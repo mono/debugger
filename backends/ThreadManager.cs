@@ -395,6 +395,10 @@ namespace Mono.Debugger
 			command_mutex.ReleaseMutex ();
 		}
 
+		internal bool InBackgroundThread {
+			get { return Thread.CurrentThread == inferior_thread; }
+		}
+
 		// <summary>
 		//   Sends a synchronous command to the background thread and wait until
 		//   it is completed.  This command never throws any exceptions, but returns
@@ -409,7 +413,7 @@ namespace Mono.Debugger
 		// </remarks>
 		internal CommandResult SendSyncCommand (Command command)
 		{
-			if (Thread.CurrentThread == inferior_thread) {
+			if (InBackgroundThread) {
 				try {
 					return command.Process.ProcessCommand (command);
 				} catch (ThreadAbortException) {

@@ -1,5 +1,11 @@
 2004-03-04  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (SendSyncCommand): Allow sync
+	commands to be run from the background thread, ie. inside an event
+	handler.
+
+2004-03-04  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs (BreakpointEventHandler): Added additional
 	StackFrame argument.
 

@@ -901,7 +901,7 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				// Check whether we're curring performing an async
 				// stepping operation.
-				if (!engine_stopped) {
+				if (!engine_stopped && !manager.InBackgroundThread) {
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
 					return CommandResult.Busy;
