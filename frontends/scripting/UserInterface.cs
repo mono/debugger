@@ -11,6 +11,11 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontends.Scripting
 {
+	/// <summary>
+	///   This interface controls how things are being displayed to the
+	///   user, for instance the current stack frame or variables from
+	///   the target.
+	/// </summary>
 	public interface UserInterface
 	{
 		string Name {
@@ -155,6 +160,11 @@ namespace Mono.Debugger.Frontends.Scripting
 			Print (type.Name);
 		}
 	}
+
+
+	///
+	/// Ignore this `user interface' - I need it to debug the debugger.
+	///
 
 	public class UserInterfaceMartin : UserInterfaceBase, UserInterface
 	{
