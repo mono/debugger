@@ -1,5 +1,12 @@
 2003-03-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs (mono_thread_manager): Fixed a bug to
+	make this actually work; don't insert a breakpoint, but pass the
+	stop address to SingleSteppingEngine.Continue() and then wait
+	until it has stopped again.
+
+2003-03-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs: Run the BreakpointHitHandler()
 	from the ready_event_handler() because it should be run after the
 	target state has changed to TargetState.STOPPED and the

@@ -30,7 +30,6 @@ namespace Mono.Debugger
 		Mutex thread_lock_mutex;
 		AddressDomain address_domain;
 		BreakpointManager breakpoint_manager;
-		AutoResetEvent thread_started_event;
 		ThreadGroup global_group;
 		int thread_lock_level = 0;
 
@@ -60,7 +59,6 @@ namespace Mono.Debugger
 			thread_lock_mutex = new Mutex ();
 			breakpoint_manager = new BreakpointManager ();
 
-			thread_started_event = new AutoResetEvent (false);
 			main_started_event = new ManualResetEvent (false);
 
 			address_domain = new AddressDomain ("global");
@@ -261,13 +259,8 @@ namespace Mono.Debugger
 		}
 
 		int last_thread = 0;
+		Process last_process = null;
 		SingleSteppingEngine last_sse = null;
-
-		void thread_started (StackFrame frame, int index, object user_data)
-		{
-			Console.WriteLine ("THREAD STARTED: {0} {1}", frame, index);
-			thread_started_event.Set ();
-		}
 
 		bool mono_thread_manager (DaemonThreadRunner runner, TargetAddress address, int signal)
 		{
@@ -345,24 +338,23 @@ namespace Mono.Debugger
 				if (thread != last_thread)
 					throw new InternalError ();
 
-				thread_started_event.WaitOne ();
+				last_sse.Wait ();
+				OnThreadCreatedEvent (last_process);
 				return true;
 			}
 
-			Process new_process = runner.Process.CreateThread (pid);
-			new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
+			last_process = runner.Process.CreateThread (pid);
+			last_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
 
-			add_process (new_process, pid, true);
+			add_process (last_process, pid, false);
 
 			if (func.Address == 0)
 				throw new InternalError ("Created thread without start function");
 
 			last_thread = thread;
-			last_sse = new_process.SingleSteppingEngine;
-			int ret = last_sse.InsertBreakpoint (
-				func, null, new BreakpointHitHandler (thread_started), true, null);
+			last_sse = last_process.SingleSteppingEngine;
 
-			new_process.SingleSteppingEngine.Continue (true, false);
+			last_sse.Continue (func, false);
 
 			return true;
 		}
