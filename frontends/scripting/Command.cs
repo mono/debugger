@@ -1224,4 +1224,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class AboutCommand : CL.Command {
+		public override string Execute (CL.Engine e)
+		{
+			Console.WriteLine ("Mono Debugger (C) 2003, 2004 Novell, Inc.\n" +
+					   "Written by Martin Baulig (martin@ximian.com)\n");
+			return null;
+		}
+	}
 }

@@ -1,5 +1,10 @@
 2004-06-17  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs
+	(AboutCommand): Added `about' command.
+
+2004-06-17  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Expression.cs (NumberExpression): Derive
 	from PointerExpression.
 	(PointerDereferenceExpression.EvaluateAddress): Removed the
