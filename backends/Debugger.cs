@@ -160,7 +160,7 @@ namespace Mono.Debugger
 				csharp_language = new MonoCSharpLanguageBackend (this, process);
 				languages.Add (csharp_language);
 			}
-			process.Inferior.UpdateModules ();
+			process.UpdateModules ();
 
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;

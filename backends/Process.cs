@@ -113,7 +113,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal IInferior Inferior {
+		private IInferior Inferior {
 			get {
 				check_disposed ();
 				return inferior;
@@ -464,6 +464,12 @@ namespace Mono.Debugger
 				return sse.DisassembleInstruction (ref address);
 			else
 				return core.Disassembler.DisassembleInstruction (ref address);
+		}
+
+		internal void UpdateModules ()
+		{
+			check_inferior ();
+			inferior.UpdateModules ();
 		}
 
 		void child_exited ()
