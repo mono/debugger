@@ -462,7 +462,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			protected override ISymbolTable GetSymbolTable ()
 			{
-				return table.Language.SymbolTable;	
+				return reader.SymbolTable;
 			}
 		}
 	}
@@ -577,6 +577,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected IInferior inferior;
 		protected ITargetMemoryAccess memory;
 		protected Hashtable range_hash;
+		MonoCSharpSymbolTable symtab;
 		ArrayList ranges;
 
 		TargetAddress start_address;
@@ -689,6 +690,8 @@ namespace Mono.Debugger.Languages.CSharp
 			} catch {
 				throw new SymbolTableException ();
 			}
+
+			symtab = new MonoCSharpSymbolTable (this);
 		}
 
 		public override string ToString ()
@@ -871,6 +874,12 @@ namespace Mono.Debugger.Languages.CSharp
 		internal ArrayList SymbolRanges {
 			get {
 				return ranges;
+			}
+		}
+
+		internal ISymbolTable SymbolTable {
+			get {
+				return symtab;
 			}
 		}
 
@@ -1223,6 +1232,47 @@ namespace Mono.Debugger.Languages.CSharp
 						      dynamic_address, dynamic_size);
 			}
 		}
+
+		private class MonoCSharpSymbolTable : SymbolTable
+		{
+			MonoSymbolTableReader reader;
+
+			public MonoCSharpSymbolTable (MonoSymbolTableReader reader)
+			{
+				this.reader = reader;
+			}
+
+			public override bool HasMethods {
+				get {
+					return false;
+				}
+			}
+
+			protected override ArrayList GetMethods ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override bool HasRanges {
+				get {
+					return true;
+				}
+			}
+
+			public override ISymbolRange[] SymbolRanges {
+				get {
+					ArrayList ranges = reader.SymbolRanges;
+					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
+					ranges.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+
+			public override void UpdateSymbolTable ()
+			{
+				base.UpdateSymbolTable ();
+			}
+		}
 	}
 
 	internal class MonoCSharpLanguageBackend : ILanguageBackend
@@ -1234,7 +1284,6 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress trampoline_address;
 		IArchitecture arch;
 		protected MonoSymbolFileTable table;
-		MonoCSharpSymbolTable symtab;
 
 		public MonoCSharpLanguageBackend (DebuggerBackend backend)
 		{
@@ -1272,7 +1321,6 @@ namespace Mono.Debugger.Languages.CSharp
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			if (table != null)
 				table.Inferior = inferior;
-			symtab = new MonoCSharpSymbolTable (this);
 		}
 
 		void child_exited ()
@@ -1281,7 +1329,6 @@ namespace Mono.Debugger.Languages.CSharp
 			info = null;
 			symtab_generation = 0;
 			arch = null;
-			symtab = null;
 			trampoline_address = TargetAddress.Null;
 		}
 
@@ -1289,12 +1336,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
-		}
-
-		public ISymbolTable SymbolTable {
-			get {
-				return symtab;
-			}
 		}
 
 		public Module[] Modules {
@@ -1378,7 +1419,6 @@ namespace Mono.Debugger.Languages.CSharp
 				table = null;
 			} finally {
 				updating_symfiles = false;
-				symtab.UpdateSymbolTable ();
 			}
 		}
 
@@ -1410,8 +1450,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			if (table.Update ())
 				must_update = true;
-			if (must_update)
-				symtab.UpdateSymbolTable ();
 		}
 
 		Hashtable breakpoints = new Hashtable ();
@@ -1536,50 +1574,5 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public event ModulesChangedHandler ModulesChangedEvent;
-
-		private class MonoCSharpSymbolTable : SymbolTable
-		{
-			MonoCSharpLanguageBackend backend;
-
-			public MonoCSharpSymbolTable (MonoCSharpLanguageBackend backend)
-			{
-				this.backend = backend;
-			}
-
-			public override bool HasMethods {
-				get {
-					return false;
-				}
-			}
-
-			protected override ArrayList GetMethods ()
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override bool HasRanges {
-				get {
-					return backend.table != null;
-				}
-			}
-
-			public override ISymbolRange[] SymbolRanges {
-				get {
-					if (backend.table == null)
-						throw new InvalidOperationException ();
-
-					ArrayList ranges = backend.table.SymbolRanges;
-					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
-					ranges.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-
-			public override void UpdateSymbolTable ()
-			{
-				backend.UpdateSymbolTable ();
-				base.UpdateSymbolTable ();
-			}
-		}
 	}
 }
