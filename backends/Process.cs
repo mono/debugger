@@ -367,9 +367,12 @@ namespace Mono.Debugger
 
 		public void Kill ()
 		{
-			check_disposed ();
+			if (disposed)
+				return;
 			if (sse != null)
 				sse.Kill ();
+			child_exited ();
+			Dispose ();
 		}
 
 		public TargetAddress CurrentFrameAddress {

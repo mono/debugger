@@ -169,7 +169,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   Holds all the symbol tables from the target's JIT.
 	// </summary>
-	internal class MonoSymbolFileTable
+	internal class MonoSymbolFileTable : IDisposable
 	{
 		public const int  DynamicVersion = 26;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
@@ -184,7 +184,8 @@ namespace Mono.Debugger.Languages.CSharp
 		ArrayList ranges;
 		Hashtable types;
 		Hashtable type_cache;
-		protected Hashtable modules;
+		ArrayList modules;
+		protected Hashtable module_hash;
 
 		int address_size;
 		int long_size;
@@ -193,14 +194,6 @@ namespace Mono.Debugger.Languages.CSharp
 		int last_num_type_tables;
 		int last_type_table_offset;
 		ArrayList type_table;
-
-		void child_exited ()
-		{
-			SymbolFiles = null;
-			ranges = new ArrayList ();
-			types = new Hashtable ();
-			type_cache = new Hashtable ();
-		}
 
 		public MonoSymbolFileTable (DebuggerBackend backend, MonoCSharpLanguageBackend language,
 					    ITargetInfo target_info)
@@ -213,7 +206,8 @@ namespace Mono.Debugger.Languages.CSharp
 			long_size = target_info.TargetLongIntegerSize;
 			int_size = target_info.TargetIntegerSize;
 
-			modules = new Hashtable ();
+			modules = new ArrayList ();
+			module_hash = new Hashtable ();
 			type_table = new ArrayList ();
 		}
 
@@ -306,14 +300,17 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void load_symfile (MonoSymbolTableReader symfile, string name)
 		{
-			Module module = (Module) modules [name];
+			Module module = (Module) module_hash [name];
 			if (module == null) {
 				module = Backend.ModuleManager.CreateModule (name);
-				modules.Add (name, module);
+				module_hash.Add (name, module);
 				symfile.Module = module;
 			}
-			if (!module.IsLoaded)
-				module.ModuleData = new MonoModule (module, name, symfile);
+			if (!module.IsLoaded) {
+				MonoModule mono_module = new MonoModule (module, name, symfile);
+				module.ModuleData = mono_module;
+				modules.Add (mono_module);
+			}
 		}
 
 		public MonoType GetType (Type type, int type_size, int offset)
@@ -360,7 +357,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public ICollection Modules {
 			get {
 				lock (this) {
-					return modules.Values;
+					return module_hash.Values;
 				}
 			}
 		}
@@ -402,6 +399,47 @@ namespace Mono.Debugger.Languages.CSharp
 
 				return true;
 			}
+		}
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		private void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			if (!this.disposed) {
+			// If this is a call to Dispose, dispose all managed resources.
+				if (disposing) {
+					SymbolFiles = null;
+					if (modules != null) {
+						foreach (MonoModule module in modules)
+							module.Dispose ();
+					}
+					modules = new ArrayList ();
+					module_hash = new Hashtable ();
+					ranges = new ArrayList ();
+					types = new Hashtable ();
+					type_cache = new Hashtable ();
+				}
+
+				// Release unmanaged resources
+				this.disposed = true;
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+				// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~MonoSymbolFileTable ()
+		{
+			Dispose (false);
 		}
 
 		private struct TypeEntry {
@@ -520,7 +558,7 @@ namespace Mono.Debugger.Languages.CSharp
 			throw new InternalError ("Can't find type entry at offset {0}.", offset);
 		}
 
-		private class MonoModule : NativeModule
+		private class MonoModule : NativeModule, IDisposable
 		{
 			Module module;
 			bool symbols_loaded;
@@ -585,6 +623,38 @@ namespace Mono.Debugger.Languages.CSharp
 			public override SourceMethodInfo FindMethod (string name)
 			{
 				return reader.FindMethod (name);
+			}
+
+			//
+			// IDisposable
+			//
+
+			private bool disposed = false;
+
+			private void Dispose (bool disposing)
+			{
+				// Check to see if Dispose has already been called.
+				if (!this.disposed) {
+				// If this is a call to Dispose, dispose all managed resources.
+					if (disposing) {
+						module.ModuleData = null;
+					}
+				
+					// Release unmanaged resources
+					this.disposed = true;
+				}
+			}
+
+			public void Dispose ()
+			{
+				Dispose (true);
+				// Take yourself off the Finalization queue
+				GC.SuppressFinalize (this);
+			}
+
+			~MonoModule ()
+			{
+				Dispose (false);
 			}
 		}
 	}
@@ -1429,6 +1499,11 @@ namespace Mono.Debugger.Languages.CSharp
 			initialized = false;
 			symtab_generation = 0;
 			trampoline_address = TargetAddress.Null;
+
+			if (table != null) {
+				table.Dispose ();
+				table = null;
+			}
 		}
 
 		public Module[] Modules {

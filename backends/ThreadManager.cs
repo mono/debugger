@@ -188,17 +188,24 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		bool main_exited = false;
+
 		void process_exited (Process process)
 		{
 			OnThreadExitedEvent (process);
+
+			if (main_exited)
+				return;
 
 			lock (this) {
 				thread_hash.Remove (process.PID);
 				if (process != main_process)
 					return;
 
+				main_exited = true;
+
 				foreach (Process thread in thread_hash.Values)
-					thread.Dispose ();
+					thread.Kill ();
 			}
 		}
 
