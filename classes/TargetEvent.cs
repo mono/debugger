@@ -12,7 +12,8 @@ namespace Mono.Debugger
 		TargetHitBreakpoint,
 		TargetSignaled,
 		TargetExited,
-		FrameChanged
+		FrameChanged,
+		UnhandledException
 	}
 
 	public class TargetEventArgs

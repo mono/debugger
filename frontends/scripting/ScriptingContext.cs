@@ -355,6 +355,21 @@ namespace Mono.Debugger.Frontends.Scripting
 					interpreter.Abort ();
 				break;
 
+			case TargetEventType.UnhandledException:
+				interpreter.Print ("{0} caught unhandled exception{1}",
+						   Name, frame);
+
+				if (interpreter.IsScript)
+					break;
+
+				interpreter.Style.UnhandledException (
+					interpreter.GlobalContext, current_frame, current_insn,
+					(TargetAddress) args.Data);
+
+				if (!interpreter.IsInteractive)
+					interpreter.Abort ();
+				break;
+
 			case TargetEventType.TargetExited:
 				if ((int) args.Data == 0)
 					interpreter.Print ("{0} terminated normally.", Name);

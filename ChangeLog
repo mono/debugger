@@ -1,5 +1,14 @@
 2004-06-21  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetEvent.cs
+	(TargetEventType): Added `UnhandledException'.
+
+	* backends/SingleSteppingEngine.cs: Send a
+	TargetEventType.UnhandledException when we catch an unhandled
+	exception.	
+
+2004-06-21  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(NotificationType.UnhandledException): New notification.
 

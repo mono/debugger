@@ -516,9 +516,9 @@ namespace Mono.Debugger.Backends
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
-				// FIXME: Do something with `exc'.
+				current_operation = new Operation (
+					OperationType.Exception, exc);
 
-				step_operation_finished ();
 				do_continue (ip);
 				return;
 			}
@@ -577,6 +577,13 @@ namespace Mono.Debugger.Backends
 				if (current_operation.Type == OperationType.Initialize) {
 					if (is_main)
 						manager.Initialize (inferior);
+				} else if (current_operation.Type == OperationType.Exception) {
+					frame_changed (inferior.CurrentFrame, null);
+					result = new TargetEventArgs (
+						TargetEventType.UnhandledException,
+						current_operation.Until,
+						current_frame);
+					goto send_result;
 				} else if (!DoStep (false))
 					return;
 			}
@@ -2193,7 +2200,8 @@ namespace Mono.Debugger.Backends
 		StepFrame,
 		RuntimeInvoke,
 		CallMethod,
-		FinishNative
+		FinishNative,
+		Exception
 	}
 
 	internal enum CommandType {

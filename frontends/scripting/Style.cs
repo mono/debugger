@@ -33,6 +33,9 @@ namespace Mono.Debugger.Frontends.Scripting
 		void TargetStopped (ScriptingContext context, FrameHandle frame,
 				    AssemblerLine current_insn);
 
+		void UnhandledException (ScriptingContext context, FrameHandle frame,
+					 AssemblerLine current_insn, TargetAddress exc);
+
 		void ShowVariableType (ITargetType type, string name);
 
 		void PrintVariable (IVariable variable, StackFrame frame);
@@ -102,6 +105,13 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 			if (native && (current_insn != null))
 				context.PrintInstruction (current_insn);
+		}
+
+		public virtual void UnhandledException (ScriptingContext context,
+							FrameHandle frame, AssemblerLine insn,
+							TargetAddress exc)
+		{
+			TargetStopped (context, frame, insn);
 		}
 
 		public string FormatObject (object obj)
@@ -395,13 +405,20 @@ namespace Mono.Debugger.Frontends.Scripting
 		{ }
 
 		public void TargetStopped (ScriptingContext context, FrameHandle frame,
-				    AssemblerLine current_insn)
+					   AssemblerLine current_insn)
 		{
 			if (current_insn != null)
 				context.PrintInstruction (current_insn);
 
 			if (frame != null)
 				frame.PrintSource (context);
+		}
+
+		public void UnhandledException (ScriptingContext context,
+						FrameHandle frame, AssemblerLine insn,
+						TargetAddress exc)
+		{
+			TargetStopped (context, frame, insn);
 		}
 
 		public void PrintFrame (ScriptingContext context, FrameHandle frame)
