@@ -83,9 +83,12 @@ namespace Mono.Debugger.Languages.Native
 
 		public override string Print ()
 		{
-			if (HasAddress)
-				return String.Format ("{0}", Address);
-			else {
+			if (HasAddress) {
+				if (Address.IsNull)
+					return "0x0";
+				else
+					return String.Format ("{0}", Address);
+			} else {
 				byte[] data = GetDereferencedContents (type.Size);
 
 				long address;

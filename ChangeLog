@@ -1,5 +1,10 @@
 2005-01-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/native/NativePointerObject.cs
+	(NativePointerObject.Print): Print a null pointer as "0x0".
+
+2005-01-25  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Style.cs (StructFormatter): New public class.
 	(StyleNative.DoFormatObject): Use the new StructFormatter.
 
