@@ -23,7 +23,7 @@ namespace Mono.Debugger
 
 		public NativeMethod (string name, string image_file,
 				     ITargetLocation start, ITargetLocation end)
-			: base (name, image_file, start, end)
+			: base (name, image_file, start.Address, end.Address)
 		{ }
 
 		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -43,7 +43,9 @@ namespace Mono.Debugger
 
 			StringBuilder sb = new StringBuilder ();
 
-			while (current.Address < end.Address) {
+			long end_address = EndAddress.Address;
+
+			while (current.Address < end_address) {
 				long address = current.Address;
 
 				IMethod method;
@@ -66,8 +68,7 @@ namespace Mono.Debugger
 				sb.Append (line);
 			}
 
-			string method_name = start.ToString ();
-			return new SourceBuffer (method_name, sb.ToString ());
+			return new SourceBuffer (Name, sb.ToString ());
 		}
 
 		//

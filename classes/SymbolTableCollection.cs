@@ -55,5 +55,37 @@ namespace Mono.Debugger
 
 			return false;
 		}
+
+		//
+		// ICollection
+		//
+
+		int ICollection.Count {
+			get {
+				return symtabs.Count;
+			}
+		}
+
+		bool ICollection.IsSynchronized {
+			get {
+				return false;
+			}
+		}
+
+		object ICollection.SyncRoot {
+			get {
+				throw new NotSupportedException ();
+			}
+		}
+
+		void ICollection.CopyTo (Array dest, int dest_idx)
+		{
+			symtabs.CopyTo (dest, dest_idx);
+		}
+
+		IEnumerator IEnumerable.GetEnumerator ()
+		{
+			return symtabs.GetEnumerator ();
+		}
 	}
 }

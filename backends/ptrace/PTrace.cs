@@ -60,10 +60,10 @@ namespace Mono.Debugger.Backends
 		string[] argv;
 		string[] envp;
 
-		BfdSymbolTable bfd_symtab;
+		Bfd bfd;
 		BfdDisassembler bfd_disassembler;
 		IArchitecture arch;
-		ISymbolTable native_symbol_table;
+		ISymbolTableCollection native_symtabs;
 
 		int child_pid;
 		bool native;
@@ -221,7 +221,7 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd_symtab = new BfdSymbolTable (argv [0]);
+			bfd = new Bfd (argv [0]);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -248,7 +248,7 @@ namespace Mono.Debugger.Backends
 
 			IntPtr error;
 
-			bfd_symtab = new BfdSymbolTable (argv [0]);
+			bfd = new Bfd (argv [0]);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -281,12 +281,19 @@ namespace Mono.Debugger.Backends
 			target_info = new TargetInfo (target_int_size, target_long_size,
 						      target_address_size);
 
-			bfd_disassembler = bfd_symtab.GetDisassembler (this);
+			bfd_disassembler = bfd.GetDisassembler (this);
 			arch = new ArchitectureI386 (this);
 
-			native_symbol_table = bfd_symtab.SymbolTable;
-			if (native_symbol_table != null)
-				bfd_disassembler.SymbolTable = native_symbol_table;
+			native_symtabs = new SymbolTableCollection ();
+			bfd_disassembler.SymbolTable = native_symtabs;
+
+			try {
+				ISymbolTable bfd_symtab = bfd.SymbolTable;
+				if (bfd_symtab != null)
+					native_symtabs.AddSymbolTable (bfd_symtab);
+			} catch (Exception e) {
+				Console.WriteLine ("Can't get native symbol table: {0}", e);
+			}
 		}
 
 		void read_mono_debugger_info ()
@@ -294,7 +301,7 @@ namespace Mono.Debugger.Backends
 			if (native)
 				return;
 
-			ITargetLocation symbol_info = bfd_symtab ["MONO_DEBUGGER__debugger_info"];
+			ITargetLocation symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
 			if (symbol_info == null)
 				return;
 
@@ -317,7 +324,7 @@ namespace Mono.Debugger.Backends
 			if (!native)
 				return false;
 
-			ITargetLocation symbol_info = bfd_symtab ["main"];
+			ITargetLocation symbol_info = bfd ["main"];
 			if (symbol_info == null)
 				return false;
 
@@ -734,7 +741,7 @@ namespace Mono.Debugger.Backends
 				}
 			} else if (!call.IsNull) {
 				IMethod method;
-				if ((native_symbol_table == null) || !native_symbol_table.Lookup (call, out method)) {
+				if (!native_symtabs.Lookup (call, out method)) {
 					Next ();
 					return;
 				}
@@ -776,9 +783,9 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ISymbolTable SymbolTable {
+		public ISymbolTableCollection SymbolTables {
 			get {
-				return native_symbol_table;
+				return native_symtabs;
 			}
 		}
 
@@ -795,8 +802,8 @@ namespace Mono.Debugger.Backends
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (bfd_symtab != null)
-						bfd_symtab.Dispose ();
+					if (bfd != null)
+						bfd.Dispose ();
 					if (bfd_disassembler != null)
 						bfd_disassembler.Dispose ();
 					// Do stuff here

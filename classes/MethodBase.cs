@@ -27,26 +27,33 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class MethodBase : IMethodSource, IMethod
+	public abstract class MethodBase : IMethodSource, IMethod, IComparable
 	{
-		protected ITargetLocation start, end;
 		ArrayList addresses;
 		WeakReference weak_source;
+		long start, end;
+		bool is_loaded;
 		int start_row, end_row;
 		string image_file;
 		string name;
 
 		protected MethodBase (IMethod method)
-			: this (method.Name, method.ImageFile, method.StartAddress, method.EndAddress)
+			: this (method.Name, method.ImageFile,
+				method.StartAddress.Address, method.EndAddress.Address)
 		{ }
 
-		protected MethodBase (string name, string image_file,
-				      ITargetLocation start, ITargetLocation end)
+		protected MethodBase (string name, string image_file, long start, long end)
+			: this (name, image_file)
+		{
+			this.start = start;
+			this.end = end;
+			this.is_loaded = true;
+		}
+
+		protected MethodBase (string name, string image_file)
 		{
 			this.name = name;
 			this.image_file = image_file;
-			this.start = start;
-			this.end = end;
 		}
 
 		protected ISourceBuffer ReadSource ()
@@ -71,6 +78,13 @@ namespace Mono.Debugger
 
 		protected abstract ISourceBuffer ReadSource (out int start_row, out int end_row,
 							     out ArrayList addresses);
+
+		protected void SetAddresses (long start, long end)
+		{
+			this.start = start;
+			this.end = end;
+			this.is_loaded = true;
+		}
 
 		//
 		// IMethod
@@ -118,7 +132,7 @@ namespace Mono.Debugger
 
 		public bool IsInSameMethod (ITargetLocation target)
 		{
-			if ((target.Address < start.Address) || (target.Address >= end.Address))
+			if ((target.Address < start) || (target.Address >= end))
 				return false;
 
 			return true;
@@ -134,7 +148,7 @@ namespace Mono.Debugger
 				return null;
 
 			long target_address = target.Address;
-			long next_address = end.Address;
+			long next_address = end;
 
 			for (int i = addresses.Count-1; i >= 0; i--) {
 				LineEntry entry = (LineEntry) addresses [i];
@@ -153,21 +167,55 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public bool IsLoaded {
+			get {
+				return is_loaded;
+			}
+		}
+
 		public ITargetLocation StartAddress {
 			get {
-				return (ITargetLocation) start.Clone ();
+				if (!is_loaded)
+					throw new InvalidOperationException ();
+
+				return new TargetLocation (start);
 			}
 		}
 
 		public ITargetLocation EndAddress {
 			get {
-				return (ITargetLocation) end.Clone ();
+				if (!is_loaded)
+					throw new InvalidOperationException ();
+
+				return new TargetLocation (end);
 			}
+		}
+
+		public int CompareTo (object obj)
+		{
+			IMethod method = (IMethod) obj;
+
+			long address;
+			try {
+				address = method.StartAddress.Address;
+			} catch {
+				return is_loaded ? -1 : 0;
+			}
+
+			if (!is_loaded)
+				return 1;
+
+			if (address < start)
+				return 1;
+			else if (address > start)
+				return -1;
+			else
+				return 0;
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0}({1},{2},{3})", GetType (), name, start, end);
+			return String.Format ("{0}({1},{2:x},{3:x})", GetType (), name, start, end);
 		}
 	}
 }

@@ -35,19 +35,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected class MethodComparer : IComparer
-		{
-			public static MethodComparer Comparer = new MethodComparer ();
-
-			public int Compare (object x, object y)
-			{
-				IMethod a = (IMethod) x;
-				IMethod b = (IMethod) y;
-
-				return a.StartAddress.CompareTo (b.StartAddress);
-			}
-		}
-
 		protected abstract ArrayList GetMethods ();
 
 		static int count = 0;
@@ -69,7 +56,7 @@ namespace Mono.Debugger
 			methods = GetMethods ();
 			if (methods == null)
 				return null;
-			methods.Sort (0, methods.Count, MethodComparer.Comparer);
+			methods.Sort ();
 			method_table = new WeakReference (methods);
 			return methods;
 		}
@@ -112,6 +99,9 @@ namespace Mono.Debugger
 				return false;
 
 			foreach (IMethod method in methods) {
+				if (!method.IsLoaded)
+					continue;
+
 				if ((address < method.StartAddress.Address) ||
 				    (address >= method.EndAddress.Address))
 					continue;

@@ -747,8 +747,8 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				return false;
 
-			if (inferior.SymbolTable != null)
-				if (inferior.SymbolTable.Lookup (address, out source, out method))
+			if (inferior.SymbolTables != null)
+				if (inferior.SymbolTables.Lookup (address, out source, out method))
 					return true;
 
 			if (symtabs == null)

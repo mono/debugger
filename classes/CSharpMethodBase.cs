@@ -4,7 +4,7 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
 {
-	public abstract class CSharpMethodBase : IMethod
+	public abstract class CSharpMethodBase : MethodBase
 	{
 		protected CSharpSymbolTable symtab;
 		protected MethodEntry method;
@@ -28,6 +28,23 @@ namespace Mono.Debugger
 				this.LineNumbers = LineNumbers;
 			}
 
+			ArrayList get_lines ()
+			{
+				ArrayList lines = new ArrayList ();
+
+				for (int i = 0; i < LineNumbers.Length; i++) {
+					LineNumberEntry lne = LineNumbers [i];
+					int line_address = (int) method.Address.LineAddresses [i];
+
+					long address = (long) method.Address.StartAddress + line_address;
+
+					lines.Add (new LineEntry (address, (int) lne.Row));
+				}
+
+				lines.Sort ();
+				return lines;
+			}
+
 			public ISourceBuffer SourceBuffer {
 				get {
 					return source;
@@ -46,65 +63,24 @@ namespace Mono.Debugger
 				}
 			}
 
-			internal int FindMethodLine (ulong address, out int source_offset,
-						     out int source_range)
-			{
-				source_range = source_offset = 0;
-				int count = LineNumbers.Length;
-				uint offset = (uint) (address - method.Address.StartAddress);
-
-				for (int idx = 0; idx < count; idx++) {
-					LineNumberEntry lne = LineNumbers [idx];
-					uint line_address = method.Address.LineAddresses [idx];
-
-					if ((offset > 1) && (line_address < offset))
-						continue;
-
-					if (idx+1 < count) {
-						uint next_address = method.Address.LineAddresses [idx+1];
-						source_range = (int) (next_address - offset);
-						if (next_address == offset)
-							continue;
-					} else {
-						source_range = (int) (method.Address.EndAddress - address);
-					}
-
-					if (idx > 0)
-						source_offset = (int) (offset - method.Address.LineAddresses [idx-1]);
-					else
-						source_offset = (int) (offset - 1);
-
-					return (int) lne.Row;
-				}
-
-				return 0;
-			}
-
-			internal void Dump ()
-			{
-				int index = (int) (method.Token & 0xffffff);
-
-				Console.WriteLine ("DUMP: {4} {0} {5} {3} {1} {2}", method,
-						   LineNumbers.Length, method.Address.LineAddresses.Length,
-						   index, symtab.ImageFile, method.Address);
-
-				int count = LineNumbers.Length;
-				for (int idx = 0; idx < count; idx++) {
-					LineNumberEntry lne = LineNumbers [idx];
-					uint line_address = method.Address.LineAddresses [idx];
-
-					Console.WriteLine ("{0} {1:x} {2:x}", lne, line_address,
-							   method.Address.StartAddress + line_address);
+			public ArrayList Lines {
+				get {
+					return get_lines ();
 				}
 			}
 		}
 
 		protected CSharpMethodBase (CSharpSymbolTable symtab, MethodEntry method,
 					    CSharpMethodSource source)
+			: base (String.Format ("C#({0:x})", method.Token), symtab.ImageFile)
 		{
 			this.symtab = symtab;
 			this.method = method;
 			this.source = source;
+
+			if (method.Address != null)
+				SetAddresses ((long) method.Address.StartAddress,
+					      (long) method.Address.EndAddress);
 		}
 		
 		protected static CSharpMethodSource GetILSource (CSharpSymbolTable symtab, MethodEntry method)
@@ -120,74 +96,22 @@ namespace Mono.Debugger
 				dis.GetLines (index));
 		}
 
+		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
+							     out ArrayList addresses)
+		{
+			start_row = source.StartRow;
+			end_row = source.EndRow;
+			addresses = source.Lines;
+			return source.SourceBuffer;
+		}
+
 		//
 		// IMethod
 		//
 
-		public string Name {
-			get {
-				return String.Format ("C#({0:x})", method.Token);
-			}
-		}
-
-		public string ImageFile {
-			get {
-				return symtab.ImageFile;
-			}
-		}
-
-		public object MethodHandle {
+		public override object MethodHandle {
 			get {
 				return (long) method.Token;
-			}
-		}
-
-		public IMethodSource Source {
-			get {
-				return source;
-			}
-		}
-
-		public bool IsInSameMethod (ITargetLocation target)
-		{
-			if (method.Address == null)
-				return false;
-
-			ulong address = (ulong) target.Location;
-
-			if ((address < method.Address.StartAddress) ||
-			    (address >= method.Address.EndAddress))
-				return false;
-
-			return true;
-		}
-
-		public ISourceLocation Lookup (ITargetLocation target)
-		{
-			if (!IsInSameMethod (target) || (source == null))
-				return null;
-
-			int source_range, source_offset;
-			int row = source.FindMethodLine
-				((ulong) target.Address, out source_offset, out source_range);
-
-			if (row == 0) {
-				row = source.EndRow;
-				source_range = (int) ((long) method.Address.EndAddress - target.Address);
-			}
-
-			return new SourceLocation (source.SourceBuffer, row, source_offset, source_range);
-		}
-
-		public ITargetLocation StartAddress {
-			get {
-				return new TargetLocation ((long) method.Address.StartAddress);
-			}
-		}
-
-		public ITargetLocation EndAddress {
-			get {
-				return new TargetLocation ((long) method.Address.EndAddress);
 			}
 		}
 	}
