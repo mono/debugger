@@ -92,7 +92,7 @@ namespace Mono.Debugger
 			return TargetAddress.Null;
 		}
 
-		public SourceLocation Lookup (TargetAddress address)
+		public SourceAddress Lookup (TargetAddress address)
 		{
 			if (address.IsNull || (address < start) || (address >= end))
 				return null;
@@ -102,11 +102,11 @@ namespace Mono.Debugger
 				return null;
 
 			if (address < method_start)
-				return new SourceLocation (
+				return new SourceAddress (
 					source, StartRow, (int) (address - start),
 					(int) (method_start - address));
 			else if (address >= method_end)
-				return new SourceLocation (
+				return new SourceAddress (
 					source, EndRow, (int) (address - method_end),
 					(int) (end - address));			
 
@@ -123,7 +123,7 @@ namespace Mono.Debugger
 
 				int offset = (int) (address - next_address);
 
-				return new SourceLocation (source, entry.Line, offset, range);
+				return new SourceAddress (source, entry.Line, offset, range);
 			}
 
 			return null;

@@ -27,7 +27,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   This is used to find a source line by its address.
 		// </summary>
-		SourceLocation Lookup (TargetAddress target);
+		SourceAddress Lookup (TargetAddress target);
 
 		// <summary>
 		//   This is used to find the line corresponding to a line number.

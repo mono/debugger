@@ -3,20 +3,20 @@ using System.Text;
 
 namespace Mono.Debugger
 {
-	public class SourceLocation
+	public class SourceAddress
 	{
 		ISourceBuffer SourceBuffer;
 		int row;
 		int source_offset;
 		int source_range;
 
-		public static SourceLocation Null = new SourceLocation (null, 0);
+		public static SourceAddress Null = new SourceAddress (null, 0);
 
-		public SourceLocation (ISourceBuffer buffer, int row)
+		public SourceAddress (ISourceBuffer buffer, int row)
 			: this (buffer, row, 0, 0)
 		{ }
 
-		public SourceLocation (ISourceBuffer buffer, int row, int offset, int range)
+		public SourceAddress (ISourceBuffer buffer, int row, int offset, int range)
 		{
 			this.SourceBuffer = buffer;
 			this.row = row;

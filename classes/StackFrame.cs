@@ -23,13 +23,13 @@ namespace Mono.Debugger
 	{
 		IMethod method;
 		TargetAddress address;
-		SourceLocation source;
+		SourceAddress source;
 		AddressDomain address_domain;
 		string name;
 		int level;
 
 		public StackFrame (TargetAddress address, int level,
-				   SourceLocation source, IMethod method)
+				   SourceAddress source, IMethod method)
 			: this (address, level, method.Name)
 		{
 			this.source = source;
@@ -55,7 +55,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public SourceLocation SourceLocation {
+		public SourceAddress SourceAddress {
 			get {
 				check_disposed ();
 				return source;

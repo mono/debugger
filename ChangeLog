@@ -1,3 +1,11 @@
+2003-02-23  Martin Baulig  <martin@ximian.com>
+
+	Renamed `SourceLocation' to `SourceAddress'.
+
+	* classes/SourceAddress.cs: Formerly known as SourceLocation.
+
+	* classes/SourceLocation.cs: Renamed into SourceAddress.
+
 2003-02-22  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceFileFactory.cs (SourceFile.ReadFile): Use

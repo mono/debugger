@@ -211,7 +211,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if ((current_source == null) || (current_frame == null) || (current_buffer == null))
 				return;
 
-			SourceLocation source = current_frame.SourceLocation;
+			SourceAddress source = current_frame.SourceAddress;
 			if ((source == null) || (source.Buffer != current_buffer))
 				return;
 
@@ -402,7 +402,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			Disassemble (frame);
 
-			SourceLocation location = frame.SourceLocation;
+			SourceAddress location = frame.SourceAddress;
 			if (location == null)
 				return;
 

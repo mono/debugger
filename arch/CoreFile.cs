@@ -121,7 +121,7 @@ namespace Mono.Debugger.Architecture
 				IMethod method = CurrentMethod;
 
 				if ((method != null) && method.HasSource) {
-					SourceLocation source = method.Source.Lookup (address);
+					SourceAddress source = method.Source.Lookup (address);
 
 					current_frame = new MyStackFrame (
 						this, address, 0, null, source, method);
@@ -160,7 +160,7 @@ namespace Mono.Debugger.Architecture
 				if (current_symtab != null)
 					method = current_symtab.Lookup (address);
 				if ((method != null) && method.HasSource) {
-					SourceLocation source = method.Source.Lookup (address);
+					SourceAddress source = method.Source.Lookup (address);
 					frames [i] = new MyStackFrame (
 						this, address, i, iframes [i], source, method);
 				} else
@@ -214,7 +214,7 @@ namespace Mono.Debugger.Architecture
 			CoreFile core;
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
-					     IInferiorStackFrame frame, SourceLocation source, IMethod method)
+					     IInferiorStackFrame frame, SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
 				this.frame = frame;

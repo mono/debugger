@@ -642,7 +642,7 @@ namespace Mono.Debugger.Backends
 
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
-					SourceLocation source = method.Source.Lookup (address);
+					SourceAddress source = method.Source.Lookup (address);
 					frames [i] = new MyStackFrame (
 						this, address, i, iframes [i], backtrace, source, method);
 				} else
@@ -1046,7 +1046,7 @@ namespace Mono.Debugger.Backends
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
 
 			if ((current_method != null) && current_method.HasSource) {
-				SourceLocation source = current_method.Source.Lookup (address);
+				SourceAddress source = current_method.Source.Lookup (address);
 
 				current_frame = new MyStackFrame (
 					this, address, 0, frames [0], null, source, current_method);
@@ -1099,7 +1099,7 @@ namespace Mono.Debugger.Backends
 
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasSource) {
-				SourceLocation source = current_method.Source.Lookup (address);
+				SourceAddress source = current_method.Source.Lookup (address);
 
 				// If check_method_operation() returns true, it already
 				// started a stepping operation, so the target is
@@ -1141,7 +1141,7 @@ namespace Mono.Debugger.Backends
 		//   between two source lines.
 		// </summary>
 		Command check_method_operation (TargetAddress address, IMethod method,
-						SourceLocation source, StepOperation operation)
+						SourceAddress source, StepOperation operation)
 		{
 			if (method.IsWrapper && (address > method.StartAddress))
 				return new Command (StepOperation.StepLine, new StepFrame (
@@ -1400,15 +1400,15 @@ namespace Mono.Debugger.Backends
 			StackFrame frame = CurrentFrame;
 			object language = (frame.Method != null) ? frame.Method.Module.Language : null;
 
-			if (frame.SourceLocation == null)
+			if (frame.SourceAddress == null)
 				return null;
 
 			// The current source line started at the current address minus
 			// SourceOffset; the next source line will start at the current
 			// address plus SourceRange.
 
-			int offset = frame.SourceLocation.SourceOffset;
-			int range = frame.SourceLocation.SourceRange;
+			int offset = frame.SourceAddress.SourceOffset;
+			int range = frame.SourceAddress.SourceRange;
 
 			TargetAddress start = frame.TargetAddress - offset;
 			TargetAddress end = frame.TargetAddress + range;
@@ -2159,7 +2159,7 @@ namespace Mono.Debugger.Backends
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
 					     IInferiorStackFrame frame, MyBacktrace backtrace,
-					     SourceLocation source, IMethod method)
+					     SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
 				this.sse = sse;
