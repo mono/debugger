@@ -253,6 +253,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		void print_struct (ITargetStructObject tstruct)
+		{
+			Console.WriteLine ("STRUCT: {0}", tstruct);
+			foreach (ITargetFieldInfo field in tstruct.Type.Fields) {
+				Console.WriteLine ("FIELD: {0}", field);
+				if (field.Type.HasObject)
+					print_object (tstruct.GetField (field.Index));
+			}
+		}
+
+		void print_class (ITargetClassObject tclass)
+		{
+			print_struct (tclass);
+
+			ITargetClassObject parent = tclass.Parent;
+			if (parent != null) {
+				Console.WriteLine ("PARENT");
+				print_class (parent);
+			}
+		}
+
 		void print_object (ITargetObject obj)
 		{
 			Console.WriteLine ("OBJECT: {0} [{1}]", obj,
@@ -266,8 +287,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Console.WriteLine ("OBJECT CONTENTS: |{0}|", obj.Object);
 
 			ITargetArray array = obj as ITargetArray;
-			if (array != null)
+			if (array != null) {
 				print_array (array, 0);
+				return;
+			}
+
+			ITargetClassObject tclass = obj as ITargetClassObject;
+			if (tclass != null) {
+				print_class (tclass);
+				return;
+			}
+
+			ITargetStructObject tstruct = obj as ITargetStructObject;
+			if (tstruct != null) {
+				print_struct (tstruct);
+				return;
+			}
 		}
 	}
 }

@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class MonoArrayType : MonoType
+	internal class MonoArrayType : MonoType, ITargetArrayType
 	{
 		internal readonly int Rank;
 		internal readonly int LengthOffset;
@@ -75,6 +75,12 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		internal MonoType ElementType {
+			get {
+				return element_type;
+			}
+		}
+
+		ITargetType ITargetArrayType.ElementType {
 			get {
 				return element_type;
 			}

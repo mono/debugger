@@ -60,9 +60,30 @@ namespace Mono.Debugger.Languages.CSharp
 			case 4:
 				return new MonoEnumType (type, size, info);
 
+			case 5:
+				return new MonoStructType (type, size, info);
+
+			case 6:
+				return new MonoClassType (type, size, info);
+
 			default:
 				return new MonoOpaqueType (type, size);
 			}
+		}
+
+		internal virtual TargetAddress GetAddress (ITargetLocation location,
+							   out ITargetMemoryAccess memory)
+		{
+			TargetAddress address = location.Address;
+			StackFrame frame = location.Handle as StackFrame;
+			if (frame == null)
+				throw new LocationInvalidException ();
+
+			memory = frame.TargetMemoryAccess;
+			if (IsByRef)
+				address = memory.ReadAddress (address);
+
+			return address;
 		}
 
 		public object TypeHandle {

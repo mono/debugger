@@ -100,16 +100,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected virtual TargetAddress GetAddress (ITargetLocation location,
 							    out ITargetMemoryAccess memory)
 		{
-			TargetAddress address = location.Address;
-			StackFrame frame = location.Handle as StackFrame;
-			if (frame == null)
-				throw new LocationInvalidException ();
-
-			memory = frame.TargetMemoryAccess;
-			if (type.IsByRef)
-				address = memory.ReadAddress (address);
-
-			return address;
+			return type.GetAddress (location, out memory);
 		}
 
 		protected abstract long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
