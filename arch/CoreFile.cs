@@ -282,7 +282,7 @@ namespace Mono.Debugger.Architecture
 			// Do nothing.
 		}
 
-		public void Step (IStepFrame frame)
+		public void Step (StepFrame frame)
 		{
 			throw new CannotExecuteCoreFileException ();
 		}

@@ -3,66 +3,6 @@ using System.IO;
 
 namespace Mono.Debugger.Backends
 {
-	public enum StepMode
-	{
-		// <summary>
-		//   Step a single machine instruction.
-		// </summary>
-		SingleInstruction,
-
-		// <summary>
-		//   Step a single machine instruction, but step over function calls.
-		// </summary>
-		NextInstruction,
-
-		// <summary>
-		//   Single-step until leaving the specified step frame or entering a method.
-		// </summary>
-		NativeStepFrame,
-
-		// <summary>
-		//   Single-step until leaving the specified step frame or entering a method.
-		//   This will step over all methods which are not in the application's symbol
-		//   table (you can set this using the IInferior.ApplicationSymbolTable property).
-		// </summary>
-		StepFrame,
-
-		// <summary>
-		//   Single-step until leaving the specified step frame and never enter any methods.
-		// </summary>
-		Finish
-	}
-
-	public interface IStepFrame
-	{
-		StepMode Mode {
-			get;
-		}
-
-		// <summary>
-		//   Start and End are only valid for StepMode.NativeStepFrame and StepMode.StepFrame.
-		// </summary>
-		TargetAddress Start {
-			get;
-		}
-
-		TargetAddress End {
-			get;
-		}
-
-		// <summary>
-		//   If this is not null, it's used to trigger a JIT compilation when entering a
-		//   trampoline.
-		// </summary>
-		// <remarks>
-		//   The debugger will never enter the trampoline code itself unless this is null.
-		//   This also applies for StepMode.SingleInstruction.
-		// </remarks>
-		ILanguageBackend Language {
-			get;
-		}
-	}
-
 	public interface IInferiorStackFrame
 	{
 		IInferior Inferior {
@@ -117,7 +57,7 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Single-step until we leave the specified frame.
 		// </summary>
-		void Step (IStepFrame frame);
+		void Step (StepFrame frame);
 
 		// <summary>
 		//   Stop the target.

@@ -20,56 +20,6 @@ namespace Mono.Debugger
 	public delegate void MethodInvalidHandler ();
 	public delegate void MethodChangedHandler (IMethod method);
 
-	internal class StepFrame : IStepFrame
-	{
-		TargetAddress start, end;
-		ILanguageBackend language;
-		StepMode mode;
-
-		internal StepFrame (ILanguageBackend language, StepMode mode)
-			: this (TargetAddress.Null, TargetAddress.Null, language, mode)
-		{ }
-
-		internal StepFrame (TargetAddress start, TargetAddress end, ILanguageBackend language,
-				    StepMode mode)
-		{
-			this.start = start;
-			this.end = end;
-			this.language = language;
-			this.mode = mode;
-		}
-
-		public StepMode Mode {
-			get {
-				return mode;
-			}
-		}
-
-		public TargetAddress Start {
-			get {
-				return start;
-			}
-		}
-
-		public TargetAddress End {
-			get {
-				return end;
-			}
-		}
-
-		public ILanguageBackend Language {
-			get {
-				return language;
-			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("StepFrame ({0:x},{1:x},{2},{3})",
-					      Start, End, Mode, Language);
-		}
-	}
-
 	public class DebuggerBackend : ITargetNotification, ISymbolLookup, IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
@@ -359,7 +309,7 @@ namespace Mono.Debugger
 
 		void do_run (string[] argv)
 		{
-			inferior = new Inferior (working_directory, argv, envp, native, source_factory);
+			inferior = new PTraceInferior (working_directory, argv, envp, native, source_factory);
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
@@ -424,7 +374,7 @@ namespace Mono.Debugger
 				throw new TargetNotStoppedException ();
 		}
 
-		IStepFrame get_step_frame ()
+		StepFrame get_step_frame ()
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
@@ -442,7 +392,7 @@ namespace Mono.Debugger
 			return new StepFrame (start, end, language, StepMode.StepFrame);
 		}
 
-		IStepFrame get_simple_step_frame (StepMode mode)
+		StepFrame get_simple_step_frame (StepMode mode)
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
@@ -472,7 +422,7 @@ namespace Mono.Debugger
 		public void NextLine ()
 		{
 			check_can_run ();
-			IStepFrame frame = get_step_frame ();
+			StepFrame frame = get_step_frame ();
 			if (frame == null) {
 				inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
 				return;

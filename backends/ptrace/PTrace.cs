@@ -74,7 +74,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_method_address = TargetAddress.Null;
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 
-		IStepFrame current_step_frame = null;
+		StepFrame current_step_frame = null;
 
 		public int PID {
 			get {
@@ -242,8 +242,8 @@ namespace Mono.Debugger.Backends
 			temp_breakpoint_id = insert_breakpoint (address);
 		}
 
-		public Inferior (string working_directory, string[] argv, string[] envp, bool native,
-				 SourceFileFactory factory)
+		public PTraceInferior (string working_directory, string[] argv, string[] envp,
+				       bool native, SourceFileFactory factory)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
@@ -275,7 +275,7 @@ namespace Mono.Debugger.Backends
 			setup_inferior ();
 		}
 
-		public Inferior (int pid, string[] envp, SourceFileFactory factory)
+		public PTraceInferior (int pid, string[] envp, SourceFileFactory factory)
 		{
 			this.envp = envp;
 			this.source_factory = factory;
@@ -763,7 +763,7 @@ namespace Mono.Debugger.Backends
 			// send_command (ServerCommand.KILL);
 		}
 
-		void set_step_frame (IStepFrame frame)
+		void set_step_frame (StepFrame frame)
 		{
 			if (frame != null) {
 				switch (frame.Mode) {
@@ -781,7 +781,7 @@ namespace Mono.Debugger.Backends
 				current_step_frame = null;
 		}
 
-		void do_step (IStepFrame frame)
+		void do_step (StepFrame frame)
 		{
 			set_step_frame (frame);
 
@@ -808,7 +808,7 @@ namespace Mono.Debugger.Backends
 			Continue ();
 		}
 
-		public void Step (IStepFrame frame)
+		public void Step (StepFrame frame)
 		{
 			check_disposed ();
 
@@ -1158,7 +1158,7 @@ namespace Mono.Debugger.Backends
 			GC.SuppressFinalize (this);
 		}
 
-		~Inferior ()
+		~PTraceInferior ()
 		{
 			Dispose (false);
 		}
