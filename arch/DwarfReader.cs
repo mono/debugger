@@ -98,6 +98,15 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public void ModuleLoaded ()
+		{
+			if (aranges != null)
+				return;
+
+			aranges = ArrayList.Synchronized (read_aranges ());
+			symtab = new DwarfSymbolTable (this, aranges);
+		}
+
 		public static bool IsSupported (Bfd bfd)
 		{
 			if (bfd.Target == "elf32-i386")
@@ -139,8 +148,8 @@ namespace Mono.Debugger.Architecture
 
 		IMethod ISymbolFile.GetMethod (long handle)
 		{
-			MethodBase method = (MethodBase) method_hash [handle];
-			if ((method == null) || !method.IsLoaded)
+			DwarfTargetMethod method = (DwarfTargetMethod) method_hash [handle];
+			if ((method == null) || !method.CheckLoaded ())
 				return null;
 			return method;
 		}
@@ -166,7 +175,7 @@ namespace Mono.Debugger.Architecture
 
 			source = new SourceMethod (
 				this, subprog.SourceFile, subprog.Offset, subprog.Name,
-				start_row, end_row, false);
+				start_row, end_row, true);
 			method_source_hash.Add (subprog.Offset, source);
 			return source;
 		}
@@ -1935,145 +1944,152 @@ namespace Mono.Debugger.Architecture
 				return String.Format ("{0} ({1}:{2:x}:{3:x})", GetType (),
 						      Name, start_pc, end_pc);
 			}
+		}
 
-			protected class DwarfTargetMethod : MethodBase
+		protected class DwarfTargetMethodSource : MethodSource
+		{
+			DwarfTargetMethod method;
+
+			public DwarfTargetMethodSource (DwarfTargetMethod method,
+							SourceFile file)
+				: base (method, file)
 			{
-				LineNumberEngine engine;
-				DieSubprogram subprog;
-				SourceMethod source;
-				int start_row, end_row;
-				LineNumber[] lines;
-				ISourceBuffer buffer;
+				this.method = method;
+			}
 
-				public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
-					: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
-				{
-					this.subprog = subprog;
-					this.engine = engine;
-
-					ISymbolContainer sc = (ISymbolContainer) subprog;
-					if (sc.IsContinuous && subprog.dwarf.bfd.IsLoaded)
-						SetAddresses (sc.StartAddress, sc.EndAddress);
-
-					read_source ();
-					method_loaded ();
+			protected override MethodSourceData ReadSource ()
+			{
+				LineNumber[] lines = method.LineNumbers;
+				LineEntry[] addresses = new LineEntry [lines.Length];
+				for (int i = 0; i < lines.Length; i++) {
+					LineNumber line = lines [i];
+					addresses [i] = new LineEntry (
+						method.DwarfReader.GetAddress (line.Offset),
+						line.Line);
 				}
 
-				public DwarfReader DwarfReader {
-					get { return subprog.dwarf; }
-				}
+				return new MethodSourceData (
+					method.StartRow, method.EndRow, addresses,
+					method.SourceMethod, method.SourceBuffer);
+			}
+		}
 
-				public override object MethodHandle {
-					get { return this; }
-				}
+		protected class DwarfTargetMethod : MethodBase
+		{
+			LineNumberEngine engine;
+			DieSubprogram subprog;
+			SourceMethod source;
+			DwarfTargetMethodSource msource;
+			int start_row, end_row;
+			LineNumber[] lines;
+			ISourceBuffer buffer;
 
-				public override ITargetStructType DeclaringType {
-					get { return null; }
-				}
+			public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
+				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
+			{
+				this.subprog = subprog;
+				this.engine = engine;
 
-				public override bool HasThis {
-					get { return false; }
-				}
+				read_source ();
+				CheckLoaded ();
+			}
 
-				public override IVariable This {
-					get {
-						throw new InvalidOperationException ();
-					}
-				}
+			public DwarfReader DwarfReader {
+				get { return subprog.dwarf; }
+			}
 
-				public override IVariable[] Parameters {
-					get { return subprog.Parameters; }
-				}
+			public override object MethodHandle {
+				get { return this; }
+			}
 
-				public override IVariable[] Locals {
-					get { return subprog.Locals; }
-				}
+			public override ITargetStructType DeclaringType {
+				get { return null; }
+			}
 
-				public int StartRow {
-					get { return start_row; }
-				}
+			public override bool HasThis {
+				get { return false; }
+			}
 
-				public int EndRow {
-					get { return end_row; }
-				}
-
-				public LineNumber[] LineNumbers {
-					get { return lines; }
-				}
-
-				public SourceMethod SourceMethod {
-					get { return source; }
-				}
-
-				public ISourceBuffer SourceBuffer {
-					get { return buffer; }
-				}
-
-				void read_source ()
-				{
-					string file = engine.GetSource (
-						subprog, out start_row, out end_row, out lines);
-					if (file == null)
-						throw new InternalError ();
-
-					source = subprog.dwarf.GetSourceMethod (
-						subprog, StartRow, EndRow);
-
-					buffer = subprog.dwarf.factory.FindFile (
-						subprog.SourceFile.FileName);
-
-					subprog.dwarf.method_hash.Add (source.Handle, this);
-				}
-
-				void method_loaded ()
-				{
-					if (!subprog.dwarf.bfd.IsLoaded)
-						return;
-
-					SetSource (new DwarfTargetMethodSource (
-							   this, subprog.SourceFile));
-
-					if ((lines != null) && (lines.Length > 2)) {
-						LineNumber start = lines [1];
-						LineNumber end = lines [lines.Length - 1];
-
-						SetMethodBounds (
-							subprog.dwarf.GetAddress (start.Offset),
-							subprog.dwarf.GetAddress (end.Offset));
-					}
-				}
-
-				public override SourceMethod GetTrampoline (ITargetMemoryAccess memory, TargetAddress address)
-				{
-					return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
+			public override IVariable This {
+				get {
+					throw new InvalidOperationException ();
 				}
 			}
 
-			protected class DwarfTargetMethodSource : MethodSource
+			public override IVariable[] Parameters {
+				get { return subprog.Parameters; }
+			}
+
+			public override IVariable[] Locals {
+				get { return subprog.Locals; }
+			}
+
+			public int StartRow {
+				get { return start_row; }
+			}
+
+			public int EndRow {
+				get { return end_row; }
+			}
+
+			public LineNumber[] LineNumbers {
+				get { return lines; }
+			}
+
+			public SourceMethod SourceMethod {
+				get { return source; }
+			}
+
+			public ISourceBuffer SourceBuffer {
+				get { return buffer; }
+			}
+
+			void read_source ()
 			{
-				DwarfTargetMethod method;
+				string file = engine.GetSource (
+					subprog, out start_row, out end_row, out lines);
+				if (file == null)
+					throw new InternalError ();
 
-				public DwarfTargetMethodSource (DwarfTargetMethod method, SourceFile file)
-					: base (method, file)
-				{
-					this.method = method;
+				source = subprog.dwarf.GetSourceMethod (
+					subprog, StartRow, EndRow);
+
+				buffer = subprog.dwarf.factory.FindFile (
+					subprog.SourceFile.FileName);
+
+				subprog.dwarf.method_hash.Add (source.Handle, this);
+			}
+
+			public bool CheckLoaded ()
+			{
+				if (!subprog.dwarf.bfd.IsLoaded)
+					return false;
+				if (msource != null)
+					return true;
+
+				ISymbolContainer sc = (ISymbolContainer) subprog;
+				if (sc.IsContinuous)
+					SetAddresses (sc.StartAddress, sc.EndAddress);
+
+				msource = new DwarfTargetMethodSource (
+					this, subprog.SourceFile);
+				SetSource (msource);
+
+				if ((lines != null) && (lines.Length > 2)) {
+					LineNumber start = lines [1];
+					LineNumber end = lines [lines.Length - 1];
+
+					SetMethodBounds (
+						subprog.dwarf.GetAddress (start.Offset),
+						subprog.dwarf.GetAddress (end.Offset));
 				}
 
-				protected override MethodSourceData ReadSource ()
-				{
-					LineNumber[] lines = method.LineNumbers;
-					LineEntry[] addresses = new LineEntry [lines.Length];
-					for (int i = 0; i < lines.Length; i++) {
-						LineNumber line = lines [i];
-						addresses [i] = new LineEntry (
-							method.DwarfReader.GetAddress (line.Offset),
-							line.Line);
-					}
+				return true;
+			}
 
-					return new MethodSourceData (
-						method.StartRow, method.EndRow, addresses,
-						method.SourceMethod, method.SourceBuffer);
-				}
+			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory, TargetAddress address)
+			{
+				return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
 			}
 		}
 

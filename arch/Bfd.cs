@@ -1016,13 +1016,6 @@ namespace Mono.Debugger.Architecture
 								   MethodLoadedHandler handler,
 								   object user_data)
 		{
-			throw new InvalidOperationException ();
-		}
-
-		internal IDisposable RegisterLoadHandler (SourceMethod method,
-							  MethodLoadedHandler handler,
-							  object user_data)
-		{
 			LoadHandlerData data = new LoadHandlerData (
 				this, method, handler, user_data);
 
@@ -1039,13 +1032,15 @@ namespace Mono.Debugger.Architecture
 		{
 			this.base_address = address;
 
-			Console.WriteLine ("MODULE LOADED: {0} {1}", BaseAddress, address);
+			if (dwarf != null) {
+				dwarf.ModuleLoaded ();
 
-			load_dwarf ();
-
-			foreach (LoadHandlerData data in load_handlers.Keys) {
-				data.Handler (inferior, data.Method, data.UserData);
+				has_debugging_info = true;
+				OnSymbolsLoadedEvent ();
 			}
+
+			foreach (LoadHandlerData data in load_handlers.Keys)
+				data.Handler (inferior, data.Method, data.UserData);
 		}
 
 		protected sealed class LoadHandlerData : IDisposable
