@@ -161,7 +161,10 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				engine_stopped = true;
-				send_target_event (result);
+				if (result != null)
+					send_target_event (result);
+				else
+					target_state = TargetState.STOPPED;
 				operation_completed_event.Set ();
 			}
 		}
@@ -462,14 +465,24 @@ namespace Mono.Debugger.Backends
 		//   Now, our first task is figuring out whether the atomic operation actually
 		//   completed, ie. the target stopped normally.
 		// </summary>
-		protected bool ProcessEvent (Inferior.ChildEvent cevent)
+		protected void ProcessEvent (Inferior.ChildEvent cevent)
 		{
 			// Callbacks happen when the user (or the engine) called a method
 			// in the target (RuntimeInvoke).
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK) {
 				bool ret;
-				if (handle_callback (cevent, out ret))
-					return ret;
+				if (handle_callback (cevent, out ret)) {
+					Report.Debug (DebugFlags.EventLoop,
+						      "SSE {0} completed callback: {1}",
+						      this, ret);
+					if (!ret)
+						return;
+					// Ok, inform the user that we stopped.
+					frame_changed (inferior.CurrentFrame, null);
+					step_operation_finished ();
+					operation_completed (null);
+					return;
+				}
 			}
 
 			// If the target stopped abnormally, this returns an event which
@@ -484,7 +497,7 @@ namespace Mono.Debugger.Backends
 					// The `DaemonEventHandler' may decide to discard
 					// this event in which case it returns true.
 					if (DaemonEventHandler (this, inferior, result))
-						return false;
+						return;
 				}
 				// Ok, inform the user that we stopped.
 				step_operation_finished ();
@@ -493,7 +506,7 @@ namespace Mono.Debugger.Backends
 					reached_main = true;
 					manager.ReachedMain ();
 				}
-				return true;
+				return;
 			}
 
 			//
@@ -511,7 +524,7 @@ namespace Mono.Debugger.Backends
 					if (is_main)
 						manager.Initialize (inferior.CurrentFrame);
 				} else if (!DoStep (false))
-					return false;
+					return;
 			}
 
 			//
@@ -525,7 +538,7 @@ namespace Mono.Debugger.Backends
 			// a signal).
 			if (!main_method_retaddr.IsNull && (frame == main_method_retaddr)) {
 				do_continue ();
-				return false;
+				return;
 			}
 
 			//
@@ -540,7 +553,7 @@ namespace Mono.Debugger.Backends
 			Operation new_operation = frame_changed (frame, current_operation);
 			if (new_operation != null) {
 				ProcessCommand (new_operation);
-				return false;
+				return;
 			}
 
 			//
@@ -894,10 +907,12 @@ namespace Mono.Debugger.Backends
 				}
 
 				Report.Debug (DebugFlags.Wait,
-					      "SSE {0} sending sync command", this);
+					      "SSE {0} sending sync command {1}",
+					      this, command);
 				CommandResult result = manager.SendSyncCommand (command);
 				Report.Debug (DebugFlags.Wait,
-					      "SSE {0} finished sync command", this);
+					      "SSE {0} finished sync command {1}",
+					      this, command);
 
 				return result;
 			}
@@ -943,7 +958,17 @@ namespace Mono.Debugger.Backends
 			if (!StartOperation ())
 				throw new TargetNotStoppedException ();
 
-			manager.SendAsyncCommand (command);
+			lock (this) {
+				operation_completed_event.Reset ();
+				manager.SendAsyncCommand (command);
+			}
+
+			Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
+			operation_completed_event.WaitOne ();
+			Report.Debug (DebugFlags.Wait, "SSE {0} done waiting", this);
+			Report.Debug (DebugFlags.Wait,
+				      "SSE {0} released command mutex", this);
+			manager.ReleaseCommandMutex ();
 		}
 
 		public bool Stop ()
@@ -1665,7 +1690,7 @@ namespace Mono.Debugger.Backends
 				new CallMethodData ((RuntimeInvokeData) cb.Data.Data),
 				new CallbackFunc (callback_runtime_invoke_done)));
 
-			return true;
+			return false;
 		}
 
 		bool callback_runtime_invoke_done (Callback cb, long data1, long data2)
@@ -1683,8 +1708,6 @@ namespace Mono.Debugger.Backends
 			else
 				rdata.ExceptionObject = TargetAddress.Null;
 
-			frame_changed (inferior.CurrentFrame, null);
-			send_frame_event (current_frame, 0);
 			return true;
 		}
 
@@ -1698,7 +1721,9 @@ namespace Mono.Debugger.Backends
 		{
 			cb.Data.Result = data1;
 
-			// manager.SetCompleted (this);
+			Report.Debug (DebugFlags.EventLoop,
+				      "Call method done: {0} {1:x} {2:x}", this, data1, data2);
+
 			return true;
 		}
 
