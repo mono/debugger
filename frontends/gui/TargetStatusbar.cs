@@ -17,7 +17,7 @@ namespace Mono.Debugger.GUI
 		{
 			status_bar = widget;
 			status_id = status_bar.GetContextId ("message");
-			backend.StateChanged += new StateChangedHandler (state_changed);
+			backend.StateChanged += new StateChangedHandler (StateChanged);
 		}
 
 		public void Message (string message)
@@ -25,11 +25,6 @@ namespace Mono.Debugger.GUI
 			status_bar.Pop (status_id);
 			status_bar.Push (status_id, message);
 			MainIteration ();
-		}
-
-		public void state_changed (TargetState new_state)
-		{
-			StateChanged (new_state);
 		}
 
 		public virtual void StateChanged (TargetState new_state)
