@@ -480,7 +480,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress symbol_file_generation;	
 		public readonly TargetAddress notification_code;
 		public readonly TargetAddress symbol_file_table;
-		public readonly TargetAddress update_symbol_file_table;
 		public readonly TargetAddress compile_method;
 		public readonly TargetAddress insert_breakpoint;
 		public readonly TargetAddress remove_breakpoint;
@@ -495,7 +494,6 @@ namespace Mono.Debugger.Languages.CSharp
 			symbol_file_generation = reader.ReadAddress ();
 			notification_code = reader.ReadAddress ();
 			symbol_file_table = reader.ReadAddress ();
-			update_symbol_file_table = reader.ReadAddress ();
 			compile_method = reader.ReadAddress ();
 			insert_breakpoint = reader.ReadAddress ();
 			remove_breakpoint = reader.ReadAddress ();
@@ -506,11 +504,10 @@ namespace Mono.Debugger.Languages.CSharp
 		public override string ToString ()
 		{
 			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x}:{8:x})",
+				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x})",
 				generic_trampoline_code, breakpoint_trampoline_code,
 				symbol_file_generation, symbol_file_table,
-				update_symbol_file_table, compile_method,
-				insert_breakpoint, remove_breakpoint,
+				compile_method, insert_breakpoint, remove_breakpoint,
 				runtime_invoke);
 		}
 	}
@@ -1390,7 +1387,6 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoCSharpLanguageBackend : ILanguageBackend
 	{
 		Process process;
-		// SingleSteppingEngine sse;
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
@@ -1491,11 +1487,11 @@ namespace Mono.Debugger.Languages.CSharp
 					   notification_address);
 		}
 
-		bool updating_symfiles;
 		public void do_update_symbol_table (IInferior inferior)
 		{
 			try {
 				int generation = inferior.ReadInteger (info.symbol_file_generation);
+				Console.WriteLine ("UPDATE: {0} {1}", generation, symtab_generation);
 				if ((table != null) && (generation == symtab_generation)) {
 					table.Update (inferior);
 					return;
@@ -1507,20 +1503,11 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			try {
-				updating_symfiles = true;
-
-				if ((inferior.State != TargetState.CORE_FILE) &&
-				    ((int) inferior.CallMethod (info.update_symbol_file_table, 0) == 0)) {
-					// Nothing to do.
-					return;
-				}
-
+				Console.WriteLine ("RELOADING SYMTAB");
 				do_update_symbol_files (inferior);
 			} catch (Exception e) {
 				Console.WriteLine ("Can't update symbol table: {0}", e);
 				table = null;
-			} finally {
-				updating_symfiles = false;
 			}
 		}
 
@@ -1619,6 +1606,8 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new TargetMemoryException (
 					"Unknown target address size " + inferior.TargetAddressSize);
 			}
+
+			Console.WriteLine ("TRAMPOLINE: {0} {1}", address, method);
 
 			return method;
 		}
