@@ -41,6 +41,22 @@ class C : B
 	}
 }
 
+struct D
+{
+	public A a;
+	public B b;
+	public C c;
+	public string[] s;
+
+	public D (A a, B b, C c, params string[] args)
+	{
+		this.a = a;
+		this.b = b;
+		this.c = c;
+		this.s = args;
+	}
+}
+
 class X
 {
 	static void Simple ()
@@ -53,7 +69,7 @@ class X
 
 		Console.WriteLine (a);
 		Console.WriteLine (b);
-		// Console.WriteLine (f);
+		Console.WriteLine (f);
 		Console.WriteLine (hello);
 	}
 
@@ -125,6 +141,16 @@ class X
 		Console.WriteLine (b.a);
 	}
 
+	static void ComplexStructType ()
+	{
+		A a = new A (5, 256, "New England Patriots");
+		B b = new B (5, 256, "New England Patriots");
+		C c = new C (5, 256, "New England Patriots", 3.14F, 8);
+
+		D d = new D (a, b, c, "Eintracht Trier");
+		Console.WriteLine (d.s [0]);
+	}
+
 	static void Main ()
 	{
 		Simple ();
@@ -137,5 +163,6 @@ class X
 		StructType ();
 		ClassType ();
 		InheritedClassType ();
+		ComplexStructType ();
 	}
 }

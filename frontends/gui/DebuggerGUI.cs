@@ -108,7 +108,8 @@ namespace Mono.Debugger.GUI
 
 		Gtk.Entry command_entry;
 		CurrentInstructionEntry current_insn;
-		VariableDisplay variable_display;
+		VariableDisplay locals_display;
+		VariableDisplay params_display;
 		BackTraceView backtrace_view;
 		ModuleDisplay module_display;
 		HexEditor hex_editor;
@@ -220,7 +221,8 @@ namespace Mono.Debugger.GUI
 			output_writer = new OutputWindow (target_output);
 			command_writer = new OutputWindow (command_output);
 
-			variable_display = new VariableDisplay (this, "variable-display");
+			locals_display = new VariableDisplay (this, "locals-display", true);
+			params_display = new VariableDisplay (this, "params-display", false);
 			backtrace_view = new BackTraceView (this, "backtrace-view");
 			module_display = new ModuleDisplay (this, "module-view");
 			hex_editor = new HexEditor (this, "hexeditor-dialog", "hexeditor-view");

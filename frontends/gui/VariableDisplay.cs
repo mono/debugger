@@ -16,14 +16,17 @@ namespace Mono.Debugger.GUI
 
 		Gtk.TreeView tree;
 		Gtk.TreeStore store;
+		bool is_locals_display;
 
-		public VariableDisplay (DebuggerGUI gui, string glade_name)
-			: this (gui, (Gtk.Container) gui.GXML [glade_name])
+		public VariableDisplay (DebuggerGUI gui, string glade_name, bool is_locals_display)
+			: this (gui, (Gtk.Container) gui.GXML [glade_name], is_locals_display)
 		{ }
 
-		public VariableDisplay (DebuggerGUI gui, Gtk.Container container)
+		public VariableDisplay (DebuggerGUI gui, Gtk.Container container, bool is_locals_display)
 			: base (gui, null, container)
 		{
+			this.is_locals_display = is_locals_display;
+
 			store = new TreeStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString);
@@ -87,17 +90,29 @@ namespace Mono.Debugger.GUI
 		{
 			bool inserted = false;
 
-#if FIXME
 			foreach (ITargetFieldInfo field in sobj.Type.Fields) {
-				if (!field.Type.HasObject)
-					continue;
-
 				TreeIter iter;
 				store.Append (out iter, parent);
 				add_object (sobj.GetField (field.Index), field.Name, iter);
 				inserted = true;
 			}
-#endif
+
+			return inserted;
+		}
+
+		bool add_class (TreeIter parent, ITargetClassObject sobj)
+		{
+			bool inserted = false;
+
+			if (sobj.Type.HasParent) {
+				TreeIter iter;
+				store.Append (out iter, parent);
+				add_object (sobj.Parent, "<parent>", iter);
+				inserted = true;
+			}
+
+			if (add_struct (parent, sobj))
+				inserted = true;
 
 			return inserted;
 		}
@@ -132,8 +147,9 @@ namespace Mono.Debugger.GUI
 				return;
 			}
 
-			ITargetArrayObject array = obj as ITargetArrayObject;
-			if (array != null) {
+			switch (obj.Type.Kind) {
+			case TargetObjectKind.Array:
+				ITargetArrayObject array = (ITargetArrayObject) obj;
 				try {
 					inserted = add_array (args.Iter, array);
 				} catch {
@@ -142,11 +158,22 @@ namespace Mono.Debugger.GUI
 				}
 				if (!inserted)
 					add_message (args.Iter, "<empty array>");
-				return;
-			}
+				break;
 
-			ITargetStructObject sobj = obj as ITargetStructObject;
-			if (sobj != null) {
+			case TargetObjectKind.Class:
+				ITargetClassObject cobj = (ITargetClassObject) obj;
+				try {
+					inserted = add_class (args.Iter, cobj);
+				} catch {
+					add_message (args.Iter, "<can't display class>");
+					inserted = true;
+				}
+				if (!inserted)
+					add_message (args.Iter, "<empty class>");
+				break;
+
+			case TargetObjectKind.Struct:
+				ITargetStructObject sobj = (ITargetStructObject) obj;
 				try {
 					inserted = add_struct (args.Iter, sobj);
 				} catch {
@@ -155,10 +182,12 @@ namespace Mono.Debugger.GUI
 				}
 				if (!inserted)
 					add_message (args.Iter, "<empty struct>");
-				return;
-			}
+				break;
 
-			add_message (args.Iter, "<unknown object>");
+			default:
+				add_message (args.Iter, "<unknown object>");
+				break;
+			}
 		}
 
 		void add_data (ITargetObject obj, TreeIter parent)
@@ -173,16 +202,18 @@ namespace Mono.Debugger.GUI
 			store.SetValue (iter, 0, new GLib.Value (name));
 			store.SetValue (iter, 1, new GLib.Value (obj.Type.Name));
 
-#if FIXME
-			if (obj.HasObject) {
-				object contents = obj.Object;
+			switch (obj.Type.Kind) {
+			case TargetObjectKind.Fundamental:
+				object contents = ((ITargetFundamentalObject) obj).Object;
 				store.SetValue (iter, 2, new GLib.Value (contents.ToString ()));
-				return;
-			}
+				break;
 
-			if ((obj is ITargetArrayObject) || (obj is ITargetStructObject))
+			case TargetObjectKind.Array:
+			case TargetObjectKind.Struct:
+			case TargetObjectKind.Class:
 				add_data (obj, iter);
-#endif
+				break;
+			}
 		}
 
 		void add_variable (IVariable variable)
@@ -217,13 +248,15 @@ namespace Mono.Debugger.GUI
 				return;
 
 			try {
-				IVariable[] param_vars = current_frame.Method.Parameters;
-				foreach (IVariable var in param_vars)
-					add_variable (var);
-
-				IVariable[] local_vars = current_frame.Method.Locals;
-				foreach (IVariable var in local_vars)
-					add_variable (var);
+				if (is_locals_display) {
+					IVariable[] local_vars = current_frame.Method.Locals;
+					foreach (IVariable var in local_vars)
+						add_variable (var);
+				} else {
+					IVariable[] param_vars = current_frame.Method.Parameters;
+					foreach (IVariable var in param_vars)
+						add_variable (var);
+				}
 			} catch (Exception e) {
 				Console.WriteLine ("CAN'T GET VARIABLES: {0}", e);
 				store.Clear ();
@@ -231,7 +264,7 @@ namespace Mono.Debugger.GUI
 			}
 		}
 		
-		void FrameChangedEvent (StackFrame frame)
+		protected override void FrameChanged (StackFrame frame)
 		{
 			current_frame = frame;
 
@@ -241,7 +274,7 @@ namespace Mono.Debugger.GUI
 			UpdateDisplay ();
 		}
 
-		void FramesInvalidEvent ()
+		protected override void FramesInvalid ()
 		{
 			current_frame = null;
 		}
