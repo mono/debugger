@@ -169,8 +169,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 					ITargetObject obj = var.GetObject (backend.CurrentFrame);
 					Console.WriteLine ("VAR: {0}", obj);
-					if (obj.Location.IsValid)
-						Console.WriteLine ("DATA: {0}", obj.MemoryReader);
+					if (!obj.Location.IsValid)
+						continue;
+
+					Console.WriteLine ("DATA: {0}", obj.MemoryReader);
+					if (!obj.Variable.Type.HasObject)
+						continue;
+
+					Console.WriteLine ("OBJECT: {0}", obj.Variable.Type.GetObject (
+						obj.MemoryReader));
 				}
 				break;
 			}

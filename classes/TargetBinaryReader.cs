@@ -83,6 +83,11 @@ namespace Mono.Debugger
 			return ((short) (contents[pos] | (contents[pos+1] << 8)));
 		}
 
+		public short PeekInt16 ()
+		{
+			return PeekInt16 (pos);
+		}
+
 		public short ReadInt16 ()
 		{
 			short retval = PeekInt16 (pos);
@@ -94,6 +99,11 @@ namespace Mono.Debugger
 		{
 			return (contents[pos] | (contents[pos+1] << 8) |
 				(contents[pos+2] << 16) | (contents[pos+3] << 24));
+		}
+
+		public int PeekInt32 ()
+		{
+			return PeekInt32 (pos);
 		}
 
 		public int ReadInt32 ()
@@ -116,6 +126,11 @@ namespace Mono.Debugger
 			return (long) ((((ulong) ret_high) << 32) | ret_low);
 		}
 
+		public long PeekInt64 ()
+		{
+			return PeekInt64 (pos);
+		}
+
 		public long ReadInt64 ()
 		{
 			long retval = PeekInt64 (pos);
@@ -129,6 +144,11 @@ namespace Mono.Debugger
 				return PeekInt64 (pos);
 			else
 				return PeekInt32 (pos);
+		}
+
+		public long PeekAddress ()
+		{
+			return PeekAddress (pos);
 		}
 
 		public long ReadAddress ()
@@ -150,6 +170,11 @@ namespace Mono.Debugger
 				retval [i] = (char) contents[pos+i];
 
 			return new String (retval);
+		}
+
+		public string PeekString ()
+		{
+			return PeekString (pos);
 		}
 
 		public string ReadString ()

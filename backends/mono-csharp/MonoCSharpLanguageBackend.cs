@@ -229,8 +229,8 @@ namespace Mono.Debugger.Languages.CSharp
 				ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
-					param_types [i] = new MonoType (param_info [i].ParameterType,
-									method.Parameters [i].Size);
+					param_types [i] = MonoType.GetType (
+						param_info [i].ParameterType, method.Parameters [i].Size);
 
 				parameters = new IVariable [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
