@@ -7,6 +7,8 @@ using System.Runtime.Serialization;
 
 using Mono.Debugger;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Native;
 
 namespace Mono.Debugger.Architecture
 {
@@ -14,6 +16,7 @@ namespace Mono.Debugger.Architecture
 	{
 		Hashtable bfd_hash;
 		DebuggerBackend backend;
+		NativeLanguage language;
 
 		public BfdContainer (DebuggerBackend backend)
 		{
@@ -21,6 +24,10 @@ namespace Mono.Debugger.Architecture
 			this.bfd_hash = new Hashtable ();
 
 			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
+		}
+
+		public NativeLanguage NativeLanguage {
+			get { return language; }
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -32,6 +39,11 @@ namespace Mono.Debugger.Architecture
 				check_disposed ();
 				return (Bfd) bfd_hash [filename];
 			}
+		}
+
+		internal void SetupInferior (ITargetInfo info)
+		{
+			language = new NativeLanguage (this, info);
 		}
 
 		public Bfd AddFile (ITargetMemoryAccess memory, string filename,
@@ -70,6 +82,17 @@ namespace Mono.Debugger.Architecture
 			}
 
 			return TargetAddress.Null;
+		}
+
+		public ITargetType LookupType (StackFrame frame, string name)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				ITargetType type = bfd.LookupType (frame, name);
+				if (type != null)
+					return type;
+			}
+
+			return null;
 		}
 
 		public void CloseBfd (Bfd bfd)

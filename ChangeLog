@@ -1,3 +1,13 @@
+2004-07-07  Martin Baulig  <martin@ximian.com>
+
+	* backends/native/NativeLanguage.cs: Make this a "real" language
+	backend, ie. we just create one instance of it and it's also doing
+	type lookups.
+	(NativeLanguage): The .ctor now also takes the BfdContainer.
+	(NativeLanguage.LookupType): Implemented.
+
+	* arch/DwarfReader.cs (DwarfReader.LookupType): New public method.
+
 2004-07-06  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetPointerType.cs

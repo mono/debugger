@@ -110,6 +110,7 @@ namespace Mono.Debugger.Architecture
 		Hashtable method_source_hash;
 		Hashtable method_hash;
 		Hashtable compile_unit_hash;
+		Hashtable type_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
 		Hashtable pubnames;
@@ -152,6 +153,7 @@ namespace Mono.Debugger.Architecture
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
 			method_hash = Hashtable.Synchronized (new Hashtable ());
 			source_hash = Hashtable.Synchronized (new Hashtable ());
+			type_hash = Hashtable.Synchronized (new Hashtable ());
 
 			if (bfd.IsLoaded) {
 				aranges = ArrayList.Synchronized (read_aranges ());
@@ -278,6 +280,21 @@ namespace Mono.Debugger.Architecture
 			SourceFile file = new SourceFile (module, filename);
 			source_hash.Add (file, die);
 			return file;
+		}
+
+		protected void AddType (string name, DieType type)
+		{
+			if (!type_hash.Contains (name))
+				type_hash.Add (name, type);
+		}
+
+		public ITargetType LookupType (StackFrame frame, string name)
+		{
+			DieType type = (DieType) type_hash [name];
+			if (type == null)
+				return null;
+
+			return type.ResolveType ();
 		}
 
 		protected class CompileUnitBlock
@@ -2433,6 +2450,9 @@ namespace Mono.Debugger.Architecture
 			{
 				this.offset = offset;
 				comp_unit.AddType (offset, this);
+
+				if (name != null)
+					comp_unit.DwarfReader.AddType (name, this);
 			}
 
 			protected override void ProcessAttribute (Attribute attribute)

@@ -40,7 +40,7 @@ namespace Mono.Debugger
 		protected internal ILanguage NativeLanguage {
 			get {
 				check_engine ();
-				return engine.NativeLanguage;
+				return DebuggerBackend.BfdContainer.NativeLanguage;
 			}
 		}
 

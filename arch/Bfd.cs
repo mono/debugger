@@ -47,7 +47,6 @@ namespace Mono.Debugger.Architecture
 		bool has_shlib_info;
 		TargetAddress base_address, start_address, end_address;
 		TargetAddress plt_start, plt_end, got_start;
-		ILanguage language;
 		bool is_powerpc;
 		bool use_stabs;
 		bool has_got;
@@ -187,7 +186,6 @@ namespace Mono.Debugger.Architecture
 			this.is_loaded = is_loaded;
 
 			load_handlers = new Hashtable ();
-			language = new Mono.Debugger.Languages.Native.NativeLanguage (info);
 
 			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -558,7 +556,7 @@ namespace Mono.Debugger.Architecture
 
 		public override ILanguage Language {
 			get {
-				return language;
+				return container.NativeLanguage;
 			}
 		}
 
@@ -1053,6 +1051,14 @@ namespace Mono.Debugger.Architecture
 				if (new_frame != null)
 					return new_frame;
 			}
+			return null;
+		}
+
+		public ITargetType LookupType (StackFrame frame, string name)
+		{
+			if (dwarf != null)
+				return dwarf.LookupType (frame, name);
+
 			return null;
 		}
 

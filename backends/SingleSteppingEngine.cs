@@ -120,8 +120,6 @@ namespace Mono.Debugger.Backends
 			current_simple_symtab = manager.SymbolTableManager.SimpleSymbolTable;
 			current_symtab = manager.SymbolTableManager.SymbolTable;
 
-			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ((ITargetInfo) inferior);
-
 			manager.SymbolTableManager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 		}
@@ -820,7 +818,6 @@ namespace Mono.Debugger.Backends
 		Inferior inferior;
 		IArchitecture arch;
 		IDisassembler disassembler;
-		ILanguage native_language;
 		ProcessStart start;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
@@ -840,12 +837,6 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
-
-		public ILanguage NativeLanguage {
-			get {
-				return native_language;
-			}
-		}
 
 		public TargetState State {
 			get {

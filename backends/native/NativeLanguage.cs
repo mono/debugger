@@ -1,16 +1,21 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Architecture;
+
 namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeLanguage : ILanguage
 	{
+		BfdContainer bfd_container;
 		NativeFundamentalType integer_type;
 		NativeFundamentalType long_type;
 		NativePointerType pointer_type;
 
-		public NativeLanguage (ITargetInfo info)
+		public NativeLanguage (BfdContainer bfd_container, ITargetInfo info)
 		{
+			this.bfd_container = bfd_container;
+
 			integer_type = new NativeFundamentalType ("int", typeof (int), Marshal.SizeOf (typeof (int)));
 			long_type = new NativeFundamentalType ("long", typeof (long), Marshal.SizeOf (typeof (long)));
 			pointer_type = new NativePointerType ("pointer", info.TargetAddressSize);
@@ -38,7 +43,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public ITargetType LookupType (StackFrame frame, string name)
 		{
-			return null;
+			return bfd_container.LookupType (frame, name);
 		}
 
 		public bool CanCreateInstance (Type type)

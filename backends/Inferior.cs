@@ -372,6 +372,8 @@ namespace Mono.Debugger.Backends
 
 			SetupInferior ();
 
+			bfd_container.SetupInferior (this);
+
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
