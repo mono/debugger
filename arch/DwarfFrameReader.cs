@@ -11,12 +11,15 @@ namespace Mono.Debugger.Architecture
 		protected readonly Bfd bfd;
 		protected readonly TargetBlob blob;
 		protected readonly bool is_ehframe;
+		protected readonly long vma;
 		protected CIE cie_list;
 
-		public DwarfFrameReader (Bfd bfd, TargetBlob blob, bool is_ehframe)
+		public DwarfFrameReader (Bfd bfd, TargetBlob blob, long vma,
+					 bool is_ehframe)
 		{
 			this.bfd = bfd;
 			this.blob = blob;
+			this.vma = vma;
 			this.is_ehframe = is_ehframe;
 		}
 
@@ -89,7 +92,7 @@ namespace Mono.Debugger.Architecture
 			long base_addr = 0;
 			switch (encoding & 0x70) {
 			case (byte) DW_EH_PE.pcrel:
-				base_addr = bfd.StartAddress.Address + reader.Position;
+				base_addr = vma + reader.Position;
 				break;
 			}
 

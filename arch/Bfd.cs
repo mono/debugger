@@ -630,16 +630,23 @@ namespace Mono.Debugger.Architecture
 
 		void create_frame_reader ()
 		{
-			byte[] contents = GetSectionContents (".debug_frame", false);
-			if (contents != null) {
+			long vma_base = StartAddress.Address;
+			InternalSection section = GetSectionByName (".debug_frame", false);
+			if (section != null) {
+				byte[] contents = GetSectionContents (
+					new IntPtr (section.section), false);
 				TargetBlob blob = new TargetBlob (contents);
-				frame_reader = new DwarfFrameReader (this, blob, false);
+				frame_reader = new DwarfFrameReader (
+					this, blob, vma_base + section.vma, false);
 			}
 
-			contents = GetSectionContents (".eh_frame", true);
-			if (contents != null) {
+			section = GetSectionByName (".eh_frame", false);
+			if (section != null) {
+				byte[] contents = GetSectionContents (
+					new IntPtr (section.section), false);
 				TargetBlob blob = new TargetBlob (contents);
-				eh_frame_reader = new DwarfFrameReader (this, blob, true);
+				eh_frame_reader = new DwarfFrameReader (
+					this, blob, vma_base + section.vma, true);
 			}
 		}
 
