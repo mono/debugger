@@ -295,7 +295,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 34;
+		public const int  DynamicVersion = 35;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -828,6 +828,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress InsertBreakpoint;
 		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeInvoke;
+		public readonly TargetAddress CreateString;
 		public readonly TargetAddress EventData;
 		public readonly TargetAddress EventArg;
 		public readonly TargetAddress Heap;
@@ -845,6 +846,7 @@ namespace Mono.Debugger.Languages.CSharp
 			InsertBreakpoint = reader.ReadAddress ();
 			RemoveBreakpoint = reader.ReadAddress ();
 			RuntimeInvoke = reader.ReadAddress ();
+			CreateString = reader.ReadAddress ();
 			EventData = reader.ReadAddress ();
 			EventArg = reader.ReadAddress ();
 			Heap = reader.ReadAddress ();
@@ -1176,6 +1178,16 @@ namespace Mono.Debugger.Languages.CSharp
 		public SourceMethod GetMethod (int index)
 		{
 			return GetMethod_internal (index);
+		}
+
+		public SourceMethod GetMethodByToken (int token)
+		{
+			if (File == null)
+				return null;
+
+			ensure_sources ();
+			MethodEntry entry = File.GetMethodByToken (token);
+			return GetMethod_internal (entry.Index);
 		}
 
 		public SourceMethod FindMethod (string name)
@@ -1914,7 +1926,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if ((reader == null) || ((token & 0xff000000) != 0x06000000))
 				throw new InternalError ();
 
-			return reader.GetMethod ((token & 0x00ffffff) - 1);
+			return reader.GetMethodByToken (token);
 		}
 
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)

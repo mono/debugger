@@ -1990,6 +1990,18 @@ namespace Mono.Debugger.Backends
 			return (long) result.Data;
 		}
 
+		internal TargetAddress CallMethod (TargetAddress method, string string_argument)
+		{
+			CallMethodData data = new CallMethodData (method, 0, string_argument);
+			CommandResult result = send_sync_command (new CommandFunc (call_string_method), data);
+			if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+			long retval = (long) result.Data;
+			if (inferior.TargetAddressSize == 4)
+				retval &= 0xffffffffL;
+			return new TargetAddress (inferior.AddressDomain, retval);
+		}
+
 		CommandResult call_method (object data)
 		{
 			CallMethodData cdata = (CallMethodData) data;

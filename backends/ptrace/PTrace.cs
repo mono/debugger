@@ -349,6 +349,11 @@ namespace Mono.Debugger.Backends
 				return TargetAddress.Null;
 		}
 
+		TargetAddress ITargetAccess.CallMethod (TargetAddress method, string argument)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public int InsertBreakpoint (TargetAddress address)
 		{
 			int retval;

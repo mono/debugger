@@ -7,18 +7,19 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		static int max_string_length = 10000;
 
-		internal readonly TargetAddress VTableAddress;
 		internal readonly int LengthOffset;
 		internal readonly int LengthSize;
 		internal readonly int DataOffset;
 
+		protected readonly TargetAddress CreateString;
+
 		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
 			: base (type, size, info, table, false)
 		{
-			VTableAddress = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
 			DataOffset = info.ReadByte ();
+			CreateString = table.Language.MonoDebuggerInfo.CreateString;
 		}
 
 		new public static bool Supports (Type type)
@@ -70,19 +71,8 @@ namespace Mono.Debugger.Languages.CSharp
 			if (str == null)
 				throw new ArgumentException ();
 
-			byte[] contents = CreateObject (str);
-
-			int size = Size + contents.Length;
-			TargetLocation location = Heap.Allocate (frame, size);
-
-			TargetBinaryWriter writer = new TargetBinaryWriter (size, (ITargetInfo) frame.TargetAccess);
-			writer.WriteAddress (VTableAddress);
-			writer.WriteAddress (0);
-			writer.WriteInt32 (str.Length);
-			writer.WriteBuffer (contents);
-
-			frame.TargetAccess.WriteBuffer (location.Address, writer.Contents);
-
+			TargetAddress retval = frame.TargetAccess.CallMethod (CreateString, str);
+			TargetLocation location = new AbsoluteTargetLocation (frame, retval);
 			return new MonoFundamentalObject (this, location);
 		}
 	}

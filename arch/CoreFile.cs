@@ -388,6 +388,11 @@ namespace Mono.Debugger.Architecture
 			throw new InvalidOperationException ();
 		}
 
+		TargetAddress ITargetAccess.CallMethod (TargetAddress method, string argument)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		//
 		// ITargetInfo
 		//

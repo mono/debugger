@@ -1,3 +1,10 @@
+2003-08-06  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/MonoStringType.cs: We don't get the vtable
+	from the JIT anymore; instead we call mono_string_new_wrapper()
+	via a special wrapper method to make this work for multiple
+	application domains.
+
 2003-08-04  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/*.cs: Completely reworked the type support.

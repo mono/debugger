@@ -133,5 +133,7 @@ namespace Mono.Debugger
 		TargetAddress CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
 						TargetAddress object_argument, TargetAddress[] param_objects,
 						out TargetAddress exc_object);
+
+		TargetAddress CallMethod (TargetAddress method, string argument);
 	}
 }
