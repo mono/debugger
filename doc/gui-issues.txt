@@ -6,6 +6,10 @@ This is a list of GUI issues which need to be fixed for the next release.
 * The ProgramToDebug dialog needs some loving; for instance, there is no way to specify
   environment variables.
 
+* "Insert breakpoint" from the context menu computes the wrong coordinates and thus
+  inserts the breakpoint somewhere, but not where the user actually klicked.
+  This is bug #40869.
+
 
 April 7th, 2003
 Martin Baulig
