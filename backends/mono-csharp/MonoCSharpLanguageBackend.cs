@@ -1742,11 +1742,6 @@ namespace Mono.Debugger.Languages.CSharp
 				initialized = true;
 			}
 
-			if (signal == PTraceInferior.SIGSTOP) {
-				runner.Inferior.SetSignal (0, false);
-				return true;
-			}
-
 			if ((signal != 0) || (address != notification_address))
 				return false;
 
