@@ -13,7 +13,7 @@ libmonodebuggerreadline_la_SOURCES = \
 
 libmonodebuggerreadline_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ @READLINE_DEPLIBS@
 
-INCLUDES = @BASE_DEPENDENCIES_CFLAGS@
+INCLUDES = @BASE_DEPENDENCIES_CFLAGS@ @glue_cflags@
 
 CLEANFILES = lib*.a lib*.dll
 

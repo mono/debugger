@@ -1,5 +1,12 @@
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Allow windows.
+	(glue_cflags, server_cflags): AC_SUBST() them.
+
+	* backends/server/i386-win32.c: Initial windows port.
+
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
 	* arch/bfdglue.c (bfd_glue_elfi386_locate_base): This is only
 	supported on Linux and FreeBSD.
 

@@ -36,10 +36,19 @@ case "$host" in
 	*-*-linux*)
 		server_sources="i386-linux-ptrace.c i386-linux-ptrace.h"
 		bfd_trad_core=yes
+		glue_cflags=
+		server_cflags=
 		;;
 	*-*-freebsd*)
 		server_sources="i386-freebsd-ptrace.c i386-freebsd-ptrace.h"
 		bfd_trad_core=yes
+		glue_cflags=
+		server_cflags=
+		;;
+	*-*-cygwin*)
+		server_sources="i386-win32.c i386-win32.h"
+		glue_cflags=-mno-cygwin
+		server_cflags=-I/usr/include/w32api -mno-cygwin
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
@@ -47,6 +56,8 @@ case "$host" in
 esac
 AC_MSG_RESULT(ok)
 AC_SUBST(server_sources)
+AC_SUBST(glue_cflags)
+AC_SUBST(server_cflags)
 AM_CONDITIONAL(bfd_trad_core, test x$bfd_trad_core = xyes)
 
 dnl may require a specific autoconf version

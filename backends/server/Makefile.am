@@ -1,4 +1,4 @@
-INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@
+INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@ @server_cflags@
 
 lib_LTLIBRARIES = libmonodebuggerserver.la
 
@@ -19,5 +19,6 @@ libmonodebuggerserver_la_SOURCES = \
 	#
 
 libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
+libmonodebuggerserver_la_LDFLAGS = -no-undefined -module -export-dynamic -shared
 
 CLEANFILES = lib*.a lib*.dll
