@@ -2,7 +2,7 @@ MCS_FLAGS=-g
 
 noinst_SCRIPTS = $(test_FILES)
 
-test_FILES = TestManagedTypes.exe
+test_FILES = TestManagedTypes.exe TestLexicalScopes.cs
 
 EXTRA_DIST = @srcdir@/*.cs
 

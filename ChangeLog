@@ -1,3 +1,8 @@
+2003-03-13  Martin Baulig  <martin@ximian.com>
+
+	* test/TestLexicalScopes.cs: New tests.  The debugger should only
+	display one variable called `a' at a time.
+
 2003-03-12  Martin Baulig  <martin@ximian.com>
 
 	* frontends/gui/DebuggerManager.cs: New file.  Do all this event
