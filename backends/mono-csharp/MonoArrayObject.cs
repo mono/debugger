@@ -24,27 +24,33 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryAccess memory;
 			TargetAddress address = GetAddress (location, out memory);
 
-			ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
+			try {
+				ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
 
-			reader.Offset = type.LengthOffset;
-			length = (int) reader.BinaryReader.ReadInteger (type.LengthSize);
+				reader.Offset = type.LengthOffset;
+				length = (int) reader.BinaryReader.ReadInteger (type.LengthSize);
 
-			if (rank == 0)
-				return;
+				if (rank == 0)
+					return;
 
-			reader.Offset = type.BoundsOffset;
-			TargetAddress bounds_address = reader.ReadAddress ();
-			ITargetMemoryReader breader = memory.ReadMemory (
-				bounds_address, type.BoundsSize * rank);
+				reader.Offset = type.BoundsOffset;
+				TargetAddress bounds_address = reader.ReadAddress ();
+				ITargetMemoryReader breader = memory.ReadMemory (
+					bounds_address, type.BoundsSize * rank);
 
-			bounds = new MonoArrayBounds [rank];
+				bounds = new MonoArrayBounds [rank];
 
-			for (int i = 0; i < rank; i++) {
-				breader.Offset = i * type.BoundsSize + type.BoundsLowerOffset;
-				int b_lower = (int) breader.BinaryReader.ReadInteger (type.BoundsLowerSize);
-				breader.Offset = i * type.BoundsSize + type.BoundsLengthOffset;
-				int b_length = (int) breader.BinaryReader.ReadInteger (type.BoundsLengthSize);
-				bounds [i] = new MonoArrayBounds (b_lower, b_length);
+				for (int i = 0; i < rank; i++) {
+					breader.Offset = i * type.BoundsSize + type.BoundsLowerOffset;
+					int b_lower = (int) breader.BinaryReader.ReadInteger (
+						type.BoundsLowerSize);
+					breader.Offset = i * type.BoundsSize + type.BoundsLengthOffset;
+					int b_length = (int) breader.BinaryReader.ReadInteger (
+						type.BoundsLengthSize);
+					bounds [i] = new MonoArrayBounds (b_lower, b_length);
+				}
+			} catch {
+				throw new LocationInvalidException ();
 			}
 		}
 
@@ -88,8 +94,13 @@ namespace Mono.Debugger.Languages.CSharp
 					TargetAddress address = GetAddress (location, out memory);
 
 					TargetAddress dynamic_address;
-					ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
-					GetDynamicSize (reader, address, out dynamic_address);
+					try {
+						ITargetMemoryReader reader = memory.ReadMemory (
+							address, type.Size);
+						GetDynamicSize (reader, address, out dynamic_address);
+					} catch {
+						throw new LocationInvalidException ();
+					}
 
 					if (type.ElementType.IsByRef)
 						dynamic_address += index * memory.TargetAddressSize;

@@ -42,7 +42,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			ITargetMemoryAccess memory;
 			TargetAddress address = GetAddress (location, out memory);
-			return memory.ReadBuffer (address, size);
+			try {
+				return memory.ReadBuffer (address, size);
+			} catch {
+				throw new LocationInvalidException ();
+			}
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,

@@ -115,10 +115,14 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryAccess memory;
 			TargetAddress address = GetAddress (location, out memory);
 
-			ITargetLocation field_loc = new RelativeTargetLocation (
-				location, address + fields [index].Offset);
+			try {
+				ITargetLocation field_loc = new RelativeTargetLocation (
+					location, address + fields [index].Offset);
 
-			return fields [index].Type.GetObject (field_loc);
+				return fields [index].Type.GetObject (field_loc);
+			} catch {
+				throw new LocationInvalidException ();
+			}
 		}
 
 		public override bool IsByRef {

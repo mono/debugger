@@ -79,12 +79,20 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			TargetAddress address = location.Address;
 			StackFrame frame = location.Handle as StackFrame;
-			if (frame == null)
+			if ((frame == null) || (address.Address == 0))
 				throw new LocationInvalidException ();
 
 			memory = frame.TargetMemoryAccess;
-			if (IsByRef)
-				address = memory.ReadAddress (address);
+			if (IsByRef) {
+				try {
+					address = memory.ReadAddress (address);
+				} catch {
+					throw new LocationInvalidException ();
+				}
+
+				if (address.Address == 0)
+					throw new LocationInvalidException ();
+			}
 
 			return address;
 		}

@@ -37,10 +37,14 @@ namespace Mono.Debugger.Languages.CSharp
 				ITargetMemoryAccess memory;
 				TargetAddress address = GetAddress (location, out memory);
 
-				address = memory.ReadAddress (address);
-				address = memory.ReadAddress (address);
+				try {
+					address = memory.ReadAddress (address);
+					address = memory.ReadAddress (address);
 
-				return type.Table.GetTypeFromClass (address.Address);
+					return type.Table.GetTypeFromClass (address.Address);
+				} catch {
+					throw new LocationInvalidException ();
+				}
 			}
 		}
 
