@@ -464,8 +464,10 @@ namespace Mono.Debugger.Backends
 					      "{0} hit temporary breakpoint at {1}",
 					      this, inferior.CurrentFrame);
 
-				inferior.Continue (); // do_continue ();
-				return;
+				if (!stop_requested) {
+					inferior.Continue (); // do_continue ();
+					return;
+				}
 
 				inferior.RemoveBreakpoint (temp_breakpoint_id);
 				temp_breakpoint_id = 0;
@@ -1043,14 +1045,7 @@ namespace Mono.Debugger.Backends
 					return;
 
 				stop_requested = true;
-				if (!inferior.Stop ()) {
-					// We're already stopped, so just consider the
-					// current operation as finished.
-					step_operation_finished ();
-					engine_stopped = true;
-					stop_requested = false;
-					operation_completed_event.Set ();
-				}
+				inferior.GlobalStop ();
 			}
 		}
 

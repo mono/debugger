@@ -1,5 +1,12 @@
 2004-04-09  Martin Baulig  <martin@ximian.com>
 
+	* backends/Interior.cs (Inferior.GlobalStop): New public method.
+
+	* backends/SingleStepping.cs (SingleSteppingEngine.Interrupt): Call
+	GlobalStop() instead of Stop() on the inferior.
+
+2004-04-09  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Added private configure option and an automake
 	conditional to enable some hacking features - just for me at the
 	moment ...

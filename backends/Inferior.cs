@@ -94,7 +94,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_target_info (IntPtr handle, out int target_int_size, out int target_long_size, out int target_address_size);
+		static extern CommandError mono_debugger_server_get_target_info (out int target_int_size, out int target_long_size, out int target_address_size);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);
@@ -134,6 +134,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_stop (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_global_stop ();
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_stop_and_wait (IntPtr handle, out int status);
@@ -197,7 +200,9 @@ namespace Mono.Debugger.Backends
 			NoSuchBreakpoint,
 			UnknownRegister,
 			DrOccupied,
-			MemoryAccess
+			MemoryAccess,
+			NotImplemented,
+			IOError
 		}
 
 		protected Inferior (DebuggerBackend backend, ProcessStart start,
@@ -262,6 +267,15 @@ namespace Mono.Debugger.Backends
 
 			case CommandError.UnknownRegister:
 				throw new NoSuchRegisterException ();
+
+			case CommandError.MemoryAccess:
+				throw new TargetMemoryException ();
+
+			case CommandError.NotImplemented:
+				throw new TargetException ("Feature not implemented");
+
+			case CommandError.IOError:
+				throw new TargetException ("Unknown I/O error");
 
 			default:
 				throw new InternalError ("Got unknown error condition from inferior: {0}",
@@ -427,7 +441,7 @@ namespace Mono.Debugger.Backends
 
 			int target_int_size, target_long_size, target_address_size;
 			check_error (mono_debugger_server_get_target_info
-				(server_handle, out target_int_size, out target_long_size,
+				(out target_int_size, out target_long_size,
 				 out target_address_size));
 
 			target_info = new TargetInfo (target_int_size, target_long_size, target_address_size);
@@ -848,6 +862,11 @@ namespace Mono.Debugger.Backends
 			return error == CommandError.None;
 		}
 
+		public void GlobalStop ()
+		{
+			mono_debugger_server_global_stop ();
+		}
+
 		public void SetSignal (int signal, bool send_it)
 		{
 			check_disposed ();
@@ -1017,6 +1036,10 @@ namespace Mono.Debugger.Backends
 					stop_addr = stop.Address;
 				CommandError result = mono_debugger_server_get_backtrace (
 					server_handle, max_frames, stop_addr, out count, out data);
+
+				if (result != CommandError.None)
+					return new StackFrame [0];
+
 				check_error (result);
 
 				ServerStackFrame[] frames = new ServerStackFrame [count];
