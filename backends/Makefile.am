@@ -1,3 +1,3 @@
-SUBDIRS = classes server ptrace
+SUBDIRS = classes server ptrace mono-csharp
 
 EXTRA_DIST = *.cs
