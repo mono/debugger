@@ -211,11 +211,11 @@ namespace Mono.Debugger
 			if ((address < method.StartAddress) || (address >= method.EndAddress))
 				return null;
 
-			long offset = method.StartAddress - address;
+			long offset = address - method.StartAddress;
 			if (offset == 0)
 				return method.Name;
 			else if (!exact_match)
-				return String.Format ("{0}+{1:x}", method.Name, offset);
+				return String.Format ("{0}+0x{1:x}", method.Name, offset);
 			else
 				return null;
 		}
