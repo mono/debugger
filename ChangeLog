@@ -1,3 +1,7 @@
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
+	Released version 0.2.2 "Cambridge" of the Mono Debugger :-)
+
 2003-03-07  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Check whether we're compiling from CVS and only
