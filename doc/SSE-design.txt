@@ -1,0 +1,152 @@
+Atomic operations
+-----------------
+
+First, let's have a look at the core part of the SSE - it's the part
+which actually does the single-stepping - this part is basically the
+`bool DoStep (bool first)' if you look at the source code.
+
+It gets a so-called step frame from its caller and single-steps until
+leaving that step frame.  Normally, this is a range of memory and we
+step until we stop somewhere outside of that range.  It's actually a
+bit more complicated than this since we need to deal with method
+calls, JIT trampolines and all this stuff, but this shouldn't matter
+here.
+
+When the user issues a "step until next source line" command, the SSE
+normally needs to do several step operations until reaching the next
+source line.  A good average is probably about 5-20 machine
+instructions per source line - but of course, this depends a lot on
+the code you're currently debugging.  There's also no upper limit on
+that number - it may well go over one million if you're out of
+hardware watchpoints and using Finish() in a method containing a loop.
+
+However, you can assume that normally the SSE needs to process five or
+more step operations each time the user issues a single command.
+
+Internally, the target just knows two "atomic operations": it can
+either resume execution (until it stops, hits a breakpoint or receives
+a signal) or single-step one macihne instruction.
+
+To do things like "step until next source line", the SSE needs to
+perform several atomic operations.  For obvious performance reasons,
+this whole stuff needs to be very fast - so we aren't doing any symbol
+lookups unless really necessary.
+
+
+Linux, threads and ptrace
+-------------------------
+
+Sometimes, you think you're making things more simple - and a year
+later you find out that you actually made things a lot more
+complicated ....
+
+This applies especially to the debugger's SingleSteppingEngine which
+just went through an almost complete rewrite to compensate for a
+fundamental design flaw I made about a year ago.
+
+There are several constraints which affect the debugger's life and
+limit the number of ways how things can be done in it:
+
+* Only the thread which originally started the target may debug it any
+  any of its threads.
+
+  Under Linux 2.6.0, if you're ptrace()ing a multi-threaded
+  application, you're automatically tracing all its threads - and you
+  cannot ptrace(PT_ATTACH) to one particular thread anymore.
+
+  This means that there may be just one thread in the debugger which
+  interacts directly with the target.
+
+* The only way to reliably wait for the target is using a blocking
+  waitpid() - waiting for the SIGCHLD doesn't work.
+
+
+The old Main Loop
+-----------------
+
+Basically, there are two ways of writing the main loop.
+
+In the old SingleSteppingEngine, the main loop waited for a command
+from the user and did not return before it was done executing it.
+
+If the command was a stepping operation, it waited after each atomic
+operation for the target and then checked immediately whether we
+were done with it.
+
+Of course, this design looks really clean and simple: you don't need
+to keep track of the current operation, you could basically just
+have one `void Step (Command command)' which did the whole
+operation.
+
+However, the big problem with this is that this needs one
+SingleSteppingEngine - with a separate background thread - for each of
+the target's threads.  This doesn't work anymore in Linux 2.6.0,
+everything must be done in one thread.
+
+The other big problem was that with all these threads, synchronization
+and deadlock issues may arise and that these were really hard to
+detect and fix.
+
+The new SingleSteppingEngine
+----------------------------
+
+Before I started with the rewrite, I made some fundamental design
+decisions:
+
+* There is just one user sitting in front of the debugger and this
+  user is just debugging one single application.
+
+  While this application (the target) may have several threads, there
+  is just one keyboard and one mouse connected to the user's computer,
+  so he can just type one command at a time.
+
+  This affects the way how the debugger's APIs may be used.
+
+* For each stepping operation, the SingleSteppingEngine has two modes
+  of operation: blocking or non-blocking.
+
+  If you choose blocking mode, the calling thread blocks until the
+  operation completed or something unexpected happened (hit a
+  breakpoint, received a signal).
+
+  While the calling thread is blocked, the debugger will not accept
+  any commands (except Stop), but an attempt to do so will return an
+  error condition and not block.
+
+  If you choose non-blocking mode, the calling thread returns
+  immediately and the operation will be performed in the background.
+
+This made things a lot easier from the debugger's point of view:
+
+* There's now just one main loop and it's processing all user commands
+  and all events from all of the target's threads.
+
+  We're still creating a separate `TheEngine' instance for each target
+  thread, but since they're called from the main loop, there's still
+  just one thread in the debugger.
+
+* The big advantage of this is that there are now just two "states"
+  the engine can be in: either it's waiting for an event or it's
+  preparing/starting the next atomic operation.
+
+  Everything is now done from this one background thread, this
+  includes symbol lookups, JIT compilations etc.
+
+* This makes life a lot easier wrt. non-blocking mode:
+
+  Suppose you just issued a non-blocking stepping operation on thread
+  A and then thread B's `TheEngine' wants to know whether that
+  operation is still running.
+
+* Like the old SingleSteppingEngine, we're still doing ptrace() and
+  waitpid() in the same thread.  This is important for performance
+  reasons.
+
+* Speaking of performance, most expensive are operations like
+  StepLine(), NextLine() or Finish().
+
+  Normally, there's just one such operation running at a time.  If
+  you're debugging a multi-threaded application, you're normally just
+  debugging one thread at a time and the other threads are either
+  stopped or running all the time.
+
