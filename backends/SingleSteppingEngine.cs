@@ -69,12 +69,10 @@ public class SingleSteppingEngine : ThreadManager
 		thread_lock_mutex = new Mutex ();
 		address_domain = new AddressDomain ("global");
 
-		engine_event = new AutoResetEvent (false);
 		start_event = new ManualResetEvent (false);
 		completed_event = new ManualResetEvent (false);
 		command_mutex = new Mutex ();
 
-		wait_event = new AutoResetEvent (false);
 		ready_event = new ManualResetEvent (false);
 	}
 
@@ -82,8 +80,6 @@ public class SingleSteppingEngine : ThreadManager
 	protected readonly SymbolTableManager SymbolTableManager;
 
 	ProcessStart start;
-	Thread wait_thread;
-	AutoResetEvent wait_event;
 	Thread inferior_thread;
 	ManualResetEvent ready_event;
 	Hashtable thread_hash;
@@ -94,57 +90,15 @@ public class SingleSteppingEngine : ThreadManager
 
 	ManualResetEvent start_event;
 	ManualResetEvent completed_event;
-	AutoResetEvent engine_event;
 	Mutex command_mutex;
 	bool result_sent = false;
 	bool abort_requested;
 
-	void start_wait_thread ()
-	{
-		while (!abort_requested)
-			wait_thread_main ();
-	}
-
 	[DllImport("monodebuggerserver")]
 	static extern int mono_debugger_server_wait (out long status);
 
-	void wait_thread_main ()
-	{
-		Report.Debug (DebugFlags.Wait, "Wait thread waiting");
-
-		while (!wait_event.WaitOne ())
-			;
-
-		Report.Debug (DebugFlags.Wait, "Wait thread woke up");
-
-		if (abort_requested) {
-			Report.Debug (DebugFlags.Wait, "Abort requested");
-			return;
-		}
-
-		int pid;
-		long status;
-
-		pid = mono_debugger_server_wait (out status);
-		if (pid < 0)
-			throw new InternalError ();
-
-		Report.Debug (DebugFlags.Wait,
-			      "Wait thread received event: {0} {1:x}", pid, status);
-
-		EngineProcess event_engine = (EngineProcess) thread_hash [pid];
-		if (event_engine == null)
-			throw new InternalError ("Got event {0:x} for unknown pid {1}",
-						 status, pid);
-
-		lock (this) {
-			if (current_event_engine != null)
-				throw new Exception ();
-			current_event = status;
-			current_event_engine = event_engine;
-			engine_event.Set ();
-		}
-	}
+	[DllImport("monodebuggerserver")]
+	static extern void mono_debugger_server_abort_wait ();
 
 	void start_inferior ()
 	{
@@ -153,7 +107,6 @@ public class SingleSteppingEngine : ThreadManager
 		Report.Debug (DebugFlags.Threads, "Engine started: {0}", the_engine.PID);
 
 		thread_hash.Add (the_engine.PID, the_engine);
-		wait_event.Set ();
 
 		OnThreadCreatedEvent (the_engine);
 
@@ -171,8 +124,6 @@ public class SingleSteppingEngine : ThreadManager
 	// </remarks>
 	Command current_command = null;
 	CommandResult command_result = null;
-	long current_event = 0;
-	EngineProcess current_event_engine = null;
 
 	void engine_error (Exception ex)
 	{
@@ -198,9 +149,6 @@ public class SingleSteppingEngine : ThreadManager
 	public override Process StartApplication (ProcessStart start)
 	{
 		this.start = start;
-
-		wait_thread = new Thread (new ThreadStart (start_wait_thread));
-		wait_thread.Start ();
 
 		inferior_thread = new Thread (new ThreadStart (start_inferior));
 		inferior_thread.Start ();
@@ -277,10 +225,13 @@ public class SingleSteppingEngine : ThreadManager
 		thread_hash.Add (pid, new_thread);
 
 		if ((mono_manager != null) &&
-		    mono_manager.ThreadCreated (new_thread, new_inferior)) {
+		    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
 			main_process = new_thread;
 
 			main_method = mono_manager.Initialize (the_engine, inferior);
+
+			Report.Debug (DebugFlags.Threads, "Managed main address is {0}",
+				      main_method);
 
 			new_thread.Start (main_method, true);
 		}
@@ -294,6 +245,11 @@ public class SingleSteppingEngine : ThreadManager
 	internal override bool HandleChildEvent (Inferior inferior,
 						 Inferior.ChildEvent cevent)
 	{
+		if (cevent.Type == Inferior.ChildEventType.NONE) {
+			inferior.Continue ();
+			return true;
+		}
+
 		if (!initialized) {
 			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 			    (cevent.Argument != 0))
@@ -358,7 +314,7 @@ public class SingleSteppingEngine : ThreadManager
 		lock (this) {
 			command.Process.SendTargetEvent (new TargetEventArgs (TargetEventType.TargetRunning, 0));
 			current_command = command;
-			engine_event.Set ();
+			mono_debugger_server_abort_wait ();
 			completed_event.Reset ();
 		}
 
@@ -443,7 +399,7 @@ public class SingleSteppingEngine : ThreadManager
 
 		lock (this) {
 			current_command = new Command (func, data);
-			engine_event.Set ();
+			mono_debugger_server_abort_wait ();
 			completed_event.Reset ();
 		}
 
@@ -489,27 +445,20 @@ public class SingleSteppingEngine : ThreadManager
 	{
 		Report.Debug (DebugFlags.Wait, "SSE waiting");
 
-		// Wait until we get a command.
-		while (!engine_event.WaitOne ())
-			;
-
-		Report.Debug (DebugFlags.Wait, "SSE woke up");
-
-		if (abort_requested) {
-			Report.Debug (DebugFlags.Wait, "Abort requested");
-			return;
-		}
-
-		EngineProcess event_engine;
+		int pid;
 		long status;
-		lock (this) {
-			status = current_event;
-			event_engine = current_event_engine;
-			current_event = 0;
-			current_event_engine = null;
-		}
 
-		if (event_engine != null) {
+		pid = mono_debugger_server_wait (out status);
+
+		if (pid > 0) {
+			Report.Debug (DebugFlags.Wait,
+				      "SSE received event: {0} {1:x}", pid, status);
+
+			EngineProcess event_engine = (EngineProcess) thread_hash [pid];
+			if (event_engine == null)
+				throw new InternalError ("Got event {0:x} for unknown pid {1}",
+							 status, pid);
+
 			try {
 				event_engine.ProcessEvent (status);
 			} catch (ThreadAbortException) {
@@ -517,12 +466,16 @@ public class SingleSteppingEngine : ThreadManager
 			} catch (Exception e) {
 				Console.WriteLine ("EXCEPTION: {0}", e);
 			}
-			wait_event.Set ();
 
 			if (!engine_is_ready) {
 				engine_is_ready = true;
 				start_event.Set ();
 			}
+		}
+
+		if (abort_requested) {
+			Report.Debug (DebugFlags.Wait, "Abort requested");
+			return;
 		}
 
 		Command command;
@@ -557,7 +510,6 @@ public class SingleSteppingEngine : ThreadManager
 			try {
 				command.Process.ProcessCommand (command.Operation);
 			} catch (ThreadAbortException) {
-				;
 				return;
 			} catch (Exception e) {
 				Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
@@ -779,11 +731,6 @@ public class SingleSteppingEngine : ThreadManager
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			if (false) {
-				sse.DebuggerBackend.ReachedMain ();
-				main_method_retaddr = inferior.GetReturnAddress ();
-			}
-
 			disassembler.SymbolTable = sse.SymbolTableManager.SimpleSymbolTable;
 			current_simple_symtab = sse.SymbolTableManager.SimpleSymbolTable;
 			current_symtab = sse.SymbolTableManager.SymbolTable;
@@ -808,11 +755,13 @@ public class SingleSteppingEngine : ThreadManager
 		void send_frame_event (StackFrame frame, int signal)
 		{
 			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
+			sse.SetCompleted ();
 		}
 
 		void send_frame_event (StackFrame frame, BreakpointHandle handle)
 		{
 			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
+			sse.SetCompleted ();
 		}
 
 		public void SendTargetEvent (TargetEventArgs args)
@@ -834,7 +783,6 @@ public class SingleSteppingEngine : ThreadManager
 			}
 
 			OnTargetEvent (args);
-			sse.SetCompleted ();
 		}
 
 		public override void Start (TargetAddress func, bool is_main)
@@ -1050,8 +998,6 @@ public class SingleSteppingEngine : ThreadManager
 			}
 
 			TargetEventArgs result = process_child_event (cevent);
-			Report.Debug (DebugFlags.EventLoop, "SSE {0} got result: {1} {2}",
-				      this, result, current_operation);
 
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
@@ -1061,6 +1007,7 @@ public class SingleSteppingEngine : ThreadManager
 						return false;
 				}
 				SendTargetEvent (result);
+				sse.SetCompleted ();
 				return true;
 			}
 
@@ -2933,13 +2880,10 @@ public class SingleSteppingEngine : ThreadManager
 		if (inferior_thread != null) {
 			lock (this) {
 				abort_requested = true;
-				engine_event.Set ();
+				mono_debugger_server_abort_wait ();
 			}
 			inferior_thread.Join ();
 		}
-
-		if (wait_thread != null)
-			wait_thread.Abort ();
 
 		TheEngine[] threads = new TheEngine [thread_hash.Count];
 		thread_hash.Values.CopyTo (threads, 0);

@@ -22,8 +22,9 @@ typedef enum {
 } ServerCommandError;
 
 typedef enum {
-	MESSAGE_UNKNOWN_ERROR = 0,
-	MESSAGE_CHILD_EXITED = 1,
+	MESSAGE_NONE,
+	MESSAGE_UNKNOWN_ERROR = 1,
+	MESSAGE_CHILD_EXITED = 2,
 	MESSAGE_CHILD_STOPPED,
 	MESSAGE_CHILD_SIGNALED,
 	MESSAGE_CHILD_CALLBACK,
@@ -99,6 +100,9 @@ mono_debugger_server_attach               (ServerHandle       *handle,
 
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
+
+void
+mono_debugger_server_abort_wait           (void);
 
 guint32
 mono_debugger_server_wait                 (guint64                 *status);

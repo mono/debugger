@@ -50,6 +50,9 @@ struct _MonoDebuggerThread {
 struct _MonoDebuggerManager {
 	guint32 size;
 	gpointer main_function;
+	guint32 command_tid;
+	guint32 debugger_tid;
+	guint32 main_tid;
 	MonoDebuggerThread *main_thread;
 	gpointer command_notification;
 	gpointer thread_manager_notification;

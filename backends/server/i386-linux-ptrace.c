@@ -72,7 +72,8 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start,
 				continue;
 			else if (errno == EIO)
 				return COMMAND_ERROR_MEMORY_ACCESS;
-			g_warning (G_STRLOC ": Can't read target memory at address %08Lx: %s",
+			g_message (G_STRLOC ": Can't read target memory of %d at "
+				   "address %08Lx: %s", handle->inferior->pid,
 				   start, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
@@ -99,22 +100,21 @@ _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long 
 	return COMMAND_ERROR_NONE;
 }
 
+void
+mono_debugger_server_abort_wait (void)
+{
+	pthread_kill (mono_debugger_thread, SIGUSR1);
+}
+
 static int
 do_wait (int pid, guint32 *status)
 {
 	int ret;
 
-	ret = waitpid (pid, status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
-	if (ret < 0) {
-		g_warning (G_STRLOC ": Can't waitpid for %d: %s", pid, g_strerror (errno));
-		return -1;
-	} else if (ret)
-		return ret;
-
-	GC_start_blocking ();
 	ret = waitpid (pid, status, WUNTRACED | __WALL | __WCLONE);
-	GC_end_blocking ();
 	if (ret < 0) {
+		if (errno == EINTR)
+			return 0;
 		g_warning (G_STRLOC ": Can't waitpid for %d: %s", pid, g_strerror (errno));
 		return -1;
 	}
@@ -128,8 +128,8 @@ mono_debugger_server_wait (guint64 *status_ret)
 	int ret, status;
 
 	ret = do_wait (-1, &status);
-	if (ret < 0)
-		return -1;
+	if (ret <= 0)
+		return ret;
 
 	*status_ret = status;
 	return ret;
@@ -143,7 +143,7 @@ _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main)
 	if (!is_main) {
 		int status;
 
-		do_wait (handle->inferior->pid, &status);
+		while (do_wait (handle->inferior->pid, &status) == 0);
 
 		i386_arch_get_registers (handle);
 	}

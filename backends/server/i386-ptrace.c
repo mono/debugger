@@ -198,6 +198,9 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 			if (WSTOPSIG (status) == SIGTRAP) {
 				handle->inferior->last_signal = 0;
 				*arg = 0;
+			} else if (WSTOPSIG (status) == 32) {
+				handle->inferior->last_signal = WSTOPSIG (status);
+				return MESSAGE_NONE;
 			} else {
 				if (WSTOPSIG (status) == SIGSTOP)
 					handle->inferior->last_signal = 0;
@@ -232,7 +235,11 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 }
 
 static gboolean initialized = FALSE;
-static sigset_t mono_debugger_signal_mask;
+pthread_t mono_debugger_thread;
+
+static void
+sigusr1_signal_handler (int _dummy)
+{ }
 
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *bpm)
@@ -240,12 +247,15 @@ mono_debugger_server_initialize (BreakpointManager *bpm)
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
 
 	if (!initialized) {
-		/* These signals are only unblocked by sigwait(). */
-		sigemptyset (&mono_debugger_signal_mask);
-		sigaddset (&mono_debugger_signal_mask, SIGCHLD);
-		sigaddset (&mono_debugger_signal_mask, SIGINT);
-		sigaddset (&mono_debugger_signal_mask, SIGIO);
-		sigprocmask (SIG_BLOCK, &mono_debugger_signal_mask, NULL);
+		struct sigaction sa;
+
+		/* catch SIGUSR1 */
+		sa.sa_handler = sigusr1_signal_handler;
+		sigemptyset (&sa.sa_mask);
+		sa.sa_flags = 0;
+		g_assert (sigaction (SIGUSR1, &sa, NULL) != -1);
+
+		mono_debugger_thread = pthread_self ();
 
 		initialized = TRUE;
 	}
@@ -261,7 +271,6 @@ child_setup_func (gpointer data)
 {
 	if (ptrace (PT_TRACE_ME, getpid (), NULL, 0))
 		g_error (G_STRLOC ": Can't PT_TRACEME: %s", g_strerror (errno));
-	sigprocmask (SIG_UNBLOCK, &mono_debugger_signal_mask, NULL);
 }
 
 static void

@@ -34,4 +34,6 @@ void _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_mai
 gboolean _mono_debugger_server_has_thread_manager (ServerHandle *handle);
 gboolean _mono_debugger_server_setup_thread_manager (ServerHandle *handle);
 
+pthread_t mono_debugger_thread;
+
 #endif

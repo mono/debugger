@@ -161,7 +161,9 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
 		public enum ChildEventType {
-			CHILD_EXITED = 1,
+			NONE = 0,
+			UNKNOWN_ERROR = 1,
+			CHILD_EXITED,
 			CHILD_STOPPED,
 			CHILD_SIGNALED,
 			CHILD_CALLBACK,

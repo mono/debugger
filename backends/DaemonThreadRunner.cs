@@ -43,6 +43,9 @@ namespace Mono.Debugger.Backends
 		bool daemon_event (NativeProcess process, Inferior inferior,
 				   TargetEventArgs args)
 		{
+			if (inferior != this.inferior)
+				throw new InvalidOperationException ();
+
 			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data != 0)) {
 				int signal = (int) args.Data;
 

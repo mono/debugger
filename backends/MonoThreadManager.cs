@@ -22,6 +22,7 @@ namespace Mono.Debugger.Backends
 		ThreadManager thread_manager;
 		Hashtable thread_hash;
 		TargetAddress info;
+		Inferior inferior;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
 							    Inferior inferior)
@@ -30,12 +31,14 @@ namespace Mono.Debugger.Backends
 			if (info.IsNull)
 				return null;
 
-			return new MonoThreadManager (thread_manager, info);
+			return new MonoThreadManager (thread_manager, inferior, info);
 		}
 
-		protected MonoThreadManager (ThreadManager thread_manager, TargetAddress info)
+		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
+					     TargetAddress info)
 		{
 			this.info = info;
+			this.inferior = inferior;
 			this.thread_manager = thread_manager;
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
@@ -54,7 +57,7 @@ namespace Mono.Debugger.Backends
 			main_function = inferior.ReadGlobalAddress (info + 4);
 
 			manager_process = process;
-			new DaemonThreadRunner (process, inferior,
+			new DaemonThreadRunner (process, this.inferior,
 						new DaemonThreadHandler (main_handler));
 
 			return main_function;
@@ -67,6 +70,11 @@ namespace Mono.Debugger.Backends
 			reader.ReadInteger ();
 
 			main_function = reader.ReadGlobalAddress ();
+
+			command_tid = reader.ReadInteger ();
+			debugger_tid = reader.ReadInteger ();
+			main_tid = reader.ReadInteger ();
+
 			main_thread = reader.ReadGlobalAddress ();
 			command_notification = reader.ReadGlobalAddress ();
 			mono_thread_notification = reader.ReadGlobalAddress ();
@@ -75,6 +83,9 @@ namespace Mono.Debugger.Backends
 			thread_manager_notify_tid = reader.ReadGlobalAddress ();
 		}
 
+		int command_tid;
+		int debugger_tid;
+		int main_tid;
 		NativeProcess manager_process;
 		NativeProcess command_process;
 		NativeProcess debugger_process;
@@ -82,12 +93,26 @@ namespace Mono.Debugger.Backends
 		DaemonThreadHandler debugger_handler;
 		bool initialized;
 
-		public bool ThreadCreated (NativeProcess process, Inferior inferior)
+		bool is_nptl;
+		int first_index;
+
+		public bool ThreadCreated (NativeProcess process, Inferior inferior,
+					   Inferior caller_inferior)
 		{
 			ThreadData tdata = new ThreadData (process, inferior.TID, inferior.PID);
 			thread_hash.Add (inferior.TID, tdata);
 
-			if (thread_hash.Count == 2) {
+			if (thread_hash.Count == 1) {
+				process.SetDaemonFlag ();
+				return false;
+			}
+
+			if (first_index == 0) {
+				is_nptl = caller_inferior == this.inferior;
+				first_index = is_nptl ? 2 : 3;
+			}
+
+			if (thread_hash.Count == first_index) {
 				command_process = process;
 				command_process.SetDaemonFlag ();
 				Report.Debug (DebugFlags.Threads,
@@ -95,7 +120,7 @@ namespace Mono.Debugger.Backends
 					      process);
 				process.DaemonEventHandler = new DaemonEventHandler (command_handler);
 				return false;
-			} else if (thread_hash.Count == 3) {
+			} else if (thread_hash.Count == first_index+1) {
 				debugger_process = process;
 				debugger_process.SetDaemonFlag ();
 				Report.Debug (DebugFlags.Threads,
@@ -104,13 +129,13 @@ namespace Mono.Debugger.Backends
 				debugger_handler = thread_manager.DebuggerBackend.CreateDebuggerHandler (command_process);
 				new DaemonThreadRunner (process, inferior, debugger_handler);
 				return false;
-			} else if (thread_hash.Count == 4) {
+			} else if (thread_hash.Count == first_index+2) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed main process: {0}",
 					      process);
 				main_process = process;
 				return true;
-			} else if (thread_hash.Count > 4) {
+			} else if (thread_hash.Count > first_index+3) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed thread: {0}", process);
 				process.DaemonEventHandler = new DaemonEventHandler (managed_handler);
