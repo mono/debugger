@@ -1858,6 +1858,10 @@ namespace Mono.Debugger.Backends
 						  Inferior inferior,
 						  Inferior.ChildEvent cevent)
 			{
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} while waiting for " +
+					      "callback {2}", sse, cevent, this);
+
 				if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
 					Abort ();
 					return true;

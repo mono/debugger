@@ -366,6 +366,8 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	for (i = 0; i < DR_NADDR; i++) {
 		if (I386_DR_WATCH_HIT (arch, i)) {
+			_server_ptrace_set_dr (inferior, DR_STATUS, 0);
+			arch->dr_status = 0;
 			*retval = arch->dr_regs [i];
 			return STOP_ACTION_BREAKPOINT_HIT;
 		}

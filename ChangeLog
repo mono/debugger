@@ -1,5 +1,10 @@
 2004-07-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-arch.c (i386_arch_child_stopped): Reset
+	DR_STATUS if we hit a hardware breakpoint.
+
+2004-07-02  Martin Baulig  <martin@ximian.com>
+
 	* frontends/command-line/ExpressionParser.jay: Added `->' syntax
 	for pointer dereference + member access.
 
