@@ -33,8 +33,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.stdout = stdout;
 			this.stderr = stderr;
 
+#if FALSE
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 			backend.FrameChangedEvent += new StackFrameHandler (frame_changed);
+#endif
 		}
 
 		void frames_invalid ()
@@ -146,6 +148,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case "exit":
 				return false;
 
+#if FALSE
 			case "c":
 			case "continue":
 				backend.CurrentProcess.Continue ();
@@ -382,6 +385,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Console.WriteLine ("METHODS:");
 				print_modules (backend.Modules, 2);
 				break;
+#endif
 
 			default:
 				stderr.WriteLine ("Unknown command: " + command);
@@ -391,6 +395,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return true;
 		}
 
+#if FALSE
 		bool check_stopped ()
 		{
 			switch (backend.State) {
@@ -743,5 +748,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			source.DumpLineNumbers ();
 		}
+#endif
 	}
 }
