@@ -845,9 +845,10 @@ namespace Mono.Debugger.Backends
 		}
 
 		private class CommandResult {
-			public CommandResultType Type;
-			public ChildEventType EventType;
-			public int Argument;
+			public readonly CommandResultType Type;
+			public readonly ChildEventType EventType;
+			public readonly int Argument;
+			public readonly object Data;
 
 			public CommandResult (ChildEventType type, int arg)
 			{
@@ -856,8 +857,13 @@ namespace Mono.Debugger.Backends
 			}
 
 			public CommandResult (CommandResultType type)
+				: this (type, null)
+			{ }
+
+			public CommandResult (CommandResultType type, object data)
 			{
 				this.Type = type;
+				this.Data = data;
 			}
 		}
 
@@ -1574,6 +1580,18 @@ namespace Mono.Debugger.Backends
 
 		Hashtable breakpoints = new Hashtable ();
 
+		CommandResult insert_breakpoint (object data)
+		{
+			int index = inferior.InsertBreakpoint ((TargetAddress) data);
+			return new CommandResult (CommandResultType.CommandOk, index);
+		}
+
+		CommandResult remove_breakpoint (object data)
+		{
+			inferior.RemoveBreakpoint ((int) data);
+			return new CommandResult (CommandResultType.CommandOk);
+		}
+
 		// <summary>
 		//   Insert a breakpoint at address @address.  Each time this breakpoint
 		//   is hit, @handler will be called and @user_data will be passed to it
@@ -1587,7 +1605,12 @@ namespace Mono.Debugger.Backends
 					     bool needs_frame, object user_data)
 		{
 			check_inferior ();
-			int index = inferior.InsertBreakpoint (address);
+
+			CommandResult result = send_sync_command (new CommandFunc (insert_breakpoint), address);
+			if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+
+			int index = (int) result.Data;
 			breakpoints.Add (index, new BreakpointHandle (index, handler, needs_frame, user_data));
 			return index;
 		}
@@ -1600,7 +1623,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 			if (inferior != null)
-				inferior.RemoveBreakpoint (index);
+				send_sync_command (new CommandFunc (remove_breakpoint), index);
 			breakpoints.Remove (index);
 		}
 

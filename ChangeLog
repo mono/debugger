@@ -1,3 +1,26 @@
+2002-12-26  Martin Baulig  <martin@ximian.com>
+
+	* inferfaces/IProcess.cs: New interface.  This is implemented by
+	backends/Process.cs; it's some kind of a hack because Process.cs
+	is in the backends dir, but I need this in Module.cs.
+
+	* classes/ThreadGroup.cs: New public class.  It is used to share
+	information about breakpoints and signal handlers between
+	different invocations of the same target.
+
+	* classes/Module.cs (AddBreakpoint): Added ThreadGroup argument.
+	(EnableBreakpoint, DisableBreakpoint): Likewise.
+
+	* backends/classes/NativeModule.cs
+	(EnableBreakpoint, DisableBreakpoint): Enable/disable the
+	breakpoint on all threads in the ThreadGroup.
+
+	* backends/SingleSteppingEngine.cs
+	(InsertBreakpoint, RemoveBreakpoint): Make this work again.
+
+	* frontends/scripting/Parser.jay: Added `break' command to insert
+	a breakpoint.
+
 2002-12-25  Martin Baulig  <martin@ximian.com>
 
 	* arch/Bfd.cs (Bfd.GetDisassembler): Take an IInferior argument

@@ -58,22 +58,46 @@ namespace Mono.Debugger.Backends
 			return handle.Breakpoint.BreakpointHit (frame);
 		}
 
-		protected override object EnableBreakpoint (BreakpointHandle handle, TargetAddress address)
+		protected override object EnableBreakpoint (BreakpointHandle handle,
+							    ThreadGroup group, TargetAddress address)
 		{
 			if (!IsLoaded)
 				return null;
 
-			return backend.SingleSteppingEngine.InsertBreakpoint (
-				address, new BreakpointHitHandler (breakpoint_hit),
-				handle.Breakpoint.HandlerNeedsFrame, handle);
+			Hashtable hash = new Hashtable ();
+			foreach (IProcess thread in group.Threads) {
+				Process process = thread as Process;
+				if (process == null)
+					throw new NotSupportedException ();
+
+				int id = process.SingleSteppingEngine.InsertBreakpoint (
+					address, new BreakpointHitHandler (breakpoint_hit),
+					handle.Breakpoint.HandlerNeedsFrame, handle);
+				hash.Add (process, id);
+			}
+
+			return hash;
 		}
 
-		protected override void DisableBreakpoint (BreakpointHandle handle, object data)
+		protected override void DisableBreakpoint (BreakpointHandle handle,
+							   ThreadGroup group, object data)
 		{
 			if (!IsLoaded)
 				return;
 
-			backend.SingleSteppingEngine.RemoveBreakpoint (handle.Index);
+			Hashtable hash = (Hashtable) data;
+
+			foreach (IProcess thread in group.Threads) {
+				Process process = thread as Process;
+				if (process == null)
+					throw new NotSupportedException ();
+				if (!hash.Contains (process))
+					throw new NotSupportedException ();
+
+				int id = (int) hash [process];
+				process.SingleSteppingEngine.RemoveBreakpoint (id);
+				hash.Remove (id);
+			}
 		}
 
 		//

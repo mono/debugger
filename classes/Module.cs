@@ -287,14 +287,16 @@ namespace Mono.Debugger
 		//   The implementation may return any arbitrary data which will be passed
 		//   as the @data argument to DisableBreakpoint() when disabling the breakpoint.
 		// </summary>
-		protected abstract object EnableBreakpoint (BreakpointHandle handle, TargetAddress address);
+		protected abstract object EnableBreakpoint (BreakpointHandle handle,
+							    ThreadGroup group, TargetAddress address);
 
 		// <summary>
 		//   This must be implemented to actually disable the breakpoint.  It is
 		//   called which the method is still being loaded and the target is still
 		//   alive.  The @data argument is whatever EnableBreakpoint() returned.
 		// </summary>
-		protected abstract void DisableBreakpoint (BreakpointHandle handle, object data);
+		protected abstract void DisableBreakpoint (BreakpointHandle handle,
+							   ThreadGroup group, object data);
 
 		// <summary>
 		//   Registers the breakpoint @breakpoint with this module.  The
@@ -303,9 +305,10 @@ namespace Mono.Debugger
 		//   Returns a breakpoint index which can be passed to RemoveBreakpoint()
 		//   to remove the breakpoint.
 		// </summary>
-		public int AddBreakpoint (Breakpoint breakpoint, SourceMethodInfo method)
+		public int AddBreakpoint (Breakpoint breakpoint, ThreadGroup group,
+					  SourceMethodInfo method)
 		{
-			return AddBreakpoint (breakpoint, method, 0);
+			return AddBreakpoint (breakpoint, group, method, 0);
 		}
 
 		// <summary>
@@ -316,11 +319,12 @@ namespace Mono.Debugger
 		//   Returns a breakpoint index which can be passed to RemoveBreakpoint()
 		//   to remove the breakpoint.
 		// </summary>
-		public int AddBreakpoint (Breakpoint breakpoint, SourceMethodInfo method, int line)
+		public int AddBreakpoint (Breakpoint breakpoint, ThreadGroup group,
+					  SourceMethodInfo method, int line)
 		{
 			int index = ++next_breakpoint_id;
 			BreakpointHandle handle = new BreakpointHandle (
-				this, breakpoint, method, line, index);
+				this, breakpoint, group, method, line, index);
 			breakpoints.Add (index, handle);
 			OnBreakpointsChangedEvent ();
 			return index;
@@ -473,13 +477,16 @@ namespace Mono.Debugger
 			public readonly Module Module;
 			public readonly Breakpoint Breakpoint;
 			public readonly string MethodName;
+			public readonly ThreadGroup ThreadGroup;
 			public SourceMethodInfo Method;
 
 			public BreakpointHandle (Module module, Breakpoint breakpoint,
-						 SourceMethodInfo method, int line, int index)
+						 ThreadGroup group, SourceMethodInfo method,
+						 int line, int index)
 			{
 				this.Module = module;
 				this.Breakpoint = breakpoint;
+				this.ThreadGroup = group;
 				this.Index = index;
 				this.Line = line;
 				this.Method = method;
@@ -523,7 +530,7 @@ namespace Mono.Debugger
 				if (address.IsNull)
 					return;
 
-				handle = Module.EnableBreakpoint (this, address);
+				handle = Module.EnableBreakpoint (this, ThreadGroup, address);
 				enabled = handle != null;
 			}
 
@@ -561,7 +568,7 @@ namespace Mono.Debugger
 					// lookup the address and insert the breakpoint.
 					TargetAddress address = get_address ();
 					if (!address.IsNull)
-						handle = Module.EnableBreakpoint (this, address);
+						handle = Module.EnableBreakpoint (this, ThreadGroup, address);
 					if (handle != null)
 						enabled = true;
 				} else if (Method.IsDynamic) {
@@ -600,7 +607,7 @@ namespace Mono.Debugger
 				} else {
 					// The method is actually loaded in memory, so
 					// remove the breakpoint instruction in the target.
-					Module.DisableBreakpoint (this, handle);
+					Module.DisableBreakpoint (this, ThreadGroup, handle);
 					handle = null;
 				}
 
@@ -655,7 +662,7 @@ namespace Mono.Debugger
 				if (!this.disposed) {
 					if (disposing) {
 						if (enabled)
-							Module.DisableBreakpoint (this, handle);
+							Module.DisableBreakpoint (this, ThreadGroup, handle);
 						Module.RemoveBreakpoint (this);
 					}
 

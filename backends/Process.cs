@@ -17,11 +17,12 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
-	public class Process : ITargetNotification, IDisposable
+	public class Process : IProcess, ITargetNotification, IDisposable
 	{
 		DebuggerBackend backend;
 		ProcessStart start;
 		BfdContainer bfd_container;
+		ThreadGroup thread_group;
 
 		SingleSteppingEngine sse;
 		CoreFile core;
@@ -36,6 +37,8 @@ namespace Mono.Debugger
 			this.start = start;
 			this.bfd_container = bfd_container;
 			this.id = ++next_id;
+
+			thread_group = new ThreadGroup (this);
 
 			inferior = new PTraceInferior (backend, start, bfd_container,
 						       backend.ThreadManager.BreakpointManager,
@@ -112,6 +115,11 @@ namespace Mono.Debugger
 				
 				return inferior.Architecture;
 			}
+		}
+
+		public static explicit operator ThreadGroup (Process process)
+		{
+			return process.thread_group;
 		}
 
 		//

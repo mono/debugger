@@ -32,6 +32,7 @@ namespace Mono.Debugger
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
 		ThreadManager thread_manager;
+		ThreadGroup main_group;
 		Process process;
 
 		public DebuggerBackend ()
@@ -60,6 +61,8 @@ namespace Mono.Debugger
 			this.bfd_container = new BfdContainer (this);
 			this.thread_manager = new ThreadManager (this, bfd_container);
 
+			main_group = new ThreadGroup ("main");
+
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent +=
 				new SymbolTableManager.ModuleHandler (modules_reloaded);
@@ -79,12 +82,6 @@ namespace Mono.Debugger
 		public SymbolTableManager SymbolTableManager {
 			get {
 				return symtab_manager;
-			}
-		}
-
-		public SingleSteppingEngine SingleSteppingEngine {
-			get {
-				throw new NotSupportedException ("THIS WILL GO AWAY SOON");
 			}
 		}
 
@@ -121,6 +118,7 @@ namespace Mono.Debugger
 			module_manager.Locked = true;
 
 			process = new Process (this, start, bfd_container);
+			main_group.AddThread (process);
 			return process;
 		}
 
@@ -209,6 +207,16 @@ namespace Mono.Debugger
 		}
 
 		Hashtable breakpoint_module_map = new Hashtable ();
+
+		public int InsertBreakpoint (Breakpoint breakpoint, string name)
+		{
+			return InsertBreakpoint (breakpoint, main_group, name);
+		}
+
+		public int InsertBreakpoint (Breakpoint breakpoint, string source, int line)
+		{
+			return InsertBreakpoint (breakpoint, main_group, source, line);
+		}
 		
 		// <summary>
 		//   Inserts a breakpoint for method @name, which must be the method's full
@@ -217,7 +225,7 @@ namespace Mono.Debugger
 		//   Example:
 		//     System.DateTime.GetUtcOffset(System.DateTime)
 		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, string name)
+		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group, string name)
 		{
 			SourceMethodInfo method = FindMethod (name);
 			if (method == null) {
@@ -230,7 +238,7 @@ namespace Mono.Debugger
 
 			Module module = method.SourceInfo.Module;
 
-			int index = module.AddBreakpoint (breakpoint, method);
+			int index = module.AddBreakpoint (breakpoint, group, method);
 			breakpoint_module_map [index] = module;
 			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;
@@ -240,7 +248,8 @@ namespace Mono.Debugger
 		//   Inserts a breakpoint at source file @source (while must be a full pathname)
 		//   and line @line.
 		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, string source, int line)
+		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group,
+					     string source, int line)
 		{
 			SourceMethodInfo method = FindMethod (source, line);
 			if (method == null) {
@@ -253,7 +262,7 @@ namespace Mono.Debugger
 
 			Module module = method.SourceInfo.Module;
 
-			int index = module.AddBreakpoint (breakpoint, method, line);
+			int index = module.AddBreakpoint (breakpoint, group, method, line);
 			breakpoint_module_map [index] = module;
 			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;

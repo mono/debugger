@@ -4,11 +4,17 @@
 #include <sched.h>
 
 void
+hello (int is_thread)
+{
+	printf ("HELLO: %d\n", is_thread);
+	fflush (stdout);
+}
+
+void
 common_function (int is_thread, int sleep_seconds)
 {
 	while (1) {
-		printf ("COMMON FUNCTION: %d\n", is_thread);
-		fflush (stdout);
+		hello (is_thread);
 		sleep (sleep_seconds);
 	}
 }

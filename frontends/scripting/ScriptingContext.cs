@@ -335,6 +335,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 		}
 
+		public DebuggerBackend DebuggerBackend {
+			get { return backend; }
+		}
+
 		public bool IsSynchronous {
 			get { return is_synchronous; }
 		}
@@ -426,6 +430,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			procs.Add (handle);
+		}
+		
+		public int InsertBreakpoint (string method)
+		{
+			Breakpoint breakpoint = new SimpleBreakpoint (method);
+			return backend.InsertBreakpoint (breakpoint, method);
 		}
 	}
 }

@@ -286,4 +286,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 				context.Print ("%{0} = 0x{1:x}", names [indices [i]], regs [i]);
 		}
 	}
+
+	public class BreakCommand : Command
+	{
+		string identifier;
+
+		public BreakCommand (string identifier)
+		{
+			this.identifier = identifier;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			Console.WriteLine ("BREAK: {0}", identifier);
+			context.InsertBreakpoint (identifier);
+		}
+	}
 }

@@ -72,6 +72,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token STEPI
 %token NEXTI
 %token FINISH
+%token BREAK
 
 %token SELECT
 %token BACKGROUND
@@ -139,6 +140,10 @@ command
 	| SHOW REGISTERS opt_process
 	  {
 		$$ = new ShowRegistersCommand ((ProcessExpression) $3);
+	  }
+	| BREAK IDENTIFIER
+	  {
+		$$ = new BreakCommand ((string) $2);
 	  }
 	| expression
 	  {
