@@ -370,7 +370,7 @@ namespace Mono.Debugger.GUI
 			fs.Destroy ();
 			fs = null;
 
-			if (v != -5)
+			if (v != (int) ResponseType.Ok)
 				return;
 
 			source_manager.LoadFile (file);
