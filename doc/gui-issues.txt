@@ -12,6 +12,7 @@ This is a list of GUI issues which need to be fixed for the next release.
 
 * There seems to be a reference-counting bug somewhere in gtk#: if you display the "About"
   dialog several times, you get a crash.  I did some debugging, but I was unable to find it.
+  This is now known as bug #41091.
 
 
 April 10th, 2003
