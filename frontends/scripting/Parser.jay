@@ -246,15 +246,15 @@ command
 	  {
 		$$ = new BreakCommand ((ThreadGroupExpression) $2, (SourceExpression) $3);
 	  }
-	| BREAKPOINT ENABLE breakpoint_number
+	| BREAKPOINT ENABLE breakpoint_number_expression
 	  {
 		$$ = new BreakpointEnableCommand ((BreakpointNumberExpression) $3);
 	  }
-	| BREAKPOINT DISABLE breakpoint_number
+	| BREAKPOINT DISABLE breakpoint_number_expression
 	  {
 		$$ = new BreakpointDisableCommand ((BreakpointNumberExpression) $3);
 	  }
-	| BREAKPOINT DELETE breakpoint_number
+	| BREAKPOINT DELETE breakpoint_number_expression
 	  {
 		$$ = new BreakpointDeleteCommand ((BreakpointNumberExpression) $3);
 	  }
@@ -487,7 +487,7 @@ program_arglist
 	  }
 	;
 
-breakpoint_number
+breakpoint_number_expression
 	: INTEGER
 	  {
 		$$ = new BreakpointNumberExpression ((int) $1);
