@@ -3,6 +3,8 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	public delegate void ObjectInvalidHandler (object obj);

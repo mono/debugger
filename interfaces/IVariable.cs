@@ -1,6 +1,4 @@
-using System;
-
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   This interface provides information about a variable in the target application.

@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	// <summary>

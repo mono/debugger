@@ -2,6 +2,8 @@ using System;
 using System.Text;
 using System.Collections;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	public struct LineEntry : IComparable {

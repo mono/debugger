@@ -5,6 +5,8 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	public delegate void ModuleEventHandler (Module module);

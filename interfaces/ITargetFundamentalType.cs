@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   A fundamental type is a type which can be represented with a Mono type,

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using Mono.Debugger;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {

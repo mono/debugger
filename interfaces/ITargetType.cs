@@ -1,6 +1,4 @@
-using System;
-
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   This interface denotes a type in the target application.

@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	public interface ILanguage
 	{
