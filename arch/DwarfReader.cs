@@ -676,8 +676,7 @@ namespace Mono.Debugger.Architecture
 					this.start_file = stm.st_file;
 
 					engine.debug ("CLONE: {0} {1} {2}",
-						      stm.start_line, stm.end_line, stm.st_file,
-						      engine.source_files [stm.st_file]);
+						      stm.start_line, stm.end_line, stm.st_file);
 
 					this.start_line = stm.start_line;
 					this.end_line = stm.end_line;
