@@ -937,6 +937,11 @@ namespace Mono.Debugger.Backends
 			return retval [0];
 		}
 
+		public bool CanModify ()
+		{
+			return true;
+		}
+		
 		public long[] GetRegisters (int[] registers)
 		{
 			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;

@@ -22,7 +22,8 @@ namespace Mono.Debugger
 		XCS		= 13,
 		EFL		= 14,
 		ESP		= 15,
-		XSS		= 16
+		XSS		= 16,
+		COUNT		= 17
 	}
 
 	// <summary>

@@ -1,4 +1,3 @@
-using GLib;
 //
 // The register display code.
 //
@@ -21,9 +20,11 @@ using GLib;
 //
 // (C) 2002 Ximian, Inc.
 //
+using GLib;
 using Gtk;
 using System;
 using System.IO;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
 
@@ -36,7 +37,7 @@ namespace Mono.Debugger.GUI
 		IArchitecture arch;
 		StackFrame current_frame;
 		Gdk.Color color_change, color_stable;
-		
+
 		public RegisterDisplay (Glade.XML gxml, Gtk.Container window, Gtk.Notebook notebook)
 			: base (window, notebook)
 		{
@@ -68,8 +69,8 @@ namespace Mono.Debugger.GUI
 				arch = backend.Architecture;
 				
 				if (arch is ArchitectureI386){
-					notebook.Page = 1;
 					SetupI386 ();
+					notebook.Page = 1;
 				} else
 					notebook.Page = 0;
 			} else {
@@ -81,104 +82,67 @@ namespace Mono.Debugger.GUI
 		//
 		// The i386 registers
 		//
-		Gtk.Entry i386_eax, i386_ebx, i386_ecx, i386_edx;
-		Gtk.Entry i386_esi, i386_edi, i386_ebp, i386_esp;
-		Gtk.Entry i386_ecs, i386_eds, i386_ees, i386_ess;
-		Gtk.Entry i386_eip, i386_efs, i386_egs;
+		Gtk.Entry [] i386_registers;
 		Gtk.ToggleButton i386_cf, i386_pf, i386_af, i386_zf;
 		Gtk.ToggleButton i386_sf, i386_tf, i386_if, i386_df;
 		Gtk.ToggleButton i386_of, i386_nt, i386_rf, i386_vm;
 		Gtk.ToggleButton i386_ac, i386_vif, i386_id, i386_vip;
 
-		Gtk.Entry GetEntry (string name, EventHandler ev)
+		void i386_register_modified (object sender, EventArgs e)
 		{
-			Gtk.Entry entry = (Gtk.Entry) gxml [name];
+			long value;
+			int ridx;
+			
+			for (ridx = 0; ridx < (int) I386Register.COUNT; ridx++){
+				if (sender == i386_registers [ridx])
+					break;
+			}
+			
+			if (backend.State != TargetState.STOPPED){
+				Report.Error ("Can not set value, program is not stopped");
+				value = regs [ridx];
+			} else {
+				Gtk.Entry entry = (Gtk.Entry) sender;
+				string text = entry.Text;
 
-			if (entry == null)
-				Console.WriteLine ("COULD NOT FIND: " + name);
+				try {
+					value = UInt32.Parse (text, NumberStyles.HexNumber);
+				} catch {
+					Report.Error ("Invalid value entered");
+					value = regs [ridx];
+				}
+			}
 
-			return entry;
+			i386_registers [ridx].Text = String.Format ("{0:x8}", value);
+			backend.SetRegister (ridx, value);
 		}
+		
+		//
+		// Loads the pointers to the i386 widgets, and hooks them up their
+		// event handlers
+		//
+		void I386BindWidgets ()
+		{
+			if (i386_registers != null)
+				return;
 
-		void i386_eax_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_ebx_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_ecx_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_edx_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_esi_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_edi_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_ebp_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_esp_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_ecs_changed (object sender, EventArgs e)
-		{
-		}
+			i386_registers = new Gtk.Entry [(int) I386Register.COUNT];
+			for (int i = 0; i <= (int) I386Register.COUNT; i++){
+				if (i == (int) I386Register.EFL)
+					continue;
+				
+				string name = ((I386Register) i).ToString ();
+				if (name.Length != 3)
+					continue;
 
-		void i386_eds_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_ees_changed (object sender, EventArgs e)
-		{
-		}
+				string full = String.Format ("386-{0}-entry", name.ToLower ());
 
-		void i386_ess_changed (object sender, EventArgs e)
-		{
-		}
-
-		void i386_eip_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void i386_efs_changed (object sender, EventArgs e)
-		{
-		}
-
-		void i386_egs_changed (object sender, EventArgs e)
-		{
-		}
-		
-		void SetupI386 ()
-		{
-			i386_eax = GetEntry ("386-eax-entry", new EventHandler (i386_eax_changed));
-			i386_ebx = GetEntry ("386-ebx-entry", new EventHandler (i386_ebx_changed));
-			i386_ecx = GetEntry ("386-ecx-entry", new EventHandler (i386_ecx_changed));
-			i386_edx = GetEntry ("386-edx-entry", new EventHandler (i386_edx_changed));
-			i386_esi = GetEntry ("386-esi-entry", new EventHandler (i386_esi_changed));
-			i386_edi = GetEntry ("386-edi-entry", new EventHandler (i386_edi_changed));
-			i386_ebp = GetEntry ("386-ebp-entry", new EventHandler (i386_ebp_changed));
-			i386_esp = GetEntry ("386-esp-entry", new EventHandler (i386_esp_changed));
-			i386_ecs = GetEntry ("386-ecs-entry", new EventHandler (i386_ecs_changed));
-			i386_eds = GetEntry ("386-eds-entry", new EventHandler (i386_eds_changed));
-			i386_ees = GetEntry ("386-ees-entry", new EventHandler (i386_ees_changed));
-			i386_ess = GetEntry ("386-ess-entry", new EventHandler (i386_ess_changed));
-			i386_eip = GetEntry ("386-eip-entry", new EventHandler (i386_eip_changed));
-			i386_efs = GetEntry ("386-efs-entry", new EventHandler (i386_efs_changed));
-			i386_egs = GetEntry ("386-egs-entry", new EventHandler (i386_egs_changed));
-
-
+				Console.WriteLine ("Name: " + full);
+				Gtk.Entry entry = (Gtk.Entry) gxml [full];
+				entry.Activated += new EventHandler (i386_register_modified);
+				i386_registers [i] = entry;
+			}
+			
 			i386_cf = (Gtk.ToggleButton) gxml ["386-carry-flag"];
 			i386_pf = (Gtk.ToggleButton) gxml ["386-parity-flag"];
 			i386_af = (Gtk.ToggleButton) gxml ["386-auxiliary-carry-flag"];
@@ -196,6 +160,42 @@ namespace Mono.Debugger.GUI
 			i386_id = (Gtk.ToggleButton) gxml ["386-id-flag"];
 			i386_vip = (Gtk.ToggleButton) gxml ["386-vip-flag"];
 
+			I386_SetAdvanced (false);
+		}
+
+		void I386_SetAdvanced (bool state)
+		{
+			foreach (string s in new string [] { "cs", "ds", "es", "ss", "fs", "gs"}){
+				string label = String.Format ("x{0}-label", s);
+				Console.WriteLine ("label: " + label);
+				gxml [label].Visible = false;
+				string entry = String.Format ("386-x{0}-entry", s);
+				Console.WriteLine ("entry: " + entry);
+				gxml [entry].Visible = false;
+			}
+		}
+		
+		//
+		// Sets the widgets to editable/non-editable depending on whether the backend
+		// supports editing or not
+		//
+		void I386SetupModifiableWidgets ()
+		{
+			bool can_modify = backend.Inferior.CanModify ();
+
+			for (int i = 0; i < (int) I386Register.COUNT; i++){
+				if (i386_registers [i] != null)
+					i386_registers [i].Editable = can_modify;
+			}
+		}
+
+		//
+		// Sets 
+		void SetupI386 ()
+		{
+			I386BindWidgets ();
+			I386SetupModifiableWidgets ();
+			
 			backend.FrameChangedEvent += new StackFrameHandler (I386_FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (I386_FramesInvalidEvent);
 		}
@@ -204,7 +204,6 @@ namespace Mono.Debugger.GUI
 
 		void SetText (Gtk.Entry entry, int idx)
 		{
-			
 			if (last_regs != null){
 				if (regs [idx] != last_regs [idx]){
 					entry.Text = String.Format ("{0:X8}", regs [idx]);
@@ -229,21 +228,11 @@ namespace Mono.Debugger.GUI
 			try {
 				regs = backend.GetRegisters (arch.AllRegisterIndices);
 
-				SetText (i386_eax, (int) I386Register.EAX);
-				SetText (i386_ebx, (int) I386Register.EBX);
-				SetText (i386_ecx, (int) I386Register.ECX);
-				SetText (i386_edx, (int) I386Register.EDX);
-				SetText (i386_esi, (int) I386Register.ESI);
-				SetText (i386_edi, (int) I386Register.EDI);
-				SetText (i386_ebp, (int) I386Register.EBP);
-				SetText (i386_esp, (int) I386Register.ESP);
-				SetText (i386_ecs, (int) I386Register.XCS);
-				SetText (i386_eds, (int) I386Register.XDS);
-				SetText (i386_ees, (int) I386Register.XES);
-				SetText (i386_ess, (int) I386Register.XSS);
-				SetText (i386_eip, (int) I386Register.EIP);
-				SetText (i386_efs, (int) I386Register.XFS);
-				SetText (i386_egs, (int) I386Register.XGS);
+				for (int i = 0; i < (int) I386Register.COUNT; i++){
+					if (i386_registers [i] == null)
+						continue;
+					SetText (i386_registers [i], i);
+				}
 
 				long f = regs [(int)I386Register.EFL];
 				i386_cf.Active =  ((f & (1 << 0)) != 0);
@@ -265,7 +254,7 @@ namespace Mono.Debugger.GUI
 
 				last_regs = regs;
 			} catch {
-				Console.WriteLine ("Register loading threw an exception here");
+				Console.WriteLine ("ERROR: Register loading threw an exception here");
 				last_regs = null;
 			}
 		}

@@ -1,3 +1,17 @@
+2002-10-02  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/gui/RegisterDisplay.cs: Allow values to be changed,
+	rewrite code to minimize duplicated code.
+
+	Turn off advanced mode, so segment registers are not shown
+
+	* backends/IInferior.cs: New property to tell if we can update the
+	registers or not.
+	
+	* frontends/gui/Report.cs: New file, requires an updated Gtk#
+	
+	* arch/ArchitectureI386.cs: Add TOP constant.
+
 2002-10-02  Martin Baulig  <martin@gnome.org>
 
 	* interfaces/ITargetNotification.cs

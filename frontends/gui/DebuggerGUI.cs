@@ -152,6 +152,11 @@ namespace Mono.Debugger.GUI
 				new string [] {
 					"run-button", "run-program-menu"},
 				TargetState.EXITED, TargetState.NO_TARGET);
+
+			//
+			// I considered adding "register-notebook", but it looks
+			// ugly.
+			
 			StateRegister (
 				new string [] {
 					"run-button", "run-program-menu",
@@ -160,6 +165,8 @@ namespace Mono.Debugger.GUI
 					"instruction-step-into-menu",
 					"instruction-step-over-menu" },
 				TargetState.STOPPED);
+
+			
 			StateRegister (
 				new string [] {
 					"stop-button", "stop-program-menu"

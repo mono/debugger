@@ -34,55 +34,55 @@ namespace Mono.Debugger.Backends
 
 	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
-		// <summary>
-		//   Continue the target.
-		// </summary>
+		/// <summary>
+		///   Continue the target.
+		/// </summary>
 		void Continue ();
 
-		// <summary>
-		//   Aborts the target being debugged, but gives it time to terminate cleanly.
-		//   On Unix systems, this'll send a SIGTERM to the target process.
-		// </summary>
+		/// <summary>
+		///   Aborts the target being debugged, but gives it time to terminate cleanly.
+		///   On Unix systems, this'll send a SIGTERM to the target process.
+		/// </summary>
 		void Shutdown ();
 
-		// <summary>
-		//   Forcibly kills the target without giving it any time to terminate.
-		//   On Unix systems, this'll send a SIGKILL to the target process.
-		// </summary>
+		/// <summary>
+		///   Forcibly kills the target without giving it any time to terminate.
+		///   On Unix systems, this'll send a SIGKILL to the target process.
+		/// </summary>
 		void Kill ();
 
-		// <summary>
-		//   Get the current target location.
-		// </summary>
+		/// <summary>
+		///   Get the current target location.
+		/// </summary>
 		TargetAddress CurrentFrame {
 			get;
 		}
 
-		// <summary>
-		//   Whether the user set a breakpoint at the current instruction.
-		// </summary>
-		// <remarks>
-		//   This method only checks whether the user set a breakpoint at the
-		//   current instruction, it does not track breakpoint instruction which
-		//   were already in the source code.
-		// </remarks>
+		/// <summary>
+		///   Whether the user set a breakpoint at the current instruction.
+		/// </summary>
+		/// <remarks>
+		///   This method only checks whether the user set a breakpoint at the
+		///   current instruction, it does not track breakpoint instruction which
+		///   were already in the source code.
+		/// </remarks>
 		bool CurrentInstructionIsBreakpoint {
 			get;
 		}
 
-		// <summary>
-		//   Single-step one instruction.
-		// </summary>
+		/// <summary>
+		///   Single-step one instruction.
+		/// </summary>
 		void Step ();
 
-		// <summary>
-		//   Stop the target.
-		// </summary>
+		/// <summary>
+		///   Stop the target.
+		/// </summary>
 		void Stop ();
 
-		// <remarks>
-		//   The following two methods are more or less private.
-		// </remarks>
+		/// <remarks>
+		///   The following two methods are more or less private.
+		/// </remarks>
 		long CallMethod (TargetAddress method, long method_argument);
 		long CallStringMethod (TargetAddress method, long method_argument,
 				       string string_argument);
@@ -116,31 +116,36 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		// <summary>
-		//   Returns a disassembler for the current target.
-		// </summary>
+		/// <summary>
+		///   Whether we can modify the inferior process
+		/// </summary>
+		bool CanModify ();
+
+		/// <summary>
+		///   Returns a disassembler for the current target.
+		/// </summary>
 		IDisassembler Disassembler {
 			get;
 		}
 
-		// <summary>
-		//   Gets the IArchitecture for the current target.
-		// </summary>
+		/// <summary>
+		///   Gets the IArchitecture for the current target.
+		/// </summary>
 		IArchitecture Architecture {
 			get;
 		}
 
-		// <summary>
-		//   The symbol table from native executables and shared libraries.
-		// </summary>
+		/// <summary>
+		///   The symbol table from native executables and shared libraries.
+		/// </summary>
 		ISymbolTable SymbolTable {
 			get;
 		}
 
-		// <summary>
-		//   The application's symbol table.  You should set this property to get
-		//   your application's symbol names in a disassembly.
-		// </summary>
+		/// <summary>
+		///   The application's symbol table.  You should set this property to get
+		///   your application's symbol names in a disassembly.
+		/// </summary>
 		ISymbolTable ApplicationSymbolTable {
 			get; set;
 		}

@@ -110,6 +110,11 @@ namespace Mono.Debugger.Architecture
 
 		public abstract long[] GetRegisters (int[] registers);
 
+		public bool CanModify ()
+		{
+			return false;
+		}
+		
 		public abstract IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 
 		public IDisassembler Disassembler {
