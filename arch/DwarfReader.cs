@@ -286,8 +286,8 @@ namespace Mono.Debugger.Architecture
 
 			public override string ToString ()
 			{
-				return String.Format ("{0} ({1}:{2})", GetType (), dwarf.FileName,
-						      ranges.Count);
+				return String.Format ("{0} ({1}:{2})", GetType (),
+						      dwarf.FileName, ranges.Count);
 			}
 		}
 
@@ -2173,7 +2173,7 @@ namespace Mono.Debugger.Architecture
 		{
 			string name;
 			long offset;
-			bool resolved;
+			bool resolved, ok, type_created;
 			NativeType type;
 
 			public DieType (DwarfBinaryReader reader, CompilationUnit comp_unit,
@@ -2193,35 +2193,41 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected NativeType GetReference (long offset)
+			protected DieType GetReference (long offset)
 			{
-				DieType reference = comp_unit.GetType (offset);
-				if ((reference == null) || !reference.HasType)
-					return null;
-
-				return reference.Type;
+				return comp_unit.GetType (offset);
 			}
 
-			protected NativeType Resolve ()
+			public NativeType ResolveType ()
 			{
-				if (!resolved) {
-					type = DoResolve ();
-					if (name == null) {
-						if (type != null)
-							name = type.Name;
-						else
-							name = "void";
-					}
-					resolved = true;
+				if (resolved)
+					return type;
+
+				type = CreateType ();
+				resolved = true;
+
+				if (type == null) {
+					type_created = true;
+					return null;
 				}
+
+				if (!type_created) {
+					type_created = true;
+					PopulateType ();
+				}
+
 				return type;
 			}
 
-			protected abstract NativeType DoResolve ();
+			protected abstract NativeType CreateType ();
+
+			protected virtual void PopulateType ()
+			{ }
 
 			public bool HasType {
 				get {
-					Resolve ();
+					if (!resolved || !ok)
+						throw new InvalidOperationException ();
 					return type != null;
 				}
 			}
@@ -2261,7 +2267,7 @@ namespace Mono.Debugger.Architecture
 			public override string ToString ()
 			{
 				return String.Format ("{0} ({1}:{2}:{3})", GetType (),
-						      offset, Name, Type);
+						      offset, Name, type);
 			}
 		}
 
@@ -2269,7 +2275,7 @@ namespace Mono.Debugger.Architecture
 		{
 			int byte_size;
 			int encoding;
-			Type type;
+			Type mono_type;
 
 			public DieBaseType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					    long offset, AbbrevEntry abbrev)
@@ -2293,15 +2299,15 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve ()
+			protected override NativeType CreateType ()
 			{
-				type = GetMonoType ((DwarfBaseTypeEncoding) encoding, byte_size);
-				if (type != null) {
-					if (Name == null)
-						SetName (type.Name);
-					return new NativeFundamentalType (Name, type, byte_size);
-				} else
+				mono_type = GetMonoType (
+					(DwarfBaseTypeEncoding) encoding, byte_size);
+
+				if (mono_type == null)
 					return new NativeOpaqueType (Name, byte_size);
+
+				return new NativeFundamentalType (Name, mono_type, byte_size);
 			}
 
 			protected Type GetMonoType (DwarfBaseTypeEncoding encoding, int byte_size)
@@ -2347,7 +2353,7 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public Type MonoType {
-				get { return type; }
+				get { return mono_type; }
 			}
 		}
 
@@ -2355,6 +2361,7 @@ namespace Mono.Debugger.Architecture
 		{
 			int byte_size;
 			long type_offset;
+			DieType reference;
 
 			public DiePointerType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					       long offset, AbbrevEntry abbrev)
@@ -2378,27 +2385,37 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve ()
+			protected override NativeType CreateType ()
 			{
-				NativeType ref_type = GetReference (type_offset);
-				if (ref_type == null) {
-					Console.WriteLine ("UNKNOWN POINTER: {0}", comp_unit.RealStartOffset + type_offset);
+				reference = GetReference (type_offset);
+				if (reference == null) {
+					Console.WriteLine (
+						"UNKNOWN POINTER: {0}",
+						comp_unit.RealStartOffset + type_offset);
 					return null;
 				}
+
+				NativeType ref_type = reference.ResolveType ();
+				if (ref_type == null)
+					return null;
 
 				if (ref_type.TypeHandle == typeof (char))
 					return new NativeStringType (byte_size);
 
-				if (Name == null)
-					SetName (String.Format ("{0} *", ref_type.Name));
+				string name;
+				if (Name != null)
+					name = Name;
+				else
+					name = String.Format ("{0} *", ref_type.Name);
 
-				return new NativePointerType (Name, ref_type, byte_size);
+				return new NativePointerType (name, ref_type, byte_size);
 			}
 		}
 
 		protected class DieConstType : DieType
 		{
 			long type_offset;
+			DieType reference;
 
 			public DieConstType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					     long offset, AbbrevEntry abbrev)
@@ -2418,15 +2435,21 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve ()
+			protected override NativeType CreateType ()
 			{
-				return GetReference (type_offset);
+				reference = GetReference (type_offset);
+				if (reference == null)
+					return null;
+
+				return reference.ResolveType ();
 			}
 		}
 
 		protected class DieTypedef : DieType
 		{
 			long type_offset;
+			DieType reference;
+			new NativeTypeAlias type;
 
 			public DieTypedef (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					   long offset, AbbrevEntry abbrev)
@@ -2446,16 +2469,19 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve ()
+			protected override NativeType CreateType ()
 			{
-				if (Name == null)
-					throw new InvalidOperationException ();
-
-				DieType reference = comp_unit.GetType (type_offset);
+				reference = GetReference (type_offset);
 				if (reference == null)
 					return null;
 
-				return reference.GetAlias (Name);
+				type = new NativeTypeAlias (Name, reference.Name);
+				return type;
+			}
+
+			protected override void PopulateType ()
+			{
+				type.TargetType = reference.ResolveType ();
 			}
 		}
 
@@ -2481,34 +2507,42 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			NativeStructType type;
+			ArrayList members;
+			NativeFieldInfo[] fields;
+			new NativeStructType type;
 
-			protected override NativeType DoResolve ()
+			protected override NativeType CreateType ()
 			{
-				if (type != null)
-					return type;
+				type = new NativeStructType (Name, fields, byte_size);
+				return type;
+			}
 
-				type = new NativeStructType (Name, byte_size);
+			protected override void PopulateType ()
+			{
+				if (!abbrev.HasChildren)
+					return;
 
-				ArrayList field_list = new ArrayList ();
+				ArrayList list = new ArrayList ();
 
-				if (abbrev.HasChildren) {
-					foreach (Die child in Children) {
-						DieMember member = child as DieMember;
-						if ((member == null) || !member.Resolve ())
-							continue;
+				foreach (Die child in Children) {
+					DieMember member = child as DieMember;
+					if ((member == null) || !member.Resolve ())
+						continue;
 
-						NativeFieldInfo field = new NativeFieldInfo (
-							member.Type, member.Name, field_list.Count, member.DataOffset);
-						field_list.Add (field);
-					}
+					NativeType mtype = member.Type;
+					if (mtype == null)
+						mtype = NativeType.VoidType;
+
+					NativeFieldInfo field = new NativeFieldInfo (
+						mtype, member.Name, list.Count,
+						member.DataOffset);
+					list.Add (field);
 				}
 
-				NativeFieldInfo[] fields = new NativeFieldInfo [field_list.Count];
-				field_list.CopyTo (fields, 0);
+				fields = new NativeFieldInfo [list.Count];
+				list.CopyTo (fields);
 
 				type.SetFields (fields);
-				return type;
 			}
 		}
 
@@ -2516,7 +2550,7 @@ namespace Mono.Debugger.Architecture
 		{
 			long type_offset;
 			bool prototyped;
-			NativeType return_type;
+			DieType return_type;
 
 			public DieSubroutineType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 						  long offset, AbbrevEntry abbrev)
@@ -2552,35 +2586,43 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve ()
+			protected override NativeType CreateType ()
 			{
 				if (!prototyped)
 					return null;
 
 				if (type_offset != 0) {
-					DieType reference = comp_unit.GetType (type_offset);
-					if ((reference == null) || !reference.HasType)
+					return_type = GetReference (type_offset);
+					if (return_type == null)
 						return null;
-
-					return_type = reference.Type;
 				}
+
+				NativeType ret_type = null;
+				if (return_type != null)
+					ret_type = return_type.ResolveType ();
+				if (ret_type == null)
+					ret_type = NativeType.VoidType;
+
+				NativeType[] param_types = new NativeType [0];
+				NativeFunctionType func_type = new NativeFunctionType (
+					"test", ret_type, param_types);
+				return func_type;
+			}
+
+			protected override void PopulateType ()
+			{
+				if (!abbrev.HasChildren)
+					return;
 
 				ArrayList args = new ArrayList ();
 
-				if (abbrev.HasChildren) {
-					foreach (Die child in Children) {
-						DieFormalParameter formal = child as DieFormalParameter;
-						if (formal == null)
-							return null;
+				foreach (Die child in Children) {
+					DieFormalParameter formal = child as DieFormalParameter;
+					if (formal == null)
+						continue;
 
-						args.Add (formal);
-					}
+					args.Add (formal);
 				}
-
-				NativeType[] param_types = new NativeType [0];
-				NativeFunctionType func_type = new NativeFunctionType ("test", return_type, param_types);
-
-				return func_type;
 			}
 		}
 
@@ -2662,12 +2704,14 @@ namespace Mono.Debugger.Architecture
 				if ((TypeOffset == 0) || (location == null) || (Name == null))
 					return false;
 
-				DieType type = comp_unit.GetType (TypeOffset);
-				if (type == null)
+				DieType reference = comp_unit.GetType (TypeOffset);
+				if (reference == null)
 					return false;
 
-				TargetBinaryReader locreader = new TargetBinaryReader (location, target_info);
-				variable = new TargetVariable (Name, type.Type, locreader);
+				NativeType type = reference.ResolveType ();
+				TargetBinaryReader locreader = new TargetBinaryReader (
+					location, target_info);
+				variable = new TargetVariable (Name, type, locreader);
 				return true;
 			}
 
@@ -2722,6 +2766,7 @@ namespace Mono.Debugger.Architecture
 
 			byte[] location;
 			bool resolved, ok;
+			DieType type_die;
 			NativeType type;
 			ITargetInfo target_info;
 			int offset;
@@ -2731,8 +2776,9 @@ namespace Mono.Debugger.Architecture
 				if (resolved)
 					return ok;
 
-				ok = DoResolve ();
+				type = ResolveType ();
 				resolved = true;
+				ok = type != null;
 				return ok;
 			}
 
@@ -2748,25 +2794,25 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected bool DoResolve ()
+			protected NativeType ResolveType ()
 			{
 				if ((TypeOffset == 0) || (location == null) || (Name == null))
-					return false;
+					return null;
 
-				DieType type_die = comp_unit.GetType (TypeOffset);
+				type_die = comp_unit.GetType (TypeOffset);
 				if (type_die == null)
-					return false;
+					return null;
 
-				if ((type_die == null) || !type_die.HasType)
-					return false;
+				if (type_die == null)
+					return null;
 
-				type = type_die.Type;
-
-				TargetBinaryReader locreader = new TargetBinaryReader (location, target_info);
+				TargetBinaryReader locreader = new TargetBinaryReader (
+					location, target_info);
 				if (!read_location (locreader))
-					return false;
+					return null;
 
-				return true;
+				type = type_die.ResolveType ();
+				return type;
 			}
 
 			public NativeType Type {

@@ -47,5 +47,11 @@ namespace Mono.Debugger.Languages.Native
 		{
 			return new NativePointerObject (this, location);
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} [{1}:{2}:{3}]", GetType (),
+					      Name, Size, target_type);
+		}
 	}
 }

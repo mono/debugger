@@ -10,10 +10,10 @@ namespace Mono.Debugger.Languages.Native
 			this.target_name = target_name;
 		}
 
-		public NativeTypeAlias (string name, string target_name, ITargetType target)
+		public NativeTypeAlias (string name, string target_name, NativeType target)
 			: this (name, target_name)
 		{
-			this.target_type = target_type;
+			this.target_type = target;
 		}
 
 		string target_name;

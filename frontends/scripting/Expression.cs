@@ -982,7 +982,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException (
 					"Expression `{0}' is not a pointer.", expr.Name);
 
-			return ptype;
+			return ptype.StaticType;
 		}
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)

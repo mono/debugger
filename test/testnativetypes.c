@@ -33,6 +33,13 @@ typedef struct
 	int e : 9;
 } BitField;
 
+typedef struct _List List;
+
+struct _List {
+	int a;
+	List *next;
+};
+
 void
 simple (void)
 {
@@ -114,6 +121,17 @@ test_bitfield (void)
 	bitfield.e = 15;
 }
 
+void
+test_list (void)
+{
+	List list;
+
+	list.a = 9;
+	list.next = &list;
+
+	printf ("%d\n", list.next->a);
+}
+
 int
 main (void)
 {
@@ -124,5 +142,6 @@ main (void)
 	test_struct_3 ();
 	test_function_struct ();
 	test_bitfield ();
+	test_list ();
 	return 0;
 }

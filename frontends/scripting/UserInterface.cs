@@ -272,7 +272,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			case TargetObjectKind.Pointer: {
 				ITargetPointerObject pobj = (ITargetPointerObject) obj;
-				if (pobj.HasDereferencedObject) {
+				if (pobj.Type.IsTypesafe && pobj.HasDereferencedObject) {
 					ITargetObject deref = pobj.DereferencedObject;
 					return String.Format ("&({0}) {1}", deref.Type.Name,
 							      FormatObject (deref));
@@ -314,14 +314,22 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetObject obj = null;
 			try {
 				obj = variable.GetObject (frame);
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0} {1} {2}",
+						   frame, variable, ex);
 			}
 
 			string contents;
-			if (obj != null)
-				contents = FormatObject (obj);
-			else
+			try {
+				if (obj != null)
+					contents = FormatObject (obj);
+				else
+					contents = "<cannot display object>";
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0} {1} {2}", frame,
+						   variable, ex);
 				contents = "<cannot display object>";
+			}
 				
 			Print ("${0} = ({1}) {2}", variable.Name, variable.Type.Name,
 			       contents);
@@ -378,7 +386,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetObject obj = null;
 			try {
 				obj = variable.GetObject (frame);
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0} {1} {2}",
+						   frame, variable, ex);
 			}
 
 			string contents;
