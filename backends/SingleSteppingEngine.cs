@@ -41,6 +41,12 @@ namespace Mono.Debugger.Backends
 	//                            time the target stopped; it is used to step over
 	//                            method calls.
 	//
+	//     source stepping op   - stepping operation based on the program's source code,
+	//                            such as StepLine() or NextLine().
+	//
+	//     native stepping op   - stepping operation based on the machine code such as
+	//                            StepInstruction() or NextInstruction().
+	//
 	// </summary>
 	public class SingleSteppingEngine
 	{
@@ -497,8 +503,13 @@ namespace Mono.Debugger.Backends
 		StackFrame[] current_backtrace;
 		bool must_send_update;
 
+		// <summary>
+		//   Compute the StackFrame for target address @address.
+		// </summary>
 		StackFrame get_frame (TargetAddress address)
 		{
+			// If we have a current_method and the address is still inside
+			// that method, we don't need to do a method lookup.
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
 				backend.UpdateSymbolTable ();
@@ -508,6 +519,7 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
+			// This gets just one single stack frame.
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
 
 			if ((current_method != null) && current_method.HasSource) {
@@ -524,6 +536,9 @@ namespace Mono.Debugger.Backends
 			return current_frame;
 		}
 
+		// <summary>
+		//   Check whether @address is inside @frame.
+		// </summary>
 		bool is_in_step_frame (StepFrame frame, TargetAddress address)
                 {
 			if (address.IsNull || frame.Start.IsNull)
@@ -535,11 +550,24 @@ namespace Mono.Debugger.Backends
                         return true;
                 }
 
+		// <summary>
+		//   This is called when the target left the current step frame, received
+		//   a signal or hit a breakpoint whose action was to remain stopped.
+		//
+		//   The `current_operation' is the currently running stepping operation
+		//   and `current_operation_frame' is a step frame corresponding to this
+		//   operation.  In this method, we check whether the stepping operation
+		//   has been completed or what to do next.
+		// </summary>
 		void frame_changed (TargetAddress address, int arg)
 		{
 			IMethod old_method = current_method;
 
-			if ((current_operation != StepOperation.None) &&
+			// We stopped normally (not because of a signal), a source
+			// stepping operation is running in we're still within it's step
+			// frame - so continue stepping.
+			if ((arg == 0) &&
+			    (current_operation != StepOperation.None) &&
 			    (current_operation != StepOperation.Native) &&
 			    (current_operation_frame != null) &&
 			    is_in_step_frame (current_operation_frame, address)) {
@@ -547,6 +575,13 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
+			// `must_send_update' means that we must recompute the current
+			// stack frame (including a new method lookup).
+			//
+			// If we don't need to do this and already have a current stack
+			// frame which is still valid (this happens if child_event()
+			// already needed to compute it), just send the notification that
+			// we've stopped.
 			if (!must_send_update && (current_frame != null) &&
 			    current_frame.IsValid && (current_frame.TargetAddress == address)) {
 				current_operation = StepOperation.None;
@@ -554,8 +589,10 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
+			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
 
+			// Only do a method lookup if we actually need it.
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
 				backend.UpdateSymbolTable ();
@@ -567,10 +604,14 @@ namespace Mono.Debugger.Backends
 
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
 
+			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
 				ILanguageBackend language = current_method.Module.Language;
 
+				// If check_method_operation() returns true, it already
+				// started a stepping operation, so the target is
+				// currently running.
 				if (check_method_operation (address, current_method, source)) {
 					must_send_update = true;
 					return;
@@ -582,10 +623,12 @@ namespace Mono.Debugger.Backends
 				current_frame = new StackFrame (
 					inferior, address, frames [0], 0);
 
+			// Ok, the current operation has now been completed.
 			current_operation = StepOperation.None;
 
 			change_target_state (TargetState.STOPPED, arg);
 
+			// If the method changed or we `must_send_update', notify our clients.
 			if (must_send_update || (current_method != old_method)) {
 				if (current_method != null) {
 					if (MethodChangedEvent != null)
@@ -604,24 +647,39 @@ namespace Mono.Debugger.Backends
 			return;
 		}
 
+		// <summary>
+		//   Checks whether to do a "method operation".
+		//
+		//   This is only used while doing a source stepping operation and ensures
+		//   that we don't stop somewhere inside a method's prologue code or
+		//   between two source lines.
+		// </summary>
 		bool check_method_operation (TargetAddress address, IMethod method, SourceLocation source)
 		{
 			ILanguageBackend language = method.Module.Language;
 			if (language == null)
 				return false;
 
+			// Do nothing if this is not a source stepping operation.
 			if ((current_operation != StepOperation.StepLine) &&
 			    (current_operation != StepOperation.NextLine) &&
 			    (current_operation != StepOperation.Run))
 				return false;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
+				// We stopped between two source lines.  This normally
+				// happens when returning from a method call; in this
+				// case, we need to continue stepping until we reach the
+				// next source line.
 				start_step_operation (StepOperation.Native, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
 					language, current_operation == StepOperation.StepLine ?
 					StepMode.StepFrame : StepMode.Finish));
 				return true;
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
+				// Do not stop inside a method's prologue code, but stop
+				// immediately behind it (on the first instruction of the
+				// method's actual code).
 				start_step_operation (StepOperation.Native, new StepFrame (
 					method.StartAddress, method.MethodStartAddress,
 					null, StepMode.Finish));
@@ -670,6 +728,9 @@ namespace Mono.Debugger.Backends
 				current_step_frame = null;
 		}
 
+		// <summary>
+		//   Single-step until leaving @frame.
+		// </summary>
 		void do_step (StepFrame frame)
 		{
 			check_inferior ();
@@ -681,21 +742,33 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.RUNNING);
 		}
 
+		// <summary>
+		//   Step over the next machine instruction.
+		// </summary>
 		void do_next ()
 		{
 			check_inferior ();
 			TargetAddress address = inferior.CurrentFrame;
 			if (arch.IsRetInstruction (address)) {
+				// If this is a `ret' instruction, step one instruction.
 				do_step (null);
 				return;
 			}
 
+			// Get the size of the current instruction, insert a temporary
+			// breakpoint immediately behind it and continue.
 			address += disassembler.GetInstructionSize (address);
 
 			insert_temporary_breakpoint (address);
 			do_continue (false);
 		}
 
+		// <summary>
+		//   Resume the target.  If @is_breakpoint is true, the current
+		//   instruction is a breakpoint; in this case we need to step one
+		//   instruction before we can resume the target (see `must_continue' in
+		//   child_event() for more info).
+		// </summary>
 		void do_continue (bool is_breakpoint)
 		{
 			check_inferior ();
@@ -818,6 +891,11 @@ namespace Mono.Debugger.Backends
 			do_step (null);
 		}
 
+		// <summary>
+		//   Continue until reaching @until, hitting a breakpoint or receiving a
+		//   signal.  This method just inserts a breakpoint at @until and resumes
+		//   the target.
+		// </summary>
 		public void Continue (TargetAddress until)
 		{
 			check_inferior ();
@@ -825,6 +903,9 @@ namespace Mono.Debugger.Backends
 			Continue ();
 		}
 
+		// <summary>
+		//   Resume the target until a breakpoint is hit or it receives a signal.
+		// </summary>
 		public void Continue ()
 		{
 			check_inferior ();
@@ -832,6 +913,9 @@ namespace Mono.Debugger.Backends
 			do_continue (false);
 		}
 
+		// <summary>
+		//   Create a step frame to step until the next source line.
+		// </summary>
 		StepFrame get_step_frame ()
 		{
 			check_inferior ();
@@ -842,6 +926,10 @@ namespace Mono.Debugger.Backends
 			if (frame.SourceLocation == null)
 				return null;
 
+			// The current source line started at the current address minus
+			// SourceOffset; the next source line will start at the current
+			// address plus SourceRange.
+
 			int offset = frame.SourceLocation.SourceOffset;
 			int range = frame.SourceLocation.SourceRange;
 
@@ -851,6 +939,9 @@ namespace Mono.Debugger.Backends
 			return new StepFrame (start, end, language, StepMode.StepFrame);
 		}
 
+		// <summary>
+		//   Create a step frame for a native stepping operation.
+		// </summary>
 		StepFrame get_simple_step_frame (StepMode mode)
 		{
 			check_inferior ();
@@ -871,26 +962,38 @@ namespace Mono.Debugger.Backends
 		void start_step_operation (StepMode mode)
 		{
 			start_step_operation (StepOperation.Native, get_simple_step_frame (mode));
-		}			
+		}
 
+		// <summary>
+		//   Step one machine instruction.
+		// </summary>
 		public void StepInstruction ()
 		{
 			check_can_run ();
 			start_step_operation (StepMode.SingleInstruction);
 		}
 
+		// <summary>
+		//   Step one machine instruction, but step over method calls.
+		// </summary>
 		public void NextInstruction ()
 		{
 			check_can_run ();
 			start_step_operation (StepMode.NextInstruction);
 		}
 
+		// <summary>
+		//   Step one source line.
+		// </summary>
 		public void StepLine ()
 		{
 			check_can_run ();
 			start_step_operation (StepOperation.StepLine, get_step_frame ());
 		}
 
+		// <summary>
+		//   Step one source line, but step over method calls.
+		// </summary>
 		public void NextLine ()
 		{
 			check_can_run ();
@@ -905,6 +1008,9 @@ namespace Mono.Debugger.Backends
 				new StepFrame (frame.Start, frame.End, null, StepMode.Finish));
 		}
 
+		// <summary>
+		//   Continue until leaving the current method.
+		// </summary>
 		public void Finish ()
 		{
 			check_can_run ();
@@ -918,6 +1024,15 @@ namespace Mono.Debugger.Backends
 
 		Hashtable breakpoints = new Hashtable ();
 
+		// <summary>
+		//   Insert a breakpoint at address @address.  Each time this breakpoint
+		//   is hit, @handler will be called and @user_data will be passed to it
+		//   as argument.  @needs_frame specifies whether the @handler needs the
+		//   StackFrame argument.
+		//
+		//   Returns a number which may be passed to RemoveBreakpoint() to remove
+		//   the breakpoint.
+		// </summary>
 		public int InsertBreakpoint (TargetAddress address, BreakpointHitHandler handler,
 					     bool needs_frame, object user_data)
 		{
@@ -927,6 +1042,10 @@ namespace Mono.Debugger.Backends
 			return index;
 		}
 
+		// <summary>
+		//   Remove breakpoint @index.  @index is the breakpoint number which has
+		//   been returned by InsertBreakpoint().
+		// </summary>
 		public void RemoveBreakpoint (int index)
 		{
 			check_disposed ();
