@@ -96,6 +96,12 @@ namespace GLib {
 		[DllImport("glib-2.0")]
 		static extern bool g_spawn_async_with_pipes (string working_directory, string[] argv, string[] envp, int flags, IntPtr child_setup, IntPtr user_data, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr errout);
 
+		[DllImport("glib-2.0")]
+		static extern bool g_spawn_command_line_sync (string command_line, out IntPtr standard_output, out IntPtr standard_error, out int exit_status, out IntPtr errout);
+
+		[DllImport("glib-2.0")]
+		static extern void g_free (IntPtr memory);	
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -116,6 +122,26 @@ namespace GLib {
 			standard_input = new IOOutputChannel (stdin_fd);
 			standard_output = new IOInputChannel (stdout_fd);
 			standard_error = new IOInputChannel (stderr_fd);
+		}
+
+		public static int SpawnCommandLine (string command_line, out string standard_output,
+						    out string standard_error)
+		{
+			int exit_status;
+			IntPtr str_stdout, str_stderr, error;
+			bool retval = g_spawn_command_line_sync (
+				command_line, out str_stdout, out str_stderr, out exit_status, out error);
+
+			standard_output = Marshal.PtrToStringAnsi (str_stdout);
+			standard_error = Marshal.PtrToStringAnsi (str_stderr);
+
+			g_free (str_stdout);
+			g_free (str_stderr);
+
+			if (!retval)
+				throw new Exception ();
+
+			return exit_status;
 		}
 
 		public void Kill ()

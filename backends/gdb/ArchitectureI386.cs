@@ -21,5 +21,10 @@ namespace Mono.Debugger
 
 			return 0;
 		}
+
+		public long GetTrampoline (IDebuggerBackend backend, long address)
+		{
+			return 0;
+		}
 	}
 }

@@ -35,14 +35,23 @@ namespace Mono.Debugger
 				    (address > method_address.EndAddress))
 					continue;
 
+				ISourceBuffer source;
+				LineNumberEntry[] LineNumbers;
 				if (method.SourceFile == null) {
-					Console.WriteLine ("Can't create dynamic file yet: " + method);
-					return null;
+					if (method.Token >> 24 != 6)
+						return null;
+
+					int index = (int) (method.Token & 0xffffff);
+					Disassembler dis = Disassembler.Disassemble (symtab.ImageFile);
+					LineNumbers = dis.GetLines (index);
+					source = dis;
+				} else {
+					source = source_factory.FindFile (method.SourceFile);
+					LineNumbers = method.LineNumbers;
 				}
 
-				ISourceFile source = source_factory.FindFile (method.SourceFile);
 				int source_range;
-				uint row = FindMethodLine (method, address, out source_range);
+				uint row = FindMethodLine (method, LineNumbers, address, out source_range);
 
 				return new SourceLocation (source, (int) row, source_range);
 			}
@@ -50,14 +59,15 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		uint FindMethodLine (MethodEntry method, ulong address, out int source_range)
+		uint FindMethodLine (MethodEntry method, LineNumberEntry[] LineNumbers, ulong address,
+				     out int source_range)
 		{
 			source_range = 0;
-			int count = method.LineNumbers.Length;
+			int count = LineNumbers.Length;
 			uint offset = (uint) (address - method.Address.StartAddress);
 
 			for (int idx = 0; idx < count; idx++) {
-				LineNumberEntry lne = method.LineNumbers [idx];
+				LineNumberEntry lne = LineNumbers [idx];
 				uint line_address = method.Address.LineAddresses [idx];
 
 				if ((offset > 1) && (line_address < offset))

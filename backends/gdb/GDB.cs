@@ -502,6 +502,9 @@ namespace Mono.Debugger.Backends
 				uint is_dynamic = ReadInteger (ptr);
 				ptr += target_integer_size;
 
+				long image_file = ReadAddress (ptr);
+				ptr += target_address_size;
+
 				long raw_contents = ReadAddress (ptr);
 				ptr += target_address_size;
 
@@ -530,7 +533,7 @@ namespace Mono.Debugger.Backends
 						   address_table, address_table_size, tmpfile2);
 
 				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
-					reader, address_reader);
+					"Foo.exe", reader, address_reader);
 				reader.Close ();
 				address_reader.Close ();
 				File.Delete (tmpfile);
