@@ -80,6 +80,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("kill", Token.KILL);
 			keywords.Add ("threadgroup", Token.THREADGROUP);
 			keywords.Add ("search", Token.SEARCH);
+			keywords.Add ("list", Token.LIST);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);
@@ -87,6 +88,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("contents", Token.CONTENTS);
 			keywords.Add ("line", Token.LINE);
 			keywords.Add ("modules", Token.MODULES);
+			keywords.Add ("sources", Token.SOURCES);
 			keywords.Add ("breakpoints", Token.BREAKPOINTS);
 			keywords.Add ("threadgroups", Token.THREADGROUPS);
 
@@ -508,6 +510,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.OP_LT;
 				else if (c == '>')
 					return Token.OP_GT;
+				else if (c == ':')
+					return Token.COLON;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

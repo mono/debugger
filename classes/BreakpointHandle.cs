@@ -4,17 +4,21 @@ using System.Runtime.Serialization;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public abstract class BreakpointHandle : ISerializable, IDeserializationCallback
+	public class BreakpointHandle : ISerializable, IDeserializationCallback
 	{
 		Module module;
 		ThreadGroup group;
 		Breakpoint breakpoint;
+		SourceLocation location;
+		bool is_loaded;
 
-		protected BreakpointHandle (Breakpoint breakpoint, Module module, ThreadGroup group)
+		public BreakpointHandle (Breakpoint breakpoint, Module module, ThreadGroup group,
+					 SourceLocation location)
 		{
 			this.module = module;
 			this.group = group;
 			this.breakpoint = breakpoint;
+			this.location = location;
 
 			Initialize ();
 		}
@@ -42,11 +46,60 @@ namespace Mono.Debugger
 			module.ModuleUnLoadedEvent += new ModuleEventHandler (ModuleUnLoaded);
 
 			breakpoint.BreakpointChangedEvent += new BreakpointEventHandler (breakpoint_changed);
+
+			if (module.IsLoaded)
+				ModuleLoaded (module);
 		}
 
-		protected abstract void SymbolsLoaded (Module module);
-		protected abstract void ModuleLoaded (Module module);
-		protected abstract void ModuleUnLoaded (Module module);
+		IDisposable load_handler;
+
+		// <summary>
+		//   The method has just been loaded, lookup the breakpoint
+		//   address and actually insert it.
+		// </summary>
+		void method_loaded (SourceMethodInfo method, object user_data)
+		{
+			load_handler = null;
+
+			TargetAddress address = location.GetAddress ();
+			if (address.IsNull)
+				return;
+
+			EnableBreakpoint (address);
+		}
+
+		protected virtual void SymbolsLoaded (Module module)
+		{
+			if (module.IsLoaded)
+				ModuleLoaded (module);
+		}
+
+		protected virtual void ModuleLoaded (Module module)
+		{
+			if (is_loaded)
+				return;
+			is_loaded = true;
+			if (location.Method.IsLoaded)
+				EnableBreakpoint (location.GetAddress ());
+			else if (location.Method.IsDynamic) {
+				// A dynamic method is a method which may emit a
+				// callback when it's loaded.  We register this
+				// callback here and do the actual insertion when
+				// the method is loaded.
+				load_handler = location.Method.RegisterLoadHandler (
+					new MethodLoadedHandler (method_loaded), null);
+			}
+		}
+
+		protected virtual void ModuleUnLoaded (Module module)
+		{
+			is_loaded = false;
+			if (load_handler != null) {
+				load_handler.Dispose ();
+				load_handler = null;
+			}
+			DisableBreakpoint ();
+		}
 
 		// <summary>
 		//   This is called via the Breakpoint.BreakpointChangedEvent to
@@ -128,6 +181,7 @@ namespace Mono.Debugger
 			info.AddValue ("breakpoint", breakpoint);
 			info.AddValue ("module", module);
 			info.AddValue ("group", group);
+			info.AddValue ("location", location);
 		}
 
 		protected BreakpointHandle (SerializationInfo info, StreamingContext context)
@@ -135,113 +189,7 @@ namespace Mono.Debugger
 			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
 			module = (Module) info.GetValue ("module", typeof (Module));
 			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
-		}
-	}
-
-	[Serializable]
-	public class BreakpointHandleMethod : BreakpointHandle
-	{
-		SourceMethodInfo method;
-		bool is_loaded;
-		string name;
-		int line;
-
-		public BreakpointHandleMethod (Breakpoint breakpoint, Module module, ThreadGroup group,
-					       SourceMethodInfo method)
-			: this (breakpoint, module, group, method, -1)
-		{ }
-
-		public BreakpointHandleMethod (Breakpoint breakpoint, Module module, ThreadGroup group,
-					       SourceMethodInfo method, int line)
-			: base (breakpoint, module, group)
-		{
-			this.method = method;
-			this.name = method.Name;
-			this.line = line;
-
-			if (module.IsLoaded)
-				ModuleLoaded (module);
-		}
-
-		protected TargetAddress get_address (SourceMethodInfo method)
-		{
-			if (line != -1)
-				return method.Lookup (line);
-			else if (method.Method.HasMethodBounds)
-				return method.Method.MethodStartAddress;
-			else
-				return method.Method.StartAddress;
-		}
-
-		IDisposable load_handler;
-
-		// <summary>
-		//   The method has just been loaded, lookup the breakpoint
-		//   address and actually insert it.
-		// </summary>
-		void method_loaded (SourceMethodInfo method, object user_data)
-		{
-			load_handler = null;
-
-			TargetAddress address = get_address (method);
-			if (address.IsNull)
-				return;
-
-			EnableBreakpoint (address);
-		}
-
-		protected override void SymbolsLoaded (Module module)
-		{
-			if (method != null)
-				return;
-
-			method = module.FindMethod (name);
-			if (method == null)
-				return;
-
-			if (module.IsLoaded)
-				ModuleLoaded (module);
-		}
-
-		protected override void ModuleLoaded (Module module)
-		{
-			if (is_loaded || (method == null))
-				return;
-			is_loaded = true;
-			if (method.IsLoaded)
-				EnableBreakpoint (get_address (method));
-			else if (method.IsDynamic) {
-				// A dynamic method is a method which may emit a
-				// callback when it's loaded.  We register this
-				// callback here and do the actual insertion when
-				// the method is loaded.
-				load_handler = method.RegisterLoadHandler (
-					new MethodLoadedHandler (method_loaded), null);
-			}
-		}
-
-		protected override void ModuleUnLoaded (Module module)
-		{
-			is_loaded = false;
-			if (load_handler != null) {
-				load_handler.Dispose ();
-				load_handler = null;
-			}
-			DisableBreakpoint ();
-		}
-
-		public override void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData (info, context);
-			info.AddValue ("name", name);
-			info.AddValue ("line", line);
-		}
-
-		protected BreakpointHandleMethod (SerializationInfo info, StreamingContext context)
-			: base (info, context)
-		{
-			name = info.GetString ("name");
-			line = info.GetInt32 ("line");
+			location = (SourceLocation) info.GetValue ("location", typeof (SourceLocation));
 		}
 	}
 }

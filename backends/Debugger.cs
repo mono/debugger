@@ -204,33 +204,31 @@ namespace Mono.Debugger
 			Console.WriteLine ("METHOD LOADED: {0}", method);
 		}
 
-		Hashtable breakpoint_module_map = new Hashtable ();
+		Hashtable breakpoint_map = new Hashtable ();
 
-		public int InsertBreakpoint (Breakpoint breakpoint, SourceMethodInfo method)
+		public int InsertBreakpoint (Breakpoint breakpoint, SourceLocation location)
 		{
-			return InsertBreakpoint (breakpoint, main_group, method);
+			return InsertBreakpoint (breakpoint, main_group, location);
 		}
 
 		// <summary>
 		//   Inserts a breakpoint for method @method.
 		// </summary>
 		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group,
-					     SourceMethodInfo method)
+					     SourceLocation location)
 		{
-			Module module = method.SourceInfo.Module;
-
-			int index = module.AddBreakpoint (breakpoint, group, method);
-			breakpoint_module_map [index] = module;
+			int index = location.InsertBreakpoint (breakpoint, group);
+			breakpoint_map [index] = location;
 			return index;
 		}
 
 		public void RemoveBreakpoint (int index)
 		{
-			if (breakpoint_module_map [index] == null)
+			if (breakpoint_map [index] == null)
 				throw new Exception ("Breakpoint is not registered");
 
-			Module mod = (Module) breakpoint_module_map [index];
-			mod.RemoveBreakpoint (index);
+			SourceLocation location = (SourceLocation) breakpoint_map [index];
+			location.RemoveBreakpoint (index);
 		}
 
 		public void UpdateSymbolTable ()

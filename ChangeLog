@@ -1,5 +1,14 @@
 2003-02-24  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceLocation.cs: New public class.
+
+	* classes/BreakpointHandle.cs (BreakpointHandleMethod): Merged all
+	the functionality into `BreakpointHandle' and removed this class.
+
+	* classes/Module.cs (Module.AddBreakpoint): Take a SourceLocation.
+
+2003-02-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs (Kill): Send the event and call Dispose ().
 
 	* backends/ThreadManager.cs (process_exited): Use Process.Kill()

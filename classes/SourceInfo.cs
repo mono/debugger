@@ -28,6 +28,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public int ID {
+			get {
+				return id;
+			}
+		}
+
 		protected abstract ArrayList GetMethods ();
 
 		ObjectCache method_cache = null;
@@ -101,16 +107,19 @@ namespace Mono.Debugger
 
 		protected SourceInfo (Module module, string filename)
 		{
+			this.id = ++next_id;
 			this.module = module;
 			this.filename = filename;
 		}
 
 		string filename;
 		Module module;
+		int id;
+		static int next_id = 0;
 
 		public override string ToString ()
 		{
-			return String.Format ("SourceInfo ({0})", FileName);
+			return String.Format ("SourceInfo ({0}:{1})", ID, FileName);
 		}
 
 		// <remarks>

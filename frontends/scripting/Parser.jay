@@ -70,6 +70,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token CLOSE_BRACKET
 %token OP_LT
 %token OP_GT
+%token COLON
 
 %token PROCESSES
 %token REGISTERS
@@ -95,6 +96,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token CLASS
 %token POINTER
 %token MODULES
+%token SOURCES
 %token BREAKPOINTS
 %token THREADGROUPS
 %token GLOBAL
@@ -122,6 +124,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token KILL
 %token THREADGROUP
 %token SEARCH
+%token LIST
 
 %token SELECT
 %token BACKGROUND
@@ -218,6 +221,13 @@ command
 	  {
 		$$ = new ShowModulesCommand ();
 	  }
+	| SHOW SOURCES opt_number_list
+	  {
+		int[] modules = new int [((ArrayList) $3).Count];
+		((ArrayList) $3).CopyTo (modules, 0);
+
+		$$ = new ShowSourcesCommand (modules);
+	  }
 	| SHOW BREAKPOINTS
 	  {
 		$$ = new ShowBreakpointsCommand ();
@@ -230,9 +240,9 @@ command
 	  {
 		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
 	  }
-	| BREAK opt_thread_group method_expression
+	| BREAK opt_thread_group source_expression
 	  {
-		$$ = new BreakCommand ((ThreadGroupExpression) $2, (MethodExpression) $3);
+		$$ = new BreakCommand ((ThreadGroupExpression) $2, (SourceExpression) $3);
 	  }
 	| BREAKPOINT INTEGER ENABLE
 	  {
@@ -337,9 +347,9 @@ command
 	  {
 		$$ = new HelpCommand ("");
 	  }
-	| SEARCH METHOD opt_process opt_frame_number IDENTIFIER
+	| LIST source_expression
 	  {
-		$$ = new MethodExpression ((ProcessExpression) $3, (int) $4, (string) $5);
+		$$ = new ListCommand ((SourceExpression) $2);
 	  }
 	;
 
@@ -527,26 +537,37 @@ opt_frame_number
 	  }
 	;
 
-method_expression
-	: opt_process opt_frame_number IDENTIFIER
+opt_line
+	: /* empty */
 	  {
-		$$ = new MethodExpression ((ProcessExpression) $1, (int) $2, (string) $3);
+		$$ = -1;
+	  }
+	| COLON INTEGER
+	  {
+		$$ = $2;
+	  }
+	;
+
+source_expression
+	: opt_process opt_frame_number IDENTIFIER opt_line
+	  {
+		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, (string) $3, (int) $4);
 	  }
 	| opt_process opt_frame_number INTEGER
 	  {
-		$$ = new MethodExpression ((ProcessExpression) $1, (int) $2, (int) $3);
+		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, (int) $3);
 	  }
 	| STRING
 	  {
-		$$ = new MethodExpression ((string) $1);
+		$$ = new SourceExpression ((string) $1);
 	  }
 	| STRING INTEGER
 	  {
-		$$ = new MethodExpression ((string) $1, (int) $2);
+		$$ = new SourceExpression ((string) $1, (int) $2);
 	  }
 	| BANG INTEGER
 	  {
-		$$ = new MethodExpression ((int) $2);
+		$$ = new SourceExpression ((int) $2);
 	  }
 	;
 

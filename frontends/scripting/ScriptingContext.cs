@@ -1162,6 +1162,43 @@ namespace Mono.Debugger.Frontends.CommandLine
 				module_operation (module, operations);
 		}
 
+		public void ShowSources (int[] module_indices)
+		{
+			if (modules == null) {
+				Print ("No modules.");
+				return;
+			}
+
+			backend.ModuleManager.Lock ();
+
+			if (module_indices.Length == 0) {
+				foreach (Module module in modules)
+					ShowSources (module);
+			} else {
+				foreach (int index in module_indices) {
+					if ((index < 0) || (index > modules.Length)) {
+						Error ("No such module {0}.", index);
+						return;
+					}
+
+					ShowSources (modules [index]);
+				}
+			}
+
+			backend.ModuleManager.UnLock ();
+		}
+
+		public void ShowSources (Module module)
+		{
+			if (!module.SymbolsLoaded)
+				return;
+
+			Print ("Sources for module {0}:", module.Name);
+
+			foreach (SourceInfo source in module.Sources)
+				Print ("  {0}", source);
+		}
+
 		void process_exited (ProcessHandle process)
 		{
 			procs.Remove (process);
@@ -1243,10 +1280,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public int InsertBreakpoint (ThreadGroup group, SourceMethodInfo method)
+		public int InsertBreakpoint (ThreadGroup group, SourceLocation location)
 		{
-			Breakpoint breakpoint = new SimpleBreakpoint (method.Name);
-			int index = backend.InsertBreakpoint (breakpoint, group, method);
+			Breakpoint breakpoint = new SimpleBreakpoint (location.Name);
+			int index = backend.InsertBreakpoint (breakpoint, group, location);
 			if (index < 0)
 				throw new ScriptingException ("Could not insert breakpoint.");
 			return index;

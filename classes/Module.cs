@@ -287,25 +287,9 @@ namespace Mono.Debugger
 		//   to remove the breakpoint.
 		// </summary>
 		public int AddBreakpoint (Breakpoint breakpoint, ThreadGroup group,
-					  SourceMethodInfo method)
+					  SourceLocation location)
 		{
-			return AddBreakpoint (new BreakpointHandleMethod (
-				breakpoint, this, group, method));
-		}
-
-		// <summary>
-		//   Registers the breakpoint @breakpoint with this module.  The
-		//   breakpoint will be inserted at line @line (counted from the beginning
-		//   of the source file) in method @method.
-		//
-		//   Returns a breakpoint index which can be passed to RemoveBreakpoint()
-		//   to remove the breakpoint.
-		// </summary>
-		public int AddBreakpoint (Breakpoint breakpoint, ThreadGroup group,
-					  SourceMethodInfo method, int line)
-		{
-			return AddBreakpoint (new BreakpointHandleMethod (
-				breakpoint, this, group, method, line));
+			return AddBreakpoint (new BreakpointHandle (breakpoint, this, group, location));
 		}
 
 		protected int AddBreakpoint (BreakpointHandle handle)
