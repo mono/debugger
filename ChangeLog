@@ -1,3 +1,11 @@
+2005-04-04  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoFundamentalType.cs: use the protected
+	"type_info" field instead of CreateTypeInfo, since the latter
+	gives us hashtable assertions about duplicate key insertion.  This
+	fixes passing fundamental objects (ints, floats, shorts, etc) to
+	methods using the "call" command.
+
 2005-04-02  Chris Toshok  <toshok@ximian.com>
 
 	* backends/mono/MonoLanguageBackend.cs

@@ -123,7 +123,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation location = Heap.Allocate (frame, size);
 			frame.TargetAccess.WriteBuffer (location.Address, CreateObject (obj));
 
-			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)CreateTypeInfo(), location);
+			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)type_info, location);
 		}
 	}
 }
