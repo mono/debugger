@@ -751,7 +751,7 @@ namespace Mono.Debugger.Architecture
 						return String.Format ("{0}+0x{1:x}", entry.Name, offset);
 				}
 
-				return null;
+				return String.Format ("<{0}:0x{1:x}>", bfd.FileName, address-start);
 			}
 		}
 
