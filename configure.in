@@ -227,6 +227,4 @@ arch/bfd/include/coff/Makefile
 arch/bfd/include/elf/Makefile
 test/Makefile
 doc/Makefile
-lib/mono-debug
-lib/Interpreter.exe.config
 ])

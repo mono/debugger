@@ -2,10 +2,6 @@
 
 	* classes/SimpleBreakpoint.cs: Added simpler .ctor.
 
-2004-01-23  Jackson Harper <jackson@ximian.com>
-
-	* configure.in: Add missing files
-	
 2004-01-16  Martin Baulig  <martin@ximian.com>
 
 	* classes/BreakpointHandle.cs: The .ctors don't take a `Process'
