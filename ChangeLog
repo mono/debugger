@@ -1,5 +1,11 @@
 2003-01-19  Martin Baulig  <martin@ximian.com>
 
+	* README.FreeBSD: Unfortunately, the binutils issue is a bit worse
+	than expected on FreeBSD.  I've made a FreeBSD port, including a
+	binary package; added a link to them.
+
+2003-01-19  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Don't make this an IDisposable.
 
 	* classes/SymbolTableManager.cs: Catch the ThreadAbortException

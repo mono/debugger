@@ -45,13 +45,10 @@ in user space.
 While Linux only has kernel threads, FreeBSD uses user-space threads by default.
 
 To get kernel threads on FreeBSD, you need to install the LinuxThreads package - there's a
-port in the FreeBSD ports collection.  After installing it, you need to recompile both
-glib and the mono runtime with LinuxThreads.
+port in the FreeBSD ports collection.  After installing it, you need to recompile the mono
+runtime with LinuxThreads.
 
 Make sure not to use the `-pthread' ld argument anywhere; link against -llthread instead.
-
-If you get any deadlocks in g_logv(), double-check whether your glib is really using
-liblthread.so and not libc_r.so.
 
 There seems to be a problem with boehm which makes it just crash for me, so I compiled my
 runtime with --with-gc=none.
