@@ -111,22 +111,7 @@ namespace Mono.Debugger
 
 		public event StackFrameInvalidHandler FrameInvalid;
 
-		public string DisassembleInstruction (ref TargetAddress address)
-		{
-			check_disposed ();
-
-			if ((method == null) || !method.IsLoaded)
-				return DoDisassembleInstruction (ref address);
-
-			if ((address < method.StartAddress) || (address >= method.EndAddress))
-				throw new ArgumentException ();
-
-			return DoDisassembleInstruction (ref address);
-		}
-
-		protected abstract string DoDisassembleInstruction (ref TargetAddress address);
-
-		public AssemblerMethod DisassembleInstruction (TargetAddress address)
+		public AssemblerLine DisassembleInstruction (TargetAddress address)
 		{
 			check_disposed ();
 
@@ -139,7 +124,7 @@ namespace Mono.Debugger
 			return DoDisassembleInstruction (address);
 		}
 
-		protected abstract AssemblerMethod DoDisassembleInstruction (TargetAddress address);
+		protected abstract AssemblerLine DoDisassembleInstruction (TargetAddress address);
 
 		public abstract AssemblerMethod DisassembleMethod ();
 

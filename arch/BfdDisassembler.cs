@@ -104,26 +104,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public string DisassembleInstruction (ref TargetAddress location)
-		{
-			memory_exception = null;
-			sb = new StringBuilder ();
-
-			string insn;
-			try {
-				int count = bfd_glue_disassemble_insn (dis, info, location.Address);
-				if (memory_exception != null)
-					throw memory_exception;
-				insn = sb.ToString ();
-				location += count;
-			} finally {
-				sb = null;
-				memory_exception = null;
-			}
-
-			return insn;
-		}
-
 		public int GetInstructionSize (TargetAddress location)
 		{
 			memory_exception = null;
@@ -144,9 +124,31 @@ namespace Mono.Debugger.Architecture
 				method.StartAddress, method.EndAddress, method.Name, this);
 		}
 
-		public AssemblerMethod DisassembleInstruction (TargetAddress address)
+		public AssemblerLine DisassembleInstruction (TargetAddress address)
 		{
-			return new AssemblerMethod (address, this);
+			memory_exception = null;
+			sb = new StringBuilder ();
+
+			string insn;
+			int insn_size;
+			try {
+				insn_size = bfd_glue_disassemble_insn (dis, info, address.Address);
+				if (memory_exception != null)
+					return null;
+				insn = sb.ToString ();
+			} finally {
+				sb = null;
+				memory_exception = null;
+			}
+
+			string label = null;
+			if (SymbolTable != null) {
+				IMethod imethod = SymbolTable.Lookup (address);
+				if ((imethod != null) && (imethod.StartAddress == address))
+					label = imethod.Name;
+			}
+
+			return new AssemblerLine (label, address, (byte) insn_size, insn);
 		}
 
 		//

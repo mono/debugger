@@ -1,7 +1,17 @@
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
-	* classes/AssemblerMethod.cs (AppendOneLine): New public method to
-	append a line at the end of the current method.
+	* interfaces/IDisassembler.cs (DisassembleInstruction): Removed
+	the version which took a `ref TargetAddress'; the other one now
+	returns an AssemblerLine or null on error, it doesn't throw an
+	exception any longer.
+
+	* classes/AssemblerMethod.cs (AssemblerLine): Made this a sealed
+	class, not a struct so we can pass this by reference and return null.
+
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
+	* classes/AssemblerMethod.cs (AssemblerMethod.AppendOneLine): New
+	public method to append a line at the end of the current method.
 
 	* frontends/gui/DisassemblerView.cs: While we don't have a method,
 	add all instructions we encounter here.

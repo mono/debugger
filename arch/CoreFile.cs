@@ -247,12 +247,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override string DoDisassembleInstruction (ref TargetAddress address)
-			{
-				return core.Disassembler.DisassembleInstruction (ref address);
-			}
-
-			protected override AssemblerMethod DoDisassembleInstruction (TargetAddress address)
+			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
 			{
 				return core.Disassembler.DisassembleInstruction (address);
 			}

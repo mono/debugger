@@ -53,14 +53,13 @@ namespace Mono.Debugger.GUI
 
 		void disassemble_line (TargetAddress address)
 		{
-			try {
-				TargetAddress old_addr = address;
-				string insn = CurrentFrame.DisassembleInstruction (ref address);
-				current_insn = String.Format ("0x{0:x}   {1}", old_addr.Address, insn);
-				stack.Push (address);
+			AssemblerLine line = CurrentFrame.DisassembleInstruction (address);
+			if (line != null) {
+				current_insn = line.FullText;
+				stack.Push (address + line.InstructionSize);
 				Update ();
-			} catch {
-				// Do nothing.
+			} else {
+				current_insn = null;
 			}
 		}
 
@@ -83,18 +82,16 @@ namespace Mono.Debugger.GUI
 		protected override void RealFrameChanged (StackFrame frame)
 		{
 			lock (this) {
-				try {
-					IDisassembler dis = process.Disassembler;
-					TargetAddress old_addr = frame.TargetAddress;
-					TargetAddress addr = old_addr;
-					string insn = dis.DisassembleInstruction (ref addr);
-					current_insn = String.Format ("0x{0:x}   {1}", old_addr.Address, insn);
+				IDisassembler dis = process.Disassembler;
+				TargetAddress addr = frame.TargetAddress;
+				AssemblerLine line = dis.DisassembleInstruction (addr);
+				if (line != null) {
+					current_insn = line.FullText;
 
 					stack = new Stack ();
-					stack.Push (old_addr);
 					stack.Push (addr);
-				} catch (Exception e) {
-					Console.WriteLine (e);
+					stack.Push (addr + line.InstructionSize);
+				} else {
 					current_insn = null;
 					stack = null;
 				}

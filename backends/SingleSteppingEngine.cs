@@ -1718,60 +1718,23 @@ namespace Mono.Debugger.Backends
 		// Disassembling.
 		//
 
-		private struct DisassembleData {
-			public readonly TargetAddress Address;
-			public readonly string Disassembly;
-
-			public DisassembleData (TargetAddress address, string disasm)
-			{
-				this.Address = address;
-				this.Disassembly = disasm;
-			}
-		}
-
 		CommandResult disassemble_insn (object data)
 		{
 			try {
 				TargetAddress address = (TargetAddress) data;
-				string disasm = disassembler.DisassembleInstruction (ref address);
-				DisassembleData result = new DisassembleData (address, disasm);
+				AssemblerLine result = disassembler.DisassembleInstruction (address);
 				return new CommandResult (CommandResultType.CommandOk, result);
 			} catch (Exception e) {
 				return new CommandResult (CommandResultType.Exception, e);
 			}
 		}
 
-		public string DisassembleInstruction (ref TargetAddress address)
+		public AssemblerLine DisassembleInstruction (TargetAddress address)
 		{
 			check_inferior ();
 			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn), address);
 			if (result.Type == CommandResultType.CommandOk) {
-				DisassembleData data = (DisassembleData) result.Data;
-				address = data.Address;
-				return data.Disassembly;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
-		}
-
-		CommandResult disassemble_insn_2 (object data)
-		{
-			try {
-				TargetAddress address = (TargetAddress) data;
-				AssemblerMethod result = disassembler.DisassembleInstruction (address);
-				return new CommandResult (CommandResultType.CommandOk, result);
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
-			}
-		}
-
-		public AssemblerMethod DisassembleInstruction (TargetAddress address)
-		{
-			check_inferior ();
-			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn_2), address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (AssemblerMethod) result.Data;
+				return (AssemblerLine) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else
@@ -2115,12 +2078,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			protected override string DoDisassembleInstruction (ref TargetAddress address)
-			{
-				return sse.DisassembleInstruction (ref address);
-			}
-
-			protected override AssemblerMethod DoDisassembleInstruction (TargetAddress address)
+			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
 			{
 				return sse.DisassembleInstruction (address);
 			}

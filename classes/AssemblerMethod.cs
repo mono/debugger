@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public struct AssemblerLine
+	public sealed class AssemblerLine
 	{
 		public readonly string Label;
 		public readonly TargetAddress Address;
@@ -22,6 +22,12 @@ namespace Mono.Debugger
 		public AssemblerLine (TargetAddress address, byte size, string text)
 			: this (null, address, size, text)
 		{ }
+
+		public string FullText {
+			get {
+				return String.Format ("0x{0:x}   {1}", Address, Text);
+			}
+		}
 	}
 
 	public sealed class AssemblerMethod : MethodSource
@@ -51,50 +57,46 @@ namespace Mono.Debugger
 
 			TargetAddress current = start_address;
 
-			while (current < end)
-				add_one_line (disassembler, ref current);
+			while (current < end) {
+				AssemblerLine line = disassembler.DisassembleInstruction (current);
+				if (line == null)
+					break;
+
+				current += line.InstructionSize;
+				add_one_line (line);
+			}
 		}
 
-		public AssemblerMethod (TargetAddress start, IDisassembler disassembler)
-			: base (start, start)
+		public AssemblerMethod (AssemblerLine line)
+			: base (line.Address, line.Address)
 		{
 			start_row = end_row = 0;
 			addresses = null;
 
-			this.name = start.ToString ();
-			this.start_address = start;
-			this.end_address = start;
+			this.name = line.Address.ToString ();
+			this.start_address = line.Address;
+			this.end_address = line.Address;
 
 			lines = new ArrayList ();
 			addresses = new ArrayList ();
 			sb = new StringBuilder ();
 
-			TargetAddress current = start;
-			add_one_line (disassembler, ref current);
+			add_one_line (line);
 		}
 
-		void add_one_line (IDisassembler disassembler, ref TargetAddress current)
+		void add_one_line (AssemblerLine line)
 		{
-			string label = null;
-			if (disassembler.SymbolTable != null) {
-				IMethod imethod = disassembler.SymbolTable.Lookup (current);
-				if ((imethod != null) && (imethod.StartAddress == current)) {
-					label = imethod.Name;
-					if (end_row > 0) {
-						sb.Append ("\n");
-						end_row++;
-					} else
-						start_row++;
-					sb.Append (String.Format ("{0}:\n", label));
+			if (line.Label != null) {
+				if (end_row > 0) {
+					sb.Append ("\n");
 					end_row++;
-				}
+				} else
+					start_row++;
+				sb.Append (String.Format ("{0}:\n", line.Label));
+				end_row++;
 			}
 
-			TargetAddress address = current;
-			string insn = disassembler.DisassembleInstruction (ref current);
-			byte insn_size = (byte) (current - address);
-
-			AppendOneLine (new AssemblerLine (address, insn_size, insn));
+			AppendOneLine (line);
 		}
 
 		public void AppendOneLine (AssemblerLine line)

@@ -87,8 +87,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			IDisassembler dis = process.Disassembler;
 			if (dis != null) {
 				TargetAddress address = frame.TargetAddress;
-				current_insn = String.Format ("{0:11x}\t{1}", address,
-							      dis.DisassembleInstruction (ref address));
+				AssemblerLine asm = dis.DisassembleInstruction (address);
+				current_insn = asm != null ? asm.FullText : "";
 			}
 		}
 
@@ -547,11 +547,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Disassemble (StackFrame frame)
 		{
-			TargetAddress address = frame.TargetAddress;
-			TargetAddress old_address = address;
-			string disasm = process.DisassembleInstruction (ref address);
+			Disassemble (frame.TargetAddress);
+		}
 
-			context.Print ("{0:11x}\t{1}", old_address, disasm);
+		public AssemblerLine Disassemble (TargetAddress address)
+		{
+			AssemblerLine line = process.DisassembleInstruction (address);
+
+			if (line != null)
+				context.Print ("{0:11x}\t{1}", address, line.Text);
+			else
+				context.Error ("Cannot disassemble instruction at address {0}.", address);
+
+			return line;
 		}
 
 		public void DisassembleMethod (int frame_number)
@@ -568,10 +576,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			TargetAddress address = method.StartAddress;
 			while (address < method.EndAddress) {
-				TargetAddress old_address = address;
-				string disasm = process.DisassembleInstruction (ref address);
+				AssemblerLine line = Disassemble (address);
 
-				context.Print ("{0:11x}\t{1}", old_address, disasm);
+				if (line != null)
+					address += line.InstructionSize;
+				else
+					break;
 			}
 		}
 

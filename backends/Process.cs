@@ -438,13 +438,13 @@ namespace Mono.Debugger
 			get { return start; }
 		}
 
-		public string DisassembleInstruction (ref TargetAddress address)
+		public AssemblerLine DisassembleInstruction (TargetAddress address)
 		{
 			check_disposed ();
 			if (sse != null)
-				return sse.DisassembleInstruction (ref address);
+				return sse.DisassembleInstruction (address);
 			else
-				return core.Disassembler.DisassembleInstruction (ref address);
+				return core.Disassembler.DisassembleInstruction (address);
 		}
 
 		void child_exited ()

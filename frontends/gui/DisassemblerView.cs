@@ -116,18 +116,18 @@ namespace Mono.Debugger.GUI
 					return;
 				else if (dynamic.Method.EndAddress == frame.TargetAddress) {
 					TargetAddress address = frame.TargetAddress;
-					string insn = frame.DisassembleInstruction (ref address);
-					byte insn_size = (byte) (address - frame.TargetAddress);
+					AssemblerLine asm_line = frame.DisassembleInstruction (address);
+					if (asm_line == null)
+						return;
 
-					dynamic.Method.AppendOneLine (new AssemblerLine (
-						frame.TargetAddress, insn_size, insn));
+					dynamic.Method.AppendOneLine (asm_line);
 
 					line = dynamic.StartLine + (dynamic.NumLines++);
 					text_buffer.GetIterAtLineOffset (out iter, line, 0);
 					source_view.ScrollToIter (iter, 0.0, true, 0.0, 0.5);
 
 					string contents = String.Format (
-						"  {0:x}   {1}\n", frame.TargetAddress, insn);
+						"  {0:x}   {1}\n", frame.TargetAddress, asm_line.Text);
 
 					text_buffer.Insert (iter, contents, contents.Length);
 					new_lines = 1;
@@ -139,9 +139,11 @@ namespace Mono.Debugger.GUI
 			}
 
 			if (new_lines == 0) {
-				AssemblerMethod method = frame.DisassembleInstruction (frame.TargetAddress);
-				if (method == null)
+				AssemblerLine asm_line = frame.DisassembleInstruction (frame.TargetAddress);
+				if (asm_line == null)
 					return;
+
+				AssemblerMethod method = new AssemblerMethod (asm_line);
 
 				text_buffer.GetIterAtLineOffset (out iter, line, 0);
 				source_view.ScrollToIter (iter, 0.0, true, 0.0, 0.5);
