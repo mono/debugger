@@ -979,7 +979,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		public readonly string Identifier;
 		public readonly bool IsStatic;
 
-		new ITargetStructType Type;
+		ITargetStructType Type;
 		ITargetStructObject Instance;
 		StackFrame Frame;
 

@@ -1,5 +1,10 @@
 2004-10-18  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/scripting/Expression.cs (StructAccessExpression):
+	remove the "new" modifier from the Type field.
+
+2004-10-18  Chris Toshok  <toshok@ximian.com>
+
 	* backends/ThreadManager.cs (ThreadManager.SendSyncCommand):
 	Process -> Engine.
 	(ThreadManager.engine_thread_main): same.
