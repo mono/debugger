@@ -18,3 +18,10 @@ log*
 config.h
 config.log
 config.status
+COPYING
+INSTALL
+depcomp
+install-sh
+ltconfig
+missing
+mkinstalldirs
