@@ -556,7 +556,9 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public override string ToString ()
 		{
-			if (process.IsDaemon)
+			if (process == null)
+				return String.Format ("Zombie @{0}", id);
+			else if (process.IsDaemon)
 				return String.Format ("Daemon process @{0}: {1} {2}", id, process.PID, State);
 			else
 				return String.Format ("Process @{0}: {1} {2}", id, process.PID, State);

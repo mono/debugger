@@ -157,7 +157,7 @@ namespace Mono.Debugger.Backends
 					      this, cevent, status, current_operation);
 			}
 
-			if (manager.HandleChildEvent (inferior, cevent))
+			if (manager.HandleChildEvent (inferior, ref cevent))
 				return;
 			ProcessEvent (cevent);
 		}
@@ -1070,6 +1070,7 @@ namespace Mono.Debugger.Backends
 
 		void child_exited ()
 		{
+			Console.WriteLine ("CHILD EXITED: {0}", this);
 			inferior.Dispose ();
 			inferior = null;
 			frames_invalid ();
@@ -1846,7 +1847,7 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 
-				if (manager.HandleChildEvent (inferior, cevent))
+				if (manager.HandleChildEvent (inferior, ref cevent))
 					return;
 				ProcessEvent (cevent);
 			} else {

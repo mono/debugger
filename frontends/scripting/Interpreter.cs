@@ -326,7 +326,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			backend.Run (start);
 			Process process = backend.ThreadManager.WaitForApplication ();
-			current_process = (ProcessHandle) procs [process];
+			current_process = (ProcessHandle) procs [process.ID];
 
 			return process;
 		}
@@ -489,7 +489,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		void process_exited (ProcessHandle process)
 		{
-			procs.Remove (process);
+			procs.Remove (process.ID);
 			if (process == current_process)
 				current_process = null;
 		}
@@ -497,7 +497,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		void add_process (ProcessHandle process)
 		{
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-			procs.Add (process.Process, process);
+			procs.Add (process.Process.ID, process);
 		}
 
 		void target_exited ()

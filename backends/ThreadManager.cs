@@ -260,7 +260,8 @@ namespace Mono.Debugger
 			inferior.Continue ();
 		}
 
-		internal bool HandleChildEvent (Inferior inferior, Inferior.ChildEvent cevent)
+		internal bool HandleChildEvent (Inferior inferior,
+						ref Inferior.ChildEvent cevent)
 		{
 			if (cevent.Type == Inferior.ChildEventType.NONE) {
 				inferior.Continue ();
@@ -294,7 +295,7 @@ namespace Mono.Debugger
 			}
 
 			if (mono_manager != null)
-				return mono_manager.HandleChildEvent (inferior, cevent);
+				return mono_manager.HandleChildEvent (inferior, ref cevent);
 
 			return false;
 		}

@@ -174,6 +174,10 @@ main_thread_handler (gpointer user_data)
 	IO_LAYER (WaitForSingleObject) (main_ready_cond, INFINITE);
 
 	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
+	/*
+	 * This will never return.
+	 */
+	mono_debugger_notification_function (NOTIFICATION_MAIN_EXITED, NULL, retval);
 
 	return retval;
 }

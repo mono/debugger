@@ -154,7 +154,8 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		internal bool HandleChildEvent (Inferior inferior, Inferior.ChildEvent cevent)
+		internal bool HandleChildEvent (Inferior inferior,
+						ref Inferior.ChildEvent cevent)
 		{
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) {
 				NotificationType type = (NotificationType) cevent.Argument;
@@ -181,6 +182,12 @@ namespace Mono.Debugger.Backends
 
 				case NotificationType.WrapperMain:
 					return true;
+
+				case NotificationType.MainExited:
+					cevent = new Inferior.ChildEvent (
+						Inferior.ChildEventType.CHILD_EXITED,
+						0, 0, 0);
+					return false;
 
 				default: {
 					TargetAddress data = new TargetAddress (
