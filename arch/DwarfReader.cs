@@ -317,7 +317,7 @@ namespace Mono.Debugger.Architecture
 				address_size = dwarf.AddressSize;
 				is64bit = dwarf.Is64Bit;
 
-				debug ("Creating new `{0}' reader.", section_name);
+				// debug ("Creating new `{0}' reader.", section_name);
 			}
 
 			public DwarfReader DwarfReader {
@@ -492,18 +492,8 @@ namespace Mono.Debugger.Architecture
 
 			public int PeekLeb128 (long pos)
 			{
-				int ret = 0;
-				int shift = 0;
-				byte b;
-
-				do {
-					b = PeekByte (pos++);
-				
-					ret = ret | ((b & 0x7f) << shift);
-					shift += 7;
-				} while ((b & 0x80) == 0x80);
-
-				return ret;
+				int size;
+				return PeekLeb128 (pos, out size);
 			}
 
 			public int PeekLeb128 (long pos, out int size)
@@ -532,6 +522,41 @@ namespace Mono.Debugger.Architecture
 				return retval;
 			}
 
+			public int PeekSLeb128 (long pos)
+			{
+				int size;
+				return PeekSLeb128 (pos, out size);
+			}
+
+			public int PeekSLeb128 (long pos, out int size)
+			{
+				int ret = 0;
+				int shift = 0;
+				byte b;
+
+				size = 0;
+				do {
+					b = (byte) PeekByte (pos + size);
+					size++;
+				
+					ret = ret | ((b & 0x7f) << shift);
+					shift += 7;
+				} while ((b & 0x80) == 0x80);
+
+				if ((shift < 31) && ((b & 0x40) == 0x40))
+					ret |= - (1 << shift);
+
+				return ret;
+			}
+
+			public int ReadSLeb128 ()
+			{
+				int size;
+				int retval = PeekSLeb128 (pos, out size);
+				pos += size;
+				return retval;
+			}
+
 			public long ReadInitialLength ()
 			{
 				bool is64bit;
@@ -555,7 +580,51 @@ namespace Mono.Debugger.Architecture
 
 			~DwarfBinaryReader ()
 			{
-				debug ("Finalizing `{0}' reader.", section_name);
+				// debug ("Finalizing `{0}' reader.", section_name);
+			}
+		}
+
+		protected class DwarfNativeMethod : NativeMethod
+		{
+			DieCompileUnit comp_unit_die;
+			LineNumberEngine engine;
+			DieSubprogram subprog;
+			SourceFileFactory factory;
+
+			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
+				: base (subprog.Name, subprog.comp_unit.DieCompileUnit.ImageFile,
+					subprog.StartAddress, subprog.EndAddress)
+			{
+				this.subprog = subprog;
+				this.engine = engine;
+				this.comp_unit_die = subprog.comp_unit.DieCompileUnit;
+
+				factory = new SourceFileFactory ();
+			}
+
+			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
+								     out ArrayList addresses)
+			{
+				start_row = end_row = 0;
+				addresses = null;
+
+				if (engine == null)
+					return null;
+
+				Console.WriteLine ("READ SOURCE: {0:x} {1:x} {2}",
+						   StartAddress, EndAddress, engine);
+
+				string file = engine.GetSource (subprog, out start_row, out end_row,
+								out addresses);
+				if (file == null)
+					return null;
+
+				Console.WriteLine ("FILE: {0} {1} {2} {3}", file, start_row, end_row,
+						   addresses.Count);
+
+				string dir = "/home/martin/monocvs/mono/mono/jit";
+
+				return factory.FindFile (String.Format ("{0}/{1}", dir, file));
 			}
 		}
 
@@ -571,18 +640,28 @@ namespace Mono.Debugger.Architecture
 
 			protected override ArrayList GetMethods ()
 			{
-				comp_unit_die.ReadLineNumbers ();
-
 				ArrayList methods = new ArrayList ();
+
+				ArrayList list = new ArrayList ();
 
 				foreach (Die child in comp_unit_die.Children) {
 					DieSubprogram subprog = child as DieSubprogram;
 					if ((subprog == null) || !subprog.IsContinuous)
 						continue;
 
-					NativeMethod native = new NativeMethod (
-						subprog.Name, comp_unit_die.ImageFile,
-						subprog.StartAddress, subprog.EndAddress);
+					list.Add (subprog);
+				}
+
+				list.Sort ();
+
+				LineNumberEngine engine = null;
+				if (comp_unit_die.LineNumberOffset >= 0)
+					engine = new LineNumberEngine (
+						comp_unit_die.dwarf, comp_unit_die.LineNumberOffset,
+						list);
+
+				foreach (DieSubprogram subprog in list) {
+					DwarfNativeMethod native = new DwarfNativeMethod (subprog, engine);
 
 					methods.Add (native);
 				}
@@ -660,30 +739,251 @@ namespace Mono.Debugger.Architecture
 
 		protected class LineNumberEngine
 		{
-			DwarfReader dwarf;
-			DwarfBinaryReader reader;
+			protected DwarfReader dwarf;
+			protected DwarfBinaryReader reader;
+			protected byte minimum_insn_length;
+			protected bool default_is_stmt;
+			protected byte opcode_base;
+			protected int line_base, line_range;
+
 			long offset;
 
 			long length;
 			int version;
 			long header_length, data_offset, end_offset;
-			byte minimum_insn_length;
-			bool default_is_stmt;
 
-			int line_base, line_range, opcode_base;
+			ISymbolContainer next_method, current_method;
+			long next_method_address;
+			int next_method_index;
+
 			int[] standard_opcode_lengths;
 			ArrayList include_directories;
-			ArrayList source_files;
+			protected ArrayList source_files;
+			ArrayList methods;
+			Hashtable method_hash;
 
-			long st_address;
-			int st_line;
-			int st_file;
-			int st_column;
-			bool is_stmt;
-			bool basic_block;
-			bool end_sequence;
-			bool prologue_end;
-			bool epilogue_begin;
+			protected class StatementMachine
+			{
+				public LineNumberEngine engine;			      
+				public long st_address;
+				public int st_line;
+				public int st_file;
+				public int st_column;
+				public bool is_stmt;
+				public bool basic_block;
+				public bool end_sequence;
+				public bool prologue_end;
+				public bool epilogue_begin;
+				public long start_offset;
+
+				public int start_line, end_line;
+				public ArrayList lines;
+
+				bool creating;
+				DwarfBinaryReader reader;
+				int const_add_pc_range;
+
+				public StatementMachine (LineNumberEngine engine, long offset)
+				{
+					this.engine = engine;
+					this.reader = this.engine.reader;
+					this.creating = true;
+					this.start_offset = offset;
+					this.st_address = 0;
+					this.st_file = 0;
+					this.st_line = 1;
+					this.st_column = 0;
+					this.is_stmt = default_is_stmt;
+					this.basic_block = false;
+					this.end_sequence = false;
+					this.prologue_end = false;
+					this.epilogue_begin = false;
+
+					this.const_add_pc_range =
+						((0xff - engine.opcode_base) / engine.line_range) *
+						engine.minimum_insn_length;
+					this.lines = new ArrayList ();
+				}
+
+				public StatementMachine (StatementMachine stm)
+				{
+					this.engine = stm.engine;
+					this.reader = this.engine.reader;
+					this.creating = false;
+					this.start_offset = stm.start_offset;
+					this.st_address = stm.st_address;
+					this.st_file = stm.st_file;
+					this.st_line = stm.st_line;
+					this.st_column = stm.st_column;
+					this.is_stmt = default_is_stmt;
+					this.basic_block = stm.basic_block;
+					this.end_sequence = stm.end_sequence;
+					this.prologue_end = stm.prologue_end;
+					this.epilogue_begin = stm.epilogue_begin;
+
+					debug ("CLONE: {0} {1} {2} - {3}",
+					       stm.start_line, stm.end_line, stm.st_file,
+					       engine.source_files [stm.st_file]);
+
+					this.start_line = stm.start_line;
+					this.end_line = stm.end_line;
+
+					this.const_add_pc_range =
+						((0xff - engine.opcode_base) / engine.line_range) *
+						engine.minimum_insn_length;
+
+					this.lines = stm.lines;
+					this.lines.Sort ();
+
+					stm.start_line = stm.st_line;
+					stm.lines = new ArrayList ();
+				}
+
+				void commit ()
+				{
+					if (creating) {
+						if (start_line == 0)
+							start_line = st_line;
+						engine.commit (this);
+						end_line = st_line;
+					}
+
+					// Console.WriteLine ("COMMIT: {0:x} {1}", st_address, st_line);
+					lines.Add (new LineEntry (st_address, st_line));
+
+					basic_block = false;
+					prologue_end = false;
+					epilogue_begin = false;
+				}
+
+				void set_end_sequence ()
+				{
+					end_sequence = true;
+
+					if (!creating)
+						return;
+
+					engine.end_sequence (this);
+
+					end_line = st_line;
+				}
+
+				void do_standard_opcode (byte opcode)
+				{
+					debug ("STANDARD OPCODE: {0:x}", opcode);
+
+					switch (opcode) {
+					case StandardOpcode.copy:
+						commit ();
+						break;
+
+					case StandardOpcode.advance_pc:
+						st_address += engine.minimum_insn_length * reader.ReadLeb128 ();
+						break;
+
+					case StandardOpcode.advance_line:
+						st_line += reader.ReadSLeb128 ();
+						break;
+
+					case StandardOpcode.set_file:
+						st_file = reader.ReadLeb128 ();
+						break;
+
+					case StandardOpcode.set_column:
+						st_column = reader.ReadLeb128 ();
+						break;
+
+					case StandardOpcode.const_add_pc:
+						st_address += const_add_pc_range;
+						break;
+
+					case StandardOpcode.set_prologue_end:
+						prologue_end = true;
+						break;
+
+					case StandardOpcode.set_epilogue_begin:
+						epilogue_begin = true;
+						break;
+
+					default:
+						error (String.Format (
+							"Unknown standard opcode {0:x} in line number engine",
+							opcode));
+						break;
+					}
+				}
+
+				void do_extended_opcode ()
+				{
+					byte size = reader.ReadByte ();
+					long end_pos = reader.Position + size;
+					byte opcode = reader.ReadByte ();
+
+					debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
+
+					switch (opcode) {
+					case ExtendedOpcode.set_address:
+						st_address = reader.ReadAddress ();
+						debug ("SETTING ADDRESS TO {0:x}", st_address);
+						break;
+
+					case ExtendedOpcode.end_sequence:
+						set_end_sequence ();
+						break;
+
+					default:
+						warning (String.Format (
+							"Unknown extended opcode {0:x} in line number engine",
+							opcode));
+						break;
+					}
+
+					reader.Position = end_pos;
+				}
+
+				void dump ()
+				{
+					FileEntry file = (FileEntry) engine.source_files [st_file];
+					Console.WriteLine ("DUMP: {0} {1} {2:x} - {3:x}",
+							   file, st_line, st_address,
+							   engine.next_method_address);
+				}
+
+				public void Read ()
+				{
+					reader.Position = start_offset;
+					end_sequence = false;
+					while (!end_sequence) {
+						byte opcode = reader.ReadByte ();
+						debug ("OPCODE: {0:x}", opcode);
+
+						if (opcode == 0)
+							do_extended_opcode ();
+						else if (opcode < engine.opcode_base)
+							do_standard_opcode (opcode);
+						else {
+							opcode -= engine.opcode_base;
+
+							int addr_inc = (opcode / engine.line_range) *
+								engine.minimum_insn_length;
+							int line_inc = engine.line_base +
+								(opcode % engine.line_range);
+
+							debug ("INC: {0:x} {1:x} {2:x} {3:x} - {4} {5}",
+							       opcode, engine.opcode_base, addr_inc, line_inc,
+							       opcode % engine.line_range,
+							       opcode / engine.line_range);
+
+							st_line += line_inc;
+							st_address += addr_inc;
+
+							commit ();
+						}
+					}
+				}
+			}
+
+			// StatementMachine stm;
 
 			protected enum StandardOpcode
 			{
@@ -722,26 +1022,36 @@ namespace Mono.Debugger.Architecture
 					LastModificationTime = reader.ReadLeb128 ();
 					Length = reader.ReadLeb128 ();
 				}
+
+				public override string ToString ()
+				{
+					return String.Format ("FileEntry({0},{1})", FileName, Directory);
+				}
 			}
 
-			void initialize ()
+			void end_sequence (StatementMachine stm)
 			{
-				st_address = 0;
-				st_file = 0;
-				st_line = 1;
-				st_column = 0;
-				is_stmt = default_is_stmt;
-				basic_block = false;
-				end_sequence = false;
-				prologue_end = false;
-				epilogue_begin = false;
+				debug ("NEXT: {0:x} {1:x}", stm.st_address, next_method_address);
+
+				if (next_method_index > 1)
+					method_hash.Add (current_method, new StatementMachine (stm));
+
+				current_method = next_method;
+				if (next_method_index < methods.Count) {
+					next_method = (ISymbolContainer) methods [next_method_index++];
+					next_method_address = next_method.StartAddress.Address;
+				} else
+					next_method_address = Int64.MaxValue;
+
+				debug ("NEW NEXT: {0:x}", next_method_address);
 			}
 
-			void commit ()
+			void commit (StatementMachine stm)
 			{
-				basic_block = false;
-				prologue_end = false;
-				epilogue_begin = false;
+				debug ("COMMIT: {0:x} {1}", stm.st_address, stm.st_line);
+
+				if (stm.st_address >= next_method_address)
+					end_sequence (stm);
 			}
 
 			void warning (string message)
@@ -759,74 +1069,12 @@ namespace Mono.Debugger.Architecture
 				// Console.WriteLine (String.Format (message, args));
 			}
 
-			void do_standard_opcode (byte opcode)
-			{
-				debug ("STANDARD OPCODE: {0:x}", opcode);
-
-				switch (opcode) {
-				case StandardOpcode.copy:
-					commit ();
-					break;
-
-				case StandardOpcode.advance_pc:
-					st_address += minimum_insn_length * reader.ReadLeb128 ();
-					break;
-
-				case StandardOpcode.advance_line:
-					st_line += reader.ReadLeb128 ();
-					break;
-
-				case StandardOpcode.set_file:
-					st_file = reader.ReadLeb128 ();
-					break;
-
-				case StandardOpcode.set_column:
-					st_column = reader.ReadLeb128 ();
-					break;
-
-				case StandardOpcode.const_add_pc:
-					break;
-
-				default:
-					error (String.Format (
-						"Unknown standard opcode {0:x} in line number engine",
-						opcode));
-					break;
-				}
-			}
-
-			void do_extended_opcode ()
-			{
-				byte size = reader.ReadByte ();
-				long end_pos = reader.Position + size;
-				byte opcode = reader.ReadByte ();
-
-				debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
-
-				switch (opcode) {
-				case ExtendedOpcode.set_address:
-					st_address = reader.ReadAddress ();
-					break;
-
-				case ExtendedOpcode.end_sequence:
-					initialize ();
-					break;
-
-				default:
-					warning (String.Format (
-						"Unknown extended opcode {0:x} in line number engine",
-						opcode));
-					break;
-				}
-
-				reader.Position = end_pos;
-			}
-
-			public LineNumberEngine (DwarfReader dwarf, long offset)
+			public LineNumberEngine (DwarfReader dwarf, long offset, ArrayList methods)
 			{
 				this.dwarf = dwarf;
 				this.offset = offset;
 				this.reader = dwarf.DebugLineReader;
+				this.methods = methods;
 
 				reader.Position = offset;
 				length = reader.ReadInitialLength ();
@@ -836,7 +1084,7 @@ namespace Mono.Debugger.Architecture
 				data_offset = reader.Position + header_length;
 				minimum_insn_length = reader.ReadByte ();
 				default_is_stmt = reader.ReadByte () != 0;
-				line_base = reader.ReadByte ();
+				line_base = (sbyte) reader.ReadByte ();
 				line_range = reader.ReadByte ();
 				opcode_base = reader.ReadByte ();
 				standard_opcode_lengths = new int [opcode_base - 1];
@@ -853,25 +1101,45 @@ namespace Mono.Debugger.Architecture
 
 				Console.WriteLine (this);
 
-				initialize ();
+				next_method_index = 1;
+				next_method = (ISymbolContainer) methods [0];
+				next_method_address = next_method.StartAddress.Address;
 
-				reader.Position = data_offset;
-				while (reader.Position < end_offset) {
-					byte opcode = reader.ReadByte ();
-					debug ("OPCODE: {0:x}", opcode);
+				method_hash = new Hashtable ();
 
-					if (opcode == 0)
-						do_extended_opcode ();
-					else if (opcode < opcode_base)
-						do_standard_opcode (opcode);
+				StatementMachine stm = new StatementMachine (this, reader.Position);
+				stm.Read ();
+			}
 
+			public string GetSource (ISymbolContainer method, out int start_row, out int end_row,
+						 out ArrayList addresses)
+			{
+				start_row = end_row = 0;
+				addresses = null;
+
+				StatementMachine stm = (StatementMachine) method_hash [method];
+				if (stm == null) {
+					Console.WriteLine ("NOT FOUND: {0}", method);
+					return null;
 				}
+
+				FileEntry file = (FileEntry) source_files [stm.st_file];
+				start_row = stm.start_line;
+				end_row = stm.end_line;
+				addresses = stm.lines;
+
+				if (file.Directory > 0)
+					return String.Format (
+						"{0}.{1}", (string) include_directories [file.Directory - 1],
+						file.FileName);
+				else
+					return file.FileName;
 			}
 
 			public override string ToString ()
 			{
 				return String.Format (
-					"LineNumberEngine ({0:x},{1:x},{2},{3} - {4},{5},{6})",
+					"LineNumberEngine ({0:x},{1:x},{2},{3} - {4},{5},{6},{7})",
 					offset, length, version, header_length,
 					default_is_stmt, line_base, line_range, opcode_base);
 			}
@@ -1297,16 +1565,6 @@ namespace Mono.Debugger.Architecture
 			protected long line_offset;
 			protected bool has_lines;
 
-			LineNumberEngine line_numbers;
-
-			internal void ReadLineNumbers ()
-			{
-				if (!has_lines || (line_numbers != null))
-					return;
-
-				line_numbers = new LineNumberEngine (dwarf, line_offset);
-			}
-
 			protected override int ReadAttributes ()
 			{
 				int total_size = 0;
@@ -1352,6 +1610,15 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public long LineNumberOffset {
+				get {
+					if (!has_lines)
+						return -1;
+
+					return line_offset;
+				}
+			}
+
 			public ITargetLocation StartAddress {
 				get {
 					if (!is_continuous)
@@ -1371,7 +1638,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class DieSubprogram : Die, ISymbolContainer
+		protected class DieSubprogram : Die, IComparable, ISymbolContainer
 		{
 			long start_pc, end_pc;
 			bool is_continuous;
@@ -1442,6 +1709,18 @@ namespace Mono.Debugger.Architecture
 
 					return new TargetLocation (end_pc);
 				}
+			}
+
+			public int CompareTo (object obj)
+			{
+				DieSubprogram die = (DieSubprogram) obj;
+
+				if (die.start_pc < start_pc)
+					return 1;
+				else if (die.start_pc > start_pc)
+					return -1;
+				else
+					return 0;
 			}
 		}
 

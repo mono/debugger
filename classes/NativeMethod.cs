@@ -4,6 +4,29 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
+	public struct LineEntry : IComparable {
+		public readonly long Address;
+		public readonly int Line;
+
+		public LineEntry (long address, int line)
+		{
+			this.Address = address;;
+			this.Line = line;
+		}
+
+		public int CompareTo (object obj)
+		{
+			LineEntry entry = (LineEntry) obj;
+
+			if (entry.Address < Address)
+				return 1;
+			else if (entry.Address > Address)
+				return -1;
+			else
+				return 0;
+		}
+	}
+
 	public class NativeMethod : IMethodSource, IMethod
 	{
 		IDisassembler disassembler;
@@ -35,13 +58,8 @@ namespace Mono.Debugger
 			this.end = end;
 		}
 
-		ISourceBuffer read_source ()
+		ISourceBuffer ReadSource ()
 		{
-			if (disassembler == null)
-				return null;
-
-			Console.WriteLine ("READ SOURCE: {0}", this);
-
 			ISourceBuffer source = null;
 			if (weak_source != null) {
 				try {
@@ -53,6 +71,23 @@ namespace Mono.Debugger
 
 			if (source != null)
 				return source;
+
+			source = ReadSource (out start_row, out end_row, out addresses);
+			if (source != null)
+				weak_source = new WeakReference (source);
+			return source;
+		}
+
+		protected virtual ISourceBuffer ReadSource (out int start_row, out int end_row,
+							    out ArrayList addresses)
+		{
+			start_row = end_row = 0;
+			addresses = null;
+
+			if (disassembler == null)
+				return null;
+
+			Console.WriteLine ("READ SOURCE: {0}", this);
 
 			ITargetLocation current = (ITargetLocation) start.Clone ();
 
@@ -70,10 +105,8 @@ namespace Mono.Debugger
 					if (end_row > 0) {
 						sb.Append ("\n");
 						end_row++;
-					} else {
+					} else
 						start_row++;
-						addresses.Add (address);
-					}
 					sb.Append (String.Format ("{0}:\n",  method.Name));
 					end_row++;
 				}
@@ -81,15 +114,12 @@ namespace Mono.Debugger
 				string insn = disassembler.DisassembleInstruction (ref current);
 				string line = String.Format ("  {0:x}   {1}\n", address, insn);
 
-				addresses.Add (address);
+				addresses.Add (new LineEntry (address, ++end_row));
 				sb.Append (line);
-				end_row++;
 			}
 
 			string method_name = start.ToString ();
-			source = new SourceBuffer (method_name, sb.ToString ());
-			weak_source = new WeakReference (source);
-			return source;
+			return new SourceBuffer (method_name, sb.ToString ());
 		}
 
 		//
@@ -122,7 +152,7 @@ namespace Mono.Debugger
 
 		public ISourceBuffer SourceBuffer {
 			get {
-				return read_source ();
+				return ReadSource ();
 			}
 		}
 
@@ -151,13 +181,18 @@ namespace Mono.Debugger
 			if (!IsInSameMethod (target))
 				return null;
 
-			ISourceBuffer source = read_source ();
+			ISourceBuffer source = ReadSource ();
 			if (source == null)
 				return null;
 
-			for (int i = start_row; i < end_row; i++)
-				if ((long) addresses [i] >= target.Address)
-					return new SourceLocation (source, i + 1);
+			for (int i = addresses.Count-1; i >= 0; i--) {
+				LineEntry entry = (LineEntry) addresses [i];
+
+				if (entry.Address > target.Address)
+					continue;
+
+				return new SourceLocation (source, entry.Line);
+			}
 
 			return null;
 		}
