@@ -14,13 +14,6 @@ This is a list of GUI issues which need to be fixed for the next release.
   dialog several times, you get a crash.  I did some debugging, but I was unable to find it.
   This is now known as bug #41091.
 
-Other issues:
 
-* The GUI crashes or hangs somewhere after the application has quit.  I did a lot of debugging,
-  but I was unable to find the problem yet.  Unfortunately, this bug cannot be reproduced after
-  inserting some Console.WriteLine()s, so maybe this is some kind of a race condition.
-  [Small update: I think I found the problem; at least, mini is giving me a useful backtrace.]
-
-
-April 14th, 2003
+April 15th, 2003
 Martin Baulig
