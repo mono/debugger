@@ -139,9 +139,14 @@ namespace Mono.Debugger.Backends
 		public void ProcessEvent (int status)
 		{
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
-			Report.Debug (DebugFlags.EventLoop,
-				      "{0} received event {1} ({2:x})",
-				      this, cevent, status);
+			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION)
+				Report.Debug (DebugFlags.Notification,
+					      "{0} received event {1} ({2:x})",
+					      this, cevent, status);
+			else
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} ({2:x})",
+					      this, cevent, status);
 
 			if (stepping_over_breakpoint > 0) {
 				Report.Debug (DebugFlags.SSE,
@@ -1078,7 +1083,14 @@ namespace Mono.Debugger.Backends
 					return;
 
 				stop_requested = true;
-				inferior.GlobalStop ();
+				if (!inferior.Stop ()) {
+					// We're already stopped, so just consider the
+					// current operation as finished.
+					step_operation_finished ();
+					engine_stopped = true;
+					stop_requested = false;
+					operation_completed_event.Set ();
+				}
 			}
 		}
 

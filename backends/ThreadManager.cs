@@ -559,8 +559,10 @@ namespace Mono.Debugger
 						return;
 					}
 
-					if (command_engine != null)
-						command_engine.Interrupt ();
+					foreach (SingleSteppingEngine engine in thread_hash.Values) {
+						if (!engine.IsDaemon)
+							engine.Interrupt ();
+					}
 				}
 				return;
 			}

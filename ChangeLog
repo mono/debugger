@@ -1,5 +1,14 @@
 2004-06-21  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs: If we caught a SIGINT, call
+	Interrupt() on all non-deamon SSE's.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Interrupt): Call Inferior.Stop(), not
+	Inferior.GlobalStop().	
+
+2004-06-21  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (CallCommand): New command.
 
 2004-06-21  Martin Baulig  <martin@ximian.com>

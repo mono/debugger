@@ -12,7 +12,8 @@ namespace Mono.Debugger
 		Signals			= 8,
 		EventLoop		= 16,
 		Wait			= 32,
-		SSE			= 64
+		SSE			= 64,
+		Notification		= 128
 	}
 
 	public class Report
