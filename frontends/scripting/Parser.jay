@@ -141,9 +141,9 @@ command
 	  {
 		$$ = new ShowRegistersCommand ((ProcessExpression) $3);
 	  }
-	| BREAK IDENTIFIER
+	| BREAK opt_process IDENTIFIER
 	  {
-		$$ = new BreakCommand ((string) $2);
+		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3);
 	  }
 	| expression
 	  {

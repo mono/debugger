@@ -289,17 +289,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class BreakCommand : Command
 	{
+		ProcessExpression process_expr;
 		string identifier;
 
-		public BreakCommand (string identifier)
+		public BreakCommand (ProcessExpression process_expr, string identifier)
 		{
+			this.process_expr = process_expr;
 			this.identifier = identifier;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Console.WriteLine ("BREAK: {0}", identifier);
-			context.InsertBreakpoint (identifier);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.InsertBreakpoint (identifier);
 		}
 	}
 }

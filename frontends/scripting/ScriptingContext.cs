@@ -280,6 +280,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			return process.GetRegisters (registers);
 		}
+		
+		public int InsertBreakpoint (string method)
+		{
+			Breakpoint breakpoint = new SimpleBreakpoint (method);
+			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, method);
+		}
 
 		public override string ToString ()
 		{
@@ -430,12 +436,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			procs.Add (handle);
-		}
-		
-		public int InsertBreakpoint (string method)
-		{
-			Breakpoint breakpoint = new SimpleBreakpoint (method);
-			return backend.InsertBreakpoint (breakpoint, method);
 		}
 	}
 }

@@ -1,5 +1,10 @@
 2002-12-26  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: The `break' command now takes
+	an opt_process argument.
+
+2002-12-26  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs: Correctly step over
 	breakpoints in the current thread.
 
