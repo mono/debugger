@@ -1,0 +1,16 @@
+MCS=mcs
+JAY=jay
+DESTDIR=
+
+all: linux
+
+linux: Parser.cs
+
+Parser.cs: Parser.jay
+	$(JAY) -ctv < skeleton Parser.jay > Parser.cs
+
+clean:
+	rm -f Parser.cs y.output
+
+install: all
+

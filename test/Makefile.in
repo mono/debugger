@@ -10,7 +10,8 @@ ALL_SOURCES = \
 	@top_srcdir@/frontends/command-line/Interpreter.cs
 
 INTERPRETER_SOURCES = \
-	@top_srcdir@/frontends/command-line/*.cs
+	@top_srcdir@/frontends/command-line/*.cs	\
+	@top_srcdir@/frontends/scripting/*.cs
 
 LIBRARY_SOURCES = \
 	@top_srcdir@/interfaces/*.cs			\
@@ -73,5 +74,5 @@ Interpreter.exe: $(INTERPRETER_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.
 clean:
 	rm -f *.exe
 
-install:
+install: all
 

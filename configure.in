@@ -104,6 +104,8 @@ widgets/sources/Makefile
 widgets/sources/gtksourceview/Makefile
 backends/Makefile
 backends/server/Makefile
+frontends/Makefile
+frontends/scripting/Makefile
 arch/Makefile
 test/Makefile
 test/Debugger.exe.config

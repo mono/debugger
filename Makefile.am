@@ -1,2 +1,2 @@
-SUBDIRS = glue widgets arch backends test 
+SUBDIRS = glue widgets arch backends frontends test
 
