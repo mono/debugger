@@ -65,12 +65,9 @@ namespace Mono.Debugger
 		// IMethodSource
 		//
 
-		public virtual string Name {
+		public string Name {
 			get {
-				if (IsDynamic)
-					return SourceBuffer.Name;
-				else
-					return SourceFile.Name;
+				return name;
 			}
 		}
 
