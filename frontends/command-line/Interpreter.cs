@@ -241,6 +241,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return true;
 		}
 
+		void print_array (ITargetArray array, int dimension)
+		{
+			Console.WriteLine ("ARRAY DIMENSION {0}", dimension);
+			for (int i = array.LowerBound; i < array.UpperBound; i++) {
+				Console.WriteLine ("ELEMENT {0} {1}: {2}", dimension, i, array [i]);
+				ITargetArray earray = array [i] as ITargetArray;
+				if (earray != null)
+					print_array (earray, dimension + 1);
+			}
+		}
+
 		void print_object (ITargetObject obj)
 		{
 			Console.WriteLine ("OBJECT: {0}", obj);
@@ -249,11 +260,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Console.WriteLine ("OBJECT CONTENTS: |{0}|", obj.Object);
 
 			ITargetArray array = obj as ITargetArray;
-			if (array != null) {
-				Console.WriteLine ("ARRAY");
-				for (int i = array.LowerBound; i < array.UpperBound; i++)
-					Console.WriteLine ("ELEMENT {0}: {1}", i, array [i]);
-			}
+			if (array != null)
+				print_array (array, 0);
 		}
 	}
 }
