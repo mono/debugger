@@ -1,9 +1,5 @@
 2003-03-10  Miguel de Icaza  <miguel@ximian.com>
 
-	* frontends/scripting/ScriptingContext.cs: Do not throw an
-	exception when no debugging information can be found, return a
-	null.
-
 	* frontends/gui/SourceList.cs: Generate an informational message
 
 2003-03-10  Martin Baulig  <martin@ximian.com>
