@@ -69,6 +69,7 @@ namespace Mono.Debugger.Backends
 			start_event = new ManualResetEvent (false);
 			completed_event = new ManualResetEvent (false);
 			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
+			command_mutex = new Mutex ();
 		}
 
 		void ready_event_handler ()
@@ -76,6 +77,9 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				if (command_result == null)
 					return;
+
+				if (command_result.Type != CommandResultType.ChildEvent)
+					throw new InternalError ();
 
 				switch (command_result.EventType) {
 				case ChildEventType.CHILD_HIT_BREAKPOINT:
@@ -93,6 +97,7 @@ namespace Mono.Debugger.Backends
 				}
 
 				command_result = null;
+				command_mutex.ReleaseMutex ();
 			}
 		}
 
@@ -140,6 +145,14 @@ namespace Mono.Debugger.Backends
 				command_result = new CommandResult (message, arg);
 				thread_notify.Signal ();
 				result_sent = true;
+				completed_event.Set ();
+			}
+		}
+
+		void send_result (CommandResultType type)
+		{
+			lock (this) {
+				command_result = new CommandResult (type);
 				completed_event.Set ();
 			}
 		}
@@ -294,6 +307,32 @@ namespace Mono.Debugger.Backends
 			if (command == null)
 				return;
 
+			if (command.Type == CommandType.StepOperation)
+				goto again;
+
+			switch (command.Type) {
+			case CommandType.ReloadSymtab:
+				frames_invalid ();
+				current_method = null;
+				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+				ok = true;
+				break;
+
+			case CommandType.GetBacktrace:
+				current_backtrace = get_backtrace ();
+				ok = current_backtrace != null;
+				break;
+
+			default:
+				throw new InternalError ();
+			}
+
+			if (!ok)
+				send_result (CommandResultType.UnknownError);
+			else
+				send_result (CommandResultType.CommandOk);
+			return;
+
 		again:
 			switch (command.Operation) {
 			case StepOperation.Run:
@@ -350,15 +389,11 @@ namespace Mono.Debugger.Backends
 
 		void update_symtabs (object sender, ISymbolTable symbol_table)
 		{
-#if FALSE
 			disassembler.SymbolTable = symbol_table;
 			current_symtab = symbol_table;
 			if (State == TargetState.STOPPED) {
-				frames_invalid ();
-				current_method = null;
-				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+				send_sync_command (new Command (CommandType.ReloadSymtab));
 			}
-#endif
 		}
 
 		public IMethod Lookup (TargetAddress address)
@@ -422,10 +457,17 @@ namespace Mono.Debugger.Backends
 			if (current_backtrace != null)
 				return current_backtrace;
 
+			send_sync_command (new Command (CommandType.GetBacktrace));
+
+			return current_backtrace;
+		}
+
+		StackFrame[] get_backtrace ()
+		{
 			backend.UpdateSymbolTable ();
 
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (-1, main_method_retaddr);
-			current_backtrace = new StackFrame [frames.Length];
+			StackFrame[] backtrace = new StackFrame [frames.Length];
 
 			for (int i = 0; i < frames.Length; i++) {
 				TargetAddress address = frames [i].Address;
@@ -433,14 +475,13 @@ namespace Mono.Debugger.Backends
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
-					current_backtrace [i] = new StackFrame (
-						inferior, address, frames [i], i, source, method);
+					backtrace [i] = new StackFrame (inferior, address,
+									frames [i], i, source, method);
 				} else
-					current_backtrace [i] = new StackFrame (
-						inferior, address, frames [i], i);
+					backtrace [i] = new StackFrame (inferior, address, frames [i], i);
 			}
 
-			return current_backtrace;
+			return backtrace;
 		}
 
 		// <summary>
@@ -472,6 +513,7 @@ namespace Mono.Debugger.Backends
 		ManualResetEvent completed_event;
 		AutoResetEvent step_event;
 		ThreadNotify thread_notify;
+		Mutex command_mutex;
 		bool result_sent = false;
 		bool native;
 		int pid = -1;
@@ -572,13 +614,21 @@ namespace Mono.Debugger.Backends
 			StepFrame
 		}
 
+		private enum CommandType {
+			StepOperation,
+			ReloadSymtab,
+			GetBacktrace
+		}
+
 		private class Command {
+			public CommandType Type;
 			public StepOperation Operation;
 			public StepFrame StepFrame;
 			public TargetAddress Until;
 
 			public Command (StepOperation operation, StepFrame frame)
 			{
+				this.Type = CommandType.StepOperation;
 				this.Operation = operation;
 				this.StepFrame = frame;
 				this.Until = TargetAddress.Null;
@@ -586,6 +636,7 @@ namespace Mono.Debugger.Backends
 
 			public Command (StepOperation operation, TargetAddress until)
 			{
+				this.Type = CommandType.StepOperation;
 				this.Operation = operation;
 				this.StepFrame = null;
 				this.Until = until;
@@ -593,13 +644,26 @@ namespace Mono.Debugger.Backends
 
 			public Command (StepOperation operation)
 			{
+				this.Type = CommandType.StepOperation;
 				this.Operation = operation;
 				this.StepFrame = null;
 				this.Until = TargetAddress.Null;
 			}
+
+			public Command (CommandType type)
+			{
+				this.Type = type;
+			}
+		}
+
+		private enum CommandResultType {
+			ChildEvent,
+			CommandOk,
+			UnknownError
 		}
 
 		private class CommandResult {
+			public CommandResultType Type;
 			public ChildEventType EventType;
 			public int Argument;
 
@@ -607,6 +671,11 @@ namespace Mono.Debugger.Backends
 			{
 				this.EventType = type;
 				this.Argument = arg;
+			}
+
+			public CommandResult (CommandResultType type)
+			{
+				this.Type = type;
 			}
 		}
 
@@ -1061,39 +1130,64 @@ namespace Mono.Debugger.Backends
 			return new StepFrame (language, mode);
 		}
 
-		void start_step_operation (StepOperation operation, StepFrame frame)
+		void send_async_command (Command command)
 		{
 			lock (this) {
+				command_mutex.WaitOne ();
 				change_target_state (TargetState.RUNNING, 0);
-				current_command = new Command (operation, frame);
+				current_command = command;
 				step_event.Set ();
 				completed_event.Reset ();
 			}
+		}
+
+		CommandResult send_sync_command (Command command)
+		{
+			command_mutex.WaitOne ();
+			lock (this) {
+				current_command = command;
+				step_event.Set ();
+				completed_event.Reset ();
+			}
+
+			completed_event.WaitOne ();
+
+			CommandResult result;
+			lock (this) {
+				result = command_result;
+				command_result = null;
+			}
+
+			command_mutex.ReleaseMutex ();
+
+			if (result != null)
+				return result;
+			else
+				return new CommandResult (CommandResultType.UnknownError);
+		}
+
+		void start_step_operation (StepOperation operation, StepFrame frame)
+		{
+			send_async_command (new Command (operation, frame));
 		}
 
 		void start_step_operation (StepOperation operation, TargetAddress until)
 		{
-			lock (this) {
-				change_target_state (TargetState.RUNNING, 0);
-				current_command = new Command (operation, until);
-				step_event.Set ();
-				completed_event.Reset ();
-			}
+			send_async_command (new Command (operation, until));
 		}
 
 		void start_step_operation (StepOperation operation)
 		{
-			lock (this) {
-				change_target_state (TargetState.RUNNING, 0);
-				current_command = new Command (operation);
-				step_event.Set ();
-				completed_event.Reset ();
-			}
+			send_async_command (new Command (operation));
 		}
 
 		void start_step_operation (StepMode mode)
 		{
 			start_step_operation (StepOperation.Native, get_simple_step_frame (mode));
+		}
+
+		void send_sync_command (StepOperation operation)
+		{
 		}
 
 		// <summary>
