@@ -29,7 +29,6 @@ namespace Mono.Debugger
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			
-			global_group = ThreadGroup.CreateThreadGroup ("global");
 			thread_lock_mutex = new Mutex ();
 			address_domain = new AddressDomain ("global");
 
@@ -65,7 +64,6 @@ namespace Mono.Debugger
 		int thread_lock_level;
 		Mutex thread_lock_mutex;
 		AddressDomain address_domain;
-		ThreadGroup global_group;
 
 		Process main_process;
 

@@ -13,6 +13,13 @@ namespace Mono.Debugger
 	public class ThreadGroup : ISerializable
 	{
 		static Hashtable groups = Hashtable.Synchronized (new Hashtable ());
+		static ThreadGroup global_group, main_group;
+
+		static ThreadGroup ()
+		{
+			global_group = CreateThreadGroup ("global");
+			main_group = CreateThreadGroup ("main");
+		}
 
 		public static ThreadGroup CreateThreadGroup (string name)
 		{
@@ -85,11 +92,19 @@ namespace Mono.Debugger
 		}
 
 		public bool IsSystem {
-			get { return (name == "main") || (name == "global"); }
+			get { return (this == main_group) || (this == global_group); }
 		}
 
 		public bool IsGlobal {
-			get { return name == "global"; }
+			get { return this == global_group; }
+		}
+
+		public static ThreadGroup Main {
+			get { return main_group; }
+		}
+
+		public static ThreadGroup Global {
+			get { return global_group; }
 		}
 
 		public override string ToString ()

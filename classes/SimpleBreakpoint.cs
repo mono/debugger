@@ -22,7 +22,7 @@ namespace Mono.Debugger
 		{ }
 
 		public SimpleBreakpoint (string name)
-			: this (name, null)
+			: this (name, ThreadGroup.Global)
 		{ }
 
 		BreakpointCheckHandler check_handler;

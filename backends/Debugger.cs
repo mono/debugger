@@ -28,14 +28,12 @@ namespace Mono.Debugger
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
 		ThreadManager thread_manager;
-		ThreadGroup main_group;
 		Process process;
 		ProcessStart start;
 
 		public DebuggerBackend ()
 		{
 			module_manager = new ModuleManager ();
-			main_group = ThreadGroup.CreateThreadGroup ("main");
 
 			DoInitialize ();
 		}
@@ -145,7 +143,7 @@ namespace Mono.Debugger
 		{
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 
-			main_group.AddThread (process.ID);
+			ThreadGroup.Main.AddThread (process.ID);
 		}
 
 		void modules_changed ()
@@ -260,14 +258,12 @@ namespace Mono.Debugger
 		{
 			info.AddValue ("modules", module_manager);
 			info.AddValue ("start", start);
-			info.AddValue ("main_group", main_group);
 		}
 
 		protected DebuggerBackend (SerializationInfo info, StreamingContext context)
 		{
 			module_manager = (ModuleManager) info.GetValue ("modules", typeof (ModuleManager));
 			start = (ProcessStart) info.GetValue ("start", typeof (ProcessStart));
-			main_group = (ThreadGroup) info.GetValue ("main_group", typeof (ThreadGroup));
 		}
 
 		//

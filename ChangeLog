@@ -1,3 +1,9 @@
+2004-06-12  Martin Baulig  <martin@ximian.com>
+
+	* classes/ThreadGroup.cs (Global, Main): New static public
+	properties.  Initialize the "global" and "main" thread group in
+	our static .ctor.
+
 2004-06-09  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs: When entering a JIT
