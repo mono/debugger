@@ -769,6 +769,21 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	[ShortDescription("Run the target")]
+	public class RunCommand : DebuggerCommand
+	{
+		protected override bool NeedsProcess {
+			get {
+				return false;
+			}
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.Run ();
+		}
+	}
+
 	[ShortDescription("Kill the target")]
 	public class KillCommand : DebuggerCommand
 	{
@@ -1482,6 +1497,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				   "   disable N       disables breakpoint    enable N        Enables breakpoint N\n" +
 				   "\n" +
 				   "Execution:\n" +
+				   "   run/r           Starts execution\n" + 
 				   "   continue/c      Continues execution\n" + 
 				   "   step/s          Single-step execution  next/n          Step-over execution\n" +
 				   "   stepi/i         Machine single step    nexti/t         Machine step-over\n" + 
