@@ -71,6 +71,7 @@ AC_SUBST(top_srcdir)
 
 AC_PATH_PROG(MONO, mono, mono)
 AC_PATH_PROG(GDB, gdb, gdb)
+AC_SUBST(PATH)
 
 AC_OUTPUT([
 Makefile

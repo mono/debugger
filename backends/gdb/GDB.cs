@@ -20,8 +20,9 @@ namespace Mono.Debugger.Backends
 {
 	public class GDB : IDebuggerBackend, ILanguageCSharp, IDisposable
 	{
-		public static string Path_GDB	= "/usr/bin/gdb";
-		public static string Path_Mono	= "mono";
+		public readonly string Path_GDB		= "/usr/bin/gdb";
+		public readonly string Path_Mono	= "mono";
+		public readonly string Environment_Path	= "/usr/bin";
 
 		Spawn process;
 		IOOutputChannel gdb_input;
@@ -54,12 +55,10 @@ namespace Mono.Debugger.Backends
 		readonly uint target_long_integer_size;
 
 		public GDB (string application, string[] arguments)
-			: this (Path_GDB, Path_Mono, application, arguments,
-				new SourceFileFactory ())
+			: this (application, arguments, new SourceFileFactory ())
 		{ }
 
-		public GDB (string gdb_path, string mono_path, string application,
-			    string[] arguments, ISourceFileFactory source_factory)
+		public GDB (string application, string[] arguments, ISourceFileFactory source_factory)
 		{
 			NameValueCollection settings = ConfigurationSettings.AppSettings;
 
@@ -75,6 +74,10 @@ namespace Mono.Debugger.Backends
 					Path_GDB = value;
 					break;
 
+				case "environment-path":
+					Environment_Path = value;
+					break;
+
 				default:
 					break;
 				}
@@ -86,13 +89,12 @@ namespace Mono.Debugger.Backends
 			MethodInfo main = this.application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
 
-			string[] argv = { gdb_path, "-n", "-nw", "-q", "--annotate=2", "--async",
-					  "--args", mono_path, "--break", main_name, "--debug=mono",
-					  "--noinline", "--precompile", "@" + application,
+			string[] argv = { Path_GDB, "-n", "-nw", "-q", "--annotate=2", "--async",
+					  "--args", Path_Mono, "--break", main_name, "--debug=mono",
+					  "--noinline", "--nols", "--precompile", "@" + application,
 					  "--debug-args", "internal_mono_debugger",
-					  "--precompile", "@Hello",
 					  application };
-			string[] envp = { "PATH=/home/martin/MONO-LINUX/bin:/usr/bin" };
+			string[] envp = { "PATH=" + Environment_Path };
 			string working_directory = ".";
 
 			arch = new ArchitectureI386 ();
@@ -522,7 +524,7 @@ namespace Mono.Debugger.Backends
 				uint is_dynamic = ReadInteger (ptr);
 				ptr += target_integer_size;
 
-				long image_file = ReadAddress (ptr);
+				string image_file = ReadString (ptr);
 				ptr += target_address_size;
 
 				long raw_contents = ReadAddress (ptr);
@@ -548,12 +550,13 @@ namespace Mono.Debugger.Backends
 				BinaryReader address_reader = GetTargetMemoryReader (
 					address_table, address_table_size, out tmpfile2);
 				
-				Console.WriteLine ("SYMTAB: {0:x} {1} {2} - {3:x} {4} {5}",
+				Console.WriteLine ("SYMTAB: {0:x} {1} {2} - {3:x} {4} {5} - {6}",
 						   raw_contents, raw_contents_size, tmpfile,
-						   address_table, address_table_size, tmpfile2);
+						   address_table, address_table_size, tmpfile2,
+						   image_file);
 
 				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
-					"Foo.exe", reader, address_reader);
+					image_file, reader, address_reader);
 				reader.Close ();
 				address_reader.Close ();
 				File.Delete (tmpfile);
@@ -673,7 +676,7 @@ namespace Mono.Debugger.Backends
 
 		public string ReadString (long address)
 		{
-			return ReadString ("print/s *" + address);
+			return ReadString ("print (char *)*" + address);
 		}
 
 		string ReadString (string address)
@@ -1042,7 +1045,7 @@ namespace Mono.Debugger.Backends
 
 			case WaitForOutput.STRING_VALUE_2:
 				wait_for = WaitForOutput.UNKNOWN;
-				last_string_value = line;
+				last_string_value = line.Substring (11, line.Length - 12);
 				last_value_ok = true;
 				return true;
 
@@ -1142,7 +1145,7 @@ namespace Mono.Debugger.Backends
 			if (stop_address != 0) {
 				send_gdb_command ("tbreak *" + stop_address);
 				command = "continue";
-				step_mode = StepMode.RUN;
+				// step_mode = StepMode.RUN;
 			}
 
 			new_frame = null;

@@ -35,6 +35,7 @@ namespace Mono.Debugger
 				    (address >= method_address.EndAddress))
 					continue;
 
+				uint EndRow;
 				ISourceBuffer source;
 				LineNumberEntry[] LineNumbers;
 				if (method.SourceFile == null) {
@@ -44,10 +45,12 @@ namespace Mono.Debugger
 					int index = (int) (method.Token & 0xffffff);
 					Disassembler dis = Disassembler.Disassemble (symtab.ImageFile);
 					LineNumbers = dis.GetLines (index);
+					EndRow = dis.GetEndLine (index);
 					source = dis;
 				} else {
 					source = source_factory.FindFile (method.SourceFile);
 					LineNumbers = method.LineNumbers;
+					EndRow = method.EndRow;
 				}
 
 				if (source == null)
@@ -56,10 +59,33 @@ namespace Mono.Debugger
 				int source_range;
 				uint row = FindMethodLine (method, LineNumbers, address, out source_range);
 
+				if (row == 0) {
+					row = EndRow;
+					source_range = (int) (method_address.EndAddress - address);
+				}
+
 				return new SourceLocation (source, (int) row, source_range);
 			}
 
 			return null;
+		}
+
+		void DumpMethod (MethodEntry method, LineNumberEntry[] LineNumbers)
+		{
+			int index = (int) (method.Token & 0xffffff);
+
+			Console.WriteLine ("DUMP: {4} {0} {5} {3} {1} {2}", method,
+					   LineNumbers.Length, method.Address.LineAddresses.Length,
+					   index, symtab.ImageFile, method.Address);
+
+			int count = LineNumbers.Length;
+			for (int idx = 0; idx < count; idx++) {
+				LineNumberEntry lne = LineNumbers [idx];
+				uint line_address = method.Address.LineAddresses [idx];
+
+				Console.WriteLine ("{0} {1:x} {2:x}", lne, line_address,
+						   method.Address.StartAddress + line_address);
+			}
 		}
 
 		uint FindMethodLine (MethodEntry method, LineNumberEntry[] LineNumbers, ulong address,
@@ -79,7 +105,7 @@ namespace Mono.Debugger
 				if (idx+1 < count) {
 					uint next_address = method.Address.LineAddresses [idx+1];
 					source_range = (int) (next_address - offset);
-					if (next_address == line_address)
+					if (next_address == offset)
 						continue;
 				}
 

@@ -17,6 +17,7 @@ namespace Mono.Debugger
 		static Hashtable files = new Hashtable ();
 
 		ArrayList methods;
+		ArrayList end_lines;
 
 		public string Name {
 			get {
@@ -39,6 +40,11 @@ namespace Mono.Debugger
 			return retval;
 		}
 
+		public uint GetEndLine (int index)
+		{
+			return (uint) end_lines [index - 1];
+		}
+
 		protected Disassembler (string image_file)
 		{
 			this.image_file = image_file;
@@ -54,6 +60,7 @@ namespace Mono.Debugger
 				throw new Exception (standard_error);
 
 			methods = new ArrayList ();
+			end_lines = new ArrayList ();
 
 			int i = 0;
 			string[] lines = standard_output.Split ('\n');
@@ -75,8 +82,10 @@ namespace Mono.Debugger
 					line = lines [i].TrimStart (' ', '\t').TrimEnd (' ', '\t');
 					i++;
 
-					if (line.StartsWith ("}"))
+					if (line.StartsWith ("}")) {
+						end_lines.Add ((uint) i);
 						break;
+					}
 
 					if (line.StartsWith ("IL_")) {
 						uint offset = UInt32.Parse (
