@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
-using Mono.Debugger.Languages.CSharp;
 using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
