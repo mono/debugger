@@ -65,7 +65,7 @@ namespace Mono.Debugger
 		// IMethodSource
 		//
 
-		public string Name {
+		public virtual string Name {
 			get {
 				return name;
 			}
