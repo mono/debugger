@@ -1144,7 +1144,7 @@ namespace Mono.Debugger.Backends
 						SourceLocation source, StepOperation operation)
 		{
 			ILanguageBackend language = method.Module.Language as ILanguageBackend;
-			if (language == null)
+			if ((language == null) || (source == null))
 				return null;
 
 			// Do nothing if this is not a source stepping operation.
@@ -1322,6 +1322,8 @@ namespace Mono.Debugger.Backends
 							tmethod = Lookup (trampoline);
 						}
 						if ((tmethod == null) || !tmethod.Module.StepInto) {
+							Console.WriteLine ("TRAMPOLINE: {0} {1} {2}",
+									   call, trampoline, tmethod != null);
 							if (!do_next ())
 								return false;
 							continue;
@@ -1354,11 +1356,32 @@ namespace Mono.Debugger.Backends
 				 * and step over it.
 				 */
 				IMethod method = Lookup (call);
+				Console.WriteLine ("METHOD: {0} {1}", call, method != null);
+
 				if ((method == null) || !method.Module.StepInto) {
 					if (!do_next ())
 						return false;
 					continue;
 				}
+
+				/*
+				 * If this is a PInvoke/icall wrapper, check whether we want to step into
+				 * the wrapped function.
+				 */
+				if (method.IsWrapper) {
+					TargetAddress wrapper = method.WrapperAddress;
+					IMethod wmethod = Lookup (wrapper);
+
+					if ((wmethod == null) || !wmethod.Module.StepInto) {
+						if (!do_next ())
+							return false;
+						continue;
+					}
+
+					insert_temporary_breakpoint (wrapper);
+					return do_continue ();
+				}
+
 
 				/*
 				 * Finally, step into the method.
