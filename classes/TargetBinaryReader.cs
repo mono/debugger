@@ -353,9 +353,17 @@ namespace Mono.Debugger
 		{
 			StringBuilder sb = new StringBuilder ();
 
+			sb.Append ("\n" + TargetAddress.FormatAddress (0) + "   ");
+
 			for (int i = 0; i < data.Length; i++) {
-				if (i > 0)
-					sb.Append (" ");
+				if (i > 0) {
+					if ((i % 16) == 0)
+						sb.Append ("\n" + TargetAddress.FormatAddress (i) + "   ");
+					else if ((i % 8) == 0)
+						sb.Append (" - ");
+					else
+						sb.Append (" ");
+				}
 				sb.Append (String.Format ("{1}{0:x}", data [i], data [i] >= 16 ? "" : "0"));
 			}
 			return sb.ToString ();
