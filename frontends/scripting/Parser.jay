@@ -71,6 +71,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token LOCALS
 %token TYPE
 %token METHOD
+%token PARENT
 
 %token FRAME
 %token START
@@ -258,6 +259,10 @@ variable_expression
 	| variable_expression OPEN_BRACKET INTEGER CLOSE_BRACKET
 	  {
 		$$ = new ArrayAccessExpression ((VariableExpression) $1, (int) $3);
+	  }
+	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = new ParentClassExpression ((VariableExpression) $3);
 	  }
 	;
 

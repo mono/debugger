@@ -753,4 +753,49 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return type.ElementType;
 		}
 	}
+
+	public class ParentClassExpression : VariableExpression
+	{
+		VariableExpression var_expr;
+
+		public ParentClassExpression (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		public override string Name {
+			get {
+				return String.Format ("parent ({0})", var_expr.Name);
+			}
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			ITargetClassObject obj = var_expr.ResolveVariable (context) as ITargetClassObject;
+			if (obj == null)
+				throw new ScriptingException (
+					"Variable {0} is not a class type.", var_expr.Name);
+
+			if (!obj.Type.HasParent)
+				throw new ScriptingException ("Variable {0} doesn't have a parent type.",
+							      var_expr.Name);
+
+			return obj.Parent;
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			ITargetClassType type = var_expr.ResolveType (context) as ITargetClassType;
+			if (type == null)
+				throw new ScriptingException ("Variable {0} is not a class type.",
+							      var_expr.Name);
+
+			if (!type.HasParent)
+				throw new ScriptingException ("Variable {0} doesn't have a parent type.",
+							      var_expr.Name);
+
+			return type.ParentType;
+		}
+	}
+
 }

@@ -28,6 +28,19 @@ class B
 	}
 }
 
+class C : B
+{
+	public new int a;
+	public float f;
+
+	public C (int a, long b, string c, float f, int new_a)
+		: base (a, b, c)
+	{
+		this.f = f;
+		this.a = new_a;
+	}
+}
+
 class X
 {
 	static void Simple ()
@@ -103,6 +116,15 @@ class X
 		Console.WriteLine (b);
 	}
 
+	static void InheritedClassType ()
+	{
+		C c = new C (5, 256, "New England Patriots", 3.14F, 8);
+		Console.WriteLine (c.a);
+
+		B b = c;
+		Console.WriteLine (b.a);
+	}
+
 	static void Main ()
 	{
 		Simple ();
@@ -112,7 +134,8 @@ class X
 		MultiValueTypeArray ();
 		StringArray ();
 		MultiStringArray ();
-		ClassType ();
 		StructType ();
+		ClassType ();
+		InheritedClassType ();
 	}
 }

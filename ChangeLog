@@ -1,5 +1,10 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Added the parent expression
+	"print parent ($foo)".
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added the array access
 	expression "print $a [5]".
 

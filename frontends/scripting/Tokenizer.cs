@@ -70,6 +70,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("disassemble", Token.DISASSEMBLE);
 			keywords.Add ("method", Token.METHOD);
 			keywords.Add ("set", Token.SET);
+			keywords.Add ("parent", Token.PARENT);
 
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);
