@@ -30,6 +30,19 @@ namespace Mono.Debugger.Languages.CSharp
 			this.factory = reader.Table.Backend.SourceFileFactory;
 		}
 
+		void generate_line_number (ArrayList lines, TargetAddress address, int offset)
+		{
+			for (int i = method.NumLineNumbers - 1; i >= 0; i--) {
+				LineNumberEntry lne = method.LineNumbers [i];
+
+				if (lne.Offset > offset)
+					continue;
+
+				lines.Add (new LineEntry (address, lne.Row));
+				break;
+			}
+		}
+
 		protected override MethodSourceData ReadSource ()
 		{
 			ArrayList lines = new ArrayList ();
@@ -37,7 +50,7 @@ namespace Mono.Debugger.Languages.CSharp
 			for (int i = 0; i < line_numbers.Length; i++) {
 				JitLineNumberEntry lne = line_numbers [i];
 
-				lines.Add (new LineEntry (imethod.StartAddress + lne.Address, lne.Line));
+				generate_line_number (lines, imethod.StartAddress + lne.Address, lne.Offset);
 			}
 
 			lines.Sort ();

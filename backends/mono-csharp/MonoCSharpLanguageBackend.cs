@@ -73,13 +73,11 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		public readonly int Offset;
 		public readonly int Address;
-		public readonly int Line;
 
 		public JitLineNumberEntry (TargetBinaryReader reader)
 		{
 			Offset = reader.ReadInt32 ();
 			Address = reader.ReadInt32 ();
-			Line = 5; // FIXME FIXME FIXME FIXME FIXME
 		}
 
 		public override string ToString ()
