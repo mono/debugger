@@ -1,5 +1,27 @@
 2004-12-06  Chris Toshok  <toshok@ximian.com>
 
+	* backends/server/powerpc-arch.c (powerpc_get_registers): we get
+	all registers now, not just a subset of them.
+	(powerpc_set_registers): same.
+	(powerpc_get_pc): rename to powerpc_get_frame, and implement.
+	(powerpc_insert_breakpoint):
+	mono_debugger_breakpoint_manager_lock/unlock no longer take a
+	pointer to a bpm.
+	(powerpc_remove_breakpoint): same.
+	(powerpc_enable_breakpoint): same.
+	(powerpc_disable_breakpoint): same.
+	(powerpc_get_breakpoints): same.
+	(powerpc_current_insn_is_bpt): same.
+	(check_breakpoint): same.
+
+	* backends/server/powerpc-darwin.c (powerpc_get_target_info): fix
+	signature and set is_bigendian.
+	(powerpc_global_init): new function.
+	(powerpc_darwin_inferior): add global_init and remove get_pc,
+	renaming to get_frame.
+
+2004-12-06  Chris Toshok  <toshok@ximian.com>
+
 	* configure.in: nuke the LT_VERSION stuff, as it breaks the ppc
 	build.
 

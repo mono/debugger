@@ -160,11 +160,12 @@ powerpc_spawn (ServerHandle *handle, const gchar *working_directory,
 
 static ServerCommandError
 powerpc_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
-			 guint32 *target_address_size)
+			 guint32 *target_address_size, guint32 *is_bigendian)
 {
 	*target_int_size = sizeof (guint32);
 	*target_long_size = sizeof (guint64);
 	*target_address_size = sizeof (void *);
+	*is_bigendian = 1;
 
 	return COMMAND_ERROR_NONE;
 }
@@ -413,9 +414,15 @@ powerpc_write_memory (ServerHandle *handle, guint64 start, guint32 size, gconstp
 	return write_memory_remainder (handle->inferior, (vm_address_t) start, size, buffer);
 }
 
+static void
+powerpc_global_init (void)
+{
+}
+
 #include "powerpc-arch.c"
 
 InferiorVTable powerpc_darwin_inferior = {
+	powerpc_global_init,
 	powerpc_initialize,
 	powerpc_spawn,
 	NULL, // powerpc_attach,
@@ -427,7 +434,7 @@ InferiorVTable powerpc_darwin_inferior = {
 	powerpc_get_target_info,
 	powerpc_continue,
 	powerpc_step,
-	powerpc_get_pc,
+	powerpc_get_frame,
 	powerpc_current_insn_is_bpt,
 	NULL, // powerpc_peek_word,
 	powerpc_read_memory,
