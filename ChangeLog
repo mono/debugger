@@ -1,5 +1,11 @@
 2003-02-02  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/icall.c: New file.
+	(Mono.Debugger.Tests.TestInternCall::Test): New interncall for
+	testing purposes.
+
+2003-02-02  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/SourceView.cs (CreateWidget): New abstract method.
 	(.ctor): Hook to the "map"/"unmap" events and don't update the
 	widget while we're invisible.

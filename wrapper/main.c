@@ -283,6 +283,8 @@ main (int argc, char **argv, char **envp)
 
 	domain = mono_jit_init (file);
 
+	mono_debugger_init_icalls ();
+
 	error = mono_verify_corlib ();
 	if (error) {
 		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
