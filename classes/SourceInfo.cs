@@ -13,6 +13,12 @@ namespace Mono.Debugger
 	// </summary>
 	public abstract class SourceFile
 	{
+		public string Name {
+			get {
+				return Path.GetFileName (filename);
+			}
+		}
+
 		// <summary>
 		//   The file's full pathname.
 		// </summary>

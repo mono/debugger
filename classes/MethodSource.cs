@@ -70,7 +70,7 @@ namespace Mono.Debugger
 				if (IsDynamic)
 					return SourceBuffer.Name;
 				else
-					return SourceFile.FileName;
+					return SourceFile.Name;
 			}
 		}
 
