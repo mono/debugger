@@ -1,5 +1,9 @@
 2004-06-12  Martin Baulig  <martin@ximian.com>
 
+	Released version 0.9 "Seven Mile Bridge" of the Mono Debugger :-)
+
+2004-06-12  Martin Baulig  <martin@ximian.com>
+
 	* configure.in, wrapper/Makefile.am: GACify the debugger :-)
 
 	* wrapper/AssemblyInfo.cs: New file.

@@ -1,3 +1,13 @@
+June 12th, 2004 - Martin Baulig
+-------------------------------
+
+Released version 0.9 "Seven Mile Bridge" of the Mono Debugger :-)
+
+- fixed a couple of bugs
+- Mono.Debugger.dll is now installed in the GAC
+- this release requires Mono's beta3
+- the debugger is enabled in MonoDevelop again
+
 June 2nd, 2004 - Martin Baulig
 ------------------------------
 

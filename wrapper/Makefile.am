@@ -69,7 +69,8 @@ AssemblyInfo.cs: AssemblyInfo.cs.in
 	sed -e 's^\@libdir\@^$(libdir)^g' < $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 
-ASSEMBLY = Mono.Debugger.dll
+ASSEMBLY_NAME = Mono.Debugger
+ASSEMBLY = $(ASSEMBLY_NAME).dll
 
 CLEANFILES = *.exe *.dll mdb AssemblyInfo.cs
 
