@@ -36,6 +36,8 @@ namespace Mono.Debugger.GUI
 			NameCol.Title = "Name";
 			NameCol.PackStart (NameRenderer, true);
 			NameCol.AddAttribute (NameRenderer, "text", 0);
+			NameCol.Resizable = true;
+			NameCol.Alignment = 0.0f;
 			tree.AppendColumn (NameCol);
 
 			TreeViewColumn TypeCol = new TreeViewColumn ();
@@ -43,6 +45,8 @@ namespace Mono.Debugger.GUI
 			TypeCol.Title = "Type";
 			TypeCol.PackStart (TypeRenderer, true);
 			TypeCol.AddAttribute (TypeRenderer, "text", 1);
+			TypeCol.Resizable = true;
+			NameCol.Alignment = 0.0f;
 			tree.AppendColumn (TypeCol);
 
 			TreeViewColumn ValueCol = new TreeViewColumn ();
@@ -50,6 +54,8 @@ namespace Mono.Debugger.GUI
 			ValueCol.Title = "Value";
 			ValueCol.PackStart (ValueRenderer, true);
 			ValueCol.AddAttribute (ValueRenderer, "text", 2);
+			ValueCol.Resizable = true;
+			NameCol.Alignment = 0.0f;
 			tree.AppendColumn (ValueCol);
 
 			tree.TestExpandRow += new TestExpandRowHandler (test_expand_row);
