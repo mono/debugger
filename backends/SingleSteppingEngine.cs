@@ -78,7 +78,7 @@ public class SingleSteppingEngine : ThreadManager
 		ready_event = new ManualResetEvent (false);
 	}
 
-	TheEngine the_engine;
+	EngineProcess the_engine;
 	protected readonly SymbolTableManager SymbolTableManager;
 
 	ProcessStart start;
@@ -132,7 +132,7 @@ public class SingleSteppingEngine : ThreadManager
 		Report.Debug (DebugFlags.Wait,
 			      "Wait thread received event: {0} {1:x}", pid, status);
 
-		TheEngine event_engine = (TheEngine) thread_hash [pid];
+		EngineProcess event_engine = (EngineProcess) thread_hash [pid];
 		if (event_engine == null)
 			throw new InternalError ("Got event {0:x} for unknown pid {1}",
 						 status, pid);
@@ -148,7 +148,7 @@ public class SingleSteppingEngine : ThreadManager
 
 	void start_inferior ()
 	{
-		the_engine = new TheEngine (this, start);
+		the_engine = new EngineProcess (this, start);
 
 		Report.Debug (DebugFlags.Threads, "Engine started: {0}", the_engine.PID);
 
@@ -172,7 +172,7 @@ public class SingleSteppingEngine : ThreadManager
 	Command current_command = null;
 	CommandResult command_result = null;
 	long current_event = 0;
-	TheEngine current_event_engine = null;
+	EngineProcess current_event_engine = null;
 
 	void engine_error (Exception ex)
 	{
@@ -234,7 +234,7 @@ public class SingleSteppingEngine : ThreadManager
 			lock (this) {
 				Process[] procs = new Process [thread_hash.Count];
 				int i = 0;
-				foreach (TheEngine engine in thread_hash.Values)
+				foreach (EngineProcess engine in thread_hash.Values)
 					procs [i] = engine;
 				return procs;
 			}
@@ -272,7 +272,7 @@ public class SingleSteppingEngine : ThreadManager
 
 		Inferior new_inferior = inferior.CreateThread ();
 
-		TheEngine new_thread = new TheEngine (this, new_inferior, pid);
+		EngineProcess new_thread = new EngineProcess (this, new_inferior, pid);
 
 		thread_hash.Add (pid, new_thread);
 
@@ -492,7 +492,7 @@ public class SingleSteppingEngine : ThreadManager
 			return;
 		}
 
-		TheEngine event_engine;
+		EngineProcess event_engine;
 		long status;
 		lock (this) {
 			status = current_event;
@@ -687,7 +687,7 @@ public class SingleSteppingEngine : ThreadManager
 		{ }
 	}
 
-	protected class TheEngine : NativeProcess, ITargetAccess, IDisassembler
+	protected abstract class TheEngine : NativeProcess
 	{
 		protected TheEngine (SingleSteppingEngine sse, Inferior inferior)
 			: base (inferior.ProcessStart)
@@ -1063,138 +1063,7 @@ public class SingleSteppingEngine : ThreadManager
 			return current_simple_symtab.SimpleLookup (address, exact_match);
 		}
 
-		// <summary>
-		//   The single-stepping engine's target state.  This will be
-		//   TargetState.RUNNING while the engine is stepping.
-		// </summary>
-		public override TargetState State {
-			get {
-				return inferior.State;
-			}
-		}
-
-		public override int PID {
-			get {
-				return pid;
-			}
-		}
-
-		public override int TID {
-			get {
-				return tid;
-			}
-		}
-
-		internal Inferior TheInferior {
-			get {
-				return inferior;
-			}
-		}
-
-		// <summary>
-		//   The current stack frame.  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The single stepping engine
-		//   automatically computes the current frame and current method each time
-		//   a stepping operation is completed.  This ensures that we do not
-		//   unnecessarily compute this several times if more than one client
-		//   accesses this property.
-		// </summary>
-		public override StackFrame CurrentFrame {
-			get {
-				check_inferior ();
-				return current_frame;
-			}
-		}
-
-		public override TargetAddress CurrentFrameAddress {
-			get {
-				StackFrame frame = CurrentFrame;
-				return frame != null ? frame.TargetAddress : TargetAddress.Null;
-			}
-		}
-
-		// <summary>
-		//   The current stack frame.  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The backtrace is generated on
-		//   demand, when this function is called.  However, the single stepping
-		//   engine will compute this only once each time a stepping operation is
-		//   completed.  This means that if you call this function several times
-		//   without doing any stepping operations in the meantime, you'll always
-		//   get the same backtrace.
-		// </summary>
-		public override Backtrace GetBacktrace ()
-		{
-			check_inferior ();
-
-			if (current_backtrace != null)
-				return current_backtrace;
-
-			sse.SendSyncCommand (new CommandFunc (get_backtrace), -1);
-
-			return current_backtrace;
-		}
-
-		public override Backtrace GetBacktrace (int max_frames)
-		{
-			check_inferior ();
-
-			if ((max_frames == -1) && (current_backtrace != null))
-				return current_backtrace;
-
-			sse.SendSyncCommand (new CommandFunc (get_backtrace), max_frames);
-
-			return current_backtrace;
-		}
-
-		CommandResult get_backtrace (object data)
-		{
-			sse.DebuggerBackend.UpdateSymbolTable ();
-
-			Inferior.StackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
-			StackFrame[] frames = new StackFrame [iframes.Length];
-			MyBacktrace backtrace = new MyBacktrace (this);
-
-			for (int i = 0; i < iframes.Length; i++) {
-				TargetAddress address = iframes [i].Address;
-
-				IMethod method = Lookup (address);
-				if ((method != null) && method.HasSource) {
-					SourceAddress source = method.Source.Lookup (address);
-					frames [i] = new MyStackFrame (
-						this, address, i, iframes [i], backtrace, source, method);
-				} else
-					frames [i] = new MyStackFrame (
-						this, address, i, iframes [i], backtrace);
-			}
-
-			backtrace.SetFrames (frames);
-			current_backtrace = backtrace;
-			return CommandResult.Ok;
-		}
-
-		public override long GetRegister (int index)
-		{
-			foreach (Register register in GetRegisters ()) {
-				if (register.Index == index)
-					return (long) register.Data;
-			}
-
-			throw new NoSuchRegisterException ();
-		}
-
-		public override Register[] GetRegisters ()
-		{
-			check_inferior ();
-
-			if (registers != null)
-				return registers;
-
-			sse.SendSyncCommand (new CommandFunc (get_registers), null);
-
-			return registers;
-		}
-
-		void get_registers ()
+		protected void get_registers ()
 		{
 			long[] regs = inferior.GetRegisters (arch.AllRegisterIndices);
 			registers = new Register [regs.Length];
@@ -1202,79 +1071,27 @@ public class SingleSteppingEngine : ThreadManager
 				registers [i] = new Register (arch.AllRegisterIndices [i], regs [i]);
 		}
 
-		CommandResult get_registers (object data)
-		{
-			get_registers ();
-			return CommandResult.Ok;
-		}
-
-		CommandResult set_register (object data)
-		{
-			Register reg = (Register) data;
-			inferior.SetRegister (reg.Index, (long) reg.Data);
-			registers = null;
-			return CommandResult.Ok;
-		}
-
-		public override void SetRegister (int register, long value)
-		{
-			Register reg = new Register (register, value);
-			sse.SendSyncCommand (new CommandFunc (set_register), reg);
-		}
-
-		public override void SetRegisters (int[] registers, long[] values)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public override TargetMemoryArea[] GetMemoryMaps ()
-		{
-			check_inferior ();
-			return inferior.GetMemoryMaps ();
-		}
-
-		// <summary>
-		//   The current method  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The single stepping engine
-		//   automatically computes the current frame and current method each time
-		//   a stepping operation is completed.  This ensures that we do not
-		//   unnecessarily compute this several times if more than one client
-		//   accesses this property.
-		// </summary>
-		public IMethod CurrentMethod {
-			get {
-				check_inferior ();
-				return current_method;
-			}
-		}
-
-		public ILanguage NativeLanguage {
-			get {
-				return native_language;
-			}
-		}
-
-		SingleSteppingEngine sse;
-		Inferior inferior;
-		IArchitecture arch;
-		IDisassembler disassembler;
+		protected SingleSteppingEngine sse;
+		protected Inferior inferior;
+		protected IArchitecture arch;
+		protected IDisassembler disassembler;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		ILanguage native_language;
-		AutoResetEvent stop_event;
-		AutoResetEvent restart_event;
-		bool stop_requested = false;
+		protected AutoResetEvent stop_event;
+		protected AutoResetEvent restart_event;
+		protected bool stop_requested = false;
 		int pending_sigstop = 0;
 		bool is_main;
 		bool native;
-		int pid, tid;
+		protected int pid, tid;
 
-		TargetAddress main_method_retaddr = TargetAddress.Null;
+		protected TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
 
 		bool in_event = false;
 
-		void check_inferior ()
+		protected void check_inferior ()
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
@@ -1282,6 +1099,13 @@ public class SingleSteppingEngine : ThreadManager
 
 		public override IArchitecture Architecture {
 			get { return arch; }
+		}
+
+
+		public ILanguage NativeLanguage {
+			get {
+				return native_language;
+			}
 		}
 
 		bool start_native ()
@@ -1384,10 +1208,10 @@ public class SingleSteppingEngine : ThreadManager
 			return true;
 		}
 
-		IMethod current_method;
-		StackFrame current_frame;
-		Backtrace current_backtrace;
-		Register[] registers;
+		protected IMethod current_method;
+		protected StackFrame current_frame;
+		protected Backtrace current_backtrace;
+		protected Register[] registers;
 
 		// <summary>
 		//   Compute the StackFrame for target address @address.
@@ -1411,14 +1235,20 @@ public class SingleSteppingEngine : ThreadManager
 			if ((current_method != null) && current_method.HasSource) {
 				SourceAddress source = current_method.Source.Lookup (address);
 
-				current_frame = new MyStackFrame (
-					this, address, 0, frames [0], null, source, current_method);
+				current_frame = CreateFrame (
+					address, 0, frames [0], null, source, current_method);
 			} else
-				current_frame = new MyStackFrame (
-					this, address, 0, frames [0], null);
+				current_frame = CreateFrame (
+					address, 0, frames [0], null, null, null);
 
 			return current_frame;
 		}
+
+		protected abstract StackFrame CreateFrame (TargetAddress address, int level,
+							   Inferior.StackFrame frame,
+							   Backtrace backtrace,
+							   SourceAddress source,
+							   IMethod method);
 
 		// <summary>
 		//   Check whether @address is inside @frame.
@@ -1472,11 +1302,11 @@ public class SingleSteppingEngine : ThreadManager
 				if (new_command != null)
 					return new_command;
 
-				current_frame = new MyStackFrame (
-					this, address, 0, frames [0], null, source, current_method);
+				current_frame = CreateFrame (
+					address, 0, frames [0], null, source, current_method);
 			} else
-				current_frame = new MyStackFrame (
-					this, address, 0, frames [0], null);
+				current_frame = CreateFrame (
+					address, 0, frames [0], null, null, null);
 
 			return null;
 		}
@@ -1783,7 +1613,7 @@ public class SingleSteppingEngine : ThreadManager
 		// <summary>
 		//   Create a step frame to step until the next source line.
 		// </summary>
-		StepFrame get_step_frame ()
+		protected StepFrame get_step_frame ()
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
@@ -1808,7 +1638,7 @@ public class SingleSteppingEngine : ThreadManager
 		// <summary>
 		//   Create a step frame for a native stepping operation.
 		// </summary>
-		StepFrame get_simple_step_frame (StepMode mode)
+		protected StepFrame get_simple_step_frame (StepMode mode)
 		{
 			check_inferior ();
 			object language;
@@ -1819,6 +1649,249 @@ public class SingleSteppingEngine : ThreadManager
 				language = null;
 
 			return new StepFrame (language, mode);
+		}
+
+		void do_runtime_invoke (RuntimeInvokeData rdata)
+		{
+			check_inferior ();
+
+			TargetAddress invoke = rdata.Language.CompileMethod (inferior, rdata.MethodArgument);
+
+			insert_temporary_breakpoint (invoke);
+
+			inferior.RuntimeInvoke (
+				rdata.Language.RuntimeInvokeFunc, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects);
+
+			do_continue ();
+		}
+
+		protected struct RuntimeInvokeData
+		{
+			public readonly TargetAddress InvokeMethod;
+			public readonly ILanguageBackend Language;
+			public readonly TargetAddress MethodArgument;
+			public readonly TargetAddress ObjectArgument;
+			public readonly TargetAddress[] ParamObjects;
+
+			public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
+						  TargetAddress object_argument, TargetAddress[] param_objects)
+			{
+				this.Language = language;
+				this.InvokeMethod = TargetAddress.Null;
+				this.MethodArgument = method_argument;
+				this.ObjectArgument = object_argument;
+				this.ParamObjects = param_objects;
+			}
+
+			public RuntimeInvokeData (TargetAddress invoke_method, TargetAddress method_argument,
+						  TargetAddress object_argument, TargetAddress[] param_objects)
+			{
+				this.Language = null;
+				this.InvokeMethod = invoke_method;
+				this.MethodArgument = method_argument;
+				this.ObjectArgument = object_argument;
+				this.ParamObjects = param_objects;
+			}
+		}
+
+		//
+		// IDisposable
+		//
+
+		protected override void DoDispose ()
+		{
+			if (inferior != null)
+				inferior.Kill ();
+			inferior = null;
+		}
+	}
+
+	protected class EngineProcess : TheEngine, ITargetAccess, IDisassembler
+	{
+		public EngineProcess (SingleSteppingEngine sse, ProcessStart start)
+			: base (sse, start)
+		{ }
+
+		public EngineProcess (SingleSteppingEngine sse, Inferior inferior, int pid)
+			: base (sse, inferior, pid)
+		{
+		}
+
+		// <summary>
+		//   The single-stepping engine's target state.  This will be
+		//   TargetState.RUNNING while the engine is stepping.
+		// </summary>
+		public override TargetState State {
+			get {
+				return inferior.State;
+			}
+		}
+
+		public override int PID {
+			get {
+				return pid;
+			}
+		}
+
+		public override int TID {
+			get {
+				return tid;
+			}
+		}
+
+		internal Inferior TheInferior {
+			get {
+				return inferior;
+			}
+		}
+
+		// <summary>
+		//   The current stack frame.  May only be used when the engine is stopped
+		//   (State == TargetState.STOPPED).  The single stepping engine
+		//   automatically computes the current frame and current method each time
+		//   a stepping operation is completed.  This ensures that we do not
+		//   unnecessarily compute this several times if more than one client
+		//   accesses this property.
+		// </summary>
+		public override StackFrame CurrentFrame {
+			get {
+				check_inferior ();
+				return current_frame;
+			}
+		}
+
+		public override TargetAddress CurrentFrameAddress {
+			get {
+				StackFrame frame = CurrentFrame;
+				return frame != null ? frame.TargetAddress : TargetAddress.Null;
+			}
+		}
+
+		// <summary>
+		//   The current stack frame.  May only be used when the engine is stopped
+		//   (State == TargetState.STOPPED).  The backtrace is generated on
+		//   demand, when this function is called.  However, the single stepping
+		//   engine will compute this only once each time a stepping operation is
+		//   completed.  This means that if you call this function several times
+		//   without doing any stepping operations in the meantime, you'll always
+		//   get the same backtrace.
+		// </summary>
+		public override Backtrace GetBacktrace ()
+		{
+			check_inferior ();
+
+			if (current_backtrace != null)
+				return current_backtrace;
+
+			sse.SendSyncCommand (new CommandFunc (get_backtrace), -1);
+
+			return current_backtrace;
+		}
+
+		public override Backtrace GetBacktrace (int max_frames)
+		{
+			check_inferior ();
+
+			if ((max_frames == -1) && (current_backtrace != null))
+				return current_backtrace;
+
+			sse.SendSyncCommand (new CommandFunc (get_backtrace), max_frames);
+
+			return current_backtrace;
+		}
+
+		CommandResult get_backtrace (object data)
+		{
+			sse.DebuggerBackend.UpdateSymbolTable ();
+
+			Inferior.StackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
+			StackFrame[] frames = new StackFrame [iframes.Length];
+			MyBacktrace backtrace = new MyBacktrace (this);
+
+			for (int i = 0; i < iframes.Length; i++) {
+				TargetAddress address = iframes [i].Address;
+
+				IMethod method = Lookup (address);
+				if ((method != null) && method.HasSource) {
+					SourceAddress source = method.Source.Lookup (address);
+					frames [i] = new MyStackFrame (
+						this, address, i, iframes [i], backtrace, source, method);
+				} else
+					frames [i] = new MyStackFrame (
+						this, address, i, iframes [i], backtrace);
+			}
+
+			backtrace.SetFrames (frames);
+			current_backtrace = backtrace;
+			return CommandResult.Ok;
+		}
+
+		public override long GetRegister (int index)
+		{
+			foreach (Register register in GetRegisters ()) {
+				if (register.Index == index)
+					return (long) register.Data;
+			}
+
+			throw new NoSuchRegisterException ();
+		}
+
+		public override Register[] GetRegisters ()
+		{
+			check_inferior ();
+
+			if (registers != null)
+				return registers;
+
+			sse.SendSyncCommand (new CommandFunc (get_registers), null);
+
+			return registers;
+		}
+
+		CommandResult get_registers (object data)
+		{
+			get_registers ();
+			return CommandResult.Ok;
+		}
+
+		CommandResult set_register (object data)
+		{
+			Register reg = (Register) data;
+			inferior.SetRegister (reg.Index, (long) reg.Data);
+			registers = null;
+			return CommandResult.Ok;
+		}
+
+		public override void SetRegister (int register, long value)
+		{
+			Register reg = new Register (register, value);
+			sse.SendSyncCommand (new CommandFunc (set_register), reg);
+		}
+
+		public override void SetRegisters (int[] registers, long[] values)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override TargetMemoryArea[] GetMemoryMaps ()
+		{
+			check_inferior ();
+			return inferior.GetMemoryMaps ();
+		}
+
+		// <summary>
+		//   The current method  May only be used when the engine is stopped
+		//   (State == TargetState.STOPPED).  The single stepping engine
+		//   automatically computes the current frame and current method each time
+		//   a stepping operation is completed.  This ensures that we do not
+		//   unnecessarily compute this several times if more than one client
+		//   accesses this property.
+		// </summary>
+		public IMethod CurrentMethod {
+			get {
+				check_inferior ();
+				return current_method;
+			}
 		}
 
 		bool start_step_operation (Command command, bool wait)
@@ -1991,24 +2064,6 @@ public class SingleSteppingEngine : ThreadManager
 			throw new TargetNotStoppedException ();
 		}
 #endif
-
-		CommandResult reached_main_func (object data)
-		{
-			if ((bool) data)
-				main_method_retaddr = inferior.GetReturnAddress ();
-			sse.DebuggerBackend.ReachedMain ();
-			inferior.UpdateModules ();
-			frames_invalid ();
-			current_method = null;
-			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			return CommandResult.Ok;
-		}
-
-		internal void ReachedMain (bool set_return_address)
-		{
-			sse.SendSyncCommand (new CommandFunc (reached_main_func), set_return_address);
-			send_frame_event (current_frame, 0);
-		}
 
 		// <summary>
 		//   Interrupt any currently running stepping operation, but don't send
@@ -2278,49 +2333,6 @@ public class SingleSteppingEngine : ThreadManager
 			if (inferior.TargetAddressSize == 4)
 				retval &= 0xffffffffL;
 			return new TargetAddress (inferior.AddressDomain, retval);
-		}
-
-		private struct RuntimeInvokeData
-		{
-			public readonly TargetAddress InvokeMethod;
-			public readonly ILanguageBackend Language;
-			public readonly TargetAddress MethodArgument;
-			public readonly TargetAddress ObjectArgument;
-			public readonly TargetAddress[] ParamObjects;
-
-			public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
-						  TargetAddress object_argument, TargetAddress[] param_objects)
-			{
-				this.Language = language;
-				this.InvokeMethod = TargetAddress.Null;
-				this.MethodArgument = method_argument;
-				this.ObjectArgument = object_argument;
-				this.ParamObjects = param_objects;
-			}
-
-			public RuntimeInvokeData (TargetAddress invoke_method, TargetAddress method_argument,
-						  TargetAddress object_argument, TargetAddress[] param_objects)
-			{
-				this.Language = null;
-				this.InvokeMethod = invoke_method;
-				this.MethodArgument = method_argument;
-				this.ObjectArgument = object_argument;
-				this.ParamObjects = param_objects;
-			}
-		}
-
-		void do_runtime_invoke (RuntimeInvokeData rdata)
-		{
-			check_inferior ();
-
-			TargetAddress invoke = rdata.Language.CompileMethod (inferior, rdata.MethodArgument);
-
-			insert_temporary_breakpoint (invoke);
-
-			inferior.RuntimeInvoke (
-				rdata.Language.RuntimeInvokeFunc, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects);
-
-			do_continue ();
 		}
 
 		CommandResult runtime_invoke_func (object data)
@@ -2613,35 +2625,37 @@ public class SingleSteppingEngine : ThreadManager
 			TargetBinaryWriter writer = new TargetBinaryWriter (TargetAddressSize, this);
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
-		}		
-
-		//
-		// IDisposable
-		//
-
-		protected override void DoDispose ()
-		{
-			if (inferior != null)
-				inferior.Kill ();
-			inferior = null;
 		}
+
 
 		//
 		// Stack frames.
 		//
 
+		protected override StackFrame CreateFrame (TargetAddress address, int level,
+							   Inferior.StackFrame frame,
+							   Backtrace bt, SourceAddress source,
+							   IMethod method)
+		{
+			if (source != null)
+				return new MyStackFrame (this, address, level, frame,
+							 bt, source, method);
+			else
+				return new MyStackFrame (this, address, level, frame, bt);
+		}
+
 		protected class MyStackFrame : StackFrame
 		{
-			TheEngine sse;
+			EngineProcess sse;
 			Inferior.StackFrame frame;
-			MyBacktrace backtrace;
+			Backtrace backtrace;
 			ILanguage language;
 
 			Register[] registers;
 			bool has_registers;
 
-			public MyStackFrame (TheEngine sse, TargetAddress address, int level,
-					     Inferior.StackFrame frame, MyBacktrace backtrace,
+			public MyStackFrame (EngineProcess sse, TargetAddress address, int level,
+					     Inferior.StackFrame frame, Backtrace backtrace,
 					     SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
@@ -2651,8 +2665,8 @@ public class SingleSteppingEngine : ThreadManager
 				this.language = method.Module.Language;
 			}
 
-			public MyStackFrame (TheEngine sse, TargetAddress address, int level,
-					     Inferior.StackFrame frame, MyBacktrace backtrace)
+			public MyStackFrame (EngineProcess sse, TargetAddress address, int level,
+					     Inferior.StackFrame frame, Backtrace backtrace)
 				: base (address, level, sse.SimpleLookup (address, false))
 			{
 				this.sse = sse;
@@ -2730,12 +2744,12 @@ public class SingleSteppingEngine : ThreadManager
 
 		protected class MyBacktrace : Backtrace
 		{
-			public MyBacktrace (TheEngine sse, StackFrame[] frames)
+			public MyBacktrace (EngineProcess sse, StackFrame[] frames)
 				: base (sse, frames)
 			{
 			}
 
-			public MyBacktrace (TheEngine sse)
+			public MyBacktrace (EngineProcess sse)
 				: this (sse, null)
 			{ }
 
