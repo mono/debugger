@@ -15,7 +15,7 @@
 bfd *
 bfd_glue_openr (const char *filename, const char *target)
 {
-	return bfd_openr (g_strdup (filename), g_strdup (target));
+	return bfd_openr (g_strdup (filename), NULL);
 }
 
 gboolean

@@ -8,6 +8,7 @@ libmonodebuggerbfdglue_la_SOURCES = \
 	#
 
 libmonodebuggerbfdglue_la_LIBADD = opcodes/libopcodes.la bfd/libbfd.la @BASE_DEPENDENCIES_LIBS@
+libmonodebuggerbfdglue_la_LDFLAGS = -export-dynamic
 
 noinst_PROGRAMS = testbfd
 

@@ -123,22 +123,22 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		[DllImport("libbfd")]
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static void bfd_init ();
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static IntPtr bfd_glue_openr (string filename, string target);
 
-		[DllImport("libbfd")]
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static bool bfd_close (IntPtr bfd);
 
-		[DllImport("libbfd")]
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static IntPtr bfd_get_section_by_name (IntPtr bfd, string name);
 
-		[DllImport("libbfd")]
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static string bfd_core_file_failing_command (IntPtr bfd);
 
-		[DllImport("libopcodes")]
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static IntPtr disassembler (IntPtr bfd);
 
 		[DllImport("libmonodebuggerbfdglue")]

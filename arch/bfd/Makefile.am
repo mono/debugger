@@ -24,7 +24,7 @@ SOURCE_FILES = \
 	merge.c dwarf1.c dwarf2.c
 
 libbfd_la_SOURCES = $(BFD_BACKENDS) $(BFD_MACHINES) $(BFD_COREFILE) $(SOURCE_FILES)
-libbfd_la_LDFLAGS = -release $(VERSION)
+libbfd_la_LDFLAGS = -export-dynamic
 libbfd_la_LIBADD = ../libiberty/libiberty.la
 
 # This file holds an array associating configuration triplets and
@@ -38,10 +38,10 @@ targmatch.h: config.bfd targmatch.sed
 # When compiling archures.c and targets.c, supply the default target
 # info from configure.
 
-targets.lo: targets.c config.status
+targets.lo: targets.c Makefile
 	$(LIBTOOL) --mode=compile $(COMPILE) -c $(TDEFAULTS) $(srcdir)/targets.c
 
-archures.lo: archures.c config.status
+archures.lo: archures.c Makefile
 	$(LIBTOOL) --mode=compile $(COMPILE) -c $(TDEFAULTS) $(srcdir)/archures.c
 
 elf32-target.h : elfxx-target.h
@@ -58,7 +58,5 @@ pepigen.c : peXXigen.c
 	rm -f pepigen.c
 	sed -e s/XX/pep/g < $(srcdir)/peXXigen.c > pepigen.new
 	mv -f pepigen.new pepigen.c
-
-CLEANFILES = bfd.h
 
 

@@ -15,7 +15,11 @@
 int
 main (void)
 {
-  bfd *bfd= bfd_openr ("testbfd.o", "");
+  bfd *bfd;
+
+  bfd_init ();
+
+  bfd = bfd_openr ("testbfd.o", NULL);
 
   printf ("BFD: %p\n", bfd);
   return 0;
