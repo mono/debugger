@@ -105,8 +105,14 @@ namespace Mono.Debugger
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.
 	// </summary>
-	public abstract class SourceMethod
+	public class SourceMethod
 	{
+		public long Handle {
+			get {
+				return handle;
+			}
+		}
+
 		public SourceFile SourceFile {
 			get {
 				return source;
@@ -135,8 +141,14 @@ namespace Mono.Debugger
 		//   Whether this method is current loaded in memory.  For managed
 		//   methods, this returns whether the method has already been JITed.
 		// </summary>
-		public abstract bool IsLoaded {
-			get;
+		public bool IsLoaded {
+			get {
+				if (method != null)
+					return true;
+
+				method = symfile.GetMethod (handle);
+				return method != null;
+			}
 		}
 
 		// <summary>
@@ -145,8 +157,13 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsLoaded is false.
 		// </summary>
-		public abstract IMethod Method {
-			get;
+		public IMethod Method {
+			get {
+				if (!IsLoaded)
+					throw new InvalidOperationException ();
+
+				return method;
+			}
 		}
 
 		// <summary>
@@ -163,26 +180,16 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract TargetAddress Lookup (int SourceLine);
+		public TargetAddress Lookup (int SourceLine)
+		{
+			if (!IsLoaded)
+				throw new InvalidOperationException ();
 
-		// <summary>
-		//   Registers a delegate to be invoked when the method is loaded.
-		//   This is an expensive operation and must not be used in a GUI to get
-		//   a notification when the `IsLoaded' field changed.
-		//
-		//   This is an expensive operation, registering too many load handlers
-		//   may slow that target down, so do not use this in the user interface
-		//   to get any notifications when a method is loaded or something like
-		//   this.  It's just intended to insert breakpoints.
-		//
-		//   To unregister the delegate, dispose the returned IDisposable.
-		//
-		//   Throws:
-		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
-		// </summary>
-		internal abstract IDisposable RegisterLoadHandler (Process process,
-								   MethodLoadedHandler handler,
-								   object user_data);
+			if (Method.HasSource)
+				return Method.Source.Lookup (SourceLine);
+			else
+				return TargetAddress.Null;
+		}
 
 		public override string ToString ()
 		{
@@ -190,15 +197,21 @@ namespace Mono.Debugger
 					      StartRow, EndRow, IsLoaded);
 		}
 
+		IMethod method;
+		ISymbolFile symfile;
 		SourceFile source;
 		string name;
 		int  start_row, end_row;
 		bool is_dynamic;
+		long handle;
 
-		protected SourceMethod (SourceFile source, string name,
-					int start, int end, bool is_dynamic)
+		public SourceMethod (ISymbolFile symfile, SourceFile source,
+				     long handle, string name, int start, int end,
+				     bool is_dynamic)
 		{
+			this.symfile = symfile;
 			this.source = source;
+			this.handle = handle;
 			this.name = name;
 			this.start_row = start;
 			this.end_row = end;

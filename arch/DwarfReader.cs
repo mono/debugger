@@ -132,6 +132,11 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		IMethod ISymbolFile.GetMethod (long handle)
+		{
+			return null;
+		}
+
 		protected class CompileUnitBlock
 		{
 			public readonly DwarfReader dwarf;
@@ -1828,7 +1833,7 @@ namespace Mono.Debugger.Architecture
 			{
 				LineNumberEngine engine;
 				DieSubprogram subprog;
-				DwarfSourceMethod source;
+				SourceMethod source;
 				int start_row, end_row;
 				ArrayList addresses;
 				ISourceBuffer buffer;
@@ -1909,7 +1914,9 @@ namespace Mono.Debugger.Architecture
 						SetMethodBounds (start.Address, end.Address);
 					}
 
-					source = new DwarfSourceMethod (subprog.SourceFile, this);
+					source = new SourceMethod (
+						subprog.dwarf, subprog.SourceFile, 0,
+						Name, StartRow, EndRow, false);
 					subprog.DieCompileUnit.AddMethod (source);
 
 					buffer = subprog.dwarf.factory.FindFile (subprog.SourceFile.FileName);
@@ -1936,44 +1943,6 @@ namespace Mono.Debugger.Architecture
 					return new MethodSourceData (
 						method.StartRow, method.EndRow, method.Addresses,
 						method.SourceMethod, method.SourceBuffer);
-				}
-			}
-
-			protected class DwarfSourceMethod : SourceMethod
-			{
-				IMethod method;
-
-				public DwarfSourceMethod (SourceFile source, DwarfTargetMethod method)
-					: base (source, method.Name, method.StartRow, method.EndRow, false)
-				{
-					this.method = method;
-				}
-
-				public override bool IsLoaded {
-					get {
-						return true;
-					}
-				}
-
-				public override IMethod Method {
-					get {
-						return method;
-					}
-				}
-
-				public override TargetAddress Lookup (int line)
-				{
-					if (!method.HasSource)
-						return TargetAddress.Null;
-
-					return method.Source.Lookup (line);
-				}
-
-				internal override IDisposable RegisterLoadHandler (Process process,
-										   MethodLoadedHandler handler,
-										   object user_data)
-				{
-					throw new InvalidOperationException ();
 				}
 			}
 		}

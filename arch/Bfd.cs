@@ -988,6 +988,14 @@ namespace Mono.Debugger.Architecture
 			return TargetAddress.Null;
 		}
 
+		internal override IDisposable RegisterLoadHandler (Process process,
+								   SourceMethod method,
+								   MethodLoadedHandler handler,
+								   object user_data)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		//
 		// The BFD symbol table.
 		//

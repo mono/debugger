@@ -80,8 +80,8 @@ namespace Mono.Debugger
 					// callback when it's loaded.  We register this
 					// callback here and do the actual insertion when
 					// the method is loaded.
-					load_handler = location.Method.RegisterLoadHandler (
-						process,
+					load_handler = location.Module.RegisterLoadHandler (
+						process, location.Method,
 						new MethodLoadedHandler (method_loaded),
 						null);
 				}

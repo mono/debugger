@@ -1034,15 +1034,25 @@ namespace Mono.Debugger.Languages.CSharp
 
 		Hashtable method_hash = new Hashtable ();
 
+		IMethod ISymbolFile.GetMethod (long handle)
+		{
+			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
+			if (entry == null)
+				return null;
+
+			return entry.GetMethod ();
+		}
+
 		protected MonoMethod GetMonoMethod (int index)
 		{
 			MonoMethod mono_method = (MonoMethod) method_hash [index];
 			if (mono_method != null)
 				return mono_method;
 
-			MonoSourceMethod method = GetMethod_internal (index);
+			SourceMethod method = GetMethod_internal (index);
+			C.MethodEntry entry = File.GetMethod (index);
 
-			mono_method = new MonoMethod (this, method, method.Entry);
+			mono_method = new MonoMethod (this, method, entry);
 			method_hash.Add (index, mono_method);
 			return mono_method;
 		}
@@ -1084,7 +1094,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return;
 
 			foreach (C.SourceFileEntry source in File.Sources) {
-				MonoSourceFile info = new MonoSourceFile (this, source);
+				SourceFile info = new SourceFile (this, source.FileName);
 
 				foreach (C.MethodSourceEntry entry in source.Methods) {
 					SourceMethod method = GetMethod (entry.Index);
@@ -1141,18 +1151,18 @@ namespace Mono.Debugger.Languages.CSharp
 			return retval;
 		}
 
-		MonoSourceMethod GetMethod_internal (int index)
+		SourceMethod GetMethod_internal (int index)
 		{
 			if (File == null)
 				return null;
 
 			ensure_sources ();
-			MonoSourceMethod method = (MonoSourceMethod) method_index_hash [index];
+			SourceMethod method = (SourceMethod) method_index_hash [index];
 			if (method != null)
 				return method;
 
 			C.MethodEntry entry = File.GetMethod (index);
-			MonoSourceFile info = (MonoSourceFile) source_hash [entry.SourceFile];
+			SourceFile info = (SourceFile) source_hash [entry.SourceFile];
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
 			R.MethodBase mbase = entry.MethodBase;
@@ -1172,7 +1182,10 @@ namespace Mono.Debugger.Languages.CSharp
 			sb.Append (")");
 
 			string name = sb.ToString ();
-			method = new MonoSourceMethod (info, this, source, entry, name);
+			method = new SourceMethod (
+				this, info, source.Index, name, source.StartRow,
+				source.EndRow, true);
+
 			method_index_hash.Add (index, method);
 			return method;
 		}
@@ -1224,183 +1237,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			return null;
-		}	
-
-		private class MonoSourceFile : SourceFile
-		{
-			MonoSymbolFile reader;
-			C.SourceFileEntry source;
-
-			public MonoSourceFile (MonoSymbolFile reader, C.SourceFileEntry source)
-				: base (reader, source.FileName)
-			{
-				this.reader = reader;
-				this.source = source;
-			}
-
-			protected ArrayList GetMethods ()
-			{
-				ArrayList list = new ArrayList ();
-
-				foreach (C.MethodSourceEntry entry in source.Methods) {
-					SourceMethod method = reader.GetMethod (entry.Index);
-					list.Add (method);
-				}
-
-				return list;
-			}
 		}
 
-		private class MonoSourceMethod : SourceMethod
+		internal override IDisposable RegisterLoadHandler (Process process,
+								   SourceMethod source,
+								   MethodLoadedHandler handler,
+								   object user_data)
 		{
-			MonoSymbolFile reader;
-			Hashtable load_handlers;
-			int index;
-			C.MethodEntry entry;
-			MonoMethod method;
-
-			public MonoSourceMethod (SourceFile info, MonoSymbolFile reader,
-						 C.MethodSourceEntry source, C.MethodEntry entry, string name)
-				: base (info, name, source.StartRow, source.EndRow, true)
-			{
-				this.reader = reader;
-				this.index = source.Index;
-				this.entry = entry;
-			}
-
-			public C.MethodEntry Entry {
-				get { return entry; }
-			}
-
-			public override bool IsLoaded {
-				get {
-					ensure_method ();
-					return (method != null) && method.IsLoaded;
-				}
-			}
-
-			void ensure_method ()
-			{
-				if ((reader == null) || ((method != null) && method.IsLoaded))
-					return;
-
-				MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [index];
-				if (entry != null)
-					method = entry.GetMethod ();
-			}
-
-			public override IMethod Method {
-				get {
-					if (!IsLoaded)
-						throw new InvalidOperationException ();
-
-					ensure_method ();
-					return method;
-				}
-			}
-
-			public override TargetAddress Lookup (int line)
-			{
-				if (!IsLoaded)
-					throw new InvalidOperationException ();
-
-				ensure_method ();
-				if (method.HasSource)
-					return method.Source.Lookup (line);
-				else
-					return TargetAddress.Null;
-			}
-
-			void breakpoint_hit (Inferior inferior, TargetAddress address,
-					     object user_data)
-			{
-				if (load_handlers == null)
-					return;
-
-				ensure_method ();
-
-				foreach (HandlerData handler in load_handlers.Keys)
-					handler.Handler (inferior, handler.Method, handler.UserData);
-
-				load_handlers = null;
-			}
-
-			internal override IDisposable RegisterLoadHandler (Process process,
-									   MethodLoadedHandler handler,
-									   object user_data)
-			{
-				HandlerData data = new HandlerData (this, handler, user_data);
-
-				if (load_handlers == null) {
-					load_handlers = new Hashtable ();
-
-					if (method == null)
-						method = reader.GetMonoMethod (index);
-
-					R.MethodBase minfo = (R.MethodBase) method.MethodHandle;
-
-					string full_name = String.Format (
-						"{0}:{1}", minfo.ReflectedType.FullName, minfo.Name);
-
-					reader.Table.Language.InsertBreakpoint (
-						process, full_name,
-						new BreakpointHandler (breakpoint_hit),
-						null);
-				}
-
-				load_handlers.Add (data, true);
-				return data;
-			}
-
-			protected void UnRegisterLoadHandler (HandlerData data)
-			{
-				if (load_handlers == null)
-					return;
-
-				load_handlers.Remove (data);
-				if (load_handlers.Count == 0)
-					load_handlers = null;
-			}
-
-			protected sealed class HandlerData : IDisposable
-			{
-				public readonly MonoSourceMethod Method;
-				public readonly MethodLoadedHandler Handler;
-				public readonly object UserData;
-
-				public HandlerData (MonoSourceMethod method, MethodLoadedHandler handler,
-						    object user_data)
-				{
-					this.Method = method;
-					this.Handler = handler;
-					this.UserData = user_data;
-				}
-
-				private bool disposed = false;
-
-				private void Dispose (bool disposing)
-				{
-					if (!this.disposed) {
-						if (disposing) {
-							Method.UnRegisterLoadHandler (this);
-						}
-					}
-						
-					this.disposed = true;
-				}
-
-				public void Dispose ()
-				{
-					Dispose (true);
-					// Take yourself off the Finalization queue
-					GC.SuppressFinalize (this);
-				}
-
-				~HandlerData ()
-				{
-					Dispose (false);
-				}
-			}
+			MonoMethod method = GetMonoMethod ((int) source.Handle);
+			return method.RegisterLoadHandler (process, handler, user_data);
 		}
 
 		protected class MonoMethod : MethodBase
@@ -1418,6 +1263,7 @@ namespace Mono.Debugger.Languages.CSharp
 			bool has_variables;
 			bool is_loaded;
 			MethodAddress address;
+			Hashtable load_handlers;
 
 			public MonoMethod (MonoSymbolFile reader, SourceMethod info, C.MethodEntry method)
 				: base (info.Name, reader.ImageFile, reader)
@@ -1580,6 +1426,94 @@ namespace Mono.Debugger.Languages.CSharp
 								    TargetAddress address)
 			{
 				return reader.Table.Language.GetTrampoline (memory, address);
+			}
+
+			void breakpoint_hit (Inferior inferior, TargetAddress address,
+					     object user_data)
+			{
+				if (load_handlers == null)
+					return;
+
+				// ensure_method ();
+
+				foreach (HandlerData handler in load_handlers.Keys)
+					handler.Handler (inferior, info, handler.UserData);
+
+				load_handlers = null;
+			}
+
+			public IDisposable RegisterLoadHandler (Process process,
+								MethodLoadedHandler handler,
+								object user_data)
+			{
+				HandlerData data = new HandlerData (this, handler, user_data);
+
+				if (load_handlers == null) {
+					load_handlers = new Hashtable ();
+
+					string full_name = String.Format (
+						"{0}:{1}", rmethod.ReflectedType.FullName,
+						rmethod.Name);
+
+					reader.Table.Language.InsertBreakpoint (
+						process, full_name,
+						new BreakpointHandler (breakpoint_hit),
+						null);
+				}
+
+				load_handlers.Add (data, true);
+				return data;
+			}
+
+			protected void UnRegisterLoadHandler (HandlerData data)
+			{
+				if (load_handlers == null)
+					return;
+
+				load_handlers.Remove (data);
+				if (load_handlers.Count == 0)
+					load_handlers = null;
+			}
+
+			protected sealed class HandlerData : IDisposable
+			{
+				public readonly MonoMethod Method;
+				public readonly MethodLoadedHandler Handler;
+				public readonly object UserData;
+
+				public HandlerData (MonoMethod method,
+						    MethodLoadedHandler handler,
+						    object user_data)
+				{
+					this.Method = method;
+					this.Handler = handler;
+					this.UserData = user_data;
+				}
+
+				private bool disposed = false;
+
+				private void Dispose (bool disposing)
+				{
+					if (!this.disposed) {
+						if (disposing) {
+							Method.UnRegisterLoadHandler (this);
+						}
+					}
+						
+					this.disposed = true;
+				}
+
+				public void Dispose ()
+				{
+					Dispose (true);
+					// Take yourself off the Finalization queue
+					GC.SuppressFinalize (this);
+				}
+
+				~HandlerData ()
+				{
+					Dispose (false);
+				}
 			}
 		}
 

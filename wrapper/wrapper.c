@@ -22,6 +22,7 @@ static guint64 debugger_compile_method (MonoMethod *method);
 static guint64 debugger_create_string (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
+static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument);
 
 void (*mono_debugger_notification_function) (int command, gpointer data, guint32 data2);
 
@@ -42,6 +43,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_create_string,
 	&debugger_class_get_static_field_data,
 	&debugger_lookup_type,
+	&debugger_lookup_assembly,
 	mono_debugger_heap,
 	HEAP_SIZE
 };
@@ -96,6 +98,17 @@ debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
 
 	mono_debugger_lock ();
 	retval = mono_debugger_lookup_type (string_argument);
+	mono_debugger_unlock ();
+	return retval;
+}
+
+static guint64
+debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument)
+{
+	gint64 retval;
+
+	mono_debugger_lock ();
+	retval = mono_debugger_lookup_assembly (string_argument);
 	mono_debugger_unlock ();
 	return retval;
 }

@@ -28,6 +28,7 @@ struct _MonoDebuggerInfo {
 	guint64 (*create_string) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*class_get_static_field_data) (guint64 klass);
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	gpointer heap;
 	guint32 heap_size;
 };

@@ -196,6 +196,11 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		IMethod ISymbolFile.GetMethod (long handle)
+		{
+			return null;
+		}
+
 		protected struct Entry {
 			public readonly string n_str;
 			public readonly byte n_type;
@@ -596,7 +601,9 @@ namespace Mono.Debugger.Architecture
 					addresses.Add (new LineEntry (addr, line.Line));
 				}
 
-				SourceMethod source = new StabsSourceMethod (method);
+				SourceMethod source = new SourceMethod (
+					method.File.StabsReader, method.File.SourceFile,
+					0, Name, StartRow, EndRow, false);
 
 				return new MethodSourceData (
 					method.StartLine, method.EndLine, addresses,
@@ -864,42 +871,6 @@ namespace Mono.Debugger.Architecture
 			{
 				return String.Format ("NativeVariable [{0}:{1}:{2}:{3:x}]",
 						      Name, Type, register, offset);
-			}
-		}
-
-		protected class StabsSourceMethod : SourceMethod {
-			MethodEntry method;
-
-			public StabsSourceMethod (MethodEntry method)
-				: base (method.File.SourceFile, method.Name,
-					method.StartLine, method.EndLine, false)
-			{
-				this.method = method;
-			}
-
-			public override bool IsLoaded {
-				get { return true; }
-			}
-
-			public override IMethod Method {
-				get { return method; }
-			}
-
-			public override TargetAddress Lookup (int SourceLine)
-			{
-				foreach (LineNumberEntry line in method.Lines) {
-					if (line.Line >= SourceLine)
-						return method.StartAddress + line.Offset;
-				}
-
-				return TargetAddress.Null;
-			}
-
-			internal override IDisposable RegisterLoadHandler (Process process,
-									   MethodLoadedHandler handler,
-									   object user_data)
-			{
-				throw new InvalidOperationException ();
 			}
 		}
 

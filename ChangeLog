@@ -1,5 +1,13 @@
 2004-04-23  Martin Baulig  <martin@ximian.com>
 
+	* classes/Module.cs (Module.RegisterLoadHandler): Moved here from
+	SourceMethod.
+
+	* classes/SourceInfo.cs (SourceMethod): Don't make this abstract.
+	(SourceMethod.RegisterLoadHandler): Moved into Module.
+
+2004-04-23  Martin Baulig  <martin@ximian.com>
+
 	* classes/ISymbolFile.cs: New public interface.
 
 	* classes/SourceInfo.cs (SourceFile): Don't make this abstract.
