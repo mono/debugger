@@ -16,6 +16,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		IDebuggerBackend backend;
 		TextWriter stdout, stderr;
+		string last_command;
+		string[] last_args;
 
 		// <summary>
 		//   Create a new command interpreter for the debugger backend @backend.
@@ -48,13 +50,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		// </summary>
 		public bool ProcessCommand (string line)
 		{
-			if (line == "")
-				return true;
+			if (line == "") {
+				if (last_command == null)
+					return true;
+
+				try {
+					return ProcessCommand (last_command, last_args);
+				} catch (TargetException e) {
+					Console.WriteLine (e);
+					stderr.WriteLine (e);
+					return true;
+				}
+			}
 
 			string[] tmp_args = line.Split (' ', '\t');
 			string[] args = new string [tmp_args.Length - 1];
 			Array.Copy (tmp_args, 1, args, 0, tmp_args.Length - 1);
 			string command = tmp_args [0];
+
+			last_command = null;
+			last_args = new string [0];
 
 			try {
 				return ProcessCommand (tmp_args [0], args);
@@ -92,6 +107,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (backend.Inferior == null)
 					throw new NoTargetException ();
 				backend.Inferior.Continue ();
+				last_command = command;
 				break;
 
 			case "i":
@@ -99,6 +115,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (backend.Inferior == null)
 					throw new NoTargetException ();
 				backend.Inferior.Step ();
+				last_command = command;
 				break;
 
 			case "t":
@@ -106,16 +123,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (backend.Inferior == null)
 					throw new NoTargetException ();
 				backend.Inferior.Next ();
+				last_command = command;
 				break;
 
 			case "s":
 			case "step":
 				backend.StepLine ();
+				last_command = command;
 				break;
 
 			case "n":
 			case "next":
 				backend.NextLine ();
+				last_command = command;
 				break;
 
 			case "abort":
