@@ -71,6 +71,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("regs", Token.REGISTERS);
 			keywords.Add ("b", Token.BREAK);
 			keywords.Add ("break", Token.BREAK);
+			keywords.Add ("print", Token.PRINT);
+			keywords.Add ("p", Token.PRINT);
 		}
 
 		ScriptingContext context;

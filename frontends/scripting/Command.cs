@@ -37,11 +37,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class CommandExpression : Command
+	public class PrintCommand : Command
 	{
 		Expression expression;
 
-		public CommandExpression (Expression expression)
+		public PrintCommand (Expression expression)
 		{
 			this.expression = expression;
 		}
@@ -53,123 +53,93 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class ProcessExpression : Expression
-	{
-		int number;
-
-		public ProcessExpression (int number)
-		{
-			this.number = number;
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			if (number == -1)
-				return context.CurrentProcess;
-
-			foreach (ProcessHandle proc in context.Processes)
-				if (proc.ID == number)
-					return proc;
-
-			throw new ScriptingException ("No such process: {0}", number);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1})", GetType (), number);
-		}
-	}
-
-	public class FrameExpression : Expression
+	public class FrameCommand : Command
 	{
 		int number;
 		ProcessExpression process_expr;
 
-		public FrameExpression (ProcessExpression process_expr, int number)
+		public FrameCommand (ProcessExpression process_expr, int number)
 		{
 			this.process_expr = process_expr;
 			this.number = number;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
-			return process.GetFrame (number);
+			context.Print (process.GetFrame (number));
 		}
 	}
 
-	public class StartExpression : Expression
+	public class StartCommand : Command
 	{
 		string[] args;
 		int pid;
 
-		public StartExpression (string[] args)
+		public StartCommand (string[] args)
 		{
 			this.args = args;
 			this.pid = -1;
 		}
 
-		public StartExpression (string[] args, int pid)
+		public StartCommand (string[] args, int pid)
 		{
 			this.args = args;
 			this.pid = pid;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override void DoExecute (ScriptingContext context)
 		{
-			return context.Start (args, pid);
+			context.Start (args, pid);
 		}
 	}
 
-	public class SelectProcessExpression : Expression
+	public class SelectProcessCommand : Command
 	{
 		ProcessExpression process_expr;
 
-		public SelectProcessExpression (ProcessExpression process_expr)
+		public SelectProcessCommand (ProcessExpression process_expr)
 		{
 			this.process_expr = process_expr;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			context.CurrentProcess = process;
-			return process;
 		}
 	}
 
-	public class BackgroundProcessExpression : Expression
+	public class BackgroundProcessCommand : Command
 	{
 		ProcessExpression process_expr;
 
-		public BackgroundProcessExpression (ProcessExpression process_expr)
+		public BackgroundProcessCommand (ProcessExpression process_expr)
 		{
 			this.process_expr = process_expr;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			process.Background ();
-			return process;
 		}
 	}
 
-	public class StopProcessExpression : Expression
+	public class StopProcessCommand : Command
 	{
 		ProcessExpression process_expr;
 
-		public StopProcessExpression (ProcessExpression process_expr)
+		public StopProcessCommand (ProcessExpression process_expr)
 		{
 			this.process_expr = process_expr;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			process.Stop ();
-			return process;
 		}
 	}
 
@@ -314,6 +284,33 @@ namespace Mono.Debugger.Frontends.CommandLine
 				process.InsertBreakpoint (identifier, line);
 			else
 				process.InsertBreakpoint (identifier);
+		}
+	}
+
+	public class ProcessExpression : Expression
+	{
+		int number;
+
+		public ProcessExpression (int number)
+		{
+			this.number = number;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			if (number == -1)
+				return context.CurrentProcess;
+
+			foreach (ProcessHandle proc in context.Processes)
+				if (proc.ID == number)
+					return proc;
+
+			throw new ScriptingException ("No such process: {0}", number);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType (), number);
 		}
 	}
 }

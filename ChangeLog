@@ -1,3 +1,8 @@
+2002-12-28  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/Parser.jay: Transformed all the old
+	Expressions into Commands.
+
 2002-12-27  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/breakpoints.h (BreakpointManager): Use a

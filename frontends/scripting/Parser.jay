@@ -73,6 +73,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token NEXTI
 %token FINISH
 %token BREAK
+%token PRINT
 
 %token SELECT
 %token BACKGROUND
@@ -149,37 +150,41 @@ command
 	  {
 		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3, (int) $4);
 	  }
-	| expression
+	| PRINT expression
 	  {
-		$$ = new CommandExpression ((Expression) $1);
+		$$ = new PrintCommand ((Expression) $2);
+	  }
+	| FRAME opt_process opt_frame_number
+	  {
+		$$ = new FrameCommand ((ProcessExpression) $2, (int) $3);
+	  }
+	| START INTEGER program_arguments
+	  {
+		$$ = new StartCommand ((string []) $3, (int) $2);
+	  }
+	| START program_arguments
+	  {
+		$$ = new StartCommand ((string []) $2);
+	  }
+	| PROCESS opt_process
+	  {
+		$$ = new SelectProcessCommand ((ProcessExpression) $2);
+	  }
+	| BACKGROUND opt_process
+	  {
+		$$ = new BackgroundProcessCommand ((ProcessExpression) $2);
+	  }
+	| STOP opt_process
+	  {
+		$$ = new StopProcessCommand ((ProcessExpression) $2);
 	  }
 	;
 
 expression
-	: FRAME opt_process opt_frame_number
-	  {
-		$$ = new FrameExpression ((ProcessExpression) $2, (int) $3);
-	  }
-	| START INTEGER program_arguments
-	  {
-		$$ = new StartExpression ((string []) $3, (int) $2);
-	  }
-	| START program_arguments
-	  {
-		$$ = new StartExpression ((string []) $2);
-	  }
-	| PROCESS opt_process
-	  {
-		$$ = new SelectProcessExpression ((ProcessExpression) $2);
-	  }
-	| BACKGROUND opt_process
-	  {
-		$$ = new BackgroundProcessExpression ((ProcessExpression) $2);
-	  }
-	| STOP opt_process
-	  {
-		$$ = new StopProcessExpression ((ProcessExpression) $2);
-	  }
+	: AT INTEGER
+	{
+		$$ = new ProcessExpression ((int) $2);
+	}
 	;
 
 program_arguments
