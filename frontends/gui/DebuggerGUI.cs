@@ -134,8 +134,6 @@ namespace Mono.Debugger.GUI
 			context = new ScriptingContext (command_writer, output_writer, false, true);
 			interpreter = new Interpreter (context);
 
-			// backend.ThreadManager.InitializedEvent += new ThreadEventHandler (main_process_started);
-
 			if (arguments.Length > 0)
 				LoadProgram (arguments);
 		}
@@ -294,6 +292,8 @@ namespace Mono.Debugger.GUI
 			process = context.Start (args);
 			start = context.ProcessStart;
 
+			SetProcess (process);
+
 			//
 			// FIXME: chdir here to working_dir
 			//
@@ -310,6 +310,13 @@ namespace Mono.Debugger.GUI
 
 		void main_process_started (ThreadManager manager, Process process)
 		{
+			SetProcess (process);
+		}
+
+		void SetProcess (Process process)
+		{
+			backend = process.DebuggerBackend;
+
 			process.TargetOutput += new TargetOutputHandler (TargetOutput);
 			process.TargetError += new TargetOutputHandler (TargetError);
 			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
