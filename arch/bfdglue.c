@@ -1,8 +1,10 @@
 #include <bfdglue.h>
 #include <signal.h>
 #include <string.h>
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <link.h>
 #include <elf.h>
+#endif
 #ifdef __linux__
 #include <sys/user.h>
 #include <sys/procfs.h>
@@ -50,22 +52,8 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 	int flags;
 
 	symbol = symbol_table [idx];
-	flags = symbol->flags & ~BSF_DYNAMIC;
+	flags = symbol->flags & ~(BSF_DYNAMIC | BSF_NOT_AT_END);
 
-	if (!symbol->section->index)
-		return NULL;
-
-#if 0
-	if (!strcmp (symbol->name, "__pthread_threads_debug") ||
-	    !strcmp (symbol->name, "__pthread_handles") ||
-	    !strcmp (symbol->name, "__pthread_handles_num") ||
-	    !strcmp (symbol->name, "__pthread_last_event") ||
-	    !strncmp (symbol->name, "MONO_DEBUGGER__", 15)) {
-		*is_function = 1;
-		*address = symbol->section->vma + symbol->value;
-		return symbol->name;
-	}
-#endif
 	if (flags == (BSF_OBJECT | BSF_GLOBAL)) {
 		*is_function = 0;
 		*address = symbol->section->vma + symbol->value;
