@@ -1,0 +1,73 @@
+<Type Name="DwarfReader+LineNumberEngine+FileEntry" FullName="Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+FileEntry">
+  <TypeSignature Language="C#" Value="protected struct FileEntry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.ValueType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public FileEntry (Mono.Debugger.Architecture.DwarfBinaryReader reader);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Architecture.DwarfBinaryReader" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="FileName">
+      <MemberSignature Language="C#" Value="public readonly string FileName;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Directory">
+      <MemberSignature Language="C#" Value="public readonly int Directory;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="LastModificationTime">
+      <MemberSignature Language="C#" Value="public readonly int LastModificationTime;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Length">
+      <MemberSignature Language="C#" Value="public readonly int Length;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

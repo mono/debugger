@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,7 +15,6 @@
     <BaseTypeName>Mono.Debugger.TargetBinaryReader</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="PokeByte">
       <MemberSignature Language="C#" Value="public void PokeByte (long pos, byte value);" />
@@ -285,7 +282,7 @@
       </Docs>
     </Member>
     <Member MemberName="PokeBuffer">
-      <MemberSignature Language="C#" Value="public void PokeBuffer (long pos, byte [] buffer);" />
+      <MemberSignature Language="C#" Value="public void PokeBuffer (long pos, byte[] buffer);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -302,7 +299,7 @@
       </Docs>
     </Member>
     <Member MemberName="WriteBuffer">
-      <MemberSignature Language="C#" Value="public void WriteBuffer (byte [] buffer);" />
+      <MemberSignature Language="C#" Value="public void WriteBuffer (byte[] buffer);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -328,7 +325,6 @@
         <summary>To be added</summary>
         <param name="size">a <see cref="T:System.Int32" /></param>
         <param name="target_info">a <see cref="T:Mono.Debugger.ITargetInfo" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetBinaryWriter" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

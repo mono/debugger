@@ -1,0 +1,2224 @@
+<Type Name="Inferior" FullName="Mono.Debugger.Backends.Inferior">
+  <TypeSignature Language="C#" Value="internal abstract class Inferior : Mono.Debugger.ITargetAccess, Mono.Debugger.ITargetNotification, System.IDisposable" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ITargetAccess</InterfaceName>
+    </Interface>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ITargetNotification</InterfaceName>
+    </Interface>
+    <Interface>
+      <InterfaceName>System.IDisposable</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected Inferior (Mono.Debugger.DebuggerBackend backend, Mono.Debugger.ProcessStart start, Mono.Debugger.Backends.BreakpointManager bpm, Mono.Debugger.DebuggerErrorHandler error_handler, Mono.Debugger.AddressDomain global_address_domain);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="backend" Type="Mono.Debugger.DebuggerBackend" />
+        <Parameter Name="start" Type="Mono.Debugger.ProcessStart" />
+        <Parameter Name="bpm" Type="Mono.Debugger.Backends.BreakpointManager" />
+        <Parameter Name="error_handler" Type="Mono.Debugger.DebuggerErrorHandler" />
+        <Parameter Name="global_address_domain" Type="Mono.Debugger.AddressDomain" />
+      </Parameters>
+      <Docs>
+        <param name="backend">To be added.</param>
+        <param name="start">To be added.</param>
+        <param name="bpm">To be added.</param>
+        <param name="error_handler">To be added.</param>
+        <param name="global_address_domain">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetExited">
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.TargetExitedHandler TargetExited;" />
+      <MemberType>Event</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetExitedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetOutput">
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.TargetOutputHandler TargetOutput;" />
+      <MemberType>Event</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DebuggerOutput">
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.DebuggerOutputHandler DebuggerOutput;" />
+      <MemberType>Event</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DebuggerError">
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.DebuggerErrorHandler DebuggerError;" />
+      <MemberType>Event</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerErrorHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StateChanged">
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.StateChangedHandler StateChanged;" />
+      <MemberType>Event</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.StateChangedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="server_handle">
+      <MemberSignature Language="C#" Value="protected IntPtr server_handle;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="bfd">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.Bfd bfd;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.Bfd</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="bfd_disassembler">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.BfdDisassembler bfd_disassembler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.BfdDisassembler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="address_domain">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.AddressDomain address_domain;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AddressDomain</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="thread_manager">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.ThreadManager thread_manager;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="start">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.ProcessStart start;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ProcessStart</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="bfd_container">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.Architecture.BfdContainer bfd_container;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.BfdContainer</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="symtab_collection">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.SymbolTableCollection symtab_collection;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SymbolTableCollection</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="backend">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.DebuggerBackend backend;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerBackend</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="error_handler">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.DebuggerErrorHandler error_handler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerErrorHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="breakpoint_manager">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.Backends.BreakpointManager breakpoint_manager;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.BreakpointManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="global_address_domain">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.AddressDomain global_address_domain;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AddressDomain</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="native">
+      <MemberSignature Language="C#" Value="protected readonly bool native;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="CreateInferior">
+      <MemberSignature Language="C#" Value="public static Mono.Debugger.Backends.Inferior CreateInferior (Mono.Debugger.ThreadManager thread_manager, Mono.Debugger.ProcessStart start);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="thread_manager" Type="Mono.Debugger.ThreadManager" />
+        <Parameter Name="start" Type="Mono.Debugger.ProcessStart" />
+      </Parameters>
+      <Docs>
+        <param name="thread_manager">To be added.</param>
+        <param name="start">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CreateThread">
+      <MemberSignature Language="C#" Value="public abstract Mono.Debugger.Backends.Inferior CreateThread ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="g_free">
+      <MemberSignature Language="C#" Value="protected static void g_free (IntPtr data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="data" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="check_error">
+      <MemberSignature Language="C#" Value="protected void check_error (Mono.Debugger.TargetError error);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="error" Type="Mono.Debugger.TargetError" />
+      </Parameters>
+      <Docs>
+        <param name="error">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CallMethod">
+      <MemberSignature Language="C#" Value="public void CallMethod (Mono.Debugger.TargetAddress method, long data1, long data2, long callback_arg);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="data1" Type="System.Int64" />
+        <Parameter Name="data2" Type="System.Int64" />
+        <Parameter Name="callback_arg" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <param name="data1">To be added.</param>
+        <param name="data2">To be added.</param>
+        <param name="callback_arg">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CallMethod">
+      <MemberSignature Language="C#" Value="public void CallMethod (Mono.Debugger.TargetAddress method, long arg1, string arg2, long callback_arg);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="arg1" Type="System.Int64" />
+        <Parameter Name="arg2" Type="System.String" />
+        <Parameter Name="callback_arg" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <param name="arg1">To be added.</param>
+        <param name="arg2">To be added.</param>
+        <param name="callback_arg">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="RuntimeInvoke">
+      <MemberSignature Language="C#" Value="public void RuntimeInvoke (Mono.Debugger.TargetAddress invoke_method, Mono.Debugger.TargetAddress method_argument, Mono.Debugger.TargetAddress object_argument, Mono.Debugger.TargetAddress[] param_objects, long callback_arg, bool debug);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="invoke_method" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="method_argument" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="object_argument" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="param_objects" Type="Mono.Debugger.TargetAddress[]" />
+        <Parameter Name="callback_arg" Type="System.Int64" />
+        <Parameter Name="debug" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="invoke_method">To be added.</param>
+        <param name="method_argument">To be added.</param>
+        <param name="object_argument">To be added.</param>
+        <param name="param_objects">To be added.</param>
+        <param name="callback_arg">To be added.</param>
+        <param name="debug">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="InsertBreakpoint">
+      <MemberSignature Language="C#" Value="public int InsertBreakpoint (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="InsertHardwareBreakpoint">
+      <MemberSignature Language="C#" Value="public int InsertHardwareBreakpoint (Mono.Debugger.TargetAddress address, bool fallback, out int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="fallback" Type="System.Boolean" />
+        <Parameter Name="index" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="fallback">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="RemoveBreakpoint">
+      <MemberSignature Language="C#" Value="public void RemoveBreakpoint (int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="EnableBreakpoint">
+      <MemberSignature Language="C#" Value="public void EnableBreakpoint (int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DisableBreakpoint">
+      <MemberSignature Language="C#" Value="public void DisableBreakpoint (int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Run">
+      <MemberSignature Language="C#" Value="public void Run (bool redirect_fds);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="redirect_fds" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="redirect_fds">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Attach">
+      <MemberSignature Language="C#" Value="public void Attach (int pid);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="pid" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="pid">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ProcessEvent">
+      <MemberSignature Language="C#" Value="public abstract Mono.Debugger.Backends.Inferior+ChildEvent ProcessEvent (int status);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEvent</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="status" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="status">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SetupInferior">
+      <MemberSignature Language="C#" Value="protected virtual void SetupInferior ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UpdateModules">
+      <MemberSignature Language="C#" Value="public void UpdateModules ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SimpleLookup">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress SimpleLookup (string name);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="child_exited">
+      <MemberSignature Language="C#" Value="protected void child_exited ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="ReadBuffer">
+      <MemberSignature Language="C#" Value="public byte[] ReadBuffer (Mono.Debugger.TargetAddress address, int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Byte[]</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadByte">
+      <MemberSignature Language="C#" Value="public byte ReadByte (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Byte</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadInteger">
+      <MemberSignature Language="C#" Value="public int ReadInteger (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadLongInteger">
+      <MemberSignature Language="C#" Value="public long ReadLongInteger (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadAddress">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress ReadAddress (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadGlobalAddress">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress ReadGlobalAddress (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadString">
+      <MemberSignature Language="C#" Value="public string ReadString (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadMemory">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ITargetMemoryReader ReadMemory (Mono.Debugger.TargetAddress address, int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetMemoryReader</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadMemory">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ITargetMemoryReader ReadMemory (byte[] buffer);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetMemoryReader</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="buffer" Type="System.Byte[]" />
+      </Parameters>
+      <Docs>
+        <param name="buffer">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="WriteBuffer">
+      <MemberSignature Language="C#" Value="public void WriteBuffer (Mono.Debugger.TargetAddress address, byte[] buffer);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="buffer" Type="System.Byte[]" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="buffer">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="WriteByte">
+      <MemberSignature Language="C#" Value="public void WriteByte (Mono.Debugger.TargetAddress address, byte value);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="value" Type="System.Byte" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="value">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="WriteInteger">
+      <MemberSignature Language="C#" Value="public void WriteInteger (Mono.Debugger.TargetAddress address, int value);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="value" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="value">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="WriteLongInteger">
+      <MemberSignature Language="C#" Value="public void WriteLongInteger (Mono.Debugger.TargetAddress address, long value);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="value" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="value">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="WriteAddress">
+      <MemberSignature Language="C#" Value="public void WriteAddress (Mono.Debugger.TargetAddress address, Mono.Debugger.TargetAddress value);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="value" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="value">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="change_target_state">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.TargetState change_target_state (Mono.Debugger.TargetState new_state);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetState</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="new_state" Type="Mono.Debugger.TargetState" />
+      </Parameters>
+      <Docs>
+        <param name="new_state">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Step">
+      <MemberSignature Language="C#" Value="public void Step ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Continue">
+      <MemberSignature Language="C#" Value="public void Continue ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Stop">
+      <MemberSignature Language="C#" Value="public bool Stop (out Mono.Debugger.Backends.Inferior+ChildEvent new_event);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="new_event" Type="Mono.Debugger.Backends.Inferior+ChildEvent&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="new_event">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Stop">
+      <MemberSignature Language="C#" Value="public bool Stop ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GlobalStop">
+      <MemberSignature Language="C#" Value="public void GlobalStop ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SetSignal">
+      <MemberSignature Language="C#" Value="public void SetSignal (int signal, bool send_it);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="signal" Type="System.Int32" />
+        <Parameter Name="send_it" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="signal">To be added.</param>
+        <param name="send_it">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Detach">
+      <MemberSignature Language="C#" Value="public void Detach ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Shutdown">
+      <MemberSignature Language="C#" Value="public void Shutdown ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Kill">
+      <MemberSignature Language="C#" Value="public void Kill ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetRegisters">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Registers GetRegisters ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Registers</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SetRegisters">
+      <MemberSignature Language="C#" Value="public void SetRegisters (Mono.Debugger.Registers registers);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="registers" Type="Mono.Debugger.Registers" />
+      </Parameters>
+      <Docs>
+        <param name="registers">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetCurrentFrame">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Backends.Inferior+StackFrame GetCurrentFrame ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+StackFrame</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetBacktrace">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Backends.Inferior+StackFrame[] GetBacktrace (int max_frames, Mono.Debugger.TargetAddress stop);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+StackFrame[]</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="max_frames" Type="System.Int32" />
+        <Parameter Name="stop" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="max_frames">To be added.</param>
+        <param name="stop">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetReturnAddress">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GetReturnAddress ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetMemoryMaps">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetMemoryArea[] GetMemoryMaps ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetMemoryArea[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="OnMemoryChanged">
+      <MemberSignature Language="C#" Value="protected virtual void OnMemoryChanged ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="HasTarget">
+      <MemberSignature Language="C#" Value="public bool HasTarget { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="PID">
+      <MemberSignature Language="C#" Value="public int PID { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TID">
+      <MemberSignature Language="C#" Value="public int TID { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DebuggerBackend">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.DebuggerBackend DebuggerBackend { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerBackend</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ProcessStart">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ProcessStart ProcessStart { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ProcessStart</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="BfdContainer">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Architecture.BfdContainer BfdContainer { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.BfdContainer</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="BreakpointManager">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Backends.BreakpointManager BreakpointManager { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.BreakpointManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Bfd">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Architecture.Bfd Bfd { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.Bfd</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="MainMethodAddress">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress MainMethodAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetIntegerSize">
+      <MemberSignature Language="C#" Value="public int TargetIntegerSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetLongIntegerSize">
+      <MemberSignature Language="C#" Value="public int TargetLongIntegerSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetAddressSize">
+      <MemberSignature Language="C#" Value="public int TargetAddressSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsBigEndian">
+      <MemberSignature Language="C#" Value="public bool IsBigEndian { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="AddressDomain">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.AddressDomain AddressDomain { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AddressDomain</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GlobalAddressDomain">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.AddressDomain GlobalAddressDomain { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AddressDomain</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CanWrite">
+      <MemberSignature Language="C#" Value="public bool CanWrite { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="State">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetState State { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetState</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CurrentFrame">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress CurrentFrame { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CurrentInstructionIsBreakpoint">
+      <MemberSignature Language="C#" Value="public bool CurrentInstructionIsBreakpoint { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Disassembler">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.IDisassembler Disassembler { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IDisassembler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Architecture">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.IArchitecture Architecture { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IArchitecture</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Modules">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Module[] Modules { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Module[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SIGKILL">
+      <MemberSignature Language="C#" Value="public abstract int SIGKILL { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SIGSTOP">
+      <MemberSignature Language="C#" Value="public abstract int SIGSTOP { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SIGINT">
+      <MemberSignature Language="C#" Value="public abstract int SIGINT { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SIGCHLD">
+      <MemberSignature Language="C#" Value="public abstract int SIGCHLD { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="MonoThreadAbortSignal">
+      <MemberSignature Language="C#" Value="public abstract int MonoThreadAbortSignal { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="child_pid">
+      <MemberSignature Language="C#" Value="private int child_pid;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="tid">
+      <MemberSignature Language="C#" Value="private int tid;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="initialized">
+      <MemberSignature Language="C#" Value="private bool initialized;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_info">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ITargetInfo target_info;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetInfo</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="arch">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.IArchitecture arch;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IArchitecture</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_state">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetState target_state;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetState</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TargetExited">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetExitedHandler TargetExited;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetExitedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TargetOutput">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetOutputHandler TargetOutput;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="DebuggerOutput">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerOutputHandler DebuggerOutput;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="DebuggerError">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerErrorHandler DebuggerError;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerErrorHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="StateChanged">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.StateChangedHandler StateChanged;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.StateChangedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ITargetAccess.InsertBreakpoint">
+      <MemberSignature Language="C#" Value="private int Mono.Debugger.ITargetAccess.InsertBreakpoint (Mono.Debugger.Breakpoint bpt, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="bpt" Type="Mono.Debugger.Breakpoint" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="bpt">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_spawn">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, Mono.Debugger.Backends.ChildOutputHandler stdout_handler, Mono.Debugger.Backends.ChildOutputHandler stderr_handler, out IntPtr error);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="working_directory" Type="System.String" />
+        <Parameter Name="argv" Type="System.String[]" />
+        <Parameter Name="envp" Type="System.String[]" />
+        <Parameter Name="child_pid" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="stdout_handler" Type="Mono.Debugger.Backends.ChildOutputHandler" />
+        <Parameter Name="stderr_handler" Type="Mono.Debugger.Backends.ChildOutputHandler" />
+        <Parameter Name="error" Type="System.IntPtr&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="working_directory">To be added.</param>
+        <param name="argv">To be added.</param>
+        <param name="envp">To be added.</param>
+        <param name="child_pid">To be added.</param>
+        <param name="stdout_handler">To be added.</param>
+        <param name="stderr_handler">To be added.</param>
+        <param name="error">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_attach">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="child_pid" Type="System.Int32" />
+        <Parameter Name="tid" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="child_pid">To be added.</param>
+        <param name="tid">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_frame">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_get_frame (IntPtr handle, out Mono.Debugger.Backends.Inferior+ServerStackFrame frame);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="frame" Type="Mono.Debugger.Backends.Inferior+ServerStackFrame&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="frame">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_current_insn_is_bpt">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_current_insn_is_bpt (IntPtr handle, out int is_breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="is_breakpoint" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="is_breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_step">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_step (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_continue">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_continue (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_detach">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_detach (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_finalize">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_finalize (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_read_memory">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_read_memory (IntPtr handle, long start, int size, IntPtr data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="start" Type="System.Int64" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="data" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="start">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_write_memory">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_write_memory (IntPtr handle, long start, int size, IntPtr data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="start" Type="System.Int64" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="data" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="start">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_target_info">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_get_target_info (out int target_int_size, out int target_long_size, out int target_address_size, out int is_bigendian);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="target_int_size" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="target_long_size" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="target_address_size" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="is_bigendian" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="target_int_size">To be added.</param>
+        <param name="target_long_size">To be added.</param>
+        <param name="target_address_size">To be added.</param>
+        <param name="is_bigendian">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_call_method">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="method_address" Type="System.Int64" />
+        <Parameter Name="method_argument1" Type="System.Int64" />
+        <Parameter Name="method_argument2" Type="System.Int64" />
+        <Parameter Name="callback_argument" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="method_address">To be added.</param>
+        <param name="method_argument1">To be added.</param>
+        <param name="method_argument2">To be added.</param>
+        <param name="callback_argument">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_call_method_1">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="method_address" Type="System.Int64" />
+        <Parameter Name="method_argument" Type="System.Int64" />
+        <Parameter Name="string_argument" Type="System.String" />
+        <Parameter Name="callback_argument" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="method_address">To be added.</param>
+        <param name="method_argument">To be added.</param>
+        <param name="string_argument">To be added.</param>
+        <param name="callback_argument">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_call_method_invoke">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument, bool debug);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="invoke_method" Type="System.Int64" />
+        <Parameter Name="method_address" Type="System.Int64" />
+        <Parameter Name="object_address" Type="System.Int64" />
+        <Parameter Name="num_params" Type="System.Int32" />
+        <Parameter Name="param_array" Type="System.IntPtr" />
+        <Parameter Name="callback_argument" Type="System.Int64" />
+        <Parameter Name="debug" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="invoke_method">To be added.</param>
+        <param name="method_address">To be added.</param>
+        <param name="object_address">To be added.</param>
+        <param name="num_params">To be added.</param>
+        <param name="param_array">To be added.</param>
+        <param name="callback_argument">To be added.</param>
+        <param name="debug">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_insert_breakpoint">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="address" Type="System.Int64" />
+        <Parameter Name="breakpoint" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_insert_hw_breakpoint">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_insert_hw_breakpoint (IntPtr handle, out int index, long address, out int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="index" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="address" Type="System.Int64" />
+        <Parameter Name="breakpoint" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="index">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_remove_breakpoint">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_enable_breakpoint">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_enable_breakpoint (IntPtr handle, int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_disable_breakpoint">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_disable_breakpoint (IntPtr handle, int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_registers">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_get_registers (IntPtr handle, IntPtr values);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="values" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="values">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_set_registers">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_set_registers (IntPtr handle, IntPtr values);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="values" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="values">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_backtrace">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="max_frames" Type="System.Int32" />
+        <Parameter Name="stop_address" Type="System.Int64" />
+        <Parameter Name="count" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="data" Type="System.IntPtr&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="max_frames">To be added.</param>
+        <param name="stop_address">To be added.</param>
+        <param name="count">To be added.</param>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_ret_address">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_get_ret_address (IntPtr handle, out long retval);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="retval" Type="System.Int64&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="retval">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_stop">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_stop (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_global_stop">
+      <MemberSignature Language="C#" Value="private static void mono_debugger_server_global_stop ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_stop_and_wait">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_stop_and_wait (IntPtr handle, out int status);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="status" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="status">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_set_signal">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_set_signal (IntPtr handle, int signal, int send_it);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="signal" Type="System.Int32" />
+        <Parameter Name="send_it" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="signal">To be added.</param>
+        <param name="send_it">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_kill">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_kill (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_initialize">
+      <MemberSignature Language="C#" Value="private static IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="breakpoint_manager" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="breakpoint_manager">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="inferior_stdout_handler">
+      <MemberSignature Language="C#" Value="private void inferior_stdout_handler (string line);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="line" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="line">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="inferior_stderr_handler">
+      <MemberSignature Language="C#" Value="private void inferior_stderr_handler (string line);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="line" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="line">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="debugger_output">
+      <MemberSignature Language="C#" Value="private void debugger_output (string line);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="line" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="line">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="read_buffer">
+      <MemberSignature Language="C#" Value="private IntPtr read_buffer (Mono.Debugger.TargetAddress address, int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="change_target_state">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetState change_target_state (Mono.Debugger.TargetState new_state, int arg);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetState</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="new_state" Type="Mono.Debugger.TargetState" />
+        <Parameter Name="arg" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="new_state">To be added.</param>
+        <param name="arg">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="check_disposed">
+      <MemberSignature Language="C#" Value="private void check_disposed ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

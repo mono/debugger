@@ -1,0 +1,299 @@
+<Type Name="MonoBuiltinTypes" FullName="Mono.Debugger.Languages.CSharp.MonoBuiltinTypes">
+  <TypeSignature Language="C#" Value="internal class MonoBuiltinTypes" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoBuiltinTypes (Mono.Debugger.Languages.CSharp.MonoSymbolTable table, Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address, Mono.Debugger.Languages.CSharp.MonoSymbolFile corlib);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="table" Type="Mono.Debugger.Languages.CSharp.MonoSymbolTable" />
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="corlib" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+      </Parameters>
+      <Docs>
+        <param name="table">To be added.</param>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="corlib">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ObjectType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoObjectType ObjectType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoObjectType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ValueType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoClass ValueType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ByteType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType ByteType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="VoidType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoOpaqueType VoidType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoOpaqueType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="BooleanType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType BooleanType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SByteType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType SByteType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Int16Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType Int16Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UInt16Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType UInt16Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Int32Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType Int32Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UInt32Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType UInt32Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IntType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType IntType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UIntType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType UIntType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Int64Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType Int64Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UInt64Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType UInt64Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SingleType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType SingleType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DoubleType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType DoubleType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CharType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoFundamentalType CharType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StringType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoStringType StringType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoStringType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="EnumType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoClass EnumType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="EnumInfo">
+      <MemberSignature Language="C#" Value="public readonly int EnumInfo;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ArrayType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoClass ArrayType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ArrayInfo">
+      <MemberSignature Language="C#" Value="public readonly int ArrayInfo;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ExceptionType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoClass ExceptionType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TypeInfoSize">
+      <MemberSignature Language="C#" Value="protected readonly int TypeInfoSize;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

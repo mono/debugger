@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,7 +15,6 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="Null">
       <MemberSignature Language="C#" Value="public static Mono.Debugger.SourceAddress Null;" />
@@ -32,55 +29,9 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName=".ctor">
-      <MemberSignature Language="C#" Value="public SourceAddress (Mono.Debugger.IMethodSource source, int row);" />
-      <MemberType>Constructor</MemberType>
-      <ReturnValue />
-      <Parameters>
-        <Parameter Name="source" Type="Mono.Debugger.IMethodSource" />
-        <Parameter Name="row" Type="System.Int32" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="source">a <see cref="T:Mono.Debugger.IMethodSource" /></param>
-        <param name="row">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.SourceAddress" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName=".ctor">
-      <MemberSignature Language="C#" Value="public SourceAddress (Mono.Debugger.IMethodSource source, int row, int offset, int range);" />
-      <MemberType>Constructor</MemberType>
-      <ReturnValue />
-      <Parameters>
-        <Parameter Name="source" Type="Mono.Debugger.IMethodSource" />
-        <Parameter Name="row" Type="System.Int32" />
-        <Parameter Name="offset" Type="System.Int32" />
-        <Parameter Name="range" Type="System.Int32" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="source">a <see cref="T:Mono.Debugger.IMethodSource" /></param>
-        <param name="row">a <see cref="T:System.Int32" /></param>
-        <param name="offset">a <see cref="T:System.Int32" /></param>
-        <param name="range">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.SourceAddress" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
+    
+    
     <Member MemberName="Location">
       <MemberSignature Language="C#" Value="public Mono.Debugger.SourceLocation Location { get; };" />
       <MemberType>Property</MemberType>
@@ -90,20 +41,20 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SourceLocation" /></returns>
+        <value>a <see cref="T:Mono.Debugger.SourceLocation" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="MethodSource">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.IMethodSource MethodSource { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.MethodSource MethodSource { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
-        <ReturnType>Mono.Debugger.IMethodSource</ReturnType>
+        <ReturnType>Mono.Debugger.MethodSource</ReturnType>
       </ReturnValue>
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.IMethodSource" /></returns>
+        <value>a <see cref="T:Mono.Debugger.IMethodSource" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -116,7 +67,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -129,7 +80,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -142,7 +93,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -155,7 +106,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -168,8 +119,98 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public SourceAddress (Mono.Debugger.MethodSource source, int row);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="source" Type="Mono.Debugger.MethodSource" />
+        <Parameter Name="row" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="source">To be added.</param>
+        <param name="row">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public SourceAddress (Mono.Debugger.MethodSource source, int row, int offset, int range);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="source" Type="Mono.Debugger.MethodSource" />
+        <Parameter Name="row" Type="System.Int32" />
+        <Parameter Name="offset" Type="System.Int32" />
+        <Parameter Name="range" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="source">To be added.</param>
+        <param name="row">To be added.</param>
+        <param name="offset">To be added.</param>
+        <param name="range">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private SourceAddress ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="source">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.MethodSource source;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.MethodSource</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="row">
+      <MemberSignature Language="C#" Value="private int row;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="source_offset">
+      <MemberSignature Language="C#" Value="private int source_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="source_range">
+      <MemberSignature Language="C#" Value="private int source_range;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

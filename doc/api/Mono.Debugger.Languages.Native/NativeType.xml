@@ -1,0 +1,239 @@
+<Type Name="NativeType" FullName="Mono.Debugger.Languages.Native.NativeType">
+  <TypeSignature Language="C#" Value="internal abstract class NativeType : Mono.Debugger.Languages.ITargetType" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetType</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected NativeType (string name, Mono.Debugger.TargetObjectKind kind, int size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="kind" Type="Mono.Debugger.TargetObjectKind" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="kind">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected NativeType (string name, Mono.Debugger.TargetObjectKind kind, int size, bool has_fixed_size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="kind" Type="Mono.Debugger.TargetObjectKind" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="has_fixed_size" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="kind">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="has_fixed_size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="kind">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.TargetObjectKind kind;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetObjectKind</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="type_handle">
+      <MemberSignature Language="C#" Value="protected object type_handle;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="VoidType">
+      <MemberSignature Language="C#" Value="public static readonly Mono.Debugger.Languages.Native.NativeType VoidType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="GetObject">
+      <MemberSignature Language="C#" Value="public abstract Mono.Debugger.Languages.Native.NativeObject GetObject (Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Kind">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetObjectKind Kind { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetObjectKind</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Name">
+      <MemberSignature Language="C#" Value="public string Name { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TypeHandle">
+      <MemberSignature Language="C#" Value="public object TypeHandle { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsByRef">
+      <MemberSignature Language="C#" Value="public abstract bool IsByRef { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="HasFixedSize">
+      <MemberSignature Language="C#" Value="public virtual bool HasFixedSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Size">
+      <MemberSignature Language="C#" Value="public virtual int Size { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private NativeType ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="name">
+      <MemberSignature Language="C#" Value="private string name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="has_fixed_size">
+      <MemberSignature Language="C#" Value="private bool has_fixed_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="size">
+      <MemberSignature Language="C#" Value="private int size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetType.GetObject">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetObject Mono.Debugger.Languages.ITargetType.GetObject (Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

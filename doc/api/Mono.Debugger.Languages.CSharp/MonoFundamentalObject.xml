@@ -1,0 +1,43 @@
+<Type Name="MonoFundamentalObject" FullName="Mono.Debugger.Languages.CSharp.MonoFundamentalObject">
+  <TypeSignature Language="C#" Value="internal class MonoFundamentalObject : Mono.Debugger.Languages.CSharp.MonoFundamentalObjectBase" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.CSharp.MonoFundamentalObjectBase</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoFundamentalObject (Mono.Debugger.Languages.CSharp.MonoFundamentalType type, Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.CSharp.MonoFundamentalType" />
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName="type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoFundamentalType type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,16 +1,14 @@
 <Type Name="Breakpoint" FullName="Mono.Debugger.Breakpoint">
-  <TypeSignature Language="C#" Value="public abstract class Breakpoint : ISerializable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public abstract class Breakpoint : System.Runtime.Serialization.ISerializable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
-    <summary>To be added</summary>
+    <summary>Abstract base class which is implemented by the user interface to hold the user's settings for a given breakpoint.</summary>
     <remarks>To be added</remarks>
   </Docs>
   <Base>
@@ -21,26 +19,9 @@
       <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
-    <Member MemberName="CheckBreakpointHit">
-      <MemberSignature Language="C#" Value="public virtual bool CheckBreakpointHit (Mono.Debugger.StackFrame frame);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.Boolean</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="frame">a <see cref="T:Mono.Debugger.StackFrame" /></param>
-        <returns>a <see cref="T:System.Boolean" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
     <Member MemberName="BreakpointHit">
-      <MemberSignature Language="C#" Value="public virtual void BreakpointHit (Mono.Debugger.StackFrame frame);" />
+      <MemberSignature Language="C#" Value="public abstract void BreakpointHit (Mono.Debugger.StackFrame frame);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -51,19 +32,6 @@
       <Docs>
         <summary>To be added</summary>
         <param name="frame">a <see cref="T:Mono.Debugger.StackFrame" /></param>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -92,9 +60,9 @@
       </ReturnValue>
       <Parameters />
       <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
-        <remarks>To be added</remarks>
+        <summary>An automatically generated unique index for this breakpoint.</summary>
+        <value>a <see cref="T:System.Int32" /></value>
+        <remarks>Do not restore this from a serialized memory stream, but increment the protected static variable `NextBreakpointIndex' to get a unique number.</remarks>
       </Docs>
     </Member>
     <Member MemberName="Name">
@@ -105,21 +73,8 @@
       </ReturnValue>
       <Parameters />
       <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName="Enabled">
-      <MemberSignature Language="C#" Value="public bool Enabled { set; get; };" />
-      <MemberType>Property</MemberType>
-      <ReturnValue>
-        <ReturnType>System.Boolean</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <summary>A displayable name for this breakpoint.</summary>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -131,21 +86,154 @@
       </ReturnValue>
       <Parameters />
       <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
-        <remarks>To be added</remarks>
+        <summary>Whether the BreakpointHit delegate needs the StackFrame argument.  </summary>
+        <value>a <see cref="T:System.Boolean" /></value>
+        <remarks>Constructing the StackFrame argument is an expensive operation, so you should set this to false unless your handler actually needs it.  Normally, your handler only needs this argument if it wants to access any parameters or local variables.</remarks>
       </Docs>
     </Member>
-    <Member MemberName="BreakpointChangedEvent">
-      <MemberSignature Language="C#" Value="public event Mono.Debugger.BreakpointEventHandler BreakpointChangedEvent;" />
-      <MemberType>Event</MemberType>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected Breakpoint (string name, Mono.Debugger.ThreadGroup group, bool needs_frame);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="group" Type="Mono.Debugger.ThreadGroup" />
+        <Parameter Name="needs_frame" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="group">To be added.</param>
+        <param name="needs_frame">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected Breakpoint (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="info" Type="System.Runtime.Serialization.SerializationInfo" />
+        <Parameter Name="context" Type="System.Runtime.Serialization.StreamingContext" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="context">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="index">
+      <MemberSignature Language="C#" Value="protected int index;" />
+      <MemberType>Field</MemberType>
       <ReturnValue>
-        <ReturnType>Mono.Debugger.BreakpointEventHandler</ReturnType>
+        <ReturnType>System.Int32</ReturnType>
       </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="name">
+      <MemberSignature Language="C#" Value="protected string name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="needs_frame">
+      <MemberSignature Language="C#" Value="protected bool needs_frame;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="group">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.ThreadGroup group;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadGroup</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="NextBreakpointIndex">
+      <MemberSignature Language="C#" Value="protected static int NextBreakpointIndex;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Breaks">
+      <MemberSignature Language="C#" Value="public bool Breaks (int id);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="id" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="id">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CheckBreakpointHit">
+      <MemberSignature Language="C#" Value="public virtual bool CheckBreakpointHit (Mono.Debugger.TargetAddress frame_address, Mono.Debugger.StackFrame frame, Mono.Debugger.ITargetAccess target);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame_address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="target" Type="Mono.Debugger.ITargetAccess" />
+      </Parameters>
+      <Docs>
+        <param name="frame_address">To be added.</param>
+        <param name="frame">The stack frame with which this method can use to inspect local variables and parameters.  null if the `HandlerNeedsFrame' property is false.</param>
+        <param name="target">To be added.</param>
+        <summary>This method is called each time the breakpoint is hit.</summary>
+        <returns>true if the target should remain stopped.
+false if the breakpoint is to be ignored.</returns>
+        <remarks>This delegate is invoked _before_ any notifications are sent, so you must not attempt to access the CurrentFrame or the CurrentMethod in this handler.  If you want to inspect local variables, or parameters, set the `HandlerNeedsFrame' property to true and use the @frame argument which is passed to you.
+The reason for this behavior is that these notifications won't be sent at all (and thus the CurrentFrame and CurrentMethod won't even get computed) if the target is to be continued.  This is necessary to get a flicker-free UI if you have a breakpoint which is ignored the first 1000 times it is hit, for instance.
+</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ThreadGroup">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ThreadGroup ThreadGroup { set; get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadGroup</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>The <see cref="T:System.Threading.ThreadGroup" /> in which this breakpoint is active.  If null, this it is active in all threads.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private Breakpoint ();" />
+      <MemberType>Constructor</MemberType>
       <Parameters />
       <Docs>
-        <summary>To be added</summary>
-        <remarks>To be added</remarks>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

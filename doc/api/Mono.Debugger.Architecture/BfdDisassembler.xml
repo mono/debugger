@@ -1,0 +1,390 @@
+<Type Name="BfdDisassembler" FullName="Mono.Debugger.Architecture.BfdDisassembler">
+  <TypeSignature Language="C#" Value="internal class BfdDisassembler : Mono.Debugger.IDisassembler, System.IDisposable" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.IDisassembler</InterfaceName>
+    </Interface>
+    <Interface>
+      <InterfaceName>System.IDisposable</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="GetInstructionSize">
+      <MemberSignature Language="C#" Value="public int GetInstructionSize (Mono.Debugger.TargetAddress location);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DisassembleMethod">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.AssemblerMethod DisassembleMethod (Mono.Debugger.IMethod method);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AssemblerMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.IMethod" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DisassembleInstruction">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.AssemblerLine DisassembleInstruction (Mono.Debugger.IMethod method, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AssemblerLine</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.IMethod" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SymbolTable">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ISimpleSymbolTable SymbolTable { set; get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISimpleSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="internal BfdDisassembler (Mono.Debugger.ITargetMemoryAccess memory, IntPtr dis, IntPtr info);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="dis" Type="System.IntPtr" />
+        <Parameter Name="info" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="dis">To be added.</param>
+        <param name="info">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="dis">
+      <MemberSignature Language="C#" Value="private IntPtr dis;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="info">
+      <MemberSignature Language="C#" Value="private IntPtr info;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="memory">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ITargetMemoryAccess memory;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetMemoryAccess</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symbol_table">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ISimpleSymbolTable symbol_table;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISimpleSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="read_handler">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.BfdDisassembler+ReadMemoryHandler read_handler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.BfdDisassembler+ReadMemoryHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="output_handler">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.BfdDisassembler+OutputHandler output_handler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.BfdDisassembler+OutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="print_handler">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.BfdDisassembler+PrintAddressHandler print_handler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.BfdDisassembler+PrintAddressHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="sb">
+      <MemberSignature Language="C#" Value="private System.Text.StringBuilder sb;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Text.StringBuilder</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="memory_exception">
+      <MemberSignature Language="C#" Value="private Exception memory_exception;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Exception</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_method">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.IMethod current_method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IMethod</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bfd_glue_disassemble_insn">
+      <MemberSignature Language="C#" Value="private static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="dis" Type="System.IntPtr" />
+        <Parameter Name="info" Type="System.IntPtr" />
+        <Parameter Name="address" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="dis">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bfd_glue_setup_disassembler">
+      <MemberSignature Language="C#" Value="private static void bfd_glue_setup_disassembler (IntPtr info, Mono.Debugger.Architecture.BfdDisassembler+ReadMemoryHandler read_memory_cb, Mono.Debugger.Architecture.BfdDisassembler+OutputHandler output_cb, Mono.Debugger.Architecture.BfdDisassembler+PrintAddressHandler print_address_cb);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="info" Type="System.IntPtr" />
+        <Parameter Name="read_memory_cb" Type="Mono.Debugger.Architecture.BfdDisassembler+ReadMemoryHandler" />
+        <Parameter Name="output_cb" Type="Mono.Debugger.Architecture.BfdDisassembler+OutputHandler" />
+        <Parameter Name="print_address_cb" Type="Mono.Debugger.Architecture.BfdDisassembler+PrintAddressHandler" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="read_memory_cb">To be added.</param>
+        <param name="output_cb">To be added.</param>
+        <param name="print_address_cb">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bfd_glue_free_disassembler">
+      <MemberSignature Language="C#" Value="private static void bfd_glue_free_disassembler (IntPtr info);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="info" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="read_memory_func">
+      <MemberSignature Language="C#" Value="private int read_memory_func (long address, IntPtr data, int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="System.Int64" />
+        <Parameter Name="data" Type="System.IntPtr" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="data">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="output_func">
+      <MemberSignature Language="C#" Value="private void output_func (string output);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="output" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="output">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="output_func">
+      <MemberSignature Language="C#" Value="private void output_func (long address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="print_address_func">
+      <MemberSignature Language="C#" Value="private void print_address_func (long address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

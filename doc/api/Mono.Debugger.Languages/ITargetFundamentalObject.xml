@@ -1,28 +1,24 @@
 <Type Name="ITargetFundamentalObject" FullName="Mono.Debugger.Languages.ITargetFundamentalObject">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetFundamentalObject" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetFundamentalObject : Mono.Debugger.Languages.ITargetObject" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces>
     <Interface>
       <InterfaceName>Mono.Debugger.Languages.ITargetObject</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="HasObject">
-      <MemberSignature Language="C#" Value="public virtual bool HasObject { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasObject { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -30,12 +26,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Object">
-      <MemberSignature Language="C#" Value="public virtual object Object { set; get; };" />
+      <MemberSignature Language="C#" Value="public object Object { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Object</ReturnType>
@@ -43,7 +39,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Object" /></returns>
+        <value>a <see cref="T:System.Object" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

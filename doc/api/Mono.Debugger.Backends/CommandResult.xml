@@ -1,0 +1,158 @@
+<Type Name="CommandResult" FullName="Mono.Debugger.Backends.CommandResult">
+  <TypeSignature Language="C#" Value="internal class CommandResult" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CommandResult (Mono.Debugger.Backends.Inferior+ChildEventType type, int arg);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Backends.Inferior+ChildEventType" />
+        <Parameter Name="arg" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="arg">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CommandResult (Mono.Debugger.Backends.Inferior+ChildEventType type, object data);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Backends.Inferior+ChildEventType" />
+        <Parameter Name="data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CommandResult (Mono.Debugger.Backends.CommandResultType type, object data);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Backends.CommandResultType" />
+        <Parameter Name="data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CommandResult (Exception e);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="e" Type="System.Exception" />
+      </Parameters>
+      <Docs>
+        <param name="e">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Ok">
+      <MemberSignature Language="C#" Value="public static readonly Mono.Debugger.Backends.CommandResult Ok;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CommandResult</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Busy">
+      <MemberSignature Language="C#" Value="public static readonly Mono.Debugger.Backends.CommandResult Busy;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CommandResult</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Interrupted">
+      <MemberSignature Language="C#" Value="public static readonly Mono.Debugger.Backends.CommandResult Interrupted;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CommandResult</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Backends.CommandResultType Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CommandResultType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="EventType">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Backends.Inferior+ChildEventType EventType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Argument">
+      <MemberSignature Language="C#" Value="public readonly int Argument;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Data">
+      <MemberSignature Language="C#" Value="public readonly object Data;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private CommandResult ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

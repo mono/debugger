@@ -1,0 +1,218 @@
+<Type Name="NativeStructMember" FullName="Mono.Debugger.Languages.Native.NativeStructMember">
+  <TypeSignature Language="C#" Value="internal abstract class NativeStructMember : Mono.Debugger.Languages.ITargetMemberInfo" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetMemberInfo</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public NativeStructMember (Mono.Debugger.Languages.Native.NativeType type, string name, int index, bool is_static);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.Native.NativeType" />
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="index" Type="System.Int32" />
+        <Parameter Name="is_static" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="name">To be added.</param>
+        <param name="index">To be added.</param>
+        <param name="is_static">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.Native.NativeType Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Name">
+      <MemberSignature Language="C#" Value="public readonly string Name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Index">
+      <MemberSignature Language="C#" Value="public readonly int Index;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsStatic">
+      <MemberSignature Language="C#" Value="public readonly bool IsStatic;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  <Member MemberName="Mono.Debugger.Languages.ITargetMemberInfo.get_Handle">
+      <MemberSignature Language="C#" Value="private object Mono.Debugger.Languages.ITargetMemberInfo.get_Handle ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetMemberInfo.get_IsStatic">
+      <MemberSignature Language="C#" Value="private bool Mono.Debugger.Languages.ITargetMemberInfo.get_IsStatic ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetMemberInfo.get_Index">
+      <MemberSignature Language="C#" Value="private int Mono.Debugger.Languages.ITargetMemberInfo.get_Index ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetMemberInfo.get_Name">
+      <MemberSignature Language="C#" Value="private string Mono.Debugger.Languages.ITargetMemberInfo.get_Name ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetMemberInfo.get_Type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType Mono.Debugger.Languages.ITargetMemberInfo.get_Type ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetMemberInfo.Handle">
+      <MemberSignature Language="C#" Value="private object ITargetMemberInfo.Handle { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetMemberInfo.IsStatic">
+      <MemberSignature Language="C#" Value="private bool ITargetMemberInfo.IsStatic { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetMemberInfo.Index">
+      <MemberSignature Language="C#" Value="private int ITargetMemberInfo.Index { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetMemberInfo.Name">
+      <MemberSignature Language="C#" Value="private string ITargetMemberInfo.Name { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetMemberInfo.Type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType ITargetMemberInfo.Type { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

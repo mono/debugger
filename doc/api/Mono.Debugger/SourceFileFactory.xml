@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,7 +15,6 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="FindFile">
       <MemberSignature Language="C#" Value="public Mono.Debugger.ISourceBuffer FindFile (string name);" />
@@ -42,8 +39,52 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SourceFileFactory" /></returns>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  <Member MemberName="Exists">
+      <MemberSignature Language="C#" Value="public bool Exists (string name);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  <Member MemberName="files">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable files;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="read_file">
+      <MemberSignature Language="C#" Value="private object read_file (object user_data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="user_data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="user_data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

@@ -1,0 +1,126 @@
+<Type Name="NativeTypeAlias" FullName="Mono.Debugger.Languages.Native.NativeTypeAlias">
+  <TypeSignature Language="C#" Value="internal class NativeTypeAlias : Mono.Debugger.Languages.Native.NativeType, Mono.Debugger.Languages.ITargetTypeAlias" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.Native.NativeType</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetTypeAlias</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public NativeTypeAlias (string name, string target_name);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="target_name" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="target_name">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public NativeTypeAlias (string name, string target_name, Mono.Debugger.Languages.Native.NativeType target);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="target_name" Type="System.String" />
+        <Parameter Name="target" Type="Mono.Debugger.Languages.Native.NativeType" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="target_name">To be added.</param>
+        <param name="target">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="TargetName">
+      <MemberSignature Language="C#" Value="public string TargetName { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetType">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.Native.NativeType TargetType { set; get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_name">
+      <MemberSignature Language="C#" Value="private string target_name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeType target_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetTypeAlias.get_TargetType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType Mono.Debugger.Languages.ITargetTypeAlias.get_TargetType ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetTypeAlias.TargetType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType ITargetTypeAlias.TargetType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

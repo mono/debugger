@@ -1,0 +1,53 @@
+<Type Name="MonoArrayBounds" FullName="Mono.Debugger.Languages.CSharp.MonoArrayBounds">
+  <TypeSignature Language="C#" Value="internal struct MonoArrayBounds" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.ValueType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoArrayBounds (int lower, int length);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="lower" Type="System.Int32" />
+        <Parameter Name="length" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="lower">To be added.</param>
+        <param name="length">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Lower">
+      <MemberSignature Language="C#" Value="public readonly int Lower;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Length">
+      <MemberSignature Language="C#" Value="public readonly int Length;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

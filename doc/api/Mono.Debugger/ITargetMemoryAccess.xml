@@ -1,31 +1,24 @@
 <Type Name="ITargetMemoryAccess" FullName="Mono.Debugger.ITargetMemoryAccess">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetMemoryAccess" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetMemoryAccess : Mono.Debugger.ITargetMemoryInfo" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces>
     <Interface>
       <InterfaceName>Mono.Debugger.ITargetMemoryInfo</InterfaceName>
     </Interface>
-    <Interface>
-      <InterfaceName>Mono.Debugger.ITargetInfo</InterfaceName>
-    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="ReadByte">
-      <MemberSignature Language="C#" Value="public virtual byte ReadByte (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public byte ReadByte (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte</ReturnType>
@@ -41,7 +34,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadInteger">
-      <MemberSignature Language="C#" Value="public virtual int ReadInteger (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public int ReadInteger (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32</ReturnType>
@@ -57,7 +50,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadLongInteger">
-      <MemberSignature Language="C#" Value="public virtual long ReadLongInteger (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public long ReadLongInteger (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Int64</ReturnType>
@@ -73,7 +66,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress ReadAddress (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress ReadAddress (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -89,7 +82,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadGlobalAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress ReadGlobalAddress (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress ReadGlobalAddress (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -105,7 +98,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadString">
-      <MemberSignature Language="C#" Value="public virtual string ReadString (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public string ReadString (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.String</ReturnType>
@@ -121,7 +114,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadMemory">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.ITargetMemoryReader ReadMemory (Mono.Debugger.TargetAddress address, int size);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ITargetMemoryReader ReadMemory (Mono.Debugger.TargetAddress address, int size);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.ITargetMemoryReader</ReturnType>
@@ -139,7 +132,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadMemory">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.ITargetMemoryReader ReadMemory (byte [] buffer);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ITargetMemoryReader ReadMemory (byte[] buffer);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.ITargetMemoryReader</ReturnType>
@@ -155,7 +148,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadBuffer">
-      <MemberSignature Language="C#" Value="public virtual byte [] ReadBuffer (Mono.Debugger.TargetAddress address, int size);" />
+      <MemberSignature Language="C#" Value="public byte[] ReadBuffer (Mono.Debugger.TargetAddress address, int size);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte[]</ReturnType>
@@ -172,37 +165,10 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="GetRegister">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Register GetRegister (int register);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.Register</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="register" Type="System.Int32" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="register">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.Register" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName="GetRegisters">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Register[] GetRegisters ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.Register[]</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Register[]" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
+    
     <Member MemberName="CanWrite">
-      <MemberSignature Language="C#" Value="public virtual bool CanWrite { get; };" />
+      <MemberSignature Language="C#" Value="public bool CanWrite { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -210,8 +176,21 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetRegisters">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Registers GetRegisters ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Registers</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

@@ -1,0 +1,26 @@
+<Type Name="BfdDisassembler+ReadMemoryHandler" FullName="Mono.Debugger.Architecture.BfdDisassembler+ReadMemoryHandler">
+  <TypeSignature Language="C#" Value="private delegate int ReadMemoryHandler(long address, IntPtr data, int size);" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Delegate</BaseTypeName>
+  </Base>
+  <Parameters>
+    <Parameter Name="address" Type="System.Int64" />
+    <Parameter Name="data" Type="System.IntPtr" />
+    <Parameter Name="size" Type="System.Int32" />
+  </Parameters>
+  <ReturnValue>
+    <ReturnType>System.Int32</ReturnType>
+  </ReturnValue>
+  <Docs>
+    <param name="address">To be added.</param>
+    <param name="data">To be added.</param>
+    <param name="size">To be added.</param>
+    <summary>To be added.</summary>
+    <returns>To be added.</returns>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

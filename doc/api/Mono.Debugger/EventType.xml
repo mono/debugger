@@ -1,0 +1,26 @@
+<Type Name="EventType" FullName="Mono.Debugger.EventType">
+  <TypeSignature Language="C#" Value="public enum EventType" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Enum</BaseTypeName>
+  </Base>
+  <Members>
+    <Member MemberName="CatchException">
+      <MemberSignature Language="C#" Value="CatchException" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.EventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

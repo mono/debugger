@@ -1,0 +1,383 @@
+<Type Name="DwarfReader+DieCompileUnit" FullName="Mono.Debugger.Architecture.DwarfReader+DieCompileUnit">
+  <TypeSignature Language="C#" Value="protected class DieCompileUnit : Mono.Debugger.Architecture.DwarfReader+Die, Mono.Debugger.ISymbolContainer" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Architecture.DwarfReader+Die</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ISymbolContainer</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public DieCompileUnit (Mono.Debugger.Architecture.DwarfBinaryReader reader, Mono.Debugger.Architecture.DwarfReader+CompilationUnit comp_unit, Mono.Debugger.Architecture.DwarfReader+AbbrevEntry abbrev);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Architecture.DwarfBinaryReader" />
+        <Parameter Name="comp_unit" Type="Mono.Debugger.Architecture.DwarfReader+CompilationUnit" />
+        <Parameter Name="abbrev" Type="Mono.Debugger.Architecture.DwarfReader+AbbrevEntry" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="comp_unit">To be added.</param>
+        <param name="abbrev">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="line_offset">
+      <MemberSignature Language="C#" Value="protected long line_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="has_lines">
+      <MemberSignature Language="C#" Value="protected bool has_lines;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="GetSubprogram">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Architecture.DwarfReader+DieSubprogram GetSubprogram (long offset);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DieSubprogram</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="offset" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="offset">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    <Member MemberName="Engine">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.DwarfReader+LineNumberEngine Engine { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Subprograms">
+      <MemberSignature Language="C#" Value="public System.Collections.ArrayList Subprograms { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ImageFile">
+      <MemberSignature Language="C#" Value="public string ImageFile { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CompilationDirectory">
+      <MemberSignature Language="C#" Value="public string CompilationDirectory { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsContinuous">
+      <MemberSignature Language="C#" Value="public bool IsContinuous { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="LineNumberOffset">
+      <MemberSignature Language="C#" Value="public long LineNumberOffset { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SymbolTable">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ISymbolTable SymbolTable { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StartAddress">
+      <MemberSignature Language="C#" Value="public long StartAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="EndAddress">
+      <MemberSignature Language="C#" Value="public long EndAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SourceFile">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceFile SourceFile { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceFile</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="start_pc">
+      <MemberSignature Language="C#" Value="private long start_pc;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="end_pc">
+      <MemberSignature Language="C#" Value="private long end_pc;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="name">
+      <MemberSignature Language="C#" Value="private string name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="comp_dir">
+      <MemberSignature Language="C#" Value="private string comp_dir;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="is_continuous">
+      <MemberSignature Language="C#" Value="private bool is_continuous;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="file">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SourceFile file;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceFile</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfReader+DieCompileUnit+CompileUnitSymbolTable symtab;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DieCompileUnit+CompileUnitSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="children">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList children;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="engine">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfReader+LineNumberEngine engine;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ISymbolContainer.get_EndAddress">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress Mono.Debugger.ISymbolContainer.get_EndAddress ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ISymbolContainer.get_StartAddress">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress Mono.Debugger.ISymbolContainer.get_StartAddress ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="read_children">
+      <MemberSignature Language="C#" Value="private void read_children ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="read_symtab">
+      <MemberSignature Language="C#" Value="private void read_symtab ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ISymbolContainer.EndAddress">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress ISymbolContainer.EndAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ISymbolContainer.StartAddress">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress ISymbolContainer.StartAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

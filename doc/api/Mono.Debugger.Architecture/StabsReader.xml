@@ -1,0 +1,666 @@
+<Type Name="StabsReader" FullName="Mono.Debugger.Architecture.StabsReader">
+  <TypeSignature Language="C#" Value="internal class StabsReader : Mono.Debugger.SymbolTable, Mono.Debugger.ISimpleSymbolTable, Mono.Debugger.ISymbolFile" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.SymbolTable</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ISimpleSymbolTable</InterfaceName>
+    </Interface>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ISymbolFile</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public StabsReader (Mono.Debugger.Architecture.Bfd bfd, Mono.Debugger.Module module, Mono.Debugger.SourceFileFactory factory);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="bfd" Type="Mono.Debugger.Architecture.Bfd" />
+        <Parameter Name="module" Type="Mono.Debugger.Module" />
+        <Parameter Name="factory" Type="Mono.Debugger.SourceFileFactory" />
+      </Parameters>
+      <Docs>
+        <param name="bfd">To be added.</param>
+        <param name="module">To be added.</param>
+        <param name="factory">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="module">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Module module;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Module</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="methods">
+      <MemberSignature Language="C#" Value="protected System.Collections.ArrayList methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="bfd">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.Bfd bfd;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.Bfd</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="factory">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.SourceFileFactory factory;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceFileFactory</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="entry_point">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.TargetAddress entry_point;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="IsSupported">
+      <MemberSignature Language="C#" Value="public static bool IsSupported (Mono.Debugger.Architecture.Bfd bfd);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="bfd" Type="Mono.Debugger.Architecture.Bfd" />
+      </Parameters>
+      <Docs>
+        <param name="bfd">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="FindMethod">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod FindMethod (string name);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="HandleSymbolOrType">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.StabsReader+MyVariable HandleSymbolOrType (ref Mono.Debugger.Architecture.StabsReader+Entry entry);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.StabsReader+MyVariable</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="entry" Type="Mono.Debugger.Architecture.StabsReader+Entry&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="entry">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="RecordType">
+      <MemberSignature Language="C#" Value="protected void RecordType (string name, Mono.Debugger.Languages.Native.NativeType type);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="type" Type="Mono.Debugger.Languages.Native.NativeType" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="type">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ParseType">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.Native.NativeType ParseType (string name, string alias, string def, ref int pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="alias" Type="System.String" />
+        <Parameter Name="def" Type="System.String" />
+        <Parameter Name="pos" Type="System.Int32&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="alias">To be added.</param>
+        <param name="def">To be added.</param>
+        <param name="pos">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ParsePointer">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.Native.NativeType ParsePointer (string name, string alias, string def, ref int pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="alias" Type="System.String" />
+        <Parameter Name="def" Type="System.String" />
+        <Parameter Name="pos" Type="System.Int32&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="alias">To be added.</param>
+        <param name="def">To be added.</param>
+        <param name="pos">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ParseStruct">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.Native.NativeType ParseStruct (string name, string def, ref int pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="def" Type="System.String" />
+        <Parameter Name="pos" Type="System.Int32&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="def">To be added.</param>
+        <param name="pos">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ParseArray">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.Native.NativeType ParseArray (string name, string def, ref int pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="def" Type="System.String" />
+        <Parameter Name="pos" Type="System.Int32&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="def">To be added.</param>
+        <param name="pos">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ParseRange">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.Native.NativeType ParseRange (string name, string type, string def, ref int pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="type" Type="System.String" />
+        <Parameter Name="def" Type="System.String" />
+        <Parameter Name="pos" Type="System.Int32&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="type">To be added.</param>
+        <param name="def">To be added.</param>
+        <param name="pos">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Read">
+      <MemberSignature Language="C#" Value="public void Read ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    <Member MemberName="EntryPoint">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress EntryPoint { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Sources">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceFile[] Sources { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceFile[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StabTableReader">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetBinaryReader StabTableReader { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetBinaryReader</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StringTableReader">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetBinaryReader StringTableReader { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetBinaryReader</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="FileName">
+      <MemberSignature Language="C#" Value="public string FileName { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="files">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList files;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="types">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable types;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="filename">
+      <MemberSignature Language="C#" Value="private string filename;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ranges">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ISymbolRange[] ranges;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISymbolRange[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="stabs_reader">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ObjectCache stabs_reader;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ObjectCache</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="stabstr_reader">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ObjectCache stabstr_reader;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ObjectCache</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="string_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeStringType string_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeStringType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="int_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType int_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="char_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType char_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="long_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType long_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="uint_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType uint_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ulong_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType ulong_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="long_long_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType long_long_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ulong_long_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType ulong_long_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="short_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType short_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ushort_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType ushort_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="schar_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType schar_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="uchar_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType uchar_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="float_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType float_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="double_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType double_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ISymbolFile.GetMethods">
+      <MemberSignature Language="C#" Value="private void Mono.Debugger.ISymbolFile.GetMethods (Mono.Debugger.SourceFile file);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="file" Type="Mono.Debugger.SourceFile" />
+      </Parameters>
+      <Docs>
+        <param name="file">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ISymbolFile.GetMethod">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.IMethod Mono.Debugger.ISymbolFile.GetMethod (long handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="RegisterFundamental">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.Native.NativeFundamentalType RegisterFundamental (string name, Type type, int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.Native.NativeFundamentalType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="type">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="create_reader_func">
+      <MemberSignature Language="C#" Value="private object create_reader_func (object user_data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="user_data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="user_data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="create_reader">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ObjectCache create_reader (string section_name);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ObjectCache</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="section_name" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="section_name">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,96 @@
+<Type Name="Heap" FullName="Mono.Debugger.Languages.CSharp.Heap">
+  <TypeSignature Language="C#" Value="internal class Heap" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Heap (Mono.Debugger.ITargetInfo info, Mono.Debugger.TargetAddress start, int size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="info" Type="Mono.Debugger.ITargetInfo" />
+        <Parameter Name="start" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="start">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TargetInfo">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.ITargetInfo TargetInfo;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetInfo</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StartAddress">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetAddress StartAddress;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Size">
+      <MemberSignature Language="C#" Value="public readonly int Size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Allocate">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.TargetLocation Allocate (Mono.Debugger.StackFrame frame, int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.TargetLocation</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="end">
+      <MemberSignature Language="C#" Value="private int end;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,24 +1,20 @@
 <Type Name="ITargetNotification" FullName="Mono.Debugger.ITargetNotification">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetNotification" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetNotification" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="State">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetState State { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetState State { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetState</ReturnType>
@@ -26,12 +22,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetState" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetState" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StateChanged">
-      <MemberSignature Language="C#" Value="public virtual event Mono.Debugger.StateChangedHandler StateChanged;" />
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.StateChangedHandler StateChanged;" />
       <MemberType>Event</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.StateChangedHandler</ReturnType>
@@ -43,7 +39,7 @@
       </Docs>
     </Member>
     <Member MemberName="TargetExited">
-      <MemberSignature Language="C#" Value="public virtual event Mono.Debugger.TargetExitedHandler TargetExited;" />
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.TargetExitedHandler TargetExited;" />
       <MemberType>Event</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetExitedHandler</ReturnType>

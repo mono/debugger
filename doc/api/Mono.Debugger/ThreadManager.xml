@@ -1,12 +1,10 @@
 <Type Name="ThreadManager" FullName="Mono.Debugger.ThreadManager">
   <TypeSignature Language="C#" Value="public class ThreadManager" Maintainer="auto" />
   <AssemblyInfo>
-    <AssemblyName>Mono.Debugger.Backend</AssemblyName>
+    <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,24 +15,8 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
-    <Member MemberName="StartApplication">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.Process StartApplication (Mono.Debugger.ProcessStart start);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.Process</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="start" Type="Mono.Debugger.ProcessStart" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="start">a <see cref="T:Mono.Debugger.ProcessStart" /></param>
-        <returns>a <see cref="T:Mono.Debugger.Process" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName="Kill">
       <MemberSignature Language="C#" Value="public void Kill ();" />
       <MemberType>Method</MemberType>
@@ -60,7 +42,7 @@
       </Docs>
     </Member>
     <Member MemberName="Threads">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.Process [] Threads { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Process[] Threads { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Process[]</ReturnType>
@@ -68,7 +50,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Process[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Process[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -81,7 +63,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.DebuggerBackend" /></returns>
+        <value>a <see cref="T:Mono.Debugger.DebuggerBackend" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -94,7 +76,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Process" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Process" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -107,7 +89,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.AddressDomain" /></returns>
+        <value>a <see cref="T:Mono.Debugger.AddressDomain" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -217,6 +199,1036 @@
       <Docs>
         <summary>To be added</summary>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="Initialize">
+      <MemberSignature Language="C#" Value="public static void Initialize ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="StartApplication">
+      <MemberSignature Language="C#" Value="public void StartApplication (Mono.Debugger.ProcessStart start);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="start" Type="Mono.Debugger.ProcessStart" />
+      </Parameters>
+      <Docs>
+        <param name="start">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="WaitForApplication">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Process WaitForApplication ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Process</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="OnInitializedEvent">
+      <MemberSignature Language="C#" Value="protected virtual void OnInitializedEvent (Mono.Debugger.Process new_process);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="new_process" Type="Mono.Debugger.Process" />
+      </Parameters>
+      <Docs>
+        <param name="new_process">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="OnMainThreadCreatedEvent">
+      <MemberSignature Language="C#" Value="protected virtual void OnMainThreadCreatedEvent (Mono.Debugger.Process new_process);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="new_process" Type="Mono.Debugger.Process" />
+      </Parameters>
+      <Docs>
+        <param name="new_process">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="OnThreadCreatedEvent">
+      <MemberSignature Language="C#" Value="protected virtual void OnThreadCreatedEvent (Mono.Debugger.Process new_process);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="new_process" Type="Mono.Debugger.Process" />
+      </Parameters>
+      <Docs>
+        <param name="new_process">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="OnThreadExitedEvent">
+      <MemberSignature Language="C#" Value="protected virtual void OnThreadExitedEvent (Mono.Debugger.Process process);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="process" Type="Mono.Debugger.Process" />
+      </Parameters>
+      <Docs>
+        <param name="process">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="OnTargetExitedEvent">
+      <MemberSignature Language="C#" Value="protected virtual void OnTargetExitedEvent ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="DoDispose">
+      <MemberSignature Language="C#" Value="protected virtual void DoDispose ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="internal ThreadManager (Mono.Debugger.DebuggerBackend backend);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="backend" Type="Mono.Debugger.DebuggerBackend" />
+      </Parameters>
+      <Docs>
+        <param name="backend">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="the_engine">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.SingleSteppingEngine the_engine;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.SingleSteppingEngine</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="start">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ProcessStart start;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ProcessStart</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="backend">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerBackend backend;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerBackend</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="breakpoint_manager">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.BreakpointManager breakpoint_manager;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.BreakpointManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="inferior_thread">
+      <MemberSignature Language="C#" Value="private System.Threading.Thread inferior_thread;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Threading.Thread</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="wait_thread">
+      <MemberSignature Language="C#" Value="private System.Threading.Thread wait_thread;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Threading.Thread</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ready_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerManualResetEvent ready_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerManualResetEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="wait_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerEvent wait_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="engine_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.Semaphore engine_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Semaphore</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="thread_hash">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable thread_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="has_thread_lock">
+      <MemberSignature Language="C#" Value="private bool has_thread_lock;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="thread_lock_mutex">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerMutex thread_lock_mutex;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerMutex</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="address_domain">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.AddressDomain address_domain;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AddressDomain</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="main_process">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Process main_process;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Process</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="start_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerEvent start_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="completed_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerEvent completed_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="command_mutex">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerMutex command_mutex;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerMutex</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="sync_command_running">
+      <MemberSignature Language="C#" Value="private bool sync_command_running;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="abort_requested">
+      <MemberSignature Language="C#" Value="private bool abort_requested;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="engine_is_ready">
+      <MemberSignature Language="C#" Value="private bool engine_is_ready;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="start_error">
+      <MemberSignature Language="C#" Value="private Exception start_error;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Exception</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_command">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.Command current_command;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Command</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="command_result">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.CommandResult command_result;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CommandResult</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="command_engine">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.SingleSteppingEngine command_engine;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.SingleSteppingEngine</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.SingleSteppingEngine current_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.SingleSteppingEngine</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_event_status">
+      <MemberSignature Language="C#" Value="private int current_event_status;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="initialized">
+      <MemberSignature Language="C#" Value="private bool initialized;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_manager">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.MonoThreadManager mono_manager;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.MonoThreadManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="main_method">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress main_method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="InitializedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ThreadEventHandler InitializedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadEventHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="MainThreadCreatedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ThreadEventHandler MainThreadCreatedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadEventHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ThreadCreatedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ThreadEventHandler ThreadCreatedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadEventHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ThreadExitedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ThreadEventHandler ThreadExitedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadEventHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TargetExitedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetExitedHandler TargetExitedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetExitedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TargetOutputEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetOutputHandler TargetOutputEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TargetErrorOutputEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetOutputHandler TargetErrorOutputEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="DebuggerOutputEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerOutputHandler DebuggerOutputEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerOutputHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="DebuggerErrorEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerErrorHandler DebuggerErrorEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerErrorHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_static_init">
+      <MemberSignature Language="C#" Value="private static int mono_debugger_server_static_init ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_global_init">
+      <MemberSignature Language="C#" Value="private static int mono_debugger_server_global_init ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_global_wait">
+      <MemberSignature Language="C#" Value="private static int mono_debugger_server_global_wait (out int status);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="status" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="status">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_pending_sigint">
+      <MemberSignature Language="C#" Value="private static int mono_debugger_server_get_pending_sigint ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="start_inferior">
+      <MemberSignature Language="C#" Value="private void start_inferior ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="engine_error">
+      <MemberSignature Language="C#" Value="private void engine_error (Exception ex);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="ex" Type="System.Exception" />
+      </Parameters>
+      <Docs>
+        <param name="ex">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="wait_until_engine_is_ready">
+      <MemberSignature Language="C#" Value="private void wait_until_engine_is_ready ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Initialize">
+      <MemberSignature Language="C#" Value="internal void Initialize (Mono.Debugger.Backends.Inferior inferior);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ReachedMain">
+      <MemberSignature Language="C#" Value="internal void ReachedMain ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="AcquireGlobalThreadLock">
+      <MemberSignature Language="C#" Value="internal void AcquireGlobalThreadLock (Mono.Debugger.Backends.SingleSteppingEngine caller);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="caller" Type="Mono.Debugger.Backends.SingleSteppingEngine" />
+      </Parameters>
+      <Docs>
+        <param name="caller">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ReleaseGlobalThreadLock">
+      <MemberSignature Language="C#" Value="internal void ReleaseGlobalThreadLock (Mono.Debugger.Backends.SingleSteppingEngine caller);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="caller" Type="Mono.Debugger.Backends.SingleSteppingEngine" />
+      </Parameters>
+      <Docs>
+        <param name="caller">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="thread_created">
+      <MemberSignature Language="C#" Value="private void thread_created (Mono.Debugger.Backends.Inferior inferior, int pid);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+        <Parameter Name="pid" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <param name="pid">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="KillThread">
+      <MemberSignature Language="C#" Value="internal void KillThread (Mono.Debugger.Backends.SingleSteppingEngine engine);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="engine" Type="Mono.Debugger.Backends.SingleSteppingEngine" />
+      </Parameters>
+      <Docs>
+        <param name="engine">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="HandleChildEvent">
+      <MemberSignature Language="C#" Value="internal bool HandleChildEvent (Mono.Debugger.Backends.Inferior inferior, ref Mono.Debugger.Backends.Inferior+ChildEvent cevent);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+        <Parameter Name="cevent" Type="Mono.Debugger.Backends.Inferior+ChildEvent&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <param name="cevent">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="inferior_output">
+      <MemberSignature Language="C#" Value="private void inferior_output (bool is_stderr, string line);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="is_stderr" Type="System.Boolean" />
+        <Parameter Name="line" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="is_stderr">To be added.</param>
+        <param name="line">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="debugger_output">
+      <MemberSignature Language="C#" Value="private void debugger_output (string line);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="line" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="line">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="debugger_error">
+      <MemberSignature Language="C#" Value="private void debugger_error (object sender, string message, Exception e);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="sender" Type="System.Object" />
+        <Parameter Name="message" Type="System.String" />
+        <Parameter Name="e" Type="System.Exception" />
+      </Parameters>
+      <Docs>
+        <param name="sender">To be added.</param>
+        <param name="message">To be added.</param>
+        <param name="e">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="AcquireCommandMutex">
+      <MemberSignature Language="C#" Value="internal bool AcquireCommandMutex (Mono.Debugger.Backends.SingleSteppingEngine engine);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="engine" Type="Mono.Debugger.Backends.SingleSteppingEngine" />
+      </Parameters>
+      <Docs>
+        <param name="engine">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ReleaseCommandMutex">
+      <MemberSignature Language="C#" Value="internal void ReleaseCommandMutex ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SendSyncCommand">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Backends.CommandResult SendSyncCommand (Mono.Debugger.Backends.Command command);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CommandResult</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="command" Type="Mono.Debugger.Backends.Command" />
+      </Parameters>
+      <Docs>
+        <param name="command">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SendAsyncCommand">
+      <MemberSignature Language="C#" Value="internal void SendAsyncCommand (Mono.Debugger.Backends.Command command);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="command" Type="Mono.Debugger.Backends.Command" />
+      </Parameters>
+      <Docs>
+        <param name="command">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="engine_thread_main">
+      <MemberSignature Language="C#" Value="private void engine_thread_main ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="start_wait_thread">
+      <MemberSignature Language="C#" Value="private void start_wait_thread ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="wait_thread_main">
+      <MemberSignature Language="C#" Value="private void wait_thread_main ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="check_disposed">
+      <MemberSignature Language="C#" Value="private void check_disposed ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BreakpointManager">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Backends.BreakpointManager BreakpointManager { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.BreakpointManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="InBackgroundThread">
+      <MemberSignature Language="C#" Value="internal bool InBackgroundThread { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

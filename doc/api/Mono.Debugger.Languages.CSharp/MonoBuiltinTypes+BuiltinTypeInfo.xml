@@ -1,0 +1,134 @@
+<Type Name="MonoBuiltinTypes+BuiltinTypeInfo" FullName="Mono.Debugger.Languages.CSharp.MonoBuiltinTypes+BuiltinTypeInfo">
+  <TypeSignature Language="C#" Value="private struct BuiltinTypeInfo" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.ValueType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public BuiltinTypeInfo (Mono.Debugger.ITargetMemoryReader reader);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.ITargetMemoryReader" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Klass">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetAddress Klass;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="GetType">
+      <MemberSignature Language="C#" Value="public static Mono.Debugger.Languages.CSharp.MonoType GetType (Mono.Debugger.Languages.CSharp.MonoBuiltinTypes builtin, Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address, Mono.Debugger.Languages.CSharp.MonoSymbolFile corlib);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="builtin" Type="Mono.Debugger.Languages.CSharp.MonoBuiltinTypes" />
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="corlib" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+      </Parameters>
+      <Docs>
+        <param name="builtin">To be added.</param>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="corlib">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetType">
+      <MemberSignature Language="C#" Value="public static Mono.Debugger.Languages.CSharp.MonoType GetType (Mono.Debugger.Languages.CSharp.MonoBuiltinTypes builtin, Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address, Mono.Debugger.Languages.CSharp.MonoSymbolFile corlib, out int type_info);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="builtin" Type="Mono.Debugger.Languages.CSharp.MonoBuiltinTypes" />
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="corlib" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="type_info" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="builtin">To be added.</param>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="corlib">To be added.</param>
+        <param name="type_info">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ClassInfoAddress">
+      <MemberSignature Language="C#" Value="private readonly Mono.Debugger.TargetAddress ClassInfoAddress;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TypeInfo">
+      <MemberSignature Language="C#" Value="private readonly int TypeInfo;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ClassInfo">
+      <MemberSignature Language="C#" Value="private readonly int ClassInfo;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TypeData">
+      <MemberSignature Language="C#" Value="private readonly Mono.Debugger.TargetAddress TypeData;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

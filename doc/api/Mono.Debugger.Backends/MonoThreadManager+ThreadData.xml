@@ -1,0 +1,106 @@
+<Type Name="MonoThreadManager+ThreadData" FullName="Mono.Debugger.Backends.MonoThreadManager+ThreadData">
+  <TypeSignature Language="C#" Value="protected class ThreadData" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public ThreadData (Mono.Debugger.Backends.SingleSteppingEngine sse, int tid, int pid, Mono.Debugger.TargetAddress start_stack);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="sse" Type="Mono.Debugger.Backends.SingleSteppingEngine" />
+        <Parameter Name="tid" Type="System.Int32" />
+        <Parameter Name="pid" Type="System.Int32" />
+        <Parameter Name="start_stack" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="sse">To be added.</param>
+        <param name="tid">To be added.</param>
+        <param name="pid">To be added.</param>
+        <param name="start_stack">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public ThreadData (Mono.Debugger.Backends.SingleSteppingEngine sse, int tid, int pid);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="sse" Type="Mono.Debugger.Backends.SingleSteppingEngine" />
+        <Parameter Name="tid" Type="System.Int32" />
+        <Parameter Name="pid" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="sse">To be added.</param>
+        <param name="tid">To be added.</param>
+        <param name="pid">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="TID">
+      <MemberSignature Language="C#" Value="public readonly int TID;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="PID">
+      <MemberSignature Language="C#" Value="public readonly int PID;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsManaged">
+      <MemberSignature Language="C#" Value="public bool IsManaged;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Engine">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Backends.SingleSteppingEngine Engine;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.SingleSteppingEngine</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StartStack">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress StartStack;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,41 @@
+<Type Name="SingleSteppingEngine+CallbackCallMethod" FullName="Mono.Debugger.Backends.SingleSteppingEngine+CallbackCallMethod">
+  <TypeSignature Language="C#" Value="protected class CallbackCallMethod : Mono.Debugger.Backends.SingleSteppingEngine+Callback" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Backends.SingleSteppingEngine+Callback</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CallbackCallMethod (Mono.Debugger.Backends.CallMethodData data);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="data" Type="Mono.Debugger.Backends.CallMethodData" />
+      </Parameters>
+      <Docs>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName="data">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.CallMethodData data;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.CallMethodData</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,7 +15,6 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="CurrentDebugFlags">
       <MemberSignature Language="C#" Value="public static int CurrentDebugFlags;" />
@@ -50,7 +47,7 @@
       </Docs>
     </Member>
     <Member MemberName="Debug">
-      <MemberSignature Language="C#" Value="public static void Debug (Mono.Debugger.DebugFlags category, string message, object [] args);" />
+      <MemberSignature Language="C#" Value="public static void Debug (Mono.Debugger.DebugFlags category, string message, object[] args);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -58,7 +55,13 @@
       <Parameters>
         <Parameter Name="category" Type="Mono.Debugger.DebugFlags" />
         <Parameter Name="message" Type="System.String" />
-        <Parameter Name="args" Type="System.Object[]" />
+        <Parameter Name="args" Type="System.Object[]">
+          <Attributes>
+            <Attribute>
+              <AttributeName>System.ParamArray</AttributeName>
+            </Attribute>
+          </Attributes>
+        </Parameter>
       </Parameters>
       <Docs>
         <summary>To be added</summary>
@@ -75,8 +78,42 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Report" /></returns>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private Report ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="writer">
+      <MemberSignature Language="C#" Value="private static System.IO.StreamWriter writer;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IO.StreamWriter</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="initialize">
+      <MemberSignature Language="C#" Value="private static void initialize ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

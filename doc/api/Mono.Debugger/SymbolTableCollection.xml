@@ -1,12 +1,10 @@
 <Type Name="SymbolTableCollection" FullName="Mono.Debugger.SymbolTableCollection">
-  <TypeSignature Language="C#" Value="public class SymbolTableCollection : ISymbolTable, ISymbolLookup, ISymbolContainer, ICollection, IEnumerable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class SymbolTableCollection : Mono.Debugger.ISymbolTable, System.Collections.ICollection" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -21,19 +19,9 @@
       <InterfaceName>Mono.Debugger.ISymbolTable</InterfaceName>
     </Interface>
     <Interface>
-      <InterfaceName>Mono.Debugger.ISymbolLookup</InterfaceName>
-    </Interface>
-    <Interface>
-      <InterfaceName>Mono.Debugger.ISymbolContainer</InterfaceName>
-    </Interface>
-    <Interface>
       <InterfaceName>System.Collections.ICollection</InterfaceName>
     </Interface>
-    <Interface>
-      <InterfaceName>System.Collections.IEnumerable</InterfaceName>
-    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="AddSymbolTable">
       <MemberSignature Language="C#" Value="public void AddSymbolTable (Mono.Debugger.ISymbolTable symtab);" />
@@ -75,7 +63,7 @@
       </Docs>
     </Member>
     <Member MemberName="Lookup">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.IMethod Lookup (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.IMethod Lookup (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.IMethod</ReturnType>
@@ -91,7 +79,7 @@
       </Docs>
     </Member>
     <Member MemberName="UpdateSymbolTable">
-      <MemberSignature Language="C#" Value="public virtual void UpdateSymbolTable ();" />
+      <MemberSignature Language="C#" Value="public void UpdateSymbolTable ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -109,12 +97,11 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SymbolTableCollection" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="IsContinuous">
-      <MemberSignature Language="C#" Value="public virtual bool IsContinuous { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsContinuous { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -122,12 +109,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StartAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress StartAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress StartAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -135,12 +122,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="EndAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress EndAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress EndAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -148,12 +135,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="HasRanges">
-      <MemberSignature Language="C#" Value="public virtual bool HasRanges { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasRanges { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -161,12 +148,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="SymbolRanges">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.ISymbolRange [] SymbolRanges { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ISymbolRange[] SymbolRanges { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.ISymbolRange[]</ReturnType>
@@ -174,12 +161,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ISymbolRange[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.ISymbolRange[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="HasMethods">
-      <MemberSignature Language="C#" Value="public virtual bool HasMethods { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasMethods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -187,12 +174,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Methods">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.IMethod [] Methods { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.IMethod[] Methods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.IMethod[]</ReturnType>
@@ -200,12 +187,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.IMethod[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.IMethod[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="IsLoaded">
-      <MemberSignature Language="C#" Value="public virtual bool IsLoaded { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsLoaded { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -213,12 +200,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="SymbolTableChanged">
-      <MemberSignature Language="C#" Value="public virtual event Mono.Debugger.SymbolTableChangedHandler SymbolTableChanged;" />
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.SymbolTableChangedHandler SymbolTableChanged;" />
       <MemberType>Event</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.SymbolTableChangedHandler</ReturnType>
@@ -227,6 +214,229 @@
       <Docs>
         <summary>To be added</summary>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="symtabs">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList symtabs;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ranges">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList ranges;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="has_ranges">
+      <MemberSignature Language="C#" Value="private bool has_ranges;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="in_update">
+      <MemberSignature Language="C#" Value="private bool in_update;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="needs_update">
+      <MemberSignature Language="C#" Value="private bool needs_update;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="locked">
+      <MemberSignature Language="C#" Value="private int locked;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SymbolTableChanged">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SymbolTableChangedHandler SymbolTableChanged;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SymbolTableChangedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="System.Collections.ICollection.get_SyncRoot">
+      <MemberSignature Language="C#" Value="private object System.Collections.ICollection.get_SyncRoot ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="System.Collections.ICollection.get_IsSynchronized">
+      <MemberSignature Language="C#" Value="private bool System.Collections.ICollection.get_IsSynchronized ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="System.Collections.ICollection.get_Count">
+      <MemberSignature Language="C#" Value="private int System.Collections.ICollection.get_Count ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="System.Collections.IEnumerable.GetEnumerator">
+      <MemberSignature Language="C#" Value="private System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.IEnumerator</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="System.Collections.ICollection.CopyTo">
+      <MemberSignature Language="C#" Value="private void System.Collections.ICollection.CopyTo (Array dest, int dest_idx);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="dest" Type="System.Array" />
+        <Parameter Name="dest_idx" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="dest">To be added.</param>
+        <param name="dest_idx">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="update_ranges">
+      <MemberSignature Language="C#" Value="private void update_ranges ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="update_handler">
+      <MemberSignature Language="C#" Value="private void update_handler ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ICollection.SyncRoot">
+      <MemberSignature Language="C#" Value="private object ICollection.SyncRoot { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ICollection.IsSynchronized">
+      <MemberSignature Language="C#" Value="private bool ICollection.IsSynchronized { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ICollection.Count">
+      <MemberSignature Language="C#" Value="private int ICollection.Count { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

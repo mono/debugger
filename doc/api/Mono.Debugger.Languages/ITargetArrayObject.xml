@@ -1,19 +1,16 @@
 <Type Name="ITargetArrayObject" FullName="Mono.Debugger.Languages.ITargetArrayObject">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetArrayObject" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetArrayObject : Mono.Debugger.Languages.ITargetObject" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces>
     <Interface>
       <InterfaceName>Mono.Debugger.Languages.ITargetObject</InterfaceName>
@@ -21,12 +18,12 @@
   </Interfaces>
   <Attributes>
     <Attribute>
-      <AttributeName>System.Reflection.DefaultMemberAttribute</AttributeName>
+      <AttributeName>System.Reflection.DefaultMember(MemberName="Item")</AttributeName>
     </Attribute>
   </Attributes>
   <Members>
     <Member MemberName="LowerBound">
-      <MemberSignature Language="C#" Value="public virtual int LowerBound { get; };" />
+      <MemberSignature Language="C#" Value="public int LowerBound { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32</ReturnType>
@@ -34,12 +31,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="UpperBound">
-      <MemberSignature Language="C#" Value="public virtual int UpperBound { get; };" />
+      <MemberSignature Language="C#" Value="public int UpperBound { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32</ReturnType>
@@ -47,12 +44,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Item">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetObject Item { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject Item[int index] { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
@@ -63,7 +60,7 @@
       <Docs>
         <summary>To be added</summary>
         <param name="index">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetObject" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetObject" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

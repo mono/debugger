@@ -1,0 +1,216 @@
+<Type Name="TargetError" FullName="Mono.Debugger.TargetError">
+  <TypeSignature Language="C#" Value="public enum TargetError" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Enum</BaseTypeName>
+  </Base>
+  <Members>
+    <Member MemberName="None">
+      <MemberSignature Language="C#" Value="None" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="UnknownError">
+      <MemberSignature Language="C#" Value="UnknownError" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NoTarget">
+      <MemberSignature Language="C#" Value="NoTarget" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="AlreadyHaveTarget">
+      <MemberSignature Language="C#" Value="AlreadyHaveTarget" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CannotStartTarget">
+      <MemberSignature Language="C#" Value="CannotStartTarget" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NotStopped">
+      <MemberSignature Language="C#" Value="NotStopped" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="AlreadyStopped">
+      <MemberSignature Language="C#" Value="AlreadyStopped" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="RecursiveCall">
+      <MemberSignature Language="C#" Value="RecursiveCall" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NoSuchBreakpoint">
+      <MemberSignature Language="C#" Value="NoSuchBreakpoint" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NoSuchRegister">
+      <MemberSignature Language="C#" Value="NoSuchRegister" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="DebugRegisterOccupied">
+      <MemberSignature Language="C#" Value="DebugRegisterOccupied" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="MemoryAccess">
+      <MemberSignature Language="C#" Value="MemoryAccess" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NotImplemented">
+      <MemberSignature Language="C#" Value="NotImplemented" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="IOError">
+      <MemberSignature Language="C#" Value="IOError" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NoStack">
+      <MemberSignature Language="C#" Value="NoStack" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="NoMethod">
+      <MemberSignature Language="C#" Value="NoMethod" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="AlreadyHaveBreakpoint">
+      <MemberSignature Language="C#" Value="AlreadyHaveBreakpoint" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="SymbolTable">
+      <MemberSignature Language="C#" Value="SymbolTable" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="InvocationException">
+      <MemberSignature Language="C#" Value="InvocationException" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="LocationInvalid">
+      <MemberSignature Language="C#" Value="LocationInvalid" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

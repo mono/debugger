@@ -1,0 +1,55 @@
+<Type Name="DwarfException" FullName="Mono.Debugger.Architecture.DwarfException">
+  <TypeSignature Language="C#" Value="internal class DwarfException : System.Exception" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Exception</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public DwarfException (Mono.Debugger.Architecture.Bfd bfd, string message, object[] args);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="bfd" Type="Mono.Debugger.Architecture.Bfd" />
+        <Parameter Name="message" Type="System.String" />
+        <Parameter Name="args" Type="System.Object[]">
+          <Attributes>
+            <Attribute>
+              <AttributeName>System.ParamArray</AttributeName>
+            </Attribute>
+          </Attributes>
+        </Parameter>
+      </Parameters>
+      <Docs>
+        <param name="bfd">To be added.</param>
+        <param name="message">To be added.</param>
+        <param name="args">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public DwarfException (Mono.Debugger.Architecture.Bfd bfd, string message, Exception inner);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="bfd" Type="Mono.Debugger.Architecture.Bfd" />
+        <Parameter Name="message" Type="System.String" />
+        <Parameter Name="inner" Type="System.Exception" />
+      </Parameters>
+      <Docs>
+        <param name="bfd">To be added.</param>
+        <param name="message">To be added.</param>
+        <param name="inner">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

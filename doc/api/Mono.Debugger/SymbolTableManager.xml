@@ -1,12 +1,10 @@
 <Type Name="SymbolTableManager" FullName="Mono.Debugger.SymbolTableManager">
-  <TypeSignature Language="C#" Value="public class SymbolTableManager : IDisposable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class SymbolTableManager : System.IDisposable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -21,7 +19,6 @@
       <InterfaceName>System.IDisposable</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="SetModules">
       <MemberSignature Language="C#" Value="public void SetModules (System.Collections.ICollection modules);" />
@@ -51,7 +48,7 @@
       </Docs>
     </Member>
     <Member MemberName="Dispose">
-      <MemberSignature Language="C#" Value="public virtual void Dispose ();" />
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -69,7 +66,6 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SymbolTableManager" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -82,7 +78,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -95,7 +91,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -108,7 +104,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ISymbolTable" /></returns>
+        <value>a <see cref="T:Mono.Debugger.ISymbolTable" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -121,12 +117,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ISimpleSymbolTable" /></returns>
+        <value>a <see cref="T:Mono.Debugger.ISimpleSymbolTable" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Modules">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.Module [] Modules { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Module[] Modules { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Module[]</ReturnType>
@@ -134,7 +130,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Module[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Module[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -160,6 +156,252 @@
       <Docs>
         <summary>To be added</summary>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="OnSymbolTableChanged">
+      <MemberSignature Language="C#" Value="protected virtual void OnSymbolTableChanged ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="OnModulesChanged">
+      <MemberSignature Language="C#" Value="protected virtual void OnModulesChanged ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab_thread">
+      <MemberSignature Language="C#" Value="private System.Threading.Thread symtab_thread;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Threading.Thread</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab_reload_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerAutoResetEvent symtab_reload_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerAutoResetEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtabs_loaded_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerManualResetEvent symtabs_loaded_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerManualResetEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="modules_loaded_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerManualResetEvent modules_loaded_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerManualResetEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="update_completed_event">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.DebuggerManualResetEvent update_completed_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerManualResetEvent</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab_update_in_progress">
+      <MemberSignature Language="C#" Value="private bool symtab_update_in_progress;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="module_update_in_progress">
+      <MemberSignature Language="C#" Value="private bool module_update_in_progress;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="new_modules">
+      <MemberSignature Language="C#" Value="private System.Collections.ICollection new_modules;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ICollection</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_symtab">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ISymbolTable current_symtab;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_simple_symtab">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ISimpleSymbolTable current_simple_symtab;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISimpleSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_modules">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Module[] current_modules;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Module[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SymbolTableChangedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SymbolTableManager+SymbolTableHandler SymbolTableChangedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SymbolTableManager+SymbolTableHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ModulesChangedEvent">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SymbolTableManager+ModuleHandler ModulesChangedEvent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SymbolTableManager+ModuleHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab_thread_start">
+      <MemberSignature Language="C#" Value="private void symtab_thread_start ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab_thread_main">
+      <MemberSignature Language="C#" Value="private void symtab_thread_main ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="check_disposed">
+      <MemberSignature Language="C#" Value="private void check_disposed ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

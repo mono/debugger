@@ -1,0 +1,25 @@
+<Type Name="BreakpointHandler" FullName="Mono.Debugger.Languages.CSharp.BreakpointHandler">
+  <TypeSignature Language="C#" Value="internal delegate void BreakpointHandler(Mono.Debugger.Backends.Inferior inferior, Mono.Debugger.TargetAddress address, object user_data);" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Delegate</BaseTypeName>
+  </Base>
+  <Parameters>
+    <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+    <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+    <Parameter Name="user_data" Type="System.Object" />
+  </Parameters>
+  <ReturnValue>
+    <ReturnType>System.Void</ReturnType>
+  </ReturnValue>
+  <Docs>
+    <param name="inferior">To be added.</param>
+    <param name="address">To be added.</param>
+    <param name="user_data">To be added.</param>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,196 @@
+<Type Name="MonoPointerObject" FullName="Mono.Debugger.Languages.CSharp.MonoPointerObject">
+  <TypeSignature Language="C#" Value="internal class MonoPointerObject : Mono.Debugger.Languages.CSharp.MonoObject, Mono.Debugger.Languages.ITargetPointerObject" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.CSharp.MonoObject</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetPointerObject</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoPointerObject (Mono.Debugger.Languages.CSharp.MonoPointerType type, Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.CSharp.MonoPointerType" />
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="GetDereferencedContents">
+      <MemberSignature Language="C#" Value="public byte[] GetDereferencedContents (int size);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Byte[]</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetArrayElement">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetArrayElement (int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="Type">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetPointerType Type { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetPointerType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="HasAddress">
+      <MemberSignature Language="C#" Value="public bool HasAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Address">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress Address { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoPointerType type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoPointerType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetPointerObject.get_DereferencedObject">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetObject Mono.Debugger.Languages.ITargetPointerObject.get_DereferencedObject ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetPointerObject.get_HasDereferencedObject">
+      <MemberSignature Language="C#" Value="private bool Mono.Debugger.Languages.ITargetPointerObject.get_HasDereferencedObject ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetPointerObject.get_CurrentType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType Mono.Debugger.Languages.ITargetPointerObject.get_CurrentType ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetPointerObject.DereferencedObject">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetObject ITargetPointerObject.DereferencedObject { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetPointerObject.HasDereferencedObject">
+      <MemberSignature Language="C#" Value="private bool ITargetPointerObject.HasDereferencedObject { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetPointerObject.CurrentType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType ITargetPointerObject.CurrentType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

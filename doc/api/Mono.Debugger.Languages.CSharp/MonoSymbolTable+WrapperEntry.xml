@@ -1,0 +1,119 @@
+<Type Name="MonoSymbolTable+WrapperEntry" FullName="Mono.Debugger.Languages.CSharp.MonoSymbolTable+WrapperEntry">
+  <TypeSignature Language="C#" Value="private class WrapperEntry : Mono.Debugger.SymbolRangeEntry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.SymbolRangeEntry</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    
+    
+    
+    
+    
+    <Member MemberName="Name">
+      <MemberSignature Language="C#" Value="public readonly string Name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadWrapper">
+      <MemberSignature Language="C#" Value="public static Mono.Debugger.Languages.CSharp.MonoSymbolTable+WrapperEntry ReadWrapper (Mono.Debugger.Languages.CSharp.MonoSymbolTable table, Mono.Debugger.ITargetMemoryReader reader);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolTable+WrapperEntry</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="table" Type="Mono.Debugger.Languages.CSharp.MonoSymbolTable" />
+        <Parameter Name="reader" Type="Mono.Debugger.ITargetMemoryReader" />
+      </Parameters>
+      <Docs>
+        <param name="table">To be added.</param>
+        <param name="reader">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="private WrapperEntry (Mono.Debugger.Languages.CSharp.MonoSymbolTable table, string name, Mono.Debugger.TargetAddress start, Mono.Debugger.TargetAddress end, Mono.Debugger.TargetAddress func, Mono.Debugger.TargetAddress method_start, Mono.Debugger.TargetAddress method_end);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="table" Type="Mono.Debugger.Languages.CSharp.MonoSymbolTable" />
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="start" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="end" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="func" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="method_start" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="method_end" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="table">To be added.</param>
+        <param name="name">To be added.</param>
+        <param name="start">To be added.</param>
+        <param name="end">To be added.</param>
+        <param name="func">To be added.</param>
+        <param name="method_start">To be added.</param>
+        <param name="method_end">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="table">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoSymbolTable table;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="func">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress func;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_start">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress method_start;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_end">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress method_end;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

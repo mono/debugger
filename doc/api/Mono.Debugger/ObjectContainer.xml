@@ -1,12 +1,10 @@
 <Type Name="ObjectContainer" FullName="Mono.Debugger.ObjectContainer">
-  <TypeSignature Language="C#" Value="public class ObjectContainer : IDisposable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class ObjectContainer : System.IDisposable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -21,7 +19,6 @@
       <InterfaceName>System.IDisposable</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="AddObject">
       <MemberSignature Language="C#" Value="public void AddObject (Mono.Debugger.ObjectCache data);" />
@@ -39,7 +36,7 @@
       </Docs>
     </Member>
     <Member MemberName="Dispose">
-      <MemberSignature Language="C#" Value="public virtual void Dispose ();" />
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -57,8 +54,59 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ObjectContainer" /></returns>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="objects">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList objects;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="check_disposed">
+      <MemberSignature Language="C#" Value="private void check_disposed ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

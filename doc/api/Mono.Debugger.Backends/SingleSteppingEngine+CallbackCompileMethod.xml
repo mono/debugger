@@ -1,0 +1,55 @@
+<Type Name="SingleSteppingEngine+CallbackCompileMethod" FullName="Mono.Debugger.Backends.SingleSteppingEngine+CallbackCompileMethod">
+  <TypeSignature Language="C#" Value="protected class CallbackCompileMethod : Mono.Debugger.Backends.SingleSteppingEngine+Callback" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Backends.SingleSteppingEngine+Callback</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CallbackCompileMethod (Mono.Debugger.TargetAddress compile, Mono.Debugger.TargetAddress trampoline);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="compile" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="trampoline" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="compile">To be added.</param>
+        <param name="trampoline">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+  <Member MemberName="compile">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress compile;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="trampoline">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress trampoline;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

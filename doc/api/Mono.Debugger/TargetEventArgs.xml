@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,7 +15,6 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="Type">
       <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetEventType Type;" />
@@ -58,19 +55,7 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName=".ctor">
       <MemberSignature Language="C#" Value="public TargetEventArgs (Mono.Debugger.TargetEventType type, object data);" />
       <MemberType>Constructor</MemberType>
@@ -83,7 +68,6 @@
         <summary>To be added</summary>
         <param name="type">a <see cref="T:System.Int32" /></param>
         <param name="data">a <see cref="T:System.Object" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetEventArgs" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -101,7 +85,6 @@
         <param name="type">a <see cref="T:System.Int32" /></param>
         <param name="data">a <see cref="T:System.Object" /></param>
         <param name="frame">a <see cref="T:Mono.Debugger.StackFrame" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetEventArgs" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -114,8 +97,22 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public TargetEventArgs (Mono.Debugger.TargetEventType type, Mono.Debugger.StackFrame frame);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.TargetEventType" />
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="frame">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

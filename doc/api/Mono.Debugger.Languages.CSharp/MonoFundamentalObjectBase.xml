@@ -1,0 +1,91 @@
+<Type Name="MonoFundamentalObjectBase" FullName="Mono.Debugger.Languages.CSharp.MonoFundamentalObjectBase">
+  <TypeSignature Language="C#" Value="internal abstract class MonoFundamentalObjectBase : Mono.Debugger.Languages.CSharp.MonoClassObject, Mono.Debugger.Languages.ITargetFundamentalObject" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.CSharp.MonoClassObject</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetFundamentalObject</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoFundamentalObjectBase (Mono.Debugger.Languages.CSharp.MonoClass type, Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.CSharp.MonoClass" />
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="GetObject">
+      <MemberSignature Language="C#" Value="protected abstract object GetObject (Mono.Debugger.ITargetMemoryReader reader, Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.ITargetMemoryReader" />
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="HasObject">
+      <MemberSignature Language="C#" Value="public bool HasObject { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Object">
+      <MemberSignature Language="C#" Value="public object Object { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetObject">
+      <MemberSignature Language="C#" Value="internal object GetObject ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

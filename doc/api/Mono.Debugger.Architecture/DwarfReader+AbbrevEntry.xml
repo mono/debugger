@@ -1,0 +1,114 @@
+<Type Name="DwarfReader+AbbrevEntry" FullName="Mono.Debugger.Architecture.DwarfReader+AbbrevEntry">
+  <TypeSignature Language="C#" Value="protected class AbbrevEntry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public AbbrevEntry (Mono.Debugger.Architecture.DwarfReader dwarf, Mono.Debugger.Architecture.DwarfBinaryReader reader);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="dwarf" Type="Mono.Debugger.Architecture.DwarfReader" />
+        <Parameter Name="reader" Type="Mono.Debugger.Architecture.DwarfBinaryReader" />
+      </Parameters>
+      <Docs>
+        <param name="dwarf">To be added.</param>
+        <param name="reader">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="Attributes">
+      <MemberSignature Language="C#" Value="public readonly System.Collections.ArrayList Attributes;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ID">
+      <MemberSignature Language="C#" Value="public int ID { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Tag">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Architecture.DwarfReader+DwarfTag Tag { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DwarfTag</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="HasChildren">
+      <MemberSignature Language="C#" Value="public bool HasChildren { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="abbrev_id">
+      <MemberSignature Language="C#" Value="private int abbrev_id;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="tag">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfReader+DwarfTag tag;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DwarfTag</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="has_children">
+      <MemberSignature Language="C#" Value="private bool has_children;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

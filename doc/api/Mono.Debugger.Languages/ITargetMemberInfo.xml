@@ -1,24 +1,20 @@
 <Type Name="ITargetMemberInfo" FullName="Mono.Debugger.Languages.ITargetMemberInfo">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetMemberInfo" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetMemberInfo" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="Type">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetType Type { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetType Type { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
@@ -26,12 +22,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetType" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetType" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Name">
-      <MemberSignature Language="C#" Value="public virtual string Name { get; };" />
+      <MemberSignature Language="C#" Value="public string Name { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.String</ReturnType>
@@ -39,12 +35,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Index">
-      <MemberSignature Language="C#" Value="public virtual int Index { get; };" />
+      <MemberSignature Language="C#" Value="public int Index { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32</ReturnType>
@@ -52,12 +48,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="IsStatic">
-      <MemberSignature Language="C#" Value="public virtual bool IsStatic { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsStatic { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -65,12 +61,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Handle">
-      <MemberSignature Language="C#" Value="public virtual object Handle { get; };" />
+      <MemberSignature Language="C#" Value="public object Handle { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Object</ReturnType>
@@ -78,7 +74,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Object" /></returns>
+        <value>a <see cref="T:System.Object" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

@@ -1,0 +1,41 @@
+<Type Name="DwarfReader+DieCompileUnit+CompileUnitSymbolTable" FullName="Mono.Debugger.Architecture.DwarfReader+DieCompileUnit+CompileUnitSymbolTable">
+  <TypeSignature Language="C#" Value="protected class CompileUnitSymbolTable : Mono.Debugger.SymbolTable" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.SymbolTable</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CompileUnitSymbolTable (Mono.Debugger.Architecture.DwarfReader+DieCompileUnit comp_unit_die);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="comp_unit_die" Type="Mono.Debugger.Architecture.DwarfReader+DieCompileUnit" />
+      </Parameters>
+      <Docs>
+        <param name="comp_unit_die">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName="comp_unit_die">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfReader+DieCompileUnit comp_unit_die;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DieCompileUnit</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

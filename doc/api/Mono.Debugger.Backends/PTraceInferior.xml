@@ -1,0 +1,107 @@
+<Type Name="PTraceInferior" FullName="Mono.Debugger.Backends.PTraceInferior">
+  <TypeSignature Language="C#" Value="internal class PTraceInferior : Mono.Debugger.Backends.Inferior" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Backends.Inferior</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public PTraceInferior (Mono.Debugger.DebuggerBackend backend, Mono.Debugger.ProcessStart start, Mono.Debugger.Backends.BreakpointManager bpm, Mono.Debugger.DebuggerErrorHandler error_handler, Mono.Debugger.AddressDomain global_domain, Mono.Debugger.ThreadManager thread_manager);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="backend" Type="Mono.Debugger.DebuggerBackend" />
+        <Parameter Name="start" Type="Mono.Debugger.ProcessStart" />
+        <Parameter Name="bpm" Type="Mono.Debugger.Backends.BreakpointManager" />
+        <Parameter Name="error_handler" Type="Mono.Debugger.DebuggerErrorHandler" />
+        <Parameter Name="global_domain" Type="Mono.Debugger.AddressDomain" />
+        <Parameter Name="thread_manager" Type="Mono.Debugger.ThreadManager" />
+      </Parameters>
+      <Docs>
+        <param name="backend">To be added.</param>
+        <param name="start">To be added.</param>
+        <param name="bpm">To be added.</param>
+        <param name="error_handler">To be added.</param>
+        <param name="global_domain">To be added.</param>
+        <param name="thread_manager">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+  <Member MemberName="has_signals">
+      <MemberSignature Language="C#" Value="private bool has_signals;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="signal_info">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.PTraceInferior+SignalInfo signal_info;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.PTraceInferior+SignalInfo</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_dispatch_event">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.Backends.Inferior+ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="status" Type="System.Int32" />
+        <Parameter Name="arg" Type="System.Int64&amp;" RefType="out" />
+        <Parameter Name="data1" Type="System.Int64&amp;" RefType="out" />
+        <Parameter Name="data2" Type="System.Int64&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="status">To be added.</param>
+        <param name="arg">To be added.</param>
+        <param name="data1">To be added.</param>
+        <param name="data2">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_server_get_signal_info">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.TargetError mono_debugger_server_get_signal_info (IntPtr handle, out IntPtr data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetError</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+        <Parameter Name="data" Type="System.IntPtr&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

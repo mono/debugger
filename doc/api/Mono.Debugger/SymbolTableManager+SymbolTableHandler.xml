@@ -1,0 +1,25 @@
+<Type Name="SymbolTableManager+SymbolTableHandler" FullName="Mono.Debugger.SymbolTableManager+SymbolTableHandler">
+  <TypeSignature Language="C#" Value="public delegate void SymbolTableHandler(object sender, Mono.Debugger.ISymbolTable symbol_table, Mono.Debugger.ISimpleSymbolTable simple_symtab);" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Delegate</BaseTypeName>
+  </Base>
+  <Parameters>
+    <Parameter Name="sender" Type="System.Object" />
+    <Parameter Name="symbol_table" Type="Mono.Debugger.ISymbolTable" />
+    <Parameter Name="simple_symtab" Type="Mono.Debugger.ISimpleSymbolTable" />
+  </Parameters>
+  <ReturnValue>
+    <ReturnType>System.Void</ReturnType>
+  </ReturnValue>
+  <Docs>
+    <param name="sender">To be added.</param>
+    <param name="symbol_table">To be added.</param>
+    <param name="simple_symtab">To be added.</param>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,12 +1,10 @@
 <Type Name="TargetMemoryException" FullName="Mono.Debugger.TargetMemoryException">
-  <TypeSignature Language="C#" Value="public class TargetMemoryException : Mono.Debugger.TargetException, ISerializable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class TargetMemoryException : Mono.Debugger.TargetException" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,11 +15,7 @@
     <BaseTypeName>Mono.Debugger.TargetException</BaseTypeName>
   </Base>
   <Interfaces>
-    <Interface>
-      <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
-    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName=".ctor">
       <MemberSignature Language="C#" Value="public TargetMemoryException (string message);" />
@@ -33,7 +27,6 @@
       <Docs>
         <summary>To be added</summary>
         <param name="message">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetMemoryException" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -47,7 +40,6 @@
       <Docs>
         <summary>To be added</summary>
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetMemoryException" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -63,8 +55,16 @@
         <summary>To be added</summary>
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <param name="size">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetMemoryException" /></returns>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public TargetMemoryException ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

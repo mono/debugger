@@ -1,0 +1,65 @@
+<Type Name="MonoEnumType" FullName="Mono.Debugger.Languages.CSharp.MonoEnumType">
+  <TypeSignature Language="C#" Value="internal class MonoEnumType : Mono.Debugger.Languages.CSharp.MonoFundamentalType" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.CSharp.MonoFundamentalType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoEnumType (Type type, int size, Mono.Debugger.TargetBinaryReader info, Mono.Debugger.Languages.CSharp.MonoSymbolFile file);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="info" Type="Mono.Debugger.TargetBinaryReader" />
+        <Parameter Name="file" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="file">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Supports">
+      <MemberSignature Language="C#" Value="public static bool Supports (Type type, Mono.Debugger.TargetBinaryReader info);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="info" Type="Mono.Debugger.TargetBinaryReader" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="info">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="element_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoType element_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,65 @@
+<Type Name="SingleSteppingEngine+CallbackRuntimeInvoke" FullName="Mono.Debugger.Backends.SingleSteppingEngine+CallbackRuntimeInvoke">
+  <TypeSignature Language="C#" Value="protected class CallbackRuntimeInvoke : Mono.Debugger.Backends.SingleSteppingEngine+Callback" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Backends.SingleSteppingEngine+Callback</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public CallbackRuntimeInvoke (Mono.Debugger.Backends.RuntimeInvokeData rdata);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="rdata" Type="Mono.Debugger.Backends.RuntimeInvokeData" />
+      </Parameters>
+      <Docs>
+        <param name="rdata">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+  <Member MemberName="rdata">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Backends.RuntimeInvokeData rdata;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.RuntimeInvokeData</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_compiled">
+      <MemberSignature Language="C#" Value="private bool method_compiled;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

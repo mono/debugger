@@ -1,12 +1,10 @@
 <Type Name="ObjectCache" FullName="Mono.Debugger.ObjectCache">
-  <TypeSignature Language="C#" Value="public class ObjectCache : IDisposable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class ObjectCache : System.IDisposable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -21,7 +19,6 @@
       <InterfaceName>System.IDisposable</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="Flush">
       <MemberSignature Language="C#" Value="public void Flush ();" />
@@ -36,7 +33,7 @@
       </Docs>
     </Member>
     <Member MemberName="Dispose">
-      <MemberSignature Language="C#" Value="public virtual void Dispose ();" />
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -47,19 +44,7 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName=".ctor">
       <MemberSignature Language="C#" Value="public ObjectCache (Mono.Debugger.ObjectCacheFunc func, object user_data, int ttl);" />
       <MemberType>Constructor</MemberType>
@@ -74,7 +59,6 @@
         <param name="func">a <see cref="T:Mono.Debugger.ObjectCacheFunc" /></param>
         <param name="user_data">a <see cref="T:System.Object" /></param>
         <param name="ttl">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.ObjectCache" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -87,7 +71,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Object" /></returns>
+        <value>a <see cref="T:System.Object" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -100,8 +84,207 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Object" /></returns>
+        <value>a <see cref="T:System.Object" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private ObjectCache ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="weak_reference">
+      <MemberSignature Language="C#" Value="private WeakReference weak_reference;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.WeakReference</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="func">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ObjectCacheFunc func;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ObjectCacheFunc</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="user_data">
+      <MemberSignature Language="C#" Value="private object user_data;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="cached_object">
+      <MemberSignature Language="C#" Value="private object cached_object;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="initial_ttl">
+      <MemberSignature Language="C#" Value="private int initial_ttl;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ttl">
+      <MemberSignature Language="C#" Value="private int ttl;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="id">
+      <MemberSignature Language="C#" Value="private int id;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="objects">
+      <MemberSignature Language="C#" Value="private static System.Collections.ArrayList objects;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mutex">
+      <MemberSignature Language="C#" Value="private static Mono.Debugger.DebuggerMutex mutex;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerMutex</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="next_id">
+      <MemberSignature Language="C#" Value="private static int next_id;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="cleanup_process">
+      <MemberSignature Language="C#" Value="private static void cleanup_process (object dummy);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="dummy" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="dummy">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="timeout_func">
+      <MemberSignature Language="C#" Value="private void timeout_func ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="check_disposed">
+      <MemberSignature Language="C#" Value="private void check_disposed ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

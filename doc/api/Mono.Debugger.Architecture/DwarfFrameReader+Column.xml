@@ -1,0 +1,62 @@
+<Type Name="DwarfFrameReader+Column" FullName="Mono.Debugger.Architecture.DwarfFrameReader+Column">
+  <TypeSignature Language="C#" Value="protected struct Column" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.ValueType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Column (Mono.Debugger.Architecture.DwarfFrameReader+State state);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="state" Type="Mono.Debugger.Architecture.DwarfFrameReader+State" />
+      </Parameters>
+      <Docs>
+        <param name="state">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="State">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Architecture.DwarfFrameReader+State State;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfFrameReader+State</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Register">
+      <MemberSignature Language="C#" Value="public int Register;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Offset">
+      <MemberSignature Language="C#" Value="public int Offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

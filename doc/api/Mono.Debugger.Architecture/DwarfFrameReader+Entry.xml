@@ -1,0 +1,242 @@
+<Type Name="DwarfFrameReader+Entry" FullName="Mono.Debugger.Architecture.DwarfFrameReader+Entry">
+  <TypeSignature Language="C#" Value="protected class Entry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Entry (Mono.Debugger.Architecture.DwarfFrameReader+CIE cie);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="cie" Type="Mono.Debugger.Architecture.DwarfFrameReader+CIE" />
+      </Parameters>
+      <Docs>
+        <param name="cie">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Entry (Mono.Debugger.Architecture.DwarfFrameReader+CIE cie, Mono.Debugger.TargetAddress initial_location, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="cie" Type="Mono.Debugger.Architecture.DwarfFrameReader+CIE" />
+        <Parameter Name="initial_location" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="cie">To be added.</param>
+        <param name="initial_location">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="cie">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Architecture.DwarfFrameReader+CIE cie;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfFrameReader+CIE</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="current_address">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.TargetAddress current_address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="address">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.TargetAddress address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Read">
+      <MemberSignature Language="C#" Value="public void Read (Mono.Debugger.Architecture.DwarfBinaryReader reader, long end_pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Architecture.DwarfBinaryReader" />
+        <Parameter Name="end_pos" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="end_pos">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    <Member MemberName="Unwind">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SimpleStackFrame Unwind (Mono.Debugger.SimpleStackFrame frame, Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.IArchitecture arch);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SimpleStackFrame</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.SimpleStackFrame" />
+        <Parameter Name="target" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="arch" Type="Mono.Debugger.IArchitecture" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="target">To be added.</param>
+        <param name="arch">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Columns">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Architecture.DwarfFrameReader+Column[] Columns { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfFrameReader+Column[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="columns">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfFrameReader+Column[] columns;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfFrameReader+Column[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetArchRegister">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.I386Register GetArchRegister (int dwarf_index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.I386Register</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="dwarf_index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="dwarf_index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetRegister">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Register GetRegister (Mono.Debugger.Registers regs, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Register</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="regs" Type="Mono.Debugger.Registers" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="regs">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetRegisterValue">
+      <MemberSignature Language="C#" Value="private long GetRegisterValue (Mono.Debugger.Registers regs, Mono.Debugger.I386Register reg, Mono.Debugger.Architecture.DwarfFrameReader+Column column);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="regs" Type="Mono.Debugger.Registers" />
+        <Parameter Name="reg" Type="Mono.Debugger.I386Register" />
+        <Parameter Name="column" Type="Mono.Debugger.Architecture.DwarfFrameReader+Column" />
+      </Parameters>
+      <Docs>
+        <param name="regs">To be added.</param>
+        <param name="reg">To be added.</param>
+        <param name="column">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetValue">
+      <MemberSignature Language="C#" Value="private void GetValue (Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.Registers regs, Mono.Debugger.TargetAddress cfa, Mono.Debugger.I386Register reg, Mono.Debugger.Architecture.DwarfFrameReader+Column column);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="target" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="regs" Type="Mono.Debugger.Registers" />
+        <Parameter Name="cfa" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="reg" Type="Mono.Debugger.I386Register" />
+        <Parameter Name="column" Type="Mono.Debugger.Architecture.DwarfFrameReader+Column" />
+      </Parameters>
+      <Docs>
+        <param name="target">To be added.</param>
+        <param name="regs">To be added.</param>
+        <param name="cfa">To be added.</param>
+        <param name="reg">To be added.</param>
+        <param name="column">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SetRegisters">
+      <MemberSignature Language="C#" Value="private void SetRegisters (Mono.Debugger.Registers regs, Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.IArchitecture arch, Mono.Debugger.Architecture.DwarfFrameReader+Column[] columns);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="regs" Type="Mono.Debugger.Registers" />
+        <Parameter Name="target" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="arch" Type="Mono.Debugger.IArchitecture" />
+        <Parameter Name="columns" Type="Mono.Debugger.Architecture.DwarfFrameReader+Column[]" />
+      </Parameters>
+      <Docs>
+        <param name="regs">To be added.</param>
+        <param name="target">To be added.</param>
+        <param name="arch">To be added.</param>
+        <param name="columns">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

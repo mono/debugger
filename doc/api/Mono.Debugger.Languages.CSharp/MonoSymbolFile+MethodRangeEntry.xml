@@ -1,0 +1,110 @@
+<Type Name="MonoSymbolFile+MethodRangeEntry" FullName="Mono.Debugger.Languages.CSharp.MonoSymbolFile+MethodRangeEntry">
+  <TypeSignature Language="C#" Value="private class MethodRangeEntry : Mono.Debugger.SymbolRangeEntry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.SymbolRangeEntry</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    
+    
+    
+    
+    <Member MemberName="ReadRanges">
+      <MemberSignature Language="C#" Value="public static System.Collections.ArrayList ReadRanges (Mono.Debugger.Languages.CSharp.MonoSymbolFile reader, Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.ITargetMemoryReader memory, int count);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="target" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryReader" />
+        <Parameter Name="count" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="target">To be added.</param>
+        <param name="memory">To be added.</param>
+        <param name="count">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="private MethodRangeEntry (Mono.Debugger.Languages.CSharp.MonoSymbolFile reader, int index, byte[] contents, Mono.Debugger.TargetAddress start_address, Mono.Debugger.TargetAddress end_address);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="index" Type="System.Int32" />
+        <Parameter Name="contents" Type="System.Byte[]" />
+        <Parameter Name="start_address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="end_address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="index">To be added.</param>
+        <param name="contents">To be added.</param>
+        <param name="start_address">To be added.</param>
+        <param name="end_address">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="reader">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoSymbolFile reader;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="index">
+      <MemberSignature Language="C#" Value="private int index;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="contents">
+      <MemberSignature Language="C#" Value="private byte[] contents;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Byte[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetMethod">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod GetMethod ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

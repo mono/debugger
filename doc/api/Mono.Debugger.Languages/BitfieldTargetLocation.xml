@@ -1,0 +1,102 @@
+<Type Name="BitfieldTargetLocation" FullName="Mono.Debugger.Languages.BitfieldTargetLocation">
+  <TypeSignature Language="C#" Value="public class BitfieldTargetLocation : Mono.Debugger.Languages.TargetLocation" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.TargetLocation</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public BitfieldTargetLocation (Mono.Debugger.Languages.TargetLocation relative_to, int offset, int size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="relative_to" Type="Mono.Debugger.Languages.TargetLocation" />
+        <Parameter Name="offset" Type="System.Int32" />
+        <Parameter Name="size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="relative_to">To be added.</param>
+        <param name="offset">To be added.</param>
+        <param name="size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+  <Member MemberName="relative_to">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.TargetLocation relative_to;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.TargetLocation</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bit_offset">
+      <MemberSignature Language="C#" Value="private int bit_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bit_size">
+      <MemberSignature Language="C#" Value="private int bit_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="location_invalid">
+      <MemberSignature Language="C#" Value="private void location_invalid (Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Print">
+      <MemberSignature Language="C#" Value="private string Print (bool[] data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="data" Type="System.Boolean[]" />
+      </Parameters>
+      <Docs>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

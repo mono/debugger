@@ -1,0 +1,23 @@
+<Type Name="SymbolTableManager+ModuleHandler" FullName="Mono.Debugger.SymbolTableManager+ModuleHandler">
+  <TypeSignature Language="C#" Value="public delegate void ModuleHandler(object sender, Mono.Debugger.Module[] modules);" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Delegate</BaseTypeName>
+  </Base>
+  <Parameters>
+    <Parameter Name="sender" Type="System.Object" />
+    <Parameter Name="modules" Type="Mono.Debugger.Module[]" />
+  </Parameters>
+  <ReturnValue>
+    <ReturnType>System.Void</ReturnType>
+  </ReturnValue>
+  <Docs>
+    <param name="sender">To be added.</param>
+    <param name="modules">To be added.</param>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

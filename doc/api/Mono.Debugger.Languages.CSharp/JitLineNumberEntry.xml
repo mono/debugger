@@ -1,0 +1,51 @@
+<Type Name="JitLineNumberEntry" FullName="Mono.Debugger.Languages.CSharp.JitLineNumberEntry">
+  <TypeSignature Language="C#" Value="internal struct JitLineNumberEntry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.ValueType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public JitLineNumberEntry (Mono.Debugger.TargetBinaryReader reader);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.TargetBinaryReader" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Offset">
+      <MemberSignature Language="C#" Value="public readonly int Offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Address">
+      <MemberSignature Language="C#" Value="public readonly int Address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

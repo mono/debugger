@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,21 +15,8 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName=".ctor">
       <MemberSignature Language="C#" Value="public TargetMemoryArea (Mono.Debugger.TargetAddress start, Mono.Debugger.TargetAddress end, Mono.Debugger.TargetMemoryFlags flags, string name);" />
       <MemberType>Constructor</MemberType>
@@ -48,7 +33,6 @@
         <param name="end">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <param name="flags">a <see cref="T:System.Int32" /></param>
         <param name="name">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetMemoryArea" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -61,7 +45,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -74,7 +58,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -87,7 +71,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetMemoryFlags" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetMemoryFlags" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -100,8 +84,56 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  <Member MemberName="start">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress start;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="end">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress end;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="flags">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetMemoryFlags flags;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetMemoryFlags</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="name">
+      <MemberSignature Language="C#" Value="private string name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

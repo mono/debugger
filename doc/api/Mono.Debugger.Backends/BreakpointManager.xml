@@ -1,0 +1,306 @@
+<Type Name="BreakpointManager" FullName="Mono.Debugger.Backends.BreakpointManager">
+  <TypeSignature Language="C#" Value="internal class BreakpointManager : System.IDisposable" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>System.IDisposable</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public BreakpointManager ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="Lock">
+      <MemberSignature Language="C#" Value="protected void Lock ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Unlock">
+      <MemberSignature Language="C#" Value="protected void Unlock ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="LookupBreakpoint">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Breakpoint LookupBreakpoint (Mono.Debugger.TargetAddress address, out int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Breakpoint</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="index" Type="System.Int32&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="LookupBreakpoint">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Breakpoint LookupBreakpoint (int breakpoint);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Breakpoint</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="breakpoint" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="breakpoint">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="InsertBreakpoint">
+      <MemberSignature Language="C#" Value="public int InsertBreakpoint (Mono.Debugger.Backends.Inferior inferior, Mono.Debugger.Breakpoint breakpoint, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+        <Parameter Name="breakpoint" Type="Mono.Debugger.Breakpoint" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <param name="breakpoint">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="RemoveBreakpoint">
+      <MemberSignature Language="C#" Value="public void RemoveBreakpoint (Mono.Debugger.Backends.Inferior inferior, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="protected virtual void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName="_manager">
+      <MemberSignature Language="C#" Value="private IntPtr _manager;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="breakpoints">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable breakpoints;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_breakpoint_manager_new">
+      <MemberSignature Language="C#" Value="private static IntPtr mono_debugger_breakpoint_manager_new ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_breakpoint_manager_free">
+      <MemberSignature Language="C#" Value="private static void mono_debugger_breakpoint_manager_free (IntPtr manager);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="manager" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="manager">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_breakpoint_manager_lookup">
+      <MemberSignature Language="C#" Value="private static IntPtr mono_debugger_breakpoint_manager_lookup (IntPtr manager, long address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="manager" Type="System.IntPtr" />
+        <Parameter Name="address" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="manager">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_breakpoint_manager_lock">
+      <MemberSignature Language="C#" Value="private static void mono_debugger_breakpoint_manager_lock ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_breakpoint_manager_unlock">
+      <MemberSignature Language="C#" Value="private static void mono_debugger_breakpoint_manager_unlock ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_breakpoint_info_get_id">
+      <MemberSignature Language="C#" Value="private static int mono_debugger_breakpoint_info_get_id (IntPtr info);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="info" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="check_disposed">
+      <MemberSignature Language="C#" Value="private void check_disposed ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Manager">
+      <MemberSignature Language="C#" Value="internal IntPtr Manager { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

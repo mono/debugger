@@ -1,0 +1,1560 @@
+<Type Name="MonoClass" FullName="Mono.Debugger.Languages.CSharp.MonoClass">
+  <TypeSignature Language="C#" Value="internal class MonoClass : Mono.Debugger.Languages.CSharp.MonoType, Mono.Debugger.Languages.ITargetClassType" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.CSharp.MonoType</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetClassType</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoClass (Mono.Debugger.TargetObjectKind kind, Type type, int size, bool is_classinfo, Mono.Debugger.TargetBinaryReader info, Mono.Debugger.Languages.CSharp.MonoSymbolFile file, bool has_fixed_size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="kind" Type="Mono.Debugger.TargetObjectKind" />
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="is_classinfo" Type="System.Boolean" />
+        <Parameter Name="info" Type="Mono.Debugger.TargetBinaryReader" />
+        <Parameter Name="file" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="has_fixed_size" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="kind">To be added.</param>
+        <param name="type">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="is_classinfo">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="file">To be added.</param>
+        <param name="has_fixed_size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected MonoClass (Mono.Debugger.TargetObjectKind kind, Type type, int size, bool has_fixed_size, Mono.Debugger.Languages.CSharp.MonoClass old_class);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="kind" Type="Mono.Debugger.TargetObjectKind" />
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="has_fixed_size" Type="System.Boolean" />
+        <Parameter Name="old_class" Type="Mono.Debugger.Languages.CSharp.MonoClass" />
+      </Parameters>
+      <Docs>
+        <param name="kind">To be added.</param>
+        <param name="type">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="has_fixed_size">To be added.</param>
+        <param name="old_class">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="Type">
+      <MemberSignature Language="C#" Value="public readonly Type Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Type</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="EffectiveType">
+      <MemberSignature Language="C#" Value="public readonly Type EffectiveType;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Type</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="InstanceSize">
+      <MemberSignature Language="C#" Value="public readonly int InstanceSize;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="KlassAddress">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetAddress KlassAddress;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Parent">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoClass Parent;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ClassGetStaticFieldData">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.TargetAddress ClassGetStaticFieldData;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="GetClass">
+      <MemberSignature Language="C#" Value="public static Mono.Debugger.Languages.CSharp.MonoClass GetClass (Type type, int size, Mono.Debugger.TargetBinaryReader info, Mono.Debugger.Languages.CSharp.MonoSymbolFile file);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="info" Type="Mono.Debugger.TargetBinaryReader" />
+        <Parameter Name="file" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="file">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetClassObject">
+      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.CSharp.MonoClassObject GetClassObject (Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClassObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    <Member MemberName="GetStaticEvent">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetStaticEvent (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="GetStaticField">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetStaticField (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="GetStaticProperty">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetStaticProperty (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    <Member MemberName="GetStaticMethod">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFunctionObject GetStaticMethod (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetConstructor">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFunctionObject GetConstructor (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetStaticConstructor">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFunctionObject GetStaticConstructor (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="HasParent">
+      <MemberSignature Language="C#" Value="public bool HasParent { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsValueType">
+      <MemberSignature Language="C#" Value="public bool IsValueType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ParentType">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.CSharp.MonoClass ParentType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountFields">
+      <MemberSignature Language="C#" Value="public int CountFields { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountStaticFields">
+      <MemberSignature Language="C#" Value="public int CountStaticFields { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountProperties">
+      <MemberSignature Language="C#" Value="public int CountProperties { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountStaticProperties">
+      <MemberSignature Language="C#" Value="public int CountStaticProperties { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountEvents">
+      <MemberSignature Language="C#" Value="public int CountEvents { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountStaticEvents">
+      <MemberSignature Language="C#" Value="public int CountStaticEvents { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountMethods">
+      <MemberSignature Language="C#" Value="public int CountMethods { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountStaticMethods">
+      <MemberSignature Language="C#" Value="public int CountStaticMethods { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Fields">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[] Fields { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StaticFields">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[] StaticFields { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Events">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[] Events { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StaticEvents">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[] StaticEvents { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Properties">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[] Properties { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StaticProperties">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[] StaticProperties { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Methods">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] Methods { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StaticMethods">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] StaticMethods { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Constructors">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] Constructors { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StaticConstructors">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] StaticConstructors { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="fields">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[] fields;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_fields">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[] static_fields;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="properties">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[] properties;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_properties">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[] static_properties;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="events">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[] events;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_events">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[] static_events;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="methods">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_methods">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] static_methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ctors">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] ctors;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="cctors">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[] cctors;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass+MonoMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="info">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetBinaryReader info;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetBinaryReader</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="File">
+      <MemberSignature Language="C#" Value="internal readonly Mono.Debugger.Languages.CSharp.MonoSymbolFile File;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="is_valuetype">
+      <MemberSignature Language="C#" Value="private bool is_valuetype;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_fields">
+      <MemberSignature Language="C#" Value="private int num_fields;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_static_fields">
+      <MemberSignature Language="C#" Value="private int num_static_fields;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_properties">
+      <MemberSignature Language="C#" Value="private int num_properties;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_static_properties">
+      <MemberSignature Language="C#" Value="private int num_static_properties;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_events">
+      <MemberSignature Language="C#" Value="private int num_events;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_static_events">
+      <MemberSignature Language="C#" Value="private int num_static_events;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_methods">
+      <MemberSignature Language="C#" Value="private int num_methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_static_methods">
+      <MemberSignature Language="C#" Value="private int num_static_methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_ctors">
+      <MemberSignature Language="C#" Value="private int num_ctors;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_cctors">
+      <MemberSignature Language="C#" Value="private int num_cctors;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_ifaces">
+      <MemberSignature Language="C#" Value="private int num_ifaces;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="field_info_offset">
+      <MemberSignature Language="C#" Value="private int field_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_field_info_offset">
+      <MemberSignature Language="C#" Value="private int static_field_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="property_info_offset">
+      <MemberSignature Language="C#" Value="private int property_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="event_info_offset">
+      <MemberSignature Language="C#" Value="private int event_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_property_info_offset">
+      <MemberSignature Language="C#" Value="private int static_property_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_info_offset">
+      <MemberSignature Language="C#" Value="private int method_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_method_info_offset">
+      <MemberSignature Language="C#" Value="private int static_method_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="static_event_info_offset">
+      <MemberSignature Language="C#" Value="private int static_event_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ctor_info_offset">
+      <MemberSignature Language="C#" Value="private int ctor_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="cctor_info_offset">
+      <MemberSignature Language="C#" Value="private int cctor_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="iface_info_offset">
+      <MemberSignature Language="C#" Value="private int iface_info_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_field">
+      <MemberSignature Language="C#" Value="private int first_field;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_static_field">
+      <MemberSignature Language="C#" Value="private int first_static_field;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_property">
+      <MemberSignature Language="C#" Value="private int first_property;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_static_property">
+      <MemberSignature Language="C#" Value="private int first_static_property;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_event">
+      <MemberSignature Language="C#" Value="private int first_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_static_event">
+      <MemberSignature Language="C#" Value="private int first_static_event;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_method">
+      <MemberSignature Language="C#" Value="private int first_method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="first_static_method">
+      <MemberSignature Language="C#" Value="private int first_static_method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="offset">
+      <MemberSignature Language="C#" Value="private long offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_StaticConstructors">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] Mono.Debugger.Languages.ITargetStructType.get_StaticConstructors ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_Constructors">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] Mono.Debugger.Languages.ITargetStructType.get_Constructors ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_StaticMethods">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] Mono.Debugger.Languages.ITargetStructType.get_StaticMethods ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_Methods">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] Mono.Debugger.Languages.ITargetStructType.get_Methods ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_StaticProperties">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetPropertyInfo[] Mono.Debugger.Languages.ITargetStructType.get_StaticProperties ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_Properties">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetPropertyInfo[] Mono.Debugger.Languages.ITargetStructType.get_Properties ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_StaticEvents">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetEventInfo[] Mono.Debugger.Languages.ITargetStructType.get_StaticEvents ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_Events">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetEventInfo[] Mono.Debugger.Languages.ITargetStructType.get_Events ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_StaticFields">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetFieldInfo[] Mono.Debugger.Languages.ITargetStructType.get_StaticFields ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetStructType.get_Fields">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetFieldInfo[] Mono.Debugger.Languages.ITargetStructType.get_Fields ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetClassType.get_ParentType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetClassType Mono.Debugger.Languages.ITargetClassType.get_ParentType ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetClassType</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_fields">
+      <MemberSignature Language="C#" Value="private void init_fields ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_static_fields">
+      <MemberSignature Language="C#" Value="private void init_static_fields ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_events">
+      <MemberSignature Language="C#" Value="private void init_events ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_static_events">
+      <MemberSignature Language="C#" Value="private void init_static_events ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetEvent">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.ITargetObject GetEvent (Mono.Debugger.Languages.TargetLocation location, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetField">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.ITargetObject GetField (Mono.Debugger.Languages.TargetLocation location, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_properties">
+      <MemberSignature Language="C#" Value="private void init_properties ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_static_properties">
+      <MemberSignature Language="C#" Value="private void init_static_properties ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetProperty">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.ITargetObject GetProperty (Mono.Debugger.Languages.TargetLocation location, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_methods">
+      <MemberSignature Language="C#" Value="private void init_methods ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_static_methods">
+      <MemberSignature Language="C#" Value="private void init_static_methods ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_ctors">
+      <MemberSignature Language="C#" Value="private void init_ctors ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="init_cctors">
+      <MemberSignature Language="C#" Value="private void init_cctors ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetMethod">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.ITargetFunctionObject GetMethod (Mono.Debugger.Languages.TargetLocation location, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="location">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.StaticConstructors">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] ITargetStructType.StaticConstructors { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.Constructors">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] ITargetStructType.Constructors { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.StaticMethods">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] ITargetStructType.StaticMethods { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.Methods">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetMethodInfo[] ITargetStructType.Methods { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.StaticProperties">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetPropertyInfo[] ITargetStructType.StaticProperties { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.Properties">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetPropertyInfo[] ITargetStructType.Properties { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetPropertyInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.StaticEvents">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetEventInfo[] ITargetStructType.StaticEvents { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.Events">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetEventInfo[] ITargetStructType.Events { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.StaticFields">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetFieldInfo[] ITargetStructType.StaticFields { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetStructType.Fields">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetFieldInfo[] ITargetStructType.Fields { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFieldInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetClassType.ParentType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetClassType ITargetClassType.ParentType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetClassType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

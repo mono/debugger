@@ -1,0 +1,293 @@
+<Type Name="MonoArrayType" FullName="Mono.Debugger.Languages.CSharp.MonoArrayType">
+  <TypeSignature Language="C#" Value="internal class MonoArrayType : Mono.Debugger.Languages.CSharp.MonoClass, Mono.Debugger.Languages.ITargetArrayType" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.CSharp.MonoClass</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetArrayType</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoArrayType (Type type, int size, Mono.Debugger.TargetBinaryReader info, Mono.Debugger.Languages.CSharp.MonoSymbolFile file, bool is_multi);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="size" Type="System.Int32" />
+        <Parameter Name="info" Type="Mono.Debugger.TargetBinaryReader" />
+        <Parameter Name="file" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="is_multi" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="size">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="file">To be added.</param>
+        <param name="is_multi">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="element_type">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.Languages.CSharp.MonoType element_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="Supports">
+      <MemberSignature Language="C#" Value="public static bool Supports (Type type, Mono.Debugger.TargetBinaryReader info);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="type" Type="System.Type" />
+        <Parameter Name="info" Type="Mono.Debugger.TargetBinaryReader" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="info">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="private MonoArrayType (Mono.Debugger.Languages.CSharp.MonoArrayType type);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.CSharp.MonoArrayType" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Rank">
+      <MemberSignature Language="C#" Value="internal readonly int Rank;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Dimension">
+      <MemberSignature Language="C#" Value="internal readonly int Dimension;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="LengthOffset">
+      <MemberSignature Language="C#" Value="internal readonly int LengthOffset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="LengthSize">
+      <MemberSignature Language="C#" Value="internal readonly int LengthSize;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="DataOffset">
+      <MemberSignature Language="C#" Value="internal readonly int DataOffset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BoundsOffset">
+      <MemberSignature Language="C#" Value="internal readonly int BoundsOffset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BoundsSize">
+      <MemberSignature Language="C#" Value="internal readonly int BoundsSize;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BoundsLowerOffset">
+      <MemberSignature Language="C#" Value="internal readonly int BoundsLowerOffset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BoundsLowerSize">
+      <MemberSignature Language="C#" Value="internal readonly int BoundsLowerSize;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BoundsLengthOffset">
+      <MemberSignature Language="C#" Value="internal readonly int BoundsLengthOffset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BoundsLengthSize">
+      <MemberSignature Language="C#" Value="internal readonly int BoundsLengthSize;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="subarray_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoArrayType subarray_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoArrayType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.Languages.ITargetArrayType.get_ElementType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType Mono.Debugger.Languages.ITargetArrayType.get_ElementType ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="setup">
+      <MemberSignature Language="C#" Value="private void setup ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetArrayType.ElementType">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.ITargetType ITargetArrayType.ElementType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ElementType">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.CSharp.MonoType ElementType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SubArrayType">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.CSharp.MonoArrayType SubArrayType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoArrayType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

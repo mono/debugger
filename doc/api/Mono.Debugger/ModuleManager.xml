@@ -1,12 +1,10 @@
 <Type Name="ModuleManager" FullName="Mono.Debugger.ModuleManager">
-  <TypeSignature Language="C#" Value="public class ModuleManager : ISerializable, IDeserializationCallback" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class ModuleManager : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -18,30 +16,14 @@
   </Base>
   <Interfaces>
     <Interface>
-      <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
-    </Interface>
-    <Interface>
       <InterfaceName>System.Runtime.Serialization.IDeserializationCallback</InterfaceName>
     </Interface>
+    <Interface>
+      <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
+    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
-    <Member MemberName="CreateModule">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.Module CreateModule (string name);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.Module</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="name" Type="System.String" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="name">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.Module" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName="Lock">
       <MemberSignature Language="C#" Value="public void Lock ();" />
       <MemberType>Method</MemberType>
@@ -66,20 +48,9 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="UnLoadAllModules">
-      <MemberSignature Language="C#" Value="public void UnLoadAllModules ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.Void</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName="OnDeserialization">
-      <MemberSignature Language="C#" Value="public virtual void OnDeserialization (object sender);" />
+      <MemberSignature Language="C#" Value="public void OnDeserialization (object sender);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -117,12 +88,11 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ModuleManager" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Modules">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.Module [] Modules { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Module[] Modules { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Module[]</ReturnType>
@@ -130,7 +100,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Module[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Module[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -156,6 +126,187 @@
       <Docs>
         <summary>To be added</summary>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected ModuleManager (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="info" Type="System.Runtime.Serialization.SerializationInfo" />
+        <Parameter Name="context" Type="System.Runtime.Serialization.StreamingContext" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="context">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  
+  
+  <Member MemberName="AddModule">
+      <MemberSignature Language="C#" Value="public void AddModule (Mono.Debugger.Module module);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="module" Type="Mono.Debugger.Module" />
+      </Parameters>
+      <Docs>
+        <param name="module">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  <Member MemberName="OnModulesChanged">
+      <MemberSignature Language="C#" Value="protected virtual void OnModulesChanged ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="OnBreakpointsChanged">
+      <MemberSignature Language="C#" Value="protected virtual void OnBreakpointsChanged ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="modules">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable modules;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="locked">
+      <MemberSignature Language="C#" Value="private int locked;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="needs_module_update">
+      <MemberSignature Language="C#" Value="private bool needs_module_update;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="needs_breakpoint_update">
+      <MemberSignature Language="C#" Value="private bool needs_breakpoint_update;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="deserialized_modules">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList deserialized_modules;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="initialized">
+      <MemberSignature Language="C#" Value="private bool initialized;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ModulesChanged">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ModulesChangedHandler ModulesChanged;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ModulesChangedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="BreakpointsChanged">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.BreakpointsChangedHandler BreakpointsChanged;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.BreakpointsChangedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="module_changed">
+      <MemberSignature Language="C#" Value="private void module_changed (Mono.Debugger.Module module);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="module" Type="Mono.Debugger.Module" />
+      </Parameters>
+      <Docs>
+        <param name="module">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="breakpoints_changed">
+      <MemberSignature Language="C#" Value="private void breakpoints_changed (Mono.Debugger.Module module);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="module" Type="Mono.Debugger.Module" />
+      </Parameters>
+      <Docs>
+        <param name="module">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

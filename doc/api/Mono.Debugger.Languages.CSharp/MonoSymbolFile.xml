@@ -1,0 +1,697 @@
+<Type Name="MonoSymbolFile" FullName="Mono.Debugger.Languages.CSharp.MonoSymbolFile">
+  <TypeSignature Language="C#" Value="internal class MonoSymbolFile : Mono.Debugger.Module, Mono.Debugger.ISimpleSymbolTable, Mono.Debugger.ISymbolFile, System.Runtime.Serialization.ISerializable" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Module</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ISimpleSymbolTable</InterfaceName>
+    </Interface>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ISymbolFile</InterfaceName>
+    </Interface>
+    <Interface>
+      <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="backend">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.DebuggerBackend backend;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebuggerBackend</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="range_hash">
+      <MemberSignature Language="C#" Value="protected System.Collections.Hashtable range_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="Update">
+      <MemberSignature Language="C#" Value="public bool Update (Mono.Debugger.ITargetMemoryAccess memory);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetMonoMethod">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod GetMonoMethod (int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetMonoMethod">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod GetMonoMethod (int index, byte[] contents);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+        <Parameter Name="contents" Type="System.Byte[]" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <param name="contents">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    <Member MemberName="GetSources">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceFile[] GetSources ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceFile[]</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="GetMethod">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod GetMethod (int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetMethodByToken">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod GetMethodByToken (int token);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="token" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="token">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SimpleLookup">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Symbol SimpleLookup (Mono.Debugger.TargetAddress address, bool exact_match);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Symbol</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="exact_match" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="exact_match">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Sources">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceFile[] Sources { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceFile[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="internal MonoSymbolFile (Mono.Debugger.Languages.CSharp.MonoSymbolTable table, Mono.Debugger.DebuggerBackend backend, Mono.Debugger.ITargetInfo target_info, Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="table" Type="Mono.Debugger.Languages.CSharp.MonoSymbolTable" />
+        <Parameter Name="backend" Type="Mono.Debugger.DebuggerBackend" />
+        <Parameter Name="target_info" Type="Mono.Debugger.ITargetInfo" />
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="table">To be added.</param>
+        <param name="backend">To be added.</param>
+        <param name="target_info">To be added.</param>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Index">
+      <MemberSignature Language="C#" Value="internal readonly int Index;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Assembly">
+      <MemberSignature Language="C#" Value="internal readonly System.Reflection.Assembly Assembly;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Reflection.Assembly</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Table">
+      <MemberSignature Language="C#" Value="internal readonly Mono.Debugger.Languages.CSharp.MonoSymbolTable Table;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="MonoImage">
+      <MemberSignature Language="C#" Value="internal readonly Mono.Debugger.TargetAddress MonoImage;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ImageFile">
+      <MemberSignature Language="C#" Value="internal readonly string ImageFile;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="File">
+      <MemberSignature Language="C#" Value="internal readonly Mono.CompilerServices.SymbolWriter.MonoSymbolFile File;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.CompilerServices.SymbolWriter.MonoSymbolFile</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ThreadManager">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.ThreadManager ThreadManager;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ThreadManager</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GlobalAddressDomain">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.AddressDomain GlobalAddressDomain;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AddressDomain</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="TargetInfo">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.ITargetInfo TargetInfo;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetInfo</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="symtab">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoCSharpSymbolTable symtab;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoCSharpSymbolTable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ranges">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList ranges;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="name">
+      <MemberSignature Language="C#" Value="private string name;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="dynamic_address">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress dynamic_address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="class_entry_size">
+      <MemberSignature Language="C#" Value="private int class_entry_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="address_size">
+      <MemberSignature Language="C#" Value="private int address_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="int_size">
+      <MemberSignature Language="C#" Value="private int int_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="generation">
+      <MemberSignature Language="C#" Value="private int generation;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="num_range_entries">
+      <MemberSignature Language="C#" Value="private int num_range_entries;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="last_class_table_index">
+      <MemberSignature Language="C#" Value="private int last_class_table_index;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="last_class_table">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.TargetAddress last_class_table;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_hash">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable method_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="sources">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList sources;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="source_hash">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable source_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="source_file_hash">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable source_file_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_index_hash">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable method_index_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="System.Runtime.Serialization.ISerializable.GetObjectData">
+      <MemberSignature Language="C#" Value="private void System.Runtime.Serialization.ISerializable.GetObjectData (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="info" Type="System.Runtime.Serialization.SerializationInfo" />
+        <Parameter Name="context" Type="System.Runtime.Serialization.StreamingContext" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="context">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ISymbolFile.GetMethods">
+      <MemberSignature Language="C#" Value="private void Mono.Debugger.ISymbolFile.GetMethods (Mono.Debugger.SourceFile file);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="file" Type="Mono.Debugger.SourceFile" />
+      </Parameters>
+      <Docs>
+        <param name="file">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ISymbolFile.GetMethod">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.IMethod Mono.Debugger.ISymbolFile.GetMethod (long handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="update_ranges">
+      <MemberSignature Language="C#" Value="private bool update_ranges (Mono.Debugger.ITargetMemoryAccess memory, ref Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="update_classes">
+      <MemberSignature Language="C#" Value="private bool update_classes (Mono.Debugger.ITargetMemoryAccess memory, ref Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress&amp;" RefType="ref" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetType">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.Languages.CSharp.MonoType GetType (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ensure_sources">
+      <MemberSignature Language="C#" Value="private void ensure_sources ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetSourceMethod">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SourceMethod GetSourceMethod (int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetSourceMethod">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SourceMethod GetSourceMethod (Mono.Debugger.SourceFile file, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="file" Type="Mono.Debugger.SourceFile" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="file">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="CreateSourceMethod">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SourceMethod CreateSourceMethod (Mono.Debugger.SourceFile file, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="file" Type="Mono.Debugger.SourceFile" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="file">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="LanguageBackend">
+      <MemberSignature Language="C#" Value="internal override Mono.Debugger.Backends.ILanguageBackend LanguageBackend { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.ILanguageBackend</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="SymbolRanges">
+      <MemberSignature Language="C#" Value="internal System.Collections.ArrayList SymbolRanges { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,324 @@
+<Type Name="MonoSymbolFile+MonoMethod" FullName="Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod">
+  <TypeSignature Language="C#" Value="protected class MonoMethod : Mono.Debugger.MethodBase" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.MethodBase</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoMethod (Mono.Debugger.Languages.CSharp.MonoSymbolFile reader, Mono.Debugger.SourceMethod info, Mono.CompilerServices.SymbolWriter.MethodEntry method, System.Reflection.MethodBase rmethod);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="info" Type="Mono.Debugger.SourceMethod" />
+        <Parameter Name="method" Type="Mono.CompilerServices.SymbolWriter.MethodEntry" />
+        <Parameter Name="rmethod" Type="System.Reflection.MethodBase" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="method">To be added.</param>
+        <param name="rmethod">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MonoMethod (Mono.Debugger.Languages.CSharp.MonoSymbolFile reader, Mono.Debugger.SourceMethod info, Mono.CompilerServices.SymbolWriter.MethodEntry method, System.Reflection.MethodBase rmethod, Mono.Debugger.ITargetMemoryReader dynamic_reader);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile" />
+        <Parameter Name="info" Type="Mono.Debugger.SourceMethod" />
+        <Parameter Name="method" Type="Mono.CompilerServices.SymbolWriter.MethodEntry" />
+        <Parameter Name="rmethod" Type="System.Reflection.MethodBase" />
+        <Parameter Name="dynamic_reader" Type="Mono.Debugger.ITargetMemoryReader" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="info">To be added.</param>
+        <param name="method">To be added.</param>
+        <param name="rmethod">To be added.</param>
+        <param name="dynamic_reader">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="Load">
+      <MemberSignature Language="C#" Value="public void Load (Mono.Debugger.TargetBinaryReader dynamic_reader, Mono.Debugger.AddressDomain domain);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="dynamic_reader" Type="Mono.Debugger.TargetBinaryReader" />
+        <Parameter Name="domain" Type="Mono.Debugger.AddressDomain" />
+      </Parameters>
+      <Docs>
+        <param name="dynamic_reader">To be added.</param>
+        <param name="domain">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    <Member MemberName="RegisterLoadHandler">
+      <MemberSignature Language="C#" Value="public IDisposable RegisterLoadHandler (Mono.Debugger.Process process, Mono.Debugger.MethodLoadedHandler handler, object user_data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IDisposable</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="process" Type="Mono.Debugger.Process" />
+        <Parameter Name="handler" Type="Mono.Debugger.MethodLoadedHandler" />
+        <Parameter Name="user_data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="process">To be added.</param>
+        <param name="handler">To be added.</param>
+        <param name="user_data">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UnRegisterLoadHandler">
+      <MemberSignature Language="C#" Value="protected void UnRegisterLoadHandler (Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod+HandlerData data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="data" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod+HandlerData" />
+      </Parameters>
+      <Docs>
+        <param name="data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="MethodAddress">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.CSharp.MethodAddress MethodAddress { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MethodAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="reader">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoSymbolFile reader;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="info">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SourceMethod info;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method">
+      <MemberSignature Language="C#" Value="private Mono.CompilerServices.SymbolWriter.MethodEntry method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.CompilerServices.SymbolWriter.MethodEntry</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="rmethod">
+      <MemberSignature Language="C#" Value="private System.Reflection.MethodBase rmethod;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Reflection.MethodBase</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="decl_type">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoClass decl_type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoClass</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="param_types">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoType[] param_types;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="local_types">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MonoType[] local_types;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoType[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="this_var">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.IVariable this_var;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.IVariable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="parameters">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.IVariable[] parameters;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.IVariable[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="locals">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.IVariable[] locals;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.IVariable[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="has_variables">
+      <MemberSignature Language="C#" Value="private bool has_variables;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="is_loaded">
+      <MemberSignature Language="C#" Value="private bool is_loaded;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="address">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Languages.CSharp.MethodAddress address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MethodAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="load_handlers">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable load_handlers;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="breakpoint_hit">
+      <MemberSignature Language="C#" Value="private void breakpoint_hit (Mono.Debugger.Backends.Inferior inferior, Mono.Debugger.TargetAddress address, object user_data);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="user_data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="user_data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetTypeSignature">
+      <MemberSignature Language="C#" Value="private string GetTypeSignature (Type t);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="t" Type="System.Type" />
+      </Parameters>
+      <Docs>
+        <param name="t">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

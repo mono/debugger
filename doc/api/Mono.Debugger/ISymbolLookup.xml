@@ -1,24 +1,20 @@
 <Type Name="ISymbolLookup" FullName="Mono.Debugger.ISymbolLookup">
-  <TypeSignature Language="C#" Value="public abstract interface ISymbolLookup" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ISymbolLookup" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="Lookup">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.IMethod Lookup (Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.IMethod Lookup (Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.IMethod</ReturnType>

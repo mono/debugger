@@ -1,0 +1,110 @@
+<Type Name="MonoSymbolFile+MonoMethod+HandlerData" FullName="Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod+HandlerData">
+  <TypeSignature Language="C#" Value="protected sealed class HandlerData : System.IDisposable" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>System.IDisposable</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public HandlerData (Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod method, Mono.Debugger.MethodLoadedHandler handler, object user_data);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod" />
+        <Parameter Name="handler" Type="Mono.Debugger.MethodLoadedHandler" />
+        <Parameter Name="user_data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <param name="handler">To be added.</param>
+        <param name="user_data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Method">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod Method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.MonoSymbolFile+MonoMethod</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Handler">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.MethodLoadedHandler Handler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.MethodLoadedHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UserData">
+      <MemberSignature Language="C#" Value="public readonly object UserData;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="public void Dispose ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="disposed">
+      <MemberSignature Language="C#" Value="private bool disposed;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Dispose">
+      <MemberSignature Language="C#" Value="private void Dispose (bool disposing);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="disposing" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="disposing">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,12 +1,10 @@
 <Type Name="SourceLocation" FullName="Mono.Debugger.SourceLocation">
-  <TypeSignature Language="C#" Value="public class SourceLocation : ISerializable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class SourceLocation : System.Runtime.Serialization.ISerializable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -21,54 +19,10 @@
       <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
-    <Member MemberName="InsertBreakpoint">
-      <MemberSignature Language="C#" Value="public int InsertBreakpoint (Mono.Debugger.Breakpoint breakpoint, Mono.Debugger.ThreadGroup group);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.Int32</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="breakpoint" Type="Mono.Debugger.Breakpoint" />
-        <Parameter Name="group" Type="Mono.Debugger.ThreadGroup" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="breakpoint">a <see cref="T:Mono.Debugger.Breakpoint" /></param>
-        <param name="group">a <see cref="T:Mono.Debugger.ThreadGroup" /></param>
-        <returns>a <see cref="T:System.Int32" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName="RemoveBreakpoint">
-      <MemberSignature Language="C#" Value="public void RemoveBreakpoint (int index);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.Void</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="index" Type="System.Int32" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="index">a <see cref="T:System.Int32" /></param>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
+    
+    
     <Member MemberName="GetObjectData">
       <MemberSignature Language="C#" Value="public virtual void GetObjectData (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
       <MemberType>Method</MemberType>
@@ -96,7 +50,6 @@
       <Docs>
         <summary>To be added</summary>
         <param name="method">a <see cref="T:Mono.Debugger.SourceMethod" /></param>
-        <returns>a <see cref="T:Mono.Debugger.SourceLocation" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -112,7 +65,6 @@
         <summary>To be added</summary>
         <param name="method">a <see cref="T:Mono.Debugger.SourceMethod" /></param>
         <param name="line">a <see cref="T:System.Int32" /></param>
-        <returns>a <see cref="T:Mono.Debugger.SourceLocation" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -125,7 +77,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Module" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Module" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -138,7 +90,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SourceFile" /></returns>
+        <value>a <see cref="T:Mono.Debugger.SourceFile" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -151,7 +103,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SourceMethod" /></returns>
+        <value>a <see cref="T:Mono.Debugger.SourceMethod" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -164,7 +116,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -177,8 +129,78 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected SourceLocation (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="info" Type="System.Runtime.Serialization.SerializationInfo" />
+        <Parameter Name="context" Type="System.Runtime.Serialization.StreamingContext" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="context">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  <Member MemberName="InsertBreakpoint">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.BreakpointHandle InsertBreakpoint (Mono.Debugger.Process process, Mono.Debugger.Breakpoint bpt);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.BreakpointHandle</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="process" Type="Mono.Debugger.Process" />
+        <Parameter Name="bpt" Type="Mono.Debugger.Breakpoint" />
+      </Parameters>
+      <Docs>
+        <param name="process">To be added.</param>
+        <param name="bpt">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.SourceMethod method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="line">
+      <MemberSignature Language="C#" Value="private int line;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetAddress">
+      <MemberSignature Language="C#" Value="internal Mono.Debugger.TargetAddress GetAddress ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

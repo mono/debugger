@@ -1,12 +1,10 @@
 <Type Name="SourceFile" FullName="Mono.Debugger.SourceFile">
-  <TypeSignature Language="C#" Value="public abstract class SourceFile" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class SourceFile : System.Runtime.Serialization.ISerializable" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -16,25 +14,13 @@
   <Base>
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
-  <Interfaces />
-  <Attributes />
+  <Interfaces>
+    <Interface>
+      <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
+    </Interface>
+  </Interfaces>
   <Members>
-    <Member MemberName="FindMethod">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod FindMethod (string name);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="name" Type="System.String" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="name">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.SourceMethod" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName="FindLine">
       <MemberSignature Language="C#" Value="public Mono.Debugger.SourceLocation FindLine (int line);" />
       <MemberType>Method</MemberType>
@@ -51,19 +37,7 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="ToString">
-      <MemberSignature Language="C#" Value="public override string ToString ();" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters />
-      <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName="Name">
       <MemberSignature Language="C#" Value="public string Name { get; };" />
       <MemberType>Property</MemberType>
@@ -73,7 +47,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -86,7 +60,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -99,7 +73,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Module" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Module" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -112,12 +86,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Methods">
-      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod [] Methods { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod[] Methods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.SourceMethod[]</ReturnType>
@@ -125,8 +99,138 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.SourceMethod[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.SourceMethod[]" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public SourceFile (Mono.Debugger.Module module, string filename);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="module" Type="Mono.Debugger.Module" />
+        <Parameter Name="filename" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="module">To be added.</param>
+        <param name="filename">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="protected SourceFile (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="info" Type="System.Runtime.Serialization.SerializationInfo" />
+        <Parameter Name="context" Type="System.Runtime.Serialization.StreamingContext" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="context">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  
+  
+  
+  
+  
+  
+  <Member MemberName="AddMethod">
+      <MemberSignature Language="C#" Value="public void AddMethod (Mono.Debugger.SourceMethod method);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.SourceMethod" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetObjectData">
+      <MemberSignature Language="C#" Value="public virtual void GetObjectData (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="info" Type="System.Runtime.Serialization.SerializationInfo" />
+        <Parameter Name="context" Type="System.Runtime.Serialization.StreamingContext" />
+      </Parameters>
+      <Docs>
+        <param name="info">To be added.</param>
+        <param name="context">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".cctor">
+      <MemberSignature Language="C#" Value="private SourceFile ();" />
+      <MemberType>Constructor</MemberType>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="filename">
+      <MemberSignature Language="C#" Value="private string filename;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="module">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Module module;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Module</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="id">
+      <MemberSignature Language="C#" Value="private int id;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="methods">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="next_id">
+      <MemberSignature Language="C#" Value="private static int next_id;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

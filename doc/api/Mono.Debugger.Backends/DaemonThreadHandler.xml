@@ -1,0 +1,26 @@
+<Type Name="DaemonThreadHandler" FullName="Mono.Debugger.Backends.DaemonThreadHandler">
+  <TypeSignature Language="C#" Value="internal delegate bool DaemonThreadHandler(Mono.Debugger.Backends.DaemonThreadRunner sender, Mono.Debugger.TargetAddress address, int signal);" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Delegate</BaseTypeName>
+  </Base>
+  <Parameters>
+    <Parameter Name="sender" Type="Mono.Debugger.Backends.DaemonThreadRunner" />
+    <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+    <Parameter Name="signal" Type="System.Int32" />
+  </Parameters>
+  <ReturnValue>
+    <ReturnType>System.Boolean</ReturnType>
+  </ReturnValue>
+  <Docs>
+    <param name="sender">To be added.</param>
+    <param name="address">To be added.</param>
+    <param name="signal">To be added.</param>
+    <summary>To be added.</summary>
+    <returns>To be added.</returns>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,86 @@
+<Type Name="DwarfReader+LineNumberEngine+StandardOpcode" FullName="Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode">
+  <TypeSignature Language="C#" Value="protected enum StandardOpcode" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Enum</BaseTypeName>
+  </Base>
+  <Members>
+    <Member MemberName="extended_op">
+      <MemberSignature Language="C#" Value="extended_op" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="copy">
+      <MemberSignature Language="C#" Value="copy" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="advance_pc">
+      <MemberSignature Language="C#" Value="advance_pc" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="advance_line">
+      <MemberSignature Language="C#" Value="advance_line" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="negate_stmt">
+      <MemberSignature Language="C#" Value="negate_stmt" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="const_add_pc">
+      <MemberSignature Language="C#" Value="const_add_pc" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="fixed_advance_pc">
+      <MemberSignature Language="C#" Value="fixed_advance_pc" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StandardOpcode</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

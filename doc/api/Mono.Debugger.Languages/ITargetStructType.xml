@@ -1,28 +1,24 @@
 <Type Name="ITargetStructType" FullName="Mono.Debugger.Languages.ITargetStructType">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetStructType" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetStructType : Mono.Debugger.Languages.ITargetType" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces>
     <Interface>
       <InterfaceName>Mono.Debugger.Languages.ITargetType</InterfaceName>
     </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="GetStaticField">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetObject GetStaticField (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetStaticField (Mono.Debugger.StackFrame frame, int index);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
@@ -40,7 +36,7 @@
       </Docs>
     </Member>
     <Member MemberName="GetStaticProperty">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetObject GetStaticProperty (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetStaticProperty (Mono.Debugger.StackFrame frame, int index);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
@@ -58,7 +54,7 @@
       </Docs>
     </Member>
     <Member MemberName="GetStaticMethod">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetFunctionObject GetStaticMethod (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFunctionObject GetStaticMethod (Mono.Debugger.StackFrame frame, int index);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
@@ -76,7 +72,7 @@
       </Docs>
     </Member>
     <Member MemberName="GetConstructor">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetFunctionObject GetConstructor (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFunctionObject GetConstructor (Mono.Debugger.StackFrame frame, int index);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
@@ -94,7 +90,7 @@
       </Docs>
     </Member>
     <Member MemberName="Fields">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetFieldInfo [] Fields { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFieldInfo[] Fields { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetFieldInfo[]</ReturnType>
@@ -102,12 +98,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetFieldInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetFieldInfo[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StaticFields">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetFieldInfo [] StaticFields { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFieldInfo[] StaticFields { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetFieldInfo[]</ReturnType>
@@ -115,12 +111,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetFieldInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetFieldInfo[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Properties">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetPropertyInfo [] Properties { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetPropertyInfo[] Properties { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetPropertyInfo[]</ReturnType>
@@ -128,12 +124,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetPropertyInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetPropertyInfo[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StaticProperties">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetPropertyInfo [] StaticProperties { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetPropertyInfo[] StaticProperties { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetPropertyInfo[]</ReturnType>
@@ -141,12 +137,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetPropertyInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetPropertyInfo[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Methods">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetMethodInfo [] Methods { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetMethodInfo[] Methods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
@@ -154,12 +150,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetMethodInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetMethodInfo[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StaticMethods">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetMethodInfo [] StaticMethods { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetMethodInfo[] StaticMethods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
@@ -167,12 +163,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetMethodInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetMethodInfo[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Constructors">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.ITargetMethodInfo [] Constructors { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetMethodInfo[] Constructors { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
@@ -180,8 +176,80 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.ITargetMethodInfo[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.ITargetMethodInfo[]" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetStaticEvent">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetObject GetStaticEvent (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetStaticConstructor">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetFunctionObject GetStaticConstructor (Mono.Debugger.StackFrame frame, int index);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetFunctionObject</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Events">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetEventInfo[] Events { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="StaticEvents">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetEventInfo[] StaticEvents { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetEventInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="StaticConstructors">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetMethodInfo[] StaticConstructors { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetMethodInfo[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

@@ -1,0 +1,145 @@
+<Type Name="ILanguageBackend" FullName="Mono.Debugger.Backends.ILanguageBackend">
+  <TypeSignature Language="C#" Value="internal interface ILanguageBackend" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Interfaces />
+  <Members>
+    <Member MemberName="GetTrampolineAddress">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GetTrampolineAddress (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address, out bool is_start);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="is_start" Type="System.Boolean&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <param name="is_start">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetTrampoline">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod GetTrampoline (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Notification">
+      <MemberSignature Language="C#" Value="public void Notification (Mono.Debugger.Backends.Inferior inferior, Mono.Debugger.Backends.NotificationType type, Mono.Debugger.TargetAddress data, long arg);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="inferior" Type="Mono.Debugger.Backends.Inferior" />
+        <Parameter Name="type" Type="Mono.Debugger.Backends.NotificationType" />
+        <Parameter Name="data" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="arg" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="inferior">To be added.</param>
+        <param name="type">To be added.</param>
+        <param name="data">To be added.</param>
+        <param name="arg">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Name">
+      <MemberSignature Language="C#" Value="public string Name { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GenericTrampolineCode">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GenericTrampolineCode { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="RuntimeInvokeFunc">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress RuntimeInvokeFunc { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CompileMethodFunc">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress CompileMethodFunc { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetVirtualMethodFunc">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GetVirtualMethodFunc { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="GetBoxedObjectFunc">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GetBoxedObjectFunc { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

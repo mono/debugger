@@ -1,0 +1,380 @@
+<Overview>
+  <Assembly Version="1.0.0.0">Mono.Debugger</Assembly>
+  <Remarks>To be added.</Remarks>
+  <Copyright>To be added.</Copyright>
+  <Types>
+    <Namespace Name="Mono.Debugger.Backends">
+      <Type Name="ILanguageBackend" />
+      <Type Name="BreakpointManager" />
+      <Type Name="DaemonThreadRunner" />
+      <Type Name="Inferior" />
+      <Type Name="Inferior+ChildEvent" />
+      <Type Name="Inferior+ServerStackFrame" />
+      <Type Name="Inferior+StackFrame" />
+      <Type Name="Inferior+ChildEventHandler" />
+      <Type Name="Inferior+ChildEventType" />
+      <Type Name="MonoThreadManager" />
+      <Type Name="MonoThreadManager+ThreadData" />
+      <Type Name="SingleSteppingEngine" />
+      <Type Name="SingleSteppingEngine+Callback" />
+      <Type Name="SingleSteppingEngine+CallbackCallMethod" />
+      <Type Name="SingleSteppingEngine+CallbackCompileMethod" />
+      <Type Name="SingleSteppingEngine+CallbackRuntimeInvoke" />
+      <Type Name="SingleSteppingEngine+StackData" />
+      <Type Name="SingleSteppingEngine+CallbackFunc" />
+      <Type Name="Operation" />
+      <Type Name="Command" />
+      <Type Name="CommandResult" />
+      <Type Name="CallMethodData" />
+      <Type Name="RuntimeInvokeData" />
+      <Type Name="StepFrame" />
+      <Type Name="Semaphore" />
+      <Type Name="TargetInfo" />
+      <Type Name="TargetReader" />
+      <Type Name="Utils" />
+      <Type Name="PTraceInferior" />
+      <Type Name="PTraceInferior+SignalInfo" />
+      <Type Name="DaemonThreadHandler" />
+      <Type Name="DaemonEventHandler" />
+      <Type Name="ChildOutputHandler" />
+      <Type Name="NotificationType" />
+      <Type Name="OperationType" />
+      <Type Name="CommandType" />
+      <Type Name="CommandResultType" />
+      <Type Name="CallMethodType" />
+      <Type Name="StepMode" />
+    </Namespace>
+    <Namespace Name="Mono.Debugger">
+      <Type Name="ISymbolFile" />
+      <Type Name="IArchitecture" />
+      <Type Name="IDisassembler" />
+      <Type Name="IMethod" />
+      <Type Name="ISourceBuffer" />
+      <Type Name="ISymbolLookup" />
+      <Type Name="ISourceLookup" />
+      <Type Name="ISymbolContainer" />
+      <Type Name="ISymbolRange" />
+      <Type Name="ISymbolTable" />
+      <Type Name="ISimpleSymbolTable" />
+      <Type Name="ITargetInfo" />
+      <Type Name="ITargetMemoryInfo" />
+      <Type Name="ITargetMemoryReader" />
+      <Type Name="ITargetMemoryAccess" />
+      <Type Name="ITargetAccess" />
+      <Type Name="ITargetNotification" />
+      <Type Name="ArchitectureI386" />
+      <Type Name="ArchitecturePowerPC" />
+      <Type Name="Module" />
+      <Type Name="TargetBinaryReader" />
+      <Type Name="SymbolTable" />
+      <Type Name="SymbolRangeEntry" />
+      <Type Name="MethodSource" />
+      <Type Name="MethodSource+MethodSourceData" />
+      <Type Name="MethodBase" />
+      <Type Name="DebuggerBackend" />
+      <Type Name="Process" />
+      <Type Name="ThreadManager" />
+      <Type Name="AddressDomain" />
+      <Type Name="AssemblerLine" />
+      <Type Name="AssemblerMethod" />
+      <Type Name="Backtrace" />
+      <Type Name="Breakpoint" />
+      <Type Name="BreakpointHandle" />
+      <Type Name="EventHandle" />
+      <Type Name="ExceptionCatchPoint" />
+      <Type Name="InternalError" />
+      <Type Name="LineEntry" />
+      <Type Name="ModuleManager" />
+      <Type Name="ObjectCache" />
+      <Type Name="ObjectContainer" />
+      <Type Name="DebuggerOptions" />
+      <Type Name="ProcessStart" />
+      <Type Name="Report" />
+      <Type Name="SimpleBreakpoint" />
+      <Type Name="SimpleSymbolTableCollection" />
+      <Type Name="SourceAddress" />
+      <Type Name="SourceBuffer" />
+      <Type Name="SourceFileFactory" />
+      <Type Name="SourceFile" />
+      <Type Name="SourceMethod" />
+      <Type Name="SourceLocation" />
+      <Type Name="Register" />
+      <Type Name="Registers" />
+      <Type Name="SimpleStackFrame" />
+      <Type Name="StackFrame" />
+      <Type Name="SymbolTableCollection" />
+      <Type Name="TargetException" />
+      <Type Name="SymbolTableException" />
+      <Type Name="SymbolTableManager" />
+      <Type Name="SymbolTableManager+SymbolTableHandler" />
+      <Type Name="SymbolTableManager+ModuleHandler" />
+      <Type Name="TargetAddress" />
+      <Type Name="TargetBlob" />
+      <Type Name="TargetBinaryWriter" />
+      <Type Name="TargetEventArgs" />
+      <Type Name="LocationInvalidException" />
+      <Type Name="TargetInvocationException" />
+      <Type Name="TargetMemoryArea" />
+      <Type Name="TargetMemoryException" />
+      <Type Name="TargetMemoryReadOnlyException" />
+      <Type Name="ThreadGroup" />
+      <Type Name="ThreadGroup+ThreadGroupProxy" />
+      <Type Name="DebuggerWaitHandle" />
+      <Type Name="DebuggerMutex" />
+      <Type Name="DebuggerEvent" />
+      <Type Name="DebuggerManualResetEvent" />
+      <Type Name="DebuggerAutoResetEvent" />
+      <Type Name="Symbol" />
+      <Type Name="AssemblyInfo" />
+      <Type Name="BreakpointCheckHandler" />
+      <Type Name="BreakpointHitHandler" />
+      <Type Name="ProcessExitedHandler" />
+      <Type Name="ThreadEventHandler" />
+      <Type Name="AddressDomainInvalidHandler" />
+      <Type Name="BreakpointEventHandler" />
+      <Type Name="ModuleEventHandler" />
+      <Type Name="ModulesChangedHandler" />
+      <Type Name="BreakpointsChangedHandler" />
+      <Type Name="ObjectCacheFunc" />
+      <Type Name="MethodLoadedHandler" />
+      <Type Name="ObjectInvalidHandler" />
+      <Type Name="TargetEventHandler" />
+      <Type Name="SymbolTableChangedHandler" />
+      <Type Name="TargetExitedHandler" />
+      <Type Name="TargetOutputHandler" />
+      <Type Name="DebuggerOutputHandler" />
+      <Type Name="DebuggerErrorHandler" />
+      <Type Name="StateChangedHandler" />
+      <Type Name="I386Register" />
+      <Type Name="PowerPCRegister" />
+      <Type Name="EventType" />
+      <Type Name="DebugFlags" />
+      <Type Name="TargetEventType" />
+      <Type Name="TargetError" />
+      <Type Name="TargetMemoryFlags" />
+      <Type Name="TargetState" />
+      <Type Name="TargetObjectKind" />
+    </Namespace>
+    <Namespace Name="Mono.Debugger.Languages">
+      <Type Name="ILanguage" />
+      <Type Name="ITargetObject" />
+      <Type Name="ITargetArrayObject" />
+      <Type Name="ITargetType" />
+      <Type Name="ITargetArrayType" />
+      <Type Name="ITargetStructObject" />
+      <Type Name="ITargetClassObject" />
+      <Type Name="ITargetStructType" />
+      <Type Name="ITargetClassType" />
+      <Type Name="ITargetFunctionObject" />
+      <Type Name="ITargetFunctionType" />
+      <Type Name="ITargetFundamentalObject" />
+      <Type Name="ITargetFundamentalType" />
+      <Type Name="ITargetPointerObject" />
+      <Type Name="ITargetPointerType" />
+      <Type Name="ITargetMemberInfo" />
+      <Type Name="ITargetFieldInfo" />
+      <Type Name="ITargetPropertyInfo" />
+      <Type Name="ITargetEventInfo" />
+      <Type Name="ITargetMethodInfo" />
+      <Type Name="ITargetTypeAlias" />
+      <Type Name="IVariable" />
+      <Type Name="TargetLocation" />
+      <Type Name="BitfieldTargetLocation" />
+      <Type Name="MonoVariableLocation" />
+      <Type Name="AbsoluteTargetLocation" />
+      <Type Name="RelativeTargetLocation" />
+      <Type Name="LocationEventHandler" />
+    </Namespace>
+    <Namespace Name="Mono.Debugger.Architecture">
+      <Type Name="BfdContainer" />
+      <Type Name="Bfd" />
+      <Type Name="Bfd+InternalSection" />
+      <Type Name="Bfd+Section" />
+      <Type Name="Bfd+LoadHandlerData" />
+      <Type Name="Bfd+BfdProxy" />
+      <Type Name="Bfd+BfdSymbolTable" />
+      <Type Name="Bfd+SectionFlags" />
+      <Type Name="BfdDisassembler" />
+      <Type Name="BfdDisassembler+ReadMemoryHandler" />
+      <Type Name="BfdDisassembler+OutputHandler" />
+      <Type Name="BfdDisassembler+PrintAddressHandler" />
+      <Type Name="DwarfFrameReader" />
+      <Type Name="DwarfFrameReader+Column" />
+      <Type Name="DwarfFrameReader+Entry" />
+      <Type Name="DwarfFrameReader+CIE" />
+      <Type Name="DwarfFrameReader+DW_CFA" />
+      <Type Name="DwarfFrameReader+DW_EH_PE" />
+      <Type Name="DwarfFrameReader+State" />
+      <Type Name="DwarfException" />
+      <Type Name="DwarfBinaryReader" />
+      <Type Name="DwarfReader" />
+      <Type Name="DwarfReader+CompileUnitBlock" />
+      <Type Name="DwarfReader+DwarfSymbolTable" />
+      <Type Name="DwarfReader+RangeEntry" />
+      <Type Name="DwarfReader+NameEntry" />
+      <Type Name="DwarfReader+LineNumber" />
+      <Type Name="DwarfReader+LineNumberEngine" />
+      <Type Name="DwarfReader+LineNumberEngine+StatementMachine" />
+      <Type Name="DwarfReader+LineNumberEngine+FileEntry" />
+      <Type Name="DwarfReader+LineNumberEngine+StandardOpcode" />
+      <Type Name="DwarfReader+LineNumberEngine+ExtendedOpcode" />
+      <Type Name="DwarfReader+AttributeEntry" />
+      <Type Name="DwarfReader+Attribute" />
+      <Type Name="DwarfReader+AbbrevEntry" />
+      <Type Name="DwarfReader+Die" />
+      <Type Name="DwarfReader+DieCompileUnit" />
+      <Type Name="DwarfReader+DieCompileUnit+CompileUnitSymbolTable" />
+      <Type Name="DwarfReader+DieSubprogram" />
+      <Type Name="DwarfReader+DwarfTargetMethodSource" />
+      <Type Name="DwarfReader+DwarfTargetMethod" />
+      <Type Name="DwarfReader+CompilationUnit" />
+      <Type Name="DwarfReader+TargetVariable" />
+      <Type Name="DwarfReader+DieType" />
+      <Type Name="DwarfReader+DieBaseType" />
+      <Type Name="DwarfReader+DiePointerType" />
+      <Type Name="DwarfReader+DieConstType" />
+      <Type Name="DwarfReader+DieTypedef" />
+      <Type Name="DwarfReader+DieStructureType" />
+      <Type Name="DwarfReader+DieSubroutineType" />
+      <Type Name="DwarfReader+DieVariableBase" />
+      <Type Name="DwarfReader+DieMethodVariable" />
+      <Type Name="DwarfReader+DieFormalParameter" />
+      <Type Name="DwarfReader+DieVariable" />
+      <Type Name="DwarfReader+DieMember" />
+      <Type Name="DwarfReader+DwarfTag" />
+      <Type Name="DwarfReader+DwarfAttribute" />
+      <Type Name="DwarfReader+DwarfBaseTypeEncoding" />
+      <Type Name="DwarfReader+DwarfForm" />
+      <Type Name="StabsReader" />
+      <Type Name="StabsReader+Entry" />
+      <Type Name="StabsReader+FileRangeEntry" />
+      <Type Name="StabsReader+FileEntry" />
+      <Type Name="StabsReader+MethodRange" />
+      <Type Name="StabsReader+MethodSourceEntry" />
+      <Type Name="StabsReader+MethodEntry" />
+      <Type Name="StabsReader+MyVariable" />
+      <Type Name="StabsReader+LineNumberEntry" />
+      <Type Name="StabsReader+StabsException" />
+      <Type Name="StabsReader+StabType" />
+      <Type Name="BfdDisposedHandler" />
+    </Namespace>
+    <Namespace Name="Mono.Debugger.Languages.CSharp">
+      <Type Name="CSharpMethod" />
+      <Type Name="Heap" />
+      <Type Name="Heap+HeapLocation" />
+      <Type Name="MonoObject" />
+      <Type Name="MonoClassObject" />
+      <Type Name="MonoArrayObject" />
+      <Type Name="MonoArrayBounds" />
+      <Type Name="MonoType" />
+      <Type Name="MonoType+TypeKind" />
+      <Type Name="MonoClass" />
+      <Type Name="MonoClass+MonoStructMember" />
+      <Type Name="MonoClass+MonoEventInfo" />
+      <Type Name="MonoClass+MonoFieldInfo" />
+      <Type Name="MonoClass+MonoPropertyInfo" />
+      <Type Name="MonoClass+MonoMethodInfo" />
+      <Type Name="MonoArrayType" />
+      <Type Name="VariableInfo" />
+      <Type Name="VariableInfo+AddressMode" />
+      <Type Name="JitLineNumberEntry" />
+      <Type Name="JitLexicalBlockEntry" />
+      <Type Name="MethodAddress" />
+      <Type Name="MonoBuiltinTypes" />
+      <Type Name="MonoBuiltinTypes+BuiltinTypeInfo" />
+      <Type Name="MonoSymbolTable" />
+      <Type Name="MonoSymbolTable+WrapperEntry" />
+      <Type Name="MonoSymbolTable+WrapperMethod" />
+      <Type Name="MonoSymbolTable+WrapperSymbolTable" />
+      <Type Name="MonoSymbolTable+TypeEntry" />
+      <Type Name="MonoSymbolTable+MiscEntryType" />
+      <Type Name="MonoSymbolTable+MonoDebuggerType" />
+      <Type Name="MonoDebuggerInfo" />
+      <Type Name="ClassEntry" />
+      <Type Name="MonoSymbolFile" />
+      <Type Name="MonoSymbolFile+MonoSymbolFileProxy" />
+      <Type Name="MonoSymbolFile+MonoMethod" />
+      <Type Name="MonoSymbolFile+MonoMethod+HandlerData" />
+      <Type Name="MonoSymbolFile+MethodRangeEntry" />
+      <Type Name="MonoSymbolFile+MonoCSharpSymbolTable" />
+      <Type Name="MonoCSharpLanguageBackend" />
+      <Type Name="MonoCSharpLanguageBackend+MyBreakpointHandle" />
+      <Type Name="MonoFundamentalObjectBase" />
+      <Type Name="MonoEnumObject" />
+      <Type Name="MonoFundamentalType" />
+      <Type Name="MonoEnumType" />
+      <Type Name="MonoFunctionObject" />
+      <Type Name="MonoFunctionType" />
+      <Type Name="MonoFundamentalObject" />
+      <Type Name="MonoObjectObject" />
+      <Type Name="MonoObjectType" />
+      <Type Name="MonoOpaqueObject" />
+      <Type Name="MonoOpaqueType" />
+      <Type Name="MonoPointerObject" />
+      <Type Name="MonoPointerType" />
+      <Type Name="MonoStringObject" />
+      <Type Name="MonoStringType" />
+      <Type Name="MonoVariable" />
+      <Type Name="BreakpointHandler" />
+    </Namespace>
+    <Namespace Name="Mono.Debugger.Languages.Native">
+      <Type Name="NativeObject" />
+      <Type Name="NativeFunctionObject" />
+      <Type Name="NativeType" />
+      <Type Name="NativeFunctionType" />
+      <Type Name="NativeFundamentalObject" />
+      <Type Name="NativeFundamentalType" />
+      <Type Name="NativeLanguage" />
+      <Type Name="NativeOpaqueObject" />
+      <Type Name="NativeOpaqueType" />
+      <Type Name="NativePointerObject" />
+      <Type Name="NativePointerType" />
+      <Type Name="NativeStringObject" />
+      <Type Name="NativeStringType" />
+      <Type Name="NativeStructObject" />
+      <Type Name="NativeStructMember" />
+      <Type Name="NativeFieldInfo" />
+      <Type Name="NativeMethodInfo" />
+      <Type Name="NativeStructType" />
+      <Type Name="NativeTypeAlias" />
+    </Namespace>
+  </Types>
+  <Attributes>
+    <Attribute>
+      <AttributeName>Mono.Author</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>Mono.Author</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>Mono.Author</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>Mono.About</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyCulture(Culture="")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyTrademark(Trademark="")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyCopyright(Copyright="(C) 2003-2005 Novell, Inc.")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyProduct(Product="")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyCompany(Company="")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyConfiguration(Configuration="")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyDescription(Description="Mono Debugger")</AttributeName>
+    </Attribute>
+    <Attribute>
+      <AttributeName>System.Reflection.AssemblyTitle(Title="Mono Debugger")</AttributeName>
+    </Attribute>
+  </Attributes>
+</Overview>

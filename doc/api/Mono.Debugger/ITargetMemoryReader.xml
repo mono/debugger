@@ -1,31 +1,24 @@
 <Type Name="ITargetMemoryReader" FullName="Mono.Debugger.ITargetMemoryReader">
-  <TypeSignature Language="C#" Value="public abstract interface ITargetMemoryReader" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ITargetMemoryReader : Mono.Debugger.ITargetMemoryInfo" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces>
     <Interface>
       <InterfaceName>Mono.Debugger.ITargetMemoryInfo</InterfaceName>
     </Interface>
-    <Interface>
-      <InterfaceName>Mono.Debugger.ITargetInfo</InterfaceName>
-    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="ReadByte">
-      <MemberSignature Language="C#" Value="public virtual byte ReadByte ();" />
+      <MemberSignature Language="C#" Value="public byte ReadByte ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte</ReturnType>
@@ -38,7 +31,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadInteger">
-      <MemberSignature Language="C#" Value="public virtual int ReadInteger ();" />
+      <MemberSignature Language="C#" Value="public int ReadInteger ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32</ReturnType>
@@ -51,7 +44,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadLongInteger">
-      <MemberSignature Language="C#" Value="public virtual long ReadLongInteger ();" />
+      <MemberSignature Language="C#" Value="public long ReadLongInteger ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Int64</ReturnType>
@@ -64,7 +57,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress ReadAddress ();" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress ReadAddress ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -77,7 +70,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadGlobalAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress ReadGlobalAddress ();" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress ReadGlobalAddress ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -90,7 +83,7 @@
       </Docs>
     </Member>
     <Member MemberName="Offset">
-      <MemberSignature Language="C#" Value="public virtual long Offset { set; get; };" />
+      <MemberSignature Language="C#" Value="public long Offset { set; get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int64</ReturnType>
@@ -98,12 +91,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int64" /></returns>
+        <value>a <see cref="T:System.Int64" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Size">
-      <MemberSignature Language="C#" Value="public virtual long Size { get; };" />
+      <MemberSignature Language="C#" Value="public long Size { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int64</ReturnType>
@@ -111,12 +104,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int64" /></returns>
+        <value>a <see cref="T:System.Int64" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Contents">
-      <MemberSignature Language="C#" Value="public virtual byte [] Contents { get; };" />
+      <MemberSignature Language="C#" Value="public byte[] Contents { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte[]</ReturnType>
@@ -124,12 +117,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Byte[]" /></returns>
+        <value>a <see cref="T:System.Byte[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="BinaryReader">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetBinaryReader BinaryReader { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetBinaryReader BinaryReader { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetBinaryReader</ReturnType>
@@ -137,7 +130,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetBinaryReader" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetBinaryReader" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

@@ -4,20 +4,17 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
-    <summary>To be added</summary>
+    <summary>Represents one line in the assembler output for a method.</summary>
     <remarks>To be added</remarks>
   </Docs>
   <Base>
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="Label">
       <MemberSignature Language="C#" Value="public readonly string Label;" />
@@ -87,7 +84,6 @@
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <param name="size">a <see cref="T:System.Byte" /></param>
         <param name="text">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.AssemblerLine" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -105,7 +101,6 @@
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <param name="size">a <see cref="T:System.Byte" /></param>
         <param name="text">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.AssemblerLine" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -118,7 +113,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

@@ -1,0 +1,31 @@
+<Type Name="NativeOpaqueObject" FullName="Mono.Debugger.Languages.Native.NativeOpaqueObject">
+  <TypeSignature Language="C#" Value="internal class NativeOpaqueObject : Mono.Debugger.Languages.Native.NativeObject" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.Native.NativeObject</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public NativeOpaqueObject (Mono.Debugger.Languages.Native.NativeOpaqueType type, Mono.Debugger.Languages.TargetLocation location);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.Native.NativeOpaqueType" />
+        <Parameter Name="location" Type="Mono.Debugger.Languages.TargetLocation" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="location">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

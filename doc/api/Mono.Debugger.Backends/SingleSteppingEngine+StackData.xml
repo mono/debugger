@@ -1,0 +1,79 @@
+<Type Name="SingleSteppingEngine+StackData" FullName="Mono.Debugger.Backends.SingleSteppingEngine+StackData">
+  <TypeSignature Language="C#" Value="protected sealed class StackData" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public StackData (Mono.Debugger.IMethod method, Mono.Debugger.StackFrame frame, Mono.Debugger.Backtrace backtrace, Mono.Debugger.Registers registers);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.IMethod" />
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+        <Parameter Name="backtrace" Type="Mono.Debugger.Backtrace" />
+        <Parameter Name="registers" Type="Mono.Debugger.Registers" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <param name="frame">To be added.</param>
+        <param name="backtrace">To be added.</param>
+        <param name="registers">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Method">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.IMethod Method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.IMethod</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Frame">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.StackFrame Frame;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.StackFrame</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Backtrace">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Backtrace Backtrace;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backtrace</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Registers">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Registers Registers;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Registers</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,31 +1,27 @@
 <Type Name="ISymbolTable" FullName="Mono.Debugger.ISymbolTable">
-  <TypeSignature Language="C#" Value="public abstract interface ISymbolTable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ISymbolTable : Mono.Debugger.ISymbolContainer, Mono.Debugger.ISymbolLookup" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
-    <summary>To be added</summary>
+    <summary>This interface is used to find a method by an address.</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces>
-    <Interface>
-      <InterfaceName>Mono.Debugger.ISymbolLookup</InterfaceName>
-    </Interface>
     <Interface>
       <InterfaceName>Mono.Debugger.ISymbolContainer</InterfaceName>
     </Interface>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ISymbolLookup</InterfaceName>
+    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName="UpdateSymbolTable">
-      <MemberSignature Language="C#" Value="public virtual void UpdateSymbolTable ();" />
+      <MemberSignature Language="C#" Value="public void UpdateSymbolTable ();" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Void</ReturnType>
@@ -37,7 +33,7 @@
       </Docs>
     </Member>
     <Member MemberName="HasRanges">
-      <MemberSignature Language="C#" Value="public virtual bool HasRanges { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasRanges { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -45,12 +41,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="SymbolRanges">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.ISymbolRange [] SymbolRanges { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.ISymbolRange[] SymbolRanges { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.ISymbolRange[]</ReturnType>
@@ -58,12 +54,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ISymbolRange[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.ISymbolRange[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="HasMethods">
-      <MemberSignature Language="C#" Value="public virtual bool HasMethods { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasMethods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -71,12 +67,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Methods">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.IMethod [] Methods { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.IMethod[] Methods { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.IMethod[]</ReturnType>
@@ -84,12 +80,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.IMethod[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.IMethod[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="IsLoaded">
-      <MemberSignature Language="C#" Value="public virtual bool IsLoaded { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsLoaded { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -97,12 +93,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="SymbolTableChanged">
-      <MemberSignature Language="C#" Value="public virtual event Mono.Debugger.SymbolTableChangedHandler SymbolTableChanged;" />
+      <MemberSignature Language="C#" Value="public event Mono.Debugger.SymbolTableChangedHandler SymbolTableChanged;" />
       <MemberType>Event</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.SymbolTableChangedHandler</ReturnType>

@@ -1,0 +1,41 @@
+<Type Name="StabsReader+FileRangeEntry" FullName="Mono.Debugger.Architecture.StabsReader+FileRangeEntry">
+  <TypeSignature Language="C#" Value="protected class FileRangeEntry : Mono.Debugger.SymbolRangeEntry" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.SymbolRangeEntry</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public FileRangeEntry (Mono.Debugger.Architecture.StabsReader+FileEntry file);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="file" Type="Mono.Debugger.Architecture.StabsReader+FileEntry" />
+      </Parameters>
+      <Docs>
+        <param name="file">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+  <Member MemberName="file">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.StabsReader+FileEntry file;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.StabsReader+FileEntry</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

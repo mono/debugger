@@ -1,42 +1,20 @@
 <Type Name="IArchitecture" FullName="Mono.Debugger.IArchitecture">
-  <TypeSignature Language="C#" Value="public abstract interface IArchitecture" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface IArchitecture" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
-    <summary>To be added</summary>
+    <summary>Interface to architecture specific functionality.</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
-    <Member MemberName="PrintRegister">
-      <MemberSignature Language="C#" Value="public virtual string PrintRegister (int register, long value);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.String</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="register" Type="System.Int32" />
-        <Parameter Name="value" Type="System.Int64" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="register">a <see cref="T:System.Int32" /></param>
-        <param name="value">a <see cref="T:System.Int64" /></param>
-        <returns>a <see cref="T:System.String" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
     <Member MemberName="IsRetInstruction">
-      <MemberSignature Language="C#" Value="public virtual bool IsRetInstruction (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address);" />
+      <MemberSignature Language="C#" Value="public bool IsRetInstruction (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -46,7 +24,7 @@
         <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
       </Parameters>
       <Docs>
-        <summary>To be added</summary>
+        <summary>Determine if the instruction at target address @address is a return instruction.</summary>
         <param name="memory">a <see cref="T:Mono.Debugger.ITargetMemoryAccess" /></param>
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <returns>a <see cref="T:System.Boolean" /></returns>
@@ -54,7 +32,7 @@
       </Docs>
     </Member>
     <Member MemberName="GetCallTarget">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress GetCallTarget (Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.TargetAddress address, out int insn_size);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GetCallTarget (Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.TargetAddress address, out int insn_size);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -65,7 +43,10 @@
         <Parameter Name="insn_size" Type="System.Int32&amp;" RefType="out" />
       </Parameters>
       <Docs>
-        <summary>To be added</summary>
+        <summary>Check whether the instruction at target address @address is a `call' instruction and returns the destination of the call or null.
+
+The out parameter @insn_size is set to the size on bytes of the call instructions.  This can be used to set a breakpoint immediately after the function.
+</summary>
         <param name="target">a <see cref="T:Mono.Debugger.ITargetMemoryAccess" /></param>
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <param name="insn_size">a <see cref="T:System.Int32" /></param>
@@ -74,7 +55,7 @@
       </Docs>
     </Member>
     <Member MemberName="GetTrampoline">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress GetTrampoline (Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.TargetAddress address, Mono.Debugger.TargetAddress generic_trampoline_address);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress GetTrampoline (Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.TargetAddress address, Mono.Debugger.TargetAddress generic_trampoline_address);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -85,7 +66,8 @@
         <Parameter Name="generic_trampoline_address" Type="Mono.Debugger.TargetAddress" />
       </Parameters>
       <Docs>
-        <summary>To be added</summary>
+        <summary>Check whether the instruction at target address @address is a trampoline method. If it's a trampoline, return the address of the corresponding method's code.  For JIT trampolines, this should do a JIT compilation of the method.
+</summary>
         <param name="target">a <see cref="T:Mono.Debugger.ITargetMemoryAccess" /></param>
         <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
         <param name="generic_trampoline_address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
@@ -93,72 +75,34 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="UnwindStack">
-      <MemberSignature Language="C#" Value="public virtual object UnwindStack (Mono.Debugger.Register[] registers);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>System.Object</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="registers" Type="Mono.Debugger.Register[]" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="registers">a <see cref="T:Mono.Debugger.Register" /></param>
-        <returns>a <see cref="T:System.Object" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
-    <Member MemberName="UnwindStack">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Register[] UnwindStack (byte [] code, Mono.Debugger.ITargetMemoryAccess memory, object last_data, out object new_data);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.Register[]</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="code" Type="System.Byte[]" />
-        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
-        <Parameter Name="last_data" Type="System.Object" />
-        <Parameter Name="new_data" Type="System.Object&amp;" RefType="out" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="code">a <see cref="T:System.Byte" /></param>
-        <param name="memory">a <see cref="T:Mono.Debugger.ITargetMemoryAccess" /></param>
-        <param name="last_data">a <see cref="T:System.Object" /></param>
-        <param name="new_data">a <see cref="T:System.Object" /></param>
-        <returns>a <see cref="T:Mono.Debugger.Register[]" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
     <Member MemberName="RegisterNames">
-      <MemberSignature Language="C#" Value="public virtual string [] RegisterNames { get; };" />
+      <MemberSignature Language="C#" Value="public string[] RegisterNames { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.String[]</ReturnType>
       </ReturnValue>
       <Parameters />
       <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.String[]" /></returns>
+        <summary>The names of all registers</summary>
+        <value>a <see cref="T:System.String[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="RegisterIndices">
-      <MemberSignature Language="C#" Value="public virtual int [] RegisterIndices { get; };" />
+      <MemberSignature Language="C#" Value="public int[] RegisterIndices { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32[]</ReturnType>
       </ReturnValue>
       <Parameters />
       <Docs>
-        <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32[]" /></returns>
+        <summary>Indices of the "important" registers, sorted in way that's suitable to display them to the user.</summary>
+        <value>a <see cref="T:System.Int32[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="AllRegisterIndices">
-      <MemberSignature Language="C#" Value="public virtual int [] AllRegisterIndices { get; };" />
+      <MemberSignature Language="C#" Value="public int[] AllRegisterIndices { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32[]</ReturnType>
@@ -166,12 +110,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32[]" /></returns>
+        <value>a <see cref="T:System.Int32[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="MaxPrologueSize">
-      <MemberSignature Language="C#" Value="public virtual int MaxPrologueSize { get; };" />
+      <MemberSignature Language="C#" Value="public int MaxPrologueSize { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Int32</ReturnType>
@@ -179,8 +123,106 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="PrintRegister">
+      <MemberSignature Language="C#" Value="public string PrintRegister (Mono.Debugger.Register register);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="register" Type="Mono.Debugger.Register" />
+      </Parameters>
+      <Docs>
+        <param name="register">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="PrintRegisters">
+      <MemberSignature Language="C#" Value="public string PrintRegisters (Mono.Debugger.StackFrame frame);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.StackFrame" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UnwindStack">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SimpleStackFrame UnwindStack (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.SimpleStackFrame frame, Mono.Debugger.Symbol name, byte[] code);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SimpleStackFrame</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="frame" Type="Mono.Debugger.SimpleStackFrame" />
+        <Parameter Name="name" Type="Mono.Debugger.Symbol" />
+        <Parameter Name="code" Type="System.Byte[]" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="frame">To be added.</param>
+        <param name="name">To be added.</param>
+        <param name="code">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UnwindStack">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SimpleStackFrame UnwindStack (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress stack, Mono.Debugger.TargetAddress frame_address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SimpleStackFrame</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="stack" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="frame_address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="stack">To be added.</param>
+        <param name="frame_address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="RegisterSizes">
+      <MemberSignature Language="C#" Value="public int[] RegisterSizes { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="CountRegisters">
+      <MemberSignature Language="C#" Value="public int CountRegisters { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

@@ -1,0 +1,66 @@
+<Type Name="MonoCSharpLanguageBackend+MyBreakpointHandle" FullName="Mono.Debugger.Languages.CSharp.MonoCSharpLanguageBackend+MyBreakpointHandle">
+  <TypeSignature Language="C#" Value="private struct MyBreakpointHandle" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.ValueType</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public MyBreakpointHandle (int index, Mono.Debugger.Languages.CSharp.BreakpointHandler handler, object user_data);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+        <Parameter Name="handler" Type="Mono.Debugger.Languages.CSharp.BreakpointHandler" />
+        <Parameter Name="user_data" Type="System.Object" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <param name="handler">To be added.</param>
+        <param name="user_data">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Index">
+      <MemberSignature Language="C#" Value="public readonly int Index;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Handler">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Languages.CSharp.BreakpointHandler Handler;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.CSharp.BreakpointHandler</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UserData">
+      <MemberSignature Language="C#" Value="public readonly object UserData;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Object</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

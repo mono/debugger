@@ -1,24 +1,20 @@
 <Type Name="ISourceLookup" FullName="Mono.Debugger.ISourceLookup">
-  <TypeSignature Language="C#" Value="public abstract interface ISourceLookup" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ISourceLookup" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="Lookup">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.SourceMethod Lookup (string method_name);" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod Lookup (string method_name);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.SourceMethod</ReturnType>

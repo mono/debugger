@@ -1,0 +1,106 @@
+<Type Name="DebuggerAutoResetEvent" FullName="Mono.Debugger.DebuggerAutoResetEvent">
+  <TypeSignature Language="C#" Value="public class DebuggerAutoResetEvent : Mono.Debugger.DebuggerEvent" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.DebuggerEvent</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public DebuggerAutoResetEvent (string name, bool initially_locked);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="initially_locked" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="name">To be added.</param>
+        <param name="initially_locked">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+  <Member MemberName="handle">
+      <MemberSignature Language="C#" Value="private IntPtr handle;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_event_new">
+      <MemberSignature Language="C#" Value="private static IntPtr mono_debugger_event_new ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.IntPtr</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_event_wait">
+      <MemberSignature Language="C#" Value="private static void mono_debugger_event_wait (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_event_trywait">
+      <MemberSignature Language="C#" Value="private static bool mono_debugger_event_trywait (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="mono_debugger_event_signal">
+      <MemberSignature Language="C#" Value="private static void mono_debugger_event_signal (IntPtr handle);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="handle" Type="System.IntPtr" />
+      </Parameters>
+      <Docs>
+        <param name="handle">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

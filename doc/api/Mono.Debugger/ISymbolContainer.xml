@@ -1,24 +1,20 @@
 <Type Name="ISymbolContainer" FullName="Mono.Debugger.ISymbolContainer">
-  <TypeSignature Language="C#" Value="public abstract interface ISymbolContainer" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface ISymbolContainer" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="IsContinuous">
-      <MemberSignature Language="C#" Value="public virtual bool IsContinuous { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsContinuous { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -26,12 +22,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StartAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress StartAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress StartAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -39,12 +35,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="EndAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress EndAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress EndAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -52,7 +48,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>

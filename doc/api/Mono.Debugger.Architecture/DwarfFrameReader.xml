@@ -1,0 +1,144 @@
+<Type Name="DwarfFrameReader" FullName="Mono.Debugger.Architecture.DwarfFrameReader">
+  <TypeSignature Language="C#" Value="internal class DwarfFrameReader" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public DwarfFrameReader (Mono.Debugger.Architecture.Bfd bfd, Mono.Debugger.TargetBlob blob, long vma, bool is_ehframe);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="bfd" Type="Mono.Debugger.Architecture.Bfd" />
+        <Parameter Name="blob" Type="Mono.Debugger.TargetBlob" />
+        <Parameter Name="vma" Type="System.Int64" />
+        <Parameter Name="is_ehframe" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="bfd">To be added.</param>
+        <param name="blob">To be added.</param>
+        <param name="vma">To be added.</param>
+        <param name="is_ehframe">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="bfd">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.Architecture.Bfd bfd;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.Bfd</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="blob">
+      <MemberSignature Language="C#" Value="protected readonly Mono.Debugger.TargetBlob blob;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetBlob</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="is_ehframe">
+      <MemberSignature Language="C#" Value="protected readonly bool is_ehframe;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="vma">
+      <MemberSignature Language="C#" Value="protected readonly long vma;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="cie_list">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.DwarfFrameReader+CIE cie_list;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfFrameReader+CIE</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="find_cie">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.DwarfFrameReader+CIE find_cie (long offset);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfFrameReader+CIE</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="offset" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="offset">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="UnwindStack">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SimpleStackFrame UnwindStack (Mono.Debugger.SimpleStackFrame frame, Mono.Debugger.ITargetMemoryAccess target, Mono.Debugger.IArchitecture arch);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SimpleStackFrame</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.SimpleStackFrame" />
+        <Parameter Name="target" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="arch" Type="Mono.Debugger.IArchitecture" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="target">To be added.</param>
+        <param name="arch">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="ReadEncodedValue">
+      <MemberSignature Language="C#" Value="public long ReadEncodedValue (Mono.Debugger.Architecture.DwarfBinaryReader reader, int encoding);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="reader" Type="Mono.Debugger.Architecture.DwarfBinaryReader" />
+        <Parameter Name="encoding" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="reader">To be added.</param>
+        <param name="encoding">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,0 +1,209 @@
+<Type Name="TargetInfo" FullName="Mono.Debugger.Backends.TargetInfo">
+  <TypeSignature Language="C#" Value="internal class TargetInfo : Mono.Debugger.ITargetInfo" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.ITargetInfo</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="internal TargetInfo (int target_address_size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="target_address_size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="target_address_size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="internal TargetInfo (int target_int_size, int target_long_size, int target_address_size, bool is_bigendian);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="target_int_size" Type="System.Int32" />
+        <Parameter Name="target_long_size" Type="System.Int32" />
+        <Parameter Name="target_address_size" Type="System.Int32" />
+        <Parameter Name="is_bigendian" Type="System.Boolean" />
+      </Parameters>
+      <Docs>
+        <param name="target_int_size">To be added.</param>
+        <param name="target_long_size">To be added.</param>
+        <param name="target_address_size">To be added.</param>
+        <param name="is_bigendian">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_int_size">
+      <MemberSignature Language="C#" Value="private int target_int_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_long_size">
+      <MemberSignature Language="C#" Value="private int target_long_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_address_size">
+      <MemberSignature Language="C#" Value="private int target_address_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="is_bigendian">
+      <MemberSignature Language="C#" Value="private bool is_bigendian;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ITargetInfo.get_IsBigEndian">
+      <MemberSignature Language="C#" Value="private bool Mono.Debugger.ITargetInfo.get_IsBigEndian ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ITargetInfo.get_TargetAddressSize">
+      <MemberSignature Language="C#" Value="private int Mono.Debugger.ITargetInfo.get_TargetAddressSize ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ITargetInfo.get_TargetLongIntegerSize">
+      <MemberSignature Language="C#" Value="private int Mono.Debugger.ITargetInfo.get_TargetLongIntegerSize ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Mono.Debugger.ITargetInfo.get_TargetIntegerSize">
+      <MemberSignature Language="C#" Value="private int Mono.Debugger.ITargetInfo.get_TargetIntegerSize ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetInfo.IsBigEndian">
+      <MemberSignature Language="C#" Value="private bool ITargetInfo.IsBigEndian { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetInfo.TargetAddressSize">
+      <MemberSignature Language="C#" Value="private int ITargetInfo.TargetAddressSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetInfo.TargetLongIntegerSize">
+      <MemberSignature Language="C#" Value="private int ITargetInfo.TargetLongIntegerSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ITargetInfo.TargetIntegerSize">
+      <MemberSignature Language="C#" Value="private int ITargetInfo.TargetIntegerSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

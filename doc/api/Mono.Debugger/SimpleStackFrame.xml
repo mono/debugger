@@ -1,0 +1,109 @@
+<Type Name="SimpleStackFrame" FullName="Mono.Debugger.SimpleStackFrame">
+  <TypeSignature Language="C#" Value="public class SimpleStackFrame" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public SimpleStackFrame (Mono.Debugger.TargetAddress address, Mono.Debugger.TargetAddress stack, Mono.Debugger.TargetAddress frame, Mono.Debugger.Registers regs, int level);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="stack" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="frame" Type="Mono.Debugger.TargetAddress" />
+        <Parameter Name="regs" Type="Mono.Debugger.Registers" />
+        <Parameter Name="level" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="address">To be added.</param>
+        <param name="stack">To be added.</param>
+        <param name="frame">To be added.</param>
+        <param name="regs">To be added.</param>
+        <param name="level">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    <Member MemberName="Address">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetAddress Address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="StackPointer">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetAddress StackPointer;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="FrameAddress">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.TargetAddress FrameAddress;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Registers">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Registers Registers;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Registers</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Level">
+      <MemberSignature Language="C#" Value="public readonly int Level;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="internal SimpleStackFrame (Mono.Debugger.Backends.Inferior+StackFrame iframe, Mono.Debugger.Registers regs, int level);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="iframe" Type="Mono.Debugger.Backends.Inferior+StackFrame" />
+        <Parameter Name="regs" Type="Mono.Debugger.Registers" />
+        <Parameter Name="level" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="iframe">To be added.</param>
+        <param name="regs">To be added.</param>
+        <param name="level">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

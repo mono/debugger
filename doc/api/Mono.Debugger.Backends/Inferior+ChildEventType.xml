@@ -1,0 +1,146 @@
+<Type Name="Inferior+ChildEventType" FullName="Mono.Debugger.Backends.Inferior+ChildEventType">
+  <TypeSignature Language="C#" Value="protected enum ChildEventType" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Enum</BaseTypeName>
+  </Base>
+  <Members>
+    <Member MemberName="NONE">
+      <MemberSignature Language="C#" Value="NONE" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="UNKNOWN_ERROR">
+      <MemberSignature Language="C#" Value="UNKNOWN_ERROR" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_EXITED">
+      <MemberSignature Language="C#" Value="CHILD_EXITED" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_STOPPED">
+      <MemberSignature Language="C#" Value="CHILD_STOPPED" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_SIGNALED">
+      <MemberSignature Language="C#" Value="CHILD_SIGNALED" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_CALLBACK">
+      <MemberSignature Language="C#" Value="CHILD_CALLBACK" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_HIT_BREAKPOINT">
+      <MemberSignature Language="C#" Value="CHILD_HIT_BREAKPOINT" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_MEMORY_CHANGED">
+      <MemberSignature Language="C#" Value="CHILD_MEMORY_CHANGED" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_CREATED_THREAD">
+      <MemberSignature Language="C#" Value="CHILD_CREATED_THREAD" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="CHILD_NOTIFICATION">
+      <MemberSignature Language="C#" Value="CHILD_NOTIFICATION" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="UNHANDLED_EXCEPTION">
+      <MemberSignature Language="C#" Value="UNHANDLED_EXCEPTION" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="THROW_EXCEPTION">
+      <MemberSignature Language="C#" Value="THROW_EXCEPTION" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+    <Member MemberName="HANDLE_EXCEPTION">
+      <MemberSignature Language="C#" Value="HANDLE_EXCEPTION" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

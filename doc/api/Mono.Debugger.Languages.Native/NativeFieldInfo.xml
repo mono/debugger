@@ -1,0 +1,157 @@
+<Type Name="NativeFieldInfo" FullName="Mono.Debugger.Languages.Native.NativeFieldInfo">
+  <TypeSignature Language="C#" Value="internal class NativeFieldInfo : Mono.Debugger.Languages.Native.NativeStructMember, Mono.Debugger.Languages.ITargetFieldInfo" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>Mono.Debugger.Languages.Native.NativeStructMember</BaseTypeName>
+  </Base>
+  <Interfaces>
+    <Interface>
+      <InterfaceName>Mono.Debugger.Languages.ITargetFieldInfo</InterfaceName>
+    </Interface>
+  </Interfaces>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public NativeFieldInfo (Mono.Debugger.Languages.Native.NativeType type, string name, int index, int offset);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.Native.NativeType" />
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="index" Type="System.Int32" />
+        <Parameter Name="offset" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="name">To be added.</param>
+        <param name="index">To be added.</param>
+        <param name="offset">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public NativeFieldInfo (Mono.Debugger.Languages.Native.NativeType type, string name, int index, int offset, int bit_offset, int bit_size);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Languages.Native.NativeType" />
+        <Parameter Name="name" Type="System.String" />
+        <Parameter Name="index" Type="System.Int32" />
+        <Parameter Name="offset" Type="System.Int32" />
+        <Parameter Name="bit_offset" Type="System.Int32" />
+        <Parameter Name="bit_size" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="name">To be added.</param>
+        <param name="index">To be added.</param>
+        <param name="offset">To be added.</param>
+        <param name="bit_offset">To be added.</param>
+        <param name="bit_size">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    <Member MemberName="Offset">
+      <MemberSignature Language="C#" Value="public int Offset { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="BitOffset">
+      <MemberSignature Language="C#" Value="public int BitOffset { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="BitSize">
+      <MemberSignature Language="C#" Value="public int BitSize { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="IsBitfield">
+      <MemberSignature Language="C#" Value="public bool IsBitfield { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="offset">
+      <MemberSignature Language="C#" Value="private int offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bit_offset">
+      <MemberSignature Language="C#" Value="private int bit_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="bit_size">
+      <MemberSignature Language="C#" Value="private int bit_size;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="is_bitfield">
+      <MemberSignature Language="C#" Value="private bool is_bitfield;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

@@ -1,40 +1,21 @@
 <Type Name="IMethod" FullName="Mono.Debugger.IMethod">
-  <TypeSignature Language="C#" Value="public abstract interface IMethod" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public interface IMethod" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
     <summary>To be added</summary>
     <remarks>To be added</remarks>
   </Docs>
-  <Base />
   <Interfaces />
-  <Attributes />
   <Members>
-    <Member MemberName="GetTrampoline">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.SourceMethod GetTrampoline (Mono.Debugger.TargetAddress address);" />
-      <MemberType>Method</MemberType>
-      <ReturnValue>
-        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
-      </ReturnValue>
-      <Parameters>
-        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
-      </Parameters>
-      <Docs>
-        <summary>To be added</summary>
-        <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
-        <returns>a <see cref="T:Mono.Debugger.SourceMethod" /></returns>
-        <remarks>To be added</remarks>
-      </Docs>
-    </Member>
+    
     <Member MemberName="Name">
-      <MemberSignature Language="C#" Value="public virtual string Name { get; };" />
+      <MemberSignature Language="C#" Value="public string Name { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.String</ReturnType>
@@ -42,12 +23,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="ImageFile">
-      <MemberSignature Language="C#" Value="public virtual string ImageFile { get; };" />
+      <MemberSignature Language="C#" Value="public string ImageFile { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.String</ReturnType>
@@ -55,12 +36,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.String" /></returns>
+        <value>a <see cref="T:System.String" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="MethodHandle">
-      <MemberSignature Language="C#" Value="public virtual object MethodHandle { get; };" />
+      <MemberSignature Language="C#" Value="public object MethodHandle { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Object</ReturnType>
@@ -68,12 +49,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Object" /></returns>
+        <value>a <see cref="T:System.Object" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Module">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Module Module { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Module Module { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Module</ReturnType>
@@ -81,12 +62,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Module" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Module" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="IsLoaded">
-      <MemberSignature Language="C#" Value="public virtual bool IsLoaded { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsLoaded { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -94,12 +75,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="StartAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress StartAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress StartAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -107,12 +88,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="EndAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress EndAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress EndAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -120,12 +101,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="HasMethodBounds">
-      <MemberSignature Language="C#" Value="public virtual bool HasMethodBounds { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasMethodBounds { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -133,12 +114,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="MethodStartAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress MethodStartAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress MethodStartAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -146,12 +127,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="MethodEndAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress MethodEndAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress MethodEndAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -159,12 +140,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="IsWrapper">
-      <MemberSignature Language="C#" Value="public virtual bool IsWrapper { get; };" />
+      <MemberSignature Language="C#" Value="public bool IsWrapper { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -172,12 +153,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="WrapperAddress">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.TargetAddress WrapperAddress { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.TargetAddress WrapperAddress { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.TargetAddress</ReturnType>
@@ -185,12 +166,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.TargetAddress" /></returns>
+        <value>a <see cref="T:Mono.Debugger.TargetAddress" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="HasSource">
-      <MemberSignature Language="C#" Value="public virtual bool HasSource { get; };" />
+      <MemberSignature Language="C#" Value="public bool HasSource { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Boolean</ReturnType>
@@ -198,25 +179,25 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Source">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.IMethodSource Source { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.MethodSource Source { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
-        <ReturnType>Mono.Debugger.IMethodSource</ReturnType>
+        <ReturnType>Mono.Debugger.MethodSource</ReturnType>
       </ReturnValue>
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.IMethodSource" /></returns>
+        <value>a <see cref="T:Mono.Debugger.IMethodSource" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Parameters">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.IVariable [] Parameters { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.IVariable[] Parameters { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.IVariable[]</ReturnType>
@@ -224,12 +205,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.IVariable[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.IVariable[]" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Locals">
-      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.Languages.IVariable [] Locals { get; };" />
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.IVariable[] Locals { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>Mono.Debugger.Languages.IVariable[]</ReturnType>
@@ -237,8 +218,82 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.Languages.IVariable[]" /></returns>
+        <value>a <see cref="T:Mono.Debugger.Languages.IVariable[]" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetTrampoline">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SourceMethod GetTrampoline (Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SourceMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <param name="memory">To be added.</param>
+        <param name="address">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="UnwindStack">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.SimpleStackFrame UnwindStack (Mono.Debugger.SimpleStackFrame frame, Mono.Debugger.ITargetMemoryAccess memory, Mono.Debugger.IArchitecture arch);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.SimpleStackFrame</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="frame" Type="Mono.Debugger.SimpleStackFrame" />
+        <Parameter Name="memory" Type="Mono.Debugger.ITargetMemoryAccess" />
+        <Parameter Name="arch" Type="Mono.Debugger.IArchitecture" />
+      </Parameters>
+      <Docs>
+        <param name="frame">To be added.</param>
+        <param name="memory">To be added.</param>
+        <param name="arch">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="DeclaringType">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.ITargetStructType DeclaringType { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.ITargetStructType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="HasThis">
+      <MemberSignature Language="C#" Value="public bool HasThis { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="This">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Languages.IVariable This { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Languages.IVariable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,10 +15,9 @@
     <BaseTypeName>System.Object</BaseTypeName>
   </Base>
   <Interfaces />
-  <Attributes />
   <Members>
     <Member MemberName="HexDump">
-      <MemberSignature Language="C#" Value="public static string HexDump (byte [] data);" />
+      <MemberSignature Language="C#" Value="public static string HexDump (byte[] data);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.String</ReturnType>
@@ -36,7 +33,7 @@
       </Docs>
     </Member>
     <Member MemberName="HexDump">
-      <MemberSignature Language="C#" Value="public static string HexDump (Mono.Debugger.TargetAddress start, byte [] data);" />
+      <MemberSignature Language="C#" Value="public static string HexDump (Mono.Debugger.TargetAddress start, byte[] data);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.String</ReturnType>
@@ -306,7 +303,7 @@
       </Docs>
     </Member>
     <Member MemberName="PeekBuffer">
-      <MemberSignature Language="C#" Value="public byte [] PeekBuffer (long offset, int size);" />
+      <MemberSignature Language="C#" Value="public byte[] PeekBuffer (long offset, int size);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte[]</ReturnType>
@@ -324,7 +321,7 @@
       </Docs>
     </Member>
     <Member MemberName="ReadBuffer">
-      <MemberSignature Language="C#" Value="public byte [] ReadBuffer (int size);" />
+      <MemberSignature Language="C#" Value="public byte[] ReadBuffer (int size);" />
       <MemberType>Method</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte[]</ReturnType>
@@ -463,7 +460,7 @@
       </Docs>
     </Member>
     <Member MemberName=".ctor">
-      <MemberSignature Language="C#" Value="public TargetBinaryReader (byte [] contents, Mono.Debugger.ITargetInfo target_info);" />
+      <MemberSignature Language="C#" Value="public TargetBinaryReader (byte[] contents, Mono.Debugger.ITargetInfo target_info);" />
       <MemberType>Constructor</MemberType>
       <ReturnValue />
       <Parameters>
@@ -474,7 +471,6 @@
         <summary>To be added</summary>
         <param name="contents">a <see cref="T:System.Byte" /></param>
         <param name="target_info">a <see cref="T:Mono.Debugger.ITargetInfo" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetBinaryReader" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -490,7 +486,6 @@
         <summary>To be added</summary>
         <param name="blob">a <see cref="T:Mono.Debugger.TargetBlob" /></param>
         <param name="target_info">a <see cref="T:Mono.Debugger.ITargetInfo" /></param>
-        <returns>a <see cref="T:Mono.Debugger.TargetBinaryReader" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -503,7 +498,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int32" /></returns>
+        <value>a <see cref="T:System.Int32" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -516,7 +511,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.ITargetInfo" /></returns>
+        <value>a <see cref="T:Mono.Debugger.ITargetInfo" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -529,7 +524,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int64" /></returns>
+        <value>a <see cref="T:System.Int64" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -542,7 +537,7 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Int64" /></returns>
+        <value>a <see cref="T:System.Int64" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -555,12 +550,12 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Boolean" /></returns>
+        <value>a <see cref="T:System.Boolean" /></value>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
     <Member MemberName="Contents">
-      <MemberSignature Language="C#" Value="public byte [] Contents { get; };" />
+      <MemberSignature Language="C#" Value="public byte[] Contents { get; };" />
       <MemberType>Property</MemberType>
       <ReturnValue>
         <ReturnType>System.Byte[]</ReturnType>
@@ -568,8 +563,95 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:System.Byte[]" /></returns>
+        <value>a <see cref="T:System.Byte[]" /></value>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  
+  <Member MemberName="blob">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.TargetBlob blob;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.TargetBlob</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="pos">
+      <MemberSignature Language="C#" Value="protected int pos;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="swap">
+      <MemberSignature Language="C#" Value="protected bool swap;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="PeekUInt32">
+      <MemberSignature Language="C#" Value="public uint PeekUInt32 (long pos);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.UInt32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="pos" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="pos">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="PeekUInt32">
+      <MemberSignature Language="C#" Value="public uint PeekUInt32 ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.UInt32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="ReadUInt32">
+      <MemberSignature Language="C#" Value="public uint ReadUInt32 ();" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.UInt32</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="target_info">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.ITargetInfo target_info;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ITargetInfo</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

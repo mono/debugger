@@ -1,0 +1,425 @@
+<Type Name="DwarfReader+LineNumberEngine" FullName="Mono.Debugger.Architecture.DwarfReader+LineNumberEngine">
+  <TypeSignature Language="C#" Value="protected class LineNumberEngine" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public LineNumberEngine (Mono.Debugger.Architecture.DwarfReader dwarf, long offset, string compilation_dir, System.Collections.ArrayList methods);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="dwarf" Type="Mono.Debugger.Architecture.DwarfReader" />
+        <Parameter Name="offset" Type="System.Int64" />
+        <Parameter Name="compilation_dir" Type="System.String" />
+        <Parameter Name="methods" Type="System.Collections.ArrayList" />
+      </Parameters>
+      <Docs>
+        <param name="dwarf">To be added.</param>
+        <param name="offset">To be added.</param>
+        <param name="compilation_dir">To be added.</param>
+        <param name="methods">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="dwarf">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.DwarfReader dwarf;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="reader">
+      <MemberSignature Language="C#" Value="protected Mono.Debugger.Architecture.DwarfBinaryReader reader;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfBinaryReader</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="minimum_insn_length">
+      <MemberSignature Language="C#" Value="protected byte minimum_insn_length;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Byte</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="default_is_stmt">
+      <MemberSignature Language="C#" Value="protected bool default_is_stmt;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="opcode_base">
+      <MemberSignature Language="C#" Value="protected byte opcode_base;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Byte</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="line_base">
+      <MemberSignature Language="C#" Value="protected int line_base;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="line_range">
+      <MemberSignature Language="C#" Value="protected int line_range;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="source_files">
+      <MemberSignature Language="C#" Value="protected System.Collections.ArrayList source_files;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <Member MemberName="GetSource">
+      <MemberSignature Language="C#" Value="public string GetSource (Mono.Debugger.ISymbolContainer method, out int start_row, out int end_row, out Mono.Debugger.Architecture.DwarfReader+LineNumber[] lines);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.ISymbolContainer" />
+        <Parameter Name="start_row" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="end_row" Type="System.Int32&amp;" RefType="out" />
+        <Parameter Name="lines" Type="Mono.Debugger.Architecture.DwarfReader+LineNumber[]&amp;" RefType="out" />
+      </Parameters>
+      <Docs>
+        <param name="method">To be added.</param>
+        <param name="start_row">To be added.</param>
+        <param name="end_row">To be added.</param>
+        <param name="lines">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="offset">
+      <MemberSignature Language="C#" Value="private long offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="length">
+      <MemberSignature Language="C#" Value="private long length;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="version">
+      <MemberSignature Language="C#" Value="private int version;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="header_length">
+      <MemberSignature Language="C#" Value="private long header_length;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="data_offset">
+      <MemberSignature Language="C#" Value="private long data_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="end_offset">
+      <MemberSignature Language="C#" Value="private long end_offset;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="base_address">
+      <MemberSignature Language="C#" Value="private long base_address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="next_method">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfReader+DieSubprogram next_method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DieSubprogram</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="current_method">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Architecture.DwarfReader+DieSubprogram current_method;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Architecture.DwarfReader+DieSubprogram</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="next_method_address">
+      <MemberSignature Language="C#" Value="private long next_method_address;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="next_method_index">
+      <MemberSignature Language="C#" Value="private int next_method_index;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="standard_opcode_lengths">
+      <MemberSignature Language="C#" Value="private int[] standard_opcode_lengths;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="include_directories">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList include_directories;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="compilation_dir">
+      <MemberSignature Language="C#" Value="private string compilation_dir;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="methods">
+      <MemberSignature Language="C#" Value="private System.Collections.ArrayList methods;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.ArrayList</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="method_hash">
+      <MemberSignature Language="C#" Value="private System.Collections.Hashtable method_hash;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Collections.Hashtable</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="end_sequence">
+      <MemberSignature Language="C#" Value="private void end_sequence (Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StatementMachine stm);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="stm" Type="Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StatementMachine" />
+      </Parameters>
+      <Docs>
+        <param name="stm">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="commit">
+      <MemberSignature Language="C#" Value="private void commit (Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StatementMachine stm);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="stm" Type="Mono.Debugger.Architecture.DwarfReader+LineNumberEngine+StatementMachine" />
+      </Parameters>
+      <Docs>
+        <param name="stm">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="warning">
+      <MemberSignature Language="C#" Value="private void warning (string message);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="message" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="message">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="error">
+      <MemberSignature Language="C#" Value="private void error (string message);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="message" Type="System.String" />
+      </Parameters>
+      <Docs>
+        <param name="message">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="debug">
+      <MemberSignature Language="C#" Value="private void debug (string message, object[] args);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Void</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="message" Type="System.String" />
+        <Parameter Name="args" Type="System.Object[]">
+          <Attributes>
+            <Attribute>
+              <AttributeName>System.ParamArray</AttributeName>
+            </Attribute>
+          </Attributes>
+        </Parameter>
+      </Parameters>
+      <Docs>
+        <param name="message">To be added.</param>
+        <param name="args">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

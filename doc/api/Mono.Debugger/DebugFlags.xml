@@ -4,9 +4,7 @@
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -16,20 +14,9 @@
   <Base>
     <BaseTypeName>System.Enum</BaseTypeName>
   </Base>
-  <Interfaces>
-    <Interface>
-      <InterfaceName>System.IComparable</InterfaceName>
-    </Interface>
-    <Interface>
-      <InterfaceName>System.IConvertible</InterfaceName>
-    </Interface>
-    <Interface>
-      <InterfaceName>System.IFormattable</InterfaceName>
-    </Interface>
-  </Interfaces>
   <Attributes>
     <Attribute>
-      <AttributeName>System.FlagsAttribute</AttributeName>
+      <AttributeName>System.Flags</AttributeName>
     </Attribute>
   </Attributes>
   <Members>
@@ -124,17 +111,45 @@
         <remarks>To be added</remarks>
       </Docs>
     </Member>
-    <Member MemberName="value__">
-      <MemberSignature Language="C#" Value="value__" />
+    
+  <Member MemberName="None">
+      <MemberSignature Language="C#" Value="None" />
       <MemberType>Field</MemberType>
       <ReturnValue>
-        <ReturnType>System.Int32</ReturnType>
+        <ReturnType>Mono.Debugger.DebugFlags</ReturnType>
       </ReturnValue>
-      <Parameters>
-      </Parameters>
       <Docs>
-        <summary>To be added</summary>
-        <remarks>To be added</remarks>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  <Member MemberName="Notification">
+      <MemberSignature Language="C#" Value="Notification" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebugFlags</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  <Member MemberName="Mutex">
+      <MemberSignature Language="C#" Value="Mutex" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebugFlags</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+      </Docs>
+    </Member>
+  <Member MemberName="SymbolTable">
+      <MemberSignature Language="C#" Value="SymbolTable" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.DebugFlags</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
       </Docs>
     </Member>
   </Members>

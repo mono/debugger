@@ -1,12 +1,10 @@
 <Type Name="LocationInvalidException" FullName="Mono.Debugger.LocationInvalidException">
-  <TypeSignature Language="C#" Value="public class LocationInvalidException : Mono.Debugger.TargetException, ISerializable" Maintainer="auto" />
+  <TypeSignature Language="C#" Maintainer="auto" Value="public class LocationInvalidException : Mono.Debugger.TargetException" />
   <AssemblyInfo>
     <AssemblyName>Mono.Debugger</AssemblyName>
     <AssemblyPublicKey>
     </AssemblyPublicKey>
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <AssemblyCulture>neutral</AssemblyCulture>
-    <Attributes />
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </AssemblyInfo>
   <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
   <Docs>
@@ -17,11 +15,7 @@
     <BaseTypeName>Mono.Debugger.TargetException</BaseTypeName>
   </Base>
   <Interfaces>
-    <Interface>
-      <InterfaceName>System.Runtime.Serialization.ISerializable</InterfaceName>
-    </Interface>
   </Interfaces>
-  <Attributes />
   <Members>
     <Member MemberName=".ctor">
       <MemberSignature Language="C#" Value="public LocationInvalidException ();" />
@@ -30,7 +24,6 @@
       <Parameters />
       <Docs>
         <summary>To be added</summary>
-        <returns>a <see cref="T:Mono.Debugger.LocationInvalidException" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -44,7 +37,6 @@
       <Docs>
         <summary>To be added</summary>
         <param name="message">a <see cref="T:System.String" /></param>
-        <returns>a <see cref="T:Mono.Debugger.LocationInvalidException" /></returns>
         <remarks>To be added</remarks>
       </Docs>
     </Member>
@@ -58,8 +50,23 @@
       <Docs>
         <summary>To be added</summary>
         <param name="ex">a <see cref="T:Mono.Debugger.TargetException" /></param>
-        <returns>a <see cref="T:Mono.Debugger.LocationInvalidException" /></returns>
         <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="GetExceptionText">
+      <MemberSignature Language="C#" Value="protected static string GetExceptionText (Mono.Debugger.TargetException ex);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.String</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="ex" Type="Mono.Debugger.TargetException" />
+      </Parameters>
+      <Docs>
+        <param name="ex">To be added.</param>
+        <summary>To be added.</summary>
+        <returns>To be added.</returns>
+        <remarks>To be added.</remarks>
       </Docs>
     </Member>
   </Members>

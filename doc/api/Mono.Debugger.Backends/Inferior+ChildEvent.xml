@@ -1,0 +1,79 @@
+<Type Name="Inferior+ChildEvent" FullName="Mono.Debugger.Backends.Inferior+ChildEvent">
+  <TypeSignature Language="C#" Value="protected sealed class ChildEvent" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public ChildEvent (Mono.Debugger.Backends.Inferior+ChildEventType type, long arg, long data1, long data2);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="type" Type="Mono.Debugger.Backends.Inferior+ChildEventType" />
+        <Parameter Name="arg" Type="System.Int64" />
+        <Parameter Name="data1" Type="System.Int64" />
+        <Parameter Name="data2" Type="System.Int64" />
+      </Parameters>
+      <Docs>
+        <param name="type">To be added.</param>
+        <param name="arg">To be added.</param>
+        <param name="data1">To be added.</param>
+        <param name="data2">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Type">
+      <MemberSignature Language="C#" Value="public readonly Mono.Debugger.Backends.Inferior+ChildEventType Type;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Backends.Inferior+ChildEventType</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Argument">
+      <MemberSignature Language="C#" Value="public readonly long Argument;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Data1">
+      <MemberSignature Language="C#" Value="public readonly long Data1;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Data2">
+      <MemberSignature Language="C#" Value="public readonly long Data2;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>

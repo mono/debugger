@@ -1,0 +1,125 @@
+<Type Name="Registers" FullName="Mono.Debugger.Registers">
+  <TypeSignature Language="C#" Value="public sealed class Registers" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+  </AssemblyInfo>
+  <Base>
+    <BaseTypeName>System.Object</BaseTypeName>
+  </Base>
+  <Interfaces />
+  <Attributes>
+    <Attribute>
+      <AttributeName>System.Reflection.DefaultMember(MemberName="Item")</AttributeName>
+    </Attribute>
+  </Attributes>
+  <Members>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Registers (Mono.Debugger.IArchitecture arch);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="arch" Type="Mono.Debugger.IArchitecture" />
+      </Parameters>
+      <Docs>
+        <param name="arch">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Registers (Mono.Debugger.IArchitecture arch, long[] values);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="arch" Type="Mono.Debugger.IArchitecture" />
+        <Parameter Name="values" Type="System.Int64[]" />
+      </Parameters>
+      <Docs>
+        <param name="arch">To be added.</param>
+        <param name="values">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName=".ctor">
+      <MemberSignature Language="C#" Value="public Registers (Mono.Debugger.Registers old_regs);" />
+      <MemberType>Constructor</MemberType>
+      <Parameters>
+        <Parameter Name="old_regs" Type="Mono.Debugger.Registers" />
+      </Parameters>
+      <Docs>
+        <param name="old_regs">To be added.</param>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    
+    
+    
+    <Member MemberName="FromCurrentFrame">
+      <MemberSignature Language="C#" Value="public bool FromCurrentFrame { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="Item">
+      <MemberSignature Language="C#" Value="public Mono.Debugger.Register Item[int index] { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Register</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="index" Type="System.Int32" />
+      </Parameters>
+      <Docs>
+        <param name="index">To be added.</param>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="regs">
+      <MemberSignature Language="C#" Value="private Mono.Debugger.Register[] regs;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.Register[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="from_current_frame">
+      <MemberSignature Language="C#" Value="private bool from_current_frame;" />
+      <MemberType>Field</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Boolean</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  <Member MemberName="Values">
+      <MemberSignature Language="C#" Value="internal long[] Values { get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int64[]</ReturnType>
+      </ReturnValue>
+      <Docs>
+        <summary>To be added.</summary>
+        <value>To be added.</value>
+        <remarks>To be added.</remarks>
+      </Docs>
+    </Member>
+  </Members>
+  <Docs>
+    <summary>To be added.</summary>
+    <remarks>To be added.</remarks>
+  </Docs>
+</Type>
