@@ -29,7 +29,7 @@ namespace Mono.Debugger.Architecture
 		Hashtable compile_unit_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
-		TargetInfo target_info;
+		ITargetInfo target_info;
 		SourceFileFactory factory;
 
 		SourceFile[] sources;
@@ -51,6 +51,7 @@ namespace Mono.Debugger.Architecture
 			this.module = module;
 			this.filename = bfd.FileName;
 			this.factory = factory;
+			this.target_info = bfd.TargetInfo;
 
 			debug_info_reader = create_reader (".debug_info");
 
@@ -69,8 +70,6 @@ namespace Mono.Debugger.Architecture
 			if ((address_size != 4) && (address_size != 8))
 				throw new DwarfException (this, String.Format (
 					"Unknown address size: {0}", address_size));
-
-			reader.TargetInfo = target_info = new TargetInfo (address_size);
 
 			debug_abbrev_reader = create_reader (".debug_abbrev");
 			debug_line_reader = create_reader (".debug_line");
@@ -99,7 +98,7 @@ namespace Mono.Debugger.Architecture
 			source_list.CopyTo (sources, 0);
 		}
 
-		public TargetInfo TargetInfo {
+		public ITargetInfo TargetInfo {
 			get {
 				return target_info;
 			}
