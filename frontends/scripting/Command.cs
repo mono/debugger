@@ -837,4 +837,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.ListSourceCode (location);
 		}
 	}
+
+	public class VariableAssignCommand : Command
+	{
+		VariableExpression var_expr;
+		Expression expr;
+
+		public VariableAssignCommand (VariableExpression var_expr, Expression expr)
+		{
+			this.var_expr = var_expr;
+			this.expr = expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			object obj = expr.Resolve (context);
+			var_expr.Assign (context, obj);
+		}
+	}
 }

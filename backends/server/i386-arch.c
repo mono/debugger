@@ -353,70 +353,64 @@ server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *reg
 static ServerCommandError
 server_ptrace_set_registers (InferiorHandle *handle, guint32 count, guint32 *registers, guint64 *values)
 {
-	ServerCommandError result;
-	INFERIOR_REGS_TYPE regs;
 	int i;
-
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
 
 	for (i = 0; i < count; i++) {
 		switch (registers [i]) {
 		case DEBUGGER_REG_EBX:
-			INFERIOR_REG_EBX (regs) = values [i];
+			INFERIOR_REG_EBX (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_ECX:
-			INFERIOR_REG_ECX (regs) = values [i];
+			INFERIOR_REG_ECX (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_EDX:
-			INFERIOR_REG_EDX (regs) = values [i];
+			INFERIOR_REG_EDX (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_ESI:
-			INFERIOR_REG_ESI (regs) = values [i];
+			INFERIOR_REG_ESI (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_EDI:
-			INFERIOR_REG_EDI (regs) = values [i];
+			INFERIOR_REG_EDI (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_EBP:
-			INFERIOR_REG_EBP (regs) = values [i];
+			INFERIOR_REG_EBP (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_EAX:
-			INFERIOR_REG_EAX (regs) = values [i];
+			INFERIOR_REG_EAX (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_DS:
-			INFERIOR_REG_DS (regs) = values [i];
+			INFERIOR_REG_DS (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_ES:
-			INFERIOR_REG_ES (regs) = values [i];
+			INFERIOR_REG_ES (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_FS:
-			INFERIOR_REG_FS (regs) = values [i];
+			INFERIOR_REG_FS (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_GS:
-			INFERIOR_REG_GS (regs) = values [i];
+			INFERIOR_REG_GS (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_EIP:
-			INFERIOR_REG_EIP (regs) = values [i];
+			INFERIOR_REG_EIP (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_CS:
-			INFERIOR_REG_CS (regs) = values [i];
+			INFERIOR_REG_CS (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_EFLAGS:
-			INFERIOR_REG_EFLAGS (regs) = values [i];
+			INFERIOR_REG_EFLAGS (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_ESP:
-			INFERIOR_REG_ESP (regs) = values [i];
+			INFERIOR_REG_ESP (handle->current_regs) = values [i];
 			break;
 		case DEBUGGER_REG_SS:
-			INFERIOR_REG_SS (regs) = values [i];
+			INFERIOR_REG_SS (handle->current_regs) = values [i];
 			break;
 		default:
 			return COMMAND_ERROR_UNKNOWN_REGISTER;
 		}
 	}
 
-	return set_registers (handle, &regs);
+	return set_registers (handle, &handle->current_regs);
 }
 
 static ServerCommandError

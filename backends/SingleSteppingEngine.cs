@@ -729,9 +729,22 @@ namespace Mono.Debugger.Backends
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
+		CommandResult set_register (object data)
+		{
+			Register reg = (Register) data;
+			try {
+				inferior.SetRegister (reg.Index, (long) reg.Data);
+				registers = null;
+				return new CommandResult (CommandResultType.CommandOk);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
 		public void SetRegister (int register, long value)
 		{
-			throw new NotImplementedException ();
+			Register reg = new Register (register, value);
+			send_sync_command (new CommandFunc (set_register), reg);
 		}
 
 		public void SetRegisters (int[] registers, long[] values)
@@ -2120,6 +2133,42 @@ namespace Mono.Debugger.Backends
 			return new TargetReader (buffer, inferior);
 		}
 
+		private struct WriteMemoryData
+		{
+			public TargetAddress Address;
+			public byte[] Data;
+
+			public WriteMemoryData (TargetAddress address, byte[] data)
+			{
+				this.Address = address;
+				this.Data = data;
+			}
+		}
+
+		CommandResult do_write_memory (object data)
+		{
+			WriteMemoryData mdata = (WriteMemoryData) data;
+
+			try {
+				inferior.WriteBuffer (mdata.Address, mdata.Data);
+				return new CommandResult (CommandResultType.CommandOk);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		protected void write_memory (TargetAddress address, byte[] buffer)
+		{
+			WriteMemoryData data = new WriteMemoryData (address, buffer);
+			CommandResult result = send_sync_command (new CommandFunc (do_write_memory), data);
+			if (result.Type == CommandResultType.CommandOk)
+				return;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
 		AddressDomain ITargetMemoryInfo.AddressDomain {
 			get {
 				return inferior.AddressDomain;
@@ -2186,9 +2235,9 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		void ITargetMemoryAccess.WriteBuffer (TargetAddress address, byte[] buffer, int size)
+		void ITargetMemoryAccess.WriteBuffer (TargetAddress address, byte[] buffer)
 		{
-			throw new InvalidOperationException ();
+			write_memory (address, buffer);
 		}
 
 		void ITargetMemoryAccess.WriteByte (TargetAddress address, byte value)
@@ -2271,6 +2320,17 @@ namespace Mono.Debugger.Backends
 			{
 				return Language.PointerType.GetObject (
 					new MonoVariableLocation (this, true, index, offset, false, 0));
+			}
+
+			public override void SetRegister (int index, long value)
+			{
+				if (backtrace != null)
+					throw new NotImplementedException ();
+
+				sse.SetRegister (index, value);
+
+				has_registers = false;
+				registers = null;
 			}
 
 			public override ILanguage Language {

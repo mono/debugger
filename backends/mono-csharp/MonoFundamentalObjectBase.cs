@@ -20,6 +20,9 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				return GetObject ();
 			}
+			set {
+				SetObject (value);
+			}
 		}
 
 		internal object GetObject ()
@@ -38,7 +41,23 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		internal void SetObject (object obj)
+		{
+			try {
+				byte [] data = CreateObject (obj);
+				if (!type.HasFixedSize || (data == null) || (data.Length != type.Size))
+					throw new NotSupportedException ();
+
+				RawContents = data;
+			} catch (TargetException ex) {
+				is_valid = false;
+				throw new LocationInvalidException (ex);
+			}
+		}
+
 		protected abstract object GetObject (ITargetMemoryReader reader, TargetLocation location);
+
+		protected abstract byte[] CreateObject (object obj);
 
 		public override string Print ()
 		{

@@ -41,6 +41,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 			return new String (retval);
 		}
+
+		protected override byte[] CreateObject (object obj)
+		{
+			throw new NotSupportedException ();
+		}
 	}
 }
 

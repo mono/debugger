@@ -38,6 +38,16 @@ namespace Mono.Debugger.Languages.CSharp
 					throw new LocationInvalidException (ex);
 				}
 			}
+			set {
+				try {
+					if (!type.HasFixedSize || (value.Length != type.Size))
+						throw new ArgumentException ();
+					location.WriteBuffer (value);
+				} catch (TargetException ex) {
+					is_valid = false;
+					throw new LocationInvalidException (ex);
+				}
+			}
 		}
 
 		protected virtual int MaximumDynamicSize {

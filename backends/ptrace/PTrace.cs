@@ -769,11 +769,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteBuffer (TargetAddress address, byte[] buffer, int size)
+		public void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
+				int size = buffer.Length;
 				data = Marshal.AllocHGlobal (size);
 				Marshal.Copy (buffer, 0, data, size);
 				check_error (mono_debugger_server_write_memory (

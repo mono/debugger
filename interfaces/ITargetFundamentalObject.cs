@@ -16,7 +16,7 @@ namespace Mono.Debugger
 		//   Returns a Mono object representing this object.
 		// </summary>
 		object Object {
-			get;
+			get; set;
 		}
 	}
 }

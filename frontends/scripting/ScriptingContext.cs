@@ -125,6 +125,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return frame.GetRegister (register, offset);
 		}
 
+		public void SetRegister (string name, long value)
+		{
+			int register = process.GetRegisterIndex (name);
+
+			frame.SetRegister (register, value);
+		}
+
 		public void ShowParameters (ScriptingContext context)
 		{
 			if (frame.Method == null)

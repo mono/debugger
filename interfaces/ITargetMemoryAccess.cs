@@ -115,7 +115,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		void WriteBuffer (TargetAddress address, byte[] buffer, int size);
+		void WriteBuffer (TargetAddress address, byte[] buffer);
 
 		void WriteByte (TargetAddress address, byte value);
 

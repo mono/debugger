@@ -331,6 +331,10 @@ other_command
 	  {
 		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
 	  }
+	| SET variable_expression ASSIGN expression
+	  {
+		$$ = new VariableAssignCommand ((VariableExpression) $2, (Expression) $4);
+	  }
 	| PRINT expression
 	  {
 		$$ = new PrintCommand ((Expression) $2);

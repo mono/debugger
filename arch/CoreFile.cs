@@ -257,6 +257,11 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public override void SetRegister (int index, long value)
+			{
+				throw new InvalidOperationException ();
+			}
+
 			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
 			{
 				return core.Disassembler.DisassembleInstruction (Method, address);
@@ -464,7 +469,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public void WriteBuffer (TargetAddress address, byte[] buffer, int size)
+		public void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			throw new InvalidOperationException ();
 		}

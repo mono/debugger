@@ -104,6 +104,8 @@ namespace Mono.Debugger
 
 		protected abstract ITargetObject GetRegister (int index, long contents, long offset);
 
+		public abstract void SetRegister (int index, long value);
+
 		public IMethod Method {
 			get {
 				check_disposed ();

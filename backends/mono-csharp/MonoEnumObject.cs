@@ -27,5 +27,10 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			return Enum.ToObject ((Type) type.TypeHandle, element_object.GetObject ());
 		}
+
+		protected override byte[] CreateObject (object obj)
+		{
+			throw new NotSupportedException ();
+		}
 	}
 }

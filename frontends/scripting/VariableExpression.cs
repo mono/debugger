@@ -56,6 +56,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public virtual void Assign (ScriptingContext context, object obj)
+		{
+			ITargetObject target_object = ResolveVariable (context);
+
+			Console.WriteLine ("ASSIGN: {0} {1} {2} {3}", this, target_object, obj, obj.GetType ());
+
+			ITargetFundamentalObject fundamental = target_object as ITargetFundamentalObject;
+			if ((fundamental == null) || !fundamental.HasObject)
+				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
+
+			try {
+				fundamental.Object = obj;
+			} catch (NotSupportedException) {
+				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
+			} catch (InvalidOperationException) {
+				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
+			}
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), Name);
@@ -159,6 +178,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ITargetType type = DoResolveType (context);
 
 			return frame.GetRegister (register, offset);
+		}
+
+		public override void Assign (ScriptingContext context, object obj)
+		{
+			if (offset != 0)
+				throw new ScriptingException ("Cannot assign a register expression which has an offset.");
+
+			frame = (FrameHandle) frame_expr.Resolve (context);
+			long value = Convert.ToInt64 (obj);
+
+			frame.SetRegister (register, value);
 		}
 
 		public override string ToString ()

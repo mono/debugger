@@ -129,6 +129,11 @@ namespace Mono.Debugger
 			return ReadMemory (size).Contents;
 		}
 
+		public virtual void WriteBuffer (byte[] data)
+		{
+			TargetMemoryAccess.WriteBuffer (Address, data);
+		}
+
 		public ITargetMemoryAccess TargetMemoryAccess {
 			get {
 				return frame.TargetMemoryAccess;

@@ -1,3 +1,17 @@
+2003-07-11  Martin Baulig  <martin@ximian.com>
+
+	Added support to modify variables of fundamental types.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryAccess.WriteBuffer): We don't need a `size' argument
+	here since we can just use the buffer's length.
+
+	* interfaces/ITargetFundamentalObject.cs
+	(ITargetFundamentalObject.Object): Added setter to this property.
+
+	* frontends/scripting/Parser.jay: Added a `set $variable =
+	<expression>' command to modify variables.
+
 2003-07-10  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/server.h (StackFrame): Replaced the
