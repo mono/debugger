@@ -6,11 +6,11 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected readonly Heap Heap;
 
-		public MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+		public MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
 			: this (type, size, info, table, true)
 		{ }
 
-		protected MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table,
+		protected MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table,
 					       bool has_fixed_size)
 			: base (TargetObjectKind.Fundamental, type, size, false, info, table, has_fixed_size)
 		{

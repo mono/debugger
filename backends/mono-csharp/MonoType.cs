@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolTable table)
+		public static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolFile table)
 		{
 			int kind = info.ReadByte ();
 			if (kind == 0)

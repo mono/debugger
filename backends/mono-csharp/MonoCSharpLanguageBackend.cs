@@ -1,11 +1,11 @@
 using System;
 using System.IO;
 using System.Text;
-using Reflection = System.Reflection;
+using R = System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Threading;
-using Mono.CSharp.Debugger;
+using C = Mono.CSharp.Debugger;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Architecture;
@@ -130,7 +130,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return TargetAddress.Null;
 		}
 
-		public MethodAddress (MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
+		public MethodAddress (C.MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
 		{
 			reader.Position = 4;
 			StartAddress = ReadAddress (reader, domain);
@@ -226,7 +226,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly int TypeInfoSize;
 
 		public MonoBuiltinTypes (MonoSymbolTable table, ITargetMemoryAccess memory, TargetAddress address,
-					 MonoSymbolTableReader corlib)
+					 MonoSymbolFile corlib)
 		{
 			int size = memory.ReadInteger (address);
 			ITargetMemoryReader reader = memory.ReadMemory (address, size);
@@ -279,7 +279,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public static MonoType GetType (MonoBuiltinTypes builtin, ITargetMemoryAccess memory,
-							TargetAddress address, MonoSymbolTableReader corlib)
+							TargetAddress address, MonoSymbolFile corlib)
 			{
 				int size = builtin.TypeInfoSize;
 				ITargetMemoryReader reader = memory.ReadMemory (address, size);
@@ -306,11 +306,12 @@ namespace Mono.Debugger.Languages.CSharp
 		Hashtable class_table;
 		Hashtable types;
 		Hashtable image_hash;
+		Hashtable assembly_hash;
 		ArrayList modules;
 		protected Hashtable module_hash;
 
 		MonoBuiltinTypes builtin;
-		MonoSymbolTableReader corlib;
+		MonoSymbolFile corlib;
 		TargetAddress StartAddress;
 		int TotalSize;
 
@@ -332,6 +333,7 @@ namespace Mono.Debugger.Languages.CSharp
 			modules = new ArrayList ();
 			module_hash = new Hashtable ();
 			image_hash = new Hashtable ();
+			assembly_hash = new Hashtable ();
 			type_table = new ArrayList ();
 
 			ranges = new ArrayList ();
@@ -376,7 +378,7 @@ namespace Mono.Debugger.Languages.CSharp
 				TargetAddress address = memory.ReadAddress (symbol_files);
 				symbol_files += address_size;
 
-				MonoSymbolTableReader symfile = new MonoSymbolTableReader (
+				MonoSymbolFile symfile = new MonoSymbolFile (
 					this, Backend, memory, memory, address, Language);
 				SymbolFiles.Add (symfile);
 
@@ -454,7 +456,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			bool updated = false;
 
-			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
+			foreach (MonoSymbolFile symfile in SymbolFiles) {
 				if (!symfile.Module.LoadSymbols)
 					continue;
 
@@ -464,7 +466,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (updated) {
 				ranges = new ArrayList ();
-				foreach (MonoSymbolTableReader symfile in SymbolFiles) {
+				foreach (MonoSymbolFile symfile in SymbolFiles) {
 					if (!symfile.Module.LoadSymbols)
 						continue;
 
@@ -480,9 +482,13 @@ namespace Mono.Debugger.Languages.CSharp
 			if (retval != null)
 				return retval;
 
+			MonoSymbolFile reader = GetImage (type.Assembly);
+			if (reader == null)
+				throw new InternalError ();
+
 			byte[] data = GetTypeInfo (offset);
 			TargetBinaryReader info = new TargetBinaryReader (data, TargetInfo);
-			retval = MonoType.GetType (type, info, this);
+			retval = MonoType.GetType (type, info, reader);
 			types.Add (type, retval);
 			return retval;
 		}
@@ -527,17 +533,25 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal void AddImage (MonoSymbolTableReader reader)
+		internal void AddImage (MonoSymbolFile reader)
 		{
 			lock (this) {
 				image_hash.Add (reader.MonoImage.Address, reader);
+				assembly_hash.Add (reader.Assembly, reader);
 			}
 		}
 
-		public MonoSymbolTableReader GetImage (TargetAddress address)
+		public MonoSymbolFile GetImage (TargetAddress address)
 		{
 			lock (this) {
-				return (MonoSymbolTableReader) image_hash [address.Address];
+				return (MonoSymbolFile) image_hash [address.Address];
+			}
+		}
+
+		public MonoSymbolFile GetImage (R.Assembly assembly)
+		{
+			lock (this) {
+				return (MonoSymbolFile) assembly_hash [assembly];
 			}
 		}
 
@@ -597,7 +611,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (name.IndexOf ('[') >= 0)
 				return null;
 
-			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
+			foreach (MonoSymbolFile symfile in SymbolFiles) {
 				Type type = symfile.Assembly.GetType (name);
 				if (type == null)
 					continue;
@@ -719,9 +733,9 @@ namespace Mono.Debugger.Languages.CSharp
 			Module module;
 			bool symbols_loaded;
 			bool has_debugging_info;
-			MonoSymbolTableReader reader;
+			MonoSymbolFile reader;
 
-			public MonoModule (Module module, string name, MonoSymbolTableReader reader)
+			public MonoModule (Module module, string name, MonoSymbolFile reader)
 				: base (module, name)
 			{
 				this.module = module;
@@ -744,11 +758,11 @@ namespace Mono.Debugger.Languages.CSharp
 				get { return reader.Table.Language; }
 			}
 
-			public MonoSymbolTableReader MonoSymbolTableReader {
+			public MonoSymbolFile MonoSymbolFile {
 				get { return reader; }
 			}
 
-			public Reflection.Assembly Assembly {
+			public R.Assembly Assembly {
 				get { return reader.Assembly; }
 			}
 
@@ -900,18 +914,18 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int TypeInfo;
 		public readonly Type Type;
 
-		static Reflection.MethodInfo get_type;
+		static R.MethodInfo get_type;
 
 		static ClassEntry ()
 		{
-			Type type = typeof (Reflection.Assembly);
+			Type type = typeof (R.Assembly);
 			get_type = type.GetMethod ("MonoDebugger_GetType");
 			if (get_type == null)
 				throw new InternalError (
 					"Can't find Assembly.MonoDebugger_GetType");
 		}
 
-		internal ClassEntry (MonoSymbolTableReader reader, ITargetMemoryReader memory)
+		internal ClassEntry (MonoSymbolFile reader, ITargetMemoryReader memory)
 		{
 			KlassAddress = memory.ReadAddress ();
 			Rank = memory.BinaryReader.ReadInt32 ();
@@ -924,7 +938,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public static void ReadClasses (MonoSymbolTableReader reader,
+		public static void ReadClasses (MonoSymbolFile reader,
 						ITargetMemoryReader memory, int count)
 		{
 			for (int i = 0; i < count; i++) {
@@ -943,14 +957,14 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   A single Assembly's symbol table.
 	// </summary>
-	internal class MonoSymbolTableReader : ISimpleSymbolTable
+	internal class MonoSymbolFile : ISimpleSymbolTable
 	{
 		internal readonly int Index;
-		internal readonly Reflection.Assembly Assembly;
+		internal readonly R.Assembly Assembly;
 		internal readonly MonoSymbolTable Table;
 		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
-		internal readonly MonoSymbolFile File;
+		internal readonly C.MonoSymbolFile File;
 		internal Module Module;
 		internal ThreadManager ThreadManager;
 		internal AddressDomain GlobalAddressDomain;
@@ -970,7 +984,7 @@ namespace Mono.Debugger.Languages.CSharp
 		int num_range_entries;
 		int num_class_entries;
 
-		internal MonoSymbolTableReader (MonoSymbolTable table, DebuggerBackend backend,
+		internal MonoSymbolFile (MonoSymbolTable table, DebuggerBackend backend,
 						ITargetInfo target_info, ITargetMemoryAccess memory,
 						TargetAddress address, MonoCSharpLanguageBackend language)
 		{
@@ -1005,9 +1019,9 @@ namespace Mono.Debugger.Languages.CSharp
 			address += int_size;
 			dynamic_address = address;
 
-			Assembly = Reflection.Assembly.LoadFrom (ImageFile);
+			Assembly = R.Assembly.LoadFrom (ImageFile);
 
-			File = MonoSymbolFile.ReadSymbolFile (Assembly);
+			File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
 
 			symtab = new MonoCSharpSymbolTable (this);
 		}
@@ -1148,7 +1162,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (File == null)
 				return;
 
-			foreach (SourceFileEntry source in File.Sources) {
+			foreach (C.SourceFileEntry source in File.Sources) {
 				MonoSourceFile info = new MonoSourceFile (this, source);
 
 				sources.Add (info);
@@ -1188,9 +1202,9 @@ namespace Mono.Debugger.Languages.CSharp
 			if (method != null)
 				return method;
 
-			MethodEntry entry = File.GetMethod (index);
+			C.MethodEntry entry = File.GetMethod (index);
 			MonoSourceFile info = (MonoSourceFile) source_hash [entry.SourceFile];
-			MethodSourceEntry source = File.GetMethodSource (index);
+			C.MethodSourceEntry source = File.GetMethodSource (index);
 
 			string name = entry.FullName;
 			method = new MonoSourceMethod (info, this, source, entry, name);
@@ -1210,7 +1224,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return null;
 
 			ensure_sources ();
-			MethodEntry entry = File.GetMethodByToken (token);
+			C.MethodEntry entry = File.GetMethodByToken (token);
 			if (entry == null)
 				return null;
 			return GetMethod_internal (entry.Index);
@@ -1222,6 +1236,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return null;
 
 			ensure_sources ();
+
 			SourceMethod method = (SourceMethod) method_name_hash [name];
 			if (method != null)
 				return method;
@@ -1267,10 +1282,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private class MonoSourceFile : SourceFile
 		{
-			MonoSymbolTableReader reader;
-			SourceFileEntry source;
+			MonoSymbolFile reader;
+			C.SourceFileEntry source;
 
-			public MonoSourceFile (MonoSymbolTableReader reader, SourceFileEntry source)
+			public MonoSourceFile (MonoSymbolFile reader, C.SourceFileEntry source)
 				: base (reader.Module, source.FileName)
 			{
 				this.reader = reader;
@@ -1281,7 +1296,7 @@ namespace Mono.Debugger.Languages.CSharp
 			{
 				ArrayList list = new ArrayList ();
 
-				foreach (MethodSourceEntry entry in source.Methods) {
+				foreach (C.MethodSourceEntry entry in source.Methods) {
 					SourceMethod method = reader.GetMethod (entry.Index);
 					list.Add (method);
 				}
@@ -1292,14 +1307,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private class MonoSourceMethod : SourceMethod
 		{
-			MonoSymbolTableReader reader;
+			MonoSymbolFile reader;
 			Hashtable load_handlers;
 			int index;
-			MethodEntry entry;
+			C.MethodEntry entry;
 			MonoMethod method;
 
-			public MonoSourceMethod (SourceFile info, MonoSymbolTableReader reader,
-						 MethodSourceEntry source, MethodEntry entry, string name)
+			public MonoSourceMethod (SourceFile info, MonoSymbolFile reader,
+						 C.MethodSourceEntry source, C.MethodEntry entry, string name)
 				: base (info, name, source.StartRow, source.EndRow, true)
 			{
 				this.reader = reader;
@@ -1309,7 +1324,7 @@ namespace Mono.Debugger.Languages.CSharp
 				info.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
 			}
 
-			public MethodEntry Entry {
+			public C.MethodEntry Entry {
 				get { return entry; }
 			}
 
@@ -1381,7 +1396,7 @@ namespace Mono.Debugger.Languages.CSharp
 					if (method == null)
 						method = reader.GetMonoMethod (index);
 
-					Reflection.MethodBase minfo = (Reflection.MethodBase) method.MethodHandle;
+					R.MethodBase minfo = (R.MethodBase) method.MethodHandle;
 
 					string full_name = String.Format (
 						"{0}:{1}", minfo.ReflectedType.FullName, minfo.Name);
@@ -1447,10 +1462,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected class MonoMethod : MethodBase
 		{
-			MonoSymbolTableReader reader;
+			MonoSymbolFile reader;
 			SourceMethod info;
-			MethodEntry method;
-			System.Reflection.MethodBase rmethod;
+			C.MethodEntry method;
+			R.MethodBase rmethod;
 			MonoType[] param_types;
 			MonoType[] local_types;
 			IVariable[] parameters;
@@ -1459,7 +1474,7 @@ namespace Mono.Debugger.Languages.CSharp
 			bool is_loaded;
 			MethodAddress address;
 
-			public MonoMethod (MonoSymbolTableReader reader, SourceMethod info, MethodEntry method)
+			public MonoMethod (MonoSymbolFile reader, SourceMethod info, C.MethodEntry method)
 				: base (info.Name, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
@@ -1468,7 +1483,7 @@ namespace Mono.Debugger.Languages.CSharp
 				this.rmethod = method.MethodBase;
 			}
 
-			public MonoMethod (MonoSymbolTableReader reader, SourceMethod info, MethodEntry method,
+			public MonoMethod (MonoSymbolFile reader, SourceMethod info, C.MethodEntry method,
 					   ITargetMemoryReader dynamic_reader)
 				: this (reader, info, method)
 			{
@@ -1511,7 +1526,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (has_variables || !is_loaded)
 					return;
 
-				Reflection.ParameterInfo[] param_info = rmethod.GetParameters ();
+				R.ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
 					param_types [i] = reader.Table.GetType (
@@ -1533,7 +1548,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				locals = new IVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
-					LocalVariableEntry local = method.Locals [i];
+					C.LocalVariableEntry local = method.Locals [i];
 
 					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
 						int index = local.BlockIndex - 1;
@@ -1586,11 +1601,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private class MethodRangeEntry : SymbolRangeEntry
 		{
-			MonoSymbolTableReader reader;
+			MonoSymbolFile reader;
 			int index;
 			byte[] contents;
 
-			private MethodRangeEntry (MonoSymbolTableReader reader, int index,
+			private MethodRangeEntry (MonoSymbolFile reader, int index,
 						  byte[] contents, TargetAddress start_address,
 						  TargetAddress end_address)
 				: base (start_address, end_address)
@@ -1600,7 +1615,7 @@ namespace Mono.Debugger.Languages.CSharp
 				this.contents = contents;
 			}
 
-			public static ArrayList ReadRanges (MonoSymbolTableReader reader,
+			public static ArrayList ReadRanges (MonoSymbolFile reader,
 							    ITargetMemoryAccess target,
 							    ITargetMemoryReader memory, int count)
 			{
@@ -1649,9 +1664,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private class MonoCSharpSymbolTable : SymbolTable
 		{
-			MonoSymbolTableReader reader;
+			MonoSymbolFile reader;
 
-			public MonoCSharpSymbolTable (MonoSymbolTableReader reader)
+			public MonoCSharpSymbolTable (MonoSymbolFile reader)
 			{
 				this.reader = reader;
 			}
@@ -1905,7 +1920,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int token = target.ReadInteger (trampoline + 4);
 			TargetAddress klass = target.ReadAddress (trampoline + 8);
 			TargetAddress image = target.ReadAddress (klass);
-			MonoSymbolTableReader reader = table.GetImage (image);
+			MonoSymbolFile reader = table.GetImage (image);
 
 			// Console.WriteLine ("TRAMPOLINE: {0} {1:x} {2} {3} {4}", trampoline, token, klass, image, reader);
 

@@ -1,21 +1,21 @@
 using System;
 using System.Collections;
-using Mono.CSharp.Debugger;
+using C = Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Languages.CSharp
 {
 	internal class CSharpMethod : MethodSource
 	{
 		int start_row, end_row;
-		MonoSymbolTableReader reader;
+		MonoSymbolFile reader;
 		JitLineNumberEntry[] line_numbers;
-		MethodEntry method;
+		C.MethodEntry method;
 		SourceMethod source_method;
 		IMethod imethod;
 		SourceFileFactory factory;
 
-		public CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
-				     SourceMethod source_method, MethodEntry method,
+		public CSharpMethod (MonoSymbolFile reader, IMethod imethod,
+				     SourceMethod source_method, C.MethodEntry method,
 				     JitLineNumberEntry[] line_numbers)
 			: base (imethod, source_method.SourceFile)
 		{
@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.CSharp
 					   ref int last_line)
 		{
 			for (int i = method.NumLineNumbers - 1; i >= 0; i--) {
-				LineNumberEntry lne = method.LineNumbers [i];
+				C.LineNumberEntry lne = method.LineNumbers [i];
 
 				if (lne.Offset > offset)
 					continue;

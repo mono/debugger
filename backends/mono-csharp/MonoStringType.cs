@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
 			: base (type, size, info, table, false)
 		{
 			LengthOffset = info.ReadByte ();

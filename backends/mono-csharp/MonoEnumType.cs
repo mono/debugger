@@ -6,11 +6,11 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		MonoType element_type;
 
-		public MonoEnumType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
-			: base (type, size, info, table)
+		public MonoEnumType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file)
+			: base (type, size, info, file)
 		{
 			int element_type_info = info.ReadInt32 ();
-			element_type = table.GetType (type.GetElementType (), element_type_info);
+			element_type = file.Table.GetType (type.GetElementType (), element_type_info);
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)

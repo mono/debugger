@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoPropertyInfo[] properties, static_properties;
 		MonoMethodInfo[] methods, static_methods, ctors;
 		TargetBinaryReader info;
-		internal readonly MonoSymbolTable Table;
+		internal readonly MonoSymbolFile File;
 		bool is_valuetype;
 		int num_fields, num_static_fields, num_properties, num_static_properties, num_methods, num_static_methods;
 		int num_ctors, field_info_size, static_field_info_size, property_info_size, static_property_info_size;
@@ -28,14 +28,15 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly TargetAddress ClassGetStaticFieldData;
 
 		public MonoClass (TargetObjectKind kind, Type type, int size, bool is_classinfo,
-				  TargetBinaryReader info, MonoSymbolTable table, bool has_fixed_size)
+				  TargetBinaryReader info, MonoSymbolFile file, bool has_fixed_size)
 			: base (kind, type, size, has_fixed_size)
 		{
+			this.File = file;
 			if (!is_classinfo) {
 			again:
 				int offset = info.ReadInt32 ();
-				byte[] data = table.GetTypeInfo (offset);
-				info = new TargetBinaryReader (data, table.TargetInfo);
+				byte[] data = file.Table.GetTypeInfo (offset);
+				info = new TargetBinaryReader (data, file.Table.TargetInfo);
 				TypeKind tkind = (TypeKind) info.ReadByte ();
 				if ((tkind == TypeKind.Class) || (tkind == TypeKind.Struct)) {
 					info.ReadInt32 ();
@@ -48,7 +49,7 @@ namespace Mono.Debugger.Languages.CSharp
 				is_valuetype = kind == TargetObjectKind.Struct;
 			}
 
-			KlassAddress = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
+			KlassAddress = new TargetAddress (file.Table.GlobalAddressDomain, info.ReadAddress ());
 			num_fields = info.ReadInt32 ();
 			field_info_size = info.ReadInt32 ();
 			num_static_fields = info.ReadInt32 ();
@@ -67,9 +68,8 @@ namespace Mono.Debugger.Languages.CSharp
 			this.offset = info.Position;
 			this.Type = type;
 			this.InstanceSize = size;
-			this.Table = table;
 			// StartRuntimeInvoke = table.Language.MonoDebuggerInfo.StartRuntimeInvoke;
-			ClassGetStaticFieldData = table.Language.MonoDebuggerInfo.ClassGetStaticFieldData;
+			ClassGetStaticFieldData = file.Table.Language.MonoDebuggerInfo.ClassGetStaticFieldData;
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -103,8 +103,7 @@ namespace Mono.Debugger.Languages.CSharp
 			offset = old_class.offset;
 			this.Type = type;
 			this.InstanceSize = size;
-			this.Table = old_class.Table;
-			// StartRuntimeInvoke = old_class.StartRuntimeInvoke;
+			this.File = old_class.File;
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -114,7 +113,7 @@ namespace Mono.Debugger.Languages.CSharp
 				EffectiveType = Type;
 		}
 
-		public static MonoClass GetClass (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+		public static MonoClass GetClass (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
 		{
 			bool is_valuetype = info.ReadByte () != 0;
 			TargetObjectKind kind = is_valuetype ? TargetObjectKind.Struct : TargetObjectKind.Class;
@@ -181,7 +180,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_fields.Length, num_fields);
 
 			for (int i = 0; i < num_fields; i++)
-				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], false, info, Table);
+				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], false, info, File);
 		}
 
 		ITargetFieldInfo[] ITargetStructType.Fields {
@@ -215,7 +214,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_static_fields.Length, num_static_fields);
 
 			for (int i = 0; i < num_static_fields; i++)
-				static_fields [i] = new MonoFieldInfo (this, i, mono_static_fields [i], true, info, Table);
+				static_fields [i] = new MonoFieldInfo (this, i, mono_static_fields [i], true, info, File);
 		}
 
 		ITargetFieldInfo[] ITargetStructType.StaticFields {
@@ -297,12 +296,12 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly R.FieldInfo FieldInfo;
 
 			internal MonoFieldInfo (MonoClass klass, int index, R.FieldInfo finfo, bool is_static,
-						TargetBinaryReader info, MonoSymbolTable table)
+						TargetBinaryReader info, MonoSymbolFile file)
 				: base (klass, finfo, index, is_static)
 			{
 				FieldInfo = finfo;
 				Offset = info.ReadInt32 ();
-				type = table.GetType (finfo.FieldType, info.ReadInt32 ());
+				type = file.Table.GetType (finfo.FieldType, info.ReadInt32 ());
 			}
 
 			public override MonoType Type {
@@ -366,7 +365,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_properties.Length, num_properties);
 
 			for (int i = 0; i < num_properties; i++)
-				properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], false, info, Table);
+				properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], false, info, File);
 		}
 
 		ITargetPropertyInfo[] ITargetStructType.Properties {
@@ -402,7 +401,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_properties.Length, num_static_properties);
 
 			for (int i = 0; i < num_static_properties; i++)
-				static_properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], true, info, Table);
+				static_properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], true, info, File);
 		}
 
 		ITargetPropertyInfo[] ITargetStructType.StaticProperties {
@@ -426,20 +425,20 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly MonoFunctionType GetterType, SetterType;
 
 			internal MonoPropertyInfo (MonoClass klass, int index, R.PropertyInfo pinfo, bool is_static,
-						   TargetBinaryReader info, MonoSymbolTable table)
+						   TargetBinaryReader info, MonoSymbolFile file)
 				: base (klass, pinfo, index, is_static)
 			{
 				PropertyInfo = pinfo;
-				type = table.GetType (pinfo.PropertyType, info.ReadInt32 ());
-				Getter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
-				Setter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
+				type = file.Table.GetType (pinfo.PropertyType, info.ReadInt32 ());
+				Getter = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
+				Setter = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
 
 				if (PropertyInfo.CanRead)
 					GetterType = new MonoFunctionType (
-						Klass, PropertyInfo.GetGetMethod (false), Getter, Type, table);
+						Klass, PropertyInfo.GetGetMethod (false), Getter, Type, file);
 				if (PropertyInfo.CanWrite)
 					SetterType = new MonoFunctionType (
-						Klass, PropertyInfo.GetSetMethod (false), Setter, Type, table);
+						Klass, PropertyInfo.GetSetMethod (false), Setter, Type, file);
 
 			}
 
@@ -526,7 +525,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_methods; i++)
 				methods [i] = new MonoMethodInfo (
-					this, i, (R.MethodInfo) list [i], false, info, Table);
+					this, i, (R.MethodInfo) list [i], false, info, File);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.Methods {
@@ -570,7 +569,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_static_methods; i++)
 				static_methods [i] = new MonoMethodInfo (
-					this, i, (R.MethodInfo) list [i], true, info, Table);
+					this, i, (R.MethodInfo) list [i], true, info, File);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.StaticMethods {
@@ -611,7 +610,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_ctors; i++)
 				ctors [i] = new MonoMethodInfo (
-					this, i, (R.ConstructorInfo) list [i], true, info, Table);
+					this, i, (R.ConstructorInfo) list [i], true, info, File);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.Constructors {
@@ -633,11 +632,11 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly MonoFunctionType FunctionType;
 
 			internal MonoMethodInfo (MonoClass klass, int index, R.MethodBase minfo, bool is_static,
-						 TargetBinaryReader info, MonoSymbolTable table)
+						 TargetBinaryReader info, MonoSymbolFile file)
 				: base (klass, minfo, index, is_static)
 			{
 				MethodInfo = minfo;
-				FunctionType = new MonoFunctionType (Klass, minfo, info, table);
+				FunctionType = new MonoFunctionType (Klass, minfo, info, file);
 			}
 
 			public override MonoType Type {

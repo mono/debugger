@@ -4,7 +4,7 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoObjectType : MonoClass, ITargetPointerType
 	{
-		public MonoObjectType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+		public MonoObjectType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
 			: base (TargetObjectKind.Pointer, type, size, false, info, table, true)
 		{ }
 

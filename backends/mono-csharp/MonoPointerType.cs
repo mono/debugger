@@ -8,13 +8,13 @@ namespace Mono.Debugger.Languages.CSharp
 		Type etype;
 		bool is_void;
 
-		public MonoPointerType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+		public MonoPointerType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file)
 			: base (TargetObjectKind.Pointer, type, size)
 		{
 			etype = type.GetElementType ();
 			is_void = etype == typeof (void);
 			int target_type_info = info.ReadInt32 ();
-			target_type = table.GetType (etype, target_type_info);
+			target_type = file.Table.GetType (etype, target_type_info);
 		}
 
 		public override bool IsByRef {

@@ -1,5 +1,13 @@
 2004-01-15  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend: Renamed
+	`MonoSymbolTableReader' to `MonoSymbolfile'.
+
+	* backends/mono-csharp/: We're now passing the `MonoSymbolFile'
+	instead of the `MonoSymbolTable' to the types.
+
+2004-01-15  Martin Baulig  <martin@ximian.com>
+
 	The big rewrite and cleanup.
 
 	The debugger now requires either Red Hat 9 or glibc 2.3.x and a

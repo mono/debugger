@@ -31,8 +31,8 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly MonoType element_type;
 		MonoArrayType subarray_type;
 
-		public MonoArrayType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table, bool is_multi)
-			: base (TargetObjectKind.Array, type, size, false, info, table, false)
+		public MonoArrayType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file, bool is_multi)
+			: base (TargetObjectKind.Array, type, size, false, info, file, false)
 		{
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
@@ -49,7 +49,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			int element_type_info = info.ReadInt32 ();
-			element_type = table.GetType (type.GetElementType (), element_type_info);
+			element_type = file.Table.GetType (type.GetElementType (), element_type_info);
 			setup ();
 		}
 

@@ -10,19 +10,19 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress method;
 		MonoType return_type;
 		MonoType[] parameter_types;
-		MonoSymbolTable table;
+		MonoSymbolFile file;
 		bool has_return_type;
 
-		public MonoFunctionType (MonoClass klass, R.MethodBase mbase, TargetBinaryReader info, MonoSymbolTable table)
+		public MonoFunctionType (MonoClass klass, R.MethodBase mbase, TargetBinaryReader info, MonoSymbolFile file)
 			: base (TargetObjectKind.Function, mbase.ReflectedType, 0)
 		{
 			this.method_info = mbase;
-			this.table = table;
-			this.method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
+			this.file = file;
+			this.method = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
 			int type_info = info.ReadInt32 ();
 			if (type_info != 0) {
 				R.MethodInfo minfo = (R.MethodInfo) mbase;
-				return_type = table.GetType (minfo.ReturnType, type_info);
+				return_type = file.Table.GetType (minfo.ReturnType, type_info);
 				has_return_type = minfo.ReturnType != typeof (void);
 			} else if (mbase is R.ConstructorInfo) {
 				return_type = klass;
@@ -42,18 +42,18 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 			for (int i = 0; i < num_params; i++) {
 				int param_info = info.ReadInt32 ();
-				parameter_types [i] = table.GetType (parameters [i].ParameterType, param_info);
+				parameter_types [i] = file.Table.GetType (parameters [i].ParameterType, param_info);
 			}
 		}
 
 		public MonoFunctionType (MonoClass klass, R.MethodInfo minfo, TargetAddress method,
-					 MonoType return_type, MonoSymbolTable table)
+					 MonoType return_type, MonoSymbolFile file)
 			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
 		{
 			this.method_info = minfo;
 			this.method = method;
 			this.return_type = return_type;
-			this.table = table;
+			this.file = file;
 
 			parameter_types = new MonoType [0];
 		}
@@ -96,6 +96,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		object ITargetFunctionType.MethodHandle {
 			get {
+				Console.WriteLine ("GET METHOD HANDLE: {0}", this);
+
 				return method_info;
 			}
 		}
@@ -153,16 +155,16 @@ namespace Mono.Debugger.Languages.CSharp
 					return null;
 
 				TargetLocation exc_loc = new AbsoluteTargetLocation (frame, exc_object);
-				MonoStringObject exc_obj = (MonoStringObject) table.StringType.GetObject (exc_loc);
+				MonoStringObject exc_obj = (MonoStringObject) file.Table.StringType.GetObject (exc_loc);
 				string exc_message = (string) exc_obj.Object;
 
 				throw new TargetInvocationException (exc_message);
 			}
 
 			TargetLocation retval_loc = new AbsoluteTargetLocation (frame, retval);
-			MonoObjectObject retval_obj = (MonoObjectObject) table.ObjectType.GetObject (retval_loc);
+			MonoObjectObject retval_obj = (MonoObjectObject) file.Table.ObjectType.GetObject (retval_loc);
 
-			if ((retval_obj == null) || !retval_obj.HasDereferencedObject || (return_type == table.ObjectType))
+			if ((retval_obj == null) || !retval_obj.HasDereferencedObject || (return_type == file.Table.ObjectType))
 				return retval_obj;
 			else
 				return retval_obj.DereferencedObject;
