@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Collections;
 using Mono.CSharp.Debugger;
 using Mono.Debugger;
@@ -72,9 +73,13 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress range_table;
 		int range_table_size;
 
+		TargetAddress string_table;
+		int string_table_size;
+
 		BinaryReader reader;
 		BinaryReader address_reader;
 		ITargetMemoryReader range_reader;
+		ITargetMemoryReader string_reader;
 
 		internal MonoSymbolTableReader (IInferior inferior,
 						ITargetMemoryReader symtab_reader,
@@ -98,6 +103,8 @@ namespace Mono.Debugger.Languages.CSharp
 			address_table_size = symtab_reader.ReadInteger ();
 			range_table = symtab_reader.ReadAddress ();
 			range_table_size = symtab_reader.ReadInteger ();
+			string_table = symtab_reader.ReadAddress ();
+			string_table_size = symtab_reader.ReadInteger ();
 			symtab_reader.ReadAddress ();
 
 			if ((raw_contents_size == 0) || (address_table_size == 0))
@@ -106,6 +113,7 @@ namespace Mono.Debugger.Languages.CSharp
 			reader = inferior.ReadMemory (raw_contents, raw_contents_size).BinaryReader;
 			address_reader = inferior.ReadMemory (address_table, address_table_size).BinaryReader;
 			range_reader = inferior.ReadMemory (range_table, range_table_size);
+			string_reader = inferior.ReadMemory (string_table, string_table_size);
 
 			//
 			// Read the offset table.
@@ -122,26 +130,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ranges = MethodRangeEntry.ReadRanges (
 				this, range_reader, range_table_size, offset_table);
-
-#if FALSE
-			//
-			// Read the method table.
-			//
-			binreader.BaseStream.Position = offset_table.method_table_offset;
-
-			Methods = new MethodEntry [offset_table.method_count];
-
-			for (int i = 0; i < offset_table.method_count; i++) {
-				try {
-					Methods [i] = new MethodEntry (binreader, address_reader.BinaryReader);
-				} catch {
-					throw new SymbolTableException ("Can't read method table");
-				}
-			}
-#endif
 		}
 
-		internal void CheckMethodOffset (long offset)
+		internal int CheckMethodOffset (long offset)
 		{
 			if (offset < offset_table.method_table_offset)
 				throw new SymbolTableException ();
@@ -149,15 +140,32 @@ namespace Mono.Debugger.Languages.CSharp
 			offset -= offset_table.method_table_offset;
 			if ((offset % MethodEntry.Size) != 0)
 				throw new SymbolTableException ();
-			if ((offset / MethodEntry.Size) > offset_table.method_count)
+
+			long index = (offset / MethodEntry.Size);
+			if (index > offset_table.method_count)
 				throw new SymbolTableException ();
+
+			return (int) index;
 		} 
 
 		internal ISymbolLookup GetMethod (long offset)
 		{
+			int index = CheckMethodOffset (offset);
 			reader.BaseStream.Position = offset;
 			MethodEntry method = new MethodEntry (reader, address_reader);
-			return new MonoMethod (this, method);
+			string_reader.Offset = index * inferior.TargetIntegerSize;
+			string_reader.Offset = string_reader.ReadInteger ();
+
+			StringBuilder sb = new StringBuilder ();
+			while (true) {
+				byte b = string_reader.ReadByte ();
+				if (b == 0)
+					break;
+
+				sb.Append ((char) b);
+			}
+
+			return new MonoMethod (this, method, sb.ToString ());
 		}
 
 		internal ArrayList SymbolRanges {
@@ -172,9 +180,9 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodEntry method;
 			ISourceFileFactory factory;
 
-			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method)
-				: base (String.Format ("C#({0:x})", method.Token), reader.ImageFile,
-					method.Token >> 24 == 6)
+			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
+					   string name)
+				: base (name, reader.ImageFile, method.Token >> 24 == 6)
 			{
 				this.reader = reader;
 				this.method = method;
