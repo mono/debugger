@@ -467,6 +467,11 @@ namespace Mono.Debugger.Backends
 					}
 					current_step_frame = null;
 				}
+				if (CurrentFrame == main_method_retaddr) {
+					Continue ();
+					break;
+				}
+
 				change_target_state (TargetState.STOPPED, arg);
 				break;
 
