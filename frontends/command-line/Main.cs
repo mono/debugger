@@ -76,23 +76,39 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			DebuggerEngine e = new DebuggerEngine (GlobalContext);
 
-			Type command_type = typeof (Command);
-
-			foreach (Type type in command_type.Assembly.GetTypes ()) {
-				if (!type.IsSubclassOf (command_type) || type.IsAbstract)
-					continue;
-
-				object[] attrs = type.GetCustomAttributes (
-					typeof (CommandAttribute), false);
-
-				if (attrs.Length != 1) {
-					Console.WriteLine ("Ignoring command `{0}'", type);
-					continue;
-				}
-
-				CommandAttribute attr = (CommandAttribute) attrs [0];
-				e.Register (attr.Name, type);
-			}
+			e.Register ("print", typeof (PrintCommand));
+			e.Register ("p", typeof (PrintCommand));
+			e.Register ("ptype", typeof (PrintTypeCommand));
+			e.Register ("mode", typeof (UserInterfaceCommand));
+			e.Register ("examine", typeof (ExamineCommand));
+			e.Register ("x", typeof (ExamineCommand));
+			e.Register ("frame", typeof (PrintFrameCommand));
+			e.Register ("f", typeof (PrintFrameCommand));
+			e.Register ("disassemble", typeof (DisassembleCommand));
+			e.Register ("dis", typeof (DisassembleCommand));
+			e.Register ("process", typeof (SelectProcessCommand));
+			e.Register ("background", typeof (BackgroundProcessCommand));
+			e.Register ("bg", typeof (BackgroundProcessCommand));
+			e.Register ("stop", typeof (StopProcessCommand));
+			e.Register ("continue", typeof (ContinueCommand));
+			e.Register ("c", typeof (ContinueCommand));
+			e.Register ("step", typeof (StepCommand));
+			e.Register ("next", typeof (NextCommand));
+			e.Register ("stepi", typeof (StepInstructionCommand));
+			e.Register ("nexti", typeof (NextInstructionCommand));
+			e.Register ("finish", typeof (FinishCommand));
+			e.Register ("backtrace", typeof (BacktraceCommand));
+			e.Register ("bt", typeof (BacktraceCommand));
+			e.Register ("up", typeof (UpCommand));
+			e.Register ("down", typeof (DownCommand));
+			e.Register ("kill", typeof (KillCommand));
+			e.Register ("show", typeof (ShowCommand));
+			e.Register ("threadgroup", typeof (ThreadGroupCommand));
+			e.Register ("enable", typeof (BreakpointEnableCommand));
+			e.Register ("disable", typeof (BreakpointDisableCommand));
+			e.Register ("delete", typeof (BreakpointDeleteCommand));
+			e.Register ("list", typeof (ListCommand));
+			e.Register ("break", typeof (BreakCommand));
 
 			return e;
 		}

@@ -17,64 +17,32 @@ using Mono.GetOptions;
 namespace Mono.Debugger.Frontends.Scripting
 {
 	[AttributeUsage (AttributeTargets.Class)]
-	public class CommandAttribute : Attribute
+	public class ShortDescriptionAttribute : Attribute
 	{
-		string name;
-		string short_description;
-		string help_text;
+		string text;
 
-		public CommandAttribute (string name, string short_description)
-			: this (name, short_description, null)
-		{ }
-
-		public CommandAttribute (string name, string short_description, string help_text)
+		public ShortDescriptionAttribute (string text)
 		{
-			this.name = name;
-			this.short_description = short_description;
-			this.help_text = help_text;
+			this.text = text;
 		}
 
-		public string Name {
-			get { return name; }
-		}
-
-		public string ShortDescription {
-			get { return short_description; }
-		}
-
-		public string HelpText {
-			get { return help_text; }
+		public string Text {
+			get { return text; }
 		}
 	}
 
 	[AttributeUsage (AttributeTargets.Class)]
-	public class ExpressionAttribute : Attribute
-	{ 
-		string name;
-		string short_description;
-		string help_text;
+	public class HelpAttribute : Attribute
+	{
+		string text;
 
-		public ExpressionAttribute (string name, string short_description)
-			: this (name, short_description, null)
-		{ }
-
-		public ExpressionAttribute (string name, string short_description, string help_text)
+		public HelpAttribute (string text)
 		{
-			this.name = name;
-			this.short_description = short_description;
-			this.help_text = help_text;
+			this.text = text;
 		}
 
-		public string Name {
-			get { return name; }
-		}
-
-		public string ShortDescription {
-			get { return short_description; }
-		}
-
-		public string HelpText {
-			get { return help_text; }
+		public string Text {
+			get { return text; }
 		}
 	}
 

@@ -133,7 +133,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("print", "Print the result of an expression")]
+	[ShortDescription("Print the result of an expression")]
 	public class PrintCommand : FrameCommand
 	{
 		Expression expression;
@@ -161,7 +161,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("ptype", "Print the type of an expression")]
+	[ShortDescription("Print the type of an expression")]
 	public class PrintTypeCommand : FrameCommand
 	{
 		Expression expression;
@@ -189,7 +189,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("mode", "Switches the user interface")]
+	[ShortDescription("Selects the user interface")]
 	public class UserInterfaceCommand : DebuggerCommand
 	{
 		UserInterface ui;
@@ -211,7 +211,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("examine", "Examine memory.")]
+	[ShortDescription("Examine memory.")]
 	public class ExamineCommand : DebuggerCommand
 	{
 		Expression expression;
@@ -256,7 +256,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("frame", "Print the current stack frame.")]
+	[ShortDescription("Print the current stack frame.")]
 	public class PrintFrameCommand : FrameCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -267,7 +267,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("disassemble", "Disassemble current instruction or method")]
+	[ShortDescription("Disassemble current instruction or method")]
 	public class DisassembleCommand : FrameCommand
 	{
 		bool method;
@@ -316,11 +316,11 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 #endif
 
-	[Command("process", "Print or select current process",
-		 "Without argument, print the current process.\n\n" +
-		 "With a process argument, make that process the current process.\n" +
-		 "This is the process which is used if you do not explicitly specify\n" +
-		 "a process (see `help process_expression' for details).\n")]
+	[ShortDescription("Print or select current process")]
+	[Help("Without argument, print the current process.\n\n" +
+	      "With a process argument, make that process the current process.\n" +
+	      "This is the process which is used if you do not explicitly specify\n" +
+	      "a process (see `help process_expression' for details).\n")]
 	public class SelectProcessCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -331,12 +331,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("background", "Run process in background",
-		 "Resumes execution of the selected process, but does not wait for it.\n\n" +
-		 "The difference to `continue' is that `continue' waits until the process\n" +
-		 "stops again (for instance, because it hit a breakpoint or received a signal)\n" +
-		 "while this command just lets the process running.  Note that the process\n" +
-		 "still stops if it hits a breakpoint.\n")]
+	[ShortDescription("Run process in background")]
+	[Help("Resumes execution of the selected process, but does not wait for it.\n\n" +
+	      "The difference to `continue' is that `continue' waits until the process\n" +
+	      "stops again (for instance, because it hit a breakpoint or received a signal)\n" +
+	      "while this command just lets the process running.  Note that the process\n" +
+	      "still stops if it hits a breakpoint.\n")]
 	public class BackgroundProcessCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -346,7 +346,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("stop", "Stop execution of a process")]
+	[ShortDescription("Stop execution of a process")]
 	public class StopProcessCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -356,7 +356,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("continue", "Continue execution of the target")]
+	[ShortDescription("Continue execution of the target")]
 	public class ContinueCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -367,7 +367,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("step", "Step one source line")]
+	[ShortDescription("Step one source line")]
 	public class StepCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -378,8 +378,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("next", "Next source line",
-		 "Steps one source line, but does not enter any methods.")]
+	[ShortDescription("Next source line")]
+	[Help("Steps one source line, but does not enter any methods.")]
 	public class NextCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -390,7 +390,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("stepi", "Step one instruction, but don't enter trampolines")]
+	[ShortDescription("Step one instruction, but don't enter trampolines")]
 	public class StepInstructionCommand : ProcessCommand
 	{
 		bool native;
@@ -411,8 +411,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("nexti", "Next instruction",
-		 "Steps one machine instruction, but steps over method calls.")]
+	[ShortDescription("Next instruction")]
+	[Help("Steps one machine instruction, but steps over method calls.")]
 	public class NextInstructionCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -423,7 +423,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("finish", "Run until exit of current method")]
+	[ShortDescription("Run until exit of current method")]
 	public class FinishCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -434,7 +434,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("backtrace", "Print backtrace")]
+	[ShortDescription("Print backtrace")]
 	public class BacktraceCommand : ProcessCommand
 	{
 		int max_frames = -1;
@@ -459,7 +459,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("up", "Go one frame up")]
+	[ShortDescription("Go one frame up")]
 	public class UpCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -471,7 +471,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("down", "Go one frame down")]
+	[ShortDescription("Go one frame down")]
 	public class DownCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -483,7 +483,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("kill", "Kill the target")]
+	[ShortDescription("Kill the target")]
 	public class KillCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -492,7 +492,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show", "Show things")]
+	[ShortDescription("Show things")]
 	public class ShowCommand : DebuggerCommand
 	{
 		DebuggerCommand subcommand;
@@ -704,7 +704,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("threadgroup", "Manage thread groups")]
+	[ShortDescription("Manage thread groups")]
 	public class ThreadGroupCommand : DebuggerCommand
 	{
 		DebuggerCommand subcommand;
@@ -830,7 +830,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("enable", "Enable breakpoint")]
+	[ShortDescription("Enable breakpoint")]
 	public class BreakpointEnableCommand : DebuggerCommand
 	{
 		protected BreakpointHandle handle;
@@ -855,7 +855,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("disable", "Disable breakpoint")]
+	[ShortDescription("Disable breakpoint")]
 	public class BreakpointDisableCommand : BreakpointEnableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -864,7 +864,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("delete", "Delete breakpoint")]
+	[ShortDescription("Delete breakpoint")]
 	public class BreakpointDeleteCommand : BreakpointEnableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -874,7 +874,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 #if FIXME
-	[Command("MODULE", "Change module parameters",
+	[ShortDescription("MODULE", "Change module parameters",
 		 "The module parameters control how the debugger should behave while single-stepping\n" +
 		 "wrt methods from this method.\n\n" +
 		 "Use `show modules' to get a list of modules.\n" +
@@ -970,7 +970,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("list", "List source code")]
+	[ShortDescription("List source code")]
 	public class ListCommand : SourceCommand
 	{
 		int count = 10;
@@ -987,7 +987,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("break", "Insert breakpoint")]
+	[ShortDescription("Insert breakpoint")]
 	public class BreakCommand : SourceCommand
 	{
 		string group;

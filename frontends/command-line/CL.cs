@@ -44,6 +44,9 @@ namespace CL
 		{
 			if (!t.IsSubclassOf (typeof (Command)))
 				throw new Exception ("Need a type derived from CL.Command");
+			else if (t.IsAbstract)
+				throw new Exception (
+					"Some clown tried to register an abstract class");
 
 			commands [s] = t;
 		}
