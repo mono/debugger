@@ -257,8 +257,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			ITargetMemoryReader header = memory.ReadMemory (StartAddress, TotalSize);
 
-			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL TABLE HEADER: {0}", header);
-
 			long magic = header.ReadLongInteger ();
 			if (magic != DynamicMagic)
 				throw new SymbolTableException (
@@ -276,9 +274,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			int num_symbol_files = header.ReadInteger ();
 			TargetAddress symbol_files = header.ReadAddress ();
-
-			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILES: {0} {1}",
-				      num_symbol_files, symbol_files);
 
 			symbol_files += SymbolFiles.Count * address_size;
 
@@ -805,6 +800,9 @@ namespace Mono.Debugger.Languages.CSharp
 			address += int_size;
 			int new_num_range_entries = memory.ReadInteger (address);
 			address += int_size;
+
+			Report.Debug (DebugFlags.JIT_SYMTAB, "RANGES: {0} {1} {2}", this,
+				      num_range_entries, new_num_range_entries);
 
 			if (new_num_range_entries == num_range_entries)
 				return false;
@@ -1355,6 +1353,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 					MethodRangeEntry entry = new MethodRangeEntry (
 						reader, index, contents, start, end);
+
+					Report.Debug (DebugFlags.JIT_SYMTAB,
+						      "RANGE ENTRY: {0} {1} {2} {3} {4} {5} {6}",
+						      reader, start, end, index, dynamic_address,
+						      dynamic_size, entry);
 
 					list.Add (entry);
 					reader.range_hash.Add (index, entry);
