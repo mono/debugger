@@ -721,16 +721,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Error (ex.Message);
 		}
 
+		public void Print (string message)
+		{
+			command_output.WriteLine (false, message);
+		}
+
 		public void Print (string format, params object[] args)
 		{
-			string message = String.Format (format, args);
-
-			command_output.WriteLine (false, message);
+			Print (String.Format (format, args));
 		}
 
 		public void Print (object obj)
 		{
-			Print ("{0}", obj);
+			Print (obj.ToString ());
 		}
 
 		public void PrintObject (object obj)
