@@ -566,8 +566,10 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				foreach (ThreadData data in thread_hash.Values)
-					data.Process.Dispose ();
+				ThreadData[] threads = new ThreadData [thread_hash.Count];
+				thread_hash.Values.CopyTo (threads, 0);
+				for (int i = 0; i < threads.Length; i++)
+					threads [i].Process.Dispose ();
 				main_process.Dispose ();
 				breakpoint_manager.Dispose ();
 			}
