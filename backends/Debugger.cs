@@ -33,6 +33,7 @@ namespace Mono.Debugger
 		MonoCSharpLanguageBackend csharp_language;
 		SingleSteppingEngine sse;
 		SymbolTableManager symtab_manager;
+		ModuleManager module_manager;
 
 		string[] argv;
 		string[] envp;
@@ -70,6 +71,7 @@ namespace Mono.Debugger
 
 			this.native = native;
 			this.languages = new ArrayList ();
+			this.module_manager = new ModuleManager ();
 			this.bfd_container = new BfdContainer (this);
 
 			symtab_manager = new SymbolTableManager ();
@@ -77,9 +79,15 @@ namespace Mono.Debugger
 				new SymbolTableManager.ModuleHandler (modules_reloaded);
 
 			csharp_language = new MonoCSharpLanguageBackend (this);
-			csharp_language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
-			bfd_container.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
+			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
 			languages.Add (csharp_language);
+		}
+
+		public ModuleManager ModuleManager {
+			get {
+				return module_manager;
+			}
 		}
 
 		public SymbolTableManager SymbolTableManager {
@@ -225,6 +233,7 @@ namespace Mono.Debugger
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 		public event ModulesChangedHandler ModulesChangedEvent;
+		public event BreakpointsChangedHandler BreakpointsChangedEvent;
 
 		public IInferior Inferior {
 			get {
@@ -365,7 +374,7 @@ namespace Mono.Debugger
 
 		void do_run (string[] argv)
 		{
-			modules_locked = true;
+			module_manager.Locked = true;
 
 			if (native)
 				load_native_symtab = true;
@@ -413,27 +422,24 @@ namespace Mono.Debugger
 				FramesInvalidEvent ();
 		}
 
-		bool modules_locked = false;
-
 		void modules_changed ()
 		{
-			if (modules_locked)
-				return;
-
 			check_disposed ();
-			ArrayList modules = new ArrayList ();
-			modules.AddRange (bfd_container.Modules);
-			foreach (ILanguageBackend language in languages)
-				modules.AddRange (language.Modules);
-
-			symtab_manager.SetModules (modules);
+			symtab_manager.SetModules (module_manager.Modules);
 		}
 
 		Module[] current_modules = null;
 
+		void breakpoints_changed ()
+		{
+			if (BreakpointsChangedEvent != null)
+				BreakpointsChangedEvent ();
+		}
+
 		void modules_reloaded (object sender, Module[] modules)
 		{
 			Console.WriteLine ("MODULES RELOADED");
+
 			current_modules = modules;
 
 			if (ModulesChangedEvent != null)
@@ -442,23 +448,15 @@ namespace Mono.Debugger
 
 		internal void ReachedMain ()
 		{
-			modules_locked = true;
+			module_manager.Locked = true;
 			inferior.UpdateModules ();
 			UpdateSymbolTable ();
-			modules_locked = false;
-			modules_changed ();
+			module_manager.Locked = false;
 		}
 
 		internal void ChildExited ()
 		{
-			if (current_modules == null)
-				return;
-
-			modules_locked = true;
-			foreach (Module module in current_modules)
-				module.UnLoad ();
-			modules_locked = false;
-			modules_changed ();
+			module_manager.UnLoadAllModules ();
 		}
 
 		void load_core (string core_file, string[] argv)

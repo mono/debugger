@@ -26,6 +26,8 @@ namespace Mono.Debugger.Backends
 			}
 
 			set {
+				if (inferior == value)
+					return;
 				inferior = value;
 				CheckLoaded ();
 			}
@@ -40,6 +42,7 @@ namespace Mono.Debugger.Backends
 		public override void UnLoad ()
 		{
 			Inferior = null;
+			base.UnLoad ();
 		}
 
 		protected override void AddBreakpoint (BreakpointHandle handle)

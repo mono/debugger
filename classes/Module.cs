@@ -78,13 +78,16 @@ namespace Mono.Debugger
 		}
 
 		protected abstract void SymbolsChanged (bool loaded);
-		public abstract void UnLoad ();
+
+		public virtual void UnLoad ()
+		{ }
 
 		public event ModuleEventHandler ModuleLoadedEvent;
 		public event ModuleEventHandler ModuleUnLoadedEvent;
 		public event ModuleEventHandler SymbolsLoadedEvent;
 		public event ModuleEventHandler SymbolsUnLoadedEvent;
 		public event ModuleEventHandler ModuleChangedEvent;
+		public event ModuleEventHandler BreakpointsChangedEvent;
 
 		bool is_loaded = false;
 		protected virtual void CheckLoaded ()
@@ -156,6 +159,13 @@ namespace Mono.Debugger
 				ModuleChangedEvent (this);
 		}
 
+		protected virtual void OnBreakpointsChangedEvent ()
+		{
+			Console.WriteLine ("ON BREAKPOINTS CHANGED");
+			if (BreakpointsChangedEvent != null)
+				BreakpointsChangedEvent (this);
+		}
+
 		protected abstract void AddBreakpoint (BreakpointHandle handle);
 
 		protected abstract void RemoveBreakpoint (BreakpointHandle handle);
@@ -175,6 +185,7 @@ namespace Mono.Debugger
 			BreakpointHandle handle = new BreakpointHandle (
 				this, breakpoint, method, line, index);
 			breakpoints.Add (index, handle);
+			OnBreakpointsChangedEvent ();
 			return index;
 		}
 
@@ -186,12 +197,16 @@ namespace Mono.Debugger
 			BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
 			handle.Dispose ();
 			breakpoints.Remove (index);
+			OnBreakpointsChangedEvent ();
 		}
 
 		public Breakpoint[] Breakpoints {
 			get {
-				Breakpoint[] retval = new Breakpoint [breakpoints.Values.Count];
-				breakpoints.Values.CopyTo (retval, 0);
+				ArrayList list = new ArrayList ();
+				foreach (BreakpointHandle handle in breakpoints.Values)
+					list.Add (handle.Breakpoint);
+				Breakpoint[] retval = new Breakpoint [list.Count];
+				list.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -333,8 +348,10 @@ namespace Mono.Debugger
 
 			public void Enable ()
 			{
-				if (enabled)
+				if (enabled || !Module.IsLoaded || !Breakpoint.Enabled) {
+					Module.OnBreakpointsChangedEvent ();
 					return;
+				}
 
 				if (Method.IsLoaded) {
 					handle = Module.EnableBreakpoint (this, Method.Method.StartAddress);
@@ -346,21 +363,27 @@ namespace Mono.Debugger
 					if (load_handler != null)
 						enabled = true;
 				}
+
+				Module.OnBreakpointsChangedEvent ();
 			}
 
 			public void Disable ()
 			{
-				if (enabled) {
-					enabled = false;
-
-					if (load_handler != null) {
-						load_handler.Dispose ();
-						load_handler = null;
-					} else {
-						Module.DisableBreakpoint (this, handle);
-						handle = null;
-					}
+				if (!enabled) {
+					Module.OnBreakpointsChangedEvent ();
+					return;
 				}
+
+				if (load_handler != null) {
+					load_handler.Dispose ();
+					load_handler = null;
+				} else {
+					Module.DisableBreakpoint (this, handle);
+					handle = null;
+				}
+
+				enabled = false;
+				Module.OnBreakpointsChangedEvent ();
 			}
 
 			public override string ToString ()

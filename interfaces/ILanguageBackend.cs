@@ -2,8 +2,6 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate void ModulesChangedHandler ();
-
 	public interface ILanguageBackend
 	{
 		string Name {
@@ -13,8 +11,6 @@ namespace Mono.Debugger
 		Module[] Modules {
 			get;
 		}
-
-		event ModulesChangedHandler ModulesChangedEvent;
 
 		// <summary>
 		//   The address of the JIT's generic trampoline code.

@@ -70,8 +70,6 @@ namespace Mono.Debugger.Architecture
 			module.Inferior = inferior;
 			bfd_hash.Add (filename, bfd);
 
-			OnModulesChangedEvent ();
-
 			return bfd;
 		}
 
@@ -118,14 +116,6 @@ namespace Mono.Debugger.Architecture
 				module_hash.Values.CopyTo (modules, 0);
 				return modules;
 			}
-		}
-
-		public event ModulesChangedHandler ModulesChangedEvent;
-
-		protected virtual void OnModulesChangedEvent ()
-		{
-			if (ModulesChangedEvent != null)
-				ModulesChangedEvent ();
 		}
 
 		public TargetAddress GenericTrampolineCode {

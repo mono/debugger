@@ -417,15 +417,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 						   module.LoadSymbols, module.StepInto,
 						   library);
 
-				if (module.Sources == null)
-					continue;
-
 				module_count++;
 
 				foreach (Breakpoint breakpoint in module.Breakpoints)
 					Console.WriteLine ("    BREAKPOINT: {0}", breakpoint);
 
-				if (level == 0)
+				if ((module.Sources == null) || (level == 0))
 					continue;
 
 				foreach (SourceInfo source in module.Sources) {

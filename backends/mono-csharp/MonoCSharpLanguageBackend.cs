@@ -276,8 +276,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			foreach (MonoSymbolTableReader symfile in SymbolFiles)
 				((MonoModule) symfile.Module).ReadReferences ();
-
-			Language.ModulesChanged ();
 		}
 
 		public MonoType GetType (Type type, int type_size, TargetAddress address)
@@ -369,6 +367,8 @@ namespace Mono.Debugger.Languages.CSharp
 				: base (name.FullName, table.Backend)
 			{
 				this.table = table;
+
+				table.Backend.ModuleManager.AddModule (this);
 			}
 
 			public override ILanguageBackend Language {
@@ -426,7 +426,6 @@ namespace Mono.Debugger.Languages.CSharp
 			protected override void SymbolsChanged (bool loaded)
 			{
 				table.Update ();
-				table.Language.ModulesChanged ();
 
 				if (loaded)
 					OnSymbolsLoadedEvent ();
@@ -1070,7 +1069,8 @@ namespace Mono.Debugger.Languages.CSharp
 				if (load_handlers == null) {
 					load_handlers = new Hashtable ();
 
-					method = reader.GetMethod (offset);
+					if (method == null)
+						method = reader.GetMethod (offset);
 					MethodInfo minfo = (MethodInfo) method.MethodHandle;
 
 					string full_name = String.Format (
@@ -1663,13 +1663,5 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 			return true;
 		}
-
-		public void ModulesChanged ()
-		{
-			if (ModulesChangedEvent != null)
-				ModulesChangedEvent ();
-		}
-
-		public event ModulesChangedHandler ModulesChangedEvent;
 	}
 }

@@ -44,6 +44,7 @@ namespace Mono.Debugger
 		protected Breakpoint ()
 		{
 			this.index = ++next_breakpoint_index;
+			this.enabled = true;
 		}
 
 		protected virtual void OnBreakpointChangedEvent ()

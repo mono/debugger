@@ -83,6 +83,7 @@ namespace Mono.Debugger.GUI
 		ModuleDisplay module_display;
 		HexEditor hex_editor;
 		MemoryMapsDisplay memory_maps_display;
+		BreakpointManager breakpoint_manager;
 		Dialog hex_editor_dialog;
 
 		Gtk.TextView target_output;
@@ -143,6 +144,8 @@ namespace Mono.Debugger.GUI
 				gxml, hex_editor_dialog, (Gtk.Container) gxml ["hexeditor-view"]);
 			memory_maps_display = new MemoryMapsDisplay (
 				gxml, null, (Gtk.Container) gxml ["memory-maps-view"]);
+			breakpoint_manager = new BreakpointManager (
+				gxml, null, (Gtk.Container) gxml ["breakpoint-manager"]);
 
 			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
 
@@ -264,6 +267,7 @@ namespace Mono.Debugger.GUI
 			module_display.SetBackend (backend);
 			hex_editor.SetBackend (backend);
 			memory_maps_display.SetBackend (backend);
+			breakpoint_manager.SetBackend (backend);
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
 			source_manager.SetBackend (backend);

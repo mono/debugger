@@ -22,6 +22,8 @@ namespace Mono.Debugger.Architecture
 		{
 			this.filename = filename;
 			this.is_library = is_library;
+
+			backend.ModuleManager.AddModule (this);
 		}
 
 		public override ILanguageBackend Language {
@@ -42,6 +44,9 @@ namespace Mono.Debugger.Architecture
 			}
 
 			set {
+				if (bfd == value)
+					return;
+
 				bfd = value;
 				if (bfd != null) {
 					OnSymbolsLoadedEvent ();
@@ -59,6 +64,12 @@ namespace Mono.Debugger.Architecture
 		internal void BfdDisposed ()
 		{
 			bfd = null;
+		}
+
+		public override void UnLoad ()
+		{
+			Bfd = null;
+			base.UnLoad ();
 		}
 
 		public override bool IsLoaded {
