@@ -1,5 +1,10 @@
 2003-01-06  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Set version number to 0.1.7 (this is an odd number
+	which means that we're still unstable ...)
+
+2003-01-06  Martin Baulig  <martin@ximian.com>
+
 	* doc/debugger-status.txt: Added a "How you can help with the
 	debugger" section.
 
