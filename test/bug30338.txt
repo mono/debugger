@@ -1,0 +1,160 @@
+Index: backends/mono-csharp/MonoArrayObject.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoArrayObject.cs,v
+retrieving revision 1.3
+diff -u -u -r1.3 MonoArrayObject.cs
+--- backends/mono-csharp/MonoArrayObject.cs	24 Sep 2002 20:45:20 -0000	1.3
++++ backends/mono-csharp/MonoArrayObject.cs	25 Sep 2002 13:54:58 -0000
+@@ -128,12 +128,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetObject.HasObject {
+-			get {
+-				return false;
+-			}
+-		}
+-
+ 		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+ 		{
+ 			throw new InvalidOperationException ();
+Index: backends/mono-csharp/MonoArrayType.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoArrayType.cs,v
+retrieving revision 1.9
+diff -u -u -r1.9 MonoArrayType.cs
+--- backends/mono-csharp/MonoArrayType.cs	24 Sep 2002 20:05:34 -0000	1.9
++++ backends/mono-csharp/MonoArrayType.cs	25 Sep 2002 13:54:58 -0000
+@@ -117,12 +117,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetType.HasObject {
+-			get {
+-				return HasObject;
+-			}
+-		}
+-
+ 		internal MonoType ElementType {
+ 			get {
+ 				if (Dimension + 1 >= Rank)
+Index: backends/mono-csharp/MonoObjectObject.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoObjectObject.cs,v
+retrieving revision 1.2
+diff -u -u -r1.2 MonoObjectObject.cs
+--- backends/mono-csharp/MonoObjectObject.cs	24 Sep 2002 20:45:20 -0000	1.2
++++ backends/mono-csharp/MonoObjectObject.cs	25 Sep 2002 13:54:58 -0000
+@@ -26,12 +26,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetObject.HasObject {
+-			get {
+-				return HasObject;
+-			}
+-		}
+-
+ 		public MonoType CurrentType {
+ 			get {
+ 				ITargetMemoryAccess memory;
+Index: backends/mono-csharp/MonoObjectType.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoObjectType.cs,v
+retrieving revision 1.2
+diff -u -u -r1.2 MonoObjectType.cs
+--- backends/mono-csharp/MonoObjectType.cs	24 Sep 2002 20:05:34 -0000	1.2
++++ backends/mono-csharp/MonoObjectType.cs	25 Sep 2002 13:54:58 -0000
+@@ -25,12 +25,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetType.HasObject {
+-			get {
+-				return true;
+-			}
+-		}
+-
+ 		public bool IsTypesafe {
+ 			get {
+ 				return true;
+Index: backends/mono-csharp/MonoOpaqueObject.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoOpaqueObject.cs,v
+retrieving revision 1.3
+diff -u -u -r1.3 MonoOpaqueObject.cs
+--- backends/mono-csharp/MonoOpaqueObject.cs	24 Sep 2002 20:45:20 -0000	1.3
++++ backends/mono-csharp/MonoOpaqueObject.cs	25 Sep 2002 13:54:58 -0000
+@@ -26,12 +26,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetObject.HasObject {
+-			get {
+-				return false;
+-			}
+-		}
+-
+ 		ITargetType ITargetPointerObject.CurrentType {
+ 			get {
+ 				throw new InvalidOperationException ();
+Index: backends/mono-csharp/MonoOpaqueType.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoOpaqueType.cs,v
+retrieving revision 1.4
+diff -u -u -r1.4 MonoOpaqueType.cs
+--- backends/mono-csharp/MonoOpaqueType.cs	24 Sep 2002 20:05:34 -0000	1.4
++++ backends/mono-csharp/MonoOpaqueType.cs	25 Sep 2002 13:54:58 -0000
+@@ -20,12 +20,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetType.HasObject {
+-			get {
+-				return true;
+-			}
+-		}
+-
+ 		public bool IsTypesafe {
+ 			get {
+ 				return false;
+Index: backends/mono-csharp/MonoStructObject.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoStructObject.cs,v
+retrieving revision 1.1
+diff -u -u -r1.1 MonoStructObject.cs
+--- backends/mono-csharp/MonoStructObject.cs	24 Sep 2002 11:31:46 -0000	1.1
++++ backends/mono-csharp/MonoStructObject.cs	25 Sep 2002 13:54:58 -0000
+@@ -31,12 +31,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetObject.HasObject {
+-			get {
+-				return false;
+-			}
+-		}
+-
+ 		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
+ 							out TargetAddress dynamic_address)
+ 		{
+Index: backends/mono-csharp/MonoStructType.cs
+===================================================================
+RCS file: /cvs/public/debugger/backends/mono-csharp/MonoStructType.cs,v
+retrieving revision 1.5
+diff -u -u -r1.5 MonoStructType.cs
+--- backends/mono-csharp/MonoStructType.cs	24 Sep 2002 20:45:20 -0000	1.5
++++ backends/mono-csharp/MonoStructType.cs	25 Sep 2002 13:54:58 -0000
+@@ -137,12 +137,6 @@
+ 			}
+ 		}
+ 
+-		bool ITargetType.HasObject {
+-			get {
+-				return true;
+-			}
+-		}
+-
+ 		public override MonoObject GetObject (ITargetLocation location)
+ 		{
+ 			return new MonoStructObject (this, location);
