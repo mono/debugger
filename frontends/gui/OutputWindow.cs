@@ -51,7 +51,7 @@ namespace Mono.Debugger.GUI {
 		// </summary>
                 public override void Write (bool is_stderr, string output)
 		{
-			output_buffer.Insert (output_buffer.EndIter, output, output.Length);
+			output_buffer.Insert (output_buffer.EndIter, output);
 
 			if (is_stderr) {
 				Gtk.TextIter start_iter;

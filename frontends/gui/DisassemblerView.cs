@@ -131,7 +131,7 @@ namespace Mono.Debugger.GUI
 					string contents = String.Format (
 						"  {0:x}   {1}\n", frame.TargetAddress, asm_line.Text);
 
-					text_buffer.Insert (iter, contents, contents.Length);
+					text_buffer.Insert (iter, contents);
 					new_lines = 1;
 					break;
 				}
@@ -151,7 +151,7 @@ namespace Mono.Debugger.GUI
 				source_view.ScrollToIter (iter, 0.0, true, 0.0, 0.5);
 
 				string contents = "\n" + method.SourceBuffer.Contents;
-				text_buffer.Insert (iter, contents, contents.Length);
+				text_buffer.Insert (iter, contents);
 
 				index++;
 				DynamicMethod new_dynamic = new DynamicMethod (method, line + 1);
