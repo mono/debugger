@@ -1,0 +1,68 @@
+    [Work in Progress, will post it to the list once complete]
+
+                Overview of the Mono Debugging Framework
+                   Martin Baulig <martin@gnome.org>
+
+
+The Name of The Game
+--------------------
+
+For the moment, let's call it the Mono Debugging Framework (MDF) until
+someone suggests a better name for it.
+
+Design Guidelines
+=================
+
+Modularity
+----------
+
+Writing a debugger is a really complex and difficult task and it'll
+require a lot of time and effort to make it perfect.  This makes it
+very important to do it very simply and modular.  It's also important
+to make it as easy as possible for new developers to understand the
+MDF.  Using small modules allows new developers to work on whatever
+they like most, even without understanding the whole picture.
+
+Debugger backends
+-----------------
+
+We should try to separate the GUI and the low-level debugging code.
+It must be possible to use whatever GUI we want with whatever debugger
+backend we want.  Everyone can write his own GUI for the debugging
+framework.  In the same way, it must be easy to replace the underlying
+debugger - this allows us to port the debugger to new hardware or
+operating systems very easily.
+
+Supporting different backends allow allows us to start with a very
+simple but unsatisfying  backend for the moment so that we can
+concentrate on more important things.
+
+It must be possible to debug both C# and native C code - but it'd be
+great if we were able to plug a backend for whatever programming
+language we want at a later time.  For the moment, it's probably best
+to start with a simple gdb wrapper using its annotation interface.
+This is very far from perfect, but it gives us a good head-start and
+we can concentrate on the other parts of the MDF for the moment.
+Later on, we'll probably write our own debugging backend so that we
+can debug machine code without talking to an external gdb process.
+Another idea is to use mint for the debugging - for instance, mint
+could interpret just one line of IL code while single stepping.
+
+Different GUIs and front-ends
+-----------------------------
+
+Different people have different needs regarding a debugger so that
+it's important to support different GUIs and front-ends.  Later on,
+we'll probably want to add scripting support to the debugger and this
+can easily be done by writing a new front-end for it.
+
+Interfaces
+==========
+
+The interfaces of the MDF reside in the interfaces/ directory, please
+have a look at the individual files for more information, the
+documentation for the interfaces is in their source code.
+
+
+Last changed August 22nd, 2002
+Martin Baulig
