@@ -21,16 +21,16 @@ static sem_t debugger_finished_cond;
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
 
-volatile MonoMethod *MONO_DEBUGGER__main_method = NULL;
-volatile gpointer MONO_DEBUGGER__main_function = NULL;
-volatile MonoDebuggerThread *MONO_DEBUGGER__main_thread = NULL;
-volatile int MONO_DEBUGGER__main_pid = 0;
-volatile int MONO_DEBUGGER__debugger_thread = 0;
-volatile int MONO_DEBUGGER__command_thread = 0;
-volatile gpointer MONO_DEBUGGER__command_notification = NULL;
+MonoMethod *MONO_DEBUGGER__main_method = NULL;
+gpointer MONO_DEBUGGER__main_function = NULL;
+MonoDebuggerThread *MONO_DEBUGGER__main_thread = NULL;
+int MONO_DEBUGGER__main_pid = 0;
+int MONO_DEBUGGER__debugger_thread = 0;
+int MONO_DEBUGGER__command_thread = 0;
+gpointer MONO_DEBUGGER__command_notification = NULL;
 
-static volatile gpointer debugger_event_data;
-static volatile guint32 debugger_event_arg;
+static gpointer debugger_event_data;
+static guint32 debugger_event_arg;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);

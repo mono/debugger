@@ -17,11 +17,13 @@ static GPtrArray *thread_array = NULL;
 
 static void (*notification_function) (int tid, gpointer data);
 
-volatile gpointer MONO_DEBUGGER__thread_manager_notification = NULL;
-volatile int MONO_DEBUGGER__thread_manager_notify_command = 0;
-volatile int MONO_DEBUGGER__thread_manager_notify_tid = 0;
-volatile gpointer MONO_DEBUGGER__thread_manager_notify_data = NULL;
+gpointer MONO_DEBUGGER__thread_manager_notification = NULL;
+int MONO_DEBUGGER__thread_manager_notify_command = 0;
+int MONO_DEBUGGER__thread_manager_notify_tid = 0;
+gpointer MONO_DEBUGGER__thread_manager_notify_data = NULL;
 static int last_tid = 0, last_pid = 0;
+
+extern void GC_push_all_stack (gpointer b, gpointer t);
 
 void
 mono_debugger_thread_manager_main (void)

@@ -1,5 +1,6 @@
 #include <mono-debugger-jit-wrapper.h>
 #include <mono/metadata/verify.h>
+#include <mono/jit/jit.h>
 #include <locale.h>
 
 extern MonoDomain *

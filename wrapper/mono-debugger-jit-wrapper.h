@@ -63,20 +63,20 @@ void mono_debugger_thread_manager_acquire_global_thread_lock (void);
 void mono_debugger_thread_manager_release_global_thread_lock (void);
 void mono_debugger_init_icalls (void);
 
-volatile void MONO_DEBUGGER__main (void);
+void MONO_DEBUGGER__main (void);
 
-extern volatile void (*mono_debugger_thread_manager_notification_function) (gpointer func);
-extern volatile gpointer MONO_DEBUGGER__thread_manager_notification;
-extern volatile gpointer MONO_DEBUGGER__command_notification;
-extern volatile int MONO_DEBUGGER__main_pid;
-extern volatile MonoDebuggerThread *MONO_DEBUGGER__main_thread;
-extern volatile int MONO_DEBUGGER__debugger_thread;
-extern volatile int MONO_DEBUGGER__command_thread;
-extern volatile int MONO_DEBUGGER__thread_manager_last_pid;
-extern volatile MonoMethod *MONO_DEBUGGER__main_method;
-extern volatile gpointer MONO_DEBUGGER__main_function;
-extern volatile gpointer MONO_DEBUGGER__thread_manager_last_func;
-extern volatile guint32 MONO_DEBUGGER__thread_manager_last_thread;
+extern void (*mono_debugger_thread_manager_notification_function) (gpointer func);
+extern gpointer MONO_DEBUGGER__thread_manager_notification;
+extern gpointer MONO_DEBUGGER__command_notification;
+extern int MONO_DEBUGGER__main_pid;
+extern MonoDebuggerThread *MONO_DEBUGGER__main_thread;
+extern int MONO_DEBUGGER__debugger_thread;
+extern int MONO_DEBUGGER__command_thread;
+extern int MONO_DEBUGGER__thread_manager_last_pid;
+extern MonoMethod *MONO_DEBUGGER__main_method;
+extern gpointer MONO_DEBUGGER__main_function;
+extern gpointer MONO_DEBUGGER__thread_manager_last_func;
+extern guint32 MONO_DEBUGGER__thread_manager_last_thread;
 
 G_END_DECLS
 
