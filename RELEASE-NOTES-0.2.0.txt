@@ -12,23 +12,26 @@ This is the first public release of the Mono Debugger :-)
 About the Mono Debugger
 -----------------------
 
-The Mono Debugger is a graphical debugger for GNU/Linux which is
-written in C#.  It can debug both native and managed applications.
-It has a graphical and a text-mode user interface.
+The Mono Debugger is a graphical debugger which is written in C#.  It
+can debug both native and managed applications and it has a graphical
+and a text-mode user interface.
 
-Starting with the 0.2.0 release, the debugger fully supports debugging
-multi-threaded applications.
+At the moment, the debugger only works on the i386 architecture
+running either a Linux 2.2.x or 2.4.x kernel or FreeBSD 4.7.
+Most likely, the debugger also works on OpenBSD, but I don't have an
+OpenBSD system to test it.
 
-Currently, the debugger only works on GNU/Linux system running a 2.2.x
-or 2.4.x kernel on the i386.
+You can debug any single-threaded and multi-threaded managed
+applications (unmanaged multi-threaded applications are also
+supported, but a few restrictions apply in this case).
 
 Design Goals
 ------------
 
 The debugger was designed to be modular and portable to other systems.
 However, when we started this project, we were already short on time
-so the backend is currently only implemented for GNU/Linux on the
-i386.
+so the backend is currently only implemented on the i386 architecture
+running either a Linux or BSD kernel.
 
 Our main idea was to write a debugger for managed applications, but
 still being able to debug unmanaged applications such as the JIT if
@@ -55,9 +58,18 @@ Limitations
 
 Ok, before promising too much, let's start with the limitations ;-)
 
-At the moment, the debugger only works on the i386 running GNU/Linux
-with a 2.2.x or 2.4.x kernel.  Older kernels may or may not work, I've
-never tested this.
+At the moment, the debugger only works on the i386 architecture.
+Despite its modular design, it's probably a huge task to port it to
+another hardware architecture.
+
+When we started the project, I originally wrote the backend just for
+Linux 2.2.x, but while doing the FreeBSD port I realized how easy it
+was to do this - so the debugger can probably be ported to all flavors
+of BSD with very little effort.
+
+The only limitation is that the operating system must support
+kernel-level threads and you must use them in glib and the runtime.
+This is explained a bit more detailed in README.FreeBSD.
 
 When debugging unmanaged applications, you cannot view any parameters
 or local variables.  This is because the code to read the type
@@ -195,5 +207,5 @@ GUI does not have:
 - it can be used as regression test suite.
 
 
-January 6th, 2003
+January 18th, 2003
 Martin Baulig <martin@ximian.com>
