@@ -13,8 +13,8 @@ namespace Mono.Debugger.Architecture
 
 		long[] registers;
 
-		public CoreFileElfI386 (string application, string core_file)
-			: base (application, core_file)
+		public CoreFileElfI386 (string application, string core_file, BfdContainer bfd_container)
+			: base (application, core_file, bfd_container)
 		{
 			registers = get_registers ();
 		}

@@ -4,6 +4,15 @@ namespace Mono.Debugger
 {
 	public delegate void ModulesChangedHandler ();
 
+	// <summary>
+	//   This interface maintains information about loaded modules which can be set by
+	//   the user.  It persists across multiple invocations of the same target and can
+	//   also be serialized to disk.
+	// </summary>
+	// <remarks>
+	//   Although this interface does not directly implement ISerializable, it can be
+	//   serialized with a special method in DebuggerBackend.
+	// </remarks>
 	public interface IModule
 	{
 		ILanguageBackend Language {

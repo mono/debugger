@@ -9,6 +9,8 @@ namespace Mono.Debugger
 	{
 		ArrayList symtabs = new ArrayList ();
 		ArrayList ranges = new ArrayList ();
+		ArrayList symbols = new ArrayList ();
+		bool has_symbols;
 		bool has_ranges;
 		bool in_update;
 
@@ -68,6 +70,35 @@ namespace Mono.Debugger
 			}
 		}
 
+		void update_symbols ()
+		{
+			symbols = new ArrayList ();
+			foreach (ISymbolTable symtab in symtabs) {
+				if (!symtab.IsLoaded || !symtab.HasSymbols)
+					continue;
+
+				symbols.AddRange (symtab.Symbols);
+				has_symbols = true;
+			}
+			symbols.Sort ();
+		}
+
+		public bool HasSymbols {
+			get {
+				return has_symbols;
+			}
+		}
+
+		public ISymbol[] Symbols {
+			get {
+				if (!has_symbols)
+					throw new InvalidOperationException ();
+				ISymbol[] retval = new ISymbol [symbols.Count];
+				symbols.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
 		public IMethod Lookup (TargetAddress address)
 		{
 			foreach (ISymbolTable symtab in symtabs) {
@@ -79,6 +110,18 @@ namespace Mono.Debugger
 				if (method != null)
 					return method;
 			}
+
+			return null;
+		}
+
+		public ISymbol Lookup (string name)
+		{
+			if (!HasSymbols)
+				return null;
+
+			foreach (ISymbol symbol in Symbols)
+				if (symbol.Name == name)
+					return symbol;
 
 			return null;
 		}
@@ -95,6 +138,7 @@ namespace Mono.Debugger
 				return;
 
 			update_ranges ();
+			update_symbols ();
 
 			if (SymbolTableChanged != null)
 				SymbolTableChanged ();

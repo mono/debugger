@@ -7,6 +7,8 @@ namespace Mono.Debugger
 	public interface ISymbolLookup
 	{
 		IMethod Lookup (TargetAddress address);
+
+		ISymbol Lookup (string name);
 	}
 
 	public interface ISymbolContainer
@@ -49,6 +51,17 @@ namespace Mono.Debugger
 		}
 	}
 
+	public interface ISymbol : IComparable
+	{
+		string Name {
+			get;
+		}
+
+		ITargetLocation Location {
+			get;
+		}
+	}
+
 	public delegate void SymbolTableChangedHandler ();
 
 	public interface ISymbolTable : ISymbolLookup, ISymbolContainer
@@ -74,6 +87,21 @@ namespace Mono.Debugger
 		//   and thus a lookup fill me faster.
 		// </remarks>
 		ISymbolRange[] SymbolRanges {
+			get;
+		}
+
+		// <summary>
+		//   Whether the symbol table has a symbol list.
+		// </summary>
+		bool HasSymbols {
+			get;
+		}
+
+		// <summary>
+		//   If HasNames is true, returns a list of ISymbols which can
+		//   be used to lookup symbols by name.
+		// </summary>
+		ISymbol[] Symbols {
 			get;
 		}
 

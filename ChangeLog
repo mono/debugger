@@ -1,5 +1,16 @@
 2002-09-27  Martin Baulig  <martin@gnome.org>
 
+	* arch/BfdContainer.cs: New class to hold all Bfd instances of the
+	DebuggerBackend.  It also maintains the module table and allows it
+	to be shared across different invocations of the target.
+
+	* interfaces/ISymbolTable.cs: Started to work on lookup-by-name.
+	(ISymbol): New interface.
+	(ISymbolLookup): Added `ISymbol Lookup (string name)'.
+	(ISymbolTable): Added HasSymbols and Symbols properties.
+
+2002-09-27  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IModule.cs (IModule.StepInto): New property to
 	specify whether to enter methods in this module while
 	single-stepping.

@@ -11,7 +11,7 @@ void
 hello_world (const char *message, int a)
 {
 	printf (message);
-	crashing_here (NULL);
+	// crashing_here (NULL);
 }
 
 int

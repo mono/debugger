@@ -97,6 +97,14 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract bool HasSymbols {
+			get;
+		}
+
+		public abstract ISymbol[] Symbols {
+			get;
+		}
+
 		protected abstract bool HasMethods {
 			get;
 		}
@@ -182,6 +190,18 @@ namespace Mono.Debugger
 
 				return method;
 			}
+
+			return null;
+		}
+
+		public virtual ISymbol Lookup (string name)
+		{
+			if (!HasSymbols)
+				return null;
+
+			foreach (ISymbol symbol in Symbols)
+				if (symbol.Name == name)
+					return symbol;
 
 			return null;
 		}

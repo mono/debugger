@@ -903,6 +903,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoDebuggerInfo info;
 		int symtab_generation;
 		ArrayList ranges;
+		ArrayList symbols;
 		TargetAddress trampoline_address;
 		IArchitecture arch;
 		MonoSymbolFileTable table;
@@ -937,6 +938,22 @@ namespace Mono.Debugger.Languages.CSharp
 					throw new InvalidOperationException ();
 				ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 				ranges.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
+		public override bool HasSymbols {
+			get {
+				return symbols != null;
+			}
+		}
+
+		public override ISymbol[] Symbols {
+			get {
+				if (symbols == null)
+					throw new InvalidOperationException ();
+				ISymbol[] retval = new ISymbol [symbols.Count];
+				symbols.CopyTo (retval, 0);
 				return retval;
 			}
 		}

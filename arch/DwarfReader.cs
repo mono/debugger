@@ -21,6 +21,7 @@ namespace Mono.Debugger.Architecture
 		ObjectCache debug_abbrev_reader;
 		ObjectCache debug_line_reader;
 		ObjectCache debug_aranges_reader;
+		ObjectCache debug_pubnames_reader;
 		ObjectCache debug_str_reader;
 
 		Hashtable compile_unit_hash;
@@ -47,6 +48,7 @@ namespace Mono.Debugger.Architecture
 			debug_abbrev_reader = create_reader (".debug_abbrev");
 			debug_line_reader = create_reader (".debug_line");
 			debug_aranges_reader = create_reader (".debug_aranges");
+			debug_pubnames_reader = create_reader (".debug_pubnames");
 			debug_str_reader = create_reader (".debug_str");
 
 			DwarfBinaryReader reader = (DwarfBinaryReader) debug_info_reader.Data;
@@ -71,7 +73,7 @@ namespace Mono.Debugger.Architecture
 
 			Console.WriteLine ("Reading aranges table ....");
 
-			symtab = new DwarfSymbolTable (this, read_aranges ());
+			symtab = new DwarfSymbolTable (this, read_aranges (), read_pubnames ());
 
 			Console.WriteLine ("Done reading aranges table");
 		}
@@ -152,12 +154,14 @@ namespace Mono.Debugger.Architecture
 		{
 			DwarfReader dwarf;
 			ArrayList ranges;
+			ArrayList symbols;
 
-			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges)
+			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges, ArrayList symbols)
 			{
 				this.dwarf = dwarf;
 				this.ranges = ranges;
 				this.ranges.Sort ();
+				this.symbols = symbols;
 			}
 
 			public override bool HasRanges {
@@ -170,6 +174,20 @@ namespace Mono.Debugger.Architecture
 				get {
 					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 					ranges.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+
+			public override bool HasSymbols {
+				get {
+					return true;
+				}
+			}
+
+			public override ISymbol[] Symbols {
+				get {
+					ISymbol[] retval = new ISymbol [symbols.Count];
+					symbols.CopyTo (retval, 0);
 					return retval;
 				}
 			}
@@ -203,6 +221,45 @@ namespace Mono.Debugger.Architecture
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
 				return dwarf.get_symtab_at_offset (FileOffset);
+			}
+		}
+
+		private class PubNameEntry : ISymbol
+		{
+			public readonly long FileOffset;
+			string name;
+			DwarfReader dwarf;
+
+			public PubNameEntry (DwarfReader dwarf, long offset, string name)
+			{
+				this.dwarf = dwarf;
+				this.FileOffset = offset;
+				this.name = name;
+				Console.WriteLine (this);
+			}
+
+			public string Name {
+				get {
+					return name;
+				}
+			}
+
+			public ITargetLocation Location {
+				get {
+					return null;
+				}
+			}
+
+			public int CompareTo (object obj)
+			{
+				PubNameEntry entry = (PubNameEntry) obj;
+
+				return name.CompareTo (entry.name);
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("DwarfSymbol ({0},{1:x})", Name, FileOffset);
 			}
 		}
 
@@ -252,6 +309,38 @@ namespace Mono.Debugger.Architecture
 			return ranges;
 		}
 
+		ArrayList read_pubnames ()
+		{
+			DwarfBinaryReader reader = DebugPubnamesReader;
+
+			ArrayList pubnames = new ArrayList ();
+
+			while (!reader.IsEof) {
+				long start = reader.Position;
+				long length = reader.ReadInitialLength ();
+				long stop = reader.Position + length;
+				int version = reader.ReadInt16 ();
+				long offset = reader.ReadOffset ();
+				long section_length = reader.ReadOffset ();
+
+				if (version != 2)
+					throw new DwarfException (this, String.Format (
+						"Wrong version in .debug_pubnames: {0}", version));
+
+				while (reader.Position < stop) {
+					long section_offset = reader.ReadOffset ();
+					if (section_offset == 0)
+						break;
+
+					string name = reader.ReadString ();
+
+					pubnames.Add (new PubNameEntry (this, section_offset, name));
+				}
+			}
+
+			return pubnames;
+		}
+
 		private struct CreateReaderData
 		{
 			public readonly DwarfReader reader;
@@ -287,6 +376,12 @@ namespace Mono.Debugger.Architecture
 		public DwarfBinaryReader DebugAbbrevReader {
 			get {
 				return (DwarfBinaryReader) debug_abbrev_reader.Data;
+			}
+		}
+
+		public DwarfBinaryReader DebugPubnamesReader {
+			get {
+				return (DwarfBinaryReader) debug_pubnames_reader.Data;
 			}
 		}
 
@@ -428,7 +523,7 @@ namespace Mono.Debugger.Architecture
 			protected DieSubprogram subprog;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
-				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.bfd)
+				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.bfd.Module)
 			{
 				this.subprog = subprog;
 				this.engine = engine;
@@ -511,6 +606,18 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public override ISymbolRange[] SymbolRanges {
+				get {
+					throw new InvalidOperationException ();
+				}
+			}
+
+			public override bool HasSymbols {
+				get {
+					return false;
+				}
+			}
+
+			public override ISymbol[] Symbols {
 				get {
 					throw new InvalidOperationException ();
 				}

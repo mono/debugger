@@ -10,6 +10,7 @@ namespace Mono.Debugger.Architecture
 	{
 		protected Bfd bfd;
 		protected Bfd core_bfd;
+		protected BfdContainer bfd_container;
 
 		protected BfdDisassembler bfd_disassembler;
 		protected IArchitecture arch;
@@ -18,10 +19,10 @@ namespace Mono.Debugger.Architecture
 		protected SymbolTableCollection symtab_collection;
 		protected ISymbolTable application_symtab;
 
-		public CoreFile (string application, string core_file)
+		public CoreFile (string application, string core_file, BfdContainer bfd_container)
 		{
-			bfd = new Bfd (this, application, false, true);
-			core_bfd = new Bfd (this, core_file, true, false);
+			bfd = bfd_container.AddFile (this, application, false);
+			core_bfd = new Bfd (this, core_file, true, false, null);
 
 			Console.WriteLine ("CORE DUMP FROM: {0}", core_bfd.CrashProgram);
 
@@ -147,7 +148,7 @@ namespace Mono.Debugger.Architecture
 
 		public IModule[] Modules {
 			get {
-				return new IModule[] { bfd };
+				return new IModule[] { bfd.Module };
 			}
 		}
 
@@ -325,6 +326,7 @@ namespace Mono.Debugger.Architecture
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
+					bfd_container.CloseBfd (bfd);
 					if (core_bfd != null)
 						core_bfd.Dispose ();
 				}

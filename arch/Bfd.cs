@@ -4,19 +4,23 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class Bfd : IModule, IDisposable
+	internal delegate void BfdDisposedHandler (Bfd bfd);
+ 
+	internal class Bfd : IDisposable
 	{
 		IntPtr bfd;
 		protected IInferior inferior;
 		Hashtable symbols;
 		Hashtable section_hash;
 		DwarfReader dwarf;
+		BfdModule module;
 		string filename;
 		bool is_coredump;
 		bool step_into;
@@ -115,10 +119,12 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (IInferior inferior, string filename, bool core_file, bool read_dwarf_symtab)
+		public Bfd (IInferior inferior, string filename, bool core_file, bool read_dwarf_symtab,
+			    BfdModule module)
 		{
 			this.inferior = inferior;
 			this.filename = filename;
+			this.module = module;
 
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -297,65 +303,9 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		//
-		// IModule
-		//
-
-		ILanguageBackend IModule.Language {
+		public IModule Module {
 			get {
-				return null;
-			}
-		}
-
-		string IModule.Name {
-			get {
-				return filename;
-			}
-		}
-
-		string IModule.FullName {
-			get {
-				return filename;
-			}
-		}
-
-		bool IModule.IsLoaded {
-			get {
-				return true;
-			}
-		}
-
-		bool IModule.SymbolsLoaded {
-			get {
-				return dwarf != null;
-			}
-		}
-
-		bool IModule.LoadSymbols {
-			get {
-				return IModule.SymbolsLoaded;
-			}
-
-			set {
-				if (!value) {
-					dwarf = null;
-					return;
-				}
-
-				if (is_coredump)
-					return;
-
-				read_dwarf ();
-			}
-		}
-
-		bool IModule.StepInto {
-			get {
-				return step_into;
-			}
-
-			set {
-				step_into = value;
+				return module;
 			}
 		}
 
@@ -372,6 +322,8 @@ namespace Mono.Debugger.Architecture
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
+					if (module != null)
+						module.IsLoaded = module.SymbolsLoaded = false;
 					if (dwarf != null)
 						dwarf.Dispose ();
 				}

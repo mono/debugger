@@ -383,10 +383,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				string language = module.Language != null ?
 					module.Language.Name : "native";
 
-				Console.WriteLine ("  {0} {1} {2} {3} {4} {5}",
+				Console.WriteLine ("  {0} {1} {2} {3} {4} {5} {6}",
 						   module.Name, module.FullName, language,
 						   module.IsLoaded, module.SymbolsLoaded,
-						   module.StepInto);
+						   module.LoadSymbols, module.StepInto);
 
 				if (module.Name == "Monkey")
 					module.LoadSymbols = false;

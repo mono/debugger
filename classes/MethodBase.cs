@@ -202,6 +202,11 @@ namespace Mono.Debugger
 			return this;
 		}
 
+		ISymbol ISymbolLookup.Lookup (string name)
+		{
+			return null;
+		}
+
 		public int CompareTo (object obj)
 		{
 			IMethod method = (IMethod) obj;

@@ -26,6 +26,7 @@ namespace Mono.Debugger
 		public readonly string Environment_Path	= "/usr/bin";
 
 		SymbolTableCollection symtabs;
+		BfdContainer bfd_container;
 
 		IInferior inferior;
 		ArrayList languages;
@@ -39,7 +40,7 @@ namespace Mono.Debugger
 		StackFrame[] current_backtrace;
 		IMethod current_method;
 
-		bool load_native_symtab = false;
+		bool load_native_symtab = true;
 
 		bool step_line;
 		bool next_line;
@@ -74,6 +75,7 @@ namespace Mono.Debugger
 
 			this.native = native;
 			this.languages = new ArrayList ();
+			this.bfd_container = new BfdContainer (this);
 		}
 
 		public string CurrentWorkingDirectory {
@@ -347,7 +349,7 @@ namespace Mono.Debugger
 			if (native)
 				load_native_symtab = true;
 			inferior = new PTraceInferior (working_directory, argv, envp, native,
-						       load_native_symtab);
+						       load_native_symtab, bfd_container);
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
@@ -376,7 +378,7 @@ namespace Mono.Debugger
 
 		void load_core (string core_file, string[] argv)
 		{
-			inferior = new CoreFileElfI386 (argv [0], core_file);
+			inferior = new CoreFileElfI386 (argv [0], core_file, bfd_container);
 
 			symtabs = new SymbolTableCollection ();
 			symtabs.AddSymbolTable (inferior.SymbolTable);
@@ -530,6 +532,7 @@ namespace Mono.Debugger
 
 		public void TestBreakpoint (string name)
 		{
+#if FALSE
 			if (current_method == null)
 				return;
 
@@ -541,6 +544,13 @@ namespace Mono.Debugger
 			Console.WriteLine ("TEST: {0}", name);
 
 			csharp.InsertBreakpoint (name);
+#else
+			ISymbol symbol = Lookup (name);
+			if (symbol == null)
+				return;
+
+			Console.WriteLine ("SYMBOL: {0}", symbol);
+#endif
 		}
 
 		public TargetAddress CurrentFrameAddress {
@@ -632,12 +642,16 @@ namespace Mono.Debugger
 			return symtabs.Lookup (address);
 		}
 
+		public ISymbol Lookup (string name)
+		{
+			return symtabs.Lookup (name);
+		}
+
 		public IModule[] Modules {
 			get {
 				check_disposed ();
 				ArrayList modules = new ArrayList ();
-				if (inferior != null)
-					modules.AddRange (inferior.Modules);
+				modules.AddRange (bfd_container.Modules);
 				foreach (ILanguageBackend language in languages)
 					modules.AddRange (language.Modules);
 				IModule[] retval = new IModule [modules.Count];
@@ -773,6 +787,7 @@ namespace Mono.Debugger
 					// Do stuff here
 					if (inferior != null)
 						inferior.Kill ();
+					bfd_container.Dispose ();
 				}
 				
 				// Release unmanaged resources

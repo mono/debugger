@@ -57,6 +57,7 @@ namespace Mono.Debugger.Backends
 		string[] envp;
 
 		Bfd bfd;
+		BfdContainer bfd_container;
 		BfdDisassembler bfd_disassembler;
 		IArchitecture arch;
 		SymbolTableCollection native_symtabs;
@@ -276,17 +277,18 @@ namespace Mono.Debugger.Backends
 		}
 
 		public PTraceInferior (string working_directory, string[] argv, string[] envp,
-				       bool native, bool load_native_symtab)
+				       bool native, bool load_native_symtab, BfdContainer bfd_container)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
 			this.envp = envp;
 			this.native = native;
+			this.bfd_container = bfd_container;
 
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = new Bfd (this, argv [0], false, load_native_symtab);
+			bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -307,11 +309,13 @@ namespace Mono.Debugger.Backends
 			setup_inferior (load_native_symtab);
 		}
 
-		public PTraceInferior (int pid, string[] envp, bool load_native_symtab)
+		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
+				       BfdContainer bfd_container)
 		{
 			this.envp = envp;
+			this.bfd_container = bfd_container;
 
-			bfd = new Bfd (this, argv [0], false, load_native_symtab);
+			bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -980,7 +984,7 @@ namespace Mono.Debugger.Backends
 
 		public IModule[] Modules {
 			get {
-				return new IModule[] { bfd };
+				return new IModule[] { bfd.Module };
 			}
 		}
 
@@ -1154,8 +1158,7 @@ namespace Mono.Debugger.Backends
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (bfd != null)
-						bfd.Dispose ();
+					bfd_container.CloseBfd (bfd);
 					if (bfd_disassembler != null)
 						bfd_disassembler.Dispose ();
 					// Do stuff here
