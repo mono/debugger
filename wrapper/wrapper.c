@@ -42,8 +42,8 @@ static void (*command_notification_function) (void);
  * This is a global data symbol which is read by the debugger.
  */
 MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
-	MONO_SYMBOL_FILE_DYNAMIC_MAGIC,
-	MONO_SYMBOL_FILE_DYNAMIC_VERSION,
+	MONO_DEBUGGER_MAGIC,
+	MONO_DEBUGGER_VERSION,
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
 	&debugger_notification_address,
