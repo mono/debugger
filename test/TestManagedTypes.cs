@@ -81,6 +81,8 @@ struct E
 
 public class X
 {
+	public static string Hello = "Hello World";
+
 	public static void Simple ()
 	{
 		int a = 5;

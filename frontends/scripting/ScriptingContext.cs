@@ -211,26 +211,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 				"No variable or parameter with that name: `{0}'.", identifier);
 		}
 
-		public ITargetObject GetVariable (string identifier)
+		public ITargetObject GetVariable (IVariable var)
 		{
-			IVariable var = GetVariableInfo (identifier, true);
 			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
 			if (!var.CheckValid (frame))
 				throw new ScriptingException ("Variable cannot be accessed.");
 
 			return var.GetObject (frame);
-		}
-
-		public ITargetType GetVariableType (string identifier)
-		{
-			IVariable var = GetVariableInfo (identifier, true);
-			if (!var.IsAlive (frame.TargetAddress))
-				throw new ScriptingException ("Variable out of scope.");
-			if (!var.CheckValid (frame))
-				throw new ScriptingException ("Variable cannot be accessed.");
-
-			return var.Type;
 		}
 
 		public override string ToString ()

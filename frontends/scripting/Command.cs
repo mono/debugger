@@ -101,8 +101,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return false;
 			}
 
-			Console.WriteLine ("PRINT: {0}", expression);
-
 			return true;
 		}
 
@@ -248,6 +246,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+#if FIXME
 	public class StartCommand : Command
 	{
 		ProgramArgumentsExpression program_args_expr;
@@ -273,6 +272,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 	}
+#endif
 
 	[Command("process", "Print or select current process",
 		 "Without argument, print the current process.\n\n" +
@@ -530,6 +530,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+#if FIXME
 	[Command("SHOW SOURCES", "Show source files")]
 	public class ShowSourcesCommand : Command
 	{
@@ -815,4 +816,5 @@ namespace Mono.Debugger.Frontends.CommandLine
 			var_expr.Assign (context, obj);
 		}
 	}
+#endif
 }
