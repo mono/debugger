@@ -14,6 +14,7 @@ namespace Mono.Debugger.Architecture
 		protected Bfd bfd;
 		protected SourceFileFactory factory;
 		ArrayList files;
+		Hashtable types;
 		string filename;
 		ISymbolRange[] ranges;
 		protected TargetAddress entry_point = TargetAddress.Null;
@@ -28,7 +29,10 @@ namespace Mono.Debugger.Architecture
 			N_SLINE	= 0x44,
 			N_SO	= 0x64,
 			N_LSYM	= 0x80,
-			N_PSYM	= 0xa0
+			N_BINCL	= 0x82,
+			N_SOL	= 0x84,
+			N_PSYM	= 0xa0,
+			NEINCL	= 0xa2
 		}
 
 		public StabsReader (Bfd bfd, Module module, SourceFileFactory factory)
@@ -50,6 +54,35 @@ namespace Mono.Debugger.Architecture
 			TargetBinaryReader reader = StabTableReader;
 			TargetBinaryReader string_reader = StringTableReader;
 
+			types = new Hashtable ();
+
+			int_type = RegisterFundamental (
+				"int", typeof (int), 4);
+			char_type = RegisterFundamental (
+				"char", typeof (byte), 1);
+			long_type = RegisterFundamental (
+				"long int", typeof (int), 4);
+			uint_type = RegisterFundamental (
+				"unsigned int", typeof (uint), 4);
+			ulong_type = RegisterFundamental (
+				"long unsigned int", typeof (uint), 4);
+			long_long_type = RegisterFundamental (
+				"long long int", typeof (long), 4);
+			ulong_long_type = RegisterFundamental (
+				"long long unsigned int", typeof (ulong), 8);
+			short_type = RegisterFundamental (
+				"short int", typeof (short), 2);
+			ushort_type = RegisterFundamental (
+				"short unsigned int", typeof (ushort), 2);
+			schar_type = RegisterFundamental (
+				"signed char", typeof (sbyte), 1);
+			uchar_type = RegisterFundamental (
+				"unsigned char", typeof (byte), 1);
+			float_type = RegisterFundamental (
+				"float", typeof (float), 4);
+			double_type = RegisterFundamental (
+				"double", typeof (double), 8);
+
 			files = new ArrayList ();
 			methods = new ArrayList ();
 
@@ -68,6 +101,28 @@ namespace Mono.Debugger.Architecture
 				ranges [i] = new FileRangeEntry ((FileEntry) files [i]);
 			}
 		}
+
+		NativeFundamentalType RegisterFundamental (string name, Type type, int size)
+		{
+			NativeFundamentalType native = new NativeFundamentalType (
+				name, type, size);
+			types.Add (name, native);
+			return native;
+		}
+
+		NativeFundamentalType int_type;
+		NativeFundamentalType char_type;
+		NativeFundamentalType long_type;
+		NativeFundamentalType uint_type;
+		NativeFundamentalType ulong_type;
+		NativeFundamentalType long_long_type;
+		NativeFundamentalType ulong_long_type;
+		NativeFundamentalType short_type;
+		NativeFundamentalType ushort_type;
+		NativeFundamentalType schar_type;
+		NativeFundamentalType uchar_type;
+		NativeFundamentalType float_type;
+		NativeFundamentalType double_type;
 
 		public static bool IsSupported (Bfd bfd)
 		{
@@ -178,6 +233,182 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		protected MyVariable HandleSymbolOrType (ref Entry entry)
+		{
+			if (!entry.HasName)
+				return null;
+
+			Console.WriteLine ("   SYMBOL OR TYPE: {0}", entry.n_str);
+			int pos = entry.n_str.IndexOf (':');
+			string name = entry.n_str.Substring (0,pos);
+			string def = entry.n_str.Substring (pos+1);
+
+			if ((def [0] == 't') || (def [0] == 'T')) {
+				int start = 1;
+				ParseType (name, null, def, ref start);
+				return null;
+			} else if ((def [0] == '-') || (def [0] == '(')) {
+				NativeType type = (NativeType) types [def];
+				if (type == null)
+					type = new NativeOpaqueType (null, 0);
+
+				return new MyVariable (name, entry.n_value, type);
+			}
+
+			return null;
+		}
+
+		protected NativeType ParseType (string name, string alias, string def,
+						ref int pos)
+		{
+			Console.WriteLine ("PARSE TYPE: |{0}| - {1} - |{2}|{3}|",
+					   name, pos, alias, def.Substring (pos));
+
+			NativeType type;
+
+			if (def [pos] == '(') {
+				int new_pos = def.IndexOf ('=', pos);
+				if (new_pos > 0) {
+					alias = def.Substring (pos, new_pos-pos);
+					pos = new_pos+1;
+					type = ParseType (name, alias, def, ref pos);
+					Console.WriteLine ("ALIAS: |{0}| - {1}", alias, type);
+					types.Add (alias, type);
+					return type;
+				} else {
+					new_pos = def.IndexOf (')', pos);
+					string reftype = def.Substring (pos, new_pos-pos+1);
+					pos = new_pos+1;
+
+					type = (NativeType) types [reftype];
+					Console.WriteLine ("REFERENCE: |{0}| - {1}",
+							   reftype, type);
+					return type;
+				}
+			}
+
+			if (def [pos] == 'r')
+				return ParseRange (name, alias, def, ref pos);
+			else if (def [pos] == '*') {
+				pos++;
+				type = ParseType (name, alias, def, ref pos);
+				Console.WriteLine ("POINTER: {0} {1}", name, type);
+				return new NativePointerType (name, type, 4);
+			} else if (def [pos] == 's')
+				return ParseStruct (name, def, ref pos);
+			else if (def [pos] == 'a')
+				return ParseArray (name, def, ref pos);
+
+			Console.WriteLine ("UNKNOWN TYPE: |{0}|", def.Substring (pos));
+			return null;
+		}
+
+		protected NativeType ParseStruct (string name, string def, ref int pos)
+		{
+			int new_pos = pos+1;
+			while ((def [new_pos] >= '0') && (def [new_pos] <= '9'))
+				new_pos++;
+
+			int size = (int) UInt32.Parse (def.Substring (pos+1,new_pos-pos-1));
+			pos = new_pos;
+
+			ArrayList members = new ArrayList ();
+
+			Console.WriteLine ("STRUCT: {0} |{1}|", size, def.Substring (pos));
+			int length = def.Length;
+			while (pos < length) {
+				if (def [pos] == ';') {
+					pos++;
+					break;
+				}
+
+				int p = def.IndexOf (':', pos);
+				string mname = def.Substring (pos, p-pos);
+				pos = p+1;
+
+				NativeType type = ParseType (name, null, def, ref pos);
+
+				if (def [pos++] != ',') {
+					Console.WriteLine ("UNKNOWN STRUCT DEF: |{0}|", def);
+					return null;
+				}
+
+				p = def.IndexOf (',', pos);
+				int moffs = (int) UInt32.Parse (def.Substring (pos, p-pos));
+				pos = p+1;
+
+				p = def.IndexOf (';', pos);
+				int mbits = (int) UInt32.Parse (def.Substring (pos, p-pos));
+				pos = p+1;
+
+				int msize = (mbits + 7) >> 3;
+
+				if (type == null)
+					type = new NativeOpaqueType (null, msize);
+
+				Console.WriteLine ("MEMBER: {0} {1} {2} {3} {4} - |{5}|",
+						   mname, mbits, moffs, msize, type,
+						   def.Substring (pos));
+
+				NativeFieldInfo field = new NativeFieldInfo (
+					type, mname, members.Count, moffs, msize);
+				members.Add (field);
+			}
+
+			NativeFieldInfo[] fields = new NativeFieldInfo [members.Count];
+			members.CopyTo (fields);
+
+			return new NativeStructType (name, fields, size);
+		}
+
+		protected NativeType ParseArray (string name, string def, ref int pos)
+		{
+			pos++;
+			NativeType index = ParseType (name, null, def, ref pos);
+			Console.WriteLine ("ARRAY: {0} {1} - |{2}|", name, index,
+					   def.Substring (pos));
+
+			if (def [pos] == ';') {
+				int p = def.IndexOf (';', pos+1);
+				string lower = def.Substring (pos+1, p-pos-1);
+				int q = def.IndexOf (';', p+1);
+				string upper = def.Substring (p+1, q-p-1);
+				pos = q+1;
+
+				Console.WriteLine ("ARRAY #0: |{0}|{1}| - |{2}|",
+						   lower, upper, def.Substring (pos));
+			}
+
+			NativeType element = ParseType (name, null, def, ref pos);
+			Console.WriteLine ("ARRAY #1: {0} {1} - |{2}|", name, element,
+					   def.Substring (pos));
+			return null;
+		}
+
+		protected NativeType ParseRange (string name, string type, string def,
+						 ref int pos)
+		{
+			int p = def.IndexOf (';', pos);
+			string reftype = def.Substring (pos+1, p-pos-1);
+			int q = def.IndexOf (';', p+1);
+			string lower = def.Substring (p+1, q-p-1);
+			int r = def.IndexOf (';', q+1);
+			string upper = def.Substring (q+1, r-q-1);
+			pos = r+1;
+
+			Console.WriteLine ("RANGE: |{0}|{1}|{2}| - |{3}|", reftype,
+					   lower, upper, def.Substring (pos));
+
+			if (type == reftype)
+				return (NativeType) types [name];
+			else if (name == "float")
+				return float_type;
+			else if (name == "double")
+				return double_type;
+
+			return null;
+		}
+
 		protected class FileRangeEntry : SymbolRangeEntry
 		{
 			FileEntry file;
@@ -233,6 +464,8 @@ namespace Mono.Debugger.Architecture
 						if (mentry.Lines.Length > 0)
 							has_lines = true;
 						goto again;
+					} else if (entry.n_type == (byte) StabType.N_LSYM) {
+						stabs.HandleSymbolOrType (ref entry);
 					}
 				}
 
@@ -367,6 +600,7 @@ namespace Mono.Debugger.Architecture
 				long start_offset = entry.n_value;
 				long end_offset = 0;
 
+				StabsReader stabs = file.StabsReader;
 				Bfd bfd = file.StabsReader.bfd;
 
 				while (reader.Position < reader.Size) {
@@ -387,6 +621,7 @@ namespace Mono.Debugger.Architecture
 							entry.n_ndesc, value);
 						lines.Add (lne);
 					} else if (entry.n_type == (byte) StabType.N_PSYM) {
+#if FIXME
 						byte next_type = Entry.PeekType (reader);
 						MyVariable var;
 						if (next_type == (byte) StabType.N_RSYM) {
@@ -399,7 +634,11 @@ namespace Mono.Debugger.Architecture
 						if (parameters == null)
 							parameters = new ArrayList ();
 						parameters.Add (var);
+#endif
 					} else if (entry.n_type == (byte) StabType.N_LSYM) {
+						HandleSymbol (stabs, ref entry);
+						continue;
+#if FIXME
 						byte next_type = Entry.PeekType (reader);
 						MyVariable var;
 						if (next_type == (byte) StabType.N_RSYM) {
@@ -412,6 +651,7 @@ namespace Mono.Debugger.Architecture
 						if (locals == null)
 							locals = new ArrayList ();
 						locals.Add (var);
+#endif
 					}
 				}
 
@@ -449,6 +689,18 @@ namespace Mono.Debugger.Architecture
 				file.StabsReader.methods.Add (this);
 
 				lines = new ArrayList ();
+			}
+
+			protected void HandleSymbol (StabsReader stabs, ref Entry entry)
+			{
+				MyVariable var = stabs.HandleSymbolOrType (ref entry);
+				if (var == null)
+					return;
+
+				if (locals == null)
+					locals = new ArrayList ();
+
+				locals.Add (var);
 			}
 
 			public override object MethodHandle {
@@ -520,22 +772,13 @@ namespace Mono.Debugger.Architecture
 					return name.Substring (0, pos);
 			}
 
-			public MyVariable (ref Entry entry)
+			public MyVariable (string name, long offset, NativeType type)
 			{
-				this.name = GetName (entry.n_str);
-				this.type = NativeType.VoidType;
+				this.name = name;
+				this.type = type;
 
-				this.offset = entry.n_value;
+				this.offset = offset;
 				this.register = -1;
-
-				Console.WriteLine (this);
-				Console.WriteLine ("VARIABLE: |{0}|", entry.n_str);
-			}
-
-			public MyVariable (ref Entry entry, ref Entry next_entry)
-				: this (ref entry)
-			{
-				this.register = (int) entry.n_value;
 
 				Console.WriteLine (this);
 			}
@@ -557,12 +800,14 @@ namespace Mono.Debugger.Architecture
 			public bool CheckValid (StackFrame frame)
 			{
 				// FIXME
-				return false;
+				return true;
 			}
 
 			protected TargetLocation GetAddress (StackFrame frame)
 			{
-				throw new InvalidOperationException ();
+				return new MonoVariableLocation (
+					frame, true, (int) I386Register.EBP, offset,
+					type.IsByRef, 0);
 			}
 
 			public ITargetObject GetObject (StackFrame frame)

@@ -56,12 +56,19 @@ namespace Mono.Debugger.Languages.Native
 
 	internal class NativeFieldInfo : NativeStructMember, ITargetFieldInfo
 	{
-		int offset;
+		int offset, size;
 
 		public NativeFieldInfo (NativeType type, string name, int index, int offset)
 			: base (type, name, index, false)
 		{
 			this.offset = offset;
+		}
+
+		public NativeFieldInfo (NativeType type, string name, int index, int offset,
+					int size)
+			: this (type, name, index, offset)
+		{
+			this.size = size;
 		}
 
 		public int Offset {
