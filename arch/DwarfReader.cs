@@ -1535,6 +1535,9 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		// <summary>
+		// Base class for all DIE's - The DWARF Debugging Information Entry.
+		// </summary>
 		protected class Die
 		{
 			public readonly CompilationUnit comp_unit;
@@ -1647,6 +1650,7 @@ namespace Mono.Debugger.Architecture
 				case DwarfTag.pointer_type:
 					return new DiePointerType (reader, comp_unit, offset, abbrev);
 
+				case DwarfTag.class_type: // for now just treat classes and structs the same.
 				case DwarfTag.structure_type:
 					return new DieStructureType (reader, comp_unit, offset, abbrev, false);
 
@@ -1672,6 +1676,16 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		// <summary>
+		// The Debugging Information Entry corresponding to compilation units.
+		// </summary>
+		// <remarks>
+		// From the DWARF spec: <em>A compilation unit typically
+		// represents the text and data contributed to an executable
+		// by a single relocatable object file.  It may be derived
+		// from several source files, including pre-processed
+		// ``include files.''</em>
+		// </remarks>
 		protected class DieCompileUnit : Die, ISymbolContainer
 		{
 			public DieCompileUnit (DwarfBinaryReader reader, CompilationUnit comp_unit,
@@ -1900,6 +1914,11 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		// <summary>
+		// The Debugging Information Entry corresponding to a
+		// subprogram, which in most languages means a method or
+		// function or subroutine.
+		// </summary>
 		protected class DieSubprogram : Die, IComparable, ISymbolContainer
 		{
 			long real_offset, start_pc, end_pc;
@@ -2558,6 +2577,15 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		// <summary>
+		// Debugging Information Entry corresponding to base types.
+		// </summary>
+		// <remarks>
+		// From the DWARF spec: <em>A base type is a data type that
+		// is not defined in terms of other data types.  Each
+		// programming language has a set of base types that are
+		// considered to be built into that language. </em>
+		// </remarks>
 		protected class DieBaseType : DieType
 		{
 			int byte_size;
@@ -2732,6 +2760,10 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		// <summary>
+		// Debugging Information Entry corresponding to arbitrary
+		// types that are assigned names by the programmer.
+		// </summary>
 		protected class DieTypedef : DieType
 		{
 			long type_offset;
@@ -2772,6 +2804,52 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		// <summary>
+		// Debugging Information Entry corresponding to
+		// inheritance information.
+		// </summary>
+		// <remarks>
+		// From the DWARF spec: <em>The class type of
+		// structure type entry that describes a derived class
+		// or structure owns debugging information entries
+		// describing each of the classes or structures it is
+		// derived from, ordered as they were in the source
+		// program.</em>
+		// </remarks>
+		protected class DieInheritance : Die
+		{
+			long type_offset;
+			long data_member_location;
+			DieType reference;
+
+			public DieInheritance (DwarfBinaryReader reader,
+					       CompilationUnit comp_unit,
+					       AbbrevEntry abbrev)
+				: base (reader, comp_unit, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.data_member_location:
+					// the location is specified as a
+					// block, it appears..  not sure the
+					// format, but it definitely isn't a (long).
+					//
+					// data_member_location = (long)attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+		}
+
 		protected class DieStructureType : DieType
 		{
 			int byte_size;
@@ -2795,6 +2873,18 @@ namespace Mono.Debugger.Architecture
 				default:
 					base.ProcessAttribute (attribute);
 					break;
+				}
+			}
+
+			protected override Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit,
+							  long offset, AbbrevEntry abbrev)
+			{
+				switch (abbrev.Tag) {
+				case DwarfTag.inheritance:
+					return new DieInheritance (reader, comp_unit, abbrev);
+
+				default:
+					return base.CreateDie (reader, comp_unit, offset, abbrev);
 				}
 			}
 
