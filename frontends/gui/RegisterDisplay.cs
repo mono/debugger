@@ -76,7 +76,7 @@ namespace Mono.Debugger.GUI
 				break;
 
 			default:
-				notebook.Page = 0;
+				// Do not change the page, it flickers.
 				break;
 			}
 		}

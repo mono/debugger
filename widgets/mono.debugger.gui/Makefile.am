@@ -1,5 +1,9 @@
 MCS=mcs
 
+assdir = $(libdir)
+
+ass_SCRIPTS = debugger-widgets.dll
+
 all: debugger-widgets.dll
 
 debugger-widgets.dll: generated/*.cs

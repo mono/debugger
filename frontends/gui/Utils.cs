@@ -42,23 +42,21 @@ namespace Mono.Debugger.GUI {
 			if (idx > -1){
 				name = name.Substring (idx + 1);
 			}
-			
-			Gtk.Image close_image = new Gtk.Image (Stock.Close, IconSize.Menu);
-			PackStart (new Label (name));
-			eb =  new EventBox ();
-			eb.Add (close_image);
-			PackEnd (eb);
 
-			eb.ButtonPressEvent += new ButtonPressEventHandler (button_pressed);
-			eb.Events = (int)EventMask.ExposureMask | (int)EventMask.LeaveNotifyMask;
+			Button button = new Button ();
+			button.Relief = ReliefStyle.None;
+			Gtk.Image close_image = new Gtk.Image (Stock.Close, IconSize.Menu);
+			button.Add (close_image);
+			PackStart (new Label (name));
+			PackEnd (button);
+
+			button.Clicked += new EventHandler (button_pressed);
 			ShowAll ();
 		}
 
-		void button_pressed (object obj, ButtonPressEventArgs args)
+		void button_pressed (object obj, EventArgs args)
 		{
-			Gdk.EventButton ev = args.Event;
-			if (ev.button == 1 && ButtonClicked != null)
-				ButtonClicked (this, null);
+			ButtonClicked (this, null);
 
 			SignalArgs sa = (SignalArgs) args;
 			sa.RetVal = true;
