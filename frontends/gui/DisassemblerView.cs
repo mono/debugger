@@ -21,6 +21,7 @@ namespace Mono.Debugger.GUI
 
 		IMethod current_method = null;
 		AssemblerMethod current_method_source = null;
+		ArrayList dynamic_methods = null;
 
 		protected override void SetActive ()
 		{
@@ -41,10 +42,9 @@ namespace Mono.Debugger.GUI
 		{
 			current_method_source = null;
 			current_method = null;
+			dynamic_methods = null;
 
-			if ((frame.Method == null) || !frame.Method.IsLoaded)
-				current_method_source = frame.DisassembleInstruction (frame.TargetAddress);
-			else {
+			if ((frame.Method != null) && frame.Method.IsLoaded) {
 				current_method = frame.Method;
 				current_method_source = frame.DisassembleMethod ();
 			}
@@ -62,13 +62,123 @@ namespace Mono.Debugger.GUI
 
 		protected override SourceLocation GetSourceLocation (StackFrame frame)
 		{
-			if ((frame.Method != current_method) || (frame.Method == null))
+			if (frame.Method == null)
+				UpdateDynamicMethod (frame);
+			else if (frame.Method != current_method)
 				MethodChanged (frame);
 
-			if (current_method_source == null)
+			if (dynamic_methods != null)
+				return LookupDynamic (frame.TargetAddress);
+			else if (current_method_source == null)
 				return null;
 
 			return current_method_source.Lookup (frame.TargetAddress);
+		}
+
+		protected sealed class DynamicMethod
+		{
+			public readonly AssemblerMethod Method;
+			public int StartLine;
+			public int NumLines;
+
+			public DynamicMethod (AssemblerMethod method, int line)
+			{
+				this.Method = method;
+				this.StartLine = line;
+
+				string contents = method.SourceBuffer.Contents;
+				foreach (char ch in contents) {
+					if (ch == '\n')
+						NumLines++;
+				}
+			}
+		}
+
+		void UpdateDynamicMethod (StackFrame frame)
+		{
+			if (dynamic_methods == null) {
+				dynamic_methods = new ArrayList ();
+				text_buffer.Text = "";
+			}
+
+			int index;
+			int line = 0;
+			int new_lines = 0;
+			TextIter iter;
+
+			for (index = dynamic_methods.Count-1; index >= 0; index--) {
+				DynamicMethod dynamic = (DynamicMethod) dynamic_methods [index];
+
+				if (frame.TargetAddress < dynamic.Method.StartAddress)
+					continue;
+				else if ((frame.TargetAddress >= dynamic.Method.StartAddress) &&
+					 (frame.TargetAddress < dynamic.Method.EndAddress))
+					return;
+				else if (dynamic.Method.EndAddress == frame.TargetAddress) {
+					TargetAddress address = frame.TargetAddress;
+					string insn = frame.DisassembleInstruction (ref address);
+					byte insn_size = (byte) (address - frame.TargetAddress);
+
+					dynamic.Method.AppendOneLine (new AssemblerLine (
+						frame.TargetAddress, insn_size, insn));
+
+					line = dynamic.StartLine + (dynamic.NumLines++);
+					text_buffer.GetIterAtLineOffset (out iter, line, 0);
+					source_view.ScrollToIter (iter, 0.0, true, 0.0, 0.5);
+
+					string contents = String.Format (
+						"  {0:x}   {1}\n", frame.TargetAddress, insn);
+
+					text_buffer.Insert (iter, contents, contents.Length);
+					new_lines = 1;
+					break;
+				}
+
+				line = dynamic.StartLine + dynamic.NumLines;
+				break;
+			}
+
+			if (new_lines == 0) {
+				AssemblerMethod method = frame.DisassembleInstruction (frame.TargetAddress);
+				if (method == null)
+					return;
+
+				text_buffer.GetIterAtLineOffset (out iter, line, 0);
+				source_view.ScrollToIter (iter, 0.0, true, 0.0, 0.5);
+
+				string contents = "\n" + method.SourceBuffer.Contents;
+				text_buffer.Insert (iter, contents, contents.Length);
+
+				index++;
+				DynamicMethod new_dynamic = new DynamicMethod (method, line + 1);
+				dynamic_methods.Insert (index, new_dynamic);
+				new_lines = new_dynamic.NumLines + 1;
+			}
+
+			for (++index; index < dynamic_methods.Count; index++) {
+				DynamicMethod dynamic = (DynamicMethod) dynamic_methods [index];
+
+				dynamic.StartLine += new_lines;
+			}
+		}
+
+		SourceLocation LookupDynamic (TargetAddress address)
+		{
+			foreach (DynamicMethod dynamic in dynamic_methods) {
+				if ((address < dynamic.Method.StartAddress) ||
+				    (address >= dynamic.Method.EndAddress))
+					continue;
+
+				SourceLocation source = dynamic.Method.Lookup (address);
+				if (source == null)
+					return null;
+
+				return new SourceLocation (
+					source.Buffer, source.Row + dynamic.StartLine,
+					source.SourceOffset, source.SourceRange);
+			}
+
+			return null;
 		}
 	}
 }

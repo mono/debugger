@@ -8,17 +8,19 @@ namespace Mono.Debugger
 	{
 		public readonly string Label;
 		public readonly TargetAddress Address;
+		public readonly byte InstructionSize;
 		public readonly string Text;
 
-		public AssemblerLine (string label, TargetAddress address, string text)
+		public AssemblerLine (string label, TargetAddress address, byte size, string text)
 		{
 			this.Label = label;
 			this.Address = address;
+			this.InstructionSize = size;
 			this.Text = text;
 		}
 
-		public AssemblerLine (TargetAddress address, string text)
-			: this (null, address, text)
+		public AssemblerLine (TargetAddress address, byte size, string text)
+			: this (null, address, size, text)
 		{ }
 	}
 
@@ -29,29 +31,28 @@ namespace Mono.Debugger
 		int end_row;
 		ArrayList addresses, lines;
 		TargetAddress start_address, end_address;
+		StringBuilder sb;
 		string name;
 
 		public AssemblerMethod (TargetAddress start, TargetAddress end, string name,
 					IDisassembler disassembler)
-			: base (start, end)
+			: base (start, start)
 		{
 			start_row = end_row = 0;
 			addresses = null;
 
 			this.name = name;
 			this.start_address = start;
-			this.end_address = end;
+			this.end_address = start;
 
 			lines = new ArrayList ();
 			addresses = new ArrayList ();
-			StringBuilder sb = new StringBuilder ();
+			sb = new StringBuilder ();
 
 			TargetAddress current = start_address;
 
-			while (current < end_address)
-				add_one_line (disassembler, sb, ref current);
-
-			buffer = new SourceBuffer (name, sb.ToString ());
+			while (current < end)
+				add_one_line (disassembler, ref current);
 		}
 
 		public AssemblerMethod (TargetAddress start, IDisassembler disassembler)
@@ -66,15 +67,13 @@ namespace Mono.Debugger
 
 			lines = new ArrayList ();
 			addresses = new ArrayList ();
-			StringBuilder sb = new StringBuilder ();
+			sb = new StringBuilder ();
 
-			add_one_line (disassembler, sb, ref end_address);
-			SetEndAddress (end_address);
-
-			buffer = new SourceBuffer (name, sb.ToString ());
+			TargetAddress current = start;
+			add_one_line (disassembler, ref current);
 		}
 
-		void add_one_line (IDisassembler disassembler, StringBuilder sb, ref TargetAddress current)
+		void add_one_line (IDisassembler disassembler, ref TargetAddress current)
 		{
 			string label = null;
 			if (disassembler.SymbolTable != null) {
@@ -93,11 +92,28 @@ namespace Mono.Debugger
 
 			TargetAddress address = current;
 			string insn = disassembler.DisassembleInstruction (ref current);
-			string line = String.Format ("  {0:x}   {1}\n", address, insn);
+			byte insn_size = (byte) (current - address);
 
-			lines.Add (new AssemblerLine (label, address, insn));
-			addresses.Add (new LineEntry (address, ++end_row));
-			sb.Append (line);
+			AppendOneLine (new AssemblerLine (address, insn_size, insn));
+		}
+
+		public void AppendOneLine (AssemblerLine line)
+		{
+			if (line.Address != EndAddress)
+				throw new ArgumentException (String.Format (
+					"Requested to add instruction at address {0}, but " +
+					"method ends at {1}.", line.Address, EndAddress));
+
+			lines.Add (line);
+			addresses.Add (new LineEntry (line.Address, ++end_row));
+			sb.Append (String.Format ("  {0:x}   {1}\n", line.Address, line.Text));
+			SetEndAddress (line.Address + line.InstructionSize);
+		}
+
+		protected override void SetEndAddress (TargetAddress end)
+		{
+			this.end_address = end;
+			base.SetEndAddress (end);
 		}
 
 		public string Name {
@@ -126,7 +142,7 @@ namespace Mono.Debugger
 			start_row = this.start_row;
 			end_row = this.end_row;
 			addresses = this.addresses;
-			return this.buffer;
+			return new SourceBuffer (name, sb.ToString ());
 		}
 	}
 }

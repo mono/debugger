@@ -33,7 +33,7 @@ namespace Mono.Debugger
 			this.end = this.method_end = end;
 		}
 
-		protected void SetEndAddress (TargetAddress end)
+		protected virtual void SetEndAddress (TargetAddress end)
 		{
 			this.end = this.method_end = end;
 		}

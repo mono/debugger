@@ -1,3 +1,11 @@
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
+	* classes/AssemblerMethod.cs (AppendOneLine): New public method to
+	append a line at the end of the current method.
+
+	* frontends/gui/DisassemblerView.cs: While we don't have a method,
+	add all instructions we encounter here.
+
 2003-01-12  Martin Baulig  <martin@ximian.com>
 
 	* classes/NativeMethod.cs: Renamed to AssemblerMethod.
