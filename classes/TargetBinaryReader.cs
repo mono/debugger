@@ -276,6 +276,11 @@ namespace Mono.Debugger
 			return buffer;
 		}
 
+		public byte[] PeekBuffer (int size)
+		{
+			return PeekBuffer (pos, size);
+		}
+
 		public byte[] ReadBuffer (int size)
 		{
 			byte[] buffer = new byte [size];
