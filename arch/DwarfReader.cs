@@ -10,7 +10,7 @@ namespace Mono.Debugger.Architecture
 {
 	public class DwarfReader : ISymbolTable, IDisposable
 	{
-		protected BfdSymbolTable bfd;
+		protected Bfd bfd;
 		protected string filename;
 		bool is64bit;
 		byte address_size;
@@ -35,7 +35,7 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (BfdSymbolTable bfd)
+		public DwarfReader (Bfd bfd)
 		{
 			this.bfd = bfd;
 			this.filename = bfd.FileName;
@@ -593,7 +593,7 @@ namespace Mono.Debugger.Architecture
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.comp_unit.DieCompileUnit.ImageFile,
-					subprog.StartAddress, subprog.EndAddress)
+					subprog.StartAddress.Address, subprog.EndAddress.Address)
 			{
 				this.subprog = subprog;
 				this.engine = engine;

@@ -9,7 +9,7 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Architecture
 {
-	public class BfdSymbolTable : IDisposable
+	public class Bfd : IDisposable
 	{
 		IntPtr bfd;
 		Hashtable symbols;
@@ -50,12 +50,12 @@ namespace Mono.Debugger.Architecture
 		extern static string bfd_glue_get_symbol (IntPtr bfd, IntPtr symtab, int index,
 							  out long address);
 
-		static BfdSymbolTable ()
+		static Bfd ()
 		{
 			bfd_init ();
 		}
 
-		public BfdSymbolTable (string filename)
+		public Bfd (string filename)
 		{
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -179,7 +179,7 @@ namespace Mono.Debugger.Architecture
 			GC.SuppressFinalize (this);
 		}
 
-		~BfdSymbolTable ()
+		~Bfd ()
 		{
 			Dispose (false);
 		}
