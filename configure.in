@@ -319,6 +319,7 @@ AC_CHECK_FUNCS(fcntl getpagesize setitimer sysconf fdopen getuid getgid)
 AC_OUTPUT([
 Makefile
 mono-debugger.pc
+jay/Makefile
 interfaces/Makefile
 classes/Makefile
 glue/Makefile

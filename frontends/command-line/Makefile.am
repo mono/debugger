@@ -1,6 +1,6 @@
 noinst_DATA = ExpressionParser.cs
 
-JAY = $(top_srcdir)/../mcs/jay/jay
+JAY = $(top_builddir)/jay/jay
 
 ExpressionParser.cs: ExpressionParser.jay
 	$(JAY) -ctv < skeleton ExpressionParser.jay > tmp-p && mv -f tmp-p ExpressionParser.cs

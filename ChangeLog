@@ -1,3 +1,14 @@
+2004-11-12  Chris Toshok  <toshok@ximian.com>
+
+	* jay/: Add our own copy of jay from the mcs source.
+	
+	* configure.in (AC_OUTPUT): add jay/Makefile.
+
+	* Makefile.am (SUBDIRS): add jay/
+
+	* frontends/command-line/Makefile.am (JAY): use our jay, not
+	mcs's.
+
 2004-10-22  Chris Toshok  <toshok@ximian.com>
 
 	* frontends/scripting/Command.cs: remove CommandParamAttribute.

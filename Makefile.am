@@ -1,4 +1,4 @@
-SUBDIRS = interfaces classes glue arch backends frontends wrapper test
+SUBDIRS = jay interfaces classes glue arch backends frontends wrapper test
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mono-debugger.pc
