@@ -1937,7 +1937,10 @@ namespace Mono.Debugger.Backends
 				      data1, data2);
 
 			rdata.InvokeOk = true;
-			rdata.ReturnObject = new TargetAddress (inferior.AddressDomain, data1);
+			if (data1 != 0)
+				rdata.ReturnObject = new TargetAddress (inferior.AddressDomain, data1);
+			else
+				rdata.ReturnObject = TargetAddress.Null;
 			if (data2 != 0)
 				rdata.ExceptionObject = new TargetAddress (inferior.AddressDomain, data2);
 			else
