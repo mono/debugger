@@ -1,3 +1,8 @@
+2005-02-12  Chris Toshok  <toshok@ximian.com>
+
+	* backends/ILanguageBackend.cs (NotificationType): add AddModule
+	to reflect change to unmanaged code.
+
 2005-02-10  Martin Baulig  <martin@ximian.com>
 
 	* backends/Process.cs (Process.RuntimeInvoke): Don't throw an

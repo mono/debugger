@@ -4,6 +4,7 @@ namespace Mono.Debugger.Backends
 {
 	internal enum NotificationType {
 		InitializeManagedCode	= 1,
+		AddModule,
 		ReloadSymtabs,
 		MethodCompiled,
 		JitBreakpoint,
