@@ -46,7 +46,17 @@ namespace Mono.Debugger.GUI
 			case TargetState.STOPPED:
 				try {
 					StackFrame frame = backend.CurrentFrame;
-					Message (String.Format ("{1} at {0}.", frame, GetStopReason (arg)));
+					if (frame.SourceLocation == null) {
+						base.StateChanged (new_state, arg);
+						return;
+					}
+					string filename = Utils.GetBasename (frame.SourceLocation.Name);
+					string offset = "";
+					if (frame.SourceLocation.SourceOffset > 0)
+						offset = String.Format (
+							" (offset 0x{0})", frame.SourceLocation.SourceOffset);
+					Message (String.Format ("{0} at {1}{3} at {2}.", GetStopReason (arg),
+								filename, frame.TargetAddress, offset));
 				} catch (NoStackException) {
 					Message (String.Format ("{0}.", GetStopReason (arg)));
 				} catch (Exception e) {

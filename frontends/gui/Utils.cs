@@ -64,4 +64,15 @@ namespace Mono.Debugger.GUI {
 			sa.RetVal = true;
 		}
 	}
+
+	public class Utils
+	{
+		public static string GetBasename (string filename)
+		{
+			int pos = filename.LastIndexOf ('/');
+			if (pos < 0)
+				return filename;
+			return filename.Substring (pos+1);
+		}
+	}
 }
