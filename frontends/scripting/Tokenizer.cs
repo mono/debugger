@@ -65,6 +65,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("finish", Token.FINISH);
 			keywords.Add ("select", Token.SELECT);
 			keywords.Add ("background", Token.BACKGROUND);
+			keywords.Add ("bg", Token.BACKGROUND);
 			keywords.Add ("stop", Token.STOP);
 		}
 
