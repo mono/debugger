@@ -67,6 +67,12 @@ mono_debugger_server_finalize (ServerHandle *handle)
 	(* global_vtable->finalize) (handle);
 }
 
+void
+mono_debugger_server_global_init (void)
+{
+	(* global_vtable->global_init) ();
+}
+
 guint32
 mono_debugger_server_global_wait (guint32 *status)
 {

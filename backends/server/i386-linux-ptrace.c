@@ -112,6 +112,8 @@ do_wait (int pid, guint32 *status)
 	if (ret < 0) {
 		if (errno == EINTR)
 			return 0;
+		else if (errno == ECHILD)
+			return -1;
 		g_warning (G_STRLOC ": Can't waitpid for %d: %s", pid, g_strerror (errno));
 		return -1;
 	}
@@ -335,4 +337,18 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 #endif
 
 	return COMMAND_ERROR_NONE;
+}
+
+static void
+server_ptrace_global_init (void)
+{
+	g_static_mutex_init (&wait_mutex);
+	g_static_mutex_init (&wait_mutex_2);
+
+	first_status = 0;
+	first_ret = 0;
+
+	global_pid = 0;
+	stop_requested = 0;
+	stop_status = 0;
 }

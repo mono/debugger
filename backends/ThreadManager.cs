@@ -40,6 +40,8 @@ namespace Mono.Debugger
 			ready_event = new ManualResetEvent (false);
 			engine_event = Semaphore.CreateThreadManagerSemaphore ();
 			wait_event = new AutoResetEvent (false);
+
+			mono_debugger_server_global_init ();
 		}
 
 		public static void Initialize ()
@@ -75,6 +77,9 @@ namespace Mono.Debugger
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_static_init ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_global_init ();
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_global_wait (out int status);
@@ -301,10 +306,15 @@ namespace Mono.Debugger
 				return true;
 			}
 
+			bool retval = false;
 			if (mono_manager != null)
-				return mono_manager.HandleChildEvent (inferior, ref cevent);
+				retval = mono_manager.HandleChildEvent (inferior, ref cevent);
 
-			return false;
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
+			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED))
+				OnTargetExitedEvent ();
+
+			return retval;
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -664,23 +674,18 @@ namespace Mono.Debugger
 		protected virtual void DoDispose ()
 		{
 			if (inferior_thread != null) {
-#if FIXME
-				lock (this) {
-					abort_requested = true;
-					engine_event.Set ();
-				}
-				inferior_thread.Join ();
-#else
-				inferior_thread.Abort ();
-#endif
-				wait_thread.Abort ();
+				if (inferior_thread != Thread.CurrentThread)
+					inferior_thread.Abort ();
 			}
+			if (wait_thread != null)
+				wait_thread.Abort ();
 
 			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
 			thread_hash.Values.CopyTo (threads, 0);
 
 			for (int i = 0; i < threads.Length; i++)
 				threads [i].Dispose ();
+
 			if (main_process != null)
 				main_process.Dispose ();
 		}

@@ -11,11 +11,15 @@ namespace Mono.Debugger.Frontends.Scripting
 {
 	public class DebuggerEngine : CL.Engine
 	{
-		public readonly ScriptingContext Context;
+		public readonly Interpreter Interpreter;
 
-		public DebuggerEngine (ScriptingContext context)
+		public DebuggerEngine (Interpreter interpreter)
 		{
-			this.Context = context;
+			this.Interpreter = interpreter;
+		}
+
+		public ScriptingContext Context {
+			get { return Interpreter.GlobalContext; }
 		}
 	}
 

@@ -75,7 +75,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		DebuggerEngine SetupEngine ()
 		{
-			DebuggerEngine e = new DebuggerEngine (GlobalContext);
+			DebuggerEngine e = new DebuggerEngine (this);
 
 			e.Register ("print", typeof (PrintCommand));
 			e.Register ("p", typeof (PrintCommand));

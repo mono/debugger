@@ -93,6 +93,8 @@ struct ServerHandle {
 };
 
 struct InferiorVTable {
+	void                  (* global_init)         (void);
+
 	ServerHandle *        (* initialize)          (BreakpointManager  *bpm);
 
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
@@ -324,6 +326,9 @@ struct InferiorVTable {
 
 void
 mono_debugger_server_static_init          (void);
+
+void
+mono_debugger_server_global_init          (void);
 
 ServerHandle *
 mono_debugger_server_initialize           (BreakpointManager  *bpm);

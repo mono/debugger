@@ -1999,8 +1999,10 @@ namespace Mono.Debugger.Backends
 			// Check to see if Dispose has already been called.
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				if (inferior != null)
+				if (inferior != null) {
 					inferior.Kill ();
+					inferior.Dispose ();
+				}
 				inferior = null;
 			}
 

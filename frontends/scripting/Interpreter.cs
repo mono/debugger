@@ -510,6 +510,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (backend != null)
 				backend.Dispose ();
 			backend = null;
+
+			current_process = null;
+			procs = new Hashtable ();
+			breakpoints = new Hashtable ();
+
+			context = new ScriptingContext (this, is_interactive, true);
 		}
 
 		public ProcessHandle GetProcess (int number)
@@ -640,17 +646,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void Kill ()
 		{
-			if (backend != null) {
-				backend.ThreadManager.Kill ();
-				backend.Dispose ();
-				backend = null;
-			}
-
-			current_process = null;
-			procs = new Hashtable ();
-			breakpoints = new Hashtable ();
-
-			context = new ScriptingContext (this, is_interactive, true);
+			target_exited ();
 		}
 
 		public void LoadLibrary (Process process, string filename)
