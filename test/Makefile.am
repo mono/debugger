@@ -4,10 +4,13 @@ AUTOMAKE_OPTIONS = dejagnu
 
 MCS_FLAGS=-g
 
-noinst_SCRIPTS = TestManagedTypes.exe TestAssembly.exe TestModule.dll
+noinst_SCRIPTS = \
+	TestManagedTypes.exe TestAssembly.exe TestNamespace.exe TestModule.dll
+
 noinst_PROGRAMS = testnativetypes module libfoo.so
 
-EXTRA_DIST = TestManagedTypes.cs TestAssembly.cs TestModule.cs
+EXTRA_DIST = \
+	TestManagedTypes.cs TestAssembly.cs TestModule.cs TestNamespace.cs
 
 testnativetypes_SOURCES = testnativetypes.c
 

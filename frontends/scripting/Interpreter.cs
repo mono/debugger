@@ -635,6 +635,8 @@ namespace Mono.Debugger.Frontends.Scripting
 					"Cannot load library `{0}': {1}",
 					pathname, ex.Message);
 			}
+
+			Print ("Loaded library {0}.", filename);
 		}
 	}
 }

@@ -269,7 +269,10 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = ResolveFrame (context);
 
-			context.Interpreter.Style.PrintFrame (context, frame);
+			if (context.Interpreter.IsScript)
+				context.Print (frame);
+			else
+				context.Interpreter.Style.PrintFrame (context, frame);
 		}
 	}
 

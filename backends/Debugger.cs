@@ -216,7 +216,12 @@ namespace Mono.Debugger
 
 		public void LoadLibrary (Process process, string filename)
 		{
-			Assembly ass = Assembly.LoadFrom (filename);
+			Assembly ass;
+			try {
+				ass = Assembly.LoadFrom (filename);
+			} catch {
+				ass = null;
+			}
 			if (ass != null) {
 				if (csharp_language == null)
 					throw new SymbolTableException (

@@ -9,8 +9,7 @@ mdb_expect_frame 0 "X.Main()" 218
 mdb_send "break 120"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_prompt
-mdb_expect_frame 0 "X.Simple()" 120
+mdb_expect_stopped 0 "X.Simple()" 120
 mdb_send "dump -mode object a"
 mdb_expect "object:True:-1:System.Int32:True:4:Fundamental System.Int32"
 mdb_send "ptype a"

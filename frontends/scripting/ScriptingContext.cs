@@ -344,6 +344,9 @@ namespace Mono.Debugger.Frontends.Scripting
 				else
 					interpreter.Print ("{0} stopped{1}.", Name, frame);
 
+				if (interpreter.IsScript)
+					break;
+
 				interpreter.Style.TargetStopped (
 					interpreter.GlobalContext, current_frame, current_insn);
 
