@@ -20,9 +20,17 @@ namespace Mono.Debugger.Languages.CSharp
 				     int start_scope_offset, int end_scope_offset)
 			: this (backend, name, type, is_local, method, info)
 		{
-			start_scope = method.StartAddress + start_scope_offset;
-			end_scope = method.StartAddress + end_scope_offset;
-			has_scope_info = true;
+			if (is_local) {
+				start_scope = method.StartAddress + start_scope_offset;
+				end_scope = method.StartAddress + end_scope_offset;
+				has_scope_info = true;
+			} else if (method.HasMethodBounds) {
+				start_scope = method.MethodStartAddress;
+				end_scope = method.MethodEndAddress;
+			} else {
+				start_scope = method.StartAddress;
+				end_scope = method.EndAddress;
+			}
 
 			if (has_liveness_info) {
 				if (start_liveness < start_scope)

@@ -1,5 +1,10 @@
 2003-04-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoVariable.cs: Use correct scope info for
+	parameters.
+
+2003-04-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs (TargetOuput, TargetError): New public
 	events; use them to get the target's stdout and stderr instead of
 	the events in Process.
