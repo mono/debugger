@@ -18,6 +18,40 @@ using Mono.Debugger;
 using Mono.Debugger.Frontends.CommandLine;
 using Mono.Debugger.GUI;
 
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("Mono Debugger")]
+[assembly: AssemblyDescription("Mono Debugger")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("(C) 2003 Ximian, Inc.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]		
+
+[assembly: Mono.About("Distributed under the GPL")]
+
+[assembly: Mono.UsageComplement("application args")]
+
+[assembly: Mono.Author("Martin Baulig")]
+[assembly: Mono.Author("Miguel de Icaza")]
+
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("0.2.*")]
+
 namespace Mono.Debugger.GUI
 {
 	public delegate void ProgramLoadedHandler (object sender, DebuggerBackend backend);
@@ -49,27 +83,6 @@ namespace Mono.Debugger.GUI
 		static void Main (string[] args)
 		{
 			bool gotarg = false;
-			ArrayList arguments = new ArrayList ();
-
-			foreach (string a in args){
-				if (gotarg == false && a.StartsWith ("--")){
-					string name = a.Substring (2);
-					
-					switch (name) {
-					case "help":
-						Usage ();
-						break;
-						
-					default:
-						Console.WriteLine ("Unknown argument `{0}'.", name);
-						Environment.Exit (1);
-						break;
-					}
-				} else {
-					gotarg = true;
-					arguments.Add (a);
-				}
-			}
 
 			LogFunc func = new LogFunc (Log.PrintTraceLogFunction);
 			Log.SetLogHandler ("Gtk", LogLevelFlags.All, func);
@@ -77,7 +90,7 @@ namespace Mono.Debugger.GUI
 			Log.SetLogHandler ("GLib-GObject", LogLevelFlags.All, func);
 			Log.SetLogHandler ("GtkSourceView", LogLevelFlags.All, func);
 
-			DebuggerGUI gui = new DebuggerGUI ((string []) arguments.ToArray (typeof (string)));
+			DebuggerGUI gui = new DebuggerGUI (args);
 
 			try {
 				gui.Run ();
@@ -127,23 +140,28 @@ namespace Mono.Debugger.GUI
 
 		public DebuggerGUI (string[] arguments)
 		{
-			thread_notify = new ThreadNotify ();
-			program = new Program ("Debugger", "0.2", Modules.UI, arguments);
-			manager = new DebuggerManager (this);
+			DebuggerOptions options = new DebuggerOptions ();
+			string error_message = options.ParseArguments (arguments);
+			if (error_message != null) {
+				Console.WriteLine (error_message);
+				Environment.Exit (1);
+			}
 
-#if FALSE
-			backend.DebuggerError += new DebuggerErrorHandler (ErrorHandler);
-#endif
+			start = options.ProcessStart;
+
+			thread_notify = new ThreadNotify ();
+			program = new Program ("Debugger", "0.2", Modules.UI, new string [0]);
+			manager = new DebuggerManager (this);
 
 			SetupGUI ();
 
 			main_window.DeleteEvent += new DeleteEventHandler (Window_Delete);
 
-			context = new ScriptingContext (command_writer, output_writer, false, true);
+			context = new ScriptingContext (command_writer, output_writer, false, true, options);
 			interpreter = new Interpreter (context);
 
-			if (arguments.Length > 0)
-				LoadProgram (arguments);
+			if (start != null)
+				StartProgram ();
 		}
 
 		internal DebuggerManager Manager {
@@ -295,26 +313,9 @@ namespace Mono.Debugger.GUI
 			}
 		}
 			
-		//
-		// This constructor is used by the startup code: it contains the command line arguments
-		//
-		void LoadProgram (string [] args)
+		void StartProgram ()
 		{
-			IDictionary envars;
-
-			envars = Environment.GetEnvironmentVariables();
-			string [] env = new string [envars.Count];
-			int i = 0;
-
-			foreach (string name in envars.Keys) {
-				env[i] = name + "=" + Environment.GetEnvironmentVariable (name);
-				//Console.WriteLine ("env: " + env[i]);
-				i++;
-			}
-
-			backend = context.ParseArguments (args);
-			start = context.ProcessStart;
-
+			backend = context.DebuggerBackend;
 			backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
 				main_process_started);
 
@@ -324,6 +325,7 @@ namespace Mono.Debugger.GUI
 			// FIXME: chdir here to working_dir
 			//
 
+			string[] args = start.CommandLineArguments;
 			main_window.Title = "Debugging: " + program +
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
 		}
@@ -375,7 +377,8 @@ namespace Mono.Debugger.GUI
 			string[] argsv = new string [list.Count];
 			list.CopyTo (argsv);
 
-			LoadProgram (argsv);
+			start = context.Start (argsv);
+			StartProgram ();
 		}
 
 		void OnQuitActivate (object sender, EventArgs args)

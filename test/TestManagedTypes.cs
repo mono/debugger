@@ -53,7 +53,7 @@ class X
 
 		Console.WriteLine (a);
 		Console.WriteLine (b);
-		Console.WriteLine (f);
+		// Console.WriteLine (f);
 		Console.WriteLine (hello);
 	}
 

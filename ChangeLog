@@ -1,5 +1,25 @@
 2003-03-22  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs: Moved here from ../backends/.
+
+	* backends/ProcessStart.cs: Moved to ../classes/.
+
+	* frontends/scripting/DebuggerOptions.cs: New file.  Moved
+	`MyOptions' from ScriptingContext.cs here, renamed it to
+	DebuggerOptions and made it public.  This class handles the
+	parsing of the command line arguments.
+
+	* frontends/scripting/ScriptingContext.cs
+	(ScriptingContext..ctor): Added DebuggerOptions argument.
+	(ScriptingContext.Start): Return the ProcessStart, don't call Run().
+	(ScriptingContext.ParseArguments): Removed.
+	(ScriptingContext.Run): Call Initialize() here.
+
+	* frontends/gui/DebuggerGUI.cs: Use the new DebuggerOptions class
+	to parse the command line arguments.
+
+2003-03-22  Martin Baulig  <martin@ximian.com>
+
 	* doc/guadec-abstract.txt: Added the abstract of my GUADEC talk.
 
 2003-03-22  Martin Baulig  <martin@ximian.com>

@@ -56,21 +56,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
-			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (writer, writer, true, is_terminal);
-			parser = new Parser (context, "Debugger");
-
-			if ((args != null) && (args.Length > 0)) {
-				try {
-					context.Start (args);
-				} catch (ScriptingException ex) {
-					Console.WriteLine (ex.Message);
-					Environment.Exit (255);
-				}
+			DebuggerOptions options = new DebuggerOptions ();
+			string error_message = options.ParseArguments (args);
+			if (error_message != null) {
+				Console.WriteLine (error_message);
+				Environment.Exit (1);
 			}
+
+			writer = new ConsoleTextWriter ();
+			context = new ScriptingContext (writer, writer, true, is_terminal, options);
+			parser = new Parser (context, "Debugger");
 
 			if (is_terminal)
 				readline = new GnuReadLine (context.Prompt + " ");
+
+			if (context.HasBackend)
+				context.Run ();
 		}
 
 		public void Run ()

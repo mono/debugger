@@ -630,71 +630,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Finish
 	}
 
-	internal enum StartMode
-	{
-		Unknown,
-		CoreFile,
-		LoadSession,
-		StartApplication
-	}
-
-	internal class MyOptions : Options
-	{
-		public MyOptions()
-		{
-			ParsingMode = OptionsParsingMode.Linux;
-			EndOptionProcessingWithDoubleDash = true;
-		}
-
-		StartMode start_mode = StartMode.Unknown;
-
-		[Option("PARAM is one of `core' (to load a core file),\n\t\t\t" +
-			"`load' (to load a previously saved debugging session)\n\t\t\t" +
-			"or `start' (to start a new application).", 'm')]
-		public WhatToDoNext mode (string value)
-		{
-			if (start_mode != StartMode.Unknown) {
-				Console.WriteLine ("This argument cannot be used multiple times.");
-				return WhatToDoNext.AbandonProgram;
-			}
-
-			switch (value) {
-			case "core":
-				start_mode = StartMode.CoreFile;
-				return WhatToDoNext.GoAhead;
-
-			case "load":
-				start_mode = StartMode.LoadSession;
-				return WhatToDoNext.GoAhead;
-
-			case "start":
-				start_mode = StartMode.StartApplication;
-				return WhatToDoNext.GoAhead;
-
-			default:
-				Console.WriteLine ("Invalid `--mode' argument.");
-				return WhatToDoNext.AbandonProgram;
-			}
-		}
-
-		[Option("The command-line prompt", 'p')]
-		public string prompt = "$";
-
-		[Option("Full path name of the JIT wrapper", "jit-wrapper")]
-		public string JitWrapper = null;
-
-		public StartMode StartMode {
-			get { return start_mode; }
-		}
-
-		[Option("Display version and licensing information", 'V', "version")]
-		public override WhatToDoNext DoAbout()
-		{
-			base.DoAbout ();
-			return WhatToDoNext.AbandonProgram;
-		}
-	}
-
 	public class ScriptingContext
 	{
 		ProcessHandle current_process;
@@ -711,7 +646,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		internal static readonly string DirectorySeparatorStr;
 		static readonly Generator generator;
 
-		MyOptions options;
+		DebuggerOptions options;
 
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
@@ -726,20 +661,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 
 		public ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
-					 bool is_synchronous, bool is_interactive)
+					 bool is_synchronous, bool is_interactive, DebuggerOptions options)
 		{
 			this.command_output = command_out;
 			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
-
-			options = new MyOptions ();
+			this.options = options;
 
 			procs = new ArrayList ();
 			current_process = null;
 
 			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
+
+			backend = options.DebuggerBackend;
+			start = options.ProcessStart;
 		}
 
 		protected void Initialize ()
@@ -845,6 +782,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public bool HasBackend {
+			get {
+				return backend != null;
+			}
+		}
+
 		public bool HasTarget {
 			get {
 				return current_process != null;
@@ -857,92 +800,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public Process Start (string[] args)
-		{
-			backend = ParseArguments (args);
-			if (backend == null)
-				return null;
-
-			return Run ();
-		}
-
-		public DebuggerBackend ParseArguments (string[] args)
+		public ProcessStart Start (string[] args)
 		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
-			if (args.Length == 0)
-				throw new ScriptingException ("No program specified.");
 
-			options.ProcessArgs (args);
-			prompt = options.prompt;
-
-			switch (options.StartMode) {
-			case StartMode.CoreFile:
-				if (options.RemainingArguments.Length < 2)
-					throw new ScriptingException (
-						"You need to specify at least the name of the core " +
-						"file and the application it was generated from.");
-				return LoadCoreFile (options.RemainingArguments);
-
-			case StartMode.LoadSession:
-				if (options.RemainingArguments.Length != 1)
-					throw new ScriptingException (
-						"This mode requires exactly one argument, the file " +
-						"to load the session from.");
-				return LoadSession (options.RemainingArguments [0]);
-
-			case StartMode.Unknown:
-				if (options.RemainingArguments.Length == 0)
-					return null;
-				return StartApplication (options.RemainingArguments);
-
-			default:
-				return StartApplication (options.RemainingArguments);
-			}
-		}
-
-		protected DebuggerBackend LoadCoreFile (string[] args)
-		{
 			backend = new DebuggerBackend ();
-			Initialize ();
-
-			string core_file = args [0];
-			string [] temp_args = new string [args.Length-1];
-			Array.Copy (args, 1, temp_args, 0, args.Length-1);
-			args = temp_args;
-
-			start = ProcessStart.Create (null, args, null, core_file);
-			return backend;
-		}
-
-		protected DebuggerBackend StartApplication (string[] args)
-		{
-			backend = new DebuggerBackend ();
-			Initialize ();
-
 			start = ProcessStart.Create (null, args, null);
-			return backend;
-		}
-
-		protected DebuggerBackend LoadSession (string filename)
-		{
-			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
-			BinaryFormatter formatter = new BinaryFormatter (null, context);
-
-			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
-				backend = (DebuggerBackend) formatter.Deserialize (stream);
-			}
-
-			Initialize ();
-
-			start = backend.ProcessStart;
-			return backend;
+			return start;
 		}
 
 		public Process Run ()
 		{
 			if (current_process != null)
 				throw new ScriptingException ("Process already started.");
+
+			Initialize ();
 
 			Process process = backend.Run (start);
 			current_process = new ProcessHandle (this, backend, process, -1);

@@ -112,6 +112,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string[] args = (string []) program_args_expr.Resolve (context);
 			context.Start (args);
+			context.Run ();
 		}
 	}
 
