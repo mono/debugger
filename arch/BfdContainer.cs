@@ -73,6 +73,20 @@ namespace Mono.Debugger.Architecture
 			return bfd;
 		}
 
+		public TargetAddress LookupSymbol (string name)
+		{
+			foreach (BfdModule module in module_hash.Values) {
+				if (module.Bfd == null)
+					continue;
+
+				TargetAddress symbol = module.Bfd [name];
+				if (!symbol.IsNull)
+					return symbol;
+			}
+
+			return TargetAddress.Null;
+		}
+
 		public void CloseBfd (Bfd bfd)
 		{
 			if (bfd == null)
