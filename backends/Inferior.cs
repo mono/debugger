@@ -91,7 +91,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, IntPtr data, long start, int size);
+		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_target_info (IntPtr handle, out int target_int_size, out int target_long_size, out int target_address_size);
@@ -679,7 +679,7 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (size);
 				Marshal.Copy (buffer, 0, data, size);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, address.Address, size));
+					server_handle, address.Address, size, data));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -695,7 +695,7 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (1);
 				Marshal.WriteByte (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, address.Address, 1));
+					server_handle, address.Address, 1, data));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -711,7 +711,7 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (4);
 				Marshal.WriteInt32 (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, address.Address, 4));
+					server_handle, address.Address, 4, data));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -727,7 +727,7 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (8);
 				Marshal.WriteInt64 (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, address.Address, 8));
+					server_handle, address.Address, 8, data));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
