@@ -264,8 +264,13 @@ namespace Mono.Debugger
 		protected override void DoSetup ()
 		{
 			base.DoSetup ();
-			load_native_symtab = false;
-			native = false;
+			if (Options.LoadNativeSymbolTable) {
+				load_native_symtab = true;
+				native = true;
+			} else {
+				load_native_symtab = false;
+				native = false;
+			}
 		}
 
 		protected override void SetupBaseDirectory ()
