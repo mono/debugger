@@ -842,7 +842,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		Hashtable method_hash = new Hashtable ();
 
-		protected MonoMethod GetMethod (int index)
+		protected MonoMethod GetMonoMethod (int index)
 		{
 			MonoMethod mono_method = (MonoMethod) method_hash [index];
 			if (mono_method != null)
@@ -855,9 +855,9 @@ namespace Mono.Debugger.Languages.CSharp
 			return mono_method;
 		}
 
-		protected MonoMethod GetMethod (int index, byte[] contents)
+		protected MonoMethod GetMonoMethod (int index, byte[] contents)
 		{
-			MonoMethod method = GetMethod (index);
+			MonoMethod method = GetMonoMethod (index);
 
 			if (!method.IsLoaded) {
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
@@ -909,12 +909,12 @@ namespace Mono.Debugger.Languages.CSharp
 			SourceMethodInfo[] retval = new SourceMethodInfo [methods.Length];
 
 			for (int i = 0; i < methods.Length; i++)
-				retval [i] = FindMethod (methods [i]);
+				retval [i] = GetMethod (methods [i]);
 
 			return retval;
 		}
 
-		public SourceMethodInfo FindMethod (int index)
+		public SourceMethodInfo GetMethod (int index)
 		{
 			if (File == null)
 				return null;
@@ -1032,7 +1032,7 @@ namespace Mono.Debugger.Languages.CSharp
 				ArrayList list = new ArrayList ();
 
 				foreach (MethodSourceEntry entry in source.Methods) {
-					SourceMethodInfo method = reader.FindMethod (entry.Index);
+					SourceMethodInfo method = reader.GetMethod (entry.Index);
 					list.Add (method);
 				}
 
@@ -1126,7 +1126,7 @@ namespace Mono.Debugger.Languages.CSharp
 					load_handlers = new Hashtable ();
 
 					if (method == null)
-						method = reader.GetMethod (index);
+						method = reader.GetMonoMethod (index);
 					MethodInfo minfo = (MethodInfo) method.MethodHandle;
 
 					string full_name = String.Format (
@@ -1355,12 +1355,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal MonoMethod GetMethod ()
 			{
-				return reader.GetMethod (index, contents);
+				return reader.GetMonoMethod (index, contents);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
-				return reader.GetMethod (index, contents);
+				return reader.GetMonoMethod (index, contents);
 			}
 
 			public override string ToString ()
