@@ -114,58 +114,58 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static void bfd_init ();
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static IntPtr bfd_glue_openr (string filename, string target);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static bool bfd_close (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static string bfd_glue_get_target_name (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static IntPtr bfd_get_section_by_name (IntPtr bfd, string name);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static string bfd_core_file_failing_command (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static IntPtr disassembler (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static IntPtr bfd_glue_init_disassembler (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static bool bfd_glue_check_format_object (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static bool bfd_glue_check_format_core (IntPtr bfd);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_get_symbols (IntPtr bfd, out IntPtr symtab);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_get_dynamic_symbols (IntPtr bfd, out IntPtr symtab);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, long offset, out IntPtr data, out int size);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static bool bfd_glue_get_sections (IntPtr bfd, out IntPtr sections, out int count);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static bool bfd_glue_get_section_by_name (IntPtr bfd, string name, out IntPtr section);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static long bfd_glue_elfi386_locate_base (IntPtr bfd, IntPtr data, int size);
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static string bfd_glue_get_symbol (IntPtr bfd, IntPtr symtab, int index,
 							  out int is_function, out long address);
 

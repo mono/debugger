@@ -1,0 +1,3 @@
+<configuration>
+   <dllmap dll="monodebuggerserver" target="@libdir@/libmonodebuggerserver@LT_VERSION_SUFFIX@"/>
+</configuration>

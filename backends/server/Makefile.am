@@ -52,7 +52,11 @@ libmonodebuggerserver_la_SOURCES = \
 debugger_remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
 debugger_remote_server_LDFLAGS = -static
 
-libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
-libmonodebuggerserver_la_LDFLAGS = -no-undefined -module -export-dynamic -shared
+libmonodebuggerserver_la_LIBADD = \
+	@SERVER_DEPENDENCIES_LIBS@ \
+	../../arch/libmonodebuggerbfdglue.la
+libmonodebuggerserver_la_LDFLAGS = \
+	 -no-undefined -module -export-dynamic -shared \
+	 -version-info @LT_VERSION_INFO@
 
 CLEANFILES = lib*.a lib*.dll

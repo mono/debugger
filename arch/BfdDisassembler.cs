@@ -17,13 +17,13 @@ namespace Mono.Debugger.Architecture
 		ITargetMemoryAccess memory;
 		ISimpleSymbolTable symbol_table;
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static void bfd_glue_setup_disassembler (IntPtr info, ReadMemoryHandler read_memory_cb, OutputHandler output_cb, PrintAddressHandler print_address_cb);
 
-		[DllImport("libmonodebuggerbfdglue")]
+		[DllImport("monodebuggerserver")]
 		extern static void bfd_glue_free_disassembler (IntPtr info);
 
 		internal BfdDisassembler (ITargetMemoryAccess memory, IntPtr dis, IntPtr info)

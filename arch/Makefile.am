@@ -1,11 +1,10 @@
 SUBDIRS = libiberty bfd opcodes
 
-lib_LTLIBRARIES = libmonodebuggerbfdglue.la
+noinst_LTLIBRARIES = libmonodebuggerbfdglue.la
 
 libmonodebuggerbfdglue_la_SOURCES = \
 	bfdglue.c		\
-	bfdglue.h		\
-	#
+	bfdglue.h
 
 noinst_PROGRAMS = testbfd
 

@@ -1,5 +1,14 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* arch/Makefile.am: Don't install libmonodebuggerbfdglue.la, link
+	it into libmonodebuggerserver.la instead.
+
+	* wrapper/Mono.Debugger.dll.config.in: Provide a .config file for
+	Mono.Debugger.dll and map "monodebuggerserver" to the full path
+	name of the installed library.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/mono-debugger-jit-wrapper.h (MonoDebuggerManager): Added
 	`guint32 thread_size' (which is `sizeof (MonoDebuggerThread)') and
 	removed `thread_manager_notification'.

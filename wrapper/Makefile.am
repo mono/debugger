@@ -65,9 +65,17 @@ Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
-AssemblyInfo.cs: AssemblyInfo.cs.in
+AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	sed -e 's^\@libdir\@^$(libdir)^g' < $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
+
+noinst_DATA = Mono.Debugger.dll.config
+
+Mono.Debugger.dll.config: Mono.Debugger.dll.config.in Makefile
+	sed -e 's^\@libdir\@^$(libdir)^g' \
+		-e 's^\@LT_VERSION_SUFFIX\@^$(LT_VERSION_SUFFIX)^g' \
+		< $(srcdir)/Mono.Debugger.dll.config.in > config.tmp \
+	&& mv config.tmp Mono.Debugger.dll.config
 
 ASSEMBLY_NAME = Mono.Debugger
 ASSEMBLY = $(ASSEMBLY_NAME).dll
@@ -75,7 +83,7 @@ ASSEMBLY = $(ASSEMBLY_NAME).dll
 CLEANFILES = *.exe *.dll mdb AssemblyInfo.cs
 
 EXTRA_DIST = \
-	mdb.in mono.snk AssemblyInfo.cs.in
+	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config
 
 mdb: mdb.in Makefile
 	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
