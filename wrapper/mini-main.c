@@ -21,6 +21,8 @@ main (int argc, char **argv, char **envp)
 	g_assert (argc >= 3);
 	file = argv [2];
 
+	mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
+
 	// mono_break_on_exc = TRUE;
 
 	domain = mono_init_debugger (file, argv [1]);

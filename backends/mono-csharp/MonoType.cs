@@ -15,7 +15,8 @@ namespace Mono.Debugger.Languages.CSharp
 			Object,
 			Struct,
 			Class,
-			ClassInfo
+			ClassInfo,
+			Reference
 		};
 
 		protected Type type;
@@ -46,11 +47,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolFile table)
+		public static MonoType GetType (Type type, TargetBinaryReader info,
+						MonoSymbolFile table)
 		{
 			int kind = info.ReadByte ();
 			if (kind == 0)
-				throw new InternalError ();
+				throw new InternalError ("Unknown type: {0}", type);
 
 			int size = info.ReadInt32 ();
 
@@ -94,6 +96,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			case TypeKind.Unknown:
 				return new MonoOpaqueType (type, size);
+
+			case TypeKind.Reference:
+				return table.Table.GetTypeFromClass (size);
 
 			default:
 				throw new InternalError ("KIND: {0}", kind);

@@ -129,9 +129,11 @@ namespace Mono.Debugger.Frontends.Scripting
 				return '"' + (string) obj + '"';
 			else if (obj is ITargetType)
 				return ((ITargetType) obj).Name;
-			else if (obj is ITargetObject)
-				return FormatObject ((ITargetObject) obj);
-			else
+			else if (obj is ITargetObject) {
+				ITargetObject tobj = (ITargetObject) obj;
+				return String.Format ("({0}) {1}", tobj.Type.Name,
+						      FormatObject (tobj));
+			} else
 				return obj.ToString ();
 		}
 

@@ -40,6 +40,7 @@ namespace Mono.Debugger.Languages.CSharp
 				int offset = info.ReadInt32 ();
 				byte[] data = file.Table.GetTypeInfo (offset);
 				info = new TargetBinaryReader (data, file.Table.TargetInfo);
+
 				TypeKind tkind = (TypeKind) info.ReadByte ();
 				if ((tkind == TypeKind.Class) || (tkind == TypeKind.Struct)) {
 					info.ReadInt32 ();

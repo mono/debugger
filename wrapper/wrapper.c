@@ -247,7 +247,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * Start the debugger thread and wait until it's ready.
 	 */
-	mono_debug_init (domain, MONO_DEBUG_FORMAT_DEBUGGER);
+	mono_debug_init_1 (domain);
 
 	assembly = mono_domain_assembly_open (domain, file);
 	if (!assembly){
