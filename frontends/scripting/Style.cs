@@ -279,6 +279,16 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public string FormatObject (ITargetObject obj)
 		{
+			try {
+				return DoFormatObject (obj);
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0}", ex);
+				return "<cannot display object>";
+			}
+		}
+
+		protected string DoFormatObject (ITargetObject obj)
+		{
 			switch (obj.Type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayObject aobj = (ITargetArrayObject) obj;

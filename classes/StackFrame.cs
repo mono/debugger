@@ -202,12 +202,17 @@ namespace Mono.Debugger
 
 		private void check_disposed ()
 		{
-			if (disposed)
-				throw new ObjectDisposedException ("StackFrame");
+			if (disposed) {
+				Console.WriteLine ("FUCK: {0}", this);
+				// throw new ObjectDisposedException ("StackFrame");
+			}
 		}
 
 		protected virtual void Dispose (bool disposing)
 		{
+			Console.WriteLine ("DISPOSE: {0} {1}", this, disposing);
+			if (address.Address == 0x401ce59b)
+				throw new Exception ("FUCK");
 			if (!this.disposed) {
 				if (disposing) {
 					if (FrameInvalidEvent != null)
