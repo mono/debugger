@@ -124,7 +124,9 @@ namespace Mono.Debugger.Architecture
 		protected TargetAddress GetAddress (long address)
 		{
 			if (!bfd.IsLoaded)
-				throw new InvalidOperationException ();
+				throw new InvalidOperationException (
+					"Trying to get an address from not-loaded " +
+					"symbol file `" + bfd.FileName + "'");
 
 			return bfd.GetAddress (address);
 		}
