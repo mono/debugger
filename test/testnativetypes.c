@@ -1,0 +1,86 @@
+#include <stdlib.h>
+#include <stdio.h>
+
+typedef struct _TestStruct TestStruct;
+typedef struct _FunctionStruct FunctionStruct;
+
+struct _TestStruct
+{
+	int a;
+	long b;
+	float f;
+	const char *hello;
+};
+
+struct _FunctionStruct
+{
+	void (* foo) (int a);
+};
+
+void
+simple (void)
+{
+	int a = 5;
+	long b = 7;
+	float f = (float) a / (float) b;
+
+	const char *hello = "Hello World";
+
+	printf ("Simple: %d - %ld - %g - %s\n", a, b, f, hello);
+}
+
+void
+print_test_struct (struct _TestStruct *s)
+{
+	printf ("Struct: %d - %ld - %g - %s\n", s->a, s->b, s->f, s->hello);
+}
+
+void
+test_struct (void)
+{
+	struct _TestStruct s;
+
+	s.a = 5;
+	s.b = 7;
+	s.f = (float) s.b / (float) s.a;
+	s.hello = "Hello World";
+
+	print_test_struct (&s);
+}
+
+void
+test_struct_2 (void)
+{
+	TestStruct s;
+
+	s.a = 5;
+	s.b = 7;
+	s.f = (float) s.b / (float) s.a;
+	s.hello = "Hello World";
+
+	print_test_struct (&s);
+}
+
+void
+test_func (int a)
+{
+	printf ("Test: %d\n", a);
+}
+
+void
+test_function_struct (void)
+{
+	FunctionStruct test;
+
+	test.foo = test_func;
+}
+
+int
+main (void)
+{
+	simple ();
+	test_struct ();
+	test_struct_2 ();
+	test_function_struct ();
+	return 0;
+}

@@ -166,7 +166,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected ITargetObject Invoke (TargetAddress method, TargetLocation this_location)
+		internal ITargetObject Invoke (TargetAddress method, TargetLocation this_location)
 		{
 			throw new NotImplementedException ();
 #if FIXME
@@ -319,50 +319,23 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected class MonoMethodInfo : ITargetMethodInfo
 		{
+			public readonly MonoStructType StructType;
 			public readonly MethodInfo MethodInfo;
 			public readonly int Index;
-			public readonly TargetAddress Method;
-			public readonly MonoStructType StructType;
-			public readonly MonoType ReturnType;
-			public readonly MonoType[] Parameters;
+			public readonly MonoFunctionType FunctionType;
 
 			internal MonoMethodInfo (MonoStructType type, int index, MethodInfo minfo,
 						 TargetBinaryReader info, MonoSymbolTable table)
 			{
 				StructType = type;
-				Index = index;
 				MethodInfo = minfo;
-				Method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
-				int type_info = info.ReadInt32 ();
-				if (type_info != 0)
-					ReturnType = type.GetType (minfo.ReturnType, type_info, table);
-				
-				int num_params = info.ReadInt32 ();
-				Parameters = new MonoType [num_params];
-
-				ParameterInfo[] parameters = minfo.GetParameters ();
-				if (parameters.Length != num_params)
-					throw new InternalError (
-						"MethodInfo.GetParameters() returns {0} parameters " +
-						"for method {1}, but the JIT has {2}",
-						parameters.Length, minfo.ReflectedType.Name + "." +
-						minfo.Name, num_params);
-				for (int i = 0; i < num_params; i++) {
-					int param_info = info.ReadInt32 ();
-					Parameters [i] = type.GetType (
-						parameters [i].ParameterType, param_info, table);
-				}
+				Index = index;
+				FunctionType = new MonoFunctionType (type, minfo, info, table);
 			}
 
-			ITargetType ITargetMethodInfo.ReturnType {
+			ITargetFunctionType ITargetMethodInfo.Type {
 				get {
-					return null;
-				}
-			}
-
-			ITargetType[] ITargetMethodInfo.ParameterTypes {
-				get {
-					return Parameters;
+					return FunctionType;
 				}
 			}
 
@@ -378,24 +351,9 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			object ITargetMethodInfo.MethodHandle {
-				get {
-					return MethodInfo;
-				}
-			}
-
-			internal ITargetObject Invoke (TargetLocation location, ITargetObject[] args)
-			{
-				if (args.Length != 0)
-					throw new NotSupportedException ();
-
-				return StructType.Invoke (Method, location);
-			}
-
 			public override string ToString ()
 			{
-				return String.Format ("MonoMethod ({0:x}:{1})",
-						      Index, MethodInfo.Name);
+				return String.Format ("MonoMethod ({0:x}:{1}:{2})", Index, MethodInfo.Name, FunctionType);
 			}
 		}
 
@@ -404,7 +362,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			init_methods ();
 
-			return methods [index].Invoke (location, arguments);
+			return methods [index].FunctionType.Invoke (location, arguments);
 		}
 
 		public override bool IsByRef {
@@ -428,7 +386,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (method == null)
 				throw new InternalError ();
 
-			ITargetObject obj = method.Invoke (location, new ITargetObject [0]);
+			ITargetObject obj = method.FunctionType.Invoke (location, new ITargetObject [0]);
 			return (string) ((ITargetFundamentalObject) obj).Object;
 		}
 	}

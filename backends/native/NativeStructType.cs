@@ -55,6 +55,44 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
+	internal class NativeMethodInfo  : ITargetMethodInfo
+	{
+		int index;
+		string name;
+		NativeFunctionType function_type;
+
+		public NativeMethodInfo (string name, int index, NativeFunctionType function_type)
+		{
+			this.name = name;
+			this.index = index;
+			this.function_type = function_type;
+		}
+
+		public NativeFunctionType Type {
+			get {
+				return function_type;
+			}
+		}
+
+		ITargetFunctionType ITargetMethodInfo.Type {
+			get {
+				return function_type;
+			}
+		}
+
+		public string Name {
+			get {
+				return name;
+			}
+		}
+
+		public int Index {
+			get {
+				return index;
+			}
+		}
+	}
+
 	internal class NativeStructType : NativeType, ITargetStructType
 	{
 		NativeFieldInfo[] fields;

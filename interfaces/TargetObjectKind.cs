@@ -8,6 +8,7 @@ namespace Mono.Debugger
 		Struct,
 		Class,
 		Pointer,
+		Function,
 		Opaque
 	}
 }

@@ -57,6 +57,21 @@ struct D
 	}
 }
 
+struct E
+{
+	public int a;
+
+	public E (int a)
+	{
+		this.a = a;
+	}
+
+	public long Foo (int a)
+	{
+		return a;
+	}
+}
+
 class X
 {
 	static void Simple ()
@@ -151,6 +166,14 @@ class X
 		Console.WriteLine (d.s [0]);
 	}
 
+	static void FunctionStructType ()
+	{
+		E e = new E (9);
+
+		e.Foo (10);
+		Console.WriteLine (e.a);
+	}
+
 	static void Main ()
 	{
 		Simple ();
@@ -164,5 +187,6 @@ class X
 		ClassType ();
 		InheritedClassType ();
 		ComplexStructType ();
+		FunctionStructType ();
 	}
 }

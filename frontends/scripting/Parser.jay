@@ -128,6 +128,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token LIST
 %token RUN
 %token EXAMINE
+%token CALL
 
 %token NATIVE
 %token SELECT
@@ -337,6 +338,10 @@ other_command
 	| EXAMINE examine_format variable_expression
 	  {
 		$$ = new ExamineCommand ((ExamineCommand.Format) $2, (VariableExpression) $3);
+	  }
+	| CALL variable_expression
+	  {
+		$$ = new CallMethodCommand ((VariableExpression) $2);
 	  }
 	| START program_arguments_expression
 	  {

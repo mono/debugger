@@ -87,6 +87,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("CALL", "Call a function in the target")]
+	public class CallMethodCommand : Command
+	{
+		VariableExpression expression;
+
+		public CallMethodCommand (VariableExpression expression)
+		{
+			this.expression = expression;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ITargetObject obj = expression.ResolveVariable (context);
+
+			if (obj.Type.Kind != TargetObjectKind.Function)
+				throw new ScriptingException ("Expression is not a function.");
+
+			((ITargetFunctionObject) obj).Invoke ();
+		}
+	}
+
 	[Command("FRAME", "Print the current stack frame.")]
 	public class FrameCommand : Command
 	{

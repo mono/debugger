@@ -514,6 +514,7 @@ namespace Mono.Debugger.Architecture
 			pointer_type		= 0x0f,
 			compile_unit		= 0x11,
 			structure_type		= 0x13,
+			subroutine_type		= 0x15,
 			typedef			= 0x16,
 			comp_dir		= 0x1b,
 			inheritance		= 0x1c,
@@ -538,6 +539,7 @@ namespace Mono.Debugger.Architecture
 			const_value		= 0x1c,
 			lower_bound		= 0x22,
 			producer		= 0x25,
+			prototyped		= 0x27,
 			start_scope		= 0x2c,
 			upper_bound		= 0x2f,
 			accessibility		= 0x32,
@@ -1157,9 +1159,12 @@ namespace Mono.Debugger.Architecture
 				DwarfBinaryReader reader = dwarf.DebugInfoReader;
 
 				switch (form) {
+				case DwarfForm.flag:
+					data_size = 1;
+					return reader.PeekByte (offset) != 0;
+
 				case DwarfForm.ref1:
 				case DwarfForm.data1:
-				case DwarfForm.flag:
 					data_size = 1;
 					return (long) reader.PeekByte (offset);
 
@@ -1418,6 +1423,9 @@ namespace Mono.Debugger.Architecture
 
 				case DwarfTag.typedef:
 					return new DieTypedef (reader, comp_unit, offset, abbrev);
+
+				case DwarfTag.subroutine_type:
+					return new DieSubroutineType (reader, comp_unit, offset, abbrev);
 
 				case DwarfTag.member:
 					return new DieMember (reader, comp_unit, abbrev);
@@ -2043,6 +2051,12 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			internal long RealStartOffset {
+				get {
+					return real_start_offset;
+				}
+			}
+
 			public AbbrevEntry this [int abbrev_id] {
 				get {
 					if (abbrevs.Contains (abbrev_id))
@@ -2347,9 +2361,11 @@ namespace Mono.Debugger.Architecture
 
 			protected override NativeType DoResolve (string name)
 			{
-				NativeType ref_type = GetReference (name, type_offset);
-				if (ref_type == null)
+				NativeType ref_type = GetReference (type_offset);
+				if (ref_type == null) {
+					Console.WriteLine ("UNKNOWN POINTER: {0}", comp_unit.RealStartOffset + type_offset);
 					return null;
+				}
 
 				if (ref_type.TypeHandle == typeof (char))
 					return new NativeStringType (byte_size);
@@ -2549,6 +2565,169 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		protected class DieTypedef : DieType
+		{
+			long type_offset;
+
+			public DieTypedef (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					   long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override NativeType DoResolve ()
+			{
+				if (Name == null)
+					throw new InvalidOperationException ();
+
+				DieType reference = comp_unit.GetType (type_offset);
+				if (reference == null)
+					return null;
+
+				reference.SetName (Name);
+				if (!reference.HasType)
+					return null;
+
+				return reference.Type;
+			}
+		}
+
+		protected class DieStructureType : DieType
+		{
+			int byte_size;
+
+			public DieStructureType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+						 long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.byte_size:
+					byte_size = (int) (long) attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override NativeType DoResolve ()
+			{
+				if (Name == null)
+					throw new InternalError ();
+
+				ArrayList field_list = new ArrayList ();
+
+				if (abbrev.HasChildren) {
+					foreach (Die child in Children) {
+						DieMember member = child as DieMember;
+						if ((member == null) || !member.Resolve ())
+							continue;
+
+						NativeFieldInfo field = new NativeFieldInfo (
+							member.Type, member.Name, field_list.Count, member.DataOffset);
+						field_list.Add (field);
+					}
+				}
+
+				NativeFieldInfo[] fields = new NativeFieldInfo [field_list.Count];
+				field_list.CopyTo (fields, 0);
+
+				return new NativeStructType (Name, byte_size, fields);
+			}
+		}
+
+		protected class DieSubroutineType : DieType
+		{
+			long type_offset;
+			bool prototyped;
+			NativeType return_type;
+
+			public DieSubroutineType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+						  long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.prototyped:
+					prototyped = (bool) attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit,
+							  long offset, AbbrevEntry abbrev)
+			{
+				switch (abbrev.Tag) {
+				case DwarfTag.formal_parameter:
+					return new DieFormalParameter (null, reader, comp_unit, abbrev);
+
+				default:
+					return base.CreateDie (reader, comp_unit, offset, abbrev);
+				}
+			}
+
+			protected override NativeType DoResolve ()
+			{
+				if (!prototyped)
+					return null;
+
+				if (type_offset != 0) {
+					DieType reference = comp_unit.GetType (type_offset);
+					if ((reference == null) || !reference.HasType)
+						return null;
+
+					return_type = reference.Type;
+				}
+
+				ArrayList args = new ArrayList ();
+
+				if (abbrev.HasChildren) {
+					foreach (Die child in Children) {
+						DieFormalParameter formal = child as DieFormalParameter;
+						Console.WriteLine ("FUNC CHILD: {0} {1} {2}", child, formal,
+								   child.GetType ());
+						if (formal == null)
+							return null;
+
+						args.Add (formal);
+					}
+				}
+
+				NativeType[] param_types = new NativeType [0];
+				NativeFunctionType func_type = new NativeFunctionType ("test", return_type, param_types);
+
+				Console.WriteLine ("FUNC TYPE: {0}", func_type);
+
+				return func_type;
+			}
+		}
+
 		protected abstract class DieVariableBase : Die
 		{
 			string name;
@@ -2561,12 +2740,12 @@ namespace Mono.Debugger.Architecture
 			protected override void ProcessAttribute (Attribute attribute)
 			{
 				switch (attribute.DwarfAttribute) {
-				case DwarfAttribute.name:
-					name = (string) attribute.Data;
+				case DwarfAttribute.location:
+					location = (byte []) attribute.Data;
 					break;
 
-				case DwarfAttribute.type:
-					type_offset = (long) attribute.Data;
+				default:
+					base.ProcessAttribute (attribute);
 					break;
 				}
 			}
@@ -2592,10 +2771,12 @@ namespace Mono.Debugger.Architecture
 			{
 				this.target_info = reader.TargetInfo;
 
-				if (is_local)
-					parent.AddLocal (this);
-				else
-					parent.AddParameter (this);
+				if (parent != null) {
+					if (is_local)
+						parent.AddLocal (this);
+					else
+						parent.AddParameter (this);
+				}
 			}
 
 			protected override void ProcessAttribute (Attribute attribute)
@@ -2712,6 +2893,9 @@ namespace Mono.Debugger.Architecture
 					return false;
 
 				DieType type_die = comp_unit.GetType (TypeOffset);
+				if (type_die == null)
+					return false;
+
 				if ((type_die == null) || !type_die.HasType)
 					return false;
 

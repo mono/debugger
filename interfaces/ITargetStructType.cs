@@ -34,11 +34,7 @@ namespace Mono.Debugger
 
 	public interface ITargetMethodInfo
 	{
-		ITargetType ReturnType {
-			get;
-		}
-
-		ITargetType[] ParameterTypes {
+		ITargetFunctionType Type {
 			get;
 		}
 
@@ -47,15 +43,6 @@ namespace Mono.Debugger
 		}
 
 		int Index {
-			get;
-		}
-
-		// <summary>
-		//   The current programming language's native representation of
-		//   a method.  This is a System.Reflection.MethodInfo for managed
-		//   data types.
-		// </summary>
-		object MethodHandle {
 			get;
 		}
 	}

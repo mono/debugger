@@ -83,6 +83,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("list", Token.LIST);
 			keywords.Add ("run", Token.RUN);
 			keywords.Add ("examine", Token.EXAMINE);
+			keywords.Add ("call", Token.CALL);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);

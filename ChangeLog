@@ -1,5 +1,14 @@
 2003-06-23  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFunctionType.cs: New class.
+	* interfaces/ITargetFunctionObject.cs: New class.
+
+	* interfaces/TargetObjectKind: Added `function'.
+
+	* arch/DwarfReader.cs: More work on native type support.
+
+2003-06-23  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Improved native type support.
 
 	* backends/native/NativeOpaqueObject.cs: New class.
