@@ -15,29 +15,37 @@ namespace Mono.Debugger.GUI {
 
 	public class SourceList {
 		ScrolledWindow sw;
-		DebuggerBackend backend;
 		Gtk.SourceView source_view;
 		TextTag frame_tag;
-		TextBuffer text_buffer;
+		Gtk.SourceBuffer text_buffer;
+
 		ClosableNotebookTab tab;
 		SourceFileFactory factory;
+		DebuggerBackend backend;
+		
 		bool active;
+		string filename;
 
+		Hashtable breakpoints = new Hashtable ();
+		
 		public SourceList (ISourceBuffer source_buffer, string filename)
 		{
+			Console.WriteLine ("Filename: " + filename);
+			this.filename = filename;
 			tab = new ClosableNotebookTab (filename);
 
 			factory = new SourceFileFactory ();
 			
 			sw = new ScrolledWindow (null, null);
 			sw.SetPolicy (PolicyType.Automatic, PolicyType.Automatic);
-			source_view = new Gtk.SourceView ();
+			text_buffer = new Gtk.SourceBuffer (new Gtk.TextTagTable ());
+			source_view = new Gtk.SourceView (text_buffer);
+			source_view.ButtonPressEvent += new ButtonPressEventHandler (button_pressed);
 			source_view.Editable = false;
 
-			FontDescription font = FontDescription.FromString ("Monospace");
+			FontDescription font = FontDescription.FromString ("Monospace 14");
 			source_view.ModifyFont (font);
 			
-			text_buffer = source_view.Buffer;
 			DateTime start = DateTime.Now;
 			string contents = GetSource (source_buffer);
 			frame_tag = new Gtk.TextTag ("frame");
@@ -47,10 +55,43 @@ namespace Mono.Debugger.GUI {
 			start = DateTime.Now;
 			text_buffer.SetText (contents);
 
+			//
+			// Load our markers
+			//
+			Gdk.Pixbuf stop_icon = new Gdk.Pixbuf (null, "stop.png");
+			source_view.AddPixbuf ("stop", stop_icon, false);
+			
 			sw.Add (source_view);
 			sw.ShowAll ();
 		}
 
+		void button_pressed (object obj, ButtonPressEventArgs args)
+		{
+			Gdk.EventButton ev = args.Event;
+
+			if (ev.window.Equals (source_view.GetWindow (TextWindowType.Left))){
+				int buffer_x, buffer_y;
+
+				source_view.WindowToBufferCoords (TextWindowType.Left, (int) ev.x, (int) ev.y, out buffer_x, out buffer_y);
+				Gtk.TextIter iter;
+				source_view.GetLineAtY (out iter, buffer_y, 0);
+				int line = iter.Line + 1;
+
+				if (breakpoints [line] != null){
+					//
+					// FIXME: Remove breakpoint.
+					//
+					breakpoints [line] = null;
+				} else {
+					Breakpoint bp = new SimpleBreakpoint (String.Format ("{0}:{1}", filename, line));
+					backend.InsertBreakpoint (bp, filename, line);
+
+					text_buffer.LineAddMarker (line, "stop");
+					breakpoints [line] = true;
+				}
+			} 
+		}
+		
 		string GetSource (ISourceBuffer buffer)
 		{
 			if (buffer.HasContents)

@@ -30,8 +30,10 @@ namespace Mono.Debugger.GUI
 
 			visible = container.Visible;
 
-			container.Mapped += new EventHandler (mapped);
-			container.Unmapped += new EventHandler (unmapped);
+			try {
+				container.Mapped += new EventHandler (mapped);
+				container.Unmapped += new EventHandler (unmapped);
+			} catch {}
 		}
 
 		public virtual void SetBackend (DebuggerBackend backend)

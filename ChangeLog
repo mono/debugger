@@ -1,3 +1,16 @@
+2002-10-15  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/gui/DebuggerGUI.cs: Check state of the backend before
+	issuing a command, as even if we grey menu items, events can be
+	queued.
+
+	Reactivate the sensitivity code.
+
+	Desensitize `Program to Debug' when running.
+
+	* frontends/gui/ProgramToDebug.cs: Display the current settings,
+	and allow the user to change those, instead of re-entering them. 
+
 2002-10-14  Martin Baulig  <martin@gnome.org>
 
 	* configure.in: We don't need to check for gdb anymore.

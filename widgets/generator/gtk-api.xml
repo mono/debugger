@@ -287,6 +287,9 @@
           <parameter type="gboolean" name="overwrite"/>
         </parameters>
       </method>
+      <method name="GetBuffer" cname="gtk_source_view_get_buffer">
+        <return-type type="GtkSourceBuffer*"/>
+      </method>
       <method name="GetPixbuf" cname="gtk_source_view_get_pixbuf">
         <return-type type="GdkPixbuf*"/>
         <parameters>
@@ -348,65 +351,6 @@
         </parameters>
       </constructor>
     </object>
-    <object name="TextSearch" cname="GtkTextSearch" parent="GObject">
-      <field cname="search_for" type="gchar*"/>
-      <field cname="offset" type="gchar*"/>
-      <field cname="buffer" type="GtkTextBuffer*"/>
-      <field cname="mark_current" type="GtkTextMark*"/>
-      <field cname="mark_stop" type="GtkTextMark*"/>
-      <field cname="sflags" type="GtkETextSearchFlags"/>
-      <field cname="is_matched" bits="1" type="gint"/>
-      <method name="Backward" cname="gtk_text_search_backward">
-        <return-type type="gboolean"/>
-        <parameters>
-          <parameter type="GtkTextIter*" name="match_start"/>
-          <parameter type="GtkTextIter*" name="match_end"/>
-        </parameters>
-      </method>
-      <method name="BackwardForeach" cname="gtk_text_search_backward_foreach">
-        <return-type type="gint"/>
-        <parameters>
-          <parameter type="GtkTextSearchForeachFunc" name="func"/>
-          <parameter type="gpointer" name="data"/>
-        </parameters>
-      </method>
-      <method name="Forward" cname="gtk_text_search_forward">
-        <return-type type="gboolean"/>
-        <parameters>
-          <parameter type="GtkTextIter*" name="match_start"/>
-          <parameter type="GtkTextIter*" name="match_end"/>
-        </parameters>
-      </method>
-      <method name="ForwardForeach" cname="gtk_text_search_forward_foreach">
-        <return-type type="gint"/>
-        <parameters>
-          <parameter type="GtkTextSearchForeachFunc" name="func"/>
-          <parameter type="gpointer" name="data"/>
-        </parameters>
-      </method>
-      <method name="GetType" cname="gtk_text_search_get_type" shared="true">
-        <return-type type="GType"/>
-      </method>
-      <constructor cname="gtk_text_search_new">
-        <parameters>
-          <parameter type="GtkTextBuffer*" name="buffer"/>
-          <parameter type="const-GtkTextIter*" name="start"/>
-          <parameter type="const-char*" name="search"/>
-          <parameter type="GtkETextSearchFlags" name="sflags"/>
-          <parameter type="const-GtkTextIter*" name="limit"/>
-        </parameters>
-      </constructor>
-      <method name="Set" cname="gtk_text_search_set">
-        <return-type type="void"/>
-        <parameters>
-          <parameter type="GtkTextBuffer*" name="buffer"/>
-          <parameter type="const-GtkTextIter*" name="start"/>
-          <parameter type="const-char*" name="searchfor"/>
-          <parameter type="GtkETextSearchFlags" name="sflags"/>
-          <parameter type="const-GtkTextIter*" name="limit"/>
-        </parameters>
-      </method>
-    </object>
     <object name="UndoManager" cname="GtkUndoManager" parent="GObject">
       <field cname="priv" type="GtkUndoManagerPrivate*"/>
       <signal name="CanUndo" cname="can_undo" when="LAST">
@@ -462,6 +406,9 @@
     <struct name="SourceBufferMarker" cname="GtkSourceBufferMarker">
       <field cname="line" type="int"/>
       <field cname="name" type="char*"/>
+    </struct>
+    <struct name="TextSearchClass" cname="GtkTextSearchClass">
+      <field cname="parent" type="GObjectClass"/>
     </struct>
   </namespace>
 </api>

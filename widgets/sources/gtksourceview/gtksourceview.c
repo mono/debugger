@@ -777,3 +777,9 @@ gtk_source_view_get_pixbuf (GtkSourceView *view,
 {
 	return g_hash_table_lookup (view->pixmap_cache, key);
 }
+
+GtkSourceBuffer *
+gtk_source_view_get_buffer (GtkSourceView *view)
+{
+	return GTK_SOURCE_BUFFER (GTK_TEXT_VIEW (view)->buffer);
+}
