@@ -34,6 +34,7 @@ namespace Mono.Debugger
 			this.bfd_container = bfd_container;
 
 			inferior = new PTraceInferior (backend, start, bfd_container,
+						       backend.ThreadManager.BreakpointManager,
 						       new DebuggerErrorHandler (debugger_error));
 
 			inferior.TargetExited += new TargetExitedHandler (child_exited);

@@ -51,6 +51,7 @@ namespace Mono.Debugger.Backends
 		SymbolTableCollection symtab_collection;
 		DebuggerBackend backend;
 		DebuggerErrorHandler error_handler;
+		BreakpointManager breakpoint_manager;
 
 		int child_pid;
 		bool native;
@@ -170,7 +171,7 @@ namespace Mono.Debugger.Backends
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
 		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_server_initialize ();
+		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
@@ -353,7 +354,8 @@ namespace Mono.Debugger.Backends
 		}
 
 		public PTraceInferior (DebuggerBackend backend, ProcessStart start,
-				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
+				       BfdContainer bfd_container, BreakpointManager breakpoint_manager,
+				       DebuggerErrorHandler error_handler)
 		{
 			this.backend = backend;
 			this.start = start;
@@ -361,8 +363,9 @@ namespace Mono.Debugger.Backends
 			this.bfd_container = bfd_container;
 			this.error_handler = error_handler;
 			this.arch = new ArchitectureI386 (this);
+			this.breakpoint_manager = breakpoint_manager;
 
-			server_handle = mono_debugger_server_initialize ();
+			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 		}

@@ -241,7 +241,7 @@ namespace Mono.Debugger.GUI
 		
 		void StateSensitivityUpdate (TargetState state)
 		{
-			Console.WriteLine ("New state: " + state);
+			// Console.WriteLine ("New state: " + state);
 			return;
 			
 			foreach (Widget w in all_state_widgets)

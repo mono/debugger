@@ -1,3 +1,22 @@
+2002-12-24  Martin Baulig  <martin@ximian.com>
+
+	The Monday Night Hack of week #52 - the BreakpointManager is done.
+
+	* backends/BreakpointManager.cs: New file.  This is just a wrapper
+	around the unmanaged API in backends/server/breakpoints.[ch].
+
+	* backends/server/breakpoints.[ch]: New files.
+	* backends/server/i386-linux-ptrace.c: Use a breakpoint manager
+	which is shared between all threads of the same application.
+
+	* backends/ThreadManager.cs
+	(AcquireGlobalThreadLock, ReleaseGlobalThreadLock): Don't
+	lock/unlock the calling process.
+
+	* backends/SingleSteppingEngine.cs: Breakpoints are almost working
+	again; we can now safely hit a breakpoint in another thread
+	(except of a few race conditions which aren't fixed yet).
+
 2002-12-23  Martin Baulig  <martin@ximian.com>
 
 	* frontends/gui/SourceManager.cs (SourceManager): Added events

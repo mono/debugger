@@ -70,6 +70,9 @@ namespace Mono.Debugger.Backends
 			this.inferior = inferior;
 			this.native = native;
 
+			thread_manager = backend.ThreadManager;
+			breakpoint_manager = thread_manager.BreakpointManager;
+
 			inferior.SingleSteppingEngine = this;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
@@ -80,6 +83,7 @@ namespace Mono.Debugger.Backends
 			start_event = new ManualResetEvent (false);
 			completed_event = new ManualResetEvent (false);
 			restart_event = new AutoResetEvent (false);
+			stop_event = new AutoResetEvent (false);
 			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
 			command_mutex = new Mutex ();
 		}
@@ -206,6 +210,7 @@ namespace Mono.Debugger.Backends
 
 			TargetAddress main = TargetAddress.Null;
 			main = inferior.MainMethodAddress;
+			pid = inferior.PID;
 			engine_thread_main (new Command (StepOperation.Run, main));
 		}
 
@@ -287,6 +292,17 @@ namespace Mono.Debugger.Backends
 			ChildEventType message = child_event.Type;
 			int arg = child_event.Argument;
 
+			if (stop_requested) {
+				stop_event.Set ();
+				restart_event.WaitOne ();
+				Console.WriteLine ("RESTART AFTER STOP: {0} {1} {2}", pid, arg, message);
+				if ((message == ChildEventType.CHILD_STOPPED) &&
+				    (arg == 0) || (arg == inferior.StopSignal)) {
+					do_continue_nowait (false);
+					goto again;
+				}
+			}
+
 			// To step over a method call, the sse inserts a temporary
 			// breakpoint immediately after the call instruction and then
 			// resumes the target.
@@ -310,7 +326,12 @@ namespace Mono.Debugger.Backends
 					temp_breakpoint_id = 0;
 				else if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
 					if (arg == temp_breakpoint_id) {
-						// we hit the temporary breakpoint.
+						// we hit the temporary breakpoint; this'll always
+						// happen in the `correct' thread since the
+						// `temp_breakpoint_id' is only set in this
+						// SingleSteppingEngine and not in any other thread's.
+						Console.WriteLine ("HIT TEMP BREAKPOINT: {0} {1}",
+								   pid, arg);
 						message = ChildEventType.CHILD_STOPPED;
 						arg = 0;
 					} else if (!child_breakpoint (arg)) {
@@ -320,30 +341,23 @@ namespace Mono.Debugger.Backends
 						goto again;
 					}
 				}
-
-				if (temp_breakpoint_id != 0) {
-					inferior.RemoveBreakpoint (temp_breakpoint_id);
-					temp_breakpoint_id = 0;
-				}
 			}
 
-			if (stop_requested) {
-				completed_event.Set ();
-				restart_event.WaitOne ();
-				if ((message == ChildEventType.CHILD_STOPPED) &&
-				    (arg == 0) || (arg == inferior.StopSignal)) {
+			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
+				if (!backend.SignalHandler (process, arg)) {
 					do_continue_nowait (false);
 					goto again;
 				}
 			}
 
+			if (temp_breakpoint_id != 0) {
+				inferior.RemoveBreakpoint (temp_breakpoint_id);
+				temp_breakpoint_id = 0;
+			}
+
 			switch (message) {
 			case ChildEventType.CHILD_STOPPED:
 				if (arg != 0) {
-					if (!backend.SignalHandler (process, arg)) {
-						do_continue_nowait (false);
-						goto again;
-					}
 					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 					send_result (message, arg);
 					return false;
@@ -352,7 +366,6 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
-				Console.WriteLine ("BREAKPOINT: {0}", arg);
 				if (!child_breakpoint (arg)) {
 					do_continue_nowait (true);
 					goto again;
@@ -599,6 +612,8 @@ namespace Mono.Debugger.Backends
 		IInferior inferior;
 		IArchitecture arch;
 		DebuggerBackend backend;
+		ThreadManager thread_manager;	
+		BreakpointManager breakpoint_manager;
 		Process process;
 		IDisassembler disassembler;
 		SymbolTableManager symtab_manager;
@@ -606,6 +621,7 @@ namespace Mono.Debugger.Backends
 		Thread engine_thread;
 		ManualResetEvent start_event;
 		ManualResetEvent completed_event;
+		AutoResetEvent stop_event;
 		AutoResetEvent restart_event;
 		AutoResetEvent step_event;
 		ThreadNotify thread_notify;
@@ -690,8 +706,9 @@ namespace Mono.Debugger.Backends
 		bool check_can_run ()
 		{
 			check_inferior ();
-			command_mutex.WaitOne ();
-			return completed_event.WaitOne (0, false);
+			if (!command_mutex.WaitOne (0, false) || !completed_event.WaitOne (0, false))
+				return false;
+			return true;
 		}
 
 		bool start_native ()
@@ -831,8 +848,19 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		bool child_breakpoint (int breakpoint)
 		{
+			Console.WriteLine ("BREAKPOINT: {0} {1}", breakpoint, inferior.CurrentFrame);
+
+			// The inferior knows about breakpoints from all threads, so if this is
+			// zero, then no other thread has set this breakpoint.
 			if (breakpoint == 0)
 				return backend.BreakpointHit (inferior.CurrentFrame);
+
+			// Ok, the next thing we need to check is whether this is actually "our"
+			// breakpoint or whether it belongs to another thread.  In this case,
+			// `thread_breakpoint' does everything for us and we can just continue
+			// execution.
+			if (!thread_breakpoint (inferior.CurrentFrame))
+				return false;
 
 			if (!breakpoints.Contains (breakpoint))
 				return true;
@@ -845,6 +873,35 @@ namespace Mono.Debugger.Backends
 			if (handle.NeedsFrame)
 				frame = get_frame (inferior.CurrentFrame);
 			return handle.Handler (frame, breakpoint, handle.UserData);
+		}
+
+		bool thread_breakpoint (TargetAddress address)
+		{
+			int owner;
+			int id = breakpoint_manager.LookupBreakpoint (address, out owner);
+			Console.WriteLine ("LOOKUP: {0} {1} {2} {3}", address, id, owner, pid);
+
+			if (id == 0) {
+				Console.WriteLine ("UNKNOWN BREAKPOINT: {0} {1}", pid, address);
+				return true;
+			}
+
+			if ((owner == 0) || (owner == pid))
+				return true;
+
+			thread_manager.AcquireGlobalThreadLock (process);
+			Console.WriteLine ("ACQUIRED GLOBAL THREAD LOCK");
+			inferior.DisableBreakpoint (id);
+			Console.WriteLine ("DISABLED BREAKPOINT");
+			inferior.Step ();
+			Console.WriteLine ("STEPPED ONE INSTRUCTION");
+			ChildEvent child_event = inferior.Wait ();
+			Console.WriteLine ("DONE WAITING: {0} {1}", child_event.Type, child_event.Argument);
+			inferior.EnableBreakpoint (id);
+			Console.WriteLine ("REENABLED BREAKPOINT");
+			thread_manager.ReleaseGlobalThreadLock (process);
+			Console.WriteLine ("RELEASED GLOBAL THREAD LOCK");
+			return false;
 		}
 
 		IMethod current_method;
@@ -1024,7 +1081,6 @@ namespace Mono.Debugger.Backends
 		void insert_temporary_breakpoint (TargetAddress address)
 		{
 			check_inferior ();
-			// temp_breakpoint_id = inferior.InsertHardwareBreakpoint (address, 0);
 			temp_breakpoint_id = inferior.InsertBreakpoint (address);
 		}
 
@@ -1263,10 +1319,8 @@ namespace Mono.Debugger.Backends
 			if (Thread.CurrentThread == engine_thread)
 				return func (data);
 
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return new CommandResult (CommandResultType.UnknownError);
-			}
 
 			lock (this) {
 				current_command = new Command (func, data);
@@ -1320,10 +1374,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool StepInstruction (bool synchronous)
 		{
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return false;
-			}
 
 			start_step_operation (StepOperation.StepInstruction);
 			if (synchronous)
@@ -1337,10 +1389,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool NextInstruction (bool synchronous)
 		{
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return false;
-			}
 
 			start_step_operation (StepOperation.NextInstruction);
 			if (synchronous)
@@ -1354,10 +1404,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool StepLine (bool synchronous)
 		{
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return false;
-			}
 
 			start_step_operation (StepOperation.StepLine, get_step_frame ());
 			if (synchronous)
@@ -1371,10 +1419,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool NextLine (bool synchronous)
 		{
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return false;
-			}
 
 			StepFrame frame = get_step_frame ();
 			if (frame == null) {
@@ -1398,10 +1444,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool Finish (bool synchronous)
 		{
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return false;
-			}
 
 			StackFrame frame = CurrentFrame;
 			if (frame.Method == null) {
@@ -1438,10 +1482,8 @@ namespace Mono.Debugger.Backends
 
 		public bool Continue (TargetAddress until, bool in_background, bool synchronous)
 		{
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
+			if (!check_can_run ())
 				return false;
-			}
 
 			if (in_background)
 				start_step_operation (StepOperation.RunInBackground, until);
@@ -1468,7 +1510,6 @@ namespace Mono.Debugger.Backends
 			inferior.Stop ();
 			wait_for_completion ();
 			ready_event_handler ();
-			command_mutex.ReleaseMutex ();
 		}
 
 		// <summary>
@@ -1488,7 +1529,7 @@ namespace Mono.Debugger.Backends
 			// currently running operation completed.
 			stop_requested = true;
 			inferior.Stop ();
-			wait_for_completion ();
+			stop_event.WaitOne ();
 		}
 
 		internal void ReleaseThreadLock ()

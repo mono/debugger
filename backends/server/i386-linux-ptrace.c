@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <server.h>
+#include <breakpoints.h>
 #include <sys/stat.h>
 #include <sys/ptrace.h>
 #include <asm/ptrace.h>
@@ -32,9 +33,7 @@ struct InferiorHandle
 	struct user_regs_struct *saved_regs;
 	struct user_i387_struct *saved_fpregs;
 	unsigned dr_control, dr_status;
-	GPtrArray *breakpoints;
-	GHashTable *breakpoint_hash;
-	GHashTable *breakpoint_by_addr;
+	BreakpointManager *bpm;
 };
 
 /* Debug registers' indices.  */
@@ -105,15 +104,11 @@ struct InferiorHandle
 #define I386_DR_WATCH_HIT(handle,i) \
   (handle->dr_status & (1 << (i)))
 
-static int last_breakpoint_id = 0;
-
 typedef struct {
-	int id;
-	int enabled;
+	BreakpointInfo info;
 	int dr_index;
 	char saved_insn;
-	guint32 address;
-} BreakpointInfo;
+} I386BreakpointInfo;
 
 typedef enum {
 	STOP_ACTION_SEND_STOPPED,
@@ -189,12 +184,6 @@ server_ptrace_finalize (InferiorHandle *handle)
 
 	g_free (handle->saved_regs);
 	g_free (handle->saved_fpregs);
-	if (handle->breakpoints)
-		g_ptr_array_free (handle->breakpoints, TRUE);
-	if (handle->breakpoint_hash)
-		g_hash_table_destroy (handle->breakpoint_hash);
-	if (handle->breakpoint_by_addr)
-		g_hash_table_destroy (handle->breakpoint_by_addr);
 	g_free (handle);
 }
 
@@ -247,15 +236,12 @@ server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 static ServerCommandError
 server_ptrace_current_insn_is_bpt (InferiorHandle *handle, guint32 *is_breakpoint)
 {
-	if (!handle->breakpoints) {
-		*is_breakpoint = FALSE;
-		return COMMAND_ERROR_NONE;
-	}
-
-	if (g_hash_table_lookup (handle->breakpoint_by_addr, GUINT_TO_POINTER (handle->current_regs.eip)))
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	if (mono_debugger_breakpoint_manager_lookup (handle->bpm, handle->current_regs.eip))
 		*is_breakpoint = TRUE;
 	else
 		*is_breakpoint = FALSE;
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -502,18 +488,19 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 }
 
 static gboolean
-check_breakpoint (InferiorHandle *handle, long address, guint64 *retval)
+check_breakpoint (InferiorHandle *handle, guint64 address, guint64 *retval)
 {
-	BreakpointInfo *info;
+	I386BreakpointInfo *info;
 
-	if (!handle->breakpoints)
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	info = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	if (!info || !info->info.enabled) {
+		mono_debugger_breakpoint_manager_unlock (handle->bpm);
 		return FALSE;
+	}
 
-	info = g_hash_table_lookup (handle->breakpoint_by_addr, GUINT_TO_POINTER (address));
-	if (!info || !info->enabled)
-		return FALSE;
-
-	*retval = info->id;
+	*retval = info->info.id;
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
 	return TRUE;
 }
 
@@ -545,6 +532,8 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 
 		if ((code & 0xff) == 0xcc) {
 			*retval = 0;
+			handle->current_regs.eip--;
+			set_registers (handle, &handle->current_regs);
 			return STOP_ACTION_BREAKPOINT_HIT;
 		}
 
@@ -578,19 +567,22 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 }
 
 static ServerCommandError
-do_enable (InferiorHandle *handle, BreakpointInfo *breakpoint)
+do_enable (InferiorHandle *handle, I386BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	char bopcode = 0xcc;
+	guint32 address;
 
-	if (breakpoint->enabled)
+	if (breakpoint->info.enabled)
 		return COMMAND_ERROR_NONE;
+
+	address = (guint32) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
 		I386_DR_SET_RW_LEN (handle, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
 		I386_DR_LOCAL_ENABLE (handle, breakpoint->dr_index);
 
-		result = server_ptrace_set_dr (handle, breakpoint->dr_index, breakpoint->address);
+		result = server_ptrace_set_dr (handle, breakpoint->dr_index, address);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
@@ -598,27 +590,30 @@ do_enable (InferiorHandle *handle, BreakpointInfo *breakpoint)
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	} else {
-		result = server_ptrace_read_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+		result = server_ptrace_read_data (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
-		result = server_ptrace_write_data (handle, breakpoint->address, 1, &bopcode);
+		result = server_ptrace_write_data (handle, address, 1, &bopcode);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	}
 
-	breakpoint->enabled = TRUE;
+	breakpoint->info.enabled = TRUE;
 
 	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
-do_disable (InferiorHandle *handle, BreakpointInfo *breakpoint)
+do_disable (InferiorHandle *handle, I386BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
+	guint32 address;
 
-	if (!breakpoint->enabled)
+	if (!breakpoint->info.enabled)
 		return COMMAND_ERROR_NONE;
+
+	address = (guint32) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
 		I386_DR_DISABLE (handle, breakpoint->dr_index);
@@ -631,12 +626,12 @@ do_disable (InferiorHandle *handle, BreakpointInfo *breakpoint)
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	} else {
-		result = server_ptrace_write_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+		result = server_ptrace_write_data (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	}
 
-	breakpoint->enabled = FALSE;
+	breakpoint->info.enabled = FALSE;
 
 	return COMMAND_ERROR_NONE;
 }
@@ -644,29 +639,36 @@ do_disable (InferiorHandle *handle, BreakpointInfo *breakpoint)
 static ServerCommandError
 server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint32 *bhandle)
 {
-	BreakpointInfo *breakpoint = g_new0 (BreakpointInfo, 1);
+	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
-	if (!handle->breakpoints) {
-		handle->breakpoints = g_ptr_array_new ();
-		handle->breakpoint_hash = g_hash_table_new (NULL, NULL);
-		handle->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	if (breakpoint && !breakpoint->info.is_hardware_bpt) {
+		breakpoint->info.refcount++;
+		goto done;
 	}
 
-	breakpoint->address = (guint32) address;
-	breakpoint->id = ++last_breakpoint_id;
+	breakpoint = g_new0 (I386BreakpointInfo, 1);
+
+	breakpoint->info.refcount = 1;
+	breakpoint->info.owner = handle->pid;
+	breakpoint->info.address = address;
+	breakpoint->info.is_hardware_bpt = FALSE;
+	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
 	breakpoint->dr_index = -1;
 
 	result = do_enable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
+		mono_debugger_breakpoint_manager_unlock (handle->bpm);
 		g_free (breakpoint);
 		return result;
 	}
 
-	g_ptr_array_add (handle->breakpoints, breakpoint);
-	g_hash_table_insert (handle->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id), breakpoint);
-	g_hash_table_insert (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address), breakpoint);
-	*bhandle = breakpoint->id;
+	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
+ done:
+	*bhandle = breakpoint->info.id;
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -674,39 +676,32 @@ server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint3
 static ServerCommandError
 server_ptrace_remove_breakpoint (InferiorHandle *handle, guint32 bhandle)
 {
-	BreakpointInfo *breakpoint;
+	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
-	if (!handle->breakpoints)
-		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
-
-	breakpoint = g_hash_table_lookup (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
-	if (!breakpoint)
-		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	if (!breakpoint) {
+		result = COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+		goto out;
+	}
 
 	result = do_disable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE)
-		return result;
+		goto out;
 
-	g_hash_table_remove (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
-	g_hash_table_remove (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address));
-	g_ptr_array_remove_fast (handle->breakpoints, breakpoint);
-	g_free (breakpoint);
+	mono_debugger_breakpoint_manager_remove (handle->bpm, (BreakpointInfo *) breakpoint);
 
-	return COMMAND_ERROR_NONE;
+ out:
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
+	return result;
 }
 
 static ServerCommandError
 server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, guint32 idx, guint64 address, guint32 *bhandle)
 {
-	BreakpointInfo *breakpoint;
+	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
-
-	if (!handle->breakpoints) {
-		handle->breakpoints = g_ptr_array_new ();
-		handle->breakpoint_hash = g_hash_table_new (NULL, NULL);
-		handle->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
-	}
 
 	if ((idx < 0) || (idx > DR_NADDR))
 		return COMMAND_ERROR_DR_OCCUPIED;
@@ -714,21 +709,25 @@ server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, guint32 idx, guint64
 	if (!I386_DR_VACANT (handle, idx))
 		return COMMAND_ERROR_DR_OCCUPIED;
 
-	breakpoint = g_new0 (BreakpointInfo, 1);
-	breakpoint->address = (guint32) address;
-	breakpoint->id = ++last_breakpoint_id;
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	breakpoint = g_new0 (I386BreakpointInfo, 1);
+	breakpoint->info.owner = handle->pid;
+	breakpoint->info.address = address;
+	breakpoint->info.refcount = 1;
+	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
+	breakpoint->info.is_hardware_bpt = TRUE;
 	breakpoint->dr_index = idx;
 
 	result = do_enable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
+		mono_debugger_breakpoint_manager_unlock (handle->bpm);
 		g_free (breakpoint);
 		return result;
 	}
 
-	g_ptr_array_add (handle->breakpoints, breakpoint);
-	g_hash_table_insert (handle->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id), breakpoint);
-	g_hash_table_insert (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address), breakpoint);
-	*bhandle = breakpoint->id;
+	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
+	*bhandle = breakpoint->info.id;
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -736,83 +735,68 @@ server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, guint32 idx, guint64
 static ServerCommandError
 server_ptrace_enable_breakpoint (InferiorHandle *handle, guint32 bhandle)
 {
-	BreakpointInfo *breakpoint;
+	I386BreakpointInfo *breakpoint;
+	ServerCommandError result;
 
-	if (!handle->breakpoints)
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	if (!breakpoint) {
+		mono_debugger_breakpoint_manager_unlock (handle->bpm);
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+	}
 
-	breakpoint = g_hash_table_lookup (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
-	if (!breakpoint)
-		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
-
-	return do_enable (handle, breakpoint);
+	result = do_enable (handle, breakpoint);
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
+	return result;
 }
 
 static ServerCommandError
 server_ptrace_disable_breakpoint (InferiorHandle *handle, guint32 bhandle)
 {
-	BreakpointInfo *breakpoint;
+	I386BreakpointInfo *breakpoint;
+	ServerCommandError result;
 
-	if (!handle->breakpoints)
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	if (!breakpoint) {
+		mono_debugger_breakpoint_manager_unlock (handle->bpm);
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+	}
 
-	breakpoint = g_hash_table_lookup (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
-	if (!breakpoint)
-		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
-
-	return do_disable (handle, breakpoint);
-}
-
-static void
-do_enable_cb (gpointer key, gpointer value, gpointer user_data)
-{
-	do_enable ((InferiorHandle *) user_data, (BreakpointInfo *) value);
-}
-
-static void
-do_disable_cb (gpointer key, gpointer value, gpointer user_data)
-{
-	do_disable ((InferiorHandle *) user_data, (BreakpointInfo *) value);
+	result = do_disable (handle, breakpoint);
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
+	return result;
 }
 
 static ServerCommandError
 server_ptrace_enable_all_breakpoints (InferiorHandle *handle)
 {
-	if (!handle->breakpoints)
-		return COMMAND_ERROR_NONE;
-
-	g_hash_table_foreach (handle->breakpoint_hash, do_enable_cb, handle);
-
 	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
 server_ptrace_disable_all_breakpoints (InferiorHandle *handle)
 {
-	if (!handle->breakpoints)
-		return COMMAND_ERROR_NONE;
-
-	g_hash_table_foreach (handle->breakpoint_hash, do_disable_cb, handle);
-
 	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
-server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 **breakpoints)
+server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 **retval)
 {
 	int i;
+	GPtrArray *breakpoints;
 
-	if (!handle->breakpoints)
-		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
+	*count = breakpoints->len;
+	*retval = g_new0 (guint32, breakpoints->len);
 
-	*count = handle->breakpoints->len;
-	*breakpoints = g_new0 (guint32, handle->breakpoints->len);
+	for (i = 0; i < breakpoints->len; i++) {
+		BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 
-	for (i = 0; i < handle->breakpoints->len; i++) {
-		BreakpointInfo *info = g_ptr_array_index (handle->breakpoints, i);
-
-		(*breakpoints) [i] = info->id;
+		(*retval) [i] = info->id;
 	}
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
 
 	return COMMAND_ERROR_NONE;	
 }
@@ -919,6 +903,15 @@ server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint
 	} while (!do_dispatch (handle, status, type, arg, data1, data2));
 }
 
+static InferiorHandle *
+server_ptrace_initialize (BreakpointManager *bpm)
+{
+	InferiorHandle *handle = g_new0 (InferiorHandle, 1);
+
+	handle->bpm = bpm;
+	return handle;
+}
+
 static void
 setup_inferior (InferiorHandle *handle)
 {
@@ -951,42 +944,36 @@ child_setup_func (gpointer data)
 		g_error (G_STRLOC ": Can't PTRACE_TRACEME: %s", g_strerror (errno));
 }
 
-static InferiorHandle *
-server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp, gboolean search_path,
-		     gint *child_pid, gint *standard_input, gint *standard_output, gint *standard_error,
-		     GError **error)
+static ServerCommandError
+server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gchar **argv, gchar **envp,
+		     gboolean search_path, gint *child_pid, gint *standard_input, gint *standard_output,
+		     gint *standard_error, GError **error)
 {
 	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
-	InferiorHandle *handle;
 
 	if (search_path)
 		flags |= G_SPAWN_SEARCH_PATH;
 
 	if (!g_spawn_async (working_directory, argv, envp, flags, child_setup_func, NULL, child_pid, error))
-		return NULL;
+		return COMMAND_ERROR_FORK;
 
-	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = *child_pid;
-
 	setup_inferior (handle);
 
-	return handle;
+	return COMMAND_ERROR_NONE;
 }
 
-static InferiorHandle *
-server_ptrace_attach (int pid)
+static ServerCommandError
+server_ptrace_attach (InferiorHandle *handle, int pid)
 {
-	InferiorHandle *handle;
-
 	if (ptrace (PTRACE_ATTACH, pid))
-		g_error (G_STRLOC ": Can't attach to process %d: %s", pid, g_strerror (errno));
+		return COMMAND_ERROR_FORK;
 
-	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = pid;
 
 	setup_inferior (handle);
 
-	return handle;
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -1266,6 +1253,7 @@ server_ptrace_set_signal (InferiorHandle *handle, guint32 sig, guint32 send_it)
  * Method VTable for this backend.
  */
 InferiorInfo i386_linux_ptrace_inferior = {
+	server_ptrace_initialize,
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,

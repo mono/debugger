@@ -6,10 +6,12 @@ libmonodebuggerserver_la_SOURCES = \
 	library.c		\
 	i386-linux-ptrace.c	\
 	server.h		\
+	breakpoints.c		\
+	breakpoints.h		\
 	#
 
-libmonodebuggerserver_la_LIBADD = @BASE_DEPENDENCIES_LIBS@
+libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
 
-INCLUDES = @BASE_DEPENDENCIES_CFLAGS@
+INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@
 
 CLEANFILES = lib*.a lib*.dll

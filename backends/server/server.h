@@ -1,6 +1,7 @@
 #ifndef __MONO_DEBUGGER_SERVER_H__
 #define __MONO_DEBUGGER_SERVER_H__
 
+#include <breakpoints.h>
 #include <glib.h>
 
 G_BEGIN_DECLS
@@ -59,7 +60,10 @@ typedef void (*ChildExitedFunc) (void);
  */
 
 typedef struct {
-	InferiorHandle *      (* spawn)               (const gchar        *working_directory,
+	InferiorHandle *      (* initialize)          (BreakpointManager  *bpm);
+
+	ServerCommandError    (* spawn)               (InferiorHandle     *handle,
+						       const gchar        *working_directory,
 						       gchar             **argv,
 						       gchar             **envp,
 						       gboolean            search_path,
@@ -69,7 +73,8 @@ typedef struct {
 						       gint               *standard_error,
 						       GError            **error);
 
-	InferiorHandle *      (* attach)              (int                 pid);
+	ServerCommandError    (* attach)              (InferiorHandle     *handle,
+						       int                 pid);
 
 	ServerCommandError    (* detach)              (InferiorHandle     *handle);
 
@@ -279,13 +284,14 @@ extern InferiorInfo i386_linux_ptrace_inferior;
  */
 
 typedef struct {
+	int has_inferior;
 	InferiorHandle *inferior;
 	InferiorInfo *info;
 	int fd, pid;
 } ServerHandle;
 
 ServerHandle *
-mono_debugger_server_initialize           (void);
+mono_debugger_server_initialize           (BreakpointManager  *bpm);
 
 ServerCommandError
 mono_debugger_server_spawn                (ServerHandle       *handle,

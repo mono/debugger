@@ -26,6 +26,7 @@ namespace Mono.Debugger
 		Hashtable thread_hash;
 		Process main_process;
 		Mutex thread_lock_mutex;
+		BreakpointManager breakpoint_manager;
 		int thread_lock_level = 0;
 
 		TargetAddress thread_handles = TargetAddress.Null;
@@ -45,6 +46,7 @@ namespace Mono.Debugger
 			this.thread_hash = new Hashtable ();
 
 			thread_lock_mutex = new Mutex ();
+			breakpoint_manager = new BreakpointManager ();
 		}
 
 		public bool Initialize (Process process)
@@ -76,6 +78,10 @@ namespace Mono.Debugger
 
 		public DebuggerBackend DebuggerBackend {
 			get { return backend; }
+		}
+
+		internal BreakpointManager BreakpointManager {
+			get { return breakpoint_manager; }
 		}
 
 		public event ThreadEventHandler ThreadCreatedEvent;
@@ -160,17 +166,19 @@ namespace Mono.Debugger
 		//   The threads are automatically resumed to their previos state when
 		//   ReleaseGlobalThreadLock() is called.
 		// </summary>
-		public void AcquireGlobalThreadLock ()
+		public void AcquireGlobalThreadLock (Process caller)
 		{
 			thread_lock_mutex.WaitOne ();
 			if (thread_lock_level++ > 0)
 				return;
 			foreach (Process process in thread_hash.Values) {
+				if (process == caller)
+					continue;
 				process.SingleSteppingEngine.AcquireThreadLock ();
 			}
 		}
 
-		public void ReleaseGlobalThreadLock ()
+		public void ReleaseGlobalThreadLock (Process caller)
 		{
 			if (--thread_lock_level > 0) {
 				thread_lock_mutex.ReleaseMutex ();
@@ -178,6 +186,8 @@ namespace Mono.Debugger
 			}
 				
 			foreach (Process process in thread_hash.Values) {
+				if (process == caller)
+					continue;
 				process.SingleSteppingEngine.ReleaseThreadLock ();
 			}
 			thread_lock_mutex.ReleaseMutex ();
@@ -202,7 +212,7 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					// Do stuff here
+					breakpoint_manager.Dispose ();
 				}
 				
 				// Release unmanaged resources
