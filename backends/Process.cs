@@ -444,8 +444,6 @@ namespace Mono.Debugger
 				TargetExited ();
 			if (ProcessExitedEvent != null)
 				ProcessExitedEvent (this);
-
-			Dispose ();
 		}
 
 		void check_iprocess ()
