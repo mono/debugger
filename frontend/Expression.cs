@@ -28,7 +28,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual ITargetType DoEvaluateType (ScriptingContext context)
 		{
-			return EvaluateVariable (context).Type;
+			return EvaluateVariable (context).Type.Type;
 		}
 
 		public ITargetType EvaluateType (ScriptingContext context)
@@ -455,11 +455,11 @@ namespace Mono.Debugger.Frontend
 			if (!var.CanWrite)
 				return false;
 
-			if (var.Type != obj.Type)
+			if (var.Type != obj.Type.Type)
 				throw new ScriptingException (
 					"Type mismatch: cannot assign expression of type " +
 					"`{0}' to variable `{1}', which is of type `{2}'.",
-					obj.Type.Name, Name, var.Type.Name);
+					obj.Type.Type.Name, Name, var.Type.Name);
 
 			var.SetObject (context.CurrentFrame.Frame, obj);
 			return true;
@@ -1546,7 +1546,7 @@ namespace Mono.Debugger.Frontend
 		static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
 					      ITargetClassType target_type)
 		{
-			if (source.Type == target_type)
+			if (source.Type.Type == target_type)
 				return source;
 
 			ITargetClassObject sobj = source as ITargetClassObject;
@@ -1590,7 +1590,7 @@ namespace Mono.Debugger.Frontend
 			if (obj == null)
 				return null;
 
-			return obj.Type;
+			return obj.Type.Type;
 		}
 	}
 
