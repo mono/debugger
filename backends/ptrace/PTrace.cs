@@ -387,8 +387,8 @@ namespace Mono.Debugger.Backends
 				out error));
 
 			inferior_stdin = new IOOutputChannel (stdin_fd, false, false);
-			inferior_stdout = new IOInputChannel (stdout_fd, false, false);
-			inferior_stderr = new IOInputChannel (stderr_fd, false, false);
+			inferior_stdout = new IOInputChannel (stdout_fd, true, false);
+			inferior_stderr = new IOInputChannel (stderr_fd, true, false);
 
 			setup_inferior (start, error_handler);
 			change_target_state (TargetState.STOPPED, 0);

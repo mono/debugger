@@ -8,6 +8,7 @@ common_function (int is_thread, int sleep_seconds)
 {
 	while (1) {
 		printf ("COMMON FUNCTION: %d\n", is_thread);
+		fflush (stdout);
 		sleep (sleep_seconds);
 	}
 }
@@ -24,7 +25,8 @@ main (void)
 {
 	pthread_t *thread;
 
-	sleep (3);
+	printf ("Hello World!\n");
+	fflush (stdout);
 	pthread_create (&thread, NULL, thread_func, NULL);
 	common_function (0, 5);
 

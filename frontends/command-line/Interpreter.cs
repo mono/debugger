@@ -14,7 +14,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class Interpreter
 	{
 		DebuggerBackend backend;
-		TextWriter stdout, stderr;
+		DebuggerTextWriter command_output, inferior_output;
 		ScriptingContext context;
 		Parser parser;
 
@@ -22,13 +22,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		//   Create a new command interpreter for the debugger backend @backend.
 		//   The interpreter sends its stdout to @stdout and its stderr to @stderr.
 		// </summary>
-		public Interpreter (DebuggerBackend backend, TextWriter stdout, TextWriter stderr)
+		public Interpreter (DebuggerBackend backend, DebuggerTextWriter command_output,
+				    DebuggerTextWriter inferior_output)
 		{
 			this.backend = backend;
-			this.stdout = stdout;
-			this.stderr = stderr;
+			this.command_output = command_output;
+			this.inferior_output = inferior_output;
 
-			context = new ScriptingContext (backend, stdout, stderr, false);
+			context = new ScriptingContext (backend, command_output, inferior_output, false);
 			parser = new Parser (context, "Debugger", new string [0]);
 		}
 

@@ -16,6 +16,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		GnuReadLine readline;
 		DebuggerBackend backend;
 		ScriptingContext context;
+		DebuggerTextWriter writer;
 		Parser parser;
 
 		public CommandLineInterpreter (string[] args)
@@ -23,7 +24,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			channel = new IOChannel (0, false, true);
 			readline = new GnuReadLine (channel, "$ ");
 			backend = new DebuggerBackend ();
-			context = new ScriptingContext (backend, Console.Out, Console.Error, true);
+			writer = new ConsoleTextWriter ();
+			context = new ScriptingContext (backend, writer, writer, true);
 			parser = new Parser (context, "Debugger", args);
 		}
 

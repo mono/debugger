@@ -102,12 +102,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void inferior_output (string line)
 		{
-			context.Print ("INFERIOR OUTPUT: {0}", line);
+			context.PrintInferior (false, line);
 		}
 
 		void inferior_error (string line)
 		{
-			context.Print ("INFERIOR ERROR: {0}", line);
+			context.PrintInferior (true, line);
 		}
 
 		void debugger_output (string line)
@@ -311,16 +311,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ArrayList procs;
 
 		DebuggerBackend backend;
-		TextWriter stdout;
-		TextWriter stderr;
+		DebuggerTextWriter command_output;
+		DebuggerTextWriter inferior_output;
 		bool is_synchronous;
 
-		public ScriptingContext (DebuggerBackend backend, TextWriter stdout, TextWriter stderr,
-					 bool is_synchronous)
+		public ScriptingContext (DebuggerBackend backend, DebuggerTextWriter command_output,
+					 DebuggerTextWriter inferior_output, bool is_synchronous)
 		{
 			this.backend = backend;
-			this.stdout = stdout;
-			this.stderr = stderr;
+			this.command_output = command_output;
+			this.inferior_output = inferior_output;
 			this.is_synchronous = is_synchronous;
 
 			procs = new ArrayList ();
@@ -352,22 +352,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			string message = String.Format (format, args);
 
-			stderr.WriteLine ("ERROR: {0}", message);
+			command_output.WriteLine (true, message);
 		}
 
 		public void Error (ScriptingException ex)
 		{
-			stderr.WriteLine (ex.Message);
+			command_output.WriteLine (true, ex.Message);
 		}
 
 		public void Print (string format, params object[] args)
 		{
-			stdout.WriteLine (format, args);
+			string message = String.Format (format, args);
+
+			command_output.WriteLine (false, message);
 		}
 
 		public void Print (object obj)
 		{
 			Print ("{0}", obj);
+		}
+
+		public void PrintInferior (bool is_stderr, string line)
+		{
+			inferior_output.WriteLine (is_stderr, line);
 		}
 
 		public ProcessHandle CurrentProcess {

@@ -1,5 +1,16 @@
 2002-12-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerTextWriter.cs: New abstract base class.
+
+	* frontends/scripting/ScriptingContext.cs: Use two
+	DebuggerTextWriter's for the debugger and inferior output.
+
+	* frontends/gui/OutputWindow.cs: Rewrote this to use the new
+	DebuggerTextWriter.  We're now using a separate output window
+	for the inferior output and error output is displayed in red.
+
+2002-12-25  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerWidget.cs: Renamed SetBackend -> SetProcess;
 	the DebuggerBackend can already be set in the ctor, so this only
 	takes a Process argument.

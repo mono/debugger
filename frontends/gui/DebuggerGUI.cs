@@ -92,9 +92,11 @@ namespace Mono.Debugger.GUI
 		ThreadNotify thread_notify;
 
 		Gtk.TextView target_output;
+		Gtk.TextView command_output;
 		SourceStatusbar source_status;
 
-		TextWriter output_writer;
+		DebuggerTextWriter output_writer;
+		DebuggerTextWriter command_writer;
 
 		DebuggerBackend backend;
 		Interpreter interpreter;
@@ -118,7 +120,7 @@ namespace Mono.Debugger.GUI
 			if (arguments.Length > 0)
 				LoadProgram (arguments);
 
-			interpreter = new Interpreter (backend, output_writer, output_writer);
+			interpreter = new Interpreter (backend, command_writer, output_writer);
 		}
 
 		internal ThreadNotify ThreadNotify {
@@ -151,9 +153,11 @@ namespace Mono.Debugger.GUI
 			main_window = (App) gxml ["debugger-toplevel"];
 
 			command_entry = (Gtk.Entry) gxml ["command-entry"];
+			command_output = (Gtk.TextView) gxml ["command-output"];
 			target_output = (Gtk.TextView) gxml ["target-output"];
 
 			output_writer = new OutputWindow (target_output);
+			command_writer = new OutputWindow (command_output);
 
 			register_display = new RegisterDisplay (
 				this, null, (Gtk.Notebook) gxml ["register-notebook"]);
@@ -291,6 +295,11 @@ namespace Mono.Debugger.GUI
 
 		void SetProcess (Process process)
 		{
+			process.TargetOutput += new TargetOutputHandler (TargetOutput);
+			process.TargetError += new TargetOutputHandler (TargetError);
+			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
+			process.DebuggerError += new DebuggerErrorHandler (DebuggerError);
+
 			current_insn.SetProcess (process);
 			register_display.SetProcess (process);
 			source_status.SetProcess (process);
@@ -481,7 +490,7 @@ namespace Mono.Debugger.GUI
 		void AddOutput (string output)
 		{
 			Console.WriteLine (output);
-			output_writer.WriteLine (output);
+			// output_writer.WriteLine (output);
 		}
 
 		void DoOneCommand (object sender, EventArgs event_args)
@@ -501,8 +510,7 @@ namespace Mono.Debugger.GUI
 
 		public void Run ()
 		{
-			output_writer.WriteLine ("Debugger ready.");
-			output_writer.WriteLine ("Type a command in the command entry or `h' for help.");
+			command_writer.WriteLine (false, "Debugger ready.");
 			command_entry.Sensitive = true;
 			command_entry.HasFocus = true;
 			program.Run ();
