@@ -92,6 +92,8 @@ namespace Mono.Debugger.GUI
 		Interpreter interpreter;
 		SourceFileFactory source_factory;
 
+		SourceManager source_manager;
+
 		public DebuggerGUI (string[] arguments)
 		{
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
@@ -128,9 +130,12 @@ namespace Mono.Debugger.GUI
 
 			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
 
-			source_status = new SourceStatusbar ((Gtk.Statusbar) gxml ["source-status"]);
+			//source_status = new SourceStatusbar ((Gtk.Statusbar) gxml ["source-status"]);
 			source_view = new SourceView
-				((Gtk.Container) main_window, (Gtk.TextView) gxml ["source-view"]);
+			((Gtk.Container) main_window, (Gtk.TextView) gxml ["source-view"]);
+
+			source_manager = new SourceManager ((Gtk.Notebook) gxml ["code-browser-notebook"]);
+
 			disassembler_view = new DisassemblerView (
 				null, (Gtk.TextView) gxml ["disassembler-view"]);
 			
@@ -232,7 +237,8 @@ namespace Mono.Debugger.GUI
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
 			source_view.SetBackend (backend);
-
+			source_manager.SetBackend (backend);
+			
 			backend.StateChanged += new StateChangedHandler (BackendStateChanged);
 		}
 

@@ -1,3 +1,10 @@
+2002-09-27  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/gui/SourceManager.cs: New file, it will hold the
+	source code manager, and currently also hosts the source listing
+	widget (it will replace the old code in the future, but I have
+	ketp it for compatibility reasons).
+
 2002-09-27  Martin Baulig  <martin@gnome.org>
 
 	* interfaces/IArchitecture.cs (IArchitecture.GetBreakpointTrampolineData):

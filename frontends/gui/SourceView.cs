@@ -63,6 +63,7 @@ namespace Mono.Debugger.GUI
 			if (method == null)
 				return;
 
+			Console.WriteLine ("++++++++");
 			current_method_source = GetMethodSource (method);
 			if (current_method_source == null)
 				return;
@@ -114,6 +115,8 @@ namespace Mono.Debugger.GUI
 			SourceLocation source = GetSource (frame);
 			if (source == null)
 				return;
+
+			Console.WriteLine ("This one got source");
 
 			Gtk.TextIter start_iter, end_iter;
 			text_buffer.GetIterAtLineOffset (out start_iter, source.Row - 1, 0);
