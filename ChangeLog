@@ -1,3 +1,13 @@
+2004-11-28  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/scripting/Command.cs (ListSourceCode): The symbol "-"
+	means, list backwards, to be compatible with gdb. 
+
+	* frontends/scripting/ScriptingContext.cs (ListSourceCode): Allow
+	for count to be negative to list source code backwards.
+
+	Fix off-by-one rendering of the line number.
+
 2004-11-27  Chris Toshok  <toshok@ximian.com>
 
 	* frontends/scripting/ScriptingContext.cs

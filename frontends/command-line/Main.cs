@@ -53,6 +53,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.RegisterAlias   ("bg", typeof (BackgroundProcessCommand));
 			e.RegisterCommand ("stop", typeof (StopProcessCommand));
 			e.RegisterCommand ("continue", typeof (ContinueCommand));
+			e.RegisterAlias   ("cont", typeof (ContinueCommand));
 			e.RegisterAlias   ("c", typeof (ContinueCommand));
 			e.RegisterCommand ("step", typeof (StepCommand));
 			e.RegisterAlias   ("s", typeof (StepCommand));

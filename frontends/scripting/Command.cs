@@ -77,8 +77,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			ExpressionParser parser = new ExpressionParser (context, ToString ());
 
 			Expression expr = parser.Parse (arg);
-			if (expr == null)
+			if (expr == null){
+				Console.WriteLine (Environment.StackTrace);
 				context.Error ("Cannot parse arguments");
+			}
 
 			return expr;
 		}
@@ -1501,7 +1503,8 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class ListCommand : SourceCommand, CL.IDocumentableCommand
 	{
 		int lines = 10;
-
+		bool reverse = false;
+		
 		public int Lines {
 			get { return lines; }
 			set { lines = value; }
@@ -1509,24 +1512,40 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Repeating)
+			if (Argument == "-"){
+				reverse = true;
 				return true;
-			else
+			}
+
+			if (Repeating){
+				return true;
+			} else
 				return base.DoResolve (context);
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (Repeating)
-				context.ListSourceCode (null, Lines);
-			else
-				context.ListSourceCode (location, Lines);
+				context.ListSourceCode (null, Lines * (reverse ? -1 : 1));
+			else {
+				context.ListSourceCode (location, Lines * (reverse ? -1 : 1));
+			}
 		}
 
 		// IDocumentableCommand
 		public CL.CommandFamily Family { get { return CL.CommandFamily.Files; } }
-		public string Description { get { return "List source code."; } }
-		public string Documentation { get { return ""; } }
+		public string Description {
+			get { return "List source code."; }
+		}
+
+		public string Documentation {
+			get {
+				return  "Syntax: list [LOCATION]\n" +
+					"Any of the standard way of representing a location are allowed\n" + 
+					"in addition the symbol `-' can be used to list the source code\n" + 
+					"backwards from the last point that was listed";
+			}
+		}
 	}
 
 	public class BreakCommand : SourceCommand, CL.IDocumentableCommand

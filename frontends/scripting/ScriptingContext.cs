@@ -835,10 +835,15 @@ namespace Mono.Debugger.Frontends.Scripting
 		public void ListSourceCode (SourceLocation location, int count)
 		{
 			int start;
+
 			if ((location == null) && (current_source_code == null))
 				location = CurrentLocation;
 			if (location == null) {
-				start = last_line;
+				if (count < 0){
+					start = Math.Max (last_line + 2 * count, 0);
+					count = -count;
+				} else 
+					start = last_line;
 			} else {
 				string filename = location.SourceFile.FileName;
 				ISourceBuffer buffer = interpreter.FindFile (filename);
@@ -847,13 +852,23 @@ namespace Mono.Debugger.Frontends.Scripting
 						"Cannot find source file `{0}'", filename);
 
 				current_source_code = buffer.Contents;
-				start = Math.Max (location.Line - 2, 0);
+
+				if (count < 0)
+					start = Math.Max (location.Line + 2, 0);
+				else 
+					start = Math.Max (location.Line - 2, 0);
 			}
 
 			last_line = Math.Min (start + count, current_source_code.Length);
 
+			if (start > last_line){
+				int t = start;
+				start = last_line;
+				last_line = t;
+			}
+
 			for (int line = start; line < last_line; line++)
-				interpreter.Print (String.Format ("{0,4} {1}", line, current_source_code [line]));
+				interpreter.Print (String.Format ("{0,4} {1}", line + 1, current_source_code [line]));
 		}
 
 		public void ResetCurrentSourceCode ()
