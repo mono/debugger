@@ -52,6 +52,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			if (process.SingleSteppingEngine.HasTarget) {
+				current_frame = process.SingleSteppingEngine.CurrentFrame;
+				if (current_frame.Method != null)
+					method_changed (current_frame.Method);
 				context.Print ("Process @{0} stopped at {1}.", id, CurrentFrame);
 				PrintFrameSource (CurrentFrame);
 			} else {
