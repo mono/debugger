@@ -68,18 +68,25 @@ namespace Mono.Debugger
 		public SourceMethodInfo FindMethod (string name)
 		{
 			SourceData data = ensure_methods ();
-			Console.WriteLine ("FIND METHOD: {0} {1}", this, name);
 			if (data == null)
 				return null;
 
 			return (SourceMethodInfo) data.MethodHash [name];
 		}
 
-		// <summary>
-		//   Returns the method in which @SourceLine is or null if the
-		//   line is in no method.
-		// </summary>
-		public abstract ITargetLocation Lookup (int SourceLine);
+		public SourceMethodInfo FindMethod (int line)
+		{
+			SourceData data = ensure_methods ();
+			if (data == null)
+				return null;
+
+			foreach (SourceMethodInfo method in data.Methods) {
+				if ((method.StartRow <= line) && (method.EndRow >= line))
+					return method;
+			}
+
+			return null;
+		}
 
 		protected SourceInfo (Module module, string filename)
 		{
@@ -149,6 +156,8 @@ namespace Mono.Debugger
 				return is_dynamic;
 			}
 		}
+
+		public abstract TargetAddress Lookup (int SourceLine);
 
 		// <summary>
 		//   Registers a delegate to be invoked when the method is loaded.

@@ -68,6 +68,22 @@ namespace Mono.Debugger
 			}
 		}
 
+		public TargetAddress Lookup (int line)
+		{
+			ISourceBuffer source = ReadSource ();
+			if ((source == null) || (line < StartRow) || (line > EndRow))
+				return TargetAddress.Null;
+
+			for (int i = 0; i < addresses.Count; i++) {
+				LineEntry entry = (LineEntry) addresses [i];
+
+				if (line <= entry.Line)
+					return entry.Address;
+			}
+
+			return TargetAddress.Null;
+		}
+
 		public SourceLocation Lookup (TargetAddress address)
 		{
 			if (!MethodBase.IsInSameMethod (method, address))

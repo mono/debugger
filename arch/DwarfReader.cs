@@ -170,6 +170,14 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public override TargetAddress Lookup (int line)
+			{
+				if (!method.HasSource)
+					return TargetAddress.Null;
+
+				return method.Source.Lookup (line);
+			}
+
 			public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
 									 object user_data)
 			{
@@ -197,11 +205,6 @@ namespace Mono.Debugger.Architecture
 			protected override ArrayList GetMethods ()
 			{
 				return methods;
-			}
-
-			public override ITargetLocation Lookup (int line)
-			{
-				return null;
 			}
 		}
 

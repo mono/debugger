@@ -973,11 +973,6 @@ namespace Mono.Debugger.Languages.CSharp
 				this.source = source;
 			}
 
-			public override ITargetLocation Lookup (int line)
-			{
-				return null;
-			}
-
 			protected override ArrayList GetMethods ()
 			{
 				ArrayList list = new ArrayList ();
@@ -1018,9 +1013,18 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override bool IsLoaded {
 				get {
-					return (method != null) ||
+					return (method != null) &&
 						((reader != null) && reader.range_hash.Contains (offset));
 				}
+			}
+
+			void ensure_method ()
+			{
+				if ((method != null) && method.IsLoaded)
+					return;
+
+				MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [offset];
+				method = entry.GetMethod ();
 			}
 
 			public override IMethod Method {
@@ -1028,20 +1032,29 @@ namespace Mono.Debugger.Languages.CSharp
 					if (!IsLoaded)
 						throw new InvalidOperationException ();
 
-					if ((method != null) && method.IsLoaded)
-						return method;
-
-					MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [offset];
-					method = entry.GetMethod ();
-
+					ensure_method ();
 					return method;
 				}
+			}
+
+			public override TargetAddress Lookup (int line)
+			{
+				if (!IsLoaded)
+					throw new InvalidOperationException ();
+
+				ensure_method ();
+				if (method.HasSource)
+					return method.Source.Lookup (line);
+				else
+					return TargetAddress.Null;
 			}
 
 			void breakpoint_hit (TargetAddress address, object user_data)
 			{
 				if (load_handlers == null)
 					return;
+
+				ensure_method ();
 
 				foreach (HandlerData handler in load_handlers.Keys)
 					handler.Handler (handler.Method, handler.UserData);
@@ -1649,15 +1662,6 @@ namespace Mono.Debugger.Languages.CSharp
 				// Do nothing.
 			}
 			return true;
-		}
-
-		public void Test (IMethod method)
-		{
-			MethodInfo minfo = method.MethodHandle as MethodInfo;
-			if (minfo == null)
-				return;
-
-			Console.WriteLine ("TEST: {0}", minfo);
 		}
 
 		public void ModulesChanged ()

@@ -219,62 +219,30 @@ namespace Mono.Debugger.Frontends.CommandLine
 					stderr.WriteLine ("Command requires an argument");
 					break;
 				}
-				backend.InsertBreakpoint (args [0]);
-				break;
-
-			case "test":
-				backend.Test ("Hello.Test");
+				Breakpoint breakpoint = new SimpleBreakpoint ();
+				if (args [0].IndexOf (':') != -1) {
+					string[] tmp = args [0].Split (':');
+					string file = Path.GetFullPath (tmp [0]);
+					int line = Int32.Parse (tmp [1]);
+					backend.InsertBreakpoint (breakpoint, file, line);
+				} else
+					backend.InsertBreakpoint (breakpoint, args [0]);
 				break;
 
 			case "modules":
 				Console.WriteLine ("MODULES:");
-				print_modules (backend.Modules);
+				print_modules (backend.Modules, 0);
 				break;
 
-#if FALSE
-			case "b":
-			case "break-method": {
-				if (args.Length != 2) {
-					stderr.WriteLine ("Command requires an argument");
-					break;
-				}
-
-				ILanguageCSharp csharp = backend as ILanguageCSharp;
-				if (csharp == null) {
-					stderr.WriteLine ("Debugger doesn't support C#");
-					break;
-				}
-
-				Type type = csharp.CurrentAssembly.GetType (args [0]);
-				if (type == null) {
-					stderr.WriteLine ("No such type: `" + args [0] + "'");
-					break;
-				}
-
-				MethodInfo method = type.GetMethod (args [1]);
-				if (method == null) {
-					stderr.WriteLine ("Can't find method `" + args [1] + "' in type `" +
-							  args [0] + "'");
-					break;
-				}
-
-				ITargetLocation location = csharp.CreateLocation (method);
-				if (location == null) {
-					stderr.WriteLine ("Can't get location for method: " +
-							  args [0] + "." + args [1]);
-					break;
-				}
-
-				IBreakPoint break_point = backend.AddBreakPoint (location);
-
-				if (break_point != null)
-					stderr.WriteLine ("Added breakpoint: " + break_point);
-				else
-					stderr.WriteLine ("Unable to add breakpoint!");
-
+			case "sources":
+				Console.WriteLine ("SOURCES:");
+				print_modules (backend.Modules, 1);
 				break;
-			}
-#endif
+
+			case "methods":
+				Console.WriteLine ("METHODS:");
+				print_modules (backend.Modules, 2);
+				break;
 
 			default:
 				stderr.WriteLine ("Unknown command: " + command);
@@ -420,7 +388,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		void print_modules (Module[] modules)
+		void print_modules (Module[] modules, int level)
 		{
 			if (modules == null)
 				return;
@@ -454,24 +422,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				module_count++;
 
+				foreach (Breakpoint breakpoint in module.Breakpoints)
+					Console.WriteLine ("    BREAKPOINT: {0}", breakpoint);
+
+				if (level == 0)
+					continue;
+
 				foreach (SourceInfo source in module.Sources) {
 					Console.WriteLine ("    SOURCE: {0}", source);
 
 					++source_count;
+					if (level == 1)
+						continue;
 
 					foreach (SourceMethodInfo method in source.Methods) {
 						Console.WriteLine ("      METHOD: {0}", method);
 						++method_count;
 					}
 				}
-
-				foreach (Breakpoint breakpoint in module.Breakpoints)
-					Console.WriteLine ("    BREAKPOINT: {0}", breakpoint);
-
-				if (module.Name == "Monkey")
-					module.LoadSymbols = false;
-				if (module.Name == "Hello")
-					module.StepInto = false;
 			}
 
 			Console.WriteLine ("Total {0} modules, {1} source files and {2} methods.",

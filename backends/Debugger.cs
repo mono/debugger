@@ -585,17 +585,29 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		SourceMethodInfo FindMethod (string source, int line)
+		{
+			foreach (Module module in Modules) {
+				SourceMethodInfo method = module.FindMethod (source, line);
+				
+				if (method != null)
+					return method;
+			}
+
+			return null;
+		}
+
 		void method_loaded (SourceMethodInfo method, object user_data)
 		{
 			Console.WriteLine ("METHOD LOADED: {0}", method);
 		}
 
-		public int InsertBreakpoint (string name)
+		public int InsertBreakpoint (Breakpoint breakpoint, string name)
 		{
 			SourceMethodInfo method = FindMethod (name);
 			if (method == null) {
-				Console.WriteLine ("Can't find any method with this name: {0}", name);
-				return 0;
+				Console.WriteLine ("Can't find any method with this name.");
+				return -1;
 			}
 
 			Console.WriteLine ("METHOD: {0} {1} {2}", method, method.SourceInfo,
@@ -603,30 +615,27 @@ namespace Mono.Debugger
 
 			Module module = method.SourceInfo.Module;
 
-			int index = module.AddBreakpoint (new SimpleBreakpoint (), method);
+			int index = module.AddBreakpoint (breakpoint, method);
 			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;
 		}
 
-		public void Test (string name)
+		public int InsertBreakpoint (Breakpoint breakpoint, string source, int line)
 		{
-			SourceMethodInfo source_method = FindMethod (name);
-			if ((source_method == null) || !source_method.IsLoaded)
-				return;
+			SourceMethodInfo method = FindMethod (source, line);
+			if (method == null) {
+				Console.WriteLine ("No method contains this line.");
+				return -1;
+			}
 
-			IMethod method = source_method.Method;
-			if (!method.IsLoaded)
-				return;
+			Console.WriteLine ("METHOD: {0} {1} {2}", method, method.SourceInfo,
+					   method.SourceInfo.Module);
 
-			Console.WriteLine ("METHOD: {0} {1}", source_method, method);
+			Module module = method.SourceInfo.Module;
 
-			MonoCSharpLanguageBackend csharp = method.Module.Language as MonoCSharpLanguageBackend;
-			if (csharp == null)
-				return;
-
-			Console.WriteLine ("METHOD: {0}", csharp);
-
-			csharp.Test (method);
+			int index = module.AddBreakpoint (breakpoint, method, line);
+			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
+			return index;
 		}
 
 		public TargetAddress CurrentFrameAddress {

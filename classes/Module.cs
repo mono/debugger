@@ -166,8 +166,14 @@ namespace Mono.Debugger
 
 		public int AddBreakpoint (Breakpoint breakpoint, SourceMethodInfo method)
 		{
+			return AddBreakpoint (breakpoint, method, 0);
+		}
+
+		public int AddBreakpoint (Breakpoint breakpoint, SourceMethodInfo method, int line)
+		{
 			int index = ++next_breakpoint_id;
-			BreakpointHandle handle = new BreakpointHandle (this, breakpoint, method, index);
+			BreakpointHandle handle = new BreakpointHandle (
+				this, breakpoint, method, line, index);
 			breakpoints.Add (index, handle);
 			return index;
 		}
@@ -231,6 +237,21 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public virtual SourceMethodInfo FindMethod (string source_file, int line)
+		{
+			if (!SymbolsLoaded)
+				return null;
+
+			foreach (SourceInfo source in Sources) {
+				if (source.FileName != source_file)
+					continue;
+
+				return source.FindMethod (line);
+			}
+
+			return null;
+		}
+
 		public ISymbolTable SymbolTable {
 			get {
 				if (!SymbolsLoaded)
@@ -255,17 +276,19 @@ namespace Mono.Debugger
 
 		protected sealed class BreakpointHandle : IDisposable {
 			public readonly int Index;
+			public readonly int Line;
 			public readonly Module Module;
 			public readonly Breakpoint Breakpoint;
 			public readonly string MethodName;
 			public SourceMethodInfo Method;
 
 			public BreakpointHandle (Module module, Breakpoint breakpoint,
-						 SourceMethodInfo method, int index)
+						 SourceMethodInfo method, int line, int index)
 			{
 				this.Module = module;
 				this.Breakpoint = breakpoint;
 				this.Index = index;
+				this.Line = line;
 				this.Method = method;
 				this.MethodName = method.Name;
 
@@ -292,7 +315,19 @@ namespace Mono.Debugger
 			void method_loaded (SourceMethodInfo method, object user_data)
 			{
 				load_handler = null;
-				handle = Module.EnableBreakpoint (this, Method.Method.StartAddress);
+
+				TargetAddress address;
+				if (Line != 0)
+					address = Method.Lookup (Line);
+				else
+					address = Method.Method.StartAddress;
+
+				Console.WriteLine ("METHOD LOADED: {0} {1}", method, address);
+
+				if (address.IsNull)
+					return;
+
+				handle = Module.EnableBreakpoint (this, address);
 				enabled = handle != null;
 			}
 
