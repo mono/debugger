@@ -1067,7 +1067,23 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSourceFile info = (MonoSourceFile) source_hash [entry.SourceFile];
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
-			string name = entry.Name;
+			R.MethodBase mbase = entry.MethodBase;
+
+			StringBuilder sb = new StringBuilder (mbase.DeclaringType.FullName);
+			sb.Append (".");
+			sb.Append (entry.Name);
+			sb.Append ("(");
+			bool first = true;
+			foreach (R.ParameterInfo param in mbase.GetParameters ()) {
+				if (first)
+					first = false;
+				else
+					sb.Append (",");
+				sb.Append (param.ParameterType.FullName);
+			}
+			sb.Append (")");
+
+			string name = sb.ToString ();
 			method = new MonoSourceMethod (info, this, source, entry, name);
 			method_index_hash.Add (index, method);
 			return method;

@@ -1,5 +1,14 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolFile.GetMethod_internal): Use the full method signature
+	as method name.
+
+	* arch/BfdDisassembler.cs (print_address_func): Put back
+	trampoline support.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.h (mono_debugger_server_get_target_info):
 	Added `guint32 *is_bigendian'.
 
