@@ -1023,33 +1023,48 @@ namespace Mono.Debugger.Backends
 
 		internal class StackFrame
 		{
-			Inferior inferior;
-			ServerStackFrame frame;
+			TargetAddress address, stack, frame;
 
 			internal StackFrame (Inferior inferior, ServerStackFrame frame)
 			{
-				this.inferior = inferior;
-				this.frame = frame;
+				this.address = new TargetAddress (inferior.GlobalAddressDomain, frame.Address);
+				this.stack = new TargetAddress (inferior.AddressDomain, frame.StackPointer);
+				this.frame = new TargetAddress (inferior.AddressDomain, frame.FrameAddress);
+			}
+
+			internal StackFrame (TargetAddress address, TargetAddress stack)
+			{
+				this.address = address;
+				this.stack = stack;
+				this.frame = TargetAddress.Null;
 			}
 
 			public TargetAddress Address {
 				get {
-					return new TargetAddress (inferior.GlobalAddressDomain, frame.Address);
+					return address;
 				}
 			}
 
 			public TargetAddress StackPointer {
 				get {
-					return new TargetAddress (inferior.AddressDomain, frame.StackPointer);
+					return stack;
 				}
 			}
-
 
 			public TargetAddress FrameAddress {
 				get {
-					return new TargetAddress (inferior.AddressDomain, frame.FrameAddress);
+					return frame;
 				}
 			}
+		}
+
+		public StackFrame GetCurrentFrame ()
+		{
+			StackFrame[] iframes = GetBacktrace (1, TargetAddress.Null);
+			if (iframes.Length > 0)
+				return iframes [0];
+
+			return new StackFrame (CurrentFrame, GetStackPointer ());
 		}
 
 		public StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)

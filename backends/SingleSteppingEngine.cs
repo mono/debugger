@@ -1196,8 +1196,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		StackFrame get_frame ()
 		{
-			Inferior.StackFrame[] iframes = inferior.GetBacktrace (1, TargetAddress.Null);
-			TargetAddress address = iframes [0].Address;
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			TargetAddress address = iframe.Address;
 
 			// If we have a current_method and the address is still inside
 			// that method, we don't need to do a method lookup.
@@ -1214,10 +1214,10 @@ namespace Mono.Debugger.Backends
 				SourceAddress source = current_method.Source.Lookup (address);
 
 				current_frame = process.CreateFrame (
-					iframes [0], 0, null, source, current_method);
+					iframe, 0, null, source, current_method);
 			} else
 				current_frame = process.CreateFrame (
-					iframes [0], 0, null, null, null);
+					iframe, 0, null, null, null);
 
 			return current_frame;
 		}
@@ -1259,7 +1259,7 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
-			Inferior.StackFrame[] iframes = inferior.GetBacktrace (1, TargetAddress.Null);
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasSource) {
@@ -1277,10 +1277,10 @@ namespace Mono.Debugger.Backends
 				}
 
 				current_frame = process.CreateFrame (
-					iframes [0], 0, null, source, current_method);
+					iframe, 0, null, source, current_method);
 			} else
 				current_frame = process.CreateFrame (
-					iframes [0], 0, null, null, null);
+					iframe, 0, null, null, null);
 
 			return null;
 		}

@@ -1,5 +1,11 @@
 2004-06-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/Inferior.cs (Inferior.GetCurrentFrame): New internal
+	function; this is a more reliable way of getting the inner
+	Inferior.StackFrame.	
+
+2004-06-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(ILanguageBackend.GetTrampolineAddress): Added `out bool is_start';
 	if true, then the return address is the start of the trampoline
