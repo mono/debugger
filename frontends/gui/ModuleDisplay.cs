@@ -86,13 +86,8 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
-		}
 
-		protected override void SetBackend (DebuggerBackend backend)
-		{
-			base.SetBackend (backend);
-
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			gui.Manager.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
 		Module[] modules = null;

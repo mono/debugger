@@ -1,5 +1,11 @@
 2003-03-12  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerManager.cs: New file.  Do all this event
+	notification stuff here instead of doing it on a per-widget level
+	in DebuggerWidget.
+
+2003-03-12  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/ProcessManager.cs: Removed, this was way too immature.
 
 	* frontends/gui/LineDebugStatusbar.cs: Removed.

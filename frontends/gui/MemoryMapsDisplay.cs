@@ -61,13 +61,8 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
-		}
 
-		protected override void SetProcess (Process process)
-		{
-			base.SetProcess (process);
-
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			gui.Manager.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
 		TargetMemoryArea[] memory_maps = null;

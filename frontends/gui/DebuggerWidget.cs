@@ -12,22 +12,23 @@ namespace Mono.Debugger.GUI
 		protected DebuggerBackend backend;
 		protected Process process;
 		protected DebuggerGUI gui;
-		protected ThreadNotify thread_notify;
 		protected Glade.XML gxml;
+		protected DebuggerManager manager;
 		bool visible;
-		int frame_notify_id;
-		int state_notify_id;
 
 		public DebuggerWidget (DebuggerGUI gui, Gtk.Container container, Gtk.Widget widget)
 		{
 			this.gui = gui;
-			this.thread_notify = gui.ThreadNotify;
+			this.manager = gui.Manager;
 			this.gxml = gui.GXML;
 			this.widget = widget;
 			this.container = container;
 
-			frame_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (frame_event));
-			state_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (state_event));
+			gui.Manager.ProcessCreatedEvent += new ProcessCreatedHandler (ProgramLoaded);
+
+			gui.Manager.StateChangedEvent += new StateChangedHandler (StateChanged);
+			gui.Manager.FrameChangedEvent += new StackFrameHandler (FrameChanged);
+			gui.Manager.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalid);
 
 			if (container == null) {
 				Gtk.Widget parent = widget.Parent;
@@ -43,9 +44,6 @@ namespace Mono.Debugger.GUI
 				container.Mapped += new EventHandler (mapped);
 				container.Unmapped += new EventHandler (unmapped);
 			} catch {}
-
-			gui.ProgramLoadedEvent += new ProgramLoadedHandler (program_loaded);
-			gui.ProcessCreatedEvent += new ProcessCreatedHandler (process_created);
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -56,62 +54,15 @@ namespace Mono.Debugger.GUI
 			get { return process; }
 		}
 
-		void program_loaded (object sender, DebuggerBackend backend)
+		void ProgramLoaded (object sender, Process process)
 		{
-			SetBackend (backend);
-		}
-
-		void process_created (object sender, Process process)
-		{
+			this.backend = process.DebuggerBackend;
 			SetProcess (process);
-		}
-
-		protected virtual void SetBackend (DebuggerBackend backend)
-		{
-			this.backend = backend;
 		}
 
 		protected virtual void SetProcess (Process process)
 		{
 			this.process = process;
-
-			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
-			process.StateChanged += new StateChangedHandler (RealStateChanged);
-		}
-
-		StackFrame current_frame = null;
-
-		void frame_event ()
-		{
-			lock (this) {
-				if (current_frame != null)
-					FrameChanged (current_frame);
-				else
-					FramesInvalid ();
-			}
-		}
-
-		// <remarks>
-		//   This method may get called from any thread, so we must not use gtk# here.
-		// </remarks>
-		protected virtual void RealFrameChanged (StackFrame frame)
-		{
-			lock (this) {
-				current_frame = frame;
-				thread_notify.Signal (frame_notify_id);
-			}
-		}
-
-		// <remarks>
-		//   This method may get called from any thread, so we must not use gtk# here.
-		// </remarks>
-		protected virtual void RealFramesInvalid ()
-		{
-			lock (this) {
-				current_frame = null;
-				thread_notify.Signal (frame_notify_id);
-			}
 		}
 
 		// <remarks>
@@ -129,38 +80,7 @@ namespace Mono.Debugger.GUI
 		{ }
 
 		protected StackFrame CurrentFrame {
-			get { return current_frame; }
-		}
-
-		TargetState current_state = TargetState.NO_TARGET;
-		int current_state_arg = 0;
-		bool state_changed = false;
-
-		void state_event ()
-		{
-			lock (this) {
-				if (state_changed) {
-					state_changed = false;
-					StateChanged (current_state, current_state_arg);
-				}
-			}
-		}
-
-		// <remarks>
-		//   This method may get called from any thread, so we must not use gtk# here.
-		// </remarks>
-		protected virtual void RealStateChanged (TargetState state, int arg)
-		{
-			lock (this) {
-				state_changed = true;
-				current_state = state;
-				current_state_arg = arg;
-
-				if (state == TargetState.EXITED)
-					RealTargetExited ();
-
-				thread_notify.Signal (state_notify_id);
-			}
+			get { return manager.CurrentFrame; }
 		}
 
 		// <remarks>
@@ -172,12 +92,6 @@ namespace Mono.Debugger.GUI
 			if (state == TargetState.EXITED)
 				TargetExited ();
 		}
-
-		// <remarks>
-		//   This method may get called from any thread, so we must not use gtk# here.
-		// </remarks>
-		protected virtual void RealTargetExited ()
-		{ }
 
 		// <remarks>
 		//   This method will always get called from the gtk# thread and while keeping the
@@ -211,12 +125,6 @@ namespace Mono.Debugger.GUI
 		public virtual Gtk.Widget Container {
 			get {
 				return container;
-			}
-		}
-
-		public virtual DebuggerBackend Debugger {
-			get {
-				return backend;
 			}
 		}
 

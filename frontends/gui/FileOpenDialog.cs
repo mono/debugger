@@ -26,7 +26,7 @@ namespace Mono.Debugger.GUI
 			ShowFileops = false;
 			Response += new ResponseHandler (response_event);
 
-			gui.ProgramLoadedEvent += new ProgramLoadedHandler (program_loaded);
+			gui.Manager.ProcessCreatedEvent += new ProcessCreatedHandler (program_loaded);
 
 			show_list_button = (Button) AddButton ("_Browse source list", 1);
 
@@ -61,9 +61,9 @@ namespace Mono.Debugger.GUI
 			VBox.PackStart (list_vbox, true, true, 0);
 		}
 
-		void program_loaded (object sender, DebuggerBackend backend)
+		void program_loaded (object sender, Process process)
 		{
-			this.backend = backend;
+			this.backend = process.DebuggerBackend;
 			UpdateList ();
 		}
 

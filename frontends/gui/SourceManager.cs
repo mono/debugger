@@ -54,13 +54,6 @@ namespace Mono.Debugger.GUI {
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 
-		protected override void SetBackend (DebuggerBackend backend)
-		{
-			base.SetBackend (backend);
-
-			OnProgramLoadedEvent (backend);
-		}
-
 		protected override void SetProcess (Process process)
 		{
 			base.SetProcess (process);
@@ -74,14 +67,7 @@ namespace Mono.Debugger.GUI {
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 		public event TargetExitedHandler TargetExitedEvent;
 		public event StateChangedHandler StateChangedEvent;
-		public event ProgramLoadedHandler ProgramLoadedEvent;
 		public event ProcessCreatedHandler ProcessCreatedEvent;
-
-		protected void OnProgramLoadedEvent (DebuggerBackend backend)
-		{
-			if (ProgramLoadedEvent != null)
-				ProgramLoadedEvent (this, backend);
-		}
 
 		protected void OnProcessCreatedEvent (Process process)
 		{

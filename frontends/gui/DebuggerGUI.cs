@@ -98,12 +98,12 @@ namespace Mono.Debugger.GUI
 		VariableDisplay variable_display;
 		BackTraceView backtrace_view;
 		ModuleDisplay module_display;
-		ProcessManager process_manager;
 		HexEditor hex_editor;
 		MemoryMapsDisplay memory_maps_display;
 		BreakpointManager breakpoint_manager;
 		ThreadNotify thread_notify;
 		FileOpenDialog file_open_dialog;
+		DebuggerManager manager;
 
 		Gtk.TextView target_output;
 		Gtk.TextView command_output;
@@ -129,6 +129,7 @@ namespace Mono.Debugger.GUI
 		{
 			thread_notify = new ThreadNotify ();
 			program = new Program ("Debugger", "0.2", Modules.UI, arguments);
+			manager = new DebuggerManager (this);
 
 #if FALSE
 			backend.DebuggerError += new DebuggerErrorHandler (ErrorHandler);
@@ -145,27 +146,16 @@ namespace Mono.Debugger.GUI
 				LoadProgram (arguments);
 		}
 
+		internal DebuggerManager Manager {
+			get { return manager; }
+		}
+
 		internal ThreadNotify ThreadNotify {
 			get { return thread_notify; }
 		}
 
 		internal Glade.XML GXML {
 			get { return gxml; }
-		}
-
-		public event ProgramLoadedHandler ProgramLoadedEvent;
-		public event ProcessCreatedHandler ProcessCreatedEvent;
-
-		protected void OnProgramLoadedEvent (DebuggerBackend backend)
-		{
-			if (ProgramLoadedEvent != null)
-				ProgramLoadedEvent (this, backend);
-		}
-
-		protected void OnProcessCreatedEvent (Process process)
-		{
-			if (ProcessCreatedEvent != null)
-				ProcessCreatedEvent (this, process);
 		}
 
 		//
@@ -215,7 +205,6 @@ namespace Mono.Debugger.GUI
 			variable_display = new VariableDisplay (this, "variable-display");
 			backtrace_view = new BackTraceView (this, "backtrace-view");
 			module_display = new ModuleDisplay (this, "module-view");
-			process_manager = new ProcessManager (this, "process-manager");
 			hex_editor = new HexEditor (this, "hexeditor-dialog", "hexeditor-view");
 			memory_maps_display = new MemoryMapsDisplay (this, "memory-maps-view");
 			breakpoint_manager = new BreakpointManager (this, "breakpoint-manager");
@@ -325,7 +314,6 @@ namespace Mono.Debugger.GUI
 
 			backend = context.ParseArguments (args);
 			start = context.ProcessStart;
-			OnProgramLoadedEvent (backend);
 
 			backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
 				main_process_started);
@@ -349,7 +337,7 @@ namespace Mono.Debugger.GUI
 			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
 			process.DebuggerError += new DebuggerErrorHandler (DebuggerError);
 
-			OnProcessCreatedEvent (process);
+			this.manager.MainProcessCreated (process);
 
 			source_manager.StateChangedEvent += new StateChangedHandler (UpdateGUIState);
 

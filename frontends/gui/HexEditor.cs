@@ -124,13 +124,8 @@ namespace Mono.Debugger.GUI
 			// displayed to the user if it failed.
 			force_writable_button = (ToggleButton) gxml ["hexeditor-force-writable"];
 			force_writable_button.Toggled += new EventHandler (force_writable_toggled);
-		}
 
-		protected override void SetBackend (DebuggerBackend backend)
-		{
-			base.SetBackend (backend);
-
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			gui.Manager.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
 		void force_writable_toggled (object sender, EventArgs args)

@@ -24,6 +24,9 @@ namespace Mono.Debugger.GUI
 			entry.PreviousLine += new EventHandler (previous_line);
 			entry.NextLine += new EventHandler (next_line);
 
+			manager.RealFrameChangedEvent += new StackFrameHandler (RealFrameChanged);
+			manager.RealFramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
+
 			widget = entry;
 
 			container.Add (entry);
@@ -83,33 +86,26 @@ namespace Mono.Debugger.GUI
 			Update ();
 		}
 
-		protected override void RealFrameChanged (StackFrame frame)
+		void RealFrameChanged (StackFrame frame)
 		{
-			lock (this) {
-				IDisassembler dis = process.Disassembler;
-				TargetAddress addr = frame.TargetAddress;
-				AssemblerLine line = dis.DisassembleInstruction (addr);
-				if (line != null) {
-					current_insn = line.FullText;
+			IDisassembler dis = process.Disassembler;
+			TargetAddress addr = frame.TargetAddress;
+			AssemblerLine line = dis.DisassembleInstruction (addr);
+			if (line != null) {
+				current_insn = line.FullText;
 
-					stack = new Stack ();
-					stack.Push (addr);
-					stack.Push (addr + line.InstructionSize);
-				} else {
-					current_insn = null;
-					stack = null;
-				}
+				stack = new Stack ();
+				stack.Push (addr);
+				stack.Push (addr + line.InstructionSize);
+			} else {
+				current_insn = null;
+				stack = null;
 			}
-
-			base.RealFrameChanged (frame);
 		}
 
-		protected override void RealFramesInvalid ()
+		void RealFramesInvalid ()
 		{
-			lock (this) {
-				current_insn = null;
-			}
-			base.RealFramesInvalid ();
+			current_insn = null;
 		}
 
 		protected override void StateChanged (TargetState new_state, int arg)

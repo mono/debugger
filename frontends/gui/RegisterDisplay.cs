@@ -46,6 +46,9 @@ namespace Mono.Debugger.GUI
 		{
 			this.notebook = notebook;
 
+			manager.RealFrameChangedEvent += new StackFrameHandler (RealFrameChanged);
+			manager.RealFramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
+
 			color_change.red = 0xffff;
 			color_change.green = 0;
 			color_change.blue = 0;
@@ -246,7 +249,7 @@ namespace Mono.Debugger.GUI
 			if (!IsVisible)
 				return;
 			
-			if ((current_frame == null) || (arch == null))
+			if ((CurrentFrame == null) || (arch == null))
 				return;
 
 			if (regs == null) {
@@ -281,7 +284,7 @@ namespace Mono.Debugger.GUI
 			last_regs = regs;
 		}
 		
-		protected override void RealFrameChanged (StackFrame frame)
+		void RealFrameChanged (StackFrame frame)
 		{
 			if (!process.HasTarget || (arch == null))
 				return;
@@ -292,14 +295,11 @@ namespace Mono.Debugger.GUI
 				Console.WriteLine ("ERROR: Register loading threw an exception here: {0}", e);
 				regs = null;
 			}
-
-			base.RealFrameChanged (frame);
 		}
 
-		protected override void RealFramesInvalid ()
+		void RealFramesInvalid ()
 		{
 			regs = null;
-			base.RealFramesInvalid ();
 		}
 	}
 }

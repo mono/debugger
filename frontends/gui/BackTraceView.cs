@@ -10,7 +10,6 @@ namespace Mono.Debugger.GUI
 	{
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
-		Backtrace current_backtrace = null;
 
 		public BackTraceView (DebuggerGUI gui, string glade_name)
 			: this (gui, (Gtk.Container) gui.GXML [glade_name])
@@ -60,31 +59,20 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		protected override void RealFramesInvalid ()
-		{
-			current_backtrace = null;
-			base.RealFramesInvalid ();
-		}
-
-		protected override void RealFrameChanged (StackFrame frame)
-		{
-			current_backtrace = process.GetBacktrace ();
-			base.RealFrameChanged (frame);
-		}
-
 		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
 
 			store.Clear ();
-			if (current_backtrace == null)
+			Backtrace bt = manager.CurrentBacktrace;
+			if (bt == null)
 				return;
 
 			switch (new_state) {
 			case TargetState.STOPPED:
-				for (int i = 0; i < current_backtrace.Length; i++)
-					add_frame (i, current_backtrace [i]);
+				for (int i = 0; i < bt.Length; i++)
+					add_frame (i, bt [i]);
 				break;
 			}
 		}
