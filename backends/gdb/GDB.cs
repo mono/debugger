@@ -295,6 +295,32 @@ namespace Mono.Debugger.Backends
 		// private interface implementations.
 		//
 
+		protected class MyBinaryReader : BinaryReader
+		{
+			readonly uint target_address_size;
+
+			public MyBinaryReader (Stream input, uint target_address_size)
+				: base (input)
+			{
+				this.target_address_size = target_address_size;
+			}
+
+			public long ReadAddress ()
+			{
+				switch (target_address_size) {
+				case 4:
+					return ReadUInt32 ();
+
+				case 8:
+					return ReadInt64 ();
+
+				default:
+					throw new TargetException ("Unknown address size: " +
+								   target_address_size);
+				}
+			}
+		}
+
 		protected class TargetSymbol : ITargetLocation
 		{
 			public readonly string SymbolName;
@@ -486,7 +512,8 @@ namespace Mono.Debugger.Backends
 			if (modified == 0)
 				return;
 
-			generic_trampoline_code = ReadAddress ("print/a mono_generic_trampoline_code");
+			if (generic_trampoline_code == 0)
+				generic_trampoline_code = ReadAddress ("print/a mono_generic_trampoline_code");
 
 			symtabs = new ArrayList ();
 
@@ -499,35 +526,28 @@ namespace Mono.Debugger.Backends
 			symtab_generation = ReadInteger (ptr);
 			ptr += target_integer_size;
 
+			Console.WriteLine ("SYMTABS: {0:x} {1:x} {2:x}", size, count, symtab_generation);
+
+			string symtab_tmpfile;
+			MyBinaryReader symtab_reader = GetTargetMemoryReader (
+				ptr, size, out symtab_tmpfile);
+
 			for (uint i = 0; i < count; i++) {
-				long magic = ReadLongInteger (ptr);
+				long magic = symtab_reader.ReadInt64 ();
 				if (magic != OffsetTable.Magic)
 					throw new SymbolTableException ();
-				ptr += target_long_integer_size;
 
-				uint version = ReadInteger (ptr);
-				version = ReadInteger (ptr);
+				uint version = symtab_reader.ReadUInt32 ();
 				if (version != OffsetTable.Version)
 					throw new SymbolTableException ();
-				ptr += target_integer_size;
 
-				uint is_dynamic = ReadInteger (ptr);
-				ptr += target_integer_size;
-
-				string image_file = ReadString (ptr);
-				ptr += target_address_size;
-
-				long raw_contents = ReadAddress (ptr);
-				ptr += target_address_size;
-
-				uint raw_contents_size = ReadInteger (ptr);
-				ptr += target_integer_size;
-
-				long address_table = ReadAddress (ptr);
-				ptr += target_address_size;
-
-				uint address_table_size = ReadInteger (ptr);
-				ptr += target_integer_size + target_address_size;
+				uint is_dynamic = symtab_reader.ReadUInt32 ();
+				string image_file = ReadString (symtab_reader.ReadAddress ());
+				long raw_contents = symtab_reader.ReadAddress ();
+				uint raw_contents_size = symtab_reader.ReadUInt32 ();
+				long address_table = symtab_reader.ReadAddress ();
+				uint address_table_size = symtab_reader.ReadUInt32 ();
+				symtab_reader.ReadAddress ();
 
 				if ((raw_contents_size == 0) || (address_table_size == 0)) {
 					Console.WriteLine ("IGNORING SYMTAB");
@@ -553,8 +573,10 @@ namespace Mono.Debugger.Backends
 				File.Delete (tmpfile2);
 
 				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
-
 			}
+
+			symtab_reader.Close ();
+			File.Delete (symtab_tmpfile);
 		}
 
 		// <remarks>
@@ -666,7 +688,7 @@ namespace Mono.Debugger.Backends
 
 		public string ReadString (long address)
 		{
-			return ReadString ("print (char *)*" + address);
+			return ReadString ("print (char *)" + address);
 		}
 
 		string ReadString (string address)
@@ -680,7 +702,7 @@ namespace Mono.Debugger.Backends
 			return last_string_value;
 		}
 
-		BinaryReader GetTargetMemoryReader (long address, long size, out string tmpfile)
+		MyBinaryReader GetTargetMemoryReader (long address, long size, out string tmpfile)
 		{
 			tmpfile = Path.GetTempFileName ();
 
@@ -688,7 +710,7 @@ namespace Mono.Debugger.Backends
 					  (address + size));
 
 			FileStream stream = new FileStream (tmpfile, FileMode.Open);
-			return new BinaryReader (stream);
+			return new MyBinaryReader (stream, target_address_size);
 		}
 
 		ISourceLocation LookupAddress (long address)
