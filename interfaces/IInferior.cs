@@ -125,6 +125,21 @@ namespace Mono.Debugger
 		}
 	}
 
+	public interface IInferiorStackFrame
+	{
+		TargetAddress Address {
+			get;
+		}
+
+		TargetAddress ParamsAddress {
+			get;
+		}
+
+		TargetAddress LocalsAddress {
+			get;
+		}
+	}
+
 	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
 		// <summary>
@@ -176,7 +191,7 @@ namespace Mono.Debugger
 		long GetRegister (int register);
 		long[] GetRegisters (int[] registers);
 
-		TargetAddress[] GetBacktrace (int max_frames, bool full_backtrace);
+		IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
 
 		// <summary>
 		//   Returns a disassembler for the current target.

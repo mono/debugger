@@ -7,7 +7,7 @@ namespace Mono.Debugger
 	public delegate void MethodChangedHandler (IMethod method);
 
 	public delegate void StackFrameHandler (IStackFrame frame);
-	public delegate void StackFramesInvalidHandler ();
+	public delegate void StackFrameInvalidHandler ();
 
 	/// <summary>
 	///   This denotes a single debuggable target in some debugger.
@@ -119,7 +119,10 @@ namespace Mono.Debugger
 			get;
 		}
 
-		IStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
+		// <summary>
+		//   Get a backtrace.
+		// </summary>
+		IStackFrame[] GetBacktrace ();
 
 		long GetRegister (int register);
 		long[] GetRegisters (int[] registers);
@@ -165,7 +168,7 @@ namespace Mono.Debugger
 		//   event to remove the highlighting of the current
 		//   stack frame.
 		// </summary>
-		event StackFramesInvalidHandler FramesInvalidEvent;
+		event StackFrameInvalidHandler FramesInvalidEvent;
 
 		// <summary>
 		//   This event is emitted when the current method becomes

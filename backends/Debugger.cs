@@ -246,7 +246,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class StackFrame : IStackFrame
+	internal class StackFrame : IStackFrame, IDisposable
 	{
 		IMethod method;
 		TargetAddress address;
@@ -269,21 +269,26 @@ namespace Mono.Debugger.Backends
 
 		ISourceLocation IStackFrame.SourceLocation {
 			get {
+				check_disposed ();
 				return source;
 			}
 		}
 
 		TargetAddress IStackFrame.TargetAddress {
 			get {
+				check_disposed ();
 				return address;
 			}
 		}
 
 		IMethod IStackFrame.Method {
 			get {
+				check_disposed ();
 				return method;
 			}
 		}
+
+		public event StackFrameInvalidHandler FrameInvalid;
 
 		public override string ToString ()
 		{
@@ -297,6 +302,47 @@ namespace Mono.Debugger.Backends
 
 			return builder.ToString ();
 		}
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("Inferior");
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			if (!this.disposed) {
+				if (disposing) {
+					if (FrameInvalid != null)
+						FrameInvalid ();
+
+					method = null;
+					inferior = null;
+					source = null;
+				}
+				
+				this.disposed = true;
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~StackFrame ()
+		{
+			Dispose (false);
+		}
+
 	}
 
 	internal class StepFrame : IStepFrame
@@ -408,7 +454,8 @@ namespace Mono.Debugger.Backends
 		string target_application;
 		string working_directory;
 
-		IStackFrame current_frame;
+		StackFrame current_frame;
+		StackFrame[] current_backtrace;
 		IMethod current_method;
 
 		bool native;
@@ -525,9 +572,23 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		void frames_invalid ()
+		{
+			if (current_frame != null) {
+				current_frame.Dispose ();
+				current_frame = null;
+			}
+
+			if (current_backtrace != null) {
+				foreach (StackFrame frame in current_backtrace)
+					frame.Dispose ();
+				current_backtrace = null;
+			}
+		}
+
 		void target_state_changed (TargetState new_state, int arg)
 		{
-			current_frame = null;
+			frames_invalid ();
 			if (new_state == TargetState.STOPPED)
 				frame_changed ();
 
@@ -546,7 +607,7 @@ namespace Mono.Debugger.Backends
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
 		public event StackFrameHandler FrameChangedEvent;
-		public event StackFramesInvalidHandler FramesInvalidEvent;
+		public event StackFrameInvalidHandler FramesInvalidEvent;
 
 		public IInferior Inferior {
 			get {
@@ -566,7 +627,7 @@ namespace Mono.Debugger.Backends
 			inferior = null;
 			language = null;
 			symtabs = null;
-			current_frame = null;
+			frames_invalid ();
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
 		}
@@ -817,7 +878,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
+		public IStackFrame[] GetBacktrace ()
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
@@ -825,21 +886,27 @@ namespace Mono.Debugger.Backends
 			if (State != TargetState.STOPPED)
 				throw new TargetNotStoppedException ();
 
+			if (current_backtrace != null)
+				return current_backtrace;
+
 			symtabs.UpdateSymbolTable ();
 
-			TargetAddress[] frames = inferior.GetBacktrace (max_frames, full_backtrace);
-			IStackFrame[] retval = new IStackFrame [frames.Length];
+			IInferiorStackFrame[] frames = inferior.GetBacktrace (-1, false);
+			current_backtrace = new StackFrame [frames.Length];
 
 			for (int i = 0; i < frames.Length; i++) {
-				IMethod method = Lookup (frames [i]);
+				TargetAddress address = frames [i].Address;
+
+				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
-					ISourceLocation source = method.Source.Lookup (frames [i]);
-					retval [i] = new StackFrame (inferior, frames [i], source, method);
+					ISourceLocation source = method.Source.Lookup (address);
+					current_backtrace [i] = new StackFrame (
+						inferior, address, source, method);
 				} else
-					retval [i] = new StackFrame (inferior, frames [i]);
+					current_backtrace [i] = new StackFrame (inferior, address);
 			}
 
-			return retval;
+			return current_backtrace;
 		}
 
 		public long GetRegister (int register)

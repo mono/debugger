@@ -45,7 +45,7 @@ namespace Mono.Debugger.GUI
 			base.SetBackend (backend);
 
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
+			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 		
 		void FramesInvalidEvent ()

@@ -60,7 +60,7 @@ namespace Mono.Debugger.GUI
 			base.SetBackend (backend);
 			
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
+			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 		
 		void FramesInvalidEvent ()
@@ -95,7 +95,7 @@ namespace Mono.Debugger.GUI
 				return;
 
 			try {
-				IStackFrame[] frames = backend.GetBacktrace (-1, false);
+				IStackFrame[] frames = backend.GetBacktrace ();
 				for (int i = 0; i < frames.Length; i++)
 					add_frame (i, frames [i]);
 			} catch {

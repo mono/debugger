@@ -27,5 +27,10 @@ namespace Mono.Debugger
 		IMethod Method {
 			get;
 		}
+
+		// <summary>
+		//   This event is emitted when the frame becomes invalid.
+		// </summary>
+		event StackFrameInvalidHandler FrameInvalid;
 	}
 }

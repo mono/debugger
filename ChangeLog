@@ -1,5 +1,17 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* interface/IStackFrame.cs: Added FrameInvalid event.
+
+	* interface/IDebuggerBackend.cs (IDebuggerBackend.GetBackTrace):
+	Removed all arguments; this method will cache the return value and
+	emit the FrameInvalid event on each of the returned frames.
+
+	* interface/IInferior.cs (IInferior.GetBackTrace): Return an array
+	of IInternalBackTrace's;  this is an internal interface and should
+	not be used outside of Debugger.cs.
+
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
 	* interface/IInferior.cs, IDebuggerBackend.cs: Added Stop() method.
 
 2002-09-18  Martin Baulig  <martin@gnome.org>

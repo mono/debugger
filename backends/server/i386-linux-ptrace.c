@@ -785,19 +785,23 @@ server_ptrace_get_ret_address (InferiorHandle *handle, guint64 *retval)
 
 static ServerCommandError
 server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 stop_address,
-			     guint32 *count, guint64 **data)
+			     guint32 *count, StackFrame **data)
 {
-	GArray *frames = g_array_new (FALSE, FALSE, 4);
+	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
 	ServerCommandError result;
 	struct user_regs_struct regs;
 	guint32 address, frame;
+	StackFrame sframe;
 	int i;
 
 	result = get_registers (handle, &regs);
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
-	g_array_append_val (frames, regs.eip);
+	sframe.address = (guint32) regs.eip;
+	sframe.params_address = sframe.locals_address = (guint32) regs.ebp;
+
+	g_array_append_val (frames, sframe);
 
 	result = server_ptrace_get_frame (handle, regs.eip, regs.esp, regs.ebp,
 					  &address, &frame);
@@ -811,7 +815,10 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 		if (address == stop_address)
 			goto out;
 
-		g_array_append_val (frames, address);
+		sframe.address = address;
+		sframe.params_address = sframe.locals_address = frame;
+
+		g_array_append_val (frames, sframe);
 
 		result = server_ptrace_peek_word (handle, frame + 4, &address);
 		if (result != COMMAND_ERROR_NONE)
@@ -826,9 +833,9 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 
  out:
 	*count = frames->len;
-	*data = g_new0 (guint64, frames->len);
+	*data = g_new0 (StackFrame, frames->len);
 	for (i = 0; i < frames->len; i++)
-		(*data)[i] = g_array_index (frames, guint32, i);
+		(*data)[i] = g_array_index (frames, StackFrame, i);
 	g_array_free (frames, FALSE);
 	return result;
 }

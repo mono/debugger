@@ -993,7 +993,44 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public TargetAddress[] GetBacktrace (int max_frames, bool full_backtrace)
+		private struct ServerStackFrame
+		{
+			public long Address;
+			public long ParamsAddress;
+			public long LocalsAddress;
+		}
+
+		private class InferiorStackFrame : IInferiorStackFrame
+		{
+			IInferior inferior;
+			ServerStackFrame frame;
+
+			public InferiorStackFrame (IInferior inferior, ServerStackFrame frame)
+			{
+				this.inferior = inferior;
+				this.frame = frame;
+			}
+
+			public TargetAddress Address {
+				get {
+					return new TargetAddress (inferior, frame.Address);
+				}
+			}
+
+			public TargetAddress ParamsAddress {
+				get {
+					return new TargetAddress (inferior, frame.ParamsAddress);
+				}
+			}
+
+			public TargetAddress LocalsAddress {
+				get {
+					return new TargetAddress (inferior, frame.LocalsAddress);
+				}
+			}
+		}
+
+		public IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
@@ -1006,12 +1043,17 @@ namespace Mono.Debugger.Backends
 					server_handle, max_frames, stop, out count, out data);
 				check_error (result);
 
-				long[] frames = new long [count];
-				Marshal.Copy (data, frames, 0, count);
+				ServerStackFrame[] frames = new ServerStackFrame [count];
+				IntPtr temp = data;
+				for (int i = 0; i < count; i++) {
+					frames [i] = (ServerStackFrame) Marshal.PtrToStructure (
+						temp, typeof (ServerStackFrame));
+					temp = new IntPtr ((long) temp + Marshal.SizeOf (frames [i]));
+				}
 
-				TargetAddress[] retval = new TargetAddress [count];
+				IInferiorStackFrame[] retval = new IInferiorStackFrame [count];
 				for (int i = 0; i < count; i++)
-					retval [i] = new TargetAddress (this, frames [i]);
+					retval [i] = new InferiorStackFrame (this, frames [i]);
 				return retval;
 			} finally {
 				g_free (data);

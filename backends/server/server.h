@@ -36,6 +36,12 @@ typedef struct {
 	guint32 arg;
 } ServerStatusMessage;
 
+typedef struct {
+	guint64 address;
+	guint64 params_address;
+	guint64 locals_address;
+} StackFrame;
+
 /* This is an opaque data structure which the backend may use to store stuff. */
 typedef struct InferiorHandle InferiorHandle;
 
@@ -180,7 +186,7 @@ typedef struct {
 						       gint32            max_frames,
 						       guint64           stop_address,
 						       guint32          *count,
-						       guint64         **frames);
+						       StackFrame       **frames);
 
 	/*
 	 * This is only allowed on the first instruction of a method.
@@ -303,7 +309,7 @@ mono_debugger_server_get_backtrace       (ServerHandle        *handle,
 					  gint32               max_frames,
 					  guint64              stop_address,
 					  guint32             *count,
-					  guint64            **frames);
+					  StackFrame         **frames);
 
 ServerCommandError
 mono_debugger_server_get_ret_address     (ServerHandle        *handle,
