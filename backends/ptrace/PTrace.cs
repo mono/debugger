@@ -117,7 +117,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_get_target_info (IntPtr handle, out int target_int_size, out int target_long_size, out int target_address_size);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument, long callback_argument);
+		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
@@ -257,14 +257,14 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public long CallMethod (TargetAddress method, long method_argument)
+		public long CallMethod (TargetAddress method, long method_argument1, long method_argument2)
 		{
 			check_disposed ();
 
 			TargetState old_state = change_target_state (TargetState.BUSY);
 			try {
 				check_error (mono_debugger_server_call_method (
-					server_handle, method.Address, method_argument, 0));
+					server_handle, method.Address, method_argument1, method_argument2, 0));
 			} catch {
 				change_target_state (old_state);
 			}
@@ -354,7 +354,7 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
-		TargetAddress ITargetAccess.CallMethod (TargetAddress method, TargetAddress argument)
+		TargetAddress ITargetAccess.CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
 		{
 			throw new InvalidOperationException ();
 		}

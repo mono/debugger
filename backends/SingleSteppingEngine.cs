@@ -1961,22 +1961,31 @@ namespace Mono.Debugger.Backends
 		private struct CallMethodData
 		{
 			public readonly TargetAddress Method;
-			public readonly long Argument;
+			public readonly long Argument1;
+			public readonly long Argument2;
 			public readonly string StringArgument;
 
 			public CallMethodData (TargetAddress method, long arg, string string_arg)
 			{
 				this.Method = method;
-				this.Argument = arg;
+				this.Argument1 = arg;
+				this.Argument2 = 0;
 				this.StringArgument = string_arg;
+			}
+
+			public CallMethodData (TargetAddress method, long arg1, long arg2)
+			{
+				this.Method = method;
+				this.Argument1 = arg1;
+				this.Argument2 = arg2;
+				this.StringArgument = null;
 			}
 		}
 
 		CommandResult call_string_method (object data)
 		{
 			CallMethodData cdata = (CallMethodData) data;
-			long retval = inferior.CallStringMethod (cdata.Method, cdata.Argument,
-								 cdata.StringArgument);
+			long retval = inferior.CallStringMethod (cdata.Method, cdata.Argument1, cdata.StringArgument);
 			return new CommandResult (CommandResultType.CommandOk, retval);
 		}
 
@@ -2005,22 +2014,22 @@ namespace Mono.Debugger.Backends
 		CommandResult call_method (object data)
 		{
 			CallMethodData cdata = (CallMethodData) data;
-			long retval = inferior.CallMethod (cdata.Method, cdata.Argument);
+			long retval = inferior.CallMethod (cdata.Method, cdata.Argument1, cdata.Argument2);
 			return new CommandResult (CommandResultType.CommandOk, retval);
 		}
 
-		internal long CallMethod (TargetAddress method, long method_argument)
+		internal long CallMethod (TargetAddress method, long arg1, long arg2)
 		{
-			CallMethodData data = new CallMethodData (method, method_argument, null);
+			CallMethodData data = new CallMethodData (method, arg1, arg2);
 			CommandResult result = send_sync_command (new CommandFunc (call_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			return (long) result.Data;
 		}
 
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress argument)
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
 		{
-			CallMethodData data = new CallMethodData (method, argument.Address, null);
+			CallMethodData data = new CallMethodData (method, arg1.Address, arg2.Address);
 			CommandResult result = send_sync_command (new CommandFunc (call_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();

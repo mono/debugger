@@ -20,7 +20,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetType LookupType (string name);
+		ITargetType LookupType (StackFrame frame, string name);
 	}
 }
 

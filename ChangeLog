@@ -1,3 +1,12 @@
+2003-08-11  Martin Baulig  <martin@ximian.com>
+
+	* backends/IInferior.cs (IInferior.CallMethod): This method now
+	takes two `long' arguments.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolTable.LookupType): Call `mono_debugger_lookup_type ()'
+	in the JIT to do the actual lookup.
+
 2003-08-07  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ILanguage.cs (ILanguage.LookupType): New method.

@@ -51,13 +51,16 @@ server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 
 static ServerCommandError
 server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
-			   guint64 method_argument, guint64 callback_argument)
+			   guint64 method_argument1, guint64 method_argument2,
+			   guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	long new_esp, call_disp;
 
 	guint8 code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
-			  0x00, 0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0xcc };
+			  0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
+			  0x00, 0x00, 0x00, 0x00, 0xe8, 0x00, 0x00, 0x00,
+			  0x00, 0xcc };
 	int size = sizeof (code);
 
 	if (handle->saved_regs)
@@ -67,14 +70,16 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 
 	handle->saved_regs = g_memdup (&handle->current_regs, sizeof (handle->current_regs));
 	handle->saved_fpregs = g_memdup (&handle->current_fpregs, sizeof (handle->current_fpregs));
-	handle->call_address = new_esp + 16;
+	handle->call_address = new_esp + 26;
 	handle->callback_argument = callback_argument;
 
 	call_disp = (int) method_address - new_esp;
 
-	*((guint32 *) (code+1)) = method_argument >> 32;
-	*((guint32 *) (code+6)) = method_argument & 0xffffffff;
-	*((guint32 *) (code+11)) = call_disp - 15;
+	*((guint32 *) (code+1)) = method_argument1 >> 32;
+	*((guint32 *) (code+6)) = method_argument1 & 0xffffffff;
+	*((guint32 *) (code+11)) = method_argument2 >> 32;
+	*((guint32 *) (code+16)) = method_argument2 & 0xffffffff;
+	*((guint32 *) (code+21)) = call_disp - 25;
 
 	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)

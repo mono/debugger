@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return pointer_type; }
 		}
 
-		public ITargetType LookupType (string name)
+		public ITargetType LookupType (StackFrame frame, string name)
 		{
 			return null;
 		}

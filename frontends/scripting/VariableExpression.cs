@@ -75,7 +75,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			return frame.Frame.Language.LookupType (identifier);
+			return frame.Frame.Language.LookupType (frame.Frame, identifier);
 		}
 	}
 

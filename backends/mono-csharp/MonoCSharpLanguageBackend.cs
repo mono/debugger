@@ -295,7 +295,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 36;
+		public const int  DynamicVersion = 37;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -588,12 +588,27 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return pointer_type; }
 		}
 
-		public ITargetType LookupType (string name)
+		private ITargetType LookupType (ITargetAccess target, Type type, string name)
 		{
+			int offset = (int) target.CallMethod (Language.MonoDebuggerInfo.LookupType, name).Address;
+			return GetType (type, offset);
+		}
+
+		public ITargetType LookupType (StackFrame frame, string name)
+		{
+			if (name.IndexOf ('[') >= 0)
+				return null;
+
 			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
 				Type type = symfile.Assembly.GetType (name);
-				if (type != null)
-					return (MonoType) types [type];
+				if (type == null)
+					continue;
+
+				MonoType mtype = (MonoType) types [type];
+				if (mtype != null)
+					return mtype;
+
+				return LookupType (frame.TargetAccess, type, name);
 			}
 
 			return null;
@@ -841,6 +856,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
+		public readonly TargetAddress LookupType;
 		public readonly TargetAddress EventData;
 		public readonly TargetAddress EventArg;
 		public readonly TargetAddress Heap;
@@ -860,6 +876,7 @@ namespace Mono.Debugger.Languages.CSharp
 			RuntimeInvoke = reader.ReadAddress ();
 			CreateString = reader.ReadAddress ();
 			ClassGetStaticFieldData = reader.ReadAddress ();
+			LookupType = reader.ReadAddress ();
 			EventData = reader.ReadAddress ();
 			EventArg = reader.ReadAddress ();
 			Heap = reader.ReadAddress ();
@@ -1894,7 +1911,7 @@ namespace Mono.Debugger.Languages.CSharp
 			long result;
 			lock (this) {
 				reload_event.Reset ();
-				result = inferior.CallMethod (info.CompileMethod, trampoline.Address);
+				result = inferior.CallMethod (info.CompileMethod, trampoline.Address, 0);
 			}
 			reload_event.WaitOne ();
 

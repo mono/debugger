@@ -335,7 +335,8 @@ namespace Mono.Debugger.Languages.CSharp
 			init_static_fields ();
 
 			try {
-				TargetAddress data_address = frame.TargetAccess.CallMethod (ClassGetStaticFieldData, KlassAddress);
+				TargetAddress data_address = frame.TargetAccess.CallMethod (
+					ClassGetStaticFieldData, KlassAddress, TargetAddress.Null);
 				TargetLocation field_loc = new AbsoluteTargetLocation (frame, data_address);
 
 				return static_fields [index].Type.GetObject (field_loc);

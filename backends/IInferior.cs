@@ -116,7 +116,7 @@ namespace Mono.Debugger.Backends
 		/// <remarks>
 		///   The following two methods are more or less private.
 		/// </remarks>
-		long CallMethod (TargetAddress method, long method_argument);
+		long CallMethod (TargetAddress method, long method_argument1, long method_argument2);
 		long CallStringMethod (TargetAddress method, long method_argument,
 				       string string_argument);
 		TargetAddress CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,

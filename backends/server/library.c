@@ -57,13 +57,14 @@ mono_debugger_server_get_target_info (ServerHandle *handle, guint32 *target_int_
 
 ServerCommandError
 mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
-				  guint64 method_argument, guint64 callback_argument)
+				  guint64 method_argument1, guint64 method_argument2,
+				  guint64 callback_argument)
 {
 	if (!handle->has_inferior)
 		return COMMAND_ERROR_NO_INFERIOR;
 
-	return (* handle->info->call_method) (handle->inferior, method_address, method_argument,
-					      callback_argument);
+	return (* handle->info->call_method) (handle->inferior, method_address, method_argument1,
+					      method_argument2, callback_argument);
 }
 
 ServerCommandError

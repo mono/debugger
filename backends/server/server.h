@@ -140,7 +140,8 @@ typedef struct {
 	 */
 	ServerCommandError    (* call_method)         (InferiorHandle   *handle,
 						       guint64           method,
-						       guint64           method_argument,
+						       guint64           method_argument1,
+						       guint64           method_argument2,
 						       guint64           callback_argument);
 
 	/*
@@ -341,7 +342,8 @@ mono_debugger_server_write_memory         (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_call_method          (ServerHandle       *handle,
 					   guint64             method_address,
-					   guint64             method_argument,
+					   guint64             method_argument1,	
+					   guint64             method_argument2,
 					   guint64             callback_argument);
 
 ServerCommandError
