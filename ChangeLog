@@ -1,5 +1,10 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c (mono_debugger_server_static_init):
+	Don't override the mono thread abort signal.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/Makefile.am: Don't install Mono.Debugger.dll in
 	$(libdir), it only goes into the GAC.
 

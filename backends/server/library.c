@@ -366,17 +366,10 @@ sigint_signal_handler (int _dummy)
 	sem_post (&manager_semaphore);
 }
 
-static void
-thread_abort_signal_handler (int _dummy)
-{
-	pthread_exit (NULL);
-}
-
 void
 mono_debugger_server_static_init (void)
 {
 	struct sigaction sa;
-	int thread_abort_sig;
 
 	if (initialized)
 		return;
@@ -386,17 +379,6 @@ mono_debugger_server_static_init (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-
-#if !defined(__POWERPC__)
-	thread_abort_sig = mono_thread_get_abort_signal ();
-	if (thread_abort_sig > 0) {
-		/* catch SIGINT */
-		sa.sa_handler = thread_abort_signal_handler;
-		sigemptyset (&sa.sa_mask);
-		sa.sa_flags = 0;
-		g_assert (sigaction (thread_abort_sig, &sa, NULL) != -1);
-	}
-#endif
 
 	initialized = TRUE;
 }
