@@ -33,6 +33,9 @@ namespace Mono.Debugger
 
 		/* true if we're running in a script */
 		public bool IsScript = false;
+
+		/* true if we want to start the application immediately */
+		public bool StartTarget = false;
 	  
 		/* the value of the -debug-flags: command line
 		 * argument */

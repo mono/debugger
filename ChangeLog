@@ -1,3 +1,13 @@
+2004-12-12  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs (DebuggerOptions.StartTarget): New field.
+
+	* frontend/Interpreter.cs (Interpreter.Start): New overloaded
+	version taking a `DebuggerOptions'.
+
+	* frontend/Main.cs (CommandLineInterpreter.ParseOption): Added
+	`-run' command line argument to immediately start the target.
+
 2004-12-11  Martin Baulig  <martin@ximian.com>
 
 	* backends/ThreadManager.cs (ThreadManager.HandleChildEvent): Set

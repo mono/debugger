@@ -306,6 +306,32 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public ProcessStart Start (DebuggerOptions options)
+		{
+			string[] argv;
+
+			if (options.InferiorArgs == null)
+				argv = new string [1];
+			else {
+				argv = new string [options.InferiorArgs.Length + 1];
+				options.InferiorArgs.CopyTo (argv, 1);
+			}
+
+			argv[0] = options.File;
+
+			Console.WriteLine ("Starting program: {0}", String.Join (" ", argv));
+
+			try {
+				ProcessStart start = Start (argv);
+				Initialize ();
+				Run ();
+				return start;
+			} catch (TargetException e) {
+				Kill ();
+				throw new ScriptingException (e.Message);
+			}
+		}
+
 		public ProcessStart Start (string[] argv)
 		{
 			if (backend != null)

@@ -31,6 +31,9 @@ namespace Mono.Debugger.Frontend
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
 			}
+
+			if (options.StartTarget)
+				Start (options);
 		}
 
 		DebuggerEngine SetupEngine ()
@@ -250,6 +253,10 @@ namespace Mono.Debugger.Frontend
 			case "-usage":
 				Usage();
 				Environment.Exit (1);
+				return true;
+
+			case "-run":
+				debug_options.StartTarget = true;
 				return true;
 			}
 
