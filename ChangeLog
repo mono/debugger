@@ -1,5 +1,9 @@
 2004-10-21  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (CatchCommand): New command.
+
+2004-10-21  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ILanguage.cs
 	(ILanguage.ExceptionType): New public property.
 

@@ -1387,6 +1387,67 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	[ShortDescription("Catch exceptions")]
+	public class CatchCommand : FrameCommand
+	{
+		string group;
+		ProcessHandle process;
+		ThreadGroup tgroup;
+		ITargetClassType type;
+
+		public string Group {
+			get { return group; }
+			set { group = value; }
+		}
+
+		bool IsSubclassOf (ITargetClassType type, ITargetType parent)
+		{
+			while (type != null) {
+				if (type == parent)
+					return true;
+
+				if (!type.HasParent)
+					return false;
+
+				type = type.ParentType;
+			}
+
+			return false;
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			FrameHandle frame = ResolveFrame (context);
+			process = frame.Process;
+
+			ITargetType exception_type = frame.Language.ExceptionType;
+			if (exception_type == null)
+				throw new ScriptingException ("Current language doesn't have any exceptions.");
+
+			Expression expr = ParseExpression (context);
+			if (expr == null)
+				return false;
+
+			expr = expr.ResolveType (context);
+			if (expr == null)
+				return false;
+
+			type = expr.EvaluateType (context) as ITargetClassType;
+			if (!IsSubclassOf (type, exception_type))
+				throw new ScriptingException ("Type `{0}' is not an exception type.", expr.Name);
+
+			if (tgroup == null)
+				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			Console.WriteLine ("INSERT CATCH: {0} {1} {2}", process, tgroup, type);
+		}
+	}
+
 	public class DumpCommand : FrameCommand
 	{
 		Expression expression;

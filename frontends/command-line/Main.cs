@@ -83,6 +83,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("list", typeof (ListCommand));
 			e.Register ("break", typeof (BreakCommand));
 			e.Register ("b", typeof (BreakCommand));
+			e.Register ("catch", typeof (CatchCommand));
 			e.Register ("quit", typeof (QuitCommand));
 			e.Register ("q", typeof (QuitCommand));
 			e.Register ("dump", typeof (DumpCommand));

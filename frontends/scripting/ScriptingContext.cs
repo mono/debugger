@@ -29,6 +29,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.frame = frame;
 		}
 
+		public ProcessHandle Process {
+			get { return process; }
+		}
+
 		public StackFrame Frame {
 			get { return frame; }
 		}
