@@ -28,7 +28,7 @@ mono_debugger_util_read (int fd, gpointer data, int size)
 gboolean
 mono_debugger_util_write (int fd, gconstpointer data, int size)
 {
-	guint8 *ptr = data;
+	const guint8 *ptr = data;
 
 	while (size) {
 		int ret = write (fd, ptr, size);

@@ -30,6 +30,7 @@ command_func (InferiorInfo *info, InferiorHandle *handle, int fd)
 	ServerCommand command;
 	ServerCommandError result;
 	guint64 arg, arg2, arg3;
+	guint32 iarg, iarg2;
 	gpointer data;
 
 	if (!mono_debugger_util_read (fd, &command, sizeof (command)))
@@ -111,6 +112,23 @@ command_func (InferiorInfo *info, InferiorHandle *handle, int fd)
 		if (!mono_debugger_util_read (fd, &arg3, sizeof (arg3)))
 			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
 		result = (* info->call_method) (handle, arg, arg2, arg3);
+		break;
+
+	case SERVER_COMMAND_INSERT_BREAKPOINT:
+		if (!mono_debugger_util_read (fd, &arg, sizeof (arg)))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		result = (* info->insert_breakpoint) (handle, arg, &iarg2);
+		if (result != COMMAND_ERROR_NONE)
+			break;
+		write_result (fd, COMMAND_ERROR_NONE);
+		if (!mono_debugger_util_write (fd, &iarg2, sizeof (iarg2)))
+			g_error (G_STRLOC ": Can't send command argument: %s", g_strerror (errno));
+		return;
+
+	case SERVER_COMMAND_REMOVE_BREAKPOINT:
+		if (!mono_debugger_util_read (fd, &iarg, sizeof (iarg)))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		result = (* info->remove_breakpoint) (handle, iarg);
 		break;
 
 	default:

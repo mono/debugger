@@ -130,11 +130,7 @@ mono_debugger_server_write_memory (ServerHandle *handle, gpointer data, guint64 
 
 	kill (handle->pid, SIGUSR1);
 
-	result = read_status (handle);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	return COMMAND_ERROR_NONE;
+	return read_status (handle);
 }
 
 ServerCommandError
@@ -185,11 +181,48 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 
 	kill (handle->pid, SIGUSR1);
 
+	return read_status (handle);
+}
+
+ServerCommandError
+mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *breakpoint)
+{
+	ServerCommandError result;
+
+	result = write_command (handle, SERVER_COMMAND_INSERT_BREAKPOINT);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if (!mono_debugger_util_write (handle->fd, &address, sizeof (address)))
+		return COMMAND_ERROR_IO;
+
+	kill (handle->pid, SIGUSR1);
+
 	result = read_status (handle);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	return result;
+	if (!mono_debugger_util_read (handle->fd, breakpoint, sizeof (*breakpoint)))
+		return COMMAND_ERROR_IO;
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
+mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 breakpoint)
+{
+	ServerCommandError result;
+
+	result = write_command (handle, SERVER_COMMAND_REMOVE_BREAKPOINT);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if (!mono_debugger_util_write (handle->fd, &breakpoint, sizeof (breakpoint)))
+		return COMMAND_ERROR_IO;
+
+	kill (handle->pid, SIGUSR1);
+
+	return read_status (handle);
 }
 
 gboolean
@@ -200,6 +233,18 @@ mono_debugger_server_read_uint64 (ServerHandle *handle, guint64 *arg)
 
 gboolean
 mono_debugger_server_write_uint64 (ServerHandle *handle, guint64 arg)
+{
+	return mono_debugger_util_write (handle->fd, &arg, sizeof (arg));
+}
+
+gboolean
+mono_debugger_server_read_uint32 (ServerHandle *handle, guint32 *arg)
+{
+	return mono_debugger_util_read (handle->fd, arg, sizeof (*arg));
+}
+
+gboolean
+mono_debugger_server_write_uint32 (ServerHandle *handle, guint32 arg)
 {
 	return mono_debugger_util_write (handle->fd, &arg, sizeof (arg));
 }

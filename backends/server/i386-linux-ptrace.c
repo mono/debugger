@@ -21,7 +21,17 @@ struct InferiorHandle
 	guint64 callback_argument;
 	struct user_regs_struct *saved_regs;
 	struct user_i387_struct *saved_fpregs;
+	GPtrArray *breakpoints;
+	GHashTable *breakpoint_hash;
 };
+
+static int last_breakpoint_id = 0;
+
+typedef struct {
+	int id;
+	char saved_insn;
+	guint64 address;
+} BreakPointInfo;
 
 static void
 server_ptrace_traceme (int pid)
@@ -329,6 +339,83 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 	return TRUE;
 }
 
+static ServerCommandError
+server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint32 *bhandle)
+{
+	BreakPointInfo *breakpoint = g_new0 (BreakPointInfo, 1);
+	ServerCommandError result;
+	char bopcode = 0xcc;
+
+	if (!handle->breakpoints) {
+		handle->breakpoints = g_ptr_array_new ();
+		handle->breakpoint_hash = g_hash_table_new (NULL, NULL);
+	}
+
+	breakpoint->address = address;
+	breakpoint->id = ++last_breakpoint_id;
+	result = server_ptrace_read_data (handle, address, 1, &breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE) {
+		g_free (breakpoint);
+		return result;
+	}
+
+	result = server_ptrace_write_data (handle, address, 1, &bopcode);
+	if (result != COMMAND_ERROR_NONE) {
+		g_free (breakpoint);
+		return result;
+	}
+
+	g_ptr_array_add (handle->breakpoints, breakpoint);
+	g_hash_table_insert (handle->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id), breakpoint);
+	*bhandle = breakpoint->id;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_remove_breakpoint (InferiorHandle *handle, guint32 bhandle)
+{
+	BreakPointInfo *breakpoint;
+	ServerCommandError result;
+
+	if (!handle->breakpoints)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	breakpoint = g_hash_table_lookup (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
+	if (!breakpoint)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	result = server_ptrace_write_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	g_hash_table_remove (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
+	g_ptr_array_remove_fast (handle->breakpoints, breakpoint);
+	g_free (breakpoint);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 **breakpoints)
+{
+	int i;
+
+	if (!handle->breakpoints)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	*count = handle->breakpoints->len;
+	*breakpoints = g_new0 (guint32, handle->breakpoints->len);
+
+	for (i = 0; i < handle->breakpoints->len; i++) {
+		BreakPointInfo *info = g_ptr_array_index (handle->breakpoints, i);
+
+		(*breakpoints) [i] = info->id;
+	}
+
+	return COMMAND_ERROR_NONE;	
+}
+
 /*
  * Method VTable for this backend.
  */
@@ -343,5 +430,8 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_read_data,
 	server_ptrace_write_data,
 	server_ptrace_call_method,
-	server_ptrace_child_stopped
+	server_ptrace_child_stopped,
+	server_ptrace_insert_breakpoint,
+	server_ptrace_remove_breakpoint,
+	server_ptrace_get_breakpoints
 };

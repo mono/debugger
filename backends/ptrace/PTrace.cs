@@ -107,6 +107,12 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument, long callback_argument);
 
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -162,6 +168,22 @@ namespace Mono.Debugger.Backends
 			check_error (result);
 			change_target_state (TargetState.RUNNING);
 			return async;
+		}
+
+		int insert_breakpoint (ITargetLocation address)
+		{
+			int retval;
+			CommandError result = mono_debugger_server_insert_breakpoint (
+				server_handle, address.Address, out retval);
+			check_error (result);
+			return retval;
+		}
+
+		void remove_breakpoint (int breakpoint)
+		{
+			CommandError result = mono_debugger_server_remove_breakpoint (
+				server_handle, breakpoint);
+			check_error (result);
 		}
 
 		public Inferior (string working_directory, string[] argv, string[] envp)
@@ -600,7 +622,9 @@ namespace Mono.Debugger.Backends
 			ITargetLocation location = Frame ();
 			location.Offset += bfd_disassembler.GetInstructionSize (location);
 
-			Console.WriteLine ("TEST: {0}", location);
+			int breakpoint = insert_breakpoint (location);
+
+			Console.WriteLine ("TEST: {0} {1}", location, breakpoint);
 		}
 
 		public ITargetLocation Frame ()
