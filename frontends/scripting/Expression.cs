@@ -13,7 +13,9 @@ namespace Mono.Debugger.Frontends.Scripting
 	{
 		Method,
 		PropertyGetter,
-		PropertySetter
+		PropertySetter,
+		EventAdd,
+		EventRemove
 	}
 
 	public abstract class Expression
@@ -1059,10 +1061,30 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
+		protected ITargetObject GetEvent (ITargetStructObject sobj, ITargetEventInfo ev)
+		{
+			try {
+				return sobj.GetEvent (ev.Index);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException ("Can't get event {0}: {1}", Name, ex.Message);
+			}
+		}
+
+		protected ITargetObject GetStaticEvent (ITargetStructType stype, StackFrame frame, ITargetEventInfo ev)
+		{
+			try {
+				return stype.GetStaticEvent (frame, ev.Index);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException ("Can't get event {0}: {1}", Name, ex.Message);
+			}
+		}
+
 		protected ITargetObject GetMember (ITargetStructObject sobj, ITargetMemberInfo member)
 		{
 			if (member is ITargetPropertyInfo)
 				return GetProperty (sobj, (ITargetPropertyInfo) member);
+			else if (member is ITargetEventInfo)
+				return GetEvent (sobj, (ITargetEventInfo) member);
 			else
 				return GetField (sobj, (ITargetFieldInfo) member);
 		}
@@ -1071,6 +1093,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			if (member is ITargetPropertyInfo)
 				return GetStaticProperty (stype, frame, (ITargetPropertyInfo) member);
+			else if (member is ITargetEventInfo)
+				return GetStaticEvent (stype, frame, (ITargetEventInfo) member);
 			else
 				return GetStaticField (stype, frame, (ITargetFieldInfo) member);
 		}
@@ -1086,6 +1110,10 @@ namespace Mono.Debugger.Frontends.Scripting
 				foreach (ITargetPropertyInfo property in stype.Properties)
 					if (property.Name == name)
 						return property;
+
+				foreach (ITargetEventInfo ev in stype.Events)
+					if (ev.Name == name)
+						return ev;
 			}
 
 			foreach (ITargetFieldInfo field in stype.StaticFields)
@@ -1095,6 +1123,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			foreach (ITargetPropertyInfo property in stype.StaticProperties)
 				if (property.Name == name)
 					return property;
+
+			foreach (ITargetEventInfo ev in stype.StaticEvents)
+				if (ev.Name == name)
+					return ev;
 
 			return null;
 		}
@@ -1173,6 +1205,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (member == null)
 				return null;
 
+			ITargetFunctionType func;
+
 			switch (type) {
 			case LocationType.PropertyGetter:
 			case LocationType.PropertySetter:
@@ -1180,7 +1214,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				if (property == null)
 					return null;
 
-				ITargetFunctionType func;
 				if (type == LocationType.PropertyGetter) {
 					if (!property.CanRead)
 						throw new ScriptingException (
@@ -1194,7 +1227,19 @@ namespace Mono.Debugger.Frontends.Scripting
 				}
 
 				return new SourceLocation (func.Source);
+			case LocationType.EventAdd:
+			case LocationType.EventRemove:
+				ITargetEventInfo ev = member as ITargetEventInfo;
+				if (ev == null)
+					return null;
 
+				if (type == LocationType.EventAdd) {
+					func = ev.Add;
+				} else {
+					func = ev.Remove;
+				}
+
+				return new SourceLocation (func.Source);
 			default:
 				return null;
 			}

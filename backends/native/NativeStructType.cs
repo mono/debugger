@@ -182,6 +182,23 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
+		public ITargetEventInfo[] Events {
+			get {
+				return new ITargetEventInfo [0];
+			}
+		}
+
+		public ITargetEventInfo[] StaticEvents {
+			get {
+				return new ITargetEventInfo [0];
+			}
+		}
+
+		public ITargetObject GetStaticEvent (StackFrame frame, int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetMethodInfo[] Methods {
 			get {
 				return new ITargetMethodInfo [0];

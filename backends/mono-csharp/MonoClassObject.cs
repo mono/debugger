@@ -59,6 +59,11 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.GetProperty (location, index);
 		}
 
+		public ITargetObject GetEvent (int index)
+		{
+			return type.GetEvent (location, index);
+		}
+
 		public ITargetFunctionObject GetMethod (int index)
 		{
 			return type.GetMethod (location, index);

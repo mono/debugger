@@ -9,16 +9,19 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		MonoFieldInfo[] fields, static_fields;
 		MonoPropertyInfo[] properties, static_properties;
+		MonoEventInfo[] events, static_events;
 		MonoMethodInfo[] methods, static_methods, ctors;
 		TargetBinaryReader info;
 		internal readonly MonoSymbolFile File;
 		bool is_valuetype;
 		int num_fields, num_static_fields, num_properties, num_static_properties;
+		int num_events, num_static_events;
 		int num_methods, num_static_methods, num_ctors, num_ifaces;
-		int field_info_offset, static_field_info_offset, property_info_offset;
-		int static_property_info_offset, method_info_offset, static_method_info_offset;
+		int field_info_offset, static_field_info_offset, property_info_offset, event_info_offset;
+		int static_property_info_offset, method_info_offset, static_method_info_offset, static_event_info_offset;
 		int ctor_info_offset, iface_info_offset;
 		int first_field, first_static_field, first_property, first_static_property;
+		int first_event, first_static_event;
 		int first_method, first_static_method;
 		long offset;
 
@@ -58,12 +61,16 @@ namespace Mono.Debugger.Languages.CSharp
 			field_info_offset = info.ReadInt32 ();
 			num_properties = info.ReadInt32 ();
 			property_info_offset = info.ReadInt32 ();
+			num_events = info.ReadInt32 ();
+			event_info_offset = info.ReadInt32 ();
 			num_methods = info.ReadInt32 ();
 			method_info_offset = info.ReadInt32 ();
 			num_static_fields = info.ReadInt32 ();
 			static_field_info_offset = info.ReadInt32 ();
 			num_static_properties = info.ReadInt32 ();
 			static_property_info_offset = info.ReadInt32 ();
+			num_static_events = info.ReadInt32 ();
+			static_event_info_offset = info.ReadInt32 ();
 			num_static_methods = info.ReadInt32 ();
 			static_method_info_offset = info.ReadInt32 ();
 			num_ctors = info.ReadInt32 ();
@@ -215,6 +222,24 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public int CountEvents {
+			get {
+				if (Parent != null)
+					return Parent.CountEvents + num_events;
+				else
+					return num_events;
+			}
+		}
+
+		public int CountStaticEvents {
+			get {
+				if (Parent != null)
+					return Parent.CountStaticEvents + num_static_events;
+				else
+					return num_static_events;
+			}
+		}
+
 		public int CountMethods {
 			get {
 				if (Parent != null)
@@ -314,6 +339,158 @@ namespace Mono.Debugger.Languages.CSharp
 				return static_fields;
 			}
 		}
+
+		void init_events ()
+		{
+			if (events != null)
+				return;
+
+			info.Position = offset + event_info_offset;
+			events = new MonoEventInfo [num_events];
+
+			R.EventInfo[] mono_events = EffectiveType.GetEvents (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+
+			if (mono_events.Length != num_events)
+				throw new InternalError (
+					"Type.GetEvents() returns {0} events, but the JIT has {1}",
+					mono_events.Length, num_events);
+
+			if (Parent != null)
+				first_event = Parent.CountEvents;
+
+			for (int i = 0; i < num_events; i++)
+				events [i] = new MonoEventInfo (
+					this, first_event + i, mono_events [i],
+					false, info, File);
+		}
+
+		ITargetEventInfo[] ITargetStructType.Events {
+			get {
+				return Events;
+			}
+		}
+
+		protected MonoEventInfo[] Events {
+			get {
+				init_events ();
+				return events;
+			}
+		}
+
+		void init_static_events ()
+		{
+			if (static_events != null)
+				return;
+
+			info.Position = offset + static_event_info_offset;
+
+			static_events = new MonoEventInfo [num_static_events];
+
+			R.EventInfo[] mono_events = EffectiveType.GetEvents (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+
+			if (mono_events.Length != num_static_events)
+				throw new InternalError (
+					"Type.GetEvents() returns {0} events, but the JIT has {1}",
+					mono_events.Length, num_static_events);
+
+			if (Parent != null)
+				first_static_event = Parent.CountStaticEvents;
+
+			for (int i = 0; i < num_static_events; i++)
+				static_events [i] = new MonoEventInfo (
+					this, first_static_event + i, mono_events [i],
+					true, info, File);
+		}
+
+		ITargetEventInfo[] ITargetStructType.StaticEvents {
+			get {
+				return StaticEvents;
+			}
+		}
+
+		protected MonoEventInfo[] StaticEvents {
+			get {
+				init_static_events ();
+				return static_events;
+			}
+		}
+
+		protected class MonoEventInfo : MonoStructMember, ITargetEventInfo
+		{
+			public readonly R.EventInfo EventInfo;
+			public readonly TargetAddress Add, Remove;
+			public readonly MonoFunctionType AddType, RemoveType;
+			public readonly MonoType HandlerType;
+
+			internal MonoEventInfo (MonoClass klass, int index, R.EventInfo einfo, bool is_static,
+						TargetBinaryReader info, MonoSymbolFile file)
+				: base (klass, einfo, index, is_static)
+			{
+				EventInfo = einfo;
+				HandlerType = file.Table.GetType (einfo.EventHandlerType, info.ReadInt32 ());
+				Add = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
+				Remove = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
+
+				AddType = new MonoFunctionType (
+					Klass, EventInfo.GetAddMethod (true),
+					Add, HandlerType, file);
+				RemoveType = new MonoFunctionType (
+					Klass, EventInfo.GetRemoveMethod (true),
+					Remove, HandlerType, file);
+			}
+
+			public override MonoType Type {
+				get { return HandlerType; }
+			}
+
+			ITargetFunctionType ITargetEventInfo.Add {
+				get {
+					return AddType;
+				}
+			}
+
+			ITargetFunctionType ITargetEventInfo.Remove {
+				get {
+					return RemoveType;
+				}
+			}
+
+			protected override string MyToString ()
+			{
+				return String.Format ("hi");
+			}
+		}
+
+		internal ITargetObject GetEvent (TargetLocation location, int index)
+		{
+			init_events ();
+
+			if (index < first_event)
+				return Parent.GetEvent (location, index);
+
+			return null;
+#if FALSE
+			return events [index - first_event].Get (location);
+#endif
+		}
+
+		public ITargetObject GetStaticEvent (StackFrame frame, int index)
+		{
+			init_static_events ();
+
+			if (index < first_static_event)
+				return Parent.GetStaticEvent (frame, index);
+
+			return null;
+#if FALSE
+			return static_events [index - first_static_event].Get (frame);
+#endif
+		}
+
 
 		protected abstract class MonoStructMember : ITargetMemberInfo
 		{

@@ -187,6 +187,18 @@ namespace Mono.Debugger.Frontends.Scripting
 			return sb.ToString ();
 		}
 
+		protected string FormatEvent (string prefix, ITargetEventInfo ev,
+						 bool is_static, Hashtable hash)
+		{
+			string tname = ev.Type.Name;
+			if (is_static)
+				return String.Format (
+					"{0}   static event {1} {2};\n", prefix, tname, ev.Name);
+			else
+				return String.Format (
+					"{0}   event {1} {2};\n", prefix, tname, ev.Name);
+		}
+
 		protected string FormatMethod (string prefix, ITargetMethodInfo method,
 					       bool is_static, bool is_ctor, Hashtable hash)
 		{
@@ -284,6 +296,12 @@ namespace Mono.Debugger.Frontends.Scripting
 				foreach (ITargetPropertyInfo property in stype.StaticProperties)
 					sb.Append (FormatProperty (
 							   prefix, property, true, hash));
+				foreach (ITargetEventInfo ev in stype.Events)
+					sb.Append (FormatEvent (
+							   prefix, ev, false, hash));
+				foreach (ITargetEventInfo ev in stype.StaticEvents)
+					sb.Append (FormatEvent (
+							   prefix, ev, true, hash));
 				foreach (ITargetMethodInfo method in stype.Methods)
 					sb.Append (FormatMethod (
 							   prefix, method, false, false, hash));

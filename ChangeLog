@@ -1,3 +1,46 @@
+2004-10-21  Chris Toshok  <toshok@ximian.com>
+
+	* frontends/scripting/Style.cs (StyleNative.FormatEvent): new
+	function.
+	(StyleNative.FormatType): format both instance and static events.
+
+	* frontends/scripting/Expression.cs
+	(StructAccessExpression.GetEvent,
+	StructAccessExpression.GetStaticEvent): new methods.
+	(StructAccessExpression.FindMember): try to find events too.
+	(StructAccessExpression.GetMember): add event support.
+	(StructAccessExpression.GetStaticMember): same.
+	(StructAccessExpression.DoEvaluateLocation): add support for event
+	add/remove blocks.
+
+	* frontends/scripting/Command.cs: add Add/Remove properties so
+	-add and -remove can be used on source commands (like list and
+	break).
+
+	* backends/native/NativeStructType.cs: implement the event stuff
+	from ITargetStructType.
+
+	* backends/native/NativeStructObject.cs
+	(NativeStructObject.GetEvent): implement.
+
+	* backends/mono-csharp/MonoClassObject.cs
+	(MonoClassObject.GetEvent): implement the ITargetStructObject
+	event stuff.
+
+	* backends/mono-csharp/MonoClass.cs (MonoClass.init_events,
+	MonoClass.Events, MonoClass.init_static_events,
+	MonoClass.StaticEvents): implement the ITargetStructType event
+	stuff.
+	(MonoClass.ctor): read event/static event info.
+
+	* interfaces/ITargetStructType.cs (ITargetStructType.Events): new
+	property.
+	(ITargetStructType.StaticEvents): new property.
+	(ITargetStructType.GetStaticEvent): new method
+
+	* interfaces/ITargetStructObject.cs
+	(ITargetStructObject.GetEvent): new method.
+
 2004-10-21  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Command.cs (CatchCommand): New command.

@@ -28,6 +28,11 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
+		public ITargetObject GetEvent (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetFunctionObject GetMethod (int index)
 		{
 			throw new InvalidOperationException ();

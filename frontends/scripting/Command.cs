@@ -1232,6 +1232,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		int method_id = -1;
 		bool is_getter = false;
 		bool is_setter = false;
+		bool is_event_add = false;
+		bool is_event_remove = false;
 		protected SourceLocation location;
 
 		public int ID {
@@ -1249,6 +1251,16 @@ namespace Mono.Debugger.Frontends.Scripting
 			set { is_setter = value; }
 		}
 
+		public bool Add {
+			get { return is_event_add; }
+			set { is_event_add = value; }
+		}
+
+		public bool Remove {
+			get { return is_event_remove; }
+			set { is_event_remove = value; }
+		}
+
 		protected bool DoResolveExpression (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
@@ -1263,6 +1275,10 @@ namespace Mono.Debugger.Frontends.Scripting
 				location = expr.EvaluateLocation (context, LocationType.PropertyGetter, null);
 			else if (is_setter)
 				location = expr.EvaluateLocation (context, LocationType.PropertySetter, null);
+			else if (is_event_add)
+				location = expr.EvaluateLocation (context, LocationType.EventAdd, null);
+			else if (is_event_remove)
+				location = expr.EvaluateLocation (context, LocationType.EventRemove, null);
 			else
 				location = expr.EvaluateLocation (context, LocationType.Method, null);
 			return location != null;

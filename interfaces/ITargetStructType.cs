@@ -54,6 +54,17 @@ namespace Mono.Debugger.Languages
 		}
 	}
 
+	public interface ITargetEventInfo : ITargetMemberInfo
+	{
+		ITargetFunctionType Add {
+			get;
+		}
+
+		ITargetFunctionType Remove {
+			get;
+		}
+	}
+
 	public interface ITargetMethodInfo : ITargetMemberInfo
 	{
 		ITargetFunctionType Type {
@@ -87,6 +98,16 @@ namespace Mono.Debugger.Languages
 
 		ITargetObject GetStaticProperty (StackFrame frame, int index);
 
+		ITargetEventInfo[] Events {
+			get;
+		}
+
+		ITargetEventInfo[] StaticEvents {
+			get;
+		}
+
+		ITargetObject GetStaticEvent (StackFrame frame, int index);
+
 		ITargetMethodInfo[] Methods {
 			get;
 		}
@@ -95,11 +116,12 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetFunctionObject GetStaticMethod (StackFrame frame, int index);
+
+
 		ITargetMethodInfo[] Constructors {
 			get;
 		}
-
-		ITargetFunctionObject GetStaticMethod (StackFrame frame, int index);
 
 		ITargetFunctionObject GetConstructor (StackFrame frame, int index);
 	}
