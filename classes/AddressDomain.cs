@@ -55,7 +55,7 @@ namespace Mono.Debugger
 		static int next_id = 0;
 
 		public int ID {
-			get { return ID; }
+			get { return id; }
 		}
 
 		public string Name {
