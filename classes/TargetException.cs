@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	public abstract class TargetException : Exception
+	public class TargetException : Exception
 	{
 		public TargetException (string message)
 			: base (message)

@@ -1,5 +1,9 @@
 2004-04-09  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetException.cs
+	(TargetException): Don't make this abstract.
+	(TargetMemoryException): Added parameterless .ctor.	
+
 	* backends/Interior.cs (Inferior.GlobalStop): New public method.
 
 	* backends/SingleStepping.cs (SingleSteppingEngine.Interrupt): Call
