@@ -1,3 +1,9 @@
+2004-12-09  Miguel de Icaza  <miguel@ximian.com>
+
+	* glue/mono-debugger-readline.c
+	(mono_debugger_readline_set_completion_matches): When there are no
+	matches readline expects to get a NULL back, not a zero array.
+
 2004-12-09  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/GnuReadLine.cs: deal with null matches.

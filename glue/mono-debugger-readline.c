@@ -87,11 +87,9 @@ mono_debugger_readline_set_completion_matches (char **matches, int count)
 {
 	int i;
 
-	if (completion_matches != NULL) {
-		/* we don't free the actual strings, just the array.
-		   this is because readline apparently frees the
-		   strings itself.  pukey api, if you ask me */
-		free (completion_matches);
+	if (count == 0){
+		completion_matches = NULL;
+		return;
 	}
 
 	completion_matches = (char**)malloc (count * sizeof (char*));
