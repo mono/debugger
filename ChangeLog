@@ -1,3 +1,7 @@
+2004-04-14  Martin Baulig  <martin@ximian.com>
+
+	The debugger is unstable at the moment, please use the latest release. 
+
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
 	* wrapper/wrapper.c: Don't call mono_thread_manage(), but send a
