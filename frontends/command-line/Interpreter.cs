@@ -208,6 +208,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.TestBreakpoint (args [0]);
 				break;
 
+			case "modules":
+				Console.WriteLine ("MODULES:");
+				print_modules (backend.Modules);
+				break;
+
 #if FALSE
 			case "b":
 			case "break-method": {
@@ -366,6 +371,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (tpointer != null) {
 				print_pointer (tpointer);
 				return;
+			}
+		}
+
+		void print_modules (IModule[] modules)
+		{
+			if (modules == null)
+				return;
+
+			foreach (IModule module in modules) {
+				string language = module.Language != null ?
+					module.Language.Name : "native";
+
+				Console.WriteLine ("  {0} {1} {2} {3} {4}",
+						   module.Name, module.FullName, language,
+						   module.IsLoaded, module.SymbolsLoaded);
+
+				if (module.Name == "Monkey")
+					module.LoadSymbols = false;
 			}
 		}
 	}

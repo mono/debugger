@@ -148,19 +148,32 @@ namespace Mono.Debugger.Languages.CSharp
 		public const int  DynamicVersion = 11;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
-		public readonly int TotalSize;
-		public readonly int Generation;
-		public readonly MonoSymbolTableReader[] SymbolFiles;
+		internal int TotalSize;
+		internal int Generation;
+		internal MonoSymbolTableReader[] SymbolFiles;
+		public readonly MonoCSharpLanguageBackend Language;
+		public readonly DebuggerBackend Backend;
+		public readonly IInferior Inferior;
 		ITargetMemoryAccess memory;
 		ArrayList ranges;
 		Hashtable types;
 		Hashtable type_cache;
+		protected Hashtable modules;
 
 		public MonoSymbolFileTable (DebuggerBackend backend, IInferior inferior,
-					    ITargetMemoryAccess memory, TargetAddress address,
-					    ILanguageBackend language)
+					    MonoCSharpLanguageBackend language)
 		{
-			this.memory = memory;
+			this.memory = inferior;
+			this.Language = language;
+			this.Backend = backend;
+			this.Inferior = inferior;
+
+			modules = new Hashtable ();
+		}
+
+		internal void Reload (TargetAddress address)
+		{
+			Console.WriteLine ("RELOAD");
 
 			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE: {0}", address);
 
@@ -202,7 +215,25 @@ namespace Mono.Debugger.Languages.CSharp
 			SymbolFiles = new MonoSymbolTableReader [count];
 			for (int i = 0; i < count; i++)
 				SymbolFiles [i] = new MonoSymbolTableReader (
-					this, backend, inferior, memory, reader.ReadAddress (), language);
+					this, Backend, Inferior, Inferior, reader.ReadAddress (), Language);
+
+			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
+				AssemblyName name = symfile.Assembly.GetName ();
+				MonoModule module = (MonoModule) modules [name.FullName];
+				if (module == null) {
+					module = new MonoModule (this, name);
+					modules.Add (name.FullName, module);
+				}
+
+				module.Assembly = symfile.Assembly;
+				module.FileName = symfile.ImageFile;
+				symfile.Module = module;
+			}
+
+			foreach (MonoSymbolTableReader symfile in SymbolFiles)
+				((MonoModule) symfile.Module).ReadReferences ();
+
+			Language.ModulesChanged ();
 		}
 
 		public MonoType GetType (Type type, int type_size, TargetAddress address)
@@ -233,6 +264,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public ICollection Modules {
+			get {
+				return modules.Values;
+			}
+		}
+
 		internal void AddType (TypeEntry type)
 		{
 			types.Add (type.KlassAddress.Address, type);
@@ -241,19 +278,106 @@ namespace Mono.Debugger.Languages.CSharp
 		public bool Update ()
 		{
 			bool updated = false;
-			for (int i = 0; i < SymbolFiles.Length; i++)
+			for (int i = 0; i < SymbolFiles.Length; i++) {
+				if (!SymbolFiles [i].Module.LoadSymbols)
+					continue;
+
 				if (SymbolFiles [i].Update ())
 					updated = true;
+			}
 
 			if (!updated)
 				return false;
 
 			ranges = new ArrayList ();
-			for (int i = 0; i < SymbolFiles.Length; i++)
+			for (int i = 0; i < SymbolFiles.Length; i++) {
+				if (!SymbolFiles [i].Module.LoadSymbols)
+					continue;
+
 				ranges.AddRange (SymbolFiles [i].SymbolRanges);
+			}
 			ranges.Sort ();
 
 			return true;
+		}
+
+		private class MonoModule : IModule
+		{
+			public Assembly Assembly;
+			public string FileName;
+			string name;
+			bool load_symbols;
+			MonoSymbolFileTable table;
+
+			public MonoModule (MonoSymbolFileTable table, AssemblyName name)
+			{
+				this.table = table;
+				this.name = name.FullName;
+				this.load_symbols = true;
+			}
+
+			public ILanguageBackend Language {
+				get {
+					return table.Language;
+				}
+			}
+
+			public string Name {
+				get {
+					return name;
+				}
+			}
+
+			public string FullName {
+				get {
+					if (FileName != null)
+						return FileName;
+					else
+						return name;
+				}
+			}
+
+			public bool IsLoaded {
+				get {
+					return Assembly != null;
+				}
+			}
+				
+			public bool SymbolsLoaded {
+				get {
+					return load_symbols && (Assembly != null);
+				}
+			}
+
+			public bool LoadSymbols {
+				get {
+					return load_symbols;
+				}
+
+				set {
+					if (load_symbols == value)
+						return;
+
+					load_symbols = value;
+					table.Update ();
+					table.Language.ModulesChanged ();
+				}
+			}
+
+			public void ReadReferences ()
+			{
+				if ((table.modules == null) || (Assembly == null))
+					return;
+
+				AssemblyName[] references = Assembly.GetReferencedAssemblies ();
+				foreach (AssemblyName name in references) {
+					if (table.modules.Contains (name.FullName))
+						continue;
+
+					MonoModule module = new MonoModule (table, name);
+					table.modules.Add (name.FullName, module);
+				}
+			}
 		}
 	}
 
@@ -321,7 +445,7 @@ namespace Mono.Debugger.Languages.CSharp
 			TypeInfo = memory.ReadAddress ();
 
 			object[] args = new object[] { (int) Token };
-			Type = (Type) get_type.Invoke (reader.assembly, args);
+			Type = (Type) get_type.Invoke (reader.Assembly, args);
 
 			if (Type == null)
 				throw new InvalidOperationException ();
@@ -333,7 +457,7 @@ namespace Mono.Debugger.Languages.CSharp
 			for (int i = 0; i < count; i++) {
 				try {
 					TypeEntry entry = new TypeEntry (reader, memory);
-					reader.table.AddType (entry);
+					reader.Table.AddType (entry);
 				} catch {
 					// Do nothing.
 				}
@@ -350,10 +474,11 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoSymbolTableReader
 	{
 		MethodEntry[] Methods;
-		internal readonly Assembly assembly;
-		internal readonly MonoSymbolFileTable table;
-		protected string ImageFile;
-		protected string SymbolFile;
+		internal readonly Assembly Assembly;
+		internal readonly MonoSymbolFileTable Table;
+		internal readonly string ImageFile;
+		internal readonly string SymbolFile;
+		internal IModule Module;
 		protected OffsetTable offset_table;
 		protected ILanguageBackend language;
 		protected DebuggerBackend backend;
@@ -384,7 +509,7 @@ namespace Mono.Debugger.Languages.CSharp
 						IInferior inferior, ITargetMemoryAccess memory,
 						TargetAddress address, ILanguageBackend language)
 		{
-			this.table = table;
+			this.Table = table;
 			this.backend = backend;
 			this.inferior = inferior;
 			this.memory = memory;
@@ -440,7 +565,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			dynamic_address = address;
 
-			assembly = Assembly.LoadFrom (ImageFile);
+			Assembly = Assembly.LoadFrom (ImageFile);
 
 			if (raw_contents_size == 0)
 				throw new SymbolTableException ("Symbol table is empty.");
@@ -627,7 +752,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
-					reader.assembly, args);
+					reader.Assembly, args);
 
 				IMethodSource source = CSharpMethod.GetMethodSource (
 					this, method, address.LineNumbers);
@@ -642,13 +767,13 @@ namespace Mono.Debugger.Languages.CSharp
 					return;
 
 				if (!address.ThisTypeInfoAddress.IsNull)
-					this_type = reader.table.GetType (
+					this_type = reader.Table.GetType (
 						rmethod.ReflectedType, 0, address.ThisTypeInfoAddress);
 
 				ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
-					param_types [i] = reader.table.GetType (
+					param_types [i] = reader.Table.GetType (
 						param_info [i].ParameterType,
 						address.ParamVariableInfo [i].Size,
 						address.ParamTypeInfoAddresses [i]);
@@ -665,9 +790,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 					object[] args = new object[] { local.Signature };
 					Type type = (Type) get_local_type_from_sig.Invoke (
-						reader.assembly, args);
+						reader.Assembly, args);
 
-					local_types [i] = reader.table.GetType (
+					local_types [i] = reader.Table.GetType (
 						type, address.LocalVariableInfo [i].Size,
 						address.LocalTypeInfoAddresses [i]);
 				}
@@ -782,6 +907,12 @@ namespace Mono.Debugger.Languages.CSharp
 			this.inferior = inferior;
 		}
 
+		public string Name {
+			get {
+				return "Mono";
+			}
+		}
+
 		public ISymbolTable SymbolTable {
 			get {
 				return this;
@@ -800,6 +931,18 @@ namespace Mono.Debugger.Languages.CSharp
 					throw new InvalidOperationException ();
 				ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 				ranges.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
+		public IModule[] Modules {
+			get {
+				ICollection modules = table.Modules;
+				if (modules == null)
+					return new IModule [0];
+
+				IModule[] retval = new IModule [modules.Count];
+				modules.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -898,7 +1041,9 @@ namespace Mono.Debugger.Languages.CSharp
 				Console.WriteLine ("Ooops, no symtab loaded.");
 				return;
 			}
-			table = new MonoSymbolFileTable (backend, inferior, inferior, address, this);
+			if (table == null)
+				table = new MonoSymbolFileTable (backend, inferior, this);
+			table.Reload (address);
 
 			symtab_generation = table.Generation;
 
@@ -981,6 +1126,14 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 			return true;
 		}
+
+		public void ModulesChanged ()
+		{
+			if (ModulesChangedEvent != null)
+				ModulesChangedEvent ();
+		}
+
+		public event ModulesChangedHandler ModulesChangedEvent;
 	}
 
 	internal class ManagedBreakpointLocation : TargetLocation

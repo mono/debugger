@@ -10,7 +10,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class Bfd : IDisposable
+	internal class Bfd : IModule, IDisposable
 	{
 		IntPtr bfd;
 		protected IInferior inferior;
@@ -153,12 +153,16 @@ namespace Mono.Debugger.Architecture
 
 			g_free (symtab);
 
-			if (read_dwarf_symtab) {
-				try {
-					dwarf = new DwarfReader (inferior, this);
-				} catch (Exception e) {
-					Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
-				}
+			if (read_dwarf_symtab)
+				read_dwarf ();
+		}
+
+		void read_dwarf ()
+		{
+			try {
+				dwarf = new DwarfReader (inferior, this);
+			} catch (Exception e) {
+				Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
 			}
 		}
 
@@ -289,6 +293,58 @@ namespace Mono.Debugger.Architecture
 				has_sections = true;
 			} finally {
 				g_free (data);
+			}
+		}
+
+		//
+		// IModule
+		//
+
+		ILanguageBackend IModule.Language {
+			get {
+				return null;
+			}
+		}
+
+		string IModule.Name {
+			get {
+				return filename;
+			}
+		}
+
+		string IModule.FullName {
+			get {
+				return filename;
+			}
+		}
+
+		bool IModule.IsLoaded {
+			get {
+				return true;
+			}
+		}
+
+		bool IModule.SymbolsLoaded {
+			get {
+				return dwarf != null;
+			}
+		}
+
+		bool IModule.LoadSymbols {
+			get {
+				return IModule.SymbolsLoaded;
+			}
+
+			set {
+				if (!value) {
+					dwarf = null;
+					return;
+				}
+
+				if (is_coredump)
+					return;
+
+				read_dwarf ();
 			}
 		}
 

@@ -145,6 +145,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public IModule[] Modules {
+			get {
+				return new IModule[] { bfd };
+			}
+		}
+
 		//
 		// ITargetNotification
 		//

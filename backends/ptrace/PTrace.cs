@@ -978,6 +978,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public IModule[] Modules {
+			get {
+				return new IModule[] { bfd };
+			}
+		}
+
 		public long GetRegister (int register)
 		{
 			long[] retval = GetRegisters (new int[] { register });

@@ -219,6 +219,7 @@ namespace Mono.Debugger
 		public event MethodChangedHandler MethodChangedEvent;
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
+		public event ModulesChangedHandler ModulesChangedEvent;
 
 		public IInferior Inferior {
 			get {
@@ -356,11 +357,19 @@ namespace Mono.Debugger
 			if (load_native_symtab)
 				symtabs.AddSymbolTable (inferior.SymbolTable);
 
-			if (!native) {
-				language = new MonoCSharpLanguageBackend (this, inferior);
-				symtabs.AddSymbolTable (language.SymbolTable);
-				inferior.ApplicationSymbolTable = language.SymbolTable;
-			}
+			if (native)
+				return;
+
+			language = new MonoCSharpLanguageBackend (this, inferior);
+			symtabs.AddSymbolTable (language.SymbolTable);
+			inferior.ApplicationSymbolTable = language.SymbolTable;
+			language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+		}
+
+		void modules_changed ()
+		{
+			if (ModulesChangedEvent != null)
+				ModulesChangedEvent ();
 		}
 
 		void load_core (string core_file, string[] argv)
@@ -612,6 +621,20 @@ namespace Mono.Debugger
 		public IMethod Lookup (TargetAddress address)
 		{
 			return symtabs.Lookup (address);
+		}
+
+		public IModule[] Modules {
+			get {
+				check_disposed ();
+				ArrayList modules = new ArrayList ();
+				if (inferior != null)
+					modules.AddRange (inferior.Modules);
+				if (language != null)
+					modules.AddRange (language.Modules);
+				IModule[] retval = new IModule [modules.Count];
+				modules.CopyTo (retval, 0);
+				return retval;
+			}
 		}
 
 		static bool in_frame_changed = false;

@@ -4,9 +4,19 @@ namespace Mono.Debugger
 {
 	public interface ILanguageBackend
 	{
+		string Name {
+			get;
+		}
+
 		ISymbolTable SymbolTable {
 			get;
 		}
+
+		IModule[] Modules {
+			get;
+		}
+
+		event ModulesChangedHandler ModulesChangedEvent;
 
 		// <summary>
 		//   The address of the JIT's generic trampoline code.

@@ -11,5 +11,6 @@ public class Hello
 	public virtual void World ()
 	{
 		int a = Int32.Parse ("92");
+		Monkey.Party ();
 	}
 }

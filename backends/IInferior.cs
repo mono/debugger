@@ -105,6 +105,10 @@ namespace Mono.Debugger.Backends
 		ISymbolTable ApplicationSymbolTable {
 			get; set;
 		}
+
+		IModule[] Modules {
+			get;
+		}
 	}
 }
 

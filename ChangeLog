@@ -1,5 +1,13 @@
 2002-09-27  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IModule.cs: New interface.
+
+	* backends/Debugger.cs (DebuggerBackend.Modules): New property to get a
+	list of loaded modules.
+	(DebuggerBackend.ModulesChangedEvent): New event.
+
+2002-09-27  Martin Baulig  <martin@gnome.org>
+
 	* class/MethodBase.cs: Don't implement IMethodSource, added
 	protected SetSource() method to set the IMethodSource.
 
