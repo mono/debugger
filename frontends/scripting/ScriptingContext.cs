@@ -1193,6 +1193,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Print ("  {0}", source);
 		}
 
+		public void ShowMethods (int[] source_indices)
+		{
+			if (modules == null) {
+				Print ("No modules.");
+				return;
+			}
+
+			Hashtable source_hash = new Hashtable ();
+
+			backend.ModuleManager.Lock ();
+
+			foreach (Module module in modules) {
+				if (!module.SymbolsLoaded)
+					continue;
+
+				foreach (SourceFile source in module.Sources)
+					source_hash.Add (source.ID, source);
+			}
+
+			foreach (int index in source_indices) {
+				SourceFile source = (SourceFile) source_hash [index];
+				if (source == null) {
+					Print ("No such source file: {0}", index);
+					continue;
+				}
+
+				ShowMethods (source);
+			}
+
+			backend.ModuleManager.UnLock ();
+		}
+
+		public void ShowMethods (SourceFile source)
+		{
+			Print ("Methods from {0}:", source);
+			foreach (SourceMethod method in source.Methods)
+				Print ("  {0}", method);
+		}
+
 		void process_exited (ProcessHandle process)
 		{
 			procs.Remove (process);

@@ -97,6 +97,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token POINTER
 %token MODULES
 %token SOURCES
+%token METHODS
 %token BREAKPOINTS
 %token THREADGROUPS
 %token GLOBAL
@@ -227,6 +228,13 @@ command
 		((ArrayList) $3).CopyTo (modules, 0);
 
 		$$ = new ShowSourcesCommand (modules);
+	  }
+	| SHOW METHODS opt_number_list
+	  {
+		int[] sources = new int [((ArrayList) $3).Count];
+		((ArrayList) $3).CopyTo (sources, 0);
+
+		$$ = new ShowMethodsCommand (sources);
 	  }
 	| SHOW BREAKPOINTS
 	  {

@@ -400,6 +400,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowMethodsCommand : Command
+	{
+		int[] sources;
+
+		public ShowMethodsCommand (int[] sources)
+		{
+			this.sources = sources;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.ShowMethods (sources);
+		}
+	}
+
 	public class ShowBreakpointsCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
