@@ -1,6 +1,6 @@
 using System;
 
-class X
+class Whatever
 {
 	struct Foo
 	{
