@@ -27,8 +27,6 @@ proc fail {msg} {
 proc mdb_start {} {
     global mdb_prompt
     global spawn_id
-    global file
-    global args
     global mono
     global mdb
 

@@ -22,12 +22,11 @@ namespace Mono.Debugger.Languages.CSharp
 			if (type.IsByRef)
 				type = type.GetElementType ();
 
-			if (!type.IsPrimitive) {
-				if ((type == typeof (IntPtr)) || (type == typeof (UIntPtr)))
-					return true;
-
+			if (!type.IsPrimitive)
 				return false;
-			}
+
+			if ((type == typeof (IntPtr)) || (type == typeof (UIntPtr)))
+				return true;
 
 			switch (Type.GetTypeCode (type)) {
 			case TypeCode.Boolean:

@@ -1,3 +1,9 @@
+2004-11-18  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono-csharp/MonoFundamentalType.cs
+	(MonoFundamentalType.Supports): fix the debugger, after r36132
+	(which makes IntPtr/UIntPtr primitive) broke it.
+
 2004-11-17  Chris Toshok  <toshok@ximian.com>
 
 	* frontends/scripting/Interpreter.cs (Interpreter.Start): accept a
