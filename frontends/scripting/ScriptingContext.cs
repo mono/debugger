@@ -50,12 +50,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 		StackFrame[] current_backtrace = null;
 		string current_insn = null;
 
+		[DllImport("libc.so.6")]
+		static extern int getpid ();
+
 		void frame_changed (StackFrame frame)
 		{
 			current_frame = frame;
 			current_frame_idx = -1;
 			current_backtrace = null;
 			current_insn = null;
+
+			Console.WriteLine ("FRAME CHANGED: {0} {1}", getpid (), id);
 
 			IDisassembler dis = process.Disassembler;
 			if (dis != null) {

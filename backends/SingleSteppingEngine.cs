@@ -277,11 +277,15 @@ namespace Mono.Debugger.Backends
 		//   where some sub-method already sent an error message back).  Normally
 		//   this method will return true to signal the main loop that it still
 		//   needs to send the result.
+		//   `must_continue' specifies what to do when we stopped unexpectedly because
+		//   of a signal or breakpoint and its handler told us to resume execution.
+		//   If false, our caller is doing a single-instruction step operation and thus
+		//   we can just report a successful completion.  Otherwise, resume the target.
 		// </summary>
 		// <remarks>
 		//   This method may only be used in the background thread.
 		// </remarks>
-		bool wait ()
+		bool wait (bool must_continue)
 		{
 		again:
 			ChildEvent child_event = inferior.Wait ();
@@ -299,8 +303,11 @@ namespace Mono.Debugger.Backends
 				// A stop was requested and we actually received the SIGSTOP.  Note that
 				// we may also have stopped for another reason before receiving the SIGSTOP.
 				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.StopSignal)) {
-					do_continue_nowait (false);
-					goto again;
+					if (must_continue) {
+						do_continue_nowait (false);
+						goto again;
+					} else
+						return true;
 				}
 				// Ignore the next SIGSTOP.
 				pending_sigstop++;
@@ -309,12 +316,18 @@ namespace Mono.Debugger.Backends
 			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
 				if ((pending_sigstop > 0) && (arg == inferior.StopSignal)) {
 					--pending_sigstop;
-					do_continue_nowait (false);
-					goto again;
+					if (must_continue) {
+						do_continue_nowait (false);
+						goto again;
+					} else
+						return true;
 				}
 				if (!backend.SignalHandler (process, arg)) {
-					do_continue_nowait (false);
-					goto again;
+					if (must_continue) {
+						do_continue_nowait (false);
+						goto again;
+					} else
+						return true;
 				}
 			}
 
@@ -366,13 +379,19 @@ namespace Mono.Debugger.Backends
 						child_event = new_event;
 						goto again_with_event;
 					}
-					do_continue_nowait (true);
-					goto again;
+					if (must_continue) {
+						do_continue_nowait (true);
+						goto again;
+					} else
+						return true;
 				} else if (!child_breakpoint (arg)) {
 					// we hit any breakpoint, but its handler told us
 					// to resume the target and continue.
-					do_continue_nowait (true);
-					goto again;
+					if (must_continue) {
+						do_continue_nowait (true);
+						goto again;
+					} else
+						return true;
 				}
 			}
 
@@ -1102,7 +1121,7 @@ namespace Mono.Debugger.Backends
 
 			inferior.Step ();
 
-			return wait ();
+			return wait (false);
 		}
 
 		// <summary>
@@ -1135,7 +1154,7 @@ namespace Mono.Debugger.Backends
 			if (!do_continue_nowait (is_breakpoint))
 				return false;
 
-			return wait ();
+			return wait (true);
 		}
 
 		bool do_continue_nowait (bool is_breakpoint)
@@ -1145,7 +1164,7 @@ namespace Mono.Debugger.Backends
 			if (is_breakpoint || inferior.CurrentInstructionIsBreakpoint) {
 				must_continue = true;
 				inferior.Step ();
-				if (!wait ())
+				if (!wait (false))
 					return false;
 			}
 

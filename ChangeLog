@@ -1,5 +1,11 @@
 2002-12-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs: If we're stepping one instruction
+	and receive signal which we're supposed to ignore, the stepping operation
+	has already been completed and we don't need to resume the target.
+
+2002-12-25  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/ProcessManager.cs: Added thread manager GUI.
 
 2002-12-25  Martin Baulig  <martin@ximian.com>
