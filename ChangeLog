@@ -1,3 +1,7 @@
+2004-04-29  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Bumped version number to 0.7.
+
 2004-04-26  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Session.cs: New file.
