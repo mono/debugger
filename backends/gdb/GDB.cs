@@ -374,43 +374,31 @@ namespace Mono.Debugger.Backends
 			public event BreakPointHandler Hit;
 		}
 
-		protected class TargetLocation : ITargetLocation
-		{
-			public long Address;
-
-			internal TargetLocation ()
-				: this (-1)
-			{ }
-
-			public TargetLocation (long Address)
-			{
-				this.Address = Address;
-			}
-
-			long ITargetLocation.Location {
-				get {
-					return Address;
-				}
-			}
-
-			public override string ToString ()
-			{
-				StringBuilder builder = new StringBuilder ();
-
-				if (Address > 0) {
-					builder.Append ("0x");
-					builder.Append (Address.ToString ("x"));
-				} else
-					builder.Append ("<unknown>");
-
-				return builder.ToString ();
-			}
-		}
-
 		protected class StackFrame : IStackFrame
 		{
-			public ISourceLocation SourceLocation = null;
-			public TargetLocation TargetLocation = new TargetLocation ();
+			public readonly GDB GDB;
+			public readonly ISourceLocation SourceLocation = null;
+			public readonly TargetLocation TargetLocation = null;
+			public readonly ISymbolHandle SymbolHandle = null;
+
+			public StackFrame (GDB gdb, long address)
+				: this (gdb, null, address)
+			{ }
+
+			public StackFrame (GDB gdb, ISymbolHandle handle, long address)
+			{
+				GDB = gdb;
+				TargetLocation = new TargetLocation (address);
+
+				if ((handle == null) || !handle.IsInSameMethod (TargetLocation)) {
+					GDB.update_symbol_files ();
+
+					SourceLocation = GDB.LookupAddress (TargetLocation, out handle);
+				} else
+					SourceLocation = handle.Lookup (TargetLocation);
+
+				SymbolHandle = handle;
+			}
 
 			ISourceLocation IStackFrame.SourceLocation {
 				get {
@@ -476,7 +464,8 @@ namespace Mono.Debugger.Backends
 		WaitForOutput wait_for = WaitForOutput.UNKNOWN;
 
 		StackFrame current_frame = null;
-		StackFrame new_frame = null;
+		long current_frame_address = 0;
+		long new_frame_address = 0;
 		string source_file = null;
 
 		byte last_byte_value;
@@ -581,7 +570,7 @@ namespace Mono.Debugger.Backends
 			// The stack frame has changed, check whether we must continue single-stepping
 			// or whether we can report that the target has stopped.
 			//
-			if (new_frame != current_frame)
+			if (new_frame_address != 0)
 				frame_changed ();
 
 			//
@@ -703,13 +692,15 @@ namespace Mono.Debugger.Backends
 
 		ISourceLocation LookupAddress (long address)
 		{
-			return LookupAddress (new TargetLocation (address));
+			ISymbolHandle handle;
+
+			return LookupAddress (new TargetLocation (address), out handle);
 		}
 
-		ISourceLocation LookupAddress (ITargetLocation address)
+		ISourceLocation LookupAddress (ITargetLocation address, out ISymbolHandle handle)
 		{
 			foreach (ISymbolTable symtab in symtabs) {
-				ISourceLocation source = symtab.Lookup (address);
+				ISourceLocation source = symtab.Lookup (address, out handle);
 
 				if (source != null)
 					return source;
@@ -722,19 +713,18 @@ namespace Mono.Debugger.Backends
 		{
 			bool send_event = false;
 
-			update_symbol_files ();
-
 			int step_range = 0;
 			long start_address = 0;
+			ISymbolHandle symbol_handle = null;
+
 			if (current_frame != null) {
-				start_address = current_frame.TargetLocation.Address;
+				start_address = current_frame.TargetLocation.Location;
 				step_range = current_frame.SourceLocation.SourceRange;
+				symbol_handle = current_frame.SymbolHandle;
 			}
 
 		again:
-			current_frame = new_frame;
-
-			long address = current_frame.TargetLocation.Address;
+			current_frame_address = new_frame_address;
 
 			switch (step_mode) {
 			case StepMode.RUN:
@@ -744,7 +734,8 @@ namespace Mono.Debugger.Backends
 
 			case StepMode.STEP_LINE:
 			case StepMode.SKIP_CALLS:
-				if ((address < start_address) || (address >= start_address + step_range)) {
+				if ((new_frame_address < start_address) ||
+				    (new_frame_address >= start_address + step_range)) {
 					step_mode = StepMode.RUN;
 					change_target_state (TargetState.STOPPED);
 					send_event = true;
@@ -758,9 +749,12 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
-			ISourceLocation source = LookupAddress (current_frame.TargetLocation);
-			if (source != null)
-				current_frame.SourceLocation = source;
+			if (symbol_handle != null)
+				current_frame = new StackFrame (this, symbol_handle, new_frame_address);
+			else
+				current_frame = new StackFrame (this, new_frame_address);
+
+			new_frame_address = 0;
 
 			if (send_event && (current_frame_event != null))
 				current_frame_event (current_frame);
@@ -811,7 +805,6 @@ namespace Mono.Debugger.Backends
 
 			case "frame-begin":
 				wait_for = WaitForOutput.FRAME;
-				new_frame = new StackFrame ();
 				break;
 
 			case "frame-end":
@@ -966,11 +959,9 @@ namespace Mono.Debugger.Backends
 
 			case WaitForOutput.FRAME_ADDRESS:
 				wait_for = WaitForOutput.FRAME;
-				if (new_frame == null)
-					break;
 
 				try {
-					new_frame.TargetLocation.Address = Int64.Parse (
+					new_frame_address = Int64.Parse (
 						line.Substring (2), NumberStyles.HexNumber);
 					return true;
 				} catch {
@@ -1094,18 +1085,17 @@ namespace Mono.Debugger.Backends
 
 			if ((current_frame == null) ||
 			    ((mode != StepMode.STEP_LINE) && (mode != StepMode.SKIP_CALLS))) {
-				new_frame = null;
+				new_frame_address = 0;
 				send_gdb_command (command);
 				return;
 			}
 
-			long address = current_frame.TargetLocation.Address;
 			int insn_size;
-			long call_target = arch.GetCallTarget (this, address, out insn_size);
+			long call_target = arch.GetCallTarget (this, current_frame_address, out insn_size);
 			long stop_address = 0;
 
 			if (call_target == 0) {
-				new_frame = null;
+				new_frame_address = 0;
 				send_gdb_command (command);
 				return;
 			}
@@ -1127,7 +1117,7 @@ namespace Mono.Debugger.Backends
 
 					ISourceLocation source = LookupAddress (method);
 					if (source == null)
-						stop_address = address + insn_size;
+						stop_address = current_frame_address + insn_size;
 					else {
 						stop_address = method;
 						Console.WriteLine ("TRAMPOLINE CALL: {0}", source);
@@ -1135,12 +1125,12 @@ namespace Mono.Debugger.Backends
 				} else {
 					ISourceLocation source = LookupAddress (call_target);
 					if (source == null)
-						stop_address = address + insn_size;
+						stop_address = current_frame_address + insn_size;
 					else
 						Console.WriteLine ("CALL: {0}", source);
 				}
 			} else
-				stop_address = address + insn_size;
+				stop_address = current_frame_address + insn_size;
 
 			if (stop_address != 0) {
 				send_gdb_command ("tbreak *" + stop_address);
@@ -1148,7 +1138,7 @@ namespace Mono.Debugger.Backends
 				// step_mode = StepMode.RUN;
 			}
 
-			new_frame = null;
+			new_frame_address = 0;
 			send_gdb_command (command);
 		}
 
