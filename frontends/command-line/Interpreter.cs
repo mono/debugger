@@ -166,16 +166,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 					Console.WriteLine ("PARAM: {0}", var);
 
 					ITargetObject obj = var.GetObject (backend.CurrentFrame);
-					Console.WriteLine ("VAR: {0}", obj);
 					if (!obj.Location.IsValid)
 						continue;
 
-					Console.WriteLine ("DATA: {0}", obj.MemoryReader);
 					if (!obj.Variable.Type.HasObject)
 						continue;
 
 					Console.WriteLine ("OBJECT: {0}", obj.Variable.Type.GetObject (
-						obj.MemoryReader));
+						backend.CurrentFrame.TargetMemoryAccess,
+						obj.Location.Address));
 				}
 				break;
 			}
@@ -186,16 +185,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 					Console.WriteLine ("LOCAL: {0}", var);
 
 					ITargetObject obj = var.GetObject (backend.CurrentFrame);
-					Console.WriteLine ("VAR: {0}", obj);
 					if (!obj.Location.IsValid)
 						continue;
 
-					Console.WriteLine ("DATA: {0}", obj.MemoryReader);
 					if (!obj.Variable.Type.HasObject)
 						continue;
 
 					Console.WriteLine ("OBJECT: {0}", obj.Variable.Type.GetObject (
-						obj.MemoryReader));
+						backend.CurrentFrame.TargetMemoryAccess,
+						obj.Location.Address));
 				}
 				break;
 			}

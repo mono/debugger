@@ -11,9 +11,5 @@ namespace Mono.Debugger
 		ITargetLocation Location {
 			get;
 		}
-
-		ITargetMemoryReader MemoryReader {
-			get;
-		}
 	}
 }

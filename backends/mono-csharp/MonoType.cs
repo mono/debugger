@@ -2,32 +2,29 @@ using System;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoType : ITargetType
+	internal abstract class MonoType : ITargetType
 	{
 		protected Type type;
-		protected int size;
 
-		protected MonoType (Type type, int size)
+		protected MonoType (Type type)
 		{
 			this.type = type;
-			this.size = size;
 		}
 
 		public static MonoType GetType (Type type, int size)
 		{
-			Console.WriteLine ("TEST: {0} {1}", type, size);
+			if (MonoFundamentalType.Supports (type, null))
+				return new MonoFundamentalType (type, size, null);
 
-			if (MonoFundamentalType.Supports (type))
-				return new MonoFundamentalType (type, size);
-
-			return new MonoType (type, size);
+			return new MonoOpaqueType (type, size);
 		}
 
-		public static MonoType GetType (Type type, int size, ITargetMemoryReader reader)
+		public static MonoType GetType (Type type, int size, TargetBinaryReader reader)
 		{
-			Console.WriteLine ("TEST: {0} {1} {2}", type, size, reader);
+			if (MonoFundamentalType.Supports (type, reader))
+				return new MonoFundamentalType (type, size, reader);
 
-			return GetType (type, size);;
+			return GetType (type, size);
 		}
 
 		public object TypeHandle {
@@ -36,21 +33,41 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public int Size {
-			get {
-				return size;
-			}
+		public abstract bool IsByRef {
+			get;
 		}
 
-		public virtual bool HasObject {
-			get {
-				return false;
-			}
+		public abstract bool HasFixedSize {
+			get;
 		}
 
-		public virtual object GetObject (ITargetMemoryReader reader)
+		public abstract int Size {
+			get;
+		}
+
+		public abstract bool HasObject {
+			get;
+		}
+
+		protected abstract object GetObject (ITargetMemoryReader reader);
+
+		public virtual object GetObject (ITargetMemoryAccess memory, TargetAddress address)
 		{
-			throw new InvalidOperationException ();
+			Console.WriteLine ("GET OBJECT: {0} {1} {2}", IsByRef, address, Size);
+
+			if (IsByRef) {
+				address = memory.ReadAddress (address);
+				Console.WriteLine ("BY REF: {0}", address);
+			}
+
+			ITargetMemoryReader reader = memory.ReadMemory (address, Size);
+			return GetObject (reader);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} [{1}:{2}:{3}:{4}:{5}]", GetType (), TypeHandle,
+					      IsByRef, HasFixedSize, Size, HasObject);
 		}
 	}
 }

@@ -424,7 +424,7 @@ namespace Mono.Debugger.Languages.CSharp
 				taddress += memory.TargetIntegerSize;
 
 				ITargetMemoryReader reader = memory.ReadMemory (taddress, size);
-				retval = MonoType.GetType (type, type_size, reader);
+				retval = MonoType.GetType (type, type_size, reader.BinaryReader);
 			} else
 				retval = MonoType.GetType (type, type_size);
 

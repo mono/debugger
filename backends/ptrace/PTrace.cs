@@ -557,7 +557,7 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetAddress (this, ReadInteger (address));
+				return new TargetAddress (this, (uint) ReadInteger (address));
 
 			case 8:
 				return new TargetAddress (this, ReadLongInteger (address));

@@ -11,6 +11,18 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   Whether an instance of this type has a fixed size.
+		// </summary>
+		bool HasFixedSize {
+			get;
+		}
+
+		// <summary>
+		//   The size of an instance of this type or - is HasFixedSize
+		//   is false - the minimum number of bytes which must be read
+		//   to determine its size.
+		// </summary>
 		int Size {
 			get;
 		}
@@ -27,6 +39,6 @@ namespace Mono.Debugger
 		//   If HasObject is true, get a Mono object which is suitable
 		//   to represent an instance of this type.
 		// </summary>
-		object GetObject (ITargetMemoryReader reader);
+		object GetObject (ITargetMemoryAccess memory, TargetAddress address);
 	}
 }

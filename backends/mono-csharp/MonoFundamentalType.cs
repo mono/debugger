@@ -4,13 +4,26 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFundamentalType : MonoType
 	{
-		public MonoFundamentalType (Type type, int size)
-			: base (type, size)
-		{ }
+		int size;
 
-		public static bool Supports (Type type)
+		public MonoFundamentalType (Type type, int stack_size, TargetBinaryReader info)
+			: base (type)
 		{
-			if (type.IsByRef || !type.IsPrimitive)
+			if (type.IsByRef) {
+				size = info.ReadInt32 ();
+				// Supports() already checked this.
+				if (size <= 0)
+					throw new InternalError ();
+			} else
+				size = stack_size;
+		}
+
+		public static bool Supports (Type type, TargetBinaryReader info)
+		{
+			if (!type.IsPrimitive)
+				return false;
+
+			if (type.IsByRef && (info == null))
 				return false;
 
 			switch (Type.GetTypeCode (type)) {
@@ -24,10 +37,30 @@ namespace Mono.Debugger.Languages.CSharp
 			case TypeCode.UInt32:
 			case TypeCode.Int64:
 			case TypeCode.UInt64:
+			case TypeCode.Single:
+			case TypeCode.Double:
 				return true;
 
 			default:
 				return false;
+			}
+		}
+
+		public override bool HasFixedSize {
+			get {
+				return true;
+			}
+		}
+
+		public override int Size {
+			get {
+				return size;
+			}
+		}
+
+		public override bool IsByRef {
+			get {
+				return type.IsByRef;
 			}
 		}
 
@@ -37,7 +70,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override object GetObject (ITargetMemoryReader target_reader)
+		protected override object GetObject (ITargetMemoryReader target_reader)
 		{
 			TargetBinaryReader reader = target_reader.BinaryReader;
 
@@ -71,6 +104,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 			case TypeCode.UInt64:
 				return (ulong) reader.ReadInt64 ();
+
+			case TypeCode.Single: {
+				byte[] bits = BitConverter.GetBytes (reader.ReadInt32 ());
+				return BitConverter.ToSingle (bits, 0);
+			}
+
+			case TypeCode.Double:
+				return BitConverter.Int64BitsToDouble (reader.ReadInt64 ());
 
 			default:
 				throw new InvalidOperationException ();

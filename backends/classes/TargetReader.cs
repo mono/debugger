@@ -122,7 +122,7 @@ namespace Mono.Debugger.Backends
 		public TargetAddress ReadAddress ()
 		{
 			if (TargetAddressSize == 4)
-				return new TargetAddress (inferior, reader.ReadInt32 ());
+				return new TargetAddress (inferior, (uint) reader.ReadInt32 ());
 			else if (TargetAddressSize == 8)
 				return new TargetAddress (inferior, reader.ReadInt64 ());
 			else

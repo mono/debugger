@@ -72,5 +72,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			return new MonoObject (frame, this, is_local);
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("MonoVariable [{0}:{1}:{2}:{3}]",
+					      Name, Type, StartScope, EndScope);
+		}
 	}
 }

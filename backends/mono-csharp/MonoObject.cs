@@ -37,15 +37,5 @@ namespace Mono.Debugger.Languages.CSharp
 				return location;
 			}
 		}
-
-		public ITargetMemoryReader MemoryReader {
-			get {
-				if (!Location.IsValid)
-					throw new LocationInvalidException ();
-
-				return frame.TargetMemoryAccess.ReadMemory (
-					Location.Address, Variable.Type.Size);
-			}
-		}
 	}
 }
