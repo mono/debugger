@@ -49,7 +49,7 @@ namespace Mono.Debugger.Architecture
 			BfdModule module = (BfdModule) module_hash [filename];
 			if (module == null) {
 				module = new BfdModule (filename, backend, !base_address.IsNull);
-				module.LoadSymbols = true;
+				module.LoadSymbols = step_into;
 				module.StepInto = step_into;
 				module_hash.Add (filename, module);
  				new_module = true;

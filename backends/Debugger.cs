@@ -39,7 +39,7 @@ namespace Mono.Debugger
 		string target_application;
 		string working_directory;
 
-		bool load_native_symtab = true;
+		bool load_native_symtab = false;
 
 		bool native;
 

@@ -840,32 +840,26 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			Hashtable source_hash = new Hashtable ();
 
-			reader.Position = offset_table.method_table_offset;
-			for (int i = 0; i < offset_table.method_count; i++) {
+			reader.Position = offset_table.source_file_table_offset;
+			for (int i = 0; i < offset_table.source_file_count; i++) {
 				int offset = (int) reader.Position;
 
-				MethodEntry method = new MethodEntry (reader);
+				SourceFileEntry source = new SourceFileEntry (reader);
+				MonoSourceInfo info = new MonoSourceInfo (this, source);
 
-				if (method.SourceFile == null)
-					continue;
+				foreach (MethodSourceEntry method in source.Methods) {
+					string_reader.Offset = method.Index * int_size;
+					string_reader.Offset = string_reader.ReadInteger ();
 
-				string_reader.Offset = i * int_size;
-				string_reader.Offset = string_reader.ReadInteger ();
+					int length = string_reader.BinaryReader.ReadInt32 ();
+					byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
+					string name = Encoding.UTF8.GetString (buffer);
 
-				int length = string_reader.BinaryReader.ReadInt32 ();
-				byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
-				string name = Encoding.UTF8.GetString (buffer);
-
-				SourceInfo source = (SourceInfo) source_hash [method.SourceFile];
-				if (source == null) {
-					source = new MonoSourceInfo (this, method.SourceFile);
-					source_hash.Add (method.SourceFile, source);
+					info.AddMethod (new MonoSourceMethod (info, this, method, name));
 				}
-
-				source.AddMethod (new MonoSourceMethod (source, this, method, name, offset));
 			}
 
-			SourceInfo[] retval = new SourceInfo [source_hash.Values.Count];
+			SourceInfo[] retval = new SourceInfo [0];
 			source_hash.Values.CopyTo (retval, 0);
 			return retval;
 
@@ -886,11 +880,13 @@ namespace Mono.Debugger.Languages.CSharp
 		private class MonoSourceInfo : SourceInfo
 		{
 			MonoSymbolTableReader reader;
+			SourceFileEntry source;
 
-			public MonoSourceInfo (MonoSymbolTableReader reader, string filename)
-				: base (reader.Module, filename)
+			public MonoSourceInfo (MonoSymbolTableReader reader, SourceFileEntry source)
+				: base (reader.Module, source.SourceFile)
 			{
 				this.reader = reader;
+				this.source = source;
 			}
 
 			public override ITargetLocation Lookup (int line)
@@ -906,13 +902,15 @@ namespace Mono.Debugger.Languages.CSharp
 			int offset;
 			string full_name;
 			MonoMethod method;
+			MethodSourceEntry entry;
 
 			public MonoSourceMethod (SourceInfo source, MonoSymbolTableReader reader,
-						 MethodEntry method, string name, int offset)
-				: base (source, name, method.StartRow, method.EndRow, true)
+						 MethodSourceEntry entry, string name)
+				: base (source, name, entry.StartRow, entry.EndRow, true)
 			{
 				this.reader = reader;
 				this.offset = offset;
+				this.entry = entry;
 
 				source.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
 			}
