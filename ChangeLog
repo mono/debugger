@@ -1,5 +1,9 @@
 2002-12-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: The big
+	rewrite; we're doing all the symbol table stuff in a background
+	thread when we get a notification from the JIT.
+
 	* backends/ThreadManager.cs: If we're debugging a managed
 	application, the JIT creates a special debugger thread for us;
 	create a DaemonThreadRunner for this thread.
