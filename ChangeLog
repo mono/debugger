@@ -1,3 +1,18 @@
+2005-01-14  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Completer.cs (Completer.SymbolCompleter): attempt to
+	prepend the currently in-scope namespaces to the text so we don't
+	have to enter fully qualified names for completion.
+
+	* frontend/ScriptingContext.cs (ScriptingContext.GetNamespaces):
+	add two overloaded methods for this, one that takes a FrameHandle
+	and one with no args (to use the current frame).
+
+	* frontend/Expression.cs (SimpleNameExpression.GetNamespaces):
+	remove, and move to ScriptingContext.
+	(SimpleNameExpression.Lookup, SimpleNameExpression.DoResolveType):
+	use ScriptingContext.GetNamespaces.
+
 2005-01-05  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Interpreter.cs (Interpreter.Modules): add a property so

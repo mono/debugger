@@ -708,6 +708,25 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public string[] GetNamespaces (FrameHandle frame)
+		{
+			IMethod method = frame.Frame.Method;
+			if ((method == null) || !method.HasSource)
+				return null;
+
+			MethodSource msource = method.Source;
+			if (msource.IsDynamic)
+				return null;
+
+			return msource.GetNamespaces ();
+		}
+
+		public string[] GetNamespaces ()
+		{
+			return GetNamespaces (CurrentFrame);
+		}
+
+
 		public SourceLocation CurrentLocation {
 			get {
 				StackFrame frame = CurrentFrame.Frame;

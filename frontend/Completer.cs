@@ -205,6 +205,8 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				ArrayList method_list = new ArrayList ();
+				string[] namespaces = de.Interpreter.GlobalContext.GetNamespaces();
+
 				foreach (Module module in de.Interpreter.Modules) {
 					if (module.SymbolFile == null) {
 						// use the module's symbol table and
@@ -216,8 +218,17 @@ namespace Mono.Debugger.Frontend
 
 						foreach (ISymbolRange range in module.SymbolTable.SymbolRanges) {
 							IMethod method = range.SymbolLookup.Lookup (range.StartAddress);
-							if (method != null && method.Name.StartsWith (text))
-								method_list.Add (method.Name);
+							if (method != null) {
+								if (method.Name.StartsWith (text)) {
+									method_list.Add (method.Name);
+								}
+								if (namespaces != null) {
+									foreach (string n in namespaces) {
+										if (n != "" && method.Name.StartsWith (String.Concat (n, ".", text)))
+											method_list.Add (method.Name.Substring (n.Length + 1));
+									}
+								}
+							}
 						}
 					}
 					else {
@@ -237,6 +248,18 @@ namespace Mono.Debugger.Frontend
 										method_list.Add (method.Name.Substring (0, parameter_start));
 									else
 										method_list.Add (method.Name);
+								}
+								if (namespaces != null) {
+									foreach (string n in namespaces) {
+										if (n != "" && method.Name.StartsWith (String.Concat (n, ".", text))) {
+											int parameter_start = method.Name.IndexOf ('(');
+											if (parameter_start != -1)
+												method_list.Add (method.Name.Substring (n.Length + 1,
+																	parameter_start - n.Length - 1));
+											else
+												method_list.Add (method.Name.Substring (n.Length + 1));
+										}
+									}
 								}
 							}
 						}

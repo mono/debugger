@@ -532,22 +532,9 @@ namespace Mono.Debugger.Frontend
 				(ITargetStructObject) instance, false, full_name);
 		}
 
-		string[] GetNamespaces (ScriptingContext context, FrameHandle frame)
-		{
-			IMethod method = frame.Frame.Method;
-			if ((method == null) || !method.HasSource)
-				return null;
-
-			MethodSource msource = method.Source;
-			if (msource.IsDynamic)
-				return null;
-
-			return msource.GetNamespaces ();
-		}
-
 		Expression Lookup (ScriptingContext context, FrameHandle frame)
 		{
-			string[] namespaces = GetNamespaces (context, frame);
+			string[] namespaces = context.GetNamespaces (frame);
 			if (namespaces == null)
 				return null;
 
@@ -594,7 +581,7 @@ namespace Mono.Debugger.Frontend
 			if (type != null)
 				return new TypeExpression (type);
 
-			string[] namespaces = GetNamespaces (context, frame);
+			string[] namespaces = context.GetNamespaces (frame);
 			if (namespaces == null)
 				return null;
 
