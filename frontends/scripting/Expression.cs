@@ -1363,11 +1363,17 @@ namespace Mono.Debugger.Frontends.Scripting
 							      "Variable {0} is not an array type.", expr.Name);
 			}
 
-			if ((i < aobj.LowerBound) || (i >= aobj.UpperBound))
-				throw new ScriptingException (
-					"Index {0} of array expression {1} out of bounds " +
-					"(must be between {2} and {3}).", i, expr.Name,
-					aobj.LowerBound, aobj.UpperBound - 1);
+			if ((i < aobj.LowerBound) || (i >= aobj.UpperBound)) {
+				if (aobj.UpperBound == 0)
+					throw new ScriptingException (
+								      "Index {0} of array expression {1} out of bounds " +
+								      "(array is of zero length)", i, expr.Name);
+				else
+					throw new ScriptingException (
+								      "Index {0} of array expression {1} out of bounds " +
+								      "(must be between {2} and {3}).", i, expr.Name,
+								      aobj.LowerBound, aobj.UpperBound - 1);
+			}
 
 			return aobj [i];
 		}
