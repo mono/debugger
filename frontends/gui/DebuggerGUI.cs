@@ -149,6 +149,10 @@ namespace Mono.Debugger.GUI
 			get { return gxml; }
 		}
 
+		internal ScriptingContext Context {
+			get { return context; }
+		}
+
 		public event ProgramLoadedHandler ProgramLoadedEvent;
 		public event ProcessCreatedHandler ProcessCreatedEvent;
 

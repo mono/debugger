@@ -71,8 +71,12 @@ namespace Mono.Debugger.GUI {
 					text_buffer.LineRemoveMarker (line, "stop");
 					breakpoints [line] = null;
 				} else {
-					Breakpoint bp = new SimpleBreakpoint (String.Format ("{0}:{1}", filename, line));
-					int id = backend.InsertBreakpoint (bp, filename, line);
+					SourceLocation location = manager.FindLocation (filename, line);
+					if (location == null)
+						return;
+
+					Breakpoint bp = new SimpleBreakpoint (location.Name);
+					int id = backend.InsertBreakpoint (bp, location);
 
 					text_buffer.LineAddMarker (line, "stop");
 					breakpoints [line] = id;
@@ -80,9 +84,9 @@ namespace Mono.Debugger.GUI {
 			} 
 		}
 
-		protected override SourceLocation GetSourceLocation (StackFrame frame)
+		protected override SourceAddress GetSourceAddress (StackFrame frame)
 		{
-			return frame.SourceLocation;
+			return frame.SourceAddress;
 		}
 
 		public ClosableNotebookTab TabWidget {

@@ -55,8 +55,10 @@ namespace Mono.Debugger.GUI
 
 			if (current_method_source == null)
 				text_buffer.Text = "";
-			else
-				text_buffer.Text = current_method_source.SourceBuffer.Contents;
+			else {
+				string[] lines = current_method_source.SourceBuffer.Contents;
+				text_buffer.Text = String.Join ("\n", lines);
+			}
 		}
 
 		void MethodInvalid ()
@@ -64,7 +66,7 @@ namespace Mono.Debugger.GUI
 			// text_buffer.Text = "";
 		}
 
-		protected override SourceLocation GetSourceLocation (StackFrame frame)
+		protected override SourceAddress GetSourceAddress (StackFrame frame)
 		{
 			if (frame.Method == null)
 				UpdateDynamicMethod (frame);
@@ -90,11 +92,7 @@ namespace Mono.Debugger.GUI
 				this.Method = method;
 				this.StartLine = line;
 
-				string contents = method.SourceBuffer.Contents;
-				foreach (char ch in contents) {
-					if (ch == '\n')
-						NumLines++;
-				}
+				NumLines = method.SourceBuffer.Contents.Length;
 			}
 		}
 
@@ -168,19 +166,19 @@ namespace Mono.Debugger.GUI
 			}
 		}
 
-		SourceLocation LookupDynamic (TargetAddress address)
+		SourceAddress LookupDynamic (TargetAddress address)
 		{
 			foreach (DynamicMethod dynamic in dynamic_methods) {
 				if ((address < dynamic.Method.StartAddress) ||
 				    (address >= dynamic.Method.EndAddress))
 					continue;
 
-				SourceLocation source = dynamic.Method.Lookup (address);
+				SourceAddress source = dynamic.Method.Lookup (address);
 				if (source == null)
 					return null;
 
-				return new SourceLocation (
-					source.Buffer, source.Row + dynamic.StartLine,
+				return new SourceAddress (
+					source.MethodSource, source.Row + dynamic.StartLine,
 					source.SourceOffset, source.SourceRange);
 			}
 

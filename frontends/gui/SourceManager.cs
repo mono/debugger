@@ -187,18 +187,18 @@ namespace Mono.Debugger.GUI {
 				MethodInvalidEvent ();
 		}
 
-		string GetSource (ISourceBuffer buffer)
+		string[] GetSource (IMethodSource source)
 		{
-			if (buffer.HasContents)
-				return buffer.Contents;
+			if (source.IsDynamic)
+				return source.SourceBuffer.Contents;
 
-			SourceFile file = factory.FindFile (buffer.Name);
-			if (file == null) {
-				Console.WriteLine ("Can't find source file {0}.", buffer.Name);
+			ISourceBuffer buffer = factory.FindFile (source.SourceFile.FileName);
+			if (buffer == null) {
+				Console.WriteLine ("Can't find source file {0}.", source.Name);
 				return null;
 			}
 
-			return file.Contents;
+			return buffer.Contents;
 		}
 
 		SourceView GetSourceView (IMethod method, IMethodSource source)
@@ -206,26 +206,20 @@ namespace Mono.Debugger.GUI {
 			if (source == null)
 				return disassembler_view;
 
-			ISourceBuffer source_buffer = source.SourceBuffer;
-			if (source_buffer == null)
-				return disassembler_view;
-
-			string filename = source_buffer.Name;
-			SourceList view = (SourceList) sources [filename];
-
+			SourceList view = (SourceList) sources [source];
 			if (view != null)
 				return view;
 
-			string contents = GetSource (source_buffer);
+			string[] contents = GetSource (source);
 			if (contents == null)
 				return disassembler_view;
 			
-			view = CreateSourceView (filename, contents);
+			view = CreateSourceView (source.Name, String.Join ("\n", contents));
 			view.Widget.ShowAll ();
 					
-			sources [filename] = view;
+			sources [source] = view;
 			notebook.InsertPage (view.Widget, view.TabWidget, -1);
-			notebook.SetMenuLabelText (view.Widget, filename);
+			notebook.SetMenuLabelText (view.Widget, source.Name);
 			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
 
 			return view;
@@ -249,6 +243,11 @@ namespace Mono.Debugger.GUI {
 			initialized = true;
 			if (MethodChangedEvent != null)
 				MethodChangedEvent (method);
+		}
+
+		public SourceLocation FindLocation (string filename, int line)
+		{
+			return gui.Context.FindLocation (filename, line);
 		}
 	}
 }

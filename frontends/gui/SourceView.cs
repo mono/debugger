@@ -173,7 +173,7 @@ namespace Mono.Debugger.GUI {
 		StackFrame current_frame = null;
 		int last_line = 0;
 
-		protected abstract SourceLocation GetSourceLocation (StackFrame frame);
+		protected abstract SourceAddress GetSourceAddress (StackFrame frame);
 		
 		void frame_changed_event (StackFrame frame)
 		{
@@ -187,7 +187,7 @@ namespace Mono.Debugger.GUI {
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 
-			SourceLocation source = GetSourceLocation (frame);
+			SourceAddress source = GetSourceAddress (frame);
 			if (source == null)
 				return;
 

@@ -24,11 +24,11 @@ namespace Mono.Debugger
 
 		public static SourceAddress Null = new SourceAddress (null, 0);
 
-		internal SourceAddress (IMethodSource source, int row)
+		public SourceAddress (IMethodSource source, int row)
 			: this (source, row, 0, 0)
 		{ }
 
-		internal SourceAddress (IMethodSource source, int row, int offset, int range)
+		public SourceAddress (IMethodSource source, int row, int offset, int range)
 		{
 			this.source = source;
 			this.row = row;

@@ -24,11 +24,11 @@ namespace Mono.Debugger.GUI
 				return;
 			}
 
-			SourceLocation source = null;
+			SourceAddress source = null;
 			TargetAddress address;
 			try {
 				StackFrame frame = process.CurrentFrame;
-				source = frame.SourceLocation;
+				source = frame.SourceAddress;
 				address = frame.TargetAddress;
 			} catch {
 				Message ("");

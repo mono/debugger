@@ -98,7 +98,7 @@ namespace Mono.Debugger
 			AppendOneLine (line);
 		}
 
-		void AppendOneLine (AssemblerLine line)
+		public void AppendOneLine (AssemblerLine line)
 		{
 			if (line.Address != EndAddress)
 				throw new ArgumentException (String.Format (

@@ -49,15 +49,15 @@ namespace Mono.Debugger.GUI
 					Message (String.Format ("{0}.", GetStopReason (arg)));
 					break;
 				}
-				if (CurrentFrame.SourceLocation == null) {
+				if (CurrentFrame.SourceAddress == null) {
 					base.StateChanged (new_state, arg);
 					return;
 				}
-				string filename = Utils.GetBasename (CurrentFrame.SourceLocation.Name);
+				string filename = Utils.GetBasename (CurrentFrame.SourceAddress.Name);
 				string offset = "";
-				if (CurrentFrame.SourceLocation.SourceOffset > 0)
+				if (CurrentFrame.SourceAddress.SourceOffset > 0)
 					offset = String.Format (
-						" (offset 0x{0})", CurrentFrame.SourceLocation.SourceOffset);
+						" (offset 0x{0})", CurrentFrame.SourceAddress.SourceOffset);
 				Message (String.Format ("{0} at {1}{3} at {2}.", GetStopReason (arg),
 							filename, CurrentFrame.TargetAddress, offset));
 				break;
