@@ -14,6 +14,7 @@ typedef enum {
 	COMMAND_ERROR_ALREADY_HAVE_INFERIOR,
 	COMMAND_ERROR_FORK,
 	COMMAND_ERROR_NOT_STOPPED,
+	COMMAND_ERROR_ALREADY_STOPPED,
 	COMMAND_ERROR_RECURSIVE_CALL,
 	COMMAND_ERROR_NO_SUCH_BREAKPOINT,
 	COMMAND_ERROR_UNKNOWN_REGISTER,
@@ -105,7 +106,11 @@ void
 mono_debugger_server_abort_wait           (void);
 
 guint32
-mono_debugger_server_wait                 (guint64                 *status);
+mono_debugger_server_global_wait          (guint64                 *status);
+
+ServerCommandError
+mono_debugger_server_wait                 (ServerHandle            *handle,
+					   guint32                 *status);
 
 ServerStatusMessageType
 mono_debugger_server_dispatch_event       (ServerHandle            *handle,
@@ -225,6 +230,10 @@ mono_debugger_server_get_ret_address     (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_stop                (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_stop_and_wait       (ServerHandle        *handle,
+					  guint32             *status);
 
 ServerCommandError
 mono_debugger_server_set_signal          (ServerHandle        *handle,

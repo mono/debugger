@@ -5,47 +5,37 @@
 #include <pthread.h>
 
 void
-hello (int is_thread)
-{
-	printf ("HELLO: %x\n", pthread_self ());
-	fflush (stdout);
-}
-
-void
 do_sleep (int seconds)
 {
+	printf ("Sleep: %d\n", seconds);
 	while (seconds > 0)
 		seconds = sleep (seconds);
+	printf ("Done sleeping: %d\n", seconds);
 }
 
 void
-common_function (int is_thread, int sleep_seconds)
+common_function (int seconds)
 {
 	while (1) {
-		do_sleep (sleep_seconds);
-		hello (is_thread);
+		printf ("Looping: %d\n", seconds);
+		do_sleep (seconds);
 	}
 }
 
 int
 thread_func (void *data)
 {
-	// asm ("int $03");
-	common_function (1, 1);
+	common_function (5);
 	return 0;
 }
 
 int
 main (void)
 {
-	pthread_t *thread, *thread2;
+	pthread_t *thread;
 
-	printf ("Hello World!\n");
-	fflush (stdout);
 	pthread_create (&thread, NULL, thread_func, NULL);
-	pthread_create (&thread2, NULL, thread_func, NULL);
-	// asm ("int $03");
-	common_function (0, 10);
+	common_function (15);
 
 	return 0;
 }

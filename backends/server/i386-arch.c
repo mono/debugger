@@ -292,13 +292,20 @@ get_runtime_invoke_data (ArchInfo *arch)
 	return g_ptr_array_index (arch->rti_stack, arch->rti_stack->len - 1);
 }
 
-void
+ServerCommandError
 i386_arch_get_registers (ServerHandle *handle)
 {
-	if (_mono_debugger_server_get_registers (handle->inferior, &handle->arch->current_regs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get registers");
-	if (_mono_debugger_server_get_fp_registers (handle->inferior, &handle->arch->current_fpregs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get fp registers");
+	ServerCommandError result;
+
+	result = _mono_debugger_server_get_registers (handle->inferior, &handle->arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	_mono_debugger_server_get_fp_registers (handle->inferior, &handle->arch->current_fpregs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
 }
 
 guint32

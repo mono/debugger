@@ -123,7 +123,7 @@ do_wait (int pid, guint32 *status)
 }
 
 guint32
-mono_debugger_server_wait (guint64 *status_ret)
+mono_debugger_server_global_wait (guint64 *status_ret)
 {
 	int ret, status;
 
@@ -133,6 +133,81 @@ mono_debugger_server_wait (guint64 *status_ret)
 
 	*status_ret = status;
 	return ret;
+}
+
+ServerCommandError
+mono_debugger_server_wait (ServerHandle *handle, guint32 *status)
+{
+	int ret;
+
+	do {
+		ret = do_wait (handle->inferior->pid, status);
+	} while (ret == 0);
+
+	if (ret < 0)
+		return COMMAND_ERROR_UNKNOWN;
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
+mono_debugger_server_stop (ServerHandle *handle)
+{
+	ServerCommandError result;
+	int ret;
+
+	/*
+	 * Try to get the thread's registers.  If we suceed, then it's already stopped
+	 * and still alive.
+	 */
+	result = i386_arch_get_registers (handle);
+	if (result == COMMAND_ERROR_NONE)
+		return COMMAND_ERROR_ALREADY_STOPPED;
+
+	if (syscall (__NR_tkill, handle->inferior->pid, SIGSTOP)) {
+		/*
+		 * It's already dead.
+		 */
+		if (errno == ESRCH)
+			return COMMAND_ERROR_NO_INFERIOR;
+		else
+			return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
+mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
+{
+	ServerCommandError result;
+	int ret;
+
+	/*
+	 * Try to get the thread's registers.  If we suceed, then it's already stopped
+	 * and still alive.
+	 */
+	result = mono_debugger_server_stop (handle);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	do {
+		ret = do_wait (handle->inferior->pid, status);
+	} while (ret == 0);
+
+	/*
+	 * Should never happen.
+	 */
+	if (ret < 0)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	/*
+	 * We expect a SIGSTOP, so don't explicitly report it.
+	 */
+	if (WIFSTOPPED (*status) && (WSTOPSIG (*status) == SIGSTOP))
+		*status = 0;
+
+	return COMMAND_ERROR_NONE;
 }
 
 void
@@ -145,7 +220,8 @@ _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main)
 
 		while (do_wait (handle->inferior->pid, &status) == 0);
 
-		i386_arch_get_registers (handle);
+		if (i386_arch_get_registers (handle) != COMMAND_ERROR_NONE)
+			g_error ("Can't get registers");
 	}
 
 	handle->inferior->mem_fd = open64 (filename, O_RDONLY);

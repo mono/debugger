@@ -20,6 +20,9 @@ namespace Mono.Debugger.Backends
 	internal class PTraceInferior : Inferior
 	{
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_wait (IntPtr handle, out int status);
+
+		[DllImport("monodebuggerserver")]
 		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, long status, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
@@ -82,33 +85,15 @@ namespace Mono.Debugger.Backends
 
 		public override ChildEvent Wait ()
 		{
-			throw new InvalidOperationException ("FUCK");
+			int status;
 
-#if FIXME
-			int arg;
-			ChildEventType message;
-
-		again:
 			Report.Debug (DebugFlags.EventLoop, "Waiting for event from {0}", PID);
-			mono_debugger_server_wait (server_handle, out message, out arg);
+			check_error (mono_debugger_server_wait (server_handle, out status));
 			Report.Debug (DebugFlags.EventLoop,
-				      "Received event for {0}: {1} {2} {3}",
-				      PID, message, arg, CurrentFrame);
+				      "Received event for {0}: {1:x}",
+				      PID, status);
 
-			ChildEvent cevent = new ChildEvent (message, arg, 0, 0);
-
-			if ((thread_manager != null) &&
-			    thread_manager.HandleChildEvent (this, cevent)) {
-				Continue ();
-				goto again;
-			}
-
-			if ((message == ChildEventType.CHILD_EXITED) ||
-			    (message == ChildEventType.CHILD_SIGNALED))
-				child_exited ();
-
-			return cevent;
-#endif
+			return ProcessEvent (status);
 		}
 
 		public override ChildEvent ProcessEvent (long status)

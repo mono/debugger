@@ -152,6 +152,9 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_stop (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_stop_and_wait (IntPtr handle, out int status);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_set_signal (IntPtr handle, int signal, int send_it);
 
 		[DllImport("monodebuggerserver")]
@@ -205,6 +208,7 @@ namespace Mono.Debugger.Backends
 			AlreadyHaveInferior,
 			Fork,
 			NotStopped,
+			AlreadyStopped,
 			RecursiveCall,
 			NoSuchBreakpoint,
 			UnknownRegister,
@@ -235,9 +239,9 @@ namespace Mono.Debugger.Backends
 		public static Inferior CreateInferior (ThreadManager thread_manager,
 						       ProcessStart start)
 		{
-			BreakpointManager bpm = new BreakpointManager ();
 			return new PTraceInferior (
-				thread_manager.DebuggerBackend, start, bpm, null,
+				thread_manager.DebuggerBackend, start,
+				thread_manager.BreakpointManager, null,
 				thread_manager.AddressDomain, null);
 		}
 
@@ -823,10 +827,40 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Stop ()
+		// <summary>
+		//   Stop the inferior.
+		//   Returns true if it actually stopped the inferior and false if it was
+		//   already stopped.
+		//   Note that the target may have stopped abnormally in the meantime, in
+		//   this case we return the corresponding ChildEvent.
+		// </summary>
+		public bool Stop (out ChildEvent new_event)
 		{
 			check_disposed ();
-			check_error (mono_debugger_server_stop (server_handle));
+			int status;
+			CommandError error = mono_debugger_server_stop_and_wait (server_handle, out status);
+			if (error != CommandError.None) {
+				new_event = null;
+				return false;
+			} else if (status == 0) {
+				new_event = null;
+				return true;
+			}
+
+			new_event = ProcessEvent (status);
+			return true;
+		}
+
+		// <summary>
+		//   Just send the inferior a stop signal, but don't wait for it to stop.
+		//   Returns true if it actually sent the signal and false if the target
+		//   was already stopped.
+		// </summary>
+		public bool Stop ()
+		{
+			check_disposed ();
+			CommandError error = mono_debugger_server_stop (server_handle);
+			return error == CommandError.None;
 		}
 
 		public void SetSignal (int signal, bool send_it)

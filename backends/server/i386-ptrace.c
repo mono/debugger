@@ -12,6 +12,7 @@
 #include <sys/select.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -206,7 +207,7 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 					handle->inferior->last_signal = 0;
 				else
 					handle->inferior->last_signal = WSTOPSIG (status);
-				*arg = WSTOPSIG (status);
+				*arg = handle->inferior->last_signal;
 			}
 			return MESSAGE_CHILD_STOPPED;
 
@@ -384,16 +385,6 @@ check_io (InferiorHandle *inferior)
 		process_output (inferior, inferior->output_fd [0], inferior->stdout_handler);
 	if (fds [1].revents == POLLIN)
 		process_output (inferior, inferior->error_fd [0], inferior->stderr_handler);
-}
-
-ServerCommandError
-mono_debugger_server_stop (ServerHandle *handle)
-{
-	g_message (G_STRLOC ": Sending SIGSTOP to %d", handle->inferior->pid);
-
-	kill (handle->inferior->pid, SIGSTOP);
-
-	return COMMAND_ERROR_NONE;
 }
 
 ServerCommandError

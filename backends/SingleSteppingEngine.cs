@@ -84,6 +84,7 @@ public class SingleSteppingEngine : ThreadManager
 	ManualResetEvent ready_event;
 	Hashtable thread_hash;
 
+	int thread_lock_level;
 	Mutex thread_lock_mutex;
 	AddressDomain address_domain;
 	ThreadGroup global_group;
@@ -95,7 +96,7 @@ public class SingleSteppingEngine : ThreadManager
 	bool abort_requested;
 
 	[DllImport("monodebuggerserver")]
-	static extern int mono_debugger_server_wait (out long status);
+	static extern int mono_debugger_server_global_wait (out long status);
 
 	[DllImport("monodebuggerserver")]
 	static extern void mono_debugger_server_abort_wait ();
@@ -197,10 +198,40 @@ public class SingleSteppingEngine : ThreadManager
 	// </summary>
 	internal override void AcquireGlobalThreadLock (Inferior inferior, Process caller)
 	{
+		thread_lock_mutex.WaitOne ();
+		Report.Debug (DebugFlags.Threads, "Acquiring global thread lock: {0} {1}",
+			      caller, thread_lock_level);
+		if (thread_lock_level++ > 0)
+			return;
+		foreach (EngineProcess engine in thread_hash.Values) {
+			if (engine == caller)
+				continue;
+			Register[] regs = engine.AcquireThreadLock ();
+			long esp = (long) regs [(int) I386Register.ESP].Data;
+			TargetAddress addr = new TargetAddress (inferior.AddressDomain, esp);
+			Report.Debug (DebugFlags.Threads, "Got thread lock on {0}: {1}",
+				      engine, addr);
+		}
+		Report.Debug (DebugFlags.Threads, "Done acquiring global thread lock: {0}",
+			      caller);
 	}
 
 	internal override void ReleaseGlobalThreadLock (Inferior inferior, Process caller)
 	{
+		Report.Debug (DebugFlags.Threads, "Releasing global thread lock: {0} {1}",
+			      caller, thread_lock_level);
+		if (--thread_lock_level > 0) {
+			thread_lock_mutex.ReleaseMutex ();
+			return;
+		}
+				
+		foreach (EngineProcess engine in thread_hash.Values) {
+			if (engine == caller)
+				continue;
+			engine.ReleaseThreadLock ();
+		}
+		thread_lock_mutex.ReleaseMutex ();
+		Report.Debug (DebugFlags.Threads, "Released global thread lock: {0}", caller);
 	}
 
 	internal override Inferior CreateInferior (ProcessStart start)
@@ -454,7 +485,7 @@ public class SingleSteppingEngine : ThreadManager
 		int pid;
 		long status;
 
-		pid = mono_debugger_server_wait (out status);
+		pid = mono_debugger_server_global_wait (out status);
 
 		if (pid > 0) {
 			Report.Debug (DebugFlags.Wait,
@@ -732,7 +763,6 @@ public class SingleSteppingEngine : ThreadManager
 
 		void setup_engine ()
 		{
-			stop_event = new AutoResetEvent (false);
 			restart_event = new AutoResetEvent (false);
 
 			inferior.SingleSteppingEngine = sse;
@@ -826,29 +856,11 @@ public class SingleSteppingEngine : ThreadManager
 		// <remarks>
 		//   This method may only be used in the background thread.
 		// </remarks>
-		TargetEventArgs process_child_event (Inferior.ChildEvent child_event)
+		TargetEventArgs process_child_event (ref Inferior.ChildEvent child_event)
 		{
+		again:
 			Inferior.ChildEventType message = child_event.Type;
 			int arg = (int) child_event.Argument;
-
-			if (stop_requested) {
-				get_registers ();
-				stop_event.Set ();
-				restart_event.WaitOne ();
-				// A stop was requested and we actually received the SIGSTOP.  Note that
-				// we may also have stopped for another reason before receiving the SIGSTOP.
-				if ((message == Inferior.ChildEventType.CHILD_STOPPED) && (arg == inferior.SIGSTOP))
-					return null;
-				// Ignore the next SIGSTOP.
-				pending_sigstop++;
-			}
-
-			if ((message == Inferior.ChildEventType.CHILD_STOPPED) && (arg != 0)) {
-				if ((pending_sigstop > 0) && (arg == inferior.SIGSTOP)) {
-					--pending_sigstop;
-					return null;
-				}
-			}
 
 			// To step over a method call, the sse inserts a temporary
 			// breakpoint immediately after the call instruction and then
@@ -889,21 +901,17 @@ public class SingleSteppingEngine : ThreadManager
 				// breakpoint or whether it belongs to another thread.  In this case,
 				// `step_over_breakpoint' does everything for us and we can just continue
 				// execution.
-				if (step_over_breakpoint (false, out new_event)) {
-					int new_arg = (int) new_event.Argument;
-					// If the child stopped normally, just continue its execution
-					// here; otherwise, we need to deal with the unexpected stop.
-					if ((new_event.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
-					    ((new_arg != 0) && (new_arg != inferior.SIGSTOP))) {
-#if FIXME
-						child_event = new_event;
-						goto again;
-#endif
-					}
-					return null;
+				if (stop_requested) {
+					stop_requested = false;
+					frame_changed (inferior.CurrentFrame, 0, null);
+					return new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
+				} else if (step_over_breakpoint (arg, out new_event)) {
+					child_event = new_event;
+					goto again;
 				} else if (!child_breakpoint (arg)) {
 					// we hit any breakpoint, but its handler told us
 					// to resume the target and continue.
+					do_continue ();
 					return null;
 				}
 			}
@@ -915,7 +923,8 @@ public class SingleSteppingEngine : ThreadManager
 
 			switch (message) {
 			case Inferior.ChildEventType.CHILD_STOPPED:
-				if (arg != 0) {
+				if (stop_requested || (arg != 0)) {
+					stop_requested = false;
 					frame_changed (inferior.CurrentFrame, 0, null);
 					return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 				}
@@ -945,6 +954,8 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public void ProcessCommand (Operation operation)
 		{
+			stop_requested = false;
+
 			// Process another stepping command.
 			switch (operation.Type) {
 			case OperationType.Run:
@@ -1016,7 +1027,7 @@ public class SingleSteppingEngine : ThreadManager
 					return ret;
 			}
 
-			TargetEventArgs result = process_child_event (cevent);
+			TargetEventArgs result = process_child_event (ref cevent);
 
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
@@ -1118,10 +1129,8 @@ public class SingleSteppingEngine : ThreadManager
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		ILanguage native_language;
-		protected AutoResetEvent stop_event;
 		protected AutoResetEvent restart_event;
 		protected bool stop_requested = false;
-		int pending_sigstop = 0;
 		bool is_main;
 		bool native;
 		protected int pid, tid;
@@ -1178,7 +1187,7 @@ public class SingleSteppingEngine : ThreadManager
 		//   either ignore the breakpoint and continue or keep the target stopped
 		//   and send out the notification.
 		//
-		//   If @breakpoint is zero, we hit an "unknown" breakpoint - ie. a
+		//   If @index is zero, we hit an "unknown" breakpoint - ie. a
 		//   breakpoint which we did not create.  Normally, this means that there
 		//   is a breakpoint instruction (such as G_BREAKPOINT ()) in the code.
 		//   Such unknown breakpoints are handled by the DebuggerBackend; one of
@@ -1200,7 +1209,7 @@ public class SingleSteppingEngine : ThreadManager
 
 			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (index);
 			if (handle == null)
-				return true;
+				return false;
 
 			StackFrame frame = null;
 			// Only compute the current stack frame if the handler actually
@@ -1218,21 +1227,18 @@ public class SingleSteppingEngine : ThreadManager
 			return true;
 		}
 
-		bool step_over_breakpoint (bool current, out Inferior.ChildEvent new_event)
+		bool step_over_breakpoint (int arg, out Inferior.ChildEvent new_event)
 		{
-			int index;
-			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (
-				inferior.CurrentFrame, out index);
-
-			if (handle == null) {
+			if (arg == 0) {
 				new_event = null;
 				return false;
 			}
 
-			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
-					   current, handle, index);
+			int index;
+			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (
+				inferior.CurrentFrame, out index);
 
-			if (!current && handle.BreakpointHandle.Breaks (this)) {
+			if ((handle != null) && handle.BreakpointHandle.Breaks (this)) {
 				new_event = null;
 				return false;
 			}
@@ -1427,7 +1433,8 @@ public class SingleSteppingEngine : ThreadManager
 		void do_step ()
 		{
 			check_inferior ();
-			do_continue_internal (false);
+			frames_invalid ();
+			inferior.Step ();
 		}
 
 		// <summary>
@@ -1463,33 +1470,8 @@ public class SingleSteppingEngine : ThreadManager
 		void do_continue ()
 		{
 			check_inferior ();
-			do_continue_internal (true);
-		}
-
-		void do_continue_internal (bool do_run)
-		{
-			check_inferior ();
-
 			frames_invalid ();
-
-			Inferior.ChildEvent new_event;
-			if (step_over_breakpoint (true, out new_event)) {
-				int new_arg = (int) new_event.Argument;
-				// If the child stopped normally, just continue its execution
-				// here; otherwise, we need to deal with the unexpected stop.
-#if FIXME
-				if ((new_event.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
-				    ((new_arg != 0) && (new_arg != inferior.SIGSTOP)))
-					return new_event;
-				else if (!do_run)
-					return new_event;
-#endif
-			}
-
-			if (do_run)
-				inferior.Continue ();
-			else
-				inferior.Step ();
+			inferior.Continue ();
 		}
 
 		Operation current_operation;
@@ -1543,8 +1525,6 @@ public class SingleSteppingEngine : ThreadManager
 
 		bool callback_method_compiled (Callback cb, long data1, long data2)
 		{
-			Console.WriteLine ("COMPILED: {0:x}", data1);
-
 			TargetAddress trampoline = new TargetAddress (sse.AddressDomain, data1);
 			IMethod method = null;
 			if (current_symtab != null) {
@@ -1839,6 +1819,41 @@ public class SingleSteppingEngine : ThreadManager
 
 			sse.SetCompleted (this);
 			return true;
+		}
+
+		bool stopped;
+		Inferior.ChildEvent stop_event;
+
+		// <summary>
+		//   Interrupt any currently running stepping operation, but don't send
+		//   any notifications to the caller.  The currently running operation is
+		//   automatically resumed when ReleaseThreadLock() is called.
+		// </summary>
+		public override Register[] AcquireThreadLock ()
+		{
+			stopped = inferior.Stop (out stop_event);
+
+			get_registers ();
+			return registers;
+		}
+
+		public override void ReleaseThreadLock ()
+		{
+			// If the target was already stopped, there's nothing to do for us.
+			if (!stopped)
+				return;
+			else if (stop_event != null) {
+				// The target stopped before we were able to send the SIGSTOP,
+				// but we haven't processed this event yet.
+				Inferior.ChildEvent cevent = stop_event;
+				stop_event = null;
+
+				if (sse.HandleChildEvent (inferior, cevent))
+					return;
+				ProcessEvent (cevent);
+			} else {
+				do_continue ();
+			}
 		}
 
 		//
@@ -2219,78 +2234,25 @@ public class SingleSteppingEngine : ThreadManager
 
 		public override void Stop ()
 		{
-			// Try to get the command mutex; if we succeed, then no stepping
-			// operation is currently running.
 			check_inferior ();
-			bool stopped = sse.CheckCanRun ();
-			Console.WriteLine ("STOP: {0} {1} {2}", this, stopped, State);
-			if (stopped) {
+			// If a stepping operation is currently running, just send the target
+			// a SIGSTOP, but don't wait for it to actually stop.
+			if (!sse.CheckCanRun ()) {
 				inferior.Stop ();
-				sse.ReleaseCommandMutex ();
 				return;
 			}
 
-			// Ok, there's an operation running.
-			// Stop the inferior and wait until the currently running operation
-			// completed.
+			// Ok, so we acquired the command mutex.
+			// Note that we still don't know whether the target is running or
+			// not, it could be running in the background.
+			stop_requested = true;
 			inferior.Stop ();
-			sse.WaitForCompletion (true);
+			sse.ReleaseCommandMutex ();
 		}
 
 		public override void Kill ()
 		{
 			Dispose ();
-		}
-
-#if FIXME
-		public void SetSignal (int signal, bool send_it)
-		{
-			// Try to get the command mutex; if we succeed, then no stepping operation
-			// is currently running.
-			check_inferior ();
-			bool stopped = sse.CheckCanRun ();
-			if (stopped) {
-				inferior.SetSignal (signal, send_it);
-				sse.ReleaseCommandMutex ();
-				return;
-			}
-
-			throw new TargetNotStoppedException ();
-		}
-#endif
-
-		// <summary>
-		//   Interrupt any currently running stepping operation, but don't send
-		//   any notifications to the caller.  The currently running operation is
-		//   automatically resumed when ReleaseThreadLock() is called.
-		// </summary>
-		public override Register[] AcquireThreadLock ()
-		{
-			// Try to get the command mutex; if we succeed, then no stepping operation
-			// is currently running.
-			check_inferior ();
-			bool stopped = sse.CheckCanRun ();
-			if (stopped)
-				return GetRegisters ();
-
-			// Ok, there's an operation running.  Stop the inferior and wait until the
-			// currently running operation completed.
-			stop_requested = true;
-			inferior.Stop ();
-			stop_event.WaitOne ();
-			return registers;
-		}
-
-		public override void ReleaseThreadLock ()
-		{
-			lock (this) {
-				if (stop_requested) {
-					stop_requested = false;
-					sse.ResetCompleted ();
-					restart_event.Set ();
-				}
-				sse.ReleaseCommandMutex ();
-			}
 		}
 
 		CommandResult insert_breakpoint (object data)

@@ -56,7 +56,7 @@ ChildStoppedAction
 i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 			 guint64 *callback_arg, guint64 *retval, guint64 *retval2);
 
-void
+ServerCommandError
 i386_arch_get_registers (ServerHandle *handle);
 
 guint32
