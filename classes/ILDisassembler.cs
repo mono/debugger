@@ -62,13 +62,21 @@ namespace Mono.Debugger
 			this.image_file = image_file;
 			string command_line = "monodis " + image_file;
 
+			Console.WriteLine ("DISASM: {0}", command_line);
+
 			int exitcode = Spawn.SpawnCommandLine (command_line, out standard_output,
 							       out standard_error);
+
+			Console.WriteLine ("DISASM DONE");
+
+			if (standard_output == null)
+				throw new InternalError ("Can't create IL disassembly: `{0}' failed",
+							 command_line);
 
 			if (exitcode != 0)
 				throw new Exception ();
 
-			if (standard_error != "")
+			if ((standard_error != null) && (standard_error != ""))
 				throw new Exception (standard_error);
 
 			methods = new ArrayList ();

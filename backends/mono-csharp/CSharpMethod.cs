@@ -57,10 +57,15 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new InvalidOperationException ();
 
 			int index = (int) (method.Token & 0xffffff);
-			ILDisassembler dis = ILDisassembler.Disassemble (imethod.ImageFile);
+			try {
+				ILDisassembler dis = ILDisassembler.Disassemble (imethod.ImageFile);
 
-			return new CSharpMethod (imethod, method, line_numbers, dis,
-						 dis.GetStartLine (index), dis.GetEndLine (index));
+				return new CSharpMethod (imethod, method, line_numbers, dis,
+							 dis.GetStartLine (index), dis.GetEndLine (index));
+			} catch {
+				ISourceBuffer buffer = new SourceBuffer (imethod.ImageFile);
+				return new CSharpMethod (imethod, buffer, method, line_numbers);
+			}
 		}
 
 		internal static ISourceBuffer GetMethodSource (IMethod imethod, MethodEntry method,

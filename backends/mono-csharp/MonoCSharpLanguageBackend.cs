@@ -97,10 +97,18 @@ namespace Mono.Debugger.Languages.CSharp
 			int line_number_size = reader.BinaryReader.ReadInt32 ();
 			TargetAddress line_number_address = reader.ReadAddress ();
 
-			ITargetMemoryReader line_reader = reader.TargetMemoryAccess.ReadMemory (
-				line_number_address, line_number_size);
-			for (int i = 0; i < num_line_numbers; i++)
-				LineNumbers [i] = new JitLineNumberEntry (line_reader.BinaryReader);
+			Report.Debug (DebugFlags.METHOD_ADDRESS,
+				      "METHOD ADDRESS: {0} {1} {2} {3} {4} {5} {6} {7}",
+				      StartAddress, EndAddress, MethodStartAddress, MethodEndAddress,
+				      variables_offset, type_table_offset, num_line_numbers,
+				      line_number_size);
+
+			if (num_line_numbers > 0) {
+				ITargetMemoryReader line_reader = reader.TargetMemoryAccess.ReadMemory (
+					line_number_address, line_number_size);
+				for (int i = 0; i < num_line_numbers; i++)
+					LineNumbers [i] = new JitLineNumberEntry (line_reader.BinaryReader);
+			}
 
 			reader.Offset = variables_offset;
 			if (entry.ThisTypeIndex != 0)
@@ -137,7 +145,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 10;
+		public const int  DynamicVersion = 11;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		public readonly int TotalSize;
@@ -171,6 +179,10 @@ namespace Mono.Debugger.Languages.CSharp
 					"Dynamic section has version {0}, but expected {1}.",
 					version, DynamicVersion);
 
+			ranges = new ArrayList ();
+			types = new Hashtable ();
+			type_cache = new Hashtable ();
+
 			TotalSize = header.ReadInteger ();
 			int count = header.ReadInteger ();
 			Generation = header.ReadInteger ();
@@ -178,16 +190,14 @@ namespace Mono.Debugger.Languages.CSharp
 			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE HEADER: {0} {1} {2}",
 				      TotalSize, count, Generation);
 
-			if ((TotalSize == 0) || (count == 0))
+			if ((TotalSize == 0) || (count == 0)) {
+				SymbolFiles = new MonoSymbolTableReader [0];
 				return;
+			}
 
 			ITargetMemoryReader reader = memory.ReadMemory (address + 24, TotalSize - 24);
 
 			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE READER: {0}", reader);
-
-			ranges = new ArrayList ();
-			types = new Hashtable ();
-			type_cache = new Hashtable ();
 
 			SymbolFiles = new MonoSymbolTableReader [count];
 			for (int i = 0; i < count; i++)
@@ -557,19 +567,14 @@ namespace Mono.Debugger.Languages.CSharp
 			string_reader.Offset = index * int_size;
 			string_reader.Offset = string_reader.ReadInteger ();
 
-			StringBuilder sb = new StringBuilder ();
-			while (true) {
-				byte b = string_reader.ReadByte ();
-				if (b == 0)
-					break;
-
-				sb.Append ((char) b);
-			}
+			int length = string_reader.BinaryReader.ReadInt32 ();
+			byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
+			string name = Encoding.UTF8.GetString (buffer);
 
 			ITargetMemoryReader dynamic_reader = memory.ReadMemory (
 				dynamic_address, dynamic_size);
 
-			return new MonoMethod (this, method, sb.ToString (), dynamic_reader);
+			return new MonoMethod (this, method, name, dynamic_reader);
 		}
 
 		internal ArrayList SymbolRanges {

@@ -166,14 +166,14 @@ namespace GLib {
 			bool retval = g_spawn_command_line_sync (
 				command_line, out str_stdout, out str_stderr, out exit_status, out error);
 
+			if (!retval)
+				throw new Exception ();
+
 			standard_output = Marshal.PtrToStringAnsi (str_stdout);
 			standard_error = Marshal.PtrToStringAnsi (str_stderr);
 
 			g_free (str_stdout);
 			g_free (str_stderr);
-
-			if (!retval)
-				throw new Exception ();
 
 			return exit_status;
 		}

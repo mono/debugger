@@ -6,12 +6,13 @@ namespace Mono.Debugger
 {
 	[Flags]
 	public enum DebugFlags {
-		JIT_SYMTAB	= 1
+		JIT_SYMTAB		= 1,
+		METHOD_ADDRESS		= 2
 	}
 
 	public class Report
 	{
-		public static int CurrentDebugFlags = 1;
+		public static int CurrentDebugFlags = 3;
 
 		public static void Debug (DebugFlags category, object argument)
 		{
