@@ -29,7 +29,7 @@ namespace Mono.Debugger
 				if (frames != null)
 					return frames.Length;
 				else
-					return -1;
+					return 0;
 			}
 		}
 
