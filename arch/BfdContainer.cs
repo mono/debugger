@@ -60,8 +60,6 @@ namespace Mono.Debugger.Architecture
 			Bfd bfd = new Bfd (this, inferior, filename, false, module, base_address);
 			bfd.CoreFileBfd = core_bfd;
  			module.Bfd = bfd;
-			module.Inferior = inferior;
-			bfd_hash.Add (filename, bfd);
 
 			if (module.StepInto) {
 				try {
@@ -70,6 +68,9 @@ namespace Mono.Debugger.Architecture
 					// Silently ignore.
 				}
 			}
+
+			module.Inferior = inferior;
+			bfd_hash.Add (filename, bfd);
 
 			update_symtabs ();
 
