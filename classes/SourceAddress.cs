@@ -3,6 +3,18 @@ using System.Text;
 
 namespace Mono.Debugger
 {
+	// <summary>
+	//   Holds the location in the source code corresponding to an actual machine address.
+	//
+	//   Note that the difference between an "address" and a "location" is that a location
+	//   is basically just a name for a specific source code location while an address contains
+	//   some additional information which are only valid while the corresponding method is
+	//   actually loaded in memory.
+	//
+	//   This means that you can easily transform a SourceAddress in a SourceLocation, but
+	//   not the other way around.  If you insert a breakpoint on a location, the debugger will
+	//   automatically compute the actual address once the corresponding method has been loaded.
+	// </summary>
 	public class SourceAddress
 	{
 		IMethodSource source;
@@ -12,11 +24,11 @@ namespace Mono.Debugger
 
 		public static SourceAddress Null = new SourceAddress (null, 0);
 
-		public SourceAddress (IMethodSource source, int row)
+		internal SourceAddress (IMethodSource source, int row)
 			: this (source, row, 0, 0)
 		{ }
 
-		public SourceAddress (IMethodSource source, int row, int offset, int range)
+		internal SourceAddress (IMethodSource source, int row, int offset, int range)
 		{
 			this.source = source;
 			this.row = row;

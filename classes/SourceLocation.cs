@@ -3,6 +3,12 @@ using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
+	// <summary>
+	//   Represents a location in the source code on which we can insert a breakpoint.
+	//   Instances of this class are normally created as the result of a user action
+	//   such as a method lookup.  They can be serialized to disk to persist across
+	//   multiple invocations of the same target.
+	// </summary>
 	[Serializable]
 	public class SourceLocation : ISerializable
 	{
