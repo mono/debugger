@@ -19,6 +19,9 @@ namespace Mono.Debugger.GUI
 
 		public void StateChanged (TargetState new_state)
 		{
+			if (!IsVisible)
+				return;
+
 			switch (new_state) {
 			case TargetState.STOPPED:
 				if ((backend.Inferior == null) || (backend.Inferior.Disassembler == null)) {

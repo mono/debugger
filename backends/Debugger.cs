@@ -404,6 +404,8 @@ namespace Mono.Debugger.Backends
 		string[] envp;
 		string working_directory;
 
+		IStackFrame current_frame;
+
 		bool initialized;
 
 		public Debugger (string application, string[] arguments)
@@ -512,6 +514,7 @@ namespace Mono.Debugger.Backends
 
 		void target_state_changed (TargetState new_state)
 		{
+			current_frame = null;
 			if (new_state == TargetState.STOPPED)
 				frame_changed ();
 
@@ -543,6 +546,7 @@ namespace Mono.Debugger.Backends
 			language = null;
 			symtabs = null;
 			initialized = false;
+			current_frame = null;
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
 		}
@@ -677,6 +681,9 @@ namespace Mono.Debugger.Backends
 				if (inferior == null)
 					throw new NoTargetException ();
 
+				if (current_frame != null)
+					return current_frame;
+
 				TargetAddress address = inferior.CurrentFrame;
 
 				symtabs.UpdateSymbolTable ();
@@ -684,9 +691,10 @@ namespace Mono.Debugger.Backends
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
 					ISourceLocation source = method.Source.Lookup (address);
-					return new StackFrame (inferior, address, source, method);
+					current_frame = new StackFrame (inferior, address, source, method);
 				} else
-					return new StackFrame (inferior, address);
+					current_frame = new StackFrame (inferior, address);
+				return current_frame;
 			}
 		}
 

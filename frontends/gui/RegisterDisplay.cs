@@ -11,8 +11,9 @@ namespace Mono.Debugger.GUI
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
 
-		public RegisterDisplay (IDebuggerBackend backend, Gtk.Container container)
-			: base (backend, container)
+		public RegisterDisplay (IDebuggerBackend backend, Gtk.Container window,
+					Gtk.Container container)
+			: base (backend, window, container)
 		{
 			store = new ListStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString);
@@ -44,11 +45,17 @@ namespace Mono.Debugger.GUI
 
 		void FramesInvalidEvent ()
 		{
+			if (!IsVisible)
+				return;
+
 			store.Clear ();
 		}
 
 		void FrameChangedEvent (IStackFrame frame)
 		{
+			if (!IsVisible)
+				return;
+
 			store.Clear ();
 
 			if (backend.Inferior == null)

@@ -22,6 +22,9 @@ namespace Mono.Debugger.GUI
 
 		public void Message (string message)
 		{
+			if (!IsVisible)
+				return;
+
 			status_bar.Pop (status_id);
 			status_bar.Push (status_id, message);
 			MainIteration ();
@@ -46,6 +49,9 @@ namespace Mono.Debugger.GUI
 
 		public virtual void StateChanged (TargetState new_state)
 		{
+			if (!IsVisible)
+				return;
+
 			switch (new_state) {
 			case TargetState.RUNNING:
 				Message ("Running ....");

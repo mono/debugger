@@ -16,6 +16,9 @@ namespace Mono.Debugger.GUI
 
 		public override void StateChanged (TargetState new_state)
 		{
+			if (!IsVisible)
+				return;
+
 			switch (new_state) {
 			case TargetState.STOPPED:
 				try {

@@ -14,8 +14,8 @@ namespace Mono.Debugger.GUI
 
 		bool has_frame;
 
-		public SourceView (IDebuggerBackend backend, Gtk.TextView widget)
-			: base (backend, widget)
+		public SourceView (IDebuggerBackend backend, Gtk.Container container, Gtk.TextView widget)
+			: base (backend, container, widget)
 		{
 			source_view = widget;
 
@@ -33,6 +33,9 @@ namespace Mono.Debugger.GUI
 
 		void FramesInvalidEvent ()
 		{
+			if (!IsVisible)
+				return;
+
 			has_frame = false;
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 		}
@@ -44,6 +47,9 @@ namespace Mono.Debugger.GUI
 
 		void FrameChangedEvent (IStackFrame frame)
 		{
+			if (!IsVisible)
+				return;
+
 			has_frame = true;
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);

@@ -89,11 +89,6 @@ namespace Mono.Debugger.GUI
 		TargetStatusbar target_status;
 		SourceStatusbar source_status;
 
-		Gtk.Widget main_window;
-		Gtk.Widget disassembler_window;
-		Gtk.Widget register_dialog;
-		Gtk.Widget backtrace_dialog;
-
 		TextWriter output_writer;
 
 		IDebuggerBackend backend;
@@ -135,7 +130,7 @@ namespace Mono.Debugger.GUI
 			Widget target_widget = gxml [target];
 			target_widget.Show ();
 
-			main_window = gxml [root];
+			Widget main_window = gxml [root];
 
 			command_entry = (Gtk.Entry) gxml ["command_entry"];
 			target_output = (Gtk.TextView) gxml ["target_output"];
@@ -152,25 +147,29 @@ namespace Mono.Debugger.GUI
 
 			target_status = new TargetStatusbar (backend, (Gtk.Statusbar) gxml ["target_status"]);
 			source_status = new SourceStatusbar (backend, (Gtk.Statusbar) gxml ["source_status"]);
-			source_view = new SourceView (backend, (Gtk.TextView) gxml ["source_view"]);
-			disassembler_view = new DisassemblerView (backend, (Gtk.TextView) gxml ["disassembler_view"]);
-			register_display = new RegisterDisplay (backend, (Gtk.Container) gxml ["register_view"]);
-			backtrace_view = new BackTraceView (backend, (Gtk.Container) gxml ["backtrace_view"]);
+			source_view = new SourceView
+				(backend, (Gtk.Container) main_window, (Gtk.TextView) gxml ["source_view"]);
+			disassembler_view = new DisassemblerView (
+				backend, (Gtk.Container) gxml ["disassembler_window"],
+				(Gtk.TextView) gxml ["disassembler_view"]);
+			register_display = new RegisterDisplay (
+				backend, (Gtk.Container) gxml ["register_dialog"],
+				(Gtk.Container) gxml ["register_view"]);
+			backtrace_view = new BackTraceView (
+				backend, (Gtk.Container) gxml ["backtrace_dialog"],
+				(Gtk.Container) gxml ["backtrace_view"]);
 
 			current_insn = new CurrentInstructionEntry (backend, (Gtk.Entry) gxml ["current_insn"]);
 
-			disassembler_window = gxml ["disassembler_window"];
-			register_dialog = gxml ["register_dialog"];
-			backtrace_dialog = gxml ["backtrace_dialog"];
-
 			if (((Gtk.CheckMenuItem) gxml ["menu_view_registers"]).Active)
-				register_dialog.Show ();
+				register_display.Show ();
 			if (((Gtk.CheckMenuItem) gxml ["menu_view_backtrace"]).Active)
-				backtrace_dialog.Show ();
+				backtrace_view.Show ();
+
 			if (((Gtk.CheckMenuItem) gxml ["menu_view_source_code_window"]).Active)
-				main_window.Show ();
+				source_view.Show ();
 			if (((Gtk.CheckMenuItem) gxml ["menu_view_disassembler_window"]).Active)
-				disassembler_window.Show ();
+				disassembler_view.Show ();
 
 			interpreter = new Interpreter (backend, output_writer, output_writer);
 
@@ -190,33 +189,33 @@ namespace Mono.Debugger.GUI
 		void on_menu_view_registers_activate (object sender, EventArgs args)
 		{
 			if (((Gtk.CheckMenuItem) sender).Active)
-				register_dialog.Show ();
+				register_display.Show ();
 			else
-				register_dialog.Hide ();
+				register_display.Hide ();
 		}
 
 		void on_menu_view_backtrace_activate (object sender, EventArgs args)
 		{
 			if (((Gtk.CheckMenuItem) sender).Active)
-				backtrace_dialog.Show ();
+				backtrace_view.Show ();
 			else
-				backtrace_dialog.Hide ();
+				backtrace_view.Hide ();
 		}
 
 		void on_menu_view_source_code_window_activate (object sender, EventArgs args)
 		{
 			if (((Gtk.CheckMenuItem) sender).Active)
-				main_window.Show ();
+				source_view.Show ();
 			else
-				main_window.Hide ();
+				source_view.Hide ();
 		}
 
 		void on_menu_view_disassembler_window_activate (object sender, EventArgs args)
 		{
 			if (((Gtk.CheckMenuItem) sender).Active)
-				disassembler_window.Show ();
+				disassembler_view.Show ();
 			else
-				disassembler_window.Hide ();
+				disassembler_view.Hide ();
 		}
 
 		void on_about_activate (object sender, EventArgs args)
