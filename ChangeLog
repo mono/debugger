@@ -1,3 +1,13 @@
+2004-06-17  Martin Baulig  <martin@ximian.com>
+
+	* frontends/command-line/CL.cs
+	(Command.Repeat): New public virtual method.
+	(Engine.Repeat): New public method.
+
+	* frontends/scripting/Command.cs
+	(DebuggerCommand.Repeating): New public bool field.
+	(DebuggerCommand.Repeat): Just set Repeating and call Execute().	
+
 2004-06-16  Martin Baulig  <martin@ximian.com>
 
 	* backends/BreakpointManager.cs: Don't allow multiple breakpoints

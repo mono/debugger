@@ -35,6 +35,11 @@ namespace CL
 		}
 
 		public abstract string Execute (Engine e);
+
+		public virtual string Repeat (Engine e)
+		{
+			return Execute (e);
+		}
 	}
 
 	public class Engine {
@@ -126,10 +131,13 @@ namespace CL
 		{
 			Console.WriteLine (String.Format ("Error: " + fmt, args));
 		}
+
+		Command last_command;
 		
 		public void Run (string s, ArrayList args)
 		{
 			Command c = Get (s, args);
+			last_command = c;
 			if (c == null) {
 				Console.WriteLine ("No such command `{0}'.", s);
 				return;
@@ -138,6 +146,12 @@ namespace CL
 			string retval = c.Execute (this);
 			if ((retval != null) && (retval != ""))
 				Console.WriteLine (retval);
+		}
+
+		public void Repeat ()
+		{
+			if (last_command != null)
+				last_command.Repeat (this);
 		}
 	}
 

@@ -25,6 +25,8 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public abstract class DebuggerCommand : CL.Command
 	{
+		protected bool Repeating;
+
 		protected virtual bool NeedsProcess {
 			get { return true;
 			}
@@ -52,6 +54,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 
 			return "";
+		}
+
+		public override string Repeat (CL.Engine e)
+		{
+			Repeating = true;
+			return Execute (e);
 		}
 
 		protected Expression ParseExpression (ScriptingContext context)
@@ -239,7 +247,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Argument == "") {
+			if (Repeating) {
 				if (context.LastExamineAddress.IsNull)
 					throw new ScriptingException (
 						"Don't have a last examine command " +
@@ -1009,16 +1017,26 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class ListCommand : SourceCommand
 	{
 		int count = 10;
-		bool restart;
 
 		public int Count {
 			get { return count; }
 			set { count = value; }
 		}
 
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Repeating)
+				return true;
+			else
+				return base.DoResolve (context);
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ListSourceCode (location, Count);
+			if (Repeating)
+				context.ListSourceCode (null, Count);
+			else
+				context.ListSourceCode (location, Count);
 		}
 	}
 

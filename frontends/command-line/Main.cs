@@ -53,7 +53,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		DebuggerEngine engine;
 		LineParser parser;
 		string prompt;
-		string last_line = "";
 		int line = 0;
 
 		internal CommandLineInterpreter (DebuggerTextWriter command_out,
@@ -150,15 +149,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			++line;
 			if (readline != null) {
+			again:
 				string the_prompt = is_complete ? prompt : "... ";
 				string result = readline.ReadLine (the_prompt);
 				if (result == null)
 					return null;
 				if (result != "")
 					readline.AddHistory (result);
-				else
-					result = last_line;
-				last_line = result;				
+				else if (is_complete) {
+					engine.Repeat ();
+					goto again;
+				}
 				return result;
 			} else {
 				if (prompt != null)
