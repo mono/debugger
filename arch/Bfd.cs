@@ -382,7 +382,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
+		public BfdDisassembler GetDisassembler (IInferior inferior)
 		{
 			IntPtr dis = disassembler (bfd);
 

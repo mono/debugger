@@ -1,5 +1,11 @@
 2002-12-25  Martin Baulig  <martin@ximian.com>
 
+	* arch/Bfd.cs (Bfd.GetDisassembler): Take an IInferior argument
+	and actually pass that argument to the BfdDisassembler's ctor; we
+	cannot share a disassembler between multiple IInferior's.
+
+2002-12-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs: If we're stepping one instruction
 	and receive signal which we're supposed to ignore, the stepping operation
 	has already been completed and we don't need to resume the target.
