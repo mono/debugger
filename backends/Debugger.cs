@@ -593,8 +593,10 @@ namespace Mono.Debugger
 		public int InsertBreakpoint (string name)
 		{
 			SourceMethodInfo method = FindMethod (name);
-			if (method == null)
+			if (method == null) {
+				Console.WriteLine ("Can't find any method with this name: {0}", name);
 				return 0;
+			}
 
 			Console.WriteLine ("METHOD: {0} {1} {2}", method, method.SourceInfo,
 					   method.SourceInfo.Module);
