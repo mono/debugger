@@ -1,5 +1,14 @@
 2002-12-31  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Tokenizer.cs: Only recognize the short
+	keywords at the start of the line; `$' starts an identifier, so
+	don't recognize any keywords in it.
+
+	* frontends/scripting/Parser.jay: Added `show type $name' to show
+	the type of a variable/parameter.
+
+2002-12-31  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: The big type
 	table rewrite; the JIT now allocates types in continuous memory
 	areas rather than using an individually malloc()ed block for each

@@ -407,6 +407,32 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Print (variable);
 		}
 
+		public void ShowVariableType (int frame_number, string identifier)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			if (frame.Method == null)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			IVariable[] local_vars = frame.Method.Locals;
+			foreach (IVariable var in local_vars) {
+				if (var.Name == identifier) {
+					context.ShowVariableType (var.Type, identifier);
+					return;
+				}
+			}
+
+			IVariable[] param_vars = frame.Method.Parameters;
+			foreach (IVariable var in param_vars) {
+				if (var.Name == identifier) {
+					context.ShowVariableType (var.Type, identifier);
+					return;
+				}
+			}
+
+			throw new ScriptingException ("No variable of parameter with that name.");
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("Process @{0}: {1} {2}", id, State, process);
@@ -590,6 +616,40 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			procs.Add (handle);
+		}
+
+		public void ShowVariableType (ITargetType type, string name)
+		{
+			ITargetArrayType array = type as ITargetArrayType;
+			if (array != null) {
+				Print ("{0} is an array of {1}.", array.ElementType);
+				return;
+			}
+
+			ITargetClassType tclass = type as ITargetClassType;
+			ITargetStructType tstruct = type as ITargetStructType;
+			if (tclass != null) {
+				if (tclass.HasParent)
+					Print ("{0} is a class of type {1} which inherits from {2}",
+					       name, tclass.Name, tclass.ParentType);
+				else
+					Print ("{0} is a class of type {1}", name, tclass.Name);
+			} else if (tstruct != null)
+				Print ("{0} is a value type of type {1}", name, tstruct.Name);
+
+			if (tstruct != null) {
+				foreach (ITargetFieldInfo field in tstruct.Fields)
+					Print ("  It has a field `{0}' of type {1}", field.Name,
+					       field.Type.Name);
+				foreach (ITargetFieldInfo property in tstruct.Properties)
+					Print ("  It has a property `{0}' of type {1}", property.Name,
+					       property.Type.Name);
+				foreach (ITargetMethodInfo method in tstruct.Methods)
+					Print ("  It has a method: {0}", method);
+				return;
+			}
+
+			Print ("{0} is a {1}", name, type);
 		}
 	}
 }

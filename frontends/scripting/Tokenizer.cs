@@ -14,6 +14,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		// Class variables
 		// 
 		static Hashtable keywords;
+		static Hashtable short_keywords;
 		static System.Text.StringBuilder id_builder;
 		static System.Text.StringBuilder string_builder;
 		static System.Text.StringBuilder number_builder;
@@ -38,44 +39,47 @@ namespace Mono.Debugger.Frontends.CommandLine
 		static void InitTokens ()
 		{
 			keywords = new Hashtable ();
+			short_keywords = new Hashtable ();
 
 			keywords.Add ("frame", Token.FRAME);
-			keywords.Add ("f", Token.FRAME);
 			keywords.Add ("quit", Token.QUIT);
 			keywords.Add ("exit", Token.QUIT);
-			keywords.Add ("q", Token.QUIT);
 			keywords.Add ("start", Token.START);
 			keywords.Add ("show", Token.SHOW);
 			keywords.Add ("processes", Token.PROCESSES);
 			keywords.Add ("process", Token.PROCESS);
 			keywords.Add ("continue", Token.CONTINUE);
-			keywords.Add ("c", Token.CONTINUE);
 			keywords.Add ("backtrace", Token.BACKTRACE);
-			keywords.Add ("bt", Token.BACKTRACE);
-			keywords.Add ("up", Token.UP);
 			keywords.Add ("down", Token.DOWN);
 			keywords.Add ("step", Token.STEP);
-			keywords.Add ("s", Token.STEP);
 			keywords.Add ("next", Token.NEXT);
-			keywords.Add ("n", Token.NEXT);
 			keywords.Add ("stepi", Token.STEPI);
-			keywords.Add ("i", Token.STEPI);
 			keywords.Add ("nexti", Token.NEXTI);
-			keywords.Add ("t", Token.NEXTI);
 			keywords.Add ("finish", Token.FINISH);
 			keywords.Add ("select", Token.SELECT);
 			keywords.Add ("background", Token.BACKGROUND);
-			keywords.Add ("bg", Token.BACKGROUND);
 			keywords.Add ("stop", Token.STOP);
 			keywords.Add ("registers", Token.REGISTERS);
 			keywords.Add ("regs", Token.REGISTERS);
-			keywords.Add ("b", Token.BREAK);
 			keywords.Add ("break", Token.BREAK);
 			keywords.Add ("print", Token.PRINT);
-			keywords.Add ("p", Token.PRINT);
 			keywords.Add ("parameters", Token.PARAMETERS);
 			keywords.Add ("params", Token.PARAMETERS);
 			keywords.Add ("locals", Token.LOCALS);
+			keywords.Add ("type", Token.TYPE);
+
+			short_keywords.Add ("f", Token.FRAME);
+			short_keywords.Add ("q", Token.QUIT);
+			short_keywords.Add ("c", Token.CONTINUE);
+			short_keywords.Add ("bt", Token.BACKTRACE);
+			short_keywords.Add ("up", Token.UP);
+			short_keywords.Add ("s", Token.STEP);
+			short_keywords.Add ("n", Token.NEXT);
+			short_keywords.Add ("i", Token.STEPI);
+			short_keywords.Add ("t", Token.NEXTI);
+			short_keywords.Add ("bg", Token.BACKGROUND);
+			short_keywords.Add ("b", Token.BREAK);
+			short_keywords.Add ("p", Token.PRINT);
 		}
 
 		ScriptingContext context;
@@ -251,14 +255,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9') || Char.IsLetter (c);
 		}
 
-		int GetKeyword (string name)
+		int GetKeyword (string name, bool tokens_seen)
 		{
+			if (current_token == Token.DOLLAR)
+				return -1;
+
 			object o = keywords [name];
 
-			if (o == null)
+			if (o != null)
+				return (int) o;
+
+			if (tokens_seen)
 				return -1;
-			
-			return (int) o;
+
+			o = short_keywords [name];
+			if (o != null)
+				return (int) o;
+
+			return -1;
 		}
 
 		//
@@ -332,6 +346,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		private int consume_identifier (int c, bool quoted) 
 		{
+			bool old_tokens_seen = tokens_seen;
+			tokens_seen = true;
+
 			id_builder.Length = 0;
 
 			id_builder.Append ((char) c);
@@ -345,7 +362,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			string ids = id_builder.ToString ();
-			int keyword = GetKeyword (ids);
+			int keyword = GetKeyword (ids, old_tokens_seen);
 
 			if (keyword == -1 || quoted){
 				val = ids;
@@ -403,10 +420,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			val = null;
 			// optimization: eliminate col and implement #directive semantic correctly.
 			for (;(c = getChar ()) != -1; col++) {
-				if (is_identifier_start_character ((char)c)){
-					tokens_seen = true;
+				if (is_identifier_start_character ((char)c))
 					return consume_identifier (c, false);
-				}
 
 				if (c == 0)
 					continue;
@@ -418,6 +433,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.AT;
 				else if (c == '%')
 					return Token.PERCENT;
+				else if (c == '$')
+					return Token.DOLLAR;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

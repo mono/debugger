@@ -56,11 +56,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token HASH
 %token AT
 %token PERCENT
+%token DOLLAR
 
 %token PROCESSES
 %token REGISTERS
 %token PARAMETERS
 %token LOCALS
+%token TYPE
 
 %token FRAME
 %token START
@@ -152,6 +154,10 @@ command
 	| SHOW LOCALS opt_process opt_frame_number
 	  {
 		$$ = new ShowLocalsCommand ((ProcessExpression) $3, (int) $4);
+	  }
+	| SHOW TYPE opt_process opt_frame_number DOLLAR IDENTIFIER
+	  {
+		$$ = new ShowVariableTypeCommand ((ProcessExpression) $3, (int) $4, (string) $6);
 	  }
 	| BREAK opt_process function_name
 	  {

@@ -299,6 +299,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowVariableTypeCommand : Command
+	{
+		ProcessExpression process_expr;
+		string identifier;
+		int number;
+
+		public ShowVariableTypeCommand (ProcessExpression process_expr, int number, string id)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+			this.identifier = id;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			process.ShowVariableType (number, identifier);
+		}
+	}
+
 	public class BreakCommand : Command
 	{
 		ProcessExpression process_expr;
