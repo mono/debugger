@@ -91,7 +91,7 @@ namespace Mono.Debugger
 			return (SourceMethod) data.MethodHash [name];
 		}
 
-		public SourceMethod FindMethod (int line)
+		public SourceLocation FindLine (int line)
 		{
 			SourceData data = ensure_methods ();
 			if (data == null)
@@ -99,7 +99,7 @@ namespace Mono.Debugger
 
 			foreach (SourceMethod method in data.Methods) {
 				if ((method.StartRow <= line) && (method.EndRow >= line))
-					return method;
+					return new SourceLocation (method, line);
 			}
 
 			return null;

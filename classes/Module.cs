@@ -402,7 +402,7 @@ namespace Mono.Debugger
 		//   Find the method containing line @line in @source_file, which must be
 		//   the file's full pathname.
 		// </summary>
-		public virtual SourceMethod FindMethod (string source_file, int line)
+		public virtual SourceLocation FindLocation (string source_file, int line)
 		{
 			if (!SymbolsLoaded)
 				return null;
@@ -411,7 +411,7 @@ namespace Mono.Debugger
 				if (source.FileName != source_file)
 					continue;
 
-				return source.FindMethod (line);
+				return source.FindLine (line);
 			}
 
 			return null;

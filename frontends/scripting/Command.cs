@@ -569,11 +569,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ThreadGroup group = (ThreadGroup) thread_group_expr.Resolve (context);
 
-			SourceMethod method = source_expr.ResolveMethod (context);
-			if (method == null)
+			SourceLocation location = source_expr.ResolveLocation (context);
+			if (location == null)
 				return;
 
-			int index = context.InsertBreakpoint (group, new SourceLocation (method));
+			int index = context.InsertBreakpoint (group, location);
 			context.Print ("Inserted breakpoint {0}.", index);
 		}
 	}
@@ -1401,25 +1401,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.line = -1;
 		}
 
-		public SourceMethod ResolveMethod (ScriptingContext context)
+		public SourceLocation ResolveLocation (ScriptingContext context)
 		{
 			object result = Resolve (context);
 			if (result == null)
 				throw new ScriptingException ("No such method.");
 
-			SourceMethod method = result as SourceMethod;
-			if (method == null) {
-				context.AddMethodSearchResult ((SourceMethod []) result);
-				return null;
-			}
+			SourceLocation location = result as SourceLocation;
+			if (location != null)
+				return location;
 
-			if (line == -1)
-				return method;
-
-			if ((line < method.StartRow) || (line > method.EndRow))
-				throw new ScriptingException ("Requested line number outside of method.");
-
-			return method;
+			context.AddMethodSearchResult ((SourceMethod []) result);
+			return null;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
@@ -1429,9 +1422,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (file_name != null) {
 				if (line == -1)
-					return context.FindMethod (file_name);
+					return context.FindLocation (file_name);
 				else
-					return context.FindMethod (file_name, line);
+					return context.FindLocation (file_name, line);
 			}
 
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
@@ -1446,17 +1439,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (source.SourceFile == null)
 					throw new ScriptingException ("Current method has no source file.");
 
-				return context.FindMethod (source.SourceFile.FileName, line);
+				return context.FindLocation (source.SourceFile.FileName, line);
 			}
 
 			SourceMethod[] result = source.MethodLookup (name);
 
 			if (result.Length == 0)
 				throw new ScriptingException ("No method matches your query.");
-			else if (result.Length == 1)
-				return result [0];
-			else
+			else if (result.Length > 1)
 				return result;
+
+			if (line == -1)
+				return new SourceLocation (result [0]);
+
+			if ((line < result [0].StartRow) || (line > result [0].EndRow))
+				throw new ScriptingException ("Requested line number outside of method.");
+
+			return new SourceLocation (result [0], line);
 		}
 	}
 
@@ -1471,11 +1470,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			SourceMethod method = source_expr.ResolveMethod (context);
-			if (method == null)
+			SourceLocation location = source_expr.ResolveLocation (context);
+			if (location == null)
 				return;
 
-			context.Print ("Method: {0}", method);
+			context.Print ("Location: {0}", location);
 		}
 	}
 }

@@ -1,3 +1,13 @@
+2003-02-25  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceInfo.cs (SourceFile.FindMethod): Renamed the
+	overloaded version which took a line into FindLine () and changed
+	its return type to SourceLocation.
+
+	* classes/Module.cs (FindMethod): Renamed the overloaded version
+	which took a filename and line to FindLocation() and changed its
+	return type to SourceLocation.
+
 2003-02-24  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/IMethod.cs (IMethodSource.SourceMethod): New property.
