@@ -204,7 +204,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : IDisposable
 	{
-		public const int  DynamicVersion = 27;
+		public const int  DynamicVersion = 28;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
