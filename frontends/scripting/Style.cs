@@ -330,8 +330,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					return String.Format ("&({0}) {1}", deref.Type.Name,
 							      FormatObject (deref));
 				} else
-					return String.Format ("({0}) {1}", pobj.Type.Name,
-							      pobj.Print ());
+					return pobj.Print ();
 			}
 
 			case TargetObjectKind.Class:
@@ -346,7 +345,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						first = false;
 					else
 						sb.Append (",  ");
-					sb.Append (field.Name + " = ");
+					sb.Append (field.Name + "=");
 					sb.Append (FormatObject (fobj));
 				}
 				sb.Append (" }");
