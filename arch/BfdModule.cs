@@ -58,7 +58,7 @@ namespace Mono.Debugger.Architecture
 
 		public override bool IsLoaded {
 			get {
-				return base.IsLoaded && !start.IsNull;
+				return base.IsLoaded && (!is_library || !start.IsNull);
 			}
 		}
 

@@ -65,10 +65,16 @@ namespace Mono.Debugger.Architecture
 
 			update_symtabs ();
 
-			if (new_module && (ModulesChangedEvent != null))
- 				ModulesChangedEvent ();
+			OnModulesChangedEvent ();
+			if (new_module)
+				module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
 
 			return bfd;
+		}
+
+		void module_changed (Module module)
+		{
+			OnModulesChangedEvent ();
 		}
 
 		public void CloseBfd (Bfd bfd)
@@ -128,6 +134,12 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public event ModulesChangedHandler ModulesChangedEvent;
+
+		protected virtual void OnModulesChangedEvent ()
+		{
+			if (ModulesChangedEvent != null)
+				ModulesChangedEvent ();
+		}
 
 		public TargetAddress GenericTrampolineCode {
 			get {

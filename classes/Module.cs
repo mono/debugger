@@ -59,6 +59,7 @@ namespace Mono.Debugger
 
 				load_symbols = value;
 				SymbolsChanged (load_symbols);
+				OnModuleChangedEvent ();
 			}
 		}
 
@@ -68,7 +69,11 @@ namespace Mono.Debugger
 			}
 
 			set {
+				if (step_into == value)
+					return;
+
 				step_into = value;
+				OnModuleChangedEvent ();
 			}
 		}
 
@@ -79,6 +84,7 @@ namespace Mono.Debugger
 		public event ModuleEventHandler ModuleUnLoadedEvent;
 		public event ModuleEventHandler SymbolsLoadedEvent;
 		public event ModuleEventHandler SymbolsUnLoadedEvent;
+		public event ModuleEventHandler ModuleChangedEvent;
 
 		bool is_loaded = false;
 		protected virtual void CheckLoaded ()
@@ -102,6 +108,8 @@ namespace Mono.Debugger
 
 			foreach (BreakpointHandle handle in breakpoints.Values)
 				handle.Enable ();
+
+			OnModuleChangedEvent ();
 		}
 
 		protected virtual void OnModuleUnLoadedEvent ()
@@ -115,6 +123,8 @@ namespace Mono.Debugger
 
 			if (ModuleUnLoadedEvent != null)
 				ModuleUnLoadedEvent (this);
+
+			OnModuleChangedEvent ();
 		}
 
 		protected virtual void OnSymbolsLoadedEvent ()
@@ -128,6 +138,8 @@ namespace Mono.Debugger
 
 			if (SymbolsLoadedEvent != null)
 				SymbolsLoadedEvent (this);
+
+			OnModuleChangedEvent ();
 		}
 
 		protected virtual void OnSymbolsUnLoadedEvent ()
@@ -138,6 +150,14 @@ namespace Mono.Debugger
 
 			if (SymbolsUnLoadedEvent != null)
 				SymbolsUnLoadedEvent (this);
+
+			OnModuleChangedEvent ();
+		}
+
+		protected virtual void OnModuleChangedEvent ()
+		{
+			if (ModuleChangedEvent != null)
+				ModuleChangedEvent (this);
 		}
 
 		protected abstract void AddBreakpoint (BreakpointHandle handle);

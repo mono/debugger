@@ -1725,6 +1725,40 @@
 			  <property name="type">tab</property>
 			</packing>
 		      </child>
+
+		      <child>
+			<widget class="GtkViewport" id="module-view">
+			  <property name="visible">True</property>
+			  <property name="shadow_type">GTK_SHADOW_IN</property>
+
+			  <child>
+			    <placeholder/>
+			  </child>
+			</widget>
+			<packing>
+			  <property name="tab_expand">False</property>
+			  <property name="tab_fill">True</property>
+			</packing>
+		      </child>
+
+		      <child>
+			<widget class="GtkLabel" id="label30">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">Modules</property>
+			  <property name="use_underline">False</property>
+			  <property name="use_markup">False</property>
+			  <property name="justify">GTK_JUSTIFY_LEFT</property>
+			  <property name="wrap">False</property>
+			  <property name="selectable">False</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+			<packing>
+			  <property name="type">tab</property>
+			</packing>
+		      </child>
 		    </widget>
 		    <packing>
 		      <property name="shrink">True</property>
@@ -1979,10 +2013,8 @@
 
       <child internal-child="action_area">
 	<widget class="GtkHButtonBox" id="dialog-action_area1">
-	  <property name="border_width">5</property>
 	  <property name="visible">True</property>
 	  <property name="layout_style">GTK_BUTTONBOX_END</property>
-	  <property name="spacing">10</property>
 
 	  <child>
 	    <widget class="GtkButton" id="button1">

@@ -74,6 +74,7 @@ namespace Mono.Debugger
 
 			csharp_language = new MonoCSharpLanguageBackend (this);
 			csharp_language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			bfd_container.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 			languages.Add (csharp_language);
 		}
 
@@ -615,6 +616,9 @@ namespace Mono.Debugger
 
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (frame);
+
+			if (ModulesChangedEvent != null)
+				ModulesChangedEvent ();
 
 			return frame;
 		}

@@ -80,6 +80,7 @@ namespace Mono.Debugger.GUI
 		RegisterDisplay register_display;
 		VariableDisplay variable_display;
 		BackTraceView backtrace_view;
+		ModuleDisplay module_display;
 
 		Gtk.TextView target_output;
 		SourceStatusbar source_status;
@@ -132,6 +133,8 @@ namespace Mono.Debugger.GUI
 				gxml, null, (Gtk.Container) gxml ["variable-display"]);
 			backtrace_view = new BackTraceView (
 				null, (Gtk.Container) gxml ["backtrace-view"]);
+			module_display = new ModuleDisplay (
+				gxml, null, (Gtk.Container) gxml ["module-view"]);
 
 			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
 
@@ -250,6 +253,7 @@ namespace Mono.Debugger.GUI
 			register_display.SetBackend (backend);
 			variable_display.SetBackend (backend);
 			backtrace_view.SetBackend (backend);
+			module_display.SetBackend (backend);
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
 			source_manager.SetBackend (backend);
