@@ -1,8 +1,8 @@
-break "TestManagedTypes.cs":54
-break "TestManagedTypes.cs":65
-break "TestManagedTypes.cs":74
+break "TestManagedTypes.cs":86
+break "TestManagedTypes.cs":98
+break "TestManagedTypes.cs":108
 continue
-assert line 54
+assert line 86
 assert accessible $a
 assert accessible $b
 assert accessible $f
@@ -11,7 +11,7 @@ assert contents "5" $a
 assert contents "7" $b
 assert contents "Hello World" $hello
 continue
-assert line 65
+assert line 98
 assert accessible $a
 assert accessible $boxed_a
 assert kind fundamental $a
@@ -20,7 +20,7 @@ assert accessible *$boxed_a
 assert kind fundamental *$boxed_a
 assert contents "5" *$boxed_a
 continue
-assert line 74
+assert line 108
 assert accessible $hello
 assert accessible $boxed_hello
 assert kind fundamental $hello

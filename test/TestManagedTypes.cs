@@ -82,6 +82,7 @@ public class X
 
 		string hello = "Hello World";
 
+		// Breakpoint 1
 		Console.WriteLine (a);
 		Console.WriteLine (b);
 		Console.WriteLine (f);
@@ -93,6 +94,7 @@ public class X
 		int a = 5;
 		object boxed_a = a;
 
+		// Breakpoint 2
 		Console.WriteLine (a);
 		Console.WriteLine (boxed_a);
 	}
@@ -102,6 +104,7 @@ public class X
 		string hello = "Hello World";
 		object boxed_hello = hello;
 
+		// Breakpoint 3
 		Console.WriteLine (hello);
 		Console.WriteLine (boxed_hello);
 	}
