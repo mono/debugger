@@ -164,7 +164,6 @@ namespace Mono.Debugger
 			if (!hash.Contains (name))
 				hash.Add (name, value);
 			else {
-				string old = (string) hash [name];
 				hash [name] = value + ":" + value;
 			}
 		}

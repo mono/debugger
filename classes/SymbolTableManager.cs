@@ -185,7 +185,6 @@ namespace Mono.Debugger
 		{
 			while (true) {
 				symtab_reload_event.Wait ();
-			again:
 				ICollection my_new_modules;
 
 				lock (this) {
