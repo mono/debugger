@@ -543,48 +543,49 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class BreakpointEnableCommand : Command
 	{
-		int index;
+		BreakpointNumberExpression breakpoint_number_expr;
 
-		public BreakpointEnableCommand (int index)
+		public BreakpointEnableCommand (BreakpointNumberExpression breakpoint_number_expr)
 		{
-			this.index = index;
+			this.breakpoint_number_expr = breakpoint_number_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Breakpoint breakpoint = context.FindBreakpoint (index);
+			Breakpoint breakpoint = (Breakpoint) breakpoint_number_expr.Resolve (context);
 			breakpoint.Enabled = true;
 		}
 	}
 
 	public class BreakpointDisableCommand : Command
 	{
-		int index;
+		BreakpointNumberExpression breakpoint_number_expr;
 
-		public BreakpointDisableCommand (int index)
+		public BreakpointDisableCommand (BreakpointNumberExpression breakpoint_number_expr)
 		{
-			this.index = index;
+			this.breakpoint_number_expr = breakpoint_number_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Breakpoint breakpoint = context.FindBreakpoint (index);
+			Breakpoint breakpoint = (Breakpoint) breakpoint_number_expr.Resolve (context);
 			breakpoint.Enabled = false;
 		}
 	}
 
 	public class BreakpointDeleteCommand : Command
 	{
-		int index;
+		BreakpointNumberExpression breakpoint_number_expr;
 
-		public BreakpointDeleteCommand (int index)
+		public BreakpointDeleteCommand (BreakpointNumberExpression breakpoint_number_expr)
 		{
-			this.index = index;
+			this.breakpoint_number_expr = breakpoint_number_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.DeleteBreakpoint (index);
+			Breakpoint breakpoint = (Breakpoint) breakpoint_number_expr.Resolve (context);
+			context.DeleteBreakpoint (breakpoint);
 		}
 	}
 

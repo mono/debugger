@@ -140,6 +140,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class BreakpointNumberExpression : Expression
+	{
+		int number;
+
+		public BreakpointNumberExpression (int number)
+		{
+			this.number = number;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return context.GetBreakpoint (number);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType(), number);
+		}
+	}
+
 	public class ThreadGroupExpression : Expression
 	{
 		string name;

@@ -246,17 +246,17 @@ command
 	  {
 		$$ = new BreakCommand ((ThreadGroupExpression) $2, (SourceExpression) $3);
 	  }
-	| BREAKPOINT INTEGER ENABLE
+	| BREAKPOINT ENABLE breakpoint_number
 	  {
-		$$ = new BreakpointEnableCommand ((int) $2);
+		$$ = new BreakpointEnableCommand ((BreakpointNumberExpression) $3);
 	  }
-	| BREAKPOINT INTEGER DISABLE
+	| BREAKPOINT DISABLE breakpoint_number
 	  {
-		$$ = new BreakpointDisableCommand ((int) $2);
+		$$ = new BreakpointDisableCommand ((BreakpointNumberExpression) $3);
 	  }
-	| BREAKPOINT INTEGER DELETE
+	| BREAKPOINT DELETE breakpoint_number
 	  {
-		$$ = new BreakpointDeleteCommand ((int) $2);
+		$$ = new BreakpointDeleteCommand ((BreakpointNumberExpression) $3);
 	  }
 	| PRINT expression
 	  {
@@ -484,6 +484,13 @@ program_arglist
 		args.Add ($2);
 
 		$$ = args;
+	  }
+	;
+
+breakpoint_number
+	: INTEGER
+	  {
+		$$ = new BreakpointNumberExpression ((int) $1);
 	  }
 	;
 

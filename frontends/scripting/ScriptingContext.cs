@@ -1061,17 +1061,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			throw new ScriptingException ("No such breakpoint.");
 		}
 
-		public Breakpoint FindBreakpoint (int index)
+		public Breakpoint GetBreakpoint (int index)
 		{
 			Module module;
 			return FindBreakpoint (index, out module);
 		}
 
-		public void DeleteBreakpoint (int index)
+		public void DeleteBreakpoint (Breakpoint breakpoint)
 		{
 			Module module;
-			FindBreakpoint (index, out module);
-			module.RemoveBreakpoint (index);
+			FindBreakpoint (breakpoint.Index, out module);
+			module.RemoveBreakpoint (breakpoint.Index);
 		}
 
 		public Module[] GetModules (int[] indices)
