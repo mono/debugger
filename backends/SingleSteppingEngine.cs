@@ -1403,9 +1403,7 @@ namespace Mono.Debugger.Backends
 			current_operation = null;
 			frames_invalid ();
 
-			Report.Debug (DebugFlags.SSE,
-				      "{0} starting step operation {0}",
-				      this, operation);
+			Report.Debug (DebugFlags.SSE, "{0} starting {1}", this, operation);
 
 			if (operation.StepFrame == null) {
 				do_step ();
@@ -1431,7 +1429,21 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress compile = frame.Language.CompileMethodFunc;
 
+			Report.Debug (DebugFlags.SSE,
+				      "{0} found trampoline {1} (compile is {2})",
+				      this, trampoline, compile);
+
 			if (compile.IsNull) {
+				IMethod method = null;
+				if (current_symtab != null) {
+					manager.DebuggerBackend.UpdateSymbolTable ();
+					method = Lookup (trampoline);
+				}
+				if ((method == null) || !method.Module.StepInto) {
+					do_next ();
+					return false;
+				}
+
 				do_continue (trampoline);
 				return false;
 			}
