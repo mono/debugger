@@ -145,20 +145,6 @@ namespace Mono.Debugger.Architecture
 				unload_dwarf ();
 		}
 
-		internal override object EnableBreakpoint (Process process,
-							   BreakpointHandle handle,
-							   TargetAddress address)
-		{
-			return process.InsertBreakpoint (handle, address, null, null,
-							 false, null);
-		}
-
-		internal override void DisableBreakpoint (Process process,
-							  BreakpointHandle handle, object data)
-		{
-			process.RemoveBreakpoint ((int) data);
-		}
-
 		//
 		// ISymbolContainer
 		//

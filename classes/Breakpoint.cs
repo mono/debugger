@@ -42,6 +42,20 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   The ThreadGroup in which this breakpoint "breaks".
+		//   If null, then it breaks in all threads.
+		// </summary>
+		public ThreadGroup ThreadGroup {
+			get {
+				return group;
+			}
+
+			set {
+				group = value;
+			}
+		}
+
+		// <summary>
 		//   Whether the `BreakpointHit' delegate needs the StackFrame argument.
 		//   Constructing this argument is an expensive operation, so you should
 		//   set it to false unless your handler actually needs it.  Normally,
@@ -56,6 +70,19 @@ namespace Mono.Debugger
 			set {
 				needs_frame = value;
 			}
+		}
+
+		public bool Breaks (int id)
+		{
+			if (group == null)
+				return true;
+
+			foreach (int thread in group.Threads) {
+				if (thread == id)
+					return true;
+			}
+
+			return false;
 		}
 
 		// <summary>
@@ -96,13 +123,15 @@ namespace Mono.Debugger
 		protected int index;
 		protected string name;
 		protected bool needs_frame;
+		protected ThreadGroup group;
 
 		protected static int NextBreakpointIndex = 0;
 
-		protected Breakpoint (string name, bool needs_frame)
+		protected Breakpoint (string name, ThreadGroup group, bool needs_frame)
 		{
 			this.index = ++NextBreakpointIndex;
 			this.needs_frame = needs_frame;
+			this.group = group;
 			this.name = name;
 		}
 	}

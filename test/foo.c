@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int
-main (void)
+void
+hello (const char *message, int a)
 {
-	hello ("Boston", 5, 8L);
-	return 0;
+	printf ("%s - %d\n", message, getpid ());
+	fflush (stdout);
 }

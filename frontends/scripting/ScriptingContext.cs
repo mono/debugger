@@ -930,7 +930,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Print ("Breakpoints:");
 			foreach (BreakpointHandle handle in breakpoints.Values) {
 				Print ("{0} ({1}): {3} {2}", handle.Breakpoint.Index,
-				       handle.ThreadGroup.Name, handle.Breakpoint,
+				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint,
 				       handle.IsEnabled ? "*" : " ");
 			}
 		}
@@ -1181,9 +1181,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
 					     SourceLocation location)
 		{
-			Breakpoint breakpoint = new SimpleBreakpoint (location.Name);
-			BreakpointHandle handle = new BreakpointHandle (
-				thread.Process, breakpoint, location.Module, group, location);
+			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
+
+			BreakpointHandle handle = location.InsertBreakpoint (
+				thread.Process, breakpoint);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 

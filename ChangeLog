@@ -1,5 +1,22 @@
 2004-01-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/BreakpointManager.cs (BreakpointManager.Handle):
+	Removed this class; BreakpointManager now uses `Breakpoint'.
+
+	* backends/Process.cs (Process.InsertBreakpoint): Just take a
+	`Breakpoint' and a `TargetAddress'.
+
+	* classes/Breakpoint.cs (Breakpoint.ThreadGroup): New property.
+	(Breakpoint.Breaks): New method; moved here from BreakpointHandle.
+
+	* classes/ModuleData.cs (ModuleData.EnableBreakpoint): Removed.
+	(ModuleData.DisableBreakpoint): Removed.
+
+	* classes/SimpleBreapoint.cs: Added .ctor which takes a
+	BreakpointCheckHandler and a BreakpointHitHandler delegate.
+
+2004-01-16  Martin Baulig  <martin@ximian.com>
+
 	Merged Mono.Debugger.dll and Mono.Debugger.Backend.dll.
 
 	* backends/classes/NativeModule.cs: Removed.

@@ -810,20 +810,6 @@ namespace Mono.Debugger.Languages.CSharp
 				return reader.FindMethod (name);
 			}
 
-			internal override object EnableBreakpoint (Process process,
-								   BreakpointHandle handle,
-								   TargetAddress address)
-			{
-				return reader.Language.EnableBreakpoint (handle, address);
-			}
-
-			internal override void DisableBreakpoint (Process process,
-								  BreakpointHandle handle,
-								  object data)
-			{
-				reader.Language.DisableBreakpoint ((int) data);
-			}
-
 			//
 			// IDisposable
 			//
@@ -1822,33 +1808,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
 			return index;
-		}
-
-		bool check_breakpoint_hit (StackFrame frame, int index, object user_data)
-		{
-			BreakpointHandle handle = (BreakpointHandle) user_data;
-
-			return handle.Breakpoint.CheckBreakpointHit (frame);
-		}
-
-		void breakpoint_hit (StackFrame frame, int index, object user_data)
-		{
-			BreakpointHandle handle = (BreakpointHandle) user_data;
-
-			handle.Breakpoint.BreakpointHit (frame);
-		}
-
-		internal int EnableBreakpoint (BreakpointHandle handle, TargetAddress address)
-		{
-			return process.InsertBreakpoint (
-				handle, address, new BreakpointCheckHandler (check_breakpoint_hit),
-				new BreakpointHitHandler (breakpoint_hit),
-				handle.Breakpoint.HandlerNeedsFrame, handle);
-		}
-
-		internal void DisableBreakpoint (int index)
-		{
-			process.RemoveBreakpoint (index);
 		}
 
 		private struct MyBreakpointHandle

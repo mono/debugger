@@ -7,21 +7,29 @@ namespace Mono.Debugger
 	{
 		Process process;
 		Module module;
-		ThreadGroup group;
 		Breakpoint breakpoint;
 		SourceLocation location;
 		bool is_loaded;
 
-		public BreakpointHandle (Process process, Breakpoint breakpoint, Module module,
-					 ThreadGroup group, SourceLocation location)
+		internal BreakpointHandle (Process process, Breakpoint breakpoint,
+					   SourceLocation location)
 		{
 			this.process = process;
-			this.module = module;
-			this.group = group;
 			this.breakpoint = breakpoint;
 			this.location = location;
+			this.module = location.Module;
 
 			initialize ();
+		}
+
+		internal BreakpointHandle (Process process, Breakpoint breakpoint,
+					   TargetAddress address)
+		{
+			this.process = process;
+			this.breakpoint = breakpoint;
+			this.address = address;
+
+			EnableBreakpoint (process);
 		}
 
 		public Module Module {
@@ -30,10 +38,6 @@ namespace Mono.Debugger
 
 		public Breakpoint Breakpoint {
 			get { return breakpoint; }
-		}
-
-		public ThreadGroup ThreadGroup {
-			get { return group; }
 		}
 
 		void initialize ()
@@ -46,19 +50,6 @@ namespace Mono.Debugger
 				ModuleLoaded (module);
 		}
 
-		public bool Breaks (int id)
-		{
-			if (group == null)
-				return true;
-
-			foreach (int thread in group.Threads) {
-				if (thread == id)
-					return true;
-			}
-
-			return false;
-		}
-
 		IDisposable load_handler;
 
 		// <summary>
@@ -69,8 +60,8 @@ namespace Mono.Debugger
 		{
 			load_handler = null;
 
-			bpt_address = location.GetAddress ();
-			if (bpt_address.IsNull)
+			address = location.GetAddress ();
+			if (address.IsNull)
 				return;
 
 			EnableBreakpoint (process);
@@ -88,7 +79,7 @@ namespace Mono.Debugger
 				return;
 			is_loaded = true;
 			if (location.Method.IsLoaded) {
-				bpt_address = location.GetAddress ();
+				address = location.GetAddress ();
 				EnableBreakpoint (process);
 			} else if (location.Method.IsDynamic) {
 				// A dynamic method is a method which may emit a
@@ -110,36 +101,44 @@ namespace Mono.Debugger
 			DisableBreakpoint (process);
 		}
 
-		TargetAddress bpt_address = TargetAddress.Null;
+		TargetAddress address = TargetAddress.Null;
 		object breakpoint_data = null;
 
 		public bool IsEnabled {
 			get { return breakpoint_data != null; }
 		}
 
+		public TargetAddress Address {
+			get { return address; }
+		}
+
 		protected void Enable (Process process)
 		{
 			lock (this) {
-				if ((bpt_address.IsNull) || (breakpoint_data != null))
+				if ((address.IsNull) || (breakpoint_data != null))
 					return;
 
 				ModuleData module_data = module.ModuleData;
 				if (module_data == null)
 					throw new InternalError ();
 
+#if FIXME
 				breakpoint_data = module_data.EnableBreakpoint (
-					process, this, bpt_address);
+					process, this, address);
+#endif
 			}
 		}
 
 		protected void Disable (Process process)
 		{
 			lock (this) {
+#if FIXME
 				ModuleData module_data = module.ModuleData;
 				if ((module_data != null) && (breakpoint_data != null))
 					module_data.DisableBreakpoint (
 						process, this, breakpoint_data);
 				breakpoint_data = null;
+#endif
 			}
 		}
 

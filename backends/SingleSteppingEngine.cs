@@ -240,10 +240,12 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case CommandType.InsertBreakpoint:
-				return insert_breakpoint ((BreakpointManager.Handle) data);
+				return manager.BreakpointManager.InsertBreakpoint (
+					inferior, (Breakpoint) data, (TargetAddress) data2);
 
 			case CommandType.RemoveBreakpoint:
-				remove_breakpoint ((int) data);
+				manager.BreakpointManager.RemoveBreakpoint (
+					inferior, (int) data);
 				break;
 
 			case CommandType.GetInstructionSize:
@@ -632,16 +634,6 @@ namespace Mono.Debugger.Backends
 		{
 			inferior.SetRegister (reg.Index, (long) reg.Data);
 			registers = inferior.GetRegisters ();
-		}
-
-		int insert_breakpoint (BreakpointManager.Handle handle)
-		{
-			return manager.BreakpointManager.InsertBreakpoint (inferior, handle);
-		}
-
-		void remove_breakpoint (int index)
-		{
-			manager.BreakpointManager.RemoveBreakpoint (inferior, index);
 		}
 
 		int get_insn_size (TargetAddress address)
@@ -1104,18 +1096,17 @@ namespace Mono.Debugger.Backends
 			if (index == 0)
 				return true;
 
-			BreakpointManager.Handle handle = manager.BreakpointManager.LookupBreakpoint (index);
-			if (handle == null)
+			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (index);
+			if (bpt == null)
 				return false;
 
 			StackFrame frame = null;
 			// Only compute the current stack frame if the handler actually
 			// needs it.  Note that this computation is an expensive operation
 			// so we should only do it when it's actually needed.
-			if (handle.NeedsFrame)
+			if (bpt.HandlerNeedsFrame)
 				frame = get_frame (inferior.CurrentFrame);
-			if ((handle.CheckHandler != null) &&
-			    !handle.CheckHandler (frame, index, handle.UserData))
+			if (!bpt.CheckBreakpointHit (frame))
 				return false;
 
 			frame_changed (inferior.CurrentFrame, current_operation);
@@ -1126,11 +1117,10 @@ namespace Mono.Debugger.Backends
 		bool step_over_breakpoint (bool current)
 		{
 			int index;
-			BreakpointManager.Handle handle = manager.BreakpointManager.LookupBreakpoint (
+			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index);
 
-			if ((handle == null) ||
-			    (!current && handle.BreakpointHandle.Breaks (process.ID)))
+			if ((bpt == null) || (!current && bpt.Breaks (process.ID)))
 				return false;
 
 			Report.Debug (DebugFlags.SSE,

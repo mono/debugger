@@ -48,7 +48,7 @@ namespace Mono.Debugger.Backends
 			get { return _manager; }
 		}
 
-		public Handle LookupBreakpoint (TargetAddress address, out int index)
+		public Breakpoint LookupBreakpoint (TargetAddress address, out int index)
 		{
 			lock (this) {
 				IntPtr info = mono_debugger_breakpoint_manager_lookup (
@@ -59,22 +59,23 @@ namespace Mono.Debugger.Backends
 				}
 
 				index = mono_debugger_breakpoint_info_get_id (info);
-				return (Handle) breakpoints [index];
+				return (Breakpoint) breakpoints [index];
 			}
 		}
 
-		public Handle LookupBreakpoint (int breakpoint)
+		public Breakpoint LookupBreakpoint (int breakpoint)
 		{
 			lock (this) {
-				return (Handle) breakpoints [breakpoint];
+				return (Breakpoint) breakpoints [breakpoint];
 			}
 		}
 
-		public int InsertBreakpoint (Inferior inferior, Handle handle)
+		public int InsertBreakpoint (Inferior inferior, Breakpoint breakpoint,
+					     TargetAddress address)
 		{
 			lock (this) {
-				int index = inferior.InsertBreakpoint (handle.Address);
-				breakpoints.Add (index, handle);
+				int index = inferior.InsertBreakpoint (address);
+				breakpoints.Add (index, breakpoint);
 				return index;
 			}
 		}
@@ -84,29 +85,6 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				inferior.RemoveBreakpoint (index);
 				breakpoints.Remove (index);
-			}
-		}
-
-		internal class Handle
-		{
-			public readonly TargetAddress Address;
-			public readonly BreakpointHandle BreakpointHandle;
-			public readonly BreakpointCheckHandler CheckHandler;
-			public readonly BreakpointHitHandler HitHandler;
-			public readonly bool NeedsFrame;
-			public readonly object UserData;
-
-			public Handle (TargetAddress address, BreakpointHandle handle,
-				       BreakpointCheckHandler check_handler,
-				       BreakpointHitHandler hit_handler,
-				       bool needs_frame, object user_data)
-			{
-				this.Address = address;
-				this.BreakpointHandle = handle;
-				this.CheckHandler = check_handler;
-				this.HitHandler = hit_handler;
-				this.NeedsFrame = needs_frame;
-				this.UserData = user_data;
 			}
 		}
 

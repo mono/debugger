@@ -393,27 +393,17 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Insert a breakpoint at address @address.  Each time this breakpoint
-		//   is hit, @handler will be called and @user_data will be passed to it
-		//   as argument.  @needs_frame specifies whether the @handler needs the
-		//   StackFrame argument.
+		//   Insert a breakpoint at address @address.
 		//
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (BreakpointHandle handle,
-					     TargetAddress address,
-					     BreakpointCheckHandler check_handler,
-					     BreakpointHitHandler hit_handler,
-					     bool needs_frame, object user_data)
+		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			check_engine ();
 
-			BreakpointManager.Handle data = new BreakpointManager.Handle (
-				address, handle, check_handler, hit_handler, needs_frame, user_data);
-
 			CommandResult result = engine.SendSyncCommand (
-				CommandType.InsertBreakpoint, data);
+				CommandType.InsertBreakpoint, breakpoint, address);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 

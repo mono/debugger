@@ -91,25 +91,5 @@ namespace Mono.Debugger
 			if (BreakpointsChangedEvent != null)
 				BreakpointsChangedEvent (this);
 		}
-
-		// <summary>
-		//   This must be implemented to actually enable the breakpoint.  It is
-		//   called after the method has been loaded - so we know the method's
-		//   address and can actually insert a breakpoint instruction.
-		//   The implementation may return any arbitrary data which will be passed
-		//   as the @data argument to DisableBreakpoint() when disabling the breakpoint.
-		// </summary>
-		internal abstract object EnableBreakpoint (Process process,
-							   BreakpointHandle handle,
-							   TargetAddress address);
-
-		// <summary>
-		//   This must be implemented to actually disable the breakpoint.  It is
-		//   called which the method is still being loaded and the target is still
-		//   alive.  The @data argument is whatever EnableBreakpoint() returned.
-		// </summary>
-		internal abstract void DisableBreakpoint (Process process,
-							  BreakpointHandle handle,
-							  object data);
 	}
 }
