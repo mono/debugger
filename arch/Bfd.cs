@@ -190,18 +190,17 @@ namespace Mono.Debugger.Architecture
 
 			g_free (symtab);
 
-			InternalSection text = GetSectionByName (".init");
+			InternalSection text = GetSectionByName (".text");
 			InternalSection bss = GetSectionByName (".bss");
 
 			if (!base_address.IsNull) {
 				start_address = base_address;
 				end_address = base_address + bss.vma;
+				initialized = true;
 			} else {
 				start_address = new TargetAddress (memory.GlobalAddressDomain, text.vma);
 				end_address = new TargetAddress (memory.GlobalAddressDomain, bss.vma);
 			}
-
-			initialized = true;
 		}
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
