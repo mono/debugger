@@ -245,8 +245,6 @@ namespace Mono.Debugger
 			inferior.Dispose ();
 			inferior = null;
 
-			languages = new ArrayList ();
-
 			sse = null;
 			core = null;
 
