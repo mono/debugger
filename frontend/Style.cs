@@ -212,7 +212,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else if (obj is ITargetObject) {
 				ITargetObject tobj = (ITargetObject) obj;
-				return String.Format ("({0}) {1}", tobj.Type.Name,
+				return String.Format ("({0}) {1}", tobj.Type.Type.Name,
 						      FormatObject (tobj, false));
 			}
 			else {
@@ -316,8 +316,7 @@ namespace Mono.Debugger.Frontend
 			switch (type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayType atype = (ITargetArrayType) type;
-				retval = String.Format (
-					"{0} []", atype.ElementType.Name);
+				retval = atype.Name;
 				break;
 			}
 
@@ -452,11 +451,11 @@ namespace Mono.Debugger.Frontend
 
 		protected string DoFormatObjectRecursed (ITargetObject obj)
 		{
-			switch (obj.Type.Kind) {
+			switch (obj.Type.Type.Kind) {
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
 				return String.Format (
-					"({0}) {1}", obj.Type.Name, obj.Location.Address);
+					"({0}) {1}", obj.Type.Type.Name, obj.Location.Address);
 
 			default:
 				return obj.Print ();
@@ -465,7 +464,7 @@ namespace Mono.Debugger.Frontend
 
 		protected string DoFormatObject (ITargetObject obj)
 		{
-			switch (obj.Type.Kind) {
+			switch (obj.Type.Type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayObject aobj = (ITargetArrayObject) obj;
 				StringBuilder sb = new StringBuilder ("[");
@@ -474,7 +473,7 @@ namespace Mono.Debugger.Frontend
 				for (int i = lower; i < upper; i++) {
 					if (i > lower)
 						sb.Append (",");
-					sb.Append (FormatObject (aobj [i], true));
+					sb.Append (FormatObject (aobj [i], false));
 				}
 				sb.Append ("]");
 				return sb.ToString ();
@@ -484,7 +483,7 @@ namespace Mono.Debugger.Frontend
 				ITargetPointerObject pobj = (ITargetPointerObject) obj;
 				if (pobj.Type.IsTypesafe && pobj.HasDereferencedObject) {
 					ITargetObject deref = pobj.DereferencedObject;
-					return String.Format ("&({0}) {1}", deref.Type.Name,
+					return String.Format ("&({0}) {1}", deref.Type.Type.Name,
 							      FormatObject (deref, false));
 				} else
 					return pobj.Print ();
