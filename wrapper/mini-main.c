@@ -1,5 +1,6 @@
 #include <mono-debugger-jit-wrapper.h>
 #include <mono/metadata/verify.h>
+#include <mono/mini/mini.h>
 #include <locale.h>
 
 int
@@ -7,7 +8,7 @@ main (int argc, char **argv, char **envp)
 {
 	MonoDomain *domain;
 	const char *file, *error;
-	int retval;
+	int opt, retval;
 
 	setlocale(LC_ALL, "");
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
@@ -18,7 +19,10 @@ main (int argc, char **argv, char **envp)
 
 	g_set_prgname (file);
 
-	mono_parse_default_optimizations (argv [1]);
+	opt = mono_parse_default_optimizations (argv [1]);
+	opt |= MONO_OPT_SHARED;
+
+	mono_set_defaults (0, opt);
 
 	domain = mono_jit_init (argv [0]);
 

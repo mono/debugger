@@ -1,6 +1,12 @@
 2003-05-04  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/mini-main.c: Always use MONO_OPT_SHARED.
+
+2003-05-04  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Dropped support for the old JIT, alwasy use Mini.
+
+	* wrapper/main.c: Removed.
 
 2003-04-27  Martin Baulig  <martin@ximian.com>
 
