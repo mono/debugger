@@ -14,21 +14,22 @@ class X
 		return c;
 	}
 
-	static long ArrayTest (int[,,] a)
+	static long ArrayTest (int[,,] a, long [] b)
 	{
-		return a [2,1,3];
+		return 29;
 	}
 
 	static void Main (string[] argv)
 	{
 		X x = new X ();
 
-		int[,,] a = { { {  5,  6,  7 }, {  8,  2,  4}, {  6,  1,  9 } },
-			      { { -5, -6, -7 }, { -8, -2, -4}, { -6, -1, -9 } } };
+		int[,,] a = { { {  5,  6,  7 }, {  8,  2,  4}, {  6,  1,  9 }, {  10,  50,  200 } },
+			      { { -5, -6, -7 }, { -8, -2, -4}, { -6, -1, -9 }, { -10, -50, -200 } } };
+		long[] b = { 59, 8, -19 };
 
-		long b = ArrayTest (a);
+		long c = ArrayTest (a, b);
 		DateTime time = DateTime.Now;
-		int c = x.Test (ref b, true, 59, -18, 3.14F, time, Foo.B);
-		Console.WriteLine (c);
+		int d = x.Test (ref c, true, 59, -18, 3.14F, time, Foo.B);
+		Console.WriteLine (d);
 	}
 }

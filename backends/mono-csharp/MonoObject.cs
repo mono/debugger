@@ -4,15 +4,15 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoObject : ITargetObject
+	internal abstract class MonoObject : ITargetObject
 	{
 		protected MonoType type;
-		protected object data;
+		protected ITargetLocation location;
 
-		public MonoObject (MonoType type, object data)
+		public MonoObject (MonoType type, ITargetLocation location)
 		{
 			this.type = type;
-			this.data = data;
+			this.location = location;
 		}
 
 		public ITargetType Type {
@@ -21,10 +21,8 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public bool HasObject {
-			get {
-				return data != null;
-			}
+		public abstract bool HasObject {
+			get;
 		}
 
 		public virtual object Object {
@@ -32,9 +30,92 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!HasObject)
 					throw new InvalidOperationException ();
 
-				return data;
+				ITargetMemoryAccess memory;
+				TargetAddress address = GetAddress (location, out memory);
+
+				ITargetMemoryReader reader;
+				if (type.HasFixedSize)
+					reader = memory.ReadMemory (address, type.Size);
+				else
+					reader = GetDynamicContents (memory, address, MaximumDynamicSize);
+
+				return GetObject (reader, address);
 			}
 		}
+
+		public virtual byte[] RawContents {
+			get {
+				ITargetMemoryAccess memory;
+				TargetAddress address = GetAddress (location, out memory);
+
+				return memory.ReadBuffer (address, type.Size);
+			}
+		}
+
+		protected virtual int MaximumDynamicSize {
+			get {
+				return -1;
+			}
+		}
+
+		public virtual long DynamicSize {
+			get {
+				if (type.HasFixedSize)
+					throw new InvalidOperationException ();
+
+				ITargetMemoryAccess memory;
+				TargetAddress address = GetAddress (location, out memory);
+
+				TargetAddress dynamic_address;
+				ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
+				return GetDynamicSize (reader, address, out dynamic_address);
+			}
+		}
+
+		public virtual byte[] GetRawDynamicContents (int max_size)
+		{
+			if (type.HasFixedSize)
+				throw new InvalidOperationException ();
+
+			ITargetMemoryAccess memory;
+			TargetAddress address = GetAddress (location, out memory);
+
+			return GetDynamicContents (memory, address, max_size).Contents;
+		}
+
+		protected virtual ITargetMemoryReader GetDynamicContents (ITargetMemoryAccess memory,
+									  TargetAddress address,
+									  int max_size)
+		{
+			TargetAddress dynamic_address;
+			ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
+			long size = GetDynamicSize (reader, address, out dynamic_address);
+
+			if ((max_size > 0) && (size > (long) max_size))
+				size = max_size;
+
+			return memory.ReadMemory (dynamic_address, (int) size);
+		}
+
+		protected virtual TargetAddress GetAddress (ITargetLocation location,
+							    out ITargetMemoryAccess memory)
+		{
+			TargetAddress address = location.Address;
+			StackFrame frame = location.Handle as StackFrame;
+			if (frame == null)
+				throw new LocationInvalidException ();
+
+			memory = frame.TargetMemoryAccess;
+			if (type.IsByRef)
+				address = memory.ReadAddress (address);
+
+			return address;
+		}
+
+		protected abstract long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
+							out TargetAddress dynamic_address);
+
+		protected abstract object GetObject (ITargetMemoryReader reader, TargetAddress address);
 
 		public override string ToString ()
 		{

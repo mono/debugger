@@ -130,18 +130,15 @@ namespace Mono.Debugger.Backends
 					"Unknown target address size " + TargetAddressSize);
 		}
 
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get {
+				return inferior;
+			}
+		}
+
 		public override string ToString ()
 		{
-			StringBuilder sb = new StringBuilder ();
-
-			sb.Append (String.Format ("MemoryReader (["));
-			for (int i = 0; i < data.Length; i++) {
-				if (i > 0)
-					sb.Append (" ");
-				sb.Append (String.Format ("{1}{0:x}", data [i], data [i] >= 16 ? "" : "0"));
-			}
-			sb.Append ("])");
-			return sb.ToString ();
+			return String.Format ("MemoryReader ([{0}])", TargetBinaryReader.HexDump (data));
 		}
 	}
 }

@@ -5,36 +5,64 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoType : ITargetType
 	{
 		protected Type type;
+		protected ITargetMemoryReader info;
 
-		protected MonoType (Type type)
+		bool has_fixed_size;
+		int size;
+
+		protected MonoType (Type type, int size)
 		{
 			this.type = type;
+			this.size = size;
+			this.has_fixed_size = true;
 		}
 
-		public static MonoType GetType (Type type, int size, ITargetMemoryAccess memory,
-						TargetBinaryReader reader)
+		protected MonoType (Type type, int size, bool has_fixed_size, ITargetMemoryReader info)
 		{
-			if (MonoFundamentalType.Supports (type, reader))
-				return new MonoFundamentalType (type, reader);
-			else if (MonoStringType.Supports (type, reader))
-				return new MonoStringType (type, reader);
-			else if (MonoArrayType.Supports (type, reader))
-				return new MonoArrayType (type, memory, reader);
-			else if (MonoEnumType.Supports (type, reader))
-				return new MonoEnumType (type, memory, reader);
-			else
+			this.type = type;
+			this.size = size;
+			this.info = info;
+			this.has_fixed_size = has_fixed_size;
+		}
+
+		public static MonoType GetType (Type type, ITargetMemoryAccess memory, TargetAddress address)
+		{
+			int size = memory.ReadInteger (address);
+			ITargetMemoryReader info = memory.ReadMemory (
+				address + memory.TargetIntegerSize, size);
+			return GetType (type, info);
+		}
+
+		public static MonoType GetType (Type type, ITargetMemoryReader info)
+		{
+			int size = info.ReadInteger ();
+			if (size > 0) {
+				if (MonoFundamentalType.Supports (type))
+					return new MonoFundamentalType (type, size);
+				else
+					return new MonoOpaqueType (type, size);
+			} else if (size == -1)
+				return new MonoOpaqueType (type, 0);
+
+			size = info.BinaryReader.ReadInt32 ();
+
+			int kind = info.ReadByte ();
+			switch (kind) {
+			case 1:
+				return new MonoStringType (type, size, info);
+
+			case 2:
+				return new MonoArrayType (type, size, info, false);
+
+			case 3:
+				return new MonoArrayType (type, size, info, true);
+
+			case 4:
+				return new MonoEnumType (type, size, info);
+
+			default:
 				return new MonoOpaqueType (type, size);
-		}
-
-		public static MonoType GetType (Type type, long type_size, ITargetMemoryAccess memory,
-						long address)
-		{
-			TargetAddress taddress = new TargetAddress (memory, address);
-			int size = memory.ReadInteger (taddress);
-			taddress += memory.TargetIntegerSize;
-
-			ITargetMemoryReader reader = memory.ReadMemory (taddress, size);
-			return GetType (type, 0, memory, reader.BinaryReader);
+			}
 		}
 
 		public object TypeHandle {
@@ -47,49 +75,23 @@ namespace Mono.Debugger.Languages.CSharp
 			get;
 		}
 
-		public abstract bool HasFixedSize {
-			get;
+		public virtual bool HasFixedSize {
+			get {
+				return has_fixed_size;
+			}
 		}
 
-		public abstract int Size {
-			get;
+		public virtual int Size {
+			get {
+				return size;
+			}
 		}
 
 		public abstract bool HasObject {
 			get;
 		}
 
-		public virtual MonoObject GetElementObject (ITargetLocation location, int index)
-		{
-			if (!HasObject)
-				throw new InvalidOperationException ();
-
-			TargetAddress address = location.Address;
-			StackFrame frame = location.Handle as StackFrame;
-			if (frame == null)
-				throw new LocationInvalidException ();
-
-			ITargetMemoryAccess memory = frame.TargetMemoryAccess;
-			if (IsByRef) {
-				address += index * memory.TargetAddressSize;
-				address = memory.ReadAddress (address);
-			} else if (HasFixedSize)
-				address += index * Size;
-			else if (index > 0)
-				throw new InvalidOperationException ();
-
-			ITargetLocation new_location = new RelativeTargetLocation (location, address);
-
-			return GetObject (memory, new_location);
-
-		}
-
-		public virtual MonoObject GetObject (ITargetLocation location)
-		{
-			return GetElementObject (location, 0);
-		}
-
-		protected abstract MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location);
+		public abstract MonoObject GetObject (ITargetLocation location);
 
 		public override string ToString ()
 		{

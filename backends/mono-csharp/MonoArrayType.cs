@@ -16,53 +16,38 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoArrayType : MonoType
 	{
-		int size;
-		int rank;
-		int length_offset;
-		int length_size;
-		int data_offset;
-		int bounds_offset;
-		int bounds_size;
-		int bounds_lower_offset;
-		int bounds_lower_size;
-		int bounds_length_offset;
-		int bounds_length_size;
+		internal readonly int Rank;
+		internal readonly int LengthOffset;
+		internal readonly int LengthSize;
+		internal readonly int DataOffset;
+		internal readonly int BoundsOffset;
+		internal readonly int BoundsSize;
+		internal readonly int BoundsLowerOffset;
+		internal readonly int BoundsLowerSize;
+		internal readonly int BoundsLengthOffset;
+		internal readonly int BoundsLengthSize;
 		MonoType element_type;
 
-		public MonoArrayType (Type type, ITargetMemoryAccess memory, TargetBinaryReader info)
-			: base (type)
+		public MonoArrayType (Type type, int size, ITargetMemoryReader info, bool is_multi)
+			: base (type, size, false, info)
 		{
-			int size_field = - info.ReadInt32 ();
-			int atype = info.ReadByte ();
-			if (atype == 2) {
-				// MONO_TYPE_SZARRAY
-				if (size_field != 5)
-					throw new InternalError ();
-			} else if (atype == 3) {
-				// MONO_TYPE_ARRAY
-				if (size_field != 12 + memory.TargetAddressSize)
-					throw new InternalError ();
-			} else
-				throw new InternalError ();
+			LengthOffset = info.ReadByte ();
+			LengthSize = info.ReadByte ();
+			DataOffset = info.ReadByte ();
 
-			size = info.ReadByte ();
-			length_offset = info.ReadByte ();
-			length_size = info.ReadByte ();
-			data_offset = info.ReadByte ();
-
-			if (atype == 3) {
-				// MONO_TYPE_ARRAY
-				rank = info.ReadByte ();
-				bounds_offset = info.ReadByte ();
-				bounds_size = info.ReadByte ();
-				bounds_lower_offset = info.ReadByte ();
-				bounds_lower_size = info.ReadByte ();
-				bounds_length_offset = info.ReadByte ();
-				bounds_length_size = info.ReadByte ();
+			if (is_multi) {
+				Rank = info.ReadByte ();
+				BoundsOffset = info.ReadByte ();
+				BoundsSize = info.ReadByte ();
+				BoundsLowerOffset = info.ReadByte ();
+				BoundsLowerSize = info.ReadByte ();
+				BoundsLengthOffset = info.ReadByte ();
+				BoundsLengthSize = info.ReadByte ();
 			}
 
-			long element_type_info = new TargetAddress (memory, info.ReadAddress ());
-			element_type = GetType (type.GetElementType (), 0, memory, element_type_info);
+			TargetAddress element_type_info = info.ReadAddress ();
+			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,
+						element_type_info);
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)
@@ -73,12 +58,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public override bool HasFixedSize {
 			get {
 				return false;
-			}
-		}
-
-		public override int Size {
-			get {
-				return size;
 			}
 		}
 
@@ -101,36 +80,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location)
 		{
-			TargetAddress address = location.Address;
-			ITargetMemoryReader reader = memory.ReadMemory (address, size);
+			if (!HasObject)
+				throw new InvalidOperationException ();
 
-			reader.Offset = length_offset;
-			int length = (int) reader.BinaryReader.ReadInteger (length_size);
-
-			ITargetLocation new_location = new RelativeTargetLocation (
-				location, address + data_offset);
-
-			if (rank == 0)
-				return new MonoArray (this, length, new_location);
-
-			reader.Offset = bounds_offset;
-			TargetAddress bounds_address = reader.ReadAddress ();
-			ITargetMemoryReader bounds = memory.ReadMemory (
-				bounds_address, bounds_size * rank);
-
-			MonoArrayBounds[] abounds = new MonoArrayBounds [rank];
-
-			for (int i = 0; i < rank; i++) {
-				bounds.Offset = i * bounds_size + bounds_lower_offset;
-				int b_lower = (int) bounds.BinaryReader.ReadInteger (bounds_lower_size);
-				bounds.Offset = i * bounds_size + bounds_length_offset;
-				int b_length = (int) bounds.BinaryReader.ReadInteger (bounds_length_size);
-				abounds [i] = new MonoArrayBounds (b_lower, b_length);
-			}
-
-			return new MonoArray (this, length, abounds, 0, 0, new_location);
+			return new MonoArrayObject (this, location);
 		}
 	}
 }

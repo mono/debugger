@@ -164,7 +164,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			MonoType retval;
 			if (address != 0)
-				retval = MonoType.GetType (type, type_size, memory, address);
+				retval = MonoType.GetType (type, memory, new TargetAddress (memory, address));
 			else
 				retval = new MonoOpaqueType (type, type_size);
 

@@ -4,34 +4,13 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoOpaqueType : MonoType
 	{
-		int size;
-
 		public MonoOpaqueType (Type type, int size)
-			: base (type)
-		{
-			this.size = size;
-		}
-
-		public static bool Supports (Type type, TargetBinaryReader info)
-		{
-			return true;
-		}
+			: base (type, size)
+		{ }
 
 		public override bool IsByRef {
 			get {
 				return false;
-			}
-		}
-
-		public override bool HasFixedSize {
-			get {
-				return true;
-			}
-		}
-
-		public override int Size {
-			get {
-				return size;
 			}
 		}
 
@@ -41,7 +20,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

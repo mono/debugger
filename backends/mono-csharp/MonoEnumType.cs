@@ -4,31 +4,19 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoEnumType : MonoType
 	{
-		int size;
 		MonoType element_type;
 
-		public MonoEnumType (Type type, ITargetMemoryAccess memory, TargetBinaryReader info)
-			: base (type)
+		public MonoEnumType (Type type, int size, ITargetMemoryReader info)
+			: base (type, size, true, info)
 		{
-			int size_field = - info.ReadInt32 ();
-			if (size_field != 1 + memory.TargetAddressSize)
-				throw new InternalError ();
-			if (info.ReadByte () != 4)
-				throw new InternalError ();
-
-			long element_type_info = new TargetAddress (memory, info.ReadAddress ());
-			element_type = GetType (type.GetElementType (), 0, memory, element_type_info);
+			TargetAddress element_type_info = info.ReadAddress ();
+			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,
+						element_type_info);
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)
 		{
 			return type.IsEnum;
-		}
-
-		public override bool HasFixedSize {
-			get {
-				return true;
-			}
 		}
 
 		public override int Size {
@@ -49,11 +37,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location)
 		{
-			object data = element_type.GetObject (location).Object;
-
-			return new MonoObject (this, Enum.ToObject (type, data));
+			return new MonoEnumObject (this, location, element_type.GetObject (location));
 		}
 	}
 }

@@ -76,6 +76,13 @@ namespace Mono.Debugger
 		//   Read an address from the target's address space at address @address.
 		// </summary>
 		TargetAddress ReadAddress ();
+
+		// <summary>
+		//   Get the ITargetMemoryAccess which was used to create this ITargetMemoryReader.
+		// </summary>
+		ITargetMemoryAccess TargetMemoryAccess {
+			get;
+		}
 	}
 
 	public interface ITargetMemoryAccess : ITargetInfo

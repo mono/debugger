@@ -244,18 +244,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 		void print_array (ITargetArray array, int dimension)
 		{
 			Console.WriteLine ("ARRAY DIMENSION {0}", dimension);
+			Console.WriteLine ("DYNAMIC CONTENTS: [{0}]",
+					   TargetBinaryReader.HexDump (array.GetRawDynamicContents (-1)));
+			
 			for (int i = array.LowerBound; i < array.UpperBound; i++) {
 				Console.WriteLine ("ELEMENT {0} {1}: {2}", dimension, i, array [i]);
-				ITargetArray earray = array [i] as ITargetArray;
-				if (earray != null)
-					print_array (earray, dimension + 1);
+				print_object (array [i]);
 			}
 		}
 
 		void print_object (ITargetObject obj)
 		{
-			Console.WriteLine ("OBJECT: {0}", obj);
+			Console.WriteLine ("OBJECT: {0} [{1}]", obj,
+					   TargetBinaryReader.HexDump (obj.RawContents));
 
+			if (!obj.Type.HasFixedSize)
+				Console.WriteLine ("DYNAMIC CONTENTS: [{0}]",
+						   TargetBinaryReader.HexDump (obj.GetRawDynamicContents (-1)));
+			
 			if (obj.HasObject)
 				Console.WriteLine ("OBJECT CONTENTS: |{0}|", obj.Object);
 

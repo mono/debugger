@@ -4,42 +4,23 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoStringType : MonoType
 	{
-		int size;
-		int length_offset;
-		int length_size;
-		int data_offset;
-
 		static int max_string_length = 100;
 
-		public MonoStringType (Type type, TargetBinaryReader info)
-			: base (type)
+		internal readonly int LengthOffset;
+		internal readonly int LengthSize;
+		internal readonly int DataOffset;
+
+		public MonoStringType (Type type, int size, ITargetMemoryReader info)
+			: base (type, size, false, info)
 		{
-			int size_field = - info.ReadInt32 ();
-			if (size_field != 5)
-				throw new InternalError ();
-			if (info.ReadByte () != 1)
-				throw new InternalError ();
-			size = info.ReadByte ();
-			length_offset = info.ReadByte ();
-			length_size = info.ReadByte ();
-			data_offset = info.ReadByte ();
+			LengthOffset = info.ReadByte ();
+			LengthSize = info.ReadByte ();
+			DataOffset = info.ReadByte ();
 		}
 
-		public static bool Supports (Type type, TargetBinaryReader info)
+		public static bool Supports (Type type)
 		{
 			return type == typeof (string);
-		}
-
-		public override bool HasFixedSize {
-			get {
-				return false;
-			}
-		}
-
-		public override int Size {
-			get {
-				return size;
-			}
 		}
 
 		public override bool IsByRef {
@@ -64,25 +45,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location)
 		{
-			TargetAddress address = location.Address;
-			TargetBinaryReader reader = memory.ReadMemory (address, size).BinaryReader;
-
-			reader.Position = length_offset;
-			int length = (int) reader.ReadInteger (length_size);
-
-			if (length > max_string_length)
-				length = max_string_length;
-
-			byte[] contents = memory.ReadBuffer (address + data_offset, 2 * length);
-
-			char[] retval = new char [length];
-
-			for (int i = 0; i < length; i++)
-				retval [i] = (char) ((contents [2*i + 1] << 8) + contents [2*i]);
-
-			return new MonoObject (this, new String (retval));
+			return new MonoStringObject (this, location);
 		}
 	}
 }

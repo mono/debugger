@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace Mono.Debugger
 {
@@ -289,6 +290,18 @@ namespace Mono.Debugger
 				throw new TargetMemoryException (
 					"Unknown integer size " + size);
 			}
+		}
+
+		public static string HexDump (byte[] data)
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			for (int i = 0; i < data.Length; i++) {
+				if (i > 0)
+					sb.Append (" ");
+				sb.Append (String.Format ("{1}{0:x}", data [i], data [i] >= 16 ? "" : "0"));
+			}
+			return sb.ToString ();
 		}
 	}
 }
