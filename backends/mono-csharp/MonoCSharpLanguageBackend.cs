@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Reflection;
 using System.Collections;
 using Mono.CSharp.Debugger;
 using Mono.Debugger;
@@ -56,6 +57,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoSymbolTableReader
 	{
 		MethodEntry[] Methods;
+		protected Assembly assembly;
 		protected string ImageFile;
 		protected OffsetTable offset_table;
 		protected ILanguageBackend language;
@@ -106,6 +108,8 @@ namespace Mono.Debugger.Languages.CSharp
 			string_table = symtab_reader.ReadAddress ();
 			string_table_size = symtab_reader.ReadInteger ();
 			symtab_reader.ReadAddress ();
+
+			assembly = Assembly.LoadFrom (ImageFile);
 
 			if ((raw_contents_size == 0) || (address_table_size == 0))
 				throw new SymbolTableEmptyException ();
@@ -179,6 +183,18 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 			MethodEntry method;
 			ISourceFileFactory factory;
+			Reflection.MethodBase rmethod;
+
+			static MethodInfo get_method;
+
+			static MonoMethod ()
+			{
+				Type type = typeof (Assembly);
+				get_method = type.GetMethod ("MonoDebugger_GetMethod");
+				if (get_method == null)
+					throw new InternalError (
+						"Can't find Assembly.MonoDebugger_GetMethod");
+			}
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
 					   string name)
@@ -195,6 +211,9 @@ namespace Mono.Debugger.Languages.CSharp
 						reader.inferior, method.Address.EndAddress);
 					SetAddresses (start, end);
 				}
+
+				object[] args = new object[] { (int) method.Token };
+				rmethod = (Reflection.MethodBase) get_method.Invoke (reader.assembly, args);
 			}
 
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -221,7 +240,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override object MethodHandle {
 				get {
-					return method.Token;
+					return rmethod;
 				}
 			}
 		}

@@ -1,5 +1,10 @@
 2002-09-20  Martin Baulig  <martin@gnome.org>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs (MonoMethod):
+	Set IMethod.MethodHandle to the method's Reflection.MethodBase.
+	
+2002-09-20  Martin Baulig  <martin@gnome.org>
+
 	Started to add support for core files.
 
 	* interfaces/IDebuggerBackend.cs (IDebuggerBackend.ReadCoreFile):

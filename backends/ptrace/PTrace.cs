@@ -574,7 +574,8 @@ namespace Mono.Debugger.Backends
 			StringBuilder sb = new StringBuilder ();
 
 			while (true) {
-				byte b = ReadByte (address++);
+				byte b = ReadByte (address);
+				address++;
 
 				if (b == 0)
 					return sb.ToString ();
