@@ -112,17 +112,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "i":
 			case "stepi":
-				if (backend.Inferior == null)
-					throw new NoTargetException ();
-				backend.Inferior.Step ();
+				backend.StepInstruction ();
 				last_command = command;
 				break;
 
 			case "t":
 			case "nexti":
-				if (backend.Inferior == null)
-					throw new NoTargetException ();
-				backend.Inferior.Next ();
+				backend.NextInstruction ();
 				last_command = command;
 				break;
 

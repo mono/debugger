@@ -299,12 +299,25 @@ namespace Mono.Debugger.Backends
 	{
 		TargetAddress start, end;
 		ILanguageBackend language;
+		StepMode mode;
 
-		internal StepFrame (TargetAddress start, TargetAddress end, ILanguageBackend language)
+		internal StepFrame (ILanguageBackend language, StepMode mode)
+			: this (TargetAddress.Null, TargetAddress.Null, language, mode)
+		{ }
+
+		internal StepFrame (TargetAddress start, TargetAddress end, ILanguageBackend language,
+				    StepMode mode)
 		{
 			this.start = start;
 			this.end = end;
 			this.language = language;
+			this.mode = mode;
+		}
+
+		public StepMode Mode {
+			get {
+				return mode;
+			}
 		}
 
 		public TargetAddress Start {
@@ -327,7 +340,8 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("StepFrame ({0:x},{1:x})", Start, End);
+			return String.Format ("StepFrame ({0:x},{1:x},{2},{3})",
+					      Start, End, Mode, Language);
 		}
 	}
 
@@ -564,6 +578,7 @@ namespace Mono.Debugger.Backends
 			if (!native) {
 				language = new MonoCSharpLanguageBackend (inferior);
 				symtabs.AddSymbolTable (language.SymbolTable);
+				inferior.ApplicationSymbolTable = language.SymbolTable;
 			}
 		}
 
@@ -579,6 +594,8 @@ namespace Mono.Debugger.Backends
 				throw new NoTargetException ();
 
 			IStackFrame frame = CurrentFrame;
+			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
+
 			if (frame.SourceLocation == null)
 				return null;
 
@@ -588,24 +605,56 @@ namespace Mono.Debugger.Backends
 			TargetAddress start = frame.TargetAddress - offset;
 			TargetAddress end = start + range;
 
+			return new StepFrame (start, end, language, StepMode.StepFrame);
+		}
+
+		IStepFrame get_simple_step_frame (StepMode mode)
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			IStackFrame frame = CurrentFrame;
 			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
-			return new StepFrame (start, end, language);
+
+			return new StepFrame (language, mode);
+		}
+
+		public void StepInstruction ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			inferior.Step (get_simple_step_frame (StepMode.SingleInstruction));
+		}
+
+		public void NextInstruction ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
 		}
 
 		public void StepLine ()
 		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
 			inferior.Step (get_step_frame ());
 		}
 
 		public void NextLine ()
 		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
 			IStepFrame frame = get_step_frame ();
 			if (frame == null) {
-				inferior.Next ();
+				inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
 				return;
 			}
 
-			Console.WriteLine ("RUNNING UNTIL: {1} {0:x}", frame.End.Address, frame.End);
+			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End);
 
 			inferior.Continue (frame.End);
 		}

@@ -41,6 +41,10 @@ namespace Mono.Debugger
 		// </summary>
 		void Run ();
 
+		void StepInstruction ();
+
+		void NextInstruction ();
+
 		void StepLine ();
 
 		void NextLine ();

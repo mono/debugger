@@ -62,7 +62,9 @@ namespace Mono.Debugger.Backends
 		Bfd bfd;
 		BfdDisassembler bfd_disassembler;
 		IArchitecture arch;
-		ISymbolTableCollection native_symtabs;
+		SymbolTableCollection native_symtabs;
+		SymbolTableCollection symtab_collection;
+		ISymbolTable application_symtab;
 		ISourceFileFactory source_factory;
 
 		int child_pid;
@@ -300,7 +302,6 @@ namespace Mono.Debugger.Backends
 			arch = new ArchitectureI386 (this);
 
 			native_symtabs = new SymbolTableCollection ();
-			bfd_disassembler.SymbolTable = native_symtabs;
 
 			try {
 				ISymbolTable bfd_symtab = bfd.SymbolTable;
@@ -309,6 +310,17 @@ namespace Mono.Debugger.Backends
 			} catch (Exception e) {
 				Console.WriteLine ("Can't get native symbol table: {0}", e);
 			}
+
+			update_symtabs ();
+		}
+
+		void update_symtabs ()
+		{
+			symtab_collection = new SymbolTableCollection ();
+			symtab_collection.AddSymbolTable (native_symtabs);
+			symtab_collection.AddSymbolTable (application_symtab);
+
+			bfd_disassembler.SymbolTable = symtab_collection;
 		}
 
 		public TargetAddress SimpleLookup (string name)
@@ -719,34 +731,14 @@ namespace Mono.Debugger.Backends
 			// send_command (ServerCommand.KILL);
 		}
 
-		public void Step ()
+		void do_step (IStepFrame frame)
 		{
-			check_disposed ();
-			Step (null);
-		}
-
-		public void Step (IStepFrame frame)
-		{
-			check_disposed ();
-			int insn_size;
-			TargetAddress call = arch.GetCallTarget (CurrentFrame, out insn_size);
-			if (!native && !call.IsNull && (frame != null) && (frame.Language != null)) {
-				TargetAddress trampoline = frame.Language.GetTrampoline (call);
-
-				if (!trampoline.IsNull) {
-					insert_temporary_breakpoint (trampoline);
-					Continue ();
-					return;
-				}
-			} else if (!call.IsNull) {
-				IMethod method = native_symtabs.Lookup (call);
-				if (method == null) {
-					Next ();
-					return;
-				}
-			}
-
-			current_step_frame = frame;
+			if ((frame != null) &&
+			    ((frame.Mode == StepMode.StepFrame) ||
+			     (frame.Mode == StepMode.NativeStepFrame)))
+				current_step_frame = frame;
+			else
+				current_step_frame = null;
 
 			TargetState old_state = change_target_state (TargetState.RUNNING);
 			try {
@@ -756,7 +748,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Next ()
+		void do_next ()
 		{
 			check_disposed ();
 			TargetAddress address = CurrentFrame;
@@ -764,6 +756,95 @@ namespace Mono.Debugger.Backends
 
 			insert_temporary_breakpoint (address);
 			Continue ();
+		}
+
+		public void Step (IStepFrame frame)
+		{
+			check_disposed ();
+
+			/*
+			 * If no step frame is given, just step one machine instruction.
+			 */
+			if (frame == null) {
+				do_step (null);
+				return;
+			}
+
+			/*
+			 * Step one instruction, but step over function calls.
+			 */
+			if (frame.Mode == StepMode.NextInstruction) {
+				do_next ();
+				return;
+			}
+
+			/*
+			 * If this is not a call instruction, continue stepping until we leave
+			 * the specified step frame.
+			 */
+			int insn_size;
+			TargetAddress call = arch.GetCallTarget (CurrentFrame, out insn_size);
+			if (call.IsNull) {
+				do_step (frame);
+				return;
+			}
+
+			/*
+			 * If we have a source language, check for trampolines.
+			 * This will trigger a JIT compilation if neccessary.
+			 */
+			if (frame.Language != null) {
+				TargetAddress trampoline = frame.Language.GetTrampoline (call);
+
+				Console.WriteLine ("TRAMPOLINE: {0} {1}", CurrentFrame, trampoline);
+
+				/*
+				 * If this is a trampoline, insert a breakpoint at the start of
+				 * the corresponding method and continue.
+				 *
+				 * We don't need to distinguish between StepMode.SingleInstruction
+				 * and StepMode.StepFrame here since we'd leave the step frame anyways
+				 * when entering the method.
+				 */
+				if (!trampoline.IsNull) {
+					insert_temporary_breakpoint (trampoline);
+					Continue ();
+					return;
+				}
+			}
+
+			Console.WriteLine ("STEP: {0} {1}", frame, call);
+
+			/*
+			 * When StepMode.SingleInstruction was requested, enter the method no matter
+			 * whether it's a system function or not.
+			 */
+			if (frame.Mode == StepMode.SingleInstruction) {
+				do_step (null);
+				return;
+			}
+
+			/*
+			 * Try to find out whether this is a system function by doing a symbol lookup.
+			 * If it can't be found in the symbol tables, assume it's a system function
+			 * and step over it.
+			 */
+			IMethod method = null;
+			if (frame.Mode == StepMode.NativeStepFrame)
+				method = symtab_collection.Lookup (call);
+			else if (application_symtab != null)
+				method = application_symtab.Lookup (call);
+			if (method == null) {
+				Console.WriteLine ("STEPPING OVER: {0}", call);
+				current_step_frame = frame;
+				do_next ();
+				return;
+			}
+
+			/*
+			 * Finally, step into the method.
+			 */
+			do_step (null);
 		}
 
 		public TargetAddress CurrentFrame {
@@ -785,10 +866,23 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ISymbolTableCollection SymbolTable {
+		public ISymbolTable SymbolTable {
 			get {
 				check_disposed ();
 				return native_symtabs;
+			}
+		}
+
+		public ISymbolTable ApplicationSymbolTable {
+			get {
+				check_disposed ();
+				return application_symtab;
+			}
+
+			set {
+				check_disposed ();
+				application_symtab = value;
+				update_symtabs ();
 			}
 		}
 

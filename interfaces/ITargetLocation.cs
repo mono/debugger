@@ -2,21 +2,6 @@ using System;
 
 namespace Mono.Debugger
 {
-	public interface IStepFrame
-	{
-		TargetAddress Start {
-			get;
-		}
-
-		TargetAddress End {
-			get;
-		}
-
-		ILanguageBackend Language {
-			get;
-		}
-	}
-
 	// <summary>
 	//   This interface denotes an address in the target's address
 	//   space in a target independent way.  It is the only way to share
