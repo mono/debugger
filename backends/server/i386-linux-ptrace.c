@@ -529,7 +529,10 @@ do_dispatch (InferiorHandle *handle, int status)
 
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
-			handle->child_message_cb (MESSAGE_CHILD_STOPPED, WSTOPSIG (status));
+			if (WSTOPSIG (status) == SIGTRAP)
+				handle->child_message_cb (MESSAGE_CHILD_STOPPED, 0);
+			else
+				handle->child_message_cb (MESSAGE_CHILD_STOPPED, WSTOPSIG (status));
 			break;
 
 		case STOP_ACTION_BREAKPOINT_HIT:

@@ -30,24 +30,33 @@ namespace Mono.Debugger.GUI
 			MainIteration ();
 		}
 
-		protected virtual string GetStopMessage (IStackFrame frame)
+		protected virtual string GetStopReason (int arg)
+		{
+			if (arg == 0)
+				return "Stopped";
+			else
+				return String.Format ("Received signal {0}", arg);
+		}
+
+		protected virtual string GetStopMessage (IStackFrame frame, int arg)
 		{
 			if (frame.Method != null) {
 				long offset = frame.TargetAddress - frame.Method.StartAddress;
 
 				if (offset > 0)
-					return String.Format ("Stopped at {0} in {1}+{2:x}",
+					return String.Format ("{3} at {0} in {1}+{2:x}",
 							      frame.TargetAddress, frame.Method.Name,
-							      offset);
+							      offset, GetStopReason (arg));
 				else if (offset == 0)
-					return String.Format ("Stopped at {0} in {1}",
-							      frame.TargetAddress, frame.Method.Name);
+					return String.Format ("{2} at {0} in {1}",
+							      frame.TargetAddress, frame.Method.Name,
+							      GetStopReason (arg));
 			}
 
-			return String.Format ("Stopped at {0}.", frame.TargetAddress);
+			return String.Format ("{1} at {0}.", frame.TargetAddress, GetStopReason (arg));
 		}
 
-		public virtual void StateChanged (TargetState new_state)
+		public virtual void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
@@ -60,17 +69,21 @@ namespace Mono.Debugger.GUI
 			case TargetState.STOPPED:
 				try {
 					IStackFrame frame = backend.CurrentFrame;
-					Message (GetStopMessage (frame));
+					Message (GetStopMessage (frame, arg));
 				} catch (NoStackException) {
-					Message ("Stopped.");
+					Message (String.Format ("{0}.", GetStopReason (arg)));
 				} catch (Exception e) {
 					Console.WriteLine (e);
-					Message ("Stopped (can't get current stackframe).");
+					Message (String.Format ("{0} ({1}).", GetStopReason (arg),
+								"(can't get current stackframe)"));
 				}
 				break;
 
 			case TargetState.EXITED:
-				Message ("Program terminated.");
+				if (arg == 0)
+					Message ("Program terminated.");
+				else
+					Message (String.Format ("Program terminated with signal {0}.", arg));
 				break;
 
 			case TargetState.NO_TARGET:

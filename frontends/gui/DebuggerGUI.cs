@@ -88,6 +88,7 @@ namespace Mono.Debugger.GUI
 		Gtk.TextView target_output;
 		TargetStatusbar target_status;
 		SourceStatusbar source_status;
+		LineDebugStatusbar line_debug_status;
 
 		TextWriter output_writer;
 
@@ -147,6 +148,7 @@ namespace Mono.Debugger.GUI
 
 			target_status = new TargetStatusbar (backend, (Gtk.Statusbar) gxml ["target_status"]);
 			source_status = new SourceStatusbar (backend, (Gtk.Statusbar) gxml ["source_status"]);
+			line_debug_status = new LineDebugStatusbar (backend, (Gtk.Statusbar) gxml ["line_debug_status"]);
 			source_view = new SourceView
 				(backend, (Gtk.Container) main_window, (Gtk.TextView) gxml ["source_view"]);
 			disassembler_view = new DisassemblerView (

@@ -104,7 +104,17 @@ namespace Mono.Debugger
 		// </summary>
 		event StackFramesInvalidHandler FramesInvalidEvent;
 
+		// <summary>
+		//   This event is emitted when the current method becomes
+		//   invalid, for instance when the debugger enters a method
+		//   for which it has no line number information.
+		// </summary>
 		event MethodInvalidHandler MethodInvalidEvent;
+
+		// <summary>
+		//   This event is emitted each time the debugger enters a
+		//   different method.
+		// </summary>
 		event MethodChangedHandler MethodChangedEvent;
 	}
 }

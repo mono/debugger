@@ -381,6 +381,13 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
+			if ((message == ChildMessageType.CHILD_STOPPED) && (arg != 0)) {
+				change_target_state (TargetState.STOPPED, arg);
+				if (ChildMessage != null)
+					ChildMessage (message, arg);
+				return;
+			}
+
 			switch (message) {
 			case ChildMessageType.CHILD_STOPPED:
 				if (initialized && !reached_main) {
@@ -398,17 +405,21 @@ namespace Mono.Debugger.Backends
 
 					if ((frame >= current_step_frame.Start) &&
 					    (frame < current_step_frame.End)) {
-						Step (current_step_frame);
+						try {
+							Step (current_step_frame);
+						} catch (Exception e) {
+							inferior_output ("EXCEPTION: " + e.ToString ());
+						}
 						break;
 					}
 					current_step_frame = null;
 				}
-				change_target_state (TargetState.STOPPED);
+				change_target_state (TargetState.STOPPED, arg);
 				break;
 
 			case ChildMessageType.CHILD_EXITED:
 			case ChildMessageType.CHILD_SIGNALED:
-				change_target_state (TargetState.EXITED);
+				change_target_state (TargetState.EXITED, arg);
 				break;
 
 			case ChildMessageType.CHILD_HIT_BREAKPOINT:
@@ -672,6 +683,11 @@ namespace Mono.Debugger.Backends
 
 		TargetState change_target_state (TargetState new_state)
 		{
+			return change_target_state (new_state, 0);
+		}
+
+		TargetState change_target_state (TargetState new_state, int arg)
+		{
 			if (new_state == target_state)
 				return target_state;
 
@@ -679,7 +695,7 @@ namespace Mono.Debugger.Backends
 			target_state = new_state;
 
 			if (StateChanged != null)
-				StateChanged (target_state);
+				StateChanged (target_state, arg);
 
 			return old_state;
 		}

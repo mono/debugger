@@ -14,7 +14,7 @@ namespace Mono.Debugger.GUI
 		{
 		}
 
-		public override void StateChanged (TargetState new_state)
+		public override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
@@ -23,17 +23,18 @@ namespace Mono.Debugger.GUI
 			case TargetState.STOPPED:
 				try {
 					IStackFrame frame = backend.CurrentFrame;
-					Message (String.Format ("Stopped at {0}.", frame));
+					Message (String.Format ("{1} at {0}.", frame, GetStopReason (arg)));
 				} catch (NoStackException) {
-					Message ("Stopped.");
+					Message (String.Format ("{0}.", GetStopReason (arg)));
 				} catch (Exception e) {
 					Console.WriteLine (e);
-					Message ("Stopped (can't get current stackframe).");
+					Message (String.Format ("{0} ({1}).", GetStopReason (arg),
+								"(can't get current stackframe)"));
 				}
 				break;
 
 			default:
-				base.StateChanged (new_state);
+				base.StateChanged (new_state, arg);
 				break;
 			}
 		}

@@ -4,7 +4,7 @@ using System.IO;
 namespace Mono.Debugger
 {
 	public delegate void TargetOutputHandler (string otuput);
-	public delegate void StateChangedHandler (TargetState new_state);
+	public delegate void StateChangedHandler (TargetState new_state, int arg);
 
 	/// <summary>
 	///   State of the target (the application we're debugging).

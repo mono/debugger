@@ -17,7 +17,7 @@ namespace Mono.Debugger.GUI
 			backend.StateChanged += new StateChangedHandler (StateChanged);
 		}
 
-		public void StateChanged (TargetState new_state)
+		public void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;

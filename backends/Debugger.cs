@@ -509,18 +509,18 @@ namespace Mono.Debugger.Backends
 
 				busy = value;
 				if (StateChanged != null)
-					StateChanged (State);
+					StateChanged (State, 0);
 			}
 		}
 
-		void target_state_changed (TargetState new_state)
+		void target_state_changed (TargetState new_state, int arg)
 		{
 			current_frame = null;
 			if (new_state == TargetState.STOPPED)
 				frame_changed ();
 
 			if (StateChanged != null)
-				StateChanged (new_state);
+				StateChanged (new_state, arg);
 		}
 
 		public event TargetOutputHandler TargetOutput;
@@ -610,7 +610,7 @@ namespace Mono.Debugger.Backends
 			int range = frame.SourceLocation.SourceRange;
 
 			TargetAddress start = frame.TargetAddress - offset;
-			TargetAddress end = start + range;
+			TargetAddress end = frame.TargetAddress + range;
 
 			return new StepFrame (start, end, language, StepMode.StepFrame);
 		}
