@@ -200,16 +200,30 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 	if (search_path)
 		flags |= G_SPAWN_SEARCH_PATH;
 
+#ifdef __linux__
 	if (redirect_fds)
 		ret = g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func,
 						NULL, child_pid, standard_input, standard_output,
-						standard_error, error);
+						standard_error, &my_error);
 	else
 		ret = g_spawn_async (working_directory, argv, envp, flags, child_setup_func,
-				     NULL, child_pid, error);
+				     NULL, child_pid, &my_error);
 
-	if (!ret)
+	if (!ret) {
+		g_message (G_STRLOC ": %d - %s", ret, my_error->message);
+
 		return COMMAND_ERROR_FORK;
+	}
+#else
+#warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)
+'"
+	*child_pid = fork ();
+	if (*child_pid == 0) {
+		child_setup_func (NULL);
+		exect (argv [0], argv+1, envp);
+		g_assert_not_reached ();
+	}
+#endif
 
 	handle->pid = *child_pid;
 	setup_inferior (handle);
