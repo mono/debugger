@@ -75,7 +75,6 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 			g_message (G_STRLOC ": %lx - can't read target memory of %d at "
 				   "address %08Lx : %s", pthread_self (),
 				   handle->inferior->pid, start, g_strerror (errno));
-			G_BREAKPOINT ();
 			return COMMAND_ERROR_UNKNOWN;
 		}
 
