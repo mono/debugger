@@ -158,29 +158,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class DwarfSourceFile : SourceFile
-		{
-			DwarfReader dwarf;
-			ArrayList methods;
-
-			public DwarfSourceFile (DwarfReader dwarf, string filename)
-				: base (dwarf.module, filename)
-			{
-				this.dwarf = dwarf;
-				this.methods = new ArrayList ();
-			}
-
-			public void AddMethod (DwarfSourceMethod method)
-			{
-				methods.Add (method);
-			}
-
-			protected override ArrayList GetMethods ()
-			{
-				return methods;
-			}
-		}
-
 		protected class CompileUnitBlock
 		{
 			public readonly DwarfReader dwarf;
@@ -421,40 +398,6 @@ namespace Mono.Debugger.Architecture
 
 			return ranges;
 		}
-
-#if FALSE
-		ArrayList read_pubnames ()
-		{
-			DwarfBinaryReader reader = DebugPubnamesReader;
-
-			ArrayList pubnames = new ArrayList ();
-
-			while (!reader.IsEof) {
-				long start = reader.Position;
-				long length = reader.ReadInitialLength ();
-				long stop = reader.Position + length;
-				int version = reader.ReadInt16 ();
-				long offset = reader.ReadOffset ();
-				long section_length = reader.ReadOffset ();
-
-				if (version != 2)
-					throw new DwarfException (this, String.Format (
-						"Wrong version in .debug_pubnames: {0}", version));
-
-				while (reader.Position < stop) {
-					long section_offset = reader.ReadOffset ();
-					if (section_offset == 0)
-						break;
-
-					string name = reader.ReadString ();
-
-					pubnames.Add (new PubNameEntry (this, section_offset, name));
-				}
-			}
-
-			return pubnames;
-		}
-#endif
 
 		object create_reader_func (object user_data)
 		{
@@ -1754,9 +1697,32 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public DwarfSourceFile SourceFile {
+			public SourceFile SourceFile {
 				get {
 					return file;
+				}
+			}
+
+			protected class DwarfSourceFile : SourceFile
+			{
+				DwarfReader dwarf;
+				ArrayList methods;
+
+				public DwarfSourceFile (DwarfReader dwarf, string filename)
+					: base (dwarf.module, filename)
+				{
+					this.dwarf = dwarf;
+					this.methods = new ArrayList ();
+				}
+
+				public void AddMethod (DwarfSourceMethod method)
+				{
+					methods.Add (method);
+				}
+
+				protected override ArrayList GetMethods ()
+				{
+					return methods;
 				}
 			}
 		}
@@ -1802,9 +1768,7 @@ namespace Mono.Debugger.Architecture
 			public DieSubprogram (DwarfBinaryReader reader, CompilationUnit comp_unit,
 						AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
-			{
-				DwarfSourceFile source = comp_unit.DieCompileUnit.SourceFile;
-			}
+			{ }
 
 			public string ImageFile {
 				get {
