@@ -83,4 +83,11 @@ namespace Mono.Debugger
 			: base ("Invalid core file: " + message)
 		{ }
 	}
+
+	public class LocationInvalidException : TargetException
+	{
+		public LocationInvalidException ()
+			: base ("Location is invalid.")
+		{ }
+	}
 }

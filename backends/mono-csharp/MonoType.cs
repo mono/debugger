@@ -93,36 +93,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected virtual TargetAddress GetAddress (ITargetLocation location,
-							    out ITargetMemoryAccess memory)
-		{
-			return GetAddress (location, out memory, IsByRef);
-		}
-
-		internal virtual TargetAddress GetAddress (ITargetLocation location,
-							   out ITargetMemoryAccess memory,
-							   bool isbyref)
-		{
-			TargetAddress address = location.Address;
-			StackFrame frame = location.Handle as StackFrame;
-			if ((frame == null) || (address.Address == 0))
-				throw new LocationInvalidException ();
-
-			memory = frame.TargetMemoryAccess;
-			if (isbyref) {
-				try {
-					address = memory.ReadAddress (address);
-				} catch {
-					throw new LocationInvalidException ();
-				}
-
-				if (address.Address == 0)
-					throw new LocationInvalidException ();
-			}
-
-			return address;
-		}
-
 		public virtual string Name {
 			get {
 				return type.Name;
@@ -155,12 +125,7 @@ namespace Mono.Debugger.Languages.CSharp
 			get;
 		}
 
-		public virtual MonoObject GetObject (ITargetLocation location)
-		{
-			return GetObject (location, IsByRef);
-		}
-
-		public abstract MonoObject GetObject (ITargetLocation location, bool isbyref);
+		public abstract MonoObject GetObject (MonoTargetLocation location);
 
 		public override string ToString ()
 		{

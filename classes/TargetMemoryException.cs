@@ -8,11 +8,11 @@ namespace Mono.Debugger
 			: base (message)
 		{ }
 
-		public TargetMemoryException (ITargetLocation address)
+		public TargetMemoryException (TargetAddress address)
 			: this (String.Format ("Cannot read target memory at address {0:x}", address))
 		{ }
 
-		public TargetMemoryException (ITargetLocation address, int size)
+		public TargetMemoryException (TargetAddress address, int size)
 			: this (String.Format ("Cannot read {1} bytes from target memory at address {0:x}",
 					       address, size))
 		{ }
@@ -24,7 +24,7 @@ namespace Mono.Debugger
 			: base ("The current target's memory is read-only")
 		{ }
 
-		public TargetMemoryReadOnlyException (ITargetLocation address)
+		public TargetMemoryReadOnlyException (TargetAddress address)
 			: base (String.Format ("Can't write to target memory at address 0x{0:x}: {1}",
 					       address, "the current target's memory is read-only"))
 		{ }

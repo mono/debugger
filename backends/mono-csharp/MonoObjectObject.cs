@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoObjectType type;
 
-		public MonoObjectObject (MonoObjectType type, ITargetLocation location, bool isbyref)
-			: base (type, location, isbyref)
+		public MonoObjectObject (MonoObjectType type, MonoTargetLocation location)
+			: base (type, location)
 		{
 			this.type = type;
 		}
@@ -34,13 +34,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoType CurrentType {
 			get {
-				ITargetMemoryAccess memory;
-				TargetAddress address = GetAddress (location, out memory);
-
 				try {
-					address = memory.ReadAddress (address);
-					address = memory.ReadAddress (address);
-
+					// location.Address resolves to the address of the MonoObject,
+					// dereferencing it once gives us the vtable, dereferencing it
+					// twice the class.
+					TargetAddress address;
+					address = location.Inferior.ReadAddress (location.Address);
+					address = location.Inferior.ReadAddress (address);
 					return type.Table.GetTypeFromClass (address.Address);
 				} catch {
 					throw new LocationInvalidException ();
@@ -59,21 +59,27 @@ namespace Mono.Debugger.Languages.CSharp
 			throw new InvalidOperationException ();
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation location)
 		{
 			MonoType current_type = CurrentType;
+
+			// If this is a reference type, then the `MonoObject *' already
+			// points to the boxed object itself.
+			// If it's a valuetype, then the boxed contents is immediately
+			// after the `MonoObject' header.
+
 			int offset = current_type.IsByRef ? 0 : type.Size;
+			MonoTargetLocation new_location = location.GetLocationAtOffset (offset, false);
 
-			ITargetLocation new_location = new RelativeTargetLocation (
-				location, address + offset);
-
-			return current_type.GetObject (new_location, false);
+			return current_type.GetObject (new_location);
 		}
 	}
 }

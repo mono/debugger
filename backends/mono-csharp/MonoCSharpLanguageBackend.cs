@@ -35,6 +35,13 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		// FIXME: Map mono/arch/x86/x86-codegen.h registers to
+		//        debugger/arch/IArchitectureI386.cs registers.
+		int[] register_map = { (int)I386Register.EAX, (int)I386Register.ECX,
+				       (int)I386Register.EDX, (int)I386Register.EBX,
+				       (int)I386Register.ESP, (int)I386Register.EBP,
+				       (int)I386Register.ESI, (int)I386Register.EDI };
+
 		public VariableInfo (TargetBinaryReader reader)
 		{
 			Index = reader.ReadInt32 ();
@@ -45,6 +52,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
+
+			if (Mode == AddressMode.Register)
+				Index = register_map [Index];
 		}
 
 		public override string ToString ()

@@ -7,26 +7,14 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoObject : ITargetObject
 	{
 		protected MonoType type;
-		protected ITargetLocation location;
+		protected MonoTargetLocation location;
 		bool is_valid;
-		bool isbyref;
 
-		public MonoObject (MonoType type, ITargetLocation location)
-			: this (type, location, type.IsByRef)
-		{ }
-
-		public MonoObject (MonoType type, ITargetLocation location, bool isbyref)
+		public MonoObject (MonoType type, MonoTargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
-			this.isbyref = isbyref;
 			is_valid = true;
-		}
-
-		public ITargetLocation Location {
-			get {
-				return location;
-			}
 		}
 
 		public ITargetType Type {
@@ -41,12 +29,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public bool IsByRef {
-			get {
-				return isbyref;
-			}
-		}
-
 		public abstract bool HasObject {
 			get;
 		}
@@ -56,18 +38,14 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!HasObject)
 					throw new InvalidOperationException ();
 
-				ITargetMemoryAccess memory;
-				TargetAddress address = GetAddress (location, out memory);
-
 				try {
 					ITargetMemoryReader reader;
 					if (type.HasFixedSize)
-						reader = memory.ReadMemory (address, type.Size);
+						reader = location.ReadMemory (type.Size);
 					else
-						reader = GetDynamicContents (
-							memory, address, MaximumDynamicSize);
+						reader = GetDynamicContents (location, MaximumDynamicSize);
 
-					return GetObject (reader, address);
+					return GetObject (reader, location);
 				} catch {
 					is_valid = false;
 					throw new LocationInvalidException ();
@@ -77,11 +55,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public virtual byte[] RawContents {
 			get {
-				ITargetMemoryAccess memory;
-				TargetAddress address = GetAddress (location, out memory);
-
 				try {
-					return memory.ReadBuffer (address, type.Size);
+					Console.WriteLine ("RAW CONTENTS: {0} {1}", location, type.Size);
+					return location.ReadBuffer (type.Size);
 				} catch {
 					is_valid = false;
 					throw new LocationInvalidException ();
@@ -100,13 +76,10 @@ namespace Mono.Debugger.Languages.CSharp
 				if (type.HasFixedSize)
 					throw new InvalidOperationException ();
 
-				ITargetMemoryAccess memory;
-				TargetAddress address = GetAddress (location, out memory);
-
 				try {
-					TargetAddress dynamic_address;
-					ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
-					return GetDynamicSize (reader, address, out dynamic_address);
+					MonoTargetLocation dynamic_location;
+					ITargetMemoryReader reader = location.ReadMemory (type.Size);
+					return GetDynamicSize (reader, location, out dynamic_location);
 				} catch {
 					is_valid = false;
 					throw new LocationInvalidException ();
@@ -119,46 +92,37 @@ namespace Mono.Debugger.Languages.CSharp
 			if (type.HasFixedSize)
 				throw new InvalidOperationException ();
 
-			ITargetMemoryAccess memory;
-			TargetAddress address = GetAddress (location, out memory);
-
 			try {
-				return GetDynamicContents (memory, address, max_size).Contents;
+				return GetDynamicContents (location, max_size).Contents;
 			} catch {
-					is_valid = false;
+				is_valid = false;
 				throw new LocationInvalidException ();
 			}
 		}
 
-		protected virtual ITargetMemoryReader GetDynamicContents (ITargetMemoryAccess memory,
-									  TargetAddress address,
+		protected virtual ITargetMemoryReader GetDynamicContents (MonoTargetLocation location,
 									  int max_size)
 		{
 			try {
-				TargetAddress dynamic_address;
-				ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
-				long size = GetDynamicSize (reader, address, out dynamic_address);
+				MonoTargetLocation dynamic_location;
+				ITargetMemoryReader reader = location.ReadMemory (type.Size);
+				long size = GetDynamicSize (reader, location, out dynamic_location);
 
 				if ((max_size > 0) && (size > (long) max_size))
 					size = max_size;
 
-				return memory.ReadMemory (dynamic_address, (int) size);
+				return dynamic_location.ReadMemory ((int) size);
 			} catch {
-					is_valid = false;
+				is_valid = false;
 				throw new LocationInvalidException ();
 			}
 		}
 
-		protected virtual TargetAddress GetAddress (ITargetLocation location,
-							    out ITargetMemoryAccess memory)
-		{
-			return type.GetAddress (location, out memory, IsByRef);
-		}
+		protected abstract long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location);
 
-		protected abstract long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address);
-
-		protected abstract object GetObject (ITargetMemoryReader reader, TargetAddress address);
+		protected abstract object GetObject (ITargetMemoryReader reader, MonoTargetLocation location);
 
 		public override string ToString ()
 		{

@@ -6,8 +6,8 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFundamentalObject : MonoObject
 	{
-		public MonoFundamentalObject (MonoType type, ITargetLocation location, bool isbyref)
-			: base (type, location, isbyref)
+		public MonoFundamentalObject (MonoType type, MonoTargetLocation location)
+			: base (type, location)
 		{ }
 
 		public override bool HasObject {
@@ -16,13 +16,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation locaction)
 		{
 			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
 			case TypeCode.Boolean:

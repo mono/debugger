@@ -1,5 +1,23 @@
 2002-10-17  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/ITargetLocation.cs, class/TargetLocation.cs: Removed.
+	* backends/class/RelativeTargetLocation.cs: Removed.
+	* backends/class/TargetStackLocation.cs: Removed.
+
+	* interfaces/ITargetObject.cs (ITargetObject.Location): Removed
+	this property, not all variables have an address.
+
+	* backends/mono-csharp/MonoTargetLocation.cs: New class.
+	* backends/mono-csharp/MonoStackLocation.cs: New class.
+	* backends/mono-csharp/MonoRegisterLocation.cs: New class.
+	* backends/mono-csharp/MonoRelativeTargetLocation.cs: New class.
+
+	* backends/mono-csharp/: Use the new MonoTargetLocation code.
+
+	* classes/StackFrame.cs (StackFrame.Level): New property.
+
+2002-10-17  Martin Baulig  <martin@gnome.org>
+
 	* interface/ILanguage.cs: Removed.
 
 2002-10-15  Miguel de Icaza  <miguel@ximian.com>

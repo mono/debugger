@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoClassType type;
 
-		public MonoClassObject (MonoClassType type, ITargetLocation location, bool isbyref)
-			: base (type, location, isbyref)
+		public MonoClassObject (MonoClassType type, MonoTargetLocation location)
+			: base (type, location)
 		{
 			this.type = type;
 		}
@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (type.ParentType == null)
 					return null;
 
-				return new MonoClassObject (type.ParentType, location, IsByRef);
+				return new MonoClassObject (type.ParentType, location);
 			}
 		}
 	}

@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoOpaqueType type;
 
-		public MonoOpaqueObject (MonoOpaqueType type, ITargetLocation location)
+		public MonoOpaqueObject (MonoOpaqueType type, MonoTargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -40,22 +40,22 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public byte[] GetDereferencedContents (int size)
 		{
-			ITargetMemoryAccess memory;
-			TargetAddress address = GetAddress (location, out memory);
 			try {
-				return memory.ReadBuffer (address, size);
+				return location.ReadBuffer (size);
 			} catch {
 				throw new LocationInvalidException ();
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

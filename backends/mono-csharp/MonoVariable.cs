@@ -70,12 +70,20 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetObject GetObject (StackFrame frame)
 		{
-			if (info.Mode != VariableInfo.AddressMode.Stack)
+			MonoTargetLocation location;
+			Console.WriteLine ("GET OBJECT: {0} {1} {2}", frame.TargetAddress, type, info);
+			if (info.Mode == VariableInfo.AddressMode.Register)
+				if (frame.Level != 0)
+					throw new LocationInvalidException ();
+				location = new MonoRegisterLocation (
+					backend, frame, type.IsByRef, info.Index, info.Offset,
+					start_scope, end_scope);
+			else if (info.Mode == VariableInfo.AddressMode.Stack)
+				location = new MonoStackLocation (
+					backend, frame, type.IsByRef, is_local, info.Offset, 0,
+					start_scope, end_scope);
+			else
 				throw new LocationInvalidException ();
-
-			ITargetLocation location = new TargetStackLocation (
-				backend, frame, is_local, info.Offset,
-				start_scope, end_scope);
 
 			return type.GetObject (location);
 		}

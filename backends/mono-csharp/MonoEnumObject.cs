@@ -8,9 +8,9 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		MonoObject element_object;
 
-		public MonoEnumObject (MonoEnumType type, ITargetLocation location, MonoObject element_obj,
-				       bool isbyref)
-			: base (type, location, isbyref)
+		public MonoEnumObject (MonoEnumType type, MonoTargetLocation location,
+				       MonoObject element_obj)
+			: base (type, location)
 		{
 			this.element_object = element_obj;
 		}
@@ -21,13 +21,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation location)
 		{
 			return Enum.ToObject ((Type) type.TypeHandle, element_object.Object);
 		}

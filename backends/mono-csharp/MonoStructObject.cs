@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoStructType type;
 
-		public MonoStructObject (MonoStructType type, ITargetLocation location, bool isbyref)
-			: base (type, location, isbyref)
+		public MonoStructObject (MonoStructType type, MonoTargetLocation location)
+			: base (type, location)
 		{
 			this.type = type;
 		}
@@ -52,13 +52,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -111,9 +111,9 @@ namespace Mono.Debugger.Architecture
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 
-					current_frame = new StackFrame (this, address, null, source, method);
+					current_frame = new StackFrame (this, address, null, 0, source, method);
 				} else
-					current_frame = new StackFrame (this, address, null);
+					current_frame = new StackFrame (this, address, null, 0);
 
 				has_current_frame = true;
 				return current_frame;
@@ -140,10 +140,10 @@ namespace Mono.Debugger.Architecture
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 					backtrace [i] = new StackFrame (
-						this, address, frames [i], source, method);
+						this, address, frames [i], i, source, method);
 				} else
 					backtrace [i] = new StackFrame (
-						this, address, frames [i]);
+						this, address, frames [i], i);
 			}
 
 			has_backtrace = true;

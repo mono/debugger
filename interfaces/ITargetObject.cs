@@ -22,13 +22,6 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   The object's location.
-		// </summary>
-		ITargetLocation Location {
-			get;
-		}
-
-		// <summary>
 		//   If false, then the object can not be accessed because its location is
 		//   invalid or the object is corrupted.
 		// </summary>

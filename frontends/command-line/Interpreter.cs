@@ -217,8 +217,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					try {
 						ITargetObject obj = var.GetObject (backend.CurrentFrame);
 						print_object (obj);
-					} catch (LocationInvalidException) {
-						// Do nothing
+					} catch (Exception e) {
+						Console.WriteLine ("CAN'T PRINT OBJECT: {0}", e);
 					}
 				}
 				break;

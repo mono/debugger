@@ -97,10 +97,10 @@ namespace Mono.Debugger.Backends
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 					current_backtrace [i] = new StackFrame (
-						inferior, address, frames [i], source, method);
+						inferior, address, frames [i], i, source, method);
 				} else
 					current_backtrace [i] = new StackFrame (
-						inferior, address, frames [i]);
+						inferior, address, frames [i], i);
 			}
 
 			return current_backtrace;
@@ -349,10 +349,10 @@ namespace Mono.Debugger.Backends
 				ILanguageBackend language = current_method.Module.Language;
 
 				current_frame = new StackFrame (
-					inferior, address, frames [0], source, current_method);
+					inferior, address, frames [0], 0, source, current_method);
 			} else
 				current_frame = new StackFrame (
-					inferior, address, frames [0]);
+					inferior, address, frames [0], 0);
 
 			must_send_update = true;
 			return current_frame;
@@ -411,10 +411,10 @@ namespace Mono.Debugger.Backends
 				}
 
 				current_frame = new StackFrame (
-					inferior, address, frames [0], source, current_method);
+					inferior, address, frames [0], 0, source, current_method);
 			} else
 				current_frame = new StackFrame (
-					inferior, address, frames [0]);
+					inferior, address, frames [0], 0);
 
 			current_operation = StepOperation.None;
 

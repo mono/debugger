@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoStringType type;
 
-		public MonoStringObject (MonoStringType type, ITargetLocation location, bool isbyref)
-			: base (type, location, isbyref)
+		public MonoStringObject (MonoStringType type, MonoTargetLocation location)
+			: base (type, location)
 		{
 			this.type = type;
 		}
@@ -26,16 +26,23 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
+			Console.WriteLine ("GET DYNAMIC SIZE: {0} {1}", type, location);
 			reader.Offset = type.LengthOffset;
-			dynamic_address = address + type.DataOffset;
-			return reader.BinaryReader.ReadInteger (type.LengthSize) * 2;
+			dynamic_location = location.GetLocationAtOffset (type.DataOffset, false);
+			long length = reader.BinaryReader.ReadInteger (type.LengthSize) * 2;
+			Console.WriteLine ("STRING SIZE: {0} {1}", dynamic_location, length);
+			return length;
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation location)
 		{
+			Console.WriteLine ("GET STRING CONTENTS: {0}", location);
+
 			int length = (int) reader.Size / 2;
 
 			char[] retval = new char [length];

@@ -14,20 +14,29 @@ namespace Mono.Debugger
 		ITargetMemoryAccess memory;
 		SourceLocation source;
 		object handle;
+		int level;
 
 		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle,
-				   SourceLocation source, IMethod method)
-			: this (memory, address, handle)
+				   int level, SourceLocation source, IMethod method)
+			: this (memory, address, handle, level)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle)
+		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle,
+				   int level)
 		{
 			this.memory = memory;
 			this.address = address;
 			this.handle = handle;
+			this.level = level;
+		}
+
+		public int Level {
+			get {
+				return level;
+			}
 		}
 
 		public bool IsValid {

@@ -14,18 +14,15 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly int base_index;
 		protected readonly MonoArrayBounds[] bounds;
 
-		public MonoArrayObject (MonoArrayType type, ITargetLocation location, bool isbyref)
-			: base (type, location, isbyref)
+		public MonoArrayObject (MonoArrayType type, MonoTargetLocation location)
+			: base (type, location)
 		{
 			this.type = type;
 			this.dimension = 0;
 			this.rank = type.Rank;
 
-			ITargetMemoryAccess memory;
-			TargetAddress address = GetAddress (location, out memory);
-
 			try {
-				ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
+				ITargetMemoryReader reader = location.ReadMemory (type.Size);
 
 				reader.Offset = type.LengthOffset;
 				length = (int) reader.BinaryReader.ReadInteger (type.LengthSize);
@@ -35,7 +32,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				reader.Offset = type.BoundsOffset;
 				TargetAddress bounds_address = reader.ReadAddress ();
-				ITargetMemoryReader breader = memory.ReadMemory (
+				ITargetMemoryReader breader = reader.TargetMemoryAccess.ReadMemory (
 					bounds_address, type.BoundsSize * rank);
 
 				bounds = new MonoArrayBounds [rank];
@@ -54,7 +51,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public MonoArrayObject (MonoArrayObject array, ITargetLocation location, int index)
+		public MonoArrayObject (MonoArrayObject array, MonoTargetLocation location, int index)
 			: base (array.type.SubArrayType, location)
 		{
 			this.type = array.type.SubArrayType;
@@ -90,30 +87,28 @@ namespace Mono.Debugger.Languages.CSharp
 				index -= LowerBound;
 
 				if (dimension + 1 >= rank) {
-					ITargetMemoryAccess memory;
-					TargetAddress address = GetAddress (location, out memory);
-
-					TargetAddress dynamic_address;
+					ITargetMemoryReader reader;
+					MonoTargetLocation dynamic_location;
 					try {
-						ITargetMemoryReader reader = memory.ReadMemory (
-							address, type.Size);
-						GetDynamicSize (reader, address, out dynamic_address);
+						reader = location.ReadMemory (type.Size);
+						GetDynamicSize (reader, location, out dynamic_location);
 					} catch {
 						throw new LocationInvalidException ();
 					}
 
+					int offset;
 					if (type.ElementType.IsByRef)
-						dynamic_address += index * memory.TargetAddressSize;
+						offset = index * reader.TargetAddressSize;
 					else if (type.ElementType.HasFixedSize)
-						dynamic_address += index * type.ElementType.Size;
+						offset = index * type.ElementType.Size;
 					else
 						throw new InvalidOperationException ();
 
-					ITargetLocation new_location = new RelativeTargetLocation (
-						location, dynamic_address);
+					MonoTargetLocation new_location =
+						dynamic_location.GetLocationAtOffset (
+							offset, type.ElementType.IsByRef);
 
-					return type.ElementType.GetObject (
-						new_location, type.ElementType.IsByRef);
+					return type.ElementType.GetObject (new_location);
 				}
 
 				for (int i = dimension + 1; i < rank; i++)
@@ -135,7 +130,8 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
+		protected override object GetObject (ITargetMemoryReader reader,
+						     MonoTargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -158,11 +154,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return length;
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,
-							out TargetAddress dynamic_address)
+		protected override long GetDynamicSize (ITargetMemoryReader reader,
+							MonoTargetLocation location,
+							out MonoTargetLocation dynamic_location)
 		{
 			int element_size = GetElementSize (reader);
-			dynamic_address = address + type.DataOffset + element_size * base_index;
+			dynamic_location = location.GetLocationAtOffset (
+				type.DataOffset + element_size * base_index, false);
 			return element_size * GetLength ();
 		}
 
