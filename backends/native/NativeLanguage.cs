@@ -8,13 +8,13 @@ namespace Mono.Debugger.Languages.Native
 	{
 		NativeFundamentalType integer_type;
 		NativeFundamentalType long_type;
-		NativeOpaqueType pointer_type;
+		NativePointerType pointer_type;
 
 		public NativeLanguage ()
 		{
 			integer_type = new NativeFundamentalType ("int", typeof (int), Marshal.SizeOf (typeof (int)));
 			long_type = new NativeFundamentalType ("long", typeof (long), Marshal.SizeOf (typeof (long)));
-			pointer_type = new NativeOpaqueType ("pointer", 0);
+			pointer_type = new NativePointerType ("pointer");
 		}
 
 		public string Name {

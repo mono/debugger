@@ -3,10 +3,10 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeOpaqueType : NativeType, ITargetPointerType
+	internal class NativeOpaqueType : NativeType
 	{
 		public NativeOpaqueType (string name, int size)
-			: base (name, TargetObjectKind.Unknown, size)
+			: base (name, TargetObjectKind.Opaque, size)
 		{ }
 
 		public override bool IsByRef {
@@ -15,27 +15,9 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public bool IsTypesafe {
-			get {
-				return false;
-			}
-		}
-
-		public bool HasStaticType {
-			get {
-				return false;
-			}
-		}
-
-		public ITargetType StaticType {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
 		public override NativeObject GetObject (TargetLocation location)
 		{
-			throw new InvalidOperationException ();
+			return new NativeOpaqueObject (this, location);
 		}
 	}
 }
