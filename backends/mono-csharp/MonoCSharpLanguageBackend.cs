@@ -145,6 +145,9 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
+	// <summary>
+	//   Holds all the symbol tables from the target's JIT.
+	// </summary>
 	internal class MonoSymbolFileTable
 	{
 		public const int  DynamicVersion = 14;
@@ -209,6 +212,9 @@ namespace Mono.Debugger.Languages.CSharp
 			modules = new Hashtable ();
 		}
 
+		// <summary>
+		//   Read all symbol tables from the JIT.
+		// </summary>
 		internal void Reload (TargetAddress address)
 		{
 			check_inferior ();
@@ -577,6 +583,9 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
+	// <summary>
+	//   A single Assembly's symbol table.
+	// </summary>
 	internal class MonoSymbolTableReader
 	{
 		MethodEntry[] Methods;
@@ -713,6 +722,10 @@ namespace Mono.Debugger.Languages.CSharp
 			return String.Format ("{0} ({1}:{2})", GetType (), ImageFile, SymbolFile);
 		}
 
+		// <remarks>
+		//   Each time we reload the JIT's symbol tables, add the addresses of all
+		//   methods which have been JITed since the last update.
+		// </remarks>
 		bool update_ranges (ref TargetAddress address)
 		{
 			TargetAddress range_table = memory.ReadAddress (address);
@@ -738,6 +751,9 @@ namespace Mono.Debugger.Languages.CSharp
 			return true;
 		}
 
+		// <summary>
+		//   Add all types which have been created in the meantime.
+		// </summary>
 		bool update_types (ref TargetAddress address)
 		{
 			TargetAddress type_table = memory.ReadAddress (address);
@@ -929,10 +945,23 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		// <remarks>
+		//   Wrapper around MethodSourceEntry; holds a reference to the
+		//   MonoSourceMethod while the method is loaded.  We only create the
+		//   MonoSourceMethod when the method is actually used since it consumes a
+		//   lot of memory and also takes some time to create it.
+		// </remarks>
 		private class MonoMethodSourceEntry
 		{
+			// <summary>
+			//   This is read from the symbol file.
+			// </summary>
 			public readonly MethodSourceEntry Entry;
 			public readonly MonoSourceInfo SourceInfo;
+
+			// <summary>
+			//   The method name is read from the JIT.
+			// </summary>
 			public readonly string Name;
 
 			public MonoMethodSourceEntry (MonoSymbolTableReader reader, MethodSourceEntry entry,
