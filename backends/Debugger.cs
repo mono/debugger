@@ -198,11 +198,6 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		void method_loaded (SourceMethod method, object user_data)
-		{
-			Console.WriteLine ("METHOD LOADED: {0}", method);
-		}
-
 		public void UpdateSymbolTable ()
 		{ }
 

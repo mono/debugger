@@ -147,13 +147,14 @@ namespace Mono.Debugger
 		MonoThreadManager mono_manager;
 		TargetAddress main_method = TargetAddress.Null;
 
-		internal void Initialize (TargetAddress frame)
+		internal void Initialize (Inferior inferior)
 		{
-			if (frame != main_method)
+			if (inferior.CurrentFrame != main_method)
 				throw new InternalError ("Target stopped unexpectedly at {0}, " +
-							 "but main is at {1}", frame, main_method);
+							 "but main is at {1}", inferior.CurrentFrame, main_method);
 
 			backend.ReachedMain ();
+			inferior.UpdateModules ();
 		}
 
 		internal void ReachedMain ()
@@ -615,11 +616,6 @@ namespace Mono.Debugger
 				lock (this) {
 					if (current_event != null)
 						throw new InternalError ();
-
-					if (event_engine.SendEvent (status)) {
-						wait_event.Set ();
-						return;
-					}
 
 					current_event = event_engine;
 					current_event_status = status;

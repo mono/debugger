@@ -80,7 +80,6 @@ namespace Mono.Debugger.Backends
 			PID = inferior.PID;
 
 			operation_completed_event = new ManualResetEvent (false);
-			wait_event = new AutoResetEvent (false);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
@@ -143,22 +142,20 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.EventLoop,
 				      "{0} received event {1} ({2:x})",
 				      this, cevent, status);
+
+			if (stepping_over_breakpoint > 0) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} stepped over breakpoint {1}",
+					      this, stepping_over_breakpoint);
+
+				inferior.EnableBreakpoint (stepping_over_breakpoint);
+				manager.ReleaseGlobalThreadLock (this);
+				stepping_over_breakpoint = 0;
+			}
+
 			if (manager.HandleChildEvent (inferior, cevent))
 				return;
 			ProcessEvent (cevent);
-		}
-
-		public bool SendEvent (long status)
-		{
-			lock (this) {
-				if (!wait_requested)
-					return false;
-
-				wait_requested = false;
-				wait_result = status;
-				wait_event.Set ();
-				return true;
-			}
 		}
 
 		void send_frame_event (StackFrame frame, int signal)
@@ -432,6 +429,9 @@ namespace Mono.Debugger.Backends
 						// SingleSteppingEngine and not in any other thread's.
 						message = Inferior.ChildEventType.CHILD_STOPPED;
 						arg = 0;
+
+						inferior.RemoveBreakpoint (temp_breakpoint_id);
+						temp_breakpoint_id = 0;
 					}
 				}
 			}
@@ -455,9 +455,18 @@ namespace Mono.Debugger.Backends
 					do_continue ();
 					return;
 				}
+
+				step_operation_finished ();
 			}
 
 			if (temp_breakpoint_id != 0) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} hit temporary breakpoint at {1}",
+					      this, inferior.CurrentFrame);
+
+				inferior.Continue (); // do_continue ();
+				return;
+
 				inferior.RemoveBreakpoint (temp_breakpoint_id);
 				temp_breakpoint_id = 0;
 			}
@@ -473,7 +482,6 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
-				step_operation_finished ();
 				break;
 
 			case Inferior.ChildEventType.CHILD_SIGNALED:
@@ -522,7 +530,7 @@ namespace Mono.Debugger.Backends
 			if (current_operation != null) {
 				if (current_operation.Type == OperationType.Initialize) {
 					if (is_main)
-						manager.Initialize (inferior.CurrentFrame);
+						manager.Initialize (inferior);
 				} else if (!DoStep (false))
 					return;
 			}
@@ -751,9 +759,7 @@ namespace Mono.Debugger.Backends
 		public readonly int PID;
 		public readonly int TID;
 
-		AutoResetEvent wait_event;
-		bool wait_requested;
-		long wait_result;
+		int stepping_over_breakpoint;
 
 		internal DaemonEventHandler DaemonEventHandler;
 		internal bool IsDaemon;
@@ -1124,26 +1130,16 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {0}",
-				      this, index);
+				      "{0} stepping over {3}breakpoint {1} at {2}",
+				      this, index, inferior.CurrentFrame,
+				      current ? "current " : "");
 
 			manager.AcquireGlobalThreadLock (this);
 			inferior.DisableBreakpoint (index);
 
-			wait_requested = true;
+			stepping_over_breakpoint = index;
 			inferior.Step ();
-			wait_event.WaitOne ();
 
-			long status = wait_result;
-
-			Report.Debug (DebugFlags.SSE,
-				      "{0} got event {1:x} - reenabling breakpoint {2}",
-				      this, status, index);
-
-			inferior.EnableBreakpoint (index);
-			manager.ReleaseGlobalThreadLock (this);
-
-			ProcessEvent (status);
 			return true;
 		}
 
@@ -1344,6 +1340,10 @@ namespace Mono.Debugger.Backends
 			// Check whether this is a call instruction.
 			int insn_size;
 			TargetAddress call = arch.GetCallTarget (inferior, address, out insn_size);
+
+			Report.Debug (DebugFlags.SSE, "{0} do_next: {1} {2}", this,
+				      address, call);
+
 			// Step one instruction unless this is a call
 			if (call.IsNull) {
 				do_step ();

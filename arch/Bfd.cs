@@ -24,6 +24,7 @@ namespace Mono.Debugger.Architecture
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
+		int dynlink_breakpoint_id;
 		Hashtable symbols;
 		BfdSymbolTable simple_symtab;
 		DwarfReader dwarf;
@@ -362,13 +363,13 @@ namespace Mono.Debugger.Architecture
 			if (reader.ReadInteger () != 0)
 				return false;
 
-#if FALSE
-			if (inferior.State != TargetState.CORE_FILE) {
-				dynlink_breakpoint_id = backend.SingleSteppingEngine.InsertBreakpoint (
-					dynlink_breakpoint, new BreakpointHitHandler (dynlink_handler),
-					false, null);
-			}
-#endif
+			SimpleBreakpoint breakpoint = new SimpleBreakpoint (
+				"dynlink", null,
+				new BreakpointCheckHandler (dynlink_handler), null,
+				false, inferior);
+
+			dynlink_breakpoint_id = inferior.BreakpointManager.InsertBreakpoint (
+				inferior, breakpoint, dynlink_breakpoint);
 
 			has_shlib_info = true;
 			return true;

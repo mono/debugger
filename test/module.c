@@ -6,7 +6,7 @@ int
 main (void)
 {
 	void *handle;
-	void (*ptr) (void);
+	void (*ptr) (char *, int);
 
 	handle = dlopen ("/home/martin/monocvs/debugger/test/libfoo.so", RTLD_NOW | RTLD_GLOBAL);
 	fprintf (stderr, "LOAD: %p\n", handle);
@@ -16,6 +16,6 @@ main (void)
 	}
 	ptr = dlsym (handle, "hello");
 	fprintf (stderr, "PTR: %p\n", ptr);
-	ptr ();
+	ptr ("Hello from module", 9);
 	exit (0);
 }
