@@ -6,6 +6,7 @@ namespace Mono.Debugger.Languages.Native
 	internal abstract class NativeType : ITargetType
 	{
 		protected readonly TargetObjectKind kind;
+		protected object type_handle;
 
 		string name;
 		bool has_fixed_size;
@@ -23,6 +24,8 @@ namespace Mono.Debugger.Languages.Native
 			this.has_fixed_size = has_fixed_size;
 		}
 
+		public static readonly NativeType VoidType = new NativeOpaqueType ("void", 0);
+
 		public TargetObjectKind Kind {
 			get {
 				return kind;
@@ -35,9 +38,9 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public virtual object TypeHandle {
+		public object TypeHandle {
 			get {
-				return null;
+				return type_handle;
 			}
 		}
 
@@ -61,8 +64,8 @@ namespace Mono.Debugger.Languages.Native
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} [{1}:{2}:{3}]", GetType (),
-					      IsByRef, HasFixedSize, Size);
+			return String.Format ("{0} [{1}:{2}:{3}:{4}]", GetType (),
+					      Name, IsByRef, HasFixedSize, Size);
 		}
 	}
 }

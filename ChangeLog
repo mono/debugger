@@ -1,5 +1,13 @@
 2003-02-26  Martin Baulig  <martin@ximian.com>
 
+	* backends/native/NativeStringType.cs: New file.
+	* backends/native/NativeStringObject.cs: New file.
+
+	* arch/DwarfReader.cs: Cleaned up the API a bit and added support
+	for strings.
+
+2003-02-26  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Started to add support for native types to
 	access parameters and local variables in native methods.
 

@@ -2,14 +2,14 @@
 #include <stdlib.h>
 
 void
-hello (int a, long b)
+hello (const char *message, int a, long b)
 {
-	printf ("Hello World: %d - %ld!", a, b);
+	printf ("Hello World: %s - %d - %ld!", message, a, b);
 }
 
 int
 main (void)
 {
-	hello (5, 8L);
+	hello ("Boston", 5, 8L);
 	return 0;
 }
