@@ -105,6 +105,15 @@ When debugging managed applications, the single stepping engine can also
     machine instruction, they'll be invisible for you like system
     calls.
 
+  - insert a breakpoint on a method which is not yet JITed.
+
+  - call a method in the target (but this is still very
+    preliminar; due to the lacking expression parser we
+    can't create the parameters yet).
+
+    However, this is already used to call a property's getter and
+    Object.ToString().
+
 * Breakpoints
 
 Breakpoints can be used in managed and unmanaged methods.  You can
@@ -148,6 +157,10 @@ method.
 The debugger has a CPU view to see a disassembly of the current method
 and view/modify the processor registers.  There's also a hex editor to
 view/modify the target's memory.
+
+* Hex Editor
+
+The debugger has a hex editor to inspect or modify the target's memory.
 
 
 October 18th, 2002

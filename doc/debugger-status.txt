@@ -84,3 +84,12 @@ Modules:
   time a new shared library gets loaded, we scan its symbol file to find out whether it
   has a method with that name.
 
+General:
+--------
+
+* We can't debug multi-threaded applications yet.   There's also a bug which may cause
+  problems if the target fork()s a child and that child dies.
+
+* This file should go away, we should use bugzilla to keep track of bugs and outstanding
+  tasks, but there's no bugzilla product for the debugger yet.
+
