@@ -122,7 +122,7 @@ namespace Mono.Debugger.Backends
 		///   Sets the signal to be sent to the target the next time
 		///   it is resumed.
 		/// </summary>
-		void SetSignal (int signal);
+		void SetSignal (int signal, bool send_it);
 
 		/// <remarks>
 		///   The following two methods are more or less private.

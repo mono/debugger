@@ -1,4 +1,5 @@
 #include <mono-debugger-readline.h>
+#include <signal.h>
 
 static gboolean in_readline = FALSE;
 static GIOChannel *readline_channel = NULL;
@@ -22,9 +23,23 @@ getc_func (FILE *dummy)
 	return ch;
 }
 
-void
-mono_debugger_readline_init ()
+static void
+sigint_handler (int dummy)
 {
+	/* do nothing. */
+}
+
+void
+mono_debugger_readline_init (void)
+{
+	struct sigaction sa;
+
+	sa.sa_handler = sigint_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+
+	sigaction (SIGINT, &sa, NULL);
+
 	rl_getc_function = getc_func;
 }
 

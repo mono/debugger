@@ -31,6 +31,8 @@ namespace Mono.Debugger
 		TargetAddress last_thread_event = TargetAddress.Null;
 		bool initialized = false;
 
+		const int Signal_SIGINT			= 2;
+
 		const int PThread_Signal_Debug		= 34;
 		const int PThread_Signal_Restart	= 32;
 
@@ -88,6 +90,12 @@ namespace Mono.Debugger
 				return true;
 			}
 
+			if (signal == Signal_SIGINT) {
+				process.Inferior.SetSignal (0, false);
+				action = true;
+				return true;
+			}
+
 			if (signal != PThread_Signal_Debug) {
 				action = true;
 				return false;
@@ -95,7 +103,7 @@ namespace Mono.Debugger
 
 			reload_threads (process.Inferior);
 
-			process.Inferior.SetSignal (PThread_Signal_Restart);
+			process.Inferior.SetSignal (PThread_Signal_Restart, false);
 			action = false;
 			return true;
 		}
@@ -126,9 +134,10 @@ namespace Mono.Debugger
 				thread_hash.Add (pid, new_process);
 
 				if (index == 1) {
-					new_process.Inferior.SetSignal (PThread_Signal_Restart);
+					new_process.Inferior.SetSignal (PThread_Signal_Restart, false);
 					new_process.SingleSteppingEngine.Continue ();
-				}
+				} else
+					new_process.Inferior.SetSignal (PThread_Signal_Restart, true);
 
 				OnThreadCreatedEvent (new_process);
 			}

@@ -182,43 +182,6 @@ set_fp_registers (InferiorHandle *handle, struct user_i387_struct *regs)
 }
 
 static void
-setup_inferior (InferiorHandle *handle, gboolean do_wait)
-{
-	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
-	int ret, status;
-
-	ret = waitpid (handle->pid, &status, WUNTRACED | __WALL | __WCLONE);
-
-	handle->mem_fd = open64 (filename, O_RDONLY);
-
-	if (handle->mem_fd < 0)
-		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
-
-	g_free (filename);
-
-	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get registers");
-	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get fp registers");
-}
-
-static InferiorHandle *
-server_ptrace_attach (int pid)
-{
-	InferiorHandle *handle;
-
-	if (ptrace (PTRACE_ATTACH, pid))
-		g_error (G_STRLOC ": Can't attach to process %d: %s", pid, g_strerror (errno));
-
-	handle = g_new0 (InferiorHandle, 1);
-	handle->pid = pid;
-
-	setup_inferior (handle, TRUE);
-
-	return handle;
-}
-
-static void
 server_ptrace_finalize (InferiorHandle *handle)
 {
 	if (handle->pid)
@@ -739,7 +702,7 @@ server_ptrace_remove_breakpoint (InferiorHandle *handle, guint32 bhandle)
 }
 
 static ServerCommandError
-server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, int idx, guint64 address, guint32 *bhandle)
+server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, guint32 idx, guint64 address, guint32 *bhandle)
 {
 	BreakpointInfo *breakpoint;
 	ServerCommandError result;
@@ -859,35 +822,6 @@ server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 *
 	return COMMAND_ERROR_NONE;	
 }
 
-static void
-child_setup_func (gpointer data)
-{
-	if (ptrace (PTRACE_TRACEME, getpid ()))
-		g_error (G_STRLOC ": Can't PTRACE_TRACEME: %s", g_strerror (errno));
-}
-
-static InferiorHandle *
-server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp, gboolean search_path,
-		     gint *child_pid, gint *standard_input, gint *standard_output, gint *standard_error,
-		     GError **error)
-{
-	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
-	InferiorHandle *handle;
-
-	if (search_path)
-		flags |= G_SPAWN_SEARCH_PATH;
-
-	if (!g_spawn_async (working_directory, argv, envp, flags, child_setup_func, NULL, child_pid, error))
-		return NULL;
-
-	handle = g_new0 (InferiorHandle, 1);
-	handle->pid = *child_pid;
-
-	setup_inferior (handle, TRUE);
-
-	return handle;
-}
-
 static ServerCommandError
 server_ptrace_get_target_info (InferiorHandle *handle, guint32 *target_int_size,
 			       guint32 *target_long_size, guint32 *target_address_size)
@@ -946,15 +880,15 @@ do_dispatch (InferiorHandle *handle, int status, ServerStatusMessageType *type, 
 	return FALSE;
 }
 
-static void
-server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint64 *arg,
-		    guint64 *data1, guint64 *data2)
+static int
+do_wait (InferiorHandle *handle)
 {
 	int ret, status = 0;
 	sigset_t mask, oldmask;
 
 	sigemptyset (&mask);
 	sigaddset (&mask, SIGCHLD);
+	sigaddset (&mask, SIGINT);
 
 	sigprocmask (SIG_BLOCK, &mask, &oldmask);
 
@@ -962,17 +896,102 @@ server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint
 	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
 	if (ret < 0) {
 		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
+		status = -1;
 		goto out;
 	} else if (ret) {
-		if (do_dispatch (handle, status, type, arg, data1, data2))
-			goto out;
+		goto out;
 	}
 
 	sigsuspend (&oldmask);
 	goto again;
 
  out:
-	sigprocmask (SIG_UNBLOCK, &mask, NULL);
+	sigprocmask (SIG_SETMASK, &oldmask, NULL);
+	return status;
+}
+
+static void
+server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint64 *arg,
+		    guint64 *data1, guint64 *data2)
+{
+	int status;
+
+	do {
+		status = do_wait (handle);
+		if (status == -1)
+			return;
+
+	} while (!do_dispatch (handle, status, type, arg, data1, data2));
+}
+
+static void
+setup_inferior (InferiorHandle *handle)
+{
+	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
+	sigset_t mask;
+
+	sigemptyset (&mask);
+	sigaddset (&mask, SIGINT);
+	pthread_sigmask (SIG_BLOCK, &mask, NULL);
+
+	do_wait (handle);
+
+	handle->mem_fd = open64 (filename, O_RDONLY);
+
+	if (handle->mem_fd < 0)
+		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
+
+	g_free (filename);
+
+	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get registers");
+	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get fp registers");
+}
+
+static void
+child_setup_func (gpointer data)
+{
+	if (ptrace (PTRACE_TRACEME, getpid ()))
+		g_error (G_STRLOC ": Can't PTRACE_TRACEME: %s", g_strerror (errno));
+}
+
+static InferiorHandle *
+server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp, gboolean search_path,
+		     gint *child_pid, gint *standard_input, gint *standard_output, gint *standard_error,
+		     GError **error)
+{
+	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
+	InferiorHandle *handle;
+
+	if (search_path)
+		flags |= G_SPAWN_SEARCH_PATH;
+
+	if (!g_spawn_async (working_directory, argv, envp, flags, child_setup_func, NULL, child_pid, error))
+		return NULL;
+
+	handle = g_new0 (InferiorHandle, 1);
+	handle->pid = *child_pid;
+
+	setup_inferior (handle);
+
+	return handle;
+}
+
+static InferiorHandle *
+server_ptrace_attach (int pid)
+{
+	InferiorHandle *handle;
+
+	if (ptrace (PTRACE_ATTACH, pid))
+		g_error (G_STRLOC ": Can't attach to process %d: %s", pid, g_strerror (errno));
+
+	handle = g_new0 (InferiorHandle, 1);
+	handle->pid = pid;
+
+	setup_inferior (handle);
+
+	return handle;
 }
 
 static ServerCommandError
@@ -1239,9 +1258,12 @@ server_ptrace_stop (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_set_signal (InferiorHandle *handle, guint32 sig)
+server_ptrace_set_signal (InferiorHandle *handle, guint32 sig, guint32 send_it)
 {
-	handle->last_signal = sig;
+	if (send_it)
+		kill (handle->pid, sig);
+	else
+		handle->last_signal = sig;
 	return COMMAND_ERROR_NONE;
 }
 

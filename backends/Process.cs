@@ -311,7 +311,7 @@ namespace Mono.Debugger
 		public void ClearSignal ()
 		{
 			check_stopped ();
-			inferior.SetSignal (0);
+			inferior.SetSignal (0, false);
 		}
 
 		public void Finish ()
