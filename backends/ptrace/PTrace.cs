@@ -547,13 +547,13 @@ namespace Mono.Debugger.Backends
 		void inferior_output (string line)
 		{
 			if (TargetOutput != null)
-				TargetOutput (line);
+				TargetOutput (false, line);
 		}
 
 		void inferior_errors (string line)
 		{
-			if (TargetError != null)
-				TargetError (line);
+			if (TargetOutput != null)
+				TargetOutput (true, line);
 		}
 
 		void debugger_output (string line)
@@ -869,8 +869,7 @@ namespace Mono.Debugger.Backends
 		//
 
 		public event TargetOutputHandler TargetOutput;
-		public event TargetOutputHandler TargetError;
-		public event TargetOutputHandler DebuggerOutput;
+		public event DebuggerOutputHandler DebuggerOutput;
 		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 

@@ -196,6 +196,19 @@ namespace Mono.Debugger.Backends
 		}
 		
 		event ChildEventHandler ChildEvent;
+
+		// <summary>
+		//   This event is emitted when the target we're currently debugging has sent any
+		//   output to stdout or stderr.
+		// </summary>
+		event TargetOutputHandler TargetOutput;
+
+		// <summary>
+		//   This event is emitted by the debugger to write diagnostic messages and errors.
+		// </summary>
+		event DebuggerOutputHandler DebuggerOutput;
+
+		event DebuggerErrorHandler DebuggerError;
 	}
 }
 

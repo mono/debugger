@@ -334,7 +334,7 @@ namespace Mono.Debugger.GUI
 		{
 			this.process = process;
 
-			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
+			process.DebuggerOutput += new DebuggerOutputHandler (DebuggerOutput);
 			process.DebuggerError += new DebuggerErrorHandler (DebuggerError);
 
 			this.manager.MainProcessCreated (process);

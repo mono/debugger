@@ -56,8 +56,7 @@ namespace Mono.Debugger
 
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
-			inferior.TargetError += new TargetOutputHandler (inferior_errors);
-			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			inferior.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			if ((type == ProcessType.Normal) && (pid == -1) && !start.IsNative)
@@ -208,10 +207,10 @@ namespace Mono.Debugger
 				StateChanged (new_state, arg);
 		}
 
-		public event TargetOutputHandler TargetOutput;
-		public event TargetOutputHandler TargetError;
-		public event TargetOutputHandler DebuggerOutput;
-		public event DebuggerErrorHandler DebuggerError;
+		internal event TargetOutputHandler TargetOutput;
+		internal event DebuggerOutputHandler DebuggerOutput;
+		internal event DebuggerErrorHandler DebuggerError;
+
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
 		public event ProcessExitedHandler ProcessExitedEvent;
@@ -221,16 +220,10 @@ namespace Mono.Debugger
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 
-		void inferior_output (string line)
+		void inferior_output (bool is_stderr, string line)
 		{
 			if (TargetOutput != null)
-				TargetOutput (line);
-		}
-
-		void inferior_errors (string line)
-		{
-			if (TargetError != null)
-				TargetError (line);
+				TargetOutput (is_stderr, line);
 		}
 
 		void debugger_output (string line)

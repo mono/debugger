@@ -1,5 +1,21 @@
 2003-04-10  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetNotification.cs
+	(TargetOutputHandler): Added `bool is_stderr' argument.
+	(DebuggerOutputHandler): New public delegate.
+	(TargetOutput, TargetError, DebuggerOutput, DebuggerError):
+	Removed these events.
+
+	* backends/ThreadManager.cs
+	(TargetOutput): Renamed to `TargetOutputEvent'.
+	(TargetError): Removed; we're now using one event for TargetOutput
+	and TargetError.
+	(TargetOutputEvent): Listen to this event to get the target's
+	stdout and stderr.
+	(DebuggerOutputEvent, DebuggerErrorEvent): New public events.
+
+2003-04-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/library.c (mono_debugger_server_spawn): Return
 	the error message as string, not as GError.
 

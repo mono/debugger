@@ -116,8 +116,10 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 
-		public event TargetOutputHandler TargetOutput;
-		public event TargetOutputHandler TargetError;
+		public event TargetOutputHandler TargetOutputEvent;
+		public event TargetOutputHandler TargetErrorOutputEvent;
+		public event DebuggerOutputHandler DebuggerOutputEvent;
+		public event DebuggerErrorHandler DebuggerErrorEvent;
 
 		protected virtual void OnInitializedEvent (Process new_process)
 		{
@@ -455,7 +457,8 @@ namespace Mono.Debugger
 				backend, process, inferior, handler, start);
 
 			process.TargetOutput += new TargetOutputHandler (inferior_output);
-			process.TargetError += new TargetOutputHandler (inferior_errors);
+			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
+			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			main_started_event.WaitOne ();
 			return runner;
@@ -467,21 +470,28 @@ namespace Mono.Debugger
 			Process process = Process.StartApplication (backend, start, bfd_container);
 
 			process.TargetOutput += new TargetOutputHandler (inferior_output);
-			process.TargetError += new TargetOutputHandler (inferior_errors);
+			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
+			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			return process;
 		}
 
-		void inferior_output (string line)
+		void inferior_output (bool is_stderr, string line)
 		{
-			if (TargetOutput != null)
-				TargetOutput (line);
+			if (TargetOutputEvent != null)
+				TargetOutputEvent (is_stderr, line);
 		}
 
-		void inferior_errors (string line)
+		void debugger_output (string line)
 		{
-			if (TargetError != null)
-				TargetError (line);
+			if (DebuggerOutputEvent != null)
+				DebuggerOutputEvent (line);
+		}
+
+		void debugger_error (object sender, string message, Exception e)
+		{
+			if (DebuggerErrorEvent != null)
+				DebuggerErrorEvent (this, message, e);
 		}
 
 		// <summary>

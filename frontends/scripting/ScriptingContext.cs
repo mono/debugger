@@ -259,7 +259,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
 			process.StateChanged += new StateChangedHandler (state_changed);
 			process.TargetExited += new TargetExitedHandler (target_exited);
-			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 		}
 
@@ -670,8 +670,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected void Initialize ()
 		{
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-			backend.ThreadManager.TargetOutput += new TargetOutputHandler (target_output);
-			backend.ThreadManager.TargetError += new TargetOutputHandler (target_error_output);
+			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 
 			if (options.JitWrapper != null)
@@ -714,14 +713,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		void target_output (string line)
+		void target_output (bool is_stderr, string line)
 		{
-			PrintInferior (false, line);
-		}
-
-		void target_error_output (string line)
-		{
-			PrintInferior (true, line);
+			PrintInferior (is_stderr, line);
 		}
 
 		public void Abort ()
