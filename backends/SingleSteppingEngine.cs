@@ -268,6 +268,9 @@ namespace Mono.Debugger.Backends
 					first = false;
 				}
 
+				if (inferior == null)
+					return;
+
 				// Wait until we get a command.
 				while (!step_event.WaitOne ())
 					;
