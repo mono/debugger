@@ -42,6 +42,11 @@ namespace Mono.Debugger
 			wait_event = new AutoResetEvent (false);
 		}
 
+		public static void Initialize ()
+		{
+			mono_debugger_server_static_init ();
+		}
+
 		SingleSteppingEngine the_engine;
 		internal readonly SymbolTableManager SymbolTableManager;
 
@@ -67,6 +72,9 @@ namespace Mono.Debugger
 		Mutex command_mutex;
 		bool sync_command_running;
 		bool abort_requested;
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_static_init ();
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_global_wait (out long status);
@@ -604,7 +612,7 @@ namespace Mono.Debugger
 
 			if (pid > 0) {
 				Report.Debug (DebugFlags.Wait,
-					      "ThreadManager received event: {0} {1:x}",
+					      "Wait thread received event: {0} {1:x}",
 					      pid, status);
 
 				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
@@ -635,18 +643,23 @@ namespace Mono.Debugger
 		protected virtual void DoDispose ()
 		{
 			if (inferior_thread != null) {
+#if FIXME
 				lock (this) {
 					abort_requested = true;
 					engine_event.Set ();
 				}
+				inferior_thread.Join ();
+#else
 				inferior_thread.Abort ();
+#endif
 				wait_thread.Abort ();
 			}
 
 			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
 			thread_hash.Values.CopyTo (threads, 0);
+
 			for (int i = 0; i < threads.Length; i++)
-				threads [i].Dispose ();
+				threads [i].Kill ();
 		}
 
 		private bool disposed = false;

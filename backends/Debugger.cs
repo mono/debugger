@@ -37,11 +37,17 @@ namespace Mono.Debugger
 			module_manager = new ModuleManager ();
 			main_group = ThreadGroup.CreateThreadGroup ("main");
 
-			Initialize ();
+			DoInitialize ();
 		}
 
-		protected void Initialize ()
+		public static void Initialize ()
 		{
+			Mono.Debugger.ThreadManager.Initialize ();
+		}
+
+		protected void DoInitialize ()
+		{
+			Initialize ();
 			if (initialized)
 				throw new InternalError ();
 			initialized = true;

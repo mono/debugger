@@ -982,6 +982,12 @@ namespace Mono.Debugger.Backends
 			return do_wait (false);
 		}
 
+		public void Kill ()
+		{
+			if (inferior != null)
+				inferior.Kill ();
+		}
+
 		bool do_wait (bool stop)
 		{
 			lock (this) {

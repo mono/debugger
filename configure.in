@@ -143,19 +143,12 @@ AC_SUBST(top_srcdir)
 
 AC_PATH_PROG(MONO, mono)
 AC_PATH_PROG(MCS, mcs)
-AC_PATH_PROG(JAY, jay)
 if test "x$MONO" = "x" ; then
   AC_MSG_ERROR([Can't find "mono" in your PATH])
 fi
 if test "x$MCS" = "x" ; then
   AC_MSG_ERROR([Can't find "mcs" in your PATH])
 fi
-have_jay=yes
-if test "x$JAY" = "x" ; then
-  have_yay=no
-  AC_MSG_WARN([Can't find "jay" in your PATH])
-fi
-AM_CONDITIONAL(HAVE_JAY, test "x$have_jay" = "xyes")
 AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
 

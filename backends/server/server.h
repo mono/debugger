@@ -80,6 +80,9 @@ typedef struct {
 	BreakpointManager *bpm;
 } ServerHandle;
 
+void
+mono_debugger_server_static_init          (void);
+
 ServerHandle *
 mono_debugger_server_initialize           (BreakpointManager  *bpm);
 

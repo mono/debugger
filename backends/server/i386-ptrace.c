@@ -289,29 +289,33 @@ mono_debugger_server_sem_get_value (void)
 	return ret;
 }
 
+void
+mono_debugger_server_static_init (void)
+{
+	struct sigaction sa;
+
+	if (initialized)
+		return;
+
+	/* catch SIGINT */
+	sa.sa_handler = sigint_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
+
+	/* catch SIGINT */
+	sa.sa_handler = thread_abort_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
+
+	initialized = TRUE;
+}
+
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *bpm)
 {
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
-
-	if (!initialized) {
-		struct sigaction sa;
-
-		/* catch SIGINT */
-		sa.sa_handler = sigint_signal_handler;
-		sigemptyset (&sa.sa_mask);
-		sa.sa_flags = 0;
-		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-
-		/* catch SIGINT */
-		sa.sa_handler = thread_abort_signal_handler;
-		sigemptyset (&sa.sa_mask);
-		sa.sa_flags = 0;
-		g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
-
-
-		initialized = TRUE;
-	}
 
 	handle->bpm = bpm;
 	handle->inferior = g_new0 (InferiorHandle, 1);

@@ -1,11 +1,9 @@
 noinst_DATA = Parser.cs
 
-if HAVE_JAY
+JAY = $(top_srcdir)/../mcs/jay/jay
 
 Parser.cs: Parser.jay
 	$(JAY) -ctv < skeleton Parser.jay > Parser.tmp && mv -f Parser.tmp Parser.cs
-
-endif
 
 MAINTAINERCLEANFILES = Parser.cs y.output
 

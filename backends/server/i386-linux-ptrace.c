@@ -100,12 +100,16 @@ _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long 
 	return COMMAND_ERROR_NONE;
 }
 
+GStaticMutex wait_mutex = G_STATIC_MUTEX_INIT;
+
 static int
 do_wait (int pid, guint32 *status)
 {
 	int ret;
 
+	g_static_mutex_lock (&wait_mutex);
 	ret = waitpid (pid, status, WUNTRACED | __WALL | __WCLONE);
+	g_static_mutex_unlock (&wait_mutex);
 	if (ret < 0) {
 		if (errno == EINTR)
 			return 0;
@@ -116,10 +120,19 @@ do_wait (int pid, guint32 *status)
 	return ret;
 }
 
+static int first_status = 0;
+static int first_ret = 0;
+
 guint32
 mono_debugger_server_global_wait (guint64 *status_ret)
 {
 	int ret, status;
+
+	if (first_status) {
+		*status_ret = first_status;
+		first_status = 0;
+		return first_ret;
+	}
 
 	ret = do_wait (-1, &status);
 	if (ret <= 0)
@@ -169,6 +182,13 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	g_static_mutex_lock (&wait_mutex);
+	result = i386_arch_get_registers (handle);
+	g_static_mutex_unlock (&wait_mutex);
+
+	if (result == COMMAND_ERROR_NONE)
+		return COMMAND_ERROR_ALREADY_STOPPED;
+
 	do {
 		ret = do_wait (handle->inferior->pid, status);
 	} while (ret == 0);
@@ -192,15 +212,20 @@ void
 _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
+	int status, ret;
 
-	if (!is_main) {
-		int status;
+	do {
+		ret = do_wait (handle->inferior->pid, &status);
+	} while (ret == 0);
 
-		while (do_wait (handle->inferior->pid, &status) == 0);
-
-		if (i386_arch_get_registers (handle) != COMMAND_ERROR_NONE)
-			g_error ("Can't get registers");
+	if (is_main) {
+		g_assert (ret == handle->inferior->pid);
+		first_status = status;
+		first_ret = ret;
 	}
+
+	if (i386_arch_get_registers (handle) != COMMAND_ERROR_NONE)
+		g_error ("Can't get registers");
 
 	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
 
@@ -219,8 +244,11 @@ _mono_debugger_server_setup_thread_manager (ServerHandle *handle)
 {
 	int flags = PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORKDONE | PTRACE_O_TRACECLONE;
 
-	if (ptrace (PTRACE_SETOPTIONS, handle->inferior->pid, 0, flags))
+	if (ptrace (PTRACE_SETOPTIONS, handle->inferior->pid, 0, flags)) {
+		g_warning (G_STRLOC ": Can't PTRACE_SETOPTIONS %d: %s",
+			   handle->inferior->pid, g_strerror (errno));
 		return FALSE;
+	}
 
 	return TRUE;
 }
