@@ -1007,7 +1007,8 @@ namespace Mono.Debugger.Backends
 		void insert_temporary_breakpoint (TargetAddress address)
 		{
 			check_inferior ();
-			temp_breakpoint_id = inferior.InsertHardwareBreakpoint (address, 0);
+			// temp_breakpoint_id = inferior.InsertHardwareBreakpoint (address, 0);
+			temp_breakpoint_id = inferior.InsertBreakpoint (address);
 		}
 
 		// <summary>
