@@ -125,6 +125,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected virtual FrameHandle ResolveFrame (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
+			context.ResetCurrentSourceCode ();
 			if (frame > 0)
 				return process.GetFrame (frame);
 			else
@@ -434,6 +435,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			int current_idx = process.CurrentFrameIndex;
 			BacktraceHandle backtrace = process.GetBacktrace (max_frames);
+			context.ResetCurrentSourceCode ();
 
 			for (int i = 0; i < backtrace.Length; i++) {
 				string prefix = i == current_idx ? "(*)" : "   ";
@@ -885,8 +887,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 #endif
 
-	[Command("list", "List source code")]
-	public class ListCommand : DebuggerCommand
+	public abstract class SourceCommand : DebuggerCommand
 	{
 		int method_id = -1;
 		protected SourceLocation location;
@@ -894,6 +895,11 @@ namespace Mono.Debugger.Frontends.Scripting
 		public int ID {
 			get { return method_id; }
 			set { method_id = value; }
+		}
+
+		protected bool DoResolveExpression (ScriptingContext context)
+		{
+			return false;
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -910,17 +916,52 @@ namespace Mono.Debugger.Frontends.Scripting
 				return true;
 			}
 
+			int line;
+			int pos = Argument.IndexOf (':');
+			if (pos >= 0) {
+				string filename = Argument.Substring (0, pos);
+				try {
+					line = (int) UInt32.Parse (Argument.Substring (pos+1));
+				} catch {
+					context.Error ("Expected filename:line");
+					return false;
+				}
+
+				location = context.Interpreter.FindLocation (filename, line);
+				return true;
+			}
+
+			try {
+				line = (int) UInt32.Parse (Argument);
+			} catch {
+				return DoResolveExpression (context);
+			}
+
+			location = context.Interpreter.FindLocation (
+				context.CurrentLocation.SourceFile.FileName, line);
 			return true;
+		}
+	}
+
+	[Command("list", "List source code")]
+	public class ListCommand : SourceCommand
+	{
+		int count = 10;
+		bool restart;
+
+		public int Count {
+			get { return count; }
+			set { count = value; }
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ListSourceCode (location);
+			context.ListSourceCode (location, Count);
 		}
 	}
 
 	[Command("break", "Insert breakpoint")]
-	public class BreakCommand : ListCommand
+	public class BreakCommand : SourceCommand
 	{
 		string group;
 		int process_id = -1;
@@ -962,7 +1003,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			int index = context.Interpreter.InsertBreakpoint (
 				process, tgroup, location);
-			context.Print ("Inserted breakpoint {0}.", index);
+			context.Print ("Inserted breakpoint {0} at {1}",
+				       index, location.Name);
 		}
 	}
 

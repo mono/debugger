@@ -40,7 +40,8 @@ namespace Mono.Debugger
 				if (line == -1)
 					return method.Name;
 				else
-					return String.Format ("{0}:{1}", method.Name, line);
+					return String.Format (
+						"{0}:{1}", SourceFile.FileName, line);
 			}
 		}
 

@@ -805,7 +805,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		int last_line = -1;
 		string[] current_source_code = null;
 
-		public void ListSourceCode (SourceLocation location)
+		public void ListSourceCode (SourceLocation location, int count)
 		{
 			int start;
 			if ((location == null) && (current_source_code == null))
@@ -823,10 +823,16 @@ namespace Mono.Debugger.Frontends.Scripting
 				start = Math.Max (location.Line - 2, 0);
 			}
 
-			last_line = Math.Min (start + 5, current_source_code.Length);
+			last_line = Math.Min (start + count, current_source_code.Length);
 
 			for (int line = start; line < last_line; line++)
 				interpreter.Print (String.Format ("{0,4} {1}", line, current_source_code [line]));
+		}
+
+		public void ResetCurrentSourceCode ()
+		{
+			current_source_code = null;
+			last_line = -1;
 		}
 	}
 }
