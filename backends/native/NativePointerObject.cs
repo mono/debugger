@@ -1,6 +1,4 @@
 using System;
-using Mono.CSharp.Debugger;
-using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {

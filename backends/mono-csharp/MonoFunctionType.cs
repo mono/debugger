@@ -1,9 +1,6 @@
 using System;
 using System.Collections;
-using System.Reflection;
 using R = System.Reflection;
-
-using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
@@ -40,7 +37,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int num_params = info.ReadInt32 ();
 			parameter_types = new MonoType [num_params];
 
-			ParameterInfo[] parameters = mbase.GetParameters ();
+			R.ParameterInfo[] parameters = mbase.GetParameters ();
 			if (parameters.Length != num_params) {
 				throw new InternalError (
 					"MethodInfo.GetParameters() returns {0} parameters " +
@@ -57,7 +54,7 @@ namespace Mono.Debugger.Languages.CSharp
 			runtime_invoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
-		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetAddress method,
+		public MonoFunctionType (MonoClass klass, R.MethodInfo minfo, TargetAddress method,
 					 MonoType return_type, MonoSymbolTable table)
 			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
 		{

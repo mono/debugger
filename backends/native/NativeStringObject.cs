@@ -1,6 +1,5 @@
 using System;
 using System.Text;
-using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {

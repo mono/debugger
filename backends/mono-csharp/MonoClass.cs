@@ -1,9 +1,7 @@
 using System;
 using System.Text;
 using System.Collections;
-using System.Reflection;
 using R = System.Reflection;
-using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
@@ -174,9 +172,9 @@ namespace Mono.Debugger.Languages.CSharp
 			info.Position = offset;
 			fields = new MonoFieldInfo [num_fields];
 
-			FieldInfo[] mono_fields = EffectiveType.GetFields (
-				BindingFlags.DeclaredOnly | BindingFlags.Instance |
-				BindingFlags.Public | BindingFlags.NonPublic);
+			R.FieldInfo[] mono_fields = EffectiveType.GetFields (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 			if (mono_fields.Length != num_fields)
 				throw new InternalError (
 					"Type.GetFields() returns {0} fields, but the JIT has {1}",
@@ -208,9 +206,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			static_fields = new MonoFieldInfo [num_static_fields];
 
-			FieldInfo[] mono_static_fields = EffectiveType.GetFields (
-				BindingFlags.DeclaredOnly | BindingFlags.Static |
-				BindingFlags.Public | BindingFlags.NonPublic);
+			R.FieldInfo[] mono_static_fields = EffectiveType.GetFields (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 			if (mono_static_fields.Length != num_static_fields)
 				throw new InternalError (
 					"Type.GetFields() returns {0} fields, but the JIT has {1}",
@@ -236,11 +234,11 @@ namespace Mono.Debugger.Languages.CSharp
 		protected abstract class MonoStructMember : ITargetMemberInfo
 		{
 			public readonly MonoClass Klass;
-			public readonly MemberInfo MemberInfo;
+			public readonly R.MemberInfo MemberInfo;
 			public readonly int Index;
 			public readonly bool IsStatic;
 
-			public MonoStructMember (MonoClass klass, MemberInfo minfo, int index, bool is_static)
+			public MonoStructMember (MonoClass klass, R.MemberInfo minfo, int index, bool is_static)
 			{
 				this.Klass = klass;
 				this.MemberInfo = minfo;
@@ -296,9 +294,9 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoType type;
 			public readonly int Offset;
 
-			public readonly FieldInfo FieldInfo;
+			public readonly R.FieldInfo FieldInfo;
 
-			internal MonoFieldInfo (MonoClass klass, int index, FieldInfo finfo, bool is_static,
+			internal MonoFieldInfo (MonoClass klass, int index, R.FieldInfo finfo, bool is_static,
 						TargetBinaryReader info, MonoSymbolTable table)
 				: base (klass, finfo, index, is_static)
 			{
@@ -358,9 +356,9 @@ namespace Mono.Debugger.Languages.CSharp
 			info.Position = offset + field_info_size;
 			properties = new MonoPropertyInfo [num_properties];
 
-			PropertyInfo[] mono_properties = EffectiveType.GetProperties (
-				BindingFlags.DeclaredOnly | BindingFlags.Instance |
-				BindingFlags.Public | BindingFlags.NonPublic);
+			R.PropertyInfo[] mono_properties = EffectiveType.GetProperties (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 
 			if (mono_properties.Length != num_properties)
 				throw new InternalError (
@@ -394,9 +392,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			static_properties = new MonoPropertyInfo [num_static_properties];
 
-			PropertyInfo[] mono_properties = EffectiveType.GetProperties (
-				BindingFlags.DeclaredOnly | BindingFlags.Static |
-				BindingFlags.Public | BindingFlags.NonPublic);
+			R.PropertyInfo[] mono_properties = EffectiveType.GetProperties (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 
 			if (mono_properties.Length != num_static_properties)
 				throw new InternalError (
@@ -423,11 +421,11 @@ namespace Mono.Debugger.Languages.CSharp
 		protected class MonoPropertyInfo : MonoStructMember, ITargetPropertyInfo
 		{
 			MonoType type;
-			public readonly PropertyInfo PropertyInfo;
+			public readonly R.PropertyInfo PropertyInfo;
 			public readonly TargetAddress Getter, Setter;
 			public readonly MonoFunctionType GetterType, SetterType;
 
-			internal MonoPropertyInfo (MonoClass klass, int index, PropertyInfo pinfo, bool is_static,
+			internal MonoPropertyInfo (MonoClass klass, int index, R.PropertyInfo pinfo, bool is_static,
 						   TargetBinaryReader info, MonoSymbolTable table)
 				: base (klass, pinfo, index, is_static)
 			{
@@ -509,9 +507,9 @@ namespace Mono.Debugger.Languages.CSharp
 			info.Position = offset + field_info_size + property_info_size;
 			methods = new MonoMethodInfo [num_methods];
 
-			MethodInfo[] mono_methods = EffectiveType.GetMethods (
-				BindingFlags.DeclaredOnly | BindingFlags.Instance |
-				BindingFlags.Public);
+			R.MethodInfo[] mono_methods = EffectiveType.GetMethods (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
+				R.BindingFlags.Public);
 
 			ArrayList list = new ArrayList ();
 			for (int i = 0; i < mono_methods.Length; i++) {
@@ -528,7 +526,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_methods; i++)
 				methods [i] = new MonoMethodInfo (
-					this, i, (MethodInfo) list [i], false, info, Table);
+					this, i, (R.MethodInfo) list [i], false, info, Table);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.Methods {
@@ -553,9 +551,9 @@ namespace Mono.Debugger.Languages.CSharp
 				static_field_info_size + static_property_info_size;
 			static_methods = new MonoMethodInfo [num_static_methods];
 
-			MethodInfo[] mono_methods = EffectiveType.GetMethods (
-				BindingFlags.DeclaredOnly | BindingFlags.Static |
-				BindingFlags.Public);
+			R.MethodInfo[] mono_methods = EffectiveType.GetMethods (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
+				R.BindingFlags.Public);
 
 			ArrayList list = new ArrayList ();
 			for (int i = 0; i < mono_methods.Length; i++) {
@@ -572,7 +570,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_static_methods; i++)
 				static_methods [i] = new MonoMethodInfo (
-					this, i, (MethodInfo) list [i], true, info, Table);
+					this, i, (R.MethodInfo) list [i], true, info, Table);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.StaticMethods {
@@ -597,9 +595,9 @@ namespace Mono.Debugger.Languages.CSharp
 				static_field_info_size + static_property_info_size + static_method_info_size;
 			ctors = new MonoMethodInfo [num_ctors];
 
-			ConstructorInfo[] mono_ctors = EffectiveType.GetConstructors (
-				BindingFlags.DeclaredOnly | BindingFlags.Instance |
-				BindingFlags.Public);
+			R.ConstructorInfo[] mono_ctors = EffectiveType.GetConstructors (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
+				R.BindingFlags.Public);
 
 			ArrayList list = new ArrayList ();
 			for (int i = 0; i < mono_ctors.Length; i++) {
@@ -613,7 +611,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_ctors; i++)
 				ctors [i] = new MonoMethodInfo (
-					this, i, (ConstructorInfo) list [i], true, info, Table);
+					this, i, (R.ConstructorInfo) list [i], true, info, Table);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.Constructors {
@@ -656,7 +654,7 @@ namespace Mono.Debugger.Languages.CSharp
 				get {
 					StringBuilder sb = new StringBuilder ();
 					bool first = true;
-					foreach (ParameterInfo pinfo in MethodInfo.GetParameters ()) {
+					foreach (R.ParameterInfo pinfo in MethodInfo.GetParameters ()) {
 						if (first)
 							first = false;
 						else
