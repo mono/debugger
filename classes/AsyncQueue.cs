@@ -18,10 +18,10 @@ namespace Mono.Debugger
 			this.handler = handler;
 
 			mono_debugger_glue_make_pipe (out input_fd, out output_fd);
-			input_channel = new IOInputChannel (input_fd);
-			output_channel = new IOOutputChannel (output_fd);
+			input_channel = new IOInputChannel (input_fd, true, false);
+			output_channel = new IOOutputChannel (output_fd, false, false);
 
-			input_channel.ReadLine += new ReadLineHandler (read_line_handler);
+			input_channel.ReadLineEvent += new ReadLineHandler (read_line_handler);
 		}
 
 		public void Write (string message)

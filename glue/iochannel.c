@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 static gboolean
-watch_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
+watch_string_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
 {
 	if (condition == G_IO_IN) {
 		char buffer [BUFSIZ];
@@ -16,8 +16,25 @@ watch_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
 
 		if (status == G_IO_STATUS_NORMAL) {
 			buffer [count] = 0;
-			((MonoDebuggerGlueReadHandler) data) (buffer);
+			((IOStringInputHandler) data) (buffer);
 		}
+	}
+
+	return TRUE;
+}
+
+static gboolean
+watch_data_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
+{
+	if (condition == G_IO_IN) {
+		char ch;
+		GIOStatus status;
+		gsize count;
+
+		status = g_io_channel_read_chars (channel, &ch, 1, &count, NULL);
+
+		if (status == G_IO_STATUS_NORMAL)
+			((IODataInputHandler) data) ((int) ch);
 	}
 
 	return TRUE;
@@ -27,62 +44,49 @@ static gboolean
 watch_hangup_func (GIOChannel *channel, GIOCondition condition, gpointer data)
 {
 	if (condition == G_IO_HUP) {
-		((MonoDebuggerGlueHangupHandler) data) ();
+		((IOHangupHandler) data) ();
 		return FALSE;
 	}
 
 	return TRUE;
 }
 
-static gboolean
-watch_data_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
+unsigned
+mono_debugger_io_add_watch_string_input (GIOChannel *channel, IOStringInputHandler cb)
 {
-	((MonoDebuggerGlueEventHandler) data) ();
-	return TRUE;
+	return g_io_add_watch (channel, G_IO_IN, watch_string_input_func, cb);
 }
 
 unsigned
-mono_debugger_glue_add_watch_input (GIOChannel *channel, MonoDebuggerGlueReadHandler cb)
+mono_debugger_io_add_watch_data_input (GIOChannel *channel, IODataInputHandler cb)
+{
+	return g_io_add_watch (channel, G_IO_IN, watch_data_input_func, cb);
+}
+
+void
+mono_debugger_io_set_async (GIOChannel *channel, gboolean is_async)
 {
 	GIOFlags flags = g_io_channel_get_flags (channel);
-	g_io_channel_set_flags (channel, flags | G_IO_FLAG_NONBLOCK, NULL);
 
-	return g_io_add_watch (channel, G_IO_IN, watch_input_func, cb);
+	if (is_async)
+		flags |= G_IO_FLAG_NONBLOCK;
+	else
+		flags &= ~G_IO_FLAG_NONBLOCK;
+
+	g_io_channel_set_flags (channel, flags, NULL);
 }
 
 unsigned
-mono_debugger_glue_add_watch_hangup (GIOChannel *channel, MonoDebuggerGlueHangupHandler cb)
+mono_debugger_io_add_watch_hangup (GIOChannel *channel, IOHangupHandler cb)
 {
 	return g_io_add_watch (channel, G_IO_HUP, watch_hangup_func, cb);
 }
 
 void
-mono_debugger_glue_add_watch_output (GIOChannel *channel)
-{
-	GIOFlags flags = g_io_channel_get_flags (channel);
-	g_io_channel_set_flags (channel, flags | G_IO_FLAG_NONBLOCK, NULL);
-}
-
-void
-mono_debugger_glue_setup_data_output (GIOChannel *channel)
+mono_debugger_io_set_data_mode (GIOChannel *channel)
 {
 	g_io_channel_set_encoding (channel, NULL, NULL);
 	g_io_channel_set_buffered (channel, FALSE);
-}
-
-GSource *
-mono_debugger_glue_create_watch_input (GIOChannel *channel, MonoDebuggerGlueEventHandler cb)
-{
-	GIOFlags flags = g_io_channel_get_flags (channel);
-	GSource *source;
-
-	g_io_channel_set_encoding (channel, NULL, NULL);
-	g_io_channel_set_buffered (channel, FALSE);
-
-	source = g_io_create_watch (channel, G_IO_IN | G_IO_HUP);
-	g_source_set_callback (source, (GSourceFunc) watch_data_input_func, cb, NULL);
-
-	return source;
 }
 
 void
@@ -95,7 +99,7 @@ mono_debugger_glue_kill_process (int pid, int force)
 }
 
 void
-mono_debugger_glue_write_line (GIOChannel *channel, const char *line)
+mono_debugger_io_write_line (GIOChannel *channel, const char *line)
 {
 	gsize count;
 	GIOStatus status;
@@ -107,7 +111,7 @@ mono_debugger_glue_write_line (GIOChannel *channel, const char *line)
 }
 
 int
-mono_debugger_glue_read_byte (GIOChannel *channel)
+mono_debugger_io_read_byte (GIOChannel *channel)
 {
 	char ch;
 	int count;
@@ -121,7 +125,7 @@ mono_debugger_glue_read_byte (GIOChannel *channel)
 }
 
 int
-mono_debugger_glue_write_byte (GIOChannel *channel, int data)
+mono_debugger_io_write_byte (GIOChannel *channel, int data)
 {
 	char ch = (char) data;
 	int count;

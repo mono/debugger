@@ -13,6 +13,8 @@ namespace GLib {
 	public class IOChannel : IDisposable
 	{
 		protected IntPtr _channel;
+		protected bool is_async;
+		protected bool is_data;
 		uint hangup_id;
 
 		[DllImport("glib-2.0")]
@@ -25,7 +27,13 @@ namespace GLib {
 		protected static extern bool g_source_remove (uint tag);
 
 		[DllImport("monodebuggerglue")]
-		static extern uint mono_debugger_glue_add_watch_hangup (IntPtr channel, HangupHandler cb);
+		static extern uint mono_debugger_io_add_watch_hangup (IntPtr channel, HangupHandler cb);
+
+		[DllImport("monodebuggerglue")]
+		static extern void mono_debugger_io_set_async (IntPtr channel, bool is_async);
+
+		[DllImport("monodebuggerglue")]
+		static extern void mono_debugger_io_set_data_mode (IntPtr channel);
 
 		public event HangupHandler Hangup;
 
@@ -38,17 +46,39 @@ namespace GLib {
 		internal IOChannel (IntPtr _channel)
 		{
 			this._channel = _channel;
-			hangup_id = mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+			hangup_id = mono_debugger_io_add_watch_hangup (_channel, new HangupHandler (hangup));
 		}
 
-		public IOChannel (int fd)
+		public IOChannel (int fd, bool is_async, bool is_data)
 		{
+			this.is_async = is_async;
+			this.is_data = is_data;
+
 			_channel = g_io_channel_unix_new (fd);
-			hangup_id = mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+			hangup_id = mono_debugger_io_add_watch_hangup (_channel, new HangupHandler (hangup));
+			mono_debugger_io_set_async (_channel, is_async);
+			if (is_data)
+				mono_debugger_io_set_data_mode (_channel);
 		}
 
 		public IntPtr Channel {
 			get { return _channel; }
+		}
+
+		public bool IsAsync {
+			get { return is_async; }
+
+			set {
+				if (value == is_async)
+					return;
+
+				is_async = value;
+				mono_debugger_io_set_async (_channel, is_async);
+			}
+		}
+
+		public bool IsData {
+			get { return is_data; }
 		}
 
 		//
@@ -84,79 +114,38 @@ namespace GLib {
 
 	public delegate void HangupHandler ();
 	public delegate void ReadLineHandler (string line);
-	public delegate void ReadyEventHandler ();
-
-	public class IODataInputChannel : IOChannel
-	{
-		public IODataInputChannel (int fd, ReadyEventHandler ready_event)
-			: base (fd)
-		{
-			_source = mono_debugger_glue_create_watch_input (_channel, ready_event);
-			g_source_attach (_source, IntPtr.Zero);
-		}
-
-		public int ReadByte ()
-		{
-			return mono_debugger_glue_read_byte (_channel);
-		}
-
-		IntPtr _source;
-
-		[DllImport("monodebuggerglue")]
-		extern static IntPtr mono_debugger_glue_create_watch_input (IntPtr _channel, ReadyEventHandler ready_event);
-
-		[DllImport("monodebuggerglue")]
-		extern static int mono_debugger_glue_read_byte (IntPtr _channel);
-
-		[DllImport("glib-2.0")]
-		extern static uint g_source_attach (IntPtr source, IntPtr context);
-
-		[DllImport("glib-2.0")]
-		extern static void g_source_destroy (IntPtr source);
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		protected override void Dispose (bool disposing)
-		{
-			if (!this.disposed) {
-				this.disposed = true;
-
-				lock (this) {
-					g_source_destroy (_source);
-				}
-			}
-
-			base.Dispose (disposing);
-		}
-	}
+	public delegate void ReadDataHandler (byte data);
 
 	public class IOInputChannel : IOChannel
 	{
-		public event ReadLineHandler ReadLine;
+		public event ReadLineHandler ReadLineEvent;
+		public event ReadDataHandler ReadDataEvent;
 
-		//		
+		public IOInputChannel (int fd, bool is_async, bool is_data)
+			: base (fd, is_async, is_data)
+		{
+			if (is_data)
+				watch_id = mono_debugger_io_add_watch_data_input (_channel, new ReadDataHandler (read_data));
+			else
+				watch_id = mono_debugger_io_add_watch_string_input (_channel, new ReadLineHandler (read_line));
+		}
+
+		//
 		// Everything below is private.
 		//
 
-		public IOInputChannel (int fd)
-			: base (fd)
-		{
-			watch_id = mono_debugger_glue_add_watch_input (_channel, new ReadLineHandler (read_line));
-		}
+		[DllImport("monodebuggerglue")]
+		static extern uint mono_debugger_io_add_watch_data_input (IntPtr channel, ReadDataHandler cb);
 
 		[DllImport("monodebuggerglue")]
-		static extern uint mono_debugger_glue_add_watch_input (IntPtr channel, ReadLineHandler cb);
+		static extern uint mono_debugger_io_add_watch_string_input (IntPtr channel, ReadLineHandler cb);
 
 		uint watch_id;
 		StringBuilder sb = null;
 
 		void read_line (string line)
 		{
-			if (ReadLine == null)
+			if (ReadLineEvent == null)
 				return;
 
 			int start = 0;
@@ -167,12 +156,12 @@ namespace GLib {
 					if (start != end) {
 						if (sb != null) {
 							sb.Append (line.Substring (start, end-start));
-							ReadLine (sb.ToString ());
+							ReadLineEvent (sb.ToString ());
 							sb = null;
 						} else
-							ReadLine (line.Substring (start, end-start));
+							ReadLineEvent (line.Substring (start, end-start));
 					} else if (sb != null) {
-						ReadLine (sb.ToString ());
+						ReadLineEvent (sb.ToString ());
 						sb = null;
 					}
 					start = end + 1;
@@ -186,6 +175,12 @@ namespace GLib {
 					break;
 				}
 			}
+		}
+
+		void read_data (byte data)
+		{
+			if (ReadDataEvent != null)
+				ReadDataEvent (data);
 		}
 
 		//
@@ -212,48 +207,27 @@ namespace GLib {
 	{
 		public void WriteLine (string line)
 		{
-			mono_debugger_glue_write_line (_channel, line + '\n');
+			mono_debugger_io_write_line (_channel, line + '\n');
 		}
 
-		//		
-		// Everything below is private.
-		//
-
-		public IOOutputChannel (int fd)
-			: base (fd)
-		{
-			mono_debugger_glue_add_watch_output (_channel);
-		}
-
-		[DllImport("monodebuggerglue")]
-		static extern void mono_debugger_glue_add_watch_output (IntPtr channel);
-
-		[DllImport("monodebuggerglue")]
-		static extern void mono_debugger_glue_write_line (IntPtr channel, string line);
-	}
-
-	public class IODataOutputChannel : IOChannel
-	{
 		public void WriteByte (int data)
 		{
-			mono_debugger_glue_write_byte (_channel, data);
+			mono_debugger_io_write_byte (_channel, data);
 		}
 
-		//		
+		public IOOutputChannel (int fd, bool is_async, bool is_data)
+			: base (fd, is_async, is_data)
+		{ }
+
+		//
 		// Everything below is private.
 		//
 
-		public IODataOutputChannel (int fd)
-			: base (fd)
-		{
-			mono_debugger_glue_setup_data_output (_channel);
-		}
+		[DllImport("monodebuggerglue")]
+		static extern void mono_debugger_io_write_line (IntPtr channel, string line);
 
 		[DllImport("monodebuggerglue")]
-		static extern void mono_debugger_glue_setup_data_output (IntPtr channel);
-
-		[DllImport("monodebuggerglue")]
-		static extern void mono_debugger_glue_write_byte (IntPtr channel, int data);
+		static extern void mono_debugger_io_write_byte (IntPtr channel, int data);
 	}
 
 	public class Spawn
@@ -287,9 +261,9 @@ namespace GLib {
 			if (!retval)
 				throw new Exception ();
 
-			standard_input = new IOOutputChannel (stdin_fd);
-			standard_output = new IOInputChannel (stdout_fd);
-			standard_error = new IOInputChannel (stderr_fd);
+			standard_input = new IOOutputChannel (stdin_fd, false, false);
+			standard_output = new IOInputChannel (stdout_fd, false, false);
+			standard_error = new IOInputChannel (stderr_fd, false, false);
 		}
 
 		public static int SpawnCommandLine (string command_line, out string standard_output,

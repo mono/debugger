@@ -19,7 +19,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public CommandLineInterpreter (string[] args)
 		{
-			channel = new IOChannel (0);
+			channel = new IOChannel (0, false, true);
 			readline = new GnuReadLine (channel, "$ ");
 			context = new ScriptingContext ();
 			parser = new Parser (context, "Debugger", args);

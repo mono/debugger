@@ -4,11 +4,13 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
+	public delegate void ReadyEventHandler ();
+
 	public class ThreadNotify : IDisposable
 	{
 		int input_fd, output_fd;
-		IODataInputChannel input_channel;
-		IODataOutputChannel output_channel;
+		IOInputChannel input_channel;
+		IOOutputChannel output_channel;
 		ReadyEventHandler ready_event;
 
 		[DllImport("glib-2.0")]
@@ -22,9 +24,8 @@ namespace Mono.Debugger
 			output_channel.WriteByte (0);
 		}
 
-		void ready_event_handler ()
+		void read_data_handler (byte data)
 		{
-			input_channel.ReadByte ();
 			ready_event ();
 		}
 
@@ -34,9 +35,10 @@ namespace Mono.Debugger
 
 			mono_debugger_glue_make_pipe (out input_fd, out output_fd);
 
-			input_channel = new IODataInputChannel (
-				input_fd, new ReadyEventHandler (ready_event_handler));
-			output_channel = new IODataOutputChannel (output_fd);
+			input_channel = new IOInputChannel (input_fd, false, true);
+			output_channel = new IOOutputChannel (output_fd, false, true);
+
+			input_channel.ReadDataEvent += new ReadDataHandler (read_data_handler);
 		}
 
 		[DllImport("monodebuggerglue")]
