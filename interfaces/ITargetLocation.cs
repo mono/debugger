@@ -17,13 +17,5 @@ namespace Mono.Debugger
 		long Location {
 			get;
 		}
-
-		// <summary>
-		//   Number of bytes we can single-step from the current
-		//   location until we're leaving this basic block.
-		// </summary>
-		int SourceRange {
-			get; set;
-		}
 	}
 }

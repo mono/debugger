@@ -30,5 +30,13 @@ namespace Mono.Debugger
 		int Column {
 			get;
 		}
+
+		// <summary>
+		//   Number of bytes we can single-step from the current
+		//   location until we're leaving this basic block.
+		// </summary>
+		int SourceRange {
+			get;
+		}
 	}
 }

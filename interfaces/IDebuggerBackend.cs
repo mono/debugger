@@ -134,6 +134,11 @@ namespace Mono.Debugger
 		uint ReadInteger (long address);
 
 		// <summary>
+		//   Read a signed integer from the target's address space at address @address.
+		// </summary>
+		int ReadSignedInteger (long address);
+
+		// <summary>
 		//   Read a long int from the target's address space at address @address.
 		// </summary>
 		long ReadLongInteger (long address);

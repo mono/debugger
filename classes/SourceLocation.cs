@@ -7,13 +7,19 @@ namespace Mono.Debugger
 	{
 		ISourceBuffer SourceBuffer;
 		int Row;
+		int SourceRange;
 
 		public static SourceLocation Null = new SourceLocation (null, 0);
 
 		public SourceLocation (ISourceBuffer buffer, int row)
+			: this (buffer, row, 0)
+		{ }
+
+		public SourceLocation (ISourceBuffer buffer, int row, int range)
 		{
 			this.SourceBuffer = buffer;
 			this.Row = row;
+			this.SourceRange = range;
 		}
 
 		ISourceBuffer ISourceLocation.Buffer {
@@ -34,6 +40,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		int ISourceLocation.SourceRange {
+			get {
+				return SourceRange;
+			}
+		}
+
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();
@@ -44,6 +56,11 @@ namespace Mono.Debugger
 			if (Row > 0) {
 				builder.Append (" line ");
 				builder.Append (Row);
+			}
+			if (SourceRange > 0) {
+				builder.Append (" (range ");
+				builder.Append (SourceRange);
+				builder.Append (")");
 			}
 			
 			return builder.ToString ();

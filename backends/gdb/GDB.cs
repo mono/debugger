@@ -38,6 +38,10 @@ namespace Mono.Debugger.Backends
 		ManualResetEvent gdb_event;
 		Mutex gdb_mutex;
 
+		IArchitecture arch;
+
+		bool continue_stepping = false;
+
 		ArrayList symtabs;
 
 		int last_breakpoint_id;
@@ -60,7 +64,7 @@ namespace Mono.Debugger.Backends
 			MethodInfo main = this.application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
 
-			string args = "-n -nw -q -x mono-debugger.gdbinit --annotate=2 --async " +
+			string args = "-n -nw -q --annotate=2 --async " +
 				"--args " + mono_path + " --break " + main_name +  " --debug=mono " +
 				"--noinline --precompile @" + application + " " + application + " " +
 				String.Join (" ", arguments);
@@ -98,11 +102,14 @@ namespace Mono.Debugger.Backends
 			target_integer_size = ReadInteger ("print sizeof (long)");
 			target_long_integer_size = ReadInteger ("print sizeof (long long)");
 
+			arch = new ArchitectureI386 ();
+
 			symbols = new Hashtable ();
 			breakpoints = new Hashtable ();
 			symtabs = new ArrayList ();
 
-			send_gdb_command ("run");
+			send_gdb_command ("set prompt");
+			start_target ("run", StepMode.RUN);
 
 			UpdateSymbolFiles ();
 		}
@@ -120,12 +127,12 @@ namespace Mono.Debugger.Backends
 
 		public void Run ()
 		{
-			gdb_pipe.WriteLine ("run");
+			start_target ("run", StepMode.RUN);
 		}
 
 		public void Continue ()
 		{
-			gdb_pipe.WriteLine ("continue");
+			start_target ("continue", StepMode.RUN);
 		}
 
 		public void Quit ()
@@ -150,13 +157,12 @@ namespace Mono.Debugger.Backends
 
 		public void Step ()
 		{
-			gdb_pipe.WriteLine ("stepi");
+			start_target ("stepi", StepMode.STEP_LINE);
 		}
 		
 		public void Next ()
 		{
-			gdb_pipe.WriteLine ("nexti");
-			gdb_pipe.WriteLine ("frame");
+			start_target ("nexti", StepMode.STEP_ONE);
 		}
 
 		public IBreakPoint AddBreakPoint (ITargetLocation location)
@@ -312,16 +318,6 @@ namespace Mono.Debugger.Backends
 					return -1;
 				}
 			}
-
-			int ITargetLocation.SourceRange {
-				get {
-					return 0;
-				}
-
-				set {
-					throw new NotSupportedException ();
-				}
-			}
 		}
 
 		protected class BreakPoint : IBreakPoint
@@ -380,21 +376,10 @@ namespace Mono.Debugger.Backends
 		protected class TargetLocation : ITargetLocation
 		{
 			public long Address = -1;
-			int SourceRange = 0;
 
 			long ITargetLocation.Location {
 				get {
 					return Address;
-				}
-			}
-
-			int ITargetLocation.SourceRange {
-				get {
-					return SourceRange;
-				}
-
-				set {
-					SourceRange = value;
 				}
 			}
 
@@ -405,11 +390,6 @@ namespace Mono.Debugger.Backends
 				if (Address > 0) {
 					builder.Append ("0x");
 					builder.Append (Address.ToString ("x"));
-					if (SourceRange > 0) {
-						builder.Append ("(");
-						builder.Append (SourceRange);
-						builder.Append (")");
-					}
 				} else
 					builder.Append ("<unknown>");
 
@@ -464,6 +444,8 @@ namespace Mono.Debugger.Backends
 			BYTE_VALUE_2,
 			INTEGER_VALUE,
 			INTEGER_VALUE_2,
+			SIGNED_INTEGER_VALUE,
+			SIGNED_INTEGER_VALUE_2,
 			HEX_VALUE,
 			HEX_VALUE_2,
 			LONG_VALUE,
@@ -472,12 +454,24 @@ namespace Mono.Debugger.Backends
 			STRING_VALUE_2
 		}
 
+		enum StepMode {
+			RUN,
+			STEP_ONE,
+			STEP_LINE,
+			STEP_LINE_2
+		}
+
+		long step_start = 0;
+		int step_range = 0;
+		StepMode step_mode = StepMode.STEP_ONE;
+
 		WaitForOutput wait_for = WaitForOutput.UNKNOWN;
 
 		StackFrame current_frame = null;
 		string source_file = null;
 
 		byte last_byte_value;
+		int last_signed_int_value;
 		uint last_int_value;
 		long last_long_value;
 		string last_string_value;
@@ -546,6 +540,22 @@ namespace Mono.Debugger.Backends
 			return last_int_value;
 		}
 
+		public int ReadSignedInteger (long address)
+		{
+			return ReadSignedInteger ("print/d *(long*)" + address);
+		}
+
+		int ReadSignedInteger (string address)
+		{
+			last_value_ok = false;
+			wait_for = WaitForOutput.SIGNED_INTEGER_VALUE;
+			send_gdb_command (address);
+			if (!last_value_ok)
+				throw new TargetException ("Can't read target memory at address " + address);
+
+			return last_signed_int_value;
+		}
+
 		public long ReadAddress (long address)
 		{
 			return ReadAddress ("print/a *(void**)" + address);
@@ -557,7 +567,8 @@ namespace Mono.Debugger.Backends
 			wait_for = WaitForOutput.HEX_VALUE;
 			send_gdb_command (address);
 			if (!last_value_ok)
-				throw new TargetException ("Can't read target memory at address " + address);
+				throw new TargetException ("Can't read target memory at address `" +
+							   address + "'");
 
 			return last_long_value;
 		}
@@ -607,6 +618,8 @@ namespace Mono.Debugger.Backends
 
 		void frame_changed (StackFrame frame)
 		{
+			bool send_event = false;
+
 			foreach (ISymbolTable symtab in symtabs) {
 				ISourceLocation source = symtab.Lookup (frame.TargetLocation);
 
@@ -616,7 +629,35 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			if (current_frame_event != null)
+			long address = current_frame.TargetLocation.Address;
+
+			switch (step_mode) {
+			case StepMode.RUN:
+			case StepMode.STEP_ONE:
+				send_event = true;
+				break;
+
+			case StepMode.STEP_LINE_2:				
+			case StepMode.STEP_LINE:
+				Console.WriteLine ("CHECK: " + address + " " + step_start + " " +
+						   step_range + " " + (step_start + step_range - address));
+
+				if ((address < step_start) || (address >= step_start + step_range)) {
+					send_event = true;
+					break;
+				}
+
+				Console.WriteLine ("CONTINE!");
+
+				continue_stepping = true;
+
+				break;
+
+			default:
+				break;
+			}
+
+			if (send_event && (current_frame_event != null))
 				current_frame_event (frame);
 		}
 
@@ -674,6 +715,8 @@ namespace Mono.Debugger.Backends
 			case "value-history-value":
 				if (wait_for == WaitForOutput.INTEGER_VALUE)
 					wait_for = WaitForOutput.INTEGER_VALUE_2;
+				else if (wait_for == WaitForOutput.SIGNED_INTEGER_VALUE)
+					wait_for = WaitForOutput.SIGNED_INTEGER_VALUE_2;
 				else if (wait_for == WaitForOutput.HEX_VALUE)
 					wait_for = WaitForOutput.HEX_VALUE_2;
 				else if (wait_for == WaitForOutput.LONG_VALUE)
@@ -821,6 +864,7 @@ namespace Mono.Debugger.Backends
 
 			case WaitForOutput.FRAME:
 			case WaitForOutput.INTEGER_VALUE:
+			case WaitForOutput.SIGNED_INTEGER_VALUE:
 			case WaitForOutput.HEX_VALUE:
 			case WaitForOutput.LONG_VALUE:
 			case WaitForOutput.STRING_VALUE:
@@ -831,6 +875,17 @@ namespace Mono.Debugger.Backends
 				wait_for = WaitForOutput.UNKNOWN;
 				try {
 					last_int_value = UInt32.Parse (line);
+					last_value_ok = true;
+					return true;
+				} catch {
+					// FIXME: report error
+				}
+				return true;
+
+			case WaitForOutput.SIGNED_INTEGER_VALUE_2:
+				wait_for = WaitForOutput.UNKNOWN;
+				try {
+					last_signed_int_value = Int32.Parse (line);
 					last_value_ok = true;
 					return true;
 				} catch {
@@ -901,6 +956,37 @@ namespace Mono.Debugger.Backends
 			// Console.WriteLine ("IDLE-LOOP DONE");
 		}
 
+		void start_target (string command, StepMode mode)
+		{
+			step_mode = mode;
+
+			if (mode != StepMode.STEP_LINE_2) {
+				step_start = 0;
+				step_range = 0;
+
+				if (current_frame != null) {
+					step_start = current_frame.TargetLocation.Address;
+					if (current_frame.SourceLocation != null)
+						step_range = current_frame.SourceLocation.SourceRange;
+				}
+			}
+
+			if (((mode == StepMode.STEP_LINE) || (mode == StepMode.STEP_LINE_2)) &&
+			    (current_frame != null)) {
+				long address = current_frame.TargetLocation.Address;
+				long call_target = arch.GetCallTarget (this, address);
+
+				if (call_target != null) {
+					Console.WriteLine ("CALL: {0:x} {1:x}", address, call_target);
+					send_gdb_command ("x/i $eip");
+					send_gdb_command ("x/5b $eip");
+				}
+			}
+
+			current_frame = null;
+			send_gdb_command (command);
+		}
+
 		string read_one_line (Stream stream)
 		{
 			StringBuilder text = new StringBuilder ();
@@ -969,6 +1055,11 @@ namespace Mono.Debugger.Backends
 			gdb_error_list.Clear ();
 
 			gdb_mutex.ReleaseMutex ();
+
+			if (continue_stepping) {
+				continue_stepping = false;
+				start_target ("stepi", StepMode.STEP_LINE_2);
+			}
 
 			return true;
 		}
