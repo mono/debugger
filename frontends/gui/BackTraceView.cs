@@ -91,7 +91,7 @@ namespace Mono.Debugger.GUI
 
 			store.Clear ();
 
-			if (backend.Inferior == null)
+			if (!backend.HasTarget)
 				return;
 
 			try {

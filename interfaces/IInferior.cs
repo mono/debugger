@@ -40,6 +40,13 @@ namespace Mono.Debugger
 	public interface ITargetNotification
 	{
 		// <summary>
+		//   Get the state of the target we're debugging.
+		// </summary>
+		TargetState State {
+			get;
+		}
+
+		// <summary>
 		//   This event is called when the target we're currently debugging has sent any
 		//   output to stdout.
 		// </summary>
@@ -120,13 +127,6 @@ namespace Mono.Debugger
 
 	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
-		// <summary>
-		//   Get the state of the target we're debugging.
-		// </summary>
-		TargetState State {
-			get;
-		}
-
 		// <summary>
 		//   Continue the target.
 		// </summary>

@@ -29,14 +29,14 @@ namespace Mono.Debugger.GUI
 
 			switch (new_state) {
 			case TargetState.STOPPED:
-				if ((backend.Inferior == null) || (backend.Inferior.Disassembler == null)) {
+				if (!backend.HasTarget || (backend.Disassembler == null)) {
 					widget.Sensitive = false;
 					break;
 				}
 
 				try {
-					IDisassembler dis = backend.Inferior.Disassembler;
-					TargetAddress frame = backend.Inferior.CurrentFrame;
+					IDisassembler dis = backend.Disassembler;
+					TargetAddress frame = backend.CurrentFrameAddress;
 					string insn = dis.DisassembleInstruction (ref frame);
 					entry.Text = String.Format ("0x{0:x}   {1}", frame.Address, insn);
 					widget.Sensitive = true;

@@ -5,7 +5,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
-	internal interface IArchitecture
+	public interface IArchitecture
 	{
 		// <summary>
 		//   The names of all registers.

@@ -1,5 +1,14 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* interface/IArchitecture.cs: Made this interface public.
+
+	* interface/IDebugerBackend.cs (IDebuggerBackend.Inferior): Removed
+	this property, the IInferior interface is a private interface.
+	You implement it when writing a new debugger backend, but it
+	shouldn't be used outside of Debugger.cs.
+
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IDebuggerBackend.cs: Added properties to specify the
 	application to debug, its command line arguments, environment and
 	current working directory.

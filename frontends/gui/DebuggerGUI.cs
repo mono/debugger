@@ -226,18 +226,10 @@ namespace Mono.Debugger.GUI
 
 		void OnRunProgramActivate (object sender, EventArgs args)
 		{
-			if (backend == null)
-			if (backend.Inferior == null)
+			if (!backend.HasTarget)
 				backend.Run ();
-			else {
-				Console.WriteLine ("Do not know how to continue");
-
-				//
-				// Maybe this works?
-				//
-				while (backend.State != TargetState.NO_TARGET)
-					backend.Finish ();
-			}
+			else
+				backend.Continue ();
 		}
 
 		void OnStopProgramActivate (object sender, EventArgs args)

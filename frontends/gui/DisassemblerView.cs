@@ -17,10 +17,10 @@ namespace Mono.Debugger.GUI
 			if (method == null)
 				return null;
 
-			if ((backend.Inferior == null) || (backend.Inferior.Disassembler == null))
+			if (!backend.HasTarget || (backend.Disassembler == null))
 				return null;
 
-			return backend.Inferior.Disassembler.DisassembleMethod (method);
+			return backend.Disassembler.DisassembleMethod (method);
 		}
 
 		protected override ISourceLocation GetSource (IStackFrame frame)

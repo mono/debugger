@@ -63,13 +63,13 @@ namespace Mono.Debugger.GUI
 
 			store.Clear ();
 
-			if (backend.Inferior == null)
+			if (!backend.HasTarget)
 				return;
 
-			IArchitecture arch = backend.Inferior.Architecture;
+			IArchitecture arch = backend.Architecture;
 
 			try {
-				long[] regs = backend.Inferior.GetRegisters (arch.RegisterIndices);
+				long[] regs = backend.GetRegisters (arch.RegisterIndices);
 
 				for (int i = 0; i < regs.Length; i++) {
 					TreeIter iter = new TreeIter ();

@@ -44,7 +44,7 @@ namespace Mono.Debugger.GUI
 			TargetAddress end = address + source.SourceRange;
 
 			string dis_message;
-			IDisassembler dis = backend.Inferior.Disassembler;
+			IDisassembler dis = backend.Disassembler;
 			if (dis != null) {
 				TargetAddress current = start;
 				while (current < end)

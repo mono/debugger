@@ -51,10 +51,6 @@ namespace Mono.Debugger
 			get; set;
 		}
 
-		IInferior Inferior {
-			get;
-		}
-
 		// <summary>
 		//   The ISourceFileFactory which is used to find source files.
 		// </summary>
@@ -63,9 +59,9 @@ namespace Mono.Debugger
 		}	       
 
 		// <summary>
-		//   Get the state of the target we're debugging.
+		//   Whether we have a program to debug.
 		// </summary>
-		TargetState State {
+		bool HasTarget {
 			get;
 		}
 
@@ -82,6 +78,8 @@ namespace Mono.Debugger
 
 		void NextLine ();
 
+		void Continue ();
+
 		void Finish ();
 
 		// <summary>
@@ -93,6 +91,14 @@ namespace Mono.Debugger
 		//   to start a new debugging session with the same breakpoint settings etc.
 		// </summary>
 		void Quit ();
+
+		// <summary>
+		//   Get the address of the current stack frame.
+		//   This doesn't do any symbol lookups.
+		// </summary>
+		TargetAddress CurrentFrameAddress {
+			get;
+		}
 
 		// <summary>
 		//   Get the current stack frame.
@@ -109,6 +115,31 @@ namespace Mono.Debugger
 		}
 
 		IStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
+
+		long GetRegister (int register);
+		long[] GetRegisters (int[] registers);
+
+		// <summary>
+		//   Returns a disassembler for the current target.
+		// </summary>
+		IDisassembler Disassembler {
+			get;
+		}
+
+		// <summary>
+		//   Gets the IArchitecture for the current target.
+		// </summary>
+		IArchitecture Architecture {
+			get;
+		}
+
+		// <summary>
+		//   Gets an ITargetMemoryAccess instance to access the
+		//   target's memory.
+		// </summary>
+		ITargetMemoryAccess TargetMemoryAccess {
+			get;
+		}
 
 		// <summary>
 		//   Adds a breakpoint at the specified target location.

@@ -495,7 +495,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		//
-		// IInferior
+		// ITargetNotification
 		//
 
 		bool busy = false;
@@ -551,6 +551,12 @@ namespace Mono.Debugger.Backends
 		public IInferior Inferior {
 			get {
 				return inferior;
+			}
+		}
+
+		public bool HasTarget {
+			get {
+				return inferior != null;
 			}
 		}
 
@@ -743,6 +749,14 @@ namespace Mono.Debugger.Backends
 				frame.Start, frame.End, null, StepMode.Finish));
 		}
 
+		public void Continue ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			inferior.Continue ();
+		}
+
 		public void Finish ()
 		{
 			if (inferior == null)
@@ -757,6 +771,18 @@ namespace Mono.Debugger.Backends
 
 			inferior.Step (new StepFrame (
 				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
+		}
+
+		public TargetAddress CurrentFrameAddress {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
+
+				if (State != TargetState.STOPPED)
+					throw new TargetNotStoppedException ();
+
+				return inferior.CurrentFrame;
+			}
 		}
 
 		public IStackFrame CurrentFrame {
@@ -806,6 +832,49 @@ namespace Mono.Debugger.Backends
 			}
 
 			return retval;
+		}
+
+		public long GetRegister (int register)
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			return inferior.GetRegister (register);
+		}
+
+		public long[] GetRegisters (int[] registers)
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			return inferior.GetRegisters (registers);
+		}
+
+		public IDisassembler Disassembler {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
+
+				return inferior.Disassembler;
+			}
+		}
+
+		public IArchitecture Architecture {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
+
+				return inferior.Architecture;
+			}
+		}
+
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
+
+				return inferior;
+			}
 		}
 
 		public IMethod Lookup (TargetAddress address)

@@ -104,9 +104,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "c":
 			case "continue":
-				if (backend.Inferior == null)
-					throw new NoTargetException ();
-				backend.Inferior.Continue ();
+				backend.Continue ();
 				last_command = command;
 				break;
 
@@ -136,18 +134,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "finish":
 				backend.Finish ();
-				break;
-
-			case "abort":
-				if (backend.Inferior == null)
-					throw new NoTargetException ();
-				backend.Inferior.Shutdown ();
-				break;
-
-			case "kill":
-				if (backend.Inferior == null)
-					throw new NoTargetException ();
-				backend.Inferior.Kill ();
 				break;
 
 			case "sleep":
