@@ -7,7 +7,7 @@
 G_BEGIN_DECLS
 
 extern void mono_debugger_readline_init (void);
-extern char *mono_debugger_readline_readline (const char *prompt);
+extern char *mono_debugger_readline_readline (GIOChannel *channel, const char *prompt);
 extern void mono_debugger_readline_add_history (const char *line);
 
 G_END_DECLS

@@ -41,10 +41,14 @@ namespace GLib {
 			hangup_id = mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
 		}
 
-		internal IOChannel (int fd)
+		public IOChannel (int fd)
 		{
 			_channel = g_io_channel_unix_new (fd);
 			hangup_id = mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+		}
+
+		public IntPtr Channel {
+			get { return _channel; }
 		}
 
 		//

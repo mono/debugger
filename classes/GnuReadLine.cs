@@ -11,11 +11,12 @@ namespace Mono.Debugger
 		extern static void mono_debugger_readline_init ();
 
 		[DllImport("libmonodebuggerreadline")]
-		extern static string mono_debugger_readline_readline (string prompt);
+		extern static string mono_debugger_readline_readline (IntPtr channel, string prompt);
 
 		[DllImport("libmonodebuggerreadline")]
 		extern static string mono_debugger_readline_add_history (string line);
 
+		IOChannel channel;
 		string prompt;
 
 		public static GnuReadLine ()
@@ -23,14 +24,15 @@ namespace Mono.Debugger
 			mono_debugger_readline_init ();
 		}
 
-		public GnuReadLine (string prompt)
+		public GnuReadLine (IOChannel channel, string prompt)
 		{
+			this.channel = channel;
 			this.prompt = prompt;
 		}
 
 		public string ReadLine ()
 		{
-			return mono_debugger_readline_readline (prompt);
+			return mono_debugger_readline_readline (channel.Channel, prompt);
 		}
 
 		public void AddHistory (string line)
