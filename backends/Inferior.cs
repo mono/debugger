@@ -356,7 +356,6 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 
 			IntPtr error;
-
 			TargetError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, out child_pid,

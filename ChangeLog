@@ -1,5 +1,12 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs
+	(ProcessStart.Arguments): Renamed to `UserArguments'.
+	(ProcessStart.Environment): Renamed to `UserEnvironment'.
+	(ProcessStart.Environment): New public property.	
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs (DebuggerOptions.JitWrapper): Removed.
 
 	* frontends/command-line/Main.cs: Removed all the `AssemblyInfo'

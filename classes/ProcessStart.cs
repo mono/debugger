@@ -47,8 +47,8 @@ namespace Mono.Debugger
 	public class ProcessStart
 	{
 		public string WorkingDirectory;
-		public string[] Arguments;
-		public string[] Environment;
+		public string[] UserArguments;
+		public string[] UserEnvironment;
 		public bool IsNative;
 		public bool LoadNativeSymbolTable;
 
@@ -82,7 +82,7 @@ namespace Mono.Debugger
 			if ((argv == null) || (argv.Length == 0))
 				throw new ArgumentException ();
 
-			this.Arguments = argv;
+			this.UserArguments = argv;
 			this.WorkingDirectory = options.WorkingDirectory;
 
 			try {
@@ -120,6 +120,10 @@ namespace Mono.Debugger
 			get { return argv; }
 		}
 
+		public string[] Environment {
+			get { return envp; }
+		}
+
 		public string TargetApplication {
 			get { return argv [0]; }
 		}
@@ -131,8 +135,8 @@ namespace Mono.Debugger
 		protected virtual void SetupEnvironment ()
 		{
 			ArrayList list = new ArrayList ();
-			if (Environment != null)
-				list.AddRange (Environment);
+			if (UserEnvironment != null)
+				list.AddRange (UserEnvironment);
 			list.Add ("LD_BIND_NOW=yes");
 
 			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
@@ -213,8 +217,8 @@ namespace Mono.Debugger
 		{
 			return String.Format ("{0} ({1},{2},{3},{4},{5})",
 					      GetType (), WorkingDirectory,
-					      print_argv (Arguments),
-					      print_argv (Environment),
+					      print_argv (UserArguments),
+					      print_argv (UserEnvironment),
 					      IsNative, LoadNativeSymbolTable);
 		}
 	}
