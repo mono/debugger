@@ -230,24 +230,6 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public override TargetAddress LocalsAddress {
-				get {
-					if (frame != null)
-						return frame.LocalsAddress;
-					else
-						return TargetAddress.Null;
-				}
-			}
-
-			public override TargetAddress ParamsAddress {
-				get {
-					if (frame != null)
-						return frame.ParamsAddress;
-					else
-						return TargetAddress.Null;
-				}
-			}
-
 			public override Register[] Registers {
 				get {
 					return core.GetRegisters ();

@@ -26,8 +26,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public enum AddressMode : long
 		{
-			Stack		= 0,
-			Register	= 0x10000000,
+			Register	= 0,
+			RegOffset	= 0x10000000,
 			TwoRegisters	= 0x20000000
 		}
 
@@ -205,7 +205,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : IDisposable
 	{
-		public const int  DynamicVersion = 28;
+		public const int  DynamicVersion = 29;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;

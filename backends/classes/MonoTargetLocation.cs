@@ -16,7 +16,7 @@ namespace Mono.Debugger.Backends
 		protected bool is_byref;
 		bool is_valid;
 
-		internal MonoTargetLocation (StackFrame frame, bool is_byref, long offset)
+		protected MonoTargetLocation (StackFrame frame, bool is_byref, long offset)
 		{
 			this.is_byref = is_byref;
 			this.offset = offset;
@@ -26,19 +26,19 @@ namespace Mono.Debugger.Backends
 			frame.FrameInvalidEvent += new ObjectInvalidHandler (frame_invalid);
 		}
 
-		protected MonoTargetLocation (MonoTargetLocation relative_to, TargetAddress address,
-					      bool isbyref)
-			: this (relative_to.frame, isbyref, 0)
-		{ }
+		// <summary>
+		//   The stack frame this location belongs to.
+		// </summary>
+		public StackFrame StackFrame {
+			get { return frame; }
+		}
 
 		// <summary>
 		//   If this variable is a reference type.  The actual contents of a
 		//   reference type starts at the dereferenced address plus `Offset'.
 		// </summary>
 		public bool IsByRef {
-			get {
-				return is_byref;
-			}
+			get { return is_byref; }
 		}
 
 		// <summary>
@@ -49,9 +49,7 @@ namespace Mono.Debugger.Backends
 		//   the register.
 		// </summary>
 		public long Offset {
-			get {
-				return offset;
-			}
+			get { return offset; }
 		}
 
 		// <summary>
@@ -100,9 +98,7 @@ namespace Mono.Debugger.Backends
 		//   next time the target is resumed and leaves the variable's scope.
 		// </summary>
 		public bool IsValid {
-			get {
-				return is_valid;
-			}
+			get { return is_valid; }
 		}
 
 		void frame_invalid (object o)
@@ -120,20 +116,6 @@ namespace Mono.Debugger.Backends
 
 		protected abstract TargetAddress GetAddress ();
 
-		// <summary>
-		//   Get an ITargetMemoryReader which is suitable for reading up to @size
-		//   bytes of the variable's contents.
-		//
-		//   Throws:
-		//     ArgumentException - @size exceeds the variable's size and we can't
-		//                         read past the end of the variable's contents
-		//                         (for instance if it's stored in a register).
-		// </summary>
-		// <remarks>
-		//   An attempt to read more data than the variable contains will usually
-		//   succeed for variables which are stored on the stack, but will fail
-		//   for register variables.
-		// </remarks>
 		public virtual ITargetMemoryReader ReadMemory (int size)
 		{
 			return TargetMemoryAccess.ReadMemory (Address, size);
@@ -170,7 +152,7 @@ namespace Mono.Debugger.Backends
 		//   the variable's contents (for instance to skip a header or access an
 		//   array element).
 		// </summary>
-		public virtual MonoTargetLocation GetLocationAtOffset (int offset, bool dereference)
+		public virtual MonoTargetLocation GetLocationAtOffset (long offset, bool dereference)
 		{
 			MonoTargetLocation new_location = Clone (offset);
 			if (!dereference)
@@ -180,9 +162,9 @@ namespace Mono.Debugger.Backends
 			return new MonoRelativeTargetLocation (this,  address);
 		}
 
-		protected abstract MonoTargetLocation Clone (int offset);
+		protected abstract MonoTargetLocation Clone (long offset);
 
-		public virtual object Clone ()
+		public object Clone ()
 		{
 			return Clone (0);
 		}
@@ -194,9 +176,9 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2:x}:{3}{4})",
-					      GetType (), frame.TargetAddress, offset,
-					      is_byref, MyToString ());
+			return String.Format ("{0} ({1}:{2}:{3:x}{4})",
+					      GetType (), frame.TargetAddress, is_byref, offset,
+					      MyToString ());
 		}
 	}
 }

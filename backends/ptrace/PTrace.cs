@@ -1043,8 +1043,6 @@ namespace Mono.Debugger.Backends
 		private struct ServerStackFrame
 		{
 			public long Address;
-			public long ParamsAddress;
-			public long LocalsAddress;
 		}
 
 		private class InferiorStackFrame : IInferiorStackFrame
@@ -1061,18 +1059,6 @@ namespace Mono.Debugger.Backends
 			public TargetAddress Address {
 				get {
 					return new TargetAddress (inferior.GlobalAddressDomain, frame.Address);
-				}
-			}
-
-			public TargetAddress ParamsAddress {
-				get {
-					return new TargetAddress (inferior.AddressDomain, frame.ParamsAddress);
-				}
-			}
-
-			public TargetAddress LocalsAddress {
-				get {
-					return new TargetAddress (inferior.AddressDomain, frame.LocalsAddress);
 				}
 			}
 		}

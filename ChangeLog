@@ -1,3 +1,18 @@
+2003-06-14  Martin Baulig  <martin@ximian.com>
+
+	* backends/IInferior.cs (IInferiorStackFrame): Removed the
+	`LocalsAddress' and `ParamsAddress' properties.
+	* classes/StackFrame.cs: Likewise.
+
+	* backends/classes/MonoRegisterLocation.cs: Removed.
+	* backends/classes/MonoStackLocation.cs: Removed.
+
+	* backends/classes/MonoVariableLocatin.cs: This is now used for all
+	variables, no matter whether they're stored on the stack or in a
+	register.  The JIT just distinguishes between variables which are
+	stored in a register and variables which are at an offset from a
+	register.  This base register can be %ebp or any other register.
+
 2003-06-13  Martin Baulig  <martin@ximian.com>
 
 	* wrapper/wrapper.c: Use POSIX semaphores instead of the mono

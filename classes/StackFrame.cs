@@ -82,14 +82,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract TargetAddress LocalsAddress {
-			get;
-		}
-
-		public abstract TargetAddress ParamsAddress {
-			get;
-		}
-
 		public abstract Register[] Registers {
 			get;
 		}

@@ -102,15 +102,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 		MonoTargetLocation GetLocation (StackFrame frame)
 		{
-			if (info.Mode == VariableInfo.AddressMode.Register) {
-				if (frame.Level != 0)
-					return null;
-				else
-					return new MonoRegisterLocation (
-						frame, type.IsByRef, info.Index, info.Offset);
-			} else if (info.Mode == VariableInfo.AddressMode.Stack)
-				return new MonoStackLocation (
-					frame, type.IsByRef, is_local, info.Offset, 0);
+			if (info.Mode == VariableInfo.AddressMode.Register)
+				return new MonoVariableLocation (frame, false, info.Index, info.Offset, type.IsByRef, 0);
+			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
+				return new MonoVariableLocation (frame, true, info.Index, info.Offset, type.IsByRef, 0);
 			else
 				return null;
 		}

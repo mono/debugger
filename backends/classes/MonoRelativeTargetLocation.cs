@@ -11,7 +11,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress address;
 
 		internal MonoRelativeTargetLocation (MonoTargetLocation relative_to, TargetAddress address)
-			: base (relative_to, address, false)
+			: base (relative_to.StackFrame, false, 0)
 		{
 			this.relative_to = relative_to;
 			this.address = address;
@@ -25,9 +25,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override bool HasAddress {
-			get {
-				return true;
-			}
+			get { return true; }
 		}
 
 		protected override TargetAddress GetAddress ()
@@ -35,9 +33,14 @@ namespace Mono.Debugger.Backends
 			return address;
 		}
 
-		protected override MonoTargetLocation Clone (int offset)
+		protected override MonoTargetLocation Clone (long offset)
 		{
 			return new MonoRelativeTargetLocation (relative_to, address + offset);
+		}
+
+		protected override string MyToString ()
+		{
+			return String.Format (":{0}:{1}", relative_to, address);
 		}
 	}
 }

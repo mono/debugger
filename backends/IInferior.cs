@@ -9,14 +9,6 @@ namespace Mono.Debugger.Backends
 		TargetAddress Address {
 			get;
 		}
-
-		TargetAddress ParamsAddress {
-			get;
-		}
-
-		TargetAddress LocalsAddress {
-			get;
-		}
 	}
 
 	public enum ChildEventType {
