@@ -1,3 +1,9 @@
+2002-11-30  Martin Baulig  <martin@ximian.com>
+
+	* glue/mono-debugger-readline.[ch]: New files.
+
+	* classes/GnuReadLine.cs: Added interface to GNU Readline.
+
 2002-11-28  Martin Baulig  <martin@ximian.com>
 
 	* frontends/command-line/Main.cs: Added new stand-alone command
