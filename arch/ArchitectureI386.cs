@@ -254,25 +254,25 @@ namespace Mono.Debugger
 
 			foreach (Register register in registers) {
 				switch (register.Index) {
-				case (uint) I386Register.EBP:
+				case (int) I386Register.EBP:
 					retval [0] = (uint) ((long) register.Data);
 					break;
-				case (uint) I386Register.EAX:
+				case (int) I386Register.EAX:
 					retval [1] = (uint) ((long) register.Data);
 					break;
-				case (uint) I386Register.EBX:
+				case (int) I386Register.EBX:
 					retval [2] = (uint) ((long) register.Data);
 					break;
-				case (uint) I386Register.ECX:
+				case (int) I386Register.ECX:
 					retval [3] = (uint) ((long) register.Data);
 					break;
-				case (uint) I386Register.EDX:
+				case (int) I386Register.EDX:
 					retval [4] = (uint) ((long) register.Data);
 					break;
-				case (uint) I386Register.ESI:
+				case (int) I386Register.ESI:
 					retval [5] = (uint) ((long) register.Data);
 					break;
-				case (uint) I386Register.EDI:
+				case (int) I386Register.EDI:
 					retval [6] = (uint) ((long) register.Data);
 					break;
 				}
