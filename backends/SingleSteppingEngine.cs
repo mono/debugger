@@ -414,6 +414,28 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
+			if (message == Inferior.ChildEventType.HANDLE_EXCEPTION) {
+				TargetAddress stack = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
+				TargetAddress ip = new TargetAddress (
+					manager.AddressDomain, cevent.Data2);
+
+				if (handle_exception (stack, ip)) {
+					current_operation = new Operation (OperationType.Exception, null);
+
+					do_continue (ip);
+					return;
+				}
+
+				Report.Debug (DebugFlags.SSE, "{0} not stopping at exception ({1}:{2}) - {3}",
+					      this, stack, ip, current_operation);
+
+				if (temp_breakpoint_id != 0) {
+					do_continue ();
+					return;
+				}
+			}
+
 			TargetEventArgs result = null;
 
 			// To step over a method call, the sse inserts a temporary
@@ -518,22 +540,6 @@ namespace Mono.Debugger.Backends
 
 				do_continue (ip);
 				return;
-			}
-
-			case Inferior.ChildEventType.HANDLE_EXCEPTION: {
-				TargetAddress stack = new TargetAddress (
-					inferior.AddressDomain, cevent.Data1);
-				TargetAddress ip = new TargetAddress (
-					manager.AddressDomain, cevent.Data2);
-
-				if (handle_exception (stack, ip)) {
-					current_operation = new Operation (OperationType.Exception, null);
-
-					do_continue (ip);
-					return;
-				}
-
-				break;
 			}
 
 			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
