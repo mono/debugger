@@ -136,6 +136,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.Finish ();
 				break;
 
+			case "stop":
+				backend.Stop ();
+				break;
+
 			case "sleep":
 				Thread.Sleep (50000);
 				break;

@@ -833,6 +833,14 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 	return result;
 }
 
+static ServerCommandError
+server_ptrace_stop (InferiorHandle *handle)
+{
+	kill (handle->pid, SIGSTOP);
+
+	return COMMAND_ERROR_NONE;
+}
+
 /*
  * Method VTable for this backend.
  */
@@ -855,5 +863,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_get_breakpoints,
 	server_ptrace_get_registers,
 	server_ptrace_get_backtrace,
-	server_ptrace_get_ret_address
+	server_ptrace_get_ret_address,
+	server_ptrace_stop
 };

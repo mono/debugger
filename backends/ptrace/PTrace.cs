@@ -141,6 +141,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_ret_address (IntPtr handle, out long retval);
 
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_stop (IntPtr handle);
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -742,6 +745,12 @@ namespace Mono.Debugger.Backends
 
 			insert_temporary_breakpoint (current);
 			Continue ();
+		}
+
+		public void Stop ()
+		{
+			check_disposed ();
+			check_error (mono_debugger_server_stop (server_handle));
 		}
 
 		public void Detach ()

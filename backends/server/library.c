@@ -237,3 +237,12 @@ mono_debugger_server_get_ret_address (ServerHandle *handle, guint64 *retval)
 
 	return (* handle->info->get_ret_address) (handle->inferior, retval);
 }
+
+ServerCommandError
+mono_debugger_server_stop (ServerHandle *handle)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->stop) (handle->inferior);
+}

@@ -162,6 +162,11 @@ namespace Mono.Debugger
 		// </summary>
 		void Step (IStepFrame frame);
 
+		// <summary>
+		//   Stop the target.
+		// </summary>
+		void Stop ();
+
 		// <remarks>
 		//   The following two methods are more or less private.
 		// </remarks>

@@ -757,6 +757,14 @@ namespace Mono.Debugger.Backends
 			inferior.Continue ();
 		}
 
+		public void Stop ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			inferior.Stop ();
+		}
+
 		public void Finish ()
 		{
 			if (inferior == null)

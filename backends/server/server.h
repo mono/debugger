@@ -187,6 +187,12 @@ typedef struct {
 	 */
 	ServerCommandError    (* get_ret_address)     (InferiorHandle   *handle,
 						       guint64          *retval);
+
+	/*
+	 * Stop the target.
+	 */
+	ServerCommandError    (* stop)                (InferiorHandle   *handle);
+
 } InferiorInfo;
 
 extern InferiorInfo i386_linux_ptrace_inferior;
@@ -302,6 +308,9 @@ mono_debugger_server_get_backtrace       (ServerHandle        *handle,
 ServerCommandError
 mono_debugger_server_get_ret_address     (ServerHandle        *handle,
 					  guint64             *retval);
+
+ServerCommandError
+mono_debugger_server_stop                (ServerHandle       *handle);
 
 G_END_DECLS
 

@@ -83,6 +83,11 @@ namespace Mono.Debugger
 		void Finish ();
 
 		// <summary>
+		//   Stop the target.
+		// </summary>
+		void Stop ();
+
+		// <summary>
 		//   Tell the debugger that we're finished debugging.  This kills the target
 		//   and terminates the current debugging session.  If the backend is talking
 		//   to an external debugger like gdb, it'll also quit this process.
