@@ -104,13 +104,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public object AddressDomain {
+		public AddressDomain AddressDomain {
 			get {
 				return info.AddressDomain;
 			}
 		}
 
-		public object GlobalAddressDomain {
+		public AddressDomain GlobalAddressDomain {
 			get {
 				return info.GlobalAddressDomain;
 			}

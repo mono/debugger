@@ -110,6 +110,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		public ITargetMemoryInfo TargetMemoryInfo {
+			get {
+				check_disposed ();
+				return inferior;
+			}
+		}
+
 		public IInferior Inferior {
 			get {
 				check_disposed ();

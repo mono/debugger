@@ -93,7 +93,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int[] ParamTypeInfoOffsets;
 		public readonly int[] LocalTypeInfoOffsets;
 
-		public MethodAddress (MethodEntry entry, TargetBinaryReader reader, object domain)
+		public MethodAddress (MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
 		{
 			reader.Position = 4;
 			StartAddress = new TargetAddress (domain, reader.ReadAddress ());
@@ -306,8 +306,10 @@ namespace Mono.Debugger.Languages.CSharp
 			return MonoType.GetType (entry.Type, entry.TypeInfo, this);
 		}
 
-		public object AddressDomain {
-			get { return Backend.ThreadManager; }
+		public AddressDomain AddressDomain {
+			get {
+				return Backend.ThreadManager.AddressDomain;
+			}
 		}
 
 		public ArrayList SymbolRanges {
@@ -711,6 +713,7 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly string SymbolFile;
 		internal Module Module;
 		internal ThreadManager ThreadManager;
+		internal AddressDomain GlobalAddressDomain;
 		internal ITargetInfo TargetInfo;
 		protected OffsetTable offset_table;
 		protected MonoCSharpLanguageBackend language;
@@ -742,6 +745,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.language = language;
 
 			ThreadManager = backend.ThreadManager;
+			GlobalAddressDomain = memory.GlobalAddressDomain;
 
 			address_size = TargetInfo.TargetAddressSize;
 			long_size = TargetInfo.TargetLongIntegerSize;
@@ -973,7 +977,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (!method.IsLoaded) {
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
-				method.Load (reader, (object) ThreadManager);
+				method.Load (reader, GlobalAddressDomain);
 			}
 
 			return method;
@@ -1318,10 +1322,10 @@ namespace Mono.Debugger.Languages.CSharp
 					   string name, ITargetMemoryReader dynamic_reader)
 				: this (reader, method, name)
 			{
-				Load (dynamic_reader.BinaryReader, (object) reader.ThreadManager);
+				Load (dynamic_reader.BinaryReader, reader.GlobalAddressDomain);
 			}
 
-			public void Load (TargetBinaryReader dynamic_reader, object domain)
+			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
 			{
 				if (is_loaded)
 					throw new InternalError ();
@@ -1709,19 +1713,21 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 			reload_event.WaitOne ();
 
+			ITargetMemoryInfo meminfo = process.TargetMemoryInfo;
+
 			TargetAddress method;
 			switch (inferior.TargetAddressSize) {
 			case 4:
-				method = new TargetAddress (thread_manager, (int) result);
+				method = new TargetAddress (meminfo.GlobalAddressDomain, (int) result);
 				break;
 
 			case 8:
-				method = new TargetAddress (thread_manager, result);
+				method = new TargetAddress (meminfo.GlobalAddressDomain, result);
 				break;
 				
 			default:
 				throw new TargetMemoryException (
-					"Unknown target address size " + inferior.TargetAddressSize);
+					"Unknown target address size " + meminfo.TargetAddressSize);
 			}
 
 			return method;

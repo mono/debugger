@@ -18,6 +18,7 @@ namespace Mono.Debugger.Architecture
 		DebuggerBackend backend;
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
+		AddressDomain address_domain;
 
 		public CoreFile (DebuggerBackend backend, string application, string core_file,
 				 BfdContainer bfd_container)
@@ -26,6 +27,8 @@ namespace Mono.Debugger.Architecture
 			this.symtab_manager = backend.SymbolTableManager;
 
 			arch = new ArchitectureI386 (this);
+
+			address_domain = new AddressDomain ("core");
 
 			core_file = Path.GetFullPath (core_file);
 			application = Path.GetFullPath (application);
@@ -155,24 +158,18 @@ namespace Mono.Debugger.Architecture
 
 		protected class CoreFileStackFrame : IInferiorStackFrame
 		{
-			IInferior inferior;
+			CoreFile core;
 			TargetAddress address;
 			TargetAddress params_address;
 			TargetAddress locals_address;
 
-			public CoreFileStackFrame (IInferior inferior, long address,
+			public CoreFileStackFrame (CoreFile core, long address,
 						   long params_address, long locals_address)
 			{
-				this.inferior = inferior;
-				this.address = new TargetAddress (inferior, address);
-				this.params_address = new TargetAddress (inferior, params_address);
-				this.locals_address = new TargetAddress (inferior, locals_address);
-			}
-
-			public IInferior Inferior {
-				get {
-					return inferior;
-				}
+				this.core = core;
+				this.address = new TargetAddress (core.AddressDomain, address);
+				this.params_address = new TargetAddress (core.AddressDomain, params_address);
+				this.locals_address = new TargetAddress (core.AddressDomain, locals_address);
 			}
 
 			public TargetAddress Address {
@@ -378,12 +375,12 @@ namespace Mono.Debugger.Architecture
 		// ITargetMemoryAccess
 		//
 
-		public object GlobalAddressDomain {
-			get { return this; }
+		public AddressDomain GlobalAddressDomain {
+			get { return address_domain; }
 		}
 
-		public object AddressDomain {
-			get { return this; }
+		public AddressDomain AddressDomain {
+			get { return address_domain; }
 		}
 
 		public byte ReadByte (TargetAddress address)

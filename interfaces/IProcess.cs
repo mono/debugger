@@ -39,6 +39,10 @@ namespace Mono.Debugger
 
 		void Kill ();
 
+		ITargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
 		TargetAddress CurrentFrameAddress {
 			get;
 		}

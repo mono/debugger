@@ -1,3 +1,13 @@
+2003-01-02  Martin Baulig  <martin@ximian.com>
+
+	* classes/AddressDomain.cs: New global class.
+
+	* classes/TargetAddress.cs: Use an instance of the new
+	AddressDomain class as the domain instead of just an `object'.
+	The AddressDomain has a name and an unique ID which is now used in
+	all error messages - this helps you a lot if you're evey wondering
+	why a comparision fails with an ArgumentException.
+
 2003-01-01  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetMemoryAccess.cs (ITargetMemoryInfo): New

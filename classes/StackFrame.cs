@@ -24,6 +24,7 @@ namespace Mono.Debugger
 		IMethod method;
 		TargetAddress address;
 		SourceLocation source;
+		AddressDomain address_domain;
 		int level;
 
 		public StackFrame (TargetAddress address, int level,
@@ -63,6 +64,15 @@ namespace Mono.Debugger
 			get {
 				check_disposed ();
 				return address;
+			}
+		}
+
+		public virtual AddressDomain AddressDomain {
+			get {
+				if (address_domain == null)
+					address_domain = new AddressDomain ("frame");
+
+				return address_domain;
 			}
 		}
 
@@ -143,6 +153,9 @@ namespace Mono.Debugger
 				if (disposing) {
 					if (FrameInvalid != null)
 						FrameInvalid ();
+
+					if (address_domain != null)
+						address_domain.Dispose ();
 
 					method = null;
 					source = null;

@@ -82,11 +82,11 @@ namespace Mono.Debugger
 
 	public interface ITargetMemoryInfo : ITargetInfo
 	{
-		object AddressDomain {
+		AddressDomain AddressDomain {
 			get;
 		}
 
-		object GlobalAddressDomain {
+		AddressDomain GlobalAddressDomain {
 			get;
 		}
 	}

@@ -53,6 +53,7 @@ namespace Mono.Debugger.Backends
 		DebuggerErrorHandler error_handler;
 		BreakpointManager breakpoint_manager;
 		ThreadManager thread_manager;
+		AddressDomain address_domain;
 
 		int child_pid;
 		bool native;
@@ -428,6 +429,8 @@ namespace Mono.Debugger.Backends
 
 		void setup_inferior (ProcessStart start, DebuggerErrorHandler error_handler)
 		{
+			address_domain = new AddressDomain (String.Format ("ptrace ({0})", child_pid));
+
 			try {
 				bfd = bfd_container.AddFile (this, start.TargetApplication,
 							     start.LoadNativeSymtab);
@@ -546,12 +549,19 @@ namespace Mono.Debugger.Backends
 		// ITargetMemoryAccess
 		//
 
-		public object AddressDomain {
-			get { return this; }
+		public AddressDomain AddressDomain {
+			get { 
+				if (address_domain == null)
+					throw new NoTargetException ();
+
+				return address_domain;
+			}
 		}
 
-		public object GlobalAddressDomain {
-			get { return thread_manager; }
+		public AddressDomain GlobalAddressDomain {
+			get {
+				return thread_manager.AddressDomain;
+			}
 		}
 
 		IntPtr read_buffer (TargetAddress address, int size)

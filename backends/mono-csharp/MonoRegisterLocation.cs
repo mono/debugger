@@ -31,7 +31,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (contents == 0)
 				throw new LocationInvalidException ();
 
-			return new TargetAddress (TargetMemoryAccess, contents);
+			return new TargetAddress (TargetMemoryAccess.AddressDomain, contents);
 		}
 
 		public override ITargetMemoryReader ReadMemory (int size)

@@ -64,8 +64,8 @@ namespace Mono.Debugger.Architecture
 				if ((max_frames >= 0) && (frames.Count >= max_frames))
 					break;
 
-				eip = (uint) ReadInteger (new TargetAddress (this, ebp + 4));
-				ebp = (uint) ReadInteger (new TargetAddress (this, ebp));
+				eip = (uint) ReadInteger (new TargetAddress (AddressDomain, ebp + 4));
+				ebp = (uint) ReadInteger (new TargetAddress (AddressDomain, ebp));
 			}
 
 			IInferiorStackFrame[] retval = new IInferiorStackFrame [frames.Count];
@@ -75,7 +75,7 @@ namespace Mono.Debugger.Architecture
 
 		protected override TargetAddress GetCurrentFrame ()
 		{
-			return new TargetAddress (this, registers [(int) I386Register.EIP]);
+			return new TargetAddress (AddressDomain, registers [(int) I386Register.EIP]);
 		}
 
 		public override Register[] GetRegisters ()

@@ -310,7 +310,7 @@ namespace Mono.Debugger.GUI
 			}
 
 			current_area = null;
-			start = new TargetAddress (process.Inferior, address);
+			start = new TargetAddress (process.TargetMemoryInfo.AddressDomain, address);
 
 			try {
 				update_areas ();

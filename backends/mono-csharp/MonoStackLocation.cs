@@ -40,10 +40,11 @@ namespace Mono.Debugger.Languages.CSharp
 			// First get the address of this variable on the stack.
 			TargetAddress base_address = is_local ? frame.LocalsAddress : frame.ParamsAddress;
 			TargetAddress address;
+			AddressDomain domain = frame.AddressDomain;
 			if (is_local)
-				address = new TargetAddress (frame, base_address.Address + stack_offset);
+				address = new TargetAddress (domain, base_address.Address + stack_offset);
 			else
-				address = new TargetAddress (frame, base_address.Address + stack_offset);
+				address = new TargetAddress (domain, base_address.Address + stack_offset);
 
 			// If this is a reference type, there's just a pointer to the
 			// actual contents on the stack which we need to dereference.

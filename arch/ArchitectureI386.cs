@@ -252,7 +252,7 @@ namespace Mono.Debugger
 							out TargetAddress retaddr)
 		{
 			TargetAddress stack = new TargetAddress (
-				target, target.GetRegister ((int) I386Register.ESP));
+				target.AddressDomain, target.GetRegister ((int) I386Register.ESP));
 
 			method = target.ReadGlobalAddress (stack);
 			code = target.ReadGlobalAddress (stack + target.TargetAddressSize +
@@ -324,7 +324,7 @@ namespace Mono.Debugger
 				return null;
 			pos += 2;
 
-			TargetAddress ebp = new TargetAddress (memory, regs [0]);
+			TargetAddress ebp = new TargetAddress (memory.AddressDomain, regs [0]);
 			regs [0] = (uint) target.ReadInteger (ebp);
 			ebp -= target.TargetAddressSize;
 

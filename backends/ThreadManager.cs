@@ -27,6 +27,7 @@ namespace Mono.Debugger
 		Process main_process;
 		Process debugger_process;
 		Mutex thread_lock_mutex;
+		AddressDomain address_domain;
 		BreakpointManager breakpoint_manager;
 		DaemonThreadHandler csharp_handler;
 		int thread_lock_level = 0;
@@ -51,6 +52,8 @@ namespace Mono.Debugger
 
 			thread_lock_mutex = new Mutex ();
 			breakpoint_manager = new BreakpointManager ();
+
+			address_domain = new AddressDomain ("global");
 		}
 
 		public bool Initialize (Process process, DaemonThreadHandler csharp_handler)
@@ -95,6 +98,10 @@ namespace Mono.Debugger
 
 		public Process MainProcess {
 			get { return main_process; }
+		}
+
+		public AddressDomain AddressDomain {
+			get { return address_domain; }
 		}
 
 		public event ThreadEventHandler InitializedEvent;

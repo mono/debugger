@@ -20,7 +20,7 @@ namespace Mono.Debugger
 	public struct TargetAddress : IComparable
 	{
 		private ulong address;
-		private object domain;
+		private AddressDomain domain;
 
 		// <remarks>
 		//   Don't use this in a comparision, use IsNull instead.
@@ -33,7 +33,7 @@ namespace Mono.Debugger
 		//   This is not what it looks like.
 		//   Never use this constructor unless you know exactly what you're doing.
 		// </summary>
-		public TargetAddress (object domain, long address)
+		public TargetAddress (AddressDomain domain, long address)
 		{
 			this.domain = domain;
 			this.address = (ulong) address;
@@ -55,7 +55,7 @@ namespace Mono.Debugger
 		//   be anything else.  It is used to ensure that addresses are only used in
 		//   the domain they came from.
 		// </summary>
-		public object Domain {
+		public AddressDomain Domain {
 			get {
 				return domain;
 			}
@@ -84,12 +84,21 @@ namespace Mono.Debugger
 			return saddr;
 		}
 
+		static void check_domains (TargetAddress a, TargetAddress b)
+		{
+			if (a.domain == b.domain)
+				return;
+
+			throw new ArgumentException (String.Format (
+				"Cannot compare addresses from different domains {0} and {1}",
+				a.Domain, b.Domain));
+		}
+
 		public int CompareTo (object obj)
 		{
 			TargetAddress addr = (TargetAddress) obj;
 
-			if (addr.domain != domain)
-				throw new ArgumentException ();
+			check_domains (addr, this);
 
 			if (address < addr.address)
 				return -1;
@@ -105,49 +114,37 @@ namespace Mono.Debugger
 
 		public static bool operator < (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
-
+			check_domains (a, b);
 			return a.address < b.address;
 		}
 
 		public static bool operator > (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
-
+			check_domains (a, b);
 			return a.address > b.address;
 		}
 
 		public static bool operator == (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
-
+			check_domains (a, b);
 			return a.address == b.address;
 		}
 
 		public static bool operator != (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
-
+			check_domains (a, b);
 			return a.address != b.address;
 		}
 
 		public static bool operator <= (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
-
+			check_domains (a, b);
 			return a.address <= b.address;
 		}
 
 		public static bool operator >= (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
-
+			check_domains (a, b);
 			return a.address >= b.address;
 		}
 
@@ -175,8 +172,7 @@ namespace Mono.Debugger
 
 		public static long operator - (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain != b.domain)
-				throw new ArgumentException ();
+			check_domains (a, b);
 
 			if (a > b)
 				return (long) (a.address - b.address);
