@@ -34,10 +34,19 @@ public class X
 		StaticHello (a);
 	}
 
+	public static void TestStatic (X y, int a, string b)
+	{
+		y.Foo (a);
+		y.Foo (b);
+		y.Hello (a);
+		StaticHello (a);
+	}
+
 	public static void Main ()
 	{
 		X x = new X ();
 		x.Test (5, "Hello World");
+		TestStatic (x, 9, "Boston");
 		StaticHello (9);
 	}
 }

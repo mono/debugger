@@ -130,7 +130,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public abstract class FrameCommand : ProcessCommand
 	{
-		int frame;
+		int frame = -1;
 
 		public int Frame {
 			get { return frame; }
@@ -168,8 +168,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			ScriptingContext new_context = context.GetExpressionContext ();
 			if (Process > 0)
 				new_context.CurrentProcess = ResolveProcess (new_context);
-			if (Frame > 0)
-				new_context.CurrentFrame = ResolveFrame (new_context);
+			ResolveFrame (new_context);
+			new_context.CurrentFrameIndex = Frame;
 
 			object retval = expression.Evaluate (new_context);
 			new_context.PrintObject (retval);
@@ -196,8 +196,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			ScriptingContext new_context = context.GetExpressionContext ();
 			if (Process > 0)
 				new_context.CurrentProcess = ResolveProcess (new_context);
-			if (Frame > 0)
-				new_context.CurrentFrame = ResolveFrame (new_context);
+			ResolveFrame (new_context);
+			new_context.CurrentFrameIndex = Frame;
 
 			ITargetType type = expression.EvaluateType (new_context);
 			new_context.PrintType (type);
@@ -1087,8 +1087,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			ScriptingContext new_context = context.GetExpressionContext ();
 			if (Process > 0)
 				new_context.CurrentProcess = ResolveProcess (new_context);
-			if (Frame > 0)
-				new_context.CurrentFrame = ResolveFrame (new_context);
+			ResolveFrame (new_context);
+			new_context.CurrentFrameIndex = Frame;
 
 			object retval = expression.Evaluate (new_context);
 			switch (mode) {

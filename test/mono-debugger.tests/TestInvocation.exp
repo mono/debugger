@@ -5,7 +5,7 @@ source $srcdir/mdb.exp
 
 set file $srcdir/TestInvocation.cs
 mdb_start "TestInvocation.exe"
-mdb_expect_frame 0 "X.Main()" $file 39
+mdb_expect_frame 0 "X.Main()" $file 47
 mdb_send "break 31"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
@@ -34,4 +34,14 @@ mdb_send "print StaticHello (Hello (4))"
 mdb_expect_line "Hello: 4"
 mdb_expect_line "Static Hello: 16"
 mdb_expect "128"
+mdb_send "break 39"
+set breakpoint [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_stopped 0 "X.TestStatic(X,System.Int32,System.String)" $file 39
+mdb_send "print a"
+mdb_expect "9"
+mdb_send "print b"
+mdb_expect "\"Boston\""
+mdb_send "print %esi"
+mdb_expect "0x9"
 mdb_send "quit"

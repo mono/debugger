@@ -597,7 +597,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class ScriptingContext
 	{
 		ProcessHandle current_process;
-		FrameHandle current_frame;
+		int current_frame_idx = -1;
 		Interpreter interpreter;
 
 		ScriptingContext parent;
@@ -624,7 +624,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.parent = parent;
 
 			current_process = parent.CurrentProcess;
-			current_frame = parent.CurrentFrame;
 		}
 
 		public ScriptingContext GetExpressionContext ()
@@ -655,15 +654,17 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public FrameHandle CurrentFrame {
 			get {
-				if ((current_frame != null) && current_frame.Frame.IsValid)
-					return current_frame;
+				return current_process.GetFrame (current_frame_idx);
+			}
+		}
 
-				current_frame = CurrentProcess.CurrentFrame;
-				return current_frame;
+		public int CurrentFrameIndex {
+			get {
+				return current_frame_idx;
 			}
 
 			set {
-				current_frame = value;
+				current_frame_idx = value;
 			}
 		}
 
