@@ -15,7 +15,6 @@ static gpointer command_ready_cond;
 static gpointer main_ready_cond;
 
 static gpointer debugger_finished_cond;
-static CRITICAL_SECTION debugger_finished_mutex;
 
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
@@ -63,9 +62,7 @@ mono_debugger_wait_cond (gpointer cond)
 static void
 mono_debugger_wait (void)
 {
-	IO_LAYER (LeaveCriticalSection) (&debugger_finished_mutex);
 	mono_debugger_wait_cond (debugger_finished_cond);
-	IO_LAYER (EnterCriticalSection) (&debugger_finished_mutex);
 }
 
 static void
@@ -154,7 +151,6 @@ initialize_debugger_support (void)
 	command_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 	main_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
-	IO_LAYER (InitializeCriticalSection) (&debugger_finished_mutex);
 	debugger_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
 	debugger_notification_function = mono_debug_create_notification_function
@@ -243,10 +239,8 @@ debugger_thread_handler (gpointer user_data)
 		debugger_signalled = FALSE;
 
 		if (must_send_finished) {
-			IO_LAYER (EnterCriticalSection) (&debugger_finished_mutex);
 			IO_LAYER (ReleaseSemaphore) (debugger_finished_cond, 1, NULL);
 			must_send_finished = FALSE;
-			IO_LAYER (LeaveCriticalSection) (&debugger_finished_mutex);
 		}
 	}
 
