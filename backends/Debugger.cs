@@ -256,7 +256,7 @@ namespace Mono.Debugger
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
 
-		ISourceFileFactory source_factory;
+		SourceFileFactory source_factory;
 		SymbolTableCollection symtabs;
 
 		IInferior inferior;
@@ -273,11 +273,11 @@ namespace Mono.Debugger
 
 		bool native;
 
-		public DebuggerBackend (ISourceFileFactory source_factory)
+		public DebuggerBackend (SourceFileFactory source_factory)
 			: this (source_factory, false)
 		{ }
 
-		public DebuggerBackend (ISourceFileFactory source_factory, bool native)
+		public DebuggerBackend (SourceFileFactory source_factory, bool native)
 		{
 			NameValueCollection settings = ConfigurationSettings.AppSettings;
 
@@ -816,7 +816,7 @@ namespace Mono.Debugger
 				FrameChangedEvent (current_frame);
 		}
 
-		public ISourceFileFactory SourceFileFactory {
+		public SourceFileFactory SourceFileFactory {
 			get {
 				check_disposed ();
 				return source_factory;

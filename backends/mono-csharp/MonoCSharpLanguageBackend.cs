@@ -416,7 +416,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			MonoSymbolTableReader reader;
 			MethodEntry method;
-			ISourceFileFactory factory;
+			SourceFileFactory factory;
 			System.Reflection.MethodBase rmethod;
 			MonoType[] param_types;
 			MonoType[] local_types;

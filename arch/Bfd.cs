@@ -114,7 +114,7 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (IInferior inferior, string filename, bool core_file, ISourceFileFactory factory)
+		public Bfd (IInferior inferior, string filename, bool core_file, SourceFileFactory factory)
 		{
 			this.inferior = inferior;
 			this.filename = filename;

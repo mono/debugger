@@ -5,7 +5,7 @@ using System.Collections;
 using Mono.Debugger;
 using Mono.CSharp.Debugger;
 
-public class SourceFile : Mono.Debugger.ISourceFile
+public class SourceFile : ISourceBuffer
 {
 	FileInfo file_info;
 	string contents;
@@ -47,14 +47,14 @@ public class SourceFile : Mono.Debugger.ISourceFile
 	}
 }
 
-public class SourceFileFactory : ISourceFileFactory
+public class SourceFileFactory
 {
 	Hashtable files = new Hashtable ();
 
-	public ISourceFile FindFile (string name)
+	public SourceFile FindFile (string name)
 	{
 		if (files.Contains (name))
-			return (ISourceFile) files [name];
+			return (SourceFile) files [name];
 
 		FileInfo file_info = new FileInfo (name);
 
@@ -63,7 +63,7 @@ public class SourceFileFactory : ISourceFileFactory
 			return null;
 		}
 
-		ISourceFile retval = new SourceFile (file_info);
+		SourceFile retval = new SourceFile (file_info);
 		files.Add (name, retval);
 		return retval;
 	}

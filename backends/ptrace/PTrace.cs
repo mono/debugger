@@ -62,7 +62,7 @@ namespace Mono.Debugger.Backends
 		SymbolTableCollection native_symtabs;
 		SymbolTableCollection symtab_collection;
 		ISymbolTable application_symtab;
-		ISourceFileFactory source_factory;
+		SourceFileFactory source_factory;
 
 		int child_pid;
 		bool native;
@@ -243,7 +243,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public Inferior (string working_directory, string[] argv, string[] envp, bool native,
-				 ISourceFileFactory factory)
+				 SourceFileFactory factory)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
@@ -275,7 +275,7 @@ namespace Mono.Debugger.Backends
 			setup_inferior ();
 		}
 
-		public Inferior (int pid, string[] envp, ISourceFileFactory factory)
+		public Inferior (int pid, string[] envp, SourceFileFactory factory)
 		{
 			this.envp = envp;
 			this.source_factory = factory;

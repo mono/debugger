@@ -92,7 +92,7 @@ namespace Mono.Debugger.GUI
 
 		DebuggerBackend backend;
 		Interpreter interpreter;
-		ISourceFileFactory source_factory;
+		SourceFileFactory source_factory;
 
 		public DebuggerGUI (string[] arguments)
 		{

@@ -41,7 +41,7 @@ namespace Mono.Debugger
 		}
 
 		public static CSharpMethod GetMethodSource (IMethod imethod, MethodEntry method,
-							    int[] line_addresses, ISourceFileFactory factory)
+							    int[] line_addresses, SourceFileFactory factory)
 		{
 			if (method.SourceFile != null) {
 				ISourceBuffer buffer = factory.FindFile (method.SourceFile);
@@ -63,7 +63,7 @@ namespace Mono.Debugger
 
 		internal static ISourceBuffer GetMethodSource (IMethod imethod, MethodEntry method,
 							       int[] line_addresses,
-							       ISourceFileFactory factory,
+							       SourceFileFactory factory,
 							       out int start_row, out int end_row,
 							       out ArrayList addresses)
 		{
