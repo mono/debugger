@@ -188,7 +188,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("PARAM: {0}", var);
 
-					print_type (var.Type);
+					if (verbose)
+						print_type (var.Type);
 
 					if (!var.Type.HasObject)
 						continue;
@@ -209,7 +210,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("LOCAL: {0}", var);
 
-					print_type (var.Type);
+					if (verbose)
+						print_type (var.Type);
 
 					if (!var.Type.HasObject)
 						continue;
@@ -223,6 +225,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				}
 				break;
 			}
+
+			case "verbose":
+				verbose = !verbose;
+				Console.WriteLine ("Verbose is {0}.", verbose);
+				break;
 
 			case "break":
 				if (args.Length != 1) {
@@ -262,23 +269,30 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return true;
 		}
 
+		bool verbose = false;
+
 		void print_array (ITargetArrayObject array, int dimension)
 		{
-			Console.WriteLine ("ARRAY DIMENSION {0}", dimension);
-			Console.WriteLine ("DYNAMIC CONTENTS: [{0}]",
-					   TargetBinaryReader.HexDump (array.GetRawDynamicContents (-1)));
+			if (verbose) {
+				Console.WriteLine ("  ARRAY DIMENSION {0}", dimension);
+				Console.WriteLine ("  DYNAMIC CONTENTS: [{0}]",
+						   TargetBinaryReader.HexDump (array.GetRawDynamicContents (-1)));
+			}
 			
 			for (int i = array.LowerBound; i < array.UpperBound; i++) {
-				Console.WriteLine ("ELEMENT {0} {1}: {2}", dimension, i, array [i]);
+				if (verbose)
+					Console.WriteLine ("    ELEMENT {0} {1}: {2}", dimension, i, array [i]);
 				print_object (array [i]);
 			}
 		}
 
 		void print_struct (ITargetStructObject tstruct)
 		{
-			Console.WriteLine ("STRUCT: {0}", tstruct);
+			if (verbose)
+				Console.WriteLine ("  STRUCT: {0}", tstruct);
 			foreach (ITargetFieldInfo field in tstruct.Type.Fields) {
-				Console.WriteLine ("FIELD: {0}", field);
+				if (verbose)
+					Console.WriteLine ("    FIELD: {0}", field);
 				try {
 					if (field.Type.HasObject)
 						print_object (tstruct.GetField (field.Index));
@@ -287,7 +301,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				}
 			}
 			foreach (ITargetFieldInfo property in tstruct.Type.Properties) {
-				Console.WriteLine ("FIELD: {0}", property);
+				Console.WriteLine ("    FIELD: {0}", property);
 				try {
 					if (property.Type.HasObject)
 						print_object (tstruct.GetProperty (property.Index));
@@ -315,11 +329,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void print_pointer (ITargetPointerObject tpointer)
 		{
-			if (tpointer.Type.IsTypesafe && !tpointer.Type.HasStaticType)
-				Console.WriteLine ("CURRENTLY POINTS TO: {0}", tpointer.CurrentType);
+			if (tpointer.Type.IsTypesafe && !tpointer.Type.HasStaticType && verbose)
+				Console.WriteLine ("  CURRENTLY POINTS TO: {0}", tpointer.CurrentType);
 
-			if (tpointer.CurrentType.HasObject)
-				Console.WriteLine ("DEREFERENCED: {0}", tpointer.Object);
+			if (tpointer.CurrentType.HasObject) {
+				if (verbose)
+					Console.WriteLine ("  DEREFERENCED: {0}", tpointer.Object);
+				ITargetObject tobject = tpointer.Object as ITargetObject;
+				if (tobject != null)
+					print_object (tobject);
+			}
 		}
 
 		void print_type (ITargetType type)
@@ -363,15 +382,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (obj == null)
 				return;
 
-			Console.WriteLine ("OBJECT: {0} [{1}]", obj,
+			Console.WriteLine ("  OBJECT: {0} [{1}]", obj,
 					   TargetBinaryReader.HexDump (obj.RawContents));
 
-			if (!obj.Type.HasFixedSize)
-				Console.WriteLine ("DYNAMIC CONTENTS: [{0}]",
+			if (!obj.Type.HasFixedSize && verbose)
+				Console.WriteLine ("  DYNAMIC CONTENTS: [{0}]",
 						   TargetBinaryReader.HexDump (obj.GetRawDynamicContents (-1)));
 			
 			if (obj.HasObject)
-				Console.WriteLine ("OBJECT CONTENTS: |{0}|", obj.Object);
+				Console.WriteLine ("  OBJECT CONTENTS: |{0}|", obj.Object);
 
 			ITargetArrayObject array = obj as ITargetArrayObject;
 			if (array != null) {

@@ -1,5 +1,33 @@
 using System;
 
+struct A
+{
+	public int a;
+	public long b;
+	public string c;
+
+	public A (int a, long b, string c)
+	{
+		this.a = a;
+		this.b = b;
+		this.c = c;
+	}
+}
+
+class B
+{
+	public int a;
+	public long b;
+	public string c;
+
+	public B (int a, long b, string c)
+	{
+		this.a = a;
+		this.b = b;
+		this.c = c;
+	}
+}
+
 class X
 {
 	static void Simple ()
@@ -63,6 +91,18 @@ class X
 		Console.WriteLine (a);
 	}
 
+	static void StructType ()
+	{
+		A a = new A (5, 256, "New England Patriots");
+		Console.WriteLine (a);
+	}
+
+	static void ClassType ()
+	{
+		B b = new B (5, 256, "New England Patriots");
+		Console.WriteLine (b);
+	}
+
 	static void Main ()
 	{
 		Simple ();
@@ -72,5 +112,7 @@ class X
 		MultiValueTypeArray ();
 		StringArray ();
 		MultiStringArray ();
+		ClassType ();
+		StructType ();
 	}
 }

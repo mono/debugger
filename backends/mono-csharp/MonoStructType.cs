@@ -125,7 +125,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			try {
 				MonoTargetLocation field_loc = location.GetLocationAtOffset (
-					fields [index].Offset, false);
+					fields [index].Offset, fields [index].Type.IsByRef);
 
 				return fields [index].Type.GetObject (field_loc);
 			} catch {
@@ -165,6 +165,10 @@ namespace Mono.Debugger.Languages.CSharp
 		protected ITargetObject Invoke (TargetAddress method, MonoTargetLocation this_location)
 		{
 			TargetAddress exc_object;
+
+			// Can't automatically box valuetypes yet.
+			if (!IsByRef)
+				throw new LocationInvalidException ();
 
 			IInferior inferior = this_location.Inferior;
 			if (inferior == null)
