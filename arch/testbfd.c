@@ -11,7 +11,7 @@
 #endif
 
 int
-main (void)
+main (int argc, const char *argv [])
 {
 	bfd *abfd;
 	asymbol **symtab = NULL;
@@ -22,7 +22,9 @@ main (void)
 
 	bfd_init ();
 
-	abfd = bfd_openr ("test", NULL);
+	g_assert (argc == 2);
+
+	abfd = bfd_openr (argv [1], NULL);
 	if (!abfd) {
 		bfd_perror (NULL);
 		return 1;
@@ -46,8 +48,8 @@ main (void)
 
 	dis = disassembler (abfd);
 
-	printf ("BFD: %p - %d - %p - %p - %p,%d\n", abfd, storage_needed, symtab,
-		dis, sections, count_sections);
+	printf ("BFD: %p - %s - %d - %p - %p - %p,%d\n", abfd, abfd->xvec->name,
+		storage_needed, symtab, dis, sections, count_sections);
 
 	return 0;
 }
