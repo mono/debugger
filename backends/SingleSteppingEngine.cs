@@ -371,6 +371,7 @@ namespace Mono.Debugger.Backends
 			if (!must_send_update && (current_frame != null) &&
 			    current_frame.IsValid && (current_frame.TargetAddress == address)) {
 				current_operation = StepOperation.None;
+				change_target_state (TargetState.STOPPED, arg);
 				return;
 			}
 
