@@ -68,17 +68,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool IsInSameMethod (TargetAddress address)
-		{
-			if ((address < start) || (address >= end))
-				return false;
-
-			return true;
-		}
-
 		public SourceLocation Lookup (TargetAddress address)
 		{
-			if (!IsInSameMethod (address))
+			if (!MethodBase.IsInSameMethod (method, address))
 				return null;
 
 			ISourceBuffer source = ReadSource ();

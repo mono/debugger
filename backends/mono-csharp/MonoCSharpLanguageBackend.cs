@@ -615,7 +615,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
 					   string name, ITargetMemoryReader dynamic_reader)
-				: base (name, reader.ImageFile, method.SourceFile != null)
+				: base (name, reader.ImageFile)
 			{
 				this.reader = reader;
 				this.method = method;
@@ -628,6 +628,12 @@ namespace Mono.Debugger.Languages.CSharp
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
 					reader.assembly, args);
+
+				IMethodSource source = CSharpMethod.GetMethodSource (
+					this, method, address.LineNumbers);
+
+				if (source != null)
+					SetSource (source);
 			}
 
 			void get_variables ()
@@ -676,16 +682,6 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 
 				has_variables = true;
-			}
-
-			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
-								     out ArrayList addresses)
-			{
-				ISourceBuffer retval = CSharpMethod.GetMethodSource (
-					this, method, address.LineNumbers, out start_row, out end_row,
-					out addresses);
-
-				return retval;
 			}
 
 			public override ILanguageBackend Language {

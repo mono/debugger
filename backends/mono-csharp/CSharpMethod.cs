@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.CSharp
 							    JitLineNumberEntry[] line_numbers)
 		{
 			if (method.SourceFile == null)
-				throw new InvalidOperationException ();
+				return null;
 
 			ISourceBuffer buffer = null;
 			if (buffer == null)

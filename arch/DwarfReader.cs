@@ -424,8 +424,8 @@ namespace Mono.Debugger.Architecture
 
 		protected class DwarfNativeMethod : MethodBase
 		{
-			LineNumberEngine engine;
-			DieSubprogram subprog;
+			protected LineNumberEngine engine;
+			protected DieSubprogram subprog;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.ImageFile)
@@ -435,6 +435,9 @@ namespace Mono.Debugger.Architecture
 
 				if (subprog.IsContinuous)
 					SetAddresses (subprog.StartAddress, subprog.EndAddress);
+
+				if (engine != null)
+					SetSource (new DwarfNativeMethodSource (this));
 			}
 
 			public override ILanguageBackend Language {
@@ -461,28 +464,39 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
-								     out ArrayList addresses)
+			private class DwarfNativeMethodSource : MethodSource
 			{
-				start_row = end_row = 0;
-				addresses = null;
+				DwarfNativeMethod method;
 
-				if (engine == null)
-					return null;
-
-				string file = engine.GetSource (subprog, out start_row, out end_row,
-								out addresses);
-				if (file == null)
-					return null;
-
-				if ((addresses != null) && (addresses.Count > 2)) {
-					LineEntry start = (LineEntry) addresses [1];
-					LineEntry end = (LineEntry) addresses [addresses.Count - 1];
-
-					SetMethodBounds (start.Address, end.Address);
+				public DwarfNativeMethodSource (DwarfNativeMethod method)
+					: base (method)
+				{
+					this.method = method;
 				}
 
-				return new SourceBuffer (file);
+				protected override ISourceBuffer ReadSource (
+					out int start_row, out int end_row, out ArrayList addresses)
+				{
+					start_row = end_row = 0;
+					addresses = null;
+
+					if (method.engine == null)
+						throw new InternalError ();
+
+					string file = method.engine.GetSource (
+						method.subprog, out start_row, out end_row, out addresses);
+					if (file == null)
+						return null;
+
+					if ((addresses != null) && (addresses.Count > 2)) {
+						LineEntry start = (LineEntry) addresses [1];
+						LineEntry end = (LineEntry) addresses [addresses.Count - 1];
+
+						method.SetMethodBounds (start.Address, end.Address);
+					}
+
+					return new SourceBuffer (file);
+				}
 			}
 		}
 

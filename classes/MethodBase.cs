@@ -27,15 +27,14 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class MethodBase : IMethod, IMethodSource, ISymbolLookup, IComparable
+	public abstract class MethodBase : IMethod, ISymbolLookup, IComparable
 	{
 		ArrayList addresses;
-		ObjectCache source;
 		int start_row, end_row;
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
+		IMethodSource source;
 		bool is_loaded, has_bounds;
-		bool has_source;
 		string image_file;
 		string name;
 
@@ -51,14 +50,9 @@ namespace Mono.Debugger
 		}
 
 		protected MethodBase (string name, string image_file)
-			: this (name, image_file, true)
-		{ }
-
-		protected MethodBase (string name, string image_file, bool has_source)
 		{
 			this.name = name;
 			this.image_file = image_file;
-			this.has_source = has_source;
 		}
 
 		protected MethodBase (IMethod method)
@@ -81,23 +75,10 @@ namespace Mono.Debugger
 			this.has_bounds = true;
 		}
 
-		object read_source (object user_data)
+		protected void SetSource (IMethodSource source)
 		{
-			return ReadSource (out start_row, out end_row, out addresses);
+			this.source = source;
 		}
-
-		protected ISourceBuffer ReadSource ()
-		{
-			if (source == null)
-				source = new ObjectCache (new ObjectCacheFunc (read_source), null,
-							  new TimeSpan (0,1,0));
-
-			return (ISourceBuffer) source.Data;
-		}
-
-		protected abstract ISourceBuffer ReadSource (out int start_row, out int end_row,
-							     out ArrayList addresses);
-
 
 		//
 		// IMethod
@@ -173,7 +154,7 @@ namespace Mono.Debugger
 
 		public bool HasSource {
 			get {
-				return has_source;
+				return source != null;
 			}
 		}
 
@@ -182,9 +163,17 @@ namespace Mono.Debugger
 				if (!HasSource)
 					throw new InvalidOperationException ();
 
-				return this;
+				return source;
 			}
 		}
+
+		public static bool IsInSameMethod (IMethod method, TargetAddress address)
+                {
+                        if ((address < method.StartAddress) || (address >= method.EndAddress))
+                                return false;
+
+                        return true;
+                }
 
 		public abstract IVariable[] Parameters {
 			get;
@@ -192,73 +181,6 @@ namespace Mono.Debugger
 
 		public abstract IVariable[] Locals {
 			get;
-		}
-
-		//
-		// IMethodSource
-		//
-
-		public ISourceBuffer SourceBuffer {
-			get {
-				return ReadSource ();
-			}
-		}
-
-		public int StartRow {
-			get {
-				return start_row + 1;
-			}
-		}
-
-		public int EndRow {
-			get {
-				return end_row;
-			}
-		}
-
-		public static bool IsInSameMethod (IMethod method, TargetAddress address)
-		{
-			if ((address < method.StartAddress) || (address >= method.EndAddress))
-				return false;
-
-			return true;
-		}
-
-		public SourceLocation Lookup (TargetAddress address)
-		{
-			if (!IsInSameMethod (this, address))
-				return null;
-
-			ISourceBuffer source = ReadSource ();
-			if (source == null)
-				return null;
-
-			if (address < method_start)
-				return new SourceLocation (
-					source, StartRow, (int) (address - start),
-					(int) (method_start - address));
-			else if (address >= method_end)
-				return new SourceLocation (
-					source, EndRow, (int) (address - method_end),
-					(int) (end - address));			
-
-			TargetAddress next_address = end;
-
-			for (int i = addresses.Count-1; i >= 0; i--) {
-				LineEntry entry = (LineEntry) addresses [i];
-
-				int range = (int) (next_address - address);
-				next_address = entry.Address;
-
-				if (next_address > address)
-					continue;
-
-				int offset = (int) (address - next_address);
-
-				return new SourceLocation (source, entry.Line, offset, range);
-			}
-
-			return null;
 		}
 
 		//

@@ -1,5 +1,10 @@
 2002-09-27  Martin Baulig  <martin@gnome.org>
 
+	* class/MethodBase.cs: Don't implement IMethodSource, added
+	protected SetSource() method to set the IMethodSource.
+
+2002-09-27  Martin Baulig  <martin@gnome.org>
+
 	* backends/*, arch/*: Removed the SourceFileFactory argument everywhere.
 
 2002-09-27  Martin Baulig  <martin@gnome.org>
