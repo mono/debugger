@@ -12,7 +12,7 @@ namespace GLib {
 
 	public class IOChannel
 	{
-		IntPtr _channel;
+		protected IntPtr _channel;
 
 		[DllImport("glib-2.0")]
 		static extern IntPtr g_io_channel_unix_new (int fd);
