@@ -1397,6 +1397,7 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE, "{0} starting {1}", this, operation);
 
 			if ((operation.Type != OperationType.Run) &&
+			    (operation.Type != OperationType.RunInBackground) &&
 			    (operation.StepFrame == null)) {
 				do_step ();
 				return true;
@@ -1512,7 +1513,8 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		protected bool DoStep (bool first)
 		{
-			if (current_operation.Type == OperationType.Run) {
+			if ((current_operation.Type == OperationType.Run) ||
+			    (current_operation.Type == OperationType.RunInBackground)) {
 				TargetAddress until = current_operation.Until;
 				if (!until.IsNull)
 					do_continue (until);
