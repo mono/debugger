@@ -349,11 +349,16 @@ namespace Mono.Debugger.Backends
 		void child_message (ChildMessageType message, int arg)
 		{
 			if (temp_breakpoint_id != 0) {
-				remove_breakpoint (temp_breakpoint_id);
-				temp_breakpoint_id = 0;
-				if (message == ChildMessageType.CHILD_HIT_BREAKPOINT) {
-					child_message (ChildMessageType.CHILD_STOPPED, 0);
-					return;
+				if ((message == ChildMessageType.CHILD_EXITED) ||
+				    (message == ChildMessageType.CHILD_SIGNALED))
+					temp_breakpoint_id = 0;
+				else {
+					remove_breakpoint (temp_breakpoint_id);
+					temp_breakpoint_id = 0;
+					if (message == ChildMessageType.CHILD_HIT_BREAKPOINT) {
+						child_message (ChildMessageType.CHILD_STOPPED, 0);
+						return;
+					}
 				}
 			}
 
