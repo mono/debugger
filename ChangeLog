@@ -1,5 +1,19 @@
 2002-12-30  Martin Baulig  <martin@ximian.com>
 
+	* arch/Bfd.cs: Use the ThreadManager as the TargetAddress domain
+	for all symbol table addresses; they must be shared between all
+	the threads.
+
+	* interfaces/ILanguageBackend.cs (GetTrampoline, BreakpointHit):
+	Added IProcess argument.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryReader): Added `ReadGlobalAddress'; uses the
+	ThreadManager as the TargetAddress'es domain.
+	(ITargetMemoryAccess): Likewise.
+
+2002-12-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/DaemonThreadRunner.cs: New public class.
 
 	* backends/ThreadManager.cs: Use the DaemonThreadRunner for the

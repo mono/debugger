@@ -19,7 +19,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		TargetAddress GetTrampoline (TargetAddress address);
+		TargetAddress GetTrampoline (IProcess process, TargetAddress address);
 
 		// <summary>
 		//   Called when a breakpoint has been hit.  Returns true if the
@@ -30,7 +30,7 @@ namespace Mono.Debugger
 		//   The implementation must not continue the target itself, this
 		//   is done automatically by the SingleSteppingEngine.
 		// </remarks>
-		bool BreakpointHit (TargetAddress address);
+		bool BreakpointHit (IProcess process, TargetAddress address);
 	}
 }
 

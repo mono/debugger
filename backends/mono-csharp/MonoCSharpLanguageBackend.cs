@@ -1649,7 +1649,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public TargetAddress GetTrampoline (TargetAddress address)
+		public TargetAddress GetTrampoline (IProcess iprocess, TargetAddress address)
 		{
 			check_inferior ();
 			if (trampoline_address.IsNull)
@@ -1680,7 +1680,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return method;
 		}
 
-		public bool BreakpointHit (TargetAddress address)
+		public bool BreakpointHit (IProcess iprocess, TargetAddress address)
 		{
 			check_inferior ();
 

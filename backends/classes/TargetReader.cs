@@ -49,11 +49,13 @@ namespace Mono.Debugger.Backends
 		TargetBinaryReader reader;
 		int offset;
 		IInferior inferior;
+		ThreadManager thread_manager;
 
 		internal TargetReader (byte[] data, IInferior inferior)
 		{
 			this.reader = new TargetBinaryReader (data, inferior);
 			this.inferior = inferior;
+			this.thread_manager = inferior.DebuggerBackend.ThreadManager;
 			this.data = data;
 			this.offset = 0;
 		}
@@ -119,22 +121,35 @@ namespace Mono.Debugger.Backends
 			return reader.ReadInt64 ();
 		}
 
-		public TargetAddress ReadAddress ()
+		long do_read_address ()
 		{
-			long address;
-
 			if (TargetAddressSize == 4)
-				address = (uint) reader.ReadInt32 ();
+				return (uint) reader.ReadInt32 ();
 			else if (TargetAddressSize == 8)
-				address = reader.ReadInt64 ();
+				return reader.ReadInt64 ();
 			else
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
+		}
+
+		public TargetAddress ReadAddress ()
+		{
+			long address = do_read_address ();
 
 			if (address == 0)
 				return TargetAddress.Null;
 			else
 				return new TargetAddress (inferior, address);
+		}
+
+		public TargetAddress ReadGlobalAddress ()
+		{
+			long address = do_read_address ();
+
+			if (address == 0)
+				return TargetAddress.Null;
+			else
+				return new TargetAddress (thread_manager, address);
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {

@@ -52,6 +52,7 @@ namespace Mono.Debugger.Backends
 		DebuggerBackend backend;
 		DebuggerErrorHandler error_handler;
 		BreakpointManager breakpoint_manager;
+		ThreadManager thread_manager;
 
 		int child_pid;
 		bool native;
@@ -352,6 +353,8 @@ namespace Mono.Debugger.Backends
 			this.arch = new ArchitectureI386 (this);
 			this.breakpoint_manager = breakpoint_manager;
 
+			thread_manager = backend.ThreadManager;
+
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
@@ -627,6 +630,22 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public TargetAddress ReadGlobalAddress (TargetAddress address)
+		{
+			check_disposed ();
+			switch (TargetAddressSize) {
+			case 4:
+				return new TargetAddress (thread_manager, (uint) ReadInteger (address));
+
+			case 8:
+				return new TargetAddress (thread_manager, ReadLongInteger (address));
+
+			default:
+				throw new TargetMemoryException (
+					"Unknown target address size " + TargetAddressSize);
+			}
+		}
+
 		public string ReadString (TargetAddress address)
 		{
 			check_disposed ();
@@ -835,7 +854,7 @@ namespace Mono.Debugger.Backends
 				if (result != CommandError.NONE)
 					throw new NoStackException ();
 
-				return new TargetAddress (this, pc);
+				return new TargetAddress (thread_manager, pc);
 			}
 		}
 
@@ -936,10 +955,10 @@ namespace Mono.Debugger.Backends
 
 		private class InferiorStackFrame : IInferiorStackFrame
 		{
-			IInferior inferior;
+			PTraceInferior inferior;
 			ServerStackFrame frame;
 
-			public InferiorStackFrame (IInferior inferior, ServerStackFrame frame)
+			public InferiorStackFrame (PTraceInferior inferior, ServerStackFrame frame)
 			{
 				this.inferior = inferior;
 				this.frame = frame;
@@ -953,7 +972,7 @@ namespace Mono.Debugger.Backends
 
 			public TargetAddress Address {
 				get {
-					return new TargetAddress (inferior, frame.Address);
+					return new TargetAddress (inferior.thread_manager, frame.Address);
 				}
 			}
 
@@ -1007,7 +1026,7 @@ namespace Mono.Debugger.Backends
 					server_handle, out address);
 			check_error (result);
 
-			return new TargetAddress (this, address);
+			return new TargetAddress (thread_manager, address);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
@@ -1060,8 +1079,8 @@ namespace Mono.Debugger.Backends
 						flags |= TargetMemoryFlags.ReadOnly;
 
 					TargetMemoryArea area = new TargetMemoryArea (
-						new TargetAddress (this, start),
-						new TargetAddress (this, end),
+						new TargetAddress (thread_manager, start),
+						new TargetAddress (thread_manager, end),
 						flags, name, this);
 					list.Add (area);
 				} while (true);

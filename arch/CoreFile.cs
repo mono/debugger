@@ -312,6 +312,11 @@ namespace Mono.Debugger.Architecture
 			return core_bfd.GetReader (address).ReadAddress ();
 		}
 
+		public TargetAddress ReadGlobalAddress (TargetAddress address)
+		{
+			return core_bfd.GetReader (address).ReadGlobalAddress ();
+		}
+
 		public string ReadString (TargetAddress address)
 		{
 			return core_bfd.GetReader (address).BinaryReader.ReadString ();

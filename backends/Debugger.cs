@@ -295,10 +295,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool BreakpointHit (TargetAddress address)
+		public bool BreakpointHit (Process process, TargetAddress address)
 		{
 			foreach (ILanguageBackend language in languages) {
-				if (!language.BreakpointHit (address))
+				if (!language.BreakpointHit (process, address))
 					return false;
 			}
 

@@ -18,6 +18,7 @@ namespace Mono.Debugger.Architecture
 		IntPtr bfd;
 		protected BfdContainer container;
 		protected DebuggerBackend backend;
+		protected ThreadManager thread_manager;
 		protected IInferior inferior;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
@@ -154,6 +155,8 @@ namespace Mono.Debugger.Architecture
 			this.module = module;
 			this.base_address = base_address;
 			this.backend = inferior.DebuggerBackend;
+
+			thread_manager = backend.ThreadManager;
 
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -333,9 +336,9 @@ namespace Mono.Debugger.Architecture
 		public TargetAddress GetAddress (long address)
 		{
 			if (BaseAddress.IsNull)
-				return new TargetAddress (inferior, address);
+				return new TargetAddress (thread_manager, address);
 			else
-				return BaseAddress + address;
+				return new TargetAddress (thread_manager, BaseAddress.Address + address);
 		}
 
 		public void ReadDwarf ()
@@ -397,7 +400,7 @@ namespace Mono.Debugger.Architecture
 					return TargetAddress.Null;
 
 				if (symbols.Contains (name))
-					return new TargetAddress (inferior, (long) symbols [name]);
+					return new TargetAddress (thread_manager, (long) symbols [name]);
 
 				return TargetAddress.Null;
 			}
@@ -449,7 +452,7 @@ namespace Mono.Debugger.Architecture
 				if (section.size == 0)
 					continue;
 
-				TargetAddress start = new TargetAddress (inferior, section.vma);
+				TargetAddress start = new TargetAddress (thread_manager, section.vma);
 				TargetAddress end = start + section.size;
 
 				TargetMemoryFlags flags = 0;

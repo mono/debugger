@@ -32,10 +32,12 @@ namespace Mono.Debugger
 	internal class ArchitectureI386 : IArchitecture
 	{
 		IInferior inferior;
+		ThreadManager thread_manager;
 
 		public ArchitectureI386 (IInferior inferior)
 		{
 			this.inferior = inferior;
+			thread_manager = inferior.DebuggerBackend.ThreadManager;
 		}
 
 		public bool IsRetInstruction (TargetAddress address)
@@ -116,10 +118,10 @@ namespace Mono.Debugger
 
 			long addr = inferior.GetRegister ((int) reg);
 
-			TargetAddress vtable_addr = new TargetAddress (inferior, addr + disp);
+			TargetAddress vtable_addr = new TargetAddress (thread_manager, addr + disp);
 
 			if (dereference_addr)
-				return inferior.ReadAddress (vtable_addr);
+				return inferior.ReadGlobalAddress (vtable_addr);
 			else
 				return vtable_addr;
 		}
@@ -147,7 +149,7 @@ namespace Mono.Debugger
 			if (location + call_disp + 10 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (inferior, method_info);
+			return new TargetAddress (thread_manager, method_info);
 		}
 
 		public string[] RegisterNames {
@@ -254,11 +256,11 @@ namespace Mono.Debugger
 			TargetAddress stack = new TargetAddress (
 				inferior, inferior.GetRegister ((int) I386Register.ESP));
 
-			method = inferior.ReadAddress (stack);
-			code = inferior.ReadAddress (stack + inferior.TargetAddressSize +
-						     inferior.TargetIntegerSize);
-			retaddr = inferior.ReadAddress (stack + 2 * inferior.TargetAddressSize +
-							inferior.TargetIntegerSize);
+			method = inferior.ReadGlobalAddress (stack);
+			code = inferior.ReadGlobalAddress (stack + inferior.TargetAddressSize +
+							   inferior.TargetIntegerSize);
+			retaddr = inferior.ReadGlobalAddress (stack + 2 * inferior.TargetAddressSize +
+							      inferior.TargetIntegerSize);
 
 			return inferior.ReadInteger (stack + inferior.TargetAddressSize);
 		}

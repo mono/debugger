@@ -887,7 +887,7 @@ namespace Mono.Debugger.Backends
 			// zero, then no other thread has set this breakpoint.
 			if (breakpoint == 0) {
 				if (reached_main)
-					return backend.BreakpointHit (inferior.CurrentFrame);
+					return backend.BreakpointHit (process, inferior.CurrentFrame);
 				else
 					return true;
 			}
@@ -1217,7 +1217,7 @@ namespace Mono.Debugger.Backends
 				 * This will trigger a JIT compilation if neccessary.
 				 */
 				if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-					TargetAddress trampoline = frame.Language.GetTrampoline (call);
+					TargetAddress trampoline = frame.Language.GetTrampoline (process, call);
 
 					/*
 					 * If this is a trampoline, insert a breakpoint at the start of

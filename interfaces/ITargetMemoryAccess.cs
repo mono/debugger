@@ -77,6 +77,8 @@ namespace Mono.Debugger
 		// </summary>
 		TargetAddress ReadAddress ();
 
+		TargetAddress ReadGlobalAddress ();
+
 		// <summary>
 		//   Get the ITargetMemoryAccess which was used to create this ITargetMemoryReader.
 		// </summary>
@@ -94,6 +96,8 @@ namespace Mono.Debugger
 		long ReadLongInteger (TargetAddress address);
 
 		TargetAddress ReadAddress (TargetAddress address);
+
+		TargetAddress ReadGlobalAddress (TargetAddress address);
 
 		string ReadString (TargetAddress address);
 

@@ -138,12 +138,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public TargetAddress GetTrampoline (TargetAddress address)
+		public TargetAddress GetTrampoline (IProcess process, TargetAddress address)
 		{
 			return TargetAddress.Null;
 		}
 
-		public bool BreakpointHit (TargetAddress address)
+		public bool BreakpointHit (IProcess process, TargetAddress address)
 		{
 			return true;
 		}
