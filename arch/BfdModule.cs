@@ -61,10 +61,16 @@ namespace Mono.Debugger.Architecture
 
 		public override ISymbolTable SymbolTable {
 			get {
-				if (dwarf != null)
-					return dwarf.SymbolTable;
-				else
-					return bfd.SymbolTable;
+				if (dwarf == null)
+					throw new InvalidOperationException ();
+
+				return dwarf.SymbolTable;
+			}
+		}
+
+		public override ISimpleSymbolTable SimpleSymbolTable {
+			get {
+				return bfd.SimpleSymbolTable;
 			}
 		}
 
@@ -98,8 +104,7 @@ namespace Mono.Debugger.Architecture
 				return;
 
 			try {
-				dwarf = new DwarfReader (
-					bfd, module, bfd.SymbolTable, backend.SourceFileFactory);
+				dwarf = new DwarfReader (bfd, module, backend.SourceFileFactory);
 			} catch (Exception e) {
 				// Silently ignore.
 			}

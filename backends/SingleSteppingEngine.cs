@@ -227,7 +227,8 @@ namespace Mono.Debugger.Backends
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			disassembler.SymbolTable = symtab_manager.SymbolTable;
+			disassembler.SymbolTable = symtab_manager.SimpleSymbolTable;
+			current_simple_symtab = symtab_manager.SimpleSymbolTable;
 			current_symtab = symtab_manager.SymbolTable;
 
 			initialized = true;
@@ -496,7 +497,8 @@ namespace Mono.Debugger.Backends
 			if (initialized && !reached_main) {
 				backend.ReachedMain (process, inferior);
 				main_method_retaddr = inferior.GetReturnAddress ();
-				disassembler.SymbolTable = symtab_manager.SymbolTable;
+				disassembler.SymbolTable = symtab_manager.SimpleSymbolTable;
+				current_simple_symtab = symtab_manager.SimpleSymbolTable;
 				current_symtab = symtab_manager.SymbolTable;
 				reached_main = true;
 			}
@@ -530,9 +532,11 @@ namespace Mono.Debugger.Backends
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
-		void update_symtabs (object sender, ISymbolTable symbol_table)
+		void update_symtabs (object sender, ISymbolTable symbol_table,
+				     ISimpleSymbolTable simple_symtab)
 		{
-			disassembler.SymbolTable = symbol_table;
+			disassembler.SymbolTable = simple_symtab;
+			current_simple_symtab = simple_symtab;
 			current_symtab = symbol_table;
 
 			send_sync_command (new CommandFunc (reload_symtab), null);
@@ -548,10 +552,10 @@ namespace Mono.Debugger.Backends
 
 		public string SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			if (current_symtab == null)
+			if (current_simple_symtab == null)
 				return null;
 
-			return current_symtab.SimpleLookup (address, exact_match);
+			return current_simple_symtab.SimpleLookup (address, exact_match);
 		}
 
 		// <summary>
@@ -730,6 +734,7 @@ namespace Mono.Debugger.Backends
 		IDisassembler disassembler;
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
+		ISimpleSymbolTable current_simple_symtab;
 		Thread engine_thread;
 		ManualResetEvent start_event;
 		ManualResetEvent completed_event;
@@ -1837,7 +1842,7 @@ namespace Mono.Debugger.Backends
 			get { return this; }
 		}
 
-		ISymbolTable IDisassembler.SymbolTable {
+		ISimpleSymbolTable IDisassembler.SymbolTable {
 			get {
 				check_inferior ();
 				lock (disassembler) {

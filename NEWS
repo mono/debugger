@@ -1,3 +1,10 @@
+March 28th, 2003 - Martin Baulig
+--------------------------------
+
+Use a special simple symbol table to lookup function names in backtraces.
+This simple symbol table may also be available if there's no debugging info
+for a module.
+
 March 23th, 2003 - Martin Baulig
 --------------------------------
 

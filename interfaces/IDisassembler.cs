@@ -24,7 +24,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   The symbol table the disassembler uses to display symbols.
 		// </summary>
-		ISymbolTable SymbolTable {
+		ISimpleSymbolTable SymbolTable {
 			get; set;
 		}
 	}

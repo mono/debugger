@@ -408,7 +408,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public ISymbolTable SymbolTable {
+		public ISimpleSymbolTable SimpleSymbolTable {
 			get {
 				return simple_symtab;
 			}
@@ -686,7 +686,7 @@ namespace Mono.Debugger.Architecture
 		// The BFD symbol table.
 		//
 
-		private class BfdSymbolTable : SymbolTable
+		private class BfdSymbolTable : ISimpleSymbolTable
 		{
 			Bfd bfd;
 			Hashtable hash;
@@ -730,24 +730,7 @@ namespace Mono.Debugger.Architecture
 				list.Sort ();
 			}
 
-			public override bool HasMethods {
-				get { return false; }
-			}
-
-			protected override ArrayList GetMethods ()
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override bool HasRanges {
-				get { return false; }
-			}
-
-			public override ISymbolRange[] SymbolRanges {
-				get { throw new InvalidOperationException (); }
-			}
-
-			public override string SimpleLookup (TargetAddress address, bool exact_match)
+			public string SimpleLookup (TargetAddress address, bool exact_match)
 			{
 				if ((address < start) || (address >= end))
 					return null;
@@ -765,7 +748,7 @@ namespace Mono.Debugger.Architecture
 					if (offset == 0)
 						return entry.Name;
 					else
-						return String.Format ("{0}+{1:x}", entry.Name, offset);
+						return String.Format ("{0}+0x{1:x}", entry.Name, offset);
 				}
 
 				return null;

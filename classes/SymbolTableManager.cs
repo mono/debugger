@@ -70,7 +70,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		public delegate void SymbolTableHandler (object sender, ISymbolTable symbol_table);
+		public delegate void SymbolTableHandler (object sender, ISymbolTable symbol_table,
+							 ISimpleSymbolTable simple_symtab);
 		public delegate void ModuleHandler (object sender, Module[] modules);
 
 		// <summary>
@@ -89,6 +90,20 @@ namespace Mono.Debugger
 					symtabs_loaded_event.WaitOne ();
 				lock (this) {
 					return current_symtab;
+				}
+			}
+		}
+
+		// <summary>
+		//   The current symbol tables.  This property may change at any time, so
+		//   you should use the SymbolTableChangedEvent to get a notification.
+		// </summary>
+		public ISimpleSymbolTable SimpleSymbolTable {
+			get {
+				if (symtab_thread != null)
+					symtabs_loaded_event.WaitOne ();
+				lock (this) {
+					return current_simple_symtab;
 				}
 			}
 		}
@@ -123,7 +138,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				if (SymbolTableChangedEvent != null)
-					SymbolTableChangedEvent (this, current_symtab);
+					SymbolTableChangedEvent (
+						this, current_symtab, current_simple_symtab);
 			}
 		}
 
@@ -140,6 +156,7 @@ namespace Mono.Debugger
 		//
 		ICollection new_modules = null;
 		ISymbolTable current_symtab = null;
+		ISimpleSymbolTable current_simple_symtab = null;
 		Module[] current_modules = null;
 
 		// <summary>
@@ -191,7 +208,12 @@ namespace Mono.Debugger
 				SymbolTableCollection symtabs = new SymbolTableCollection ();
 				symtabs.Lock ();
 
+				SimpleSymbolTableCollection simple_syms = new SimpleSymbolTableCollection ();
+
 				foreach (Module module in my_new_modules) {
+					if (module.IsLoaded)
+						simple_syms.AddSymbolTable (module.SimpleSymbolTable);
+
 					if (!module.SymbolsLoaded || !module.LoadSymbols)
 						continue;
 
@@ -209,6 +231,7 @@ namespace Mono.Debugger
 						goto again;
 
 					current_symtab = symtabs;
+					current_simple_symtab = simple_syms;
 					// We need to clear this event as soon as we're done updating
 					// the symbol tables since the main thread may be waiting in
 					// the `SymbolTable' accessor.

@@ -636,6 +636,10 @@ namespace Mono.Debugger.Languages.CSharp
 				get { return reader.SymbolTable; }
 			}
 
+			public override ISimpleSymbolTable SimpleSymbolTable {
+				get { return null; }
+			}
+
 			public override TargetAddress SimpleLookup (string name)
 			{
 				return TargetAddress.Null;

@@ -19,6 +19,7 @@ namespace Mono.Debugger.Architecture
 		DebuggerBackend backend;
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
+		ISimpleSymbolTable current_simple_symtab;
 		AddressDomain address_domain;
 
 		public CoreFile (DebuggerBackend backend, Process process, string application,
@@ -64,12 +65,6 @@ namespace Mono.Debugger.Architecture
 					"Executable {0} is more recent than core file {1}.",
 					application, core_file));
 
-			try {
-				ISymbolTable bfd_symtab = bfd.SymbolTable;
-			} catch (Exception e) {
-				Console.WriteLine ("Can't get native symbol table: {0}", e);
-			}
-
 			UpdateModules ();
 		}
 
@@ -90,6 +85,7 @@ namespace Mono.Debugger.Architecture
 		public void UpdateModules ()
 		{
 			current_symtab = symtab_manager.SymbolTable;
+			current_simple_symtab = symtab_manager.SimpleSymbolTable;
 		}
 
 		bool has_current_method = false;
@@ -135,10 +131,10 @@ namespace Mono.Debugger.Architecture
 
 		public string SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			if (current_symtab == null)
+			if (current_simple_symtab == null)
 				return null;
 
-			return current_symtab.SimpleLookup (address, exact_match);
+			return current_simple_symtab.SimpleLookup (address, exact_match);
 		}
 
 		bool has_backtrace = false;

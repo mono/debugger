@@ -7,8 +7,6 @@ namespace Mono.Debugger
 	public interface ISymbolLookup
 	{
 		IMethod Lookup (TargetAddress address);
-
-		string SimpleLookup (TargetAddress address, bool exact_match);
 	}
 
 	public interface ISourceLookup
@@ -110,5 +108,14 @@ namespace Mono.Debugger
 		void UpdateSymbolTable ();
 
 		event SymbolTableChangedHandler SymbolTableChanged;
+	}
+
+	// <summary>
+	//   This is used to resolve addresses to function names in backtraces.  Sometimes this
+	//   simple symbol table is also available if the module has no debugging info.
+	// </summary>
+	public interface ISimpleSymbolTable
+	{
+		string SimpleLookup (TargetAddress address, bool exact_match);
 	}
 }

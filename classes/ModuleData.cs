@@ -39,6 +39,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract ISimpleSymbolTable SimpleSymbolTable {
+			get;
+		}
+
 		public abstract bool HasDebuggingInfo {
 			get;
 		}

@@ -461,6 +461,17 @@ namespace Mono.Debugger
 			}
 		}
 
+		public ISimpleSymbolTable SimpleSymbolTable {
+			get {
+				lock (this) {
+					if (module_data == null)
+						throw new InvalidOperationException ();
+
+					return module_data.SimpleSymbolTable;
+				}
+			}
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",

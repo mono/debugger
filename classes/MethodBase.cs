@@ -232,23 +232,6 @@ namespace Mono.Debugger
 			return this;
 		}
 
-		string ISymbolLookup.SimpleLookup (TargetAddress address, bool exact_match)
-		{
-			if (!is_loaded)
-				return null;
-
-			if ((address < start) || (address >= end))
-				return null;
-
-			long offset = start - address;
-			if (offset == 0)
-				return name;
-			else if (!exact_match)
-				return String.Format ("{0}+{1:x}", name, offset);
-			else
-				return null;
-		}
-
 		public int CompareTo (object obj)
 		{
 			IMethod method = (IMethod) obj;

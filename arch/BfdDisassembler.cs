@@ -15,7 +15,7 @@ namespace Mono.Debugger.Architecture
 		IntPtr info;
 
 		ITargetMemoryAccess memory;
-		ISymbolTable symbol_table;
+		ISimpleSymbolTable symbol_table;
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
@@ -96,7 +96,7 @@ namespace Mono.Debugger.Architecture
 		// IDisassembler
 		//
 
-		public ISymbolTable SymbolTable {
+		public ISimpleSymbolTable SymbolTable {
 			get {
 				return symbol_table;
 			}

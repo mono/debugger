@@ -1,5 +1,37 @@
 2003-03-28  Martin Baulig  <martin@ximian.com>
 
+	Use a special ISimpleSymbolTable to lookup function names in
+	backtraces.  This simple symbol table may also be available if
+	there's no debugging info for a module.
+
+	* interfaces/ISymbolTable.cs
+	(ISymbolLookup): Removed SimpleLookup().
+	(ISimpleSymbolTable): New public interface.
+
+	* interfaces/IDisassembler.cs (SymbolTable): Return an
+	ISimpleSymbolTable, not an ISymbolTable.
+
+	* classes/SymbolTableManager.cs (SymbolTableHandler): Added
+	ISimpleSymbolTable argument to this delegate.
+	(SimpleSymbolTable): New public property.
+
+	* classes/SimpleSymbolTableCollection.cs: New public class.
+
+	* classes/ModuleData.cs (SimpleSymbolTable): New public property.
+
+	* classes/Module.cs (SimpleSymbolTable): New public property.
+
+	* clases/MethodBase.cs (SimpleLookup): Removed.
+
+2003-03-28  Martin Baulig  <martin@ximian.com>
+
+	* arch/BfdModule.cs (SymbolsLoaded): Always return true since we
+	always have at least the simple symbol table.  This is necessary
+	to get function names for functions in shared libraries without
+	debugging info.
+
+2003-03-28  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/main.c: Call mono_config_parse() and mono_set_rootdir().
 
 2003-03-25  Martin Baulig  <martin@ximian.com>

@@ -44,8 +44,7 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (Bfd bfd, Module module, ISymbolTable simple_symtab,
-				    SourceFileFactory factory)
+		public DwarfReader (Bfd bfd, Module module, SourceFileFactory factory)
 		{
 			this.bfd = bfd;
 			this.module = module;
@@ -82,7 +81,7 @@ namespace Mono.Debugger.Architecture
 
 			aranges = ArrayList.Synchronized (read_aranges ());
 
-			symtab = new DwarfSymbolTable (this, aranges, simple_symtab);
+			symtab = new DwarfSymbolTable (this, aranges);
 
 			ArrayList source_list = new ArrayList ();
 
@@ -228,12 +227,10 @@ namespace Mono.Debugger.Architecture
 		{
 			DwarfReader dwarf;
 			ArrayList ranges;
-			ISymbolTable simple_symtab;
 
-			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges, ISymbolTable simple)
+			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges)
 			{
 				this.dwarf = dwarf;
-				this.simple_symtab = simple;
 				this.ranges = ranges;
 				this.ranges.Sort ();
 			}
@@ -277,15 +274,6 @@ namespace Mono.Debugger.Architecture
 				}
 
 				return methods;
-			}
-
-			public override string SimpleLookup (TargetAddress address, bool exact_match)
-			{
-				string name = base.SimpleLookup (address, exact_match);
-				if (name != null)
-					return name;
-
-				return simple_symtab.SimpleLookup (address, exact_match);
 			}
 
 			public override string ToString ()
