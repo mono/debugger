@@ -10,13 +10,11 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <Debugger.h>
 
 CORBA_ORB orb;
 Debugger_Manager debugger_manager;
-static int the_socket;
+static int remote_pid = -1, remote_stdin, remote_stdout;
 
 struct InferiorHandle {
 	Debugger_Thread debugger_thread;
@@ -37,16 +35,14 @@ static int
 setup_corba (void)
 {
 	const char *argv[3] = { "remoting-client", "--ORBIIOPIPv4=1", NULL };
-        int argc = 2;
+	char *ssh_argv[6];
+        int ssh_argc = 5, argc = 2;
 	CORBA_Environment ev;
-	struct sockaddr_in name;
-	struct hostent *hostinfo;
 	gchar *remote_var, *port_pos;
 	int len, port = 0;
+	GError *error = NULL;
+	gboolean ok;
 	gchar *ior;
-
-	the_socket = socket (PF_INET, SOCK_STREAM, 0);
-	g_assert (the_socket >= 0);
 
 	remote_var = g_strdup (g_getenv ("MONO_DEBUGGER_REMOTE"));
 	g_assert (remote_var);
@@ -59,32 +55,59 @@ setup_corba (void)
 	if (!port)
 		port = 40857;
 
-	hostinfo = gethostbyname (remote_var);
-	if (!hostinfo) {
-		g_warning (G_STRLOC ": Can't lookup host %s", remote_var);
+	ssh_argv [0] = "ssh";
+	ssh_argv [1] = "-L";
+	ssh_argv [2] = g_strdup_printf ("%d:127.0.0.1:%d", port, port);
+	ssh_argv [3] = remote_var;
+	ssh_argv [4] = "/Users/martin/INSTALL/libexec/debugger-remote-server";
+	ssh_argv [5] = NULL;
+
+	ok = g_spawn_async_with_pipes (NULL, ssh_argv, NULL, G_SPAWN_SEARCH_PATH,
+				       NULL, NULL, &remote_pid, &remote_stdin,
+				       &remote_stdout, NULL, &error);
+
+	if (!ok) {
+		g_warning (G_STRLOC ": %s", error->message);
 		return -1;
 	}
 
-	name.sin_family = AF_INET;
-	name.sin_port = htons (port);
-	name.sin_addr = * (struct in_addr *) hostinfo->h_addr;
-
-	g_assert (hostinfo);
-
-	if (connect (the_socket, (struct sockaddr *) &name, sizeof (name))) {
-		g_warning (G_STRLOC ": Can't conntext: %s", g_strerror (errno));
+	if (read (remote_stdout, &len, 4) != 4) {
+		g_warning (G_STRLOC ": read failed: %s", g_strerror (errno));
 		return -1;
 	}
 
-	if (recv (the_socket, &len, 4, 0) != 4) {
-		g_warning (G_STRLOC ": recv failed: %s", g_strerror (errno));
+	len = ntohl (len);
+	if (len != MONO_DEBUGGER_REMOTE_MAGIC) {
+		g_warning (G_STRLOC ": Received unknown magic %x", len);
+		return -1;
+	}
+
+	if (read (remote_stdout, &len, 4) != 4) {
+		g_warning (G_STRLOC ": read failed: %s", g_strerror (errno));
+		return -1;
+	}
+
+	len = ntohl (len);
+	if (len != MONO_DEBUGGER_REMOTE_VERSION) {
+		g_warning (G_STRLOC ": Received unknown magic %x", len);
+		return -1;
+	}
+
+	len = htonl (port);
+	if (write (remote_stdin, &len, 4) != 4) {
+		g_warning (G_STRLOC ": write failed: %s", g_strerror (errno));
+		return -1;
+	}
+
+	if (read (remote_stdout, &len, 4) != 4) {
+		g_warning (G_STRLOC ": read failed: %s", g_strerror (errno));
 		return -1;
 	}
 
 	len = ntohl (len);
 
 	ior = g_malloc0 (len + 1);
-	if (recv (the_socket, ior, len, 0) != len) {
+	if (read (remote_stdout, ior, len) != len) {
 		g_warning (G_STRLOC ": recv failed: %s", g_strerror (errno));
 		return -1;
 	}
@@ -196,6 +219,10 @@ static void
 remote_server_finalize (ServerHandle *handle)
 {
 	CORBA_Environment ev;
+
+	if (remote_pid > 0)
+		kill (remote_pid, SIGKILL);
+	remote_pid = -1;
 
 	CORBA_exception_init (&ev);
 	CORBA_Object_release (handle->inferior->debugger_thread, &ev);
@@ -575,17 +602,17 @@ remote_server_global_wait (guint64 *status)
 {
 	guint32 result, status_ret, command = htonl (1);
 
-	if (send (the_socket, &command, 4, 0) != 4) {
+	if (write (remote_stdin, &command, 4) != 4) {
 		g_warning (G_STRLOC ": Send failed: %s", g_strerror (errno));
 		return -1;
 	}
 
-	if (recv (the_socket, &result, 4, 0) != 4) {
+	if (read (remote_stdout, &result, 4) != 4) {
 		g_warning (G_STRLOC ": Recv failed: %s", g_strerror (errno));
 		return -1;
 	}
 
-	if (recv (the_socket, &status_ret, 4, 0) != 4) {
+	if (read (remote_stdout, &status_ret, 4) != 4) {
 		g_warning (G_STRLOC ": Recv failed: %s", g_strerror (errno));
 		return -1;
 	}
@@ -602,7 +629,7 @@ remote_server_global_stop (void)
 {
 	guint32 result, command = htonl (2);
 
-	if (send (the_socket, &command, 4, 0) != 4) {
+	if (write (remote_stdout, &command, 4) != 4) {
 		g_warning (G_STRLOC ": Send failed: %s", g_strerror (errno));
 		return -1;
 	}

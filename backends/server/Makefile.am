@@ -17,7 +17,7 @@ martin_hack_srclist = \
 	Debugger-stubs.c	\
 	Debugger-common.c
 
-martin_hack_progs = remote-server
+martin_hack_progs = debugger-remote-server
 
 Debugger-stubs.c Debugger-common.c Debugger-skels.c Debugger.h : Debugger.idl
 	orbit-idl-2 $(srcdir)/Debugger.idl
@@ -32,10 +32,10 @@ else
 server_sources = i386-ptrace.c
 endif
 
-noinst_PROGRAMS = \
+libexec_PROGRAMS = \
 	$(martin_hack_progs)
 
-remote_server_SOURCES = \
+debugger_remote_server_SOURCES = \
 	remote-server.c		\
 	debugger-srv.c		\
 	Debugger-skels.c
@@ -48,7 +48,8 @@ libmonodebuggerserver_la_SOURCES = \
 	breakpoints.c		\
 	breakpoints.h
 
-remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
+debugger_remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
+debugger_remote_server_LDFLAGS = -static
 
 libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
 libmonodebuggerserver_la_LDFLAGS = -no-undefined -module -export-dynamic -shared

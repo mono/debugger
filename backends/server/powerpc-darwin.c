@@ -8,7 +8,7 @@
 #include <string.h>
 #include <breakpoints.h>
 
-#define DEBUG_WAIT 0
+#undef DEBUG_WAIT
 
 #include "powerpc-arch.h"
 #include "powerpc-darwin.h"

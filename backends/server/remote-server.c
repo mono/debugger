@@ -5,10 +5,7 @@
 #include <string.h>
 #include <debugger-srv.h>
 #include <sys/wait.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <pthread.h>
 
 CORBA_ORB orb;
@@ -19,7 +16,12 @@ PortableServer_ObjectId *the_objid;
 static BreakpointManager *bpm;
 static PortableServer_POAManager rootpoa_mgr;
 static const char *the_ior;
-static int the_socket;
+static int the_port;
+
+static GMutex *mutex;
+static GCond *cond;
+static GCond *ready_cond;
+static GMutex *ready_mutex;
 
 typedef struct
 {
@@ -203,10 +205,12 @@ static gpointer
 debugger_thread (gpointer data)
 {
 	CORBA_Environment ev;
-	const char *argv[6] = { "remoting-client", "--ORBIIOPIPv4=1", "--ORBIIOPUNIX=0",
-				"--ORBIIOPIPName=127.0.0.1", "--ORBIIOPIPSock=40860",
-				NULL };
+	char *argv[6] = { "remoting-client", "--ORBIIOPIPv4=1", "--ORBIIOPUNIX=0",
+			  "--ORBIIOPIPName=127.0.0.1", "--ORBIIOPIPSock=40860",
+			  NULL };
 	int argc = 5;
+
+	argv [4] = g_strdup_printf ("--ORBIIOPIPSock=%d", the_port);
 
 	CORBA_exception_init (&ev);
 	orb = CORBA_ORB_init (&argc, argv, "orbit-local-mt-orb", &ev);
@@ -228,6 +232,10 @@ debugger_thread (gpointer data)
 	the_ior = CORBA_ORB_object_to_string (orb, debugger_manager, &ev);
 	g_assert (!ev._major);
 
+	g_mutex_lock (ready_mutex);
+	g_cond_signal (ready_cond);
+	g_mutex_unlock (ready_mutex);
+
 	CORBA_ORB_run (orb, &ev);
 
 	debugger_manager_srv_finish_object (&ev);
@@ -242,9 +250,6 @@ debugger_thread (gpointer data)
 	CORBA_exception_free (&ev);
 	return NULL;
 }
-
-static GMutex *mutex;
-static GCond *cond;
 
 static gpointer
 wait_thread (gpointer data)
@@ -262,8 +267,8 @@ wait_thread (gpointer data)
 		ret = htonl (ret);
 		status = htonl (status);
 
-		g_assert (send (the_socket, &ret, 4, 0) == 4);
-		g_assert (send (the_socket, &status, 4, 0) == 4);
+		g_assert (write (1, &ret, 4) == 4);
+		g_assert (write (1, &status, 4) == 4);
 	}
 }
 
@@ -271,64 +276,42 @@ static void
 write_string (const gchar *string)
 {
 	guint32 len = htonl (strlen (string));
-	g_assert (send (the_socket, &len, 4, 0) == 4);
-	g_assert (send (the_socket, string, strlen (string), 0) == strlen (string));
+	g_assert (write (1, &len, 4) == 4);
+	g_assert (write (1, string, strlen (string)) == strlen (string));
 }
 
 int
 main (int argc, char **argv)
 {
-	struct sockaddr_in name, addr;
-	socklen_t socklen = sizeof (addr);
-	int ret, sock;
+	int magic;
 
 	g_thread_init (NULL);
+
+	magic = htonl (MONO_DEBUGGER_REMOTE_MAGIC);
+	g_assert (write (1, &magic, 4) == 4);
+	magic = htonl (MONO_DEBUGGER_REMOTE_VERSION);
+	g_assert (write (1, &magic, 4) == 4);
+
+	g_assert (read (0, &the_port, 4) == 4);
+	the_port = ntohl (the_port);
 
 	mutex = g_mutex_new ();
 	cond = g_cond_new ();
 
+	ready_mutex = g_mutex_new ();
+	ready_cond = g_cond_new ();
+
 	g_thread_create (debugger_thread, NULL, TRUE, NULL);
 	g_thread_create (wait_thread, NULL, TRUE, NULL);
 
-	/*
-	 * FIXME:
-	 *
-	 * This may be looking a bit strange, but the debugger backend may only
-	 * be used from one single thread.  See bug #139618 in GNOME bugzilla.
-	 *
-	 */
-     
-	sock = socket (PF_INET, SOCK_STREAM, 0);
-	g_assert (sock >= 0);
-
-	{
-		static const int oneval = 1;
-
-		setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &oneval, sizeof (oneval));
-	}
-
-	name.sin_family = AF_INET;
-	name.sin_port = htons (40857);
-	name.sin_addr.s_addr = htonl (INADDR_ANY);
-	g_assert (bind (sock, (struct sockaddr *) &name, sizeof (name)) == 0);
-
-	g_assert (listen (sock, 1) == 0);
-
-	the_socket = accept (sock, (struct sockaddr *) &addr, &socklen);
-	if (the_socket <= 0)
-		g_error (G_STRLOC ": %s", g_strerror (errno));
-
-	g_message (G_STRLOC ": Accepted connection from %s:%d",
-		   inet_ntoa (addr.sin_addr), ntohs (addr.sin_port));
-
-	shutdown (sock, 2);
+	g_cond_wait (ready_cond, ready_mutex);
 
 	write_string (the_ior);
 
 	for (;;) {
-		guint32 command, ret, len;
+		guint32 command, len;
 
-		len = recv (the_socket, &command, 4, 0);
+		len = read (0, &command, 4);
 		if (len != 4) {
 			g_warning (G_STRLOC ": Cannot recv: %s", g_strerror (errno));
 			exit (1);
