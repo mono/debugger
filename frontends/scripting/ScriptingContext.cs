@@ -407,30 +407,50 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Print (variable);
 		}
 
-		public void ShowVariableType (int frame_number, string identifier)
+		public IVariable GetVariableInfo (StackFrame frame, string identifier)
 		{
-			StackFrame frame = GetFrame (frame_number);
-
 			if (frame.Method == null)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
 			IVariable[] local_vars = frame.Method.Locals;
 			foreach (IVariable var in local_vars) {
-				if (var.Name == identifier) {
-					context.ShowVariableType (var.Type, identifier);
-					return;
-				}
+				if (var.Name == identifier)
+					return var;
 			}
 
 			IVariable[] param_vars = frame.Method.Parameters;
 			foreach (IVariable var in param_vars) {
-				if (var.Name == identifier) {
-					context.ShowVariableType (var.Type, identifier);
-					return;
-				}
+				if (var.Name == identifier)
+					return var;
 			}
 
 			throw new ScriptingException ("No variable of parameter with that name.");
+		}
+
+		public void ShowVariableType (int frame_number, string identifier)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			IVariable var = GetVariableInfo (frame, identifier);
+
+			context.ShowVariableType (var.Type, identifier);
+		}
+
+		public object GetVariable (int frame_number, string identifier)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			IVariable var = GetVariableInfo (frame, identifier);
+
+			context.ShowVariableType (var.Type, identifier);
+
+			if (!var.IsValid (frame))
+				throw new ScriptingException ("Variable out of scope.");
+
+			ITargetObject obj = var.GetObject (frame);
+			context.Print (obj);
+
+			return null;
 		}
 
 		public override string ToString ()
@@ -622,7 +642,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetArrayType array = type as ITargetArrayType;
 			if (array != null) {
-				Print ("{0} is an array of {1}.", array.ElementType);
+				Print ("{0} is an array of {1}", name, array.ElementType);
 				return;
 			}
 

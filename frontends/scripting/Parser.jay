@@ -206,6 +206,10 @@ expression
 	{
 		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
 	}
+	| opt_process opt_frame_number DOLLAR IDENTIFIER
+	{
+		$$ = new VariableExpression ((ProcessExpression) $1, (int) $2, (string) $4);
+	}
 	;
 
 program_arguments

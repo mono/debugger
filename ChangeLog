@@ -1,5 +1,9 @@
 2002-12-31  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Added `print $name'.
+
+2002-12-31  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Tokenizer.cs: Only recognize the short
 	keywords at the start of the line; `$' starts an identifier, so
 	don't recognize any keywords in it.

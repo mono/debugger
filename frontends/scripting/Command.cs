@@ -403,4 +403,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 					      register);
 		}
 	}
+
+	public class VariableExpression : Expression
+	{
+		int number;
+		ProcessExpression process_expr;
+		string identifier;
+
+		public VariableExpression (ProcessExpression process_expr, int number, string identifier)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+			this.identifier = identifier;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			return process.GetVariable (number, identifier);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1},{2},{3})", GetType (), process_expr, number,
+					      identifier);
+		}
+	}
 }
