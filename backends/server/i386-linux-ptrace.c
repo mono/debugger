@@ -954,7 +954,8 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 	if (search_path)
 		flags |= G_SPAWN_SEARCH_PATH;
 
-	if (!g_spawn_async (working_directory, argv, envp, flags, child_setup_func, NULL, child_pid, error))
+	if (!g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func, NULL,
+				       child_pid, standard_input, standard_output, standard_error, error))
 		return COMMAND_ERROR_FORK;
 
 	handle->pid = *child_pid;
