@@ -729,7 +729,7 @@ gtk_source_view_get_tab_stop_width (GtkSourceView *view)
 
 gboolean
 gtk_source_view_add_pixbuf (GtkSourceView *view,
-			    gchar   *key,
+			    const gchar   *key,
 			    GdkPixbuf     *pixbuf,
 			    gboolean       overwrite)
 {
@@ -764,7 +764,7 @@ gtk_source_view_add_pixbuf (GtkSourceView *view,
 		}
 		g_object_ref (G_OBJECT (pixbuf));
 		g_hash_table_insert (view->pixmap_cache,
-				     (gchar *) key,
+				     g_strdup (key),
 				     (gpointer) pixbuf);
 	}
 

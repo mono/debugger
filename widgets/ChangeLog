@@ -1,3 +1,9 @@
+2003-06-08  Martin Baulig  <martin@ximian.com>
+
+	* sources/gtksourceview/gtksourceview.c
+	(gtk_source_view_add_pixbuf): g_strdup() the `key' since it's
+	automatically freed by Mono's P/Invoke marshaller.
+
 2003-01-18  Martin Baulig  <martin@ximian.com>
 
 	* sources/gtksourceview/gtksourcebuffer.h
