@@ -1,3 +1,12 @@
+2005-01-27  Chris Toshok  <toshok@ximian.com>
+
+	* classes/Report.cs (DebugFlags): add SourceFiles.
+
+	* classes/SourceFileFactory.cs (SourceFileFactory.read_file):
+	quiet some spew and make it only show up for particular debug
+	flags, and add a comment about the particular code page we use
+	when reading the source file.
+
 2005-01-25  Chris Toshok  <toshok@ximian.com>
 
 	* glue/mono-debugger-readline.h: add prototype for

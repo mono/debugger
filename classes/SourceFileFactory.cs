@@ -40,12 +40,13 @@ namespace Mono.Debugger
 			FileInfo file_info = new FileInfo (name);
 
 			if (!file_info.Exists) {
-				Console.WriteLine ("Can't find source file: " + name);
+				Report.Debug (DebugFlags.SourceFiles, "Can't find source file: " + name);
 				return null;
 			}
 
 			ArrayList contents = new ArrayList ();
 			try {
+				/* 28591 = Windows ISO Latin1 code page */
 				Encoding encoding = Encoding.GetEncoding (28591);
 				using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
 					string line;

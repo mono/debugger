@@ -18,7 +18,8 @@ namespace Mono.Debugger
 		SSE			= 64,
 		Notification		= 128,
 		Mutex			= 256,
-		SymbolTable		= 512
+		SymbolTable		= 512,
+		SourceFiles		= 1024
 	}
 
 	public class Report
