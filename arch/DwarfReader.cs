@@ -180,11 +180,23 @@ namespace Mono.Debugger.Architecture
 		private class DwarfSourceInfo : SourceInfo
 		{
 			DwarfReader dwarf;
+			ArrayList methods;
 
 			public DwarfSourceInfo (DwarfReader dwarf, string filename)
 				: base (dwarf.module, filename)
 			{
 				this.dwarf = dwarf;
+				this.methods = new ArrayList ();
+			}
+
+			public void AddMethod (DwarfSourceMethodInfo method)
+			{
+				methods.Add (method);
+			}
+
+			protected override ArrayList GetMethods ()
+			{
+				return methods;
 			}
 
 			public override ITargetLocation Lookup (int line)

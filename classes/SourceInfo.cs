@@ -21,23 +21,57 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void AddMethod (SourceMethodInfo method)
+		protected abstract ArrayList GetMethods ();
+
+		ObjectCache method_cache = null;
+		SourceData ensure_methods ()
 		{
-			if (!methods.Contains (method.Name))
-				methods.Add (method.Name, method);
+			lock (this) {
+				if (method_cache == null)
+					method_cache = new ObjectCache
+						(new ObjectCacheFunc (get_methods), null,
+						 new TimeSpan (0,1,0));
+
+				return (SourceData) method_cache.Data;
+			}
+		}
+
+		object get_methods (object user_data)
+		{
+			lock (this) {
+				ArrayList methods = GetMethods ();
+				if (methods == null)
+					return null;
+
+				Hashtable method_hash = new Hashtable ();
+				foreach (SourceMethodInfo method in methods) {
+					if (!method_hash.Contains (method.Name))
+						method_hash.Add (method.Name, method);
+				}
+
+				return new SourceData (methods, method_hash);
+			}
 		}
 
 		public SourceMethodInfo[] Methods {
 			get {
-				SourceMethodInfo[] retval = new SourceMethodInfo [methods.Values.Count];
-				methods.Values.CopyTo (retval, 0);
+				SourceData data = ensure_methods ();
+				if (data == null)
+					return new SourceMethodInfo [0];
+
+				SourceMethodInfo[] retval = new SourceMethodInfo [data.Methods.Count];
+				data.Methods.CopyTo (retval, 0);
 				return retval;
 			}
 		}
 
 		public SourceMethodInfo FindMethod (string name)
 		{
-			return (SourceMethodInfo) methods [name];
+			SourceData data = ensure_methods ();
+			if (data == null)
+				return null;
+
+			return (SourceMethodInfo) data.MethodHash [name];
 		}
 
 		// <summary>
@@ -50,17 +84,26 @@ namespace Mono.Debugger
 		{
 			this.module = module;
 			this.filename = filename;
-
-			methods = new Hashtable ();
 		}
 
 		string filename;
-		Hashtable methods;
 		Module module;
 
 		public override string ToString ()
 		{
 			return String.Format ("SourceInfo ({0})", FileName);
+		}
+
+		private class SourceData
+		{
+			public readonly ArrayList Methods;
+			public readonly Hashtable MethodHash;
+
+			public SourceData (ArrayList methods, Hashtable method_hash)
+			{
+				this.Methods = methods;
+				this.MethodHash = method_hash;
+			}
 		}
 	}
 

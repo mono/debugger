@@ -838,29 +838,18 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public SourceInfo[] GetSources ()
 		{
-			Hashtable source_hash = new Hashtable ();
+			ArrayList sources = new ArrayList ();
 
 			reader.Position = offset_table.source_file_table_offset;
 			for (int i = 0; i < offset_table.source_file_count; i++) {
 				int offset = (int) reader.Position;
 
 				SourceFileEntry source = new SourceFileEntry (reader);
-				MonoSourceInfo info = new MonoSourceInfo (this, source);
-
-				foreach (MethodSourceEntry method in source.Methods) {
-					string_reader.Offset = method.Index * int_size;
-					string_reader.Offset = string_reader.ReadInteger ();
-
-					int length = string_reader.BinaryReader.ReadInt32 ();
-					byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
-					string name = Encoding.UTF8.GetString (buffer);
-
-					info.AddMethod (new MonoSourceMethod (info, this, method, name));
-				}
+				sources.Add (new MonoSourceInfo (this, source));
 			}
 
-			SourceInfo[] retval = new SourceInfo [0];
-			source_hash.Values.CopyTo (retval, 0);
+			SourceInfo[] retval = new SourceInfo [sources.Count];
+			sources.CopyTo (retval, 0);
 			return retval;
 
 		}
@@ -892,6 +881,22 @@ namespace Mono.Debugger.Languages.CSharp
 			public override ITargetLocation Lookup (int line)
 			{
 				return null;
+			}
+
+			protected override ArrayList GetMethods ()
+			{
+				ArrayList methods = new ArrayList ();
+				foreach (MethodSourceEntry method in source.Methods) {
+					reader.string_reader.Offset = method.Index * reader.int_size;
+					reader.string_reader.Offset = reader.string_reader.ReadInteger ();
+
+					int length = reader.string_reader.BinaryReader.ReadInt32 ();
+					byte[] buffer = reader.string_reader.BinaryReader.ReadBuffer (length);
+					string name = Encoding.UTF8.GetString (buffer);
+
+					methods.Add (new MonoSourceMethod (this, reader, method, name));
+				}
+				return methods;
 			}
 		}
 
