@@ -1,3 +1,9 @@
+2004-07-02  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Callback): Make this class abstract, moved
+	the callback code into classes derived from this.
+
 2004-06-30  Martin Baulig  <martin@ximian.com>
 
 	* classes/ObjectCache.cs: Don't make the `objects' ArrayList

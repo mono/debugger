@@ -328,11 +328,13 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case OperationType.RuntimeInvoke:
-				do_runtime_invoke (operation.RuntimeInvokeData);
+				do_callback (new CallbackRuntimeInvoke (
+						     operation.RuntimeInvokeData));
 				break;
 
 			case OperationType.CallMethod:
-				do_call_method (operation.CallMethodData);
+				do_callback (new CallbackCallMethod (
+						     operation.CallMethodData));
 				break;
 
 			case OperationType.StepLine:
@@ -395,19 +397,16 @@ namespace Mono.Debugger.Backends
 
 			// Callbacks happen when the user (or the engine) called a method
 			// in the target (RuntimeInvoke).
-			if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
-				bool ret;
-				StackData stack_data;
-				if (handle_callback (cevent, out ret, out stack_data)) {
+			if (current_callback != null) {
+				if (!current_callback.ProcessEvent (this, inferior, cevent))
+					return;
+
+				current_callback = null;
+
+				if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
 					Report.Debug (DebugFlags.EventLoop,
-						      "{0} completed callback: {1}",
-						      this, ret);
-					if (!ret)
-						return;
-					if (stack_data != null)
-						restore_stack (stack_data);
-					else 
-						frame_changed (inferior.CurrentFrame, null);
+						      "{0} completed callback", this);
+
 					// Ok, inform the user that we stopped.
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.FrameChanged, current_frame);
@@ -415,14 +414,6 @@ namespace Mono.Debugger.Backends
 					operation_completed (args);
 					return;
 				}
-			}
-
-			if (current_callback != null) {
-				Report.Debug (DebugFlags.EventLoop,
-					      "{0} deleting callback: {1}", this,
-					      current_callback);
-				current_callback.StackInvalid ();
-				current_callback = null;
 			}
 
 			TargetEventArgs result = null;
@@ -667,6 +658,12 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			return current_simple_symtab.SimpleLookup (address, exact_match);
+		}
+
+		protected IMethod do_lookup (TargetAddress address)
+		{
+			manager.DebuggerBackend.UpdateSymbolTable ();
+			return Lookup (address);
 		}
 
 		Registers get_registers ()
@@ -1407,7 +1404,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			frames_invalid ();
-			do_continue_internal (true);
+			do_continue_internal (TargetAddress.Null, true);
 		}
 
 		// <summary>
@@ -1442,22 +1439,26 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		void do_continue ()
 		{
-			check_inferior ();
-			frames_invalid ();
-			do_continue_internal (false);
+			do_continue (TargetAddress.Null, TargetAddress.Null);
 		}
 
 		void do_continue (TargetAddress until)
 		{
-			check_inferior ();
-			frames_invalid ();
-			insert_temporary_breakpoint (until);
-			do_continue_internal (false);
+			do_continue (TargetAddress.Null, until);
 		}
 
-		void do_continue_internal (bool step)
+		void do_continue (TargetAddress trampoline, TargetAddress until)
 		{
-			if (step_over_breakpoint (TargetAddress.Null, true))
+			check_inferior ();
+			frames_invalid ();
+			if (!until.IsNull)
+				insert_temporary_breakpoint (until);
+			do_continue_internal (trampoline, false);
+		}
+
+		void do_continue_internal (TargetAddress trampoline, bool step)
+		{
+			if (step_over_breakpoint (trampoline, true))
 				return;
 
 			if (step)
@@ -1529,40 +1530,7 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			do_callback (new Callback (
-				new CallMethodData (compile, trampoline.Address, 0, null),
-				new CallbackFunc (callback_method_compiled)));
-			return false;
-		}
-
-		bool callback_method_compiled (Callback cb, long data1, long data2)
-		{
-			TargetAddress trampoline = new TargetAddress (manager.AddressDomain, data1);
-			IMethod method = null;
-			if (current_symtab != null) {
-				manager.DebuggerBackend.UpdateSymbolTable ();
-				method = Lookup (trampoline);
-			}
-			Report.Debug (DebugFlags.SSE,
-				      "{0} compiled trampoline: {1} {2} {3} {4} {5}",
-				      this, current_operation, trampoline, method,
-				      method != null ? method.Module : null,
-				      method_has_source (method));
-
-			if (!method_has_source (method)) {
-				do_next ();
-				return false;
-			}
-
-			Report.Debug (DebugFlags.SSE,
-				      "{0} entering trampoline: {1} {2}",
-				      this, trampoline, current_operation);
-
-			if (step_over_breakpoint (trampoline, true))
-				return false;
-
-			insert_temporary_breakpoint (trampoline);
-			inferior.Continue ();
+			do_callback (new CallbackCompileMethod (compile, trampoline));
 			return false;
 		}
 
@@ -1798,26 +1766,6 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool handle_callback (Inferior.ChildEvent cevent, out bool ret,
-				      out StackData stack_data)
-		{
-			if ((current_callback == null) ||
-			    (cevent.Argument != current_callback.ID)) {
-				if (current_callback != null)
-					current_callback.StackInvalid ();
-				current_callback = null;
-				ret = false;
-				stack_data = null;
-				return false;
-			}
-
-			Callback cb = current_callback;
-			stack_data = current_callback.StackData;
-			current_callback = null;
-			ret = cb.Func (cb, cevent.Data1, cevent.Data2);
-			return true;
-		}
-
 		void restore_stack (StackData stack)
 		{
 			if (inferior.CurrentFrame != stack.Frame.TargetAddress) {
@@ -1849,72 +1797,216 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ();
 
 			current_callback = cb;
-			cb.Call (inferior);
+			cb.Execute (this, inferior);
 		}
 
 		Callback current_callback;
 
 		protected delegate bool CallbackFunc (Callback cb, long data1, long data2);
 
-		protected sealed class Callback
+		protected abstract class Callback
 		{
-			public readonly long ID;
-			public readonly CallMethodData Data;
-			public readonly CallbackFunc Func;
-			public readonly StackData StackData;
+			public readonly long ID = ++next_id;
+			StackData stack_data;
 
 			static int next_id = 0;
 
-			public Callback (CallMethodData data, CallbackFunc func)
+			public void Execute (SingleSteppingEngine sse,
+					     Inferior inferior)
 			{
-				this.ID = ++next_id;
-				this.Data = data;
-				this.Func = func;
+				stack_data = sse.save_stack ();
+				DoExecute (sse, inferior);
 			}
 
-			public Callback (CallMethodData data, CallbackFunc func,
-					 StackData stack)
-				: this (data, func)
+			protected abstract void DoExecute (SingleSteppingEngine sse,
+							   Inferior inferior);
+
+			public bool ProcessEvent (SingleSteppingEngine sse,
+						  Inferior inferior,
+						  Inferior.ChildEvent cevent)
 			{
-				this.StackData = stack;
+				if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
+					Abort ();
+					return true;
+				}
+
+				if (ID != cevent.Argument) {
+					Abort ();
+					return true;
+				}
+
+				if (!DoProcessEvent (sse, inferior, cevent.Data1, cevent.Data2))
+					return false;
+
+				if (stack_data != null)
+					sse.restore_stack (stack_data);
+				else 
+					sse.frame_changed (inferior.CurrentFrame, null);
+				return true;
 			}
 
-			public void StackInvalid ()
+			protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
+								Inferior inferior,
+								long data1, long data2);
+
+			public void Abort ()
 			{
-				if (StackData == null)
+				if (stack_data == null)
 					return;
 
-				if (StackData.Frame != null)
-					StackData.Frame.Dispose ();
+				if (stack_data.Frame != null)
+					stack_data.Frame.Dispose ();
 
-				if (StackData.Backtrace != null)
-					StackData.Backtrace.Dispose ();
+				if (stack_data.Backtrace != null)
+					stack_data.Backtrace.Dispose ();
+			}
+		}
+
+		protected class CallbackCallMethod : Callback
+		{
+			CallMethodData data;
+
+			public CallbackCallMethod (CallMethodData data)
+			{
+				this.data = data;
 			}
 
-			public void Call (Inferior inferior)
+			protected override void DoExecute (SingleSteppingEngine sse,
+							   Inferior inferior)
 			{
-				switch (Data.Type) {
+				switch (data.Type) {
 				case CallMethodType.LongLong:
-					inferior.CallMethod (Data.Method, Data.Argument1,
-							     Data.Argument2, ID);
+					inferior.CallMethod (data.Method, data.Argument1,
+							     data.Argument2, ID);
 					break;
 
 				case CallMethodType.LongString:
-					inferior.CallMethod (Data.Method, Data.Argument1,
-							     Data.StringArgument, ID);
-					break;
-
-				case CallMethodType.RuntimeInvoke:
-					RuntimeInvokeData rdata = (RuntimeInvokeData) Data.Data;
-					inferior.RuntimeInvoke (
-						rdata.Language.RuntimeInvokeFunc,
-						rdata.MethodArgument, rdata.ObjectArgument,
-						rdata.ParamObjects, ID, rdata.Debug);
+					inferior.CallMethod (data.Method, data.Argument1,
+							     data.StringArgument, ID);
 					break;
 
 				default:
 					throw new InvalidOperationException ();
 				}
+			}
+
+			protected override bool DoProcessEvent (SingleSteppingEngine sse,
+								Inferior inferior,
+								long data1, long data2)
+			{
+				data.Result = data1;
+
+				Report.Debug (DebugFlags.EventLoop,
+					      "Call method done: {0} {1:x} {2:x}",
+					      sse, data1, data2);
+
+				return true;
+			}
+		}
+
+		protected class CallbackCompileMethod : Callback
+		{
+			TargetAddress compile;
+			TargetAddress trampoline;
+
+			public CallbackCompileMethod (TargetAddress compile,
+						      TargetAddress trampoline)
+			{
+				this.compile = compile;
+				this.trampoline = trampoline;
+			}
+
+			protected override void DoExecute (SingleSteppingEngine sse,
+							   Inferior inferior)
+			{
+				inferior.CallMethod (compile, trampoline.Address, 0, ID);
+			}
+
+			protected override bool DoProcessEvent (SingleSteppingEngine sse,
+								Inferior inferior,
+								long data1, long data2)
+			{
+				TargetAddress trampoline = new TargetAddress (
+					inferior.GlobalAddressDomain, data1);
+
+				IMethod method = sse.do_lookup (trampoline);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} compiled trampoline: {1} {2} {3} {4}",
+					      this, trampoline, method,
+					      method != null ? method.Module : null,
+					      sse.method_has_source (method));
+
+				if (!sse.method_has_source (method)) {
+					sse.do_next ();
+					return false;
+				}
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} entering trampoline: {1}",
+					      this, trampoline);
+
+				sse.do_continue (trampoline, trampoline);
+				return false;
+			}
+		}
+
+		protected class CallbackRuntimeInvoke : Callback
+		{
+			RuntimeInvokeData rdata;
+			bool method_compiled;
+
+			public CallbackRuntimeInvoke (RuntimeInvokeData rdata)
+			{
+				this.rdata = rdata;
+			}
+
+			protected override void DoExecute (SingleSteppingEngine sse,
+							   Inferior inferior)
+			{
+				inferior.CallMethod (rdata.Language.CompileMethodFunc,
+						     rdata.MethodArgument.Address, 0, ID);
+			}
+
+			protected override bool DoProcessEvent (SingleSteppingEngine sse,
+								Inferior inferior,
+								long data1, long data2)
+			{
+				if (!method_compiled) {
+					method_compiled = true;
+
+					TargetAddress invoke = new TargetAddress (
+						inferior.AddressDomain, data1);
+
+					Report.Debug (DebugFlags.EventLoop,
+						      "Runtime invoke: {0}", invoke);
+
+					if (rdata.Debug)
+						sse.insert_temporary_breakpoint (invoke);
+
+					inferior.RuntimeInvoke (
+						rdata.Language.RuntimeInvokeFunc,
+						rdata.MethodArgument, rdata.ObjectArgument,
+						rdata.ParamObjects, ID, rdata.Debug);
+					return false;
+				}
+
+				Report.Debug (DebugFlags.EventLoop,
+				      "Runtime invoke done: {0:x} {1:x}",
+				      data1, data2);
+
+				rdata.InvokeOk = true;
+				if (data1 != 0)
+					rdata.ReturnObject = new TargetAddress (
+						inferior.AddressDomain, data1);
+				else
+					rdata.ReturnObject = TargetAddress.Null;
+				if (data2 != 0)
+					rdata.ExceptionObject = new TargetAddress (
+						inferior.AddressDomain, data2);
+				else
+					rdata.ExceptionObject = TargetAddress.Null;
+
+				return true;
 			}
 		}
 
@@ -1949,73 +2041,6 @@ namespace Mono.Debugger.Backends
 			registers = null;
 
 			return stack_data;
-		}
-
-		void do_runtime_invoke (RuntimeInvokeData rdata)
-		{
-			check_inferior ();
-
-			do_callback (new Callback (
-				new CallMethodData (rdata.Language.CompileMethodFunc,
-						    rdata.MethodArgument.Address, 0, rdata),
-				new CallbackFunc (callback_do_runtime_invoke),
-				save_stack ()));
-		}
-
-		bool callback_do_runtime_invoke (Callback cb, long data1, long data2)
-		{
-			TargetAddress invoke = new TargetAddress (manager.AddressDomain, data1);
-
-			Report.Debug (DebugFlags.EventLoop, "Runtime invoke: {0}", invoke);
-
-			RuntimeInvokeData rtd = (RuntimeInvokeData) cb.Data.Data;
-
-			if (rtd.Debug)
-				insert_temporary_breakpoint (invoke);
-
-			do_callback (new Callback (
-					     new CallMethodData (rtd),
-					     new CallbackFunc (callback_runtime_invoke_done)));
-
-			return false;
-		}
-
-		bool callback_runtime_invoke_done (Callback cb, long data1, long data2)
-		{
-			RuntimeInvokeData rdata = (RuntimeInvokeData) cb.Data.Data;
-
-			Report.Debug (DebugFlags.EventLoop,
-				      "Runtime invoke done: {0:x} {1:x}",
-				      data1, data2);
-
-			rdata.InvokeOk = true;
-			if (data1 != 0)
-				rdata.ReturnObject = new TargetAddress (inferior.AddressDomain, data1);
-			else
-				rdata.ReturnObject = TargetAddress.Null;
-			if (data2 != 0)
-				rdata.ExceptionObject = new TargetAddress (inferior.AddressDomain, data2);
-			else
-				rdata.ExceptionObject = TargetAddress.Null;
-
-			return true;
-		}
-
-		void do_call_method (CallMethodData cdata)
-		{
-			do_callback (new Callback (
-					     cdata, new CallbackFunc (callback_call_method),
-					     save_stack ()));
-		}
-
-		bool callback_call_method (Callback cb, long data1, long data2)
-		{
-			cb.Data.Result = data1;
-
-			Report.Debug (DebugFlags.EventLoop,
-				      "Call method done: {0} {1:x} {2:x}", this, data1, data2);
-
-			return true;
 		}
 
 		bool stopped;
@@ -2298,8 +2323,7 @@ namespace Mono.Debugger.Backends
 	internal enum CallMethodType
 	{
 		LongLong,
-		LongString,
-		RuntimeInvoke
+		LongString
 	}
 
 	internal sealed class CallMethodData
@@ -2332,12 +2356,6 @@ namespace Mono.Debugger.Backends
 			this.Argument2 = arg2;
 			this.StringArgument = null;
 			this.Data = data;
-		}
-
-		public CallMethodData (RuntimeInvokeData rdata)
-		{
-			this.Type = CallMethodType.RuntimeInvoke;
-			this.Data = rdata;
 		}
 	}
 
