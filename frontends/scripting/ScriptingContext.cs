@@ -167,7 +167,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return var;
 			}
 
-			throw new ScriptingException ("No variable of parameter with that name.");
+			throw new ScriptingException ("No variable or parameter with that name: `{0}'.", identifier);
 		}
 
 		public ITargetObject GetVariable (string identifier)

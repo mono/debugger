@@ -304,7 +304,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		bool is_identifier_part_character (char c)
 		{
-			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.' || (c >= '0' && c <= '9') || Char.IsLetter (c);
+			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9') || Char.IsLetter (c);
 		}
 
 		int GetKeyword (string name, bool tokens_seen)

@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Native
 		protected override object GetObject ()
 		{
 			try {
-				return ReadString (location.GetLocationAtOffset (0, true));
+				return ReadString (location);
 			} catch (TargetException ex) {
 				is_valid = false;
 				throw new LocationInvalidException (ex);

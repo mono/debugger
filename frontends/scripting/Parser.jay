@@ -458,6 +458,10 @@ variable_expression
 	  {
 		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
 	  }
+	| variable_expression MINUS OP_GT IDENTIFIER
+	  {
+		$$ = new StructAccessExpression (new VariableDereferenceExpression ((VariableExpression) $1), (string) $4);
+	  }
 	| variable_expression OPEN_BRACKET expression CLOSE_BRACKET
 	  {
 		$$ = new ArrayAccessExpression ((VariableExpression) $1, (Expression) $3);
@@ -465,6 +469,10 @@ variable_expression
 	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
 	  {
 		$$ = new ParentClassExpression ((VariableExpression) $3);
+	  }
+	| OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = (VariableExpression) $2;
 	  }
 	;
 
