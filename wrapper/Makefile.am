@@ -48,7 +48,7 @@ LIBRARY_SRCLIST = \
 	@top_srcdir@/backends/mono-csharp/*.cs		\
 	@top_srcdir@/backends/native/*.cs		\
 	@top_srcdir@/arch/*.cs				\
-	@top_srcdir@/wrapper/AssemblyInfo.cs
+	AssemblyInfo.cs
 
 LIBRARY_DEPS = \
 	-r Mono.GetOptions	\
@@ -65,12 +65,16 @@ Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
+AssemblyInfo.cs: AssemblyInfo.cs.in
+	sed -e 's^\@libdir\@^$(libdir)^g' < $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
+	&& mv assinfo.tmp AssemblyInfo.cs
+
 ASSEMBLY = Mono.Debugger.dll
 
-CLEANFILES = *.exe *.dll mdb
+CLEANFILES = *.exe *.dll mdb AssemblyInfo.cs
 
 EXTRA_DIST = \
-	mdb.in mono.snk AssemblyInfo.cs
+	mdb.in mono.snk AssemblyInfo.cs.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \

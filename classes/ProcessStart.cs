@@ -65,8 +65,7 @@ namespace Mono.Debugger
 
 		static ProcessStart ()
 		{
-			Assembly debugger_ass = Assembly.GetExecutingAssembly ();
-			string libdir = Path.GetDirectoryName (debugger_ass.Location);
+			string libdir = AssemblyInfo.libdir;
 			JitWrapper = Path.Combine (libdir, "mono-debugger-mini-wrapper");
 		}
 
