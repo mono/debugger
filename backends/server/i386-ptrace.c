@@ -174,7 +174,7 @@ server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
 	return server_ptrace_read_data (handle, start, sizeof (int), retval);
 
 	errno = 0;
-	*retval = ptrace (PT_READ_D, handle->pid, start, 0);
+	*retval = ptrace (PT_READ_D, handle->pid, (gpointer) ((guint32) start), 0);
 	if (errno) {
 		g_message (G_STRLOC ": %d - %08Lx - %s", handle->pid, start, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
@@ -195,7 +195,7 @@ server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, g
 		int word = *ptr++;
 
 		errno = 0;
-		if (ptrace (PT_WRITE_D, handle->pid, addr, word) != 0) {
+		if (ptrace (PT_WRITE_D, handle->pid, (gpointer) addr, word) != 0) {
 			if (errno == ESRCH)
 				return COMMAND_ERROR_NOT_STOPPED;
 			else if (errno) {

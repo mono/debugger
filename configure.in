@@ -13,10 +13,10 @@ AC_PROG_INSTALL
 AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-linux*)
-		server_sources="i386-linux-ptrace.c"
+		server_sources="i386-linux-ptrace.c i386-linux-ptrace.h"
 		;;
 	*-*-freebsd*)
-		server_sources=""
+		server_sources="i386-freebsd-ptrace.c i386-freebsd-ptrace.h"
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
