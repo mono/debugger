@@ -1,9 +1,13 @@
 noinst_DATA = Parser.cs
 
+if HAVE_JAY
+
 Parser.cs: Parser.jay
 	$(JAY) -ctv < skeleton Parser.jay > Parser.tmp && mv -f Parser.tmp Parser.cs
 
-CLEANFILES = Parser.cs y.output
+endif
 
-EXTRA_DIST = Parser.jay skeleton @srcdir@/*.cs
+MAINTAINERCLEANFILES = Parser.cs y.output
+
+EXTRA_DIST = Parser.cs Parser.jay skeleton @srcdir@/*.cs
 

@@ -118,9 +118,21 @@ AC_TRY_LINK_FUNC(_sch_istable,,[AC_MSG_ERROR([
 LIBS=$old_LIBS
 AC_MSG_RESULT(ok)
 
-AC_PATH_PROG(MONO, mono, [AC_MSG_ERROR([Cannot find "mono" in your PATH])])
-AC_PATH_PROG(MCS, mcs, [AC_MSG_ERROR([Cannot find "mcs" in your PATH])])
-AC_PATH_PROG(JAY, jay, [AC_MSG_ERROR([Cannot find "jay" in your PATH])])
+AC_PATH_PROG(MONO, mono)
+AC_PATH_PROG(MCS, mcs)
+AC_PATH_PROG(JAY, jay)
+if test "x$MONO" = "x" ; then
+  AC_MSG_ERROR([Can't find "mono" in your PATH])
+fi
+if test "x$MCS" = "x" ; then
+  AC_MSG_ERROR([Can't find "mcs" in your PATH])
+fi
+have_jay=yes
+if test "x$JAY" = "x" ; then
+  have_yay=no
+  AC_MSG_WARN([Can't find "jay" in your PATH])
+fi
+AM_CONDITIONAL(HAVE_JAY, test "x$have_jay" = "xyes")
 AC_SUBST(PATH)
 
 
