@@ -1,5 +1,13 @@
 2005-02-15  Chris Toshok  <toshok@ximian.com>
 
+	* classes/Makefile.am (EXTRA_DIST): remove ISymbolFile from here.
+	
+	* interfaces/Makefile.am (EXTRA_DIST): and add it here.
+
+	* interfaces/ISymbolFile.cs: mv classes/ISymbolFile.cs here.
+	
+2005-02-15  Chris Toshok  <toshok@ximian.com>
+
 	* backends/server/mutex.c (mono_debugger_event_trywait): fix
 	warning.
 
