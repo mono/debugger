@@ -76,7 +76,6 @@ namespace Mono.Debugger.GUI
 
 		Gtk.Entry command_entry;
 		CurrentInstructionEntry current_insn;
-		SourceView source_view;
 		DisassemblerView disassembler_view;
 		RegisterDisplay register_display;
 		BackTraceView backtrace_view;
@@ -138,9 +137,6 @@ namespace Mono.Debugger.GUI
 			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
 
 			//source_status = new SourceStatusbar ((Gtk.Statusbar) gxml ["source-status"]);
-			source_view = new SourceView
-			((Gtk.Container) main_window, (Gtk.TextView) gxml ["source-view"]);
-
 			source_manager = new SourceManager ((Gtk.Notebook) gxml ["code-browser-notebook"]);
 
 			disassembler_view = new DisassemblerView (
@@ -253,7 +249,6 @@ namespace Mono.Debugger.GUI
 			backtrace_view.SetBackend (backend);
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
-			source_view.SetBackend (backend);
 			source_manager.SetBackend (backend);
 			
 			backend.StateChanged += new StateChangedHandler (BackendStateChanged);

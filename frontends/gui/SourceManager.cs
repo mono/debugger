@@ -14,7 +14,7 @@ namespace Mono.Debugger.GUI {
 	public class SourceList {
 		ScrolledWindow sw;
 		DebuggerBackend backend;
-		TextView text_view;
+		Gtk.SourceView source_view;
 		TextTag frame_tag;
 		TextBuffer text_buffer;
 		ClosableNotebookTab tab;
@@ -32,15 +32,15 @@ namespace Mono.Debugger.GUI {
 
 			sw = new ScrolledWindow (null, null);
 			sw.SetPolicy (PolicyType.Automatic, PolicyType.Automatic);
-			text_view = new TextView ();
-			text_view.Editable = false;
+			source_view = new Gtk.SourceView ();
+			source_view.Editable = false;
 			
-			sw.Add (text_view);
+			sw.Add (source_view);
 			sw.ShowAll ();
 
 			factory = new SourceFileFactory ();
 			
-			text_buffer = text_view.Buffer;
+			text_buffer = source_view.Buffer;
 			string contents = GetSource (source_buffer);
 			frame_tag = new Gtk.TextTag ("frame");
 			frame_tag.Background = "red";
@@ -128,7 +128,7 @@ namespace Mono.Debugger.GUI {
 
 			Gtk.TextMark frame_mark = text_buffer.GetMark ("frame");
 			text_buffer.MoveMark (frame_mark, start_iter);
-			text_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
+			source_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
 		}
 		
 		public ClosableNotebookTab TabWidget {

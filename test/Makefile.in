@@ -38,7 +38,8 @@ DEPS = \
 	-r System.Drawing	\
 	-r Mono.CSharp.Debugger	\
 	-r Mono.Debugger.dll	\
-	-r Mono.Debugger.Backend.dll
+	-r Mono.Debugger.Backend.dll	\
+	-r gtksourceview-sharp.dll
 
 GUIDIR=../frontends/gui
 RESOURCES = \

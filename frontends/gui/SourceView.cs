@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.GUI
 {
-	public class SourceView : DebuggerWidget
+	public abstract class SourceView : DebuggerWidget
 	{
 		protected Gtk.TextView source_view;
 		protected Gtk.TextBuffer text_buffer;

@@ -1,3 +1,9 @@
+2002-10-05  Martin Baulig  <martin@gnome.org>
+
+	* frontends/gui/SourceView.cs: Made this class abstract.
+
+	* frontends/gui/SourceManager.cs: Use Gtk.SourceView.
+
 2002-10-03  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/DebuggerGUI.cs: Hook up the signal and show an
