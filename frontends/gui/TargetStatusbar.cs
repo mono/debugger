@@ -28,6 +28,11 @@ namespace Mono.Debugger.GUI
 			status_bar.Push (status_id, message);
 		}
 
+		public void Message (string format, params object[] args)
+		{
+			Message (String.Format (format, args));
+		}
+
 		protected virtual string GetStopReason (int arg)
 		{
 			if (arg == 0)
@@ -54,37 +59,40 @@ namespace Mono.Debugger.GUI
 			return String.Format ("{1} at {0}.", frame.TargetAddress, GetStopReason (arg));
 		}
 
-		protected override void StateChanged (TargetState new_state, int arg)
+		protected override void OnTargetEvent (TargetEventArgs args)
 		{
 			if (!IsVisible)
 				return;
 
-			switch (new_state) {
-			case TargetState.RUNNING:
+			switch (args.Type) {
+			case TargetEventType.TargetRunning:
 				Message ("Running ....");
 				break;
 
-			case TargetState.CORE_FILE:
-			case TargetState.STOPPED:
-				if (CurrentFrame != null)
-					Message (GetStopMessage (CurrentFrame, arg));
+			case TargetEventType.TargetStopped:
+				if (args.Frame != null)
+					Message (GetStopMessage (args.Frame, (int) args.Data));
 				else
-					Message (String.Format ("{0}.", GetStopReason (arg)));
+					Message ("{0}.", GetStopReason ((int) args.Data));
 				break;
 
-			case TargetState.EXITED:
-				if (arg == 0)
+			case TargetEventType.TargetHitBreakpoint:
+				Message ("Program hit breakpoint.");
+				break;
+
+			case TargetEventType.TargetExited:
+				if ((int) args.Data == 0)
 					Message ("Program terminated.");
 				else
-					Message (String.Format ("Program terminated with signal {0}.", arg));
+					Message ("Program terminated with exit code {0}.", (int) args.Data);
 				break;
 
-			case TargetState.NO_TARGET:
-				Message ("No target to debug.");
+			case TargetEventType.TargetSignaled:
+				Message ("Program died with fatal signal {0}.", (int) args.Data);
 				break;
 
-			case TargetState.BUSY:
-				Message ("Debugger busy ...");
+			default:
+				Message ("Ooops, unknown target state {0}.", args.Type);
 				break;
 			}
 		}

@@ -24,9 +24,6 @@ namespace Mono.Debugger.GUI
 			entry.PreviousLine += new EventHandler (previous_line);
 			entry.NextLine += new EventHandler (next_line);
 
-			manager.RealFrameChangedEvent += new StackFrameHandler (RealFrameChanged);
-			manager.RealFramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
-
 			widget = entry;
 
 			container.Add (entry);
@@ -76,44 +73,29 @@ namespace Mono.Debugger.GUI
 			widget.Sensitive = current_insn != null;
 		}
 
-		protected override void FrameChanged (StackFrame frame)
-		{
-			Update ();
-		}
-
-		protected override void FramesInvalid ()
-		{
-			Update ();
-		}
-
-		void RealFrameChanged (StackFrame frame)
-		{
-			TargetAddress addr = frame.TargetAddress;
-			AssemblerLine line = frame.DisassembleInstruction (addr);
-			if (line != null) {
-				current_insn = line.FullText;
-
-				stack = new Stack ();
-				stack.Push (addr);
-				stack.Push (addr + line.InstructionSize);
-			} else {
-				current_insn = null;
-				stack = null;
-			}
-		}
-
-		void RealFramesInvalid ()
-		{
-			current_insn = null;
-		}
-
-		protected override void StateChanged (TargetState new_state, int arg)
+		protected override void OnTargetEvent (TargetEventArgs args)
 		{
 			if (!IsVisible)
 				return;
 
-			if (new_state != TargetState.STOPPED)
-				widget.Sensitive = false;
+			if (!args.IsStopped) {
+				current_insn = null;
+			} else {
+				TargetAddress addr = args.Frame.TargetAddress;
+				AssemblerLine line = args.Frame.DisassembleInstruction (addr);
+				if (line != null) {
+					current_insn = line.FullText;
+
+					stack = new Stack ();
+					stack.Push (addr);
+					stack.Push (addr + line.InstructionSize);
+				} else {
+					current_insn = null;
+					stack = null;
+				}
+			}
+
+			Update ();
 		}
 	}
 }

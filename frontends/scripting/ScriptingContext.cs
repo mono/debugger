@@ -253,11 +253,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.process = process;
 			this.id = process.ID;
 
-			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
-			process.MethodChangedEvent += new MethodChangedHandler (method_changed);
-			process.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
-			process.StateChanged += new StateChangedHandler (state_changed);
+			process.TargetEvent += new TargetEventHandler (target_event);
 			process.TargetExited += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
@@ -273,8 +269,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (process.SingleSteppingEngine.HasTarget) {
 				StackFrame frame = process.SingleSteppingEngine.CurrentFrame;
 				current_frame = new FrameHandle (this, frame);
-				if (frame.Method != null)
-					method_changed (frame.Method);
 				context.Print ("Process @{0} stopped at {1}.", id, frame);
 				current_frame.Print (context);
 			} else {
@@ -316,78 +310,39 @@ namespace Mono.Debugger.Frontends.CommandLine
 		FrameHandle current_frame = null;
 		BacktraceHandle current_backtrace = null;
 		AssemblerLine current_insn = null;
-		IMethod current_method = null;
-		ISourceBuffer current_buffer = null;
-		string[] current_source = null;
-
-		void frame_changed (StackFrame frame)
-		{
-			current_frame = new FrameHandle (this, frame);
-			current_frame_idx = -1;
-			current_backtrace = null;
-
-			current_insn = frame.DisassembleInstruction (frame.TargetAddress);
-		}
-
-		void frames_invalid ()
-		{
-			current_insn = null;
-			current_frame = null;
-			current_frame_idx = -1;
-			current_backtrace = null;
-		}
-
-		void method_changed (IMethod method)
-		{
-			current_method = method;
-			current_source = null;
-			if (!method.HasSource)
-				return;
-
-			IMethodSource source = method.Source;
-			current_buffer = source.SourceBuffer;
-
-			if (current_buffer == null)
-				return;
-
-			current_source = current_buffer.Contents;
-		}
-
-		void method_invalid ()
-		{
-			current_method = null;
-			current_source = null;
-			current_buffer = null;
-		}
 
 		void target_exited ()
 		{
-			frames_invalid ();
-			method_invalid ();
 			process = null;
 
 			if (ProcessExitedEvent != null)
 				ProcessExitedEvent (this);
 		}
 
-		void state_changed (TargetState state, int arg)
+		void target_event (object sender, TargetEventArgs args)
 		{
+			if (args.Frame != null) {
+				current_frame = new FrameHandle (this, args.Frame);
+				current_frame_idx = -1;
+				current_backtrace = null;
+
+				current_insn = args.Frame.DisassembleInstruction (args.Frame.TargetAddress);
+			} else {
+				current_insn = null;
+				current_frame = null;
+				current_frame_idx = -1;
+				current_backtrace = null;
+			}
+
 			string frame = "";
 			if (current_frame != null)
 				frame = String.Format (" at {0}", current_frame);
 
-			switch (state) {
-			case TargetState.EXITED:
-				if (arg == 0)
-					context.Print ("Process @{0} terminated normally.", id);
-				else
-					context.Print ("Process @{0} exited with exit code {1}.", id, arg);
-				target_exited ();
-				break;
-
-			case TargetState.STOPPED:
-				if (arg != 0)
-					context.Print ("Process @{0} received signal {1}{2}.", id, arg, frame);
+			switch (args.Type) {
+			case TargetEventType.TargetStopped:
+				if ((int) args.Data != 0)
+					context.Print ("Process @{0} received signal {1}{2}.",
+						       id, (int) args.Data, frame);
 				else if (!context.IsInteractive)
 					break;
 				else
@@ -395,12 +350,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				if (current_insn != null)
 					context.PrintInstruction (current_insn);
+
 				if (current_frame != null)
 					current_frame.PrintSource (context);
 
 				if (!context.IsInteractive)
 					context.Abort ();
+				break;
 
+			case TargetEventType.TargetExited:
+				if ((int) args.Data == 0)
+					context.Print ("Process @{0} terminated normally.", id);
+				else
+					context.Print ("Process @{0} exited with exit code {1}.",
+						       id, (int) args.Data);
+				target_exited ();
+				break;
+
+			case TargetEventType.TargetSignaled:
+				context.Print ("Process @{0} died with fatal signal {1}.",
+					       id, (int) args.Data);
+				target_exited ();
 				break;
 			}
 		}

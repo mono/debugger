@@ -17,9 +17,6 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
-	public delegate void MethodInvalidHandler ();
-	public delegate void MethodChangedHandler (IMethod method);
-
 	[Serializable]
 	public class DebuggerBackend : IDisposable, ISerializable, IDeserializationCallback
 	{

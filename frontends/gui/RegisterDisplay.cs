@@ -46,9 +46,6 @@ namespace Mono.Debugger.GUI
 		{
 			this.notebook = notebook;
 
-			manager.RealFrameChangedEvent += new StackFrameHandler (RealFrameChanged);
-			manager.RealFramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
-
 			color_change.red = 0xffff;
 			color_change.green = 0;
 			color_change.blue = 0;
@@ -67,25 +64,33 @@ namespace Mono.Debugger.GUI
 				SetupI386 ();
 		}
 
-		protected override void StateChanged (TargetState new_state, int arg)
+		protected override void OnTargetExited ()
 		{
-			if (!active)
+			notebook.Page = 0;
+			arch = null;
+
+			base.OnTargetExited ();
+		}
+
+		protected override void OnTargetEvent (TargetEventArgs args)
+		{
+			active = true;
+
+			if (!active || !process.HasTarget || !args.IsStopped || (arch == null))
 				return;
 
-			switch (new_state) {
-			case TargetState.STOPPED:
-			case TargetState.CORE_FILE:
-				if (regs != null)
-					notebook.Page = 1;
-				else
-					notebook.Page = 0;
-				UpdateDisplay ();
-				break;
-
-			default:
-				// Do not change the page, it flickers.
-				break;
+			regs = null;
+			try {
+				regs = process.GetRegisters (arch.AllRegisterIndices);
+			} catch (Exception e) {
+				Console.WriteLine ("ERROR: Register loading threw an exception here: {0}", e);
 			}
+
+			if (regs != null)
+				notebook.Page = 1;
+			else
+				notebook.Page = 0;
+			UpdateDisplay ();
 		}
 
 		public bool Active {
@@ -282,24 +287,6 @@ namespace Mono.Debugger.GUI
 			i386_vip.Active = ((f & (1 << 20)) != 0);
 
 			last_regs = regs;
-		}
-		
-		void RealFrameChanged (StackFrame frame)
-		{
-			if (!process.HasTarget || (arch == null))
-				return;
-
-			try {
-				regs = process.GetRegisters (arch.AllRegisterIndices);
-			} catch (Exception e) {
-				Console.WriteLine ("ERROR: Register loading threw an exception here: {0}", e);
-				regs = null;
-			}
-		}
-
-		void RealFramesInvalid ()
-		{
-			regs = null;
 		}
 	}
 }

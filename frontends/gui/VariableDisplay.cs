@@ -263,20 +263,11 @@ namespace Mono.Debugger.GUI
 				iters = new Hashtable ();
 			}
 		}
-		
-		protected override void FrameChanged (StackFrame frame)
+
+		protected override void OnTargetEvent (TargetEventArgs args)
 		{
-			current_frame = frame;
-
-			if (!process.HasTarget)
-				return;
-
+			current_frame = args.Frame;
 			UpdateDisplay ();
-		}
-
-		protected override void FramesInvalid ()
-		{
-			current_frame = null;
 		}
 	}
 }

@@ -16,8 +16,7 @@ namespace Mono.Debugger.GUI
 		Process process;
 		DebuggerGUI gui;
 		ThreadNotify thread_notify;
-		int frame_notify_id;
-		int state_notify_id;
+		int target_notify_id;
 		int module_notify_id;
 		int bpt_notify_id;
 
@@ -26,8 +25,7 @@ namespace Mono.Debugger.GUI
 			this.gui = gui;
 			this.thread_notify = gui.ThreadNotify;
 
-			frame_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (frame_event));
-			state_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (state_event));
+			target_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (target_event));
 			module_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (module_event));
 			bpt_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (bpt_event));
 		}
@@ -44,6 +42,7 @@ namespace Mono.Debugger.GUI
 		{
 			this.backend = process.DebuggerBackend;
 			this.process = process;
+			this.target_exited = false;
 
 			if (ProcessCreatedEvent != null)
 				ProcessCreatedEvent (this, process);
@@ -51,87 +50,18 @@ namespace Mono.Debugger.GUI
 			backend.ModulesChangedEvent += new ModulesChangedHandler (RealModulesChanged);
 			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (RealBreakpointsChanged);
 
-			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
-			process.StateChanged += new StateChangedHandler (RealStateChanged);
+			process.TargetEvent += new TargetEventHandler (real_target_event);
 
 			RealModulesChanged ();
-			RealStateChanged (process.State, 0);
-			if (process.State == TargetState.STOPPED)
-				RealFrameChanged (process.CurrentFrame);
+		}
+
+		internal void TargetExited ()
+		{
+			if (!target_exited)
+				OnRealTargetEvent (new TargetEventArgs (TargetEventType.TargetExited, 0));
 		}
 
 		public event ProcessCreatedHandler ProcessCreatedEvent;
-
-		StackFrame current_frame = null;
-		Backtrace current_backtrace = null;
-
-		void frame_event ()
-		{
-			lock (this) {
-				if (current_frame != null)
-					FrameChanged (current_frame);
-				else
-					FramesInvalid ();
-			}
-		}
-
-		// <remarks>
-		//   This method may get called from any thread, so we must not use gtk# here.
-		// </remarks>
-		protected virtual void RealFrameChanged (StackFrame frame)
-		{
-			lock (this) {
-				current_frame = frame;
-				current_backtrace = process.GetBacktrace ();
-				if (RealFrameChangedEvent != null)
-					RealFrameChangedEvent (frame);
-				thread_notify.Signal (frame_notify_id);
-			}
-		}
-
-		// <remarks>
-		//   This method may get called from any thread, so we must not use gtk# here.
-		// </remarks>
-		protected virtual void RealFramesInvalid ()
-		{
-			lock (this) {
-				current_frame = null;
-				current_backtrace = null;
-				if (RealFramesInvalidEvent != null)
-					RealFramesInvalidEvent ();
-				thread_notify.Signal (frame_notify_id);
-			}
-		}
-
-		// <remarks>
-		//   These two events may be emitted from any thread, so we must not use gtk# here.
-		// </remarks>
-		public event StackFrameHandler RealFrameChangedEvent;
-		public event StackFrameInvalidHandler RealFramesInvalidEvent;
-
-		// <remarks>
-		//   This method will always get called from the gtk# thread and while keeping the
-		//   `this' lock.
-		// </remarks>
-		protected virtual void FrameChanged (StackFrame frame)
-		{
-			if (FrameChangedEvent != null)
-				FrameChangedEvent (frame);
-		}
-
-		// <remarks>
-		//   This method will always get called from the gtk# thread and while keeping the
-		//   `this' lock.
-		// </remarks>
-		protected virtual void FramesInvalid ()
-		{
-			if (FramesInvalidEvent != null)
-				FramesInvalidEvent ();
-		}
-
-		public event StackFrameHandler FrameChangedEvent;
-		public event StackFrameInvalidHandler FramesInvalidEvent;
 
 		public StackFrame CurrentFrame {
 			get { return current_frame; }
@@ -141,31 +71,45 @@ namespace Mono.Debugger.GUI
 			get { return current_backtrace; }
 		}
 
-		TargetState current_state = TargetState.NO_TARGET;
-		int current_state_arg = 0;
-		bool state_changed = false;
+		bool target_exited = false;
+		StackFrame current_frame = null;
+		Backtrace current_backtrace = null;
+		TargetEventArgs current_event = null;
 
-		void state_event ()
+		void real_target_event (object sender, TargetEventArgs args)
+		{
+			OnRealTargetEvent (args);
+		}
+
+		void target_event ()
 		{
 			lock (this) {
-				if (state_changed) {
-					state_changed = false;
-					StateChanged (current_state, current_state_arg);
-				}
+				if (current_event != null)
+					OnTargetEvent (current_event);
+				current_event = null;
 			}
 		}
 
 		// <remarks>
 		//   This method may get called from any thread, so we must not use gtk# here.
 		// </remarks>
-		protected virtual void RealStateChanged (TargetState state, int arg)
+		protected virtual void OnRealTargetEvent (TargetEventArgs args)
 		{
 			lock (this) {
-				state_changed = true;
-				current_state = state;
-				current_state_arg = arg;
+				if (args.IsStopped) {
+					current_frame = args.Frame;
+					current_backtrace = process.GetBacktrace ();
+				} else {
+					current_frame = null;
+					current_backtrace = null;
+				}
 
-				thread_notify.Signal (state_notify_id);
+				if ((args.Type == TargetEventType.TargetExited) ||
+				    (args.Type == TargetEventType.TargetSignaled))
+					target_exited = true;
+
+				current_event = args;
+				thread_notify.Signal (target_notify_id);
 			}
 		}
 
@@ -173,15 +117,13 @@ namespace Mono.Debugger.GUI
 		//   This method will always get called from the gtk# thread and while keeping the
 		//   `this' lock.
 		// </remarks>
-		protected virtual void StateChanged (TargetState state, int arg)
+		protected virtual void OnTargetEvent (TargetEventArgs args)
 		{
-			if (StateChangedEvent != null)
-				StateChangedEvent (state, arg);
-			if (state == TargetState.EXITED)
-				process = null;
+			if (TargetEvent != null)
+				TargetEvent (this, args);
 		}
 
-		public event StateChangedHandler StateChangedEvent;
+		public event TargetEventHandler TargetEvent;
 
 		void module_event ()
 		{

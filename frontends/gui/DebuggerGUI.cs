@@ -264,8 +264,9 @@ namespace Mono.Debugger.GUI
 			StateRegister (
 				new string [] {
 					"run-button", "run-program-menu",
+					"continue-ignore-signal-menu",
 					"step-over-button", "step-into-button",
-					"step-into-menu", "step-over-menu",
+					"step-into-menu", "step-over-menu", "step-out-menu",
 					"instruction-step-into-menu",
 					"instruction-step-over-menu" },
 				TargetState.STOPPED);
@@ -315,6 +316,8 @@ namespace Mono.Debugger.GUI
 				backend = context.DebuggerBackend;
 				backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
 					main_process_started);
+				backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (
+					target_exited);
 			}
 
 			try {
@@ -339,14 +342,39 @@ namespace Mono.Debugger.GUI
 
 			this.manager.MainProcessCreated (process);
 
-			source_manager.StateChangedEvent += new StateChangedHandler (UpdateGUIState);
+			source_manager.TargetEvent += new TargetEventHandler (update_gui_state);
 
 			StateSensitivityUpdate (TargetState.STOPPED);
 		}
 
-		void UpdateGUIState (TargetState state, int arg)
+		void target_exited ()
 		{
-			StateSensitivityUpdate (state);
+			manager.TargetExited ();
+
+			this.process = null;
+
+			if (backend != null) {
+				backend.Dispose ();
+				backend = null;
+			}
+		}
+
+		void update_gui_state (object sender, TargetEventArgs args)
+		{
+			switch (args.Type) {
+			case TargetEventType.TargetStopped:
+			case TargetEventType.TargetHitBreakpoint:
+				StateSensitivityUpdate (TargetState.STOPPED);
+				break;
+
+			case TargetEventType.TargetRunning:
+				StateSensitivityUpdate (TargetState.RUNNING);
+				break;
+
+			default:
+				StateSensitivityUpdate (TargetState.EXITED);
+				break;
+			}
 		}
 		
 		//

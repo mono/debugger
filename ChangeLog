@@ -1,5 +1,28 @@
 2003-04-13  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (ObjectInvalidHandler): New delegate.
+	(StackFrameHandler, StackFrameInvalidHandler): Removed.
+	(StackFrame.FrameInvalid): Renamed to FrameInvalidEvent and use
+	the new ObjectInvalidHandler.
+
+	* classes/Backtrace.cs (BacktraceInvalidHandler): Removed, use
+	ObjectInvalidHandler instead.
+
+	* classes/TargetEvent.cs: New public class.  We're now sending a
+	single `TargetEvent' instead of the FrameChanged, FrameInvalid,
+	MethodChanged, MethodInvalid and StateChanged events.
+
+	* backends/SingleSteppingEngine.cs: Send a single TargetEvent
+	instead of the FrameChanged, FrameInvalid, MethodChanged,
+	MethodInvalid and StateChanged events.  This makes things a lot
+	easier for the gui.
+
+	* frontends/gui/DebuggerWidget.cs, DebuggerManager.cs: Reflect
+	latest SingleSteppingEngine changes.  Things are now a lot easier
+	here since we're just listening to one single event.
+
+2003-04-13  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetObject.cs (ObjectInvalidHandler): Removed.
 
 2003-04-12  Martin Baulig  <martin@ximian.com>

@@ -14,9 +14,13 @@ using Gtk;
 using GtkSharp;
 using Pango;
 
-namespace Mono.Debugger.GUI {
+namespace Mono.Debugger.GUI
+{
+	public delegate void MethodInvalidHandler ();
+	public delegate void MethodChangedHandler (IMethod method);
 
-	public class SourceManager : DebuggerWidget {
+	public class SourceManager : DebuggerWidget
+	{
 		Hashtable sources; 
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
@@ -69,11 +73,9 @@ namespace Mono.Debugger.GUI {
 
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
-		public event StackFrameHandler FrameChangedEvent;
-		public event StackFrameInvalidHandler FramesInvalidEvent;
 		public event TargetExitedHandler TargetExitedEvent;
-		public event StateChangedHandler StateChangedEvent;
 		public event ProcessCreatedHandler ProcessCreatedEvent;
+		public event TargetEventHandler TargetEvent;
 
 		protected void OnProcessCreatedEvent (Process process)
 		{
@@ -147,7 +149,7 @@ namespace Mono.Debugger.GUI {
 		IMethod current_method = null;
 		IMethodSource current_method_source = null;
 
-		protected override void FrameChanged (StackFrame frame)
+		void frame_changed (StackFrame frame)
 		{
 			if (frame.Method != current_method) {
 				current_method = frame.Method;
@@ -161,31 +163,23 @@ namespace Mono.Debugger.GUI {
 				} else
 					MethodInvalid ();
 			}
-
-			if (FrameChangedEvent != null)
-				FrameChangedEvent (frame);
 		}
 
-		protected override void FramesInvalid ()
+		protected override void OnTargetEvent (TargetEventArgs args)
 		{
-			if (FramesInvalidEvent != null)
-				FramesInvalidEvent ();
+			if (args.IsStopped)
+				frame_changed (args.Frame);
+
+			if (TargetEvent != null)
+				TargetEvent (this, args);
 		}
 
-		protected override void StateChanged (TargetState state, int arg)
-		{
-			if (StateChangedEvent != null)
-				StateChangedEvent (state, arg);
-
-			base.StateChanged (state, arg);
-		}
-
-		protected override void TargetExited ()
+		protected override void OnTargetExited ()
 		{
 			if (TargetExitedEvent != null)
 				TargetExitedEvent ();
 
-			base.TargetExited ();
+			base.OnTargetExited ();
 		}
 
 		void MethodInvalid ()

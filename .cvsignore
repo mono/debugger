@@ -11,3 +11,4 @@ ltmain.sh
 stamp*
 core
 thecore
+mono-debugger-*.tar.gz

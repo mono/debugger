@@ -23,7 +23,7 @@ namespace Mono.Debugger.Backends
 			this.frame = frame;
 			this.is_valid = true;
 
-			frame.FrameInvalid += new StackFrameInvalidHandler (SetInvalid);
+			frame.FrameInvalidEvent += new ObjectInvalidHandler (frame_invalid);
 		}
 
 		protected MonoTargetLocation (MonoTargetLocation relative_to, TargetAddress address,
@@ -103,6 +103,11 @@ namespace Mono.Debugger.Backends
 			get {
 				return is_valid;
 			}
+		}
+
+		void frame_invalid (object o)
+		{
+			SetInvalid ();
 		}
 
 		protected void SetInvalid ()

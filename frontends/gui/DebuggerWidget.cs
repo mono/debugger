@@ -26,9 +26,7 @@ namespace Mono.Debugger.GUI
 
 			gui.Manager.ProcessCreatedEvent += new ProcessCreatedHandler (ProgramLoaded);
 
-			gui.Manager.StateChangedEvent += new StateChangedHandler (StateChanged);
-			gui.Manager.FrameChangedEvent += new StackFrameHandler (FrameChanged);
-			gui.Manager.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalid);
+			gui.Manager.TargetEvent += new TargetEventHandler (target_event);
 
 			if (container == null) {
 				Gtk.Widget parent = widget.Parent;
@@ -65,20 +63,6 @@ namespace Mono.Debugger.GUI
 			this.process = process;
 		}
 
-		// <remarks>
-		//   This method will always get called from the gtk# thread and while keeping the
-		//   `this' lock.
-		// </remarks>
-		protected virtual void FrameChanged (StackFrame frame)
-		{ }
-
-		// <remarks>
-		//   This method will always get called from the gtk# thread and while keeping the
-		//   `this' lock.
-		// </remarks>
-		protected virtual void FramesInvalid ()
-		{ }
-
 		protected StackFrame CurrentFrame {
 			get { return manager.CurrentFrame; }
 		}
@@ -87,19 +71,26 @@ namespace Mono.Debugger.GUI
 		//   This method will always get called from the gtk# thread and while keeping the
 		//   `this' lock.
 		// </remarks>
-		protected virtual void StateChanged (TargetState state, int arg)
+		protected virtual void OnTargetExited ()
 		{
-			if (state == TargetState.EXITED)
-				TargetExited ();
+			process = null;
 		}
 
 		// <remarks>
 		//   This method will always get called from the gtk# thread and while keeping the
 		//   `this' lock.
 		// </remarks>
-		protected virtual void TargetExited ()
+		protected virtual void OnTargetEvent (TargetEventArgs args)
 		{
-			process = null;
+		}
+
+		void target_event (object sender, TargetEventArgs args)
+		{
+			OnTargetEvent (args);
+
+			if ((args.Type == TargetEventType.TargetExited) ||
+			    (args.Type == TargetEventType.TargetSignaled))
+				OnTargetExited ();
 		}
 		
 		void mapped (object o, EventArgs args)

@@ -5,8 +5,6 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public delegate void BacktraceInvalidHandler ();
-
 	public class Backtrace : IDisposable
 	{
 		protected StackFrame[] frames;
@@ -43,7 +41,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public event BacktraceInvalidHandler BacktraceInvalidEvent;
+		public event ObjectInvalidHandler BacktraceInvalidEvent;
 
 		protected struct UnwindInfo {
 			public readonly object Data;
@@ -139,7 +137,7 @@ namespace Mono.Debugger
 			if (!this.disposed) {
 				if (disposing) {
 					if (BacktraceInvalidEvent != null)
-						BacktraceInvalidEvent ();
+						BacktraceInvalidEvent (this);
 					if (frames != null) {
 						foreach (StackFrame frame in frames)
 							frame.Dispose ();

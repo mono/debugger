@@ -81,48 +81,7 @@ namespace Mono.Debugger.Backends
 			completed_event = new ManualResetEvent (false);
 			restart_event = new AutoResetEvent (false);
 			stop_event = new AutoResetEvent (false);
-			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
 			command_mutex = new Mutex ();
-		}
-
-		// <summary>
-		//   This is called in two situations:
-		//   a) From the glib main loop if an async operation completed
-		//   b) Before returning to the caller when a synchronous operation is completed
-		//   In either case, it's guaranteed that this method will never be called
-		//   from the background thread.
-		// </summary>
-		void ready_event_handler ()
-		{
-			lock (this) {
-				if (command_result == null)
-					return;
-
-				if (command_result.Type != CommandResultType.ChildEvent)
-					throw new InternalError ();
-
-				switch (command_result.EventType) {
-				case ChildEventType.CHILD_HIT_BREAKPOINT:
-					change_target_state (TargetState.STOPPED, 0);
-
-					BreakpointHandle handle = (BreakpointHandle) command_result.Data;
-					if ((handle != null) && (handle.HitHandler != null))
-						handle.HitHandler (current_frame, 0, handle.UserData);
-
-					break;
-
-				case ChildEventType.CHILD_SIGNALED:
-				case ChildEventType.CHILD_EXITED:
-					change_target_state (TargetState.EXITED, command_result.Argument);
-					break;
-
-				default:
-					change_target_state (TargetState.STOPPED, command_result.Argument);
-					break;
-				}
-
-				command_result = null;
-			}
 		}
 
 		// <summary>
@@ -179,34 +138,61 @@ namespace Mono.Debugger.Backends
 			if (start_error != null)
 				throw start_error;
 
-			ready_event_handler ();
-
 			symtab_manager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 		}
 
 		// <summary>
 		//   The `send_result' methods are used to send the result of a command
-		//   from the background thread back to the caller.  This'll also wake up
-		//   the glib main loop so it can call the `ready_event_handler'.
+		//   from the background thread back to the caller.
 		// </summary>
-		void send_result (ChildEventType message, int arg)
-		{
-			lock (this) {
-				command_result = new CommandResult (message, arg);
-				if (thread_notify != null)
-					thread_notify.Signal ();
-				result_sent = true;
-				completed_event.Set ();
-			}
-		}
-
 		void send_result (CommandResult result)
 		{
 			lock (this) {
 				command_result = result;
 				completed_event.Set ();
 			}
+		}
+
+		void send_exited_event (TargetEventType type, int arg)
+		{
+			send_event (new TargetEventArgs (type, arg));
+
+			if (TargetExitedEvent != null)
+				TargetExitedEvent ();
+		}
+
+		void send_frame_event (StackFrame frame, int signal)
+		{
+			send_event (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
+		}
+
+		void send_frame_event (StackFrame frame, BreakpointHandle handle)
+		{
+			send_event (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
+		}
+
+		void send_event (TargetEventArgs args)
+		{
+			switch (args.Type) {
+			case TargetEventType.TargetRunning:
+				target_state = TargetState.RUNNING;
+				break;
+
+			case TargetEventType.TargetSignaled:
+			case TargetEventType.TargetExited:
+				target_state = TargetState.EXITED;
+				break;
+
+			default:
+				target_state = TargetState.STOPPED;
+				break;
+			}
+
+			if (TargetEvent != null)
+				TargetEvent (this, args);
+			result_sent = true;
+			completed_event.Set ();
 		}
 
 		void start_engine_thread ()
@@ -274,7 +260,7 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				if (!result_sent) {
 					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-					send_result (ChildEventType.CHILD_STOPPED, 0);
+					send_frame_event (current_frame, 0);
 				}
 
 				start_event.Set ();
@@ -433,7 +419,7 @@ namespace Mono.Debugger.Backends
 			case ChildEventType.CHILD_STOPPED:
 				if (arg != 0) {
 					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-					send_result (message, arg);
+					send_frame_event (current_frame, arg);
 					return false;
 				}
 
@@ -442,8 +428,12 @@ namespace Mono.Debugger.Backends
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
 				return true;
 
-			default:
-				send_result (message, arg);
+			case ChildEventType.CHILD_SIGNALED:
+				send_exited_event (TargetEventType.TargetSignaled, arg);
+				return false;
+
+			case ChildEventType.CHILD_EXITED:
+				send_exited_event (TargetEventType.TargetExited, arg);
 				return false;
 			}
 
@@ -477,8 +467,6 @@ namespace Mono.Debugger.Backends
 
 		step_operation:
 			frames_invalid ();
-			if (FramesInvalidEvent != null)
-				FramesInvalidEvent ();
 
 		again:
 			// Process another stepping command.
@@ -550,7 +538,7 @@ namespace Mono.Debugger.Backends
 				command = new_command;
 				goto again;
 			}
-			send_result (ChildEventType.CHILD_STOPPED, 0);
+			send_frame_event (current_frame, 0);
 		}
 
 		CommandResult reload_symtab (object data)
@@ -592,15 +580,7 @@ namespace Mono.Debugger.Backends
 		//   completed.  Other than the IInferior's StateChangedEvent, it is only
 		//   emitted after the whole operation completed.
 		// </summary>
-		public event StateChangedHandler StateChangedEvent;
-
-		// <summary>
-		//   These four events are emitted from the background thread.
-		// </summary>
-		public event MethodInvalidHandler MethodInvalidEvent;
-		public event MethodChangedHandler MethodChangedEvent;
-		public event StackFrameHandler FrameChangedEvent;
-		public event StackFrameInvalidHandler FramesInvalidEvent;
+		public event TargetEventHandler TargetEvent;
 
 		public event TargetExitedHandler TargetExitedEvent;
 
@@ -777,7 +757,6 @@ namespace Mono.Debugger.Backends
 		AutoResetEvent stop_event;
 		AutoResetEvent restart_event;
 		AutoResetEvent step_event;
-		ThreadNotify thread_notify;
 		Mutex command_mutex;
 		bool stop_requested = false;
 		bool result_sent = false;
@@ -789,36 +768,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
 
-		TargetState change_target_state (TargetState new_state)
-		{
-			return change_target_state (new_state, 0);
-		}
-
 		bool in_event = false;
-
-		// <summary>
-		//   Called when a stepping operation is started and completed to send the
-		//   StateChangedEvent.
-		// </summary>
-		TargetState change_target_state (TargetState new_state, int arg)
-		{
-			lock (this) {
-				if (new_state == target_state)
-					return target_state;
-
-				TargetState old_state = target_state;
-				target_state = new_state;
-
-				in_event = true;
-
-				if (StateChangedEvent != null)
-					StateChangedEvent (target_state, arg);
-
-				in_event = false;
-
-				return old_state;
-			}
-		}
 
 		void check_inferior ()
 		{
@@ -890,10 +840,6 @@ namespace Mono.Debugger.Backends
 
 			inferior = null;
 			frames_invalid ();
-			if (FramesInvalidEvent != null)
-				FramesInvalidEvent ();
-			if (TargetExitedEvent != null)
-				TargetExitedEvent ();
 		}
 
 		bool child_already_exited;
@@ -1045,7 +991,7 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			send_result (new CommandResult (ChildEventType.CHILD_HIT_BREAKPOINT, handle));
+			send_frame_event (current_frame, handle);
 
 			return true;
 		}
@@ -1074,7 +1020,6 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		IMethod old_method;
 		IMethod current_method;
 		StackFrame current_frame;
 		Backtrace current_backtrace;
@@ -1168,21 +1113,6 @@ namespace Mono.Debugger.Backends
 			} else
 				current_frame = new MyStackFrame (
 					this, address, 0, frames [0], null);
-
-			// If the method changed, notify our clients.
-			if (current_method != old_method) {
-				old_method = current_method;
-				if (current_method != null) {
-					if (MethodChangedEvent != null)
-						MethodChangedEvent (current_method);
-				} else {
-					if (MethodInvalidEvent != null)
-						MethodInvalidEvent ();
-				}
-			}
-
-			if (FrameChangedEvent != null)
-				FrameChangedEvent (current_frame);
 
 			return null;
 		}
@@ -1511,7 +1441,7 @@ namespace Mono.Debugger.Backends
 		void send_async_command (Command command)
 		{
 			lock (this) {
-				change_target_state (TargetState.RUNNING, 0);
+				send_event (new TargetEventArgs (TargetEventType.TargetRunning, 0));
 				current_command = command;
 				step_event.Set ();
 				completed_event.Reset ();
@@ -1574,7 +1504,6 @@ namespace Mono.Debugger.Backends
 		void wait_for_completion ()
 		{
 			completed_event.WaitOne ();
-			ready_event_handler ();
 		}
 
 		// <summary>
@@ -1732,7 +1661,6 @@ namespace Mono.Debugger.Backends
 			// currently running operation completed.
 			inferior.Stop ();
 			wait_for_completion ();
-			ready_event_handler ();
 		}
 
 		internal void Wait ()
@@ -1741,7 +1669,6 @@ namespace Mono.Debugger.Backends
 			command_mutex.WaitOne ();
 
 			wait_for_completion ();
-			ready_event_handler ();
 
 			command_mutex.ReleaseMutex ();
 		}
@@ -1778,6 +1705,7 @@ namespace Mono.Debugger.Backends
 		internal void ReachedMain ()
 		{
 			send_sync_command (new CommandFunc (reached_main_func), null);
+			send_frame_event (current_frame, 0);
 		}
 
 		// <summary>
@@ -2376,10 +2304,6 @@ namespace Mono.Debugger.Backends
 				if ((engine_thread != null) && !child_already_exited)
 					engine_thread.Abort ();
 				engine_thread = null;
-				if (thread_notify != null) {
-					thread_notify.Dispose ();
-					thread_notify = null;
-				}
 				if (inferior != null) {
 					inferior.Dispose ();
 					inferior = null;

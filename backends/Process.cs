@@ -18,7 +18,7 @@ namespace Mono.Debugger
 {
 	public delegate void ProcessExitedHandler (Process process);
 
-	public class Process : IProcess, ITargetNotification, IDisposable
+	public class Process : IProcess, IDisposable
 	{
 		DebuggerBackend backend;
 		ProcessStart start;
@@ -89,11 +89,7 @@ namespace Mono.Debugger
 					id = ++next_id;
 				sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
-				sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
-				sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
-				sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
-				sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
-				sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+				sse.TargetEvent += new TargetEventHandler (target_event);
 				sse.TargetExitedEvent += new TargetExitedHandler (child_exited);
 
 				if (pid != -1) {
@@ -199,26 +195,26 @@ namespace Mono.Debugger
 			}
 		}
 
-		void target_state_changed (TargetState new_state, int arg)
+		void target_event (object sender, TargetEventArgs args)
 		{
 			if ((pid == 0) && (sse != null))
 				pid = sse.PID;
-			if (StateChanged != null)
-				StateChanged (new_state, arg);
+			OnTargetEvent (args);
+		}
+
+		protected virtual void OnTargetEvent (TargetEventArgs args)
+		{
+			if (TargetEvent != null)
+				TargetEvent (this, args);
 		}
 
 		internal event TargetOutputHandler TargetOutput;
 		internal event DebuggerOutputHandler DebuggerOutput;
 		internal event DebuggerErrorHandler DebuggerError;
 
-		public event StateChangedHandler StateChanged;
+		public event TargetEventHandler TargetEvent;
 		public event TargetExitedHandler TargetExited;
 		public event ProcessExitedHandler ProcessExitedEvent;
-
-		public event MethodInvalidHandler MethodInvalidEvent;
-		public event MethodChangedHandler MethodChangedEvent;
-		public event StackFrameHandler FrameChangedEvent;
-		public event StackFrameInvalidHandler FramesInvalidEvent;
 
 		void inferior_output (bool is_stderr, string line)
 		{
@@ -236,30 +232,6 @@ namespace Mono.Debugger
 		{
 			if (DebuggerError != null)
 				DebuggerError (this, message, e);
-		}
-
-		void method_invalid ()
-		{
-			if (MethodInvalidEvent != null)
-				MethodInvalidEvent ();
-		}
-
-		void method_changed (IMethod method)
-		{
-			if (MethodChangedEvent != null)
-				MethodChangedEvent (method);
-		}
-
-		void frame_changed (StackFrame frame)
-		{
-			if (FrameChangedEvent != null)
-				FrameChangedEvent (frame);
-		}
-
-		void frames_invalid ()
-		{
-			if (FramesInvalidEvent != null)
-				FramesInvalidEvent ();
 		}
 
 		// <summary>

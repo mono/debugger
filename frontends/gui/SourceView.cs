@@ -74,8 +74,7 @@ namespace Mono.Debugger.GUI {
 			//
 			// Hook up events
 			//
-			manager.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
-			manager.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
+			manager.TargetEvent += new TargetEventHandler (target_event);
 			manager.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
 			manager.TargetExitedEvent += new TargetExitedHandler (target_exited_event);
 			manager.ProcessCreatedEvent += new ProcessCreatedHandler (process_created);
@@ -179,9 +178,9 @@ namespace Mono.Debugger.GUI {
 
 		void target_exited_event ()
 		{
+			process = null;
 			Active = false;
 			ClearLine ();
-			process = null;
 		}
 		
 		void method_invalid_event ()
@@ -199,7 +198,7 @@ namespace Mono.Debugger.GUI {
 		int last_line = 0;
 
 		protected abstract SourceAddress GetSourceAddress (StackFrame frame);
-		
+
 		void frame_changed_event (StackFrame frame)
 		{
 			if (!active || (frame == current_frame))
@@ -238,6 +237,14 @@ namespace Mono.Debugger.GUI {
 				GLib.Idle.Add (new GLib.IdleHandler (first_scroll_handler));
 				first = false;
 			}
+		}
+
+		void target_event (object sender, TargetEventArgs args)
+		{
+			if (!args.IsStopped)
+				frame_invalid_event ();
+			else
+				frame_changed_event (args.Frame);
 		}
 
 		bool first_scroll_handler ()

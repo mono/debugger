@@ -59,22 +59,21 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		protected override void StateChanged (TargetState new_state, int arg)
+		protected override void OnTargetEvent (TargetEventArgs args)
 		{
 			if (!IsVisible)
 				return;
 
 			store.Clear ();
+			if (!args.IsStopped)
+				return;
+
 			Backtrace bt = manager.CurrentBacktrace;
 			if (bt == null)
 				return;
 
-			switch (new_state) {
-			case TargetState.STOPPED:
-				for (int i = 0; i < bt.Length; i++)
-					add_frame (i, bt [i]);
-				break;
-			}
+			for (int i = 0; i < bt.Length; i++)
+				add_frame (i, bt [i]);
 		}
 
 		void add_frame (int id, StackFrame frame)

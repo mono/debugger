@@ -5,8 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public delegate void StackFrameHandler (StackFrame frame);
-	public delegate void StackFrameInvalidHandler ();
+	public delegate void ObjectInvalidHandler (object obj);
 
 	public struct Register
 	{
@@ -133,7 +132,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public event StackFrameInvalidHandler FrameInvalid;
+		public event ObjectInvalidHandler FrameInvalidEvent;
 
 		public AssemblerLine DisassembleInstruction (TargetAddress address)
 		{
@@ -194,8 +193,8 @@ namespace Mono.Debugger
 		{
 			if (!this.disposed) {
 				if (disposing) {
-					if (FrameInvalid != null)
-						FrameInvalid ();
+					if (FrameInvalidEvent != null)
+						FrameInvalidEvent (this);
 
 					if (address_domain != null)
 						address_domain.Dispose ();

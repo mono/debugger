@@ -19,8 +19,7 @@ namespace Mono.Debugger.GUI
 		}
 
 		bool is_source_status = false;
-		TargetState state;
-		int arg;
+		TargetEventArgs current_state = null;
 
 		public bool IsSourceStatusBar {
 			get {
@@ -29,45 +28,44 @@ namespace Mono.Debugger.GUI
 
 			set {
 				is_source_status = value;
-				StateChanged (state, arg);
+				if (current_state != null)
+					OnTargetEvent (current_state);
 			}
 		}
 
-		protected override void StateChanged (TargetState new_state, int arg)
+		protected override void OnTargetEvent (TargetEventArgs args)
 		{
+			this.current_state = args;
+
 			if (!IsVisible)
 				return;
 
-			this.state = new_state;
-			this.arg = arg;
-
 			if (!is_source_status) {
-				base.StateChanged (new_state, arg);
+				base.OnTargetEvent (args);
 				return;
 			}
 
-			switch (new_state) {
-			case TargetState.CORE_FILE:
-			case TargetState.STOPPED:
-				if (CurrentFrame == null) {
-					Message (String.Format ("{0}.", GetStopReason (arg)));
+			switch (args.Type) {
+			case TargetEventType.TargetStopped:
+				if (args.Frame == null) {
+					Message ("{0}.", GetStopReason ((int) args.Data));
 					break;
 				}
-				if (CurrentFrame.SourceAddress == null) {
-					base.StateChanged (new_state, arg);
+				if (args.Frame.SourceAddress == null) {
+					base.OnTargetEvent (args);
 					return;
 				}
-				string filename = Utils.GetBasename (CurrentFrame.SourceAddress.Name);
+				string filename = Utils.GetBasename (args.Frame.SourceAddress.Name);
 				string offset = "";
-				if (CurrentFrame.SourceAddress.SourceOffset > 0)
+				if (args.Frame.SourceAddress.SourceOffset > 0)
 					offset = String.Format (
-						" (offset 0x{0})", CurrentFrame.SourceAddress.SourceOffset);
-				Message (String.Format ("{0} at {1}{3} at {2}.", GetStopReason (arg),
-							filename, CurrentFrame.TargetAddress, offset));
+						" (offset 0x{0})", args.Frame.SourceAddress.SourceOffset);
+				Message ("{0} at {1}{3} at {2}.", GetStopReason ((int) args.Data),
+					 filename, args.Frame.TargetAddress, offset);
 				break;
 
 			default:
-				base.StateChanged (new_state, arg);
+				base.OnTargetEvent (args);
 				break;
 			}
 		}
