@@ -170,9 +170,9 @@ namespace Mono.Debugger
 			symtab_manager.Wait ();
 		}
 
-		internal ILanguageBackend CreateDebuggerHandler (Process command_process)
+		internal ILanguageBackend CreateDebuggerHandler ()
 		{
-			csharp_language = new MonoCSharpLanguageBackend (this, command_process);
+			csharp_language = new MonoCSharpLanguageBackend (this);
 			languages.Add (csharp_language);
 
 			return csharp_language;

@@ -1,5 +1,12 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoCSharpLanguageBackend): Don't take a `Process' argument.
+
+	* wrapper/: We don't need the command thread anymore.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* classes/BreakpointHandle.cs (BreakpointHandle.Create): New
 	internal static method; takes a Process argument to create the
 	load handler.

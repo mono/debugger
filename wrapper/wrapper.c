@@ -10,8 +10,6 @@
 #include <locale.h>
 
 static sem_t main_started_cond;
-static sem_t command_started_cond;
-static sem_t command_ready_cond;
 static sem_t main_ready_cond;
 
 #define HEAP_SIZE 1048576
@@ -26,7 +24,6 @@ static guint64 debugger_create_string (guint64 dummy_argument, const gchar *stri
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
 
-static void (*command_notification_function) (void);
 void (*mono_debugger_notification_function) (int command, gpointer data, guint32 data2);
 
 /*
@@ -52,7 +49,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 
 MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
-	NULL, NULL, 0, 0, NULL, NULL, NULL
+	NULL, NULL, 0, NULL, NULL
 };
 
 void
@@ -143,12 +140,8 @@ static void
 initialize_debugger_support (void)
 {
 	sem_init (&main_started_cond, 0, 0);
-	sem_init (&command_started_cond, 0, 0);
-	sem_init (&command_ready_cond, 0, 0);
 	sem_init (&main_ready_cond, 0, 0);
 
-	command_notification_function = mono_debugger_create_notification_function
-		(&MONO_DEBUGGER__manager.command_notification);
 	mono_debugger_notification_function = mono_debugger_create_notification_function
 		(&MONO_DEBUGGER__manager.notification_address);
 }
@@ -192,25 +185,6 @@ main_thread_handler (gpointer user_data)
 	return retval;
 }
 
-static guint32
-command_thread_handler (gpointer user_data)
-{
-	MONO_DEBUGGER__manager.command_tid = IO_LAYER (GetCurrentThreadId) ();
-	sem_post (&command_started_cond);
-
-	/*
-	 * Wait until everything is ready.
-	 */
-	mono_debugger_wait_cond (&command_ready_cond);
-
-	/*
-	 * This call will never return.
-	 */
-	command_notification_function ();
-
-	return 0;
-}
-
 void
 MONO_DEBUGGER__start_main (void)
 {
@@ -226,7 +200,6 @@ MONO_DEBUGGER__start_main (void)
 	 * Signal the main thread that it can execute the managed Main().
 	 */
 	sem_post (&main_ready_cond);
-	sem_post (&command_ready_cond);
 
 	// mono_debugger_thread_manager_main ();
 
@@ -242,12 +215,6 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	initialize_debugger_support ();
 
 	mono_debugger_init_icalls ();
-
-	/*
-	 * Create the command thread and wait until it's ready.
-	 */
-	mono_thread_create (domain, command_thread_handler, NULL);
-	mono_debugger_wait_cond (&command_started_cond);
 
 	/*
 	 * Start the debugger thread and wait until it's ready.

@@ -1556,7 +1556,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoCSharpLanguageBackend : ILanguageBackend
 	{
-		Process process;
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		TargetAddress trampoline_address;
@@ -1565,24 +1564,17 @@ namespace Mono.Debugger.Languages.CSharp
 		protected MonoSymbolTable table;
 		Heap heap;
 
-		public MonoCSharpLanguageBackend (DebuggerBackend backend, Process process)
+		public MonoCSharpLanguageBackend (DebuggerBackend backend)
 		{
 			this.backend = backend;
-			this.process = process;
 
 			mutex = new Mutex ();
-
-			process.TargetExitedEvent += new TargetExitedHandler (child_exited);
 		}
 
 		public string Name {
 			get {
 				return "Mono";
 			}
-		}
-
-		public Process Process {
-			get { return process; }
 		}
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
@@ -1593,19 +1585,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public Heap DataHeap {
 			get { return heap; }
-		}
-
-		void child_exited ()
-		{
-			process = null;
-			info = null;
-			initialized = false;
-			trampoline_address = TargetAddress.Null;
-
-			if (table != null) {
-				table.Dispose ();
-				table = null;
-			}
 		}
 
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)

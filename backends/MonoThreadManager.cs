@@ -48,7 +48,6 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		TargetAddress notification_address;
-		TargetAddress command_notification;
 		TargetAddress mono_thread_notification;
 
 		public TargetAddress Initialize (SingleSteppingEngine sse, Inferior inferior)
@@ -76,18 +75,14 @@ namespace Mono.Debugger.Backends
 			main_function = reader.ReadGlobalAddress ();
 			notification_address = reader.ReadGlobalAddress ();
 
-			command_tid = reader.ReadInteger ();
 			main_tid = reader.ReadInteger ();
 
 			main_thread = reader.ReadGlobalAddress ();
-			command_notification = reader.ReadGlobalAddress ();
 			mono_thread_notification = reader.ReadGlobalAddress ();
 		}
 
-		int command_tid;
 		int main_tid;
 		SingleSteppingEngine manager_sse;
-		SingleSteppingEngine command_sse;
 		SingleSteppingEngine main_sse;
 		ILanguageBackend csharp_language;
 		bool initialized;
@@ -112,21 +107,13 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (thread_hash.Count == first_index) {
-				command_sse = sse;
-				command_sse.IsDaemon = true;
-				Report.Debug (DebugFlags.Threads,
-					      "Created managed command sse: {0}",
-					      sse);
-				csharp_language = thread_manager.DebuggerBackend.CreateDebuggerHandler (command_sse.Process);
-				sse.DaemonEventHandler = new DaemonEventHandler (command_handler);
-				return false;
-			} else if (thread_hash.Count == first_index+1) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed main sse: {0}",
 					      sse);
+				csharp_language = thread_manager.DebuggerBackend.CreateDebuggerHandler ();
 				main_sse = sse;
 				return true;
-			} else if (thread_hash.Count > first_index+1) {
+			} else if (thread_hash.Count > first_index) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed thread: {0}", sse);
 				sse.DaemonEventHandler = new DaemonEventHandler (managed_handler);
@@ -135,12 +122,6 @@ namespace Mono.Debugger.Backends
 				sse.IsDaemon = true;
 				return false;
 			}
-		}
-
-		bool command_handler (SingleSteppingEngine sse, Inferior inferior,
-				      TargetEventArgs args)
-		{
-			return false;
 		}
 
 		bool main_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
@@ -250,12 +231,6 @@ namespace Mono.Debugger.Backends
 				this.StartStack = TargetAddress.Null;
 				this.Data = TargetAddress.Null;
 			}
-		}
-
-		protected enum ThreadManagerCommand {
-			Unknown,
-			AcquireGlobalLock,
-			ReleaseGlobalLock
 		}
 	}
 }
