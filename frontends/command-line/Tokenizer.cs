@@ -436,7 +436,13 @@ namespace Mono.Debugger.Frontends.Scripting
 				else if (c == '$')
 					return Token.DOLLAR;
 				else if (c == '.')
-					return Token.DOT;
+					if ((c = peekChar ()) == '.') {
+						getChar ();
+						return Token.DOTDOT;
+					}
+					else {
+						return Token.DOT;
+					}
 				else if (c == '!')
 					return Token.BANG;
 				else if (c == '=')

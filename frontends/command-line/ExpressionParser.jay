@@ -56,6 +56,7 @@ namespace Mono.Debugger.Frontends.Scripting
 %token PERCENT
 %token DOLLAR
 %token DOT
+%token DOTDOT
 %token BANG
 %token COMMA
 %token ASSIGN
@@ -119,6 +120,10 @@ expression
 	| CATCH
 	  {
 		$$ = new CatchExpression ();
+	  }
+	| BASE DOTDOT IDENTIFIER
+	  {
+		$$ = new MemberAccessExpression (new BaseExpression (), "." + ((string) $3));
 	  }
 	| BASE DOT IDENTIFIER
 	  {
@@ -198,6 +203,10 @@ variable_or_type_name
 	| expression DOT IDENTIFIER
 	  { 
 		$$ = new MemberAccessExpression ((Expression) $1, (string) $3);
+	  }
+	| expression DOTDOT IDENTIFIER
+	  { 
+		$$ = new MemberAccessExpression ((Expression) $1, "." + (string) $3);
 	  }
 	| expression MINUS OP_GT IDENTIFIER
 	  {

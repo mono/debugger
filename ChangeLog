@@ -1,5 +1,18 @@
 2004-10-22  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/command-line/Tokenizer.cs (Tokenizer.xtoken): handle
+	"." (DOT) and ".." (DOTDOT).
+
+	* frontends/command-line/ExpressionParser.jay (expression): add a
+	BASE DOTDOT IDENTIFIER production for use with methods that have a
+	"." prefix (like .ctor and .cctor).
+	(variable_or_type_name): same.
+
+	* frontends/scripting/Expression.cs: if the method name is
+	".ctor", add the type's constructors to the list of methods.
+
+2004-10-22  Chris Toshok  <toshok@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: replace +
 	with / when registering load handlers.
 

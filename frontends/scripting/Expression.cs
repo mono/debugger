@@ -1161,6 +1161,12 @@ namespace Mono.Debugger.Frontends.Scripting
 				methods.Add (method);
 			}
 
+			if (name == ".ctor") {
+				foreach (ITargetMethodInfo method in stype.Constructors) {
+					methods.Add (method);
+				}
+			}
+
 			if (methods.Count > 0)
 				return new MethodGroupExpression (
 					stype, name, instance, frame.Language, methods);
