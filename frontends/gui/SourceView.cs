@@ -45,8 +45,8 @@ namespace Mono.Debugger.GUI {
 			source_view = new Gtk.SourceView (text_buffer);
 			source_view.Editable = false;
 
-			FontDescription font = FontDescription.FromString ("Monospace 14");
-			source_view.ModifyFont (font);
+			//FontDescription font = FontDescription.FromString ("Monospace 14");
+			//source_view.ModifyFont (font);
 
 			//
 			// The sourceview tags we use.
