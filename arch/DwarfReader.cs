@@ -2269,7 +2269,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve (string name)
+			protected override NativeType DoResolve ()
 			{
 				type = GetMonoType ((DwarfBaseTypeEncoding) encoding, byte_size);
 				if (type != null) {
@@ -2354,12 +2354,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override string DoResolveName ()
-			{
-				return "void *";
-			}
-
-			protected override NativeType DoResolve (string name)
+			protected override NativeType DoResolve ()
 			{
 				NativeType ref_type = GetReference (type_offset);
 				if (ref_type == null) {
@@ -2399,169 +2394,9 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override NativeType DoResolve (string name)
-			{
-				return GetReference (name, type_offset);
-			}
-		}
-
-		protected class DieTypedef : DieType
-		{
-			long type_offset;
-
-			public DieTypedef (DwarfBinaryReader reader, CompilationUnit comp_unit,
-					   long offset, AbbrevEntry abbrev)
-				: base (reader, comp_unit, offset, abbrev)
-			{ }
-
-			protected override void ProcessAttribute (Attribute attribute)
-			{
-				switch (attribute.DwarfAttribute) {
-				case DwarfAttribute.type:
-					type_offset = (long) attribute.Data;
-					break;
-
-				default:
-					base.ProcessAttribute (attribute);
-					break;
-				}
-			}
-
-			protected override NativeType DoResolve (string name)
-			{
-				return GetReference (name, type_offset);
-			}
-		}
-
-		protected class DieStructureType : DieType
-		{
-			int byte_size;
-
-			public DieStructureType (DwarfBinaryReader reader, CompilationUnit comp_unit,
-						 long offset, AbbrevEntry abbrev)
-				: base (reader, comp_unit, offset, abbrev)
-			{ }
-
-			protected override void ProcessAttribute (Attribute attribute)
-			{
-				switch (attribute.DwarfAttribute) {
-				case DwarfAttribute.byte_size:
-					byte_size = (int) (long) attribute.Data;
-					break;
-
-				default:
-					base.ProcessAttribute (attribute);
-					break;
-				}
-			}
-
-			protected override NativeType DoResolve (string name)
-			{
-				ArrayList field_list = new ArrayList ();
-
-				if (abbrev.HasChildren) {
-					foreach (Die child in Children) {
-						DieMember member = child as DieMember;
-						if ((member == null) || !member.Resolve ())
-							continue;
-
-						NativeFieldInfo field = new NativeFieldInfo (
-							member.Type, member.Name, field_list.Count, member.DataOffset);
-						field_list.Add (field);
-					}
-				}
-
-				NativeFieldInfo[] fields = new NativeFieldInfo [field_list.Count];
-				field_list.CopyTo (fields, 0);
-
-				return new NativeStructType (name, byte_size, fields);
-			}
-		}
-
-		protected class DieTypedef : DieType
-		{
-			long type_offset;
-
-			public DieTypedef (DwarfBinaryReader reader, CompilationUnit comp_unit,
-					   long offset, AbbrevEntry abbrev)
-				: base (reader, comp_unit, offset, abbrev)
-			{ }
-
-			protected override void ProcessAttribute (Attribute attribute)
-			{
-				switch (attribute.DwarfAttribute) {
-				case DwarfAttribute.type:
-					type_offset = (long) attribute.Data;
-					break;
-
-				default:
-					base.ProcessAttribute (attribute);
-					break;
-				}
-			}
-
 			protected override NativeType DoResolve ()
 			{
-				if (Name == null)
-					throw new InvalidOperationException ();
-
-				DieType reference = comp_unit.GetType (type_offset);
-				if (reference == null)
-					return null;
-
-				reference.SetName (Name);
-				if (!reference.HasType)
-					return null;
-
-				return reference.Type;
-			}
-		}
-
-		protected class DieStructureType : DieType
-		{
-			int byte_size;
-
-			public DieStructureType (DwarfBinaryReader reader, CompilationUnit comp_unit,
-						 long offset, AbbrevEntry abbrev)
-				: base (reader, comp_unit, offset, abbrev)
-			{ }
-
-			protected override void ProcessAttribute (Attribute attribute)
-			{
-				switch (attribute.DwarfAttribute) {
-				case DwarfAttribute.byte_size:
-					byte_size = (int) (long) attribute.Data;
-					break;
-
-				default:
-					base.ProcessAttribute (attribute);
-					break;
-				}
-			}
-
-			protected override NativeType DoResolve ()
-			{
-				if (Name == null)
-					throw new InternalError ();
-
-				ArrayList field_list = new ArrayList ();
-
-				if (abbrev.HasChildren) {
-					foreach (Die child in Children) {
-						DieMember member = child as DieMember;
-						if ((member == null) || !member.Resolve ())
-							continue;
-
-						NativeFieldInfo field = new NativeFieldInfo (
-							member.Type, member.Name, field_list.Count, member.DataOffset);
-						field_list.Add (field);
-					}
-				}
-
-				NativeFieldInfo[] fields = new NativeFieldInfo [field_list.Count];
-				field_list.CopyTo (fields, 0);
-
-				return new NativeStructType (Name, byte_size, fields);
+				return GetReference (type_offset);
 			}
 		}
 
@@ -2740,10 +2575,6 @@ namespace Mono.Debugger.Architecture
 			protected override void ProcessAttribute (Attribute attribute)
 			{
 				switch (attribute.DwarfAttribute) {
-				case DwarfAttribute.location:
-					location = (byte []) attribute.Data;
-					break;
-
 				default:
 					base.ProcessAttribute (attribute);
 					break;
