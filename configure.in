@@ -160,20 +160,6 @@ AC_SUBST(CFLAGS)
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)
 
-old_LIBS=$LIBS
-AC_CHECK_LIB(bfd, bfd_get_arch,, [AC_MSG_ERROR(
-[Can't find libbfd, make sure you have binutils-dev >= 2.12 installed.])])
-LIBS=$old_LIBS
-
-old_LIBS=$LIBS
-LIBS="-lbfd"
-AC_MSG_CHECKING(whether we have a shared libbfd.so)
-AC_TRY_LINK_FUNC(_sch_istable,,[AC_MSG_ERROR([
-*** You libbfd is unusable for the debugger.
- *** Please read the binutils and libbfd issues section in README.FreeBSD.])])
-LIBS=$old_LIBS
-AC_MSG_RESULT(ok)
-
 AC_PATH_PROG(MONO, mono)
 AC_PATH_PROG(MCS, mcs)
 AC_PATH_PROG(JAY, jay)
