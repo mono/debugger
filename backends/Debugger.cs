@@ -604,6 +604,13 @@ namespace Mono.Debugger
 			Console.WriteLine ("METHOD LOADED: {0}", method);
 		}
 
+		// <summary>
+		//   Inserts a breakpoint for method @name, which must be the method's full
+		//   name, including the signature.
+		//
+		//   Example:
+		//     System.DateTime.GetUtcOffset(System.DateTime)
+		// </summary>
 		public int InsertBreakpoint (Breakpoint breakpoint, string name)
 		{
 			SourceMethodInfo method = FindMethod (name);
@@ -622,6 +629,10 @@ namespace Mono.Debugger
 			return index;
 		}
 
+		// <summary>
+		//   Inserts a breakpoint at source file @source (while must be a full pathname)
+		//   and line @line.
+		// </summary>
 		public int InsertBreakpoint (Breakpoint breakpoint, string source, int line)
 		{
 			SourceMethodInfo method = FindMethod (source, line);
