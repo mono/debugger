@@ -19,7 +19,6 @@ extern int mono_debugger_io_write_integer (GIOChannel *channel, int data);
 extern void mono_debugger_io_write_line (GIOChannel *channel, const char *line);
 extern void mono_debugger_io_set_data_mode (GIOChannel *channel);
 
-extern void mono_debugger_glue_kill_process (int pid, int force);
 extern void mono_debugger_glue_make_pipe (guint32 *input, guint32 *output);
 extern void mono_debugger_glue_close_pipe (guint32 input, guint32 output);
 

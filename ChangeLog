@@ -1,5 +1,11 @@
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/IOChannel.cs (Spawn): Removed this obsolete class.
+
+	* glue/iochannel.c (mono_debugger_glue_kill_process): Removed.
+
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
 	* backends/IInferior.cs (IInferior): Added properties for the
 	signal numbers.
 

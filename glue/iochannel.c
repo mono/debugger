@@ -90,15 +90,6 @@ mono_debugger_io_set_data_mode (GIOChannel *channel)
 }
 
 void
-mono_debugger_glue_kill_process (int pid, int force)
-{
-	if (force)
-		kill (pid, SIGKILL);
-	else
-		kill (pid, SIGTERM);
-}
-
-void
 mono_debugger_io_write_line (GIOChannel *channel, const char *line)
 {
 	gsize count;

@@ -161,9 +161,6 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_kill (IntPtr handle);
 
-		[DllImport("monodebuggerglue")]
-		static extern void mono_debugger_glue_kill_process (int pid, bool force);
-
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
