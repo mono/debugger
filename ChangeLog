@@ -1,5 +1,11 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/wrapper.c: Don't call mono_thread_manage(), but send a
+	special notification instead.  This tells the MonoThreadManager to
+	deal with the main thread.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/wrapper.c: Use the Mono I/O-layer instead of POSIX
 	semaphores.	
 

@@ -178,27 +178,6 @@ main_thread_handler (gpointer user_data)
 	return retval;
 }
 
-void
-MONO_DEBUGGER__start_main (void)
-{
-	/*
-	 * Reload symbol tables.
-	 */
-	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, NULL, 0);
-	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, NULL, 0);
-
-	mono_debugger_unlock ();
-
-	/*
-	 * Signal the main thread that it can execute the managed Main().
-	 */
-	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
-
-	// mono_debugger_thread_manager_main ();
-
-	mono_thread_manage ();
-}
-
 int
 mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp)
 {
@@ -250,7 +229,23 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	mono_install_thread_callbacks (&thread_callbacks);
 	mono_debugger_thread_manager_init ();
 
-	MONO_DEBUGGER__start_main ();
+	/*
+	 * Reload symbol tables.
+	 */
+	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, NULL, 0);
+	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, NULL, 0);
+
+	mono_debugger_unlock ();
+
+	/*
+	 * Signal the main thread that it can execute the managed Main().
+	 */
+	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
+
+	/*
+	 * This will never return.
+	 */
+	mono_debugger_notification_function (NOTIFICATION_WRAPPER_MAIN, NULL, 0);
 
 	return 0;
 }

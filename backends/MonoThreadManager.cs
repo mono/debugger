@@ -59,9 +59,7 @@ namespace Mono.Debugger.Backends
 			mono_debugger_server_set_notification (notification_address.Address);
 
 			manager_sse = sse;
-
-			new DaemonThreadRunner (sse, this.inferior,
-						new DaemonThreadHandler (main_handler));
+			manager_sse.IsDaemon = true;
 
 			return main_function;
 		}
@@ -124,11 +122,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		bool main_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
-		{
-			return true;
-		}
-
 		bool managed_handler (SingleSteppingEngine sse, Inferior inferior,
 				      TargetEventArgs args)
 		{
@@ -185,6 +178,9 @@ namespace Mono.Debugger.Backends
 					do_initialize (inferior);
 					initialized = true;
 					break;
+
+				case NotificationType.WrapperMain:
+					return true;
 
 				default: {
 					TargetAddress data = new TargetAddress (

@@ -9,7 +9,8 @@ namespace Mono.Debugger.Backends
 		JitBreakpoint,
 		InitializeThreadManager,
 		AcquireGlobalThreadLock,
-		ReleaseGlobalThreadLock
+		ReleaseGlobalThreadLock,
+		WrapperMain
 	}
 
 	internal interface ILanguageBackend

@@ -64,7 +64,8 @@ enum {
 	NOTIFICATION_JIT_BREAKPOINT,
 	NOTIFICATION_INITIALIZE_THREAD_MANAGER,
 	NOTIFICATION_ACQUIRE_GLOBAL_THREAD_LOCK,
-	NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK
+	NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK,
+	NOTIFICATION_WRAPPER_MAIN
 };
 
 #define IO_LAYER(func) (* mono_debugger_io_layer.func)
@@ -80,8 +81,6 @@ void mono_debugger_thread_manager_end_resume (guint32 thread);
 void mono_debugger_thread_manager_acquire_global_thread_lock (void);
 void mono_debugger_thread_manager_release_global_thread_lock (void);
 void mono_debugger_init_icalls (void);
-
-void MONO_DEBUGGER__start_main (void);
 
 extern MonoDebuggerManager MONO_DEBUGGER__manager;
 
