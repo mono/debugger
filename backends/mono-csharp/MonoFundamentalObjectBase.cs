@@ -39,5 +39,10 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		protected abstract object GetObject (ITargetMemoryReader reader, TargetLocation location);
+
+		public override string Print ()
+		{
+			return GetObject ().ToString ();
+		}
 	}
 }

@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool IsValid {
 			get {
-				return is_valid && location.IsValid;
+				return is_valid && (location != null) && location.IsValid;
 			}
 		}
 
@@ -96,6 +96,20 @@ namespace Mono.Debugger.Languages.CSharp
 		protected abstract long GetDynamicSize (ITargetMemoryReader reader,
 							TargetLocation location,
 							out TargetLocation dynamic_location);
+
+		public TargetLocation Location {
+			get {
+				if (!IsValid)
+					throw new LocationInvalidException ();
+
+				return location;
+			}
+		}
+
+		public virtual string Print ()
+		{
+			return ToString ();
+		}
 
 		public override string ToString ()
 		{

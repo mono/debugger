@@ -127,6 +127,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token SEARCH
 %token LIST
 %token RUN
+%token EXAMINE
 
 %token NATIVE
 %token SELECT
@@ -333,6 +334,10 @@ other_command
 	  {
 		$$ = new PrintCommand ((Expression) $2);
 	  }
+	| EXAMINE examine_format variable_expression
+	  {
+		$$ = new ExamineCommand ((ExamineCommand.Format) $2, (VariableExpression) $3);
+	  }
 	| START program_arguments_expression
 	  {
 		$$ = new StartCommand ((ProgramArgumentsExpression) $2);
@@ -394,11 +399,7 @@ assert_command
 	;
 
 expression
-	: frame_expression PERCENT IDENTIFIER
-	  {
-		$$ = new RegisterExpression ((FrameExpression) $1, (string) $3);
-	  }
-	| LENGTH OPEN_PARENS variable_expression CLOSE_PARENS
+	: LENGTH OPEN_PARENS variable_expression CLOSE_PARENS
 	  {
 		$$ = new ArrayLengthExpression ((VariableExpression) $3);
 	  }
@@ -412,7 +413,7 @@ expression
 	  }
 	| NUMBER
 	  {
-		$$ = new NumberExpression ((int) $1);
+		$$ = new NumberExpression ((long) $1);
 	  }
 	| INTEGER
 	  {
@@ -444,6 +445,14 @@ variable_expression
 	| frame_expression DOLLAR IDENTIFIER
 	  {
 		$$ = new VariableReferenceExpression ((FrameExpression) $1, (string) $3);
+	  }
+	| frame_expression PERCENT NUMBER
+	  {
+		$$ = new PointerExpression ((FrameExpression) $1, (long) $3);
+	  }
+	| frame_expression PERCENT IDENTIFIER opt_regoffset
+	  {
+		$$ = new RegisterExpression ((FrameExpression) $1, (string) $3, (long) $4);
 	  }
 	| variable_expression DOT IDENTIFIER
 	  {
@@ -482,6 +491,43 @@ program_arglist
 		args.Add ($2);
 
 		$$ = args;
+	  }
+	;
+
+examine_format
+	: /* empty */
+	  {
+		$$ = ExamineCommand.Format.Standard;
+	  }
+	| DIV integer_or_number
+	  {
+		$$ = new ExamineCommand.Format ((int)(long) $2);
+	  }
+	;
+
+opt_regoffset
+	: /* empty */
+	  {
+		$$ = (long) 0;
+	  }
+	| PLUS integer_or_number
+	  {
+		$$ = (long) $2;
+	  }
+	| MINUS integer_or_number
+	  {
+		$$ = -(long) $2;
+	  }
+	;
+
+integer_or_number
+	: INTEGER
+	  {
+		$$ = (long)(int) $1;
+	  }
+	| NUMBER
+	  {
+		$$ = (long) $1;
 	  }
 	;
 

@@ -25,9 +25,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class NumberExpression : Expression
 	{
-		int val;
+		object val;
 
 		public NumberExpression (int val)
+		{
+			this.val = val;
+		}
+
+		public NumberExpression (long val)
 		{
 			this.val = val;
 		}
@@ -231,30 +236,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), name);
-		}
-	}
-
-	public class RegisterExpression : Expression
-	{
-		FrameExpression frame_expr;
-		string register;
-
-		public RegisterExpression (FrameExpression frame_expr, string register)
-		{
-			this.frame_expr = frame_expr;
-			this.register = register;
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
-
-			return frame.GetRegister (register);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1},{2})", GetType (), frame_expr, register);
 		}
 	}
 

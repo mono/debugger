@@ -136,6 +136,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public abstract MonoObject GetObject (TargetLocation location);
 
+		ITargetObject ITargetType.GetObject (TargetLocation location)
+		{
+			return GetObject (location);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}:{2}:{3}:{4}]", GetType (), Name,

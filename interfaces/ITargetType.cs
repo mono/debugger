@@ -34,5 +34,7 @@ namespace Mono.Debugger
 		int Size {
 			get;
 		}
+
+		ITargetObject GetObject (TargetLocation location);
 	}
 }

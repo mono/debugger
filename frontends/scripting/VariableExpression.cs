@@ -46,15 +46,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			try {
 				ITargetObject obj = ResolveVariable (context);
-				ITargetType type = ResolveType (context);
-
 				if (!obj.IsValid)
 					throw new ScriptingException ("Variable `{0}' is out of scope.", Name);
 
-				if (type.Kind == TargetObjectKind.Fundamental)
-					return ((ITargetFundamentalObject) obj).Object;
-
-				// FIXME: how to handle all the other kinds of objects?
 				return obj;
 			} catch (LocationInvalidException ex) {
 				throw new ScriptingException ("Location of variable `{0}' is invalid: {1}",
@@ -132,6 +126,44 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1},{2})", GetType (), frame_expr, identifier);
+		}
+	}
+
+	public class RegisterExpression : VariableExpression
+	{
+		FrameExpression frame_expr;
+		string register;
+		long offset;
+		FrameHandle frame;
+
+		public RegisterExpression (FrameExpression frame_expr, string register, long offset)
+		{
+			this.frame_expr = frame_expr;
+			this.register = register;
+			this.offset = offset;
+		}
+
+		public override string Name {
+			get { return '%' + register; }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			frame = (FrameHandle) frame_expr.Resolve (context);
+
+			return frame.GetRegisterType (register);
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			ITargetType type = DoResolveType (context);
+
+			return frame.GetRegister (register, offset);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1},{2})", GetType (), frame_expr, register);
 		}
 	}
 
@@ -321,6 +353,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 							      var_expr.Name);
 
 			return type.ParentType;
+		}
+	}
+
+	public class PointerExpression : VariableExpression
+	{
+		FrameExpression frame_expr;
+		FrameHandle frame;
+		TargetLocation location;
+		long address;
+
+		public PointerExpression (FrameExpression frame_expr, long address)
+		{
+			this.frame_expr = frame_expr;
+			this.address = address;
+		}
+
+		public override string Name {
+			get { return String.Format ("%0x{0:x}", address); }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			frame = (FrameHandle) frame_expr.Resolve (context);
+			if (frame == null)
+				return null;
+
+			return frame.Frame.Language.PointerType;
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			ITargetType type = DoResolveType (context);
+			if (type == null)
+				return null;
+
+			TargetAddress taddress = new TargetAddress (frame.Frame.AddressDomain, address);
+			location = new AbsoluteTargetLocation (frame.Frame, taddress);
+
+			return type.GetObject (location);
 		}
 	}
 }

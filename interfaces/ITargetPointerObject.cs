@@ -35,5 +35,13 @@ namespace Mono.Debugger
 		//   points to.  Only allowed for non-typesafe pointers.
 		// </summary>
 		byte[] GetDereferencedContents (int size);
+
+		bool HasAddress {
+			get;
+		}
+
+		TargetAddress Address {
+			get;
+		}
 	}
 }

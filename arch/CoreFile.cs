@@ -21,6 +21,7 @@ namespace Mono.Debugger.Architecture
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		AddressDomain address_domain;
+		ILanguage native_language;
 
 		public CoreFile (DebuggerBackend backend, Process process, string application,
 				 string core_file, BfdContainer bfd_container)
@@ -41,6 +42,8 @@ namespace Mono.Debugger.Architecture
 			core_bfd.MainBfd = bfd;
 
 			bfd_disassembler = bfd.GetDisassembler (this);
+
+			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ();
 
 			string crash_program = Path.GetFullPath (core_bfd.CrashProgram);
 			string[] crash_program_args = crash_program.Split (' ');
@@ -80,6 +83,10 @@ namespace Mono.Debugger.Architecture
 
 		public int ID {
 			get { return process.ID; }
+		}
+
+		public ILanguage NativeLanguage {
+			get { return native_language; }
 		}
 
 		public void UpdateModules ()
@@ -207,6 +214,7 @@ namespace Mono.Debugger.Architecture
 		{
 			IInferiorStackFrame frame;
 			CoreFile core;
+			ILanguage language;
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
 					     IInferiorStackFrame frame, SourceAddress source, IMethod method)
@@ -214,6 +222,7 @@ namespace Mono.Debugger.Architecture
 			{
 				this.frame = frame;
 				this.core = core;
+				this.language = method.Module.Language;
 			}
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
@@ -222,6 +231,7 @@ namespace Mono.Debugger.Architecture
 			{
 				this.frame = frame;
 				this.core = core;
+				this.language = core.NativeLanguage;
 			}
 
 			public override ITargetMemoryAccess TargetMemoryAccess {
@@ -233,6 +243,12 @@ namespace Mono.Debugger.Architecture
 			public override Register[] Registers {
 				get {
 					return core.GetRegisters ();
+				}
+			}
+
+			public override ILanguage Language {
+				get {
+					return language;
 				}
 			}
 

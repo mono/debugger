@@ -322,5 +322,26 @@ namespace Mono.Debugger
 			}
 			return sb.ToString ();
 		}
+
+		public static string HexDump (TargetAddress start, byte[] data)
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			sb.Append (String.Format ("{0}   ", start));
+
+			for (int i = 0; i < data.Length; i++) {
+				if (i > 0) {
+					if ((i % 16) == 0) {
+						start += 16;
+						sb.Append (String.Format ("\n{0}   ", start));
+					} else if ((i % 8) == 0)
+						sb.Append (" - ");
+					else
+						sb.Append (" ");
+				}
+				sb.Append (String.Format ("{1}{0:x}", data [i], data [i] >= 16 ? "" : "0"));
+			}
+			return sb.ToString ();
+		}
 	}
 }

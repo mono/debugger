@@ -3,10 +3,10 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoOpaqueType : MonoType, ITargetPointerType
+	internal class MonoOpaqueType : MonoType
 	{
 		public MonoOpaqueType (Type type, int size)
-			: base (TargetObjectKind.Unknown, type, size)
+			: base (TargetObjectKind.Opaque, type, size)
 		{ }
 
 		public override bool IsByRef {
@@ -15,27 +15,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public bool IsTypesafe {
-			get {
-				return false;
-			}
-		}
-
-		public bool HasStaticType {
-			get {
-				return false;
-			}
-		}
-
-		public ITargetType StaticType {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
 		public override MonoObject GetObject (TargetLocation location)
 		{
-			throw new InvalidOperationException ();
+			return new MonoOpaqueObject (this, location);
 		}
 	}
 }

@@ -82,6 +82,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("search", Token.SEARCH);
 			keywords.Add ("list", Token.LIST);
 			keywords.Add ("run", Token.RUN);
+			keywords.Add ("examine", Token.EXAMINE);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);
@@ -130,6 +131,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			short_keywords.Add ("dis", Token.DISASSEMBLE);
 			short_keywords.Add ("h", Token.HELP);
 			short_keywords.Add ("?", Token.HELP);
+			short_keywords.Add ("x", Token.EXAMINE);
 		}
 
 		ScriptingContext context;
@@ -342,12 +344,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 					string s = number_builder.ToString ();
 
-					val = System.Int64.Parse (s, NumberStyles.HexNumber);
+					val = (long) System.UInt64.Parse (s, NumberStyles.HexNumber);
 					return Token.NUMBER;
 				}
 				decimal_digits (c);
 
-				val = System.Int32.Parse (number_builder.ToString ());
+				val = (int) System.UInt32.Parse (number_builder.ToString ());
 				return Token.INTEGER;
 			}
 

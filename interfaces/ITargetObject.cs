@@ -42,5 +42,11 @@ namespace Mono.Debugger
 		//   @max_size bytes.  May only be called for object with dynamic size.
 		// </summary>
 		byte[] GetRawDynamicContents (int max_size);
+
+		TargetLocation Location {
+			get;
+		}
+
+		string Print ();
 	}
 }

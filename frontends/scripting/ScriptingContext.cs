@@ -118,20 +118,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return retval;	
 		}
 
-		public long GetRegister (string name)
+		public ITargetObject GetRegister (string name, long offset)
 		{
 			int register = process.GetRegisterIndex (name);
 
-			Register[] frame_registers = frame.Registers;
-			if (frame_registers == null)
-				throw new ScriptingException ("Cannot get registers of selected stack frame.");
-
-			foreach (Register reg in frame_registers) {
-				if (reg.Index == register)
-					return (long) reg.Data;
-			}
-
-			throw new ScriptingException ("Cannot get this register from the selected stack frame.");
+			return frame.GetRegister (register, offset);
 		}
 
 		public void ShowParameters (ScriptingContext context)
@@ -199,6 +190,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable cannot be accessed.");
 
 			return var.Type;
+		}
+
+		public ITargetType GetRegisterType (string register)
+		{
+			return frame.Language.LongIntegerType;
 		}
 
 		public override string ToString ()

@@ -7,6 +7,7 @@ namespace Mono.Debugger
 		Array,
 		Struct,
 		Class,
-		Pointer
+		Pointer,
+		Opaque
 	}
 }

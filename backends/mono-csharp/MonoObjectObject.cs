@@ -83,5 +83,23 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			throw new InvalidOperationException ();
 		}
+
+		public bool HasAddress {
+			get {
+				return location.HasAddress;
+			}
+		}
+
+		public TargetAddress Address {
+			get { return location.Address; }
+		}
+
+		public override string Print ()
+		{
+			if (HasAddress)
+				return String.Format ("MonoObject ({0})", Address);
+			else
+				return String.Format ("MonoObject ({0})", location);
+		}
 	}
 }

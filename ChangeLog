@@ -1,5 +1,43 @@
 2003-06-21  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetType.cs (GetObject): New method.
+
+	* interfaces/ILanguage.cs: New public interface.
+
+	* classes/Module.cs: Renamed `Language' to `LanguageBackend' and
+	added new `Language' property to return the ILanguage.
+
+	* classes/StackFrame (Language): New public property.
+	(GetRegister): Added overloaded version which takes the register
+	index and an offset and returns a ITargetObject.
+
+	* interfaces/ITargetObject.cs (Location): New property.
+	(Print): New function.  Returns a stringified representation of
+	the object - suitable to be displayed to the user.
+
+	* interfaces/ITargetPointerObject.cs
+	(HasAddress, Address): New properties.
+
+	* interfaces/ITargetType.cs (GetObject): Made this method part of
+	the interface.
+
+	* interfaces/TargetObjectKind.cs: Added `Opaque'.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolTable): Implement ILanguage.
+
+	* backends/mono-csharp/MonoOpaqueObject.cs: Don't implement
+	ITargetPointerObject. Opaque objects are opaque and no pointers.
+	* backends/mono-csharp/MonoOpaqueType.cs: Likewise.
+
+	* frontends/scripting/VariableExpression.cs (RegisterExpression):
+	Made this a VariableExpression.
+
+	* frontends/scripting/Parser.jay: Added an `examine' command to
+	examine memory.  Syntax like gdb's `x' command.
+
+2003-06-21  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetLocation.cs: Moved here from
 	backends/classes/MonoTargetLocation.cs.
 

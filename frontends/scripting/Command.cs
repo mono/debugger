@@ -22,6 +22,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("PRINT", "Print the result of an expression")]
 	public class PrintCommand : Command
 	{
 		Expression expression;
@@ -37,8 +38,52 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (retval is long)
 				context.Print (String.Format ("0x{0:x}", (long) retval));
+			else if (retval is ITargetObject)
+				context.Print (((ITargetObject) retval).Print ());
 			else
 				context.Print (retval);
+		}
+	}
+
+	[Command("EXAMINE", "Examine memory.")]
+	public class ExamineCommand : Command
+	{
+		VariableExpression expression;
+		Format format;
+
+		public ExamineCommand (Format format, VariableExpression expression)
+		{
+			this.expression = expression;
+			this.format = format;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ITargetObject obj = expression.ResolveVariable (context);
+
+			if (!obj.Location.HasAddress)
+				throw new ScriptingException ("Expression doesn't have an address.");
+
+			byte[] data = obj.Location.ReadBuffer (format.Size);
+			context.Print (TargetBinaryReader.HexDump (obj.Location.Address, data));
+		}
+
+		public struct Format
+		{
+			int size;
+
+			public static readonly Format Standard = new Format (16);
+
+			public Format (int size)
+			{
+				this.size = size;
+			}
+
+			public int Size {
+				get {
+					return size;
+				}
+			}
 		}
 	}
 

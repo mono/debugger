@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using System.Text;
-// using System.Reflection;
 using Reflection = System.Reflection;
+using System.Runtime.InteropServices;
 using System.Collections;
 using System.Threading;
 using Mono.CSharp.Debugger;
@@ -203,7 +203,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   Holds all the symbol tables from the target's JIT.
 	// </summary>
-	internal class MonoSymbolTable : IDisposable
+	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
 		public const int  DynamicVersion = 30;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
@@ -254,6 +254,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			TotalSize = language.MonoDebuggerInfo.SymbolTableSize;
 			StartAddress = address;
+
+			init_types ();
 		}
 
 		internal void Update (ITargetMemoryAccess memory)
@@ -436,6 +438,37 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		//
+		// ILanguage
+		//
+
+		MonoFundamentalType integer_type;
+		MonoFundamentalType long_type;
+		MonoPointerType pointer_type;
+
+		void init_types ()
+		{
+			integer_type = new MonoFundamentalType (typeof (int), Marshal.SizeOf (typeof (int)));
+			long_type = new MonoFundamentalType (typeof (long), Marshal.SizeOf (typeof (long)));
+			pointer_type = new MonoPointerType ();
+		}
+
+		string ILanguage.Name {
+			get { return "C#"; }
+		}
+
+		ITargetFundamentalType ILanguage.IntegerType {
+			get { return integer_type; }
+		}
+
+		ITargetFundamentalType ILanguage.LongIntegerType {
+			get { return long_type; }
+		}
+
+		ITargetPointerType ILanguage.PointerType {
+			get { return pointer_type; }
+		}
+
+		//
 		// IDisposable
 		//
 
@@ -559,7 +592,11 @@ namespace Mono.Debugger.Languages.CSharp
 				module_changed (module);
 			}
 
-			public override object Language {
+			public override ILanguage Language {
+				get { return reader.Table; }
+			}
+
+			public override object LanguageBackend {
 				get { return reader.Table.Language; }
 			}
 

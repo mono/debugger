@@ -76,6 +76,8 @@ namespace Mono.Debugger.Backends
 			inferior.SingleSteppingEngine = this;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
+			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ();
+
 			step_event = new AutoResetEvent (false);
 			start_event = new ManualResetEvent (false);
 			completed_event = new ManualResetEvent (false);
@@ -741,6 +743,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public ILanguage NativeLanguage {
+			get {
+				return native_language;
+			}
+		}
+
 		IInferior inferior;
 		IArchitecture arch;
 		DebuggerBackend backend;
@@ -751,6 +759,7 @@ namespace Mono.Debugger.Backends
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
+		ILanguage native_language;
 		Thread engine_thread;
 		ManualResetEvent start_event;
 		ManualResetEvent completed_event;
@@ -1137,7 +1146,7 @@ namespace Mono.Debugger.Backends
 			if (method.IsWrapper && (address == method.StartAddress))
 				return new Command (StepOperation.Run, method.WrapperAddress);
 
-			ILanguageBackend language = method.Module.Language as ILanguageBackend;
+			ILanguageBackend language = method.Module.LanguageBackend as ILanguageBackend;
 			if (source == null)
 				return null;
 
@@ -1402,7 +1411,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
-			object language = (frame.Method != null) ? frame.Method.Module.Language : null;
+			object language = (frame.Method != null) ? frame.Method.Module.LanguageBackend : null;
 
 			if (frame.SourceAddress == null)
 				return new StepFrame (language, StepMode.SingleInstruction);
@@ -1429,7 +1438,7 @@ namespace Mono.Debugger.Backends
 			object language;
 
 			if (current_method != null)
-				language = current_method.Module.Language;
+				language = current_method.Module.LanguageBackend;
 			else
 				language = null;
 
@@ -2186,6 +2195,7 @@ namespace Mono.Debugger.Backends
 			SingleSteppingEngine sse;
 			IInferiorStackFrame frame;
 			MyBacktrace backtrace;
+			ILanguage language;
 
 			Register[] registers;
 			bool has_registers;
@@ -2198,6 +2208,7 @@ namespace Mono.Debugger.Backends
 				this.sse = sse;
 				this.frame = frame;
 				this.backtrace = backtrace;
+				this.language = method.Module.Language;
 			}
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
@@ -2207,6 +2218,7 @@ namespace Mono.Debugger.Backends
 				this.sse = sse;
 				this.frame = frame;
 				this.backtrace = backtrace;
+				this.language = sse.NativeLanguage;
 			}
 
 			public override ITargetMemoryAccess TargetMemoryAccess {
@@ -2227,6 +2239,18 @@ namespace Mono.Debugger.Backends
 					}
 
 					return registers;
+				}
+			}
+
+			protected override ITargetObject GetRegister (int index, long contents, long offset)
+			{
+				return Language.PointerType.GetObject (
+					new MonoVariableLocation (this, true, index, offset, false, 0));
+			}
+
+			public override ILanguage Language {
+				get {
+					return language;
 				}
 			}
 

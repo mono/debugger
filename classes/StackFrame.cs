@@ -96,6 +96,14 @@ namespace Mono.Debugger
 			throw new NoSuchRegisterException ();
 		}
 
+		public virtual ITargetObject GetRegister (int index, long offset)
+		{
+			long data = GetRegister (index);
+			return GetRegister (index, data, offset);
+		}
+
+		protected abstract ITargetObject GetRegister (int index, long contents, long offset);
+
 		public IMethod Method {
 			get {
 				check_disposed ();
@@ -142,6 +150,10 @@ namespace Mono.Debugger
 		protected abstract AssemblerLine DoDisassembleInstruction (TargetAddress address);
 
 		public abstract AssemblerMethod DisassembleMethod ();
+
+		public abstract ILanguage Language {
+			get;
+		}
 
 		public override string ToString ()
 		{

@@ -54,13 +54,24 @@ namespace Mono.Debugger
 			}
 		}
 
-		public object Language {
+		public ILanguage Language {
 			get {
 				lock (this) {
 					if (module_data == null)
 						throw new InvalidOperationException ();
 
 					return module_data.Language;
+				}
+			}
+		}
+
+		public object LanguageBackend {
+			get {
+				lock (this) {
+					if (module_data == null)
+						throw new InvalidOperationException ();
+
+					return module_data.LanguageBackend;
 				}
 			}
 		}

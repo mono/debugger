@@ -23,7 +23,11 @@ namespace Mono.Debugger
 			get { return name; }
 		}
 
-		public abstract object Language {
+		public abstract ILanguage Language {
+			get;
+		}
+
+		public abstract object LanguageBackend {
 			get;
 		}
 

@@ -20,6 +20,7 @@ namespace Mono.Debugger.Architecture
 		bool is_library;
 		TargetAddress start, end;
 		DebuggerBackend backend;
+		ILanguage language;
 
 		public BfdModule (DebuggerBackend backend, Module module, Bfd bfd)
 			: base (backend, module, bfd.FileName)
@@ -36,13 +37,19 @@ namespace Mono.Debugger.Architecture
 
 			has_debugging_info = bfd.HasDebuggingInfo;
 
+			language = new Mono.Debugger.Languages.Native.NativeLanguage ();
+
 			module.ModuleData = this;
 
 			module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
 			module_changed (module);
 		}
 
-		public override object Language {
+		public override ILanguage Language {
+			get { return language; }
+		}
+
+		public override object LanguageBackend {
 			get { return bfd; }
 		}
 
