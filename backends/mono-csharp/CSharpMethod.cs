@@ -38,8 +38,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public static CSharpMethod GetMethodSource (IMethod imethod, MethodEntry method,
-							    JitLineNumberEntry[] line_numbers,
-							    SourceFileFactory factory)
+							    JitLineNumberEntry[] line_numbers)
 		{
 			if (method.SourceFile == null)
 				throw new InvalidOperationException ();
@@ -53,11 +52,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal static ISourceBuffer GetMethodSource (IMethod imethod, MethodEntry method,
 							       JitLineNumberEntry[] line_numbers,
-							       SourceFileFactory factory,
 							       out int start_row, out int end_row,
 							       out ArrayList addresses)
 		{
-			CSharpMethod csharp = GetMethodSource (imethod, method, line_numbers, factory);
+			CSharpMethod csharp = GetMethodSource (imethod, method, line_numbers);
 			if (csharp == null) {
 				start_row = end_row = 0;
 				addresses = null;

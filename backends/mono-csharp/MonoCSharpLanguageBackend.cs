@@ -587,7 +587,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			MonoSymbolTableReader reader;
 			MethodEntry method;
-			SourceFileFactory factory;
 			System.Reflection.MethodBase rmethod;
 			MonoType this_type;
 			MonoType[] param_types;
@@ -620,7 +619,6 @@ namespace Mono.Debugger.Languages.CSharp
 			{
 				this.reader = reader;
 				this.method = method;
-				this.factory = reader.backend.SourceFileFactory;
 
 				address = new MethodAddress (method, dynamic_reader);
 
@@ -684,8 +682,8 @@ namespace Mono.Debugger.Languages.CSharp
 								     out ArrayList addresses)
 			{
 				ISourceBuffer retval = CSharpMethod.GetMethodSource (
-					this, method, address.LineNumbers, factory,
-					out start_row, out end_row, out addresses);
+					this, method, address.LineNumbers, out start_row, out end_row,
+					out addresses);
 
 				return retval;
 			}

@@ -17,14 +17,11 @@ namespace Mono.Debugger.Architecture
 		protected SymbolTableCollection native_symtabs;
 		protected SymbolTableCollection symtab_collection;
 		protected ISymbolTable application_symtab;
-		protected SourceFileFactory source_factory;
 
-		public CoreFile (string application, string core_file, SourceFileFactory factory)
+		public CoreFile (string application, string core_file)
 		{
-			this.source_factory = factory;
-
-			bfd = new Bfd (this, application, false, true, factory);
-			core_bfd = new Bfd (this, core_file, true, false, null);
+			bfd = new Bfd (this, application, false, true);
+			core_bfd = new Bfd (this, core_file, true, false);
 
 			Console.WriteLine ("CORE DUMP FROM: {0}", core_bfd.CrashProgram);
 

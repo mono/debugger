@@ -13,8 +13,8 @@ namespace Mono.Debugger.Architecture
 
 		long[] registers;
 
-		public CoreFileElfI386 (string application, string core_file, SourceFileFactory factory)
-			: base (application, core_file, factory)
+		public CoreFileElfI386 (string application, string core_file)
+			: base (application, core_file)
 		{
 			registers = get_registers ();
 		}

@@ -62,7 +62,6 @@ namespace Mono.Debugger.Backends
 		SymbolTableCollection native_symtabs;
 		SymbolTableCollection symtab_collection;
 		ISymbolTable application_symtab;
-		SourceFileFactory source_factory;
 
 		int child_pid;
 		bool native;
@@ -277,18 +276,17 @@ namespace Mono.Debugger.Backends
 		}
 
 		public PTraceInferior (string working_directory, string[] argv, string[] envp,
-				       bool native, bool load_native_symtab, SourceFileFactory factory)
+				       bool native, bool load_native_symtab)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
 			this.envp = envp;
 			this.native = native;
-			this.source_factory = factory;
 
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = new Bfd (this, argv [0], false, load_native_symtab, source_factory);
+			bfd = new Bfd (this, argv [0], false, load_native_symtab);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -309,13 +307,11 @@ namespace Mono.Debugger.Backends
 			setup_inferior (load_native_symtab);
 		}
 
-		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
-				       SourceFileFactory factory)
+		public PTraceInferior (int pid, string[] envp, bool load_native_symtab)
 		{
 			this.envp = envp;
-			this.source_factory = factory;
 
-			bfd = new Bfd (this, argv [0], false, load_native_symtab, factory);
+			bfd = new Bfd (this, argv [0], false, load_native_symtab);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)

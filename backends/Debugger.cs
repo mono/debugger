@@ -25,7 +25,6 @@ namespace Mono.Debugger
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
 
-		SourceFileFactory source_factory;
 		SymbolTableCollection symtabs;
 
 		IInferior inferior;
@@ -48,11 +47,11 @@ namespace Mono.Debugger
 		bool must_send_update;
 		bool native;
 
-		public DebuggerBackend (SourceFileFactory source_factory)
-			: this (source_factory, false)
+		public DebuggerBackend ()
+			: this (false)
 		{ }
 
-		public DebuggerBackend (SourceFileFactory source_factory, bool native)
+		public DebuggerBackend (bool native)
 		{
 			NameValueCollection settings = ConfigurationSettings.AppSettings;
 
@@ -73,7 +72,6 @@ namespace Mono.Debugger
 				}
 			}
 
-			this.source_factory = source_factory;
 			this.native = native;
 		}
 
@@ -347,7 +345,7 @@ namespace Mono.Debugger
 			if (native)
 				load_native_symtab = true;
 			inferior = new PTraceInferior (working_directory, argv, envp, native,
-						       load_native_symtab, source_factory);
+						       load_native_symtab);
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
@@ -367,7 +365,7 @@ namespace Mono.Debugger
 
 		void load_core (string core_file, string[] argv)
 		{
-			inferior = new CoreFileElfI386 (argv [0], core_file, source_factory);
+			inferior = new CoreFileElfI386 (argv [0], core_file);
 
 			symtabs = new SymbolTableCollection ();
 			symtabs.AddSymbolTable (inferior.SymbolTable);
@@ -713,13 +711,6 @@ namespace Mono.Debugger
 				FrameChangedEvent (current_frame);
 
 			return true;
-		}
-
-		public SourceFileFactory SourceFileFactory {
-			get {
-				check_disposed ();
-				return source_factory;
-			}
 		}
 
 		[DllImport("glib-2.0")]

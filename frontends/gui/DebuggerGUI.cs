@@ -90,7 +90,6 @@ namespace Mono.Debugger.GUI
 
 		DebuggerBackend backend;
 		Interpreter interpreter;
-		SourceFileFactory source_factory;
 
 		SourceManager source_manager;
 
@@ -98,8 +97,7 @@ namespace Mono.Debugger.GUI
 		{
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
 
-			source_factory = new SourceFileFactory ();
-			backend = new DebuggerBackend (source_factory);
+			backend = new DebuggerBackend ();
 
 			SetupGUI ();
 

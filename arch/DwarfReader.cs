@@ -24,7 +24,6 @@ namespace Mono.Debugger.Architecture
 		ObjectCache debug_str_reader;
 
 		Hashtable compile_unit_hash;
-		SourceFileFactory factory;
 		ISymbolTable symtab;
 
 		protected class DwarfException : Exception
@@ -38,12 +37,11 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (IInferior inferior, Bfd bfd, SourceFileFactory factory)
+		public DwarfReader (IInferior inferior, Bfd bfd)
 		{
 			this.bfd = bfd;
 			this.inferior = inferior;
 			this.filename = bfd.FileName;
-			this.factory = factory;
 
 			debug_info_reader = create_reader (".debug_info");
 			debug_abbrev_reader = create_reader (".debug_abbrev");
@@ -147,12 +145,6 @@ namespace Mono.Debugger.Architecture
 		public ISymbolTable SymbolTable {
 			get {
 				return symtab;
-			}
-		}
-
-		public SourceFileFactory SourceFactory {
-			get {
-				return factory;
 			}
 		}
 
@@ -432,14 +424,12 @@ namespace Mono.Debugger.Architecture
 
 		protected class DwarfNativeMethod : MethodBase
 		{
-			SourceFileFactory factory;
 			LineNumberEngine engine;
 			DieSubprogram subprog;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.ImageFile)
 			{
-				this.factory = subprog.dwarf.SourceFactory;
 				this.subprog = subprog;
 				this.engine = engine;
 
