@@ -1168,6 +1168,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override bool IsLoaded {
 				get {
+					ensure_method ();
 					return (method != null) &&
 						((reader != null) && reader.range_hash.Contains (index));
 				}

@@ -736,6 +736,10 @@ source_expression
 	  {
 		$$ = new SourceExpression ((string) $1);
 	  }
+	| STRING COLON INTEGER
+	  {
+		$$ = new SourceExpression ((string) $1, (int) $3);
+	  }
 	;
 
 module_list_expression

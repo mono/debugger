@@ -1,3 +1,14 @@
+2004-03-02  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSourceMethod.IsLoaded): Call ensure_method().
+
+	* frontends/scripting/Expression.cs (SourceExpression): Added
+	support for source file and line number.
+
+	* frontends/scripting/Parser.jay (source_expression): Added
+	"STRING COLON INTEGER" syntax.
+
 2004-03-02  Mike Kestner  <mkestner@ximian.com>
 
 	* configure.in : expand pc.in

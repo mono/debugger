@@ -381,6 +381,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.line = -1;
 		}
 
+		public SourceExpression (string identifier, int line)
+		{
+			this.history_id = -1;
+			this.identifier = identifier;
+			this.line = line;
+		}
+
 		public SourceExpression (int history_id)
 		{
 			this.history_id = history_id;
@@ -406,8 +413,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (history_id > 0)
 				return context.GetMethodSearchResult (history_id);
 
-			if (identifier != null)
-				return context.FindMethod (identifier);
+			if (identifier != null) {
+				if (line != -1)
+					return context.FindLocation (identifier, line);
+				else
+					return context.FindMethod (identifier);
+			}
 
 			ITargetFunctionObject obj = expr.ResolveMethod (context, null);
 
