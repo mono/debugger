@@ -56,7 +56,6 @@ debugger_gc_thread_init (void)
 static void
 debugger_gc_stop_world (void)
 {
-	g_message (G_STRLOC);
 	mono_debugger_thread_manager_acquire_global_thread_lock ();
 }
 
@@ -64,7 +63,6 @@ static void
 debugger_gc_start_world (void)
 {
 	mono_debugger_thread_manager_release_global_thread_lock ();
-	g_message (G_STRLOC);
 }
 
 static void
@@ -74,8 +72,6 @@ debugger_gc_push_all_stacks (void)
 
 	pid = getpid ();
 
-	g_message (G_STRLOC ": %d - %p", pid, thread_array);
-
 	if (!thread_array)
 		return;
 
@@ -83,7 +79,6 @@ debugger_gc_push_all_stacks (void)
 		MonoDebuggerThread *thread = g_ptr_array_index (thread_array, i);
 		gpointer end_stack = (thread->pid == pid) ? &i : thread->end_stack;
 
-		g_message (G_STRLOC ": %d - %p - %p", thread->pid, thread->start_stack, end_stack);
 		GC_push_all_stack (end_stack, thread->start_stack);
 	}
 }
@@ -155,10 +150,7 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 	thread->func = func;
 	thread->start_stack = start_stack;
 
-	g_message (G_STRLOC);
-
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
-	g_message (G_STRLOC);
 	g_assert (last_tid == tid);
 	last_pid = thread->pid;
 

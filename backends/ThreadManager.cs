@@ -331,9 +331,6 @@ namespace Mono.Debugger
 				TargetAddress main_thread = runner.Inferior.ReadGlobalAddress (mthread);
 				int command_pid = runner.Inferior.ReadInteger (cpid);
 
-				Console.WriteLine ("INITIALIZE: {0} {1} {2} {3}", debugger_pid, main_pid,
-						   main_thread, command_pid);
-
 				manager_process = runner.Process;
 				add_process (manager_process, manager_process.PID, true);
 
@@ -365,8 +362,6 @@ namespace Mono.Debugger
 				TargetAddress mfunc = bfdc.LookupSymbol ("MONO_DEBUGGER__main_function");
 				TargetAddress main_function = runner.Inferior.ReadGlobalAddress (mfunc);
 
-				Console.WriteLine ("THREAD MANAGER: {0} {1}", mfunc, main_function);
-
 				backend.ReachedManagedMain (main_process);
 				main_process.SingleSteppingEngine.Continue (main_function, true);
 				OnMainThreadCreatedEvent (main_process);
@@ -380,9 +375,6 @@ namespace Mono.Debugger
 			int command = runner.Inferior.ReadInteger (thread_manager_notify_command);
 			int pid = runner.Inferior.ReadInteger (thread_manager_notify_tid);
 			TargetAddress data = runner.Inferior.ReadAddress (thread_manager_notify_data);
-
-			Console.WriteLine ("THREAD MANAGER: {0} {1} {2}", (ThreadManagerCommand) command,
-					   pid, data);
 
 			ThreadData thread = (ThreadData) thread_hash [pid];
 
@@ -436,19 +428,14 @@ namespace Mono.Debugger
 			TargetAddress func = reader.ReadGlobalAddress ();
 			TargetAddress start_stack = reader.ReadGlobalAddress ();
 
-			Console.WriteLine ("CREATE THREAD #2: {0} {1} {2} {3}", pid, locked, func,
-					   start_stack);
-
 			Process process = runner.Process.CreateThread (pid);
 			process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
 
 			ThreadData thread = new ThreadData (process, tid, pid, start_stack, data);
 			add_process (thread, pid, false);
 
-			if (is_main_thread) {
-				Console.WriteLine ("MAIN THREAD: {0} {1}", pid, start_stack);
+			if (is_main_thread)
 				return process;
-			}
 
 			if (func.Address == 0)
 				throw new InternalError ("Created thread without start function");
@@ -484,10 +471,7 @@ namespace Mono.Debugger
 					continue;
 				Register[] regs = process.SingleSteppingEngine.AcquireThreadLock ();
 				int esp = (int)(long) regs [(int) I386Register.ESP].Data;
-				Console.WriteLine ("LOCK: {0} {1:x} {2:x}", process.PID,
-						   data.StartStack, esp);
 				TargetAddress addr = new TargetAddress (inferior.AddressDomain, esp);
-				Console.WriteLine ("WRITE LOCK: {0} {1}", data.Data, addr);
 				if (!data.Data.IsNull)
 					inferior.WriteAddress (data.Data, addr);
 			}
