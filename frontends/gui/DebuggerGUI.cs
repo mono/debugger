@@ -99,7 +99,7 @@ namespace Mono.Debugger.GUI
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
 
 			source_factory = new SourceFileFactory ();
-			backend = new Debugger (source_factory);
+			backend = new Mono.Debugger.Backends.Debugger (source_factory);
 
 			SetupGUI ();
 
