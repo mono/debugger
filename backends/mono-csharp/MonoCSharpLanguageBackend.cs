@@ -990,7 +990,6 @@ namespace Mono.Debugger.Languages.CSharp
 		ArrayList sources = null;
 		Hashtable source_hash = null;
 		Hashtable method_index_hash = null;
-		Hashtable method_name_hash = null;
 		void ensure_sources ()
 		{
 			if (sources != null)
@@ -998,7 +997,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			sources = new ArrayList ();
 			source_hash = new Hashtable ();
-			method_name_hash = new Hashtable ();
 			method_index_hash = new Hashtable ();
 
 			if (File == null)
@@ -1067,9 +1065,8 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSourceFile info = (MonoSourceFile) source_hash [entry.SourceFile];
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
-			string name = entry.FullName;
+			string name = entry.Name;
 			method = new MonoSourceMethod (info, this, source, entry, name);
-			method_name_hash.Add (name, method);
 			method_index_hash.Add (index, method);
 			return method;
 		}

@@ -1458,7 +1458,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			do_continue (trampoline);
-			return true;
+			return false;
 		}
 
 		// <summary>
