@@ -81,18 +81,23 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal struct JitLexicalBlockEntry
 	{
+		public readonly int StartOffset;
 		public readonly int StartAddress;
+		public readonly int EndOffset;
 		public readonly int EndAddress;
 
-		public JitLexicalBlockEntry (TargetBinaryReader reader)
+		public JitLexicalBlockEntry (int start_offset, int start_address,
+					     int end_offset, int end_address)
 		{
-			StartAddress = reader.ReadInt32 ();
-			EndAddress = reader.ReadInt32 ();
+			StartOffset = start_offset;
+			StartAddress = start_address;
+			EndOffset = end_offset;
+			EndAddress = end_address;
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("[JitLexicalBlockEntry {0:x}:{1:x}]", StartAddress, EndAddress);
+			return String.Format ("[JitLexicalBlockEntry {0:x}:{1:x}-{2:x}:{3:x}]", StartOffset, StartAddress, EndOffset, EndAddress);
 		}
 	}
 
@@ -104,6 +109,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress MethodEndAddress;
 		public readonly TargetAddress WrapperAddress;
 		public readonly JitLineNumberEntry[] LineNumbers;
+		public readonly JitLexicalBlockEntry[] LexicalBlocks;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
@@ -137,6 +143,28 @@ namespace Mono.Debugger.Languages.Mono
 				native_offset += reader.ReadSLeb128 ();
 
 				LineNumbers [i] = new JitLineNumberEntry (il_offset, native_offset);
+			}
+
+			int num_lexical_blocks = reader.ReadLeb128 ();
+			LexicalBlocks = new JitLexicalBlockEntry [num_lexical_blocks];
+
+			il_offset = 0;
+			native_offset = 0;
+			for (int i = 0; i < num_lexical_blocks; i ++) {
+				int start_offset, end_offset, start_address, end_address;
+
+				il_offset += reader.ReadSLeb128 ();
+				start_offset = il_offset;
+				native_offset += reader.ReadSLeb128 ();
+				start_address = native_offset;
+
+				il_offset += reader.ReadSLeb128 ();
+				end_offset = il_offset;
+				native_offset += reader.ReadSLeb128 ();
+				end_address = native_offset;
+
+				LexicalBlocks [i] = new JitLexicalBlockEntry (start_offset, start_address,
+									      end_offset, end_address);
 			}
 
 			HasThis = reader.ReadByte () != 0;
@@ -612,7 +640,6 @@ namespace Mono.Debugger.Languages.Mono
 
 					local_types [i] = file.MonoLanguage.LookupMonoType (type);
 
-#if FIXME
 					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
@@ -627,12 +654,6 @@ namespace Mono.Debugger.Languages.Mono
 							true, local_types [i].IsByRef, this,
 							address.LocalVariableInfo [i]);
 					}
-#else
-					locals [i] = new MonoVariable (
-						file.backend, local.Name, local_types [i],
-						true, local_types [i].IsByRef, this,
-						address.LocalVariableInfo [i]);
-#endif
 				}
 
 				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (rmethod.DeclaringType);

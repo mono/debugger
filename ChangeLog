@@ -1,3 +1,13 @@
+2005-02-23  Chris Toshok  <toshok@ximian.com>
+
+	Fix bug #72827.
+	* backends/mono/MonoSymbolFile.cs (JitLexicalBlockEntry): add
+	start and end IL Offsets here.  not sure we need them, but it
+	makes things consistent with the line number entry.
+	(MethodAddress..ctor): read in the lexical block entries.
+	(MonoMethod.get_variables): fix the FIXME to use scope ranges for
+	variables if local names are ambiguous.
+
 2005-02-21  Martin Baulig  <martin@ximian.com>
 
 	* backends/DaemonThreadRunner.cs: Removed this old file.
