@@ -22,6 +22,9 @@ namespace Mono.Debugger.Backends
 		TargetAddress info;
 		Inferior inferior;
 
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_set_notification (long address);
+
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
 							    Inferior inferior)
 		{
@@ -44,17 +47,20 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress main_function;
 		TargetAddress main_thread;
+		TargetAddress notification_address;
 		TargetAddress command_notification;
 		TargetAddress mono_thread_notification;
-
-		TargetAddress thread_manager_notify_command = TargetAddress.Null;
-		TargetAddress thread_manager_notify_tid = TargetAddress.Null;
 
 		public TargetAddress Initialize (SingleSteppingEngine sse, Inferior inferior)
 		{
 			main_function = inferior.ReadGlobalAddress (info + 4);
+			notification_address = inferior.ReadGlobalAddress (
+				info + 4 + inferior.TargetAddressSize);
+
+			mono_debugger_server_set_notification (notification_address.Address);
 
 			manager_sse = sse;
+
 			new DaemonThreadRunner (sse, this.inferior,
 						new DaemonThreadHandler (main_handler));
 
@@ -68,27 +74,22 @@ namespace Mono.Debugger.Backends
 			reader.ReadInteger ();
 
 			main_function = reader.ReadGlobalAddress ();
+			notification_address = reader.ReadGlobalAddress ();
 
 			command_tid = reader.ReadInteger ();
-			debugger_tid = reader.ReadInteger ();
 			main_tid = reader.ReadInteger ();
 
 			main_thread = reader.ReadGlobalAddress ();
 			command_notification = reader.ReadGlobalAddress ();
 			mono_thread_notification = reader.ReadGlobalAddress ();
-
-			thread_manager_notify_command = reader.ReadGlobalAddress ();
-			thread_manager_notify_tid = reader.ReadGlobalAddress ();
 		}
 
 		int command_tid;
-		int debugger_tid;
 		int main_tid;
 		SingleSteppingEngine manager_sse;
 		SingleSteppingEngine command_sse;
-		SingleSteppingEngine debugger_sse;
 		SingleSteppingEngine main_sse;
-		DaemonThreadHandler debugger_handler;
+		ILanguageBackend csharp_language;
 		bool initialized;
 
 		bool is_nptl;
@@ -116,24 +117,16 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed command sse: {0}",
 					      sse);
+				csharp_language = thread_manager.DebuggerBackend.CreateDebuggerHandler (command_sse.Process);
 				sse.DaemonEventHandler = new DaemonEventHandler (command_handler);
 				return false;
 			} else if (thread_hash.Count == first_index+1) {
-				debugger_sse = sse;
-				debugger_sse.IsDaemon = true;
-				Report.Debug (DebugFlags.Threads,
-					      "Created managed debugger sse: {0}",
-					      sse);
-				debugger_handler = thread_manager.DebuggerBackend.CreateDebuggerHandler (command_sse.Process);
-				new DaemonThreadRunner (sse, inferior, debugger_handler);
-				return false;
-			} else if (thread_hash.Count == first_index+2) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed main sse: {0}",
 					      sse);
 				main_sse = sse;
 				return true;
-			} else if (thread_hash.Count > first_index+2) {
+			} else if (thread_hash.Count > first_index+1) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed thread: {0}", sse);
 				sse.DaemonEventHandler = new DaemonEventHandler (managed_handler);
@@ -148,6 +141,11 @@ namespace Mono.Debugger.Backends
 				      TargetEventArgs args)
 		{
 			return false;
+		}
+
+		bool main_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
+		{
+			return true;
 		}
 
 		bool managed_handler (SingleSteppingEngine sse, Inferior inferior,
@@ -182,32 +180,46 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool main_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
+		internal bool HandleChildEvent (Inferior inferior, Inferior.ChildEvent cevent)
 		{
-			if (!initialized) {
-				do_initialize (runner.Inferior);
-				initialized = true;
+			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) {
+				NotificationType type = (NotificationType) cevent.Argument;
+
+				switch (type) {
+				case NotificationType.AcquireGlobalThreadLock: {
+					int tid = (int) cevent.Data2;
+					ThreadData thread = (ThreadData) thread_hash [tid];
+					thread_manager.AcquireGlobalThreadLock (thread.Engine);
+					break;
+				}
+
+				case NotificationType.ReleaseGlobalThreadLock: {
+					int tid = (int) cevent.Data2;
+					ThreadData thread = (ThreadData) thread_hash [tid];
+					thread_manager.ReleaseGlobalThreadLock (thread.Engine);
+					break;
+				}
+
+				case NotificationType.InitializeThreadManager:
+					do_initialize (inferior);
+					initialized = true;
+					break;
+
+				default: {
+					TargetAddress data = new TargetAddress (
+						inferior.GlobalAddressDomain, cevent.Data1);
+
+					csharp_language.Notification (
+						inferior, type, data, cevent.Data2);
+					break;
+				}
+				}
+
+				inferior.Continue ();
+				return true;
 			}
 
-			if ((address != mono_thread_notification) || (signal != 0))
-				return false;
-
-			int command = runner.Inferior.ReadInteger (thread_manager_notify_command);
-			int tid = runner.Inferior.ReadInteger (thread_manager_notify_tid);
-
-			ThreadData thread = (ThreadData) thread_hash [tid];
-
-			switch ((ThreadManagerCommand) command) {
-			case ThreadManagerCommand.AcquireGlobalLock:
-				thread_manager.AcquireGlobalThreadLock (thread.Engine);
-				break;
-
-			case ThreadManagerCommand.ReleaseGlobalLock:
-				thread_manager.ReleaseGlobalThreadLock (thread.Engine);
-				break;
-			}
-
-			return true;
+			return false;
 		}
 
 		protected class ThreadData {

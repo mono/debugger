@@ -170,12 +170,12 @@ namespace Mono.Debugger
 			symtab_manager.Wait ();
 		}
 
-		internal DaemonThreadHandler CreateDebuggerHandler (Process command_process)
+		internal ILanguageBackend CreateDebuggerHandler (Process command_process)
 		{
 			csharp_language = new MonoCSharpLanguageBackend (this, command_process);
 			languages.Add (csharp_language);
 
-			return new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
+			return csharp_language;
 		}
 
 		public SourceLocation FindLocation (string file, int line)

@@ -296,7 +296,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 38;
+		public const int  DynamicVersion = 39;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -710,7 +710,6 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoDebuggerInfo
 	{
 		public readonly TargetAddress GenericTrampolineCode;
-		public readonly TargetAddress NotificationCode;
 		public readonly TargetAddress SymbolTable;
 		public readonly int SymbolTableSize;
 		public readonly TargetAddress CompileMethod;
@@ -720,8 +719,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
 		public readonly TargetAddress LookupType;
-		public readonly TargetAddress EventData;
-		public readonly TargetAddress EventArg;
 		public readonly TargetAddress Heap;
 		public readonly int HeapSize;
 
@@ -730,7 +727,6 @@ namespace Mono.Debugger.Languages.CSharp
 			reader.Offset = reader.TargetLongIntegerSize +
 				2 * reader.TargetIntegerSize;
 			GenericTrampolineCode = reader.ReadAddress ();
-			NotificationCode = reader.ReadAddress ();
 			SymbolTable = reader.ReadAddress ();
 			SymbolTableSize = reader.ReadInteger ();
 			CompileMethod = reader.ReadAddress ();
@@ -740,8 +736,6 @@ namespace Mono.Debugger.Languages.CSharp
 			CreateString = reader.ReadAddress ();
 			ClassGetStaticFieldData = reader.ReadAddress ();
 			LookupType = reader.ReadAddress ();
-			EventData = reader.ReadAddress ();
-			EventArg = reader.ReadAddress ();
 			Heap = reader.ReadAddress ();
 			HeapSize = reader.ReadInteger ();
 			Report.Debug (DebugFlags.JitSymtab, this);
@@ -750,10 +744,10 @@ namespace Mono.Debugger.Languages.CSharp
 		public override string ToString ()
 		{
 			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x})",
-				GenericTrampolineCode, NotificationCode,
-				SymbolTable, SymbolTableSize, CompileMethod,
-				InsertBreakpoint, RemoveBreakpoint, RuntimeInvoke);
+				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x})",
+				GenericTrampolineCode, SymbolTable, SymbolTableSize,
+				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
+				RuntimeInvoke);
 		}
 	}
 
@@ -1562,9 +1556,7 @@ namespace Mono.Debugger.Languages.CSharp
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		TargetAddress trampoline_address;
-		TargetAddress notification_address;
 		bool initialized;
-		ManualResetEvent reload_event;
 		Mutex mutex;
 		protected MonoSymbolTable table;
 		Heap heap;
@@ -1573,9 +1565,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			this.backend = backend;
 			this.process = process;
-
-			breakpoints = new Hashtable ();
-			reload_event = new ManualResetEvent (false);
 
 			mutex = new Mutex ();
 
@@ -1640,8 +1629,6 @@ namespace Mono.Debugger.Languages.CSharp
 			info = new MonoDebuggerInfo (table);
 
 			trampoline_address = memory.ReadGlobalAddress (info.GenericTrampolineCode);
-			notification_address = memory.ReadGlobalAddress (info.NotificationCode);
-
 			heap = new Heap ((ITargetInfo) memory, info.Heap, info.HeapSize);
 		}
 
@@ -1759,43 +1746,44 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			int offset;
 			mutex.WaitOne ();
-			reload_event.Reset ();
 			offset = (int) frame.CallMethod (info.LookupType, name).Address;
-			reload_event.WaitOne ();
 			mutex.ReleaseMutex ();
 			return offset;
 		}
 
-		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)
+		public void Notification (Inferior inferior, NotificationType type,
+					  TargetAddress data, long arg)
 		{
-			if (!initialized) {
-				read_mono_debugger_info (runner.Inferior, runner.Inferior.Bfd);
-				initialized = true;
+			switch (type) {
+			case NotificationType.InitializeManagedCode:
+				read_mono_debugger_info (inferior, inferior.Bfd);
+				do_update_symbol_table (inferior, true);
+				break;
+
+			case NotificationType.ReloadSymtabs:
+				do_update_symbol_table (inferior, true);
+				break;
+
+			case NotificationType.JitBreakpoint:
+				if (!breakpoints.Contains ((int) arg))
+					break;
+
+				do_update_symbol_table (inferior, false);
+
+				MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [(int) arg];
+				handle.Handler (inferior, data, handle.UserData);
+				breakpoints.Remove (arg);
+				break;
+
+			case NotificationType.MethodCompiled:
+				do_update_symbol_table (inferior, false);
+				break;
+
+			default:
+				Console.WriteLine ("Received unknown notification {0:x}",
+						   (int) type);
+				break;
 			}
-
-			if ((signal != 0) || (address != notification_address))
-				return false;
-
-			lock (this) {
-				TargetAddress data = runner.Inferior.ReadAddress (info.EventData);
-				int arg = runner.Inferior.ReadInteger (info.EventArg);
-
-				do_update_symbol_table (runner.Inferior, false);
-
-				if (arg != 0) {
-					if (!breakpoints.Contains (arg))
-						goto done;
-
-					MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [arg];
-					handle.Handler (runner.Inferior, data, handle.UserData);
-					breakpoints.Remove (arg);
-					goto done;
-				}
-			done:
-				reload_event.Set ();
-			}
-
-			return true;
 		}
 	}
 }

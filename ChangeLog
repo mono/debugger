@@ -1,5 +1,30 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	Rewrote and simplified the notification code.
+
+	* backends/Inferior.cs (Inferior.ChildEventType): Added
+	`CHILD_NOTIFICATION'.  This is a special event which'll be
+	returned when the runtime/JIT wants to send us a notification.
+
+	* backends/MonoThreadManager (HandleChildEvent): We're now getting
+	all events from the ThreadManager and handle notifications here.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoCSharpLanguageBackend.DaemonThreadHandler): Removed.
+	(MonoCSharpLanguageBackend.Notification): New public method.
+	Handle notifications here.
+
+	* backends/server/server.h
+	(mono_debugger_server_set_notification): New global function to
+	tell the backend about our notification address.  Whenever a
+	breakpoint at that address is hit, it's now sending a
+	MESSAGE_CHILD_NOTIFICATION.
+
+	* wrapper/wrapper.c: Majorly cleaned this up; use the new
+	notification system.	
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
 	(MonoSymbolFile.GetMethod_internal): Use the full method signature
 	as method name.

@@ -34,6 +34,8 @@ typedef struct
 	guint64 callback_argument;
 } RuntimeInvokeData;
 
+static guint32 notification_address;
+
 ArchInfo *
 i386_arch_initialize (void)
 {
@@ -51,6 +53,12 @@ i386_arch_finalize (ArchInfo *arch)
 	g_free (arch->saved_regs);
      	g_free (arch->saved_fpregs);
 	g_free (arch);
+}
+
+static void
+server_ptrace_set_notification (guint64 addr)
+{
+	notification_address = (guint32) addr;
 }
 
 static ServerCommandError
@@ -329,6 +337,20 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 	RuntimeInvokeData *rdata;
 
 	i386_arch_get_registers (handle);
+
+	if (INFERIOR_REG_EIP (arch->current_regs) == notification_address) {
+		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
+		guint32 data [3];
+
+		if (server_ptrace_read_memory (handle, addr, 12, &data))
+			return STOP_ACTION_SEND_STOPPED;
+
+		*callback_arg = data [0];
+		*retval = data [1];
+		*retval2 = data [2];
+
+		return STOP_ACTION_NOTIFICATION;
+	}
 
 	if (check_breakpoint (handle, INFERIOR_REG_EIP (arch->current_regs) - 1, retval)) {
 		INFERIOR_REG_EIP (arch->current_regs)--;

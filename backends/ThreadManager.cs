@@ -293,6 +293,9 @@ namespace Mono.Debugger
 				return true;
 			}
 
+			if (mono_manager != null)
+				return mono_manager.HandleChildEvent (inferior, cevent);
+
 			return false;
 		}
 

@@ -20,7 +20,6 @@ struct _MonoDebuggerInfo {
 	guint32 version;
 	guint32 total_size;
 	guint8 **generic_trampoline_code;
-	gconstpointer notification_address;
 	MonoDebuggerSymbolTable **symbol_table;
 	guint32 symbol_table_size;
 	guint64 (*compile_method) (MonoMethod *method);
@@ -30,8 +29,6 @@ struct _MonoDebuggerInfo {
 	guint64 (*create_string) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*class_get_static_field_data) (guint64 klass);
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
-	gpointer *event_data;
-	guint32 *event_arg;
 	gpointer heap;
 	guint32 heap_size;
 };
@@ -50,19 +47,27 @@ struct _MonoDebuggerThread {
 struct _MonoDebuggerManager {
 	guint32 size;
 	gpointer main_function;
+	gpointer notification_address;
 	guint32 command_tid;
-	guint32 debugger_tid;
 	guint32 main_tid;
 	MonoDebuggerThread *main_thread;
 	gpointer command_notification;
 	gpointer thread_manager_notification;
-	guint32 *thread_manager_command;
-	guint32 *thread_manager_tid;
 };
 
 enum {
 	THREAD_MANAGER_ACQUIRE_GLOBAL_LOCK = 1,
 	THREAD_MANAGER_RELEASE_GLOBAL_LOCK
+};
+
+enum {
+	NOTIFICATION_INITIALIZE_MANAGED_CODE	= 1,
+	NOTIFICATION_RELOAD_SYMTABS,
+	NOTIFICATION_METHOD_COMPILED,
+	NOTIFICATION_JIT_BREAKPOINT,
+	NOTIFICATION_INITIALIZE_THREAD_MANAGER,
+	NOTIFICATION_ACQUIRE_GLOBAL_THREAD_LOCK,
+	NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK
 };
 
 #define IO_LAYER(func) (* mono_debugger_io_layer.func)
@@ -83,11 +88,8 @@ void mono_debugger_init_icalls (void);
 void MONO_DEBUGGER__start_main (void);
 
 extern MonoDebuggerManager MONO_DEBUGGER__manager;
-extern int mono_debugger_thread_manager_notify_command;
-extern int mono_debugger_thread_manager_notify_tid;
-extern gpointer mono_debugger_thread_manager_notify_data;
 
-extern void (*mono_debugger_thread_manager_notification_function) (gpointer func);
+extern void (*mono_debugger_notification_function) (int command, gpointer data, guint32 data2);
 
 G_END_DECLS
 

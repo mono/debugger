@@ -221,6 +221,12 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			*data1 = retval;
 			*data2 = retval2;
 			return MESSAGE_CHILD_CALLBACK;
+
+		case STOP_ACTION_NOTIFICATION:
+			*arg = callback_arg;
+			*data1 = retval;
+			*data2 = retval2;
+			return MESSAGE_CHILD_NOTIFICATION;
 		}
 
 		g_assert_not_reached ();
@@ -415,5 +421,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_stop,
 	server_ptrace_set_signal,
 	server_ptrace_kill,
-	server_ptrace_get_signal_info
+	server_ptrace_get_signal_info,
+	server_ptrace_set_notification
 };

@@ -941,6 +941,10 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
+		void ILanguageBackend.Notification (Inferior inferior, NotificationType type,
+						    TargetAddress data, long arg)
+		{ }
+
 		public TargetAddress GetTrampoline (TargetAddress address)
 		{
 			if (!has_got || (address < plt_start) || (address > plt_end))

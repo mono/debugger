@@ -159,7 +159,8 @@ namespace Mono.Debugger.Backends
 			CHILD_CALLBACK,
 			CHILD_HIT_BREAKPOINT,
 			CHILD_MEMORY_CHANGED,
-			CHILD_CREATED_THREAD
+			CHILD_CREATED_THREAD,
+			CHILD_NOTIFICATION
 		}
 
 		internal delegate void ChildEventHandler (ChildEventType message, int arg);

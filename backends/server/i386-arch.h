@@ -35,7 +35,8 @@ typedef struct {
 typedef enum {
 	STOP_ACTION_SEND_STOPPED,
 	STOP_ACTION_BREAKPOINT_HIT,
-	STOP_ACTION_CALLBACK
+	STOP_ACTION_CALLBACK,
+	STOP_ACTION_NOTIFICATION
 } ChildStoppedAction;
 
 static ArchInfo *

@@ -338,6 +338,13 @@ mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 
 }
 
+void
+mono_debugger_server_set_notification (guint64 notification)
+{
+	if (global_vtable->set_notification)
+		return (* global_vtable->set_notification) (notification);
+}
+
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;
 static int pending_sigint = 0;

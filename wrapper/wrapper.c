@@ -9,24 +9,15 @@
 #include <unistd.h>
 #include <locale.h>
 
-static sem_t debugger_thread_cond;
-static sem_t debugger_started_cond;
 static sem_t main_started_cond;
 static sem_t command_started_cond;
 static sem_t command_ready_cond;
 static sem_t main_ready_cond;
 
-static sem_t debugger_finished_cond;
-
-static gboolean debugger_signalled = FALSE;
-static gboolean must_send_finished = FALSE;
-
 #define HEAP_SIZE 1048576
 static char mono_debugger_heap [HEAP_SIZE];
 
 static MonoMethod *debugger_main_method;
-static gpointer debugger_event_data;
-static guint32 debugger_event_arg;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -35,9 +26,8 @@ static guint64 debugger_create_string (guint64 dummy_argument, const gchar *stri
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
 
-static gpointer debugger_notification_address;
-static void (*debugger_notification_function) (void);
 static void (*command_notification_function) (void);
+void (*mono_debugger_notification_function) (int command, gpointer data, guint32 data2);
 
 /*
  * This is a global data symbol which is read by the debugger.
@@ -47,7 +37,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_VERSION,
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
-	&debugger_notification_address,
 	&mono_debugger_symbol_table,
 	sizeof (MonoDebuggerSymbolTable),
 	&debugger_compile_method,
@@ -57,40 +46,19 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_create_string,
 	&debugger_class_get_static_field_data,
 	&debugger_lookup_type,
-	&debugger_event_data,
-	&debugger_event_arg,
 	mono_debugger_heap,
 	HEAP_SIZE
 };
 
 MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
-	NULL, 0, 0, 0, NULL, NULL, NULL,
-	&mono_debugger_thread_manager_notify_command,
-	&mono_debugger_thread_manager_notify_tid
+	NULL, NULL, 0, 0, NULL, NULL, NULL
 };
 
 void
 mono_debugger_wait_cond (sem_t *cond)
 {
 	sem_wait (cond);
-}
-
-static void
-mono_debugger_wait (void)
-{
-	mono_debugger_wait_cond (&debugger_finished_cond);
-}
-
-static void
-mono_debugger_signal (void)
-{
-	mono_debugger_lock ();
-	if (!debugger_signalled) {
-		debugger_signalled = TRUE;
-		sem_post (&debugger_thread_cond);
-	}
-	mono_debugger_unlock ();
 }
 
 static guint64
@@ -102,7 +70,7 @@ debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argumen
 	if (!desc)
 		return 0;
 
-	return mono_debugger_insert_breakpoint_full (desc);
+	return (guint64) mono_debugger_insert_breakpoint_full (desc);
 }
 
 static guint64
@@ -117,12 +85,10 @@ debugger_compile_method (MonoMethod *method)
 	gpointer retval;
 
 	mono_debugger_lock ();
-	must_send_finished = TRUE;
 	retval = mono_compile_method (method);
-	mono_debugger_signal ();
 	mono_debugger_unlock ();
 
-	mono_debugger_wait ();
+	mono_debugger_notification_function (NOTIFICATION_METHOD_COMPILED, retval, 0);
 
 	return GPOINTER_TO_UINT (retval);
 }
@@ -140,15 +106,15 @@ debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
 
 	mono_debugger_lock ();
 	retval = mono_debugger_lookup_type (string_argument);
-	mono_debugger_signal ();
 	mono_debugger_unlock ();
 	return retval;
 }
 
 static guint64
-debugger_class_get_static_field_data (guint64 klass)
+debugger_class_get_static_field_data (guint64 value)
 {
-	MonoVTable *vtable = mono_class_vtable (mono_domain_get (), GINT_TO_POINTER (klass));
+	MonoClass *klass = GUINT_TO_POINTER ((guint32) value);
+	MonoVTable *vtable = mono_class_vtable (mono_domain_get (), klass);
 	return GPOINTER_TO_UINT (vtable->data);
 }
 
@@ -156,24 +122,13 @@ static void
 debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 {
 	switch (event) {
-	case MONO_DEBUGGER_EVENT_TYPE_ADDED:
-	case MONO_DEBUGGER_EVENT_METHOD_ADDED:
-		mono_debugger_signal ();
+	case MONO_DEBUGGER_EVENT_RELOAD_SYMTABS:
+		mono_debugger_notification_function (NOTIFICATION_RELOAD_SYMTABS, NULL, 0);
 		break;
 
 	case MONO_DEBUGGER_EVENT_BREAKPOINT:
-		mono_debugger_lock ();
-		must_send_finished = TRUE;
-		debugger_event_data = data;
-		debugger_event_arg = arg;
-		mono_debugger_signal ();
-		mono_debugger_unlock ();
-
-		mono_debugger_wait ();
+		mono_debugger_notification_function (NOTIFICATION_JIT_BREAKPOINT, data, arg);
 		break;
-
-	default:
-		g_assert_not_reached ();
 	}
 }
 
@@ -187,19 +142,15 @@ static MonoThreadCallbacks thread_callbacks = {
 static void
 initialize_debugger_support (void)
 {
-	sem_init (&debugger_thread_cond, 0, 0);
-	sem_init (&debugger_started_cond, 0, 0);
 	sem_init (&main_started_cond, 0, 0);
 	sem_init (&command_started_cond, 0, 0);
 	sem_init (&command_ready_cond, 0, 0);
 	sem_init (&main_ready_cond, 0, 0);
 
-	sem_init (&debugger_finished_cond, 0, 0);
-
-	debugger_notification_function = mono_debugger_create_notification_function
-		(&debugger_notification_address);
 	command_notification_function = mono_debugger_create_notification_function
 		(&MONO_DEBUGGER__manager.command_notification);
+	mono_debugger_notification_function = mono_debugger_create_notification_function
+		(&MONO_DEBUGGER__manager.notification_address);
 }
 
 typedef struct 
@@ -215,70 +166,6 @@ typedef struct
 	int argc;
 	char **argv;
 } MainThreadArgs;
-
-static guint32
-debugger_thread_handler (gpointer user_data)
-{
-	DebuggerThreadArgs *debugger_args = (DebuggerThreadArgs *) user_data;
-	MonoAssembly *assembly;
-	MonoImage *image;
-
-	MONO_DEBUGGER__manager.debugger_tid = IO_LAYER (GetCurrentThreadId) ();
-	mono_debug_init (debugger_args->domain, MONO_DEBUG_FORMAT_DEBUGGER);
-
-	assembly = mono_domain_assembly_open (debugger_args->domain, debugger_args->file);
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", debugger_args->file);
-		exit (1);
-	}
-
-	mono_debug_init_2 (assembly);
-
-	/*
-	 * Get and compile the main function.
-	 */
-
-	image = assembly->image;
-	debugger_main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
-	MONO_DEBUGGER__manager.main_function = mono_compile_method (debugger_main_method);
-
-	/*
-	 * Signal the main thread that we're ready.
-	 */
-	sem_post (&debugger_started_cond);
-
-	/*
-	 * This mutex is locked by the parent thread until the debugger actually
-	 * attached to us, so we don't need a SIGSTOP here anymore.
-	 */
-	mono_debugger_lock ();
-
-	while (TRUE) {
-		/* Wait for an event. */
-		mono_debugger_unlock ();
-		mono_debugger_wait_cond (&debugger_thread_cond);
-		mono_debugger_lock ();
-
-		/*
-		 * Send notification - we'll stop on a breakpoint instruction at a special
-		 * address.  The debugger will reload the symbol tables while we're stopped -
-		 * and owning the `debugger_thread_mutex' so that no other thread can touch
-		 * them in the meantime.
-		 */
-		debugger_notification_function ();
-
-		debugger_signalled = FALSE;
-		debugger_event_data = NULL;
-		debugger_event_arg = 0;
-
-		if (must_send_finished) {
-			sem_post (&debugger_finished_cond);
-			must_send_finished = FALSE;
-		}
-	}
-
-	return 0;
-}
 
 static guint32
 main_thread_handler (gpointer user_data)
@@ -319,7 +206,7 @@ command_thread_handler (gpointer user_data)
 	/*
 	 * This call will never return.
 	 */
-	debugger_notification_function ();
+	command_notification_function ();
 
 	return 0;
 }
@@ -330,11 +217,10 @@ MONO_DEBUGGER__start_main (void)
 	/*
 	 * Reload symbol tables.
 	 */
-	must_send_finished = TRUE;
-	mono_debugger_signal ();
-	mono_debugger_unlock ();
+	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, NULL, 0);
+	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, NULL, 0);
 
-	mono_debugger_wait ();
+	mono_debugger_unlock ();
 
 	/*
 	 * Signal the main thread that it can execute the managed Main().
@@ -342,7 +228,7 @@ MONO_DEBUGGER__start_main (void)
 	sem_post (&main_ready_cond);
 	sem_post (&command_ready_cond);
 
-	mono_debugger_thread_manager_main ();
+	// mono_debugger_thread_manager_main ();
 
 	mono_thread_manage ();
 }
@@ -350,8 +236,8 @@ MONO_DEBUGGER__start_main (void)
 int
 mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp)
 {
-	DebuggerThreadArgs debugger_args;
 	MainThreadArgs main_args;
+	MonoAssembly *assembly;
 
 	initialize_debugger_support ();
 
@@ -366,11 +252,23 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * Start the debugger thread and wait until it's ready.
 	 */
-	debugger_args.domain = domain;
-	debugger_args.file = file;
+	mono_debug_init (domain, MONO_DEBUG_FORMAT_DEBUGGER);
 
-	mono_thread_create (domain, debugger_thread_handler, &debugger_args);
-	mono_debugger_wait_cond (&debugger_started_cond);
+	assembly = mono_domain_assembly_open (domain, file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", file);
+		exit (1);
+	}
+
+	mono_debug_init_2 (assembly);
+
+	/*
+	 * Get and compile the main function.
+	 */
+
+	debugger_main_method = mono_get_method (
+		assembly->image, mono_image_get_entry_point (assembly->image), NULL);
+	MONO_DEBUGGER__manager.main_function = mono_compile_method (debugger_main_method);
 
 	/*
 	 * Start the main thread and wait until it's ready.

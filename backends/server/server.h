@@ -33,7 +33,8 @@ typedef enum {
 	MESSAGE_CHILD_CALLBACK,
 	MESSAGE_CHILD_HIT_BREAKPOINT,
 	MESSAGE_CHILD_MEMORY_CHANGED,
-	MESSAGE_CHILD_CREATED_THREAD
+	MESSAGE_CHILD_CREATED_THREAD,
+	MESSAGE_CHILD_NOTIFICATION
 } ServerStatusMessageType;
 
 typedef struct {
@@ -307,6 +308,8 @@ struct InferiorVTable {
 
 	ServerCommandError    (* get_signal_info)     (ServerHandle     *handle,
 						       SignalInfo       *sinfo);
+
+	void                  (* set_notification)    (guint64           notification);
 };
 
 /*
@@ -480,6 +483,9 @@ mono_debugger_server_kill                (ServerHandle        *handle);
 ServerCommandError
 mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo          *sinfo);
+
+void
+mono_debugger_server_set_notification    (guint64              notification);
 
 
 /* POSIX semaphores */
