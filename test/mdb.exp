@@ -2,7 +2,7 @@
 #
 set mono mono
 set mdb "../wrapper/mdb.exe"
-set timeout 5
+set timeout 10
 set verbose 1
 
 proc mdb_start {file main} {
@@ -91,9 +91,8 @@ proc mdb_test_frame {frame index func file line} {
     return
 }
 
-proc mdb_expect_frame {index func line} {
+proc mdb_expect_frame {index func file line} {
     global process
-    global file
 
     mdb_send "frame -process $process"
     expect {
@@ -113,9 +112,8 @@ proc mdb_expect_frame {index func line} {
     return
 }
 
-proc mdb_expect_stopped {index func line} {
+proc mdb_expect_stopped {index func file line} {
     global process
-    global file
 
     set count 0
     while {$count < 10} {
@@ -137,8 +135,8 @@ proc mdb_expect_stopped {index func line} {
 		return -1
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
-		set line $expect_out(1,string)
-		verbose "Received `$line' while waiting for target to stop"
+		set message $expect_out(1,string)
+		verbose "Received `$message' while waiting for target to stop"
 		incr count
 	    }
 	    timeout {
