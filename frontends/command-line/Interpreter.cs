@@ -165,6 +165,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("PARAM: {0}", var);
 
+					print_type (var.Type);
+
 					if (!var.Type.HasObject)
 						continue;
 
@@ -178,6 +180,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				IVariable[] vars = backend.CurrentMethod.Locals;
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("LOCAL: {0}", var);
+
+					print_type (var.Type);
 
 					if (!var.Type.HasObject)
 						continue;
@@ -274,6 +278,44 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		void print_pointer (ITargetPointerObject tpointer)
+		{
+			if (tpointer.Type.IsTypesafe && !tpointer.Type.HasStaticType)
+				Console.WriteLine ("CURRENTLY POINTS TO: {0}", tpointer.CurrentType);
+
+			if (tpointer.CurrentType.HasObject)
+				Console.WriteLine ("DEREFERENCED: {0}", tpointer.Object);
+		}
+
+		void print_type (ITargetType type)
+		{
+			ITargetArrayType array = type as ITargetArrayType;
+			Console.WriteLine ("TYPE: {0}", type);
+			if (array != null) {
+				Console.WriteLine ("  IS AN ARRAY OF {0}.", array.ElementType);
+				return;
+			}
+
+			ITargetClassType tclass = type as ITargetClassType;
+			if ((tclass != null) && tclass.HasParent)
+				Console.WriteLine ("  INHERITS FROM {0}.", tclass.ParentType);
+
+			ITargetStructType tstruct = type as ITargetStructType;
+			if (tstruct != null) {
+				foreach (ITargetFieldInfo field in tstruct.Fields)
+					Console.WriteLine ("  HAS FIELD: {0}", field);
+				return;
+			}
+
+			ITargetPointerType tpointer = type as ITargetPointerType;
+			if (tpointer != null) {
+				Console.WriteLine ("  IS A {0}TYPE-SAFE POINTER.", tpointer.IsTypesafe ?
+						   "" : "NON-");
+				if (tpointer.HasStaticType)
+					Console.WriteLine ("  POINTS TO {0}.", tpointer.StaticType);
+			}
+		}
+
 		void print_object (ITargetObject obj)
 		{
 			Console.WriteLine ("OBJECT: {0} [{1}]", obj,
@@ -301,6 +343,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ITargetStructObject tstruct = obj as ITargetStructObject;
 			if (tstruct != null) {
 				print_struct (tstruct);
+				return;
+			}
+
+			ITargetPointerObject tpointer = obj as ITargetPointerObject;
+			if (tpointer != null) {
+				print_pointer (tpointer);
 				return;
 			}
 		}
