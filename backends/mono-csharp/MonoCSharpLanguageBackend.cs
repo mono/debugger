@@ -932,7 +932,7 @@ namespace Mono.Debugger.Languages.CSharp
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
 
-			Assembly = R.Assembly.LoadFrom (ImageFile);
+			Assembly = R.Assembly.Load (ImageFile);
 
 			table.AddImage (this);
 
