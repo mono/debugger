@@ -1654,6 +1654,9 @@ namespace Mono.Debugger.Backends
 		CommandResult reached_main_func (object data)
 		{
 			main_method_retaddr = inferior.GetReturnAddress ();
+			frames_invalid ();
+			current_method = null;
+			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
