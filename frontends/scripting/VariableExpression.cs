@@ -497,18 +497,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ArrayAccessExpression : VariableExpression
 	{
-		VariableExpression var_expr;
-		Expression index;
+		Expression expr, index;
 
-		public ArrayAccessExpression (VariableExpression var_expr, Expression index)
+		public ArrayAccessExpression (Expression expr, Expression index)
 		{
-			this.var_expr = var_expr;
+			this.expr = expr;
 			this.index = index;
 		}
 
 		public override string Name {
 			get {
-				return String.Format ("{0}[{1}]", var_expr.Name, index);
+				return String.Format ("{0}[{1}]", expr.Name, index);
 			}
 		}
 
@@ -516,10 +515,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			int i;
 
-			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
+			ITargetArrayObject obj = expr.ResolveVariable (context) as ITargetArrayObject;
 			if (obj == null)
 				throw new ScriptingException (
-					"Variable {0} is not an array type.", var_expr.Name);
+					"Variable {0} is not an array type.", expr.Name);
 			try {
 				i = (int) this.index.Resolve (context);
 			} catch (Exception e) {
@@ -530,7 +529,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if ((i < obj.LowerBound) || (i >= obj.UpperBound))
 				throw new ScriptingException (
 					"Index {0} of array expression {1} out of bounds " +
-					"(must be between {2} and {3}).", i, var_expr.Name,
+					"(must be between {2} and {3}).", i, expr.Name,
 					obj.LowerBound, obj.UpperBound - 1);
 
 			return obj [i];
@@ -538,10 +537,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ITargetArrayType type = var_expr.ResolveType (context) as ITargetArrayType;
+			ITargetArrayType type = expr.ResolveType (context) as ITargetArrayType;
 			if (type == null)
 				throw new ScriptingException ("Variable {0} is not an array type.",
-							      var_expr.Name);
+							      expr.Name);
 
 			return type.ElementType;
 		}

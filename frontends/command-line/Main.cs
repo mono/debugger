@@ -76,9 +76,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string ReadInput ()
 		{
 			++line;
-			if (readline != null)
-				return readline.ReadLine (prompt);
-			else
+			if (readline != null) {
+				string result = readline.ReadLine (prompt);
+				if ((result != null) && (result != ""))
+					readline.AddHistory (result);
+				return result;
+			} else
 				return Console.ReadLine ();
 		}
 

@@ -103,6 +103,10 @@ expression
 	  {
 		$$ = new VariableDereferenceExpression ((Expression) $2);
 	  }
+	| expression OPEN_BRACKET expression CLOSE_BRACKET
+	  {
+		$$ = new ArrayAccessExpression ((Expression) $1, (Expression) $3);
+	  }
 	;
 
 variable_or_type_name
