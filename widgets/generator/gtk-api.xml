@@ -307,14 +307,6 @@
           <parameter type="GtkSourceBuffer*" name="buffer"/>
         </parameters>
       </constructor>
-      <method name="RemoveAllMarkers" cname="gtk_source_view_remove_all_markers" shared="true">
-        <return-type type="gint"/>
-        <parameters>
-          <parameter type="GtkSourceBuffer*" name="buffer"/>
-          <parameter type="gint" name="line_start"/>
-          <parameter type="gint" name="line_end"/>
-        </parameters>
-      </method>
       <method name="SetShowLineNumbers" cname="gtk_source_view_set_show_line_numbers">
         <return-type type="void"/>
         <parameters>

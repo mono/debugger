@@ -1,0 +1,6 @@
+2002-10-05  Martin Baulig  <martin@gnome.org>
+
+	* generator/gtk-api.xml (gtk_source_view_remove_all_markers):
+	Removed this for the moment, it exists in the header file, but
+	there is no implementation.
+
