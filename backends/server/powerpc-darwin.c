@@ -120,6 +120,10 @@ powerpc_spawn (ServerHandle *handle, const gchar *working_directory,
 	if (*child_pid == 0) {
 		gchar *error_message;
 
+		close (0);
+		close (1);
+		dup2 (2, 1);
+
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 3; i < open_max; i++)
 			fcntl (i, F_SETFD, FD_CLOEXEC);
