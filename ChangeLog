@@ -1,5 +1,10 @@
 2003-07-05  Martin Baulig  <martin@ximian.com>
 
+	* arch/bfd/elf32-target.h, peigen.c, targmatch.h: Include these
+	generated files in CVS and don't rebuild them.
+
+2003-07-05  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IProcess.cs (GetBacktrace): Added overloaded version
 	which takes an `int max_frames' argument.
 

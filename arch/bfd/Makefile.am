@@ -27,14 +27,6 @@ libbfd_la_SOURCES = $(BFD_BACKEND) $(SOURCE_FILES)
 libbfd_la_LDFLAGS = -export-dynamic
 libbfd_la_LIBADD = ../libiberty/libiberty.la
 
-# This file holds an array associating configuration triplets and
-# vector names.  It is built from config.bfd.  It is not compiled by
-# itself, but is included by targets.c.
-targmatch.h: config.bfd targmatch.sed
-	rm -f targmatch.h
-	sed -f $(srcdir)/targmatch.sed < $(srcdir)/config.bfd > targmatch.new
-	mv -f targmatch.new targmatch.h
-
 # When compiling archures.c and targets.c, supply the default target
 # info from configure.
 
@@ -44,20 +36,4 @@ targets.lo: targets.c Makefile
 archures.lo: archures.c Makefile
 	$(LIBTOOL) --mode=compile $(COMPILE) -c $(TDEFAULTS) $(srcdir)/archures.c
 
-elf32-target.h : elfxx-target.h
-	rm -f elf32-target.h
-	sed -e s/NN/32/g < $(srcdir)/elfxx-target.h > elf32-target.new
-	mv -f elf32-target.new elf32-target.h
-
-peigen.c : peXXigen.c
-	rm -f peigen.c
-	sed -e s/XX/pe/g < $(srcdir)/peXXigen.c > peigen.new
-	mv -f peigen.new peigen.c
-
-pepigen.c : peXXigen.c
-	rm -f pepigen.c
-	sed -e s/XX/pep/g < $(srcdir)/peXXigen.c > pepigen.new
-	mv -f pepigen.new pepigen.c
-
-
-EXTRA_DIST = @srcdir@/*.h coff-i386.c peXXigen.c
+EXTRA_DIST = @srcdir@/*.h coff-i386.c peigen.c pepigen.c
