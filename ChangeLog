@@ -1,3 +1,38 @@
+2005-02-01  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolTable.Update): add comment about the C structure this
+	code reads.  Throw SymbolTableException instead of InternalError
+	when the size of the struct isn't as expected, to be more in line
+	with what we do when magic/version mismatches happen.
+	(MonoSymbolTable.read_type_table): add comment about the C
+	structure this code reads.
+	(MonoSymbolTable.read_misc_table): add comment about the C
+	structure this code reads.
+
+2005-01-31  Chris Toshok  <toshok@ximian.com>
+
+	* classes/ProcessStart.cs (DebuggerOptions.WorkingDirectory):
+	default to Environment.CurrentDirectory instead of ".", so we get
+	a full path when the user types "pwd".
+
+	* frontend/Command.cs (CdCommand): new class, implements a
+	gdb-like "cd" command.
+	(PwdCommand): new class, implements a gdb-like "pwd" command.
+	(FileCommand.Complete): use the filename completer.
+
+	* frontend/Main.cs (CommandLineInterpreter.SetupEngine): register
+	the "cd"/"pwd" commands.
+
+2005-01-27  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Completer.cs (StringsCompleter): simple completer to
+	match against a static set of strings.
+
+	* frontend/Command.cs (ShowCommand.Complete): complete against
+	subcommand types.
+	(ThreadGroupCommand.Complete): same.
+	
 2005-01-27  Chris Toshok  <toshok@ximian.com>
 
 	* classes/Report.cs (DebugFlags): add SourceFiles.

@@ -377,6 +377,9 @@ namespace Mono.Debugger.Languages.CSharp
 			backend.ModuleManager.AddModule (this);
 		}
 
+		// This method reads the MonoDebuggerSymbolTable
+		// structure (struct definition is in
+		// mono-debug-debugger.h)
 		internal void Update (ITargetMemoryAccess memory)
 		{
 			ITargetMemoryReader header = memory.ReadMemory (StartAddress, TotalSize);
@@ -384,23 +387,26 @@ namespace Mono.Debugger.Languages.CSharp
 			long magic = header.ReadLongInteger ();
 			if (magic != DynamicMagic)
 				throw new SymbolTableException (
-					"Dynamic section has unknown magic {0:x}.", magic);
+					"Debugger symbol table has unknown magic {0:x}.", magic);
 
 			int version = header.ReadInteger ();
 			if (version < MinDynamicVersion)
 				throw new SymbolTableException (
-					"Dynamic section has version {0}, but " +
+					"Debugger symbol table has version {0}, but " +
 					"expected at least {1}.", version,
 					MinDynamicVersion);
 			if (version > MaxDynamicVersion)
 				throw new SymbolTableException (
-					"Dynamic section has version {0}, but " +
+					"Debugger symbol table has version {0}, but " +
 					"expected at most {1}.", version,
 					MaxDynamicVersion);
 
 			int total_size = header.ReadInteger ();
 			if (total_size != TotalSize)
-				throw new InternalError ();
+				throw new SymbolTableException (
+					"Debugger symbol table has size {0}, but " +
+					"expected {1}.", total_size,
+					TotalSize);
 
 			TargetAddress corlib_address = header.ReadAddress ();
 			TargetAddress builtin_types_address = header.ReadAddress ();
@@ -449,6 +455,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		// This method reads a portion of the
+		// MonoDebuggerSymbolTable (defn in
+		// mono-debug-debugger.h)
 		void read_type_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
 		{
 			int num_type_tables = header.ReadInteger ();
@@ -506,6 +515,9 @@ namespace Mono.Debugger.Languages.CSharp
 			last_type_table_offset = offset;
 		}
 
+		// This method reads a portion of the
+		// MonoDebuggerSymbolTable (defn in
+		// mono-debug-debugger.h)
 		void read_misc_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
 		{
 			int num_misc_tables = header.ReadInteger ();
