@@ -589,6 +589,19 @@ i386_arch_get_frame (ServerHandle *handle, guint32 eip,
 	ServerCommandError result;
 	guint32 value;
 
+	if (eip == 0xffffe002) {
+		ebp = esp;
+
+		result = server_ptrace_peek_word (handle, esp, retaddr);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		*frame = ebp;
+		*stack = esp + 4;
+
+		return COMMAND_ERROR_NONE;
+	}
+
 	result = server_ptrace_peek_word (handle, eip, &value);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -692,12 +705,16 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 		stack = frame + 8;
 
 		result = server_ptrace_peek_word (handle, frame + 4, &address);
-		if (result != COMMAND_ERROR_NONE)
+		if (result != COMMAND_ERROR_NONE) {
+			result = COMMAND_ERROR_NONE;
 			goto out;
+		}
 
 		result = server_ptrace_peek_word (handle, frame, &frame);
-		if (result != COMMAND_ERROR_NONE)
+		if (result != COMMAND_ERROR_NONE) {
+			result = COMMAND_ERROR_NONE;
 			goto out;
+		}
 	}
 
 	goto out;

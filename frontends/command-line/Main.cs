@@ -128,6 +128,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("restart", typeof (RestartCommand));
 			e.Register ("about", typeof (AboutCommand));
 			e.Register ("start", typeof (StartCommand));
+			e.Register ("lookup", typeof (LookupCommand));
 
 			return e;
 		}

@@ -38,6 +38,11 @@ namespace Mono.Debugger
 
 		public TargetAddress GetCallTarget (ITargetMemoryAccess target, TargetAddress address, out int insn_size)
 		{
+			if (address.Address == 0xffffe002) {
+				insn_size = 0;
+				return TargetAddress.Null;
+			}
+
 			ITargetMemoryReader reader = target.ReadMemory (address, 6);
 
 			byte opcode = reader.ReadByte ();
