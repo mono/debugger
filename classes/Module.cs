@@ -181,15 +181,6 @@ namespace Mono.Debugger
 				BreakpointsChangedEvent (this);
 		}
 
-		// <remarks>
-		//   This is called from the SymbolTableManager's background thread when
-		//   the module is changed.  It creates a hash table which maps a method
-		//   name to a SourceMethod and a list of SourceMethod's which is
-		//   sorted by the method's start line.
-		// </remarks>
-		internal virtual void ReadModuleData ()
-		{ }
-
 		// <summary>
 		//   Returns a list of all source files in this method.
 		//   May only be used while @SymbolsLoaded is true.

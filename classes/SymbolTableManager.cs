@@ -240,20 +240,6 @@ namespace Mono.Debugger
 					OnSymbolTableChanged ();
 				}
 
-				// Ok, we're now done updating the symbol tables so we can update the
-				// module list.  This is a more CPU consuming operation so we're doing
-				// this last.
-
-				foreach (Module module in my_new_modules) {
-					module.ReadModuleData ();
-
-					// Reading the module data may be a very CPU consuming operation,
-					// so after reading each module, check whether another reload has
-					// been requested in the meantime.
-					if (reload_requested)
-						goto again;
-				}
-
 				lock (this) {
 					current_modules = new Module [my_new_modules.Count];
 					my_new_modules.CopyTo (current_modules, 0);
