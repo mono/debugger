@@ -56,7 +56,7 @@ namespace Mono.Debugger.GUI
 				try {
 					IStackFrame frame = backend.CurrentFrame;
 					Message (GetStopMessage (frame));
-				} catch (NoStackException e) {
+				} catch (NoStackException) {
 					Message ("Stopped.");
 				} catch (Exception e) {
 					Console.WriteLine (e);

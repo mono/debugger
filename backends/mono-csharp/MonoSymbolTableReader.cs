@@ -356,9 +356,9 @@ namespace Mono.Debugger.Languages.CSharp
 					reader = new MonoSymbolTableReader (memory, symtab_reader);
 					ranges.AddRange (reader.SymbolRanges);
 					symtabs.Add (reader);
-				} catch (SymbolTableEmptyException e) {
+				} catch (SymbolTableEmptyException) {
 					continue;
-				} catch (Exception e) {
+				} catch (Exception) {
 					throw new SymbolTableException ();
 				}
 			}

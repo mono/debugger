@@ -21,7 +21,7 @@ namespace Mono.Debugger.GUI
 				try {
 					IStackFrame frame = backend.CurrentFrame;
 					Message (String.Format ("Stopped at {0}.", frame));
-				} catch (NoStackException e) {
+				} catch (NoStackException) {
 					Message ("Stopped.");
 				} catch (Exception e) {
 					Console.WriteLine (e);
@@ -31,6 +31,7 @@ namespace Mono.Debugger.GUI
 
 			default:
 				base.StateChanged (new_state);
+				break;
 			}
 		}
 	}

@@ -6,7 +6,6 @@ using System.Threading;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
-using System.Threading;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Specialized;
@@ -251,8 +250,6 @@ namespace Mono.Debugger.Backends
 		{
 			this.envp = envp;
 			this.source_factory = factory;
-
-			IntPtr error;
 
 			bfd = new Bfd (argv [0], factory);
 
@@ -500,10 +497,10 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetLocation (ITargetMemoryAccess.ReadInteger (location));
+				return new TargetLocation (ReadInteger (location));
 
 			case 8:
-				return new TargetLocation (ITargetMemoryAccess.ReadLongInteger (location));
+				return new TargetLocation (ReadLongInteger (location));
 
 			default:
 				throw new TargetMemoryException (
@@ -614,9 +611,11 @@ namespace Mono.Debugger.Backends
 			switch (TargetAddressSize) {
 			case 4:
 				WriteInteger (location, (int) address.Address);
+				break;
 
 			case 8:
 				WriteLongInteger (location, address.Address);
+				break;
 
 			default:
 				throw new TargetMemoryException (

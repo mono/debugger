@@ -909,7 +909,7 @@ namespace Mono.Debugger.Architecture
 				{
 					engine.debug ("STANDARD OPCODE: {0:x}", opcode);
 
-					switch (opcode) {
+					switch ((StandardOpcode) opcode) {
 					case StandardOpcode.copy:
 						commit ();
 						break;
@@ -958,7 +958,7 @@ namespace Mono.Debugger.Architecture
 
 					engine.debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
 
-					switch (opcode) {
+					switch ((ExtendedOpcode) opcode) {
 					case ExtendedOpcode.set_address:
 						st_address = reader.ReadAddress ();
 						engine.debug ("SETTING ADDRESS TO {0:x}", st_address);

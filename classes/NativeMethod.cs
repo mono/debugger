@@ -42,16 +42,16 @@ namespace Mono.Debugger
 			while (current.Address < end_address) {
 				long address = current.Address;
 
-				IMethod method = null;
+				IMethod imethod = null;
 				if (disassembler.SymbolTable != null)
-					method = disassembler.SymbolTable.Lookup (current);
-				if ((method != null) && (method.StartAddress.Address == current.Address)) {
+					imethod = disassembler.SymbolTable.Lookup (current);
+				if ((imethod != null) && (imethod.StartAddress.Address == current.Address)) {
 					if (end_row > 0) {
 						sb.Append ("\n");
 						end_row++;
 					} else
 						start_row++;
-					sb.Append (String.Format ("{0}:\n",  method.Name));
+					sb.Append (String.Format ("{0}:\n",  imethod.Name));
 					end_row++;
 				}
 

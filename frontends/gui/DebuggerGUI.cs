@@ -58,6 +58,7 @@ namespace Mono.Debugger.GUI
 				default:
 					Console.WriteLine ("Unknown argument `{0}'.", arg);
 					Environment.Exit (1);
+					break;
 				}
 			}
 
@@ -136,9 +137,9 @@ namespace Mono.Debugger.GUI
 			output_writer = new OutputWindow (target_output);
 
 			if (application == "native")
-				backend = new Debugger (arguments);
+				backend = new Mono.Debugger.Backends.Debugger (arguments);
 			else
-				backend = new Debugger (application, arguments);
+				backend = new Mono.Debugger.Backends.Debugger (application, arguments);
 
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);
