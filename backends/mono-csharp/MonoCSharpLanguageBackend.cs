@@ -1615,6 +1615,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public void do_update_symbol_table (IInferior inferior)
 		{
+			backend.ModuleManager.Lock ();
 			try {
 				int modified = inferior.ReadInteger (info.symbol_file_modified);
 				if (modified == 0)
@@ -1625,8 +1626,6 @@ namespace Mono.Debugger.Languages.CSharp
 					table.Update (inferior);
 					return;
 				}
-
-				Console.WriteLine ("Re-reading symbol files.");
 
 				TargetAddress address = inferior.ReadAddress (info.symbol_file_table);
 				if (address.IsNull) {
@@ -1642,12 +1641,12 @@ namespace Mono.Debugger.Languages.CSharp
 				symtab_generation = table.Generation;
 
 				table.Update (inferior);
-
-				Console.WriteLine ("Done re-reading symbol files.");
 			} catch (Exception e) {
 				Console.WriteLine ("Can't update symbol table: {0}", e);
 				table = null;
 				return;
+			} finally {
+				backend.ModuleManager.UnLock ();
 			}
 		}
 

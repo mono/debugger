@@ -113,7 +113,7 @@ namespace Mono.Debugger
 			if (process != null)
 				throw new AlreadyHaveTargetException ();
 
-			module_manager.Locked = true;
+			module_manager.Lock ();
 
 			process = new Process (this, start, bfd_container);
 			main_group.AddThread (process);
@@ -155,7 +155,6 @@ namespace Mono.Debugger
 
 		internal void ReachedMain (Process process)
 		{
-			module_manager.Locked = true;
 			if (!process.ProcessStart.IsNative) {
 				csharp_language = new MonoCSharpLanguageBackend (this, process);
 				languages.Add (csharp_language);
@@ -165,13 +164,16 @@ namespace Mono.Debugger
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;
 
-			module_manager.Locked = false;
-
 			DaemonThreadHandler handler = null;
 			if (csharp_language != null)
 				handler = new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
 
 			thread_manager.Initialize (process, handler);
+		}
+
+		internal void ReachedManagedMain ()
+		{
+			module_manager.UnLock ();
 		}
 
 		public void Quit ()

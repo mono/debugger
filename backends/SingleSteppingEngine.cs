@@ -487,6 +487,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (initialized && !reached_main_2) {
+				backend.ReachedManagedMain ();
 				main_method_retaddr = inferior.GetReturnAddress ();
 				reached_main_2 = true;
 

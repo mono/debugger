@@ -77,8 +77,6 @@ namespace Mono.Debugger
 			process.TargetAccess.WriteInteger (tdebug, 1);
 			initialized = true;
 
-			Console.WriteLine ("Initialized thread manager.");
-
 			OnInitializedEvent (main_process);
 
 			return true;

@@ -33,36 +33,36 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool locked = false;
+		int locked = 0;
 		bool needs_module_update = false;
 		bool needs_breakpoint_update = false;
 
-		public bool Locked {
-			get {
-				return locked;
-			}
+		public void Lock ()
+		{
+			locked++;
+		}
 
-			set {
-				locked = value;
-				if (!locked) {
-					if (needs_module_update) {
-						needs_module_update = false;
-						OnModulesChanged ();
-					}
-					if (needs_breakpoint_update) {
-						needs_breakpoint_update = false;
-						OnBreakpointsChanged ();
-					}
-				}
+		public void UnLock ()
+		{
+			if (--locked > 0)
+				return;
+
+			if (needs_module_update) {
+				needs_module_update = false;
+				OnModulesChanged ();
+			}
+			if (needs_breakpoint_update) {
+				needs_breakpoint_update = false;
+				OnBreakpointsChanged ();
 			}
 		}
 
 		public void UnLoadAllModules ()
 		{
-			Locked = true;
+			Lock ();
 			foreach (Module module in modules)
 				module.UnLoad ();
-			Locked = false;
+			UnLock ();
 		}
 
 		void module_changed (Module module)
@@ -77,7 +77,7 @@ namespace Mono.Debugger
 
 		protected virtual void OnModulesChanged ()
 		{
-			if (locked) {
+			if (locked > 0) {
 				needs_module_update = true;
 				return;
 			}
@@ -88,7 +88,7 @@ namespace Mono.Debugger
 
 		protected virtual void OnBreakpointsChanged ()
 		{
-			if (locked) {
+			if (locked > 0) {
 				needs_breakpoint_update = true;
 				return;
 			}
