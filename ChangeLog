@@ -1,5 +1,13 @@
 2003-01-14  Martin Baulig  <martin@ximian.com>
 
+	* configure.in (server_sources): AC_SUBST this to
+	i386-linux-ptrace.c on Linux and to nothing on other systems.
+
+	* backends/server/library.c: If we're on Linux, #include
+	"i386-linux-ptrace.c", otherwise don't read a backend at all.
+
+2003-01-14  Martin Baulig  <martin@ximian.com>
+
 	* arch/CoreFileElfI386.cs (get_registers): Read the registers from
 	the `.reg' section to make this more portable.
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 void
 crashing_here (int *ptr)
@@ -11,7 +12,7 @@ crashing_here (int *ptr)
 void
 hello (const char *message, int a)
 {
-	printf ("%s\n", message);
+	printf ("%s - %d\n", message, getpid ());
 	sleep (5);
 	crashing_here (NULL);
 }

@@ -2,9 +2,12 @@ INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@
 
 lib_LTLIBRARIES = libmonodebuggerserver.la
 
+EXTRA_libmonodebuggerserver_la_SOURCES = \
+	i386-linux-ptrace.c
+
 libmonodebuggerserver_la_SOURCES = \
 	library.c		\
-	i386-linux-ptrace.c	\
+	@server_sources@	\
 	server.h		\
 	breakpoints.c		\
 	breakpoints.h		\

@@ -269,8 +269,6 @@ typedef struct {
 
 } InferiorInfo;
 
-extern InferiorInfo i386_linux_ptrace_inferior;
-
 /*
  * Library functions.
  *

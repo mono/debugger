@@ -13,12 +13,17 @@ AC_PROG_INSTALL
 AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-linux*)
+		server_sources="i386-linux-ptrace.c"
+		;;
+	*-*-freebsd*)
+		server_sources=""
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
 		;;
 esac
 AC_MSG_RESULT(ok)
+AC_SUBST(server_sources)
 
 dnl may require a specific autoconf version
 dnl AC_PROG_CC_FOR_BUILD

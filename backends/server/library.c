@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <server.h>
 #include <signal.h>
 #include <unistd.h>
@@ -144,6 +145,12 @@ signal_handler (int dummy)
 	/* Do nothing.  This is just to wake us up. */
 }
 
+#ifdef __linux__
+extern InferiorInfo i386_linux_ptrace_inferior;
+
+#include "i386-linux-ptrace.c"
+#endif
+
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 {
@@ -163,8 +170,11 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 		initialized = TRUE;
 	}
 
+#ifdef __linux__
 	handle->info = &i386_linux_ptrace_inferior;
 	handle->inferior = (* handle->info->initialize) (breakpoint_manager);
+#endif
+
 	return handle;
 }
 
