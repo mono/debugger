@@ -1,5 +1,10 @@
 2003-01-11  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/SourceList.cs: Moved the SourceList class from
+	SourceManager.cs into its own file.
+
+2003-01-11  Martin Baulig  <martin@ximian.com>
+
 	* widgets/generator/gtk-api.xml: Removed
 	gtk_source_buffer_get_tag_start() and gtk_source_buffer_get_tag_end().
 
