@@ -38,9 +38,9 @@ namespace Mono.Debugger.Languages.Native
 					reader = GetDynamicContents (location, MaximumDynamicSize);
 
 				return GetObject (reader, location);
-			} catch {
+			} catch (TargetException ex) {
 				is_valid = false;
-				throw new LocationInvalidException ();
+				throw new LocationInvalidException (ex);
 			}
 		}
 

@@ -45,9 +45,9 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				return ReadString (location.GetLocationAtOffset (0, true));
-			} catch {
+			} catch (TargetException ex) {
 				is_valid = false;
-				throw new LocationInvalidException ();
+				throw new LocationInvalidException (ex);
 			}
 		}
 

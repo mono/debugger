@@ -132,8 +132,8 @@ namespace Mono.Debugger.Languages.CSharp
 					fields [index].Offset, fields [index].Type.IsByRef);
 
 				return fields [index].Type.GetObject (field_loc);
-			} catch {
-				throw new LocationInvalidException ();
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
 			}
 		}
 

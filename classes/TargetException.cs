@@ -89,5 +89,21 @@ namespace Mono.Debugger
 		public LocationInvalidException ()
 			: base ("Location is invalid.")
 		{ }
+
+		public LocationInvalidException (string message)
+			: base (message)
+		{ }
+
+		public LocationInvalidException (TargetException ex)
+			: base (GetExceptionText (ex))
+		{ }
+
+		protected static string GetExceptionText (TargetException ex)
+		{
+			if ((ex is TargetMemoryException) || (ex is LocationInvalidException))
+				return ex.Message;
+			else
+				return String.Format ("{0}: {1}", ex.GetType ().Name, ex.Message);
+		}
 	}
 }

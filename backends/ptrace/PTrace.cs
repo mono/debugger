@@ -18,20 +18,19 @@ using Mono.CSharp.Debugger;
 namespace Mono.Debugger.Backends
 {
 	internal enum CommandError {
-		NONE = 0,
-		NO_INFERIOR,
-		ALREADY_HAVE_INFERIOR,
-		FORK,
-		IO,
-		UNKNOWN,
-		INVALID_COMMAND,
-		NOT_STOPPED,
-		ALIGNMENT,
-		RECURSIVE_CALL,
-		NO_SUCH_BREAKPOINT,
-		UNKNOWN_REGISTER
+		None = 0,
+		Unknown,
+		NoInferior,
+		AlreadyHaveInferior,
+		Fork,
+		NotStopped,
+		RecursiveCall,
+		NoSuchBreakpoint,
+		UnknownRegister,
+		DrOccupied,
+		MemoryAccess
 	}
-	
+
 	internal delegate void ChildSetupHandler ();
 
 	internal class PTraceInferior : IInferior, IDisposable
@@ -220,7 +219,7 @@ namespace Mono.Debugger.Backends
 
 		void check_error (CommandError error)
 		{
-			if (error == CommandError.NONE)
+			if (error == CommandError.None)
 				return;
 
 			handle_error (error);
@@ -229,22 +228,22 @@ namespace Mono.Debugger.Backends
 		void handle_error (CommandError error)
 		{
 			switch (error) {
-			case CommandError.NOT_STOPPED:
+			case CommandError.NotStopped:
 				throw new TargetNotStoppedException ();
 
-			case CommandError.NO_INFERIOR:
+			case CommandError.NoInferior:
 				throw new NoTargetException ();
 
-			case CommandError.ALREADY_HAVE_INFERIOR:
+			case CommandError.AlreadyHaveInferior:
 				throw new AlreadyHaveTargetException ();
 
-			case CommandError.FORK:
+			case CommandError.Fork:
 				throw new CannotStartTargetException ();
 
-			case CommandError.NO_SUCH_BREAKPOINT:
+			case CommandError.NoSuchBreakpoint:
 				throw new NoSuchBreakpointException ();
 
-			case CommandError.UNKNOWN_REGISTER:
+			case CommandError.UnknownRegister:
 				throw new NoSuchRegisterException ();
 
 			default:
@@ -630,7 +629,10 @@ namespace Mono.Debugger.Backends
 			IntPtr data;
 			CommandError result = mono_debugger_server_read_memory (
 				server_handle, address.Address, size, out data);
-			if (result != CommandError.NONE) {
+			if (result == CommandError.MemoryAccess) {
+				g_free (data);
+				throw new TargetMemoryException (address, size);
+			} else if (result != CommandError.None) {
 				g_free (data);
 				handle_error (result);
 				throw new Exception ("Internal error: this line will never be reached");
@@ -934,7 +936,7 @@ namespace Mono.Debugger.Backends
 				long pc;
 				check_disposed ();
 				CommandError result = mono_debugger_server_get_pc (server_handle, out pc);
-				if (result != CommandError.NONE)
+				if (result != CommandError.None)
 					throw new NoStackException ();
 
 				return new TargetAddress (GlobalAddressDomain, pc);
@@ -947,7 +949,7 @@ namespace Mono.Debugger.Backends
 				int is_breakpoint;
 				CommandError result = mono_debugger_server_current_insn_is_bpt (
 					server_handle, out is_breakpoint);
-				if (result != CommandError.NONE)
+				if (result != CommandError.None)
 					throw new NoStackException ();
 
 				return is_breakpoint != 0;

@@ -33,9 +33,9 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				try {
 					return location.ReadBuffer (type.Size);
-				} catch {
+				} catch (TargetException ex) {
 					is_valid = false;
-					throw new LocationInvalidException ();
+					throw new LocationInvalidException (ex);
 				}
 			}
 		}
@@ -55,9 +55,9 @@ namespace Mono.Debugger.Languages.CSharp
 					MonoTargetLocation dynamic_location;
 					ITargetMemoryReader reader = location.ReadMemory (type.Size);
 					return GetDynamicSize (reader, location, out dynamic_location);
-				} catch {
+				} catch (TargetException ex) {
 					is_valid = false;
-					throw new LocationInvalidException ();
+					throw new LocationInvalidException (ex);
 				}
 			}
 		}
@@ -69,9 +69,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			try {
 				return GetDynamicContents (location, max_size).Contents;
-			} catch {
+			} catch (TargetException ex) {
 				is_valid = false;
-				throw new LocationInvalidException ();
+				throw new LocationInvalidException (ex);
 			}
 		}
 
@@ -87,9 +87,9 @@ namespace Mono.Debugger.Languages.CSharp
 					size = max_size;
 
 				return dynamic_location.ReadMemory ((int) size);
-			} catch {
+			} catch (TargetException ex) {
 				is_valid = false;
-				throw new LocationInvalidException ();
+				throw new LocationInvalidException (ex);
 			}
 		}
 

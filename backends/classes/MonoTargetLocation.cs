@@ -85,9 +85,9 @@ namespace Mono.Debugger.Backends
 				TargetAddress address;
 				try {
 					address = GetAddress ();
-				} catch (Exception e) {
+				} catch (TargetException ex) {
 					SetInvalid ();
-					throw new LocationInvalidException ();
+					throw new LocationInvalidException (ex);
 				}
 
 				// If the type is a reference type, the pointer on the

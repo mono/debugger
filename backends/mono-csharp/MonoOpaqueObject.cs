@@ -40,8 +40,8 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			try {
 				return location.ReadBuffer (size);
-			} catch {
-				throw new LocationInvalidException ();
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
 			}
 		}
 

@@ -1,5 +1,20 @@
 2003-02-27  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/server.h (CommandError): Cleaned this up.
+
+	* backends/ptrace/PTrace.cs: Throw a TargetMemoryException if
+	reading from the target's memory failed.
+
+	* classes/TargetException.cs (LocationInvalidException): Added
+	.ctor which takes a TargetException.
+
+	* backends/native/*: Pass TargetExceptions to the
+	LocationInvalidException's .ctor.
+
+	* backends/mono-csharp/*: Likewise.
+
+2003-02-27  Martin Baulig  <martin@ximian.com>
+
 	* backends/native/NativeStringObject.cs (ReadString): Quote
 	non-printable characters in the returned string, read at most
 	MaximumDynamicSize chars.

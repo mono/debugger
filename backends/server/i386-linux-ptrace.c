@@ -69,6 +69,8 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
 		if (ret < 0) {
 			if (errno == EINTR)
 				continue;
+			else if (errno == EIO)
+				return COMMAND_ERROR_MEMORY_ACCESS;
 			g_warning (G_STRLOC ": Can't read target memory at address %08Lx: %s",
 				   start, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;

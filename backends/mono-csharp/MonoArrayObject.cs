@@ -46,8 +46,8 @@ namespace Mono.Debugger.Languages.CSharp
 						type.BoundsLengthSize);
 					bounds [i] = new MonoArrayBounds (b_lower, b_length);
 				}
-			} catch {
-				throw new LocationInvalidException ();
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
 			}
 		}
 
@@ -92,8 +92,8 @@ namespace Mono.Debugger.Languages.CSharp
 					try {
 						reader = location.ReadMemory (type.Size);
 						GetDynamicSize (reader, location, out dynamic_location);
-					} catch {
-						throw new LocationInvalidException ();
+					} catch (TargetException ex) {
+						throw new LocationInvalidException (ex);
 					}
 
 					int offset;

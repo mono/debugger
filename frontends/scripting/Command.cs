@@ -750,11 +750,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public ITargetObject ResolveVariable (ScriptingContext context)
 		{
-			ITargetObject retval = DoResolveVariable (context);
-			if (retval == null)
-				throw new ScriptingException ("Can't resolve variable: {0}", this);
+			try {
+				ITargetObject retval = DoResolveVariable (context);
+				if (retval == null)
+					throw new ScriptingException ("Can't resolve variable: `{0}'", Name);
 
-			return retval;
+				return retval;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException ("Location of variable {0} is invalid: {1}",
+							      Name, ex.Message);
+			}
 		}
 
 		protected abstract ITargetType DoResolveType (ScriptingContext context);
@@ -763,24 +768,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetType type = DoResolveType (context);
 			if (type == null)
-				throw new ScriptingException ("Can't get type of variable {0}.", this);
+				throw new ScriptingException ("Can't get type of variable `{0}'.", Name);
 
 			return type;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			ITargetObject obj = ResolveVariable (context);
-			ITargetType type = ResolveType (context);
+			try {
+				ITargetObject obj = ResolveVariable (context);
+				ITargetType type = ResolveType (context);
 
-			if (!obj.IsValid)
-				throw new ScriptingException ("Variable {0} is out of scope.", this);
+				if (!obj.IsValid)
+					throw new ScriptingException ("Variable `{0}' is out of scope.", Name);
 
-			if (type.Kind == TargetObjectKind.Fundamental)
-				return ((ITargetFundamentalObject) obj).Object;
+				if (type.Kind == TargetObjectKind.Fundamental)
+					return ((ITargetFundamentalObject) obj).Object;
 
-			// FIXME: how to handle all the other kinds of objects?
-			return obj;
+				// FIXME: how to handle all the other kinds of objects?
+				return obj;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException ("Location of variable `{0}' is invalid: {1}",
+							      Name, ex.Message);
+			}
 		}
 
 		public override string ToString ()
