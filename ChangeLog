@@ -1,5 +1,9 @@
 2004-12-08  Chris Toshok  <toshok@ximian.com>
 
+	* Makefile.am (SUBDIRS): frontends -> frontend.
+
+2004-12-08  Chris Toshok  <toshok@ximian.com>
+
 	* configure.in (AC_OUTPUT): remove the frontends/* subdirs.  we
 	just build frontend/ now.
 
