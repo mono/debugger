@@ -1,5 +1,11 @@
 2003-03-12  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/ProcessManager.cs: Removed, this was way too immature.
+
+	* frontends/gui/LineDebugStatusbar.cs: Removed.
+
+2003-03-12  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/FileOpenDialog.cs: New file.  This is a customized
 	Gtk.FileSelection which has a list of all source files.
 
