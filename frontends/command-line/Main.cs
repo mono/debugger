@@ -52,23 +52,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 		GnuReadLine readline = null;
 		DebuggerEngine engine;
 		LineParser parser;
-		string default_prompt, prompt;
+		string prompt;
 		string last_line = "";
 		int line = 0;
 
 		internal CommandLineInterpreter (DebuggerTextWriter command_out,
 						 DebuggerTextWriter inferior_out,
 						 bool is_synchronous, bool is_interactive,
-						 string[] args)
+						 DebuggerOptions options)
 			: base (command_out, inferior_out, is_synchronous, is_interactive,
-				args)
+				options)
 		{
 			engine = SetupEngine ();
 			parser = new LineParser (engine);
 
 			if (is_interactive) {
-				prompt = default_prompt = "$ ";
-				readline = new GnuReadLine ();
+				prompt = options.Prompt;
+				if (!options.IsScript)
+					readline = new GnuReadLine ();
 			}
 		}
 
@@ -115,6 +116,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("break", typeof (BreakCommand));
 			e.Register ("quit", typeof (QuitCommand));
 			e.Register ("q", typeof (QuitCommand));
+			e.Register ("dump", typeof (DumpCommand));
 
 			return e;
 		}
@@ -140,8 +142,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			++line;
 			if (readline != null) {
-				string prompty = is_complete ? "(mdb) " : "... ";
-				string result = readline.ReadLine (prompt);
+				string the_prompt = is_complete ? prompt : "... ";
+				string result = readline.ReadLine (the_prompt);
 				if (result == null)
 					return null;
 				if (result != "")
@@ -150,8 +152,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 					result = last_line;
 				last_line = result;				
 				return result;
-			} else
+			} else {
+				if (prompt != null)
+					Console.Write (prompt);
 				return Console.ReadLine ();
+			}
 		}
 
 		public void Error (int pos, string message)
@@ -175,10 +180,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
-			CommandLineInterpreter interpreter = new CommandLineInterpreter (
-				writer, writer, true, is_terminal, args);
+			DebuggerOptions options = new DebuggerOptions ();
+			options.ProcessArgs (args);
 
-			Console.WriteLine ("Mono debugger");
+			Console.WriteLine ("Mono Debugger");
+
+			CommandLineInterpreter interpreter = new CommandLineInterpreter (
+				writer, writer, true, is_terminal, options);
+
 			try {
 				interpreter.MainLoop ();
 			} catch (Exception ex) {

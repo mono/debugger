@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = dejagnu
+
 MCS_FLAGS=-g
 
 noinst_SCRIPTS = $(test_FILES)

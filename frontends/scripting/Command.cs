@@ -1040,4 +1040,41 @@ namespace Mono.Debugger.Frontends.Scripting
 				       index, location.Name);
 		}
 	}
+
+	public class DumpCommand : FrameCommand
+	{
+		Expression expression;
+		string mode = "object";
+
+		public string Mode {
+			get { return mode; }
+			set { mode = value; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			expression = ParseExpression (context);
+			if (expression == null)
+				return false;
+
+			expression = expression.Resolve (context);
+			return expression != null;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ScriptingContext new_context = context.GetExpressionContext ();
+			if (Process > 0)
+				new_context.CurrentProcess = ResolveProcess (new_context);
+			if (Frame > 0)
+				new_context.CurrentFrame = ResolveFrame (new_context);
+
+			object retval = expression.Evaluate (new_context);
+			switch (mode) {
+			case "object":
+				context.Dump (retval);
+				break;
+			}
+		}
+	}
 }

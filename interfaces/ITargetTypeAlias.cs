@@ -5,6 +5,10 @@ namespace Mono.Debugger.Languages
 	// </summary>
 	public interface ITargetTypeAlias : ITargetType
 	{
+		string TargetName {
+			get;
+		}
+
 		ITargetType TargetType {
 			get;
 		}

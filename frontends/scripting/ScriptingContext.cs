@@ -808,6 +808,71 @@ namespace Mono.Debugger.Frontends.Scripting
 			current_source_code = null;
 			last_line = -1;
 		}
+
+		public void Dump (object obj)
+		{
+			if (obj == null)
+				Print ("null");
+			else if (obj is ITargetObject)
+				Print (DumpObject ((ITargetObject) obj));
+			else
+				Print ("unknown:{0}:{1}", obj.GetType (), obj);
+		}
+
+		public string DumpObject (ITargetObject obj)
+		{
+			long dynamic = obj.Type.HasFixedSize ? -1 : obj.DynamicSize;
+			return String.Format ("object:{0}:{1}:{2}", obj.IsValid,
+					      dynamic, DumpType (obj.Type));
+		}
+
+		public string DumpType (ITargetType type)
+		{
+			StringBuilder sb = new StringBuilder ();
+			sb.Append (type.Name);
+			sb.Append (":");
+			sb.Append (type.HasFixedSize);
+			sb.Append (":");
+			sb.Append (type.Size);
+			sb.Append (":");
+			sb.Append (type.Kind);
+			sb.Append (" ");
+
+			switch (type.Kind) {
+			case TargetObjectKind.Fundamental:
+				sb.Append (((ITargetFundamentalType) type).Type);
+				break;
+
+			case TargetObjectKind.Pointer: {
+				ITargetPointerType ptype = (ITargetPointerType) type;
+				sb.Append (ptype.IsTypesafe);
+				sb.Append (":");
+				sb.Append (ptype.HasStaticType);
+				if (ptype.HasStaticType) {
+					sb.Append (":");
+					sb.Append (ptype.StaticType.Name);
+				}
+				break;
+			}
+
+			case TargetObjectKind.Array:
+				sb.Append (((ITargetArrayType) type).ElementType.Name);
+				break;
+
+			case TargetObjectKind.Alias: {
+				ITargetTypeAlias alias = (ITargetTypeAlias) type;
+				sb.Append (alias.TargetName);
+				if (alias.TargetType != null) {
+					sb.Append (":");
+					sb.Append (alias.TargetType.Name);
+				}
+				break;
+			}
+
+			}
+
+			return sb.ToString ();
+		}
 	}
 }
 

@@ -19,7 +19,7 @@ namespace Mono.Debugger
 		}
 
 		[Option("The command-line prompt", 'p', "prompt")]
-		public string Prompt = "$";
+		public string Prompt = "(mdb) ";
 
 		[Option("Full path name of the JIT wrapper", "jit-wrapper")]
 		public string JitWrapper = ProcessStart.JitWrapper;
@@ -32,6 +32,9 @@ namespace Mono.Debugger
 
 		[Option("Load native symtabs", "native-symtabs")]
 		public bool LoadNativeSymbolTable = false;
+
+		[Option("Running in a script", "script")]
+		public bool IsScript = false;
 
 		[Option("Display version and licensing information", 'V', "version")]
 		public override WhatToDoNext DoAbout()
@@ -214,13 +217,9 @@ namespace Mono.Debugger
 			initialized = true;
 		}
 
-		public static ProcessStart Create (DebuggerOptions options, string[] args)
+		public static ProcessStart Create (DebuggerOptions options)
 		{
-			if (options == null)
-				options = new DebuggerOptions ();
-
-			options.ProcessArgs (args);
-			args = options.RemainingArguments;
+			string[] args = options.RemainingArguments;
 
 			if (args.Length == 0)
 				return null;

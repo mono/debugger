@@ -77,7 +77,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		internal Interpreter (DebuggerTextWriter command_out,
 				      DebuggerTextWriter inferior_out,
 				      bool is_synchronous, bool is_interactive,
-				      string[] args)
+				      DebuggerOptions options)
 		{
 			this.command_output = command_out;
 			this.inferior_output = inferior_out;
@@ -96,7 +96,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			context = new ScriptingContext (this, is_interactive, true);
 
-			start = ProcessStart.Create (null, args);
+			start = ProcessStart.Create (options);
 			if (start != null)
 				Initialize ();
 
@@ -275,12 +275,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		public ProcessStart Start (DebuggerOptions options, string[] args)
+		public ProcessStart Start (DebuggerOptions options)
 		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
 
-			start = ProcessStart.Create (options, args);
+			start = ProcessStart.Create (options);
 
 			return start;
 		}

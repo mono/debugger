@@ -1,0 +1,131 @@
+#!/usr/bin/expect -d -f
+#
+set mdb "../wrapper/mdb"
+set timeout 10
+set verbose 1
+
+proc mdb_start {file main} {
+    global mdb
+    global timeout
+    global verbose
+    global process
+    global spawn_id
+
+    verbose "Spawning $mdb $file"
+
+    set res [spawn "$mdb" --script $file];
+    if { $res < 0 || $res == "" } {
+	perror "Spawning $mdb failed."
+	return 1;
+    }
+    verbose "Spawned $mdb"
+    expect {
+	-re "Mono Debugger\[\r\n\]+$" {
+	    verbose "Mono Debugger initialized."
+	}
+	timeout {
+	    perror "(timeout) Mono Debugger not starting"
+	    return -1
+	}
+    }
+    expect {
+	-re "Process @(\[0-9\]+) stopped at \#0: 0x\[0-9A-Fa-f\]+ in $main.*\[\r\n\]+" {
+	    verbose "Stopped"
+	    set process $expect_out(1,string)
+	} timeout {
+	    perror "(timeout) Mono Debugger not stopped in main"
+	    return -1
+	}
+    }
+    mdb_expect_prompt
+    return 0;
+}
+
+proc mdb_expect_prompt { } {
+    expect {
+	"(mdb) " {
+	    return 0
+	}
+	timeout {
+	    perror "(timeout) Mono Debugger hanging or not displaying command prompt."
+	    return -1
+	}
+    }
+    return 0
+}
+
+proc mdb_send {command} {
+    send $command\n
+    expect -re "$command\[\n\r\]+$"
+    return 0
+}
+
+proc mdb_expect_frame {index func line} {
+    global process
+    global file
+
+    mdb_send "frame -process $process"
+    expect {
+	-re "\#(\[0-9\]+): 0x\[0-9A-Fa-f\]+ in (.*) at $file:(\[0-9\]+)\[\n\r\]+" {
+	    set real_index $expect_out(1,string)
+	    set real_func $expect_out(2,string)
+	    set real_line $expect_out(3,string)
+	    if {$real_index != $index} {
+		fail "Debugger in frame $real_index, but expected $index"
+		return
+	    }
+	    regsub "\[\+\]0x\[0-9A-Fa-f\]+$" $real_func "" real_func
+	    if {$real_func != $func} {
+		fail "Debugger stopped in func $real_func, but expected $func"
+		return
+	    }
+	    if {$real_line != $line} {
+		fail "Debugger stopped in line $real_line, but expected $line"
+		return
+	    }
+	    pass "Debugger stopped in \#$index: $func, line $line"
+	}
+	timeout {
+	    perror "(timeout) Mono Debugger not responding to `frame' command."
+	    return
+	}
+    }
+    mdb_expect_prompt
+    return
+}
+
+proc mdb_expect_breakpoint {} {
+    global process
+    global file
+
+    expect {
+	-re "Inserted breakpoint (\[0-9\])" {
+	    set index $expect_out(1,string)
+	    pass "Inserted breakpoint $index"
+	}
+	timeout {
+	    perror "(timeout) Mono Debugger is not inserting breakpoint."
+	    return -1
+	}
+    }
+    mdb_expect_prompt
+    return index
+}
+
+proc mdb_expect {text} {
+    expect {
+	-re {^([^\n\r]+)[\n\r]+} {
+	    set line $expect_out(1,string)
+	    if {$line != $text} {
+		fail "Received `$line', but expected `$text'."
+	    } else {
+		pass "Received $text"
+	    }
+	} timeout {
+	    perror "(timeout) Mono Debugger is not responding."
+	    return -1
+	}
+    }
+    mdb_expect_prompt
+}
+
