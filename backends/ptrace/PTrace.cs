@@ -62,6 +62,7 @@ namespace Mono.Debugger.Backends
 
 		BfdSymbolTable bfd_symtab;
 		BfdDisassembler bfd_disassembler;
+		IArchitecture arch;
 
 		int child_pid;
 
@@ -280,24 +281,27 @@ namespace Mono.Debugger.Backends
 						      target_address_size);
 
 			bfd_disassembler = bfd_symtab.GetDisassembler (this);
+			arch = new ArchitectureI386 (this);
 		}
 
 		void read_mono_debugger_info ()
 		{
 			ITargetLocation symbol_info = bfd_symtab ["MONO_DEBUGGER__debugger_info"];
-			if (symbol_info != null) {
-				ITargetMemoryReader header = ReadMemory (symbol_info, 16);
-				if (header.ReadLongInteger () != OffsetTable.Magic)
-					throw new SymbolTableException ();
-				if (header.ReadInteger () != OffsetTable.Version)
-					throw new SymbolTableException ();
+			if (symbol_info == null)
+				return;
 
-				int size = (int) header.ReadInteger ();
+			ITargetMemoryReader header = ReadMemory (symbol_info, 16);
+			if (header.ReadLongInteger () != OffsetTable.Magic)
+				throw new SymbolTableException ();
+			if (header.ReadInteger () != OffsetTable.Version)
+				throw new SymbolTableException ();
 
-				ITargetMemoryReader table = ReadMemory (symbol_info, size);
-				mono_debugger_info = new MonoDebuggerInfo (table);
-				Console.WriteLine ("MONO DEBUGGER INFO: {0}", mono_debugger_info);
-			}
+			int size = (int) header.ReadInteger ();
+
+			ITargetMemoryReader table = ReadMemory (symbol_info, size);
+			mono_debugger_info = new MonoDebuggerInfo (table);
+
+			arch.GenericTrampolineCode = ReadAddress (mono_debugger_info.trampoline_code);
 		}
 
 		void child_exited ()
@@ -347,7 +351,7 @@ namespace Mono.Debugger.Backends
 
 					if ((frame.Address >= current_step_frame.Start.Address) &&
 					    (frame.Address < current_step_frame.End.Address)) {
-						send_command (ServerCommand.STEP);
+						Step (current_step_frame);
 						break;
 					}
 					current_step_frame = null;
@@ -472,7 +476,7 @@ namespace Mono.Debugger.Backends
 
 		public ITargetLocation ReadAddress (ITargetLocation location)
 		{
-			switch (target_info.TargetAddressSize) {
+			switch (TargetAddressSize) {
 			case 4:
 				return new TargetLocation (ITargetMemoryAccess.ReadInteger (location));
 
@@ -481,7 +485,7 @@ namespace Mono.Debugger.Backends
 
 			default:
 				throw new TargetMemoryException (
-					"Unknown target address size " + target_info.TargetAddressSize);
+					"Unknown target address size " + TargetAddressSize);
 			}
 		}
 
@@ -581,7 +585,7 @@ namespace Mono.Debugger.Backends
 
 		public void WriteAddress (ITargetLocation location, ITargetLocation address)
 		{
-			switch (target_info.TargetAddressSize) {
+			switch (TargetAddressSize) {
 			case 4:
 				WriteInteger (location, (int) address.Address);
 
@@ -590,7 +594,7 @@ namespace Mono.Debugger.Backends
 
 			default:
 				throw new TargetMemoryException (
-					"Unknown target address size " + target_info.TargetAddressSize);
+					"Unknown target address size " + TargetAddressSize);
 			}
 		}
 
@@ -652,9 +656,46 @@ namespace Mono.Debugger.Backends
 			Step (null);
 		}
 
+		void compile_method_done (object user_data, object result)
+		{
+			ITargetLocation method;
+
+			switch (TargetAddressSize) {
+			case 4:
+				method = new TargetLocation ((int) ((long) result));
+				break;
+
+			case 8:
+				method = new TargetLocation ((long) result);
+				break;
+
+			default:
+				throw new TargetMemoryException (
+					"Unknown target address size " + TargetAddressSize);
+			}
+
+			Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
+
+			Continue (method);
+		}
+
 		public void Step (IStepFrame frame)
 		{
+			int insn_size;
+			ITargetLocation call = arch.GetCallTarget (Frame (), out insn_size);
+			if (!call.IsNull) {
+				ITargetLocation trampoline = arch.GetTrampoline (call);
+
+				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
+						   call, insn_size, trampoline, frame, Frame ());
+
+				call_method (mono_debugger_info.compile_method, trampoline.Address,
+					     new TargetAsyncCallback (compile_method_done), null);
+				return;
+			}
+
 			current_step_frame = frame;
+
 			send_command (ServerCommand.STEP);
 			change_target_state (TargetState.RUNNING);
 		}

@@ -354,6 +354,11 @@ namespace Mono.Debugger.Backends
 				return end;
 			}
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("StepFrame ({0:x},{1:x})", Start, End);
+		}
 	}
 
 	internal delegate void TargetAsyncCallback (object user_data, object result);
