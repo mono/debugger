@@ -45,12 +45,14 @@ namespace Mono.Debugger.Architecture
 				byte[] buffer = memory.ReadBuffer (location, 0, size);
 				Marshal.Copy (buffer, 0, data, size);
 			} catch (Exception e) {
+				memory_exception = e;
 				return 1;
 			}
 			return 0;
 		}
 
 		StringBuilder sb;
+		Exception memory_exception;
 		void output_func (string output)
 		{
 			sb.Append (output);
@@ -62,12 +64,22 @@ namespace Mono.Debugger.Architecture
 
 		public string DisassembleInstruction (ref ITargetLocation location)
 		{
+			memory_exception = null;
 			sb = new StringBuilder ();
-			int count = bfd_glue_disassemble_insn (dis, info, location.Location + location.Offset);
-			string insn = sb.ToString ();
-			sb = null;
 
-			location.Offset += count;
+			string insn;
+			try {
+				int count = bfd_glue_disassemble_insn (
+					dis, info, location.Location + location.Offset);
+				if (memory_exception != null)
+					throw memory_exception;
+				insn = sb.ToString ();
+				location.Offset += count;
+			} finally {
+				sb = null;
+				memory_exception = null;
+			}
+
 			return insn;
 		}
 

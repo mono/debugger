@@ -274,10 +274,24 @@ namespace Mono.Debugger.Backends
 		public readonly ISourceLocation SourceLocation = null;
 		public readonly ITargetLocation TargetLocation = null;
 		public readonly ISymbolHandle SymbolHandle = null;
+		public readonly IInferior Inferior;
 
-		public StackFrame (ITargetLocation location)
+		string instruction;
+
+		public StackFrame (IInferior inferior, ITargetLocation location)
 		{
+			Inferior = inferior;
 			TargetLocation = location;
+
+			if (Inferior.Disassembler != null) {
+				ITargetLocation loc = (ITargetLocation) location.Clone ();
+
+				try {
+					instruction = Inferior.Disassembler.DisassembleInstruction (ref loc);
+				} catch (TargetException e) {
+					// Catch any target exceptions.
+				}
+			}
 		}
 
 		ISourceLocation IStackFrame.SourceLocation {
@@ -296,12 +310,17 @@ namespace Mono.Debugger.Backends
 		{
 			StringBuilder builder = new StringBuilder ();
 
-			if (SourceLocation != null)
+			if (SourceLocation != null) {
 				builder.Append (SourceLocation);
-			else
-				builder.Append ("<unknown>");
-			builder.Append (" at ");
+				builder.Append (" at ");
+			}
 			builder.Append (TargetLocation);
+
+			if (instruction != null) {
+				builder.Append (" (");
+				builder.Append (instruction);
+				builder.Append (")");
+			}
 
 			return builder.ToString ();
 		}
@@ -456,25 +475,14 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ITargetLocation Frame ()
+		ITargetLocation IInferior.Frame ()
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
 
-			update_symbol_files ();
-
 			ITargetLocation frame = inferior.Frame ();
 			if (frame.IsNull)
-				return frame;
-
-			IDisassembler dis = inferior.Disassembler;
-			if (dis != null) {
-				ITargetLocation location = (ITargetLocation) frame.Clone ();
-
-				string insn = dis.DisassembleInstruction (ref location);
-
-				Console.WriteLine ("DISASSEMBLE: {0}", insn);
-			}
+				throw new NoStackException ();
 
 			return frame;
 		}
@@ -670,12 +678,21 @@ namespace Mono.Debugger.Backends
 			Shutdown ();
 		}
 
-		void IDebuggerBackend.Frame ()
+		public IStackFrame Frame ()
 		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
 			ITargetLocation location = IInferior.Frame ();
 
+			update_symbol_files ();
+
+			IStackFrame frame = new StackFrame (inferior, location);
+
 			if (CurrentFrameEvent != null)
-				CurrentFrameEvent (new StackFrame (location));
+				CurrentFrameEvent (frame);
+
+			return frame;
 		}
 
 		public ISourceFileFactory SourceFileFactory {

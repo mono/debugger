@@ -141,8 +141,10 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start, guint32 s
 	kill (handle->pid, SIGUSR1);
 
 	result = read_status (handle);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
 
-	*data = g_malloc (size * 10);
+	*data = g_malloc (size);
 
 	if (!my_read (handle, *data, size))
 		return COMMAND_ERROR_IO;

@@ -167,10 +167,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void IDebuggerBackend.Frame ()
+		IStackFrame IDebuggerBackend.Frame ()
 		{
 			current_frame = null;
 			send_gdb_command ("frame");
+			return null;
 		}
 
 		public void Step ()

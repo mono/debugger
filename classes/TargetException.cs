@@ -23,4 +23,15 @@ namespace Mono.Debugger
 				"the requested operation")
 		{ }
 	}
+
+	public class NoStackException : TargetException
+	{
+		public NoStackException ()
+			: this ("No stack")
+		{ }
+
+		public NoStackException (string message)
+			: base (message)
+		{ }
+	}
 }

@@ -59,8 +59,7 @@ namespace Mono.Debugger
 		void Kill ();
 
 		// <summary>
-		//   Ask the debugger for the current stack frame and
-		//   emit a CurrentFrameEvent.
+		//   Get the current target location.
 		// </summary>
 		ITargetLocation Frame ();
 
@@ -134,10 +133,9 @@ namespace Mono.Debugger
 		void Quit ();
 
 		// <summary>
-		//   Ask the debugger for the current stack frame and
-		//   emit a CurrentFrameEvent.
+		//   Get the current stack frame.
 		// </summary>
-		void Frame ();
+		IStackFrame Frame ();
 
 		// <summary>
 		//   Size of an address in the target.
