@@ -1,5 +1,15 @@
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Generator.cs (Generator.PrintHelp): New
+	method.  Takes whatever the user entered after the `help' command
+	as a string and prints the help.
+
+	* frontends/scriptings/Tokenizer.cs (token): If we encounter a
+	Token.HELP, consume the rest of the line and pass it to
+	Generator.PrintHelp().
+
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Generator.cs: New file.
 
 	* frontends/scripting/Command.cs: Added a [Command] attribute to

@@ -458,7 +458,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Error ("Unterminated string literal");
 			return Token.EOF;
 		}
-		
+
+		private string consume_help ()
+		{
+			int c;
+			StringBuilder sb = new StringBuilder ();
+								
+			while ((c = getChar ()) != -1){
+				if (c == '\n') {
+					col = 0;
+					return sb.ToString ();
+				}
+
+				col++;
+				sb.Append ((char) c);
+			}
+
+			return sb.ToString ();
+		}
+
 		public int xtoken ()
 		{
 			int t;
@@ -546,7 +564,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public int token ()
 		{
-			current_token = xtoken ();
+			while ((current_token = xtoken ()) == Token.HELP)
+				context.PrintHelp (consume_help ());
 			return current_token;
 		}
 

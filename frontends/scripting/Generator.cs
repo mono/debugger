@@ -94,7 +94,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public void PrintHelp ()
+		public void PrintHelp (ScriptingContext context)
 		{
 			string[] names = new string [commands.Count];
 
@@ -109,20 +109,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 			for (int i = 0; i < commands.Count; i++)
 				names [i] = names [i].PadRight (max);
 
-			Print ("Commands:");
-			Print ("");
+			context.Print ("Commands:");
+			context.Print ("");
 
 			for (int i = 0; i < commands.Count; i++) {
 				CommandClass command = (CommandClass) commands [i];
 
-				Print ("  {0}   {1}", names [i], command.ShortDescription);
+				context.Print ("  {0}   {1}", names [i], command.ShortDescription);
 			}
 
-			Print ("");
-			Print ("Type `help' followed by a command name to get more info.");
-			Print ("The following commands have sub-commands; type `help' followed");
-			Print ("by the command name to get more information.");
-			Print ("");
+			context.Print ("");
+			context.Print ("Type `help' followed by a command name to get more info.");
+			context.Print ("The following commands have sub-commands; type `help' followed");
+			context.Print ("by the command name to get more information.");
+			context.Print ("");
 
 			string[] group_names = new string [subgroups.Count];
 
@@ -132,13 +132,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 				group_names [i] = group.Name.ToLower ();
 			}
 
-			Print ("  {0}", String.Join (" ", group_names));
-			Print ("");
+			context.Print ("  {0}", String.Join (" ", group_names));
+			context.Print ("");
 		}
 
-		void Print (string format, params object[] args)
+		public void PrintHelp (ScriptingContext context, string arg_list)
 		{
-			Console.WriteLine (String.Format (format, args));
+			arg_list = arg_list.TrimStart (' ', '\t');
+			arg_list = arg_list.TrimEnd (' ', '\t');
+			string[] arguments = arg_list.Split (' ', '\t');
+
+			Console.WriteLine ("HELP: |{0}|", arguments);
+
+			if (arguments.Length == 0) {
+				PrintHelp (context);
+				return;
+			}
+
+			string token = arguments [0];
+			Entry entry = (Entry) command_hash [token];
+			if (entry == null) {
+				context.Print ("No such command: `{0}'", token);
+				return;
+			}
+
+			context.Print ("Help for command `{0}'", token);
 		}
 
 		class Entry
@@ -229,8 +247,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (attributes.Length != 1)
 				return null;
 
-			Console.WriteLine ("EXPRESSION: {0}", type);
-
 			return new ExpressionClass (type, (ExpressionAttribute) attributes [0]);
 		}
 	}
@@ -305,8 +321,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (attributes.Length != 1)
 				return null;
 
-			Console.WriteLine ("COMMAND: {0}", type);
-
 			MemberInfo[] ctors = type.FindMembers (
 				MemberTypes.Constructor, BindingFlags.Public | BindingFlags.Instance,
 				new MemberFilter (ctor_filter), null);
@@ -350,8 +364,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			GetExpressions (assembly);
 			GetCommands (assembly);
-
-			global_group.PrintHelp ();
 		}
 
 		public string Format ()
@@ -371,6 +383,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			sb.Append ("\t;\n");
 
 			return sb.ToString ();
+		}
+
+		public void PrintHelp (ScriptingContext context, string arguments)
+		{
+			global_group.PrintHelp (context, arguments);
 		}
 
 		void GetExpressions (Assembly assembly)
