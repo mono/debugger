@@ -3,7 +3,8 @@ using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
-	public class SimpleBreakpoint : Breakpoint
+	[Serializable]
+	public class SimpleBreakpoint : Breakpoint, ISerializable
 	{
 		public SimpleBreakpoint (string name, ThreadGroup group,
 					 BreakpointCheckHandler check_handler,
@@ -50,6 +51,22 @@ namespace Mono.Debugger
 		{
 			if (BreakpointHitEvent != null)
 				BreakpointHitEvent (this, frame);
+		}
+
+		//
+		// ISerializable
+		//
+
+		public override void GetObjectData (SerializationInfo info,
+						    StreamingContext context)
+		{
+			base.GetObjectData (info, context);
+		}
+
+		protected SimpleBreakpoint (SerializationInfo info,
+					    StreamingContext context)
+			: base (info, context)
+		{			
 		}
 	}
 }

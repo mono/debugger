@@ -1,5 +1,16 @@
 2004-04-26  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Session.cs: New file.
+
+	* arch/Bfd.cs (Bfd): Added serialization support.
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolFile): Serializable.
+
+	* classes/Breakpoint.cs, classes/SourceInfo.cs: These are easy,
+	just save/load them.
+
+2004-04-26  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs: Don't make this class abstract.
 
 2004-04-25  Martin Baulig  <martin@ximian.com>

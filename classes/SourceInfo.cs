@@ -13,7 +13,8 @@ namespace Mono.Debugger
 	//   A single source file.  It is used to find a breakpoint's location by method
 	//   name or source file.
 	// </summary>
-	public class SourceFile
+	[Serializable]
+	public class SourceFile : ISerializable
 	{
 		public string Name {
 			get {
@@ -54,7 +55,7 @@ namespace Mono.Debugger
 		// </summary>
 		public SourceMethod[] Methods {
 			get {
-				symfile.GetMethods (this);
+				module.SymbolFile.GetMethods (this);
 				SourceMethod[] retval = new SourceMethod [methods.Count];
 				methods.CopyTo (retval, 0);
 				return retval;
@@ -63,7 +64,7 @@ namespace Mono.Debugger
 
 		public SourceMethod FindMethod (string name)
 		{
-			symfile.GetMethods (this);
+			module.SymbolFile.GetMethods (this);
 			foreach (SourceMethod method in methods) {
 				if (method.Name == name)
 					return method;
@@ -74,7 +75,7 @@ namespace Mono.Debugger
 
 		public SourceLocation FindLine (int line)
 		{
-			symfile.GetMethods (this);
+			module.SymbolFile.GetMethods (this);
 			foreach (SourceMethod method in methods) {
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return new SourceLocation (method, line);
@@ -83,16 +84,14 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public SourceFile (ISymbolFile symfile, Module module, string filename)
+		public SourceFile (Module module, string filename)
 		{
 			this.id = ++next_id;
-			this.symfile = symfile;
 			this.module = module;
 			this.filename = filename;
 			this.methods = new ArrayList ();
 		}
 
-		ISymbolFile symfile;
 		string filename;
 		Module module;
 		int id;
@@ -103,6 +102,24 @@ namespace Mono.Debugger
 		{
 			return String.Format ("SourceFile ({0}:{1})", ID, FileName);
 		}
+
+		//
+		// ISerializable
+		//
+
+		public virtual void GetObjectData (SerializationInfo info,
+						   StreamingContext context)
+		{
+			info.AddValue ("filename", filename);
+			info.AddValue ("module", module);
+		}
+
+		protected SourceFile (SerializationInfo info, StreamingContext context)
+		{
+			filename = info.GetString ("filename");
+			module = (Module) info.GetValue ("module", typeof (Module));
+			id = ++next_id;
+		}
 	}
 
 	internal delegate void MethodLoadedHandler (Inferior inferior, SourceMethod method,
@@ -112,6 +129,7 @@ namespace Mono.Debugger
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.
 	// </summary>
+	[Serializable]
 	public class SourceMethod
 	{
 		public long Handle {
@@ -153,7 +171,7 @@ namespace Mono.Debugger
 				if (method != null)
 					return true;
 
-				method = symfile.GetMethod (handle);
+				method = module.SymbolFile.GetMethod (handle);
 				return method != null;
 			}
 		}
@@ -204,19 +222,19 @@ namespace Mono.Debugger
 					      StartRow, EndRow, IsLoaded);
 		}
 
-		IMethod method;
-		ISymbolFile symfile;
+		[NonSerialized] IMethod method;
+		Module module;
 		SourceFile source;
 		string name;
 		int  start_row, end_row;
 		bool is_dynamic;
 		long handle;
 
-		public SourceMethod (ISymbolFile symfile, SourceFile source,
+		public SourceMethod (Module module, SourceFile source,
 				     long handle, string name, int start, int end,
 				     bool is_dynamic)
 		{
-			this.symfile = symfile;
+			this.module = module;
 			this.source = source;
 			this.handle = handle;
 			this.name = name;

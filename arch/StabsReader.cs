@@ -483,7 +483,7 @@ namespace Mono.Debugger.Architecture
 				   StabsReader stabs, ref Entry entry, string name)
 			{
 				this.stabs = stabs;
-				this.SourceFile = new SourceFile (stabs, stabs.module, name);
+				this.SourceFile = new SourceFile (stabs.module, name);
 
 				start = stabs.bfd.GetAddress (entry.n_value);
 
@@ -606,7 +606,7 @@ namespace Mono.Debugger.Architecture
 				}
 
 				SourceMethod source = new SourceMethod (
-					method.File.StabsReader, method.File.SourceFile,
+					method.File.StabsReader.module, method.File.SourceFile,
 					0, Name, StartRow, EndRow, false);
 
 				return new MethodSourceData (

@@ -2,15 +2,13 @@ using System;
 using Math = System.Math;
 using System.Text;
 using System.IO;
+using System.Threading;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
-
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.GetOptions;
 
@@ -67,6 +65,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		bool is_script;
 		int exit_code = 0;
 
+		ManualResetEvent start_event;
+
 		internal static readonly string DirectorySeparatorStr;
 
 		static Interpreter ()
@@ -96,6 +96,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			user_interfaces.Add ("martin", new StyleMartin (this));
 			current_user_interface = (Style) user_interfaces ["mono"];
 
+			start_event = new ManualResetEvent (false);
+
 			context = new ScriptingContext (this, is_interactive, true);
 
 			start = ProcessStart.Create (options);
@@ -110,6 +112,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			} catch (TargetException e) {
 				Error (e);
 			}
+
+			if (is_synchronous)
+				start_event.WaitOne ();
 
 			context.CurrentProcess = current_process;
 		}
@@ -126,6 +131,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 			backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
+			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (thread_manager_initialized);
 			return backend;
 		}
 
@@ -310,6 +316,30 @@ namespace Mono.Debugger.Frontends.Scripting
 			Process process = backend.ThreadManager.WaitForApplication ();
 			current_process = (ProcessHandle) procs [process.ID];
 
+			if (is_synchronous)
+				start_event.WaitOne ();
+
+			return process;
+		}
+
+		public Process Run (ProcessStart start)
+		{
+			if (backend != null)
+				throw new ScriptingException ("Already have a target.");
+
+			this.start = start;
+			Initialize ();
+
+			Process process;
+			try {
+				process = Run ();
+			} catch (TargetException e) {
+				throw new ScriptingException (
+					"Cannot start target: {0}", e.Message);
+			}
+
+			start_event.WaitOne ();
+			context.CurrentProcess = current_process;
 			return process;
 		}
 
@@ -317,6 +347,11 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			ProcessHandle handle = new ProcessHandle (this, process);
 			add_process (handle);
+		}
+
+		void thread_manager_initialized (ThreadManager manager, Process process)
+		{
+			start_event.Set ();
 		}
 
 		void modules_changed ()
@@ -637,6 +672,36 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 
 			Print ("Loaded library {0}.", filename);
+		}
+
+		public void SaveSession (string filename)
+		{
+			Session session = new Session ();
+
+			session.Modules = DebuggerBackend.Modules;
+
+			ArrayList list = new ArrayList ();
+			foreach (BreakpointHandle handle in breakpoints.Values) {
+				if (handle.SourceLocation == null) {
+					Print ("Warning: Cannot save breakpoint {0}",
+					       handle.Breakpoint.Index);
+					continue;
+				}
+
+				list.Add (handle);
+			}
+
+			session.Breakpoints = new BreakpointHandle [list.Count];
+			list.CopyTo (session.Breakpoints, 0);
+
+			session.Save (this, filename);
+		}
+
+		public void LoadSession (string filename)
+		{
+			Session session = Session.Load (this, filename);
+			foreach (BreakpointHandle handle in session.Breakpoints)
+				breakpoints.Add (handle.Breakpoint.Index, handle);
 		}
 	}
 }

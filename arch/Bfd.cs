@@ -13,7 +13,9 @@ namespace Mono.Debugger.Architecture
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : Module, ISymbolContainer, ILanguageBackend, IDisposable
+	[Serializable]
+	internal class Bfd : Module, ISymbolContainer, ILanguageBackend,
+		IDisposable, ISerializable
 	{
 		IntPtr bfd;
 		protected BfdContainer container;
@@ -1083,6 +1085,55 @@ namespace Mono.Debugger.Architecture
 			~LoadHandlerData ()
 			{
 				Dispose (false);
+			}
+		}
+
+		//
+		// ISerializable
+		//
+
+		void ISerializable.GetObjectData (SerializationInfo info,
+						  StreamingContext context)
+		{
+			info.SetType (typeof (BfdProxy));
+			info.AddValue ("filename", filename);
+			info.AddValue ("step_into", StepInto);
+			info.AddValue ("load_symbols", LoadSymbols);
+		}
+
+		[Serializable]
+		private class BfdProxy : IObjectReference, ISerializable
+		{
+			string filename;
+			bool step_into;
+			bool load_symbols;
+
+			public object GetRealObject (StreamingContext context)
+			{
+				Process process = (Process) context.Context;
+
+				BfdContainer bfdc = process.DebuggerBackend.BfdContainer;
+				Module module = bfdc [filename];
+				if (module == null)
+					module = bfdc.AddFile (process, filename, true, false);
+
+				module.StepInto = step_into;
+				module.LoadSymbols = load_symbols;
+				return module;
+			}
+
+			void ISerializable.GetObjectData (SerializationInfo info,
+							  StreamingContext context)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			private BfdProxy (SerializationInfo info,
+					  StreamingContext context)
+			{
+				filename = info.GetString ("filename");
+				step_into = info.GetBoolean ("step_into");
+				load_symbols = info.GetBoolean ("load_symbols");
 			}
 		}
 

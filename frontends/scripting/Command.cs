@@ -21,11 +21,16 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public abstract class DebuggerCommand : CL.Command
 	{
+		protected virtual bool NeedsProcess {
+			get { return true;
+			}
+		}
+
 		public override string Execute (CL.Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
-			if (engine.Context.CurrentProcess == null){
+			if (NeedsProcess && (engine.Context.CurrentProcess == null)) {
 				engine.Context.Error ("No process to debug", this, null);
 				return null;
 			}
@@ -1106,6 +1111,56 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			context.Interpreter.LoadLibrary (
 				context.CurrentProcess.Process, Argument);
+		}
+	}
+
+	public class SaveCommand : DebuggerCommand
+	{
+		string filename;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args == null)
+				filename = "test.session";
+			else if (Args.Count != 1) {
+				context.Error ("Filename argument expected");
+				return false;
+			} else
+				filename = Argument;
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.SaveSession (filename);
+		}
+	}
+
+	public class LoadCommand : DebuggerCommand
+	{
+		string filename;
+
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args == null)
+				filename = "test.session";
+			else if (Args.Count != 1) {
+				context.Error ("Filename argument expected");
+				return false;
+			} else
+				filename = Argument;
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.LoadSession (filename);
 		}
 	}
 

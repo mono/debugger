@@ -5,7 +5,8 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	public class BreakpointHandle
+	[Serializable]
+	public class BreakpointHandle : ISerializable, IDeserializationCallback
 	{
 		Breakpoint breakpoint;
 		SourceLocation location;
@@ -35,6 +36,10 @@ namespace Mono.Debugger
 
 		public Breakpoint Breakpoint {
 			get { return breakpoint; }
+		}
+
+		public SourceLocation SourceLocation {
+			get { return location; }
 		}
 
 		IDisposable load_handler;
@@ -123,6 +128,41 @@ namespace Mono.Debugger
 				load_handler = null;
 			}
 			DisableBreakpoint (process);
+		}
+
+		//
+		// ISerializable
+		//
+
+		private Process internal_process;
+
+		public virtual void GetObjectData (SerializationInfo info,
+						   StreamingContext context)
+		{
+			info.AddValue ("location", location);
+			info.AddValue ("breakpoint", breakpoint);
+			info.AddValue ("enabled", IsEnabled);
+		}
+
+		protected BreakpointHandle (SerializationInfo info, StreamingContext context)
+		{
+			location = (SourceLocation) info.GetValue (
+				"location", typeof (SourceLocation));
+			breakpoint = (Breakpoint) info.GetValue (
+				"breakpoint", typeof (Breakpoint));
+			if (info.GetBoolean ("enabled"))
+				internal_process = (Process) context.Context;
+		}
+
+		void IDeserializationCallback.OnDeserialization (object sender)
+		{
+			if (internal_process == null)
+				return;
+
+			if (location.Method.IsLoaded)
+				address = location.GetAddress ();
+			EnableBreakpoint (internal_process);
+			internal_process = null;
 		}
 	}
 }

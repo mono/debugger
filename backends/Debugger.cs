@@ -104,6 +104,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal MonoCSharpLanguageBackend CSharpLanguage {
+			get {
+				return csharp_language;
+			}
+		}
+
 		public event TargetExitedHandler TargetExited;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 

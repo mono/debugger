@@ -9,7 +9,8 @@ namespace Mono.Debugger
 	//   such as a method lookup.  They can be serialized to disk to persist across
 	//   multiple invocations of the same target.
 	// </summary>
-	public class SourceLocation
+	[Serializable]
+	public class SourceLocation : ISerializable
 	{
 		SourceMethod method;
 		int line;
@@ -81,6 +82,23 @@ namespace Mono.Debugger
 		public override string ToString ()
 		{
 			return String.Format ("SourceLocation ({0})", Name);
+		}
+
+		//
+		// ISerializable
+		//
+
+		public virtual void GetObjectData (SerializationInfo info,
+						   StreamingContext context)
+		{
+			info.AddValue ("method", method);
+			info.AddValue ("line", line);
+		}
+
+		protected SourceLocation (SerializationInfo info, StreamingContext context)
+		{
+			method = (SourceMethod) info.GetValue ("method", typeof (SourceMethod));
+			line = info.GetInt32 ("line");
 		}
 	}
 }

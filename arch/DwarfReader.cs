@@ -174,7 +174,7 @@ namespace Mono.Debugger.Architecture
 				return source;
 
 			source = new SourceMethod (
-				this, subprog.SourceFile, subprog.Offset, subprog.Name,
+				module, subprog.SourceFile, subprog.Offset, subprog.Name,
 				start_row, end_row, true);
 			method_source_hash.Add (subprog.Offset, source);
 			return source;
@@ -182,7 +182,7 @@ namespace Mono.Debugger.Architecture
 
 		protected SourceFile AddSourceFile (DieCompileUnit die, string filename)
 		{
-			SourceFile file = new SourceFile (this, bfd, filename);
+			SourceFile file = new SourceFile (bfd, filename);
 			source_hash.Add (file, die);
 			return file;
 		}

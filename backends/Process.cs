@@ -140,6 +140,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		public DebuggerBackend DebuggerBackend {
+			get {
+				check_engine ();
+				return engine.ThreadManager.DebuggerBackend;
+			}
+		}
+
 		void check_engine ()
 		{
 			if (engine == null)

@@ -103,14 +103,41 @@ namespace Mono.Debugger
 
 		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
 		{
+			info.SetType (typeof (ThreadGroupProxy));
 			info.AddValue ("name", name);
+
+			int[] ids = new int [threads.Count];
+			threads.Keys.CopyTo (ids, 0);
+
+			info.AddValue ("threads", ids);
 		}
 
-		protected ThreadGroup (SerializationInfo info, StreamingContext context)
+		[Serializable]
+		protected class ThreadGroupProxy : ISerializable, IObjectReference
 		{
-			name = info.GetString ("name");
-			threads = Hashtable.Synchronized (new Hashtable ());
-			groups.Add (name, this);
+			string name;
+			int[] threads;
+
+			public object GetRealObject (StreamingContext context)
+			{
+				ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
+				foreach (int thread in threads)
+					group.AddThread (thread);
+				return group;
+			}
+
+			void ISerializable.GetObjectData (SerializationInfo info,
+							  StreamingContext context)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			private ThreadGroupProxy (SerializationInfo info,
+						  StreamingContext context)
+			{
+				name = info.GetString ("name");
+				threads = (int []) info.GetValue ("threads", typeof (int []));
+			}
 		}
 	}
 }

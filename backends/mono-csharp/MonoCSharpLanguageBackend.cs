@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using R = System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Collections;
 using System.Threading;
 using C = Mono.CSharp.Debugger;
@@ -876,7 +877,8 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   A single Assembly's symbol table.
 	// </summary>
-	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable
+	[Serializable]
+	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable, ISerializable
 	{
 		internal readonly int Index;
 		internal readonly R.Assembly Assembly;
@@ -1108,7 +1110,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return;
 
 			foreach (C.SourceFileEntry source in File.Sources) {
-				SourceFile info = new SourceFile (this, this, source.FileName);
+				SourceFile info = new SourceFile (this, source.FileName);
 
 				sources.Add (info);
 				source_hash.Add (info, source);
@@ -1270,6 +1272,56 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			MonoMethod method = GetMonoMethod ((int) source.Handle);
 			return method.RegisterLoadHandler (process, handler, user_data);
+		}
+
+
+		//
+		// ISerializable
+		//
+
+		void ISerializable.GetObjectData (SerializationInfo info,
+						  StreamingContext context)
+		{
+			info.SetType (typeof (MonoSymbolFileProxy));
+			info.AddValue ("image", ImageFile);
+			info.AddValue ("step_into", StepInto);
+			info.AddValue ("load_symbols", LoadSymbols);
+		}
+
+		[Serializable]
+		protected sealed class MonoSymbolFileProxy : IObjectReference, ISerializable
+		{
+			string image;
+			bool step_into;
+			bool load_symbols;
+
+			public object GetRealObject (StreamingContext context)
+			{
+				Process process = (Process) context.Context;
+				DebuggerBackend backend = process.DebuggerBackend;
+				MonoCSharpLanguageBackend csharp = backend.CSharpLanguage;
+				MonoSymbolFile file = csharp.FindImage (process, image);
+				if (file == null)
+					throw new SerializationException ();
+
+				file.StepInto = step_into;
+				file.LoadSymbols = load_symbols;
+				return file;
+			}
+
+			void ISerializable.GetObjectData (SerializationInfo info,
+							  StreamingContext context)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			private MonoSymbolFileProxy (SerializationInfo info,
+						     StreamingContext context)
+			{
+				image = info.GetString ("image");
+				step_into = info.GetBoolean ("step_into");
+				load_symbols = info.GetBoolean ("load_symbols");
+			}
 		}
 
 		protected class MonoMethod : MethodBase

@@ -769,6 +769,10 @@ namespace Mono.Debugger.Backends
 			get { return process; }
 		}
 
+		public ThreadManager ThreadManager {
+			get { return manager; }
+		}
+
 		ThreadManager manager;
 		Process process;
 		Inferior inferior;
