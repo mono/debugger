@@ -1,3 +1,9 @@
+2004-03-02  Mike Kestner  <mkestner@ximian.com>
+
+	* configure.in : expand pc.in
+	* Makefile.am : install pc and dist pc.in
+	* mono-debugger.pc.in: new
+
 2004-03-02  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Bumped version number to 0.6.  This is not a

@@ -1,0 +1,8 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+
+
+Name: Mono.Debugger
+Description: Debugging API for Mono
+Version: @VERSION@
