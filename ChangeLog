@@ -1,5 +1,9 @@
 2003-02-02  Martin Baulig  <martin@ximian.com>
 
+	* test/TestInternCall.cs: New test.
+
+2003-02-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs: Added support for
 	PInvoke/icall wrappers.
 
