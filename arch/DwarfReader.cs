@@ -28,6 +28,7 @@ namespace Mono.Debugger.Architecture
 
 		Hashtable source_hash;
 		Hashtable method_source_hash;
+		Hashtable method_hash;
 		Hashtable compile_unit_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
@@ -79,6 +80,7 @@ namespace Mono.Debugger.Architecture
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
+			method_hash = Hashtable.Synchronized (new Hashtable ());
 			source_hash = Hashtable.Synchronized (new Hashtable ());
 
 			if (bfd.IsLoaded) {
@@ -137,7 +139,10 @@ namespace Mono.Debugger.Architecture
 
 		IMethod ISymbolFile.GetMethod (long handle)
 		{
-			return null;
+			MethodBase method = (MethodBase) method_hash [handle];
+			if ((method == null) || !method.IsLoaded)
+				return null;
+			return method;
 		}
 
 		void ISymbolFile.GetMethods (SourceFile file)
@@ -2016,6 +2021,8 @@ namespace Mono.Debugger.Architecture
 
 					buffer = subprog.dwarf.factory.FindFile (
 						subprog.SourceFile.FileName);
+
+					subprog.dwarf.method_hash.Add (source.Handle, this);
 				}
 
 				void method_loaded ()

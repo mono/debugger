@@ -63,6 +63,7 @@ namespace Mono.Debugger
 
 		public SourceMethod FindMethod (string name)
 		{
+			symfile.GetMethods (this);
 			foreach (SourceMethod method in methods) {
 				if (method.Name == name)
 					return method;
@@ -73,6 +74,7 @@ namespace Mono.Debugger
 
 		public SourceLocation FindLine (int line)
 		{
+			symfile.GetMethods (this);
 			foreach (SourceMethod method in methods) {
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return new SourceLocation (method, line);
