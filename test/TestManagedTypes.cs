@@ -1,6 +1,6 @@
 using System;
 
-struct A
+public struct A
 {
 	public int a;
 	public long b;
@@ -14,7 +14,7 @@ struct A
 	}
 }
 
-class B
+public class B
 {
 	public int a;
 	public long b;
@@ -28,7 +28,7 @@ class B
 	}
 }
 
-class C : B
+public class C : B
 {
 	public new int a;
 	public float f;
@@ -72,9 +72,9 @@ struct E
 	}
 }
 
-class X
+public class X
 {
-	static void Simple ()
+	public static void Simple ()
 	{
 		int a = 5;
 		long b = 7;
@@ -88,7 +88,7 @@ class X
 		Console.WriteLine (hello);
 	}
 
-	static void BoxedValueType ()
+	public static void BoxedValueType ()
 	{
 		int a = 5;
 		object boxed_a = a;
@@ -97,7 +97,7 @@ class X
 		Console.WriteLine (boxed_a);
 	}
 
-	static void BoxedReferenceType ()
+	public static void BoxedReferenceType ()
 	{
 		string hello = "Hello World";
 		object boxed_hello = hello;
@@ -106,28 +106,28 @@ class X
 		Console.WriteLine (boxed_hello);
 	}
 
-	static void SimpleArray ()
+	public static void SimpleArray ()
 	{
 		int[] a = { 3, 4, 5 };
 
 		Console.WriteLine (a [2]);
 	}
 
-	static void MultiValueTypeArray ()
+	public static void MultiValueTypeArray ()
 	{
 		int[,] a = { { 6, 7, 8 }, { 9, 10, 11 } };
 
 		Console.WriteLine (a [1,2]);
 	}
 
-	static void StringArray ()
+	public static void StringArray ()
 	{
 		string[] a = { "Hello", "World" };
 
 		Console.WriteLine (a);
 	}
 
-	static void MultiStringArray ()
+	public static void MultiStringArray ()
 	{
 		string[,] a = { { "Hello", "World" }, { "New York", "Boston" },
 				{ "Ximian", "Monkeys" } };
@@ -135,19 +135,19 @@ class X
 		Console.WriteLine (a);
 	}
 
-	static void StructType ()
+	public static void StructType ()
 	{
 		A a = new A (5, 256, "New England Patriots");
 		Console.WriteLine (a);
 	}
 
-	static void ClassType ()
+	public static void ClassType ()
 	{
 		B b = new B (5, 256, "New England Patriots");
 		Console.WriteLine (b);
 	}
 
-	static void InheritedClassType ()
+	public static void InheritedClassType ()
 	{
 		C c = new C (5, 256, "New England Patriots", 3.14F, 8);
 		Console.WriteLine (c.a);
@@ -156,7 +156,7 @@ class X
 		Console.WriteLine (b.a);
 	}
 
-	static void ComplexStructType ()
+	public static void ComplexStructType ()
 	{
 		A a = new A (5, 256, "New England Patriots");
 		B b = new B (5, 256, "New England Patriots");
@@ -166,7 +166,7 @@ class X
 		Console.WriteLine (d.s [0]);
 	}
 
-	static void FunctionStructType ()
+	public static void FunctionStructType ()
 	{
 		E e = new E (9);
 
@@ -174,7 +174,7 @@ class X
 		Console.WriteLine (e.a);
 	}
 
-	static void Main ()
+	public static void Main ()
 	{
 		Simple ();
 		BoxedValueType ();
