@@ -40,12 +40,12 @@ namespace Mono.Debugger
 
 		internal abstract Inferior CreateInferior (ProcessStart start);
 
-		protected abstract void DoInitialize (Inferior inferior, bool activate);
+		protected abstract void DoInitialize (Inferior inferior);
 
-		protected void Initialize (Inferior inferior, bool activate)
+		protected void Initialize (Inferior inferior)
 		{
 			if (!initialized) {
-				DoInitialize (inferior, activate);
+				DoInitialize (inferior);
 				initialized = true;
 			}
 		}
@@ -278,7 +278,7 @@ namespace Mono.Debugger
 
 				inferior.UpdateModules ();
 
-				thread_manager.Initialize (inferior, false);
+				thread_manager.Initialize (inferior);
 			}
 		}
 

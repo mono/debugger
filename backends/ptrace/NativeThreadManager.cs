@@ -19,9 +19,12 @@ namespace Mono.Debugger.Backends
 {
 	internal class NativeThreadManager : ThreadManager
 	{
-		public NativeThreadManager (DebuggerBackend backend, BfdContainer bfdc)
+		public NativeThreadManager (DebuggerBackend backend, BfdContainer bfdc,
+					    bool activate)
 			: base (backend, bfdc)
 		{
+			this.activate = activate;
+
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 
 			global_group = ThreadGroup.CreateThreadGroup ("global");
@@ -38,6 +41,7 @@ namespace Mono.Debugger.Backends
 		AddressDomain address_domain;
 		ThreadGroup global_group;
 		int thread_lock_level = 0;
+		bool activate;
 
 		TargetAddress thread_handles = TargetAddress.Null;
 		TargetAddress thread_handles_num = TargetAddress.Null;
@@ -71,7 +75,7 @@ namespace Mono.Debugger.Backends
 			return main_process;
 		}
 
-		protected override void DoInitialize (Inferior inferior, bool activate)
+		protected override void DoInitialize (Inferior inferior)
 		{
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
 
@@ -87,6 +91,7 @@ namespace Mono.Debugger.Backends
 			    !thread_handles_num.IsNull && !last_thread_event.IsNull &&
 			    !sig_debug.IsNull && !sig_restart.IsNull && !sig_cancel.IsNull) {
 				if (activate) {
+					add_process (main_process, inferior.PID);
 					inferior.WriteInteger (tdebug, 1);
 					has_threads = true;
 				}

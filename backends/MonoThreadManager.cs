@@ -24,7 +24,7 @@ namespace Mono.Debugger.Backends
 		public MonoThreadManager (DebuggerBackend backend, BfdContainer bfdc)
 			: base (backend, bfdc)
 		{
-			thread_manager = new NativeThreadManager (backend, bfdc);
+			thread_manager = new NativeThreadManager (backend, bfdc, false);
 
 			main_started_event = new ManualResetEvent (false);
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
@@ -81,9 +81,9 @@ namespace Mono.Debugger.Backends
 		bool reached_main;
 		bool has_threads;
 
-		protected override void DoInitialize (Inferior inferior, bool activate)
+		protected override void DoInitialize (Inferior inferior)
 		{
-			thread_manager.Initialize (inferior, false);
+			thread_manager.Initialize (inferior);
 
 			thread_manager_notify_command = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notify_command");
 			thread_manager_notify_tid = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notify_tid");
@@ -99,7 +99,7 @@ namespace Mono.Debugger.Backends
 
 		public bool Initialize (PTraceInferior inferior, TargetAddress address)
 		{
-			Initialize (inferior, true);
+			Initialize (inferior);
 
 			TargetAddress maddr = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notification");
 			TargetAddress caddr = bfdc.LookupSymbol ("MONO_DEBUGGER__command_notification");

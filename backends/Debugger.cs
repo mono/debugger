@@ -51,7 +51,7 @@ namespace Mono.Debugger
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
 
-			thread_manager = new MonoThreadManager (this, bfd_container);
+			thread_manager = new NativeThreadManager (this, bfd_container, true);
 
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent +=
@@ -119,12 +119,8 @@ namespace Mono.Debugger
 
 			module_manager.Lock ();
 
-#if FIXME
-			process = thread_manager.StartApplication (this, start, bfd_container);
-			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-#else
 			process = thread_manager.StartApplication (start);
-#endif
+			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 
 			main_group.AddThread (process);
 			return process;
@@ -170,17 +166,6 @@ namespace Mono.Debugger
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
 		}
-
-#if FIXME
-		internal Process CreateDebuggerProcess (Process command_process, int pid)
-		{
-			csharp_language = new MonoCSharpLanguageBackend (this, command_process);
-			languages.Add (csharp_language);
-
-			return command_process.CreateDaemonThread (
-				pid, 0, new DaemonThreadHandler (csharp_language.DaemonThreadHandler));
-		}
-#endif
 
 		internal DaemonThreadHandler CreateDebuggerHandler (Process command_process)
 		{
