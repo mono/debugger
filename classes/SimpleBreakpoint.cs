@@ -21,7 +21,7 @@ namespace Mono.Debugger
 		{ }
 
 		public SimpleBreakpoint (string name)
-			: base (name, null)
+			: this (name, null)
 		{ }
 
 		BreakpointCheckHandler check_handler;
