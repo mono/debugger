@@ -234,12 +234,13 @@ namespace Mono.Debugger.GUI
 
 		void OnStopProgramActivate (object sender, EventArgs args)
 		{
-			Console.WriteLine ("Do not know how to stop program");
+			backend.Stop ();
 		}
 
 		void OnRestartProgramActivate (object sender, EventArgs args)
 		{
-			Console.WriteLine ("Do not know how to stop program");	
+			backend.Stop ();
+			backend.Run ();
 		}
 
 		void OnStepIntoActivate (object sender, EventArgs args)

@@ -305,6 +305,7 @@
 		  <accessibility>
 		    <atkproperty name="AtkObject::accessible_description" translatable="yes">Start or resume program execution</atkproperty>
 		  </accessibility>
+		  <signal name="clicked" handler="OnRunProgramActivate" last_modification_time="Thu, 19 Sep 2002 06:00:49 GMT"/>
 		</widget>
 	      </child>
 
@@ -317,6 +318,7 @@
 		  <accessibility>
 		    <atkproperty name="AtkObject::accessible_description" translatable="yes">Stop program execution</atkproperty>
 		  </accessibility>
+		  <signal name="clicked" handler="OnStopProgramActivate" last_modification_time="Thu, 19 Sep 2002 06:00:43 GMT"/>
 		</widget>
 	      </child>
 
@@ -330,6 +332,7 @@
 		    <atkproperty name="AtkObject::accessible_name" translatable="yes">Step Over</atkproperty>
 		    <atkproperty name="AtkObject::accessible_description" translatable="yes">Step Over</atkproperty>
 		  </accessibility>
+		  <signal name="clicked" handler="OnStepOverActivate" last_modification_time="Thu, 19 Sep 2002 06:00:34 GMT"/>
 		</widget>
 	      </child>
 
@@ -342,6 +345,7 @@
 		    <atkproperty name="AtkObject::accessible_name" translatable="yes">Step Into</atkproperty>
 		    <atkproperty name="AtkObject::accessible_description" translatable="yes">Step Into</atkproperty>
 		  </accessibility>
+		  <signal name="clicked" handler="OnStepIntoActivate" last_modification_time="Thu, 19 Sep 2002 06:01:05 GMT"/>
 		</widget>
 	      </child>
 	    </widget>
@@ -923,6 +927,7 @@
 	    <widget class="GtkButton" id="button2">
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
+	      <property name="has_default">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label">gtk-open</property>
 	      <property name="use_stock">True</property>
