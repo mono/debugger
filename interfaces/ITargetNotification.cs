@@ -48,7 +48,7 @@ namespace Mono.Debugger
 		// </summary>
 		CORE_FILE,
 
-		LAST = CORE_FILE
+		LAST
 	}
 
 	public interface ITargetNotification

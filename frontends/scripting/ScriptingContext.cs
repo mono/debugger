@@ -289,7 +289,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
-			else if (State != TargetState.STOPPED)
+			else if (!process.IsStopped)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
 			if (current_backtrace != null)
@@ -313,7 +313,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
-			else if (State != TargetState.STOPPED)
+			else if (!process.IsStopped)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
 			if (number == -1) {
@@ -409,7 +409,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
-			else if (State != TargetState.STOPPED)
+			else if (!process.IsStopped)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
 			Register[] registers = frame.Registers;
@@ -707,12 +707,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				start = ProcessStart.Create (null, args, null);
 				process = backend.ReadCoreFile (start, "thecore");
+				current_process = new ProcessHandle (this, backend, process);
 			} else{
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
+				current_process = new ProcessHandle (this, backend, process, pid);
 			}
 
-			current_process = new ProcessHandle (this, backend, process, pid);
 			procs.Add (current_process);
 
 			return current_process;

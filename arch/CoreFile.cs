@@ -617,7 +617,8 @@ namespace Mono.Debugger.Architecture
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					bfd_container.CloseBfd (bfd);
+					if (bfd_container != null)
+						bfd_container.CloseBfd (bfd);
 					if (core_bfd != null)
 						core_bfd.Dispose ();
 				}

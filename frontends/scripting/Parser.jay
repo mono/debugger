@@ -253,7 +253,7 @@ program_arglist
 
 		$$ = args;
 	  }
-	| program_arguments STRING
+	| program_arglist STRING
 	  {
 		ArrayList args = (ArrayList) $1;
 		args.Add ($2);

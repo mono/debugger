@@ -137,10 +137,12 @@ namespace Mono.Debugger
 		public IArchitecture Architecture {
 			get {
 				check_disposed ();
-				if (inferior == null)
+				if (inferior != null)
+					return inferior.Architecture;
+				else if (core != null)
+					return core.Architecture;
+				else
 					return null;
-				
-				return inferior.Architecture;
 			}
 		}
 
