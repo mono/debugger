@@ -9,7 +9,7 @@ API_INCLUDES = \
 
 RUNTIME=mono
 
-if MAINTAINER_MODE
+if USE_GAPI_CODEGEN
 
 all: generated-stamp
 
