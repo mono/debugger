@@ -19,9 +19,9 @@ namespace Mono.Debugger
 	[Serializable]
 	public class ProcessStart
 	{
-		public readonly string Path_Mono		= "mono";
-		public readonly string Environment_Path		= "/usr/bin";
-		public readonly string Environment_LibPath	= "";
+		public static string Path_Mono			= "mono";
+		public static string Environment_Path		= "/usr/bin";
+		public static string Environment_LibPath	= "";
 
 		string cwd;
 		string base_dir;
@@ -33,12 +33,8 @@ namespace Mono.Debugger
 
 		bool initialized = false;
 
-		public ProcessStart (string cwd, string[] argv, string[] envp)
+		static ProcessStart ()
 		{
-			this.cwd = cwd;
-			this.argv = argv;
-			this.envp = envp;
-
 			NameValueCollection settings = ConfigurationSettings.AppSettings;
 
 			foreach (string key in settings.AllKeys) {
@@ -56,11 +52,15 @@ namespace Mono.Debugger
 				case "environment-libpath":
 					Environment_LibPath = value;
 					break;
-
-				default:
-					break;
 				}
 			}
+		}
+
+		public ProcessStart (string cwd, string[] argv, string[] envp)
+		{
+			this.cwd = cwd;
+			this.argv = argv;
+			this.envp = envp;
 		}
 
 		public ProcessStart (string cwd, string[] argv, string[] envp, string core_file)

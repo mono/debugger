@@ -1,5 +1,14 @@
 2003-03-09  Martin Baulig  <martin@ximian.com>
 
+	* backends/ProcessStart.cs
+	(Path_Mono, Environment_Path, Environment_LibPath): Made them
+	static and writable.
+
+	* frontends/scripting/ScriptingContext.cs (--jit-wrapper): New
+	command line argument to override the ProcessStart.Path_Mono.
+
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Set version number to 0.2.3.  The next release
 	will be 0.3 "White Montains".
 

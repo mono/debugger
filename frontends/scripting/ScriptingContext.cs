@@ -683,6 +683,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		[Option("The command-line prompt", 'p')]
 		public string prompt = "$";
 
+		[Option("Full path name of the JIT wrapper", "jit-wrapper")]
+		public string JitWrapper = null;
+
 		public StartMode StartMode {
 			get { return start_mode; }
 		}
@@ -746,6 +749,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+
+			if (options.JitWrapper != null)
+				ProcessStart.Path_Mono = options.JitWrapper;
 		}
 
 		public ProcessStart ProcessStart {
