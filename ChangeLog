@@ -1,5 +1,10 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/wrapper.c: Use the Mono I/O-layer instead of POSIX
+	semaphores.	
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
 	(MonoCSharpLanguageBackend): Don't take a `Process' argument.
 

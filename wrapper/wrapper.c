@@ -5,12 +5,11 @@
 #include <mono/metadata/mono-debug.h>
 #define IN_MONO_DEBUGGER
 #include <mono/private/libgc-mono-debugger.h>
-#include <semaphore.h>
 #include <unistd.h>
 #include <locale.h>
 
-static sem_t main_started_cond;
-static sem_t main_ready_cond;
+static gpointer main_started_cond;
+static gpointer main_ready_cond;
 
 #define HEAP_SIZE 1048576
 static char mono_debugger_heap [HEAP_SIZE];
@@ -51,12 +50,6 @@ MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
 	NULL, NULL, 0, NULL, NULL
 };
-
-void
-mono_debugger_wait_cond (sem_t *cond)
-{
-	sem_wait (cond);
-}
 
 static guint64
 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument)
@@ -139,8 +132,8 @@ static MonoThreadCallbacks thread_callbacks = {
 static void
 initialize_debugger_support (void)
 {
-	sem_init (&main_started_cond, 0, 0);
-	sem_init (&main_ready_cond, 0, 0);
+	main_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	main_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
 	mono_debugger_notification_function = mono_debugger_create_notification_function
 		(&MONO_DEBUGGER__manager.notification_address);
@@ -173,12 +166,12 @@ main_thread_handler (gpointer user_data)
 
 	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__manager.main_thread);
 
-	sem_post (&main_started_cond);
+	IO_LAYER (ReleaseSemaphore) (main_started_cond, 1, NULL);
 
 	/*
 	 * Wait until everything is ready.
 	 */
-	mono_debugger_wait_cond (&main_ready_cond);
+	IO_LAYER (WaitForSingleObject) (main_ready_cond, INFINITE);
 
 	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
 
@@ -199,7 +192,7 @@ MONO_DEBUGGER__start_main (void)
 	/*
 	 * Signal the main thread that it can execute the managed Main().
 	 */
-	sem_post (&main_ready_cond);
+	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
 
 	// mono_debugger_thread_manager_main ();
 
@@ -247,7 +240,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	main_args.argv = argv + 2;
 
 	mono_thread_create (domain, main_thread_handler, &main_args);
-	mono_debugger_wait_cond (&main_started_cond);
+	IO_LAYER (WaitForSingleObject) (main_started_cond, INFINITE);
 
 	/*
 	 * Initialize the thread manager.
