@@ -4,6 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
+	// Keep in sync with DebuggerI386Registers in backends/server/i386-arch.h.
 	internal enum I386Register
 	{
 		EBX		= 0,
@@ -13,17 +14,16 @@ namespace Mono.Debugger
 		EDI		= 4,
 		EBP		= 5,
 		EAX		= 6,
-		XDS		= 7,
-		XES		= 8,
-		XFS		= 9,
-		XGS		= 10,
-		ORIG_EAX	= 11,
-		EIP		= 12,
-		XCS		= 13,
-		EFL		= 14,
-		ESP		= 15,
-		XSS		= 16,
-		COUNT		= 17
+		DS		= 7,
+		ES		= 8,
+		FS		= 9,
+		GS		= 10,
+		EIP		= 11,
+		CS		= 12,
+		EFLAGS		= 13,
+		ESP		= 14,
+		SS		= 15,
+		COUNT		= 16
 	}
 
 	// <summary>
@@ -175,16 +175,15 @@ namespace Mono.Debugger
 				   (int) I386Register.EDI,
 				   (int) I386Register.EBP,
 				   (int) I386Register.EAX,
-				   (int) I386Register.XDS,
-				   (int) I386Register.XES,
-				   (int) I386Register.XFS,
-				   (int) I386Register.XGS,
-				   (int) I386Register.ORIG_EAX,
+				   (int) I386Register.DS,
+				   (int) I386Register.ES,
+				   (int) I386Register.FS,
+				   (int) I386Register.GS,
 				   (int) I386Register.EIP,
-				   (int) I386Register.XCS,
-				   (int) I386Register.EFL,
+				   (int) I386Register.CS,
+				   (int) I386Register.EFLAGS,
 				   (int) I386Register.ESP,
-				   (int) I386Register.XSS };
+				   (int) I386Register.SS };
 
 		int[] important_regs = { (int) I386Register.EAX,
 					 (int) I386Register.EBX,
@@ -195,16 +194,15 @@ namespace Mono.Debugger
 					 (int) I386Register.EBP,
 					 (int) I386Register.ESP,
 					 (int) I386Register.EIP,
-					 (int) I386Register.EFL };
+					 (int) I386Register.EFLAGS };
 				
-		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "xds",
-				       "xes", "xfs", "xgs", "orig_eax", "eip", "xcs", "eflags",
-				       "esp", "xss" };
+		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "ds",
+				       "es", "fs", "gs", "eip", "cs", "eflags", "esp", "ss" };
 
 		public string PrintRegister (int register, long value)
 		{
 			switch ((I386Register) register) {
-			case I386Register.EFL: {
+			case I386Register.EFLAGS: {
 				ArrayList flags = new ArrayList ();
 				if ((value & (1 << 0)) != 0)
 					flags.Add ("CF");

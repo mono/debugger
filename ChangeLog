@@ -1,5 +1,10 @@
 2003-01-14  Martin Baulig  <martin@ximian.com>
 
+	* arch/ArchitectureI386.cs: Keep the registers in sync with
+	DebuggerI386Registers in backends/server/i386-arch.h.
+
+2003-01-14  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-linux-ptrace.c: Moved the
 	architecture-specific stuff into i386-arch.[ch]; moved the
 	portable stuff into i386-ptrace.c, created i386-linux-ptrace.c and

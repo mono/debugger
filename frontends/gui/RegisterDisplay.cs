@@ -149,7 +149,7 @@ namespace Mono.Debugger.GUI
 
 			i386_registers = new Gtk.Entry [(int) I386Register.COUNT];
 			for (int i = 0; i <= (int) I386Register.COUNT; i++){
-				if (i == (int) I386Register.EFL)
+				if (i == (int) I386Register.EFLAGS)
 					continue;
 				
 				string name = ((I386Register) i).ToString ();
@@ -256,7 +256,7 @@ namespace Mono.Debugger.GUI
 				SetText (i386_registers [i], i);
 			}
 
-			long f = regs [(int)I386Register.EFL];
+			long f = regs [(int)I386Register.EFLAGS];
 			i386_cf.Active =  ((f & (1 << 0)) != 0);
 			i386_pf.Active =  ((f & (1 << 2)) != 0);
 			i386_af.Active =  ((f & (1 << 4)) != 0);
