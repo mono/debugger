@@ -47,66 +47,6 @@ struct InferiorHandle
 	BreakpointManager *bpm;
 };
 
-static ServerCommandError
-get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
-{
-	if (ptrace (PT_GETREGS, handle->pid, NULL, GPOINTER_TO_UINT (regs)) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
-		}
-	}
-
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
-set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
-{
-	if (ptrace (PT_SETREGS, handle->pid, NULL, GPOINTER_TO_UINT (regs)) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
-		}
-	}
-
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
-get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
-{
-	if (ptrace (PT_GETFPREGS, handle->pid, NULL, GPOINTER_TO_UINT (regs)) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
-		}
-	}
-
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
-set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
-{
-	if (ptrace (PT_SETFPREGS, handle->pid, NULL, GPOINTER_TO_UINT (regs)) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
-		}
-	}
-
-	return COMMAND_ERROR_NONE;
-}
-
 static void
 server_ptrace_finalize (InferiorHandle *handle)
 {

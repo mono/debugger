@@ -24,4 +24,9 @@
 #define INFERIOR_REG_SS(r)	r.ss
 #define INFERIOR_REG_GS(r)	r.gs
 
+static ServerCommandError get_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
+static ServerCommandError set_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
+static ServerCommandError get_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
+static ServerCommandError set_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
+
 #endif
