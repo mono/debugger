@@ -850,6 +850,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void thread_created (ThreadManager manager, Process process)
 		{
+			if (process.State == TargetState.DAEMON)
+				return;
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			add_process (handle);
 		}

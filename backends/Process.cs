@@ -27,6 +27,7 @@ namespace Mono.Debugger
 		SingleSteppingEngine sse;
 		DaemonThreadRunner runner;
 		IProcess iprocess;
+		bool is_daemon;
 		int pid, id;
 
 		static int next_id = 0;
@@ -63,12 +64,14 @@ namespace Mono.Debugger
 
 			switch (type) {
 			case ProcessType.Daemon:
+				is_daemon = true;
 				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
 				runner.TargetExited += new TargetExitedHandler (child_exited);
 				this.pid = pid;
 				break;
 
 			case ProcessType.ManagedWrapper:
+				is_daemon = true;
 				runner = backend.ThreadManager.StartManagedApplication (this, inferior, start);
 				runner.TargetExited += new TargetExitedHandler (child_exited);
 				this.pid = runner.Inferior.PID;
@@ -178,7 +181,7 @@ namespace Mono.Debugger
 			get {
 				if (iprocess != null)
 					return iprocess.State;
-				else if (runner != null)
+				else if (is_daemon)
 					return TargetState.DAEMON;
 				else
 					return TargetState.NO_TARGET;
