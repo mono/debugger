@@ -75,6 +75,13 @@ AC_SUBST(CFLAGS)
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)
 
+AC_CHECK_HEADER(dis-asm.h,, [AC_MSG_ERROR(
+[Can't find <dis-asm.h>, make sure you have binutils-dev installed.])])
+AC_CHECK_LIB(bfd, bfd_get_arch,, [AC_MSG_ERROR(
+[Can't find libbfd, make sure you have binutils-dev installed.])])
+AC_CHECK_LIB(opcodes, disassembler,, [AC_MSG_ERROR(
+[Can't find libopcodes, make sure you have binutils installed.])], -lbfd)
+
 AC_PATH_PROG(MONO, mono, mono)
 AC_PATH_PROG(GDB, gdb, gdb)
 AC_SUBST(PATH)
