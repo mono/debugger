@@ -179,8 +179,10 @@ set_fp_registers (InferiorHandle *handle, struct user_i387_struct *regs)
 static void
 server_ptrace_finalize (InferiorHandle *handle)
 {
-	if (handle->pid)
+	if (handle->pid) {
 		ptrace (PTRACE_KILL, handle->pid, NULL, NULL);
+		ptrace (PTRACE_DETACH, handle->pid, NULL, NULL);
+	}
 
 	g_free (handle->saved_regs);
 	g_free (handle->saved_fpregs);
@@ -229,7 +231,7 @@ server_ptrace_detach (InferiorHandle *handle)
 static ServerCommandError
 server_ptrace_kill (InferiorHandle *handle)
 {
-	ptrace (PTRACE_KILL, handle->pid, NULL, NULL);
+	kill (handle->pid, SIGKILL);
 	return COMMAND_ERROR_NONE;
 }
 
@@ -870,10 +872,12 @@ do_dispatch (InferiorHandle *handle, int status, ServerStatusMessageType *type, 
 	} else if (WIFEXITED (status)) {
 		*type = MESSAGE_CHILD_EXITED;
 		*arg = WEXITSTATUS (status);
+		handle->pid = 0;
 		return TRUE;
 	} else if (WIFSIGNALED (status)) {
 		*type = MESSAGE_CHILD_SIGNALED;
 		*arg = WTERMSIG (status);
+		handle->pid = 0;
 		return TRUE;
 	}
 

@@ -1,3 +1,10 @@
+2002-12-30  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-linux-ptrace.c (server_ptrace_kill): Use
+	`kill (handle->pid, SIGKILL)', not `ptrace (PTRACE_KILL)' since
+	kill() works from any thread.
+	(server_ptrace_finalize): Detach from the target after killing it.
+
 2002-12-29  Peter Williams  <peterw@ximian.com>
 
 	* frontends/gui/DebuggerGUI.cs (Main): Any argument after a
