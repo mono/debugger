@@ -4,20 +4,20 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoObject : ITargetObject
 	{
-		protected MonoTypeInfo type;
+		protected MonoTypeInfo type_info;
 		protected TargetLocation location;
 		protected bool is_valid;
 
-		public MonoObject (MonoTypeInfo type, TargetLocation location)
+		public MonoObject (MonoTypeInfo type_info, TargetLocation location)
 		{
-			this.type = type;
+			this.type_info = type_info;
 			this.location = location;
 			is_valid = true;
 		}
 
-		public ITargetTypeInfo Type {
+		public ITargetTypeInfo TypeInfo {
 			get {
-				return type;
+				return type_info;
 			}
 		}
 
@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.Mono
 		public virtual byte[] RawContents {
 			get {
 				try {
-					return location.ReadBuffer (type.Size);
+					return location.ReadBuffer (type_info.Size);
 				} catch (TargetException ex) {
 					is_valid = false;
 					throw new LocationInvalidException (ex);
@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 			set {
 				try {
-					if (!type.HasFixedSize || (value.Length != type.Size))
+					if (!type_info.HasFixedSize || (value.Length != type_info.Size))
 						throw new ArgumentException ();
 					location.WriteBuffer (value);
 				} catch (TargetException ex) {
@@ -56,12 +56,12 @@ namespace Mono.Debugger.Languages.Mono
 
 		public virtual long DynamicSize {
 			get {
-				if (type.HasFixedSize)
+				if (type_info.HasFixedSize)
 					throw new InvalidOperationException ();
 
 				try {
 					TargetLocation dynamic_location;
-					ITargetMemoryReader reader = location.ReadMemory (type.Size);
+					ITargetMemoryReader reader = location.ReadMemory (type_info.Size);
 					return GetDynamicSize (reader, location, out dynamic_location);
 				} catch (TargetException ex) {
 					is_valid = false;
@@ -72,7 +72,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public virtual byte[] GetRawDynamicContents (int max_size)
 		{
-			if (type.HasFixedSize)
+			if (type_info.HasFixedSize)
 				throw new InvalidOperationException ();
 
 			try {
@@ -88,7 +88,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			try {
 				TargetLocation dynamic_location;
-				ITargetMemoryReader reader = location.ReadMemory (type.Size);
+				ITargetMemoryReader reader = location.ReadMemory (type_info.Size);
 				long size = GetDynamicSize (reader, location, out dynamic_location);
 
 				if ((max_size > 0) && (size > (long) max_size))
@@ -126,7 +126,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} [{1}]", GetType (), Type);
+			return String.Format ("{0} [{1}]", GetType (), TypeInfo);
 		}
 	}
 }

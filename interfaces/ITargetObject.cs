@@ -3,9 +3,9 @@ namespace Mono.Debugger.Languages
 	public interface ITargetObject
 	{
 		// <summary>
-		//   The type of this object.
+		//   The type info of this object.
 		// </summary>
-		ITargetTypeInfo Type {
+		ITargetTypeInfo TypeInfo {
 			get;
 		}
 

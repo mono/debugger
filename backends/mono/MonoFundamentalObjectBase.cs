@@ -4,8 +4,8 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
 	{
-		public MonoFundamentalObjectBase (MonoTypeInfo type, TargetLocation location)
-			: base (type, location)
+		public MonoFundamentalObjectBase (MonoTypeInfo type_info, TargetLocation location)
+			: base (type_info, location)
 		{ }
 
 		public bool HasObject {
@@ -24,8 +24,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			try {
 				ITargetMemoryReader reader;
-				if (type.HasFixedSize)
-					reader = location.ReadMemory (type.Size);
+				if (type_info.HasFixedSize)
+					reader = location.ReadMemory (type_info.Size);
 				else
 					reader = GetDynamicContents (location, MaximumDynamicSize);
 

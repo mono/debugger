@@ -34,8 +34,8 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				ITargetMemoryReader reader;
-				if (type.HasFixedSize)
-					reader = location.ReadMemory (type.Size);
+				if (type_info.HasFixedSize)
+					reader = location.ReadMemory (type_info.Size);
 				else
 					reader = GetDynamicContents (location, MaximumDynamicSize);
 
@@ -50,7 +50,7 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				byte [] data = CreateObject (obj);
-				if (!type.HasFixedSize || (data == null) || (data.Length != type.Size))
+				if (!type_info.HasFixedSize || (data == null) || (data.Length != type_info.Size))
 					throw new NotSupportedException ();
 
 				RawContents = data;
@@ -62,7 +62,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected object GetObject (ITargetMemoryReader reader, TargetLocation locaction)
 		{
-			switch (System.Type.GetTypeCode ((Type) type.Type.TypeHandle)) {
+			switch (System.Type.GetTypeCode ((Type) type_info.Type.TypeHandle)) {
 			case TypeCode.Boolean:
 				return reader.BinaryReader.PeekByte () != 0;
 
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected byte[] CreateObject (object obj)
 		{
-			switch (System.Type.GetTypeCode ((Type) type.Type.TypeHandle)) {
+			switch (System.Type.GetTypeCode ((Type) type_info.Type.TypeHandle)) {
 			case TypeCode.Boolean:
 				return BitConverter.GetBytes (Convert.ToBoolean (obj));
 

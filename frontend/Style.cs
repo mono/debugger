@@ -212,7 +212,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else if (obj is ITargetObject) {
 				ITargetObject tobj = (ITargetObject) obj;
-				return String.Format ("({0}) {1}", tobj.Type.Type.Name,
+				return String.Format ("({0}) {1}", tobj.TypeInfo.Type.Name,
 						      FormatObject (tobj, false));
 			}
 			else {
@@ -451,11 +451,11 @@ namespace Mono.Debugger.Frontend
 
 		protected string DoFormatObjectRecursed (ITargetObject obj)
 		{
-			switch (obj.Type.Type.Kind) {
+			switch (obj.TypeInfo.Type.Kind) {
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
 				return String.Format (
-					"({0}) {1}", obj.Type.Type.Name, obj.Location.Address);
+					"({0}) {1}", obj.TypeInfo.Type.Name, obj.Location.Address);
 
 			default:
 				return obj.Print ();
@@ -464,7 +464,7 @@ namespace Mono.Debugger.Frontend
 
 		protected string DoFormatObject (ITargetObject obj)
 		{
-			switch (obj.Type.Type.Kind) {
+			switch (obj.TypeInfo.Type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayObject aobj = (ITargetArrayObject) obj;
 				StringBuilder sb = new StringBuilder ("[");
@@ -483,7 +483,7 @@ namespace Mono.Debugger.Frontend
 				ITargetPointerObject pobj = (ITargetPointerObject) obj;
 				if (pobj.Type.IsTypesafe && pobj.HasDereferencedObject) {
 					ITargetObject deref = pobj.DereferencedObject;
-					return String.Format ("&({0}) {1}", deref.Type.Type.Name,
+					return String.Format ("&({0}) {1}", deref.TypeInfo.Type.Name,
 							      FormatObject (deref, false));
 				} else
 					return pobj.Print ();

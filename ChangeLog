@@ -1,3 +1,16 @@
+2005-02-25  Chris Toshok  <toshok@ximian.com>
+
+	* interfaces/ITargetObject.cs (ITargetObject.TypeInfo): rename
+	Type to TypeInfo, to better reflect the type of the property.
+	Also, I was getting sick of seeing obj.Type.Type everywhere.
+
+	* frontend/Command.cs, frontend/Expression.cs, frontend/Style.cs,
+	frontend/ScriptingContext.cs, backends/native/NativeObject.cs,
+	backends/native/NativeFundamentalObject.cs,
+	backends/mono/MonoVariable.cs, backends/mono/MonoObject.cs,
+	backends/mono/MonoFundamentalObjectBase.cs: deal with the fallout
+	of the above change.
+	
 2005-02-23  Chris Toshok  <toshok@ximian.com>
 
 	Fix bug #72827.
