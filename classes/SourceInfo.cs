@@ -68,6 +68,7 @@ namespace Mono.Debugger
 		public SourceMethodInfo FindMethod (string name)
 		{
 			SourceData data = ensure_methods ();
+			Console.WriteLine ("FIND METHOD: {0} {1}", this, name);
 			if (data == null)
 				return null;
 

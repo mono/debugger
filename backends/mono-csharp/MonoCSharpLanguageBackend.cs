@@ -460,6 +460,18 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
+			protected internal override void ReadModuleData ()
+			{
+				lock (this) {
+					base.ReadModuleData ();
+				}
+			}
+
+			public override SourceMethodInfo FindMethod (string name)
+			{
+				return reader.FindMethod (name);
+			}
+
 			protected override ISymbolTable GetSymbolTable ()
 			{
 				return reader.SymbolTable;
@@ -785,6 +797,11 @@ namespace Mono.Debugger.Languages.CSharp
 			return (int) index;
 		}
 
+		internal int GetMethodOffset (int index)
+		{
+			return offset_table.method_table_offset + index * MethodEntry.Size;
+		}
+
 		Hashtable method_hash;
 
 		protected MonoMethod GetMethod (long offset)
@@ -836,22 +853,66 @@ namespace Mono.Debugger.Languages.CSharp
 			return method;
 		}
 
-		public SourceInfo[] GetSources ()
+		ArrayList sources = null;
+		Hashtable method_name_hash = null;
+		void ensure_sources ()
 		{
-			ArrayList sources = new ArrayList ();
+			if (sources != null)
+				return;
+
+			sources = new ArrayList ();
+			method_name_hash = new Hashtable ();
 
 			reader.Position = offset_table.source_file_table_offset;
 			for (int i = 0; i < offset_table.source_file_count; i++) {
 				int offset = (int) reader.Position;
 
 				SourceFileEntry source = new SourceFileEntry (reader);
-				sources.Add (new MonoSourceInfo (this, source));
-			}
+				MonoSourceInfo info = new MonoSourceInfo (this, source);
 
+				ArrayList methods = new ArrayList ();
+				foreach (MethodSourceEntry entry in source.Methods) {
+					string_reader.Offset = entry.Index * int_size;
+					string_reader.Offset = string_reader.ReadInteger ();
+
+					int length = string_reader.BinaryReader.ReadInt32 ();
+					byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
+					string name = Encoding.UTF8.GetString (buffer);
+
+					if (method_name_hash.Contains (name)) {
+						Console.WriteLine (
+							"Already have a method with this name: {1}", name);
+						continue;
+					}
+
+					MonoMethodSourceEntry method = new MonoMethodSourceEntry (
+						this, entry, info, name);
+
+					method_name_hash.Add (name, method);
+					methods.Add (method);
+				}
+				info.methods = methods;
+
+				sources.Add (info);
+			}
+		}
+
+		public SourceInfo[] GetSources ()
+		{
+			ensure_sources ();
 			SourceInfo[] retval = new SourceInfo [sources.Count];
 			sources.CopyTo (retval, 0);
 			return retval;
+		}
 
+		public SourceMethodInfo FindMethod (string name)
+		{
+			ensure_sources ();
+			MonoMethodSourceEntry method = (MonoMethodSourceEntry) method_name_hash [name];
+			if (method == null)
+				return null;
+
+			return method.Method;
 		}
 
 		internal ArrayList SymbolRanges {
@@ -866,10 +927,41 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		private class MonoMethodSourceEntry
+		{
+			public readonly MethodSourceEntry Entry;
+			public readonly MonoSourceInfo SourceInfo;
+			public readonly string Name;
+
+			public MonoMethodSourceEntry (MonoSymbolTableReader reader, MethodSourceEntry entry,
+						      MonoSourceInfo source, string name)
+			{
+				this.reader = reader;
+				this.Entry = entry;
+				this.SourceInfo = source;
+				this.Name = name;
+			}
+
+			MonoSymbolTableReader reader;
+			MonoSourceMethod method = null;
+
+			public MonoSourceMethod Method {
+				get {
+					if (method != null)
+						return method;
+
+					method = new MonoSourceMethod (SourceInfo, reader, Entry, Name);
+					return method;
+				}
+			}
+
+		}
+
 		private class MonoSourceInfo : SourceInfo
 		{
 			MonoSymbolTableReader reader;
 			SourceFileEntry source;
+			public ArrayList methods;
 
 			public MonoSourceInfo (MonoSymbolTableReader reader, SourceFileEntry source)
 				: base (reader.Module, source.SourceFile)
@@ -885,18 +977,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 			protected override ArrayList GetMethods ()
 			{
-				ArrayList methods = new ArrayList ();
-				foreach (MethodSourceEntry method in source.Methods) {
-					reader.string_reader.Offset = method.Index * reader.int_size;
-					reader.string_reader.Offset = reader.string_reader.ReadInteger ();
+				ArrayList list = new ArrayList ();
+				if (methods == null)
+					return list;
 
-					int length = reader.string_reader.BinaryReader.ReadInt32 ();
-					byte[] buffer = reader.string_reader.BinaryReader.ReadBuffer (length);
-					string name = Encoding.UTF8.GetString (buffer);
-
-					methods.Add (new MonoSourceMethod (this, reader, method, name));
-				}
-				return methods;
+				foreach (MonoMethodSourceEntry method in methods)
+					list.Add (method.Method);
+				return list;
 			}
 		}
 
@@ -914,7 +1001,7 @@ namespace Mono.Debugger.Languages.CSharp
 				: base (source, name, entry.StartRow, entry.EndRow, true)
 			{
 				this.reader = reader;
-				this.offset = offset;
+				this.offset = reader.GetMethodOffset (entry.Index);
 				this.entry = entry;
 
 				source.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);

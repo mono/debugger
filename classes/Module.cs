@@ -193,7 +193,7 @@ namespace Mono.Debugger
 		SourceInfo[] sources = null;
 		ISymbolTable symtab = null;
 
-		internal void ReadModuleData ()
+		protected internal virtual void ReadModuleData ()
 		{
 			lock (this) {
 				if (!LoadSymbols)
@@ -216,8 +216,11 @@ namespace Mono.Debugger
 			}
 		}
 
-		public SourceMethodInfo FindMethod (string name)
+		public virtual SourceMethodInfo FindMethod (string name)
 		{
+			if (!SymbolsLoaded)
+				return null;
+
 			foreach (SourceInfo source in Sources) {
 				SourceMethodInfo method = source.FindMethod (name);
 

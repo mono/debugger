@@ -33,6 +33,13 @@ namespace Mono.Debugger.GUI
 
 			// FIXME: I don't know how to add tooltips.
 
+			TreeViewColumn NameCol = new TreeViewColumn ();
+			CellRenderer NameRenderer = new CellRendererText ();
+			NameCol.Title = "Name";
+			NameCol.PackStart (NameRenderer, true);
+			NameCol.AddAttribute (NameRenderer, "text", 0);
+			tree.AppendColumn (NameCol);
+
 			TreeViewColumn LoadedCol = new TreeViewColumn ();
 			CellRendererToggle LoadedRenderer = new CellRendererToggle ();
 			LoadedCol.Title = "Loaded";
@@ -75,13 +82,6 @@ namespace Mono.Debugger.GUI
 			LoadSymbolsCol.PackStart (LoadSymbolsRenderer, false);
 			LoadSymbolsCol.AddAttribute (LoadSymbolsRenderer, "active", 4);
 			tree.AppendColumn (LoadSymbolsCol);
-
-			TreeViewColumn NameCol = new TreeViewColumn ();
-			CellRenderer NameRenderer = new CellRendererText ();
-			NameCol.Title = "Name";
-			NameCol.PackStart (NameRenderer, true);
-			NameCol.AddAttribute (NameRenderer, "text", 0);
-			tree.AppendColumn (NameCol);
 
 			container.Add (tree);
 			container.ShowAll ();
