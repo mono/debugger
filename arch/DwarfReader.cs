@@ -675,7 +675,7 @@ namespace Mono.Debugger.Architecture
 					this.epilogue_begin = stm.epilogue_begin;
 					this.start_file = stm.st_file;
 
-					engine.debug ("CLONE: {0} {1} {2} - {3}",
+					engine.debug ("CLONE: {0} {1} {2}",
 						      stm.start_line, stm.end_line, stm.st_file,
 						      engine.source_files [stm.st_file]);
 
@@ -985,10 +985,10 @@ namespace Mono.Debugger.Architecture
 				addresses = null;
 
 				StatementMachine stm = (StatementMachine) method_hash [method];
-				if (stm == null)
+				if ((stm == null) || (stm.st_file == 0))
 					return null;
 
-				FileEntry file = (FileEntry) source_files [stm.st_file];
+				FileEntry file = (FileEntry) source_files [stm.st_file - 1];
 				start_row = stm.start_line;
 				end_row = stm.end_line;
 				addresses = stm.lines;
