@@ -1,3 +1,9 @@
+2004-09-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-ptrace.c (server_ptrace_finalize): Don't
+	call do_wait(), it's causing hangs on exit and it was just there
+	to reap children.
+
 2004-09-20  Chris Toshok  <toshok@ximian.com>
 
 	* frontends/scripting/Expression.cs

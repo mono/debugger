@@ -58,7 +58,7 @@ server_ptrace_finalize (ServerHandle *handle)
 		ptrace (PT_KILL, handle->inferior->pid, NULL, 0);
 		ptrace (PT_DETACH, handle->inferior->pid, NULL, 0);
 		kill (handle->inferior->pid, SIGKILL);
-		do_wait (handle->inferior->pid, &status);
+		// do_wait (handle->inferior->pid, &status);
 	}
 	i386_arch_finalize (handle->arch);
 	g_free (handle->inferior);
