@@ -1,5 +1,5 @@
 MCS=mcs
-JAY=/home/peter/cvs/mcs/jay/jay
+JAY=jay
 DESTDIR=
 
 all: Makefile linux
