@@ -6,6 +6,18 @@
 	2.6.0 kernel.	It does not work with a 2.4.x kernel except the
 	one from Red Hat 9.
 
+	* backends/Process.cs: This is now in backends again, it is a
+	public (non-abstract) class and contains the "user interface" of
+	the SingleSteppingEngine.
+
+	* backends/SingleSteppingEngine.cs: This is now just the engine
+	itself; we create on SingleSteppingEngine class per target thread,
+	but they're all managed from the ThreadManager and we just have
+	one thread in the debugger.
+
+	* backends/ThreadManager.cs: Contains the main event loop and
+	dispatches events and commands to the SingleSteppingEngines.
+
 2003-12-29  Martin Baulig  <martin@ximian.com>
 
 	WARNING WARNING WARNING WARNING:
