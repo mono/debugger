@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   This is just an address, but its lifetime is tied to the lifetime of another location.

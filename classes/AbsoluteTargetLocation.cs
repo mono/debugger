@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   This is an absolute address - usually supplied by the user.

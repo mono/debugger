@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   The location of a variable.

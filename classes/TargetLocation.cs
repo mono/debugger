@@ -1,8 +1,8 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
-	internal delegate void LocationEventHandler (TargetLocation location);
+	public delegate void LocationEventHandler (TargetLocation location);
 
 	// <summary>
 	//   This class represents the `location' of a variable.  The idea is that we do
@@ -145,7 +145,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal event LocationEventHandler LocationInvalidEvent;
+		public event LocationEventHandler LocationInvalidEvent;
 
 		protected virtual void OnLocationInvalidEvent ()
 		{
