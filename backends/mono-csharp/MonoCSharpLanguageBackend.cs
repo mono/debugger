@@ -848,9 +848,9 @@ namespace Mono.Debugger.Languages.CSharp
 			if (mono_method != null)
 				return mono_method;
 
-			MethodEntry entry = File.GetMethod (index);
+			MonoSourceMethod method = GetMethod_internal (index);
 
-			mono_method = new MonoMethod (this, entry);
+			mono_method = new MonoMethod (this, method, method.Entry);
 			method_hash.Add (index, mono_method);
 			return mono_method;
 		}
@@ -914,13 +914,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return retval;
 		}
 
-		public SourceMethodInfo GetMethod (int index)
+		MonoSourceMethod GetMethod_internal (int index)
 		{
 			if (File == null)
 				return null;
 
 			ensure_sources ();
-			SourceMethodInfo method = (SourceMethodInfo) method_index_hash [index];
+			MonoSourceMethod method = (MonoSourceMethod) method_index_hash [index];
 			if (method != null)
 				return method;
 
@@ -929,10 +929,15 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodSourceEntry source = File.GetMethodSource (index);
 
 			string name = entry.FullName;
-			method = new MonoSourceMethod (info, this, source, name);
+			method = new MonoSourceMethod (info, this, source, entry, name);
 			method_name_hash.Add (name, method);
 			method_index_hash.Add (index, method);
 			return method;
+		}
+
+		public SourceMethodInfo GetMethod (int index)
+		{
+			return GetMethod_internal (index);
 		}
 
 		public SourceMethodInfo FindMethod (string name)
@@ -996,18 +1001,24 @@ namespace Mono.Debugger.Languages.CSharp
 			Hashtable load_handlers;
 			int index;
 			string full_name;
+			MethodEntry entry;
 			MonoMethod method;
-			MethodSourceEntry entry;
+			MethodSourceEntry source;
 
-			public MonoSourceMethod (SourceInfo source, MonoSymbolTableReader reader,
-						 MethodSourceEntry entry, string name)
-				: base (source, name, entry.StartRow, entry.EndRow, true)
+			public MonoSourceMethod (SourceInfo info, MonoSymbolTableReader reader,
+						 MethodSourceEntry source, MethodEntry entry, string name)
+				: base (info, name, source.StartRow, source.EndRow, true)
 			{
 				this.reader = reader;
-				this.index = entry.Index;
+				this.index = source.Index;
+				this.source = source;
 				this.entry = entry;
 
-				source.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
+				info.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
+			}
+
+			public MethodEntry Entry {
+				get { return entry; }
 			}
 
 			void module_unloaded (Module module)
@@ -1144,6 +1155,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected class MonoMethod : MethodBase
 		{
 			MonoSymbolTableReader reader;
+			SourceMethodInfo info;
 			MethodEntry method;
 			System.Reflection.MethodBase rmethod;
 			MonoType class_type;
@@ -1155,17 +1167,18 @@ namespace Mono.Debugger.Languages.CSharp
 			bool is_loaded;
 			MethodAddress address;
 
-			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method)
-				: base (method.FullName, reader.ImageFile, reader.Module)
+			public MonoMethod (MonoSymbolTableReader reader, SourceMethodInfo info, MethodEntry method)
+				: base (info.Name, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
+				this.info = info;
 				this.method = method;
 				this.rmethod = method.MethodBase;
 			}
 
-			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
+			public MonoMethod (MonoSymbolTableReader reader, SourceMethodInfo info, MethodEntry method,
 					   ITargetMemoryReader dynamic_reader)
-				: this (reader, method)
+				: this (reader, info, method)
 			{
 				Load (dynamic_reader.BinaryReader, reader.GlobalAddressDomain);
 			}
