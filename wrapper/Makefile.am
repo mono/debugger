@@ -60,7 +60,7 @@ MDB_DEPS = \
 	-r Mono.Debugger.dll
 
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)
-	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
+	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:@top_srcdir@/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
@@ -70,7 +70,7 @@ ASSEMBLY = Mono.Debugger.dll
 CLEANFILES = *.exe *.dll mdb
 
 EXTRA_DIST = \
-	mdb.in mono.snk mono.pub
+	mdb.in mono.snk AssemblyInfo.cs
 
 mdb: mdb.in Makefile
 	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
