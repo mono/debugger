@@ -43,6 +43,28 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		string ComputeMCP (ArrayList choices, string initial_prefix)
+		{
+			string s = (string)choices[0];
+			int maxlen = s.Length;
+
+			for (int i = 1; i < choices.Count; i ++) {
+				if (maxlen > ((string)choices[i]).Length)
+					maxlen = ((string)choices[i]).Length;
+			}
+			s = s.Substring (0, maxlen);
+
+			for (int l = initial_prefix.Length; l < maxlen; l ++) {
+				for (int i = 1; i < choices.Count; i ++) {
+					string test = (string)choices[i];
+					if (test[l] != s[l])
+						return s.Substring (0, l);
+				}
+			}
+
+			return s;
+		}
+
 		/*
 		 * some prebuilt completers, for use by commands.
 		 */
@@ -70,7 +92,7 @@ namespace Mono.Debugger.Frontend
 					 * > 1 matches, so that
 					 * readline will display the
 					 * matches. */
-					matched_commands.Insert (0, text);
+					matched_commands.Insert (0, ComputeMCP (matched_commands, text));
 				}
 
 				match_strings = new string [matched_commands.Count + 1];
@@ -104,7 +126,7 @@ namespace Mono.Debugger.Frontend
 					 * > 1 matches, so that
 					 * readline will display the
 					 * matches. */
-					matched_args.Insert (0, text);
+					matched_args.Insert (0, ComputeMCP (matched_args, text));
 				}
 
 				match_strings = new string [matched_args.Count + 1];
@@ -158,7 +180,7 @@ namespace Mono.Debugger.Frontend
 					 * > 1 matches, so that
 					 * readline will display the
 					 * matches. */
-					matched_paths.Insert (0, text);
+					matched_paths.Insert (0, ComputeMCP (matched_paths, text));
 				}
 
 				match_strings = new string [matched_paths.Count + 1];
@@ -175,6 +197,65 @@ namespace Mono.Debugger.Frontend
 	  	public void NoopCompleter (string text, int start, int end)
 		{
 			GnuReadLine.SetCompletionMatches (null);
+		}
+
+		public void SymbolCompleter (string text, int start, int end)
+		{
+			DebuggerEngine de = engine as DebuggerEngine;
+
+			try {
+				ArrayList method_list = new ArrayList ();
+				foreach (Module module in de.Interpreter.Modules) {
+					if (module.SymbolFile == null) {
+						// use the module's symbol table and
+						// symbol ranges to add methods
+
+						if (!module.SymbolsLoaded || !module.SymbolTable.HasMethods) {
+							continue;
+						}
+
+						foreach (ISymbolRange range in module.SymbolTable.SymbolRanges) {
+							IMethod method = range.SymbolLookup.Lookup (range.StartAddress);
+							if (method != null && method.Name.StartsWith (text))
+								method_list.Add (method.Name);
+						}
+					}
+					else {
+						// use the module's source
+						// files to add methods.
+						// there has to be a more
+						// efficient way to do this...
+						if (module.SymbolFile.Sources == null) {
+							continue;
+						}
+
+						foreach (SourceFile sf in module.SymbolFile.Sources) {
+							foreach (SourceMethod method in sf.Methods) {
+								if (method.Name.StartsWith (text)) {
+									int parameter_start = method.Name.IndexOf ('(');
+									if (parameter_start != -1)
+										method_list.Add (method.Name.Substring (0, parameter_start));
+									else
+										method_list.Add (method.Name);
+								}
+							}
+						}
+					}
+				}
+
+				string[] methods = null;
+				if (method_list.Count > 0) {
+					method_list.Insert (0, ComputeMCP (method_list, text));
+					methods = new string [method_list.Count + 1];
+					method_list.CopyTo (methods);
+					methods [method_list.Count] = null;
+				}
+
+				GnuReadLine.SetCompletionMatches (methods);
+			}
+			catch (Exception e) {
+				GnuReadLine.SetCompletionMatches (null);
+			}
 		}
 	}
 }

@@ -1,3 +1,21 @@
+2005-01-05  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Interpreter.cs (Interpreter.Modules): add a property so
+	Completer.SymbolCompleter can get at the module list.
+
+	* frontend/Command.cs (BreakCommand.Complete): if it doesn't start
+	with a '-' or contain a '/', try to complete it as a symbol.
+
+	* frontend/Completer.cs (Completer.ComputeMCP): computer the
+	maximal common prefix from a set of strings.
+	(Completer.CommandCompleter, Completer.ArgumentCompleter,
+	Completer.FilenameCompleter, Completer.SymbolCompleter): call
+	ComputeMCP when inserting the first match so that readline will
+	complete up to the point where the matches are different.
+	(Completer.SymbolCompleter): new function.  use either of two ways
+	to get a list of methods to complete against.  probably isn't
+	100%, but it's close.
+	
 2004-12-15  Chris Toshok  <toshok@ximian.com>
 
 	* glue/mono-debugger-readline.c: drop the #include of

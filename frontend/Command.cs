@@ -1664,6 +1664,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else {
 				/* attempt symbol name completion */
+				e.Completer.SymbolCompleter (text, start, end);
 			}
                 }
 

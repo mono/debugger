@@ -442,6 +442,24 @@ namespace Mono.Debugger.Frontend
 			return retval;
 		}
 
+		public Module[] Modules
+		{
+			get {
+				if (modules == null)
+					throw new ScriptingException ("No modules.");
+
+				backend.ModuleManager.Lock ();
+
+				Module[] retval = new Module [modules.Length];
+
+				Array.Copy (modules, retval, modules.Length);
+
+				backend.ModuleManager.UnLock ();
+
+				return retval;
+			}
+		}
+
 		public SourceFile[] GetSources (int[] indices)
 		{
 			if (modules == null)
