@@ -1,5 +1,12 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-linux-ptrace.c
+	(_server_ptrace_setup_thread_manager): Don't set
+	PTRACE_O_TRACEFORK and PTRACE_O_TRACEVFORKDONE; we don't follow
+	forks yet.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs
 	(ITargetAccess.InsertBreakpoint): New method.
 
