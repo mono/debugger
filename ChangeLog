@@ -1,3 +1,19 @@
+2005-02-04  Chris Toshok  <toshok@ximian.com>
+
+	* configure.in: add a mono dep to SERVER_DEPENDENCIES so we can
+	use the metadata thread calls.
+
+	* frontend/Interpreter.cs (Interpreter.Run): hook
+	process.TargetOutput to the target_output delegate.
+	(Interpreter.thread_created): same.
+
+	* backends/server/i386-ptrace.c (child_setup_func): dup the
+	inferior's output/error pipe fds over stdout/stderr.
+	(server_ptrace_spawn): fill in the handlers and create the
+	output/error pipes.  also, spawn our io thread.
+	(io_thread): loop forever, proxying stdout/stderr to our
+	delegates.
+
 2005-02-03  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Command.cs: add "-all" to SourceCommand, and fix up

@@ -1,4 +1,7 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include <server.h>
 #include <breakpoints.h>
 #include <stdio.h>
@@ -17,6 +20,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <mono/metadata/threads.h>
 
 /*
  * NOTE:  The manpage is wrong about the POKE_* commands - the last argument
@@ -36,6 +40,8 @@
 #endif
 
 #include "i386-arch.h"
+
+static guint32 io_thread (gpointer data);
 
 struct InferiorHandle
 {
@@ -257,10 +263,13 @@ server_ptrace_initialize (BreakpointManager *bpm)
 }
 
 static void
-child_setup_func (gpointer data)
+child_setup_func (InferiorHandle *inferior)
 {
 	if (ptrace (PT_TRACE_ME, getpid (), NULL, 0))
 		g_error (G_STRLOC ": Can't PT_TRACEME: %s", g_strerror (errno));
+
+	dup2 (inferior->output_fd[1], 1);
+	dup2 (inferior->error_fd[1], 2);
 }
 
 static ServerCommandError
@@ -276,6 +285,12 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 
 	pipe (fd);
 
+	inferior->stdout_handler = stdout_handler;
+	inferior->stderr_handler = stderr_handler;
+
+	pipe (inferior->output_fd);
+	pipe (inferior->error_fd);
+
 	*child_pid = fork ();
 	if (*child_pid == 0) {
 		gchar *error_message;
@@ -286,7 +301,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 
 		setsid ();
 
-		child_setup_func (NULL);
+		child_setup_func (inferior);
 		execve (argv [0], (char **) argv, (char **) envp);
 
 		error_message = g_strdup_printf ("Cannot exec `%s': %s", argv [0], g_strerror (errno));
@@ -296,7 +311,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		_exit (1);
 	}
 
+	close (inferior->output_fd[1]);
+	close (inferior->error_fd[1]);
 	close (fd [1]);
+
 	ret = read (fd [0], &len, sizeof (len));
 
 	if (ret != 0) {
@@ -305,12 +323,16 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		*error = g_malloc0 (len);
 		read (fd [0], *error, len);
 		close (fd [0]);
+		close (inferior->output_fd[0]);
+		close (inferior->error_fd[0]);
 		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
 	inferior->pid = *child_pid;
 	_server_ptrace_setup_inferior (handle, TRUE);
 	_server_ptrace_setup_thread_manager (handle);
+
+	mono_thread_create (mono_get_root_domain (), io_thread, inferior);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -346,25 +368,34 @@ process_output (InferiorHandle *inferior, int fd, ChildOutputFunc func)
 	func (buffer);
 }
 
-static void
-check_io (InferiorHandle *inferior)
+static guint32
+io_thread (gpointer data)
 {
+	InferiorHandle *inferior = (InferiorHandle*)data;
 	struct pollfd fds [2];
 	int ret;
 
 	fds [0].fd = inferior->output_fd [0];
-	fds [0].events = POLLIN;
+	fds [0].events = POLLIN | POLLHUP | POLLERR;
 	fds [0].revents = 0;
 	fds [1].fd = inferior->error_fd [0];
-	fds [1].events = POLLIN;
+	fds [1].events = POLLIN | POLLHUP | POLLERR;
 	fds [1].revents = 0;
 
-	ret = poll (fds, 2, 0);
+	while (1) {
+		ret = poll (fds, 2, -1);
 
-	if (fds [0].revents == POLLIN)
-		process_output (inferior, inferior->output_fd [0], inferior->stdout_handler);
-	if (fds [1].revents == POLLIN)
-		process_output (inferior, inferior->error_fd [0], inferior->stderr_handler);
+		if (fds [0].revents & POLLIN)
+			process_output (inferior, inferior->output_fd [0], inferior->stdout_handler);
+		if (fds [1].revents & POLLIN)
+			process_output (inferior, inferior->error_fd [0], inferior->stderr_handler);
+
+		if ((fds [0].revents & (POLLHUP | POLLERR))
+		    || (fds [1].revents & (POLLHUP | POLLERR)))
+			break;
+	}
+
+	return 0;
 }
 
 static ServerCommandError

@@ -355,6 +355,9 @@ namespace Mono.Debugger.Frontend
 
 			start_event.WaitOne ();
 			context.CurrentProcess = current_process;
+
+			process.TargetOutput += new TargetOutputHandler (target_output);
+
 			return process;
 		}
 
@@ -378,6 +381,7 @@ namespace Mono.Debugger.Frontend
 		{
 			ProcessHandle handle = new ProcessHandle (this, process);
 			handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+			handle.Process.TargetOutput += new TargetOutputHandler (target_output);
 			procs.Add (handle.Process.ID, handle);
 
 			if (initialized)
