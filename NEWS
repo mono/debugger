@@ -1,3 +1,19 @@
+March 23th, 2003 - Martin Baulig
+--------------------------------
+
+Fixed a few bugs wrt. variable access; the debugger now fully supports the new JIT.
+
+March 21th, 2003 - Martin Baulig
+--------------------------------
+
+Debugging interncalls is working again.
+
+March 16th, 2003 - Martin Baulig
+--------------------------------
+
+Added support for shared library trampolines; this helps a lot when debugging native
+applications which are using shared libraries.
+
 March 9th, 2003 - Martin Baulig
 -------------------------------
 
