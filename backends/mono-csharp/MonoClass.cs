@@ -97,8 +97,8 @@ namespace Mono.Debugger.Languages.CSharp
 			method_info_size = old_class.method_info_size;
 			num_static_methods = old_class.num_static_methods;
 			static_method_info_size = old_class.static_method_info_size;
-			num_ctors = info.ReadInt32 ();
-			ctor_info_size = info.ReadInt32 ();
+			num_ctors = old_class.num_ctors;
+			ctor_info_size = old_class.ctor_info_size;
 			info = old_class.info;
 			offset = old_class.offset;
 			this.Type = type;
