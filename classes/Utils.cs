@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public abstract sealed class Utils
+	public abstract class Utils
 	{
 		[DllImport("glib-2.0")]
 		extern static bool g_file_get_contents (string filename, out IntPtr contents, out int length, out IntPtr error);
