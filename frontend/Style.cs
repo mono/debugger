@@ -14,8 +14,6 @@ namespace Mono.Debugger.Frontend
 	public class StructFormatter
 	{
 		public string head;
-		public const int DefaultWidth = 80;
-		public readonly int Width = DefaultWidth;
 
 		ArrayList items = new ArrayList ();
 
@@ -32,7 +30,7 @@ namespace Mono.Debugger.Frontend
 		{
 			StringBuilder sb = new StringBuilder ();
 
-			int pos = 0;
+			int pos = head.Length + 1;
 			bool multi_line = false;
 			for (int i = 0; i < items.Count; i++) {
 				if (i > 0) {
@@ -46,10 +44,10 @@ namespace Mono.Debugger.Frontend
 				string item = (string) items [i];
 
 				pos += item.Length;
-				if (pos > Width) {
+				if (pos > GnuReadLine.Columns) {
 					sb.Append ("\n  ");
 					multi_line = true;
-					pos = 0;
+					pos = 2;
 				}
 
 				sb.Append (item);
@@ -422,7 +420,6 @@ namespace Mono.Debugger.Frontend
 			switch (stype.Kind) {
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
-				bool first = true;
 				StructFormatter formatter = new StructFormatter (header);
 				ITargetFieldInfo[] fields = stype.StaticFields;
 				foreach (ITargetFieldInfo field in fields) {

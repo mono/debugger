@@ -25,6 +25,8 @@ extern char* mono_debugger_readline_current_line_buffer (void);
 extern int mono_debugger_readline_get_filename_completion_desired (void);
 extern void mono_debugger_readline_set_filename_completion_desired (int v);
 
+extern int mono_debugger_readline_get_columns (void);
+
 G_END_DECLS
 
 #endif

@@ -28,6 +28,9 @@ namespace Mono.Debugger.Frontend
 		extern static string mono_debugger_readline_current_line_buffer ();
 
 		[DllImport("libmonodebuggerreadline")]
+		extern static int mono_debugger_readline_get_columns ();
+
+		[DllImport("libmonodebuggerreadline")]
 		extern static void mono_debugger_readline_set_completion_matches (string[] matches, int count);
 
 		[DllImport("libmonodebuggerreadline")]
@@ -56,6 +59,12 @@ namespace Mono.Debugger.Frontend
 		public static void AddHistory (string line)
 		{
 			mono_debugger_readline_add_history (line);
+		}
+
+		public static int Columns {
+			get {
+				return mono_debugger_readline_get_columns ();
+			}
 		}
 
 		public static void SetCompletionMatches (string[] matches)

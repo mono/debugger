@@ -1,5 +1,21 @@
 2005-01-25  Chris Toshok  <toshok@ximian.com>
 
+	* glue/mono-debugger-readline.h: add prototype for
+	mono_debugger_readline_get_columns.
+
+	* glue/mono-debugger-readline.c
+	(mono_debugger_readline_get_columns): new function, get the
+	current screen width from readline.
+
+	* frontend/GnuReadLine.cs (GnuReadLine.Columns): new property.
+	the getter calls mono_debugger_readline_get_columns.
+
+	* frontend/Style.cs (StructFormatter.Format): use
+	GnuReadLine.Columns instead of hardcoding an assumed column width
+	here.  also take into account the length of the header.
+	
+2005-01-25  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Style.cs (Style): PrintVariable takes a FrameHandle now
 	instead of StackFrame, and FormatObject also takes a FrameHandle
 	arg.
@@ -8,7 +24,7 @@
 	NativeStyle.FormatStructType.
 	(StyleNative.FormatStructType): print out the type's static
 	fields (and their values).
-	
+
 	* frontend/ScriptingContext.cs (FrameHandle.ShowParameters,
 	FrameHandle.ShowLocals): Style.PrintVariable takes a FrameHandle
 	now, not a StackFrame.

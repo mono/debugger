@@ -63,6 +63,16 @@ mono_debugger_readline_current_line_buffer (void)
 	return g_strdup (rl_line_buffer);
 }
 
+extern int
+mono_debugger_readline_get_columns (void)
+{
+	int cols;
+
+	rl_get_screen_size (NULL, &cols);
+
+	return cols;
+}
+
 
 /* Completion stuff */
 
