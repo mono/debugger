@@ -23,7 +23,8 @@ namespace Mono.Debugger.Backends
 		CHILD_EXITED = 1,
 		CHILD_STOPPED,
 		CHILD_SIGNALED,
-		CHILD_CALLBACK
+		CHILD_CALLBACK,
+		CHILD_HIT_BREAKPOINT
 	}
 
 	internal enum CommandError {
@@ -61,8 +62,6 @@ namespace Mono.Debugger.Backends
 
 		BfdSymbolTable bfd_symtab;
 		BfdDisassembler bfd_disassembler;
-
-		bool attached;
 
 		int child_pid;
 
@@ -184,6 +183,12 @@ namespace Mono.Debugger.Backends
 			CommandError result = mono_debugger_server_remove_breakpoint (
 				server_handle, breakpoint);
 			check_error (result);
+		}
+
+		int temp_breakpoint_id = 0;
+		void insert_temporary_breakpoint (ITargetLocation address)
+		{
+			temp_breakpoint_id = insert_breakpoint (address);
 		}
 
 		public Inferior (string working_directory, string[] argv, string[] envp)
@@ -317,6 +322,15 @@ namespace Mono.Debugger.Backends
 		bool debugger_info_read;
 		void child_message (ChildMessageType message, int arg)
 		{
+			if (temp_breakpoint_id != 0) {
+				remove_breakpoint (temp_breakpoint_id);
+				temp_breakpoint_id = 0;
+				if (message == ChildMessageType.CHILD_HIT_BREAKPOINT) {
+					child_message (ChildMessageType.CHILD_STOPPED, 0);
+					return;
+				}
+			}
+
 			switch (message) {
 			case ChildMessageType.CHILD_STOPPED:
 				if (!initialized) {
@@ -333,6 +347,11 @@ namespace Mono.Debugger.Backends
 			case ChildMessageType.CHILD_EXITED:
 			case ChildMessageType.CHILD_SIGNALED:
 				change_target_state (TargetState.EXITED);
+				break;
+
+			case ChildMessageType.CHILD_HIT_BREAKPOINT:
+				Console.WriteLine ("CHILD HIT BREAKPOINT: {0}", arg);
+				child_message (ChildMessageType.CHILD_STOPPED, 0);
 				break;
 
 			default:
@@ -622,9 +641,10 @@ namespace Mono.Debugger.Backends
 			ITargetLocation location = Frame ();
 			location.Offset += bfd_disassembler.GetInstructionSize (location);
 
-			int breakpoint = insert_breakpoint (location);
+			insert_temporary_breakpoint (location);
 
-			Console.WriteLine ("TEST: {0} {1}", location, breakpoint);
+			send_command (ServerCommand.CONTINUE);
+			change_target_state (TargetState.RUNNING);
 		}
 
 		public ITargetLocation Frame ()

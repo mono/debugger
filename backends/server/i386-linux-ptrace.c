@@ -302,22 +302,42 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 }
 
 static gboolean
+check_breakpoint (InferiorHandle *handle, long address, guint64 *retval)
+{
+	int i;
+
+	if (!handle->breakpoints)
+		return FALSE;
+
+	for (i = 0; i < handle->breakpoints->len; i++) {
+		BreakPointInfo *info = g_ptr_array_index (handle->breakpoints, i);
+
+		if (info->address == address) {
+			*retval = info->id;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+static ChildStoppedAction
 server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 			     guint64 *callback_arg, guint64 *retval)
 {
 	struct user_regs_struct regs;
 
-	if (!handle->call_address)
-		return FALSE;
-
 	if (get_registers (handle, &regs) != COMMAND_ERROR_NONE)
-		return FALSE;
+		return STOP_ACTION_SEND_STOPPED;
 
-	if (!handle->call_address)
-		return FALSE;
+	if (check_breakpoint (handle, regs.eip - 1, retval)) {
+		regs.eip--;
+		set_registers (handle, &regs);
+		return STOP_ACTION_BREAKPOINT_HIT;
+	}
 
-	if (handle->call_address != regs.eip)
-		return FALSE;
+	if (!handle->call_address || handle->call_address != regs.eip)
+		return STOP_ACTION_SEND_STOPPED;
 
 	if (set_registers (handle, handle->saved_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore registers after returning from a call");
@@ -336,7 +356,7 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 	handle->call_address = 0;
 	handle->callback_argument = 0;
 
-	return TRUE;
+	return STOP_ACTION_CALLBACK;
 }
 
 static ServerCommandError

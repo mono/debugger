@@ -274,12 +274,24 @@ main (int argc, char **argv, char **envp)
 		if (ret != 0) {
 			if (WIFSTOPPED (status)) {
 				guint64 callback_arg, retval;
-				if (! (* info->child_stopped)
-				    (handle, WSTOPSIG (status), &callback_arg, &retval))
+				ChildStoppedAction action = (* info->child_stopped)
+					(handle, WSTOPSIG (status), &callback_arg, &retval);
+
+				switch (action) {
+				case STOP_ACTION_SEND_STOPPED:
 					send_status_message (status_channel, MESSAGE_CHILD_STOPPED,
 							     WSTOPSIG (status));
-				else
+					break;
+				case STOP_ACTION_BREAKPOINT_HIT:
+					send_status_message (status_channel, MESSAGE_CHILD_HIT_BREAKPOINT,
+							     (int) retval);
+					break;
+				case STOP_ACTION_CALLBACK:
 					send_callback_message (status_channel, callback_arg, retval);
+					break;
+				default:
+					g_assert_not_reached ();
+				}
 			} else if (WIFEXITED (status)) {
 				send_status_message (status_channel, MESSAGE_CHILD_EXITED,
 						     WEXITSTATUS (status));
@@ -296,7 +308,7 @@ main (int argc, char **argv, char **envp)
 
 		FD_ZERO (&fds);
 		FD_SET (command_fd, &fds);
-
+		
 		/* Wait until either input becomes available or a signal is received. */
 		ret = select (command_fd + 1, &fds, NULL, NULL, NULL);
 		if (ret == 1)

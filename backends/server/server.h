@@ -39,8 +39,15 @@ typedef enum {
 	MESSAGE_CHILD_EXITED = 1,
 	MESSAGE_CHILD_STOPPED,
 	MESSAGE_CHILD_SIGNALED,
-	MESSAGE_CHILD_CALLBACK
+	MESSAGE_CHILD_CALLBACK,
+	MESSAGE_CHILD_HIT_BREAKPOINT
 } ServerStatusMessageType;
+
+typedef enum {
+	STOP_ACTION_SEND_STOPPED,
+	STOP_ACTION_BREAKPOINT_HIT,
+	STOP_ACTION_CALLBACK
+} ChildStoppedAction;
 
 typedef struct {
 	ServerStatusMessageType type;
@@ -115,7 +122,7 @@ typedef struct {
 						       guint64           method_argument,
 						       guint64           callback_argument);
 
-	gboolean              (* child_stopped)       (InferiorHandle   *handle,
+	ChildStoppedAction    (* child_stopped)       (InferiorHandle   *handle,
 						       int               signumber,
 						       guint64          *callback_arg,
 						       guint64          *retval);
