@@ -51,6 +51,155 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{ }
 	}
 
+	public class CommandGroup
+	{
+		string name;
+		Hashtable command_hash = new Hashtable ();
+		ArrayList commands = new ArrayList ();
+		ArrayList subgroups = new ArrayList ();
+
+		public CommandGroup (string name)
+		{
+			this.name = name;
+		}
+
+		public string Name {
+			get { return name; }
+		}
+
+		public void AddCommand (CommandClass command, string[] tokens)
+		{
+			string token = tokens [0];
+			Entry entry = (Entry) command_hash [token];
+
+			if (entry == null) {
+				if (tokens.Length > 1) {
+					CommandGroup group = new CommandGroup (token);
+					subgroups.Add (group);
+					entry = new Entry (token, group);
+				} else
+					entry = new Entry (token);
+
+				command_hash.Add (token, entry);
+			}
+
+			if (tokens.Length > 1) {
+				string[] new_tokens = new string [tokens.Length - 1];
+				Array.Copy (tokens, 1, new_tokens, 0, new_tokens.Length);
+
+				entry.Group.AddCommand (command, new_tokens);
+			} else {
+				entry.AddCommand (command);
+				commands.Add (command);
+			}
+		}
+
+		public void PrintHelp ()
+		{
+			string[] names = new string [commands.Count];
+
+			int max = 0;
+			for (int i = 0; i < commands.Count; i++) {
+				CommandClass command = (CommandClass) commands [i];
+
+				names [i] = String.Join (" ", command.Tokens).ToLower ();
+				max = Math.Max (max, names [i].Length);
+			}
+
+			for (int i = 0; i < commands.Count; i++)
+				names [i] = names [i].PadRight (max);
+
+			Print ("Commands:");
+			Print ("");
+
+			for (int i = 0; i < commands.Count; i++) {
+				CommandClass command = (CommandClass) commands [i];
+
+				Print ("  {0}   {1}", names [i], command.ShortDescription);
+			}
+
+			Print ("");
+			Print ("Type `help' followed by a command name to get more info.");
+			Print ("The following commands have sub-commands; type `help' followed");
+			Print ("by the command name to get more information.");
+			Print ("");
+
+			string[] group_names = new string [subgroups.Count];
+
+			for (int i = 0; i < subgroups.Count; i++) {
+				CommandGroup group = (CommandGroup) subgroups [i];
+
+				group_names [i] = group.Name.ToLower ();
+			}
+
+			Print ("  {0}", String.Join (" ", group_names));
+			Print ("");
+		}
+
+		void Print (string format, params object[] args)
+		{
+			Console.WriteLine (String.Format (format, args));
+		}
+
+		class Entry
+		{
+			string token;
+			ArrayList commands;
+			CommandGroup group;
+
+			public Entry (string token, CommandGroup group)
+			{
+				this.token = token;
+				this.group = group;
+			}
+
+			public Entry (string token)
+			{
+				this.token = token;
+				commands = new ArrayList ();
+			}
+
+			public string Token {
+				get { return token; }
+			}
+
+			public bool IsGroup {
+				get { return group != null; }
+			}
+
+			public CommandClass[] Commands {
+				get {
+					if (commands == null)
+						throw new GeneratorException (
+							"Token {0} must be a command", token);
+
+					CommandClass[] retval = new CommandClass [commands.Count];
+					commands.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+
+			public CommandGroup Group {
+				get {
+					if (group == null)
+						throw new GeneratorException (
+							"Token {0} must be a command group", token);
+
+					return group;
+				}
+			}
+
+			public void AddCommand (CommandClass command)
+			{
+				if (commands == null)
+					throw new GeneratorException (
+						"Token {0} must be a command, not a command group", token);
+
+				commands.Add (command);
+			}
+		}
+	}
+
 	public class ExpressionClass
 	{
 		Type type;
@@ -98,6 +247,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.type = type;
 			this.attribute = attribute;
 			this.args = args;
+		}
+
+		public string Name {
+			get {
+				return type.Name;
+			}
+		}
+
+		public string ShortDescription {
+			get {
+				return attribute.ShortDescription;
+			}
+		}
+
+		public string[] Tokens {
+			get {
+				return attribute.Jay.Split (' ');
+			}
 		}
 
 		public string Format ()
@@ -177,11 +344,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		CommandClass[] commands;
 		ExpressionClass[] expressions;
 		Hashtable expression_hash;
+		CommandGroup global_group;
 
 		public Generator (Assembly assembly)
 		{
 			GetExpressions (assembly);
 			GetCommands (assembly);
+
+			global_group.PrintHelp ();
 		}
 
 		public string Format ()
@@ -232,6 +402,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			commands = new CommandClass [list.Count];
 			list.CopyTo (commands, 0);
+
+			global_group = new CommandGroup ("");
+
+			foreach (CommandClass command in commands)
+				global_group.AddCommand (command, command.Tokens);
 		}
 
 		public ExpressionClass GetExpression (Type type)

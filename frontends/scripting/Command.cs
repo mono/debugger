@@ -60,7 +60,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("DISASSEMBLE", "Disassemble current instruction")]
+	[Command("DISASSEMBLE INSTRUCTION", "Disassemble current instruction")]
 	public class DisassembleCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -310,7 +310,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("UP", "Go one frame down")]
+	[Command("DOWN", "Go one frame down")]
 	public class DownCommand : Command
 	{
 		ProcessExpression process_expr;
