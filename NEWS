@@ -1,3 +1,10 @@
+September 27th, 2002 - Martin Baulig
+------------------------------------
+
+Type support for most types (fundamental, enums, strings, arrays, multi-dimensional
+arrays, structs, classes) is now done - at least for method parameters.  There are still
+some problems with local variables since the JIT doesn't provide this information yet.
+
 September 21th, 2002 - Martin Baulig
 ------------------------------------
 
