@@ -713,7 +713,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				start = ProcessStart.Create (null, args, null);
 				process = backend.ReadCoreFile (start, "thecore");
 				current_process = new ProcessHandle (this, backend, process);
-			} else{
+			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
 				current_process = new ProcessHandle (this, backend, process, pid);

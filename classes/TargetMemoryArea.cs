@@ -15,9 +15,9 @@ namespace Mono.Debugger
 		TargetMemoryFlags flags;
 		string name;
 
-		internal TargetMemoryArea (TargetAddress start, TargetAddress end,
-					   TargetMemoryFlags flags, string name,
-					   ITargetMemoryAccess memory)
+		public TargetMemoryArea (TargetAddress start, TargetAddress end,
+					 TargetMemoryFlags flags, string name,
+					 ITargetMemoryAccess memory)
 		{
 			this.memory = memory;
 			this.start = start;

@@ -28,6 +28,7 @@ namespace Mono.Debugger
 		DaemonThreadRunner runner;
 		CoreFile core;
 		IInferior inferior;
+		IProcess iprocess;
 		int pid, id;
 		bool has_pid;
 
@@ -63,6 +64,8 @@ namespace Mono.Debugger
 			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+
+			iprocess = sse;
 		}
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
@@ -97,6 +100,8 @@ namespace Mono.Debugger
 
 			core = new CoreFileElfI386 (backend, start.TargetApplication,
 						    core_file, bfd_container);
+
+			iprocess = core;
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -113,31 +118,24 @@ namespace Mono.Debugger
 			}
 		}
 
-		private IInferior Inferior {
-			get {
-				check_disposed ();
-				return inferior;
-			}
-		}
-
 		public ITargetMemoryInfo TargetMemoryInfo {
 			get {
-				check_disposed ();				
-				return inferior;
+				check_iprocess ();
+				return iprocess.TargetMemoryInfo;
 			}
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
 			get {
-				check_disposed ();				
-				return inferior;
+				check_iprocess ();
+				return iprocess.TargetMemoryAccess;
 			}
 		}
 
 		public ITargetAccess TargetAccess {
 			get {
-				check_disposed ();				
-				return inferior;
+				check_iprocess ();
+				return iprocess.TargetAccess;
 			}
 		}
 
@@ -153,13 +151,8 @@ namespace Mono.Debugger
 
 		public IArchitecture Architecture {
 			get {
-				check_disposed ();
-				if (inferior != null)
-					return inferior.Architecture;
-				else if (core != null)
-					return core.Architecture;
-				else
-					return null;
+				check_iprocess ();
+				return iprocess.Architecture;
 			}
 		}
 
@@ -195,8 +188,8 @@ namespace Mono.Debugger
 					return sse.State;
 				else if (runner != null)
 					return TargetState.DAEMON;
-				else if (inferior != null)
-					return inferior.State;
+				else if (core != null)
+					return TargetState.CORE_FILE;
 				else
 					return TargetState.NO_TARGET;
 			}
@@ -300,43 +293,43 @@ namespace Mono.Debugger
 
 		public bool StepInstruction (bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.StepInstruction (synchronous);
 		}
 
 		public bool NextInstruction (bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.NextInstruction (synchronous);
 		}
 
 		public bool StepLine (bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.StepLine (synchronous);
 		}
 
 		public bool NextLine (bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.NextLine (synchronous);
 		}
 
 		public bool Continue (bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.Continue (false, synchronous);
 		}
 
 		public bool Continue (bool in_background, bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.Continue (in_background, synchronous);
 		}
 
 		public bool Continue (TargetAddress until, bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.Continue (until, synchronous);
 		}
 
@@ -349,72 +342,58 @@ namespace Mono.Debugger
 
 		public void ClearSignal ()
 		{
-			check_stopped ();
-			inferior.SetSignal (0, false);
+			SetSignal (0, false);
 		}
 
 		public void SetSignal (int signal, bool send_it)
 		{
-			check_inferior ();
-			inferior.SetSignal (signal, send_it);
+			check_sse ();
+			sse.SetSignal (signal, send_it);
 		}
 
 		public bool Finish (bool synchronous)
 		{
-			check_inferior ();
+			check_sse ();
 			return sse.Finish (synchronous);
 		}
 
 		public void Kill ()
 		{
 			check_disposed ();
-			if (inferior != null)
-				inferior.Shutdown ();
+			if (sse != null)
+				sse.Kill ();
 		}
 
 		public TargetAddress CurrentFrameAddress {
 			get {
-				check_stopped ();
-				return inferior.CurrentFrame;
+				check_iprocess ();
+				return iprocess.CurrentFrameAddress;
 			}
 		}
 
 		public StackFrame CurrentFrame {
 			get {
-				check_stopped ();
-				if (sse != null)
-					return sse.CurrentFrame;
-				else
-					return core.CurrentFrame;
+				check_iprocess ();
+				return iprocess.CurrentFrame;
 			}
 		}
 
 		public Backtrace GetBacktrace ()
 		{
-			check_inferior ();
-			if (sse != null)
-				return sse.GetBacktrace ();
-			else
-				return core.GetBacktrace ();
+			check_iprocess ();
+			return iprocess.GetBacktrace ();
 		}
 
 		public Register[] GetRegisters ()
 		{
-			check_disposed ();
-			if (sse == null)
-				return core.GetRegisters ();
-
-			return sse.GetRegisters ();
+			check_iprocess ();
+			return iprocess.GetRegisters ();
 		}
 
 		public virtual long GetRegister (int index)
 		{
-			foreach (Register register in GetRegisters ()) {
-				if (register.Index == index)
-					return (long) register.Data;
-			}
-
-			throw new NoSuchRegisterException ();
+			check_iprocess ();
+			return iprocess.TargetAccess.GetRegister (index);
 		}
 
 		public virtual long[] GetRegisters (int[] indices)
@@ -427,20 +406,20 @@ namespace Mono.Debugger
 
 		public void SetRegister (int register, long value)
 		{
-			check_stopped ();
-			inferior.SetRegister (register, value);
+			check_sse ();
+			sse.SetRegister (register, value);
 		}
 
 		public void SetRegisters (int[] registers, long[] values)
 		{
-			check_stopped ();
-			inferior.SetRegisters (registers, values);
+			check_sse ();
+			sse.SetRegisters (registers, values);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
-			check_inferior ();
-			return inferior.GetMemoryMaps ();
+			check_iprocess ();
+			return iprocess.GetMemoryMaps ();
 		}
 
 		public Process CreateThread (int pid)
@@ -459,17 +438,11 @@ namespace Mono.Debugger
 
 		public string DisassembleInstruction (ref TargetAddress address)
 		{
-			check_inferior ();
+			check_disposed ();
 			if (sse != null)
 				return sse.DisassembleInstruction (ref address);
 			else
 				return core.Disassembler.DisassembleInstruction (ref address);
-		}
-
-		internal void UpdateModules ()
-		{
-			check_inferior ();
-			inferior.UpdateModules ();
 		}
 
 		void child_exited ()
@@ -480,6 +453,13 @@ namespace Mono.Debugger
 			sse = null;
 		}
 
+		void check_iprocess ()
+		{
+			check_disposed ();
+			if (iprocess == null)
+				throw new NoTargetException ();
+		}
+
 		void check_inferior ()
 		{
 			check_disposed ();
@@ -487,11 +467,11 @@ namespace Mono.Debugger
 				throw new NoTargetException ();
 		}
 
-		void check_stopped ()
+		void check_sse ()
 		{
-			check_inferior ();
-			if (!IsStopped)
-				throw new TargetNotStoppedException ();
+			check_disposed ();
+			if (sse == null)
+				throw new NoTargetException ();
 		}
 
 		//

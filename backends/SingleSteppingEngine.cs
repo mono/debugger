@@ -59,7 +59,7 @@ namespace Mono.Debugger.Backends
 	//   time.  So if you attempt to issue a step command while the engine is still
 	//   busy, the step command will return false to signal this error.
 	// </summary>
-	public class SingleSteppingEngine : ITargetMemoryAccess, IDisposable
+	public class SingleSteppingEngine : IProcess, ITargetAccess, IDisposable
 	{
 		public SingleSteppingEngine (DebuggerBackend backend, Process process,
 					     IInferior inferior, bool native)
@@ -476,7 +476,7 @@ namespace Mono.Debugger.Backends
 			//
 
 			if (initialized && !reached_main) {
-				backend.ReachedMain (process);
+				backend.ReachedMain (process, inferior);
 				reached_main = true;
 
 				if (!native) {
@@ -580,6 +580,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public TargetAddress CurrentFrameAddress {
+			get {
+				StackFrame frame = CurrentFrame;
+				return frame != null ? frame.TargetAddress : TargetAddress.Null;
+			}
+		}
+
 		// <summary>
 		//   The current stack frame.  May only be used when the engine is stopped
 		//   (State == TargetState.STOPPED).  The backtrace is generated on
@@ -627,6 +634,16 @@ namespace Mono.Debugger.Backends
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
+		public long GetRegister (int index)
+		{
+			foreach (Register register in GetRegisters ()) {
+				if (register.Index == index)
+					return (long) register.Data;
+			}
+
+			throw new NoSuchRegisterException ();
+		}
+
 		public Register[] GetRegisters ()
 		{
 			check_inferior ();
@@ -646,6 +663,22 @@ namespace Mono.Debugger.Backends
 			for (int i = 0; i < regs.Length; i++)
 				registers [i] = new Register (arch.AllRegisterIndices [i], regs [i]);
 			return new CommandResult (CommandResultType.CommandOk);
+		}
+
+		public void SetRegister (int register, long value)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public void SetRegisters (int[] registers, long[] values)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			check_inferior ();
+			return inferior.GetMemoryMaps ();
 		}
 
 		// <summary>
@@ -1562,6 +1595,26 @@ namespace Mono.Debugger.Backends
 			ready_event_handler ();
 		}
 
+		public void Kill ()
+		{
+			if (inferior != null)
+				inferior.Kill ();
+		}
+
+		public void SetSignal (int signal, bool send_it)
+		{
+			// Try to get the command mutex; if we succeed, then no stepping operation
+			// is currently running.
+			bool stopped = check_can_run ();
+			if (stopped) {
+				inferior.SetSignal (signal, send_it);
+				command_mutex.ReleaseMutex ();
+				return;
+			}
+
+			throw new TargetNotStoppedException ();
+		}
+
 		// <summary>
 		//   Interrupt any currently running stepping operation, but don't send
 		//   any notifications to the caller.  The currently running operation is
@@ -1735,6 +1788,38 @@ namespace Mono.Debugger.Backends
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			return (long) result.Data;
+		}
+
+		//
+		// IProcess
+		//
+
+		public bool HasTarget {
+			get { return inferior != null; }
+		}
+
+		public bool CanRun {
+			get { return true; }
+		}
+
+		public bool CanStep {
+			get { return true; }
+		}
+
+		public bool IsStopped {
+			get { return true; }
+		}
+
+		public ITargetAccess TargetAccess {
+			get { return this; }
+		}
+
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get { return this; }
+		}
+
+		public ITargetMemoryInfo TargetMemoryInfo {
+			get { return this; }
 		}
 
 		//

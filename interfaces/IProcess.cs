@@ -5,7 +5,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   This can either be an executable process or a core file.
 	// </summary>
-	public interface IProcess : ITargetNotification, IDisposable
+	public interface IProcess : IDisposable
 	{
 		// <summary>
 		//   If true, we have a target.
@@ -62,6 +62,8 @@ namespace Mono.Debugger
 		StackFrame CurrentFrame {
 			get;
 		}
+
+		TargetMemoryArea[] GetMemoryMaps ();
 
 		Backtrace GetBacktrace ();
 

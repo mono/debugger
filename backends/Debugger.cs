@@ -153,13 +153,13 @@ namespace Mono.Debugger
 				ModulesChangedEvent ();
 		}
 
-		internal void ReachedMain (Process process)
+		internal void ReachedMain (Process process, IInferior inferior)
 		{
 			if (!process.ProcessStart.IsNative) {
 				csharp_language = new MonoCSharpLanguageBackend (this, process);
 				languages.Add (csharp_language);
 			}
-			process.UpdateModules ();
+			inferior.UpdateModules ();
 
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;

@@ -360,24 +360,6 @@ namespace Mono.Debugger.Architecture
 		}
 
 		//
-		// ITargetNotification
-		//
-
-		public TargetState State {
-			get {
-				return TargetState.CORE_FILE;
-			}
-		}
-
-		public event TargetOutputHandler TargetOutput;
-		public event TargetOutputHandler TargetError;
-		public event TargetOutputHandler DebuggerOutput;
-		public event DebuggerErrorHandler DebuggerError;
-		public event StateChangedHandler StateChanged;
-		public event TargetExitedHandler TargetExited;
-		public event ChildEventHandler ChildEvent;
-
-		//
 		// ITargetInfo
 		//
 

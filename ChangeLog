@@ -1,5 +1,18 @@
 2003-01-03  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IProcess.cs: Don't implement ITargetNotification.
+	(IProcess.GetMemoryMaps): New method.
+
+	* backends/SingleSteppingEngine.cs: Implement ITargetAccess and
+	IProcess.
+
+	* backends/TargetMemoryArea.cs: Moved to ../classes.
+
+	* classes/TargetMemoryArea.cs: Moved here from ../backends; the
+	.ctor is now public.
+
+2003-01-03  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Breakpoints
 	in not-yet-JITed methods are finally working again :-)
 
