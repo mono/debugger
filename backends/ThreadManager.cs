@@ -713,6 +713,7 @@ namespace Mono.Debugger
 				if (disposed)
 					return;
 
+				abort_requested = true;
 				disposed = true;
 			}
 
