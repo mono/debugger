@@ -221,7 +221,7 @@ server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
 	errno = 0;
 	*retval = ptrace (PTRACE_PEEKDATA, handle->pid, start, NULL);
 	if (errno) {
-		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+		g_message (G_STRLOC ": %d - %Lx - %s", handle->pid, start, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
 

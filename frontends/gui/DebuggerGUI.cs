@@ -89,6 +89,11 @@ namespace Mono.Debugger.GUI
 		TargetStatusbar target_status;
 		SourceStatusbar source_status;
 
+		Gtk.Widget main_window;
+		Gtk.Widget disassembler_window;
+		Gtk.Widget register_dialog;
+		Gtk.Widget backtrace_dialog;
+
 		TextWriter output_writer;
 
 		IDebuggerBackend backend;
@@ -130,8 +135,7 @@ namespace Mono.Debugger.GUI
 			Widget target_widget = gxml [target];
 			target_widget.Show ();
 
-			Widget main_widget = gxml [root];
-			main_widget.Show ();
+			main_window = gxml [root];
 
 			command_entry = (Gtk.Entry) gxml ["command_entry"];
 			target_output = (Gtk.TextView) gxml ["target_output"];
@@ -155,11 +159,77 @@ namespace Mono.Debugger.GUI
 
 			current_insn = new CurrentInstructionEntry (backend, (Gtk.Entry) gxml ["current_insn"]);
 
+			disassembler_window = gxml ["disassembler_window"];
+			register_dialog = gxml ["register_dialog"];
+			backtrace_dialog = gxml ["backtrace_dialog"];
+
+			if (((Gtk.CheckMenuItem) gxml ["menu_view_registers"]).Active)
+				register_dialog.Show ();
+			if (((Gtk.CheckMenuItem) gxml ["menu_view_backtrace"]).Active)
+				backtrace_dialog.Show ();
+			if (((Gtk.CheckMenuItem) gxml ["menu_view_source_code_window"]).Active)
+				main_window.Show ();
+			if (((Gtk.CheckMenuItem) gxml ["menu_view_disassembler_window"]).Active)
+				disassembler_window.Show ();
+
 			interpreter = new Interpreter (backend, output_writer, output_writer);
+
+			gxml.Autoconnect (this);
 
 			command_entry.ActivatesDefault = true;
 			command_entry.Activated += new EventHandler (DoOneCommand);
 			command_entry.Sensitive = false;
+		}
+
+		void on_quit_activate (object sender, EventArgs args)
+		{
+			backend.Quit ();
+			Application.Quit ();
+		}
+
+		void on_menu_view_registers_activate (object sender, EventArgs args)
+		{
+			if (((Gtk.CheckMenuItem) sender).Active)
+				register_dialog.Show ();
+			else
+				register_dialog.Hide ();
+		}
+
+		void on_menu_view_backtrace_activate (object sender, EventArgs args)
+		{
+			if (((Gtk.CheckMenuItem) sender).Active)
+				backtrace_dialog.Show ();
+			else
+				backtrace_dialog.Hide ();
+		}
+
+		void on_menu_view_source_code_window_activate (object sender, EventArgs args)
+		{
+			if (((Gtk.CheckMenuItem) sender).Active)
+				main_window.Show ();
+			else
+				main_window.Hide ();
+		}
+
+		void on_menu_view_disassembler_window_activate (object sender, EventArgs args)
+		{
+			if (((Gtk.CheckMenuItem) sender).Active)
+				disassembler_window.Show ();
+			else
+				disassembler_window.Hide ();
+		}
+
+		void on_about_activate (object sender, EventArgs args)
+		{
+			Pixbuf pixbuf = new Pixbuf ("frontends/gui/mono.png");
+
+			About about = new About ("Mono Debugger", "0.1",
+						 "Copyright (C) 2002 Ximian, Inc.",
+						 "",
+						 new string [] { "Martin Baulig (martin@gnome.org)" },
+						 new string [] { },
+						 "", pixbuf);
+			about.Run ();
 		}
 
 		void TargetOutput (string output)
