@@ -6,12 +6,13 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		MonoType element_type;
 
-		public MonoEnumType (Type type, int size, ITargetMemoryReader info)
+		public MonoEnumType (Type type, int size, ITargetMemoryReader info,
+				     MonoSymbolFileTable table)
 			: base (type, size, true)
 		{
 			TargetAddress element_type_info = info.ReadAddress ();
 			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,
-						element_type_info);
+						element_type_info, table);
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)

@@ -23,15 +23,17 @@ namespace Mono.Debugger.Languages.CSharp
 			this.has_fixed_size = has_fixed_size;
 		}
 
-		public static MonoType GetType (Type type, ITargetMemoryAccess memory, TargetAddress address)
+		public static MonoType GetType (Type type, ITargetMemoryAccess memory, TargetAddress address,
+						MonoSymbolFileTable table)
 		{
 			int size = memory.ReadInteger (address);
 			ITargetMemoryReader info = memory.ReadMemory (
 				address + memory.TargetIntegerSize, size);
-			return GetType (type, info);
+			return GetType (type, info, table);
 		}
 
-		public static MonoType GetType (Type type, ITargetMemoryReader info)
+		private static MonoType GetType (Type type, ITargetMemoryReader info,
+						 MonoSymbolFileTable table)
 		{
 			int size = info.ReadInteger ();
 			if (size > 0) {
@@ -50,22 +52,22 @@ namespace Mono.Debugger.Languages.CSharp
 				return new MonoStringType (type, size, info);
 
 			case 2:
-				return new MonoArrayType (type, size, info, false);
+				return new MonoArrayType (type, size, info, false, table);
 
 			case 3:
-				return new MonoArrayType (type, size, info, true);
+				return new MonoArrayType (type, size, info, true, table);
 
 			case 4:
-				return new MonoEnumType (type, size, info);
+				return new MonoEnumType (type, size, info, table);
 
 			case 5:
-				return new MonoStructType (type, size, info);
+				return new MonoStructType (type, size, info, table);
 
 			case 6:
-				return new MonoClassType (type, size, info);
+				return new MonoClassType (type, size, info, table);
 
 			case 7:
-				return new MonoObjectType (type, size, info);
+				return new MonoObjectType (type, size, info, table);
 
 			default:
 				return new MonoOpaqueType (type, size);

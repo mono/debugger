@@ -113,7 +113,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 5;
+		public const int  DynamicVersion = 6;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		public readonly int TotalSize;
@@ -122,6 +122,7 @@ namespace Mono.Debugger.Languages.CSharp
 		ITargetMemoryAccess memory;
 		ArrayList ranges;
 		Hashtable types;
+		Hashtable type_cache;
 
 		public MonoSymbolFileTable (DebuggerBackend backend, IInferior inferior,
 					    ITargetMemoryAccess memory, TargetAddress address,
@@ -150,6 +151,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ranges = new ArrayList ();
 			types = new Hashtable ();
+			type_cache = new Hashtable ();
 
 			SymbolFiles = new MonoSymbolTableReader [count];
 			for (int i = 0; i < count; i++)
@@ -159,23 +161,36 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoType GetType (Type type, int type_size, long address)
 		{
-			if (types.Contains (address))
-				return (MonoType) types [address];
+			if (type_cache.Contains (address))
+				return (MonoType) type_cache [address];
 
 			MonoType retval;
 			if (address != 0)
-				retval = MonoType.GetType (type, memory, new TargetAddress (memory, address));
+				retval = MonoType.GetType (
+					type, memory, new TargetAddress (memory, address), this);
 			else
 				retval = new MonoOpaqueType (type, type_size);
 
-			types.Add (address, retval);
+			type_cache.Add (address, retval);
 			return retval;
+		}
+
+		public MonoType GetTypeFromClass (long klass_address)
+		{
+			TypeEntry entry = (TypeEntry) types [klass_address];
+
+			return MonoType.GetType (entry.Type, memory, entry.TypeInfo, this);
 		}
 
 		public ArrayList SymbolRanges {
 			get {
 				return ranges;
 			}
+		}
+
+		internal void AddType (TypeEntry type)
+		{
+			types.Add (type.KlassAddress.Address, type);
 		}
 
 		public bool Update ()
@@ -191,8 +206,8 @@ namespace Mono.Debugger.Languages.CSharp
 			ranges = new ArrayList ();
 			for (int i = 0; i < SymbolFiles.Length; i++)
 				ranges.AddRange (SymbolFiles [i].SymbolRanges);
-
 			ranges.Sort ();
+
 			return true;
 		}
 	}
@@ -224,10 +239,64 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
+	internal class TypeEntry
+	{
+		public readonly TargetAddress KlassAddress;
+		public readonly int Rank;
+		public readonly int Token;
+		public readonly TargetAddress TypeInfo;
+		public readonly Type Type;
+
+		static MethodInfo get_type;
+
+		static TypeEntry ()
+		{
+			Type type = typeof (Assembly);
+			get_type = type.GetMethod ("MonoDebugger_GetType");
+			if (get_type == null)
+				throw new InternalError (
+					"Can't find Assembly.MonoDebugger_GetType");
+		}
+
+		private TypeEntry (MonoSymbolTableReader reader, ITargetMemoryReader memory)
+		{
+			KlassAddress = memory.ReadAddress ();
+			Rank = memory.BinaryReader.ReadInt32 ();
+			Token = memory.BinaryReader.ReadInt32 ();
+			TypeInfo = memory.ReadAddress ();
+
+			object[] args = new object[] { (int) Token };
+			Type = (Type) get_type.Invoke (reader.assembly, args);
+
+			if (Type == null)
+				throw new InvalidOperationException ();
+		}
+
+		public static void ReadTypes (MonoSymbolTableReader reader,
+					      ITargetMemoryReader memory, int count)
+		{
+			for (int i = 0; i < count; i++) {
+				try {
+					TypeEntry entry = new TypeEntry (reader, memory);
+					reader.table.AddType (entry);
+				} catch {
+					// Do nothing.
+				}
+			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("TypeEntry [{0:x}:{1:x}:{2:x}]",
+					      KlassAddress, Token, TypeInfo);
+		}
+	}
+
 	internal class MonoSymbolTableReader
 	{
 		MethodEntry[] Methods;
-		protected Assembly assembly;
+		internal readonly Assembly assembly;
+		internal readonly MonoSymbolFileTable table;
 		protected string ImageFile;
 		protected string SymbolFile;
 		protected OffsetTable offset_table;
@@ -235,7 +304,6 @@ namespace Mono.Debugger.Languages.CSharp
 		protected DebuggerBackend backend;
 		protected IInferior inferior;
 		protected ITargetMemoryAccess memory;
-		protected MonoSymbolFileTable table;
 		ArrayList ranges;
 
 		TargetAddress start_address;
@@ -249,6 +317,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		int generation;
 		int num_range_entries;
+		int num_type_entries;
 
 		TargetAddress string_table;
 		int string_table_size;
@@ -348,20 +417,8 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public bool Update ()
+		bool update_ranges (ref TargetAddress address)
 		{
-			TargetAddress address = dynamic_address;
-			if (memory.ReadInteger (address) != 0)
-				return false;
-			address += int_size;
-
-			int new_generation = memory.ReadInteger (address);
-			if (new_generation == generation)
-				return false;
-			address += int_size;
-
-			generation = new_generation;
-
 			TargetAddress range_table = memory.ReadAddress (address);
 			address += address_size;
 			int range_entry_size = memory.ReadInteger (address);
@@ -382,6 +439,50 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ranges.AddRange (new_ranges);
 			num_range_entries = new_num_range_entries;
+			return true;
+		}
+
+		bool update_types (ref TargetAddress address)
+		{
+			TargetAddress type_table = memory.ReadAddress (address);
+			address += address_size;
+			int type_entry_size = memory.ReadInteger (address);
+			address += int_size;
+			int new_num_type_entries = memory.ReadInteger (address);
+			address += int_size;
+
+			if (new_num_type_entries == num_type_entries)
+				return false;
+
+			int count = new_num_type_entries - num_type_entries;
+			ITargetMemoryReader type_reader = memory.ReadMemory (
+				type_table + num_type_entries * type_entry_size,
+				count * type_entry_size);
+
+			TypeEntry.ReadTypes (this, type_reader, count);
+
+			num_type_entries = new_num_type_entries;
+			return true;
+		}
+
+		public bool Update ()
+		{
+			TargetAddress address = dynamic_address;
+			if (memory.ReadInteger (address) != 0)
+				return false;
+			address += int_size;
+
+			int new_generation = memory.ReadInteger (address);
+			if (new_generation == generation)
+				return false;
+			address += int_size;
+
+			generation = new_generation;
+
+			bool updated = false;
+
+			updated |= update_ranges (ref address);
+			updated |= update_types (ref address);
 
 			return true;
 		}

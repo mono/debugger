@@ -31,7 +31,8 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly MonoType element_type;
 		MonoArrayType subarray_type;
 
-		public MonoArrayType (Type type, int size, ITargetMemoryReader info, bool is_multi)
+		public MonoArrayType (Type type, int size, ITargetMemoryReader info, bool is_multi,
+				      MonoSymbolFileTable table)
 			: base (type, size, false)
 		{
 			LengthOffset = info.ReadByte ();
@@ -50,7 +51,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			TargetAddress element_type_info = info.ReadAddress ();
 			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,
-						element_type_info);
+						element_type_info, table);
 			setup ();
 		}
 

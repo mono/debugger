@@ -2,11 +2,15 @@ using System;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoObjectType : MonoType
+	internal class MonoObjectType : MonoType, ITargetPointerType
 	{
-		public MonoObjectType (Type type, int size, ITargetMemoryReader info)
+		internal readonly MonoSymbolFileTable Table;
+
+		public MonoObjectType (Type type, int size, ITargetMemoryReader info,
+				       MonoSymbolFileTable table)
 			: base (type, size, true)
 		{
+			this.Table = table;
 		}
 
 		public override bool IsByRef {
@@ -21,18 +25,33 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		bool ITargetType.HasObject {
+			get {
+				return true;
+			}
+		}
+
+		public bool IsTypesafe {
+			get {
+				return true;
+			}
+		}
+
+		public bool HasStaticType {
+			get {
+				return false;
+			}
+		}
+
+		public ITargetType StaticType {
+			get {
+				throw new InvalidOperationException ();
+			}
+		}
+
 		public override MonoObject GetObject (ITargetLocation location)
 		{
-			ITargetMemoryAccess memory;
-			TargetAddress address = GetAddress (location, out memory);
-
-			Console.WriteLine ("OBJECT: {0}", address);
-			address = memory.ReadAddress (address);
-			Console.WriteLine ("VTABLE: {0}", address);
-			address = memory.ReadAddress (address);
-			Console.WriteLine ("KLASS: {0}", address);
-
-			return new MonoOpaqueObject (this, location);
+			return new MonoObjectObject (this, location);
 		}
 	}
 }

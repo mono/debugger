@@ -8,7 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly MonoFieldInfo[] fields;
 		bool is_byref;
 
-		public MonoStructType (Type type, int size, ITargetMemoryReader info)
+		public MonoStructType (Type type, int size, ITargetMemoryReader info,
+				       MonoSymbolFileTable table)
 			: base (type, size, true)
 		{
 			is_byref = info.ReadByte () != 0;
@@ -24,7 +25,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_fields.Length, num_fields);
 
 			for (int i = 0; i < num_fields; i++)
-				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], info);
+				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], info, table);
 		}
 
 		public ITargetFieldInfo[] Fields {
@@ -41,13 +42,14 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly int Index;
 
 			internal MonoFieldInfo (MonoStructType type, int index, FieldInfo finfo,
-						ITargetMemoryReader info)
+						ITargetMemoryReader info, MonoSymbolFileTable table)
 			{
 				Index = index;
 				FieldInfo = finfo;
 				Offset = info.BinaryReader.ReadInt32 ();
 				TargetAddress type_info = info.ReadAddress ();
-				Type = type.GetType (finfo.FieldType, info.TargetMemoryAccess, type_info);
+				Type = type.GetType (
+					finfo.FieldType, info.TargetMemoryAccess, type_info, table);
 			}
 
 			ITargetType ITargetFieldInfo.Type {

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoOpaqueType : MonoType
+	internal class MonoOpaqueType : MonoType, ITargetPointerType
 	{
 		public MonoOpaqueType (Type type, int size)
 			: base (type, size)
@@ -17,6 +17,30 @@ namespace Mono.Debugger.Languages.CSharp
 		public override bool HasObject {
 			get {
 				return false;
+			}
+		}
+
+		bool ITargetType.HasObject {
+			get {
+				return true;
+			}
+		}
+
+		public bool IsTypesafe {
+			get {
+				return false;
+			}
+		}
+
+		public bool HasStaticType {
+			get {
+				return false;
+			}
+		}
+
+		public ITargetType StaticType {
+			get {
+				throw new InvalidOperationException ();
 			}
 		}
 

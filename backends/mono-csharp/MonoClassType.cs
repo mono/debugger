@@ -7,13 +7,15 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		public readonly MonoClassType ParentType;
 
-		public MonoClassType (Type type, int size, ITargetMemoryReader info)
-			: base (type, size, info)
+		public MonoClassType (Type type, int size, ITargetMemoryReader info,
+				      MonoSymbolFileTable table)
+			: base (type, size, info, table)
 		{
 			TargetAddress parent_type_info = info.ReadAddress ();
 			if (parent_type_info.Address != 0) {
 				MonoType parent = GetType (
-					type.BaseType, info.TargetMemoryAccess, parent_type_info);
+					type.BaseType, info.TargetMemoryAccess, parent_type_info,
+					table);
 				ParentType = parent as MonoClassType;
 			}
 		}
