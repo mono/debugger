@@ -523,10 +523,6 @@ namespace Mono.Debugger.Languages.Mono
 #endregion
 
 #region ILanguage implementation
-		private ITargetType LookupType (StackFrame frame, Type type, string name)
-		{
-			return null;
-		}
 
 		public ITargetType LookupType (StackFrame frame, string name)
 		{
@@ -556,13 +552,7 @@ namespace Mono.Debugger.Languages.Mono
 				Type type = symfile.Assembly.GetType (name);
 				if (type == null)
 					continue;
-#if FIXME
-				MonoType mtype = (MonoType) types [type];
-				if (mtype != null)
-					return mtype;
-
-				return LookupType (frame, type, name);
-#endif
+				return symfile.LookupMonoType (type);
 			}
 
 			return null;
