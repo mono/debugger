@@ -60,7 +60,6 @@ namespace Mono.Debugger.GUI
 
 			text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
 
-			Console.WriteLine ("METHOD CHANGED, method = " + (method == null ? "null" : "ok"));
 			if (method == null)
 				return;
 

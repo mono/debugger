@@ -77,8 +77,6 @@ namespace Mono.Debugger
 			this.method_start = method_start;
 			this.method_end = method_end;
 			this.has_bounds = true;
-
-			Console.WriteLine ("SET BOUNDS: {0} {1} {2}", this, method_start, method_end);
 		}
 
 		object read_source (object user_data)
