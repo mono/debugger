@@ -56,6 +56,11 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		internal void BfdDisposed ()
+		{
+			bfd = null;
+		}
+
 		public override bool IsLoaded {
 			get {
 				return base.IsLoaded && (!is_library || !start.IsNull);

@@ -15,16 +15,15 @@ namespace Mono.Debugger.Architecture
 		protected BfdDisassembler bfd_disassembler;
 		protected IArchitecture arch;
 
-		protected SymbolTableCollection native_symtabs;
-		protected SymbolTableCollection symtab_collection;
-		protected ISymbolTable application_symtab;
-
 		DebuggerBackend backend;
+		SymbolTableManager symtab_manager;
+		ISymbolTable current_symtab;
 
 		public CoreFile (DebuggerBackend backend, string application, string core_file,
 				 BfdContainer bfd_container)
 		{
 			this.backend = backend;
+			this.symtab_manager = backend.SymbolTableManager;
 
 			arch = new ArchitectureI386 (this);
 
@@ -61,17 +60,13 @@ namespace Mono.Debugger.Architecture
 					"Executable {0} is more recent than core file {1}.",
 					application, core_file));
 
-			native_symtabs = new SymbolTableCollection ();
-
 			try {
 				ISymbolTable bfd_symtab = bfd.SymbolTable;
-				if (bfd_symtab != null)
-					native_symtabs.AddSymbolTable (bfd_symtab);
 			} catch (Exception e) {
 				Console.WriteLine ("Can't get native symbol table: {0}", e);
 			}
 
-			update_symtabs ();
+			UpdateModules ();
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -83,17 +78,7 @@ namespace Mono.Debugger.Architecture
 		public void UpdateModules ()
 		{
 			bfd.UpdateSharedLibraryInfo ();
-		}
-
-		void update_symtabs ()
-		{
-			UpdateModules ();
-			symtab_collection = new SymbolTableCollection ();
-			symtab_collection.AddSymbolTable (native_symtabs);
-			symtab_collection.AddSymbolTable (application_symtab);
-
-			if (bfd_disassembler != null)
-				bfd_disassembler.SymbolTable = symtab_collection;
+			current_symtab = symtab_manager.SymbolTable;
 		}
 
 		bool has_current_method = false;
@@ -105,7 +90,9 @@ namespace Mono.Debugger.Architecture
 					return current_method;
 
 				has_current_method = true;
-				current_method = symtab_collection.Lookup (IInferior.CurrentFrame);
+				if (current_symtab == null)
+					return null;
+				current_method = current_symtab.Lookup (IInferior.CurrentFrame);
 				return current_method;
 			}
 		}
@@ -147,7 +134,9 @@ namespace Mono.Debugger.Architecture
 			for (int i = 0; i < frames.Length; i++) {
 				TargetAddress address = frames [i].Address;
 
-				IMethod method = symtab_collection.Lookup (address);
+				IMethod method = null;
+				if (current_symtab != null)
+					method = current_symtab.Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 					backtrace [i] = new StackFrame (
@@ -229,26 +218,6 @@ namespace Mono.Debugger.Architecture
 			get {
 				check_disposed ();
 				return bfd_disassembler;
-			}
-		}
-
-		public ISymbolTable SymbolTable {
-			get {
-				check_disposed ();
-				return native_symtabs;
-			}
-		}
-
-		public ISymbolTable ApplicationSymbolTable {
-			get {
-				check_disposed ();
-				return application_symtab;
-			}
-
-			set {
-				check_disposed ();
-				application_symtab = value;
-				update_symtabs ();
 			}
 		}
 

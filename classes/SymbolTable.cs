@@ -122,20 +122,25 @@ namespace Mono.Debugger
 
 		object get_methods (object user_data)
 		{
-			ArrayList methods = GetMethods ();
-			if (methods == null)
-				return null;
-			methods.Sort ();
-			return methods;
+			lock (this) {
+				ArrayList methods = GetMethods ();
+				if (methods == null)
+					return null;
+				methods.Sort ();
+				return methods;
+			}
 		}
 
 		ArrayList ensure_methods ()
 		{
-			if (method_table == null)
-				method_table = new ObjectCache
-					(new ObjectCacheFunc (get_methods), null, new TimeSpan (0,1,0));
+			lock (this) {
+				if (method_table == null)
+					method_table = new ObjectCache
+						(new ObjectCacheFunc (get_methods), null,
+						 new TimeSpan (0,1,0));
 
-			return (ArrayList) method_table.Data;
+				return (ArrayList) method_table.Data;
+			}
 		}
 
 		public bool IsContinuous {

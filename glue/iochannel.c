@@ -1,4 +1,6 @@
 #include <mono-debugger-glue.h>
+#include <unistd.h>
+#include <string.h>
 #include <signal.h>
 #include <stdio.h>
 
@@ -73,4 +75,21 @@ mono_debugger_glue_write_line (GIOChannel *channel, const char *line)
 	if ((status != G_IO_STATUS_NORMAL) || (count != strlen (line)))
 		g_message (G_STRLOC ": %d - %d - %d", status, strlen (line), count);
 	g_io_channel_flush (channel, NULL);
+}
+
+void
+mono_debugger_glue_make_pipe (guint32 *input, guint32 *output)
+{
+	int fds [2];
+
+	g_assert (pipe (fds) == 0);
+	*input = fds [0];
+	*output = fds [1];
+}
+
+void
+mono_debugger_glue_close_pipe (guint32 input, guint32 output)
+{
+	close (input);
+	close (output);
 }

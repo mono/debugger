@@ -305,8 +305,10 @@ namespace Mono.Debugger.GUI
 		
 		void OnQuitActivate (object sender, EventArgs args)
 		{
-			if (backend != null)
+			if (backend != null) {
 				backend.Quit ();
+				backend.Dispose ();
+			}
 			
 			Application.Quit ();
 		}
@@ -420,6 +422,7 @@ namespace Mono.Debugger.GUI
 
 			if (!interpreter.ProcessCommand (line)) {
 				backend.Quit ();
+				backend.Dispose ();
 				Application.Quit ();
 			}
 		}

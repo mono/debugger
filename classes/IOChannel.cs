@@ -10,12 +10,19 @@ namespace GLib {
 	using System.Text;
 	using System.Runtime.InteropServices;
 
-	public class IOChannel
+	public class IOChannel : IDisposable
 	{
 		protected IntPtr _channel;
+		uint hangup_id;
 
 		[DllImport("glib-2.0")]
 		static extern IntPtr g_io_channel_unix_new (int fd);
+
+		[DllImport("glib-2.0")]
+		static extern IntPtr g_io_channel_unref (IntPtr channel);
+
+		[DllImport("glib-2.0")]
+		protected static extern bool g_source_remove (uint tag);
 
 		[DllImport("monodebuggerglue")]
 		static extern uint mono_debugger_glue_add_watch_hangup (IntPtr channel, HangupHandler cb);
@@ -31,13 +38,43 @@ namespace GLib {
 		internal IOChannel (IntPtr _channel)
 		{
 			this._channel = _channel;
-			mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+			hangup_id = mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
 		}
 
 		internal IOChannel (int fd)
 		{
 			_channel = g_io_channel_unix_new (fd);
-			mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+			hangup_id = mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+		}
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		protected virtual void Dispose (bool disposing)
+		{
+			if (!this.disposed) {
+				this.disposed = true;
+
+				lock (this) {
+					g_source_remove (hangup_id);
+					g_io_channel_unref (_channel);
+				}
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~IOChannel ()
+		{
+			Dispose (false);
 		}
 	}
 
@@ -55,12 +92,13 @@ namespace GLib {
 		public IOInputChannel (int fd)
 			: base (fd)
 		{
-			mono_debugger_glue_add_watch_input (_channel, new ReadLineHandler (read_line));
+			watch_id = mono_debugger_glue_add_watch_input (_channel, new ReadLineHandler (read_line));
 		}
 
 		[DllImport("monodebuggerglue")]
 		static extern uint mono_debugger_glue_add_watch_input (IntPtr channel, ReadLineHandler cb);
 
+		uint watch_id;
 		StringBuilder sb = null;
 
 		void read_line (string line)
@@ -95,6 +133,25 @@ namespace GLib {
 					break;
 				}
 			}
+		}
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		protected override void Dispose (bool disposing)
+		{
+			if (!this.disposed) {
+				this.disposed = true;
+
+				lock (this) {
+					g_source_remove (watch_id);
+				}
+			}
+
+			base.Dispose (disposing);
 		}
 	}
 

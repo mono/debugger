@@ -117,9 +117,8 @@ namespace Mono.Debugger
 			foreach (BreakpointHandle handle in breakpoints.Values)
 				handle.Disable ();
 
-			if (symbol_data != null)
-				symbol_data.Dispose ();
-			symbol_data = null;
+			sources = null;
+			symtab = null;
 
 			if (ModuleUnLoadedEvent != null)
 				ModuleUnLoadedEvent (this);
@@ -132,9 +131,7 @@ namespace Mono.Debugger
 			if (!LoadSymbols)
 				return;
 
-			if (symbol_data == null)
-				symbol_data = new ObjectCache (new ObjectCacheFunc (get_symbol_data),
-							       null, new TimeSpan (0,5,0));
+			symtab = GetSymbolTable ();
 
 			if (SymbolsLoadedEvent != null)
 				SymbolsLoadedEvent (this);
@@ -144,9 +141,8 @@ namespace Mono.Debugger
 
 		protected virtual void OnSymbolsUnLoadedEvent ()
 		{
-			if (symbol_data != null)
-				symbol_data.Dispose ();
-			symbol_data = null;
+			sources = null;
+			symtab = null;
 
 			if (SymbolsUnLoadedEvent != null)
 				SymbolsUnLoadedEvent (this);
@@ -194,24 +190,26 @@ namespace Mono.Debugger
 			}
 		}
 
-		ObjectCache symbol_data = null;
+		SourceInfo[] sources = null;
+		ISymbolTable symtab = null;
 
-		object get_symbol_data (object user_data)
+		internal void ReadModuleData ()
 		{
-			if (!SymbolsLoaded)
-				return null;
+			lock (this) {
+				if (sources != null)
+					return;
 
-			return new ModuleSymbolData (this);
+				sources = GetSources ();
+				if (sources == null)
+					sources = new SourceInfo [0];
+			}
 		}
 
 		protected abstract SourceInfo[] GetSources ();
 
 		public SourceInfo[] Sources {
 			get {
-				if ((symbol_data == null) || (symbol_data.Data == null))
-					return new SourceInfo [0];
-
-				return ((ModuleSymbolData) symbol_data.Data).Sources;
+				return sources;
 			}
 		}
 
@@ -232,34 +230,21 @@ namespace Mono.Debugger
 				if (!SymbolsLoaded)
 					throw new InvalidOperationException ();
 
-				if (symbol_data == null)
-					return null;
+				if (symtab != null)
+					return symtab;
 
-				return ((ModuleSymbolData) symbol_data.Data).SymbolTable;
+				symtab = GetSymbolTable ();
+				return symtab;
 			}
 		}
 
 		protected abstract ISymbolTable GetSymbolTable ();
 
-		protected struct ModuleSymbolData
+		public override string ToString ()
 		{
-			public readonly Module Module;
-			public readonly SourceInfo[] Sources;
-			public readonly ISymbolTable SymbolTable;
-
-			public ModuleSymbolData (Module module)
-			{
-				this.Module = module;
-
-				Sources = null;
-				if (Module.SymbolsLoaded)
-					Sources = Module.GetSources ();
-
-				if (Sources == null)
-					Sources = new SourceInfo [0];
-
-				SymbolTable = Module.GetSymbolTable ();
-			}
+			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",
+					      GetType (), Name, IsLoaded, SymbolsLoaded, StepInto,
+					      LoadSymbols);
 		}
 
 		protected sealed class BreakpointHandle : IDisposable {

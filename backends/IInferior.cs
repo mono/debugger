@@ -141,21 +141,6 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		/// <summary>
-		///   The symbol table from native executables and shared libraries.
-		/// </summary>
-		ISymbolTable SymbolTable {
-			get;
-		}
-
-		/// <summary>
-		///   The application's symbol table.  You should set this property to get
-		///   your application's symbol names in a disassembly.
-		/// </summary>
-		ISymbolTable ApplicationSymbolTable {
-			get; set;
-		}
-
 		DebuggerBackend DebuggerBackend {
 			get;
 		}

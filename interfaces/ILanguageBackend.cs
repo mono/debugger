@@ -10,10 +10,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ISymbolTable SymbolTable {
-			get;
-		}
-
 		Module[] Modules {
 			get;
 		}

@@ -13,6 +13,8 @@ extern unsigned mono_debugger_glue_add_watch_hangup (GIOChannel *channel, MonoDe
 extern void mono_debugger_glue_add_watch_output (GIOChannel *channel);
 extern void mono_debugger_glue_kill_process (int pid, int force);
 extern void mono_debugger_glue_write_line (GIOChannel *channel, const char *line);
+extern void mono_debugger_glue_make_pipe (guint32 *input, guint32 *output);
+extern void mono_debugger_glue_close_pipe (guint32 input, guint32 output);
 
 G_END_DECLS
 

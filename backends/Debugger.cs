@@ -20,12 +20,11 @@ namespace Mono.Debugger
 	public delegate void MethodInvalidHandler ();
 	public delegate void MethodChangedHandler (IMethod method);
 
-	public class DebuggerBackend : ITargetNotification, ISymbolLookup, IDisposable
+	public class DebuggerBackend : ITargetNotification, IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
 
-		SymbolTableCollection symtabs;
 		BfdContainer bfd_container;
 
 		IInferior inferior;
@@ -33,6 +32,7 @@ namespace Mono.Debugger
 		ArrayList languages;
 		MonoCSharpLanguageBackend csharp_language;
 		SingleSteppingEngine sse;
+		SymbolTableManager symtab_manager;
 
 		string[] argv;
 		string[] envp;
@@ -72,10 +72,20 @@ namespace Mono.Debugger
 			this.languages = new ArrayList ();
 			this.bfd_container = new BfdContainer (this);
 
+			symtab_manager = new SymbolTableManager ();
+			symtab_manager.ModulesChangedEvent +=
+				new SymbolTableManager.ModuleHandler (modules_reloaded);
+
 			csharp_language = new MonoCSharpLanguageBackend (this);
 			csharp_language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 			bfd_container.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 			languages.Add (csharp_language);
+		}
+
+		public SymbolTableManager SymbolTableManager {
+			get {
+				return symtab_manager;
+			}
 		}
 
 		public string CurrentWorkingDirectory {
@@ -238,7 +248,6 @@ namespace Mono.Debugger
 			languages = new ArrayList ();
 
 			sse = null;
-			symtabs = null;
 			core = null;
 
 			frames_invalid ();	
@@ -358,6 +367,8 @@ namespace Mono.Debugger
 
 		void do_run (string[] argv)
 		{
+			modules_locked = true;
+
 			if (native)
 				load_native_symtab = true;
 			inferior = new PTraceInferior (this, working_directory, argv, envp, native,
@@ -369,15 +380,8 @@ namespace Mono.Debugger
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
-			symtabs = new SymbolTableCollection ();
-			if (load_native_symtab)
-				symtabs.AddSymbolTable (inferior.SymbolTable);
-
-			if (!native) {
+			if (!native)
 				csharp_language.Inferior = inferior;
-				symtabs.AddSymbolTable (csharp_language.SymbolTable);
-				inferior.ApplicationSymbolTable = csharp_language.SymbolTable;
-			}
 
 			sse = new SingleSteppingEngine (this, inferior, native);
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
@@ -385,25 +389,6 @@ namespace Mono.Debugger
 			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
-		}
-
-		void update_symtabs ()
-		{
-			symtabs = new SymbolTableCollection ();
-			foreach (Module module in Modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				symtabs.AddSymbolTable (module.SymbolTable);
-			}
-
-			if (!native)
-				symtabs.AddSymbolTable (csharp_language.SymbolTable);
-
-			symtabs.UpdateSymbolTable ();
-
-			if (SymbolTableChanged != null)
-				SymbolTableChanged ();
 		}
 
 		void method_invalid ()
@@ -430,11 +415,40 @@ namespace Mono.Debugger
 				FramesInvalidEvent ();
 		}
 
+		bool modules_locked = false;
+
 		void modules_changed ()
 		{
-			update_symtabs ();
+			if (modules_locked)
+				return;
+
+			check_disposed ();
+			ArrayList modules = new ArrayList ();
+			modules.AddRange (bfd_container.Modules);
+			foreach (ILanguageBackend language in languages)
+				modules.AddRange (language.Modules);
+
+			symtab_manager.SetModules (modules);
+		}
+
+		Module[] current_modules = null;
+
+		void modules_reloaded (object sender, Module[] modules)
+		{
+			Console.WriteLine ("MODULES RELOADED");
+			current_modules = modules;
+
 			if (ModulesChangedEvent != null)
 				ModulesChangedEvent ();
+		}
+
+		internal void ReachedMain ()
+		{
+			modules_locked = true;
+			inferior.UpdateModules ();
+			UpdateSymbolTable ();
+			modules_locked = false;
+			modules_changed ();
 		}
 
 		void load_core (string core_file, string[] argv)
@@ -442,15 +456,8 @@ namespace Mono.Debugger
 			core = new CoreFileElfI386 (this, argv [0], core_file, bfd_container);
 			inferior = core;
 
-			symtabs = new SymbolTableCollection ();
-			symtabs.AddSymbolTable (inferior.SymbolTable);
-
-			if (!native) {
-				symtabs.AddSymbolTable (csharp_language.SymbolTable);
+			if (!native)
 				csharp_language.Inferior = inferior;
-				inferior.ApplicationSymbolTable = csharp_language.SymbolTable;
-				UpdateSymbolTable ();
-			}
 
 			Reload ();
 		}
@@ -707,26 +714,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IMethod Lookup (TargetAddress address)
-		{
-			return symtabs.Lookup (address);
-		}
-
 		public void UpdateSymbolTable ()
 		{
-			symtabs.UpdateSymbolTable ();
+			if (!native)
+				csharp_language.UpdateSymbolTable ();
 		}
 
 		public Module[] Modules {
 			get {
-				check_disposed ();
-				ArrayList modules = new ArrayList ();
-				modules.AddRange (bfd_container.Modules);
-				foreach (ILanguageBackend language in languages)
-					modules.AddRange (language.Modules);
-				Module[] retval = new Module [modules.Count];
-				modules.CopyTo (retval, 0);
-				return retval;
+				if (current_modules != null)
+					return current_modules;
+
+				return new Module [0];
 			}
 		}
 
@@ -747,12 +746,6 @@ namespace Mono.Debugger
 		{
 			check_inferior ();
 			return inferior.GetMemoryMaps ();
-		}
-
-		public ISymbolTable ApplicationSymbolTable {
-			get {
-				return symtabs;
-			}
 		}
 
 		[DllImport("glib-2.0")]
@@ -778,6 +771,8 @@ namespace Mono.Debugger
 				// dispose all managed resources.
 				if (disposing) {
 					// Do stuff here
+					if (symtab_manager != null)
+						symtab_manager.Dispose ();
 					if (inferior != null)
 						inferior.Kill ();
 					bfd_container.Dispose ();

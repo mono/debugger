@@ -329,13 +329,21 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public TargetAddress GetAddress (long address)
+		{
+			if (BaseAddress.IsNull)
+				return new TargetAddress (inferior, address);
+			else
+				return BaseAddress + address;
+		}
+
 		public void ReadDwarf ()
 		{
 			if (dwarf != null)
 				return;
 
 			try {
-				dwarf = new DwarfReader (inferior, this);
+				dwarf = new DwarfReader (this, module);
 			} catch (Exception e) {
 				throw new SymbolTableException (
 					"Symbol file {0} doesn't contain any DWARF 2 debugging info.",
@@ -602,7 +610,7 @@ namespace Mono.Debugger.Architecture
 				// dispose all managed resources.
 				if (disposing) {
 					if (module != null)
-						module.Bfd = null;
+						module.BfdDisposed ();
 					if (dwarf != null)
 						dwarf.Dispose ();
 				}

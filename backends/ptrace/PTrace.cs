@@ -52,9 +52,7 @@ namespace Mono.Debugger.Backends
 		BfdContainer bfd_container;
 		BfdDisassembler bfd_disassembler;
 		IArchitecture arch;
-		SymbolTableCollection native_symtabs;
 		SymbolTableCollection symtab_collection;
-		ISymbolTable application_symtab;
 		DebuggerBackend backend;
 
 		int child_pid;
@@ -484,13 +482,9 @@ namespace Mono.Debugger.Backends
 			bfd_disassembler = bfd.GetDisassembler (this);
 			arch = new ArchitectureI386 (this);
 
-			native_symtabs = new SymbolTableCollection ();
-
 			if (load_native_symtab) {
 				try {
 					ISymbolTable bfd_symtab = bfd.SymbolTable;
-					if (bfd_symtab != null)
-						native_symtabs.AddSymbolTable (bfd_symtab);
 				} catch (Exception e) {
 					Console.WriteLine ("Can't get native symbol table: {0}", e);
 				}
@@ -507,8 +501,6 @@ namespace Mono.Debugger.Backends
 		void update_symtabs ()
 		{
 			symtab_collection = new SymbolTableCollection ();
-			symtab_collection.AddSymbolTable (native_symtabs);
-			symtab_collection.AddSymbolTable (application_symtab);
 
 			bfd_disassembler.SymbolTable = symtab_collection;
 		}
@@ -924,26 +916,6 @@ namespace Mono.Debugger.Backends
 			get {
 				check_disposed ();
 				return bfd_disassembler;
-			}
-		}
-
-		public ISymbolTable SymbolTable {
-			get {
-				check_disposed ();
-				return native_symtabs;
-			}
-		}
-
-		public ISymbolTable ApplicationSymbolTable {
-			get {
-				check_disposed ();
-				return application_symtab;
-			}
-
-			set {
-				check_disposed ();
-				application_symtab = value;
-				update_symtabs ();
 			}
 		}
 

@@ -12,7 +12,7 @@ namespace Mono.Debugger.Architecture
 	internal class DwarfReader : IDisposable
 	{
 		protected Bfd bfd;
-		protected IInferior inferior;
+		protected Module module;
 		protected string filename;
 		bool is64bit;
 		byte address_size;
@@ -27,6 +27,7 @@ namespace Mono.Debugger.Architecture
 		Hashtable compile_unit_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
+		TargetInfo target_info;
 
 		protected class DwarfException : Exception
 		{
@@ -39,20 +40,15 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (IInferior inferior, Bfd bfd)
+		public DwarfReader (Bfd bfd, Module module)
 		{
 			this.bfd = bfd;
-			this.inferior = inferior;
+			this.module = module;
 			this.filename = bfd.FileName;
 
 			debug_info_reader = create_reader (".debug_info");
-			debug_abbrev_reader = create_reader (".debug_abbrev");
-			debug_line_reader = create_reader (".debug_line");
-			debug_aranges_reader = create_reader (".debug_aranges");
-			debug_pubnames_reader = create_reader (".debug_pubnames");
-			debug_str_reader = create_reader (".debug_str");
 
-			DwarfBinaryReader reader = (DwarfBinaryReader) debug_info_reader.Data;
+			DwarfBinaryReader reader = DebugInfoReader;
 
 			long length = reader.ReadInitialLength (out is64bit);
 			long stop = reader.Position + length;
@@ -68,25 +64,34 @@ namespace Mono.Debugger.Architecture
 				throw new DwarfException (this, String.Format (
 					"Unknown address size: {0}", address_size));
 
-			reader.TargetInfo = new TargetInfo (address_size);
+			target_info = reader.TargetInfo = new TargetInfo (address_size);
 
-			compile_unit_hash = new Hashtable ();
+			debug_abbrev_reader = create_reader (".debug_abbrev");
+			debug_line_reader = create_reader (".debug_line");
+			debug_aranges_reader = create_reader (".debug_aranges");
+			debug_pubnames_reader = create_reader (".debug_pubnames");
+			debug_str_reader = create_reader (".debug_str");
+
+			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 
 			Console.WriteLine ("Reading aranges table ....");
 
-			aranges = read_aranges ();
+			aranges = ArrayList.Synchronized (read_aranges ());
 
 			symtab = new DwarfSymbolTable (this, aranges);
 
 			Console.WriteLine ("Done reading aranges table");
 		}
 
+		public TargetInfo TargetInfo {
+			get {
+				return target_info;
+			}
+		}
+
 		protected TargetAddress GetAddress (long address)
 		{
-			if (bfd.BaseAddress.IsNull)
-				return new TargetAddress (inferior, address);
-			else
-				return bfd.BaseAddress + address;
+			return bfd.GetAddress (address);
 		}
 
 		protected long find_compile_unit_block (long offset)
@@ -103,13 +108,18 @@ namespace Mono.Debugger.Architecture
 
 		protected ISymbolTable get_symtab_at_offset (long offset)
 		{
-			CompileUnitBlock block = (CompileUnitBlock) compile_unit_hash [offset];
-			if (block != null)
-				return block.symtabs;
+			CompileUnitBlock block;
+			lock (compile_unit_hash.SyncRoot) {
+				block = (CompileUnitBlock) compile_unit_hash [offset];
+				if (block == null) {
+					block = new CompileUnitBlock (this, offset);
+					compile_unit_hash.Add (offset, block);
+				}
+			}
 
-			block = new CompileUnitBlock (this, offset);
-			compile_unit_hash.Add (offset, block);
-			return block.symtabs;
+			// This either return the already-read symbol table or acquire the
+			// thread lock and read it.
+			return block.SymbolTable;
 		}
 
 		public SourceInfo[] GetSources ()
@@ -172,7 +182,7 @@ namespace Mono.Debugger.Architecture
 			DwarfReader dwarf;
 
 			public DwarfSourceInfo (DwarfReader dwarf, string filename)
-				: base (dwarf.bfd.Module, filename)
+				: base (dwarf.module, filename)
 			{
 				this.dwarf = dwarf;
 			}
@@ -187,12 +197,14 @@ namespace Mono.Debugger.Architecture
 		{
 			public readonly DwarfReader dwarf;
 			public readonly long offset;
-			public readonly SymbolTableCollection symtabs;
 
+			SymbolTableCollection symtabs;
 			ArrayList compile_units;
+			bool initialized;
 
 			public IMethod Lookup (TargetAddress address)
 			{
+				read_block ();
 				foreach (CompilationUnit comp_unit in compile_units) {
 					ISymbolTable symtab = comp_unit.SymbolTable;
 
@@ -204,37 +216,64 @@ namespace Mono.Debugger.Architecture
 				return null;
 			}
 
+			public ISymbolTable SymbolTable {
+				get {
+					read_block ();
+					return symtabs;
+				}
+			}
+
+			void read_block ()
+			{
+				// If we're already initialized, we don't need to do any locking,
+				// so do this check here without locking.
+				if (initialized)
+					return;
+
+				lock (this) {
+					// We need to check this again after we acquired the thread
+					// lock to avoid a race condition.
+					if (initialized)
+						return;
+
+					symtabs = new SymbolTableCollection ();
+					symtabs.Lock ();
+
+					DwarfBinaryReader reader = dwarf.DebugInfoReader;
+					reader.Position = offset;
+					long length = reader.ReadInitialLength ();
+					long stop = reader.Position + length;
+					int version = reader.ReadInt16 ();
+					if (version < 2)
+						throw new DwarfException (dwarf, String.Format (
+							"Wrong DWARF version: {0}", version));
+
+					reader.ReadOffset ();
+					int address_size = reader.ReadByte ();
+					reader.Position = offset;
+
+					if ((address_size != 4) && (address_size != 8))
+						throw new DwarfException (dwarf, String.Format (
+							"Unknown address size: {0}", address_size));
+
+					compile_units = new ArrayList ();
+
+					while (reader.Position < stop) {
+						CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
+						compile_units.Add (comp_unit);
+						symtabs.AddSymbolTable (comp_unit.SymbolTable);
+					}
+
+					symtabs.UnLock ();
+
+					initialized = true;
+				}
+			}
+
 			public CompileUnitBlock (DwarfReader dwarf, long start)
 			{
 				this.dwarf = dwarf;
 				this.offset = start;
-
-				symtabs = new SymbolTableCollection ();
-
-				DwarfBinaryReader reader = dwarf.DebugInfoReader;
-				reader.Position = start;
-				long length = reader.ReadInitialLength ();
-				long stop = reader.Position + length;
-				int version = reader.ReadInt16 ();
-				if (version < 2)
-					throw new DwarfException (dwarf, String.Format (
-						"Wrong DWARF version: {0}", version));
-
-				reader.ReadOffset ();
-				int address_size = reader.ReadByte ();
-				reader.Position = start;
-
-				if ((address_size != 4) && (address_size != 8))
-					throw new DwarfException (dwarf, String.Format (
-						"Unknown address size: {0}", address_size));
-
-				compile_units = new ArrayList ();
-
-				while (reader.Position < stop) {
-					CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
-					compile_units.Add (comp_unit);
-					symtabs.AddSymbolTable (comp_unit.SymbolTable);
-				}
 			}
 		}
 
@@ -295,6 +334,12 @@ namespace Mono.Debugger.Architecture
 				}
 
 				return methods;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("{0} ({1}:{2})", GetType (), dwarf.FileName,
+						      ranges.Count);
 			}
 		}
 
@@ -451,65 +496,65 @@ namespace Mono.Debugger.Architecture
 		}
 #endif
 
-		private struct CreateReaderData
-		{
-			public readonly DwarfReader reader;
-			public readonly string section_name;
-
-			public CreateReaderData (DwarfReader reader, string section_name)
-			{
-				this.reader = reader;
-				this.section_name = section_name;
-			}
-		}
-
 		object create_reader_func (object user_data)
 		{
-			CreateReaderData data = (CreateReaderData) user_data;
+			byte[] contents = bfd.GetSectionContents ((string) user_data, false);
+			if (contents == null)
+				throw new DwarfException (this, "Can't find DWARF 2 debugging info");
 
-			return DwarfBinaryReader.GetBinaryReader (data.reader, data.section_name);
+			ITargetInfo target_info = null;
+			if (AddressSize != 0)
+				target_info = new TargetInfo (AddressSize);
+
+			return new TargetBlob (contents);
 		}
 
 		ObjectCache create_reader (string section_name)
 		{
-			CreateReaderData data = new CreateReaderData (this, section_name);
-			return new ObjectCache (new ObjectCacheFunc (create_reader_func), data,
+			return new ObjectCache (new ObjectCacheFunc (create_reader_func), section_name,
 						new TimeSpan (0,5,0));
 		}
 
+		//
+		// These properties always create a new DwarfBinaryReader instance, but all these instances
+		// share the buffer they're reading from.  A DwarfBinaryReader just contains a reference to
+		// the data and the current position - so by creating a new instance each time we start a
+		// read operation, reading will be thread-safe.
+		//
+
 		public DwarfBinaryReader DebugInfoReader {
 			get {
-				return (DwarfBinaryReader) debug_info_reader.Data;
+				return new DwarfBinaryReader (this, (TargetBlob) debug_info_reader.Data);
 			}
 		}
 
 		public DwarfBinaryReader DebugAbbrevReader {
 			get {
-				return (DwarfBinaryReader) debug_abbrev_reader.Data;
+				return new DwarfBinaryReader (this, (TargetBlob) debug_abbrev_reader.Data);
 			}
 		}
 
 		public DwarfBinaryReader DebugPubnamesReader {
 			get {
-				return (DwarfBinaryReader) debug_pubnames_reader.Data;
+				return new DwarfBinaryReader (this, (TargetBlob) debug_pubnames_reader.Data);
 			}
 		}
 
 		public DwarfBinaryReader DebugLineReader {
 			get {
-				return (DwarfBinaryReader) debug_line_reader.Data;
+				return new DwarfBinaryReader (this, (TargetBlob) debug_line_reader.Data);
 			}
 		}
 
 		public DwarfBinaryReader DebugArangesReader {
 			get {
-				return (DwarfBinaryReader) debug_aranges_reader.Data;
+				return new DwarfBinaryReader (this, (TargetBlob) debug_aranges_reader.Data);
 			}
 		}
 
 		public DwarfBinaryReader DebugStrReader {
 			get {
-				return (DwarfBinaryReader) debug_str_reader.Data;
+				return new DwarfBinaryReader (this, (TargetBlob) debug_str_reader.Data);
 			}
 		}
 
@@ -539,32 +584,13 @@ namespace Mono.Debugger.Architecture
 		public class DwarfBinaryReader : TargetBinaryReader
 		{
 			DwarfReader dwarf;
-			string section_name;
 			bool is64bit;
 
-			protected DwarfBinaryReader (DwarfReader dwarf, string section_name,
-						     byte[] contents, ITargetInfo target_info)
-				: base (contents, target_info)
+			public DwarfBinaryReader (DwarfReader dwarf, TargetBlob blob)
+				: base (blob, dwarf.TargetInfo)
 			{
-				this.section_name = section_name;
 				this.dwarf = dwarf;
-
-				is64bit = dwarf.Is64Bit;
-
-				debug ("Creating new `{0}' reader.", section_name);
-			}
-
-			public static DwarfBinaryReader GetBinaryReader (DwarfReader dwarf, string section_name)
-			{
-				byte[] contents = dwarf.bfd.GetSectionContents (section_name, false);
-				if (contents == null)
-					throw new DwarfException (dwarf, "Can't file DWARF 2 debugging info");
-
-				ITargetInfo target_info = null;
-				if (dwarf.AddressSize != 0)
-					target_info = new TargetInfo (dwarf.AddressSize);
-
-				return new DwarfBinaryReader (dwarf, section_name, contents, target_info);
+				this.is64bit = dwarf.Is64Bit;
 			}
 
 			public DwarfReader DwarfReader {
@@ -620,11 +646,6 @@ namespace Mono.Debugger.Architecture
 					throw new DwarfException (dwarf, String.Format (
 						"Unknown initial length field {0:x}", length));
 			}
-
-			~DwarfBinaryReader ()
-			{
-				debug ("Finalizing `{0}' reader.", section_name);
-			}
 		}
 
 		protected class DwarfNativeMethod : MethodBase
@@ -633,7 +654,7 @@ namespace Mono.Debugger.Architecture
 			protected DieSubprogram subprog;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
-				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.bfd.Module)
+				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
 			{
 				this.subprog = subprog;
 				this.engine = engine;
@@ -733,12 +754,14 @@ namespace Mono.Debugger.Architecture
 
 				ArrayList list = new ArrayList ();
 
-				foreach (Die child in comp_unit_die.Children) {
-					DieSubprogram subprog = child as DieSubprogram;
-					if ((subprog == null) || !subprog.IsContinuous)
-						continue;
+				lock (comp_unit_die) {
+					foreach (Die child in comp_unit_die.Children) {
+						DieSubprogram subprog = child as DieSubprogram;
+						if ((subprog == null) || !subprog.IsContinuous)
+							continue;
 
-					list.Add (subprog);
+						list.Add (subprog);
+					}
 				}
 
 				list.Sort ();

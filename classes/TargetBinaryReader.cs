@@ -3,18 +3,32 @@ using System.Text;
 
 namespace Mono.Debugger
 {
+	public sealed class TargetBlob
+	{
+		public readonly byte[] Contents;
+
+		public TargetBlob (byte[] contents)
+		{
+			this.Contents = contents;
+		}
+	}
+
 	// <summary>
 	//   This is a generic binary reader.
 	// </summary>
 	public class TargetBinaryReader : Mono.CSharp.Debugger.IMonoBinaryReader
 	{
 		ITargetInfo target_info;
-		byte[] contents;
+		TargetBlob blob;
 		int pos;
 
 		public TargetBinaryReader (byte[] contents, ITargetInfo target_info)
+			: this (new TargetBlob (contents), target_info)
+		{ }
+
+		public TargetBinaryReader (TargetBlob blob, ITargetInfo target_info)
 		{
-			this.contents = contents;
+			this.blob = blob;
 			this.target_info = target_info;
 		}
 
@@ -44,7 +58,7 @@ namespace Mono.Debugger
 
 		public long Size {
 			get {
-				return contents.Length;
+				return blob.Contents.Length;
 			}
 		}
 
@@ -60,28 +74,28 @@ namespace Mono.Debugger
 
 		public bool IsEof {
 			get {
-				return pos == contents.Length;
+				return pos == blob.Contents.Length;
 			}
 		}
 
 		public byte PeekByte (long pos)
 		{
-			return contents[pos];
+			return blob.Contents[pos];
 		}
 
 		public byte PeekByte ()
 		{
-			return contents[pos];
+			return blob.Contents[pos];
 		}
 
 		public byte ReadByte ()
 		{
-			return contents[pos++];
+			return blob.Contents[pos++];
 		}
 
 		public short PeekInt16 (long pos)
 		{
-			return ((short) (contents[pos] | (contents[pos+1] << 8)));
+			return ((short) (blob.Contents[pos] | (blob.Contents[pos+1] << 8)));
 		}
 
 		public short PeekInt16 ()
@@ -98,8 +112,8 @@ namespace Mono.Debugger
 
 		public int PeekInt32 (long pos)
 		{
-			return (contents[pos] | (contents[pos+1] << 8) |
-				(contents[pos+2] << 16) | (contents[pos+3] << 24));
+			return (blob.Contents[pos] | (blob.Contents[pos+1] << 8) |
+				(blob.Contents[pos+2] << 16) | (blob.Contents[pos+3] << 24));
 		}
 
 		public int PeekInt32 ()
@@ -116,14 +130,14 @@ namespace Mono.Debugger
 
 		public long PeekInt64 (long pos)
 		{
-			uint ret_low  = (uint) (contents[pos]           |
-						(contents[pos+1] << 8)  |
-						(contents[pos+2] << 16) |
-						(contents[pos+3] << 24));
-			uint ret_high = (uint) (contents[pos+4]         |
-						(contents[pos+5] << 8)  |
-						(contents[pos+6] << 16) |
-						(contents[pos+7] << 24));
+			uint ret_low  = (uint) (blob.Contents[pos]           |
+						(blob.Contents[pos+1] << 8)  |
+						(blob.Contents[pos+2] << 16) |
+						(blob.Contents[pos+3] << 24));
+			uint ret_high = (uint) (blob.Contents[pos+4]         |
+						(blob.Contents[pos+5] << 8)  |
+						(blob.Contents[pos+6] << 16) |
+						(blob.Contents[pos+7] << 24));
 			return (long) ((((ulong) ret_high) << 32) | ret_low);
 		}
 
@@ -163,12 +177,12 @@ namespace Mono.Debugger
 		public string PeekString (long pos)
 		{
 			int length = 0;
-			while (contents[pos+length] != 0)
+			while (blob.Contents[pos+length] != 0)
 				length++;
 
 			char[] retval = new char [length];
 			for (int i = 0; i < length; i++)
-				retval [i] = (char) contents[pos+i];
+				retval [i] = (char) blob.Contents[pos+i];
 
 			return new String (retval);
 		}
@@ -189,7 +203,7 @@ namespace Mono.Debugger
 		{
 			byte[] buffer = new byte [size];
 
-			Array.Copy (contents, pos, buffer, 0, size);
+			Array.Copy (blob.Contents, pos, buffer, 0, size);
 
 			return buffer;
 		}
@@ -198,7 +212,7 @@ namespace Mono.Debugger
 		{
 			byte[] buffer = new byte [size];
 
-			Array.Copy (contents, pos, buffer, 0, size);
+			Array.Copy (blob.Contents, pos, buffer, 0, size);
 			pos += size;
 
 			return buffer;

@@ -1,5 +1,31 @@
 2002-10-12  Martin Baulig  <martin@gnome.org>
 
+	Implemented a SymbolTableManager which maintains all the symbol
+	tables and which uses a separate thread to update things in the
+	background.
+
+	Since reading the source list is a very CPU consuming operation
+	and the source list is only needed when inserting a new breakpoint,
+	it is now also read in the background thread.
+
+	* class/SymbolTableManager.cs: This class now maintains all the
+	symbol tables.  It's using a separate thread to update things in
+	the background.
+
+	* class/AsyncQueue.cs: New class.
+
+	* class/SymbolTableCollection.cs: Added Lock() and UnLock()
+	methods to avoid updates while adding several symbol tables.
+
+	* arch/DwarfReader.cs: This class is now thread-safe.
+
+	* interfaces/ILanguageBackend.cs (ILanguageBackend.SymbolTable):
+	Removed, the SymbolTableManager now holds all the symbol tables.
+
+	* backends/Debugger.cs: Use the SymbolTableManager.
+
+2002-10-12  Martin Baulig  <martin@gnome.org>
+
 	* class/Module.cs: Added property to get the ISymbolTable.
 
 	* backends/Debugger.cs: Do all the symbol table handling here

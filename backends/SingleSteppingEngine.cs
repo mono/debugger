@@ -25,6 +25,7 @@ namespace Mono.Debugger.Backends
 		public SingleSteppingEngine (DebuggerBackend backend, IInferior inferior, bool native)
 		{
 			this.backend = backend;
+			this.symtab_manager = backend.SymbolTableManager;
 			this.inferior = inferior;
 			this.arch = inferior.Architecture;
 			this.disassembler = inferior.Disassembler;
@@ -34,13 +35,28 @@ namespace Mono.Debugger.Backends
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.ChildEvent += new ChildEventHandler (child_event);
 
-			backend.SymbolTableChanged += new SymbolTableChangedHandler (update_symtabs);
-			update_symtabs ();
+			symtab_manager.SymbolTableChangedEvent +=
+				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 		}
 
-		void update_symtabs ()
+		void update_symtabs (object sender, ISymbolTable symbol_table)
 		{
-			disassembler.SymbolTable = backend.ApplicationSymbolTable;
+			Console.WriteLine ("SYMTAB CHANGED!");
+			disassembler.SymbolTable = symbol_table;
+			current_symtab = symbol_table;
+			if (State == TargetState.STOPPED) {
+				frames_invalid ();
+				must_send_update = true;
+				frame_changed (inferior.CurrentFrame, 0);
+			}
+		}
+
+		public IMethod Lookup (TargetAddress address)
+		{
+			if (current_symtab == null)
+				return null;
+
+			return current_symtab.Lookup (address);
 		}
 
 		public event StateChangedHandler StateChangedEvent;
@@ -77,7 +93,7 @@ namespace Mono.Debugger.Backends
 			for (int i = 0; i < frames.Length; i++) {
 				TargetAddress address = frames [i].Address;
 
-				IMethod method = backend.Lookup (address);
+				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 					current_backtrace [i] = new StackFrame (
@@ -103,6 +119,8 @@ namespace Mono.Debugger.Backends
 		IArchitecture arch;
 		DebuggerBackend backend;
 		IDisassembler disassembler;
+		SymbolTableManager symtab_manager;
+		ISymbolTable current_symtab;
 		bool native;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
@@ -252,7 +270,7 @@ namespace Mono.Debugger.Backends
 				reached_main = true;
 				main_method_retaddr = inferior.GetReturnAddress ();
 				frames_invalid ();
-				inferior.UpdateModules ();
+				backend.ReachedMain ();
 			}
 
 			switch (message) {
@@ -318,7 +336,7 @@ namespace Mono.Debugger.Backends
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
 				backend.UpdateSymbolTable ();
-				current_method = backend.Lookup (address);
+				current_method = Lookup (address);
 			}
 
 			// If some clown requested a backtrace while doing the symbol lookup ....
@@ -375,7 +393,7 @@ namespace Mono.Debugger.Backends
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
 				backend.UpdateSymbolTable ();
-				current_method = backend.Lookup (address);
+				current_method = Lookup (address);
 			}
 
 			// If some clown requested a backtrace while doing the symbol lookup ....
@@ -583,9 +601,9 @@ namespace Mono.Debugger.Backends
 				 */
 				if (!trampoline.IsNull) {
 					IMethod tmethod = null;
-					if (backend.ApplicationSymbolTable != null) {
+					if (current_symtab != null) {
 						backend.UpdateSymbolTable ();
-						tmethod = backend.ApplicationSymbolTable.Lookup (trampoline);
+						tmethod = Lookup (trampoline);
 					}
 					if ((tmethod == null) || !tmethod.Module.StepInto) {
 						set_step_frame (frame);
@@ -621,11 +639,9 @@ namespace Mono.Debugger.Backends
 			 * If it can't be found in the symbol tables, assume it's a system function
 			 * and step over it.
 			 */
-			IMethod method = null;
-			if (native || (frame.Mode == StepMode.NativeStepFrame))
-				method = backend.ApplicationSymbolTable.Lookup (call);
-			else if (backend.ApplicationSymbolTable != null)
-				method = backend.ApplicationSymbolTable.Lookup (call);
+			IMethod method = Lookup (call);
+			if (current_symtab != null)
+				method = current_symtab.Lookup (call);
 			if ((method == null) || !method.Module.StepInto) {
 				set_step_frame (frame);
 				do_next ();

@@ -15,7 +15,6 @@ namespace Mono.Debugger.Architecture
 		Hashtable bfd_hash;
 		Hashtable module_hash;
 		DebuggerBackend backend;
-		SymbolTableCollection symtabs;
 
 		public BfdContainer (DebuggerBackend backend)
 		{
@@ -24,7 +23,6 @@ namespace Mono.Debugger.Architecture
 			this.module_hash = new Hashtable ();
 
 			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
-			update_symtabs ();			
 		}
 
 		public Module this [string filename] {
@@ -72,8 +70,6 @@ namespace Mono.Debugger.Architecture
 			module.Inferior = inferior;
 			bfd_hash.Add (filename, bfd);
 
-			update_symtabs ();
-
 			OnModulesChangedEvent ();
 			if (new_module)
 				module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
@@ -93,8 +89,6 @@ namespace Mono.Debugger.Architecture
 
 			bfd_hash.Remove (bfd.FileName);
 			bfd.Dispose ();
-
-			update_symtabs ();
 		}
 
 		void target_exited_handler ()
@@ -107,15 +101,6 @@ namespace Mono.Debugger.Architecture
 				module.Bfd = null;
 				module.Inferior = null;
 			}
-
-			update_symtabs ();
-		}
-
-		void update_symtabs ()
-		{
-			symtabs = new SymbolTableCollection ();
-			foreach (Bfd bfd in bfd_hash.Values)
-				symtabs.AddSymbolTable (bfd.SymbolTable);
 		}
 
 		//
@@ -130,7 +115,7 @@ namespace Mono.Debugger.Architecture
 
 		public ISymbolTable SymbolTable {
 			get {
-				return symtabs;
+				throw new InvalidOperationException ();
 			}
 		}
 

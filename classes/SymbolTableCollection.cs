@@ -12,6 +12,9 @@ namespace Mono.Debugger
 		bool has_ranges;
 		bool in_update;
 
+		bool needs_update = false;
+		int locked = 0;
+
 		public void AddSymbolTable (ISymbolTable symtab)
 		{
 			if (symtab == null)
@@ -19,6 +22,18 @@ namespace Mono.Debugger
 			symtabs.Add (symtab);
 			symtab.SymbolTableChanged += new SymbolTableChangedHandler (update_handler);
 			update_handler ();
+		}
+
+		public void Lock ()
+		{
+			locked++;
+		}
+
+		public void UnLock ()
+		{
+			locked--;
+			if ((locked == 0) && needs_update)
+				update_handler ();
 		}
 
 		public bool IsContinuous {
@@ -114,8 +129,10 @@ namespace Mono.Debugger
 
 		void update_handler ()
 		{
-			if (in_update)
+			if (in_update || (locked > 0)) {
+				needs_update = true;
 				return;
+			}
 
 			update_ranges ();
 
