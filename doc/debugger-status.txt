@@ -24,9 +24,15 @@ Variables and types in managed code:
   long which is in %eax and %edx).  Look at backends/mono-csharp/MonoRegisterLocation.cs,
   it should work in a similar way.
 
+  [update 01/06/03: this is a bug, but if it turns out to be too hard to fix, we should
+                    disable register variables for the moment.]
+
 * We can't invoke methods on structs, only on classes.  When invoking a method on a
   struct, we need to box the `this' argument which isn't implemented yet.  The code is in
   MonoStructType.Invoke in backends/mono-csharp/MonoStructType.cs.
+
+  [update 01/06/03: this is a bug and not too hard to implement; it is required to access
+                    properties in a struct.]
 
 * We can only invoke methods without arguments.  The code to call a method is
   IInferior.CallInvokeMethod() and it's also called from MonoStructType.Invoke(); what
@@ -36,6 +42,8 @@ Variables and types in managed code:
   The problem here is that we need to create an object in the target, so we need to write
   some code which evaluates a user supplied expression and creates an object instance for
   it.
+
+  [update 01/06/03: wishlist item; won't make it into the release.]
 
 * Also in MonoStructType.Invoke(), we should do something reasonable with the returned
   exception; at the moment, it is returned instead of the method's return value.
@@ -66,10 +74,15 @@ JIT issues:
   its IL code.  This tool should create both the IL file and the symbol file and use the
   IL file as `source code'.
 
+  [update 01/06/03: wishlist item; won't make it into the release.]
+
 Single stepping issues:
 -----------------------
 
 * There is no command to make the current stack frame return.
+
+  [update 01/06/03: sounds like a cool and useful feature, but it is too much work to get
+                    it right, so it won't make it into the release.]
 
 Modules:
 --------
@@ -80,9 +93,13 @@ Modules:
   debugger loaded the module before you can insert the breakpoint.  However, the
   breakpoint will be automatically inserted when restarting the target.
 
+  [update 01/06/03: wishlist item; won't make it into the release.]
+
 * Currently, we're getting a notification when the target loads a new shared library.  We
   should do the same for managed applications, ie. let the JIT call a special method each
   time it opened a new assembly so that we could insert a breakpoint on that method.
+
+  [update 01/06/03: wishlist item; won't make it into the release.]
 
 * When inserting a breakpoint for a not-yet-JITed method, the debugger invokes a special
   function in the target's JIT to get a breakpoint when that method gets JITed.  This
@@ -92,6 +109,9 @@ Modules:
   The same applies for native libraries: we could have a list of such breakpoints and each
   time a new shared library gets loaded, we scan its symbol file to find out whether it
   has a method with that name.
+
+  [update 01/06/03: this is important and must go into the release; the whole breakpoint stuff
+                    is useless if the user interface has no command to insert a breakpoint.]
 
 General:
 --------
