@@ -117,11 +117,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		/// <summary>
-		///   Whether we can modify the inferior process
-		/// </summary>
-		bool CanModify ();
-
-		/// <summary>
 		///   Returns a disassembler for the current target.
 		/// </summary>
 		IDisassembler Disassembler {

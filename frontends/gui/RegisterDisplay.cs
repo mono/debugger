@@ -181,7 +181,7 @@ namespace Mono.Debugger.GUI
 		//
 		void I386SetupModifiableWidgets ()
 		{
-			bool can_modify = backend.Inferior.CanModify ();
+			bool can_modify = backend.State != TargetState.CORE_FILE;
 
 			for (int i = 0; i < (int) I386Register.COUNT; i++){
 				if (i386_registers [i] != null)
