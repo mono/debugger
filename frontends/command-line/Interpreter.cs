@@ -202,6 +202,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 			}
 
+#if FALSE
 			case "b":
 			case "break-method": {
 				if (args.Length != 2) {
@@ -244,6 +245,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				break;
 			}
+#endif
 
 			default:
 				stderr.WriteLine ("Unknown command: " + command);
