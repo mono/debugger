@@ -27,22 +27,20 @@ namespace Mono.Debugger.Languages.CSharp
 			this.has_fixed_size = has_fixed_size;
 		}
 
-		public static MonoType GetType (Type type, ITargetMemoryAccess memory, TargetAddress address,
-						MonoSymbolFileTable table)
+		public static MonoType GetType (Type type, int offset, MonoSymbolFileTable table)
 		{
-			int size = memory.ReadInteger (address);
-			ITargetMemoryReader info = memory.ReadMemory (
-				address + memory.TargetIntegerSize, size);
+			byte[] data = table.GetTypeInfo (offset);
+			TargetBinaryReader info = new TargetBinaryReader (data, table.TargetInfo);
 			return GetType (type, info, table);
 		}
 
-		private static MonoType GetType (Type type, ITargetMemoryReader info,
+		private static MonoType GetType (Type type, TargetBinaryReader info,
 						 MonoSymbolFileTable table)
 		{
 			if (type == typeof (void))
 				return new MonoOpaqueType (type, 0);
 
-			int size = info.ReadInteger ();
+			int size = info.ReadInt32 ();
 			if (size > 0) {
 				if (MonoFundamentalType.Supports (type))
 					return new MonoFundamentalType (type, size);
@@ -51,7 +49,7 @@ namespace Mono.Debugger.Languages.CSharp
 			} else if (size == -1)
 				return new MonoOpaqueType (type, 0);
 
-			size = info.BinaryReader.ReadInt32 ();
+			size = info.ReadInt32 ();
 
 			int kind = info.ReadByte ();
 			switch (kind) {

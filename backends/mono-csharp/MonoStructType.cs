@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoFieldInfo[] fields;
 		MonoPropertyInfo[] properties;
 		MonoMethodInfo[] methods;
-		ITargetMemoryReader info;
+		TargetBinaryReader info;
 		internal readonly MonoSymbolFileTable Table;
 		int num_fields, num_properties, num_methods;
 		int field_info_size, property_info_size, method_info_size;
@@ -20,21 +20,21 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected readonly TargetAddress invoke_method;
 
-		public MonoStructType (Type type, int size, ITargetMemoryReader info,
+		public MonoStructType (Type type, int size, TargetBinaryReader info,
 				       MonoSymbolFileTable table)
 			: base (type, size, true)
 		{
 			is_byref = info.ReadByte () != 0;
-			num_fields = info.BinaryReader.ReadInt32 ();
-			field_info_size = info.BinaryReader.ReadInt32 ();
-			num_properties = info.BinaryReader.ReadInt32 ();
-			property_info_size = info.BinaryReader.ReadInt32 ();
-			num_methods = info.BinaryReader.ReadInt32 ();
-			method_info_size = info.BinaryReader.ReadInt32 ();
+			num_fields = info.ReadInt32 ();
+			field_info_size = info.ReadInt32 ();
+			num_properties = info.ReadInt32 ();
+			property_info_size = info.ReadInt32 ();
+			num_methods = info.ReadInt32 ();
+			method_info_size = info.ReadInt32 ();
 			this.info = info;
-			this.offset = info.Offset;
+			this.offset = info.Position;
 			this.Table = table;
-			info.Offset += field_info_size + property_info_size + method_info_size;
+			info.Position += field_info_size + property_info_size + method_info_size;
 			invoke_method = table.Language.MonoDebuggerInfo.runtime_invoke;
 		}
 
@@ -48,7 +48,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (fields != null)
 				return;
 
-			info.Offset = offset;
+			info.Position = offset;
 			fields = new MonoFieldInfo [num_fields];
 
 			FieldInfo[] mono_fields = type.GetFields (
@@ -78,14 +78,13 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly int Index;
 
 			internal MonoFieldInfo (MonoStructType type, int index, FieldInfo finfo,
-						ITargetMemoryReader info, MonoSymbolFileTable table)
+						TargetBinaryReader info, MonoSymbolFileTable table)
 			{
 				Index = index;
 				FieldInfo = finfo;
-				Offset = info.BinaryReader.ReadInt32 ();
-				TargetAddress type_info = info.ReadAddress ();
-				Type = type.GetType (
-					finfo.FieldType, info.TargetMemoryAccess, type_info, table);
+				Offset = info.ReadInt32 ();
+				int type_info = info.ReadInt32 ();
+				Type = type.GetType (finfo.FieldType, type_info, table);
 			}
 
 			ITargetType ITargetFieldInfo.Type {
@@ -138,7 +137,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (properties != null)
 				return;
 
-			info.Offset = offset + field_info_size;
+			info.Position = offset + field_info_size;
 			properties = new MonoPropertyInfo [num_properties];
 
 			PropertyInfo[] mono_properties = type.GetProperties (
@@ -218,17 +217,16 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly MonoStructType StructType;
 
 			internal MonoPropertyInfo (MonoStructType type, int index, PropertyInfo pinfo,
-						   ITargetMemoryReader info, MonoSymbolFileTable table)
+						   TargetBinaryReader info, MonoSymbolFileTable table)
 			{
 				StructType = type;
 				Index = index;
 				PropertyInfo = pinfo;
-				TargetAddress type_info = info.ReadAddress ();
-				if (!type_info.IsNull)
-					Type = type.GetType (
-						pinfo.PropertyType, info.TargetMemoryAccess, type_info, table);
-				Getter = info.ReadAddress ();
-				Setter = info.ReadAddress ();
+				int type_info = info.ReadInt32 ();
+				if (type_info != 0)
+					Type = type.GetType (pinfo.PropertyType, type_info, table);
+				Getter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
+				Setter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 			}
 
 			ITargetType ITargetFieldInfo.Type {
@@ -279,7 +277,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (methods != null)
 				return;
 
-			info.Offset = offset + field_info_size + property_info_size;
+			info.Position = offset + field_info_size + property_info_size;
 			methods = new MonoMethodInfo [num_methods];
 
 			MethodInfo[] mono_methods = type.GetMethods (
@@ -321,18 +319,17 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly MonoType[] Parameters;
 
 			internal MonoMethodInfo (MonoStructType type, int index, MethodInfo minfo,
-						 ITargetMemoryReader info, MonoSymbolFileTable table)
+						 TargetBinaryReader info, MonoSymbolFileTable table)
 			{
 				StructType = type;
 				Index = index;
 				MethodInfo = minfo;
-				Method = info.ReadAddress ();
-				TargetAddress type_info = info.ReadAddress ();
-				if (!type_info.IsNull)
-					ReturnType = type.GetType (
-						minfo.ReturnType, info.TargetMemoryAccess, type_info, table);
+				Method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
+				int type_info = info.ReadInt32 ();
+				if (type_info != 0)
+					ReturnType = type.GetType (minfo.ReturnType, type_info, table);
 				
-				int num_params = info.BinaryReader.ReadInt32 ();
+				int num_params = info.ReadInt32 ();
 				Parameters = new MonoType [num_params];
 
 				ParameterInfo[] parameters = minfo.GetParameters ();
@@ -343,10 +340,9 @@ namespace Mono.Debugger.Languages.CSharp
 						parameters.Length, minfo.ReflectedType.Name + "." +
 						minfo.Name, num_params);
 				for (int i = 0; i < num_params; i++) {
-					TargetAddress param_info = info.ReadAddress ();
+					int param_info = info.ReadInt32 ();
 					Parameters [i] = type.GetType (
-						parameters [i].ParameterType, info.TargetMemoryAccess,
-						param_info, table);
+						parameters [i].ParameterType, param_info, table);
 				}
 			}
 

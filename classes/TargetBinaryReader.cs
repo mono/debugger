@@ -306,6 +306,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string HexDump ()
+		{
+			return HexDump (blob.Contents);
+		}
+
 		public static string HexDump (byte[] data)
 		{
 			StringBuilder sb = new StringBuilder ();
