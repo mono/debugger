@@ -20,7 +20,11 @@ namespace Mono.Debugger
 
 	public interface IMethod
 	{
-		string ImageFile{
+		string Name {
+			get;
+		}
+
+		string ImageFile {
 			get;
 		}
 

@@ -538,7 +538,7 @@ source_check (GSource *source)
 	ret = waitpid (handle->pid, &status, WNOHANG | WUNTRACED);
 
 	if (ret < 0) {
-		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
+		g_error (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
 		return FALSE;
 	} else if (ret == 0)
 		return FALSE;

@@ -63,8 +63,10 @@ namespace Mono.Debugger.Backends
 		BfdSymbolTable bfd_symtab;
 		BfdDisassembler bfd_disassembler;
 		IArchitecture arch;
+		ISymbolTable native_symbol_table;
 
 		int child_pid;
+		bool native;
 
 		ITargetInfo target_info;
 		Hashtable pending_callbacks = new Hashtable ();
@@ -209,11 +211,12 @@ namespace Mono.Debugger.Backends
 			temp_breakpoint_id = insert_breakpoint (address);
 		}
 
-		public Inferior (string working_directory, string[] argv, string[] envp)
+		public Inferior (string working_directory, string[] argv, string[] envp, bool native)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
 			this.envp = envp;
+			this.native = native;
 
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
@@ -280,10 +283,17 @@ namespace Mono.Debugger.Backends
 
 			bfd_disassembler = bfd_symtab.GetDisassembler (this);
 			arch = new ArchitectureI386 (this);
+
+			native_symbol_table = bfd_symtab.SymbolTable;
+			if (native_symbol_table != null)
+				bfd_disassembler.SymbolTable = native_symbol_table;
 		}
 
 		void read_mono_debugger_info ()
 		{
+			if (native)
+				return;
+
 			ITargetLocation symbol_info = bfd_symtab ["MONO_DEBUGGER__debugger_info"];
 			if (symbol_info == null)
 				return;
@@ -300,6 +310,19 @@ namespace Mono.Debugger.Backends
 			mono_debugger_info = new MonoDebuggerInfo (table);
 
 			arch.GenericTrampolineCode = ReadAddress (mono_debugger_info.trampoline_code);
+		}
+
+		bool start_native ()
+		{
+			if (!native)
+				return false;
+
+			ITargetLocation symbol_info = bfd_symtab ["main"];
+			if (symbol_info == null)
+				return false;
+
+			insert_temporary_breakpoint (symbol_info);
+			return true;
 		}
 
 		void child_exited ()
@@ -338,9 +361,11 @@ namespace Mono.Debugger.Backends
 			switch (message) {
 			case ChildMessageType.CHILD_STOPPED:
 				if (!initialized) {
-					Continue ();
 					initialized = true;
-					break;
+					if (!native || start_native ()) {
+						Continue ();
+						break;
+					}
 				} else if (!debugger_info_read) {
 					debugger_info_read = true;
 					read_mono_debugger_info ();
@@ -675,7 +700,7 @@ namespace Mono.Debugger.Backends
 		{
 			int insn_size;
 			ITargetLocation call = arch.GetCallTarget (CurrentFrame, out insn_size);
-			if (!call.IsNull) {
+			if (!native && !call.IsNull) {
 				ITargetLocation trampoline = arch.GetTrampoline (call);
 
 				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
@@ -705,6 +730,12 @@ namespace Mono.Debugger.Backends
 
 					insert_temporary_breakpoint (method);
 					Continue ();
+					return;
+				}
+			} else if (!call.IsNull) {
+				IMethod method;
+				if ((native_symbol_table == null) || !native_symbol_table.Lookup (call, out method)) {
+					Next ();
 					return;
 				}
 			}
@@ -742,6 +773,12 @@ namespace Mono.Debugger.Backends
 		public IDisassembler Disassembler {
 			get {
 				return bfd_disassembler;
+			}
+		}
+
+		public ISymbolTable SymbolTable {
+			get {
+				return native_symbol_table;
 			}
 		}
 

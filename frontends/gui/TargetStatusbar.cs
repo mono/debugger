@@ -27,6 +27,24 @@ namespace Mono.Debugger.GUI
 			MainIteration ();
 		}
 
+		protected virtual string GetStopMessage (IStackFrame frame)
+		{
+			if (frame.Method != null) {
+				long offset = frame.TargetLocation.Address -
+					frame.Method.StartAddress.Address;
+
+				if (offset > 0)
+					return String.Format ("Stopped at {0} in {1}+{2:x}",
+							      frame.TargetLocation, frame.Method.Name,
+							      offset);
+				else if (offset == 0)
+					return String.Format ("Stopped at {0} in {1}",
+							      frame.TargetLocation, frame.Method.Name);
+			}
+
+			return String.Format ("Stopped at {0}.", frame.TargetLocation);
+		}
+
 		public virtual void StateChanged (TargetState new_state)
 		{
 			switch (new_state) {
@@ -36,11 +54,8 @@ namespace Mono.Debugger.GUI
 
 			case TargetState.STOPPED:
 				try {
-					if (backend.Inferior != null) {
-						ITargetLocation frame = backend.Inferior.CurrentFrame;
-						Message (String.Format ("Stopped at {0}.", frame));
-					} else
-						Message ("Stopped (no target to debug).");
+					IStackFrame frame = backend.CurrentFrame;
+					Message (GetStopMessage (frame));
 				} catch (NoStackException e) {
 					Message ("Stopped.");
 				} catch (Exception e) {

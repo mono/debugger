@@ -104,7 +104,10 @@ namespace Mono.Debugger.GUI
 
 			output_writer = new OutputWindow (target_output);
 
-			backend = new Debugger (application, arguments);
+			if (application == "native")
+				backend = new Debugger (arguments);
+			else
+				backend = new Debugger (application, arguments);
 
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);

@@ -13,5 +13,9 @@ namespace Mono.Debugger
 		//   Get the size of the current instruction.
 		// </summary>
 		int GetInstructionSize (ITargetLocation location);
+
+		ISymbolTable SymbolTable {
+			get; set;
+		}
 	}
 }

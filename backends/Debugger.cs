@@ -447,6 +447,39 @@ namespace Mono.Debugger.Backends
 			string[] argv = { Path_Mono, "--break", main_name, "--debug=mono",
 					  "--noinline", "--nols", "--debug-args", "internal_mono_debugger",
 					  application };
+			string[] envp = { "PATH=" + Environment_Path, "LD_BIND_NOW=yes" };
+			this.argv = argv;
+			this.envp = envp;
+			this.working_directory = ".";
+		}
+
+		public Debugger (string[] argv)
+			: this (argv, new SourceFileFactory ())
+		{ }
+
+		public Debugger (string[] argv, ISourceFileFactory source_factory)
+		{
+			NameValueCollection settings = ConfigurationSettings.AppSettings;
+
+			foreach (string key in settings.AllKeys) {
+				string value = settings [key];
+
+				switch (key) {
+				case "mono-path":
+					Path_Mono = value;
+					break;
+
+				case "environment-path":
+					Environment_Path = value;
+					break;
+
+				default:
+					break;
+				}
+			}
+
+			this.source_factory = source_factory;
+
 			string[] envp = { "PATH=" + Environment_Path };
 			this.argv = argv;
 			this.envp = envp;
@@ -637,7 +670,7 @@ namespace Mono.Debugger.Backends
 			if (inferior != null)
 				throw new TargetException ("Debugger already has an inferior.");
 
-			inferior = new Inferior (working_directory, argv, envp);
+			inferior = new Inferior (working_directory, argv, envp, application == null);
 			inferior.ChildExited += new ChildExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
@@ -697,29 +730,35 @@ namespace Mono.Debugger.Backends
 				update_symbol_files ();
 
 				IMethod method;
-				ISourceLocation source = LookupAddress (location, out method);
+				ISourceLocation source;
 
-				if (source != null)
-					return new StackFrame (inferior, location, source, method);
-				else
+				if (!LookupAddress (location, out source, out method))
 					return new StackFrame (inferior, location);
+
+				return new StackFrame (inferior, location, source, method);
 			}
 		}
 
-		ISourceLocation LookupAddress (ITargetLocation address, out IMethod method)
+		bool LookupAddress (ITargetLocation address, out ISourceLocation source, out IMethod method)
 		{
 			method = null;
+			source = null;
+
+			if (inferior == null)
+				return false;
+
+			if (inferior.SymbolTable != null)
+				if (inferior.SymbolTable.Lookup (address, out source, out method))
+					return true;
+
 			if (symtabs == null)
-				return null;
+				return false;
 
-			foreach (ISymbolTable symtab in symtabs) {
-				ISourceLocation source = symtab.Lookup (address, out method);
+			foreach (ISymbolTable symtab in symtabs)
+				if (symtab.Lookup (address, out source, out method))
+					return true;
 
-				if (source != null)
-					return source;
-			}
-
-			return null;
+			return false;
 		}
 
 		void frame_changed ()

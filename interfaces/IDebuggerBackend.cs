@@ -120,6 +120,10 @@ namespace Mono.Debugger
 		IDisassembler Disassembler {
 			get;
 		}
+
+		ISymbolTable SymbolTable {
+			get;
+		}
 	}
 
 

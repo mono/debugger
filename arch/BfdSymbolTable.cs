@@ -13,6 +13,8 @@ namespace Mono.Debugger.Architecture
 	{
 		IntPtr bfd;
 		Hashtable symbols;
+		DwarfReader dwarf;
+		string filename;
 
 		[DllImport("libbfd")]
 		extern static void bfd_init ();
@@ -22,6 +24,9 @@ namespace Mono.Debugger.Architecture
 
 		[DllImport("libbfd")]
 		extern static bool bfd_close (IntPtr bfd);
+
+		[DllImport("libbfd")]
+		extern static IntPtr bfd_get_section_by_name (IntPtr bfd, string name);
 
 		[DllImport("libopcodes")]
 		extern static IntPtr disassembler (IntPtr bfd);
@@ -34,6 +39,9 @@ namespace Mono.Debugger.Architecture
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static int bfd_glue_get_symbols (IntPtr bfd, out IntPtr symtab);
+
+		[DllImport("libmonodebuggerbfdglue")]
+		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, long offset, out IntPtr data, out int size);
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
@@ -56,6 +64,8 @@ namespace Mono.Debugger.Architecture
 			if (!bfd_glue_check_format_object (bfd))
 				throw new TargetException ("Not an object file: " + filename);
 
+			this.filename = filename;
+
 			IntPtr symtab;
 			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
 
@@ -71,6 +81,27 @@ namespace Mono.Debugger.Architecture
 			}
 
 			g_free (symtab);
+
+			try {
+				dwarf = new DwarfReader (this);
+			} catch (Exception e) {
+				Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
+			}
+		}
+
+		public string FileName {
+			get {
+				return filename;
+			}
+		}
+
+		public ISymbolTable SymbolTable {
+			get {
+				if (dwarf == null)
+					return null;
+
+				return dwarf.SymbolTable;
+			}
 		}
 
 		public BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
@@ -94,6 +125,27 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public byte[] GetSectionContents (string name)
+		{
+			IntPtr section, data;
+			int size;
+
+			section = bfd_get_section_by_name (bfd, name);
+			if (section == IntPtr.Zero)
+				return null;
+
+			if (!bfd_glue_get_section_contents (bfd, section, 0, out data, out size))
+				return null;
+
+			try {
+				byte[] retval = new byte [size];
+				Marshal.Copy (data, retval, 0, size);
+				return retval;
+			} finally {
+				g_free (data);
+			}
+		}
+
 		//
 		// IDisposable
 		//
@@ -107,7 +159,8 @@ namespace Mono.Debugger.Architecture
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					// Do stuff here
+					if (dwarf != null)
+						dwarf.Dispose ();
 				}
 				
 				// Release unmanaged resources

@@ -20,7 +20,7 @@ namespace Mono.Debugger
 	//   one of the ISourceLanguage derivatives.
 	//   backend.
 	// </summary>
-	public interface ITargetLocation : ICloneable
+	public interface ITargetLocation : ICloneable, IComparable
 	{
 		// <summary>
 		//   Address of this location in the target's address space.

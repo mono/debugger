@@ -6,17 +6,25 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
 {
-	public class CSharpSymbolTable : ISymbolTable
+	public class CSharpSymbolTable : SymbolTable
 	{
 		MonoSymbolTableReader symtab;
 		ISourceFileFactory source_factory;
-		Hashtable method_hash;
 
 		public CSharpSymbolTable (MonoSymbolTableReader symtab, ISourceFileFactory factory)
 		{
 			this.symtab = symtab;
 			this.source_factory = factory;
-			this.method_hash = new Hashtable ();
+		}
+
+		protected override ArrayList GetMethods ()
+		{
+			ArrayList methods = new ArrayList ();
+
+			foreach (MethodEntry method in symtab.Methods)
+				methods.Add (new CSharpMethod (this, method));
+
+			return methods;
 		}
 
 		internal ISourceFileFactory SourceFactory {
@@ -29,54 +37,6 @@ namespace Mono.Debugger
 			get {
 				return symtab.ImageFile;
 			}
-		}
-
-		public ISourceLocation Lookup (ITargetLocation target)
-		{
-			IMethod method;
-
-			return Lookup (target, out method);
-		}
-
-		public ISourceLocation Lookup (ITargetLocation target, out IMethod imethod)
-		{
-			imethod = null;
-
-			if (source_factory == null)
-				return null;
-
-			ulong address = (ulong) target.Location;
-
-			foreach (MethodEntry method in symtab.Methods) {
-
-				if (method.Address == null)
-					continue;
-
-				MethodAddress method_address = method.Address;
-
-				if ((address < method_address.StartAddress) ||
-				    (address >= method_address.EndAddress))
-					continue;
-
-				if (method_hash.Contains (method))
-					imethod = (IMethod) method_hash [method];
-				else {
-					imethod = new CSharpMethod (this, method);
-					method_hash.Add (method, imethod);
-				}
-
-				if (imethod.Source == null)
-					return null;
-
-				return imethod.Lookup (target);
-			}
-
-			return null;
-		}
-
-		public ITargetLocation Lookup (ISourceLocation source)
-		{
-			throw new NotImplementedException ();
 		}
 	}
 }

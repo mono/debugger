@@ -15,12 +15,13 @@ namespace Mono.Debugger.Architecture
 		IntPtr info;
 
 		ITargetMemoryAccess memory;
+		ISymbolTable symbol_table;
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
 
 		[DllImport("libmonodebuggerbfdglue")]
-		extern static void bfd_glue_setup_disassembler (IntPtr info, ReadMemoryHandler read_memory_cb, OutputHandler output_cb);
+		extern static void bfd_glue_setup_disassembler (IntPtr info, ReadMemoryHandler read_memory_cb, OutputHandler output_cb, PrintAddressHandler print_address_cb);
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static void bfd_glue_free_disassembler (IntPtr info);
@@ -32,11 +33,13 @@ namespace Mono.Debugger.Architecture
 			this.memory = memory;
 
 			bfd_glue_setup_disassembler (info, new ReadMemoryHandler (read_memory_func),
-						     new OutputHandler (output_func));
+						     new OutputHandler (output_func),
+						     new PrintAddressHandler (print_address_func));
 		}
 
 		private delegate int ReadMemoryHandler (long address, IntPtr data, int size);
 		private delegate void OutputHandler (string output);
+		private delegate void PrintAddressHandler (long address);
 
 		int read_memory_func (long address, IntPtr data, int size)
 		{
@@ -59,9 +62,47 @@ namespace Mono.Debugger.Architecture
 				sb.Append (output);
 		}
 
+		void output_func (long address)
+		{
+			output_func (String.Format ("0x{0:x}", address));
+		}
+
+		void print_address_func (long address)
+		{
+			if (symbol_table == null) {
+				output_func (address);
+				return;
+			}
+
+			IMethod method;
+			if (!symbol_table.Lookup (new TargetLocation (address), out method) ||
+			    (method == null)) {
+				output_func (address);
+				return;
+			}
+
+			long offset = method.StartAddress.Address - address;
+			if (offset > 0)
+				output_func (String.Format ("{0}+{1:x}", method.Name, offset));
+			else if (offset == 0)
+				output_func (method.Name);
+			else
+				output_func (address);
+		}
+
 		//
 		// IDisassembler
 		//
+
+		public ISymbolTable SymbolTable {
+			get {
+				return symbol_table;
+			}
+
+			set {
+				symbol_table = value;
+			}
+		}
 
 		public string DisassembleInstruction (ref ITargetLocation location)
 		{

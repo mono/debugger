@@ -1,5 +1,6 @@
 #include <bfdglue.h>
 #include <signal.h>
+#include <string.h>
 
 gboolean
 bfd_glue_check_format_object (bfd *abfd)
@@ -21,15 +22,18 @@ bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 }
 
 const char *
-bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int index, guint64 *address)
+bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, guint64 *address)
 {
-	asymbol *symbol = symbol_table [index];
+	asymbol *symbol = symbol_table [idx];
 
 	if (symbol->flags == (BSF_OBJECT | BSF_GLOBAL))
 		*address = symbol->section->vma + symbol->value;
 	else if (symbol->flags == BSF_FUNCTION)
 		*address = symbol->value;
-	else
+	else if (symbol->flags == (BSF_FUNCTION | BSF_GLOBAL)) {
+		*address = symbol->section->vma + symbol->value;
+		return symbol->name;
+	} else
 		return NULL;
 
 	return symbol->name;
@@ -83,18 +87,28 @@ fprintf_func (gpointer stream, const char *message, ...)
 	return retval;
 }
 
+static void
+print_address_func (bfd_vma address, struct disassemble_info *info)
+{
+	BfdGlueDisassemblerInfo *data = info->application_data;
+
+	(* data->print_address_cb) (address);
+}
+
 void
 bfd_glue_setup_disassembler (struct disassemble_info *info, BfdGlueReadMemoryHandler read_memory_cb,
-			     BfdGlueOutputHandler output_cb)
+			     BfdGlueOutputHandler output_cb, BfdGluePrintAddressHandler print_address_cb)
 {
 	BfdGlueDisassemblerInfo *data = g_new0 (BfdGlueDisassemblerInfo, 1);
 
 	data->read_memory_cb = read_memory_cb;
 	data->output_cb = output_cb;
+	data->print_address_cb = print_address_cb;
 
 	info->application_data = data;
 	info->read_memory_func = read_memory_func;
 	info->fprintf_func = fprintf_func;
+	info->print_address_func = print_address_func;
 	info->stream = data;
 }
 
@@ -109,4 +123,19 @@ int
 bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info, guint64 address)
 {
 	return dis (address, info);
+}
+
+gboolean
+bfd_glue_get_section_contents (bfd *abfd, asection *section, guint64 offset,
+			       gpointer *data, guint32 *size)
+{
+	gboolean retval;
+
+	*size = section->_cooked_size;
+	*data = g_malloc0 (*size);
+
+	retval = bfd_get_section_contents (abfd, section, *data, offset, *size);
+	if (!retval)
+		g_free (*data);
+	return retval;
 }

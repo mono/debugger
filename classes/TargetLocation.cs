@@ -48,6 +48,18 @@ namespace Mono.Debugger
 			}
 		}
 
+		public int CompareTo (object obj)
+		{
+			ITargetLocation target = (ITargetLocation) obj;
+
+			if (Address < target.Address)
+				return -1;
+			else if (Address >= target.Address)
+				return 1;
+			else
+				return 0;
+		}
+
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();

@@ -6,88 +6,32 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.GUI
 {
-	public class DisassemblerView : DebuggerWidget
+	public class DisassemblerView : SourceView
 	{
-		Gtk.TextView disassembler_view;
-		Gtk.TextBuffer text_buffer;
-		Gtk.TextTag frame_tag;
-		Gtk.TextMark frame_mark;
-
-		bool has_frame;
-
 		public DisassemblerView (IDebuggerBackend backend, Gtk.TextView widget)
 			: base (backend, widget)
 		{
-			disassembler_view = widget;
-
-			frame_tag = new Gtk.TextTag ("frame");
-			frame_tag.Background = "red";
-
-			text_buffer = disassembler_view.Buffer;
-			text_buffer.TagTable.Add (frame_tag);
-
-			frame_mark = text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
-
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 		}
 
 		IMethod current_method = null;
-		Hashtable address_hash = null;
 
-		void FramesInvalidEvent ()
+		protected override ISourceLocation GetSource (IStackFrame frame)
 		{
-			has_frame = false;
-			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
-		}
-
-		void FrameChangedEvent (IStackFrame frame)
-		{
-			has_frame = true;
-
-			Gtk.TextBuffer buffer = disassembler_view.Buffer;
-
-			if ((frame.Method == null) || (backend.Inferior.Disassembler == null)) {
-				text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
-				current_method = null;
-				return;
+			if (current_method != null) {
+				ISourceLocation source = current_method.Lookup (frame.TargetLocation);
+				if (source != null)
+					return source;
 			}
 
-			IDisassembler dis = backend.Inferior.Disassembler;
-			IMethod method = frame.Method;
+			if ((backend.Inferior == null) || (backend.Inferior.Disassembler == null))
+				return null;
 
-			int row = 0;
-			if (current_method != method) {
-				current_method = method;
+			if (frame.Method == null)
+				return null;
 
-				text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
+			current_method = new NativeMethod (backend.Inferior.Disassembler, frame.Method);
 
-				ITargetLocation current = method.StartAddress;
-				address_hash = new Hashtable ();
-
-				while (current.Address < method.EndAddress.Address) {
-					long address = current.Address;
-					string insn = dis.DisassembleInstruction (ref current);
-
-					string line = String.Format ("{0:x}   {1}\n", address, insn);
-			
-					text_buffer.Insert (text_buffer.EndIter, line, line.Length);
-					address_hash.Add (address, row++);
-				}
-			}
-
-			row = (int) address_hash [frame.TargetLocation.Address];
-
-			Gtk.TextIter start_iter, end_iter;
-			text_buffer.GetIterAtLineOffset (out start_iter, row, 0);
-			text_buffer.GetIterAtLineOffset (out end_iter, row + 1, 0);
-
-			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
-			text_buffer.ApplyTag (frame_tag, start_iter, end_iter);
-
-			text_buffer.MoveMark (frame_mark, start_iter);
-
-			disassembler_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
+			return current_method.Lookup (frame.TargetLocation);
 		}
 	}
 }

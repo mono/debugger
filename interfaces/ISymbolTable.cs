@@ -9,8 +9,30 @@ namespace Mono.Debugger
 		ITargetLocation Lookup (ISourceLocation source);
 	}
 
-	public interface ISymbolTable : ISymbolLookup
+	public interface ISymbolContainer
 	{
-		ISourceLocation Lookup (ITargetLocation target, out IMethod method);
+		bool IsContinuous {
+			get;
+		}
+
+		ITargetLocation StartAddress {
+			get;
+		}
+
+		ITargetLocation EndAddress {
+			get;
+		}
+	}
+
+	public interface ISymbolTable : ISymbolContainer
+	{
+		bool Lookup (ITargetLocation target, out IMethod method);
+
+		bool Lookup (ITargetLocation target, out ISourceLocation source, out IMethod method);
+	}
+
+	public interface ISymbolTableCollection : ISymbolTable
+	{
+		void AddSymbolTable (ISymbolTable symtab);
 	}
 }
