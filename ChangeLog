@@ -1,5 +1,10 @@
 2003-01-18  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Set version number 0.1.9, we're almost ready for
+	the release ....
+
+2003-01-18  Martin Baulig  <martin@ximian.com>
+
 	* RELEASE-NOTES-0.2.0.txt: Replaced `GNU/Linux' with `Linux and
 	BSD kernels' since the debugger is now working on FreeBSD.
 
