@@ -95,11 +95,8 @@ namespace Mono.Debugger
 
 		void DumpSources ()
 		{
-			for (int i = 0; i < file.SourceCount; i++) {
-				SourceFileEntry source = file.GetSourceFile (i + 1);
-
+			foreach (SourceFileEntry source in file.Sources)
 				DumpSource (source);
-			}
 		}
 
 		void DumpMethod (MethodEntry method)
@@ -109,11 +106,8 @@ namespace Mono.Debugger
 
 		void DumpMethods ()
 		{
-			for (int i = 0; i < file.MethodCount; i++) {
-				MethodEntry method = file.GetMethod (i + 1);
-
+			foreach (MethodEntry method in file.Methods)
 				DumpMethod (method);
-			}
 		}
 
 		void Dump ()

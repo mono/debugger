@@ -870,12 +870,8 @@ namespace Mono.Debugger.Languages.CSharp
 			sources = new ArrayList ();
 			method_name_hash = new Hashtable ();
 
-			for (int i = 0; i < file.SourceCount; i++) {
-				SourceFileEntry source = file.GetSourceFile (i);
-				MonoSourceInfo info = new MonoSourceInfo (this, source);
-
-				sources.Add (info);
-			}
+			foreach (SourceFileEntry source in file.Sources)
+				sources.Add (new MonoSourceInfo (this, source));
 		}
 
 		public SourceInfo[] GetSources ()
