@@ -13,9 +13,11 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetBinaryReader info;
 		internal readonly MonoSymbolFile File;
 		bool is_valuetype;
-		int num_fields, num_static_fields, num_properties, num_static_properties, num_methods, num_static_methods;
-		int num_ctors, field_info_size, static_field_info_size, property_info_size, static_property_info_size;
-		int method_info_size, static_method_info_size, ctor_info_size, parent;
+		int num_fields, num_static_fields, num_properties, num_static_properties;
+		int num_methods, num_static_methods, num_ctors, num_ifaces;
+		int field_info_offset, static_field_info_offset, property_info_offset;
+		int static_property_info_offset, method_info_offset, static_method_info_offset;
+		int ctor_info_offset, iface_info_offset;
 		int first_field, first_static_field, first_property, first_static_property;
 		int first_method, first_static_method;
 		long offset;
@@ -52,20 +54,23 @@ namespace Mono.Debugger.Languages.CSharp
 
 			KlassAddress = new TargetAddress (file.Table.GlobalAddressDomain, info.ReadAddress ());
 			num_fields = info.ReadInt32 ();
-			field_info_size = info.ReadInt32 ();
-			num_static_fields = info.ReadInt32 ();
-			static_field_info_size = info.ReadInt32 ();
+			field_info_offset = info.ReadInt32 ();
 			num_properties = info.ReadInt32 ();
-			property_info_size = info.ReadInt32 ();
-			num_static_properties = info.ReadInt32 ();
-			static_property_info_size = info.ReadInt32 ();
+			property_info_offset = info.ReadInt32 ();
 			num_methods = info.ReadInt32 ();
-			method_info_size = info.ReadInt32 ();
+			method_info_offset = info.ReadInt32 ();
+			num_static_fields = info.ReadInt32 ();
+			static_field_info_offset = info.ReadInt32 ();
+			num_static_properties = info.ReadInt32 ();
+			static_property_info_offset = info.ReadInt32 ();
 			num_static_methods = info.ReadInt32 ();
-			static_method_info_size = info.ReadInt32 ();
+			static_method_info_offset = info.ReadInt32 ();
 			num_ctors = info.ReadInt32 ();
-			ctor_info_size = info.ReadInt32 ();
-			parent = info.ReadInt32 ();
+			ctor_info_offset = info.ReadInt32 ();
+			num_ifaces = info.ReadInt32 ();
+			iface_info_offset = info.ReadInt32 ();
+			int parent = info.ReadInt32 ();
+
 			this.info = info;
 			this.offset = info.Position;
 			this.Type = type;
@@ -90,20 +95,21 @@ namespace Mono.Debugger.Languages.CSharp
 			is_valuetype = old_class.is_valuetype;
 			KlassAddress = old_class.KlassAddress;
 			num_fields = old_class.num_fields;
-			field_info_size = old_class.field_info_size;
+			field_info_offset = old_class.field_info_offset;
 			num_static_fields = old_class.num_static_fields;
-			static_field_info_size = old_class.static_field_info_size;
+			static_field_info_offset = old_class.static_field_info_offset;
 			num_properties = old_class.num_properties;
-			property_info_size = old_class.property_info_size;
+			property_info_offset = old_class.property_info_offset;
 			num_static_properties = old_class.num_static_properties;
-			static_property_info_size = old_class.static_property_info_size;
+			static_property_info_offset = old_class.static_property_info_offset;
 			num_methods = old_class.num_methods;
-			method_info_size = old_class.method_info_size;
+			method_info_offset = old_class.method_info_offset;
 			num_static_methods = old_class.num_static_methods;
-			static_method_info_size = old_class.static_method_info_size;
+			static_method_info_offset = old_class.static_method_info_offset;
 			num_ctors = old_class.num_ctors;
-			ctor_info_size = old_class.ctor_info_size;
-			parent = old_class.parent;
+			ctor_info_offset = old_class.ctor_info_offset;
+			num_ifaces = old_class.num_ifaces;
+			iface_info_offset = old_class.iface_info_offset;
 			info = old_class.info;
 			offset = old_class.offset;
 			this.Type = type;
@@ -229,7 +235,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (fields != null)
 				return;
 
-			info.Position = offset;
+			info.Position = offset + field_info_offset;
 			fields = new MonoFieldInfo [num_fields];
 
 			R.FieldInfo[] mono_fields = EffectiveType.GetFields (
@@ -267,7 +273,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (static_fields != null)
 				return;
 
-			info.Position = offset + field_info_size + property_info_size + method_info_size;
+			info.Position = offset + static_field_info_offset;
 
 			static_fields = new MonoFieldInfo [num_static_fields];
 
@@ -419,12 +425,8 @@ namespace Mono.Debugger.Languages.CSharp
 				TargetAddress data_address = frame.CallMethod (
 					ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
-
-				TargetLocation location = new AbsoluteTargetLocation (
+				TargetLocation field_loc = new AbsoluteTargetLocation (
 					frame, data_address);
-				TargetLocation field_loc = location.GetLocationAtOffset (
-					static_fields [index].Offset,
-					static_fields [index].Type.IsByRef);
 
 				return static_fields [index].Type.GetObject (field_loc);
 			} catch (TargetException ex) {
@@ -437,7 +439,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (properties != null)
 				return;
 
-			info.Position = offset + field_info_size;
+			info.Position = offset + property_info_offset;
 			properties = new MonoPropertyInfo [num_properties];
 
 			R.PropertyInfo[] mono_properties = EffectiveType.GetProperties (
@@ -476,8 +478,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (static_properties != null)
 				return;
 
-			info.Position = offset + field_info_size + property_info_size + method_info_size +
-				static_field_info_size;
+			info.Position = offset + static_property_info_offset;
 
 			static_properties = new MonoPropertyInfo [num_static_properties];
 
@@ -605,7 +606,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (methods != null)
 				return;
 
-			info.Position = offset + field_info_size + property_info_size;
+			info.Position = offset + method_info_offset;
 			methods = new MonoMethodInfo [num_methods];
 
 			R.MethodInfo[] mono_methods = EffectiveType.GetMethods (
@@ -652,8 +653,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (static_methods != null)
 				return;
 
-			info.Position = offset + field_info_size + property_info_size + method_info_size +
-				static_field_info_size + static_property_info_size;
+			info.Position = offset + static_method_info_offset;
 			static_methods = new MonoMethodInfo [num_static_methods];
 
 			R.MethodInfo[] mono_methods = EffectiveType.GetMethods (
@@ -700,8 +700,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (ctors != null)
 				return;
 
-			info.Position = offset + field_info_size + property_info_size + method_info_size +
-				static_field_info_size + static_property_info_size + static_method_info_size;
+			info.Position = offset + ctor_info_offset;
 			ctors = new MonoMethodInfo [num_ctors];
 
 			R.ConstructorInfo[] mono_ctors = EffectiveType.GetConstructors (
