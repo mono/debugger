@@ -1,5 +1,11 @@
 2004-06-18  Martin Baulig  <martin@ximian.com>
 
+	* frontends/command-line/ExpressionParser.jay: Added support for
+	parenthesized expressions and allow the left side of a member
+	access to be an expression.
+
+2004-06-18  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Expression.cs (CastExpression): New
 	expression.  Currently only works from a class type to one of its
 	parent classes.
