@@ -13,6 +13,7 @@ namespace Mono.Debugger.Languages.CSharp
 		SourceMethod source_method;
 		IMethod imethod;
 		SourceFileFactory factory;
+		Hashtable namespaces;
 
 		public CSharpMethod (MonoSymbolFile reader, IMethod imethod,
 				     SourceMethod source_method, C.MethodEntry method,
@@ -66,6 +67,33 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
 			return new MethodSourceData (start_row, end_row, addresses, source_method, buffer);
+		}
+
+		public override string[] GetNamespaces ()
+		{
+			int index = method.NamespaceID;
+
+			if (namespaces == null) {
+				namespaces = new Hashtable ();
+
+				C.SourceFileEntry source = method.SourceFile;
+				foreach (C.NamespaceEntry entry in source.Namespaces)
+					namespaces.Add (entry.Index, entry);
+			}
+
+			ArrayList list = new ArrayList ();
+
+			while ((index > 0) && namespaces.Contains (index)) {
+				C.NamespaceEntry ns = (C.NamespaceEntry) namespaces [index];
+				list.Add (ns.Name);
+				list.AddRange (ns.UsingClauses);
+
+				index = ns.Parent;
+			}
+
+			string[] retval = new string [list.Count];
+			list.CopyTo (retval, 0);
+			return retval;
 		}
 	}
 }

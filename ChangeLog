@@ -1,3 +1,14 @@
+2004-06-19  Martin Baulig  <martin@ximian.com>
+
+	* classes/MethodSource.cs (MethodSource.GetNamespaces): New public
+	virtual property.
+
+	* backends/mono-csharp/CSharpMethod.cs
+	(CSharpMethod.GetNamespaces): Overload.
+
+	* frontends/scripting/Expression.cs (SimpleNameExpression): Do a
+	namespace lookup.
+
 2004-06-18  Martin Baulig  <martin@ximian.com>
 
 	* frontends/command-line/ExpressionParser.jay: Added support for

@@ -116,6 +116,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		public virtual string[] GetNamespaces ()
+		{
+			return null;
+		}
+
 		public TargetAddress Lookup (int line)
 		{
 			if ((Addresses == null) || (line < StartRow) || (line > EndRow))

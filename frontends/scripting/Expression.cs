@@ -415,7 +415,15 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return name; }
 		}
 
-		Expression LookupMember (ScriptingContext context, FrameHandle frame)
+                public static string MakeFQN (string nsn, string name)
+                {
+                        if (nsn == "")
+                                return name;
+                        return String.Concat (nsn, ".", name);
+                }
+
+		Expression LookupMember (ScriptingContext context, FrameHandle frame,
+					 string full_name)
 		{
 			IMethod method = frame.Frame.Method;
 			if ((method == null) || (method.DeclaringType == null))
@@ -427,7 +435,36 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			return StructAccessExpression.FindMember (
 				method.DeclaringType, frame.Frame,
-				(ITargetStructObject) instance, name);
+				(ITargetStructObject) instance, full_name);
+		}
+
+		string[] GetNamespaces (ScriptingContext context, FrameHandle frame)
+		{
+			IMethod method = frame.Frame.Method;
+			if ((method == null) || !method.HasSource)
+				return null;
+
+			MethodSource msource = method.Source;
+			if (msource.IsDynamic)
+				return null;
+
+			return msource.GetNamespaces ();
+		}
+
+		Expression Lookup (ScriptingContext context, FrameHandle frame)
+		{
+			string[] namespaces = GetNamespaces (context, frame);
+			if (namespaces == null)
+				return null;
+
+			foreach (string ns in namespaces) {
+				string full_name = MakeFQN (ns, name);
+				Expression expr = LookupMember (context, frame, full_name);
+				if (expr != null)
+					return expr;
+			}
+
+			return null;
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
@@ -437,7 +474,11 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (var != null)
 				return new VariableAccessExpression (var);
 
-			Expression expr = LookupMember (context, frame);
+			Expression expr = LookupMember (context, frame, name);
+			if (expr != null)
+				return expr;
+
+			expr = Lookup (context, frame);
 			if (expr != null)
 				return expr;
 
@@ -454,6 +495,17 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetType type = frame.Language.LookupType (frame.Frame, name);
 			if (type != null)
 				return new TypeExpression (type);
+
+			string[] namespaces = GetNamespaces (context, frame);
+			if (namespaces == null)
+				return null;
+
+			foreach (string ns in namespaces) {
+				string full_name = MakeFQN (ns, name);
+				type = frame.Language.LookupType (frame.Frame, full_name);
+				if (type != null)
+					return new TypeExpression (type);
+			}
 
 			return null;
 		}
