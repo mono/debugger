@@ -752,6 +752,11 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 			TargetAddress address = CurrentFrame;
+			if (arch.IsRetInstruction (address)) {
+				do_step (null);
+				return;
+			}
+
 			address += bfd_disassembler.GetInstructionSize (address);
 
 			insert_temporary_breakpoint (address);
@@ -835,7 +840,7 @@ namespace Mono.Debugger.Backends
 			 * and step over it.
 			 */
 			IMethod method = null;
-			if (frame.Mode == StepMode.NativeStepFrame)
+			if (native || (frame.Mode == StepMode.NativeStepFrame))
 				method = symtab_collection.Lookup (call);
 			else if (application_symtab != null)
 				method = application_symtab.Lookup (call);

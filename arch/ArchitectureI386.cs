@@ -16,6 +16,11 @@ namespace Mono.Debugger
 			this.inferior = inferior;
 		}
 
+		public bool IsRetInstruction (TargetAddress address)
+		{
+			return inferior.ReadByte (address) == 0xc3;
+		}
+
 		public TargetAddress GetCallTarget (TargetAddress address, out int insn_size)
 		{
 			ITargetMemoryReader reader = inferior.ReadMemory (address, 6);
