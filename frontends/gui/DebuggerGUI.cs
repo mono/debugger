@@ -357,26 +357,29 @@ namespace Mono.Debugger.GUI
 			file_open_dialog.Show ();
 		}
 
-		ProgramToDebug program_to_debug;
-		void OnProgramToDebugActivate (object sender, EventArgs a)
+		void program_to_debug_activated (string program, string working_dir, string arguments)
 		{
-			string program, arg_string;
-			
-			if (program_to_debug == null)
-				program_to_debug = new ProgramToDebug (gxml, "", null);
-
-			if (!program_to_debug.RunDialog (out program, out arg_string, ref working_dir))
-				return;
-
 			ArrayList list = new ArrayList ();
 			list.Add (program);
-			list.AddRange (arg_string.Split (new char [] { ' ' }));
+			list.AddRange (arguments.Split (new char [] { ' ' }));
 
 			string[] argsv = new string [list.Count];
 			list.CopyTo (argsv);
 
 			start = context.Start (argsv);
 			StartProgram ();
+		}
+
+		ProgramToDebug program_to_debug;
+		void OnProgramToDebugActivate (object sender, EventArgs a)
+		{
+			if (program_to_debug == null) {
+				program_to_debug = new ProgramToDebug (gxml, "", null);
+				program_to_debug.ActivatedEvent += new ProgramToDebugHandler (
+					program_to_debug_activated);
+			}
+
+			program_to_debug.ShowDialog ();
 		}
 
 		void OnQuitActivate (object sender, EventArgs args)

@@ -1,3 +1,8 @@
+2003-03-24  Martin Baulig  <martin@ximian.com>
+
+	* frontends/gui/ProgramToDebug.cs: Don't make the dialog modal and
+	don't use Dialog.Run().
+
 2003-03-23  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/DebuggerOptions.cs (--jit-optimizations):
