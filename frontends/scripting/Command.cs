@@ -813,67 +813,50 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-#if FIXME
-	[Command("BREAKPOINT ENABLE", "Enable breakpoint")]
+	[Command("enable", "Enable breakpoint")]
 	public class BreakpointEnableCommand : DebuggerCommand
 	{
-		ProcessExpression process_expr;
-		BreakpointNumberExpression breakpoint_number_expr;
+		protected BreakpointHandle handle;
 
-		public BreakpointEnableCommand (ProcessExpression process_expr, BreakpointNumberExpression breakpoint_number_expr)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.process_expr = process_expr;
-			this.breakpoint_number_expr = breakpoint_number_expr;
+			int id;
+			try {
+				id = (int) UInt32.Parse (Argument);
+			} catch {
+				context.Print ("Breakpoint number expected.");
+				return false;
+			}
+
+			handle = context.Interpreter.GetBreakpoint (id);
+			return handle != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
-			handle.EnableBreakpoint (process.Process);
+			handle.EnableBreakpoint (context.CurrentProcess.Process);
 		}
 	}
 
-	[Command("BREAKPOINT DISABLE", "Disable breakpoint")]
-	public class BreakpointDisableCommand : DebuggerCommand
+	[Command("disable", "Disable breakpoint")]
+	public class BreakpointDisableCommand : BreakpointEnableCommand
 	{
-		ProcessExpression process_expr;
-		BreakpointNumberExpression breakpoint_number_expr;
-
-		public BreakpointDisableCommand (ProcessExpression process_expr, BreakpointNumberExpression breakpoint_number_expr)
-		{
-			this.process_expr = process_expr;
-			this.breakpoint_number_expr = breakpoint_number_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
-			handle.DisableBreakpoint (process.Process);
+			handle.DisableBreakpoint (context.CurrentProcess.Process);
 		}
 	}
 
-	[Command("BREAKPOINT DELETE", "Delete breakpoint")]
-	public class BreakpointDeleteCommand : DebuggerCommand
+	[Command("delete", "Delete breakpoint")]
+	public class BreakpointDeleteCommand : BreakpointEnableCommand
 	{
-		ProcessExpression process_expr;
-		BreakpointNumberExpression breakpoint_number_expr;
-
-		public BreakpointDeleteCommand (ProcessExpression process_expr, BreakpointNumberExpression breakpoint_number_expr)
-		{
-			this.process_expr = process_expr;
-			this.breakpoint_number_expr = breakpoint_number_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
-			context.Interpreter.DeleteBreakpoint (process, handle);
+			context.Interpreter.DeleteBreakpoint (context.CurrentProcess, handle);
 		}
 	}
 
+#if FIXME
 	[Command("MODULE", "Change module parameters",
 		 "The module parameters control how the debugger should behave while single-stepping\n" +
 		 "wrt methods from this method.\n\n" +
@@ -900,34 +883,70 @@ namespace Mono.Debugger.Frontends.Scripting
 			context.Interpreter.ModuleOperations (modules, operations);
 		}
 	}
+#endif
 
-	[Command("BREAK", "Insert breakpoint")]
+	[Command("break", "Insert breakpoint")]
 	public class BreakCommand : DebuggerCommand
 	{
-		ThreadGroupExpression thread_group_expr;
-		SourceExpression source_expr;
+		string group;
+		int method_id = -1;
+		int process_id = -1;
+		ProcessHandle process;
+		ThreadGroup tgroup;
+		SourceLocation location;
 
-		public BreakCommand (ThreadGroupExpression thread_group_expr,
-				     SourceExpression source_expr)
+		public string Group {
+			get { return group; }
+			set { group = value; }
+		}
+
+		public int Process {
+			get { return process_id; }
+			set { process_id = value; }
+		}
+
+		public int ID {
+			get { return method_id; }
+			set { method_id = value; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.thread_group_expr = thread_group_expr;
-			this.source_expr = source_expr;
+			if (process_id > 0) {
+				process = context.Interpreter.GetProcess (process_id);
+				if (group == null)
+					tgroup = process.ThreadGroup;
+			} else
+				process = context.CurrentProcess;
+
+			if (tgroup == null)
+				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+
+			if (ID > 0) {
+				if (Argument != "") {
+					context.Error ("Cannot specify both a method id " +
+						       "and an expression.");
+					return false;
+				}
+
+				SourceMethod method = context.GetMethodSearchResult (ID);
+				location = new SourceLocation (method);
+				return true;
+			}
+
+			return false;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ThreadGroup group = (ThreadGroup) thread_group_expr.Resolve (context);
-
-			SourceLocation location = source_expr.ResolveLocation (context);
-			if (location == null)
-				return;
-
 			int index = context.Interpreter.InsertBreakpoint (
-				context.CurrentProcess, group, location);
+				process, tgroup, location);
 			context.Print ("Inserted breakpoint {0}.", index);
 		}
 	}
 
+
+#if FIXME
 	public class ScriptingVariableAssignCommand : DebuggerCommand
 	{
 		string identifier;

@@ -254,6 +254,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class ProcessHandle
 	{
 		Interpreter interpreter;
+		ThreadGroup tgroup;
 		Process process;
 		string name;
 		int id;
@@ -293,6 +294,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return process; }
 		}
 
+		public ThreadGroup ThreadGroup {
+			get { return tgroup; }
+		}
+
 		public event ProcessExitedHandler ProcessExitedEvent;
 
 		void initialize ()
@@ -305,6 +310,9 @@ namespace Mono.Debugger.Frontends.Scripting
 
 				registers.Add (register, arch.AllRegisterIndices [i]);
 			}
+
+			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
+			tgroup.AddThread (ID);
 		}
 
 		int current_frame_idx = -1;
@@ -776,7 +784,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		public SourceMethod GetMethodSearchResult (int index)
 		{
 			if ((index < 1) || (index > method_search_results.Count))
-				throw new ScriptingException ("No such history item.");
+				throw new ScriptingException (
+					"No such item in the method history.");
 
 			return (SourceMethod) method_search_results [index - 1];
 		}

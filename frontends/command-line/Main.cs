@@ -82,7 +82,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					continue;
 
 				object[] attrs = type.GetCustomAttributes (
-					typeof (CommandAttribute), true);
+					typeof (CommandAttribute), false);
 
 				if (attrs.Length != 1) {
 					Console.WriteLine ("Ignoring command `{0}'", type);

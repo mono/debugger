@@ -338,7 +338,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		public void DeleteBreakpoint (ProcessHandle process, BreakpointHandle handle)
 		{
 			handle.RemoveBreakpoint (process.Process);
-			breakpoints.Remove (handle);
+			breakpoints.Remove (handle.Breakpoint.Index);
 		}
 
 		public Module[] GetModules (int[] indices)
@@ -506,6 +506,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		public void ShowThreadGroups ()
 		{
 			foreach (ThreadGroup group in ThreadGroup.ThreadGroups) {
+				if (group.Name.StartsWith ("@"))
+					continue;
 				StringBuilder ids = new StringBuilder ();
 				foreach (int thread in group.Threads) {
 					ids.Append (" @");
@@ -533,6 +535,10 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public ThreadGroup GetThreadGroup (string name, bool writable)
 		{
+			if (name == null)
+				name = "global";
+			if (name.StartsWith ("@"))
+				throw new ScriptingException ("No such thread group.");
 			if (!ThreadGroup.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
