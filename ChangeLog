@@ -1,3 +1,7 @@
+2003-11-06  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Completely disable the GUI for the moment.
+
 2003-09-13  Martin Baulig  <martin@ximian.com>
 
 	* arch/ArchitectureI386.cs (ArchitectureI386.UnwindStack): Use
