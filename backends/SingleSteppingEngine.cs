@@ -70,7 +70,7 @@ public class SingleSteppingEngine : ThreadManager
 		address_domain = new AddressDomain ("global");
 
 		start_event = new ManualResetEvent (false);
-		completed_event = new ManualResetEvent (false);
+		completed_event = new AutoResetEvent (false);
 		command_mutex = new Mutex ();
 
 		ready_event = new ManualResetEvent (false);
@@ -90,9 +90,9 @@ public class SingleSteppingEngine : ThreadManager
 	ThreadGroup global_group;
 
 	ManualResetEvent start_event;
-	ManualResetEvent completed_event;
+	AutoResetEvent completed_event;
 	Mutex command_mutex;
-	bool result_sent = false;
+	bool sync_command_running;
 	bool abort_requested;
 
 	[DllImport("monodebuggerserver")]
@@ -156,7 +156,6 @@ public class SingleSteppingEngine : ThreadManager
 		inferior_thread.Start ();
 
 		ready_event.WaitOne ();
-		Wait ();
 
 		OnInitializedEvent (main_process);
 		OnMainThreadCreatedEvent (main_process);
@@ -175,7 +174,10 @@ public class SingleSteppingEngine : ThreadManager
 						 "but main is at {1}", frame, main_method);
 
 		backend.ReachedMain ();
+	}
 
+	protected void ReachedMain ()
+	{
 		ready_event.Set ();
 	}
 
@@ -311,113 +313,41 @@ public class SingleSteppingEngine : ThreadManager
 	}
 
 	// <summary>
-	//   Send the result of a command from the background thread back to the caller.
-	// </summary>
-	protected void SendResult (CommandResult result)
-	{
-		lock (this) {
-			Report.Debug (DebugFlags.EventLoop, "Sending result {0}", result);
-			command_result = result;
-			completed_event.Set ();
-		}
-	}
-
-	protected void SetCompleted (TheEngine engine)
-	{
-		lock (this) {
-			if ((command_engine != null) && (engine != command_engine))
-				return;
-			result_sent = true;
-			command_engine = null;
-			completed_event.Set ();
-		}
-	}
-
-	protected void ResetCompleted ()
-	{
-		Report.Debug (DebugFlags.EventLoop, "Clearing completed flag");
-		completed_event.Reset ();
-	}
-
-	// <summary>
-	//   Sends an asynchronous command to the background thread.  This is used
-	//   for all stepping commands, no matter whether the user requested a
-	//   synchronous or asynchronous operation since we can just block on the
-	//   `completed_event' in the synchronous case.
-	// </summary>
-	protected void SendAsyncCommand (Command command, bool wait)
-	{
-		lock (this) {
-			command.Process.SendTargetEvent (new TargetEventArgs (TargetEventType.TargetRunning, 0));
-			current_command = command;
-			mono_debugger_server_abort_wait ();
-			completed_event.Reset ();
-		}
-
-		WaitForCompletion (wait);
-	}
-
-	protected void SendCallbackCommand (Command command)
-	{
-		command_mutex.WaitOne ();
-		completed_event.WaitOne ();
-
-		SendAsyncCommand (command, true);
-	}
-
-	// <summary>
-	//   This method does two things:
-	//   a) It acquires the `command_mutex' (and blocks until it gets it).
-	//   b) After that, it attempts to acquire the `completed_event' as well
-	//      and returns whether it was able to do so (without blocking).
-	//   The caller must
-	//   a) If this method returned true, release the `completed_event' before
-	//      releasing the `command_mutex'.
-	//   b) In any case release the `command_mutex'.
-	// </summary>
-	// <remarks>
-	//   This is called before actually sending a stepping command to the
-	//   background thread.  First, we need to acquire the `command_mutex' -
-	//   this ensures that no synchronous command is running and that no other
-	//   thread has queued an async operation.  Once we acquired the mutex, no
-	//   other thread can issue any commands, but there may still be an async
-	//   command running, so we also need to acquire the `completed_event'.
+	//   The 'command_mutex' is used to protect the engine's main loop.
 	//
-	//   Note that acquiring the `command_mutex' only blocks if any other
-	//   thread is about to send a command to the background thread; it'll not
-	//   block if an asynchronous operation is still running.
+	//   Before sending any command to it, you must acquire the mutex
+	//   and release it when you're done with the command.
 	//
-	//   The `command_mutex' is basically a `lock (this)', but the background
-	//   thread needs to `lock (this)' itself to write the result, so we
-	//   cannot use this here.
-	//
-	//   The `completed_event' is only unset if an async operation is
-	//   currently running.
-	// </remarks>
-	protected bool CheckCanRun ()
+	//   Note that you must not keep this mutex when returning from the
+	//   function which acquired it.
+	// </summary>
+	protected bool AcquireCommandMutex (TheEngine engine)
 	{
-		if (!command_mutex.WaitOne (0, false)) {
-			Console.WriteLine ("CANNOT GET COMMAND MUTEX");
-			throw new InternalError ();
+		if (!command_mutex.WaitOne (0, false))
 			return false;
-		}
-		if (!completed_event.WaitOne (0, false)) {
-			Console.WriteLine ("CANNOT GET COMPLETED EVENT");
-			command_mutex.ReleaseMutex ();
-			return false;
-		}
+
+		command_engine = engine;
 		return true;
 	}
 
 	protected void ReleaseCommandMutex ()
 	{
+		command_engine = null;
 		command_mutex.ReleaseMutex ();
 	}
 
 	// <summary>
-	//   Sends a synchronous command to the background thread.  This is only
-	//   used for non-steping commands such as getting a backtrace.
+	//   Sends a synchronous command to the background thread and wait until
+	//   it is completed.  This command never throws any exceptions, but returns
+	//   an appropriate CommandResult if something went wrong.
+	//
+	//   This is used for non-steping commands such as getting a backtrace.
 	// </summary>
+	// <remarks>
+	//   You must own either the 'command_mutex' or the `this' lock prior to
+	//   calling this and you must make sure you aren't currently running any
+	//   async operations.
+	// </remarks>
 	protected CommandResult SendSyncCommand (CommandFunc func, object data)
 	{
 		if (Thread.CurrentThread == inferior_thread) {
@@ -430,13 +360,14 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		}
 
-		if (!CheckCanRun ())
-			return new CommandResult (CommandResultType.UnknownError);
+		if (!AcquireCommandMutex (null))
+			return CommandResult.Busy;
 
 		lock (this) {
 			current_command = new Command (func, data);
 			mono_debugger_server_abort_wait ();
 			completed_event.Reset ();
+			sync_command_running = true;
 		}
 
 		completed_event.WaitOne ();
@@ -455,23 +386,21 @@ public class SingleSteppingEngine : ThreadManager
 			return new CommandResult (CommandResultType.UnknownError);
 	}
 
-	protected void WaitForCompletion (bool wait)
+	// <summary>
+	//   Sends an asynchronous command to the background thread.  This is used
+	//   for all stepping commands, no matter whether the user requested a
+	//   synchronous or asynchronous operation.
+	// </summary>
+	// <remarks>
+	//   You must own the 'command_mutex' before calling this method and you must
+	//   make sure you aren't currently running any async commands.
+	// </remarks>
+	protected void SendAsyncCommand (Command command)
 	{
-		if (wait)
-			completed_event.WaitOne ();
-		else
-			completed_event.Set ();
-
-		command_mutex.ReleaseMutex ();
-	}
-
-	internal void Wait ()
-	{
-		command_mutex.WaitOne ();
-
-		completed_event.WaitOne ();
-
-		command_mutex.ReleaseMutex ();
+		lock (this) {
+			current_command = command;
+			mono_debugger_server_abort_wait ();
+		}
 	}
 
 	// <summary>
@@ -529,8 +458,21 @@ public class SingleSteppingEngine : ThreadManager
 		//
 
 		if (aborted > 0) {
-			Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT");
-			completed_event.Set ();
+			Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT: {0} {1}",
+				      command_engine, sync_command_running);
+
+			lock (this) {
+				if (sync_command_running) {
+					command_result = CommandResult.Interrupted;
+					current_command = null;
+					sync_command_running = false;
+					completed_event.Set ();
+					return;
+				}
+
+				if (command_engine != null)
+					command_engine.Interrupt ();
+			}
 			return;
 		}
 
@@ -546,8 +488,6 @@ public class SingleSteppingEngine : ThreadManager
 
 			if (command == null)
 				return;
-
-			command_engine = command.Process;
 		}
 
 		if (command == null)
@@ -571,6 +511,7 @@ public class SingleSteppingEngine : ThreadManager
 			lock (this) {
 				command_result = result;
 				current_command = null;
+				sync_command_running = false;
 				completed_event.Set ();
 			}
 		} else {
@@ -707,12 +648,16 @@ public class SingleSteppingEngine : ThreadManager
 	protected enum CommandResultType {
 		ChildEvent,
 		CommandOk,
+		NotStopped,
+		Interrupted,
 		UnknownError,
 		Exception
 	}
 
 	protected class CommandResult {
 		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk);
+		public readonly static CommandResult Busy = new CommandResult (CommandResultType.NotStopped);
+		public readonly static CommandResult Interrupted = new CommandResult (CommandResultType.Interrupted);
 
 		public readonly CommandResultType Type;
 		public readonly Inferior.ChildEventType EventType;
@@ -768,6 +713,8 @@ public class SingleSteppingEngine : ThreadManager
 
 			pid = inferior.PID;
 
+			operation_completed_event = new ManualResetEvent (false);
+
 			inferior.TargetOutput += new TargetOutputHandler (OnInferiorOutput);
 			inferior.DebuggerOutput += new DebuggerOutputHandler (OnDebuggerOutput);
 			inferior.DebuggerError += new DebuggerErrorHandler (OnDebuggerError);
@@ -798,8 +745,6 @@ public class SingleSteppingEngine : ThreadManager
 
 		void setup_engine ()
 		{
-			restart_event = new AutoResetEvent (false);
-
 			inferior.SingleSteppingEngine = sse;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
@@ -843,18 +788,28 @@ public class SingleSteppingEngine : ThreadManager
 
 		void send_frame_event (StackFrame frame, int signal)
 		{
-			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
-			sse.SetCompleted (this);
+			operation_completed (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
 		}
 
 		void send_frame_event (StackFrame frame, BreakpointHandle handle)
 		{
-			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
-			sse.SetCompleted (this);
+			operation_completed (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
 		}
 
-		public void SendTargetEvent (TargetEventArgs args)
+		void operation_completed (TargetEventArgs result)
 		{
+			lock (this) {
+				engine_stopped = true;
+				send_target_event (result);
+				operation_completed_event.Set ();
+			}
+		}
+
+		void send_target_event (TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.EventLoop, "SSE {0} sending target event {1}",
+				      this, args);
+
 			switch (args.Type) {
 			case TargetEventType.TargetRunning:
 				target_state = TargetState.RUNNING;
@@ -1117,8 +1072,11 @@ public class SingleSteppingEngine : ThreadManager
 				}
 				// Ok, inform the user that we stopped.
 				step_operation_finished ();
-				SendTargetEvent (result);
-				sse.SetCompleted (this);
+				operation_completed (result);
+				if (is_main && !reached_main) {
+					reached_main = true;
+					sse.ReachedMain ();
+				}
 				return true;
 			}
 
@@ -1228,16 +1186,248 @@ public class SingleSteppingEngine : ThreadManager
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		ILanguage native_language;
-		protected AutoResetEvent restart_event;
+		bool engine_stopped;
+		ManualResetEvent operation_completed_event;
 		protected bool stop_requested = false;
-		bool is_main;
+		bool is_main, reached_main;
 		bool native;
 		protected int pid, tid;
 
 		protected TargetAddress main_method_retaddr = TargetAddress.Null;
-		TargetState target_state = TargetState.NO_TARGET;
+		protected TargetState target_state = TargetState.NO_TARGET;
 
-		bool in_event = false;
+		//
+		// We support two kinds of commands:
+		//
+		// * synchronous commands are used for things like getting a backtrace
+		//   or accessing the target's memory.
+		//
+		//   If you send such a command to the engine, its main event loop is
+		//   blocked until the command finished, so it can send us the result
+		//   back.
+		//
+		//   The background thread may always send synchronous commands (for
+		//   instance from an event handler), so we do not acquire the
+		//   `command_mutex'.  However, we must still make sure we aren't
+		//   currently performing any async operation and ensure that no other
+		//   thread can start such an operation while we're running the command.
+		//   Because of this, we just acquire the `this' lock and then check
+		//   whether `engine_stopped' is true.
+		//
+		// * asynchronous commands are used for all stepping operations and they
+		//   can be either blocking (waiting for the operation to finish) or
+		//   non-blocking.
+		//
+		//   In either case, we need to acquire the `command_mutex' before sending
+		//   such a command and set `engine_stopped' to false (after checking that
+		//   it was previously true) to ensure that nobody can send us a synchronous
+		//   command.
+		//
+		//   `operation_completed_event' is reset by us and set when the operation
+		//   finished.
+		//
+		//   In non-blocking mode, we start the command and then release the
+		//   `command_mutex'.  Note that we can't just keep the mutex since it's
+		//   "global": it protects the main event loop and thus blocks operations
+		//   on all of the target's threads, not just on us.
+		//
+		// To summarize:
+		//
+		// * having the 'command_mutex' means that nobody can perform any operation
+		//   on any of the target's threads, ie. we're "globally blocked".
+		//
+		// * if `engine_stopped' is false (you're only allowed to check if you own
+		//   the `this' lock!), we're currently performing a stepping operation.
+		//
+		// * the `operation_completed_event' is used to wait until this stepping
+		//   operation is finished.
+		//
+
+
+		// <summary>
+		//   This must be called before sending any commands to the engine.
+		//   It'll acquire the `command_mutex' and make sure that we aren't
+		//   currently performing any async operation.
+		//   Returns true on success and false if we're still busy.
+		// </summary>
+		// <remarks>
+		//   If this returns true, you must call either AbortOperation() or
+		//   SendAsyncCommand().
+		// </remarks>
+		protected bool StartOperation ()
+		{
+			lock (this) {
+				// First try to get the `command_mutex'.
+				// If we succeed, then no synchronous command is currently
+				// running.
+				if (!sse.AcquireCommandMutex (this)) {
+					Report.Debug (DebugFlags.Wait,
+						      "SSE {0} cannot get command mutex", this);
+					return false;
+				}
+				// Check whether we're curring performing an async
+				// stepping operation.
+				if (!engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "SSE {0} not stopped", this);
+					sse.ReleaseCommandMutex ();
+					return false;
+				}
+				// This will never block.  The only thing which can
+				// happen here is that we were running an async operation
+				// and did not wait for the event yet.
+				operation_completed_event.WaitOne ();
+				engine_stopped = false;
+				Report.Debug (DebugFlags.Wait,
+					      "SSE {0} got command mutex", this);
+				return true;
+			}
+		}
+
+		// <summary>
+		//   Use this if you previously called StartOperation() and you changed
+		//   your mind and don't want to start an operation anymore.
+		// </summary>
+		protected void AbortOperation ()
+		{
+			lock (this) {
+				Report.Debug (DebugFlags.Wait,
+					      "SSE {0} aborted operation", this);
+				engine_stopped = true;
+				sse.ReleaseCommandMutex ();
+			}
+		}
+
+		// <summary>
+		//   Sends a synchronous command to the engine.
+		// </summary>
+		protected CommandResult SendSyncCommand (CommandFunc func, object data)
+		{
+			lock (this) {
+				// Check whether we're curring performing an async
+				// stepping operation.
+				if (!engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "SSE {0} not stopped", this);
+					return CommandResult.Busy;
+				}
+
+				Report.Debug (DebugFlags.Wait,
+					      "SSE {0} sending sync command", this);
+				CommandResult result = sse.SendSyncCommand (func, data);
+				Report.Debug (DebugFlags.Wait,
+					      "SSE {0} finished sync command", this);
+
+				return result;
+			}
+		}
+
+		// <summary>
+		//   Sends an async command to the engine.
+		// </summary>
+		// <remarks>
+		//   You must call StartOperation() prior to calling this.
+		// </remarks>	     
+		protected void SendAsyncCommand (Command command, bool wait)
+		{
+			lock (this) {
+				operation_completed_event.Reset ();
+				send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
+				sse.SendAsyncCommand (command);
+			}
+
+			if (wait) {
+				Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
+				operation_completed_event.WaitOne ();
+				Report.Debug (DebugFlags.Wait, "SSE {0} done waiting", this);
+			}
+			Report.Debug (DebugFlags.Wait,
+				      "SSE {0} released command mutex", this);
+			sse.ReleaseCommandMutex ();
+		}
+
+		protected void SendCallbackCommand (Command command)
+		{
+			if (!StartOperation ())
+				throw new TargetNotStoppedException ();
+
+			sse.SendAsyncCommand (command);
+		}
+
+		public override bool Stop ()
+		{
+			return do_wait (true);
+		}
+
+		public override bool Wait ()
+		{
+			return do_wait (false);
+		}
+
+		bool do_wait (bool stop)
+		{
+			lock (this) {
+				// First try to get the `command_mutex'.
+				// If we succeed, then no synchronous command is currently
+				// running.
+				if (!sse.AcquireCommandMutex (this)) {
+					Report.Debug (DebugFlags.Wait,
+						      "SSE {0} cannot get command mutex", this);
+					return false;
+				}
+				// Check whether we're curring performing an async
+				// stepping operation.
+				if (engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "SSE {0} already stopped", this);
+					sse.ReleaseCommandMutex ();
+					return true;
+				}
+
+				if (stop) {
+					stop_requested = true;
+					if (!inferior.Stop ()) {
+						// We're already stopped, so just consider the
+						// current operation as finished.
+						step_operation_finished ();
+						engine_stopped = true;
+						stop_requested = false;
+						operation_completed_event.Set ();
+						sse.ReleaseCommandMutex ();
+						return true;
+					}
+				}
+			}
+
+			// Ok, we got the `command_mutex'.
+			// Now we can wait for the operation to finish.
+			Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
+			operation_completed_event.WaitOne ();
+			Report.Debug (DebugFlags.Wait, "SSE {0} stopped", this);
+			sse.ReleaseCommandMutex ();
+			return true;
+		}
+
+		public void Interrupt ()
+		{
+			lock (this) {
+				Report.Debug (DebugFlags.Wait, "SSE {0} interrupt: {0}",
+					      this, engine_stopped);
+
+				if (engine_stopped)
+					return;
+
+				stop_requested = true;
+				if (!inferior.Stop ()) {
+					// We're already stopped, so just consider the
+					// current operation as finished.
+					step_operation_finished ();
+					engine_stopped = true;
+					stop_requested = false;
+					operation_completed_event.Set ();
+				}
+			}
+		}
 
 		protected void check_inferior ()
 		{
@@ -1910,7 +2100,7 @@ public class SingleSteppingEngine : ThreadManager
 				rdata.ExceptionObject = TargetAddress.Null;
 
 			frame_changed (inferior.CurrentFrame, null);
-			sse.SetCompleted (this);
+			send_frame_event (current_frame, 0);
 			return true;
 		}
 
@@ -1924,7 +2114,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			cb.Data.Result = data1;
 
-			sse.SetCompleted (this);
+			// sse.SetCompleted (this);
 			return true;
 		}
 
@@ -2065,7 +2255,12 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override TargetState State {
 			get {
-				return inferior.State;
+				lock (this) {
+					if (is_daemon)
+						return TargetState.DAEMON;
+					else
+						return target_state;
+				}
 			}
 		}
 
@@ -2125,7 +2320,7 @@ public class SingleSteppingEngine : ThreadManager
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			sse.SendSyncCommand (new CommandFunc (get_backtrace), -1);
+			SendSyncCommand (new CommandFunc (get_backtrace), -1);
 
 			return current_backtrace;
 		}
@@ -2137,7 +2332,7 @@ public class SingleSteppingEngine : ThreadManager
 			if ((max_frames == -1) && (current_backtrace != null))
 				return current_backtrace;
 
-			sse.SendSyncCommand (new CommandFunc (get_backtrace), max_frames);
+			SendSyncCommand (new CommandFunc (get_backtrace), max_frames);
 
 			return current_backtrace;
 		}
@@ -2185,7 +2380,7 @@ public class SingleSteppingEngine : ThreadManager
 			if (registers != null)
 				return registers;
 
-			sse.SendSyncCommand (new CommandFunc (get_registers), null);
+			SendSyncCommand (new CommandFunc (get_registers), null);
 
 			return registers;
 		}
@@ -2207,7 +2402,7 @@ public class SingleSteppingEngine : ThreadManager
 		public override void SetRegister (int register, long value)
 		{
 			Register reg = new Register (register, value);
-			sse.SendSyncCommand (new CommandFunc (set_register), reg);
+			SendSyncCommand (new CommandFunc (set_register), reg);
 		}
 
 		public override void SetRegisters (int[] registers, long[] values)
@@ -2239,9 +2434,9 @@ public class SingleSteppingEngine : ThreadManager
 		bool start_step_operation (Operation operation, bool wait)
 		{
 			check_inferior ();
-			if (!sse.CheckCanRun ())
+			if (!StartOperation ())
 				return false;
-			sse.SendAsyncCommand (new Command (this, operation), wait);
+			SendAsyncCommand (new Command (this, operation), wait);
 			return true;
 		}
 
@@ -2258,12 +2453,12 @@ public class SingleSteppingEngine : ThreadManager
 
 		void call_method (CallMethodData cdata)
 		{
-			sse.SendCallbackCommand (new Command (this, new Operation (cdata)));
+			SendCallbackCommand (new Command (this, new Operation (cdata)));
 		}
 
 		void call_method (RuntimeInvokeData rdata)
 		{
-			sse.SendCallbackCommand (new Command (this, new Operation (rdata)));
+			SendCallbackCommand (new Command (this, new Operation (rdata)));
 		}
 
 		// <summary>
@@ -2312,12 +2507,12 @@ public class SingleSteppingEngine : ThreadManager
 		public override bool Finish (bool wait)
 		{
 			check_inferior ();
-			if (!sse.CheckCanRun ())
+			if (!StartOperation ())
 				return false;
 
 			StackFrame frame = CurrentFrame;
 			if (frame.Method == null) {
-				sse.ReleaseCommandMutex ();
+				AbortOperation ();
 				throw new NoMethodException ();
 			}
 
@@ -2326,7 +2521,7 @@ public class SingleSteppingEngine : ThreadManager
 				null, StepMode.Finish);
 
 			Operation operation = new Operation (OperationType.StepFrame, sf);
-			sse.SendAsyncCommand (new Command (this, operation), wait);
+			SendAsyncCommand (new Command (this, operation), wait);
 			return true;
 		}
 
@@ -2337,24 +2532,6 @@ public class SingleSteppingEngine : ThreadManager
 							     until, wait);
 			else
 				return start_step_operation (OperationType.Run, until, wait);
-		}
-
-		public override void Stop ()
-		{
-			check_inferior ();
-			// If a stepping operation is currently running, just send the target
-			// a SIGSTOP, but don't wait for it to actually stop.
-			if (!sse.CheckCanRun ()) {
-				inferior.Stop ();
-				return;
-			}
-
-			// Ok, so we acquired the command mutex.
-			// Note that we still don't know whether the target is running or
-			// not, it could be running in the background.
-			stop_requested = true;
-			inferior.Stop ();
-			sse.ReleaseCommandMutex ();
 		}
 
 		public override void Kill ()
@@ -2395,7 +2572,7 @@ public class SingleSteppingEngine : ThreadManager
 			BreakpointManager.Handle data = new BreakpointManager.Handle (
 				address, handle, check_handler, hit_handler, needs_frame, user_data);
 
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (insert_breakpoint), data);
+			CommandResult result = SendSyncCommand (new CommandFunc (insert_breakpoint), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 
@@ -2410,7 +2587,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			check_disposed ();
 			if (inferior != null)
-				sse.SendSyncCommand (new CommandFunc (remove_breakpoint), index);
+				SendSyncCommand (new CommandFunc (remove_breakpoint), index);
 		}
 
 		//
@@ -2449,7 +2626,7 @@ public class SingleSteppingEngine : ThreadManager
 		public int GetInstructionSize (TargetAddress address)
 		{
 			check_inferior ();
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (get_insn_size), address);
+			CommandResult result = SendSyncCommand (new CommandFunc (get_insn_size), address);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (int) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
@@ -2484,7 +2661,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			check_inferior ();
 			DisassembleData data = new DisassembleData (method, address);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (disassemble_insn), data);
+			CommandResult result = SendSyncCommand (new CommandFunc (disassemble_insn), data);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (AssemblerLine) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
@@ -2504,7 +2681,7 @@ public class SingleSteppingEngine : ThreadManager
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
 			check_inferior ();
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (disassemble_method), method);
+			CommandResult result = SendSyncCommand (new CommandFunc (disassemble_method), method);
 			if (result.Type == CommandResultType.CommandOk)
 				return (AssemblerMethod) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2662,7 +2839,7 @@ public class SingleSteppingEngine : ThreadManager
 		protected byte[] read_memory (TargetAddress address, int size)
 		{
 			ReadMemoryData data = new ReadMemoryData (address, size);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (do_read_memory), data);
+			CommandResult result = SendSyncCommand (new CommandFunc (do_read_memory), data);
 			if (result.Type == CommandResultType.CommandOk)
 				return (byte []) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2682,7 +2859,7 @@ public class SingleSteppingEngine : ThreadManager
 		string read_string (TargetAddress address)
 		{
 			ReadMemoryData data = new ReadMemoryData (address, 0);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (do_read_string), data);
+			CommandResult result = SendSyncCommand (new CommandFunc (do_read_string), data);
 			if (result.Type == CommandResultType.CommandOk)
 				return (string) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2720,7 +2897,7 @@ public class SingleSteppingEngine : ThreadManager
 		protected void write_memory (TargetAddress address, byte[] buffer)
 		{
 			WriteMemoryData data = new WriteMemoryData (address, buffer);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (do_write_memory), data);
+			CommandResult result = SendSyncCommand (new CommandFunc (do_write_memory), data);
 			if (result.Type == CommandResultType.CommandOk)
 				return;
 			else if (result.Type == CommandResultType.Exception)

@@ -180,7 +180,9 @@ namespace Mono.Debugger
 		public abstract bool Continue (TargetAddress until, bool in_background,
 					       bool synchronous);
 
-		public abstract void Stop ();
+		public abstract bool Stop ();
+
+		public abstract bool Wait ();
 
 		public abstract bool Finish (bool synchronous);
 

@@ -542,7 +542,12 @@ namespace Mono.Debugger.Architecture
 			throw new CannotExecuteCoreFileException ();
 		}
 
-		public override void Stop ()
+		public override bool Stop ()
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public override bool Wait ()
 		{
 			throw new CannotExecuteCoreFileException ();
 		}
