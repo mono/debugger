@@ -87,8 +87,9 @@ namespace Mono.Debugger.Backends
 
 			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
 				if (!daemon_received_signal (inferior.CurrentFrame, arg))
-					throw new InternalError ("Daemon thread {0} received unexpected " +
-								 "signal {1}.", pid, arg);
+					throw new InternalError (
+						"Daemon thread {0} received unexpected " +
+						"signal {1} at {2}.", pid, arg, Inferior.CurrentFrame);
 				inferior.Continue ();
 				goto again;
 			} else if (message == ChildEventType.CHILD_EXITED)
