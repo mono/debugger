@@ -1322,8 +1322,6 @@ namespace Mono.Debugger.Backends
 							tmethod = Lookup (trampoline);
 						}
 						if ((tmethod == null) || !tmethod.Module.StepInto) {
-							Console.WriteLine ("TRAMPOLINE: {0} {1} {2}",
-									   call, trampoline, tmethod != null);
 							if (!do_next ())
 								return false;
 							continue;
@@ -1356,8 +1354,6 @@ namespace Mono.Debugger.Backends
 				 * and step over it.
 				 */
 				IMethod method = Lookup (call);
-				Console.WriteLine ("METHOD: {0} {1}", call, method != null);
-
 				if ((method == null) || !method.Module.StepInto) {
 					if (!do_next ())
 						return false;
