@@ -57,32 +57,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class PrintVariableCommand : Command
-	{
-		VariableExpression var_expr;
-
-		public PrintVariableCommand (VariableExpression var_expr)
-		{
-			this.var_expr = var_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			ITargetObject tobj = var_expr.ResolveVariable (context);
-
-			if (tobj is ITargetFundamentalObject) {
-				ITargetFundamentalObject fobj = (ITargetFundamentalObject) tobj;
-
-				if (fobj.HasObject) {
-					context.Print (fobj.Object);
-					return;
-				}
-			}
-
-			context.Print (tobj);
-		}
-	}
-
 	public class FrameCommand : Command
 	{
 		int number;
@@ -464,6 +438,80 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class NumberExpression : Expression
+	{
+		int val;
+
+		public NumberExpression (int val)
+		{
+			this.val = val;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return this.val;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} {1:x}", GetType(), this.val);
+		}
+	}
+
+	// So you can extend this by just creating a subclass
+	// of BinaryOperator that implements DoEvaluate and
+	// a constructor, but you'll need to add a new rule to
+	// the parser of the form
+	//
+	// expression: my_param_kind MY_OP_TOKEN my_param_kind 
+	//             { $$ = new MyBinarySubclass ((MyParam) $1, (MyParam) $3); }
+	//
+	// If you want to extend on of { +, -, *, /} for non-integers,
+	// like supporting "a" + "b" = "ab", then larger changes would
+	// be needed.
+
+	public class BinaryOperator : Expression
+	{
+		public enum Kind { Mult, Plus, Minus, Div };
+
+		protected Kind kind;
+		protected Expression left, right;
+
+		public BinaryOperator (Kind kind, Expression left, Expression right)
+		{
+			this.kind = kind;
+			this.left = left;
+			this.right = right;
+		}
+
+		protected object DoEvaluate (ScriptingContext context, object lobj, object robj)
+		{
+			switch (kind) {
+			case Kind.Mult:
+				return (int) lobj * (int) robj;
+			case Kind.Plus:
+				return (int) lobj + (int) robj;
+			case Kind.Minus:
+				return (int) lobj - (int) robj;
+			case Kind.Div:
+				return (int) lobj / (int) robj;
+			}
+
+			throw new ScriptingException ("Unknown binary operator kind: {0}", kind);
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			object lobj, robj;
+
+			lobj = left.Resolve (context);
+			robj = right.Resolve (context);
+
+			// Console.WriteLine ("bin eval: {0} ({1}) and {2} ({3})", lobj, lobj.GetType(), robj, robj.GetType());
+			return DoEvaluate (context, lobj, robj);
+		}
+	}
+
 	public class ProcessExpression : Expression
 	{
 		int number;
@@ -548,7 +596,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return ResolveVariable (context);
+			ITargetObject obj = ResolveVariable (context);
+			ITargetType type = ResolveType (context);
+
+			if (!obj.IsValid)
+				throw new ScriptingException ("Variable {0} is out of scope.", this);
+
+			if (type.Kind == TargetObjectKind.Fundamental)
+				return ((ITargetFundamentalObject) obj).Object;
+
+			// FIXME: how to handle all the other kinds of objects?
+			return obj;
 		}
 
 		public override string ToString ()
@@ -557,27 +615,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class VariableExpressionGroup : VariableExpression
+	public class ExpressionGroup : Expression
 	{
-		VariableExpression var_expr;
+		Expression expr;
 
-		public VariableExpressionGroup (VariableExpression var_expr)
+		public ExpressionGroup (Expression expr)
 		{
-			this.var_expr = var_expr;
+			this.expr = expr;
 		}
 
-		public override string Name {
-			get { return '(' + var_expr.Name + ')'; }
+		public override string ToString()
+		{
+			return '(' + expr.ToString() + ')';
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override object DoResolve (ScriptingContext context)
 		{
-			return var_expr.ResolveVariable (context);
-		}
-
-		protected override ITargetType DoResolveType (ScriptingContext context)
-		{
-			return var_expr.ResolveType (context);
+			return expr.Resolve (context);
 		}
 	}
 
@@ -748,9 +802,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ArrayAccessExpression : VariableExpression
 	{
 		VariableExpression var_expr;
-		int index;
+		Expression index;
 
-		public ArrayAccessExpression (VariableExpression var_expr, int index)
+		public ArrayAccessExpression (VariableExpression var_expr, Expression index)
 		{
 			this.var_expr = var_expr;
 			this.index = index;
@@ -764,18 +818,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
+			int i;
+
 			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
 			if (obj == null)
 				throw new ScriptingException (
 					"Variable {0} is not an array type.", var_expr.Name);
+			try {
+				i = (int) this.index.Resolve (context);
+			} catch (Exception e) {
+				throw new ScriptingException (
+					"Cannot convert {0} to an integer for indexing: {1}", this.index, e);
+			}
 
-			if ((index < obj.LowerBound) || (index >= obj.UpperBound))
+			if ((i < obj.LowerBound) || (i >= obj.UpperBound))
 				throw new ScriptingException (
 					"Index {0} of array expression {1} out of bounds " +
-					"(must be between {2} and {3}).", index, var_expr.Name,
+					"(must be between {2} and {3}).", i, var_expr.Name,
 					obj.LowerBound, obj.UpperBound - 1);
 
-			return obj [index];
+			return obj [i];
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)

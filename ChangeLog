@@ -1,3 +1,27 @@
+2003-01-15  Peter Williams  <peterw@ximian.com>
+
+	* frontends/scripting/Parser.jay: Change it so that expressions
+	go in parentheses, not variable_expressions.
+
+	* frontends/scripting/Command.cs: supporting changes of
+	VariableExpressionGroup -> ExpressionGroup.
+
+2003-01-13  Peter Williams  <peterw@ximian.com>
+
+	* frontends/scripting/Command.cs: Implement a binary operator for
+	simple math in expressions. Make variable_expressions convertible
+	to expressions so that we don't need PrintCommand as well as 
+	PrintVariableCommand. Change the default resolution of variables
+	to try and get their actual values. Make array index take an
+	expression so that we can do "$array[$i]".
+
+	* frontends/scripting/Parser.jay: Define binary operators and make
+	them possible expressions. Don't make processes possible expressions.
+	Remove the PrintVariable command since we don't need it anymore.
+
+	* frontends/scripting/Tokenizer.cs: Return the binary operator tokens
+	if necessary. Needs fixing to support negative numbers.
+
 2003-01-14  Martin Baulig  <martin@ximian.com>
 
 	* NEWS: The Debugger is now working on FreeBSD 4.7 :-)

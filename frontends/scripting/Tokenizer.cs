@@ -471,6 +471,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.ASSIGN;
 				else if (c == '*')
 					return Token.STAR;
+				else if (c == '+')
+					return Token.PLUS;
+				else if (c == '-') // FIXME: negative numbers...
+					return Token.MINUS;
+				else if (c == '/')
+					return Token.DIV;
 				else if (c == '(')
 					return Token.OPEN_PARENS;
 				else if (c == ')')
@@ -495,7 +501,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 						error_details = "No whitespace allowed after `#'";
 						return Token.ERROR;
 					} else if (current_token == Token.AT) {
-						error_details = "No whitespace allowed after `Q'";
+						error_details = "No whitespace allowed after `@'";
 						return Token.ERROR;
 					}
 

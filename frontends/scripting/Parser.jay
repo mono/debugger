@@ -61,6 +61,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token COMMA
 %token ASSIGN
 %token STAR
+%token PLUS
+%token MINUS
+%token DIV
 %token OPEN_PARENS
 %token CLOSE_PARENS
 %token OPEN_BRACKET
@@ -210,10 +213,6 @@ command
 	  {
 		$$ = new PrintCommand ((Expression) $2);
 	  }
-	| PRINT variable_expression
-	  {
-		$$ = new PrintVariableCommand ((VariableExpression) $2);
-	  }
 	| FRAME opt_process opt_frame_number
 	  {
 		$$ = new FrameCommand ((ProcessExpression) $2, (int) $3);
@@ -325,11 +324,7 @@ assert_command
 	;
 
 expression
-	: AT INTEGER
-	  {
-		$$ = new ProcessExpression ((int) $2);
-	  }
-	| opt_process opt_frame_number PERCENT IDENTIFIER
+	: opt_process opt_frame_number PERCENT IDENTIFIER
 	  {
 		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
 	  }
@@ -345,6 +340,26 @@ expression
 	  {
 		$$ = new ArrayUpperBoundExpression ((VariableExpression) $3);
 	  }
+	| NUMBER
+	  {
+		$$ = new NumberExpression ((int) $1);
+	  }
+	| INTEGER
+	  {
+		$$ = new NumberExpression ((int) $1);
+	  }
+	| expression binary_operator expression
+	  {
+		$$ = new BinaryOperator ((BinaryOperator.Kind) $2, (Expression) $1, (Expression) $3);
+	  }
+	| OPEN_PARENS expression CLOSE_PARENS
+	  {
+		$$ = new ExpressionGroup ((Expression) $2);
+	  }
+	| variable_expression
+	  {
+		$$ = $1;
+	  }
 	;
 
 variable_expression
@@ -356,10 +371,6 @@ variable_expression
 	  {
 		$$ = new ScriptingVariableReference ((string) $2);
 	  }
-	| OPEN_PARENS variable_expression CLOSE_PARENS
-	  {
-		$$ = new VariableExpressionGroup ((VariableExpression) $2);
-	  }
 	| opt_process opt_frame_number DOLLAR IDENTIFIER
 	  {
 		$$ = new VariableReferenceExpression ((ProcessExpression) $1, (int) $2, (string) $4);
@@ -368,9 +379,9 @@ variable_expression
 	  {
 		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
 	  }
-	| variable_expression OPEN_BRACKET INTEGER CLOSE_BRACKET
+	| variable_expression OPEN_BRACKET expression CLOSE_BRACKET
 	  {
-		$$ = new ArrayAccessExpression ((VariableExpression) $1, (int) $3);
+		$$ = new ArrayAccessExpression ((VariableExpression) $1, (Expression) $3);
 	  }
 	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
 	  {
@@ -495,6 +506,24 @@ module_operations
 	  }
 	;
 
+binary_operator
+	: STAR
+	  {
+		$$ = BinaryOperator.Kind.Mult;
+	  }
+	| PLUS
+	  {
+		$$ = BinaryOperator.Kind.Plus;
+	  }
+	| MINUS
+	  {
+		$$ = BinaryOperator.Kind.Minus;
+	  }
+	| DIV
+	  {
+		$$ = BinaryOperator.Kind.Div;
+	  }
+	;
 %%
 
 public Parser (ScriptingContext context, string name)
