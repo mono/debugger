@@ -1,3 +1,11 @@
+2004-01-15  Martin Baulig  <martin@ximian.com>
+
+	The big rewrite and cleanup.
+
+	The debugger now requires either Red Hat 9 or glibc 2.3.x and a
+	2.6.0 kernel.	It does not work with a 2.4.x kernel except the
+	one from Red Hat 9.
+
 2003-12-29  Martin Baulig  <martin@ximian.com>
 
 	WARNING WARNING WARNING WARNING:
