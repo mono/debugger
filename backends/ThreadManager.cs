@@ -160,42 +160,42 @@ namespace Mono.Debugger
 
 		public bool SignalHandler (IInferior inferior, int signal, out bool action)
 		{
-			if (signal == PTraceInferior.ThreadRestartSignal) {
+			if (signal == inferior.ThreadRestartSignal) {
 				action = false;
 				return true;
 			}
 
-			if (signal == PTraceInferior.ThreadAbortSignal) {
+			if (signal == inferior.ThreadAbortSignal) {
 				action = false;
 				return true;
 			}
 
-			if ((signal == PTraceInferior.SIGCHLD) || (signal == PTraceInferior.SIGPROF)) {
+			if ((signal == inferior.SIGCHLD) || (signal == inferior.SIGPROF)) {
 				inferior.SetSignal (0, false);
 				action = false;
 				return true;
 			}
 
-			if (signal == PTraceInferior.SIGINT) {
+			if (signal == inferior.SIGINT) {
 				inferior.SetSignal (0, false);
 				action = true;
 				return true;
 			}
 
-			if ((signal == PTraceInferior.SIGPWR) || (signal == PTraceInferior.SIGXCPU)) {
+			if ((signal == inferior.SIGPWR) || (signal == inferior.SIGXCPU)) {
 				inferior.SetSignal (0, false);
 				action = false;
 				return true;
 			}
 
-			if (signal != PTraceInferior.ThreadDebugSignal) {
+			if (signal != inferior.ThreadDebugSignal) {
 				action = true;
 				return false;
 			}
 
-			reload_threads (inferior);
+			reload_threads (inferior, inferior);
 
-			inferior.SetSignal (PTraceInferior.ThreadRestartSignal, false);
+			inferior.SetSignal (inferior.ThreadRestartSignal, false);
 			action = false;
 			return true;
 		}
@@ -245,7 +245,7 @@ namespace Mono.Debugger
 			add_process (new ThreadData (process, pid), pid, send_event);
 		}
 
-		void reload_threads (ITargetMemoryAccess memory)
+		void reload_threads (IInferior inferior, ITargetMemoryAccess memory)
 		{
 			int size = memory.TargetIntegerSize * 2 + memory.TargetAddressSize * 2;
 			int offset = memory.TargetIntegerSize * 2;
@@ -270,10 +270,10 @@ namespace Mono.Debugger
 				Process new_process;
 				if (index == 1)
 					new_process = main_process.CreateDaemonThread (
-						pid, PTraceInferior.ThreadRestartSignal, null);
+						pid, inferior.ThreadRestartSignal, null);
 				else {
 					new_process = main_process.CreateThread (pid);
-					new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
+					new_process.SetSignal (inferior.ThreadRestartSignal, true);
 				}
 
 				add_process (new_process, pid, true);
@@ -444,7 +444,7 @@ namespace Mono.Debugger
 			TargetAddress start_stack = reader.ReadGlobalAddress ();
 
 			Process process = runner.Process.CreateThread (pid);
-			process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
+			process.SetSignal (runner.Inferior.ThreadRestartSignal, true);
 
 			ThreadData thread = new ThreadData (process, tid, pid, start_stack, data);
 			add_process (thread, pid, false);

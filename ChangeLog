@@ -1,5 +1,14 @@
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
+	* backends/IInferior.cs (IInferior): Added properties for the
+	signal numbers.
+
+	* backends/ptrace/PTrace.cs: We're now getting the signal numbers
+	in a `SignalInfo' structure from the inferior; the corresponding
+	properties are no longer static.
+
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/: Did some API cleanups; separate
 	architecture-specific code a bit more.
 

@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 #include <server.h>
 #include <breakpoints.h>
-#include <i386-arch.h>
 #include <sys/stat.h>
 #include <sys/ptrace.h>
 #include <sys/socket.h>
@@ -21,8 +20,6 @@
  * to get a better understanding for this stuff.
  */
 
-#include "i386-arch.h"
-
 #ifdef __linux__
 #include "i386-linux-ptrace.h"
 #endif
@@ -30,6 +27,8 @@
 #ifdef __FreeBSD__
 #include "i386-freebsd-ptrace.h"
 #endif
+
+#include "i386-arch.h"
 
 typedef struct
 {
@@ -49,16 +48,6 @@ struct InferiorHandle
 	int output_fd [2], error_fd [2];
 	ChildOutputFunc stdout_handler, stderr_handler;
 	int is_thread;
-	int last_signal;
-#if 0
-	long call_address;
-	guint64 callback_argument;
-	INFERIOR_REGS_TYPE current_regs;
-	INFERIOR_FPREGS_TYPE current_fpregs;
-	INFERIOR_REGS_TYPE *saved_regs;
-	INFERIOR_FPREGS_TYPE *saved_fpregs;
-	GPtrArray *rti_stack;
-#endif
 	unsigned dr_control, dr_status;
 	BreakpointManager *bpm;
 };
@@ -79,7 +68,7 @@ static ServerCommandError
 server_ptrace_continue (InferiorHandle *handle, ArchInfo *arch)
 {
 	errno = 0;
-	if (ptrace (PT_CONTINUE, handle->pid, (caddr_t) 1, handle->last_signal)) {
+	if (ptrace (PT_CONTINUE, handle->pid, (caddr_t) 1, arch->last_signal)) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
@@ -93,7 +82,7 @@ static ServerCommandError
 server_ptrace_step (InferiorHandle *handle, ArchInfo *arch)
 {
 	errno = 0;
-	if (ptrace (PT_STEP, handle->pid, (caddr_t) 1, handle->last_signal)) {
+	if (ptrace (PT_STEP, handle->pid, (caddr_t) 1, arch->last_signal)) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
@@ -396,7 +385,7 @@ server_ptrace_set_signal (InferiorHandle *handle, ArchInfo *arch, guint32 sig, g
 	if (send_it)
 		kill (handle->pid, sig);
 	else
-		handle->last_signal = sig;
+		arch->last_signal = sig;
 	return COMMAND_ERROR_NONE;
 }
 
@@ -446,5 +435,6 @@ InferiorInfo i386_ptrace_inferior = {
 	i386_arch_get_ret_address,
 	server_ptrace_stop,
 	server_ptrace_set_signal,
-	server_ptrace_kill
+	server_ptrace_kill,
+	server_ptrace_get_signal_info
 };

@@ -203,6 +203,40 @@ namespace Mono.Debugger.Backends
 		event DebuggerOutputHandler DebuggerOutput;
 
 		event DebuggerErrorHandler DebuggerError;
+
+		int SIGKILL {
+			get;
+		}
+		int SIGSTOP {
+			get;
+		}
+		int SIGINT {
+			get;
+		}
+		int SIGCHLD {
+			get;
+		}
+		int SIGPROF {
+			get;
+		}
+		int SIGPWR {
+			get;
+		}
+		int SIGXCPU {
+			get;
+		}
+		int ThreadAbortSignal {
+			get;
+		}
+		int ThreadRestartSignal {
+			get;
+		}
+		int ThreadDebugSignal {
+			get;
+		}
+		int MonoThreadDebugSignal {
+			get;
+		}
 	}
 }
 

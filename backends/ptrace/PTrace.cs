@@ -168,56 +168,37 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
 		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigkill ();
+		static extern CommandError mono_debugger_server_get_signal_info (IntPtr handle, ref SignalInfo sinfo);
 
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigstop ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigint ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigchld ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigprof ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigpwr ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_sigxcpu ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_thread_abort_signal ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_thread_restart_signal ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_thread_debug_signal ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_mono_thread_debug_signal ();
-
-		static int sigkill, sigstop, sigint, sigchld, sigprof, sigpwr, sigxcpu;
-		static int thread_abort_signal, thread_restart_signal;
-		static int thread_debug_signal, mono_thread_debug_signal;
-
-		static PTraceInferior ()
+		private struct SignalInfo
 		{
-			sigkill = mono_debugger_server_get_sigkill ();
-			sigstop = mono_debugger_server_get_sigstop ();
-			sigint = mono_debugger_server_get_sigint ();
-			sigchld = mono_debugger_server_get_sigchld ();
-			sigprof = mono_debugger_server_get_sigprof ();
-			sigpwr = mono_debugger_server_get_sigpwr ();
-			sigxcpu = mono_debugger_server_get_sigxcpu ();
-			thread_abort_signal = mono_debugger_server_get_thread_abort_signal ();
-			thread_restart_signal = mono_debugger_server_get_thread_restart_signal ();
-			thread_debug_signal = mono_debugger_server_get_thread_debug_signal ();
-			mono_thread_debug_signal = mono_debugger_server_get_mono_thread_debug_signal ();
+			public int SIGKILL;
+			public int SIGSTOP;
+			public int SIGINT;
+			public int SIGCHLD;
+
+			public int SIGPROF;
+			public int SIGPWR;
+			public int SIGXCPU;
+
+			public int ThreadAbortSignal;
+			public int ThreadRestartSignal;
+			public int ThreadDebugSignal;
+			public int MonoThreadDebugSignal;
+
+			public override string ToString ()
+			{
+				return String.Format ("SignalInfo ({0}:{1}:{2}:{3} - {4}:{5}:{6} - " +
+						      "{7}:{8}:{9}:{10})",
+						      SIGKILL, SIGSTOP, SIGINT, SIGCHLD,
+						      SIGPROF, SIGPWR, SIGXCPU,
+						      ThreadAbortSignal, ThreadRestartSignal,
+						      ThreadDebugSignal, MonoThreadDebugSignal);
+			}
 		}
+
+		bool has_signals;
+		SignalInfo signal_info;
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
@@ -513,6 +494,9 @@ namespace Mono.Debugger.Backends
 
 		void setup_inferior (ProcessStart start, DebuggerErrorHandler error_handler)
 		{
+			check_error (mono_debugger_server_get_signal_info (server_handle, ref signal_info));
+			has_signals = true;
+
 			address_domain = new AddressDomain (String.Format ("ptrace ({0})", child_pid));
 
 			int target_int_size, target_long_size, target_address_size;
@@ -605,48 +589,103 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public static int SIGKILL {
-			get { return sigkill; }
+		public int SIGKILL {
+			get {
+				if (!has_signals || (signal_info.SIGKILL < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGKILL;
+			}
 		}
 
-		public static int SIGSTOP {
-			get { return sigstop; }
+		public int SIGSTOP {
+			get {
+				if (!has_signals || (signal_info.SIGSTOP < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGSTOP;
+			}
 		}
 
-		public static int SIGINT {
-			get { return sigint; }
+		public int SIGINT {
+			get {
+				if (!has_signals || (signal_info.SIGINT < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGINT;
+			}
 		}
 
-		public static int SIGCHLD {
-			get { return sigchld; }
+		public int SIGCHLD {
+			get {
+				if (!has_signals || (signal_info.SIGCHLD < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGCHLD;
+			}
 		}
 
-		public static int SIGPROF {
-			get { return sigprof; }
+		public int SIGPROF {
+			get {
+				if (!has_signals || (signal_info.SIGPROF < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGPROF;
+			}
 		}
 
-		public static int SIGPWR {
-			get { return sigpwr; }
+		public int SIGPWR {
+			get {
+				if (!has_signals || (signal_info.SIGPWR < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGPWR;
+			}
 		}
 
-		public static int SIGXCPU {
-			get { return sigxcpu; }
+		public int SIGXCPU {
+			get {
+				if (!has_signals || (signal_info.SIGXCPU < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGXCPU;
+			}
 		}
 
-		public static int ThreadAbortSignal {
-			get { return thread_abort_signal; }
+		public int ThreadAbortSignal {
+			get {
+				if (!has_signals || (signal_info.ThreadAbortSignal < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.ThreadAbortSignal;
+			}
 		}
 
-		public static int ThreadRestartSignal {
-			get { return thread_restart_signal; }
+		public int ThreadRestartSignal {
+			get {
+				if (!has_signals || (signal_info.ThreadRestartSignal < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.ThreadRestartSignal;
+			}
 		}
 
-		public static int ThreadDebugSignal {
-			get { return thread_debug_signal; }
+		public int ThreadDebugSignal {
+			get {
+				if (!has_signals || (signal_info.ThreadDebugSignal < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.ThreadDebugSignal;
+			}
 		}
 
-		public static int MonoThreadDebugSignal {
-			get { return mono_thread_debug_signal; }
+		public int MonoThreadDebugSignal {
+			get {
+				if (!has_signals || (signal_info.MonoThreadDebugSignal < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.MonoThreadDebugSignal;
+			}
 		}
 
 		//

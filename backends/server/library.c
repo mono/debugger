@@ -335,84 +335,12 @@ mono_debugger_server_kill (ServerHandle *handle)
 	return (* handle->info->kill) (handle->inferior, handle->arch);
 }
 
-int
-mono_debugger_server_get_sigkill (void)
+ServerCommandError
+mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 {
-	return SIGKILL;
-}
+	if (!handle->has_inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
-int
-mono_debugger_server_get_sigstop (void)
-{
-	return SIGSTOP;
-}
+	return (* handle->info->get_signal_info) (handle->inferior, handle->arch, sinfo);
 
-int
-mono_debugger_server_get_sigint (void)
-{
-	return SIGINT;
-}
-
-int
-mono_debugger_server_get_sigchld (void)
-{
-	return SIGCHLD;
-}
-
-int
-mono_debugger_server_get_sigprof (void)
-{
-	return SIGPROF;
-}
-
-int
-mono_debugger_server_get_sigpwr (void)
-{
-	return SIGPWR;
-}
-
-int
-mono_debugger_server_get_sigxcpu (void)
-{
-	return SIGXCPU;
-}
-
-int
-mono_debugger_server_get_thread_abort_signal (void)
-{
-#ifdef __linux__
-	return 33;
-#else
-	return SIGUSR1;
-#endif
-}
-
-int
-mono_debugger_server_get_thread_restart_signal (void)
-{
-#ifdef __linux__
-	return 32;
-#else
-	return SIGUSR2;
-#endif
-}
-
-int
-mono_debugger_server_get_thread_debug_signal (void)
-{
-#ifdef __linux__
-	return 34;
-#else
-	return -1;
-#endif
-}
-
-int
-mono_debugger_server_get_mono_thread_debug_signal (void)
-{
-#ifdef __linux__
-	return 34;
-#else
-	return SIGINFO;
-#endif
 }

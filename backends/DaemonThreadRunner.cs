@@ -69,7 +69,7 @@ namespace Mono.Debugger.Backends
 			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data != 0)) {
 				int signal = (int) args.Data;
 
-				if (signal == PTraceInferior.SIGKILL) {
+				if (signal == inferior.SIGKILL) {
 					Console.WriteLine ("Daemon thread {0} received SIGKILL.", pid);
 					return false;
 				}
@@ -82,7 +82,7 @@ namespace Mono.Debugger.Backends
 			} else if (args.Type == TargetEventType.TargetSignaled) {
 				int signal = (int) args.Data;
 
-				if (signal == PTraceInferior.SIGKILL)
+				if (signal == inferior.SIGKILL)
 					return false;
 				else
 					Console.WriteLine ("Daemon thread {0} unexpectedly died with " +

@@ -1,16 +1,3 @@
-struct ArchInfo
-{
-	int last_signal;
-	long call_address;
-	guint64 callback_argument;
-	INFERIOR_REGS_TYPE current_regs;
-	INFERIOR_FPREGS_TYPE current_fpregs;
-	INFERIOR_REGS_TYPE *saved_regs;
-	INFERIOR_FPREGS_TYPE *saved_fpregs;
-	GPtrArray *rti_stack;
-	unsigned dr_control, dr_status;
-};
-
 static ArchInfo *
 i386_arch_initialize ()
 {

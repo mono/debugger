@@ -46,6 +46,22 @@ typedef struct ArchInfo ArchInfo;
 /* C# delegates. */
 typedef void (*ChildOutputFunc) (const char *output);
 
+typedef struct {
+	int sigkill;
+	int sigstop;
+	int sigint;
+	int sigchld;
+
+	int sigprof;
+	int sigpwr;
+	int sigxcpu;
+
+	int thread_abort;
+	int thread_restart;
+	int thread_debug;
+	int mono_thread_debug;
+} SignalInfo;
+
 /*
  * Server functions.
  *
@@ -264,6 +280,9 @@ typedef struct {
 	 */
 	ServerCommandError    (* kill)                (InferiorHandle   *handle, ArchInfo *arch);
 
+	ServerCommandError    (* get_signal_info)     (InferiorHandle   *handle, ArchInfo *arch,
+						       SignalInfo       *sinfo);
+
 	/*
 	 * Internal.
 	 */
@@ -428,18 +447,9 @@ mono_debugger_server_set_signal          (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_kill                (ServerHandle       *handle);
 
-/* Signals. */
-int mono_debugger_server_get_sigkill                  (void);
-int mono_debugger_server_get_sigstop                  (void);
-int mono_debugger_server_get_sigint                   (void);
-int mono_debugger_server_get_sigchld                  (void);
-int mono_debugger_server_get_sigprof                  (void);
-int mono_debugger_server_get_sigpwr                   (void);
-int mono_debugger_server_get_sigxcpu                  (void);
-int mono_debugger_server_get_thread_abort_signal      (void);
-int mono_debugger_server_get_thread_restart_signal    (void);
-int mono_debugger_server_get_thread_debug_signal      (void);
-int mono_debugger_server_get_mono_thread_debug_signal (void);
+ServerCommandError
+mono_debugger_server_get_signal_info     (ServerHandle       *handle,
+					  SignalInfo         *sinfo);
 
 extern sigset_t mono_debugger_signal_mask;
 

@@ -148,3 +148,22 @@ server_setup_inferior (InferiorHandle *handle, ArchInfo *arch)
 	if (server_get_fp_registers (handle, &arch->current_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get fp registers");
 }
+
+static ServerCommandError
+server_ptrace_get_signal_info (InferiorHandle *handle, ArchInfo *arch, SignalInfo *sinfo)
+{
+	sinfo->sigkill = SIGKILL;
+	sinfo->sigstop = SIGSTOP;
+	sinfo->sigint = SIGINT;
+	sinfo->sigchld = SIGCHLD;
+	sinfo->sigprof = SIGPROF;
+	sinfo->sigpwr = SIGPWR;
+	sinfo->sigxcpu = SIGXCPU;
+
+	sinfo->thread_abort = SIGUSR1;
+	sinfo->thread_restart = SIGUSR2;
+	sinfo->thread_debug = -1;
+	sinfo->mono_thread_debug = SIGINFO;
+
+	return COMMAND_ERROR_NONE;
+}
