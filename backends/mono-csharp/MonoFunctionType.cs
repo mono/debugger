@@ -120,11 +120,6 @@ namespace Mono.Debugger.Languages.CSharp
 			if (parameter_types.Length != args.Length)
 				throw new ArgumentException ();
 
-			if (klass.IsValueType && !this_object.IsNull) {
-				TargetAddress box_method = file.Table.CSharpLanguage.GetBoxedObjectFunc;
-				this_object = frame.Process.CallMethod (box_method, klass.KlassAddress, this_object);
-			}
-
 			TargetAddress[] arg_ptr = new TargetAddress [args.Length];
 			for (int i = 0; i < args.Length; i++) {
 				if (args [i].Location.HasAddress) {

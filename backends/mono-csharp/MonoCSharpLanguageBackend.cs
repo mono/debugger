@@ -321,8 +321,8 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoSymbolTable : Module, ISymbolFile, ISimpleSymbolTable,
 		ILanguage, IDisposable
 	{
-		public const int  MinDynamicVersion = 45;
-		public const int  MaxDynamicVersion = 45;
+		public const int  MinDynamicVersion = 46;
+		public const int  MaxDynamicVersion = 46;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;

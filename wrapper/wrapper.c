@@ -98,6 +98,9 @@ debugger_get_virtual_method (guint64 object_arg, guint64 method_arg)
 	MonoObject *object = (MonoObject *) GUINT_TO_POINTER (object_arg);
 	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER (method_arg);
 
+	if (mono_class_is_valuetype (mono_method_get_class (method)))
+		return method_arg;
+
 	return GPOINTER_TO_UINT (mono_object_get_virtual_method (object, method));
 }
 
@@ -108,6 +111,9 @@ debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg)
 	MonoMethod *klass = (MonoClass *) GUINT_TO_POINTER (klass_arg);
 	gpointer val = (gpointer) GUINT_TO_POINTER (val_arg);
 	MonoObject *boxed;
+
+	if (!mono_class_is_valuetype (klass))
+		return val_arg;
 
 	boxed = mono_value_box (mono_domain_get (), klass, val);
 	last_boxed_object = boxed; // Protect the object from being garbage collected

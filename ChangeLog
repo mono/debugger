@@ -1,11 +1,12 @@
 2004-10-22  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/wrapper.c (debugger_get_virtual_method): Don't call
+	mono_object_get_virtual_method() on valuetypes.
+
+2004-10-22  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(ILanguageBackend): Added GetBoxedObjectFunc().
-
-	* backends/mono-csharp/MonoFunctionType.cs
-	(MonoFunctionType.Invoke): Box the instance object when calling an
-	instance method on a valuetype.
 
 2004-10-22  Martin Baulig  <martin@ximian.com>
 
