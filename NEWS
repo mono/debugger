@@ -1,6 +1,19 @@
 September 27th, 2002 - Martin Baulig
 ------------------------------------
 
+Started to work on "dynamic breakpoints".  The JIT now uses a special breakpoint
+trampoline if you insert a breakpoint for a not-yet-JITed method.  This trampoline is at a
+fixed address in memory and it contains a breakpoint - when this breakpoint is hit, the
+debugger reads some data from the stack, inserts all breakpoints for the method and then
+continues the target.  This technique will also be used if you insert a breakpoint for a
+source location, the target exits and you restart it - the debugger will automatically
+transform all your breakpoints into dynamic breakpoints.  There's still some work to be
+done, will hack a bit more on this tomorrow.
+
+
+September 27th, 2002 - Martin Baulig
+------------------------------------
+
 Type support for most types (fundamental, enums, strings, arrays, multi-dimensional
 arrays, structs, classes) is now done - at least for method parameters.  There are still
 some problems with local variables since the JIT doesn't provide this information yet.
