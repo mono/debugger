@@ -20,10 +20,37 @@ namespace Mono.Debugger
 	public interface IDebuggerBackend : ITargetNotification, IDisposable
 	{
 		// <summary>
-		//   The inferior is a handle to the program being debugged while this interface
-		//   is more a container which contains higher-level stuff like symbol tables etc.
-		//   This may be null if there's currently no program being debugged.
+		//   The target's current working directory.
+		//   You may only modify this property while there is no target being debugged.
 		// </summary>
+		string CurrentWorkingDirectory {
+			get; set;
+		}
+
+		// <summary>
+		//   Command-line arguments to pass to the target.
+		//   You may only modify this property while there is no target being debugged.
+		// </summary>
+		string[] CommandLineArguments {
+			get; set;
+		}
+
+		// <summary>
+		//   The application to debug.
+		//   You may only modify this property while there is no target being debugged.
+		// </summary>
+		string TargetApplication {
+			get; set;
+		}
+
+		// <summary>
+		//   Environment arguments to pass to the target.
+		//   You may only modify this property while there is no target being debugged.
+		// </summary>
+		string[] Environment {
+			get; set;
+		}
+
 		IInferior Inferior {
 			get;
 		}

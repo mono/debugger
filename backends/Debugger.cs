@@ -396,7 +396,6 @@ namespace Mono.Debugger.Backends
 		ISourceFileFactory source_factory;
 		ISymbolTableCollection symtabs;
 
-		Assembly application;
 		Inferior inferior;
 		ILanguageBackend language;
 
@@ -406,18 +405,19 @@ namespace Mono.Debugger.Backends
 
 		string[] argv;
 		string[] envp;
+		string target_application;
 		string working_directory;
 
 		IStackFrame current_frame;
 		IMethod current_method;
 
-		bool initialized;
+		bool native;
 
-		public Debugger (string application, string[] arguments)
-			: this (application, arguments, new SourceFileFactory ())
+		public Debugger (ISourceFileFactory source_factory)
+			: this (source_factory, false)
 		{ }
 
-		public Debugger (string application, string[] arguments, ISourceFileFactory source_factory)
+		public Debugger (ISourceFileFactory source_factory, bool native)
 		{
 			NameValueCollection settings = ConfigurationSettings.AppSettings;
 
@@ -439,51 +439,59 @@ namespace Mono.Debugger.Backends
 			}
 
 			this.source_factory = source_factory;
-			this.application = Assembly.LoadFrom (application);
-
-			MethodInfo main = this.application.EntryPoint;
-			string main_name = main.DeclaringType + ":" + main.Name;
-
-			string[] argv = { Path_Mono, "--break", main_name, "--debug=mono",
-					  "--noinline", "--nols", "--debug-args", "internal_mono_debugger",
-					  application };
-			string[] envp = { "PATH=" + Environment_Path, "LD_BIND_NOW=yes" };
-			this.argv = argv;
-			this.envp = envp;
-			this.working_directory = ".";
+			this.native = native;
 		}
 
-		public Debugger (string[] argv)
-			: this (argv, new SourceFileFactory ())
-		{ }
-
-		public Debugger (string[] argv, ISourceFileFactory source_factory)
-		{
-			NameValueCollection settings = ConfigurationSettings.AppSettings;
-
-			foreach (string key in settings.AllKeys) {
-				string value = settings [key];
-
-				switch (key) {
-				case "mono-path":
-					Path_Mono = value;
-					break;
-
-				case "environment-path":
-					Environment_Path = value;
-					break;
-
-				default:
-					break;
-				}
+		public string CurrentWorkingDirectory {
+			get {
+				return working_directory;
 			}
 
-			this.source_factory = source_factory;
+			set {
+				if (inferior != null)
+					throw new AlreadyHaveTargetException ();
 
-			string[] envp = { "PATH=" + Environment_Path };
-			this.argv = argv;
-			this.envp = envp;
-			this.working_directory = ".";
+				working_directory = value;
+			}
+		}
+
+		public string[] CommandLineArguments {
+			get {
+				return argv;
+			}
+
+			set {
+				if (inferior != null)
+					throw new AlreadyHaveTargetException ();
+
+				argv = value;
+			}
+		}
+
+		public string TargetApplication {
+			get {
+				return target_application;
+			}
+
+			set {
+				if (inferior != null)
+					throw new AlreadyHaveTargetException ();
+
+				target_application = value;
+			}
+		}
+
+		public string[] Environment {
+			get {
+				return envp;
+			}
+
+			set {
+				if (inferior != null)
+					throw new AlreadyHaveTargetException ();
+
+				envp = value;
+			}
 		}
 
 		//
@@ -552,7 +560,6 @@ namespace Mono.Debugger.Backends
 			inferior = null;
 			language = null;
 			symtabs = null;
-			initialized = false;
 			current_frame = null;
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
@@ -575,8 +582,63 @@ namespace Mono.Debugger.Backends
 			if (inferior != null)
 				throw new AlreadyHaveTargetException ();
 
-			bool native = application == null;
+			if (target_application == null)
+				throw new CannotStartTargetException ("You must specify a program to debug.");
 
+			if (!native) {
+				try {
+					Assembly application = Assembly.LoadFrom (target_application);
+					if (application != null) {
+						do_run (target_application, application);
+						return;
+					}
+				} catch {
+					// Do nothing.
+				}
+			}
+
+			setup_environment ();
+
+			string[] new_argv = new string [argv.Length + 1];
+			new_argv [0] = target_application;
+			argv.CopyTo (new_argv, 1);
+
+			native = true;
+			do_run (new_argv);
+		}
+
+		void setup_environment ()
+		{
+			if (argv == null)
+				argv = new string [0];
+			if (envp == null)
+				envp = new string[] { "PATH=" + Environment_Path, "LD_BIND_NOW=yes" };
+			if (working_directory == null)
+				working_directory = ".";
+		}
+
+		void do_run (string target_application, Assembly application)
+		{
+			MethodInfo main = application.EntryPoint;
+			string main_name = main.DeclaringType + ":" + main.Name;
+
+			setup_environment ();
+
+			string[] start_argv = {
+				Path_Mono, "--break", main_name, "--debug=mono",
+				"--noinline", "--nols", "--debug-args", "internal_mono_debugger",
+				target_application };
+
+			string[] new_argv = new string [argv.Length + start_argv.Length];
+			start_argv.CopyTo (new_argv, 0);
+			argv.CopyTo (new_argv, start_argv.Length);
+
+			native = false;
+			do_run (new_argv);
+		}
+
+		void do_run (string[] argv)
+		{
 			inferior = new Inferior (working_directory, argv, envp, native, source_factory);
 			inferior.ChildExited += new ChildExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);

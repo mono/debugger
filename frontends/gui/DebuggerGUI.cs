@@ -92,13 +92,17 @@ namespace Mono.Debugger.GUI
 
 		IDebuggerBackend backend;
 		Interpreter interpreter;
+		ISourceFileFactory source_factory;
 
 		public DebuggerGUI (string[] arguments)
 		{
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
 
+			source_factory = new SourceFileFactory ();
+			backend = new Debugger (source_factory);
+
 			SetupGUI ();
-			
+
 			if (arguments.Length > 0)
 				LoadProgram (arguments);
 		}
@@ -165,15 +169,8 @@ namespace Mono.Debugger.GUI
 		//
 		void LoadProgram (string program, string [] args)
 		{
-			if (ProgramIsManaged (program))
-				backend = new Mono.Debugger.Backends.Debugger (program, args);
-			else {
-				string [] unmanaged_args = new string [args.Length+1];
-				args.CopyTo (unmanaged_args, 1);
-				unmanaged_args [0] = program;
-				
-				backend = new Mono.Debugger.Backends.Debugger (unmanaged_args);
-			}
+			backend.CommandLineArguments = args;
+			backend.TargetApplication = program;
 
 			interpreter = new Interpreter (backend, output_writer, output_writer);
 			

@@ -14,6 +14,10 @@ namespace Mono.Debugger
 		public CannotStartTargetException ()
 			: base ("Cannot start target")
 		{ }
+
+		public CannotStartTargetException (string message)
+			: base (String.Format ("Cannot start target: {0}", message))
+		{ }
 	}
 
 	public class AlreadyHaveTargetException : TargetException

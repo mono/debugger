@@ -1,5 +1,17 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IDebuggerBackend.cs: Added properties to specify the
+	application to debug, its command line arguments, environment and
+	current working directory.
+
+	* backend/Debugger.cs: The ctor no longer needs command line
+	arguments and application name, they're set with the properties.
+
+	* frontends/gui/DebuggerGUI.cs: Create a Debugger instance on
+	startup and use the new properties to set the application.
+
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
 	* frontends/gui/DebuggerGUI.cs (DebuggerGUI.LoadProgram): Call
 	SetBackend() on the source_view.
 
