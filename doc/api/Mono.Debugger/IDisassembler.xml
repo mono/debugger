@@ -1,0 +1,84 @@
+<Type Name="IDisassembler" FullName="Mono.Debugger.IDisassembler">
+  <TypeSignature Language="C#" Value="public abstract interface IDisassembler" Maintainer="auto" />
+  <AssemblyInfo>
+    <AssemblyName>Mono.Debugger</AssemblyName>
+    <AssemblyPublicKey>
+    </AssemblyPublicKey>
+    <AssemblyVersion>0.0.0.0</AssemblyVersion>
+    <AssemblyCulture>neutral</AssemblyCulture>
+    <Attributes />
+  </AssemblyInfo>
+  <ThreadSafetyStatement>Gtk# is thread aware, but not thread safe; See the <link location="node:gtk-sharp/programming/threads">Gtk# Thread Programming</link> for details.</ThreadSafetyStatement>
+  <Docs>
+    <summary>To be added</summary>
+    <remarks>To be added</remarks>
+  </Docs>
+  <Base />
+  <Interfaces />
+  <Attributes />
+  <Members>
+    <Member MemberName="GetInstructionSize">
+      <MemberSignature Language="C#" Value="public virtual int GetInstructionSize (Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>System.Int32</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <summary>To be added</summary>
+        <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
+        <returns>a <see cref="T:System.Int32" /></returns>
+        <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DisassembleMethod">
+      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.AssemblerMethod DisassembleMethod (Mono.Debugger.IMethod method);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AssemblerMethod</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.IMethod" />
+      </Parameters>
+      <Docs>
+        <summary>To be added</summary>
+        <param name="method">a <see cref="T:Mono.Debugger.IMethod" /></param>
+        <returns>a <see cref="T:Mono.Debugger.AssemblerMethod" /></returns>
+        <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="DisassembleInstruction">
+      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.AssemblerLine DisassembleInstruction (Mono.Debugger.IMethod method, Mono.Debugger.TargetAddress address);" />
+      <MemberType>Method</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.AssemblerLine</ReturnType>
+      </ReturnValue>
+      <Parameters>
+        <Parameter Name="method" Type="Mono.Debugger.IMethod" />
+        <Parameter Name="address" Type="Mono.Debugger.TargetAddress" />
+      </Parameters>
+      <Docs>
+        <summary>To be added</summary>
+        <param name="method">a <see cref="T:Mono.Debugger.IMethod" /></param>
+        <param name="address">a <see cref="T:Mono.Debugger.TargetAddress" /></param>
+        <returns>a <see cref="T:Mono.Debugger.AssemblerLine" /></returns>
+        <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+    <Member MemberName="SymbolTable">
+      <MemberSignature Language="C#" Value="public virtual Mono.Debugger.ISimpleSymbolTable SymbolTable { set; get; };" />
+      <MemberType>Property</MemberType>
+      <ReturnValue>
+        <ReturnType>Mono.Debugger.ISimpleSymbolTable</ReturnType>
+      </ReturnValue>
+      <Parameters />
+      <Docs>
+        <summary>To be added</summary>
+        <returns>a <see cref="T:Mono.Debugger.ISimpleSymbolTable" /></returns>
+        <remarks>To be added</remarks>
+      </Docs>
+    </Member>
+  </Members>
+</Type>
