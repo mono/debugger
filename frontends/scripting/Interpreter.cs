@@ -458,14 +458,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			Print ("Sources for module {0}:", module.Name);
 
 			foreach (SourceFile source in module.Sources)
-				Print ("  {0}", source);
-		}
-
-		public void ShowMethods (SourceFile source)
-		{
-			Print ("Methods from {0}:", source);
-			foreach (SourceMethod method in source.Methods)
-				Print ("  {0}", method);
+				Print ("{0,4}  {1}", source.ID, source.FileName);
 		}
 
 		void process_exited (ProcessHandle process)

@@ -649,34 +649,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Expression("module_list_expression", "List of modules",
-		    "This is a comma separated list of module numbers\n" +
-		    "(from `show modules')\n\n" +
-		    "Examples:  1\n" +
-		    "           1,2,3\n")]
-	public class ModuleListExpression : Expression
-	{
-		int[] modules;
-
-		public ModuleListExpression (int[] modules)
-		{
-			this.modules = modules;
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			return context.Interpreter.GetModules (modules);
-		}
-
-		public override string ToString ()
-		{
-			string[] temp = new string [modules.Length];
-			for (int i = 0; i < modules.Length;i ++)
-				temp [i] = modules [i].ToString ();
-			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
-		}
-	}
-
 	[Expression("source_list_expression", "List of source files",
 		    "This is a comma separated list of source file numbers\n" +
 		    "(from `show sources')\n\n" +

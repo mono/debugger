@@ -242,11 +242,11 @@ namespace Mono.Debugger
 
 		SourceFile source;
 		string name;
-		int start_row, end_row;
+		int  start_row, end_row;
 		bool is_dynamic;
 
-		protected SourceMethod (SourceFile source, string name, int start, int end,
-					bool is_dynamic)
+		protected SourceMethod (SourceFile source, string name,
+					int start, int end, bool is_dynamic)
 		{
 			this.source = source;
 			this.name = name;

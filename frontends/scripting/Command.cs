@@ -484,7 +484,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			if ((Args == null) || (Args.Count < 1)) {
 				context.Print ("Need an argument: processes registers " +
-					       "locals parameters breakpoints modules");
+					       "locals parameters breakpoints modules " +
+					       "sources methods");
 				return false;
 			}
 
@@ -512,6 +513,12 @@ namespace Mono.Debugger.Frontends.Scripting
 				break;
 			case "threadgroups":
 				subcommand = new ShowThreadGroupsCommand ();
+				break;
+			case "methods":
+				subcommand = new ShowMethodsCommand ();
+				break;
+			case "sources":
+				subcommand = new ShowSourcesCommand ();
 				break;
 			default:
 				context.Error ("Syntax error");
@@ -594,45 +601,75 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-#if FIXME
-	[Command("SHOW SOURCES", "Show source files")]
 	public class ShowSourcesCommand : DebuggerCommand
 	{
-		ModuleListExpression module_list_expr;
+		protected string name;
+		protected Module[] modules;
 
-		public ShowSourcesCommand (ModuleListExpression module_list_expr)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.module_list_expr = module_list_expr;
+			if ((Args == null) || (Args.Count < 1)) {
+				context.Print ("Invalid arguments: Need one or more module " +
+					       "ids to operate on");
+				return false;
+			}
+
+			int[] ids = new int [Args.Count];
+			for (int i = 0; i < Args.Count; i++) {
+				try {
+					ids [i] = (int) UInt32.Parse ((string) Args [i]);
+				} catch {
+					context.Print ("Invalid argument {0}: expected " +
+						       "module id", i);
+					return false;
+				}
+			}
+
+			modules = context.Interpreter.GetModules (ids);
+			return modules != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Module[] modules = (Module []) module_list_expr.Resolve (context);
-
 			foreach (Module module in modules)
 				context.Interpreter.ShowSources (module);
 		}
 	}
 
-	[Command("SHOW METHODS", "Show methods")]
 	public class ShowMethodsCommand : DebuggerCommand
 	{
-		SourceListExpression source_list_expr;
+		protected string name;
+		protected SourceFile[] sources;
 
-		public ShowMethodsCommand (SourceListExpression source_list_expr)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.source_list_expr = source_list_expr;
+			if ((Args == null) || (Args.Count < 1)) {
+				context.Print ("Invalid arguments: Need one or more source " +
+					       "file ids to operate on");
+				return false;
+			}
+
+			int[] ids = new int [Args.Count];
+			for (int i = 0; i < Args.Count; i++) {
+				try {
+					ids [i] = (int) UInt32.Parse ((string) Args [i]);
+				} catch {
+					context.Print ("Invalid argument {0}: expected " +
+						       "module id", i);
+					return false;
+				}
+			}
+
+			sources = context.Interpreter.GetSources (ids);
+			return sources != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			SourceFile[] sources = (SourceFile []) source_list_expr.Resolve (context);
-
 			foreach (SourceFile source in sources)
-				context.Interpreter.ShowMethods (source);
+				context.PrintMethods (source);
 		}
 	}
-#endif
 
 	public class ShowBreakpointsCommand : DebuggerCommand
 	{
@@ -735,7 +772,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class ThreadGroupAddCommand : DebuggerCommand
 	{
 		protected string name;
-		protected int[] procs;
+		protected ProcessHandle[] threads;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -747,10 +784,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 
 			name = (string) Args [0];
-			procs = new int [Args.Count - 1];
+			int[] ids = new int [Args.Count - 1];
 			for (int i = 0; i < Args.Count - 1; i++) {
 				try {
-					procs [i] = (int) UInt32.Parse ((string) Args [i+1]);
+					ids [i] = (int) UInt32.Parse ((string) Args [i+1]);
 				} catch {
 					context.Print ("Invalid argument {0}: expected " +
 						       "process id", i+1);
@@ -758,13 +795,12 @@ namespace Mono.Debugger.Frontends.Scripting
 				}
 			}
 
-			return true;
+			threads = context.Interpreter.GetProcesses (ids);
+			return threads != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle[] threads = context.Interpreter.GetProcesses (procs);
-
 			context.Interpreter.AddToThreadGroup (name, threads);
 		}
 	}
@@ -773,8 +809,6 @@ namespace Mono.Debugger.Frontends.Scripting
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle[] threads = context.Interpreter.GetProcesses (procs);
-
 			context.Interpreter.AddToThreadGroup (name, threads);
 		}
 	}

@@ -599,6 +599,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		ScriptingContext parent;
 		ArrayList method_search_results;
+		Hashtable method_search_hash;
 		Hashtable scripting_variables;
 		ITargetObject last_object;
 
@@ -614,6 +615,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
+			method_search_hash = new Hashtable ();
 		}
 
 		protected ScriptingContext (ScriptingContext parent)
@@ -743,10 +745,32 @@ namespace Mono.Debugger.Frontends.Scripting
 		public void AddMethodSearchResult (SourceMethod[] methods)
 		{
 			interpreter.Print ("More than one method matches your query:");
+			PrintMethods (methods);
+		}
+
+		public void PrintMethods (SourceMethod[] methods)
+		{
 			foreach (SourceMethod method in methods) {
-				interpreter.Print ("{0,4}  {1}", method_search_results.Count + 1, method.Name);
-				method_search_results.Add (method);
+				int id = AddMethodSearchResult (method);
+				interpreter.Print ("{0,4}  {1}", id, method.Name);
 			}
+		}
+
+		public void PrintMethods (SourceFile source)
+		{
+			Print ("Methods from source file {0}: {1}", source.ID, source.FileName);
+			PrintMethods (source.Methods);
+		}
+
+		public int AddMethodSearchResult (SourceMethod method)
+		{
+			if (method_search_hash.Contains (method.Name))
+				return (int) method_search_hash [method.Name];
+
+			int index = method_search_results.Count + 1;
+			method_search_hash.Add (method.Name, index);
+			method_search_results.Add (method);
+			return index;
 		}
 
 		public SourceMethod GetMethodSearchResult (int index)
