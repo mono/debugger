@@ -1,5 +1,10 @@
 2003-02-26  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (check_method_operation):
+	Enable this for native methods as well.
+
+2003-02-26  Martin Baulig  <martin@ximian.com>
+
 	* backends/native/NativeStringType.cs: New file.
 	* backends/native/NativeStringObject.cs: New file.
 

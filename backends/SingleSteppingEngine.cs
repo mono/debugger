@@ -1149,7 +1149,7 @@ namespace Mono.Debugger.Backends
 					null, StepMode.Finish));
 
 			ILanguageBackend language = method.Module.Language as ILanguageBackend;
-			if ((language == null) || (source == null))
+			if (source == null)
 				return null;
 
 			// Do nothing if this is not a source stepping operation.
