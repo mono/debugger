@@ -45,9 +45,6 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new InvalidOperationException ();
 
 			ISourceBuffer buffer = null;
-			if (factory != null)
-				buffer = factory.FindFile (method.SourceFile);
-
 			if (buffer == null)
 				buffer = new SourceBuffer (method.SourceFile);
 

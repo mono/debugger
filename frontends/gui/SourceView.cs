@@ -12,6 +12,7 @@ namespace Mono.Debugger.GUI
 		protected Gtk.TextTag frame_tag;
 		protected IMethod current_method = null;
 		protected IMethodSource current_method_source = null;
+		protected SourceFileFactory factory;
 
 		bool has_frame;
 
@@ -27,6 +28,8 @@ namespace Mono.Debugger.GUI
 			text_buffer.TagTable.Add (frame_tag);
 
 			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
+
+			factory = new SourceFileFactory ();
 		}
 
 		public override void SetBackend (DebuggerBackend backend)
@@ -75,7 +78,27 @@ namespace Mono.Debugger.GUI
 				return;
 			}
 
-			text_buffer.Insert (text_buffer.EndIter, buffer.Contents, buffer.Contents.Length);
+			if (buffer.HasContents) {
+				text_buffer.Insert (
+					text_buffer.EndIter, buffer.Contents, buffer.Contents.Length);
+				return;
+			}
+
+			if (factory == null) {
+				Console.WriteLine (
+					"I don't have a SourceFileFactory, can't lookup source code.");
+				current_method_source = null;
+				return;
+			}
+
+			SourceFile file = factory.FindFile (buffer.Name);
+			if (file == null) {
+				Console.WriteLine ("Can't find source file {0}.", buffer.Name);
+				current_method_source = null;
+				return;
+			}
+
+			text_buffer.Insert (text_buffer.EndIter, file.Contents, file.Contents.Length);
 		}
 
 		void FramesInvalidEvent ()

@@ -18,6 +18,7 @@ namespace Mono.Debugger.GUI {
 		TextTag frame_tag;
 		TextBuffer text_buffer;
 		ClosableNotebookTab tab;
+		SourceFileFactory factory;
 
 		//
 		// State tracking
@@ -36,14 +37,36 @@ namespace Mono.Debugger.GUI {
 			
 			sw.Add (text_view);
 			sw.ShowAll ();
+
+			factory = new SourceFileFactory ();
 			
 			text_buffer = text_view.Buffer;
-			string contents = source_buffer.Contents;
+			string contents = GetSource (source_buffer);
 			frame_tag = new Gtk.TextTag ("frame");
 			frame_tag.Background = "red";
 			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
 			text_buffer.TagTable.Add (frame_tag);
 			text_buffer.Insert (text_buffer.EndIter, contents, contents.Length);
+		}
+
+		string GetSource (ISourceBuffer buffer)
+		{
+			if (buffer.HasContents)
+				return buffer.Contents;
+
+			if (factory == null) {
+				Console.WriteLine (
+					"I don't have a SourceFileFactory, can't lookup source code.");
+				return null;
+			}
+
+			SourceFile file = factory.FindFile (buffer.Name);
+			if (file == null) {
+				Console.WriteLine ("Can't find source file {0}.", buffer.Name);
+				return null;
+			}
+
+			return file.Contents;
 		}
 
 		public void SetBackend (DebuggerBackend backend)

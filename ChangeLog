@@ -1,3 +1,11 @@
+2002-09-27  Martin Baulig  <martin@gnome.org>
+
+	* frontends/gui/SourceManager.cs: If ISourceBuffer.HasContents is false,
+	ISourceBuffer.Name is a filename which we need to load.
+
+	* backends/mono-csharp/CSharpMethod.cs: Don't lookup source files.
+	* arch/DwarfReader.cs: Likewise.
+
 2002-09-27  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/SourceManager.cs: New file, it will hold the

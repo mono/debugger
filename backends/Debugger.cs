@@ -344,6 +344,8 @@ namespace Mono.Debugger
 
 		void do_run (string[] argv)
 		{
+			if (native)
+				load_native_symtab = true;
 			inferior = new PTraceInferior (working_directory, argv, envp, native,
 						       load_native_symtab, source_factory);
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
@@ -352,6 +354,7 @@ namespace Mono.Debugger
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
 
 			symtabs = new SymbolTableCollection ();
+			Console.WriteLine ("RUN: {0} {1}", native, load_native_symtab);
 			if (load_native_symtab)
 				symtabs.AddSymbolTable (inferior.SymbolTable);
 
