@@ -3,6 +3,12 @@ using System.IO;
 
 namespace Mono.Debugger
 {
+	public delegate void MethodInvalidHandler ();
+	public delegate void MethodChangedHandler (IMethod method);
+
+	public delegate void StackFrameHandler (IStackFrame frame);
+	public delegate void StackFramesInvalidHandler ();
+
 	/// <summary>
 	///   This denotes a single debuggable target in some debugger.
 	///
@@ -68,6 +74,13 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   Get the current method.
+		// </summary>
+		IMethod CurrentMethod {
+			get;
+		}
+
 		IStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
 
 		// <summary>
@@ -90,5 +103,8 @@ namespace Mono.Debugger
 		//   stack frame.
 		// </summary>
 		event StackFramesInvalidHandler FramesInvalidEvent;
+
+		event MethodInvalidHandler MethodInvalidEvent;
+		event MethodChangedHandler MethodChangedEvent;
 	}
 }

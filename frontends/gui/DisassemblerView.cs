@@ -13,25 +13,23 @@ namespace Mono.Debugger.GUI
 			: base (backend, container, widget)
 		{ }
 
-		IMethodSource current_method = null;
-
-		protected override ISourceLocation GetSource (IStackFrame frame)
+		protected override IMethodSource GetMethodSource (IMethod method)
 		{
-			if (current_method != null) {
-				ISourceLocation source = current_method.Lookup (frame.TargetAddress);
-				if (source != null)
-					return source;
-			}
+			if (method == null)
+				return null;
 
 			if ((backend.Inferior == null) || (backend.Inferior.Disassembler == null))
 				return null;
 
-			if (frame.Method == null)
+			return backend.Inferior.Disassembler.DisassembleMethod (method);
+		}
+
+		protected override ISourceLocation GetSource (IStackFrame frame)
+		{
+			if (current_method_source == null)
 				return null;
 
-			current_method = backend.Inferior.Disassembler.DisassembleMethod (frame.Method);
-
-			return current_method.Lookup (frame.TargetAddress);
+			return current_method_source.Lookup (frame.TargetAddress);
 		}
 	}
 }

@@ -10,7 +10,8 @@ namespace Mono.Debugger.GUI
 		protected Gtk.TextView source_view;
 		protected Gtk.TextBuffer text_buffer;
 		protected Gtk.TextTag frame_tag;
-		protected ISourceBuffer current_buffer = null;
+		protected IMethod current_method = null;
+		protected IMethodSource current_method_source = null;
 
 		bool has_frame;
 
@@ -29,6 +30,43 @@ namespace Mono.Debugger.GUI
 
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
+			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
+			backend.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
+		}
+
+		void MethodInvalidEvent ()
+		{
+			current_method = null;
+			current_method_source = null;
+
+			if (!IsVisible)
+				return;
+
+			text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
+		}
+
+		void MethodChangedEvent (IMethod method)
+		{
+			current_method = method;
+			current_method_source = null;
+
+			if (!IsVisible)
+				return;
+
+			text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
+
+			if (method == null)
+				return;
+
+			current_method_source = GetMethodSource (method);
+
+			ISourceBuffer buffer = current_method_source.SourceBuffer;
+			if (buffer == null) {
+				current_method_source = null;
+				return;
+			}
+
+			text_buffer.Insert (text_buffer.EndIter, buffer.Contents, buffer.Contents.Length);
 		}
 
 		void FramesInvalidEvent ()
@@ -40,9 +78,20 @@ namespace Mono.Debugger.GUI
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 		}
 
+		protected virtual IMethodSource GetMethodSource (IMethod method)
+		{
+			if ((method == null) || !method.HasSource)
+				return null;
+
+			return method.Source;
+		}
+
 		protected virtual ISourceLocation GetSource (IStackFrame frame)
 		{
-			return frame.SourceLocation;
+			if (current_method_source == null)
+				return null;
+
+			return current_method_source.Lookup (frame.TargetAddress);
 		}
 
 		void FrameChangedEvent (IStackFrame frame)
@@ -57,17 +106,6 @@ namespace Mono.Debugger.GUI
 			ISourceLocation source = GetSource (frame);
 			if (source == null)
 				return;
-
-			Gtk.TextBuffer buffer = source_view.Buffer;
-
-			if (current_buffer != source.Buffer) {
-				current_buffer = source.Buffer;
-
-				text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
-
-				text_buffer.Insert (text_buffer.EndIter, current_buffer.Contents,
-						    current_buffer.Contents.Length);
-			}
 
 			Gtk.TextIter start_iter, end_iter;
 			text_buffer.GetIterAtLineOffset (out start_iter, source.Row - 1, 0);

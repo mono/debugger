@@ -2,9 +2,6 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate void StackFrameHandler (IStackFrame frame);
-	public delegate void StackFramesInvalidHandler ();
-
 	// <summary>
 	//   A single stack frame.
 	// </summary>

@@ -731,7 +731,7 @@ namespace Mono.Debugger.Backends
 			// send_command (ServerCommand.KILL);
 		}
 
-		void do_step (IStepFrame frame)
+		void set_step_frame (IStepFrame frame)
 		{
 			if (frame != null) {
 				switch (frame.Mode) {
@@ -747,6 +747,11 @@ namespace Mono.Debugger.Backends
 				}
 			} else
 				current_step_frame = null;
+		}
+
+		void do_step (IStepFrame frame)
+		{
+			set_step_frame (frame);
 
 			TargetState old_state = change_target_state (TargetState.RUNNING);
 			try {
@@ -819,10 +824,12 @@ namespace Mono.Debugger.Backends
 				 */
 				if (!trampoline.IsNull) {
 					IMethod method = null;
-					if (application_symtab != null)
+					if (application_symtab != null) {
+						application_symtab.UpdateSymbolTable ();
 						method = application_symtab.Lookup (trampoline);
+					}
 					if (method == null) {
-						current_step_frame = frame;
+						set_step_frame (frame);
 						do_next ();
 						return;
 					}
@@ -862,7 +869,7 @@ namespace Mono.Debugger.Backends
 			else if (application_symtab != null)
 				method = application_symtab.Lookup (call);
 			if (method == null) {
-				current_step_frame = frame;
+				set_step_frame (frame);
 				do_next ();
 				return;
 			}

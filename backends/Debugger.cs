@@ -405,6 +405,7 @@ namespace Mono.Debugger.Backends
 		string working_directory;
 
 		IStackFrame current_frame;
+		IMethod current_method;
 
 		bool initialized;
 
@@ -530,6 +531,8 @@ namespace Mono.Debugger.Backends
 		// IDebuggerBackend
 		//
 
+		public event MethodInvalidHandler MethodInvalidEvent;
+		public event MethodChangedHandler MethodChangedEvent;
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFramesInvalidHandler FramesInvalidEvent;
 
@@ -681,20 +684,16 @@ namespace Mono.Debugger.Backends
 				if (inferior == null)
 					throw new NoTargetException ();
 
-				if (current_frame != null)
-					return current_frame;
-
-				TargetAddress address = inferior.CurrentFrame;
-
-				symtabs.UpdateSymbolTable ();
-
-				IMethod method = Lookup (address);
-				if ((method != null) && method.HasSource) {
-					ISourceLocation source = method.Source.Lookup (address);
-					current_frame = new StackFrame (inferior, address, source, method);
-				} else
-					current_frame = new StackFrame (inferior, address);
 				return current_frame;
+			}
+		}
+
+		public IMethod CurrentMethod {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
+
+				return current_method;
 			}
 		}
 
@@ -727,8 +726,33 @@ namespace Mono.Debugger.Backends
 
 		void frame_changed ()
 		{
+			IMethod old_method = current_method;
+
+			TargetAddress address = inferior.CurrentFrame;
+			if ((current_method == null) ||
+			    (!MethodBase.IsInSameMethod (current_method, address))) {
+				symtabs.UpdateSymbolTable ();
+				current_method = Lookup (address);
+			}
+
+			if (current_method != old_method) {
+				if (current_method != null) {
+					if (MethodChangedEvent != null)
+						MethodChangedEvent (current_method);
+				} else {
+					if (MethodInvalidEvent != null)
+						MethodInvalidEvent ();
+				}
+			}
+
+			if ((current_method != null) && current_method.HasSource) {
+				ISourceLocation source = current_method.Source.Lookup (address);
+				current_frame = new StackFrame (inferior, address, source, current_method);
+			} else
+				current_frame = new StackFrame (inferior, address);
+
 			if (FrameChangedEvent != null)
-				FrameChangedEvent (CurrentFrame);
+				FrameChangedEvent (current_frame);
 		}
 
 		public ISourceFileFactory SourceFileFactory {
