@@ -1,5 +1,14 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* backends/Debugger.cs (TargetAsyncResult): Make this a private nested class
+	inside PTraceInferior.
+
+	* backends/TargetReader.cs: Moved TargetInfo and TargetReader here.
+
+	* backends/ptrace/PTrace.cs: Renamed the class to PTraceInferior.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* arch/Bfd.cs, BfdDisassembler.cs, DwarfReader.cs: Made these classes internal.
 
 2002-09-21  Martin Baulig  <martin@gnome.org>

@@ -45,7 +45,7 @@ namespace Mono.Debugger.Backends
 	internal delegate void ChildCallbackHandler (long argument, long data);
 	internal delegate void ChildMessageHandler (ChildMessageType message, int arg);
 
-	internal class Inferior : IInferior, IDisposable
+	internal class PTraceInferior : IInferior, IDisposable
 	{
 		IntPtr server_handle, g_source;
 		IOOutputChannel inferior_stdin;
@@ -193,8 +193,8 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal TargetAsyncResult call_method (TargetAddress method, long method_argument,
-							TargetAsyncCallback callback, object user_data)
+		TargetAsyncResult call_method (TargetAddress method, long method_argument,
+					       TargetAsyncCallback callback, object user_data)
 		{
 			check_disposed ();
 			long number = ++last_callback_id;
@@ -1026,6 +1026,45 @@ namespace Mono.Debugger.Backends
 			public TargetAddress LocalsAddress {
 				get {
 					return new TargetAddress (inferior, frame.LocalsAddress);
+				}
+			}
+		}
+
+		private delegate void TargetAsyncCallback (object user_data, object result);
+
+		private class TargetAsyncResult
+		{
+			object user_data, result;
+			bool completed;
+			TargetAsyncCallback callback;
+
+			public TargetAsyncResult (TargetAsyncCallback callback, object user_data)
+			{
+				this.callback = callback;
+				this.user_data = user_data;
+			}
+
+			public void Completed (object result)
+			{
+				if (completed)
+					throw new InvalidOperationException ();
+
+				completed = true;
+				if (callback != null)
+					callback (user_data, result);
+
+				this.result = result;
+			}
+
+			public object AsyncResult {
+				get {
+					return result;
+				}
+			}
+
+			public bool IsCompleted {
+				get {
+					return completed;
 				}
 			}
 		}
