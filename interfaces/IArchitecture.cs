@@ -9,8 +9,10 @@ namespace Mono.Debugger
 	{
 		// <summary>
 		//   Check whether target address @address is a `call' instruction and
-		//   returns the destination of the call or null.
+		//   returns the destination of the call or null.  The out parameter
+		//   @insn_size is set to the size on bytes of the call instructions.  This
+		//   can be used to set a breakpoint immediately after the function.
 		// </summary>
-		long GetCallTarget (IDebuggerBackend backend, long address);
+		long GetCallTarget (IDebuggerBackend backend, long address, out int insn_size);
 	}
 }

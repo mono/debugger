@@ -103,13 +103,12 @@ namespace Mono.Debugger.Backends
 
 		public void Run ()
 		{
-			start_target ("run", StepMode.RUN);
-			UpdateSymbolFiles ();
+			start_target (StepMode.RUN);
 		}
 
 		public void Continue ()
 		{
-			start_target ("continue", StepMode.RUN);
+			start_target (StepMode.RUN);
 		}
 
 		public void Quit ()
@@ -135,12 +134,12 @@ namespace Mono.Debugger.Backends
 
 		public void Step ()
 		{
-			start_target ("stepi", StepMode.STEP_LINE);
+			start_target (StepMode.STEP_LINE);
 		}
 		
 		public void Next ()
 		{
-			start_target ("nexti", StepMode.STEP_ONE);
+			start_target (StepMode.SKIP_CALLS);
 		}
 
 		public IBreakPoint AddBreakPoint (ITargetLocation location)
@@ -353,7 +352,16 @@ namespace Mono.Debugger.Backends
 
 		protected class TargetLocation : ITargetLocation
 		{
-			public long Address = -1;
+			public long Address;
+
+			internal TargetLocation ()
+				: this (-1)
+			{ }
+
+			public TargetLocation (long Address)
+			{
+				this.Address = Address;
+			}
 
 			long ITargetLocation.Location {
 				get {
@@ -435,7 +443,8 @@ namespace Mono.Debugger.Backends
 		enum StepMode {
 			RUN,
 			STEP_ONE,
-			STEP_LINE
+			STEP_LINE,
+			SKIP_CALLS
 		}
 
 		StepMode step_mode = StepMode.STEP_ONE;
@@ -489,15 +498,27 @@ namespace Mono.Debugger.Backends
 			send_gdb_command ("call mono_debugger_internal_free_symbol_files (" + original + ")");
 		}
 
+		// <remarks>
+		//   This idle handler must be executed while gdb is not running; we cannot issue any
+		//   gdb commands while gdb is running since we'd ge a deadlock, that's why we need to
+		//   do this here.
+		// </remarks>
 		public bool IdleHandler ()
 		{
 			if (main_iteration_running)
 				return true;
 
-			if (new_frame != current_frame) {
+			//
+			// The stack frame has changed, check whether we must continue single-stepping
+			// or whether we can report that the target has stopped.
+			//
+			if (new_frame != current_frame)
 				frame_changed ();
-				current_frame = new_frame;
-			}
+
+			//
+			// If there's no more pending work to do, we can safely remove the idle handler.
+			// It'll be reinstalled when it's needed.
+			//
 
 			idle_handler = null;
 			return false;
@@ -611,24 +632,31 @@ namespace Mono.Debugger.Backends
 			return new BinaryReader (stream);
 		}
 
+		ISourceLocation LookupAddress (long address)
+		{
+			return LookupAddress (new TargetLocation (address));
+		}
+
+		ISourceLocation LookupAddress (ITargetLocation address)
+		{
+			foreach (ISymbolTable symtab in symtabs) {
+				ISourceLocation source = symtab.Lookup (address);
+
+				if (source != null)
+					return source;
+			}
+
+			return null;
+		}
+
 		void frame_changed ()
 		{
-		again:
 			bool send_event = false;
 
 			uint modified = ReadInteger ("print/u mono_debugger_internal_symbol_files_changed");
 
 			if (modified != 0)
 				UpdateSymbolFiles ();
-
-			foreach (ISymbolTable symtab in symtabs) {
-				ISourceLocation source = symtab.Lookup (new_frame.TargetLocation);
-
-				if (source != null) {
-					new_frame.SourceLocation = source;
-					break;
-				}
-			}
 
 			int step_range = 0;
 			long start_address = 0;
@@ -637,7 +665,14 @@ namespace Mono.Debugger.Backends
 				step_range = current_frame.SourceLocation.SourceRange;
 			}
 
-			long address = new_frame.TargetLocation.Address;
+		again:
+			current_frame = new_frame;
+
+			ISourceLocation source = LookupAddress (current_frame.TargetLocation);
+			if (source != null)
+				current_frame.SourceLocation = source;
+
+			long address = current_frame.TargetLocation.Address;
 
 			switch (step_mode) {
 			case StepMode.RUN:
@@ -646,12 +681,15 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case StepMode.STEP_LINE:
+			case StepMode.SKIP_CALLS:
 				if ((address < start_address) || (address >= start_address + step_range)) {
+					step_mode = StepMode.RUN;
+					change_target_state (TargetState.STOPPED);
 					send_event = true;
 					break;
 				}
 
-				start_target ("stepi", StepMode.STEP_LINE);
+				start_target (step_mode);
 				goto again;
 
 			default:
@@ -662,27 +700,38 @@ namespace Mono.Debugger.Backends
 				current_frame_event (new_frame);
 		}
 
+		void change_target_state (TargetState new_state)
+		{
+			if (new_state == target_state)
+				return;
+
+			// Don't signal STOPPED to the GUI if we're still stepping.
+			if ((step_mode == StepMode.STEP_LINE) || (step_mode == StepMode.SKIP_CALLS)) {
+				if (new_state == TargetState.STOPPED)
+					return;
+			}
+
+			target_state = new_state;
+
+			if (state_changed != null)
+				state_changed (target_state);
+		}
+
 		void HandleAnnotation (string annotation, string[] args)
 		{
 			switch (annotation) {
 			case "starting":
-				target_state = TargetState.RUNNING;
-				if (state_changed != null)
-					state_changed (target_state);
+				change_target_state (TargetState.RUNNING);
 				break;
 
 			case "stopped":
 				if (target_state != TargetState.RUNNING)
 					break;
-				target_state = TargetState.STOPPED;
-				if (state_changed != null)
-					state_changed (target_state);
+				change_target_state (TargetState.STOPPED);
 				break;
 
 			case "exited":
-				target_state = TargetState.EXITED;
-				if (state_changed != null)
-					state_changed (target_state);
+				change_target_state (TargetState.EXITED);
 				break;
 
 			case "prompt":
@@ -954,18 +1003,49 @@ namespace Mono.Debugger.Backends
 				MainIteration ();
 		}
 
-		void start_target (string command, StepMode mode)
+		void start_target (StepMode mode)
 		{
-			step_mode = mode;
+			string command;
 
-			if ((mode == StepMode.STEP_LINE) && (current_frame != null)) {
+			step_mode = mode;
+			switch (mode) {
+			case StepMode.STEP_ONE:
+			case StepMode.STEP_LINE:	
+				command = "stepi";
+				break;
+
+			case StepMode.SKIP_CALLS:
+				command = "nexti";
+				break;
+
+			default:
+				if (target_state == TargetState.NO_TARGET)
+					command = "run";
+				else
+					command = "continue";
+				break;
+			}
+
+			if ((current_frame != null) &&
+			    ((mode == StepMode.STEP_LINE) || (mode == StepMode.SKIP_CALLS))) {
 				long address = current_frame.TargetLocation.Address;
-				long call_target = arch.GetCallTarget (this, address);
+				int insn_size;
+				long call_target = arch.GetCallTarget (this, address, out insn_size);
+				bool step_over = false;
 
 				if (call_target != 0) {
-					Console.WriteLine ("CALL: {0:x} {1:x}", address, call_target);
-					send_gdb_command ("x/i $eip");
-					send_gdb_command ("x/5b $eip");
+					if (mode == StepMode.STEP_LINE) {
+						ISourceLocation source = LookupAddress (call_target);
+						if (source == null)
+							step_over = true;
+					} else
+						step_over = true;
+				}
+
+				if (step_over) {
+					long stop_address = address + insn_size;
+					send_gdb_command ("tbreak *" + stop_address);
+					command = "continue";
 				}
 			}
 
