@@ -14,8 +14,8 @@ void
 common_function (int is_thread, int sleep_seconds)
 {
 	while (1) {
-		hello (is_thread);
 		sleep (sleep_seconds);
+		hello (is_thread);
 	}
 }
 
