@@ -36,6 +36,9 @@ namespace Mono.Debugger.Languages.Native
 
 		protected string ReadString (TargetLocation start)
 		{
+			if (start.HasAddress && start.Address.IsNull)
+				return "null";
+
 			StringBuilder sb = new StringBuilder ();
 			bool done = false;
 

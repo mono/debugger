@@ -295,7 +295,8 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   Holds all the symbol tables from the target's JIT.
 	// </summary>
-	internal class MonoSymbolTable : Module, ISimpleSymbolTable, ILanguage, IDisposable
+	internal class MonoSymbolTable : Module, ISymbolFile, ISimpleSymbolTable,
+		ILanguage, IDisposable
 	{
 		public const int  MinDynamicVersion = 43;
 		public const int  MaxDynamicVersion = 44;
@@ -961,7 +962,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public override ISymbolFile SymbolFile {
-			get { return null; }
+			get { return this; }
 		}
 
 		public override bool SymbolsLoaded {
@@ -969,7 +970,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public SourceFile[] Sources {
-			get { return null; }
+			get { return new SourceFile [0]; }
 		}
 
 		public override bool HasDebuggingInfo {
@@ -1017,6 +1018,19 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 								ITargetMemoryAccess memory)
+		{
+			return null;
+		}
+
+		void ISymbolFile.GetMethods (SourceFile file)
+		{ }
+
+		IMethod ISymbolFile.GetMethod (long handle)
+		{
+			return null;
+		}
+
+		SourceMethod ISymbolFile.FindMethod (string name)
 		{
 			return null;
 		}
