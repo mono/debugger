@@ -18,6 +18,10 @@ About the Mono Debugger
 
 The Mono Debugger is a graphical debugger for GNU/Linux which is
 written in C#.  It can debug both native and managed applications.
+It has a graphical and a text-mode user interface.
+
+Starting with the 0.2.0 release, the debugger fully supports debugging
+multi-threaded applications.
 
 Currently, the debugger only works on GNU/Linux system running a 2.2.x
 or 2.4.x kernel on the i386.
@@ -47,13 +51,8 @@ First of all, I'd like to thank Ximian, Inc. which is a wonderful
 company to work for and Miguel de Icaza who helped me a lot this
 summer.  Without them, this project wouldn't have become possible.
 
-I really appreciated hacking on this and it was a lot of fun to see my
+I really appreciated hacking on this and it is a lot of fun to see my
 "baby" grow and develop :-)
-
-However, university starts again very soon and I need a little rest
-before concentrating again on my studies, so I'll fly to New York and
-Boston on Saturday to have some holidays, see a football game of the
-New England Patriot's and meet the Ximian guys.
 
 Limitations
 -----------
@@ -118,6 +117,11 @@ When debugging managed applications, the single stepping engine can also
     However, this is already used to call a property's getter and
     Object.ToString().
 
+The single stepping engine supports debugging multi-threaded
+applications; a stepping operation in one thread does not affect any
+of the other threads.  This means for instance that it is safe to
+insert a breakpoint on a method which is called by another thread.
+
 * Breakpoints
 
 Breakpoints can be used in managed and unmanaged methods.  You can
@@ -138,6 +142,10 @@ The user interface may supply its own breakpoint handler class which
 may be used to implement conditional breakpoints; such a conditional
 breakpoint can also read parameters and local variables to decide
 whether to continue the target.
+
+Breakpoints can be inserted on a per-thread level, this means that a
+breakpoint will only "break" on the "correct" thread.  This is very
+important when debugging system functions such as corlib.
 
 * Modules
 
@@ -166,6 +174,30 @@ view/modify the target's memory.
 
 The debugger has a hex editor to inspect or modify the target's memory.
 
+* Command line interface
 
-October 18th, 2002
-Martin Baulig <martin@gnome.org>
+In addition to the graphical user interface, the debugger also has a
+textual command line interface (which is also available in the GUI).
+
+The command line interface has a few very cool features which the
+GUI does not have:
+
+- when debugging multi-threaded applications, you can debug all
+  threads, not just the main thread.  This includes single-stepping,
+  getting stack frames and backtraces etc. for any of the other
+  threads.
+
+- all commands are synchronous, especially the stepping commands;
+  the debugger waits until the target has stopped again.
+
+- you can access variables from any stack frame, not just from the
+  current one.
+
+- there's a (still very simple) expression evaluator which allows
+  you to inspect local variables and parameters.
+
+- it can be used as regression test suite.
+
+
+January 6th, 2003
+Martin Baulig <martin@ximian.com>

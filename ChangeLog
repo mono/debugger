@@ -1,5 +1,10 @@
 2003-01-06  Martin Baulig  <martin@ximian.com>
 
+	* RELEASE-NOTES-0.2.0.txt: Started to document all the cool new
+	features here.
+
+2003-01-06  Martin Baulig  <martin@ximian.com>
+
 	* tests/TestManagedTypes.cmd: Added a few more test cases here.
 
 2003-01-06  Martin Baulig  <martin@ximian.com>
