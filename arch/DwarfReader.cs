@@ -707,6 +707,7 @@ namespace Mono.Debugger.Architecture
 				public bool prologue_end;
 				public bool epilogue_begin;
 				public long start_offset;
+				public long end_offset;
 
 				public int start_file;
 				public int start_line, end_line;
@@ -716,12 +717,14 @@ namespace Mono.Debugger.Architecture
 				DwarfBinaryReader reader;
 				int const_add_pc_range;
 
-				public StatementMachine (LineNumberEngine engine, long offset)
+				public StatementMachine (LineNumberEngine engine, long offset,
+							 long end_offset)
 				{
 					this.engine = engine;
 					this.reader = this.engine.reader;
 					this.creating = true;
 					this.start_offset = offset;
+					this.end_offset = end_offset;
 					this.st_address = 0;
 					this.st_file = 1;
 					this.st_line = 1;
@@ -745,6 +748,7 @@ namespace Mono.Debugger.Architecture
 					this.reader = this.engine.reader;
 					this.creating = false;
 					this.start_offset = stm.start_offset;
+					this.end_offset = stm.end_offset;
 					this.st_address = stm.st_address;
 					this.st_file = stm.st_file;
 					this.st_line = stm.st_line;
@@ -891,7 +895,7 @@ namespace Mono.Debugger.Architecture
 					reader.Position = start_offset;
 					end_sequence = false;
 
-					while (!end_sequence) {
+					while (!end_sequence && (reader.Position < end_offset)) {
 						byte opcode = reader.ReadByte ();
 						engine.debug ("OPCODE: {0:x}", opcode);
 
@@ -1051,7 +1055,7 @@ namespace Mono.Debugger.Architecture
 
 				method_hash = new Hashtable ();
 
-				StatementMachine stm = new StatementMachine (this, reader.Position);
+				StatementMachine stm = new StatementMachine (this, data_offset, end_offset);
 				stm.Read ();
 
 				if ((current_method != null) && !method_hash.Contains (current_method))
