@@ -48,6 +48,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				      int pid)
 			: this (context, backend, process)
 		{
+			if (process.SingleSteppingEngine == null)
+				return;
+
 			if (pid > 0)
 				process.SingleSteppingEngine.Attach (pid, true);
 			else
@@ -676,16 +679,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected void Initialize ()
 		{
-			foreach (Process process in backend.ThreadManager.Threads) {
-				ProcessHandle handle = new ProcessHandle (this, backend, process);
-				add_process (handle);
-
-				if (process == backend.ThreadManager.MainProcess)
-					current_process = handle;
-			}
-
-
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (manager_initialized);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
@@ -815,13 +810,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 				start = ProcessStart.Create (null, args, null);
 				process = backend.ReadCoreFile (start, "thecore");
 				current_process = new ProcessHandle (this, backend, process, "thecore");
+				add_process (current_process);
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
-				current_process = new ProcessHandle (this, backend, process, pid);
+				ProcessHandle handle = new ProcessHandle (this, backend, process, pid);
+				add_process (handle);
+				if (current_process == null)
+					current_process = handle;
 			}
-
-			add_process (current_process);
 
 			return process;
 		}
@@ -841,6 +838,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			add_process (handle);
+		}
+
+		void manager_initialized (ThreadManager manager, Process process)
+		{
+			current_process = new ProcessHandle (this, process.DebuggerBackend, process);
+			add_process (current_process);
 		}
 
 		public void ShowVariableType (ITargetType type, string name)
