@@ -20,9 +20,6 @@ namespace Mono.Debugger
 	public delegate void MethodInvalidHandler ();
 	public delegate void MethodChangedHandler (IMethod method);
 
-	public delegate void StackFrameHandler (StackFrame frame);
-	public delegate void StackFrameInvalidHandler ();
-
 	internal class TargetInfo : ITargetInfo
 	{
 		int target_int_size;
@@ -728,10 +725,10 @@ namespace Mono.Debugger
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 					current_backtrace [i] = new StackFrame (
-						this, inferior, address, frames [i], source, method);
+						inferior, address, frames [i], source, method);
 				} else
 					current_backtrace [i] = new StackFrame (
-						this, inferior, address, frames [i]);
+						inferior, address, frames [i]);
 			}
 
 			return current_backtrace;
@@ -807,10 +804,10 @@ namespace Mono.Debugger
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
 				current_frame = new StackFrame (
-					this, inferior, address, frames [0], source, current_method);
+					inferior, address, frames [0], source, current_method);
 			} else
 				current_frame = new StackFrame (
-					this, inferior, address, frames [0]);
+					inferior, address, frames [0]);
 
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (current_frame);

@@ -68,9 +68,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public ITargetObject GetObject (object frame)
+		public ITargetObject GetObject (StackFrame frame)
 		{
-			return new MonoObject ((StackFrame) frame, this, is_local);
+			return new MonoObject (frame, this, is_local);
 		}
 	}
 }

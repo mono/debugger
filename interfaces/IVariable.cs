@@ -15,6 +15,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetObject GetObject (object frame);
+		ITargetObject GetObject (StackFrame frame);
 	}
 }

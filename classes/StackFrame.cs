@@ -4,28 +4,27 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public class StackFrame : IDisposable
+	public delegate void StackFrameHandler (StackFrame frame);
+	public delegate void StackFrameInvalidHandler ();
+
+	public sealed class StackFrame : IDisposable
 	{
 		IMethod method;
 		TargetAddress address;
-		DebuggerBackend backend;
 		ITargetMemoryAccess memory;
 		SourceLocation source;
 		object handle;
 
-		public StackFrame (DebuggerBackend backend, ITargetMemoryAccess memory,
-				   TargetAddress address, object handle,
-				   SourceLocation source, IMethod method)
-			: this (backend, memory, address, handle)
+		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle,
+				      SourceLocation source, IMethod method)
+			: this (memory, address, handle)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (DebuggerBackend backend, ITargetMemoryAccess memory,
-				   TargetAddress address, object handle)
+		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle)
 		{
-			this.backend = backend;
 			this.memory = memory;
 			this.address = address;
 			this.handle = handle;
