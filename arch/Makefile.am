@@ -5,7 +5,7 @@ libmonodebuggerbfdglue_la_SOURCES = \
 	bfdglue.h		\
 	#
 
-libmonodebuggerbfdglue_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ -lbfd
+libmonodebuggerbfdglue_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ -lbfd -lopcodes
 
 INCLUDES = @BASE_DEPENDENCIES_CFLAGS@
 
