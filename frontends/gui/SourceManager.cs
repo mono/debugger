@@ -8,6 +8,7 @@
 using System;
 using System.Text;
 using System.Collections;
+using GLib;
 using Gtk;
 using GtkSharp;
 using Pango;
@@ -95,7 +96,12 @@ namespace Mono.Debugger.GUI {
 				sb.Append (contents [i]);
 				sb.Append ("\n");
 			}
-			return new SourceList (this, filename, sb.ToString ());
+			return CreateSourceView (filename, sb.ToString ());
+		}
+
+		SourceList CreateSourceView (string filename, string contents)
+		{
+			return new SourceList (this, filename, contents);
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -117,8 +123,8 @@ namespace Mono.Debugger.GUI {
 		void close_tab (object o, EventArgs args)
 		{
 			foreach (DictionaryEntry de in sources){
-				string name = (string) de.Key;
-				SourceList view = (SourceList) de.Value;
+				object key = de.Key;
+				SourceList view = (SourceList) de.Value as SourceList;
 
 				if (view.TabWidget == o){
 					Widget view_widget = view.Widget;
@@ -127,10 +133,9 @@ namespace Mono.Debugger.GUI {
 
 					do {
 						v = notebook.GetNthPage (i);
-						Console.WriteLine ("trying: {0} vs {1}", view_widget, v);
 						if (view_widget.Equals (v)){
 							notebook.RemovePage (i);
-							sources [name] = null;
+							sources.Remove (key);
 							return;
 						}
 						i++;
@@ -266,5 +271,26 @@ namespace Mono.Debugger.GUI {
 		{
 			return backend.FindLocation (filename, line);
 		}
+
+		public SourceView LoadFile (string filename)
+		{
+			string contents;
+			try {
+				contents = FileUtils.GetFileContents (filename);
+			} catch (Exception e) {
+				Console.WriteLine ("Can't load file {0}: {1}", filename, e.Message);
+				return null;
+			}
+
+			SourceList view = CreateSourceView (filename, contents);
+			view.Widget.ShowAll ();
+
+			sources [filename] = view;
+			notebook.InsertPage (view.Widget, view.TabWidget, -1);
+			notebook.SetMenuLabelText (view.Widget, filename);
+			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
+
+			return view;
+                }
 	}
 }

@@ -1,5 +1,9 @@
 2003-03-11  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerGUI.cs: Implemented "File / Open".
+
+2003-03-11  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/SourceManager.cs: The text in the source
 	buffer must always be terminated with a newline.
 

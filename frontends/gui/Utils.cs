@@ -58,8 +58,10 @@ namespace Mono.Debugger.GUI {
 		{
 			ButtonClicked (this, null);
 
+#if FIXME
 			SignalArgs sa = (SignalArgs) args;
 			sa.RetVal = true;
+#endif
 		}
 	}
 

@@ -366,12 +366,14 @@ namespace Mono.Debugger.GUI
 			fs.ShowFileops = false;
 
 			int v = fs.Run ();
-			fs.Hide ();
+			string file = fs.Filename;
+			fs.Destroy ();
+			fs = null;
 
 			if (v != -5)
 				return;
 
-			Console.WriteLine ("OK: {0}", fs.Filename);
+			source_manager.LoadFile (file);
 		}
 
 		ProgramToDebug program_to_debug;
