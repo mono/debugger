@@ -318,6 +318,10 @@ namespace Mono.Debugger.Backends
 					do_continue (true);
 				break;
 
+			case ChildEventType.CHILD_MEMORY_CHANGED:
+				backend.Reload ();
+				break;
+
 			default:
 				break;
 			}

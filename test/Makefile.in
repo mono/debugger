@@ -21,9 +21,11 @@ BACKEND_SOURCES = \
 	@top_srcdir@/arch/*.cs
 
 LIBRARY_DEPS = \
+	-r glib-sharp.dll	\
 	-r Mono.CSharp.Debugger
 
 BACKEND_DEPS = \
+	-r glib-sharp.dll	\
 	-r Mono.Debugger.dll	\
 	-r Mono.CSharp.Debugger
 

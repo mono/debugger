@@ -39,14 +39,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			stderr.WriteLine ("  t, nexti         next instruction step");
 			stderr.WriteLine ("  abort            Abort the target");
 			stderr.WriteLine ("  kill             Kill the target");
-			stderr.WriteLine ("  f, frame         Get current stack frame");
 			stderr.WriteLine ("  s, step          Single-step");
 			stderr.WriteLine ("  n, next          Single-step");
 			stderr.WriteLine ("  finish           Continues till the end of the function");
 			stderr.WriteLine ("  stop             Stops the program");
 			stderr.WriteLine ("  core FILE        Reads a core file");
-			stderr.WriteLine ("  frame            Display current frame");
-			stderr.WriteLine ("  bt               Displays backtrace");
+			stderr.WriteLine ("  reload           Reloads the current frame");
 			stderr.WriteLine ("  params           Displays parameters");
 			stderr.WriteLine ("  locals           Displays local variables");
 			stderr.WriteLine ("  break LOC        Inserts breakpoint");
@@ -162,14 +160,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 			}
 
-			case "frame":
-				Console.WriteLine ("CURRENT FRAME: {0}", backend.ReloadFrame ());
+			case "reload":
+				backend.Reload ();
 				break;
 
-			case "bt":
-				backend.GetBacktrace ();
+			case "maps":
+				foreach (TargetMemoryArea area in backend.GetMemoryMaps ())
+					Console.WriteLine (area);
 				break;
-
+				
 			case "params": {
 				IVariable[] vars = backend.CurrentMethod.Parameters;
 				foreach (IVariable var in vars) {

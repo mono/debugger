@@ -434,7 +434,7 @@ namespace Mono.Debugger
 				UpdateSymbolTable ();
 			}
 
-			ReloadFrame ();
+			Reload ();
 		}
 
 		public void Quit ()
@@ -602,7 +602,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public StackFrame ReloadFrame ()
+		public void Reload ()
 		{
 			if (StateChanged != null)
 				StateChanged (State, 0);
@@ -619,8 +619,6 @@ namespace Mono.Debugger
 
 			if (ModulesChangedEvent != null)
 				ModulesChangedEvent ();
-
-			return frame;
 		}
 
 		public IMethod CurrentMethod {
@@ -719,6 +717,12 @@ namespace Mono.Debugger
 			}
 
 			return true;
+		}
+
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			check_inferior ();
+			return inferior.GetMemoryMaps ();
 		}
 
 		[DllImport("glib-2.0")]

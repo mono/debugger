@@ -27,7 +27,8 @@ namespace Mono.Debugger.Backends
 		CHILD_STOPPED,
 		CHILD_SIGNALED,
 		CHILD_CALLBACK,
-		CHILD_HIT_BREAKPOINT
+		CHILD_HIT_BREAKPOINT,
+		CHILD_MEMORY_CHANGED
 	}
 
 	public delegate void ChildEventHandler (ChildEventType message, int arg);
@@ -101,6 +102,8 @@ namespace Mono.Debugger.Backends
 		void SetRegisters (int[] registers, long[] values);
 
 		IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
+
+		TargetMemoryArea[] GetMemoryMaps ();
 
 		int InsertBreakpoint (TargetAddress address);
 

@@ -1,5 +1,16 @@
 2002-10-11  Martin Baulig  <martin@gnome.org>
 
+	* backends/TargetMemoryArea.cs: New struct.
+
+	* backends/IInferior.cs (IInferior.GetMemoryMaps): New method to
+	get the memory maps as an array of TargetMemoryArea's.
+
+	* frontends/gui/HexEditor.cs: Use the memory maps to ensure that
+	we're only accessing mapped memory, allow editing of the memory.
+	You need a new Gtk# for this.
+
+2002-10-11  Martin Baulig  <martin@gnome.org>
+
 	* frontends/gui/HexEditor.cs: Added hex editor.
 
 2002-10-11  Martin Baulig  <martin@gnome.org>

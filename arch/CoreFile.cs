@@ -265,6 +265,11 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			return null;
+		}
+
 		//
 		// ITargetNotification
 		//

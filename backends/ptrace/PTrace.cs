@@ -734,6 +734,7 @@ namespace Mono.Debugger.Backends
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
+				OnMemoryChanged ();
 			}
 		}
 
@@ -749,6 +750,7 @@ namespace Mono.Debugger.Backends
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
+				OnMemoryChanged ();
 			}
 		}
 
@@ -764,6 +766,7 @@ namespace Mono.Debugger.Backends
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
+				OnMemoryChanged ();
 			}
 		}
 
@@ -779,6 +782,7 @@ namespace Mono.Debugger.Backends
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
+				OnMemoryChanged ();
 			}
 		}
 
@@ -1129,6 +1133,65 @@ namespace Mono.Debugger.Backends
 			check_error (result);
 
 			return new TargetAddress (this, address);
+		}
+
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			string mapfile = String.Format ("/proc/{0}/maps", child_pid);
+			string contents = FileUtils.GetFileContents (mapfile);
+
+			ArrayList list = new ArrayList ();
+
+			using (StringReader reader = new StringReader (contents)) {
+				do {
+					string l = reader.ReadLine ();
+					if (l == null)
+						break;
+
+					bool is64bit;
+					if (l [8] == '-')
+						is64bit = false;
+					else if (l [16] == '-')
+						is64bit = true;
+					else
+						throw new InternalError ();
+
+					string sstart = is64bit ? l.Substring (0,16) : l.Substring (0,8);
+					string send = is64bit ? l.Substring (17,16) : l.Substring (9,8);
+					string sflags = is64bit ? l.Substring (34,4) : l.Substring (18,4);
+
+					long start = Int64.Parse (sstart, NumberStyles.HexNumber);
+					long end = Int64.Parse (send, NumberStyles.HexNumber);
+
+					string name;
+					if (is64bit)
+						name = (l.Length > 73) ? l.Substring (73) : "";
+					else
+						name = (l.Length > 49) ? l.Substring (49) : "";
+					name = name.TrimStart (' ').TrimEnd (' ');
+					if (name == "")
+						name = null;
+
+					TargetMemoryFlags flags = 0;
+					if (sflags [1] != 'w')
+						flags |= TargetMemoryFlags.ReadOnly;
+
+					TargetMemoryArea area = new TargetMemoryArea (
+						new TargetAddress (this, start),
+						new TargetAddress (this, end),
+						flags, name, this);
+					list.Add (area);
+				} while (true);
+			}
+
+			TargetMemoryArea[] maps = new TargetMemoryArea [list.Count];
+			list.CopyTo (maps, 0);
+			return maps;
+		}
+
+		protected virtual void OnMemoryChanged ()
+		{
+			child_event (ChildEventType.CHILD_MEMORY_CHANGED, 0);
 		}
 
 		//
