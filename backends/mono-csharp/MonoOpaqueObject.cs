@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.CSharp
 		new MonoOpaqueType type;
 
 		public MonoOpaqueObject (MonoOpaqueType type, MonoTargetLocation location)
-			: base (type, location)
+			: base (TargetObjectKind.Unknown, type, location)
 		{
 			this.type = type;
 		}
@@ -17,18 +17,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public new ITargetPointerType Type {
 			get {
 				return type;
-			}
-		}
-
-		public override bool HasObject {
-			get {
-				return false;
-			}
-		}
-
-		bool ITargetObject.HasObject {
-			get {
-				return false;
 			}
 		}
 
@@ -60,12 +48,6 @@ namespace Mono.Debugger.Languages.CSharp
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
 							MonoTargetLocation location,
 							out MonoTargetLocation dynamic_location)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		protected override object GetObject (ITargetMemoryReader reader,
-						     MonoTargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -83,6 +83,7 @@ namespace Mono.Debugger.GUI
 		{
 			bool inserted = false;
 
+#if FIXME
 			foreach (ITargetFieldInfo field in sobj.Type.Fields) {
 				if (!field.Type.HasObject)
 					continue;
@@ -92,6 +93,7 @@ namespace Mono.Debugger.GUI
 				add_object (sobj.GetField (field.Index), field.Name, iter);
 				inserted = true;
 			}
+#endif
 
 			return inserted;
 		}
@@ -167,6 +169,7 @@ namespace Mono.Debugger.GUI
 			store.SetValue (iter, 0, new GLib.Value (name));
 			store.SetValue (iter, 1, new GLib.Value (obj.Type.Name));
 
+#if FIXME
 			if (obj.HasObject) {
 				object contents = obj.Object;
 				store.SetValue (iter, 2, new GLib.Value (contents.ToString ()));
@@ -175,6 +178,7 @@ namespace Mono.Debugger.GUI
 
 			if ((obj is ITargetArrayObject) || (obj is ITargetStructObject))
 				add_data (obj, iter);
+#endif
 		}
 
 		void add_variable (IVariable variable)

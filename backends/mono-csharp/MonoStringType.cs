@@ -29,12 +29,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasObject {
-			get {
-				return true;
-			}
-		}
-
 		public static int MaximumStringLength {
 			get {
 				return max_string_length;

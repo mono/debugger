@@ -9,7 +9,12 @@ namespace Mono.Debugger.Languages.CSharp
 		new MonoStructType type;
 
 		public MonoStructObject (MonoStructType type, MonoTargetLocation location)
-			: base (type, location)
+			: this (TargetObjectKind.Struct, type, location)
+		{ }
+
+		protected MonoStructObject (TargetObjectKind kind, MonoStructType type,
+					    MonoTargetLocation location)
+			: base (kind, type, location)
 		{
 			this.type = type;
 		}
@@ -34,33 +39,15 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.InvokeMethod (location, index, arguments);
 		}
 
-		public override bool HasObject {
-			get {
-				return false;
-			}
-		}
-
 		public new ITargetStructType Type {
 			get {
 				return type;
 			}
 		}
 
-		bool ITargetObject.HasObject {
-			get {
-				return false;
-			}
-		}
-
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
 							MonoTargetLocation location,
 							out MonoTargetLocation dynamic_location)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		protected override object GetObject (ITargetMemoryReader reader,
-						     MonoTargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

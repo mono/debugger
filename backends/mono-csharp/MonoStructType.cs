@@ -408,18 +408,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasObject {
-			get {
-				return true;
-			}
-		}
-
-		bool ITargetType.HasObject {
-			get {
-				return true;
-			}
-		}
-
 		public override MonoObject GetObject (MonoTargetLocation location)
 		{
 			return new MonoStructObject (this, location);
@@ -436,7 +424,7 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new InternalError ();
 
 			ITargetObject obj = method.Invoke (location, new ITargetObject [0]);
-			return (string) obj.Object;
+			return (string) ((ITargetFundamentalObject) obj).Object;
 		}
 	}
 }

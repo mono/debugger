@@ -22,18 +22,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasObject {
-			get {
-				return true;
-			}
-		}
-
-		bool ITargetType.HasObject {
-			get {
-				return true;
-			}
-		}
-
 		public bool IsTypesafe {
 			get {
 				return true;

@@ -119,16 +119,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public abstract bool HasObject {
-			get;
-		}
-
 		public abstract MonoObject GetObject (MonoTargetLocation location);
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} [{1}:{2}:{3}:{4}:{5}]", GetType (), TypeHandle,
-					      IsByRef, HasFixedSize, Size, HasObject);
+			return String.Format ("{0} [{1}:{2}:{3}:{4}]", GetType (), TypeHandle,
+					      IsByRef, HasFixedSize, Size);
 		}
 	}
 }

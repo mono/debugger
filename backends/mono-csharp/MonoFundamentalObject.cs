@@ -4,17 +4,11 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoFundamentalObject : MonoObject
+	internal class MonoFundamentalObject : MonoFundamentalObjectBase
 	{
 		public MonoFundamentalObject (MonoType type, MonoTargetLocation location)
 			: base (type, location)
 		{ }
-
-		public override bool HasObject {
-			get {
-				return true;
-			}
-		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
 							MonoTargetLocation location,

@@ -106,22 +106,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasObject {
-			get {
-				if (Dimension + 1 < Rank)
-					return true;
-
-				return element_type.HasObject &&
-					(element_type.IsByRef || element_type.HasFixedSize);
-			}
-		}
-
-		bool ITargetType.HasObject {
-			get {
-				return HasObject;
-			}
-		}
-
 		internal MonoType ElementType {
 			get {
 				if (Dimension + 1 >= Rank)
@@ -145,7 +129,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override MonoObject GetObject (MonoTargetLocation location)
 		{
-			if (!HasObject)
+			if (Dimension + 1 >= Rank)
 				throw new InvalidOperationException ();
 
 			return new MonoArrayObject (this, location);

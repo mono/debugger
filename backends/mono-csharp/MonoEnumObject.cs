@@ -4,21 +4,15 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoEnumObject : MonoObject
+	internal class MonoEnumObject : MonoFundamentalObjectBase
 	{
-		MonoObject element_object;
+		MonoFundamentalObjectBase element_object;
 
 		public MonoEnumObject (MonoEnumType type, MonoTargetLocation location,
-				       MonoObject element_obj)
+				       MonoFundamentalObjectBase element_obj)
 			: base (type, location)
 		{
 			this.element_object = element_obj;
-		}
-
-		public override bool HasObject {
-			get {
-				return element_object.HasObject;
-			}
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
@@ -31,7 +25,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected override object GetObject (ITargetMemoryReader reader,
 						     MonoTargetLocation location)
 		{
-			return Enum.ToObject ((Type) type.TypeHandle, element_object.Object);
+			return Enum.ToObject ((Type) type.TypeHandle, element_object.GetObject ());
 		}
 	}
 }

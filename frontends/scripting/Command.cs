@@ -52,13 +52,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (retval is long)
 				context.Print (String.Format ("0x{0:x}", (long) retval));
-			else if (retval is ITargetObject) {
-				ITargetObject tobj = (ITargetObject) retval;
-				if (tobj.HasObject)
-					context.Print (tobj.Object);
-				else
-					context.Print (tobj);
-			} else
+			else
 				context.Print (retval);
 		}
 	}
@@ -76,10 +70,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetObject tobj = var_expr.ResolveVariable (context);
 
-			if (tobj.HasObject)
-				context.Print (tobj.Object);
-			else
-				context.Print (tobj);
+			if (tobj is ITargetFundamentalObject) {
+				ITargetFundamentalObject fobj = (ITargetFundamentalObject) tobj;
+
+				if (fobj.HasObject) {
+					context.Print (fobj.Object);
+					return;
+				}
+			}
+
+			context.Print (tobj);
 		}
 	}
 

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoFundamentalType : MonoType
+	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
 	{
 		public MonoFundamentalType (Type type, int size)
 			: base (type, size)
@@ -39,9 +39,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasObject {
+		public Type Type {
 			get {
-				return true;
+				return type;
 			}
 		}
 

@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoStringObject : MonoObject
+	internal class MonoStringObject : MonoFundamentalObjectBase
 	{
 		new MonoStringType type;
 
@@ -12,12 +12,6 @@ namespace Mono.Debugger.Languages.CSharp
 			: base (type, location)
 		{
 			this.type = type;
-		}
-
-		public override bool HasObject {
-			get {
-				return true;
-			}
 		}
 
 		protected override int MaximumDynamicSize {

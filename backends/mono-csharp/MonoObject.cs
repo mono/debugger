@@ -8,13 +8,20 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected MonoType type;
 		protected MonoTargetLocation location;
+		protected readonly TargetObjectKind kind;
 		bool is_valid;
 
-		public MonoObject (MonoType type, MonoTargetLocation location)
+		public MonoObject (TargetObjectKind kind, MonoType type, MonoTargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
 			is_valid = true;
+		}
+
+		public TargetObjectKind Kind {
+			get {
+				return kind;
+			}
 		}
 
 		public ITargetType Type {
@@ -26,30 +33,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public bool IsValid {
 			get {
 				return is_valid && location.IsValid;
-			}
-		}
-
-		public abstract bool HasObject {
-			get;
-		}
-
-		public virtual object Object {
-			get {
-				if (!HasObject)
-					throw new InvalidOperationException ();
-
-				try {
-					ITargetMemoryReader reader;
-					if (type.HasFixedSize)
-						reader = location.ReadMemory (type.Size);
-					else
-						reader = GetDynamicContents (location, MaximumDynamicSize);
-
-					return GetObject (reader, location);
-				} catch {
-					is_valid = false;
-					throw new LocationInvalidException ();
-				}
 			}
 		}
 
@@ -121,14 +104,9 @@ namespace Mono.Debugger.Languages.CSharp
 							MonoTargetLocation location,
 							out MonoTargetLocation dynamic_location);
 
-		protected abstract object GetObject (ITargetMemoryReader reader, MonoTargetLocation location);
-
 		public override string ToString ()
 		{
-			if (HasObject)
-				return String.Format ("{0} [{1}:{2}]", GetType (), Type, Object);
-			else
-				return String.Format ("{0} [{1}]", GetType (), Type);
+			return String.Format ("{0} [{1}]", GetType (), Type);
 		}
 	}
 }

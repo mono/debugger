@@ -1,0 +1,43 @@
+using System;
+using Mono.CSharp.Debugger;
+using Mono.Debugger.Backends;
+
+namespace Mono.Debugger.Languages.CSharp
+{
+	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
+	{
+		public MonoFundamentalObjectBase (MonoType type, MonoTargetLocation location)
+			: base (TargetObjectKind.Fundamental, type, location)
+		{ }
+
+		public bool HasObject {
+			get {
+				return true;
+			}
+		}
+
+		public object Object {
+			get {
+				return GetObject ();
+			}
+		}
+
+		internal object GetObject ()
+		{
+			try {
+				ITargetMemoryReader reader;
+				if (type.HasFixedSize)
+					reader = location.ReadMemory (type.Size);
+				else
+					reader = GetDynamicContents (location, MaximumDynamicSize);
+
+				return GetObject (reader, location);
+			} catch {
+				is_valid = false;
+				throw new LocationInvalidException ();
+			}
+		}
+
+		protected abstract object GetObject (ITargetMemoryReader reader, MonoTargetLocation location);
+	}
+}

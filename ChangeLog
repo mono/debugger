@@ -1,5 +1,21 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFundamentalObject.cs: New interface.
+
+	* interfaces/ITargetFundamentalType.cs: New interface.
+
+	* interfaces/TargetObjectKind.cs: New enum.
+
+	* interfaces/ITargetObject.cs (Kind): New property.
+	(HasObject, Object): Removed.
+
+	* interfaces/ITargetType.cs (HasObject): Removed.
+
+	* backends/mono-csharp/MonoFundamentalObjectBase.cs: New abstract
+	base class for ITargetFundamentalObject.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (VariableExpression): Added
 	`ResolveVariable' method which returns an ITargetObject.
 

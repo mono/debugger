@@ -31,15 +31,10 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasObject {
-			get {
-				return true;
-			}
-		}
-
 		public override MonoObject GetObject (MonoTargetLocation location)
 		{
-			return new MonoEnumObject (this, location, element_type.GetObject (location));
+			MonoObject obj = element_type.GetObject (location);
+			return new MonoEnumObject (this, location, (MonoFundamentalObjectBase) obj);
 		}
 	}
 }
