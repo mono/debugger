@@ -32,6 +32,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			} catch (ScriptingException ex) {
 				engine.Context.Error (ex.Message);
 				return null;
+			} catch (TargetException ex) {
+				engine.Context.Error (ex.Message);
+				return null;
 			} catch (Exception ex) {
 				engine.Context.Error (
 					"Caught exception while executing command {0}: {1}",

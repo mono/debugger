@@ -16,7 +16,7 @@ namespace Mono.Debugger
 					throw new InvalidOperationException ("Reader is closed.");
 
 				pos = 0;
-				current_line = value + '\n';
+				current_line = value;
 			}
 		}
 

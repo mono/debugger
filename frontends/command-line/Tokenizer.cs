@@ -54,13 +54,11 @@ namespace Mono.Debugger.Frontends.Scripting
 		string ref_name;
 		int current_token;
 		int col = 1;
-		bool do_advance = true;
 
 		//
 		// Whether tokens have been seen on this line
 		//
 		bool tokens_seen = false;
-		bool dollar_seen = false;
 
 		//
 		// Details about the error encoutered by the tokenizer
@@ -82,9 +80,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void restart ()
 		{
-			do_advance = true;
 			tokens_seen = false;
-			dollar_seen = false;
 			col = 1;
 		}
 
@@ -209,7 +205,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public bool advance ()
 		{
-			return do_advance;
+			return peekChar () >= 0;
 		}
 
 		bool is_identifier_start_character (char c)
@@ -224,9 +220,6 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		int GetKeyword (string name, bool tokens_seen)
 		{
-			if (dollar_seen)
-				return -1;
-
 			object o = keywords [name];
 
 			if (o != null)
@@ -429,26 +422,20 @@ namespace Mono.Debugger.Frontends.Scripting
 
 				if (c == 0)
 					continue;
-				else if (c == '\n')
-					return Token.EOL;
 				else if (c == '#')
 					return Token.HASH;
 				else if (c == '@')
 					return Token.AT;
 				else if (c == '%')
 					return Token.PERCENT;
-				else if (c == '$') {
-					dollar_seen = true;
+				else if (c == '$')
 					return Token.DOLLAR;
-				}
 				else if (c == '.')
 					return Token.DOT;
 				else if (c == '!')
 					return Token.BANG;
-				else if (c == '=') {
-					dollar_seen = false;
+				else if (c == '=')
 					return Token.ASSIGN;
-				}
 				else if (c == '*')
 					return Token.STAR;
 				else if (c == '+')
@@ -482,7 +469,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				if (c == '"')
 					return consume_string (false);
 
-				if (c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\r'){
+				if (c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\r' || c == '\n'){
 					if (current_token == Token.HASH) {
 						error_details = "No whitespace allowed after `#'";
 						return Token.ERROR;
@@ -503,7 +490,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				return Token.ERROR;
 			}
 
-			do_advance = false;
 			return Token.EOF;
 		}
 

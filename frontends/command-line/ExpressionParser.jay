@@ -42,7 +42,6 @@ namespace Mono.Debugger.Frontends.Scripting
 %}
 
 %token QUIT
-%token EOL
 %token EOF
 %token NONE	// This token is never returned by our lexer
 %token ERROR	// This is used not by the parser, but by the tokenizer.
