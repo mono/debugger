@@ -8,3 +8,7 @@ config.status
 configure
 libtool
 ofiles
+.deps
+.libs
+Makefile
+Makefile.in
