@@ -1,5 +1,12 @@
 2002-10-11  Martin Baulig  <martin@gnome.org>
 
+	* arch/CoreFile.cs (CoreFile.GetMemoryMaps): New method to get a
+	TargetMemoryArea[] for the core file's sections.
+
+	* frontends/gui/MemoryMapsDisplay.cs: Added memory map display.
+
+2002-10-11  Martin Baulig  <martin@gnome.org>
+
 	* backends/TargetMemoryArea.cs: New struct.
 
 	* backends/IInferior.cs (IInferior.GetMemoryMaps): New method to

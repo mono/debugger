@@ -52,7 +52,7 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("{0,11} {1,11} {2,9}  {3}", start, end, flags, name);
+			return String.Format ("{0,10} {1,10} {2,8} {3}", start, end, flags, name);
 		}
 	}
 }

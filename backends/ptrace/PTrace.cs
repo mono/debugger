@@ -718,7 +718,7 @@ namespace Mono.Debugger.Backends
 
 		public bool CanWrite {
 			get {
-				return false;
+				return true;
 			}
 		}
 

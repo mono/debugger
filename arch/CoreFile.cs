@@ -267,7 +267,7 @@ namespace Mono.Debugger.Architecture
 
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
-			return null;
+			return core_bfd.GetMemoryMaps ();
 		}
 
 		//

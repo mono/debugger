@@ -402,6 +402,60 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public Section[] Sections {
+			get {
+				read_sections ();
+				return sections;
+			}
+		}
+
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			if (!is_coredump)
+				throw new InvalidOperationException ();
+
+			ArrayList list = new ArrayList ();
+
+			read_sections ();
+
+			ArrayList all_sections = new ArrayList ();
+			all_sections.AddRange (sections);
+			all_sections.AddRange (main_bfd.Sections);
+
+			foreach (Section section in all_sections) {
+				if ((section.flags & SectionFlags.Alloc) == 0)
+					continue;
+
+				if (section.size == 0)
+					continue;
+
+				TargetAddress start = new TargetAddress (inferior, section.vma);
+				TargetAddress end = start + section.size;
+
+				TargetMemoryFlags flags = 0;
+				if ((section.flags & SectionFlags.ReadOnly) != 0)
+					flags |= TargetMemoryFlags.ReadOnly;
+
+				if (list.Count > 0) {
+					TargetMemoryArea last = (TargetMemoryArea) list [list.Count - 1];
+
+					if ((last.Flags == flags) &&
+					    ((last.End + 1 == start) || (last.End == start))) {
+						list [list.Count - 1] = new TargetMemoryArea (
+							last.Start, end, last.Flags, last.Name, inferior);
+						continue;
+					}
+				}
+
+				string name = section.bfd.FileName;
+				list.Add (new TargetMemoryArea (start, end, flags, name, inferior));
+			}
+
+			TargetMemoryArea[] maps = new TargetMemoryArea [list.Count];
+			list.CopyTo (maps, 0);
+			return maps;
+		}
+
 		public ITargetMemoryReader GetReader (TargetAddress address)
 		{
 			Section section = this [address.Address];

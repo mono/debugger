@@ -72,7 +72,16 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("0x{0:x}", address);
+			return String.Format ("0x{0}", FormatAddress ((long) address));
+		}
+
+		public static string FormatAddress (long address)
+		{
+			int bits = 8;
+			string saddr = address.ToString ("x");
+			for (int i = saddr.Length; i < bits; i++)
+				saddr = "0" + saddr;
+			return saddr;
 		}
 
 		public int CompareTo (object obj)
