@@ -32,6 +32,7 @@ namespace Mono.Debugger
 		int start_row, end_row;
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
+		TargetAddress wrapper_addr = TargetAddress.Null;
 		IMethodSource source;
 		Module module;
 		bool is_loaded, has_bounds;
@@ -79,6 +80,11 @@ namespace Mono.Debugger
 		protected void SetSource (IMethodSource source)
 		{
 			this.source = source;
+		}
+
+		protected void SetWrapperAddress (TargetAddress wrapper_addr)
+		{
+			this.wrapper_addr = wrapper_addr;
 		}
 
 		//
@@ -152,6 +158,21 @@ namespace Mono.Debugger
 					throw new InvalidOperationException ();
 
 				return method_end;
+			}
+		}
+
+		public bool IsWrapper {
+			get {
+				return !wrapper_addr.IsNull;
+			}
+		}
+
+		public TargetAddress WrapperAddress {
+			get {
+				if (!IsWrapper)
+					throw new InvalidOperationException ();
+
+				return wrapper_addr;
 			}
 		}
 

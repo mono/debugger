@@ -86,6 +86,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress EndAddress;
 		public readonly TargetAddress MethodStartAddress;
 		public readonly TargetAddress MethodEndAddress;
+		public readonly TargetAddress WrapperAddress;
 		public readonly JitLineNumberEntry[] LineNumbers;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
@@ -94,13 +95,23 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int[] ParamTypeInfoOffsets;
 		public readonly int[] LocalTypeInfoOffsets;
 
+		protected TargetAddress ReadAddress (TargetBinaryReader reader, AddressDomain domain)
+		{
+			long address = reader.ReadAddress ();
+			if (address != 0)
+				return new TargetAddress (domain, address);
+			else
+				return TargetAddress.Null;
+		}				
+
 		public MethodAddress (MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
 		{
 			reader.Position = 4;
-			StartAddress = new TargetAddress (domain, reader.ReadAddress ());
-			EndAddress = new TargetAddress (domain, reader.ReadAddress ());
-			MethodStartAddress = new TargetAddress (domain, reader.ReadAddress ());
-			MethodEndAddress = new TargetAddress (domain, reader.ReadAddress ());
+			StartAddress = ReadAddress (reader, domain);
+			EndAddress = ReadAddress (reader, domain);
+			MethodStartAddress = ReadAddress (reader, domain);
+			MethodEndAddress = ReadAddress (reader, domain);
+			WrapperAddress = ReadAddress (reader, domain);
 
 			int variables_offset = reader.ReadInt32 ();
 			int type_table_offset = reader.ReadInt32 ();
@@ -111,9 +122,9 @@ namespace Mono.Debugger.Languages.CSharp
 			int line_number_offset = reader.ReadInt32 ();
 
 			Report.Debug (DebugFlags.METHOD_ADDRESS,
-				      "METHOD ADDRESS: {0} {1} {2} {3} {4} {5} {6}",
+				      "METHOD ADDRESS: {0} {1} {2} {3} {4} {5} {6} {7}",
 				      StartAddress, EndAddress, MethodStartAddress, MethodEndAddress,
-				      variables_offset, type_table_offset, num_line_numbers);
+				      WrapperAddress, variables_offset, type_table_offset, num_line_numbers);
 
 			if (num_line_numbers > 0) {
 				reader.Position = line_number_offset;
@@ -148,9 +159,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override string ToString ()
 		{
-			return String.Format ("[Address {0:x}:{1:x}:{3:x}:{4:x},{2}]",
+			return String.Format ("[Address {0:x}:{1:x}:{3:x}:{4:x},{5:x},{2}]",
 					      StartAddress, EndAddress, LineNumbers.Length,
-					      MethodStartAddress, MethodEndAddress);
+					      MethodStartAddress, MethodEndAddress, WrapperAddress);
 		}
 	}
 
@@ -159,7 +170,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 20;
+		public const int  DynamicVersion = 21;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -1299,6 +1310,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
+
+				if (!address.WrapperAddress.IsNull)
+					SetWrapperAddress (address.WrapperAddress);
 
 				IMethodSource source = CSharpMethod.GetMethodSource (
 					this, method, address.LineNumbers);

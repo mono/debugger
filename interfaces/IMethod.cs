@@ -92,6 +92,21 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Whether this is an icall/pinvoke wrapper.
+		//   WrapperAddress is only valid if this is true.
+		// </summary>
+		bool IsWrapper {
+			get;
+		}
+
+		// <summary>
+		//   If IsWrapper is true, this is the wrapped method's code.
+		// </summary>
+		TargetAddress WrapperAddress {
+			get;
+		}
+
+		// <summary>
 		//   Source is only valid if this is true.
 		// </summary>
 		bool HasSource {
