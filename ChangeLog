@@ -1,3 +1,8 @@
+2002-12-10  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/ScriptingContext.cs: Renamed `Process' to
+	`ProcessHandle' since I'm about to create backends/Process.cs.
+
 2002-12-08  Martin Baulig  <martin@ximian.com>
 
 	* class/ObjectCache.cs: Use one global cleanup thread rather than

@@ -67,7 +67,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (number == -1)
 				return context.CurrentProcess;
 
-			foreach (Process proc in context.Processes)
+			foreach (ProcessHandle proc in context.Processes)
 				if (proc.ID == number)
 					return proc;
 
@@ -93,7 +93,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			Process process = (Process) process_expr.Resolve (context);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			return process.GetFrame (number);
 		}
@@ -125,7 +125,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			Process process = (Process) process_expr.Resolve (context);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			context.CurrentProcess = process;
 			return process;
 		}
@@ -144,7 +144,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = (Process) process_expr.Resolve (context);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			context.Step (process, which);
 		}
 	}
@@ -160,7 +160,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = (Process) process_expr.Resolve (context);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			int current_idx = process.CurrentFrameIndex;
 			StackFrame[] backtrace = process.GetBacktrace ();
@@ -182,7 +182,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = (Process) process_expr.Resolve (context);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			process.CurrentFrameIndex++;
 			context.Print (process.CurrentFrame);
@@ -200,7 +200,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = (Process) process_expr.Resolve (context);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			process.CurrentFrameIndex--;
 			context.Print (process.CurrentFrame);
@@ -217,7 +217,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			int current_id = context.CurrentProcess.ID;
-			foreach (Process proc in context.Processes) {
+			foreach (ProcessHandle proc in context.Processes) {
 				string prefix = proc.ID == current_id ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, proc);
 			}
