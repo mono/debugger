@@ -20,6 +20,28 @@ namespace Mono.Debugger.Backends
 {
 	public delegate bool BreakpointHitHandler (StackFrame frame, int index, object user_data);
 
+	// <summary>
+	//   The single stepping engine is responsible for doing all the stepping
+	//   operations.
+	//
+	//     sse                  - short for single stepping engine.
+	//
+	//     stepping operation   - an operation which has been invoked by the user such
+	//                            as StepLine(), NextLine() etc.
+	//
+	//     target operation     - an operation which the sse invokes on the target
+	//                            such as stepping one machine instruction or resuming
+	//                            the target until a breakpoint is hit.
+	//
+	//     step frame           - an address range; the sse invokes target operations
+	//                            until the target hit a breakpoint, received a signal
+	//                            or stopped at an address outside this range.
+	//
+	//     temporary breakpoint - a breakpoint which is automatically removed the next
+	//                            time the target stopped; it is used to step over
+	//                            method calls.
+	//
+	// </summary>
 	public class SingleSteppingEngine
 	{
 		public SingleSteppingEngine (DebuggerBackend backend, IInferior inferior, bool native)
@@ -59,18 +81,36 @@ namespace Mono.Debugger.Backends
 			return current_symtab.Lookup (address);
 		}
 
+		// <summary>
+		//   This event is emitted each time a stepping operation is started or
+		//   completed.  Other than the IInferior's StateChangedEvent, it is only
+		//   emitted after the whole operation completed.
+		// </summary>
 		public event StateChangedHandler StateChangedEvent;
+
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 
+		// <summary>
+		//   The single-stepping engine's target state.  This will be
+		//   TargetState.RUNNING while the engine is stepping.
+		// </summary>
 		public TargetState State {
 			get {
 				return target_state;
 			}
 		}
 
+		// <summary>
+		//   The current stack frame.  May only be used when the engine is stopped
+		//   (State == TargetState.STOPPED).  The single stepping engine
+		//   automatically computes the current frame and current method each time
+		//   a stepping operation is completed.  This ensures that we do not
+		//   unnecessarily compute this several times if more than one client
+		//   accesses this property.
+		// </summary>
 		public StackFrame CurrentFrame {
 			get {
 				check_stopped ();
@@ -78,6 +118,15 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		// <summary>
+		//   The current stack frame.  May only be used when the engine is stopped
+		//   (State == TargetState.STOPPED).  The backtrace is generated on
+		//   demand, when this function is called.  However, the single stepping
+		//   engine will compute this only once each time a stepping operation is
+		//   completed.  This means that if you call this function several times
+		//   without doing any stepping operations in the meantime, you'll always
+		//   get the same backtrace.
+		// </summary>
 		public StackFrame[] GetBacktrace ()
 		{
 			check_stopped ();
@@ -106,6 +155,14 @@ namespace Mono.Debugger.Backends
 			return current_backtrace;
 		}
 
+		// <summary>
+		//   The current method  May only be used when the engine is stopped
+		//   (State == TargetState.STOPPED).  The single stepping engine
+		//   automatically computes the current frame and current method each time
+		//   a stepping operation is completed.  This ensures that we do not
+		//   unnecessarily compute this several times if more than one client
+		//   accesses this property.
+		// </summary>
 		public IMethod CurrentMethod {
 			get {
 				check_stopped ();
@@ -133,6 +190,10 @@ namespace Mono.Debugger.Backends
 
 		bool in_event = false;
 
+		// <summary>
+		//   Called when a stepping operation is started and completed to send the
+		//   StateChangedEvent.
+		// </summary>
 		TargetState change_target_state (TargetState new_state, int arg)
 		{
 			if (new_state == target_state)
@@ -215,6 +276,24 @@ namespace Mono.Debugger.Backends
 		StepFrame current_operation_frame = null;
 		bool must_continue = false;
 
+		// <summary>
+		//   A breakpoint has been hit; now the sse needs to find out what do do:
+		//   either ignore the breakpoint and continue or keep the target stopped
+		//   and send out the notification.
+		//
+		//   If @breakpoint is zero, we hit an "unknown" breakpoint - ie. a
+		//   breakpoint which we did not create.  Normally, this means that there
+		//   is a breakpoint instruction (such as G_BREAKPOINT ()) in the code.
+		//   Such unknown breakpoints are handled by the DebuggerBackend; one of
+		//   the language backends may recognize the breakpoint's address, for
+		//   instance if this is the JIT's breakpoint trampoline.
+		//
+		//   Returns true if the target should remain stopped and false to
+		//   continue stepping.
+		//
+		//   If we can't find a handler for the breakpoint, the default is to stop
+		//   the target and let the user decide what to do.
+		// </summary>
 		bool child_breakpoint (int breakpoint)
 		{
 			if (breakpoint == 0)
@@ -225,11 +304,19 @@ namespace Mono.Debugger.Backends
 
 			BreakpointHandle handle = (BreakpointHandle) breakpoints [breakpoint];
 			StackFrame frame = null;
+			// Only compute the current stack frame if the handler actually
+			// needs it.  Note that this computation is an expensive operation
+			// so we should only do it when it's actually needed.
 			if (handle.NeedsFrame)
 				frame = get_frame (inferior.CurrentFrame);
 			return handle.Handler (frame, breakpoint, handle.UserData);
 		}
 
+		// <summary>
+		//   This is called each time the target's state changed, for instance if
+		//   a target operation completed, the target hit a breakpoint, exited or
+		//   received a signal.
+		// </summary>
 		void child_event (ChildEventType message, int arg)
 		{
 			if (inferior == null) {
@@ -237,51 +324,112 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
+			// We disable all breakpoints each time the target stops.
+			// When we disabling a breakpoint, the breakpoint instruction is
+			// removed and the actual code is restored.  This is important if
+			// a client is inspecting or even modifying the target's code.
 			if (((message == ChildEventType.CHILD_STOPPED) ||
 			     (message == ChildEventType.CHILD_HIT_BREAKPOINT)))
 				inferior.DisableAllBreakpoints ();
 
+			// Ok, this piece of code needs some explanation.
+			// Assume the child hit a breakpoint and the user invoked
+			// Continue().  Now we have the problem that the current
+			// instruction is the breakpoint, so if we just resumed the
+			// target, we would immediately hit the same breakpoint again.
+			// On the other hand, we can't just disable this breakpoint
+			// because the child may execute a few instructions before
+			// reaching the current code position again and in this case we
+			// actually want it to hit the breakpoint a second time.
+			//
+			// To solve this, the sse disables all breakpoints, sets
+			// `must_continue' to true and steps a single machine instruction.
+			// That's just enough to get past that breakpoint.  However, the
+			// user asked us to Continue(), so after this single instruction
+			// step, we need to enable all breakpoints and resume the target.
 			if (must_continue && (message == ChildEventType.CHILD_STOPPED)) {
 				must_continue = false;
 				do_continue (false);
 				return;
+			} else {
+				// In either case, we must clear the `must_continue' flag
+				// the next time the target stopped.
+				must_continue = false;
 			}
 
+			// To step over a method call, the sse inserts a temporary
+			// breakpoint immediately after the call instruction and then
+			// resumes the target.
+			//
+			// If the target stops and we have such a temporary breakpoint, we
+			// need to distinguish a few cases:
+			//
+			// a) we may have received a signal
+			// b) we may have hit another breakpoint
+			// c) we actually hit the temporary breakpoint
+			//
+			// In either case, we need to remove the temporary breakpoint if
+			// the target is to remain stopped.  Note that this piece of code
+			// here only deals with the temporary breakpoint, the handling of
+			// a signal or another breakpoint is done later.
 			if (temp_breakpoint_id != 0) {
 				if ((message == ChildEventType.CHILD_EXITED) ||
 				    (message == ChildEventType.CHILD_SIGNALED))
+					// we can't remove the breakpoint anymore after
+					// the target exited, but we need to clear this id.
 					temp_breakpoint_id = 0;
-				else if ((arg == temp_breakpoint_id) || child_breakpoint (arg)) {
+				else if ((message != ChildEventType.CHILD_HIT_BREAKPOINT) ||
+					 (arg == temp_breakpoint_id) || child_breakpoint (arg)) {
+					// either we received a signal or we hit a
+					// breakpoint (the temporary one or any other
+					// breakpoint whose handler told us to remain
+					// stopped).
 					inferior.RemoveBreakpoint (temp_breakpoint_id);
 					temp_breakpoint_id = 0;
+					// if we hit a breakpoint, tell our clients that
+					// we just stopped.
 					if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
 						child_event (ChildEventType.CHILD_STOPPED, 0);
 						return;
 					}
 				} else {
+					// we hit any breakpoint, but its handler told us
+					// to resume the target and continue.
 					do_continue (true);
 					return;
 				}
 			}
 
+			// If `arg != 0', we received a signal and it's the signal number.
 			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
 				frame_changed (inferior.CurrentFrame, arg);
 				return;
 			}
 
+			// The first time the target stops in its life is in its `main'
+			// function.  In this case, we save the current stack frame's
+			// return address and when doing backtraces, we stop at this
+			// address.  This is to `hide' any stack frames beyond `main' from
+			// the user.
 			if (initialized && !reached_main &&
 			    ((message == ChildEventType.CHILD_STOPPED) ||
 			     (message == ChildEventType.CHILD_HIT_BREAKPOINT))) {
 				reached_main = true;
 				main_method_retaddr = inferior.GetReturnAddress ();
 				frames_invalid ();
+				// Tell the backend that we reached `main' and that it may
+				// load its symbol tables.
 				backend.ReachedMain ();
 			}
 
 			switch (message) {
 			case ChildEventType.CHILD_STOPPED: {
 				TargetAddress frame = inferior.CurrentFrame;
-
+				
+				// The target stops the first time immediately after
+				// exec() - somewhere in the libc's init function.  We
+				// can't do anything there, so resume the target until we
+				// reach `main'.
 				if (!initialized) {
 					initialized = true;
 					if (!native || start_native ()) {
@@ -290,6 +438,8 @@ namespace Mono.Debugger.Backends
 						break;
 					}
 				} else if (current_step_frame != null) {
+					// If the target stopped inside the current step
+					// frame, continue stepping.
 					if ((frame >= current_step_frame.Start) &&
 					    (frame < current_step_frame.End)) {
 						try {
@@ -301,11 +451,16 @@ namespace Mono.Debugger.Backends
 					}
 					current_step_frame = null;
 				}
+				// After returning from `main', resume the target and keep
+				// running until it exits (or hit a breakpoint or receives
+				// a signal).
 				if (frame == main_method_retaddr) {
 					do_continue (false);
 					break;
 				}
 
+				// Ok, we stopped somewhere outside the current step frame
+				// (if we had any), frame_changed() will decide what to do next.
 				frame_changed (frame, arg);
 				break;
 			}
@@ -316,6 +471,9 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
+				// If the hit a breakpoint and the target is to remain
+				// stopped, frame_changed() decides what to do next.
+				// Otherwise, just resume the target.
 				if (child_breakpoint (arg))
 					frame_changed (inferior.CurrentFrame, 0);
 				else
@@ -323,6 +481,9 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case ChildEventType.CHILD_MEMORY_CHANGED:
+				// Someone poked around in the target's memory; the GUI
+				// needs to reload a disassembly view since it may have
+				// changed.
 				backend.Reload ();
 				break;
 
