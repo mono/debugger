@@ -334,12 +334,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			StackFrame frame = GetFrame (frame_number);
 
-			if (frame != current_frame)
-				throw new ScriptingException ("Printing registers from other stack frames " +
-							      "is not yet implemented.");
-
 			if (!registers.Contains (name))
 				throw new ScriptingException ("No such register: %{0}", name);
+
+			if (frame != process.CurrentFrame)
+				throw new ScriptingException ("Printing registers from other stack frames " +
+							      "is not yet implemented.");
 
 			int register = (int) registers [name];
 			return process.GetRegister (register);
