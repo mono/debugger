@@ -226,6 +226,8 @@ namespace Mono.Debugger.GUI
 		
 		void StateSensitivityUpdate (TargetState state)
 		{
+			return;
+			
 			foreach (Widget w in all_state_widgets)
 				w.Sensitive = state_widgets_map [(int)state].Contains (w);
 		}

@@ -24,7 +24,7 @@ namespace Mono.Debugger.GUI {
 			
 		ScrolledWindow sw;
 		Gtk.SourceView source_view;
-		TextTag frame_tag;
+		TextTag frame_tag, breakpoint_tag;
 		Gtk.SourceBuffer text_buffer;
 
 		ClosableNotebookTab tab;
@@ -53,14 +53,24 @@ namespace Mono.Debugger.GUI {
 
 			FontDescription font = FontDescription.FromString ("Monospace 14");
 			source_view.ModifyFont (font);
-			
-			DateTime start = DateTime.Now;
-			string contents = GetSource (source_buffer);
+
+			//
+			// The sourceview tags we use.
+			//
 			frame_tag = new Gtk.TextTag ("frame");
-			frame_tag.Background = "red";
+			frame_tag.Background = "yellow";
 			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
 			text_buffer.TagTable.Add (frame_tag);
-			start = DateTime.Now;
+
+			breakpoint_tag = new Gtk.TextTag ("bpt");
+			breakpoint_tag.Background = "red";
+			text_buffer.CreateMark ("bpt", text_buffer.StartIter, true);
+			text_buffer.TagTable.Add (breakpoint_tag);
+
+			//
+			// Load contents
+			//
+			string contents = GetSource (source_buffer);
 			text_buffer.SetText (contents);
 
 			//
@@ -178,7 +188,6 @@ namespace Mono.Debugger.GUI {
 
 			current_frame = frame;
 
-			DateTime start = DateTime.Now;
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 
 			if (!active)

@@ -480,67 +480,99 @@ namespace Mono.Debugger
 				inferior.Shutdown ();
 		}
 
-		void check_inferior ()
+		bool check_inferior ()
 		{
 			check_disposed ();
-			if (inferior == null)
-				throw new NoTargetException ();
+			if (inferior == null){
+				// throw new NoTargetException ();
+				return false;
+			}
+			return true;
 		}
 
-		void check_stopped ()
+		bool check_stopped ()
 		{
 			check_inferior ();
 
 			if ((State != TargetState.STOPPED) && (State != TargetState.CORE_FILE))
-				throw new TargetNotStoppedException ();
+				//throw new TargetNotStoppedException ();
+				return false;
+
+			return true;
 		}
 
-		void check_can_run ()
+		bool check_can_run ()
 		{
-			check_inferior ();
+			if (!check_inferior ())
+				return false;
 
-			if (sse == null)
-				throw new CannotExecuteCoreFileException ();
+			if (false){
+				if (sse == null)
+					throw new CannotExecuteCoreFileException ();
+				
+				if (State == TargetState.CORE_FILE)
+					throw new CannotExecuteCoreFileException ();
+				else if (State != TargetState.STOPPED)
+					throw new TargetNotStoppedException ();
 
-			if (State == TargetState.CORE_FILE)
-				throw new CannotExecuteCoreFileException ();
-			else if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
+				return true;
+			} else {
+				if (sse == null || State == TargetState.CORE_FILE){
+					Console.WriteLine ("Error: Cannot Execute CoreFile");
+					return false;
+				} else if (State != TargetState.STOPPED) {
+					Console.WriteLine ("The target is not stopped");
+					return false;
+				}
+				return true;
+			}
 		}
 
 		public void StepInstruction ()
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			sse.StepInstruction ();
 		}
 
 		public void NextInstruction ()
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			sse.NextInstruction ();
 		}
 
 		public void StepLine ()
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			sse.StepLine ();
 		}
 
 		public void NextLine ()
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			sse.NextLine ();
 		}
 
 		public void Continue ()
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			sse.Continue ();
 		}
 
 		public void Continue (TargetAddress until)
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			TargetAddress current = CurrentFrameAddress;
 
 			Console.WriteLine (String.Format ("Requested to run from {0:x} until {1:x}.",
@@ -559,19 +591,25 @@ namespace Mono.Debugger
 
 		public void Stop ()
 		{
-			check_inferior ();
+			if (!check_inferior ())
+				return;
+			
 			inferior.Stop ();
 		}
 
 		public void ClearSignal ()
 		{
-			check_inferior ();
+			if (!check_inferior ())
+				return;
+			
 			inferior.SetSignal (0);
 		}
 
 		public void Finish ()
 		{
-			check_can_run ();
+			if (!check_can_run ())
+				return;
+			
 			sse.Finish ();
 		}
 
@@ -666,7 +704,9 @@ namespace Mono.Debugger
 
 		public TargetAddress CurrentFrameAddress {
 			get {
-				check_stopped ();
+				if (!check_stopped ())
+					throw new Exception ("Target not stopped");
+				
 				return inferior.CurrentFrame;
 			}
 		}
@@ -718,45 +758,59 @@ namespace Mono.Debugger
 
 		public long GetRegister (int register)
 		{
-			check_stopped ();
+			if (!check_stopped ())
+				return 0;
+			
 			return inferior.GetRegister (register);
 		}
 
 		public long[] GetRegisters (int[] registers)
 		{
-			check_stopped ();
+			if (!check_stopped ())
+				return null;
+			
 			return inferior.GetRegisters (registers);
 		}
 
 		public void SetRegister (int register, long value)
 		{
-			check_stopped ();
+			if (!check_stopped ())
+				return;
+			
 			inferior.SetRegister (register, value);
 		}
 
 		public void SetRegisters (int[] registers, long[] values)
 		{
-			check_stopped ();
+			if (!check_stopped ())
+				return;
+			
 			inferior.SetRegisters (registers, values);
 		}
 
 		public IDisassembler Disassembler {
 			get {
-				check_inferior ();
+				if (!check_inferior ())
+					return null;
+				
 				return inferior.Disassembler;
 			}
 		}
 
 		public IArchitecture Architecture {
 			get {
-				check_inferior ();
+				if (!check_inferior ())
+					return null;
+				
 				return inferior.Architecture;
 			}
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
 			get {
-				check_inferior ();
+				if (!check_inferior ())
+					return null;
+				
 				return inferior;
 			}
 		}
@@ -791,7 +845,9 @@ namespace Mono.Debugger
 
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
-			check_inferior ();
+			if (!check_inferior ())
+				return null;
+			
 			return inferior.GetMemoryMaps ();
 		}
 
