@@ -1106,20 +1106,51 @@ namespace Mono.Debugger.Backends
 		public void Interrupt ()
 		{
 			lock (this) {
-				Report.Debug (DebugFlags.Wait, "{0} interrupt: {0}",
+				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1}",
 					      this, engine_stopped);
 
 				if (engine_stopped)
 					return;
 
 				stop_requested = true;
-				if (!inferior.Stop ()) {
+				bool stopped = inferior.Stop ();
+				Report.Debug (DebugFlags.EventLoop, "{0} interrupt #1: {1}",
+					      this, stopped);
+
+				if (stepping_over_breakpoint > 0) {
+					Report.Debug (DebugFlags.SSE,
+						      "{0} aborting stepping over " +
+						      "breakpoint {1}: {2}",
+						      this, stepping_over_breakpoint,
+						      inferior.CurrentFrame);
+
+					inferior.EnableBreakpoint (stepping_over_breakpoint);
+					manager.ReleaseGlobalThreadLock (this);
+					stepping_over_breakpoint = 0;
+				}
+
+				if (current_callback != null) {
+					current_callback.Abort ();
+					current_callback = null;
+				}
+
+				if (!stopped) {
 					// We're already stopped, so just consider the
 					// current operation as finished.
-					step_operation_finished ();
 					engine_stopped = true;
 					stop_requested = false;
-					operation_completed_event.Set ();
+
+					frame_changed (inferior.CurrentFrame, null);
+					TargetEventArgs args = new TargetEventArgs (
+						TargetEventType.FrameChanged, current_frame);
+					step_operation_finished ();
+					operation_completed (args);
+				}
+
+				try {
+					inferior.GetCurrentFrame ();
+				} catch (Exception ex) {
+					Console.WriteLine ("FUCK: {0}", ex);
 				}
 			}
 		}

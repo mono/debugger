@@ -62,7 +62,7 @@ namespace Mono.Debugger
 		Semaphore engine_event;
 		Hashtable thread_hash;
 
-		int thread_lock_level;
+		bool has_thread_lock;
 		DebuggerMutex thread_lock_mutex;
 		AddressDomain address_domain;
 
@@ -207,10 +207,8 @@ namespace Mono.Debugger
 		{
 			thread_lock_mutex.Lock ();
 			Report.Debug (DebugFlags.Threads,
-				      "Acquiring global thread lock: {0} {1}",
-				      caller, thread_lock_level);
-			if (thread_lock_level++ > 0)
-				throw new ArgumentException ();
+				      "Acquiring global thread lock: {0}", caller);
+			has_thread_lock = true;
 			foreach (SingleSteppingEngine engine in thread_hash.Values) {
 				if (engine == caller)
 					continue;
@@ -224,18 +222,14 @@ namespace Mono.Debugger
 		internal void ReleaseGlobalThreadLock (SingleSteppingEngine caller)
 		{
 			Report.Debug (DebugFlags.Threads,
-				      "Releasing global thread lock: {0} {1}",
-				      caller, thread_lock_level);
-			if (--thread_lock_level > 0) {
-				thread_lock_mutex.Unlock ();
-				return;
-			}
+				      "Releasing global thread lock: {0}", caller);
 				
 			foreach (SingleSteppingEngine engine in thread_hash.Values) {
 				if (engine == caller)
 					continue;
 				engine.ReleaseThreadLock ();
 			}
+			has_thread_lock = false;
 			thread_lock_mutex.Unlock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock: {0}", caller);
@@ -562,6 +556,14 @@ namespace Mono.Debugger
 					foreach (SingleSteppingEngine engine in thread_hash.Values) {
 						if (!engine.IsDaemon)
 							engine.Interrupt ();
+					}
+
+					if (has_thread_lock) {
+						Report.Debug (DebugFlags.Threads,
+							      "Aborting global thread lock");
+
+						has_thread_lock = false;
+						thread_lock_mutex.Unlock ();
 					}
 				}
 				return;
