@@ -1351,6 +1351,14 @@ namespace Mono.Debugger.Backends
 				current_frame = StackFrame.CreateFrame (
 					process, simple, current_method, source);
 			} else {
+				Operation new_operation = check_method_operation (
+					address, current_method, null, operation);
+				if (new_operation != null) {
+					Report.Debug (DebugFlags.EventLoop,
+						      "New operation: {0}", new_operation);
+					return new_operation;
+				}
+
 				SimpleStackFrame simple = new SimpleStackFrame (
 					iframe, registers, 0);
 				current_frame = StackFrame.CreateFrame (
@@ -1374,8 +1382,14 @@ namespace Mono.Debugger.Backends
 			if ((operation == null) || operation.IsNative)
 				return null;
 
-			if (method.IsWrapper && (address == method.StartAddress))
-				return new Operation (OperationType.Run, method.WrapperAddress);
+			if (method.IsWrapper) {
+				if (address == method.StartAddress)
+					return new Operation (
+						OperationType.Run, method.WrapperAddress);
+				else
+					return new Operation (
+						OperationType.FinishNative);
+			}
 
 			ILanguageBackend language = method.Module.LanguageBackend as ILanguageBackend;
 			if (source == null)
@@ -1581,6 +1595,9 @@ namespace Mono.Debugger.Backends
 
 			SourceFileFactory factory = manager.DebuggerBackend.SourceFileFactory;
 			if (!factory.Exists (source.SourceFile.FileName))
+				return false;
+
+			if (!method.HasMethodBounds)
 				return false;
 
 			SourceAddress addr = source.Lookup (method.MethodStartAddress);
