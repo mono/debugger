@@ -1,3 +1,5 @@
+SUBDIRS = opcodes
+
 lib_LTLIBRARIES = libmonodebuggerbfdglue.la
 
 libmonodebuggerbfdglue_la_SOURCES = \
@@ -5,9 +7,9 @@ libmonodebuggerbfdglue_la_SOURCES = \
 	bfdglue.h		\
 	#
 
-libmonodebuggerbfdglue_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ -lbfd -lopcodes
+libmonodebuggerbfdglue_la_LIBADD = opcodes/libopcodes.la @BASE_DEPENDENCIES_LIBS@ -lbfd 
 
-INCLUDES = @BASE_DEPENDENCIES_CFLAGS@
+INCLUDES = -I$(srcdir)/opcodes @BASE_DEPENDENCIES_CFLAGS@
 
 CLEANFILES = lib*.a lib*.dll
 

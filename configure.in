@@ -134,13 +134,9 @@ AC_SUBST(CFLAGS)
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)
 
-AC_CHECK_HEADER(dis-asm.h,, [AC_MSG_ERROR(
-[Can't find <dis-asm.h>, make sure you have binutils-dev >= 2.12 installed.])])
 old_LIBS=$LIBS
 AC_CHECK_LIB(bfd, bfd_get_arch,, [AC_MSG_ERROR(
 [Can't find libbfd, make sure you have binutils-dev >= 2.12 installed.])])
-AC_CHECK_LIB(opcodes, disassembler,, [AC_MSG_ERROR(
-[Can't find libopcodes, make sure you have binutils >= 2.12 installed.])], -lbfd)
 LIBS=$old_LIBS
 
 old_LIBS=$LIBS
@@ -226,6 +222,7 @@ frontends/scripting/Makefile
 frontends/command-line/Makefile
 frontends/gui/Makefile
 arch/Makefile
+arch/opcodes/Makefile
 test/Makefile
 doc/Makefile
 ])
