@@ -483,10 +483,7 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress MainMethodAddress {
 			get {
-				if (native)
-					return bfd ["main"];
-				else
-					return TargetAddress.Null;
+				return bfd ["main"];
 			}
 		}
 

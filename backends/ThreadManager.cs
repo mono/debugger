@@ -66,13 +66,13 @@ namespace Mono.Debugger
 			last_thread_event = bfdc.LookupSymbol ("__pthread_last_event");
 
 			if (tdebug.IsNull || thread_handles.IsNull ||
-			    thread_handles_num.IsNull || last_thread_event.IsNull)
+			    thread_handles_num.IsNull || last_thread_event.IsNull) {
+				Console.WriteLine ("No thread support.");
 				return false;
+			}
 
 			process.Inferior.WriteInteger (tdebug, 1);
 			initialized = true;
-
-			reload_threads (process.Inferior);
 
 			Console.WriteLine ("Initialized thread manager.");
 
@@ -185,7 +185,7 @@ namespace Mono.Debugger
 						pid, PThread_Signal_Restart, null);
 				else if ((csharp_handler != null) && (index == 2))
 					new_process = debugger_process = main_process.CreateDaemonThread (
-						pid, 0, csharp_handler);
+						pid, PThread_Signal_Restart, csharp_handler);
 				else {
 					new_process = main_process.CreateThread (pid);
 					new_process.Inferior.SetSignal (PThread_Signal_Restart, true);
