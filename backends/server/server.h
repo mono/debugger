@@ -278,7 +278,6 @@ typedef struct {
 	int has_inferior;
 	InferiorHandle *inferior;
 	InferiorInfo *info;
-	int fd, pid;
 } ServerHandle;
 
 ServerHandle *
