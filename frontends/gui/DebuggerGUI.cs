@@ -118,6 +118,7 @@ namespace Mono.Debugger.GUI
 		ThreadNotify thread_notify;
 		FileOpenDialog file_open_dialog;
 		DebuggerManager manager;
+		About about_dialog;
 
 		Gtk.TextView target_output;
 		Gtk.TextView command_output;
@@ -450,16 +451,20 @@ namespace Mono.Debugger.GUI
 		
 		void OnAboutActivate (object sender, EventArgs args)
 		{
-			Pixbuf pixbuf = new Pixbuf (null, "mono.png");
+			if (about_dialog == null) {
+				Pixbuf pixbuf = new Pixbuf (null, "mono.png");
 
-			About about = new About ("Mono Debugger", "0.1",
-						 "Copyright (C) 2002 Ximian, Inc.",
-						 "",
-						 new string [] { "Martin Baulig (martin@ximian.com)",
-								 "Miguel de Icaza (miguel@ximian.com)" },
-						 new string [] { },
-						 "", pixbuf);
-			about.Run ();
+				about_dialog = new About (
+					"Mono Debugger", "0.3",
+					"Copyright (C) 2002-2003 Ximian, Inc.",
+					"",
+					new string [] { "Martin Baulig (martin@ximian.com)",
+							"Miguel de Icaza (miguel@ximian.com)" },
+					new string [] { },
+					"", pixbuf);
+			}
+
+			about_dialog.Show ();
 		}
 
 		void OnViewHexEditor (object sender, EventArgs args)
