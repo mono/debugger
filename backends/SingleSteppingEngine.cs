@@ -152,7 +152,6 @@ namespace Mono.Debugger.Backends
 			this.pid = pid;
 
 			reached_main = true;
-			reached_main_2 = true;
 			initialized = true;
 
 			engine_thread = new Thread (new ThreadStart (start_engine_thread_attach));
@@ -233,8 +232,13 @@ namespace Mono.Debugger.Backends
 
 			initialized = true;
 
+			engine_ready ();
+			engine_is_ready = true;
+
 			engine_thread_main (null);
 		}
+
+		bool engine_is_ready = false;
 
 		void engine_ready ()
 		{
@@ -254,8 +258,6 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		void engine_thread_main (Command command)
 		{
-			bool first = true;
-
 			do {
 				try {
 					process_command (command);
@@ -267,9 +269,9 @@ namespace Mono.Debugger.Backends
 
 				// If we reach this point the first time, signal our
 				// caller that we're now ready and about to wait for commands.
-				if (first) {
+				if (!engine_is_ready) {
 					engine_ready ();
-					first = false;
+					engine_is_ready = true;
 				}
 
 				if (inferior == null)
@@ -488,22 +490,8 @@ namespace Mono.Debugger.Backends
 
 			if (initialized && !reached_main) {
 				backend.ReachedMain (process, inferior);
-				reached_main = true;
-
-				if (!native) {
-					ok = do_continue ();
-					if (!ok)
-						return;
-				}
-			}
-
-			if (initialized && !reached_main_2) {
-				backend.ReachedManagedMain ();
 				main_method_retaddr = inferior.GetReturnAddress ();
-				reached_main_2 = true;
-
-				disassembler.SymbolTable = symtab_manager.SymbolTable;
-				current_symtab = symtab_manager.SymbolTable;
+				reached_main = true;
 			}
 
 			TargetAddress frame = inferior.CurrentFrame;
@@ -815,8 +803,12 @@ namespace Mono.Debugger.Backends
 		bool check_can_run ()
 		{
 			check_inferior ();
-			if (!command_mutex.WaitOne (0, false) || !completed_event.WaitOne (0, false))
+			if (!command_mutex.WaitOne (0, false))
 				return false;
+			if (!completed_event.WaitOne (0, false)) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
 			return true;
 		}
 
@@ -844,7 +836,6 @@ namespace Mono.Debugger.Backends
 		bool initialized
 ;
 		bool reached_main;
-		bool reached_main_2;
 		bool debugger_info_read;
 
 		private enum StepOperation {
@@ -965,12 +956,8 @@ namespace Mono.Debugger.Backends
 		{
 			// The inferior knows about breakpoints from all threads, so if this is
 			// zero, then no other thread has set this breakpoint.
-			if (breakpoint == 0) {
-				if (reached_main_2)
-					return backend.BreakpointHit (inferior, inferior.CurrentFrame);
-				else
-					return true;
-			}
+			if (breakpoint == 0)
+				return backend.BreakpointHit (inferior, inferior.CurrentFrame);
 
 			if (!breakpoints.Contains (breakpoint))
 				return true;
@@ -1643,6 +1630,17 @@ namespace Mono.Debugger.Backends
 			}
 
 			throw new TargetNotStoppedException ();
+		}
+
+		CommandResult reached_main_func (object data)
+		{
+			main_method_retaddr = inferior.GetReturnAddress ();
+			return new CommandResult (CommandResultType.CommandOk);
+		}
+
+		internal void ReachedMain ()
+		{
+			send_sync_command (new CommandFunc (reached_main_func), null);
 		}
 
 		// <summary>
