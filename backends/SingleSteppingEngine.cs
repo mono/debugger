@@ -1306,7 +1306,6 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			TargetAddress stack = inferior.ReadAddress (info);
 			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
 
 			Report.Debug (DebugFlags.SSE,
@@ -1831,7 +1830,6 @@ namespace Mono.Debugger.Backends
 				bool is_start;
 				TargetAddress trampoline = frame.Language.GetTrampolineAddress (
 					inferior, call, out is_start);
-				IMethod tmethod = null;
 
 				/*
 				 * If this is a trampoline, insert a breakpoint at the start of

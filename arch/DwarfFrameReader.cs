@@ -460,9 +460,8 @@ namespace Mono.Debugger.Architecture
 
 				string augmentation = reader.ReadString ();
 
-				long eh_augmentation_ptr = 0;
 				if (augmentation.StartsWith ("eh")) {
-					eh_augmentation_ptr = reader.ReadAddress ();
+					reader.ReadAddress ();
 					augmentation = augmentation.Substring (2);
 				}
 
@@ -472,7 +471,7 @@ namespace Mono.Debugger.Architecture
 
 				for (int pos = 0; pos < augmentation.Length; pos++) {
 					if (augmentation [pos] == 'z') {
-						long value = reader.ReadLeb128 ();
+						reader.ReadLeb128 ();
 						has_z_augmentation = true;
 						continue;
 					}

@@ -20,7 +20,6 @@ namespace Mono.Debugger.Languages.Mono
 			this.rank = type.Type.Rank;
 
 			ITargetInfo target_info = type.Type.File.TargetInfo;
-			int object_size = 2 * target_info.TargetAddressSize;
 
 			try {
 				ITargetMemoryReader reader = location.ReadMemory (type.Size);

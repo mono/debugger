@@ -135,7 +135,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (obj.Type.Type != Type)
 				throw new InvalidOperationException ();
-			TargetLocation location = GetLocation (frame);
+			// TargetLocation location = GetLocation (frame);
 			// type.SetObject (location, (MonoObject) obj);
 		}
 

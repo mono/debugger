@@ -129,8 +129,7 @@ namespace Mono.Debugger.Architecture
 
 			DwarfBinaryReader reader = DebugInfoReader;
 
-			long length = reader.ReadInitialLength (out is64bit);
-			long stop = reader.Position + length;
+			reader.ReadInitialLength (out is64bit);
 			int version = reader.ReadInt16 ();
 			if (version < 2)
 				throw new DwarfException (
@@ -160,8 +159,6 @@ namespace Mono.Debugger.Architecture
 				symtab = new DwarfSymbolTable (this, aranges);
 				pubnames = Hashtable.Synchronized (read_pubnames ());
 			}
-
-			ArrayList source_list = new ArrayList ();
 
 			long offset = 0;
 			while (offset < reader.Size) {
@@ -398,7 +395,6 @@ namespace Mono.Debugger.Architecture
 						dwarf.bfd, "Unknown address size: {0}",
 						address_size);
 
-				ArrayList source_list = new ArrayList ();
 				compile_units = new ArrayList ();
 
 				while (reader.Position < stop) {
@@ -513,7 +509,6 @@ namespace Mono.Debugger.Architecture
 			ArrayList ranges = new ArrayList ();
 
 			while (!reader.IsEof) {
-				long start = reader.Position;
 				long length = reader.ReadInitialLength ();
 				long stop = reader.Position + length;
 				int version = reader.ReadInt16 ();
@@ -582,12 +577,11 @@ namespace Mono.Debugger.Architecture
 			Hashtable names = new Hashtable ();
 
 			while (!reader.IsEof) {
-				long start = reader.Position;
 				long length = reader.ReadInitialLength ();
 				long stop = reader.Position + length;
 				int version = reader.ReadInt16 ();
 				long debug_offset = reader.ReadOffset ();
-				long debug_length = reader.ReadOffset ();
+				reader.ReadOffset ();
 
 				if (version != 2)
 					throw new DwarfException (

@@ -522,9 +522,6 @@ namespace Mono.Debugger
 			if ((code != null) && (code.Length > 3))
 				return read_prologue (frame, memory, code);
 
-			Registers old_regs = frame.Registers;
-			TargetAddress eip = frame.Address;
-			TargetAddress esp = frame.StackPointer;
 			TargetAddress ebp = frame.FrameAddress;
 
 			SimpleStackFrame new_frame = do_hacks (memory, frame, name);

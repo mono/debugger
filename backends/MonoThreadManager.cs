@@ -126,9 +126,9 @@ namespace Mono.Debugger.Backends
 		void thread_created (Inferior inferior, TargetAddress data, bool is_main)
 		{
 			ITargetMemoryReader reader = inferior.ReadMemory (data, thread_size);
-			TargetAddress end_stack = reader.ReadAddress ();
+			reader.ReadAddress ();
 			int tid = reader.BinaryReader.ReadInt32 ();
-			int locked = reader.BinaryReader.ReadInt32 ();
+			reader.BinaryReader.ReadInt32 ();
 			TargetAddress func = reader.ReadGlobalAddress ();
 			TargetAddress start_stack = reader.ReadAddress ();
 
@@ -173,7 +173,6 @@ namespace Mono.Debugger.Backends
 				}
 
 				case NotificationType.ThreadCreated: {
-					int tid = (int) cevent.Data2;
 					TargetAddress data = new TargetAddress (
 						inferior.GlobalAddressDomain, cevent.Data1);
 

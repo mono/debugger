@@ -63,8 +63,8 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			info.Position = 8;
-			int token = info.ReadLeb128 ();
-			int rank = info.ReadLeb128 ();
+			info.ReadLeb128 ();
+			info.ReadLeb128 ();
 
 			type_info = DoResolve (info);
 			return type_info;

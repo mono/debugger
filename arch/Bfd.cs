@@ -421,7 +421,7 @@ namespace Mono.Debugger.Architecture
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
-				TargetAddress tmp = map_reader.ReadAddress ();
+				map_reader.ReadAddress ();
 
 				string name;
 				try {
