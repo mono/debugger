@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Collections;
 using System.Threading;
-using C = Mono.CSharp.Debugger;
+using C = Mono.CompilerServices.SymbolWriter;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Architecture;
@@ -119,6 +119,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
 		public readonly bool HasThis;
+		public readonly int NumParameters;
 		public readonly int ClassTypeInfoOffset;
 		public readonly int[] ParamTypeInfoOffsets;
 		public readonly int[] LocalTypeInfoOffsets;
@@ -142,6 +143,7 @@ namespace Mono.Debugger.Languages.CSharp
 			WrapperAddress = ReadAddress (reader, domain);
 
 			HasThis = reader.ReadInt32 () != 0;
+			NumParameters = reader.ReadInt32 ();
 			int variables_offset = reader.ReadInt32 ();
 			int type_table_offset = reader.ReadInt32 ();
 
@@ -169,8 +171,8 @@ namespace Mono.Debugger.Languages.CSharp
 			if (HasThis)
 				ThisVariableInfo = new VariableInfo (reader);
 
-			ParamVariableInfo = new VariableInfo [entry.NumParameters];
-			for (int i = 0; i < entry.NumParameters; i++)
+			ParamVariableInfo = new VariableInfo [NumParameters];
+			for (int i = 0; i < NumParameters; i++)
 				ParamVariableInfo [i] = new VariableInfo (reader);
 
 			LocalVariableInfo = new VariableInfo [entry.NumLocals];
@@ -180,8 +182,8 @@ namespace Mono.Debugger.Languages.CSharp
 			reader.Position = type_table_offset;
 			ClassTypeInfoOffset = reader.ReadInt32 ();
 
-			ParamTypeInfoOffsets = new int [entry.NumParameters];
-			for (int i = 0; i < entry.NumParameters; i++)
+			ParamTypeInfoOffsets = new int [NumParameters];
+			for (int i = 0; i < NumParameters; i++)
 				ParamTypeInfoOffsets [i] = reader.ReadInt32 ();
 
 			LocalTypeInfoOffsets = new int [entry.NumLocals];
@@ -412,12 +414,16 @@ namespace Mono.Debugger.Languages.CSharp
 				TargetAddress address = memory.ReadAddress (symbol_files);
 				symbol_files += address_size;
 
-				MonoSymbolFile symfile = new MonoSymbolFile (
-					this, Backend, memory, memory, address);
-				SymbolFiles.Add (symfile);
+				try {
+					MonoSymbolFile symfile = new MonoSymbolFile (
+						this, Backend, memory, memory, address);
+					SymbolFiles.Add (symfile);
 
-				if (address == corlib_address)
-					corlib = symfile;
+					if (address == corlib_address)
+						corlib = symfile;
+				} catch (C.MonoSymbolFileException ex) {
+					Console.WriteLine (ex.Message);
+				}
 			}
 
 			read_type_table (memory, header);
@@ -1547,7 +1553,10 @@ namespace Mono.Debugger.Languages.CSharp
 			SourceMethod method = GetSourceMethod (index);
 			C.MethodEntry entry = File.GetMethod (index);
 
-			mono_method = new MonoMethod (this, method, entry);
+			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+				File.Assembly, entry.Token);
+
+			mono_method = new MonoMethod (this, method, entry, mbase);
 			method_hash.Add (index, mono_method);
 			return mono_method;
 		}
@@ -1672,11 +1681,12 @@ namespace Mono.Debugger.Languages.CSharp
 			C.MethodEntry entry = File.GetMethod (index);
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
-			R.MethodBase mbase = entry.MethodBase;
+			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+				File.Assembly, entry.Token);
 
 			StringBuilder sb = new StringBuilder (mbase.DeclaringType.FullName);
 			sb.Append (".");
-			sb.Append (entry.Name);
+			sb.Append (mbase.Name);
 			sb.Append ("(");
 			bool first = true;
 			foreach (R.ParameterInfo param in mbase.GetParameters ()) {
@@ -1825,18 +1835,20 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodAddress address;
 			Hashtable load_handlers;
 
-			public MonoMethod (MonoSymbolFile reader, SourceMethod info, C.MethodEntry method)
+			public MonoMethod (MonoSymbolFile reader, SourceMethod info,
+					   C.MethodEntry method, R.MethodBase rmethod)
 				: base (info.Name, reader.ImageFile, reader)
 			{
 				this.reader = reader;
 				this.info = info;
 				this.method = method;
-				this.rmethod = method.MethodBase;
+				this.rmethod = rmethod;
 			}
 
-			public MonoMethod (MonoSymbolFile reader, SourceMethod info, C.MethodEntry method,
+			public MonoMethod (MonoSymbolFile reader, SourceMethod info,
+					   C.MethodEntry method, R.MethodBase rmethod,
 					   ITargetMemoryReader dynamic_reader)
-				: this (reader, info, method)
+				: this (reader, info, method, rmethod)
 			{
 				Load (dynamic_reader.BinaryReader, reader.GlobalAddressDomain);
 			}
@@ -1892,7 +1904,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				local_types = new MonoType [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
-					Type type = method.LocalTypes [i];
+					Type type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (reader.File.Assembly, method.Locals [i].Signature);
 
 					local_types [i] = reader.Table.GetType (
 						type, address.LocalTypeInfoOffsets [i]);

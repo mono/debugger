@@ -51,11 +51,11 @@ LIBRARY_SRCLIST = \
 
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions	\
-	-r:Mono.CSharp.Debugger
+	-r:Mono.CompilerServices.SymbolWriter
 
 MDB_DEPS = \
 	-r:Mono.GetOptions	\
-	-r:Mono.CSharp.Debugger	\
+	-r:Mono.CompilerServices.SymbolWriter	\
 	-r:./Mono.Debugger.dll
 
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)

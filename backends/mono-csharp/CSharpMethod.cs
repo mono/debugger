@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using C = Mono.CSharp.Debugger;
+using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger.Languages.CSharp
 {
