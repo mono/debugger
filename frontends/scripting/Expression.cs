@@ -97,6 +97,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("process_expression", "Process")]
 	public class ProcessExpression : Expression
 	{
 		int number;
@@ -117,6 +118,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("frame_expression", "Stack frame")]
 	public class FrameExpression : Expression
 	{
 		ProcessExpression process_expr;
@@ -140,6 +142,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("breakpoint_expression", "Breakpoint number")]
 	public class BreakpointNumberExpression : Expression
 	{
 		int number;
@@ -180,6 +183,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("thread_group_expression", "Thread group")]
 	public class ThreadGroupExpression : Expression
 	{
 		string name;
@@ -308,6 +312,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("source_expression", "Source file expression")]
 	public class SourceExpression : Expression
 	{
 		FrameExpression frame_expr;
@@ -406,6 +411,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("module_list_expression", "List of modules")]
 	public class ModuleListExpression : Expression
 	{
 		int[] modules;
@@ -429,6 +435,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("source_list_expression", "List of source files")]
 	public class SourceListExpression : Expression
 	{
 		int[] sources;
@@ -452,6 +459,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("process_list_expression", "List of processes")]
 	public class ProcessListExpression : Expression
 	{
 		int[] processes;
@@ -475,6 +483,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Expression("module_operation_list_expression", "List of module operations")]
 	public class ModuleOperationListExpression : Expression
 	{
 		ModuleOperation[] operations;

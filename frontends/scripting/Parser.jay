@@ -260,10 +260,6 @@ generated_command
 	  {
 		$$ = new BreakpointDeleteCommand ((BreakpointNumberExpression) $3);
 	  }
-	| PRINT expression
-	  {
-		$$ = new PrintCommand ((Expression) $2);
-	  }
 	| FRAME frame_expression
 	  {
 		$$ = new FrameCommand ((FrameExpression) $2);
@@ -275,10 +271,6 @@ generated_command
 	| DISASSEMBLE METHOD frame_expression
 	  {
 		$$ = new DisassembleMethodCommand ((FrameExpression) $3);
-	  }
-	| START program_arguments_expression
-	  {
-		$$ = new StartCommand ((ProgramArgumentsExpression) $2);
 	  }
 	| PROCESS process_expression
 	  {
@@ -326,6 +318,14 @@ other_command
 	| SET BANG IDENTIFIER ASSIGN variable_expression
 	  {
 		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
+	  }
+	| PRINT expression
+	  {
+		$$ = new PrintCommand ((Expression) $2);
+	  }
+	| START program_arguments_expression
+	  {
+		$$ = new StartCommand ((ProgramArgumentsExpression) $2);
 	  }
 	;
 

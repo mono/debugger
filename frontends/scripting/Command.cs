@@ -42,6 +42,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("FRAME", "Print the current stack frame.")]
 	public class FrameCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -59,6 +60,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("DISASSEMBLE", "Disassemble current instruction")]
 	public class DisassembleCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -76,6 +78,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("DISASSEMBLE METHOD", "Disassemble current method")]
 	public class DisassembleMethodCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -112,6 +115,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("PROCESS", "Select current process")]
 	public class SelectProcessCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -128,6 +132,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("BACKGROUND", "Run process in background")]
 	public class BackgroundProcessCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -144,6 +149,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("STOP", "Stop execution of a process")]
 	public class StopProcessCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -160,6 +166,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("CONTINUE", "Continue execution of the target")]
 	public class ContinueCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -176,6 +183,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("STEP", "Step one source line")]
 	public class StepCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -192,6 +200,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("NEXT", "Next line")]
 	public class NextCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -208,6 +217,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("STEPI", "Step one instruction")]
 	public class StepInstructionCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -224,6 +234,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("NEXTI", "Next instruction")]
 	public class NextInstructionCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -240,6 +251,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("FINISH", "Run until exit of current method")]
 	public class FinishCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -256,6 +268,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("BACKTRACE", "Print backtrace")]
 	public class BacktraceCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -278,6 +291,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("UP", "Go one frame up")]
 	public class UpCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -296,6 +310,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("UP", "Go one frame down")]
 	public class DownCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -314,6 +329,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("KILL", "Kill a process")]
 	public class KillProcessCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -331,6 +347,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW PROCESSES", "Show processes")]
 	public class ShowProcessesCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -348,6 +365,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW REGISTERS", "Show registers")]
 	public class ShowRegistersCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -369,6 +387,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW PARAMETERS", "Show method parameters")]
 	public class ShowParametersCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -386,6 +405,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW LOCALS", "Show local variables")]
 	public class ShowLocalsCommand : Command
 	{
 		FrameExpression frame_expr;
@@ -403,6 +423,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW TYPE", "Show type of variable")]
 	public class ShowVariableTypeCommand : Command
 	{
 		VariableExpression var_expr;
@@ -420,6 +441,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW MODULES", "Show modules")]
 	public class ShowModulesCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -428,6 +450,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW SOURCES", "Show source files")]
 	public class ShowSourcesCommand : Command
 	{
 		ModuleListExpression module_list_expr;
@@ -446,6 +469,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW METHODS", "Show methods")]
 	public class ShowMethodsCommand : Command
 	{
 		SourceListExpression source_list_expr;
@@ -464,6 +488,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW BREAKPOINTS", "Show breakpoints")]
 	public class ShowBreakpointsCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -472,6 +497,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("SHOW THREADGROUPS", "Show thread groups")]
 	public class ShowThreadGroupsCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -480,6 +506,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("THREADGROUP CREATE", "Create a new thread group")]
 	public class ThreadGroupCreateCommand : Command
 	{
 		string name;
@@ -495,6 +522,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("THREADGROUP ADD", "Add threads to a thread group")]
 	public class ThreadGroupAddCommand : Command
 	{
 		string name;
@@ -514,6 +542,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("THREADGROUP REMOVE", "Remove threads from a thread group")]
 	public class ThreadGroupRemoveCommand : Command
 	{
 		string name;
@@ -533,6 +562,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("BREAKPOINT ENABLE", "Enable breakpoint")]
 	public class BreakpointEnableCommand : Command
 	{
 		BreakpointNumberExpression breakpoint_number_expr;
@@ -549,6 +579,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("BREAKPOINT DISABLE", "Disable breakpoint")]
 	public class BreakpointDisableCommand : Command
 	{
 		BreakpointNumberExpression breakpoint_number_expr;
@@ -565,6 +596,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("BREAKPOINT DELETE", "Delete breakpoint")]
 	public class BreakpointDeleteCommand : Command
 	{
 		BreakpointNumberExpression breakpoint_number_expr;
@@ -581,6 +613,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("MODULE", "Change module parameters")]
 	public class ModuleOperationCommand : Command
 	{
 		ModuleListExpression module_list_expr;
@@ -602,6 +635,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("BREAK", "Insert breakpoint")]
 	public class BreakCommand : Command
 	{
 		ThreadGroupExpression thread_group_expr;
@@ -658,6 +692,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("LIST", "List source code")]
 	public class ListCommand : Command
 	{
 		SourceExpression source_expr;

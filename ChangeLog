@@ -1,5 +1,15 @@
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Generator.cs: New file.
+
+	* frontends/scripting/Command.cs: Added a [Command] attribute to
+	all commands.
+
+	* frontends/scripting/Expression.cs: Added an [Expression]
+	attribute to all expressions.
+
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (HelpCommand): Removed.
 
 2003-03-03  Martin Baulig  <martin@ximian.com>

@@ -8,6 +8,7 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
+	[Expression("variable_expression", "Variable expression")]
 	public abstract class VariableExpression : Expression
 	{
 		public abstract string Name {
