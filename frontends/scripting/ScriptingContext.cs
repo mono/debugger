@@ -950,6 +950,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			add_process (handle);
+			handle.Background ();
 		}
 
 		public void ShowVariableType (ITargetType type, string name)

@@ -1,5 +1,10 @@
 2003-03-01  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/ScriptingContext.cs: Automatically run newly
+	created threads in the background.
+
+2003-03-01  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Ignore line numbers from other source files
 	(macros or #include'd files, for instance).
 
