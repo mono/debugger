@@ -19,8 +19,13 @@ namespace Mono.Debugger.Architecture
 		protected SymbolTableCollection symtab_collection;
 		protected ISymbolTable application_symtab;
 
-		public CoreFile (string application, string core_file, BfdContainer bfd_container)
+		DebuggerBackend backend;
+
+		public CoreFile (DebuggerBackend backend, string application, string core_file,
+				 BfdContainer bfd_container)
 		{
+			this.backend = backend;
+
 			arch = new ArchitectureI386 (this);
 
 			core_file = Path.GetFullPath (core_file);
@@ -67,6 +72,12 @@ namespace Mono.Debugger.Architecture
 			}
 
 			update_symtabs ();
+		}
+
+		public DebuggerBackend DebuggerBackend {
+			get {
+				return backend;
+			}
 		}
 
 		public void UpdateModules ()

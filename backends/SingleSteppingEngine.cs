@@ -209,6 +209,7 @@ namespace Mono.Debugger.Backends
 
 		StepOperation current_operation = StepOperation.None;
 		StepFrame current_operation_frame = null;
+		bool must_continue = false;
 
 		bool child_breakpoint (int breakpoint)
 		{
@@ -218,8 +219,10 @@ namespace Mono.Debugger.Backends
 			if (!breakpoints.Contains (breakpoint))
 				return true;
 
-			StackFrame frame = get_frame (inferior.CurrentFrame);
 			BreakpointHandle handle = (BreakpointHandle) breakpoints [breakpoint];
+			StackFrame frame = null;
+			if (handle.NeedsFrame)
+				frame = get_frame (inferior.CurrentFrame);
 			return handle.Handler (frame, breakpoint, handle.UserData);
 		}
 
@@ -234,6 +237,12 @@ namespace Mono.Debugger.Backends
 			     (message == ChildEventType.CHILD_HIT_BREAKPOINT)))
 				inferior.DisableAllBreakpoints ();
 
+			if (must_continue && (message == ChildEventType.CHILD_STOPPED)) {
+				must_continue = false;
+				do_continue (false);
+				return;
+			}
+
 			if (temp_breakpoint_id != 0) {
 				if ((message == ChildEventType.CHILD_EXITED) ||
 				    (message == ChildEventType.CHILD_SIGNALED))
@@ -246,7 +255,7 @@ namespace Mono.Debugger.Backends
 						return;
 					}
 				} else {
-					do_continue ();
+					do_continue (true);
 					return;
 				}
 			}
@@ -273,7 +282,7 @@ namespace Mono.Debugger.Backends
 					initialized = true;
 					if (!native || start_native ()) {
 						current_operation = StepOperation.Run;
-						do_continue ();
+						do_continue (false);
 						break;
 					}
 				} else if (current_step_frame != null) {
@@ -289,7 +298,7 @@ namespace Mono.Debugger.Backends
 					current_step_frame = null;
 				}
 				if (frame == main_method_retaddr) {
-					do_continue ();
+					do_continue (false);
 					break;
 				}
 
@@ -306,7 +315,7 @@ namespace Mono.Debugger.Backends
 				if (child_breakpoint (arg))
 					frame_changed (inferior.CurrentFrame, 0);
 				else
-					do_continue ();
+					do_continue (true);
 				break;
 
 			default:
@@ -521,15 +530,16 @@ namespace Mono.Debugger.Backends
 			Continue (address);
 		}
 
-		void do_continue ()
+		void do_continue (bool is_breakpoint)
 		{
 			check_inferior ();
 
 			TargetState old_state = change_target_state (TargetState.RUNNING);
 			try {
-				if (inferior.CurrentInstructionIsBreakpoint)
+				if (is_breakpoint || inferior.CurrentInstructionIsBreakpoint) {
+					must_continue = true;
 					inferior.Step ();
-				else {
+				} else {
 					inferior.EnableAllBreakpoints ();
 					inferior.Continue ();
 				}
@@ -654,7 +664,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			current_operation = StepOperation.Run;
-			do_continue ();
+			do_continue (false);
 		}
 
 		StepFrame get_step_frame ()
@@ -744,11 +754,11 @@ namespace Mono.Debugger.Backends
 		Hashtable breakpoints = new Hashtable ();
 
 		public int InsertBreakpoint (TargetAddress address, BreakpointHitHandler handler,
-					     object user_data)
+					     bool needs_frame, object user_data)
 		{
 			check_inferior ();
 			int index = inferior.InsertBreakpoint (address);
-			breakpoints.Add (index, new BreakpointHandle (index, handler, user_data));
+			breakpoints.Add (index, new BreakpointHandle (index, handler, needs_frame, user_data));
 			return index;
 		}
 
@@ -763,14 +773,16 @@ namespace Mono.Debugger.Backends
 		private struct BreakpointHandle
 		{
 			public readonly int Index;
+			public readonly bool NeedsFrame;
 			public readonly BreakpointHitHandler Handler;
 			public readonly object UserData;
 
 			public BreakpointHandle (int index, BreakpointHitHandler handler,
-						 object user_data)
+						 bool needs_frame, object user_data)
 			{
 				this.Index = index;
 				this.Handler = handler;
+				this.NeedsFrame = needs_frame;
 				this.UserData = user_data;
 			}
 		}

@@ -147,6 +147,10 @@ namespace Mono.Debugger.Backends
 			get; set;
 		}
 
+		DebuggerBackend DebuggerBackend {
+			get;
+		}
+
 		Module[] Modules {
 			get;
 		}

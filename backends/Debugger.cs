@@ -358,7 +358,7 @@ namespace Mono.Debugger
 		{
 			if (native)
 				load_native_symtab = true;
-			inferior = new PTraceInferior (working_directory, argv, envp, native,
+			inferior = new PTraceInferior (this, working_directory, argv, envp, native,
 						       load_native_symtab, bfd_container,
 						       new DebuggerErrorHandler (debugger_error));
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
@@ -420,7 +420,7 @@ namespace Mono.Debugger
 
 		void load_core (string core_file, string[] argv)
 		{
-			core = new CoreFileElfI386 (argv [0], core_file, bfd_container);
+			core = new CoreFileElfI386 (this, argv [0], core_file, bfd_container);
 			inferior = core;
 
 			symtabs = new SymbolTableCollection ();
@@ -706,6 +706,9 @@ namespace Mono.Debugger
 
 		public bool BreakpointHit (TargetAddress address)
 		{
+			if (native)
+				return true;
+
 			foreach (ILanguageBackend language in languages) {
 				if (!language.BreakpointHit (address))
 					return false;

@@ -55,6 +55,7 @@ namespace Mono.Debugger.Backends
 		SymbolTableCollection native_symtabs;
 		SymbolTableCollection symtab_collection;
 		ISymbolTable application_symtab;
+		DebuggerBackend backend;
 
 		int child_pid;
 		bool native;
@@ -380,10 +381,18 @@ namespace Mono.Debugger.Backends
 			mono_debugger_server_disable_breakpoints (server_handle);
 		}
 
-		public PTraceInferior (string working_directory, string[] argv, string[] envp,
-				       bool native, bool load_native_symtab, BfdContainer bfd_container,
+		public DebuggerBackend DebuggerBackend {
+			get {
+				return backend;
+			}
+		}
+
+		public PTraceInferior (DebuggerBackend backend, string working_directory,
+				       string[] argv, string[] envp, bool native,
+				       bool load_native_symtab, BfdContainer bfd_container,
 				       DebuggerErrorHandler error_handler)
 		{
+			this.backend = backend;
 			this.working_directory = working_directory;
 			this.argv = argv;
 			this.envp = envp;
@@ -421,9 +430,11 @@ namespace Mono.Debugger.Backends
 			setup_inferior (load_native_symtab);
 		}
 
-		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
-				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
+		public PTraceInferior (DebuggerBackend backend, int pid, string[] envp,
+				       bool load_native_symtab, BfdContainer bfd_container,
+				       DebuggerErrorHandler error_handler)
 		{
+			this.backend = backend;
 			this.envp = envp;
 			this.bfd_container = bfd_container;
 

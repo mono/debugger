@@ -61,7 +61,7 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			return backend.SingleSteppingEngine.InsertBreakpoint (
-				address, new BreakpointHitHandler (breakpoint_hit), handle);
+				address, new BreakpointHitHandler (breakpoint_hit), true, handle);
 		}
 
 		protected override void DisableBreakpoint (BreakpointHandle handle, object data)

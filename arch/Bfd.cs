@@ -17,11 +17,14 @@ namespace Mono.Debugger.Architecture
 	{
 		IntPtr bfd;
 		protected BfdContainer container;
+		protected DebuggerBackend backend;
 		protected IInferior inferior;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
+		TargetAddress rdebug_state_addr = TargetAddress.Null;
+		int dynlink_breakpoint_id = -1;
 		Hashtable symbols;
 		Hashtable section_hash;
 		DwarfReader dwarf;
@@ -152,6 +155,7 @@ namespace Mono.Debugger.Architecture
 			this.filename = filename;
 			this.module = module;
 			this.base_address = base_address;
+			this.backend = inferior.DebuggerBackend;
 
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -190,7 +194,17 @@ namespace Mono.Debugger.Architecture
 			if (!base_address.IsNull) {
 				InternalSection bss = GetSectionByName (".bss");
 				end_address = base_address + bss.vma;
+				initialized = true;
 			}
+		}
+
+		bool dynlink_handler (StackFrame frame, int index, object user_data)
+		{
+			if (inferior.ReadInteger (rdebug_state_addr) != 0)
+				return false;
+
+			UpdateSharedLibraryInfo ();
+			return false;
 		}
 
 		bool read_dynamic_info ()
@@ -227,10 +241,17 @@ namespace Mono.Debugger.Architecture
 
 			first_link_map = reader.ReadAddress ();
 			dynlink_breakpoint = reader.ReadAddress ();
+
+			rdebug_state_addr = debug_base + reader.Offset;
+
 			if (reader.ReadInteger () != 0)
 				return false;
 
-			read_sections ();
+			if (inferior.State != TargetState.CORE_FILE) {
+				dynlink_breakpoint_id = backend.SingleSteppingEngine.InsertBreakpoint (
+					dynlink_breakpoint, new BreakpointHitHandler (dynlink_handler),
+					false, null);
+			}
 
 			has_shlib_info = true;
 			return true;
