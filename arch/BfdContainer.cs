@@ -25,6 +25,10 @@ namespace Mono.Debugger.Architecture
 			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
 		}
 
+		public DebuggerBackend DebuggerBackend {
+			get { return backend; }
+		}
+
 		public Module this [string filename] {
 			get {
 				check_disposed ();
@@ -32,12 +36,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public Bfd AddFile (IInferior inferior, string filename, bool step_into)
+		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into)
 		{
-			return AddFile (inferior, filename, step_into, TargetAddress.Null, null);
+			return AddFile (memory, filename, step_into, TargetAddress.Null, null);
 		}
 
-		public Bfd AddFile (IInferior inferior, string filename, bool step_into,
+		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into,
 				    TargetAddress base_address, Bfd core_bfd)
 		{
 			bool new_module = false;
@@ -55,7 +59,7 @@ namespace Mono.Debugger.Architecture
  				new_module = true;
 			}
 
-			Bfd bfd = new Bfd (this, inferior, filename, false, module, base_address);
+			Bfd bfd = new Bfd (this, memory, filename, false, module, base_address);
 			bfd.CoreFileBfd = core_bfd;
  			module.Bfd = bfd;
 
@@ -67,7 +71,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			module.Inferior = inferior;
+			module.Load ();
 			bfd_hash.Add (filename, bfd);
 
 			return bfd;
@@ -104,7 +108,7 @@ namespace Mono.Debugger.Architecture
 
 			foreach (BfdModule module in module_hash.Values) {
 				module.Bfd = null;
-				module.Inferior = null;
+				module.UnLoad ();
 			}
 		}
 

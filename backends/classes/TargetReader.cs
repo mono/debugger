@@ -48,14 +48,12 @@ namespace Mono.Debugger.Backends
 		byte[] data;
 		TargetBinaryReader reader;
 		int offset;
-		IInferior inferior;
-		ThreadManager thread_manager;
+		ITargetMemoryInfo info;
 
-		internal TargetReader (byte[] data, IInferior inferior)
+		internal TargetReader (byte[] data, ITargetMemoryInfo info)
 		{
-			this.reader = new TargetBinaryReader (data, inferior);
-			this.inferior = inferior;
-			this.thread_manager = inferior.DebuggerBackend.ThreadManager;
+			this.reader = new TargetBinaryReader (data, info);
+			this.info = info;
 			this.data = data;
 			this.offset = 0;
 		}
@@ -90,19 +88,31 @@ namespace Mono.Debugger.Backends
 
 		public int TargetIntegerSize {
 			get {
-				return inferior.TargetIntegerSize;
+				return info.TargetIntegerSize;
 			}
 		}
 
 		public int TargetLongIntegerSize {
 			get {
-				return inferior.TargetLongIntegerSize;
+				return info.TargetLongIntegerSize;
 			}
 		}
 
 		public int TargetAddressSize {
 			get {
-				return inferior.TargetAddressSize;
+				return info.TargetAddressSize;
+			}
+		}
+
+		public object AddressDomain {
+			get {
+				return info.AddressDomain;
+			}
+		}
+
+		public object GlobalAddressDomain {
+			get {
+				return info.GlobalAddressDomain;
 			}
 		}
 
@@ -139,7 +149,7 @@ namespace Mono.Debugger.Backends
 			if (address == 0)
 				return TargetAddress.Null;
 			else
-				return new TargetAddress (inferior, address);
+				return new TargetAddress (info.AddressDomain, address);
 		}
 
 		public TargetAddress ReadGlobalAddress ()
@@ -149,13 +159,7 @@ namespace Mono.Debugger.Backends
 			if (address == 0)
 				return TargetAddress.Null;
 			else
-				return new TargetAddress (thread_manager, address);
-		}
-
-		public ITargetMemoryAccess TargetMemoryAccess {
-			get {
-				return inferior;
-			}
+				return new TargetAddress (info.GlobalAddressDomain, address);
 		}
 
 		public override string ToString ()

@@ -11,8 +11,8 @@ namespace Mono.Debugger.Backends
 {
 	internal abstract class NativeModule : Module
 	{
-		IInferior inferior;
 		DebuggerBackend backend;
+		bool is_loaded;
 
 		public NativeModule (string name, DebuggerBackend backend)
 			: base (name)
@@ -20,29 +20,23 @@ namespace Mono.Debugger.Backends
 			this.backend = backend;
 		}
 
-		public IInferior Inferior {
-			get {
-				return inferior;
-			}
-
-			set {
-				if (inferior == value)
-					return;
-				inferior = value;
-				CheckLoaded ();
-			}
-		}
-
 		public override bool IsLoaded {
 			get {
-				return Inferior != null;
+				return is_loaded;
 			}
 		}
 
 		public override void UnLoad ()
 		{
-			Inferior = null;
+			is_loaded = false;
+			CheckLoaded ();
 			base.UnLoad ();
+		}
+
+		public void Load ()
+		{
+			is_loaded = true;
+			CheckLoaded ();
 		}
 
 		protected override void AddBreakpoint (BreakpointHandle handle)

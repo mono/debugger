@@ -15,9 +15,8 @@ namespace Mono.Debugger.Architecture
 		IntPtr dis;
 		IntPtr info;
 
-		IInferior inferior;
+		ITargetMemoryAccess memory;
 		ISymbolTable symbol_table;
-		ThreadManager thread_manager;
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
@@ -28,13 +27,11 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static void bfd_glue_free_disassembler (IntPtr info);
 
-		internal BfdDisassembler (IInferior inferior, IntPtr dis, IntPtr info)
+		internal BfdDisassembler (ITargetMemoryAccess memory, IntPtr dis, IntPtr info)
 		{
 			this.dis = dis;
 			this.info = info;
-			this.inferior = inferior;
-
-			thread_manager = inferior.DebuggerBackend.ThreadManager;
+			this.memory = memory;
 
 			bfd_glue_setup_disassembler (info, new ReadMemoryHandler (read_memory_func),
 						     new OutputHandler (output_func),
@@ -48,8 +45,8 @@ namespace Mono.Debugger.Architecture
 		int read_memory_func (long address, IntPtr data, int size)
 		{
 			try {
-				TargetAddress location = new TargetAddress (inferior, address);
-				byte[] buffer = inferior.ReadBuffer (location, size);
+				TargetAddress location = new TargetAddress (memory.AddressDomain, address);
+				byte[] buffer = memory.ReadBuffer (location, size);
 				Marshal.Copy (buffer, 0, data, size);
 			} catch (Exception e) {
 				memory_exception = e;
@@ -78,7 +75,8 @@ namespace Mono.Debugger.Architecture
 				return;
 			}
 
-			IMethod method = symbol_table.Lookup (new TargetAddress (thread_manager, address));
+			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
+			IMethod method = symbol_table.Lookup (maddress);
 			if (method == null) {
 				output_func (address);
 				return;

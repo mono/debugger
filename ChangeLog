@@ -1,7 +1,11 @@
 2003-01-01  Martin Baulig  <martin@ximian.com>
 
-	* interfaces/ITargetMemoryAccess.cs (ITargetMemoryAccess): Added
-	`AddressDomain' and `GlobalAddressDomain' properties.
+	* interfaces/ITargetMemoryAccess.cs (ITargetMemoryInfo): New
+	interface; derives from ITargetInfo; added `AddressDomain' and
+	'GlobalAddressDomain' properties.
+	(ITargetMemoryAccess): Derive from ITargetMemoryInfo.
+
+	* arch/*.cs: Don't use the IInferior here.
 
 2003-01-01  Martin Baulig  <martin@ximian.com>
 

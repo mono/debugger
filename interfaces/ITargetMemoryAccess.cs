@@ -27,7 +27,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public interface ITargetMemoryReader : ITargetInfo
+	public interface ITargetMemoryReader : ITargetMemoryInfo
 	{
 		// <summary>
 		//   Position in the underlying memory stream.
@@ -78,16 +78,9 @@ namespace Mono.Debugger
 		TargetAddress ReadAddress ();
 
 		TargetAddress ReadGlobalAddress ();
-
-		// <summary>
-		//   Get the ITargetMemoryAccess which was used to create this ITargetMemoryReader.
-		// </summary>
-		ITargetMemoryAccess TargetMemoryAccess {
-			get;
-		}
 	}
 
-	public interface ITargetMemoryAccess : ITargetInfo
+	public interface ITargetMemoryInfo : ITargetInfo
 	{
 		object AddressDomain {
 			get;
@@ -96,7 +89,10 @@ namespace Mono.Debugger
 		object GlobalAddressDomain {
 			get;
 		}
+	}
 
+	public interface ITargetMemoryAccess : ITargetMemoryInfo
+	{
 		byte ReadByte (TargetAddress address);
 
 		int ReadInteger (TargetAddress address);

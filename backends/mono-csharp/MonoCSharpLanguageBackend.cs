@@ -854,7 +854,7 @@ namespace Mono.Debugger.Languages.CSharp
 				count * range_entry_size);
 
 			ArrayList new_ranges = MethodRangeEntry.ReadRanges (
-				this, range_reader, count, offset_table);
+				this, memory, range_reader, count, offset_table);
 
 			ranges.AddRange (new_ranges);
 			num_range_entries = new_num_range_entries;
@@ -1432,6 +1432,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public static ArrayList ReadRanges (MonoSymbolTableReader reader,
+							    ITargetMemoryAccess target,
 							    ITargetMemoryReader memory, int count,
 							    OffsetTable offset_table)
 			{
@@ -1444,8 +1445,7 @@ namespace Mono.Debugger.Languages.CSharp
 					TargetAddress dynamic_address = memory.ReadAddress ();
 					int dynamic_size = memory.ReadInteger ();
 
-					byte[] contents = memory.TargetMemoryAccess.ReadBuffer (
-						dynamic_address, dynamic_size);
+					byte[] contents = target.ReadBuffer (dynamic_address, dynamic_size);
 
 					reader.CheckMethodOffset (offset);
 

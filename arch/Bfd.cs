@@ -18,8 +18,7 @@ namespace Mono.Debugger.Architecture
 		IntPtr bfd;
 		protected BfdContainer container;
 		protected DebuggerBackend backend;
-		protected ThreadManager thread_manager;
-		protected IInferior inferior;
+		protected ITargetMemoryAccess memory;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
 		TargetAddress first_link_map = TargetAddress.Null;
@@ -75,7 +74,7 @@ namespace Mono.Debugger.Architecture
 				InternalSection section = (InternalSection) user_data;
 
 				byte[] data = bfd.GetSectionContents (new IntPtr (section.section), true);
-				return new TargetReader (data, bfd.inferior);
+				return new TargetReader (data, bfd.memory);
 			}
 
 			public ITargetMemoryReader GetReader (TargetAddress address)
@@ -146,17 +145,15 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, IInferior inferior, string filename, bool core_file,
-			    BfdModule module, TargetAddress base_address)
+		public Bfd (BfdContainer container, ITargetMemoryAccess memory, string filename,
+			    bool core_file, BfdModule module, TargetAddress base_address)
 		{
 			this.container = container;
-			this.inferior = inferior;
+			this.memory = memory;
 			this.filename = filename;
 			this.module = module;
 			this.base_address = base_address;
-			this.backend = inferior.DebuggerBackend;
-
-			thread_manager = backend.ThreadManager;
+			this.backend = container.DebuggerBackend;
 
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -201,7 +198,7 @@ namespace Mono.Debugger.Architecture
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
 		{
-			if (inferior.ReadInteger (rdebug_state_addr) != 0)
+			if (memory.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
 			UpdateSharedLibraryInfo ();
@@ -217,10 +214,10 @@ namespace Mono.Debugger.Architecture
 
 			InternalSection section = GetSectionByName (".dynamic");
 
-			TargetAddress vma = new TargetAddress (inferior, section.vma);
+			TargetAddress vma = new TargetAddress (memory.AddressDomain, section.vma);
 
 			int size = (int) section.size;
-			byte[] dynamic = inferior.ReadBuffer (vma, size);
+			byte[] dynamic = memory.ReadBuffer (vma, size);
 
 			TargetAddress debug_base;
 			IntPtr data = IntPtr.Zero;
@@ -230,13 +227,13 @@ namespace Mono.Debugger.Architecture
 				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
 				if (base_ptr == 0)
 					return false;
-				debug_base = new TargetAddress (inferior, base_ptr);
+				debug_base = new TargetAddress (memory.GlobalAddressDomain, base_ptr);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 
-			ITargetMemoryReader reader = inferior.ReadMemory (debug_base, 20);
+			ITargetMemoryReader reader = memory.ReadMemory (debug_base, 20);
 			if (reader.ReadInteger () != 1)
 				return false;
 
@@ -273,7 +270,7 @@ namespace Mono.Debugger.Architecture
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
-				ITargetMemoryReader map_reader = inferior.ReadMemory (map, 16);
+				ITargetMemoryReader map_reader = memory.ReadMemory (map, 16);
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
@@ -281,7 +278,7 @@ namespace Mono.Debugger.Architecture
 
 				string name;
 				try {
-					name = inferior.ReadString (l_name);
+					name = memory.ReadString (l_name);
 				} catch {
 					name = null;
 				}
@@ -297,7 +294,7 @@ namespace Mono.Debugger.Architecture
 					continue;
 
 				Bfd library_bfd = container.AddFile (
-					inferior, name, module.StepInto, l_addr, null);
+					memory, name, module.StepInto, l_addr, null);
 			}
 		}
 
@@ -311,8 +308,10 @@ namespace Mono.Debugger.Architecture
 				if (core_file_bfd != null) {
 					InternalSection text = GetSectionByName (".text");
 
-					base_address = new TargetAddress (inferior, text.vma);
-					end_address = new TargetAddress (inferior, text.vma + text.size);
+					base_address = new TargetAddress (
+						memory.GlobalAddressDomain, text.vma);
+					end_address = new TargetAddress (
+						memory.GlobalAddressDomain, text.vma + text.size);
 				}
 			}
 		}
@@ -336,9 +335,11 @@ namespace Mono.Debugger.Architecture
 		public TargetAddress GetAddress (long address)
 		{
 			if (BaseAddress.IsNull)
-				return new TargetAddress (thread_manager, address);
+				return new TargetAddress (
+					memory.GlobalAddressDomain, address);
 			else
-				return new TargetAddress (thread_manager, BaseAddress.Address + address);
+				return new TargetAddress (
+					memory.GlobalAddressDomain, BaseAddress.Address + address);
 		}
 
 		public void ReadDwarf ()
@@ -385,13 +386,13 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public BfdDisassembler GetDisassembler (IInferior inferior)
+		public BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
 		{
 			IntPtr dis = disassembler (bfd);
 
 			IntPtr info = bfd_glue_init_disassembler (bfd);
 
-			return new BfdDisassembler (inferior, dis, info);
+			return new BfdDisassembler (memory, dis, info);
 		}
 
 		public TargetAddress this [string name] {
@@ -400,7 +401,7 @@ namespace Mono.Debugger.Architecture
 					return TargetAddress.Null;
 
 				if (symbols.Contains (name))
-					return new TargetAddress (thread_manager, (long) symbols [name]);
+					return new TargetAddress (memory.GlobalAddressDomain, (long) symbols [name]);
 
 				return TargetAddress.Null;
 			}
@@ -452,7 +453,8 @@ namespace Mono.Debugger.Architecture
 				if (section.size == 0)
 					continue;
 
-				TargetAddress start = new TargetAddress (thread_manager, section.vma);
+				TargetAddress start = new TargetAddress (
+					memory.GlobalAddressDomain, section.vma);
 				TargetAddress end = start + section.size;
 
 				TargetMemoryFlags flags = 0;
@@ -465,13 +467,13 @@ namespace Mono.Debugger.Architecture
 					if ((last.Flags == flags) &&
 					    ((last.End + 1 == start) || (last.End == start))) {
 						list [list.Count - 1] = new TargetMemoryArea (
-							last.Start, end, last.Flags, last.Name, inferior);
+							last.Start, end, last.Flags, last.Name, memory);
 						continue;
 					}
 				}
 
 				string name = section.bfd.FileName;
-				list.Add (new TargetMemoryArea (start, end, flags, name, inferior));
+				list.Add (new TargetMemoryArea (start, end, flags, name, memory));
 			}
 
 			TargetMemoryArea[] maps = new TargetMemoryArea [list.Count];
