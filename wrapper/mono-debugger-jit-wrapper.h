@@ -6,6 +6,7 @@
 G_BEGIN_DECLS
 
 typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
+typedef struct _MonoDebuggerThread		MonoDebuggerThread;
 
 /*
  * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
@@ -28,6 +29,24 @@ struct _MonoDebuggerInfo {
 	MonoInvokeFunc runtime_invoke;
 };
 
+/*
+ * Thread structure.
+ */
+struct _MonoDebuggerThread {
+	gpointer end_stack;
+	guint32 tid, pid;
+	guint32 locked;
+	gpointer func;
+	gpointer start_stack;
+};
+
+enum {
+	THREAD_MANAGER_CREATE_THREAD,
+	THREAD_MANAGER_RESUME_THREAD,
+	THREAD_MANAGER_ACQUIRE_GLOBAL_LOCK,
+	THREAD_MANAGER_RELEASE_GLOBAL_LOCK
+};
+
 #define IO_LAYER(func) (* mono_debugger_io_layer.func)
 
 int mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp);
@@ -35,7 +54,8 @@ int mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **a
 void mono_debugger_wait_cond (gpointer cond);
 void mono_debugger_thread_manager_init (void);
 void mono_debugger_thread_manager_main (void);
-void mono_debugger_thread_manager_add_thread (guint32 thread, int pid, gpointer func);
+void mono_debugger_thread_manager_add_thread (guint32 thread, gpointer stack_start, gpointer func);
+void mono_debugger_thread_manager_thread_created (MonoDebuggerThread *thread);
 void mono_debugger_thread_manager_start_resume (guint32 thread);
 void mono_debugger_thread_manager_end_resume (guint32 thread);
 void mono_debugger_thread_manager_acquire_global_thread_lock (void);
@@ -47,7 +67,8 @@ volatile void MONO_DEBUGGER__main (void);
 extern volatile void (*mono_debugger_thread_manager_notification_function) (gpointer func);
 extern volatile gpointer MONO_DEBUGGER__thread_manager_notification;
 extern volatile gpointer MONO_DEBUGGER__command_notification;
-extern volatile int MONO_DEBUGGER__main_thread;
+extern volatile int MONO_DEBUGGER__main_pid;
+extern volatile MonoDebuggerThread *MONO_DEBUGGER__main_thread;
 extern volatile int MONO_DEBUGGER__debugger_thread;
 extern volatile int MONO_DEBUGGER__command_thread;
 extern volatile int MONO_DEBUGGER__thread_manager_last_pid;

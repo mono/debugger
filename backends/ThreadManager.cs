@@ -43,9 +43,9 @@ namespace Mono.Debugger
 
 		TargetAddress mono_thread_notification = TargetAddress.Null;
 		TargetAddress mono_command_notification = TargetAddress.Null;
-		TargetAddress thread_manager_last_pid = TargetAddress.Null;
-		TargetAddress thread_manager_last_func = TargetAddress.Null;
-		TargetAddress thread_manager_last_thread = TargetAddress.Null;
+		TargetAddress thread_manager_notify_command = TargetAddress.Null;
+		TargetAddress thread_manager_notify_tid = TargetAddress.Null;
+		TargetAddress thread_manager_notify_data = TargetAddress.Null;
 		TargetAddress thread_manager_background_pid = TargetAddress.Null;
 
 		internal ThreadManager (DebuggerBackend backend, BfdContainer bfdc)
@@ -143,8 +143,10 @@ namespace Mono.Debugger
 		public Process[] Threads {
 			get {
 				lock (this) {
-					Process[] procs = new Process [thread_hash.Values.Count];
-					thread_hash.Values.CopyTo (procs, 0);
+					Process[] procs = new Process [thread_hash.Count];
+					int i = 0;
+					foreach (ThreadData data in thread_hash.Values)
+						procs [i] = data.Process;
 					return procs;
 				}
 			}
@@ -208,19 +210,24 @@ namespace Mono.Debugger
 
 				main_exited = true;
 
-				foreach (Process thread in thread_hash.Values)
-					thread.Kill ();
+				foreach (ThreadData data in thread_hash.Values)
+					data.Process.Kill ();
 			}
+		}
+
+		void add_process (ThreadData data, int pid, bool send_event)
+		{
+			thread_hash.Add (pid, data);
+			if (data.Process.State != TargetState.DAEMON)
+				global_group.AddThread (data.Process);
+			data.Process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+			if (send_event)
+				OnThreadCreatedEvent (data.Process);
 		}
 
 		void add_process (Process process, int pid, bool send_event)
 		{
-			thread_hash.Add (pid, process);
-			if (process.State != TargetState.DAEMON)
-				global_group.AddThread (process);
-			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-			if (send_event)
-				OnThreadCreatedEvent (process);
+			add_process (new ThreadData (process, pid), pid, send_event);
 		}
 
 		void reload_threads (ITargetMemoryAccess memory)
@@ -258,9 +265,42 @@ namespace Mono.Debugger
 			}
 		}
 
-		int last_thread = 0;
-		Process last_process = null;
-		SingleSteppingEngine last_sse = null;
+		protected enum ThreadManagerCommand {
+			CreateThread,
+			ResumeThread,
+			AcquireGlobalLock,
+			ReleaseGlobalLock
+		};
+
+		protected class ThreadData {
+			public readonly int TID;
+			public readonly int PID;
+			public readonly bool IsManaged;
+			public readonly Process Process;
+			public readonly TargetAddress StartStack;
+			public readonly TargetAddress Data;
+
+			public ThreadData (Process process, int tid, int pid,
+					   TargetAddress start_stack, TargetAddress data)
+			{
+				this.IsManaged = true;
+				this.Process = process;
+				this.TID = tid;
+				this.PID = pid;
+				this.StartStack = start_stack;
+				this.Data = data;
+			}
+
+			public ThreadData (Process process, int pid)
+			{
+				this.IsManaged = false;
+				this.Process = process;
+				this.TID = -1;
+				this.PID = pid;
+				this.StartStack = TargetAddress.Null;
+				this.Data = TargetAddress.Null;
+			}
+		};
 
 		bool mono_thread_manager (DaemonThreadRunner runner, TargetAddress address, int signal)
 		{
@@ -268,15 +308,17 @@ namespace Mono.Debugger
 				TargetAddress maddr = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notification");
 				TargetAddress caddr = bfdc.LookupSymbol ("MONO_DEBUGGER__command_notification");
 				TargetAddress dpid = bfdc.LookupSymbol ("MONO_DEBUGGER__debugger_thread");
-				TargetAddress mpid = bfdc.LookupSymbol ("MONO_DEBUGGER__main_thread");
+				TargetAddress mpid = bfdc.LookupSymbol ("MONO_DEBUGGER__main_pid");
+				TargetAddress mthread = bfdc.LookupSymbol ("MONO_DEBUGGER__main_thread");
 				TargetAddress cpid = bfdc.LookupSymbol ("MONO_DEBUGGER__command_thread");
 
-				if (maddr.IsNull || caddr.IsNull || dpid.IsNull || mpid.IsNull || cpid.IsNull)
+				if (maddr.IsNull || caddr.IsNull || dpid.IsNull || mpid.IsNull ||
+				    cpid.IsNull || mthread.IsNull)
 					return false;
 
-				thread_manager_last_pid = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_pid");
-				thread_manager_last_func = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_func");
-				thread_manager_last_thread = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_thread");
+				thread_manager_notify_command = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notify_command");
+				thread_manager_notify_tid = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notify_tid");
+				thread_manager_notify_data = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notify_data");
 
 				mono_thread_notification = runner.Inferior.ReadGlobalAddress (maddr);
 				if (address != mono_thread_notification)
@@ -286,7 +328,11 @@ namespace Mono.Debugger
 
 				int debugger_pid = runner.Inferior.ReadInteger (dpid);
 				int main_pid = runner.Inferior.ReadInteger (mpid);
+				TargetAddress main_thread = runner.Inferior.ReadGlobalAddress (mthread);
 				int command_pid = runner.Inferior.ReadInteger (cpid);
+
+				Console.WriteLine ("INITIALIZE: {0} {1} {2} {3}", debugger_pid, main_pid,
+						   main_thread, command_pid);
 
 				manager_process = runner.Process;
 				add_process (manager_process, manager_process.PID, true);
@@ -300,8 +346,7 @@ namespace Mono.Debugger
 					command_process, debugger_pid);
 				add_process (debugger_process, debugger_pid, true);
 
-				main_process = runner.Process.CreateThread (main_pid);
-				add_process (main_process, main_pid, false);
+				main_process = CreateThread (runner, main_pid, main_thread, true);
 
 				initialized = true;
 				OnInitializedEvent (main_process);
@@ -320,6 +365,8 @@ namespace Mono.Debugger
 				TargetAddress mfunc = bfdc.LookupSymbol ("MONO_DEBUGGER__main_function");
 				TargetAddress main_function = runner.Inferior.ReadGlobalAddress (mfunc);
 
+				Console.WriteLine ("THREAD MANAGER: {0} {1}", mfunc, main_function);
+
 				backend.ReachedManagedMain (main_process);
 				main_process.SingleSteppingEngine.Continue (main_function, true);
 				OnMainThreadCreatedEvent (main_process);
@@ -330,41 +377,84 @@ namespace Mono.Debugger
 				return true;
 			}
 
-			int pid = runner.Inferior.ReadInteger (thread_manager_last_pid);
-			TargetAddress func = runner.Inferior.ReadAddress (thread_manager_last_func);
-			int thread = runner.Inferior.ReadInteger (thread_manager_last_thread);
+			int command = runner.Inferior.ReadInteger (thread_manager_notify_command);
+			int pid = runner.Inferior.ReadInteger (thread_manager_notify_tid);
+			TargetAddress data = runner.Inferior.ReadAddress (thread_manager_notify_data);
 
-			if (pid == -1) {
-				if (thread != last_thread)
+			Console.WriteLine ("THREAD MANAGER: {0} {1} {2}", (ThreadManagerCommand) command,
+					   pid, data);
+
+			ThreadData thread = (ThreadData) thread_hash [pid];
+
+			switch ((ThreadManagerCommand) command) {
+			case ThreadManagerCommand.ResumeThread:
+				if (thread == null)
 					throw new InternalError ();
 
-				last_sse.Wait ();
-				OnThreadCreatedEvent (last_process);
+				thread.Process.SingleSteppingEngine.Wait ();
+				OnThreadCreatedEvent (thread.Process);
 				return true;
-			} else if (pid == -2) {
-				Process caller = (Process) thread_hash [thread];
-				AcquireGlobalThreadLock (caller);
+
+			case ThreadManagerCommand.AcquireGlobalLock:
+				if (thread == null)
+					throw new InternalError ();
+
+				AcquireGlobalThreadLock (runner.Inferior, thread.Process);
 				return true;
-			} else if (pid == -3) {
-				Process caller = (Process) thread_hash [thread];
-				ReleaseGlobalThreadLock (caller);
+
+			case ThreadManagerCommand.ReleaseGlobalLock:
+				if (thread == null)
+					throw new InternalError ();
+
+				ReleaseGlobalThreadLock (runner.Inferior, thread.Process);
 				return true;
+
+			case ThreadManagerCommand.CreateThread:
+				if (thread != null)
+					throw new InternalError ();
+
+				CreateThread (runner, pid, data, false);
+				return true;
+
+			default:
+				throw new InternalError ();
 			}
+		}
 
-			last_process = runner.Process.CreateThread (pid);
-			last_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
+		private Process CreateThread (DaemonThreadRunner runner, int pid, TargetAddress data,
+					      bool is_main_thread)
+		{
+			int size = 3 * runner.Inferior.TargetIntegerSize +
+				3 * runner.Inferior.TargetAddressSize;
 
-			add_process (last_process, pid, false);
+			ITargetMemoryReader reader = runner.Inferior.ReadMemory (data, size);
+			reader.ReadGlobalAddress ();
+			int tid = reader.ReadInteger ();
+			if (reader.ReadInteger () != pid)
+				throw new InternalError ();
+			int locked = reader.ReadInteger ();
+			TargetAddress func = reader.ReadGlobalAddress ();
+			TargetAddress start_stack = reader.ReadGlobalAddress ();
+
+			Console.WriteLine ("CREATE THREAD #2: {0} {1} {2} {3}", pid, locked, func,
+					   start_stack);
+
+			Process process = runner.Process.CreateThread (pid);
+			process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
+
+			ThreadData thread = new ThreadData (process, tid, pid, start_stack, data);
+			add_process (thread, pid, false);
+
+			if (is_main_thread) {
+				Console.WriteLine ("MAIN THREAD: {0} {1}", pid, start_stack);
+				return process;
+			}
 
 			if (func.Address == 0)
 				throw new InternalError ("Created thread without start function");
 
-			last_thread = thread;
-			last_sse = last_process.SingleSteppingEngine;
-
-			last_sse.Continue (func, false);
-
-			return true;
+			process.SingleSteppingEngine.Continue (func, false);
+			return process;
 		}
 
 		internal DaemonThreadRunner StartManagedApplication (Process process, IInferior inferior,
@@ -383,26 +473,35 @@ namespace Mono.Debugger
 		//   The threads are automatically resumed to their previos state when
 		//   ReleaseGlobalThreadLock() is called.
 		// </summary>
-		public void AcquireGlobalThreadLock (Process caller)
+		internal void AcquireGlobalThreadLock (IInferior inferior, Process caller)
 		{
 			thread_lock_mutex.WaitOne ();
 			if (thread_lock_level++ > 0)
 				return;
-			foreach (Process process in thread_hash.Values) {
+			foreach (ThreadData data in thread_hash.Values) {
+				Process process = data.Process;
 				if ((process == caller) || (process.SingleSteppingEngine == null))
 					continue;
-				process.SingleSteppingEngine.AcquireThreadLock ();
+				Register[] regs = process.SingleSteppingEngine.AcquireThreadLock ();
+				int esp = (int)(long) regs [(int) I386Register.ESP].Data;
+				Console.WriteLine ("LOCK: {0} {1:x} {2:x}", process.PID,
+						   data.StartStack, esp);
+				TargetAddress addr = new TargetAddress (inferior.AddressDomain, esp);
+				Console.WriteLine ("WRITE LOCK: {0} {1}", data.Data, addr);
+				if (!data.Data.IsNull)
+					inferior.WriteAddress (data.Data, addr);
 			}
 		}
 
-		public void ReleaseGlobalThreadLock (Process caller)
+		internal void ReleaseGlobalThreadLock (IInferior inferior, Process caller)
 		{
 			if (--thread_lock_level > 0) {
 				thread_lock_mutex.ReleaseMutex ();
 				return;
 			}
 				
-			foreach (Process process in thread_hash.Values) {
+			foreach (ThreadData data in thread_hash.Values) {
+				Process process = data.Process;
 				if ((process == caller) || (process.SingleSteppingEngine == null))
 					continue;
 				process.SingleSteppingEngine.ReleaseThreadLock ();
@@ -429,8 +528,8 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					foreach (Process thread in thread_hash.Values)
-						thread.Dispose ();
+					foreach (ThreadData data in thread_hash.Values)
+						data.Process.Dispose ();
 					breakpoint_manager.Dispose ();
 				}
 				

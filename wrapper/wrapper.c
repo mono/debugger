@@ -4,6 +4,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/threads.h>
+#include <gc/gc.h>
 #include <unistd.h>
 #include <locale.h>
 
@@ -21,7 +22,8 @@ static gboolean must_send_finished = FALSE;
 
 volatile MonoMethod *MONO_DEBUGGER__main_method = NULL;
 volatile gpointer MONO_DEBUGGER__main_function = NULL;
-volatile int MONO_DEBUGGER__main_thread = 0;
+volatile MonoDebuggerThread *MONO_DEBUGGER__main_thread = NULL;
+volatile int MONO_DEBUGGER__main_pid = 0;
 volatile int MONO_DEBUGGER__debugger_thread = 0;
 volatile int MONO_DEBUGGER__command_thread = 0;
 volatile gpointer MONO_DEBUGGER__command_notification = NULL;
@@ -126,10 +128,6 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 		mono_debugger_wait ();
 		break;
 
-	case MONO_DEBUGGER_EVENT_THREAD_CREATED:
-		mono_debugger_thread_manager_add_thread ((guint32) data, getpid (), data2);
-		break;
-
 	default:
 		g_assert_not_reached ();
 	}
@@ -137,6 +135,7 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 
 static MonoThreadCallbacks thread_callbacks = {
 	&debugger_compile_method,
+	&mono_debugger_thread_manager_add_thread,
 	&mono_debugger_thread_manager_start_resume,
 	&mono_debugger_thread_manager_end_resume
 };
@@ -253,7 +252,14 @@ main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args = (MainThreadArgs *) user_data;
 	int retval;
 
-	MONO_DEBUGGER__main_thread = getpid ();
+	MONO_DEBUGGER__main_pid = getpid ();
+
+	MONO_DEBUGGER__main_thread = g_new0 (MonoDebuggerThread, 1);
+	MONO_DEBUGGER__main_thread->pid = getpid ();
+	MONO_DEBUGGER__main_thread->start_stack = &main_args;
+
+	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__main_thread);
+
 	IO_LAYER (ReleaseSemaphore) (main_started_cond, 1, NULL);
 
 	/*

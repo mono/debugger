@@ -325,6 +325,7 @@ namespace Mono.Debugger.Backends
 			int arg = child_event.Argument;
 
 			if (stop_requested) {
+				get_registers ();
 				stop_event.Set ();
 				restart_event.WaitOne ();
 				// A stop was requested and we actually received the SIGSTOP.  Note that
@@ -690,12 +691,17 @@ namespace Mono.Debugger.Backends
 			return registers;
 		}
 
-		CommandResult get_registers (object data)
+		void get_registers ()
 		{
 			long[] regs = inferior.GetRegisters (arch.AllRegisterIndices);
 			registers = new Register [regs.Length];
 			for (int i = 0; i < regs.Length; i++)
 				registers [i] = new Register (arch.AllRegisterIndices [i], regs [i]);
+		}
+
+		CommandResult get_registers (object data)
+		{
+			get_registers ();
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
@@ -1028,14 +1034,14 @@ namespace Mono.Debugger.Backends
 			if (!current && ((owner == 0) || (owner == pid)))
 				return false;
 
-			thread_manager.AcquireGlobalThreadLock (process);
+			thread_manager.AcquireGlobalThreadLock (inferior, process);
 			inferior.DisableBreakpoint (id);
 			inferior.Step ();
 			do {
 				new_event = inferior.Wait ();
 			} while (new_event == null);
 			inferior.EnableBreakpoint (id);
-			thread_manager.ReleaseGlobalThreadLock (process);
+			thread_manager.ReleaseGlobalThreadLock (inferior, process);
 			return true;
 		}
 
@@ -1756,19 +1762,20 @@ namespace Mono.Debugger.Backends
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		internal void AcquireThreadLock ()
+		internal Register[] AcquireThreadLock ()
 		{
 			// Try to get the command mutex; if we succeed, then no stepping operation
 			// is currently running.
 			bool stopped = check_can_run ();
 			if (stopped)
-				return;
+				return GetRegisters ();
 
 			// Ok, there's an operation running.  Stop the inferior and wait until the
 			// currently running operation completed.
 			stop_requested = true;
 			inferior.Stop ();
 			stop_event.WaitOne ();
+			return registers;
 		}
 
 		internal void ReleaseThreadLock ()

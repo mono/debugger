@@ -1,5 +1,18 @@
 2003-03-31  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/mono-debugger-jit-wrapper.h (MonoDebuggerThread): New
+	type.  We create an instance of this type for each thread.
+
+	* backends/ThreadManager.cs (AcquireGlobalThreadLock): Write the
+	stopped thread's stack pointers into the corresponding
+	MonoDebuggerThread structure so they can be accessed from the
+	unmanaged code.
+	
+	* backends/SingleSteppingEngine.cs (AcquireThreadLock): Return the
+	stopped thread's registers.
+
+2003-03-31  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Require the new libgc.
 
 2003-03-30  Martin Baulig  <martin@ximian.com>
