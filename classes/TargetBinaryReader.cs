@@ -203,7 +203,7 @@ namespace Mono.Debugger
 		{
 			byte[] buffer = new byte [size];
 
-			Array.Copy (blob.Contents, pos, buffer, 0, size);
+			Array.Copy (blob.Contents, (int) offset, buffer, 0, size);
 
 			return buffer;
 		}
