@@ -379,10 +379,10 @@
 		  <property name="show_tabs">True</property>
 		  <property name="show_border">True</property>
 		  <property name="tab_pos">GTK_POS_TOP</property>
-		  <property name="scrollable">False</property>
+		  <property name="scrollable">True</property>
 		  <property name="tab_hborder">2</property>
 		  <property name="tab_vborder">2</property>
-		  <property name="enable_popup">False</property>
+		  <property name="enable_popup">True</property>
 
 		  <child>
 		    <widget class="GtkHBox" id="hbox3">

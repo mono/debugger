@@ -242,13 +242,13 @@ namespace Mono.Debugger.GUI {
 					
 					sources [filename] = view;
 					notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);
-
-					int idx = GetPageIdx (view.ToplevelWidget);
-					if (idx != -1)
-						notebook.Page = idx;
+					notebook.SetMenuLabelText (view.ToplevelWidget, filename);
 					view.TabWidget.ButtonClicked += new EventHandler (close_tab);
-					
 				}
+
+				int idx = GetPageIdx (view.ToplevelWidget);
+				if (idx != -1)
+					notebook.Page = idx;
 			} else {
 				Console.WriteLine ("********* Need to show disassembly **********");
 			}
