@@ -68,73 +68,76 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MethodAddress
 	{
-		public readonly long StartAddress;
-		public readonly long EndAddress;
+		public readonly TargetAddress StartAddress;
+		public readonly TargetAddress EndAddress;
+		public readonly TargetAddress MethodStartAddress;
+		public readonly TargetAddress MethodEndAddress;
 		public readonly JitLineNumberEntry[] LineNumbers;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
-		public readonly long ThisTypeInfoAddress;
-		public readonly long[] ParamTypeInfoAddresses;
-		public readonly long[] LocalTypeInfoAddresses;
+		public readonly TargetAddress ThisTypeInfoAddress;
+		public readonly TargetAddress[] ParamTypeInfoAddresses;
+		public readonly TargetAddress[] LocalTypeInfoAddresses;
 
-		public MethodAddress (MethodEntry entry, ITargetMemoryReader treader)
+		public MethodAddress (MethodEntry entry, ITargetMemoryReader reader)
 		{
-			TargetBinaryReader reader = treader.BinaryReader;
+			reader.Offset = 4;
+			StartAddress = reader.ReadAddress ();
+			EndAddress = reader.ReadAddress ();
+			MethodStartAddress = reader.ReadAddress ();
+			MethodEndAddress = reader.ReadAddress ();
 
-			reader.Position = 4;
-			StartAddress = reader.ReadInt64 ();
-			EndAddress = reader.ReadInt64 ();
+			int variables_offset = reader.BinaryReader.ReadInt32 ();
+			int type_table_offset = reader.BinaryReader.ReadInt32 ();
 
-			int variables_offset = reader.ReadInt32 ();
-			int type_table_offset = reader.ReadInt32 ();
-
-			int num_line_numbers = reader.ReadInt32 ();
+			int num_line_numbers = reader.BinaryReader.ReadInt32 ();
 			LineNumbers = new JitLineNumberEntry [num_line_numbers];
 
-			int line_number_size = reader.ReadInt32 ();
-			TargetAddress line_number_address = treader.ReadAddress ();
+			int line_number_size = reader.BinaryReader.ReadInt32 ();
+			TargetAddress line_number_address = reader.ReadAddress ();
 
-			ITargetMemoryReader line_reader = treader.TargetMemoryAccess.ReadMemory (
+			ITargetMemoryReader line_reader = reader.TargetMemoryAccess.ReadMemory (
 				line_number_address, line_number_size);
 			for (int i = 0; i < num_line_numbers; i++)
 				LineNumbers [i] = new JitLineNumberEntry (line_reader.BinaryReader);
 
-			reader.Position = variables_offset;
+			reader.Offset = variables_offset;
 			if (entry.ThisTypeIndex != 0)
-				ThisVariableInfo = new VariableInfo (reader);
+				ThisVariableInfo = new VariableInfo (reader.BinaryReader);
 
 			ParamVariableInfo = new VariableInfo [entry.NumParameters];
 			for (int i = 0; i < entry.NumParameters; i++)
-				ParamVariableInfo [i] = new VariableInfo (reader);
+				ParamVariableInfo [i] = new VariableInfo (reader.BinaryReader);
 
 			LocalVariableInfo = new VariableInfo [entry.NumLocals];
 			for (int i = 0; i < entry.NumLocals; i++)
-				LocalVariableInfo [i] = new VariableInfo (reader);
+				LocalVariableInfo [i] = new VariableInfo (reader.BinaryReader);
 
-			reader.Position = type_table_offset;
+			reader.Offset = type_table_offset;
 			if (entry.ThisTypeIndex != 0)
 				ThisTypeInfoAddress = reader.ReadAddress ();
 
-			ParamTypeInfoAddresses = new long [entry.NumParameters];
+			ParamTypeInfoAddresses = new TargetAddress [entry.NumParameters];
 			for (int i = 0; i < entry.NumParameters; i++)
 				ParamTypeInfoAddresses [i] = reader.ReadAddress ();
 
-			LocalTypeInfoAddresses = new long [entry.NumLocals];
+			LocalTypeInfoAddresses = new TargetAddress [entry.NumLocals];
 			for (int i = 0; i < entry.NumLocals; i++)
 				LocalTypeInfoAddresses [i] = reader.ReadAddress ();
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("[Address {0:x}:{1:x}:{2}]",
-					      StartAddress, EndAddress, LineNumbers.Length);
+			return String.Format ("[Address {0:x}:{1:x}:{3:x}:{4:x},{2}]",
+					      StartAddress, EndAddress, LineNumbers.Length,
+					      MethodStartAddress, MethodEndAddress);
 		}
 	}
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 9;
+		public const int  DynamicVersion = 10;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		public readonly int TotalSize;
@@ -180,15 +183,14 @@ namespace Mono.Debugger.Languages.CSharp
 					this, backend, inferior, memory, reader.ReadAddress (), language);
 		}
 
-		public MonoType GetType (Type type, int type_size, long address)
+		public MonoType GetType (Type type, int type_size, TargetAddress address)
 		{
-			if (type_cache.Contains (address))
-				return (MonoType) type_cache [address];
+			if (type_cache.Contains (address.Address))
+				return (MonoType) type_cache [address.Address];
 
 			MonoType retval;
-			if (address != 0)
-				retval = MonoType.GetType (
-					type, memory, new TargetAddress (memory, address), this);
+			if (!address.IsNull)
+				retval = MonoType.GetType (type, memory, address, this);
 			else
 				retval = new MonoOpaqueType (type, type_size);
 
@@ -602,11 +604,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 				address = new MethodAddress (method, dynamic_reader);
 
-				TargetAddress start = new TargetAddress (
-					reader.inferior, address.StartAddress);
-				TargetAddress end = new TargetAddress (
-						reader.inferior, address.EndAddress);
-				SetAddresses (start, end);
+				SetAddresses (address.StartAddress, address.EndAddress);
+				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
+
+				Console.WriteLine ("TEST: {0} {1}", this, address);
 
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
@@ -618,7 +619,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (has_variables)
 					return;
 
-				if (address.ThisTypeInfoAddress != 0)
+				if (!address.ThisTypeInfoAddress.IsNull)
 					this_type = reader.table.GetType (
 						rmethod.ReflectedType, 0, address.ThisTypeInfoAddress);
 
@@ -667,13 +668,6 @@ namespace Mono.Debugger.Languages.CSharp
 				ISourceBuffer retval = CSharpMethod.GetMethodSource (
 					this, method, address.LineNumbers, factory,
 					out start_row, out end_row, out addresses);
-
-				if ((addresses != null) && (addresses.Count > 2)) {
-					LineEntry start = (LineEntry) addresses [1];
-					LineEntry end = (LineEntry) addresses [addresses.Count - 1];
-
-					SetMethodBounds (start.Address, end.Address);
-				}
 
 				return retval;
 			}
@@ -730,19 +724,16 @@ namespace Mono.Debugger.Languages.CSharp
 				ArrayList list = new ArrayList ();
 
 				for (int i = 0; i < count; i++) {
-					long start = memory.ReadLongInteger ();
-					long end = memory.ReadLongInteger ();
+					TargetAddress start = memory.ReadAddress ();
+					TargetAddress end = memory.ReadAddress ();
 					int offset = memory.ReadInteger ();
 					TargetAddress dynamic_address = memory.ReadAddress ();
 					int dynamic_size = memory.ReadInteger ();
 
 					reader.CheckMethodOffset (offset);
 
-					TargetAddress tstart = new TargetAddress (reader.inferior, start);
-					TargetAddress tend = new TargetAddress (reader.inferior, end);
-
 					list.Add (new MethodRangeEntry (reader, offset, dynamic_address,
-									dynamic_size, tstart, tend));
+									dynamic_size, start, end));
 				}
 
 				return list;
@@ -891,7 +882,7 @@ namespace Mono.Debugger.Languages.CSharp
 			ranges = new ArrayList ();
 
 			TargetAddress address = inferior.ReadAddress (info.symbol_file_table);
-			if (address.Address == 0) {
+			if (address.IsNull) {
 				Console.WriteLine ("Ooops, no symtab loaded.");
 				return;
 			}

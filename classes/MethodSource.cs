@@ -11,6 +11,7 @@ namespace Mono.Debugger
 		int start_row, end_row;
 
 		TargetAddress start, end;
+		TargetAddress method_start, method_end;
 		IMethod method;
 
 		protected MethodSource (IMethod method)
@@ -18,6 +19,14 @@ namespace Mono.Debugger
 			this.method = method;
 			this.start = method.StartAddress;
 			this.end = method.EndAddress;
+
+			if (method.HasMethodBounds) {
+				method_start = method.MethodStartAddress;
+				method_end = method.MethodEndAddress;
+			} else {
+				method_start = start;
+				method_end = end;
+			}
 		}
 
 		object read_source (object user_data)
@@ -75,6 +84,15 @@ namespace Mono.Debugger
 			ISourceBuffer source = ReadSource ();
 			if (source == null)
 				return null;
+
+			if (address < method_start)
+				return new SourceLocation (
+					source, StartRow, (int) (address - start),
+					(int) (method_start - address));
+			else if (address >= method_end)
+				return new SourceLocation (
+					source, EndRow, (int) (address - method_end),
+					(int) (end - address));			
 
 			TargetAddress next_address = end;
 

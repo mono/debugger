@@ -45,6 +45,8 @@ namespace Mono.Debugger
 		{
 			this.start = start;
 			this.end = end;
+			this.method_start = start;
+			this.method_end = end;
 			this.is_loaded = true;
 		}
 
@@ -230,6 +232,15 @@ namespace Mono.Debugger
 			ISourceBuffer source = ReadSource ();
 			if (source == null)
 				return null;
+
+			if (address < method_start)
+				return new SourceLocation (
+					source, StartRow, (int) (address - start),
+					(int) (method_start - address));
+			else if (address >= method_end)
+				return new SourceLocation (
+					source, EndRow, (int) (address - method_end),
+					(int) (end - address));			
 
 			TargetAddress next_address = end;
 
