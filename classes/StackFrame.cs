@@ -15,22 +15,22 @@ namespace Mono.Debugger
 		public readonly int Index;
 		TargetAddress addr_on_stack;
 		bool valid;
-		object data;
+		long value;
 
-		public Register (int index, bool valid, object data)
+		public Register (int index, bool valid, long value)
 		{
 			this.Index = index;
 			this.valid = valid;
-			this.data = data;
+			this.value = value;
 			this.addr_on_stack = TargetAddress.Null;
 		}
 
-		public object Data {
+		public long Value {
 			get {
 				if (!valid)
 					throw new InvalidOperationException ();
 
-				return data;
+				return value;
 			}
 		}
 
@@ -38,7 +38,7 @@ namespace Mono.Debugger
 		{
 			this.valid = true;
 			this.addr_on_stack = address;
-			this.data = value;
+			this.value = value;
 		}
 
 		public bool Valid {
@@ -170,7 +170,7 @@ namespace Mono.Debugger
 
 		public long GetRegister (int index)
 		{
-			return (long) Registers [index].Data;
+			return Registers [index].Value;
 		}
 
 		public TargetLocation GetRegisterLocation (int index, long reg_offset,

@@ -2020,7 +2020,7 @@ namespace Mono.Debugger.Backends
 				      this, stopped, stop_event);
 
 			get_registers ();
-			long esp = (long) registers [(int) I386Register.ESP].Data;
+			long esp = registers [(int) I386Register.ESP].Value;
 			TargetAddress addr = new TargetAddress (AddressDomain, esp);
 
 			if (!EndStackAddress.IsNull)

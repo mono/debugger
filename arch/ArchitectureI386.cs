@@ -213,10 +213,13 @@ namespace Mono.Debugger
 
 		public string PrintRegister (Register register)
 		{
+			if (!register.Valid)
+				return "XXXXXXXX";
+
 			switch ((I386Register) register.Index) {
 			case I386Register.EFLAGS: {
 				ArrayList flags = new ArrayList ();
-				long value = (long) register.Data;
+				long value = register.Value;
 				if ((value & (1 << 0)) != 0)
 					flags.Add ("CF");
 				if ((value & (1 << 2)) != 0)
@@ -255,14 +258,17 @@ namespace Mono.Debugger
 			}
 
 			default:
-				return String.Format ("{0:x}", (long) register.Data);
+				return String.Format ("{0:x}", register.Value);
 			}
 		}
 
-		string format (object data)
+		string format (Register register)
 		{
+			if (!register.Valid)
+				return "XXXXXXXX";
+
 			int bits = 8;
-			string saddr = ((long) data).ToString ("x");
+			string saddr = register.Value.ToString ("x");
 			for (int i = saddr.Length; i < bits; i++)
 				saddr = "0" + saddr;
 			return saddr;
@@ -274,15 +280,15 @@ namespace Mono.Debugger
 			return String.Format (
 				"EAX={0}  EBX={1}  ECX={2}  EDX={3}  ESI={4}  EDI={5}\n" +
 				"EBP={6}  ESP={7}  EIP={8}  EFLAGS={9}\n",
-				format (registers [(int) I386Register.EAX].Data),
-				format (registers [(int) I386Register.EBX].Data),
-				format (registers [(int) I386Register.ECX].Data),
-				format (registers [(int) I386Register.EDX].Data),
-				format (registers [(int) I386Register.ESI].Data),
-				format (registers [(int) I386Register.EDI].Data),
-				format (registers [(int) I386Register.EBP].Data),
-				format (registers [(int) I386Register.ESP].Data),
-				format (registers [(int) I386Register.EIP].Data),
+				format (registers [(int) I386Register.EAX]),
+				format (registers [(int) I386Register.EBX]),
+				format (registers [(int) I386Register.ECX]),
+				format (registers [(int) I386Register.EDX]),
+				format (registers [(int) I386Register.ESI]),
+				format (registers [(int) I386Register.EDI]),
+				format (registers [(int) I386Register.EBP]),
+				format (registers [(int) I386Register.ESP]),
+				format (registers [(int) I386Register.EIP]),
 				PrintRegister (registers [(int) I386Register.EFLAGS]));
 		}
 

@@ -1,5 +1,10 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (Register.Data): Renamed to `Value' and
+	changed type to long.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs (Process.RuntimeInvoke): Take a `StackFrame'
 	argument instead of an `ILanguageBackend' one; make them public.
 	(Process.MyStackFrame): Killed this class.

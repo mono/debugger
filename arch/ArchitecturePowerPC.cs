@@ -152,7 +152,7 @@ namespace Mono.Debugger
 
 		public string PrintRegister (Register register)
 		{
-			return String.Format ("{0:x}", (long) register.Data);
+			return String.Format ("{0:x}", register.Value);
 		}
 
 		public string PrintRegisters (StackFrame frame)

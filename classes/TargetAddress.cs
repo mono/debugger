@@ -42,7 +42,7 @@ namespace Mono.Debugger
 		}
 
 		public TargetAddress (AddressDomain domain, Register register)
-			: this (domain, (long) register.Data)
+			: this (domain, register.Value)
 		{
 		}
 

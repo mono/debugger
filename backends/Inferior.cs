@@ -936,7 +936,7 @@ namespace Mono.Debugger.Backends
 				buffer = Marshal.AllocHGlobal (buffer_size);
 				long[] values = new long [count];
 				for (int i = 0; i < count; i++)
-					values [i] = (long) registers [i].Data;
+					values [i] = registers [i].Value;
 				Marshal.Copy (values, 0, buffer, registers.Length);
 				TargetError result = mono_debugger_server_set_registers (
 					server_handle, buffer);
