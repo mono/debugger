@@ -257,8 +257,8 @@ public bool Parse (string text)
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//
-		Console.WriteLine (lexer.location + "  : Parsing error ");
-		Console.WriteLine (e);
+		current_context.Error (lexer.location + "  : Parsing error ");
+		current_context.Error (e.ToString ());
 		return false;
 	}
 }
