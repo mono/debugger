@@ -119,15 +119,4 @@ namespace Mono.Debugger
 				return String.Format ("{0}: {1}", ex.GetType ().Name, ex.Message);
 		}
 	}
-
-	public class MethodOverloadException : TargetException
-	{
-		public MethodOverloadException ()
-			: base ("Method overload resolution failed.")
-		{}
-
-		public MethodOverloadException (string format, params object[] args)
-			: base (String.Format (format, args))
-		{ }
-	}
 }

@@ -1,3 +1,13 @@
+2004-06-24  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetInvocationException.cs
+	(TargetInvocationException): Don't derive from TargetException.
+
+	* classes/TargetException.cs (MethodOverloadException): Removed.
+
+	* backends/mono-csharp/MonoFunctionType.cs: Throw an
+	ArgumentException, not a MethodOverloadException.
+
 2004-06-23  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/i386-arch.c (server_ptrace_get_backtrace): Added

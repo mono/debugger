@@ -115,9 +115,7 @@ namespace Mono.Debugger.Languages.CSharp
 			TargetAddress exc_object;
 
 			if (parameter_types.Length != args.Length)
-				throw new MethodOverloadException (
-					"Method takes {0} arguments, but specified {1}.",
-					parameter_types.Length, args.Length);
+				throw new ArgumentException ();
 
 			TargetAddress[] arg_ptr = new TargetAddress [args.Length];
 			for (int i = 0; i < args.Length; i++) {

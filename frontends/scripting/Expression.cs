@@ -1546,8 +1546,6 @@ namespace Mono.Debugger.Frontends.Scripting
 					throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
 
 				return retval;
-			} catch (MethodOverloadException ex) {
-				throw new ScriptingException ("Cannot invoke method `{0}': {1}", Name, ex.Message);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException ("Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
 			}
@@ -1638,10 +1636,6 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			try {
 				return ctor.Type.InvokeStatic (frame.Frame, args, debug);
-			} catch (MethodOverloadException ex) {
-				throw new ScriptingException (
-					"Cannot invoke constructor on type `{0}': {1}",
-					type_expr.Name, ex.Message);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException (
 					"Invocation of type `{0}'s constructor raised an " +
