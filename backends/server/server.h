@@ -16,6 +16,7 @@ typedef enum {
 	SERVER_COMMAND_CONTINUE,
 	SERVER_COMMAND_STEP,
 	SERVER_COMMAND_READ_DATA,
+	SERVER_COMMAND_WRITE_DATA,
 	SERVER_COMMAND_GET_TARGET_INFO,
 	SERVER_COMMAND_CALL_METHOD
 } ServerCommand;
@@ -141,6 +142,12 @@ mono_debugger_server_read_memory     (ServerHandle            *handle,
 				      guint64                  start,
 				      guint32                  size,
 				      gpointer                *data);
+
+extern ServerCommandError
+mono_debugger_server_write_memory    (ServerHandle            *handle,
+				      gpointer                 data,
+				      guint64                  start,
+				      guint32                  size);
 
 extern ServerCommandError
 mono_debugger_server_get_target_info (ServerHandle            *handle,

@@ -84,6 +84,18 @@ command_func (InferiorHandle *handle, int fd)
 		g_free (data);
 		return;
 
+	case SERVER_COMMAND_WRITE_DATA:
+		if (read (fd, &arg, sizeof (arg)) != sizeof (arg))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		if (read (fd, &arg2, sizeof (arg2)) != sizeof (arg2))
+			g_error (G_STRLOC ": Can't read command: %s", g_strerror (errno));
+		data = g_malloc (arg2);
+		if (read (fd, data, arg2) != arg2)
+			g_error (G_STRLOC ": Can't read command argument: %s", g_strerror (errno));
+		result = server_ptrace_write_data (handle, arg, arg2, data);
+		g_free (data);
+		break;
+
 	case SERVER_COMMAND_GET_TARGET_INFO:
 		write_result (fd, COMMAND_ERROR_NONE);
 		write_arg (fd, sizeof (gint32));

@@ -18,6 +18,13 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   The sum of Location and Offset.
+		// </summary>
+		long Address {
+			get;
+		}
+
 		int Offset {
 			get; set;
 		}

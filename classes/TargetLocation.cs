@@ -36,6 +36,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public long Address {
+			get {
+				return addr + offset;
+			}
+		}
+
 		public bool IsNull {
 			get {
 				return addr == 0;

@@ -153,6 +153,35 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start, guint32 s
 }
 
 ServerCommandError
+mono_debugger_server_write_memory (ServerHandle *handle, gpointer data, guint64 start, guint32 size)
+{
+	ServerCommand command = SERVER_COMMAND_WRITE_DATA;
+	ServerCommandError result;
+	guint64 l_size = size;
+
+	result = write_command (handle, command);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if (!my_write (handle, &start, sizeof (start)))
+		return COMMAND_ERROR_IO;
+
+	if (!my_write (handle, &l_size, sizeof (l_size)))
+		return COMMAND_ERROR_IO;
+
+	if (!my_write (handle, data, size))
+		return COMMAND_ERROR_IO;
+
+	kill (handle->pid, SIGUSR1);
+
+	result = read_status (handle);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
 mono_debugger_server_get_target_info (ServerHandle *handle, guint32 *target_int_size,
 				      guint32 *target_long_size, guint32 *target_address_size)
 {

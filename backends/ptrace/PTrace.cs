@@ -99,6 +99,9 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, IntPtr data, long start, int size);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_target_info (IntPtr handle, out int target_int_size, out int target_long_size, out int target_address_size);
 
 		[DllImport("monodebuggerserver")]
@@ -357,11 +360,11 @@ namespace Mono.Debugger.Backends
 		// ITargetMemoryAccess
 		//
 
-		IntPtr read_buffer (ITargetLocation location, long offset, int size)
+		IntPtr read_buffer (ITargetLocation location, int size)
 		{
 			IntPtr data;
 			CommandError result = mono_debugger_server_read_memory (
-				server_handle, location.Location + location.Offset + offset, size, out data);
+				server_handle, location.Address, size, out data);
 			if (result != CommandError.NONE) {
 				g_free (data);
 				handle_error (result);
@@ -369,11 +372,11 @@ namespace Mono.Debugger.Backends
 			return data;
 		}
 
-		public byte[] ReadBuffer (ITargetLocation location, long offset, int size)
+		public byte[] ReadBuffer (ITargetLocation location, int size)
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, offset, size);
+				data = read_buffer (location, size);
 				byte[] retval = new byte [size];
 				Marshal.Copy (data, retval, 0, size);
 				return retval;
@@ -386,7 +389,7 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, 0, 1);
+				data = read_buffer (location, 1);
 				return Marshal.ReadByte (data);
 			} finally {
 				g_free (data);
@@ -397,7 +400,7 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, 0, sizeof (int));
+				data = read_buffer (location, sizeof (int));
 				return Marshal.ReadInt32 (data);
 			} finally {
 				g_free (data);
@@ -408,7 +411,7 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, 0, sizeof (long));
+				data = read_buffer (location, sizeof (long));
 				return Marshal.ReadInt64 (data);
 			} finally {
 				g_free (data);
@@ -449,7 +452,7 @@ namespace Mono.Debugger.Backends
 
 		public ITargetMemoryReader ReadMemory (ITargetLocation location, int size)
 		{
-			byte [] retval = ReadBuffer (location, 0, size);
+			byte [] retval = ReadBuffer (location, size);
 			return new TargetReader (retval, target_info);
 		}
 
@@ -464,29 +467,79 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteBuffer (ITargetLocation location, byte[] buffer, long offset, int size)
+		public void WriteBuffer (ITargetLocation location, byte[] buffer, int size)
 		{
-			throw new NotSupportedException ();
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (size);
+				Marshal.Copy (buffer, 0, data, size);
+				CommandError result = mono_debugger_server_write_memory (
+					server_handle, data, location.Address, size);
+				check_error (result);
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+			}
 		}
 
 		public void WriteByte (ITargetLocation location, byte value)
 		{
-			throw new NotSupportedException ();
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (1);
+				Marshal.WriteByte (data, value);
+				CommandError result = mono_debugger_server_write_memory (
+					server_handle, data, location.Address, 1);
+				check_error (result);
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+			}
 		}
 
 		public void WriteInteger (ITargetLocation location, int value)
 		{
-			throw new NotSupportedException ();
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (sizeof (int));
+				Marshal.WriteInt32 (data, value);
+				CommandError result = mono_debugger_server_write_memory (
+					server_handle, data, location.Address, sizeof (int));
+				if (data != IntPtr.Zero)
+					check_error (result);
+			} finally {
+				Marshal.FreeHGlobal (data);
+			}
 		}
 
 		public void WriteLongInteger (ITargetLocation location, long value)
 		{
-			throw new NotSupportedException ();
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (sizeof (long));
+				Marshal.WriteInt64 (data, value);
+				CommandError result = mono_debugger_server_write_memory (
+					server_handle, data, location.Address, sizeof (long));
+				check_error (result);
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+			}
 		}
 
 		public void WriteAddress (ITargetLocation location, ITargetLocation address)
 		{
-			throw new NotSupportedException ();
+			switch (target_info.TargetAddressSize) {
+			case 4:
+				WriteInteger (location, (int) address.Address);
+
+			case 8:
+				WriteLongInteger (location, address.Address);
+
+			default:
+				throw new TargetMemoryException (
+					"Unknown target address size " + target_info.TargetAddressSize);
+			}
 		}
 
 		//
@@ -544,8 +597,10 @@ namespace Mono.Debugger.Backends
 
 		public void Next ()
 		{
-			throw new NotImplementedException ();
-			// change_target_state (TargetState.RUNNING);
+			ITargetLocation location = Frame ();
+			location.Offset += bfd_disassembler.GetInstructionSize (location);
+
+			Console.WriteLine ("TEST: {0}", location);
 		}
 
 		public ITargetLocation Frame ()

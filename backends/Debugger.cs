@@ -131,13 +131,12 @@ namespace Mono.Debugger.Backends
 		ITargetLocation location;
 		ITargetInfo target_info;
 		ITargetMemoryAccess memory;
-		long position = 0;
 
 		internal TargetMemoryStream (ITargetMemoryAccess memory, ITargetLocation location,
 					     ITargetInfo target_info)
 		{
 			this.memory = memory;
-			this.location = location;
+			this.location = (ITargetLocation) location.Clone ();
 			this.target_info = target_info;
 		}
 
@@ -167,11 +166,11 @@ namespace Mono.Debugger.Backends
 
 		public override long Position {
 			get {
-				return position;
+				return location.Offset;
 			}
 
 			set {
-				position = value;
+				location.Offset = (int) value;
 			}
 		}
 
@@ -182,14 +181,14 @@ namespace Mono.Debugger.Backends
 
 		public override long Seek (long offset, SeekOrigin origin)
 		{
-                        long ref_point;
+                        int ref_point;
 
                         switch (origin) {
 			case SeekOrigin.Begin:
 				ref_point = 0;
 				break;
 			case SeekOrigin.Current:
-				ref_point = position;
+				ref_point = location.Offset;
 				break;
 			case SeekOrigin.End:
 				throw new NotSupportedException ();
@@ -203,9 +202,9 @@ namespace Mono.Debugger.Backends
 			if (ref_point + offset < 0)
                                 throw new IOException ("Attempted to seek before start of stream");
 
-                        position = ref_point + offset;
+                        location.Offset = (int) (ref_point + offset);
 
-                        return position;
+                        return location.Offset;
                 }
 
 		public override void Flush ()
@@ -215,13 +214,13 @@ namespace Mono.Debugger.Backends
 		public override int Read (byte[] buffer, int offset, int count)
 		{
 			try {
-				byte[] retval = memory.ReadBuffer (location, position, count);
+				byte[] retval = memory.ReadBuffer (location, count);
 				retval.CopyTo (buffer, offset);
 			} catch (Exception e) {
 				throw new IOException ("Cannot read target memory", e);
 			}
 
-			position += count;
+			location.Offset += count;
 			return count;
 		}
 
@@ -231,14 +230,14 @@ namespace Mono.Debugger.Backends
 				if (offset != 0) {
 					byte[] temp = new byte [count];
 					Array.Copy (buffer, offset, temp, 0, count);
-					memory.WriteBuffer (location, temp, position, count);
+					memory.WriteBuffer (location, temp, count);
 				} else
-					memory.WriteBuffer (location, buffer, position, count);
+					memory.WriteBuffer (location, buffer, count);
 			} catch (Exception e) {
 				throw new IOException ("Cannot read target memory", e);
 			}
 
-			position += count;
+			location.Offset += count;
 		}
 	}
 
@@ -323,7 +322,8 @@ namespace Mono.Debugger.Backends
 			}
 			builder.Append (TargetLocation);
 
-			if ((SourceLocation == null) && (Instruction != null)) {
+			bool print_insn = true;
+			if (print_insn && (Instruction != null)) {
 				builder.Append (" (");
 				builder.Append (Instruction);
 				builder.Append (")");

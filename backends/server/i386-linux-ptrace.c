@@ -204,13 +204,12 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
 ServerCommandError
 server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
+	ServerCommandError result;
 	int *ptr = buffer;
 	int addr = start;
+	char temp [4];
 
-	if (size % sizeof (int))
-		return COMMAND_ERROR_ALIGNMENT;
-
-	while (size) {
+	while (size >= 4) {
 		int word = *ptr++;
 
 		errno = 0;
@@ -227,8 +226,16 @@ server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, g
 		size -= sizeof (int);
 	}
 
-	return COMMAND_ERROR_NONE;
-}
+	if (!size)
+		return COMMAND_ERROR_NONE;
+
+	result = server_ptrace_read_data (handle, addr, 4, &temp);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+	memcpy (&temp, ptr, size);
+
+	return server_ptrace_write_data (handle, addr, 4, &temp);
+}	
 
 /*
  * This method is highly architecture and specific.

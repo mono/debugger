@@ -42,7 +42,7 @@ namespace Mono.Debugger.Architecture
 		{
 			try {
 				ITargetLocation location = new TargetLocation (address);
-				byte[] buffer = memory.ReadBuffer (location, 0, size);
+				byte[] buffer = memory.ReadBuffer (location, size);
 				Marshal.Copy (buffer, 0, data, size);
 			} catch (Exception e) {
 				memory_exception = e;
@@ -55,7 +55,8 @@ namespace Mono.Debugger.Architecture
 		Exception memory_exception;
 		void output_func (string output)
 		{
-			sb.Append (output);
+			if (sb != null)
+				sb.Append (output);
 		}
 
 		//
@@ -81,6 +82,21 @@ namespace Mono.Debugger.Architecture
 			}
 
 			return insn;
+		}
+
+		public int GetInstructionSize (ITargetLocation location)
+		{
+			memory_exception = null;
+
+			try {
+				int count = bfd_glue_disassemble_insn (
+					dis, info, location.Location + location.Offset);
+				if (memory_exception != null)
+					throw memory_exception;
+				return count;
+			} finally {
+				memory_exception = null;
+			}
 		}
 
 		//
