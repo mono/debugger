@@ -20,13 +20,8 @@ namespace Mono.Debugger.GUI {
 		TextBuffer text_buffer;
 		ClosableNotebookTab tab;
 		SourceFileFactory factory;
+		bool active;
 
-		//
-		// State tracking
-		//
-		IMethod current_method = null;
-		IMethodSource current_method_source = null;
-		
 		public SourceList (ISourceBuffer source_buffer, string filename)
 		{
 			tab = new ClosableNotebookTab (filename);
@@ -76,47 +71,36 @@ namespace Mono.Debugger.GUI {
 
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
-			backend.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
-			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
+		}
+
+		public bool Active {
+			get {
+				return active;
+			}
+
+			set {
+				active = value;
+				if (!active)
+					text_buffer.RemoveTag (
+						frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+				else
+					FrameChangedEvent (backend.CurrentFrame);
+			}
 		}
 
 		void MethodInvalidEvent ()
 		{
-			current_method = null;
-			current_method_source = null;
-
-			Console.WriteLine ("TODO: Invalidate Method");
-		}
-
-		SourceLocation GetSource (StackFrame frame)
-		{
-			if (current_method_source == null){
-				Console.WriteLine ("Wooooopsie my current_method_source is null");
-				return null;
-			}
-
-			return current_method_source.Lookup (frame.TargetAddress);
-		}
-
-		IMethodSource GetMethodSource (IMethod method)
-		{
-			if ((method == null) || !method.HasSource)
-				return null;
-
-			return method.Source;
-		}
-
-		internal void MethodChangedEvent (IMethod method)
-		{
-			current_method = method;
-			current_method_source = GetMethodSource (method);
+			Active = false;
 		}
 
 		void FrameChangedEvent (StackFrame frame)
 		{
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 
-			SourceLocation source = GetSource (frame);
+			if (!active)
+				return;
+
+			SourceLocation source = frame.SourceLocation;
 			if (source == null)
 				return;
 
@@ -151,6 +135,13 @@ namespace Mono.Debugger.GUI {
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
 
+		//
+		// State tracking
+		//
+		IMethod current_method = null;
+		IMethodSource current_method_source = null;
+		SourceList current_source = null;
+		
 		public SourceManager (Gtk.Notebook notebook, SourceStatusbar source_status)
 		{
 			sources = new Hashtable ();
@@ -165,6 +156,7 @@ namespace Mono.Debugger.GUI {
 			this.backend = backend;
 
 			backend.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
+			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
 
 			foreach (DictionaryEntry de in sources){
 				SourceList source = (SourceList) de.Value;
@@ -176,6 +168,14 @@ namespace Mono.Debugger.GUI {
 		SourceList CreateSourceView (ISourceBuffer source_buffer, string filename)
 		{
 			return new SourceList (source_buffer, filename);
+		}
+
+		IMethodSource GetMethodSource (IMethod method)
+		{
+			if ((method == null) || !method.HasSource)
+				return null;
+
+			return method.Source;
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -223,9 +223,23 @@ namespace Mono.Debugger.GUI {
 		{
 			source_status.IsSourceStatusBar = args.PageNum != 0;
 		}
+
+		void MethodInvalidEvent ()
+		{
+			current_method = null;
+			current_method_source = null;
+
+			if (current_source != null)
+				current_source.Active = false;
+			current_source = null;
+		}
 		
 		void MethodChangedEvent (IMethod method)
 		{
+			MethodInvalidEvent ();
+			current_method = method;
+			current_method_source = GetMethodSource (method);
+
 			if (method.HasSource){
 				ISourceBuffer source_buffer = method.Source.SourceBuffer;
 
@@ -235,10 +249,8 @@ namespace Mono.Debugger.GUI {
 			
 				if (view == null){
 					view = CreateSourceView (source_buffer, filename);
-					if (backend != null){
+					if (backend != null)
 						view.SetBackend (backend);
-						view.MethodChangedEvent (method);
-					}
 					
 					sources [filename] = view;
 					notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);
@@ -246,11 +258,16 @@ namespace Mono.Debugger.GUI {
 					view.TabWidget.ButtonClicked += new EventHandler (close_tab);
 				}
 
+				view.Active = true;
+
 				int idx = GetPageIdx (view.ToplevelWidget);
 				if (idx != -1)
 					notebook.Page = idx;
+
+				current_source = view;
 			} else {
 				Console.WriteLine ("********* Need to show disassembly **********");
+				current_source = null;
 			}
 		}
 	}
