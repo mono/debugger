@@ -1,8 +1,0 @@
-*.lo
-*.o
-test-widget
-Makefile
-Makefile.in
-.libs
-*.la
-.deps
