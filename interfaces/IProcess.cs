@@ -37,6 +37,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		TargetState State {
+			get;
+		}
+
 		void Kill ();
 
 		IArchitecture Architecture {
@@ -52,6 +56,10 @@ namespace Mono.Debugger
 		}
 
 		ITargetAccess TargetAccess {
+			get;
+		}
+
+		IDisassembler Disassembler {
 			get;
 		}
 

@@ -301,6 +301,10 @@ namespace Mono.Debugger.Architecture
 			get { return this; }
 		}
 
+		public TargetState State {
+			get { return TargetState.CORE_FILE; }
+		}
+
 		public void Kill ()
 		{
 			// Do nothing.

@@ -58,7 +58,7 @@ namespace Mono.Debugger.Backends
 	//   time.  So if you attempt to issue a step command while the engine is still
 	//   busy, the step command will return false to signal this error.
 	// </summary>
-	public class SingleSteppingEngine : IProcess, ITargetAccess, IDisposable
+	public class SingleSteppingEngine : IProcess, ITargetAccess, IDisassembler, IDisposable
 	{
 		public SingleSteppingEngine (DebuggerBackend backend, Process process,
 					     IInferior inferior, bool native)
@@ -1726,12 +1726,59 @@ namespace Mono.Debugger.Backends
 		// Disassembling.
 		//
 
+		public IDisassembler Disassembler {
+			get { return this; }
+		}
+
+		ISymbolTable IDisassembler.SymbolTable {
+			get {
+				check_inferior ();
+				lock (disassembler) {
+					return disassembler.SymbolTable;
+				}
+			}
+
+			set {
+				check_inferior ();
+				lock (disassembler) {
+					disassembler.SymbolTable = value;
+				}
+			}
+		}
+
+		CommandResult get_insn_size (object data)
+		{
+			try {
+				lock (disassembler) {
+					TargetAddress address = (TargetAddress) data;
+					int result = disassembler.GetInstructionSize (address);
+					return new CommandResult (CommandResultType.CommandOk, result);
+				}
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		public int GetInstructionSize (TargetAddress address)
+		{
+			check_inferior ();
+			CommandResult result = send_sync_command (new CommandFunc (get_insn_size), address);
+			if (result.Type == CommandResultType.CommandOk) {
+				return (int) result.Data;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
 		CommandResult disassemble_insn (object data)
 		{
 			try {
-				TargetAddress address = (TargetAddress) data;
-				AssemblerLine result = disassembler.DisassembleInstruction (address);
-				return new CommandResult (CommandResultType.CommandOk, result);
+				lock (disassembler) {
+					TargetAddress address = (TargetAddress) data;
+					AssemblerLine result = disassembler.DisassembleInstruction (address);
+					return new CommandResult (CommandResultType.CommandOk, result);
+				}
 			} catch (Exception e) {
 				return new CommandResult (CommandResultType.Exception, e);
 			}
@@ -1752,8 +1799,10 @@ namespace Mono.Debugger.Backends
 		CommandResult disassemble_method (object data)
 		{
 			try {
-				AssemblerMethod block = disassembler.DisassembleMethod ((IMethod) data);
-				return new CommandResult (CommandResultType.CommandOk, block);
+				lock (disassembler) {
+					AssemblerMethod block = disassembler.DisassembleMethod ((IMethod) data);
+					return new CommandResult (CommandResultType.CommandOk, block);
+				}
 			} catch (Exception e) {
 				return new CommandResult (CommandResultType.Exception, e);
 			}

@@ -42,7 +42,7 @@ namespace Mono.Debugger
 		{
 			this.backend = backend;
 			this.bfdc = bfdc;
-			this.thread_hash = new Hashtable ();
+			this.thread_hash = Hashtable.Synchronized (new Hashtable ());
 
 			thread_lock_mutex = new Mutex ();
 			breakpoint_manager = new BreakpointManager ();
@@ -179,6 +179,17 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		void process_exited (Process process)
+		{
+			thread_hash.Remove (process.PID);
+		}
+
+		void add_process (Process process)
+		{
+			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+			OnThreadCreatedEvent (process);
+		}
+
 		void reload_threads (ITargetMemoryAccess memory)
 		{
 			int size = memory.TargetIntegerSize * 2 + memory.TargetAddressSize * 2;
@@ -215,7 +226,7 @@ namespace Mono.Debugger
 
 				thread_hash.Add (pid, new_process);
 
-				OnThreadCreatedEvent (new_process);
+				add_process (new_process);
 			}
 		}
 
@@ -234,7 +245,7 @@ namespace Mono.Debugger
 					background_pid, 0, csharp_handler);
 
 				thread_hash.Add (background_pid, debugger_process);
-				OnThreadCreatedEvent (debugger_process);
+				add_process (debugger_process);
 			}
 
 			for (int i = 0; i < count; i++) {
@@ -246,7 +257,7 @@ namespace Mono.Debugger
 
 				Process new_process = main_process.CreateThread (pid);
 				thread_hash.Add (pid, new_process);
-				OnThreadCreatedEvent (new_process);
+				add_process (new_process);
 			}
 		}
 

@@ -37,6 +37,8 @@ namespace Mono.Debugger.Backends
 			get { return inferior; }
 		}
 
+		public event TargetExitedHandler TargetExited;
+
 		IInferior inferior;
 		DebuggerBackend backend;
 		ThreadManager thread_manager;	
@@ -119,7 +121,13 @@ namespace Mono.Debugger.Backends
 
 		void child_exited ()
 		{
-			inferior = null;
+			if (inferior != null) {
+				inferior.Dispose ();
+				inferior = null;
+			}
+
+			if (TargetExited != null)
+				TargetExited ();
 		}
 
 		//

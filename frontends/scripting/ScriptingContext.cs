@@ -10,6 +10,8 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
+	public delegate void ProcessExitedHandler (ProcessHandle handle);
+
 	public class ProcessHandle
 	{
 		DebuggerBackend backend;
@@ -34,6 +36,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.StateChanged += new StateChangedHandler (state_changed);
 			process.TargetOutput += new TargetOutputHandler (inferior_output);
 			process.TargetError += new TargetOutputHandler (inferior_error);
+			process.TargetExited += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 		}
@@ -56,6 +59,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			initialize ();
 		}
+
+		public event ProcessExitedHandler ProcessExitedEvent;
 
 		void initialize ()
 		{
@@ -132,6 +137,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			frames_invalid ();
 			method_invalid ();
 			process = null;
+
+			if (ProcessExitedEvent != null)
+				ProcessExitedEvent (this);
 		}
 
 		void state_changed (TargetState state, int arg)
@@ -663,7 +671,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			foreach (Process process in backend.ThreadManager.Threads) {
 				ProcessHandle handle = new ProcessHandle (this, backend, process);
-				procs.Add (handle);
+				add_process (handle);
 
 				if (process == backend.ThreadManager.MainProcess)
 					current_process = handle;
@@ -794,7 +802,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				current_process = new ProcessHandle (this, backend, process, pid);
 			}
 
-			procs.Add (current_process);
+			add_process (current_process);
 
 			return process;
 		}
@@ -813,7 +821,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		void thread_created (ThreadManager manager, Process process)
 		{
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
-			procs.Add (handle);
+			add_process (handle);
 		}
 
 		public void ShowVariableType (ITargetType type, string name)
@@ -934,6 +942,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			foreach (Module module in modules)
 				module_operation (module, operations);
+		}
+
+		void process_exited (ProcessHandle process)
+		{
+			procs.Remove (process);
+		}
+
+		void add_process (ProcessHandle process)
+		{
+			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+			procs.Add (process);
 		}
 	}
 }

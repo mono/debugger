@@ -16,6 +16,8 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
+	public delegate void ProcessExitedHandler (Process process);
+
 	public class Process : IProcess, ITargetNotification, IDisposable
 	{
 		DebuggerBackend backend;
@@ -25,16 +27,21 @@ namespace Mono.Debugger
 
 		SingleSteppingEngine sse;
 		DaemonThreadRunner runner;
-		CoreFile core;
-		IInferior inferior;
 		IProcess iprocess;
 		int pid, id;
-		bool has_pid;
 
 		static int next_id = 0;
 
+		protected enum ProcessType
+		{
+			Normal,
+			CoreFile,
+			Daemon
+		}
+
 		protected Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
-				   bool create_sse)
+				   ProcessType type, string core_file, int pid, DaemonThreadHandler handler,
+				   int signal)
 		{
 			this.backend = backend;
 			this.start = start;
@@ -43,9 +50,9 @@ namespace Mono.Debugger
 
 			thread_group = new ThreadGroup (this);
 
-			inferior = new PTraceInferior (backend, start, bfd_container,
-						       backend.ThreadManager.BreakpointManager,
-						       new DebuggerErrorHandler (debugger_error));
+			IInferior inferior = new PTraceInferior (
+				backend, start, bfd_container, backend.ThreadManager.BreakpointManager,
+				new DebuggerErrorHandler (debugger_error));
 
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
@@ -53,58 +60,51 @@ namespace Mono.Debugger
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
-			if (!create_sse)
-				return;
+			switch (type) {
+			case ProcessType.Daemon:
+				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
+				this.pid = pid;
+				break;
 
-			sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
+			case ProcessType.Normal:
+				sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
-			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
-			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
-			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
-			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
-			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+				sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
+				sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
+				sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
+				sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
+				sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 
-			iprocess = sse;
+				if (pid != -1) {
+					this.pid = pid;
+					sse.Attach (pid, false);
+				}
+
+				iprocess = sse;
+				break;
+
+			case ProcessType.CoreFile:
+				CoreFile core = new CoreFileElfI386 (backend, start.TargetApplication,
+								     core_file, bfd_container);
+
+				backend.InitializeCoreFile (this, core);
+				iprocess = core;
+				break;
+
+			default:
+				throw new InternalError ();
+			}
 		}
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
-			: this (backend, start, bfd_container, true)
+			: this (backend, start, bfd_container, ProcessType.Normal, null, -1, null, 0)
 		{ }
 
-		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
-				  int pid)
-			: this (backend, start, bfd_container, true)
-		{
-			if (pid != -1) {
-				this.pid = pid;
-				sse.Attach (pid, false);
-			} else
-				this.pid = inferior.PID;
-			has_pid = true;
-		}
-
-		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
-				  DaemonThreadHandler handler, int pid, int signal)
-			: this (backend, start, bfd_container, false)
-		{
-			runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
-			this.pid = pid;
-			has_pid = true;
-		}
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
 				  string core_file)
-		{
-			this.backend = backend;
-			this.start = start;
-			this.bfd_container = bfd_container;
-
-			core = new CoreFileElfI386 (backend, start.TargetApplication,
-						    core_file, bfd_container);
-
-			iprocess = core;
-			backend.InitializeCoreFile (this, core);
-		}
+			: this (backend, start, bfd_container, ProcessType.CoreFile, core_file, -1, null, 0)
+		{ }
 
 		public DebuggerBackend DebuggerBackend {
 			get {
@@ -143,11 +143,8 @@ namespace Mono.Debugger
 
 		public IDisassembler Disassembler {
 			get {
-				check_disposed ();
-				if (inferior == null)
-					return null;
-
-				return inferior.Disassembler;
+				check_iprocess ();
+				return iprocess.Disassembler;
 			}
 		}
 
@@ -175,23 +172,17 @@ namespace Mono.Debugger
 
 		public int PID {
 			get{
-				check_inferior ();
-				if (!has_pid) {
-					pid = inferior.PID;
-					has_pid = true;
-				}
+				check_disposed ();
 				return pid;
 			}
 		}
 
 		public TargetState State {
 			get {
-				if (sse != null)
-					return sse.State;
+				if (iprocess != null)
+					return iprocess.State;
 				else if (runner != null)
 					return TargetState.DAEMON;
-				else if (core != null)
-					return TargetState.CORE_FILE;
 				else
 					return TargetState.NO_TARGET;
 			}
@@ -209,6 +200,7 @@ namespace Mono.Debugger
 		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
+		public event ProcessExitedHandler ProcessExitedEvent;
 
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
@@ -267,7 +259,7 @@ namespace Mono.Debugger
 		//   If true, we have a target.
 		// </summary>
 		public bool HasTarget {
-			get { return inferior != null; }
+			get { return iprocess != null; }
 		}
 
 		// <summary>
@@ -426,12 +418,14 @@ namespace Mono.Debugger
 
 		public Process CreateThread (int pid)
 		{
-			return new Process (backend, start, bfd_container, pid);
+			return new Process (backend, start, bfd_container, ProcessType.Normal,
+					    null, pid, null, 0);
 		}
 
 		public Process CreateDaemonThread (int pid, int signal, DaemonThreadHandler handler)
 		{
-			return new Process (backend, start, bfd_container, handler, pid, signal);
+			return new Process (backend, start, bfd_container, ProcessType.Daemon,
+					    null, pid, handler, signal);
 		}
 
 		public ProcessStart ProcessStart {
@@ -440,32 +434,24 @@ namespace Mono.Debugger
 
 		public AssemblerLine DisassembleInstruction (TargetAddress address)
 		{
-			check_disposed ();
-			if (sse != null)
-				return sse.DisassembleInstruction (address);
-			else
-				return core.Disassembler.DisassembleInstruction (address);
+			check_iprocess ();
+			return iprocess.Disassembler.DisassembleInstruction (address);
 		}
 
 		void child_exited ()
 		{
-			inferior.Dispose ();
-			inferior = null;
+			if (TargetExited != null)
+				TargetExited ();
+			if (ProcessExitedEvent != null)
+				ProcessExitedEvent (this);
 
-			sse = null;
+			Dispose ();
 		}
 
 		void check_iprocess ()
 		{
 			check_disposed ();
 			if (iprocess == null)
-				throw new NoTargetException ();
-		}
-
-		void check_inferior ()
-		{
-			check_disposed ();
-			if (inferior == null)
 				throw new NoTargetException ();
 		}
 
@@ -495,12 +481,10 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (sse != null)
-						sse.Dispose ();
+					if (iprocess != null)
+						iprocess.Dispose ();
 					if (runner != null)
 						runner.Dispose ();
-					if (inferior != null)
-						inferior.Dispose ();
 				}
 
 				// Release unmanaged resources
