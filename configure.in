@@ -38,17 +38,21 @@ case "$host" in
 		bfd_trad_core=yes
 		glue_cflags=
 		server_cflags=
+		windows=false
 		;;
 	*-*-freebsd*)
 		server_sources="i386-freebsd-ptrace.c i386-freebsd-ptrace.h"
 		bfd_trad_core=yes
 		glue_cflags=
 		server_cflags=
+		windows=false
 		;;
 	*-*-cygwin*)
 		server_sources="i386-win32.c i386-win32.h"
-		glue_cflags=-mno-cygwin
-		server_cflags=-I/usr/include/w32api -mno-cygwin
+		bfd_trad_core=no
+		glue_cflags="-mno-cygwin"
+		server_cflags="-I/usr/include/w32api -mno-cygwin"
+		windows=true
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
@@ -59,6 +63,7 @@ AC_SUBST(server_sources)
 AC_SUBST(glue_cflags)
 AC_SUBST(server_cflags)
 AM_CONDITIONAL(bfd_trad_core, test x$bfd_trad_core = xyes)
+AM_CONDITIONAL(WINDOWS, test x$windows = xyes)
 
 dnl may require a specific autoconf version
 dnl AC_PROG_CC_FOR_BUILD
