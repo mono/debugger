@@ -227,26 +227,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("CALL", "Call a function in the target")]
-	public class CallMethodCommand : DebuggerCommand
-	{
-		VariableExpression expression;
-		Expression[] arguments;
-
-		public CallMethodCommand (VariableExpression expression, Expression[] arguments)
-		{
-			this.expression = expression;
-			this.arguments = arguments;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			InvocationExpression invocation = new InvocationExpression (expression, arguments);
-
-			invocation.Invoke (context, false);
-		}
-	}
-
 	[Command("frame", "Print the current stack frame.")]
 	public class PrintFrameCommand : FrameCommand
 	{
@@ -1018,48 +998,6 @@ namespace Mono.Debugger.Frontends.Scripting
 
 
 #if FIXME
-	public class ScriptingVariableAssignCommand : DebuggerCommand
-	{
-		string identifier;
-		VariableExpression expr;
-
-		public ScriptingVariableAssignCommand (string identifier, VariableExpression expr)
-		{
-			this.identifier = identifier;
-			this.expr = expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context [identifier] = expr;
-		}
-	}
-
-	[Command("LIST", "List source code")]
-	public class ListCommand : DebuggerCommand
-	{
-		SourceExpression source_expr;
-
-		public ListCommand (SourceExpression source_expr)
-		{
-			this.source_expr = source_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			if (source_expr == null) {
-				context.ListSourceCode (null);
-				return;
-			}
-
-			SourceLocation location = source_expr.ResolveLocation (context);
-			if (location == null)
-				return;
-
-			context.ListSourceCode (location);
-		}
-	}
-
 	public class VariableAssignCommand : DebuggerCommand
 	{
 		VariableExpression var_expr;
