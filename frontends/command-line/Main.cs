@@ -23,7 +23,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			channel = new IOChannel (0, false, true);
 			readline = new GnuReadLine (channel, "$ ");
 			backend = new DebuggerBackend ();
-			context = new ScriptingContext (backend, Console.Out, Console.Error);
+			context = new ScriptingContext (backend, Console.Out, Console.Error, true);
 			parser = new Parser (context, "Debugger", args);
 		}
 

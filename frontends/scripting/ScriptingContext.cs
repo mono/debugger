@@ -133,22 +133,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 			bool ok;
 			switch (which) {
 			case WhichStepCommand.Continue:
-				ok = process.Continue (true);
+				ok = process.Continue (context.IsSynchronous);
 				break;
 			case WhichStepCommand.Step:
-				ok = process.StepLine (true);
+				ok = process.StepLine (context.IsSynchronous);
 				break;
 			case WhichStepCommand.Next:
-				ok = process.NextLine (true);
+				ok = process.NextLine (context.IsSynchronous);
 				break;
 			case WhichStepCommand.StepInstruction:
-				ok = process.StepInstruction (true);
+				ok = process.StepInstruction (context.IsSynchronous);
 				break;
 			case WhichStepCommand.NextInstruction:
-				ok = process.NextInstruction (true);
+				ok = process.NextInstruction (context.IsSynchronous);
 				break;
 			case WhichStepCommand.Finish:
-				ok = process.Finish (true);
+				ok = process.Finish (context.IsSynchronous);
 				break;
 			default:
 				throw new Exception ();
@@ -313,12 +313,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 		DebuggerBackend backend;
 		TextWriter stdout;
 		TextWriter stderr;
+		bool is_synchronous;
 
-		public ScriptingContext (DebuggerBackend backend, TextWriter stdout, TextWriter stderr)
+		public ScriptingContext (DebuggerBackend backend, TextWriter stdout, TextWriter stderr,
+					 bool is_synchronous)
 		{
 			this.backend = backend;
 			this.stdout = stdout;
 			this.stderr = stderr;
+			this.is_synchronous = is_synchronous;
 
 			procs = new ArrayList ();
 			current_process = null;
@@ -331,6 +334,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+		}
+
+		public bool IsSynchronous {
+			get { return is_synchronous; }
 		}
 
 		public ProcessHandle[] Processes {

@@ -28,7 +28,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.stdout = stdout;
 			this.stderr = stderr;
 
-			context = new ScriptingContext (backend, stdout, stderr);
+			context = new ScriptingContext (backend, stdout, stderr, false);
 			parser = new Parser (context, "Debugger", new string [0]);
 		}
 
