@@ -140,10 +140,6 @@ expression
 	  {
 		$$ = new CastExpression ((Expression) $2, (Expression) $4);
 	  }
-	| PARENT OPEN_PARENS expression CLOSE_PARENS
-	  {
-		$$ = new ParentClassExpression ((Expression) $3);
-	  }
 	| OPEN_PARENS expression CLOSE_PARENS
 	  {
 		$$ = $2;

@@ -1290,64 +1290,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class ParentClassExpression : Expression
-	{
-		Expression expr;
-		string name;
-
-		public ParentClassExpression (Expression expr)
-		{
-			this.expr = expr;
-			this.name = String.Format ("parent ({0})", expr.Name);
-		}
-
-		public override string Name {
-			get {
-				return name;
-			}
-		}
-
-		protected override Expression DoResolve (ScriptingContext context)
-		{
-			expr = expr.Resolve (context);
-			if (expr == null)
-				return null;
-
-			resolved = true;
-			return this;
-		}
-
-		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
-		{
-			ITargetClassObject obj = expr.EvaluateVariable (context)
-				as ITargetClassObject;
-			if (obj == null)
-				throw new ScriptingException (
-					"Variable {0} is not a class type.", expr.Name);
-
-			if (!obj.Type.HasParent)
-				throw new ScriptingException (
-					"Variable {0} doesn't have a parent type.",
-					expr.Name);
-
-			return obj.Parent;
-		}
-
-		protected override ITargetType DoEvaluateType (ScriptingContext context)
-		{
-			ITargetClassType type = expr.ResolveType (context) as ITargetClassType;
-			if (type == null)
-				throw new ScriptingException (
-					"Variable {0} is not a class type.", expr.Name);
-
-			if (!type.HasParent)
-				throw new ScriptingException (
-					"Variable {0} doesn't have a parent type.", expr.Name);
-
-			return type.ParentType;
-		}
-	}
-
 	public class CastExpression : Expression
 	{
 		Expression target, expr;
