@@ -448,7 +448,7 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case StepOperation.StepInstruction:
-				ok = do_step ();
+				ok = Step (get_simple_step_frame (StepMode.SingleInstruction));
 				break;
 
 			case StepOperation.NextInstruction:
@@ -1334,11 +1334,10 @@ namespace Mono.Debugger.Backends
 		StepFrame get_simple_step_frame (StepMode mode)
 		{
 			check_inferior ();
-			StackFrame frame = CurrentFrame;
 			object language;
 
-			if (frame != null)
-				language = (frame.Method != null) ? frame.Method.Module.Language : null;
+			if (current_method != null)
+				language = current_method.Module.Language;
 			else
 				language = null;
 
