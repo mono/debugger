@@ -1,3 +1,13 @@
+2004-10-18  Chris Toshok  <toshok@ximian.com>
+
+	* backends/ThreadManager.cs (ThreadManager.SendSyncCommand):
+	Process -> Engine.
+	(ThreadManager.engine_thread_main): same.
+
+	* backends/SingleSteppingEngine.cs: rename Command.Process to
+	Command.Engine, so things are a little less confusing (it is
+	afterall a SSE, not a Process).
+
 2004-10-06  Chris Toshok  <toshok@ximian.com>
 
 	* glue/Makefile.am

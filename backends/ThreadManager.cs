@@ -438,7 +438,7 @@ namespace Mono.Debugger
 		{
 			if (InBackgroundThread) {
 				try {
-					return command.Process.ProcessCommand (command);
+					return command.Engine.ProcessCommand (command);
 				} catch (ThreadAbortException) {
 					;
 				} catch (Exception e) {
@@ -465,7 +465,7 @@ namespace Mono.Debugger
 				current_command = null;
 			}
 
-			command_mutex.Unlock ();
+			ReleaseCommandMutex ();
 			if (result != null)
 				return result;
 			else
@@ -595,7 +595,7 @@ namespace Mono.Debugger
 			if (command.Type != CommandType.Operation) {
 				CommandResult result;
 				try {
-					result = command.Process.ProcessCommand (command);
+					result = command.Engine.ProcessCommand (command);
 				} catch (ThreadAbortException) {
 					;
 					return;
@@ -611,7 +611,7 @@ namespace Mono.Debugger
 				}
 			} else {
 				try {
-					command.Process.ProcessCommand (command.Operation);
+					command.Engine.ProcessCommand (command.Operation);
 				} catch (ThreadAbortException) {
 					return;
 				} catch (Exception e) {

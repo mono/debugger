@@ -2308,21 +2308,21 @@ namespace Mono.Debugger.Backends
 	}
 
 	internal class Command {
-		public SingleSteppingEngine Process;
+		public SingleSteppingEngine Engine;
 		public CommandType Type;
 		public Operation Operation;
 		public object Data1, Data2;
 
-		public Command (SingleSteppingEngine process, Operation operation)
+		public Command (SingleSteppingEngine engine, Operation operation)
 		{
-			this.Process = process;
+			this.Engine = engine;
 			this.Type = CommandType.Operation;
 			this.Operation = operation;
 		}
 
-		public Command (SingleSteppingEngine process, CommandType type, object data, object data2)
+		public Command (SingleSteppingEngine engine, CommandType type, object data, object data2)
 		{
-			this.Process = process;
+			this.Engine = engine;
 			this.Type = type;
 			this.Data1 = data;
 			this.Data2 = data2;
@@ -2331,7 +2331,7 @@ namespace Mono.Debugger.Backends
 		public override string ToString ()
 		{
 			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
-					      Process, Type, Operation, Data1, Data2);
+					      Engine, Type, Operation, Data1, Data2);
 		}
 	}
 
