@@ -11,6 +11,4 @@ elf32-target.h
 libtool
 ofiles
 peigen.c
-stamp-*
-stmp-*
 targmatch.h
