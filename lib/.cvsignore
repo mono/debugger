@@ -1,0 +1,4 @@
+Makefile
+*.exe
+*.dll
+*.config

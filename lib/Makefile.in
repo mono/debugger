@@ -1,0 +1,77 @@
+MCS=mcs
+DESTDIR=
+
+all: linux
+
+linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe Interpreter.exe
+
+ALL_SOURCES = \
+	@top_srcdir@/frontends/gui/*.cs			\
+	@top_srcdir@/frontends/scripting/*.cs		\
+	@top_srcdir@/frontends/command-line/Interpreter.cs
+
+INTERPRETER_SOURCES = \
+	@top_srcdir@/frontends/command-line/*.cs	\
+	@top_srcdir@/frontends/scripting/*.cs
+
+LIBRARY_SOURCES = \
+	@top_srcdir@/interfaces/*.cs			\
+	@top_srcdir@/classes/*.cs
+
+BACKEND_SOURCES = \
+	@top_srcdir@/backends/*.cs			\
+	@top_srcdir@/backends/classes/*.cs		\
+	@top_srcdir@/backends/ptrace/*.cs		\
+	@top_srcdir@/backends/mono-csharp/*.cs		\
+	@top_srcdir@/arch/*.cs
+
+LIBRARY_DEPS = \
+	-r Mono.CSharp.Debugger
+
+BACKEND_DEPS = \
+	-r Mono.Debugger.dll	\
+	-r Mono.CSharp.Debugger
+
+DEPS = \
+	-r glib-sharp.dll	\
+	-r pango-sharp.dll	\
+	-r atk-sharp.dll	\
+	-r gdk-sharp.dll	\
+	-r gtk-sharp.dll	\
+	-r gnome-sharp.dll	\
+	-r glade-sharp.dll	\
+	-r System.Drawing	\
+	-r Mono.CSharp.Debugger	\
+	-r Mono.Debugger.dll	\
+	-r Mono.Debugger.Backend.dll	\
+	-r ../widgets/gtk/gtksourceview-sharp.dll
+
+INTERPRETER_DEPS = \
+	-r Mono.CSharp.Debugger	\
+	-r Mono.Debugger.dll	\
+	-r Mono.Debugger.Backend.dll
+
+GUIDIR=../frontends/gui
+RESOURCES = \
+	-resource:$(GUIDIR)/debugger.glade,debugger.glade	\
+	-resource:$(GUIDIR)/mono.png,mono.png			\
+	-resource:$(GUIDIR)/stop.png,stop.png			\
+	-resource:$(GUIDIR)/line.png,line.png
+
+Mono.Debugger.dll: $(LIBRARY_SOURCES)
+	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SOURCES)
+
+Mono.Debugger.Backend.dll: $(BACKEND_SOURCES) Mono.Debugger.dll
+	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(MCS_FLAGS) $(BACKEND_DEPS) $(BACKEND_SOURCES)
+
+Debugger.exe: $(ALL_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
+	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES) $(MCS_FLAGS)
+
+Interpreter.exe: $(INTERPRETER_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
+	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SOURCES) $(MCS_FLAGS)
+
+clean:
+	rm -f *.exe
+
+install: all
+

@@ -1,5 +1,15 @@
 2003-01-05  Martin Baulig  <martin@ximian.com>
 
+	* lib/Debugger.exe.config.in: Moved here from ../test.
+	* lib/Interpreter.exe.config.in: Moved here from ../test.
+
+	* lib/: New directory.  Build everything here instead of in the
+	test/ directory.
+
+	* test/: This directory will now contain only tests.
+
+2003-01-05  Martin Baulig  <martin@ximian.com>
+
 	* backends/IInferior.cs (Run): Added `bool redirect_fds' argument;
 	if false, we don't redirect stdout and stderr.  This is used in
 	the command line interpreter.
