@@ -11,12 +11,13 @@ namespace Mono.Debugger.Languages.CSharp
 		DebuggerBackend backend;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
-		bool has_liveness_info;
+		bool has_liveness_info, is_byref;
 
 		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
-				     bool is_local, IMethod method, VariableInfo info,
-				     int start_scope_offset, int end_scope_offset)
-			: this (backend, name, type, is_local, method, info)
+				     bool is_local, bool is_byref, IMethod method,
+				     VariableInfo info, int start_scope_offset,
+				     int end_scope_offset)
+			: this (backend, name, type, is_local, is_byref, method, info)
 		{
 			if (is_local) {
 				start_scope = method.StartAddress + start_scope_offset;
@@ -42,12 +43,14 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
-				     bool is_local, IMethod method, VariableInfo info)
+				     bool is_local, bool is_byref, IMethod method,
+				     VariableInfo info)
 		{
 			this.backend = backend;
 			this.name = name;
 			this.type = type;
 			this.info = info;
+			this.is_byref = is_byref;
 
 			if (info.HasLivenessInfo) {
 				start_liveness = method.StartAddress + info.BeginLiveness;
@@ -93,9 +96,11 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetLocation GetLocation (StackFrame frame)
 		{
 			if (info.Mode == VariableInfo.AddressMode.Register)
-				return new MonoVariableLocation (frame, false, info.Index, info.Offset, type.IsByRef, 0);
+				return new MonoVariableLocation (
+					frame, false, info.Index, info.Offset, is_byref, 0);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
-				return new MonoVariableLocation (frame, true, info.Index, info.Offset, type.IsByRef, 0);
+				return new MonoVariableLocation (
+					frame, true, info.Index, info.Offset, is_byref, 0);
 			else
 				return null;
 		}

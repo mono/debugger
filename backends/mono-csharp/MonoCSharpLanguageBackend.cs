@@ -1410,7 +1410,8 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < param_info.Length; i++)
 					parameters [i] = new MonoVariable (
 						reader.backend, param_info [i].Name, param_types [i],
-						false, this, address.ParamVariableInfo [i], 0, 0);
+						false, param_types [i].IsByRef, this,
+						address.ParamVariableInfo [i], 0, 0);
 
 				local_types = new MonoType [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
@@ -1429,12 +1430,14 @@ namespace Mono.Debugger.Languages.CSharp
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
 						locals [i] = new MonoVariable (
 							reader.backend, local.Name, local_types [i],
-							true, this, address.LocalVariableInfo [i],
+							true, local_types [i].IsByRef, this,
+							address.LocalVariableInfo [i],
 							block.StartAddress, block.EndAddress);
 					} else {
 						locals [i] = new MonoVariable (
 							reader.backend, local.Name, local_types [i],
-							true, this, address.LocalVariableInfo [i]);
+							true, local_types [i].IsByRef, this,
+							address.LocalVariableInfo [i]);
 					}
 				}
 
@@ -1444,7 +1447,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (address.HasThis)
 					this_var = new MonoVariable (
 						reader.backend, "this", decl_type, true,
-						this, address.ThisVariableInfo);
+						true, this, address.ThisVariableInfo);
 
 				has_variables = true;
 			}

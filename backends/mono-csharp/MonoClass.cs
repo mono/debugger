@@ -403,9 +403,6 @@ namespace Mono.Debugger.Languages.CSharp
 				return Parent.GetField (location, index);
 			index -= first_field;
 
-			if (is_valuetype)
-				location = location.GetLocationAtOffset (0, true);
-
 			try {
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					fields [index].Offset, fields [index].Type.IsByRef);
@@ -594,9 +591,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (index < first_property)
 				return Parent.GetProperty (location, index);
-
-			if (is_valuetype)
-				location = location.GetLocationAtOffset (0, true);
 
 			return properties [index - first_property].Get (location);
 		}
@@ -796,9 +790,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (index < first_method)
 				return Parent.GetMethod (location, index);
-
-			if (is_valuetype)
-				location = location.GetLocationAtOffset (0, true);
 
 			try {
 				return (ITargetFunctionObject) methods [index - first_method].FunctionType.GetObject (location);
