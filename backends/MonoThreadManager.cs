@@ -135,7 +135,7 @@ namespace Mono.Debugger.Backends
 					      process);
 				main_process = process;
 				return true;
-			} else if (thread_hash.Count > first_index+3) {
+			} else if (thread_hash.Count > first_index+2) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed thread: {0}", process);
 				process.DaemonEventHandler = new DaemonEventHandler (managed_handler);
