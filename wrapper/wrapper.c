@@ -30,7 +30,7 @@ static guint32 debugger_event_arg;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
-static gpointer debugger_compile_method (MonoMethod *method);
+static guint64 debugger_compile_method (MonoMethod *method);
 static guint64 debugger_create_string (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
@@ -111,7 +111,7 @@ debugger_remove_breakpoint (guint64 breakpoint)
 	return mono_debugger_remove_breakpoint (breakpoint);
 }
 
-static gpointer
+static guint64
 debugger_compile_method (MonoMethod *method)
 {
 	gpointer retval;
@@ -124,7 +124,7 @@ debugger_compile_method (MonoMethod *method)
 
 	mono_debugger_wait ();
 
-	return retval;
+	return GPOINTER_TO_UINT (retval);
 }
 
 static guint64

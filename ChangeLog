@@ -1,5 +1,19 @@
 2004-03-05  Martin Baulig  <martin@ximian.com>
 
+	* wrapper.c (compile_method): Return a guint64.
+
+2004-03-05  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs (method_has_source): New
+	private method to check whether a method has source code; it's
+	used to determine whether we should enter a method while doing a
+	source stepping operation.
+
+	* classes/SourceFileFactory (SourceFileFactory.Exists): New public
+	method; just checks whether the file exists without opening it.
+
+2004-03-05  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs (callback_method_compiled):
 	Step over it if we're performing a source stepping operation and
 	the method doesn't have any source code.

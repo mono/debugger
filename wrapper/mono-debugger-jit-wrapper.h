@@ -23,7 +23,7 @@ struct _MonoDebuggerInfo {
 	gconstpointer notification_address;
 	MonoDebuggerSymbolTable **symbol_table;
 	guint32 symbol_table_size;
-	gpointer (*compile_method) (MonoMethod *method);
+	guint64 (*compile_method) (MonoMethod *method);
 	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
 	guint64 (*remove_breakpoint) (guint64 breakpoint);
 	MonoInvokeFunc runtime_invoke;
