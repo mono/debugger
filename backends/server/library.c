@@ -73,6 +73,18 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 }
 
 ServerCommandError
+mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address,
+				    guint64 method_argument, const gchar *string_argument,
+				    guint64 callback_argument)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->call_method_1) (handle->inferior, method_address, method_argument,
+						string_argument, callback_argument);
+}
+
+ServerCommandError
 mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *breakpoint)
 {
 	if (!handle->inferior)

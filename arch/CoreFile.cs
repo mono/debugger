@@ -297,6 +297,11 @@ namespace Mono.Debugger.Architecture
 			throw new CannotExecuteCoreFileException ();
 		}
 
+		public long CallStringMethod (TargetAddress method, long method_argument,
+					      string string_argument)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
 
 		//
 		// IDisposable

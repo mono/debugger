@@ -113,7 +113,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 7;
+		public const int  DynamicVersion = 8;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		public readonly int TotalSize;
@@ -214,27 +214,34 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoDebuggerInfo
 	{
-		public readonly TargetAddress trampoline_code;
+		public readonly TargetAddress generic_trampoline_code;
+		public readonly TargetAddress breakpoint_trampoline_code;
 		public readonly TargetAddress symbol_file_generation;
 		public readonly TargetAddress symbol_file_table;
 		public readonly TargetAddress update_symbol_file_table;
 		public readonly TargetAddress compile_method;
+		public readonly TargetAddress insert_breakpoint;
+		public readonly TargetAddress remove_breakpoint;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
 			reader.Offset = reader.TargetLongIntegerSize +
 				2 * reader.TargetIntegerSize;
-			trampoline_code = reader.ReadAddress ();
+			generic_trampoline_code = reader.ReadAddress ();
+			breakpoint_trampoline_code = reader.ReadAddress ();
 			symbol_file_generation = reader.ReadAddress ();
 			symbol_file_table = reader.ReadAddress ();
 			update_symbol_file_table = reader.ReadAddress ();
 			compile_method = reader.ReadAddress ();
+			insert_breakpoint = reader.ReadAddress ();
+			remove_breakpoint = reader.ReadAddress ();
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("MonoDebuggerInfo ({0:x}, {1:x}, {2:x}, {3:x}, {4:x})",
-					      trampoline_code, symbol_file_generation, symbol_file_table,
+			return String.Format ("MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x})",
+					      generic_trampoline_code, breakpoint_trampoline_code,
+					      symbol_file_generation, symbol_file_table,
 					      update_symbol_file_table, compile_method);
 		}
 	}
@@ -811,7 +818,7 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryReader table = inferior.ReadMemory (symbol_info, size);
 			info = new MonoDebuggerInfo (table);
 
-			trampoline_address = inferior.ReadAddress (info.trampoline_code);
+			trampoline_address = inferior.ReadAddress (info.generic_trampoline_code);
 			arch = inferior.Architecture;
 		}
 
@@ -880,6 +887,12 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			if (table.Update ())
 				ranges = table.SymbolRanges;
+		}
+
+		internal void InsertBreakpoint (string method_name)
+		{
+			long retval = inferior.CallStringMethod (
+				info.insert_breakpoint, 0x12345678abcdef79, method_name);
 		}
 
 		public TargetAddress GenericTrampolineCode {

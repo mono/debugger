@@ -455,6 +455,17 @@ namespace Mono.Debugger
 				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
 		}
 
+		public void TestBreakpoint (string name)
+		{
+			MonoCSharpLanguageBackend csharp = language as MonoCSharpLanguageBackend;
+			if (csharp == null)
+				throw new InternalError ();
+
+			Console.WriteLine ("TEST: {0}", name);
+
+			csharp.InsertBreakpoint (name);
+		}
+
 		public TargetAddress CurrentFrameAddress {
 			get {
 				check_stopped ();

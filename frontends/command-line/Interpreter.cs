@@ -200,6 +200,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 			}
 
+			case "test-break":
+				if (args.Length != 1) {
+					stderr.WriteLine ("Command requires an argument");
+					break;
+				}
+				backend.TestBreakpoint (args [0]);
+				break;
+
 #if FALSE
 			case "b":
 			case "break-method": {

@@ -155,8 +155,10 @@ server_ptrace_finalize (InferiorHandle *handle)
 
 	g_free (handle->saved_regs);
 	g_free (handle->saved_fpregs);
-	g_ptr_array_free (handle->breakpoints, TRUE);
-	g_hash_table_destroy (handle->breakpoint_hash);
+	if (handle->breakpoints)
+		g_ptr_array_free (handle->breakpoints, TRUE);
+	if (handle->breakpoint_hash)
+		g_hash_table_destroy (handle->breakpoint_hash);
 	g_free (handle);
 }
 
@@ -211,7 +213,7 @@ server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	*pc = regs.eip;
+	*pc = (guint32) regs.eip;
 	return result;
 }
 
@@ -278,12 +280,12 @@ server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, g
 	if (!size)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_read_data (handle, addr, 4, &temp);
+	result = server_ptrace_read_data (handle, (guint32) addr, 4, &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 	memcpy (&temp, ptr, size);
 
-	return server_ptrace_write_data (handle, addr, 4, &temp);
+	return server_ptrace_write_data (handle, (guint32) addr, 4, &temp);
 }	
 
 /*
@@ -326,6 +328,67 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 	*((guint32 *) (code+1)) = method_argument >> 32;
 	*((guint32 *) (code+6)) = method_argument & 0xffffffff;
 	*((guint32 *) (code+11)) = call_disp - 15;
+
+	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	regs.esp = regs.eip = new_esp;
+
+	result = set_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
+}
+
+/*
+ * This method is highly architecture and specific.
+ * It will only work on the i386.
+ */
+
+static ServerCommandError
+server_ptrace_call_method_1 (InferiorHandle *handle, guint64 method_address,
+			     guint64 method_argument, const gchar *string_argument,
+			     guint64 callback_argument)
+{
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	struct user_regs_struct regs;
+	long new_esp, call_disp;
+
+	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
+					0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0xe8,
+					0x00, 0x00, 0x00, 0x00, 0xcc };
+	int static_size = sizeof (static_code);
+	int size = static_size + strlen (string_argument) + 1;
+	guint8 *code = g_malloc0 (size);
+	memcpy (code, static_code, static_size);
+	strcpy (code + static_size, string_argument);
+
+	if (handle->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	new_esp = regs.esp - size;
+
+	handle->saved_regs = g_memdup (&regs, sizeof (regs));
+	handle->call_address = new_esp + 21;
+	handle->callback_argument = callback_argument;
+
+	handle->saved_fpregs = g_malloc (sizeof (struct user_i387_struct));
+	result = get_fp_registers (handle, handle->saved_fpregs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	call_disp = (int) method_address - new_esp;
+
+	*((guint32 *) (code+1)) = new_esp + 21;
+	*((guint32 *) (code+6)) = method_argument >> 32;
+	*((guint32 *) (code+11)) = method_argument & 0xffffffff;
+	*((guint32 *) (code+16)) = call_disp - 20;
 
 	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
@@ -865,6 +928,7 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_read_data,
 	server_ptrace_write_data,
 	server_ptrace_call_method,
+	server_ptrace_call_method_1,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_remove_breakpoint,
 	server_ptrace_get_breakpoints,

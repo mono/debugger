@@ -5,9 +5,6 @@
 
 G_BEGIN_DECLS
 
-#define MONO_SYMBOL_FILE_VERSION		18
-#define MONO_SYMBOL_FILE_MAGIC			"45e82623fd7fa614"
-
 typedef enum {
 	COMMAND_ERROR_NONE = 0,
 	COMMAND_ERROR_NO_INFERIOR,
@@ -143,6 +140,19 @@ typedef struct {
 	ServerCommandError    (* call_method)         (InferiorHandle   *handle,
 						       guint64           method,
 						       guint64           method_argument,
+						       guint64           callback_argument);
+
+	/*
+	 * Call `guint64 (*func) (guint64, const gchar *)' function at address `method' in the
+	 * target address space, pass it arguments `method_argument' and `string_argument' , send
+	 * a MESSAGE_CHILD_CALLBACK with the `callback_argument' and the function's return value
+	 * when the function returns.
+	 * This function must return immediately without waiting for the target !
+	 */
+	ServerCommandError    (* call_method_1)       (InferiorHandle   *handle,
+						       guint64           method,
+						       guint64           method_argument,
+						       const gchar      *string_argument,
 						       guint64           callback_argument);
 
 	/*
@@ -287,6 +297,13 @@ ServerCommandError
 mono_debugger_server_call_method          (ServerHandle       *handle,
 					   guint64             method_address,
 					   guint64             method_argument,
+					   guint64             callback_argument);
+
+ServerCommandError
+mono_debugger_server_call_method_1        (ServerHandle       *handle,
+					   guint64             method_address,
+					   guint64             method_argument,
+					   const gchar        *string_argument,
 					   guint64             callback_argument);
 
 ServerCommandError

@@ -68,6 +68,8 @@ namespace Mono.Debugger.Backends
 		//   The following two methods are more or less private.
 		// </remarks>
 		long CallMethod (TargetAddress method, long method_argument);
+		long CallStringMethod (TargetAddress method, long method_argument,
+				       string string_argument);
 		TargetAddress SimpleLookup (string name);
 
 		long GetRegister (int register);

@@ -126,6 +126,9 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
@@ -216,6 +219,38 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			TargetAsyncResult result = call_method (
 				method, method_argument, null, null);
+			mono_debugger_server_wait (server_handle);
+			if (!result.IsCompleted)
+				throw new InternalError ("Call not completed");
+			return (long) result.AsyncResult;
+		}
+
+		TargetAsyncResult call_method_1 (TargetAddress method, long method_argument,
+						 string string_argument, TargetAsyncCallback callback,
+						 object user_data)
+		{
+			check_disposed ();
+			long number = ++last_callback_id;
+			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
+			pending_callbacks.Add (number, async);
+
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_call_method_1 (
+					server_handle, method.Address, method_argument,
+					string_argument, number));
+			} catch {
+				change_target_state (old_state);
+			}
+			return async;
+		}
+
+		public long CallStringMethod (TargetAddress method, long method_argument,
+					      string string_argument)
+		{
+			check_disposed ();
+			TargetAsyncResult result = call_method_1 (
+				method, method_argument, string_argument, null, null);
 			mono_debugger_server_wait (server_handle);
 			if (!result.IsCompleted)
 				throw new InternalError ("Call not completed");
