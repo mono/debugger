@@ -202,6 +202,7 @@ AM_CONDITIONAL(MARTIN_HACKS, test x$use_martin_hacks = xyes)
 martin_deps=
 if test x$use_martin_hacks = xyes; then
    martin_deps="ORBit-2.0 >= 2.8.3"
+   AC_DEFINE(MARTIN_HACKS,1, [Enable Martin's playground.])
 fi
 
 

@@ -38,23 +38,32 @@ setup_corba (void)
 	CORBA_Environment ev;
 	struct sockaddr_in name;
 	struct hostent *hostinfo;
-	int argc = 0;
+	gchar *remote_var, *port_pos;
+	int len, port = 0, argc = 0;
 	gchar *ior;
-	int len;
-
-	g_message (G_STRLOC);
 
 	the_socket = socket (PF_INET, SOCK_STREAM, 0);
 	g_assert (the_socket >= 0);
 
-	hostinfo = gethostbyname ("localhost");
+	remote_var = g_strdup (g_getenv ("MONO_DEBUGGER_REMOTE"));
+	g_assert (remote_var);
+
+	port_pos = strchr (remote_var, ':');
+	if (port_pos) {
+		*port_pos++ = 0;
+		port = atoi (port_pos);
+	}
+	if (!port)
+		port = 40857;
+
+	hostinfo = gethostbyname (remote_var);
 	if (!hostinfo) {
-		g_warning (G_STRLOC ": Can't lookup host");
+		g_warning (G_STRLOC ": Can't lookup host %s", remote_var);
 		return -1;
 	}
 
 	name.sin_family = AF_INET;
-	name.sin_port = htons (40857);
+	name.sin_port = htons (port);
 	name.sin_addr = * (struct in_addr *) hostinfo->h_addr;
 
 	g_assert (hostinfo);
@@ -500,9 +509,7 @@ remote_server_get_backtrace (ServerHandle *handle, gint32 max_frames, guint64 st
 	int i;
 
 	CORBA_exception_init (&ev);
-	g_message (G_STRLOC ": Calling backtrace");
 	list = Debugger_Thread_GetBacktrace (handle->inferior->debugger_thread, max_frames, stop_address, &ev);
-	g_message (G_STRLOC ": Return from backtrace");
 	CHECK_RESULT;
 
 	*count = list->_length;
@@ -537,7 +544,6 @@ remote_server_stop (ServerHandle *handle)
 	CORBA_Environment ev;
 
 	CORBA_exception_init (&ev);
-	g_message (G_STRLOC ": Sending stop");
 	Debugger_Thread_Stop (handle->inferior->debugger_thread, &ev);
 	CHECK_RESULT;
 
@@ -551,7 +557,6 @@ remote_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	CORBA_Environment ev;
 
 	CORBA_exception_init (&ev);
-	g_message (G_STRLOC ": Sending stop and wait");
 	*status = Debugger_Thread_StopAndWait (handle->inferior->debugger_thread, &ev);
 	CHECK_RESULT;
 
@@ -586,8 +591,6 @@ static void
 remote_server_global_stop (void)
 {
 	guint32 result, command = 2;
-
-	g_message (G_STRLOC ": Sending global stop");
 
 	if (send (the_socket, &command, 4, 0) != 4) {
 		g_warning (G_STRLOC ": Send failed: %s", g_strerror (errno));
@@ -634,7 +637,7 @@ remote_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 	return COMMAND_ERROR_NOT_IMPLEMENTED;
 }
 
-InferiorVTable remote_server_inferior = {
+InferiorVTable remote_client_inferior = {
 	remote_server_initialize,
 	remote_server_spawn,
 	remote_server_attach,

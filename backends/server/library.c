@@ -17,11 +17,23 @@
 extern InferiorVTable i386_ptrace_inferior;
 static InferiorVTable *global_vtable = &i386_ptrace_inferior;
 #endif
+#if MARTIN_HACKS
+extern InferiorVTable remote_client_inferior;
+#endif
 
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 {
+#if MARTIN_HACKS
+	const gchar *remote_var = g_getenv ("MONO_DEBUGGER_REMOTE");
+
+	if (remote_var)
+		global_vtable = &remote_client_inferior;
+
 	return global_vtable->initialize (breakpoint_manager);
+#else
+	return global_vtable->initialize (breakpoint_manager);
+#endif
 }
 
 ServerCommandError
