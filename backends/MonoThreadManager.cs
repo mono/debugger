@@ -17,6 +17,7 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
+#if FIXME
 	internal class MonoThreadManager : ThreadManager
 	{
 		NativeThreadManager thread_manager;
@@ -39,6 +40,7 @@ namespace Mono.Debugger.Backends
 			return thread_manager.CreateInferior (start);
 		}
 
+#if FIXME
 		public override Process StartApplication (ProcessStart start)
 		{
 			Inferior inferior = CreateInferior (start);
@@ -59,6 +61,7 @@ namespace Mono.Debugger.Backends
 
 			return main_process;
 		}
+#endif
 
 		TargetAddress mono_thread_notification = TargetAddress.Null;
 		TargetAddress mono_command_notification = TargetAddress.Null;
@@ -314,11 +317,18 @@ namespace Mono.Debugger.Backends
 			thread_manager.ReleaseGlobalThreadLock (inferior, caller);
 		}
 
+		internal override bool HandleChildEvent (Inferior inferior,
+							 Inferior.ChildEvent cevent)
+		{
+			return thread_manager.HandleChildEvent (inferior, cevent);
+		}
+
 		protected override void DoDispose ()
 		{
 			thread_manager.Dispose ();
 		}
 
+#if FIXME
 		protected class ManagedWrapper : NativeProcess
 		{
 			MonoThreadManager thread_manager;
@@ -326,7 +336,7 @@ namespace Mono.Debugger.Backends
 
 			public ManagedWrapper (MonoThreadManager thread_manager,
 					       Inferior inferior, DaemonThreadHandler handler)
-				: base (thread_manager, inferior)
+				: base (inferior)
 			{
 				this.thread_manager = thread_manager;
 
@@ -334,5 +344,7 @@ namespace Mono.Debugger.Backends
 				SetDaemonThreadRunner (runner);
 			}
 		}
+#endif
 	}
+#endif
 }

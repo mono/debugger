@@ -17,6 +17,7 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
+#if FIXME
 	internal class NativeThreadManager : ThreadManager
 	{
 		public NativeThreadManager (DebuggerBackend backend, BfdContainer bfdc,
@@ -53,9 +54,11 @@ namespace Mono.Debugger.Backends
 		internal override Inferior CreateInferior (ProcessStart start)
 		{
 			return new PTraceInferior (
-				backend, start, bfdc, breakpoint_manager, null, this);
+				backend, start, bfdc, breakpoint_manager, null,
+				address_domain, this);
 		}
 
+#if FIXME
 		public override Process StartApplication (ProcessStart start)
 		{
 			Inferior inferior = CreateInferior (start);
@@ -74,6 +77,7 @@ namespace Mono.Debugger.Backends
 
 			return main_process;
 		}
+#endif
 
 		protected override void DoInitialize (Inferior inferior)
 		{
@@ -102,7 +106,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected virtual void ReloadThreads (PTraceInferior inferior)
+		protected virtual void ReloadThreads (Inferior inferior)
 		{
 			Report.Debug (DebugFlags.Threads, "Reloading threads");
 
@@ -195,7 +199,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public bool SignalHandler (PTraceInferior inferior, int signal, out bool action)
+		internal bool SignalHandler (Inferior inferior, int signal, out bool action)
 		{
 			Report.Debug (DebugFlags.Signals, "Signal: {0} {1} {2}",
 				      has_threads, signal, restart_signal);
@@ -240,6 +244,19 @@ namespace Mono.Debugger.Backends
 			inferior.SetSignal (restart_signal, false);
 			action = false;
 			return true;
+		}
+
+		internal override bool HandleChildEvent (Inferior inferior,
+							 Inferior.ChildEvent cevent)
+		{
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument != 0)) {
+				bool action;
+				if (SignalHandler (inferior, (int) cevent.Argument, out action))
+					return !action;
+			}
+
+			return false;
 		}
 
 		// <summary>
@@ -290,4 +307,5 @@ namespace Mono.Debugger.Backends
 			breakpoint_manager.Dispose ();
 		}
 	}
+#endif
 }
