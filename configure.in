@@ -52,17 +52,30 @@ if test "x$PKG_CONFIG" = "xno"; then
 	AC_MSG_ERROR([You need to install pkg-config])
 fi
 
-AC_PATH_PROG(GAPI_CODEGEN, gapi_codegen.exe, no)
-if test "x$GAPI_CODEGEN" != "xno"; then
-	gtksharp_path=`dirname $GAPI_CODEGEN`
-	GTKSHARP_PREFIX=`dirname $gtksharp_path`
-	have_gtk=yes
+AC_MSG_CHECKING([whether we're compiling from CVS])
+if test -f "$srcdir/.cvs_version" ; then
+	from_cvs=yes
 else
-	AC_MSG_WARN([Cannot find gtk#, the GUI won't be build!])
-	have_gtk=no
+	from_cvs=no
+fi
+AC_MSG_RESULT($from_cvs)
+
+if test "x$from_cvs" = "xyes" ; then
+	AC_PATH_PROG(GAPI_CODEGEN, gapi_codegen.exe, no)
+	if test "x$GAPI_CODEGEN" != "xno"; then
+		gtksharp_path=`dirname $GAPI_CODEGEN`
+		GTKSHARP_PREFIX=`dirname $gtksharp_path`
+		have_gtk=yes
+	else
+		AC_MSG_WARN([Cannot find gtk#, the GUI won't be build!])
+		have_gtk=no
+	fi
+else
+	have_gtk=yes
 fi
 AC_SUBST(GTKSHARP_PREFIX)
 AM_CONDITIONAL(HAVE_GTK, test x$have_gtk = xyes)
+AM_CONDITIONAL(USE_GAPI_CODEGEN, test x$from_cvs = xyes)
 
 AC_MSG_CHECKING([if building the GUI is requested])
 AC_ARG_ENABLE(gui, [  --disable-gui            don't build the GUI], build_gui=$enableval, build_gui=yes)

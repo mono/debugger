@@ -1,5 +1,13 @@
 2003-03-07  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Check whether we're compiling from CVS and only
+	check for gapi_codegen.exe if we do so.
+
+	* widgets/generator/Makefile.am (USE_GAPI_CODEGEN): New automake
+	conditional; don't rebuild if it's false.
+
+2003-03-07  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Set version number to 0.2.2.
 
 2003-03-05  Martin Baulig  <martin@ximian.com>
