@@ -1,22 +1,22 @@
 /* Target definitions for 32-bit ELF
-   Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
-   Free Software Foundation, Inc.
+   Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+   2003 Free Software Foundation, Inc.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 /* This structure contains everything that BFD knows about a target.
    It includes things like its byte order, name, what routines to call
@@ -33,7 +33,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #endif
 
 #define bfd_elf32_canonicalize_dynamic_symtab _bfd_elf_canonicalize_dynamic_symtab
+#ifndef bfd_elf32_canonicalize_reloc
 #define bfd_elf32_canonicalize_reloc	_bfd_elf_canonicalize_reloc
+#endif
 #ifndef bfd_elf32_find_nearest_line
 #define bfd_elf32_find_nearest_line	_bfd_elf_find_nearest_line
 #endif
@@ -53,7 +55,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #define bfd_elf32_link_record_dynamic_symbol _bfd_elf_link_record_dynamic_symbol
 #endif
 #define bfd_elf32_make_empty_symbol	_bfd_elf_make_empty_symbol
+#ifndef bfd_elf32_new_section_hook
 #define bfd_elf32_new_section_hook	_bfd_elf_new_section_hook
+#endif
 #define bfd_elf32_set_arch_mach		_bfd_elf_set_arch_mach
 #ifndef bfd_elf32_set_section_contents
 #define bfd_elf32_set_section_contents	_bfd_elf_set_section_contents
@@ -159,11 +163,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #endif
 #ifndef bfd_elf32_bfd_merge_private_bfd_data
 #define bfd_elf32_bfd_merge_private_bfd_data \
-  ((boolean (*) PARAMS ((bfd *, bfd *))) bfd_true)
+  ((bfd_boolean (*) PARAMS ((bfd *, bfd *))) bfd_true)
 #endif
 #ifndef bfd_elf32_bfd_set_private_flags
 #define bfd_elf32_bfd_set_private_flags \
-  ((boolean (*) PARAMS ((bfd *, flagword))) bfd_true)
+  ((bfd_boolean (*) PARAMS ((bfd *, flagword))) bfd_true)
 #endif
 #ifndef bfd_elf32_bfd_is_local_label_name
 #define bfd_elf32_bfd_is_local_label_name _bfd_elf_is_local_label_name
@@ -250,10 +254,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #endif
 
 #ifndef elf_backend_collect
-#define elf_backend_collect false
+#define elf_backend_collect FALSE
 #endif
 #ifndef elf_backend_type_change_ok
-#define elf_backend_type_change_ok false
+#define elf_backend_type_change_ok FALSE
 #endif
 
 #ifndef elf_backend_sym_is_global
@@ -398,9 +402,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
    For backwards compatibility, we still support this usage.  */
 #ifndef USE_REL
 #define USE_REL 0
-#else
-#undef USE_REL
-#define USE_REL 1
 #endif
 
 /* Use these in new code.  */
