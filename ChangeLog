@@ -1,5 +1,12 @@
 2002-12-14  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs: All step commands now take an
+	additional `bool synchronous' argument and return true on success;
+	if the `synchronous' argument is set, the engine waits until the
+	operation has been completed before returning.
+
+2002-12-14  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs: New file.
 
 2002-12-13  Martin Baulig  <martin@ximian.com>

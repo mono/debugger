@@ -113,12 +113,9 @@ namespace Mono.Debugger
 		// ITargetNotification
 		//
 
-		bool busy = false;
 		public TargetState State {
 			get {
-				if (busy)
-					return TargetState.BUSY;
-				else if (sse != null)
+				if (sse != null)
 					return sse.State;
 				else if (inferior != null)
 					return inferior.State;
@@ -127,37 +124,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool DebuggerBusy {
-			get {
-				return busy;
-			}
-
-			set {
-				if (busy == value)
-					return;
-
-				busy = value;
-				if (StateChanged != null)
-					StateChanged (State, 0);
-			}
-		}
-
 		void target_state_changed (TargetState new_state, int arg)
 		{
-			if (new_state == TargetState.STOPPED) {
-				if (busy) {
-					busy = false;
-					return;
-				}
-			}
-
-			if (new_state == TargetState.BUSY) {
-				busy = true;
-				return;
-			}
-
-			busy = false;
-
 			if (StateChanged != null)
 				StateChanged (new_state, arg);
 		}
@@ -252,66 +220,53 @@ namespace Mono.Debugger
 			get { return State == TargetState.STOPPED || State == TargetState.CORE_FILE; }
 		}
 
-		public void StepInstruction ()
+		public bool StepInstruction (bool synchronous)
 		{
-			check_can_run ();
-			sse.StepInstruction ();
+			check_inferior ();
+			return sse.StepInstruction (synchronous);
 		}
 
-		public void NextInstruction ()
+		public bool NextInstruction (bool synchronous)
 		{
-			check_can_run ();
-			sse.NextInstruction ();
+			check_inferior ();
+			return sse.NextInstruction (synchronous);
 		}
 
-		public void StepLine ()
+		public bool StepLine (bool synchronous)
 		{
-			check_can_run ();
-			sse.StepLine ();
+			check_inferior ();
+			return sse.StepLine (synchronous);
 		}
 
-		public void NextLine ()
+		public bool NextLine (bool synchronous)
 		{
-			check_can_run ();
-			sse.NextLine ();
+			check_inferior ();
+			return sse.NextLine (synchronous);
 		}
 
-		public void Continue ()
+		public bool Continue (bool synchronous)
 		{
-			check_can_run ();
-			sse.Continue (false);
+			check_inferior ();
+			return sse.Continue (false, synchronous);
 		}
 
-		public void Continue (bool in_background)
+		public bool Continue (bool in_background, bool synchronous)
 		{
-			check_can_run ();
-			sse.Continue (in_background);
+			check_inferior ();
+			return sse.Continue (in_background, synchronous);
 		}
 
-		public void Continue (TargetAddress until)
+		public bool Continue (TargetAddress until, bool synchronous)
 		{
-			check_can_run ();
-			
-			TargetAddress current = inferior.CurrentFrame;
-
-			Console.WriteLine (String.Format ("Requested to run from {0:x} until {1:x}.",
-							  current, until));
-
-			while (current < until)
-				current += inferior.Disassembler.GetInstructionSize (current);
-
-			if (current != until)
-				Console.WriteLine (String.Format (
-					"Oooops: reached {0:x} but symfile had {1:x}",
-					current, until));
-
-			sse.Continue (until);
+			check_inferior ();
+			return sse.Continue (until, synchronous);
 		}
 
 		public void Stop ()
 		{
-			check_inferior ();
-			inferior.Stop ();
+			check_disposed ();
+			if (sse != null)
+				sse.Stop ();
 		}
 
 		public void ClearSignal ()
@@ -320,10 +275,10 @@ namespace Mono.Debugger
 			inferior.SetSignal (0, false);
 		}
 
-		public void Finish ()
+		public bool Finish (bool synchronous)
 		{
-			check_can_run ();
-			sse.Finish ();
+			check_inferior ();
+			return sse.Finish (synchronous);
 		}
 
 		public void Kill ()
@@ -392,7 +347,7 @@ namespace Mono.Debugger
 		public Process CreateThread (int pid)
 		{
 			Process new_process = new Process (backend, start, bfd_container);
-			new_process.SingleSteppingEngine.Attach (pid);
+			new_process.SingleSteppingEngine.Attach (pid, false);
 			return new_process;
 		}
 
@@ -409,20 +364,6 @@ namespace Mono.Debugger
 			check_disposed ();
 			if (inferior == null)
 				throw new NoTargetException ();
-		}
-
-		// <remarks>
-		//   If you don't want to get an exception, check CanStep prior to
-		//   issuing the stepping command.
-		// </remarks>
-		void check_can_run ()
-		{
-			check_inferior ();
-
-			if (sse == null)
-				throw new CannotExecuteCoreFileException ();
-			else if (sse.State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
 		}
 
 		void check_stopped ()

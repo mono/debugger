@@ -135,7 +135,7 @@ namespace Mono.Debugger
 
 				if (index == 1) {
 					new_process.Inferior.SetSignal (PThread_Signal_Restart, false);
-					new_process.SingleSteppingEngine.Continue (true);
+					new_process.SingleSteppingEngine.Continue (true, false);
 				} else
 					new_process.Inferior.SetSignal (PThread_Signal_Restart, true);
 

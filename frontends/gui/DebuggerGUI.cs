@@ -255,7 +255,7 @@ namespace Mono.Debugger.GUI
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
-				process.SingleSteppingEngine.Run ();
+				process.SingleSteppingEngine.Run (false);
 			}
 
 			//
@@ -365,7 +365,7 @@ namespace Mono.Debugger.GUI
 		void OnRunProgramActivate (object sender, EventArgs args)
 		{
 			if ((process != null) && process.HasTarget)
-				process.Continue ();
+				process.Continue (false);
 		}
 
 		void OnContinueIgnoreSignalActivate (object sender, EventArgs args)
@@ -391,31 +391,31 @@ namespace Mono.Debugger.GUI
 		void OnStepIntoActivate (object sender, EventArgs args)
 		{
 			if ((process != null) && process.CanStep)
-				process.StepLine ();
+				process.StepLine (false);
 		}
 
 		void OnStepOverActivate (object sender, EventArgs args)
 		{
 			if ((process != null) && process.CanStep)
-				process.NextLine ();
+				process.NextLine (false);
 		}
 
 		void OnStepOutActivate (object sender, EventArgs args)
 		{
 			if ((process != null) && process.CanStep)
-				process.Finish ();
+				process.Finish (false);
 		}
 
 		void OnInstructionStepIntoActivate (object sender, EventArgs args)
 		{
 			if ((process != null) && process.CanStep)
-				process.StepInstruction ();
+				process.StepInstruction (false);
 		}
 
 		void OnInstructionStepOverActivate (object sender, EventArgs args)
 		{
 			if ((process != null) && process.CanStep)
-				process.NextInstruction ();
+				process.NextInstruction (false);
 		}
 		
 		void OnAboutActivate (object sender, EventArgs args)

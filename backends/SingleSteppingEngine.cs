@@ -101,7 +101,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Run ()
+		public void Run (bool synchronous)
 		{
 			if (engine_thread != null)
 				throw new AlreadyHaveTargetException ();
@@ -110,9 +110,11 @@ namespace Mono.Debugger.Backends
 			engine_thread.Start ();
 
 			wait_until_engine_is_ready ();
+			if (synchronous)
+				wait_for_completion ();
 		}
 
-		public void Attach (int pid)
+		public void Attach (int pid, bool synchronous)
 		{
 			if (engine_thread != null)
 				throw new AlreadyHaveTargetException ();
@@ -123,12 +125,8 @@ namespace Mono.Debugger.Backends
 			engine_thread.Start ();
 
 			wait_until_engine_is_ready ();
-		}
-
-		public WaitHandle WaitHandle {
-			get {
-				return completed_event;
-			}
+			if (synchronous)
+				wait_for_completion ();
 		}
 
 		void wait_until_engine_is_ready ()
@@ -392,9 +390,13 @@ namespace Mono.Debugger.Backends
 		{
 			disassembler.SymbolTable = symbol_table;
 			current_symtab = symbol_table;
-			if (State == TargetState.STOPPED) {
+
+			if (check_can_run ()) {
 				send_sync_command (new Command (CommandType.ReloadSymtab));
+				if (FrameChangedEvent != null)
+					FrameChangedEvent (current_frame);
 			}
+			command_mutex.ReleaseMutex ();
 		}
 
 		public IMethod Lookup (TargetAddress address)
@@ -437,7 +439,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public StackFrame CurrentFrame {
 			get {
-				check_stopped ();
+				check_inferior ();
 				return current_frame;
 			}
 		}
@@ -453,12 +455,19 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public StackFrame[] GetBacktrace ()
 		{
-			check_stopped ();
+			check_inferior ();
 
 			if (current_backtrace != null)
 				return current_backtrace;
 
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return null;
+			}
+
 			send_sync_command (new Command (CommandType.GetBacktrace));
+
+			command_mutex.ReleaseMutex ();
 
 			return current_backtrace;
 		}
@@ -570,12 +579,11 @@ namespace Mono.Debugger.Backends
 				throw new TargetNotStoppedException ();
 		}
 
-		void check_can_run ()
+		bool check_can_run ()
 		{
 			check_inferior ();
-
-			if (in_event || (State != TargetState.STOPPED))
-				throw new TargetNotStoppedException ();
+			command_mutex.WaitOne ();
+			return completed_event.WaitOne (0, false);
 		}
 
 		bool start_native ()
@@ -1068,29 +1076,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		// <summary>
-		//   Continue until reaching @until, hitting a breakpoint or receiving a
-		//   signal.  This method just inserts a breakpoint at @until and resumes
-		//   the target.
-		// </summary>
-		public void Continue (TargetAddress until)
-		{
-			check_inferior ();
-			start_step_operation (StepOperation.Run);
-		}
-
-		// <summary>
-		//   Resume the target until a breakpoint is hit or it receives a signal.
-		// </summary>
-		public void Continue (bool in_background)
-		{
-			check_inferior ();
-			if (in_background)
-				start_step_operation (StepOperation.RunInBackground, TargetAddress.Null);
-			else
-				start_step_operation (StepOperation.Run, TargetAddress.Null);
-		}
-
-		// <summary>
 		//   Create a step frame to step until the next source line.
 		// </summary>
 		StepFrame get_step_frame ()
@@ -1136,7 +1121,6 @@ namespace Mono.Debugger.Backends
 		void send_async_command (Command command)
 		{
 			lock (this) {
-				command_mutex.WaitOne ();
 				change_target_state (TargetState.RUNNING, 0);
 				current_command = command;
 				step_event.Set ();
@@ -1146,7 +1130,6 @@ namespace Mono.Debugger.Backends
 
 		CommandResult send_sync_command (Command command)
 		{
-			command_mutex.WaitOne ();
 			lock (this) {
 				current_command = command;
 				step_event.Set ();
@@ -1160,8 +1143,6 @@ namespace Mono.Debugger.Backends
 				result = command_result;
 				command_result = null;
 			}
-
-			command_mutex.ReleaseMutex ();
 
 			if (result != null)
 				return result;
@@ -1189,66 +1170,155 @@ namespace Mono.Debugger.Backends
 			start_step_operation (StepOperation.Native, get_simple_step_frame (mode));
 		}
 
-		void send_sync_command (StepOperation operation)
+		void wait_for_completion ()
 		{
+			completed_event.WaitOne ();
+			ready_event_handler ();
 		}
 
 		// <summary>
 		//   Step one machine instruction.
 		// </summary>
-		public void StepInstruction ()
+		public bool StepInstruction (bool synchronous)
 		{
-			check_can_run ();
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
+
 			start_step_operation (StepOperation.StepInstruction);
+			if (synchronous)
+				wait_for_completion ();
+			return true;
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public void NextInstruction ()
+		public bool NextInstruction (bool synchronous)
 		{
-			check_can_run ();
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
+
 			start_step_operation (StepOperation.NextInstruction);
+			if (synchronous)
+				wait_for_completion ();
+			return true;
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public void StepLine ()
+		public bool StepLine (bool synchronous)
 		{
-			check_can_run ();
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
+
 			start_step_operation (StepOperation.StepLine, get_step_frame ());
+			if (synchronous)
+				wait_for_completion ();
+			return true;
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public void NextLine ()
+		public bool NextLine (bool synchronous)
 		{
-			check_can_run ();
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
+
 			StepFrame frame = get_step_frame ();
 			if (frame == null) {
 				start_step_operation (StepMode.NextInstruction);
-				return;
+				return true;
 			}
 
 			start_step_operation (
 				StepOperation.NextLine,
 				new StepFrame (frame.Start, frame.End, null, StepMode.Finish));
+			if (synchronous)
+				wait_for_completion ();
+			return true;
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public void Finish ()
+		public bool Finish (bool synchronous)
 		{
-			check_can_run ();
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
+
 			StackFrame frame = CurrentFrame;
 			if (frame.Method == null)
 				throw new NoMethodException ();
 
 			start_step_operation (StepOperation.StepFrame, new StepFrame (
 				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
+			if (synchronous)
+				wait_for_completion ();
+			return true;
+		}
+
+		// <summary>
+		//   Continue until reaching @until, hitting a breakpoint or receiving a
+		//   signal.  This method just inserts a breakpoint at @until and resumes
+		//   the target.
+		// </summary>
+		public bool Continue (TargetAddress until, bool synchronous)
+		{
+			return Continue (until, false, synchronous);
+		}
+
+		// <summary>
+		//   Resume the target until a breakpoint is hit or it receives a signal.
+		// </summary>
+		public bool Continue (bool in_background, bool synchronous)
+		{
+			return Continue (TargetAddress.Null, in_background, synchronous);
+		}
+
+		public bool Continue (TargetAddress until, bool in_background, bool synchronous)
+		{
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return false;
+			}
+
+			if (in_background)
+				start_step_operation (StepOperation.RunInBackground, until);
+			else
+				start_step_operation (StepOperation.Run, until);
+			if (synchronous)
+				wait_for_completion ();
+			return true;
+		}
+
+		public void Stop ()
+		{
+			// Try to get the command mutex; if we succeed, then no stepping operation
+			// is currently running.
+			bool stopped = check_can_run ();
+			if (stopped) {
+				command_mutex.ReleaseMutex ();
+				return;
+			}
+
+			// Ok, there's an operation running.  Stop the inferior and wait until the
+			// currently running operation completed.
+			inferior.Stop ();
+			wait_for_completion ();
+			ready_event_handler ();
+			command_mutex.ReleaseMutex ();
 		}
 
 		Hashtable breakpoints = new Hashtable ();

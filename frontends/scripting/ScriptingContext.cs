@@ -26,7 +26,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.process = process;
 			this.id = ++next_id;
 
-			// process.FrameChangedEvent += new StackFrameHandler (frame_changed);
+			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 			process.StateChanged += new StateChangedHandler (state_changed);
 			process.TargetOutput += new TargetOutputHandler (inferior_output);
@@ -40,10 +40,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			: this (context, backend, process)
 		{
 			if (pid > 0)
-				process.SingleSteppingEngine.Attach (pid);
+				process.SingleSteppingEngine.Attach (pid, true);
 			else
-				process.SingleSteppingEngine.Run ();
-			wait_until_stopped ();
+				process.SingleSteppingEngine.Run (true);
+			process_events ();
 		}
 
 		int current_frame_idx = -1;
@@ -127,43 +127,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Process @{0} not running.", id);
 			else if (!process.CanRun)
 				throw new ScriptingException ("Process @{0} cannot be executed.", id);
-			else if (!process.IsStopped)
-				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
+			bool ok;
 			switch (which) {
 			case WhichStepCommand.Continue:
-				process.Continue ();
+				ok = process.Continue (true);
 				break;
 			case WhichStepCommand.Step:
-				process.StepLine ();
+				ok = process.StepLine (true);
 				break;
 			case WhichStepCommand.Next:
-				process.NextLine ();
+				ok = process.NextLine (true);
 				break;
 			case WhichStepCommand.StepInstruction:
-				process.StepInstruction ();
+				ok = process.StepInstruction (true);
 				break;
 			case WhichStepCommand.NextInstruction:
-				process.NextInstruction ();
+				ok = process.NextInstruction (true);
 				break;
 			case WhichStepCommand.Finish:
-				process.Finish ();
+				ok = process.Finish (true);
 				break;
 			default:
 				throw new Exception ();
 			}
 
-			wait_until_stopped ();
+			if (!ok)
+				throw new ScriptingException ("Process @{0} is not stopped.", id);
+
+			process_events ();
+		}
+
+		void process_events ()
+		{
+			while (g_main_context_iteration (IntPtr.Zero, false))
+				;
 		}
 
 		public void Stop ()
 		{
-			while (g_main_context_iteration (IntPtr.Zero, false))
-				;
-
-			return;
-
-
 			if (process == null)
 				throw new ScriptingException ("Process @{0} not running.", id);
 			process.Stop ();
@@ -178,16 +180,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			else if (!process.IsStopped)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
-			process.Continue (true);
-		}
-
-		void wait_until_stopped ()
-		{
-			while (!process.SingleSteppingEngine.WaitHandle.WaitOne ())
-				;
-
-			while (g_main_context_iteration (IntPtr.Zero, false))
-				;
+			process.Continue (true, false);
 		}
 
 		public int ID {
@@ -216,11 +209,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public StackFrame[] GetBacktrace ()
 		{
+			if (State == TargetState.NO_TARGET)
+				throw new ScriptingException ("No stack.");
+			else if (State != TargetState.STOPPED)
+				throw new ScriptingException ("Process @{0} is not stopped.", id);
+
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			if (current_frame != null)
-				current_backtrace = process.GetBacktrace ();
+			current_backtrace = process.GetBacktrace ();
 
 			if (current_backtrace == null)
 				throw new ScriptingException ("No stack.");
@@ -238,6 +235,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
+			else if (State != TargetState.STOPPED)
+				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
 			if (number == -1) {
 				if (current_frame == null)
