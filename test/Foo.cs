@@ -44,11 +44,26 @@ class X
 		Console.WriteLine (a [2,3]);
 	}
 
+	static void TimeTest (DateTime time)
+	{
+		Console.WriteLine (time);
+	}
+
+	static void ObjectTest (object o)
+	{
+		Console.WriteLine (o);
+	}
+
 	static void Main ()
 	{
+		ObjectTest (2);
+
 		Foo foo = new Foo (5, 29);
 
 		Test (foo);
+
+		DateTime time = DateTime.Now;
+		TimeTest (time);
 
 		Y y = new Y ();
 		ClassTest (y);

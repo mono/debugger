@@ -9,14 +9,15 @@ namespace Mono.Debugger.Languages.CSharp
 		bool is_byref;
 
 		public MonoStructType (Type type, int size, ITargetMemoryReader info)
-			: base (type, size, true, info)
+			: base (type, size, true)
 		{
 			is_byref = info.ReadByte () != 0;
 			int num_fields = info.BinaryReader.ReadInt32 ();
 			fields = new MonoFieldInfo [num_fields];
 
-			FieldInfo[] mono_fields = type.GetFields (BindingFlags.DeclaredOnly |
-				BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			FieldInfo[] mono_fields = type.GetFields (
+				BindingFlags.DeclaredOnly | BindingFlags.Instance |
+				BindingFlags.Public | BindingFlags.NonPublic);
 			if (mono_fields.Length != num_fields)
 				throw new InternalError (
 					"Type.GetFields() returns {0} fields, but the JIT only reports {1}",
@@ -98,6 +99,12 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public override bool HasObject {
+			get {
+				return true;
+			}
+		}
+
+		bool ITargetType.HasObject {
 			get {
 				return true;
 			}

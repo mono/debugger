@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoType element_type;
 
 		public MonoEnumType (Type type, int size, ITargetMemoryReader info)
-			: base (type, size, true, info)
+			: base (type, size, true)
 		{
 			TargetAddress element_type_info = info.ReadAddress ();
 			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,

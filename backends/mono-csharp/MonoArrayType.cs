@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoArrayType subarray_type;
 
 		public MonoArrayType (Type type, int size, ITargetMemoryReader info, bool is_multi)
-			: base (type, size, false, info)
+			: base (type, size, false)
 		{
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		private MonoArrayType (MonoArrayType type)
-			: base (get_subarray_type (type.type), type.Size, false, null)
+			: base (get_subarray_type (type.type), type.Size, false)
 		{
 			Rank = type.Rank;
 			Dimension = type.Dimension + 1;

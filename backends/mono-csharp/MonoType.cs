@@ -5,7 +5,6 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoType : ITargetType
 	{
 		protected Type type;
-		// protected ITargetMemoryReader info;
 
 		bool has_fixed_size;
 		int size;
@@ -17,11 +16,10 @@ namespace Mono.Debugger.Languages.CSharp
 			this.has_fixed_size = true;
 		}
 
-		protected MonoType (Type type, int size, bool has_fixed_size, ITargetMemoryReader info)
+		protected MonoType (Type type, int size, bool has_fixed_size)
 		{
 			this.type = type;
 			this.size = size;
-			// this.info = info;
 			this.has_fixed_size = has_fixed_size;
 		}
 
@@ -65,6 +63,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			case 6:
 				return new MonoClassType (type, size, info);
+
+			case 7:
+				return new MonoObjectType (type, size, info);
 
 			default:
 				return new MonoOpaqueType (type, size);
