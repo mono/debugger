@@ -81,6 +81,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("not", Token.NOT);
 			keywords.Add ("contents", Token.CONTENTS);
 			keywords.Add ("line", Token.LINE);
+			keywords.Add ("modules", Token.MODULES);
+
+			keywords.Add ("module", Token.MODULE);
+			keywords.Add ("ignore", Token.IGNORE);
+			keywords.Add ("unignore", Token.UNIGNORE);
 
 			keywords.Add ("unknown", Token.UNKNOWN);
 			keywords.Add ("fundamental", Token.FUNDAMENTAL);
@@ -473,6 +478,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.OPEN_BRACKET;
 				else if (c == ']')
 					return Token.CLOSE_BRACKET;
+				else if (c == ',')
+					return Token.COMMA;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

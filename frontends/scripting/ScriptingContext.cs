@@ -588,6 +588,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{ }
 	}
 
+	public enum ModuleOperation
+	{
+		Ignore,
+		UnIgnore,
+		Step,
+		DontStep
+	}
+
 	public enum WhichStepCommand
 	{
 		Continue,
@@ -614,6 +622,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		SourceFileFactory source_factory;
 		Hashtable scripting_variables;
+		Module[] modules;
 
 		static ScriptingContext ()
 		{
@@ -647,6 +656,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			source_factory = new SourceFileFactory ();
 
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
 		public SourceFileFactory SourceFactory {
@@ -835,6 +845,64 @@ namespace Mono.Debugger.Frontends.CommandLine
 					scripting_variables [identifier] = value;
 				else
 					scripting_variables.Add (identifier, value);
+			}
+		}
+
+		void modules_changed ()
+		{
+			modules = backend.Modules;
+		}
+
+		public void ShowModules ()
+		{
+			if (modules == null) {
+				Print ("No modules.");
+				return;
+			}
+
+			for (int i = 0; i < modules.Length; i++) {
+				Module module = modules [i];
+
+				Print ("{0,4} {1}{2}{3}{4}{5}", i, module.Name,
+				       module.IsLoaded ? " loaded" : "",
+				       module.SymbolsLoaded ? " symbols" : "",
+				       module.StepInto ? " step" : "",
+				       module.LoadSymbols ? "" :  " ignore");
+			}
+		}
+
+		public void ModuleOperations (int[] module_indices, ModuleOperation[] operations)
+		{
+			if (modules == null) {
+				Print ("No modules.");
+				return;
+			}
+
+			foreach (int index in module_indices) {
+				if ((index < 0) || (index > modules.Length)) {
+					Error ("No such module {0}.", index);
+					return;
+				}
+
+				Module module = modules [index];
+				foreach (ModuleOperation operation in operations) {
+					switch (operation) {
+					case ModuleOperation.Ignore:
+						module.LoadSymbols = false;
+						break;
+					case ModuleOperation.UnIgnore:
+						module.LoadSymbols = true;
+						break;
+					case ModuleOperation.Step:
+						module.StepInto = true;
+						break;
+					case ModuleOperation.DontStep:
+						module.StepInto = false;
+						break;
+					default:
+						throw new InternalError ();
+					}
+				}
 			}
 		}
 	}

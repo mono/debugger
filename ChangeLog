@@ -1,5 +1,10 @@
 2003-01-11  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Added `SHOW MODULES' command and
+	a `MODULE' command to modify modules.
+
+2003-01-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Incremented
 	MonoSymbolFileTable.DynamicVersion to 20 for the next Mono release.
 

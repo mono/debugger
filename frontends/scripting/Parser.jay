@@ -58,6 +58,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token DOLLAR
 %token DOT
 %token BANG
+%token COMMA
 %token ASSIGN
 %token STAR
 %token OPEN_PARENS
@@ -88,6 +89,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token STRUCT
 %token CLASS
 %token POINTER
+%token MODULES
 
 %token FRAME
 %token START
@@ -111,6 +113,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token SELECT
 %token BACKGROUND
 %token STOP
+
+%token MODULE
+%token IGNORE
+%token UNIGNORE
 
 %start command_loop
 %%
@@ -183,6 +189,10 @@ command
 	  {
 		$$ = new ShowLocalsCommand ((ProcessExpression) $3, (int) $4);
 	  }
+	| SHOW MODULES
+	  {
+		$$ = new ShowModulesCommand ();
+	  }
 	| SHOW TYPE variable_expression
 	  {
 		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
@@ -238,6 +248,14 @@ command
 	| SET BANG IDENTIFIER ASSIGN variable_expression
 	  {
 		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
+	  }
+	| MODULE number_list module_operations
+	  {
+		int[] modules = new int [((ArrayList) $2).Count];
+		((ArrayList) $2).CopyTo (modules, 0);
+		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $3).Count];
+		((ArrayList) $3).CopyTo (operations, 0);
+		$$ = new ModuleOperationCommand (modules, operations);
 	  }
 	| assert_command
 	  {
@@ -382,35 +400,92 @@ program_arglist
 
 opt_process
 	: /* empty */
-	{
+	  {
 		$$ = new ProcessExpression (-1);
-	}
+	  }
 	| AT INTEGER
-	{
+	  {
 		$$ = new ProcessExpression ((int) $2);
-	}
+	  }
 	;	
 
 opt_frame_number
 	: /* empty */
-	{
+	  {
 		$$ = -1;
-	}
+	  }
 	| HASH INTEGER
-	{
+	  {
 		$$ = $2;
-	}
+	  }
 	;
 
 function_name
 	: IDENTIFIER
-	{
+	  {
 		$$ = (string) $1;
-	}
+	  }
 	| STRING
-	{
+	  {
 		$$ = (string) $1;
-	}
+	  }
+	;
+
+number_list
+	: INTEGER
+	  {
+		ArrayList args = new ArrayList ();
+		args.Add ($1);
+
+		$$ = args;
+	  }
+	| number_list COMMA INTEGER
+	  {
+		ArrayList args = (ArrayList) $1;
+		args.Add ($3);
+
+		$$ = args;
+	  }
+	;
+
+module_operation
+	: IGNORE
+	  {
+		$$ = ModuleOperation.Ignore;
+	  }
+	| UNIGNORE
+	  {
+		$$ = ModuleOperation.UnIgnore;
+	  }
+	| BANG IGNORE
+	  {
+		$$ = ModuleOperation.UnIgnore;
+	  }
+	| STEP
+	  {
+		$$ = ModuleOperation.Step;
+	  }
+	| BANG STEP
+	  {
+		$$ = ModuleOperation.DontStep;
+	  }
+	;
+
+module_operations
+	: module_operation
+	  {
+		ArrayList args = new ArrayList ();
+		args.Add ($1);
+
+		$$ = args;
+	  }
+	| module_operations module_operation
+	  {
+		ArrayList args = (ArrayList) $1;
+		args.Add ($2);
+
+		$$ = args;
+	  }
 	;
 
 %%

@@ -382,6 +382,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowModulesCommand : Command
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.ShowModules ();
+		}
+	}
+
+	public class ModuleOperationCommand : Command
+	{
+		int[] modules;
+		ModuleOperation[] operations;
+
+		public ModuleOperationCommand (int[] modules, ModuleOperation[] operations)
+		{
+			this.modules = modules;
+			this.operations = operations;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.ModuleOperations (modules, operations);
+		}
+	}
+
 	public class BreakCommand : Command
 	{
 		ProcessExpression process_expr;
