@@ -855,12 +855,12 @@ namespace Mono.Debugger.Backends
 				 * when entering the method.
 				 */
 				if (!trampoline.IsNull) {
-					IMethod method = null;
+					IMethod trampoline_method = null;
 					if (application_symtab != null) {
 						application_symtab.UpdateSymbolTable ();
-						method = application_symtab.Lookup (trampoline);
+						trampoline_method = application_symtab.Lookup (trampoline);
 					}
-					if (method == null) {
+					if (trampoline_method == null) {
 						set_step_frame (frame);
 						do_next ();
 						return;

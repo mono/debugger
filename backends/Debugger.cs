@@ -381,10 +381,6 @@ namespace Mono.Debugger.Backends
 		IInferior inferior;
 		ILanguageBackend language;
 
-		readonly uint target_address_size;
-		readonly uint target_integer_size;
-		readonly uint target_long_integer_size;
-
 		string[] argv;
 		string[] envp;
 		string target_application;

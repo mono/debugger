@@ -185,7 +185,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 			MethodEntry method;
 			ISourceFileFactory factory;
-			Reflection.MethodBase rmethod;
+			System.Reflection.MethodBase rmethod;
 			MonoType[] param_types;
 			IVariable[] parameters;
 			bool has_variables;
@@ -218,7 +218,8 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 
 				object[] args = new object[] { (int) method.Token };
-				rmethod = (Reflection.MethodBase) get_method.Invoke (reader.assembly, args);
+				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
+					reader.assembly, args);
 			}
 
 			void get_variables ()
