@@ -1,5 +1,10 @@
 2005-01-21  Chris Toshok  <toshok@ximian.com>
 
+	* doc/Makefile.am (update): track proper location of
+	Mono.Debugger.dll.
+
+2005-01-21  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Main.cs: Fix command line parsing so that it correctly
 	allows for all of the following forms: "/arg:value", /arg value",
 	"-arg:value", "-arg value", "/arg", and "-arg" (and prints out a
