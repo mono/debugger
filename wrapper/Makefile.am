@@ -20,9 +20,7 @@ bin_SCRIPTS = mdb.exe mdb
 
 MCS_FLAGS = -g
 
-assdir = $(libdir)
-
-ass_SCRIPTS = Mono.Debugger.dll
+noinst_SCRIPTS = Mono.Debugger.dll
 
 MDB_SRCLIST = \
 	@top_srcdir@/frontends/command-line/DebuggerTextWriter.cs	\

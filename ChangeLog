@@ -1,5 +1,10 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/Makefile.am: Don't install Mono.Debugger.dll in
+	$(libdir), it only goes into the GAC.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs (ProcessStart.SetupEnvironment):
 	Correctly process the environment here; if the user explicitly
 	sets an env var in `UserEnvironment', it overrides the value
