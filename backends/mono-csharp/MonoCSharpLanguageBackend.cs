@@ -472,7 +472,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			protected internal override void ReadModuleData ()
+			protected override void ReadModuleData ()
 			{
 				lock (this) {
 					base.ReadModuleData ();
