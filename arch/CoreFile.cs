@@ -3,18 +3,18 @@ using System.IO;
 using System.Collections;
 using System.Runtime.InteropServices;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Architecture
 {
-#if FIXME
-	public abstract class CoreFile : ITargetMemoryAccess
+	internal abstract class CoreFile : ITargetMemoryAccess
 	{
-		protected Bfd bfd;
-		protected Bfd core_bfd;
-		protected BfdContainer bfd_container;
+		Bfd bfd;
+		internal Bfd core_bfd;
+		BfdContainer bfd_container;
 
-		protected BfdDisassembler bfd_disassembler;
-		protected IArchitecture arch;
+		BfdDisassembler bfd_disassembler;
+		IArchitecture arch;
 
 		DebuggerBackend backend;
 		SymbolTableManager symtab_manager;
@@ -119,10 +119,9 @@ namespace Mono.Debugger.Architecture
 					SourceAddress source = method.Source.Lookup (address);
 
 					current_frame = new MyStackFrame (
-						this, address, 0, null, source, method);
+						this, address, 0, source, method);
 				} else
-					current_frame = new MyStackFrame (
-						this, address, 0, null);
+					current_frame = new MyStackFrame (this, address, 0);
 
 				has_current_frame = true;
 				return current_frame;
@@ -162,10 +161,9 @@ namespace Mono.Debugger.Architecture
 				if ((method != null) && method.HasSource) {
 					SourceAddress source = method.Source.Lookup (address);
 					frames [i] = new MyStackFrame (
-						this, address, i, iframes [i], source, method);
+						this, address, i, source, method);
 				} else
-					frames [i] = new MyStackFrame (
-						this, address, i, iframes [i]);
+					frames [i] = new MyStackFrame (this, address, i);
 			}
 
 			has_backtrace = true;
@@ -210,32 +208,22 @@ namespace Mono.Debugger.Architecture
 
 		protected class MyStackFrame : StackFrame
 		{
-			Inferior.StackFrame frame;
 			CoreFile core;
 			ILanguage language;
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
-					     Inferior.StackFrame frame, SourceAddress source, IMethod method)
+					     SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
-				this.frame = frame;
 				this.core = core;
 				this.language = method.Module.Language;
 			}
 
-			public MyStackFrame (CoreFile core, TargetAddress address, int level,
-					     Inferior.StackFrame frame)
+			public MyStackFrame (CoreFile core, TargetAddress address, int level)
 				: base (address, level, core.SimpleLookup (address, false))
 			{
-				this.frame = frame;
 				this.core = core;
 				this.language = core.NativeLanguage;
-			}
-
-			public override Process Process {
-				get {
-					throw new InvalidOperationException ();
-				}
 			}
 
 			public override ITargetAccess TargetAccess {
@@ -263,7 +251,7 @@ namespace Mono.Debugger.Architecture
 
 			public override void SetRegister (int index, long value)
 			{
-				throw new InvalidOperationException ();
+				throw new CannotExecuteCoreFileException ();
 			}
 
 			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
@@ -279,11 +267,24 @@ namespace Mono.Debugger.Architecture
 				return core.Disassembler.DisassembleMethod (Method);
 			}
 
+			public override TargetAddress CallMethod (TargetAddress method,
+								  string arg)
+			{
+				throw new CannotExecuteCoreFileException ();
+			}
+
+			public override TargetAddress CallMethod (TargetAddress method,
+								  TargetAddress arg1,
+								  TargetAddress arg2)
+			{
+				throw new CannotExecuteCoreFileException ();
+			}
+
 			public override bool RuntimeInvoke (TargetAddress method_argument,
 							    TargetAddress object_argument,
 							    TargetAddress[] param_objects)
 			{
-				throw new InvalidOperationException ();
+				throw new CannotExecuteCoreFileException ();
 			}
 
 			public override TargetAddress RuntimeInvoke (TargetAddress method_arg,
@@ -291,7 +292,7 @@ namespace Mono.Debugger.Architecture
 								     TargetAddress[] param,
 								     out TargetAddress exc_obj)
 			{
-				throw new InvalidOperationException ();
+				throw new CannotExecuteCoreFileException ();
 			}
 		}
 
@@ -332,7 +333,7 @@ namespace Mono.Debugger.Architecture
 
 		public abstract Register[] GetRegisters ();
 
-		protected abstract Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
+		internal abstract Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 
 		public IDisassembler Disassembler {
 			get {
@@ -509,5 +510,4 @@ namespace Mono.Debugger.Architecture
 			Dispose (false);
 		}
 	}
-#endif
 }

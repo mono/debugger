@@ -6,7 +6,6 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-#if FIXME
 	internal class CoreFileElfI386 : CoreFile
 	{
 		[DllImport("libmonodebuggerbfdglue")]
@@ -47,7 +46,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected override Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
+		internal override Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
 		{
 			uint ebp = (uint) GetRegister ((int) I386Register.EBP).Data;
 			uint eip = (uint) GetRegister ((int) I386Register.EIP).Data;
@@ -96,5 +95,4 @@ namespace Mono.Debugger.Architecture
 			return retval;
 		}
 	}
-#endif
 }
