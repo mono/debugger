@@ -50,14 +50,9 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Start the target.
+		//   Start/continue the target.
 		// </summary>
 		void Run ();
-
-		// <summary>
-		//   Continue the target if it was previously stopped.
-		// </summary>
-		void Continue ();
 
 		// <summary>
 		//   Tell the debugger that we're finished debugging.  This kills the target

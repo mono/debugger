@@ -32,8 +32,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			stderr.WriteLine ("Commands:");
 			stderr.WriteLine ("  q, quit,exit     Quit the debugger");
-			stderr.WriteLine ("  r, run           Start the target");
-			stderr.WriteLine ("  c, continue      Continue the target");
+			stderr.WriteLine ("  r, run           Start/continue the target");
 			stderr.WriteLine ("  abort            Abort the target");
 			stderr.WriteLine ("  kill             Kill the target");
 			stderr.WriteLine ("  b, break-method  Add breakpoint for a CSharp method");
@@ -80,11 +79,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case "r":
 			case "run":
 				backend.Run ();
-				break;
-
-			case "c":
-			case "continue":
-				backend.Continue ();
 				break;
 
 			case "f":

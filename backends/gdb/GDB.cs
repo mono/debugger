@@ -106,11 +106,6 @@ namespace Mono.Debugger.Backends
 			start_target (StepMode.RUN);
 		}
 
-		public void Continue ()
-		{
-			start_target (StepMode.RUN);
-		}
-
 		public void Quit ()
 		{
 			gdb_input.WriteLine ("quit");
