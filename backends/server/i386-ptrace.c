@@ -247,6 +247,12 @@ sigint_signal_handler (int _dummy)
 	sem_post (&manager_semaphore);
 }
 
+static void
+thread_abort_signal_handler (int _dummy)
+{
+	pthread_exit (NULL);
+}
+
 int
 mono_debugger_server_get_pending_sigint (void)
 {
@@ -296,6 +302,13 @@ mono_debugger_server_initialize (BreakpointManager *bpm)
 		sigemptyset (&sa.sa_mask);
 		sa.sa_flags = 0;
 		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
+
+		/* catch SIGINT */
+		sa.sa_handler = thread_abort_signal_handler;
+		sigemptyset (&sa.sa_mask);
+		sa.sa_flags = 0;
+		g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
+
 
 		initialized = TRUE;
 	}

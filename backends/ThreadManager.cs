@@ -639,7 +639,7 @@ namespace Mono.Debugger
 					abort_requested = true;
 					engine_event.Set ();
 				}
-				inferior_thread.Join ();
+				inferior_thread.Abort ();
 				wait_thread.Abort ();
 			}
 

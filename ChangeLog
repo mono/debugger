@@ -1,5 +1,10 @@
 2004-03-03  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/i386-ptrace.c (mono_debugger_server_initialize):
+	Catch mono's thread abort signal and call pthread_exit(NULL) in it.
+
+2004-03-03  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs (DebuggerBackend.Run): Changed return type
 	to void; don't wait until the application is started.
 
