@@ -6,33 +6,37 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoClassType : MonoStructType, ITargetClassType
 	{
-		public readonly MonoClassType ParentType;
+		MonoClassType parent;
 
 		public MonoClassType (Type type, int size, TargetAddress klass,
 				      TargetBinaryReader info, MonoSymbolTable table)
-			: base (TargetObjectKind.Class, type, size, klass, info, table)
+			: base (TargetObjectKind.Class, type, size, klass, info, table, true)
 		{
-			int parent_type_info = info.ReadInt32 ();
-			if (type.BaseType != null) {
-				if (parent_type_info != 0) {
-					MonoType parent = GetType (type.BaseType, parent_type_info, table);
-					ParentType = parent as MonoClassType;
-				} else
-					ParentType = ObjectClass;
+			if (Klass.HasParent)
+				parent = new MonoClassType (Klass.Parent);
+		}
+
+		protected MonoClassType (MonoClass klass)
+			: base (TargetObjectKind.Class, klass)
+		{ }
+
+		bool ITargetClassType.HasParent {
+			get {
+				return parent != null;
 			}
 		}
 
-		public bool HasParent {
+		public MonoClassType ParentType {
 			get {
-				return ParentType != null;
+				if (parent == null)
+					throw new InvalidOperationException ();
+
+				return parent;
 			}
 		}
 
 		ITargetClassType ITargetClassType.ParentType {
 			get {
-				if (!HasParent)
-					throw new InvalidOperationException ();
-
 				return ParentType;
 			}
 		}

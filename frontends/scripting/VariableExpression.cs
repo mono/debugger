@@ -319,14 +319,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context)
 		{
-			ITargetObject obj = var_expr.ResolveVariable (context);
-			ITargetStructObject sobj = obj as ITargetStructObject;
-			if (sobj == null) {
-				ITargetFundamentalObject fobj = obj as ITargetFundamentalObject;
-				if (fobj.HasClassObject)
-					sobj = fobj.ClassObject;
-			}
-
+			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
 			if (sobj == null)
 				throw new ScriptingException ("Variable {0} is not a struct or class type.",
 							      var_expr.Name);

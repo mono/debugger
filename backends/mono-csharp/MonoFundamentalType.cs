@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
+	internal class MonoFundamentalType : MonoStructType, ITargetFundamentalType
 	{
 		protected readonly Heap Heap;
 
@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected MonoFundamentalType (Type type, int size, TargetAddress klass,
 					       TargetBinaryReader info, MonoSymbolTable table, bool has_fixed_size)
-			: base (TargetObjectKind.Fundamental, type, size, klass, has_fixed_size)
+			: base (TargetObjectKind.Fundamental, type, size, klass, info, table, has_fixed_size)
 		{
 			this.Heap = table.Language.DataHeap;
 		}

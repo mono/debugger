@@ -20,6 +20,7 @@ namespace Mono.Debugger.Languages.CSharp
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
 			DataOffset = info.ReadByte ();
+
 		}
 
 		new public static bool Supports (Type type)

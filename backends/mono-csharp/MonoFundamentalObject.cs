@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected override object GetObject (ITargetMemoryReader reader,
 						     TargetLocation locaction)
 		{
-			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
+			switch (System.Type.GetTypeCode (type.TypeHandle)) {
 			case TypeCode.Boolean:
 				return reader.BinaryReader.PeekByte () != 0;
 

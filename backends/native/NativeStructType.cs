@@ -86,6 +86,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public string FullName {
+			get {
+				return name;
+			}
+		}
+
 		public int Index {
 			get {
 				return index;

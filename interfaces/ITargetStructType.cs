@@ -42,6 +42,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		string FullName {
+			get;
+		}
+
 		int Index {
 			get;
 		}

@@ -858,7 +858,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					Print ("  It has a property `{0}' of type {1}", property.Name,
 					       property.Type.Name);
 				foreach (ITargetMethodInfo method in tstruct.Methods)
-					Print ("  It has a method: {0}", method);
+					Print ("  It has a method: {0}", method.FullName);
 				return;
 			}
 

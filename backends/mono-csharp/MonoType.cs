@@ -14,14 +14,13 @@ namespace Mono.Debugger.Languages.CSharp
 			Enum,
 			Object,
 			Struct,
-			Class
+			Class,
+			ClassInfo
 		};
 
 		protected Type type;
 		protected static MonoObjectType ObjectType;
-		internal static MonoClassType ObjectClass;
-		protected static ITargetMethodInfo[] ObjectClassMethods;
-		protected static ITargetMethodInfo ObjectToString;
+		// internal static MonoClassType ObjectClass;
 		protected readonly TargetObjectKind kind;
 		protected readonly TargetAddress klass;
 
@@ -58,6 +57,20 @@ namespace Mono.Debugger.Languages.CSharp
 			byte[] data = table.GetTypeInfo (offset);
 			TargetBinaryReader info = new TargetBinaryReader (data, table.TargetInfo);
 			return GetType (type, info, table);
+		}
+
+		public static MonoClass GetClass (Type type, int offset, MonoSymbolTable table)
+		{
+			byte[] data = table.GetTypeInfo (offset);
+			TargetBinaryReader info = new TargetBinaryReader (data, table.TargetInfo);
+			TypeKind kind = (TypeKind) info.ReadByte ();
+			if (kind != TypeKind.ClassInfo)
+				throw new InternalError ();
+
+			TargetAddress klass = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
+			int size = info.ReadInt32 ();
+
+			return new MonoClass (type, klass, size, info, table);
 		}
 
 		private static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolTable table)
@@ -102,19 +115,13 @@ namespace Mono.Debugger.Languages.CSharp
 				return new MonoClassType (type, size, klass, info, table);
 
 			case TypeKind.Object:
-				if (ObjectType == null) {
+				if (ObjectType == null)
 					ObjectType = new MonoObjectType (typeof (object), size, klass, table);
-					ObjectClass = new MonoClassType (typeof (object), size, klass, info, table);
-					ObjectClassMethods = ObjectClass.Methods;
-					foreach (ITargetMethodInfo method in ObjectClassMethods) {
-						if (method.Name == "ToString")
-							ObjectToString = method;
-					}
-					if (ObjectToString == null)
-						throw new InternalError ();
-				}
 
 				return ObjectType;
+
+			case TypeKind.ClassInfo:
+				throw new InternalError ("CLASS INFO: {0}", type);
 
 			default:
 				return new MonoOpaqueType (type, size);
@@ -127,7 +134,13 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public object TypeHandle {
+		object ITargetType.TypeHandle {
+			get {
+				return type;
+			}
+		}
+
+		public Type TypeHandle {
 			get {
 				return type;
 			}

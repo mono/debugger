@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
-		MonoStructType struct_type;
+		new MonoClass klass;
 		MethodInfo method_info;
 		TargetAddress method;
 		MonoType return_type;
@@ -16,17 +16,16 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress invoke_method;
 		MonoSymbolTable table;
 
-		public MonoFunctionType (MonoStructType struct_type, MethodInfo minfo,
-					 TargetBinaryReader info, MonoSymbolTable table)
+		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetBinaryReader info, MonoSymbolTable table)
 			: base (TargetObjectKind.Function, minfo.ReflectedType, 0, TargetAddress.Null)
 		{
-			this.struct_type = struct_type;
+			this.klass = klass;
 			this.method_info = minfo;
 			this.table = table;
 			this.method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 			int type_info = info.ReadInt32 ();
 			if (type_info != 0)
-				return_type = struct_type.GetType (minfo.ReturnType, type_info, table);
+				return_type = GetType (minfo.ReturnType, type_info, table);
 
 			int num_params = info.ReadInt32 ();
 			parameter_types = new MonoType [num_params];
@@ -40,18 +39,17 @@ namespace Mono.Debugger.Languages.CSharp
 					minfo.Name, num_params);
 			for (int i = 0; i < num_params; i++) {
 				int param_info = info.ReadInt32 ();
-				parameter_types [i] = struct_type.GetType (
-					parameters [i].ParameterType, param_info, table);
+				parameter_types [i] = GetType (parameters [i].ParameterType, param_info, table);
 			}
 
 			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
-		public MonoFunctionType (MonoStructType struct_type, MethodInfo minfo,
-					 TargetAddress method, MonoType return_type, MonoSymbolTable table)
+		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetAddress method,
+					 MonoType return_type, MonoSymbolTable table)
 			: base (TargetObjectKind.Function, minfo.ReflectedType, 0, TargetAddress.Null)
 		{
-			this.struct_type = struct_type;
+			this.klass = klass;
 			this.method_info = minfo;
 			this.method = method;
 			this.return_type = return_type;

@@ -1,3 +1,15 @@
+2003-07-22  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/MonoClass.cs: New class.  This is now used
+	for class and value types and also for fundamental types; it
+	allows us to call things like `Substring(int)' on a string.
+
+	* backends/mono-csharp/MonoStructType.cs: Moved most of this class
+	into MonoClass.
+
+	* backends/mono-csharp/MonoFundamentalType.cs: Derive from
+	MonoStructType since a fundamental type is also a valuetype.
+
 2003-07-20  Martin Baulig  <martin@ximian.com>
 
 	Largely improved the type support.  We can now invoke methods with
