@@ -24,7 +24,7 @@ namespace Mono.Debugger.Frontend
 			if (is_interactive) {
 				prompt = options.Prompt;
 				if (!options.IsScript)
-					readline = new GnuReadLine ();
+					readline = GnuReadLine.Instance ();
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
 			}

@@ -1,3 +1,27 @@
+2004-12-09  Chris Toshok  <toshok@ximian.com>
+
+	* glue/mono-debugger-readline.c
+	(mono_debugger_readline_current_line_buffer): new function, return
+	rl_line_buffer, dup'ed.
+	(mono_debugger_readline_set_completion_matches): new functoin.
+	(mono_debugger_readline_completion_function): new function, this
+	is the one we register with libreadline, the one that calls our
+	delegate.
+	(mono_debugger_readline_enable_completion): new function, register
+	our completion function and set the delegate.
+
+	* frontend/Main.cs (CommandLineInterpreter..ctor): use
+	GnuReadLine.Instance().
+
+	* frontend/GnuReadLine.cs: make this a singleton class.
+	(GnuReadLine.SetCompletionMatches): new method.  this must be
+	called from the CompletionDelegate in order to communicate back to
+	libreadline the matches for a given string.
+	(GnuReadLine.EnableCompletion): new method, sets the
+	CompletionDelegate.
+	(GnuReadLine.CurrentLine): gets the contents of the current line,
+	so we can do some rudimentary parsing if necessary.
+	
 2004-12-08  Chris Toshok  <toshok@ximian.com>
 
 	* Makefile.am (SUBDIRS): frontends -> frontend.
