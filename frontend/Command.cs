@@ -347,7 +347,7 @@ namespace Mono.Debugger.Frontend
 
 			case Format.Object:
 				ITargetObject obj = expression.EvaluateVariable (context);
-				context.PrintType (obj.Type);
+				context.PrintType (obj.Type.Type);
 				break;
 
 			case Format.Current:
@@ -355,7 +355,7 @@ namespace Mono.Debugger.Frontend
 				ITargetClassObject cobj = obj as ITargetClassObject;
 				if (cobj != null)
 					obj = cobj.CurrentObject;
-				context.PrintType (obj.Type);
+				context.PrintType (obj.Type.Type);
 				break;
 
 			default:
