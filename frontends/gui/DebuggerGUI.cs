@@ -112,6 +112,12 @@ namespace Mono.Debugger.GUI
 		SourceManager source_manager;
 		string working_dir = ".";
 
+		void Window_Delete (object obj, DeleteEventArgs args)
+		{
+			program.Quit();
+			args.RetVal = true;
+		}
+
 		public DebuggerGUI (string[] arguments)
 		{
 			thread_notify = new ThreadNotify ();
@@ -123,6 +129,8 @@ namespace Mono.Debugger.GUI
 #endif
 
 			SetupGUI ();
+
+			main_window.DeleteEvent += new DeleteEventHandler (Window_Delete);
 
 			interpreter = new Interpreter (backend, command_writer, output_writer);
 			context = interpreter.Context;
