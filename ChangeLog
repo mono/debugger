@@ -1,5 +1,17 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* backends/IInferior.cs (Bfd): New public property.
+
+	* backends/Debugger.cs: Create a MonoCSharpLanguageBackend for
+	core files from managed applications; use a special construction
+	for it, it'll only read the symbol tables once on construction.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Provide a
+	second .ctor which takes a CoreFile argument and immediately reads
+	the symbol tables.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Link against -liberty as well as -lbfd.
 
 	* classes/IOChannel.cs: Put this into the namespace Mono.Debugger.

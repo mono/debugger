@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Backends
 {
@@ -161,6 +162,10 @@ namespace Mono.Debugger.Backends
 		}
 
 		int StopSignal {
+			get;
+		}
+
+		Bfd Bfd {
 			get;
 		}
 

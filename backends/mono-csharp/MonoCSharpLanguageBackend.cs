@@ -7,6 +7,7 @@ using System.Threading;
 using Mono.CSharp.Debugger;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Languages.CSharp
 {
@@ -207,12 +208,12 @@ namespace Mono.Debugger.Languages.CSharp
 		// <summary>
 		//   Read all symbol tables from the JIT.
 		// </summary>
-		internal void Reload (IInferior inferior, TargetAddress address)
+		internal void Reload (ITargetMemoryAccess memory, TargetAddress address)
 		{
 			lock (this) {
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE: {0}", address);
 
-				ITargetMemoryReader header = inferior.ReadMemory (address, 28);
+				ITargetMemoryReader header = memory.ReadMemory (address, 28);
 
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE HEADER: {0}", header);
 
@@ -245,14 +246,14 @@ namespace Mono.Debugger.Languages.CSharp
 					return;
 				}
 
-				ITargetMemoryReader reader = inferior.ReadMemory (address + 28, TotalSize - 28);
+				ITargetMemoryReader reader = memory.ReadMemory (address + 28, TotalSize - 28);
 
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE READER: {0}", reader);
 
 				SymbolFiles = new MonoSymbolTableReader [count];
 				for (int i = 0; i < count; i++)
 					SymbolFiles [i] = new MonoSymbolTableReader (
-						this, Backend, inferior, inferior, reader.ReadAddress (),
+						this, Backend, memory, memory, reader.ReadAddress (),
 						Language);
 
 				foreach (MonoSymbolTableReader symfile in SymbolFiles) {
@@ -1546,6 +1547,14 @@ namespace Mono.Debugger.Languages.CSharp
 			process.TargetExited += new TargetExitedHandler (child_exited);
 		}
 
+		public MonoCSharpLanguageBackend (DebuggerBackend backend, Process process, CoreFile core)
+			: this (backend, process)
+		{
+			read_mono_debugger_info (core, core.Bfd);
+
+			do_update_symbol_table (core, true);
+		}
+
 		public string Name {
 			get {
 				return "Mono";
@@ -1586,14 +1595,14 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		void read_mono_debugger_info (IInferior inferior)
+		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
 		{
-			TargetAddress symbol_info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
+			TargetAddress symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
 			if (symbol_info.IsNull)
 				throw new SymbolTableException (
 					"Can't get address of `MONO_DEBUGGER__debugger_info'.");
 
-			ITargetMemoryReader header = inferior.ReadMemory (symbol_info, 16);
+			ITargetMemoryReader header = memory.ReadMemory (symbol_info, 16);
 			long magic = header.ReadLongInteger ();
 			if (magic != MonoSymbolFileTable.DynamicMagic)
 				throw new SymbolTableException (
@@ -1607,41 +1616,43 @@ namespace Mono.Debugger.Languages.CSharp
 
 			int size = (int) header.ReadInteger ();
 
-			ITargetMemoryReader table = inferior.ReadMemory (symbol_info, size);
+			ITargetMemoryReader table = memory.ReadMemory (symbol_info, size);
 			info = new MonoDebuggerInfo (table);
 
-			trampoline_address = inferior.ReadGlobalAddress (info.generic_trampoline_code);
-			notification_address = inferior.ReadGlobalAddress (info.notification_code);
+			trampoline_address = memory.ReadGlobalAddress (info.generic_trampoline_code);
+			notification_address = memory.ReadGlobalAddress (info.notification_code);
 		}
 
-		public void do_update_symbol_table (IInferior inferior)
+		public void do_update_symbol_table (ITargetMemoryAccess memory, bool force_update)
 		{
 			backend.ModuleManager.Lock ();
 			try {
-				int modified = inferior.ReadInteger (info.symbol_file_modified);
-				if (modified == 0)
-					return;
+				if (!force_update) {
+					int modified = memory.ReadInteger (info.symbol_file_modified);
+					if (modified == 0)
+						return;
 
-				int generation = inferior.ReadInteger (info.symbol_file_generation);
-				if ((table != null) && (generation == symtab_generation)) {
-					table.Update (inferior);
-					return;
+					int generation = memory.ReadInteger (info.symbol_file_generation);
+					if ((table != null) && (generation == symtab_generation)) {
+						table.Update (memory);
+						return;
+					}
 				}
 
-				TargetAddress address = inferior.ReadAddress (info.symbol_file_table);
+				TargetAddress address = memory.ReadAddress (info.symbol_file_table);
 				if (address.IsNull) {
 					Console.WriteLine ("Ooops, no symtab loaded.");
 					return;
 				}
 
 				if (table == null)
-					table = new MonoSymbolFileTable (backend, this, inferior);
+					table = new MonoSymbolFileTable (backend, this, memory);
 
-				table.Reload (inferior, address);
+				table.Reload (memory, address);
 
 				symtab_generation = table.Generation;
 
-				table.Update (inferior);
+				table.Update (memory);
 			} catch (Exception e) {
 				Console.WriteLine ("Can't update symbol table: {0}", e);
 				table = null;
@@ -1770,7 +1781,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)
 		{
 			if (!initialized) {
-				read_mono_debugger_info (runner.Inferior);
+				read_mono_debugger_info (runner.Inferior, runner.Inferior.Bfd);
 				initialized = true;
 			}
 
@@ -1783,7 +1794,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return false;
 
 			lock (this) {
-				do_update_symbol_table (runner.Inferior);
+				do_update_symbol_table (runner.Inferior, false);
 				reload_event.Set ();
 			}
 

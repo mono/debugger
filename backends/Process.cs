@@ -96,11 +96,14 @@ namespace Mono.Debugger
 				  string core_file)
 		{
 			this.backend = backend;
+			this.start = start;
+			this.bfd_container = bfd_container;
 
 			core = new CoreFileElfI386 (backend, start.TargetApplication,
 						    core_file, bfd_container);
 
 			iprocess = core;
+			backend.InitializeCoreFile (this, core);
 		}
 
 		public DebuggerBackend DebuggerBackend {

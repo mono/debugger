@@ -42,8 +42,9 @@ namespace Mono.Debugger.Architecture
 			bfd_disassembler = bfd.GetDisassembler (this);
 
 			string crash_program = Path.GetFullPath (core_bfd.CrashProgram);
+			string[] crash_program_args = crash_program.Split (' ');
 
-			if (crash_program != application)
+			if (crash_program_args [0] != application)
 				throw new CannotStartTargetException (String.Format (
 					"Core file (generated from {0}) doesn't match executable {1}.",
 					crash_program, application));
@@ -76,6 +77,10 @@ namespace Mono.Debugger.Architecture
 			get {
 				return backend;
 			}
+		}
+
+		public Bfd Bfd {
+			get { return bfd; }
 		}
 
 		public void UpdateModules ()

@@ -478,6 +478,10 @@ namespace Mono.Debugger.Backends
 			bfd_disassembler.SymbolTable = symtab_collection;
 		}
 
+		public Bfd Bfd {
+			get { return bfd; }
+		}
+
 		public TargetAddress SimpleLookup (string name)
 		{
 			return bfd [name];
