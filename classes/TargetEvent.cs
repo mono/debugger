@@ -34,7 +34,7 @@ namespace Mono.Debugger
 		}
 
 		public TargetEventArgs (TargetEventType type, StackFrame frame)
-			: this (type, null)
+			: this (type, (object) null)
 		{
 			this.Frame = frame;
 		}
