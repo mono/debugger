@@ -1,5 +1,19 @@
 2002-12-23  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/SourceManager.cs (SourceManager): Added events
+	`MethodInvalidEvent', `MethodChangedEvent', `FrameChangedEvent'
+	and `FramesInvalidEvent'.
+	(SourceList): Connect these events on the SourceManager, not on
+	the Process since their handlers must be called from the gtk# thread.
+
+	* frontends/gui/DebuggerWidget.cs
+	(RealMethodChanged, RealMethodInvalid): New protected virtual
+	methods which may be called from any thread.
+	(MethodChanged, MethodInvalid): New protected virtual methods
+	which are guaranteed to be called from the gtk# thread.
+
+2002-12-23  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerWidget.cs
 	(RealFrameChanged, RealFramesInvalid, RealStateChanged): New
 	protected virtual methods which may be called from any thread.

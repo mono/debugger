@@ -283,7 +283,6 @@ namespace Mono.Debugger.GUI
 			memory_maps_display.SetBackend (backend, process);
 			breakpoint_manager.SetBackend (backend, process);
 			disassembler_view.SetBackend (backend, process);
-			source_manager.SetBackend (backend, process);
 #endif
 			
 			process.StateChanged += new StateChangedHandler (BackendStateChanged);
@@ -295,6 +294,7 @@ namespace Mono.Debugger.GUI
 			register_display.SetBackend (backend, process);
 			source_status.SetBackend (backend, process);
 			backtrace_view.SetBackend (backend, process);
+			source_manager.SetBackend (backend, process);
 		}
 
 		void UpdateGUIState (TargetState state)

@@ -17,6 +17,7 @@ namespace Mono.Debugger.GUI
 		bool visible;
 		int frame_notify_id;
 		int state_notify_id;
+		int method_notify_id;
 
 		public DebuggerWidget (DebuggerGUI gui, Gtk.Container container, Gtk.Widget widget)
 		{
@@ -28,6 +29,7 @@ namespace Mono.Debugger.GUI
 
 			frame_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (frame_event));
 			state_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (state_event));
+			method_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (method_event));
 
 			if (container == null) {
 				Gtk.Widget parent = widget.Parent;
@@ -53,6 +55,8 @@ namespace Mono.Debugger.GUI
 			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
 			process.StateChanged += new StateChangedHandler (RealStateChanged);
+			process.MethodChangedEvent += new MethodChangedHandler (RealMethodChanged);
+			process.MethodInvalidEvent += new MethodInvalidHandler (RealMethodInvalid);
 		}
 
 		StackFrame current_frame = null;
@@ -140,6 +144,64 @@ namespace Mono.Debugger.GUI
 		// </remarks>
 		protected virtual void StateChanged (TargetState state, int arg)
 		{ }
+
+		IMethod current_method = null;
+		IMethodSource current_method_source = null;
+
+		void method_event ()
+		{
+			lock (this) {
+				if (current_method != null)
+					MethodChanged (current_method, current_method_source);
+				else
+					MethodInvalid ();
+			}
+		}
+
+		// <remarks>
+		//   This method may get called from any thread, so we must not use gtk# here.
+		// </remarks>
+		protected virtual void RealMethodChanged (IMethod method)
+		{
+			lock (this) {
+				current_method = method;
+				if ((method != null) && method.HasSource)
+					current_method_source = method.Source;
+				else
+					current_method_source = null;
+				thread_notify.Signal (method_notify_id);
+			}
+		}
+
+		// <remarks>
+		//   This method may get called from any thread, so we must not use gtk# here.
+		// </remarks>
+		protected virtual void RealMethodInvalid ()
+		{
+			lock (this) {
+				current_method = null;
+				current_method_source = null;
+				thread_notify.Signal (method_notify_id);
+			}
+		}
+
+		// <remarks>
+		//   This method will always get called from the gtk# thread and while keeping the
+		//   `this' lock.
+		// </remarks>
+		protected virtual void MethodChanged (IMethod method, IMethodSource source)
+		{ }
+
+		// <remarks>
+		//   This method will always get called from the gtk# thread and while keeping the
+		//   `this' lock.
+		// </remarks>
+		protected virtual void MethodInvalid ()
+		{ }
+
+		protected IMethod CurrentMethod {
+			get { return current_method; }
+		}
 		
 		void mapped (object o, EventArgs args)
 		{

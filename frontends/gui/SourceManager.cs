@@ -21,7 +21,8 @@ namespace Mono.Debugger.GUI {
 			stop = new Gdk.Pixbuf (null, "stop.png");
 			line = new Gdk.Pixbuf (null, "line.png");
 		}
-			
+
+		SourceManager manager;			
 		ScrolledWindow sw;
 		Gtk.SourceView source_view;
 		TextTag frame_tag, breakpoint_tag;
@@ -37,8 +38,9 @@ namespace Mono.Debugger.GUI {
 
 		Hashtable breakpoints = new Hashtable ();
 		
-		public SourceList (ISourceBuffer source_buffer, string filename)
+		public SourceList (SourceManager manager, ISourceBuffer source_buffer, string filename)
 		{
+			this.manager = manager;
 			Console.WriteLine ("Filename: " + filename);
 			this.filename = filename;
 			tab = new ClosableNotebookTab (filename);
@@ -82,6 +84,13 @@ namespace Mono.Debugger.GUI {
 			
 			sw.Add (source_view);
 			sw.ShowAll ();
+
+			//
+			// Hook up events
+			//
+			manager.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
+			manager.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
+			manager.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
 		}
 
 		void button_pressed (object obj, ButtonPressEventArgs args)
@@ -136,10 +145,6 @@ namespace Mono.Debugger.GUI {
 		{
 			this.backend = backend;
 			this.process = process;
-
-			process.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
-			process.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
 		}
 
 		public bool Active {
@@ -239,8 +244,6 @@ namespace Mono.Debugger.GUI {
 		//
 		// State tracking
 		//
-		IMethod current_method = null;
-		IMethodSource current_method_source = null;
 		SourceList current_source = null;
 		
 		public SourceManager (DebuggerGUI gui, Gtk.Notebook notebook, SourceStatusbar source_status)
@@ -258,9 +261,6 @@ namespace Mono.Debugger.GUI {
 		{
 			base.SetBackend (backend, process);
 
-			process.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
-			process.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
-
 			foreach (DictionaryEntry de in sources){
 				SourceList source = (SourceList) de.Value;
 
@@ -268,17 +268,14 @@ namespace Mono.Debugger.GUI {
 			}
 		}
 
+		public event MethodInvalidHandler MethodInvalidEvent;
+		public event MethodChangedHandler MethodChangedEvent;
+		public event StackFrameHandler FrameChangedEvent;
+		public event StackFrameInvalidHandler FramesInvalidEvent;
+
 		SourceList CreateSourceView (ISourceBuffer source_buffer, string filename)
 		{
-			return new SourceList (source_buffer, filename);
-		}
-
-		IMethodSource GetMethodSource (IMethod method)
-		{
-			if ((method == null) || !method.HasSource)
-				return null;
-
-			return method.Source;
+			return new SourceList (this, source_buffer, filename);
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -327,29 +324,38 @@ namespace Mono.Debugger.GUI {
 			source_status.IsSourceStatusBar = args.PageNum != 0;
 		}
 
-		void MethodInvalidEvent ()
+		protected override void FrameChanged (StackFrame frame)
 		{
-			current_method = null;
-			current_method_source = null;
+			if (FrameChangedEvent != null)
+				FrameChangedEvent (frame);
+		}
 
+		protected override void FramesInvalid ()
+		{
+			if (FramesInvalidEvent != null)
+				FramesInvalidEvent ();
+		}
+
+		protected override void MethodInvalid ()
+		{
 			if (current_source != null)
 				current_source.Active = false;
 			current_source = null;
+
+			if (MethodInvalidEvent != null)
+				MethodInvalidEvent ();
 		}
 		
-		void MethodChangedEvent (IMethod method)
+		protected override void MethodChanged (IMethod method, IMethodSource source)
 		{
-			MethodInvalidEvent ();
-			current_method = method;
-			current_method_source = GetMethodSource (method);
+			MethodInvalid ();
 
-			if (method.HasSource){
-				ISourceBuffer source_buffer = method.Source.SourceBuffer;
+			if (source != null){
+				ISourceBuffer source_buffer = source.SourceBuffer;
 
 				if (source_buffer == null) {
 					current_source = null;
-					initialized = true;
-					return;
+					goto done;
 				}
 
 				string filename = source_buffer.Name;
@@ -381,7 +387,10 @@ namespace Mono.Debugger.GUI {
 				current_source = null;
 			}
 
+		done:
 			initialized = true;
+			if (MethodChangedEvent != null)
+				MethodChangedEvent (method);
 		}
 	}
 }
