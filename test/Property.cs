@@ -11,16 +11,26 @@ class X
 		}
 	}
 
-	static void Test (Foo foo)
+	static void Hello (Foo foo)
 	{
 		int a = foo.Test;
 		Console.WriteLine (a);
+	}
+
+	static void Test (object test, object valuetype)
+	{
+	}
+
+	static void Error (Exception e)
+	{
 	}
 
 	static void Main ()
 	{
 		Foo foo = new Foo ();
 
-		Test (foo);
+		Hello (foo);
+		Test ("Hello World", 5);
+		Error (new InvalidOperationException ());
 	}
 }

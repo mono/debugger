@@ -51,7 +51,7 @@ namespace Mono.Debugger
 
 		protected override bool GetIsValid ()
 		{
-			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress >= end_scope))
+			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress > end_scope))
 				return false;
 
 			return true;

@@ -14,8 +14,8 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly int base_index;
 		protected readonly MonoArrayBounds[] bounds;
 
-		public MonoArrayObject (MonoArrayType type, ITargetLocation location)
-			: base (type, location)
+		public MonoArrayObject (MonoArrayType type, ITargetLocation location, bool isbyref)
+			: base (type, location, isbyref)
 		{
 			this.type = type;
 			this.dimension = 0;
@@ -112,7 +112,8 @@ namespace Mono.Debugger.Languages.CSharp
 					ITargetLocation new_location = new RelativeTargetLocation (
 						location, dynamic_address);
 
-					return type.ElementType.GetObject (new_location);
+					return type.ElementType.GetObject (
+						new_location, type.ElementType.IsByRef);
 				}
 
 				for (int i = dimension + 1; i < rank; i++)

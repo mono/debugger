@@ -174,6 +174,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 						ITargetObject obj = var.GetObject (backend.CurrentFrame);
 						print_object (obj);
 					} catch (LocationInvalidException) {
+						Console.WriteLine ("CAN'T PRINT OBJECT");
 						// Do nothing.
 					}
 				}
@@ -287,13 +288,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Console.WriteLine ("STRUCT: {0}", tstruct);
 			foreach (ITargetFieldInfo field in tstruct.Type.Fields) {
 				Console.WriteLine ("FIELD: {0}", field);
-				if (field.Type.HasObject)
-					print_object (tstruct.GetField (field.Index));
+				try {
+					if (field.Type.HasObject)
+						print_object (tstruct.GetField (field.Index));
+				} catch {
+					// Do nothing
+				}
 			}
 			foreach (ITargetFieldInfo property in tstruct.Type.Properties) {
 				Console.WriteLine ("FIELD: {0}", property);
-				if (property.Type.HasObject)
-					print_object (tstruct.GetProperty (property.Index));
+				try {
+					if (property.Type.HasObject)
+						print_object (tstruct.GetProperty (property.Index));
+				} catch {
+					// Do nothing
+				}
 			}
 		}
 
@@ -344,6 +353,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (tpointer.HasStaticType)
 					Console.WriteLine ("  POINTS TO {0}.", tpointer.StaticType);
 			}
+
+			if (type.HasObject)
+				Console.WriteLine ("  HAS OBJECT");
 		}
 
 		void print_object (ITargetObject obj)

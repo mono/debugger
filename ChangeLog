@@ -1,5 +1,10 @@
 2002-10-01  Martin Baulig  <martin@gnome.org>
 
+	* backends/mono-csharp/: Make "boxing" of non-valuetypes actually
+	work.  Added exception support to the properties.
+
+2002-10-01  Martin Baulig  <martin@gnome.org>
+
 	Reworked the module stuff, implemented breakpoints and start to
 	add support for properties.
 

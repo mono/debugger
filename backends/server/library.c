@@ -88,13 +88,13 @@ ServerCommandError
 mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 					 guint64 method_argument, guint64 object_argument,
 					 guint32 num_params, guint64 *param_data,
-					 guint64 *exc_address, guint64 callback_argument)
+					 guint64 callback_argument)
 {
 	if (!handle->inferior)
 		return COMMAND_ERROR_NO_INFERIOR;
 
 	return (* handle->info->call_method_invoke) (handle->inferior, invoke_method, method_argument,
-						     object_argument, num_params, param_data, exc_address,
+						     object_argument, num_params, param_data,
 						     callback_argument);
 }
 

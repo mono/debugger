@@ -147,7 +147,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 12;
+		public const int  DynamicVersion = 13;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -304,7 +304,10 @@ namespace Mono.Debugger.Languages.CSharp
 			check_inferior ();
 			TypeEntry entry = (TypeEntry) types [klass_address];
 
-			Console.WriteLine ("GET TYPE FROM CLASS: {0:x} {1}", klass_address, entry);
+			if (entry == null) {
+				Console.WriteLine ("Can't find class at address {0:x}", klass_address);
+				throw new InternalError ();
+			}
 
 			return MonoType.GetType (entry.Type, memory, entry.TypeInfo, this);
 		}
@@ -324,7 +327,8 @@ namespace Mono.Debugger.Languages.CSharp
 		internal void AddType (TypeEntry type)
 		{
 			check_inferior ();
-			types.Add (type.KlassAddress.Address, type);
+			if (!types.Contains (type.KlassAddress.Address))
+				types.Add (type.KlassAddress.Address, type);
 		}
 
 		public bool Update ()
@@ -529,6 +533,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (Type == null)
 				throw new InvalidOperationException ();
+			else if (Type == typeof (object))
+				MonoType.GetType (Type, memory.TargetMemoryAccess, TypeInfo, reader.Table);
 		}
 
 		public static void ReadTypes (MonoSymbolTableReader reader,
@@ -538,7 +544,8 @@ namespace Mono.Debugger.Languages.CSharp
 				try {
 					TypeEntry entry = new TypeEntry (reader, memory);
 					reader.Table.AddType (entry);
-				} catch {
+				} catch (Exception e) {
+					Console.WriteLine ("Can't read type: {0}", e);
 					// Do nothing.
 				}
 			}
@@ -677,6 +684,11 @@ namespace Mono.Debugger.Languages.CSharp
 			} catch {
 				throw new SymbolTableException ();
 			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1}:{2})", GetType (), ImageFile, SymbolFile);
 		}
 
 		bool update_ranges (ref TargetAddress address)

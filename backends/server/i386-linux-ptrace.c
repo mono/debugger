@@ -433,7 +433,7 @@ server_ptrace_call_method_1 (InferiorHandle *handle, guint64 method_address,
 static ServerCommandError
 server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 				  guint64 method_argument, guint64 object_argument,
-				  guint32 num_params, guint64 *param_data, guint64 *exc_address,
+				  guint32 num_params, guint64 *param_data,
 				  guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
@@ -441,12 +441,12 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 	long new_esp, call_disp;
 	int i;
 
-	static guint8 static_code[] = { 0x90, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00,
-					0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00,
-					0x68, 0x00, 0x00, 0x00, 0x00, 0xe8, 0x00, 0x00,
-					0x00, 0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0x5a,
-					0x8d, 0x92, 0x00, 0x00, 0x00, 0x00, 0x8b, 0x12,
-					0xcc };
+	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
+					0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
+					0x00, 0x00, 0x00, 0x00, 0xe8, 0x00, 0x00, 0x00,
+					0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0x5a, 0x8d,
+					0x92, 0x00, 0x00, 0x00, 0x00, 0x8b, 0x12, 0x31,
+					0xdb, 0x31, 0xc9, 0xcc };
 	int static_size = sizeof (static_code);
 	int size = static_size + (num_params + 2) * 4;
 	guint8 *code = g_malloc0 (size);
@@ -477,14 +477,12 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 
 	call_disp = (int) invoke_method - new_esp;
 
-	*((guint32 *) (code+2)) = new_esp + static_size + (num_params + 1) * 4;
-	*((guint32 *) (code+7)) = new_esp + static_size;
-	*((guint32 *) (code+12)) = object_argument;
-	*((guint32 *) (code+17)) = method_argument;
-	*((guint32 *) (code+22)) = call_disp - 26;
-	*((guint32 *) (code+34)) = 10 + (num_params + 1) * 4;
-
-	g_message (G_STRLOC ": %x - %x", (guint32) invoke_method, handle->call_address);
+	*((guint32 *) (code+1)) = new_esp + static_size + (num_params + 1) * 4;
+	*((guint32 *) (code+6)) = new_esp + static_size;
+	*((guint32 *) (code+11)) = object_argument;
+	*((guint32 *) (code+16)) = method_argument;
+	*((guint32 *) (code+21)) = call_disp - 25;
+	*((guint32 *) (code+33)) = 14 + (num_params + 1) * 4;
 
 	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
@@ -517,7 +515,7 @@ check_breakpoint (InferiorHandle *handle, long address, guint64 *retval)
 
 static ChildStoppedAction
 server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
-			     guint64 *callback_arg, guint64 *retval)
+			     guint64 *callback_arg, guint64 *retval, guint64 *retval2)
 {
 	struct user_regs_struct regs;
 
@@ -555,6 +553,7 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 
 	*callback_arg = handle->callback_argument;
 	*retval = (((guint64) regs.ecx) << 32) + ((gulong) regs.eax);
+	*retval2 = (((guint64) regs.ebx) << 32) + ((gulong) regs.edx);
 
 	g_free (handle->saved_regs);
 	g_free (handle->saved_fpregs);
@@ -792,9 +791,9 @@ static void
 do_dispatch (InferiorHandle *handle, int status)
 {
 	if (WIFSTOPPED (status)) {
-		guint64 callback_arg, retval;
+		guint64 callback_arg, retval, retval2;
 		ChildStoppedAction action = server_ptrace_child_stopped
-			(handle, WSTOPSIG (status), &callback_arg, &retval);
+			(handle, WSTOPSIG (status), &callback_arg, &retval, &retval2);
 
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
@@ -809,7 +808,7 @@ do_dispatch (InferiorHandle *handle, int status)
 			break;
 
 		case STOP_ACTION_CALLBACK:
-			handle->child_callback_cb (callback_arg, retval);
+			handle->child_callback_cb (callback_arg, retval, retval2);
 			break;
 
 		default:

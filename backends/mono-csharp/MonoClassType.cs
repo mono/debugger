@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.CSharp
 			: base (type, size, info, table)
 		{
 			TargetAddress parent_type_info = info.ReadAddress ();
-			if (parent_type_info.Address != 0) {
+			if (!parent_type_info.IsNull && (type.BaseType != null)) {
 				MonoType parent = GetType (
 					type.BaseType, info.TargetMemoryAccess, parent_type_info,
 					table);
@@ -35,9 +35,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override MonoObject GetObject (ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location, bool isbyref)
 		{
-			return new MonoClassObject (this, location);
+			return new MonoClassObject (this, location, isbyref);
 		}
 	}
 }

@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoObjectType type;
 
-		public MonoObjectObject (MonoObjectType type, ITargetLocation location)
-			: base (type, location)
+		public MonoObjectObject (MonoObjectType type, ITargetLocation location, bool isbyref)
+			: base (type, location, isbyref)
 		{
 			this.type = type;
 		}
@@ -67,10 +67,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override object GetObject (ITargetMemoryReader reader, TargetAddress address)
 		{
-			ITargetLocation new_location = new RelativeTargetLocation (
-				location, address + type.Size);
+			MonoType current_type = CurrentType;
+			int offset = current_type.IsByRef ? 0 : type.Size;
 
-			return CurrentType.GetObject (new_location);
+			ITargetLocation new_location = new RelativeTargetLocation (
+				location, address + offset);
+
+			return current_type.GetObject (new_location, false);
 		}
 	}
 }

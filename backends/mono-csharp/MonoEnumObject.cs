@@ -8,8 +8,9 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		MonoObject element_object;
 
-		public MonoEnumObject (MonoEnumType type, ITargetLocation location, MonoObject element_obj)
-			: base (type, location)
+		public MonoEnumObject (MonoEnumType type, ITargetLocation location, MonoObject element_obj,
+				       bool isbyref)
+			: base (type, location, isbyref)
 		{
 			this.element_object = element_obj;
 		}

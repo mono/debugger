@@ -45,9 +45,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override MonoObject GetObject (ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location, bool isbyref)
 		{
-			return new MonoStringObject (this, location);
+			return new MonoStringObject (this, location, isbyref);
 		}
 	}
 }

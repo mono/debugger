@@ -1,6 +1,11 @@
 October 1st, 2002 - Martin Baulig
 ---------------------------------
 
+Added support for properties (read-only).
+
+October 1st, 2002 - Martin Baulig
+---------------------------------
+
 Added support for breakpoints.  Breakpoints can be set for not-yet-JITed methods and will
 persist across multiple invocations of the same target.
 
@@ -15,7 +20,6 @@ continues the target.  This technique will also be used if you insert a breakpoi
 source location, the target exits and you restart it - the debugger will automatically
 transform all your breakpoints into dynamic breakpoints.  There's still some work to be
 done, will hack a bit more on this tomorrow.
-
 
 September 27th, 2002 - Martin Baulig
 ------------------------------------

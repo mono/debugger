@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoStructType type;
 
-		public MonoStructObject (MonoStructType type, ITargetLocation location)
-			: base (type, location)
+		public MonoStructObject (MonoStructType type, ITargetLocation location, bool isbyref)
+			: base (type, location, isbyref)
 		{
 			this.type = type;
 		}

@@ -9,11 +9,17 @@ namespace Mono.Debugger.Languages.CSharp
 		protected MonoType type;
 		protected ITargetLocation location;
 		bool is_valid;
+		bool isbyref;
 
 		public MonoObject (MonoType type, ITargetLocation location)
+			: this (type, location, type.IsByRef)
+		{ }
+
+		public MonoObject (MonoType type, ITargetLocation location, bool isbyref)
 		{
 			this.type = type;
 			this.location = location;
+			this.isbyref = isbyref;
 			is_valid = true;
 		}
 
@@ -35,21 +41,23 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public bool IsByRef {
+			get {
+				return isbyref;
+			}
+		}
+
 		public abstract bool HasObject {
 			get;
 		}
 
 		public virtual object Object {
 			get {
-				Console.WriteLine ("#0: {0} {1}", HasObject, location);
-
 				if (!HasObject)
 					throw new InvalidOperationException ();
 
 				ITargetMemoryAccess memory;
 				TargetAddress address = GetAddress (location, out memory);
-
-				Console.WriteLine ("#1: {0} {1} {2}", type, memory, address);
 
 				try {
 					ITargetMemoryReader reader;
@@ -144,7 +152,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected virtual TargetAddress GetAddress (ITargetLocation location,
 							    out ITargetMemoryAccess memory)
 		{
-			return type.GetAddress (location, out memory);
+			return type.GetAddress (location, out memory, IsByRef);
 		}
 
 		protected abstract long GetDynamicSize (ITargetMemoryReader reader, TargetAddress address,

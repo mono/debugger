@@ -46,7 +46,7 @@ typedef struct InferiorHandle InferiorHandle;
 typedef void (*ChildSetupFunc) (void);
 typedef void (*ChildExitedFunc) (void);
 typedef void (*ChildMessageFunc) (ServerStatusMessageType type, int arg);
-typedef void (*ChildCallbackFunc) (guint64 callback, guint64 data);
+typedef void (*ChildCallbackFunc) (guint64 callback, guint64 data, guint64 data2);
 
 /*
  * Server functions.
@@ -167,7 +167,6 @@ typedef struct {
 						       guint64           object_argument,
 						       guint32           num_params,
 						       guint64          *param_data,
-						       guint64          *exc_address,
 						       guint64           callback_argument);
 
 	/*
@@ -354,7 +353,6 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   guint64             object_argument,
 					   guint32             num_params,
 					   guint64            *param_data,
-					   guint64            *exc_address,
 					   guint64             callback_argument);
 
 ServerCommandError

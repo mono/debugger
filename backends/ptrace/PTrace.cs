@@ -18,7 +18,7 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	internal delegate void ChildCallbackHandler (long argument, long data);
+	internal delegate void ChildCallbackHandler (long argument, long data, long data2);
 
 	internal enum CommandError {
 		NONE = 0,
@@ -131,7 +131,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, out long exc_address, long callback_argument);
+		static extern CommandError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
@@ -278,7 +278,6 @@ namespace Mono.Debugger.Backends
 						      TargetAddress method_argument,
 						      TargetAddress object_argument,
 						      TargetAddress[] param_objects,
-						      out TargetAddress exc_object,
 						      TargetAsyncCallback callback,
 						      object user_data)
 		{
@@ -300,11 +299,9 @@ namespace Mono.Debugger.Backends
 					Marshal.Copy (param_addresses, 0, data, size);
 				}
 
-				long exc_address;
 				check_error (mono_debugger_server_call_method_invoke (
 					server_handle, invoke_method.Address, method_argument.Address,
-					object_argument.Address, size, data, out exc_address, number));
-				exc_object = new TargetAddress (object_argument.Domain, exc_address);
+					object_argument.Address, size, data, number));
 			} catch {
 				change_target_state (old_state);
 			} finally {
@@ -324,11 +321,24 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			TargetAsyncResult result = call_method_invoke (
 				invoke_method, method_argument, object_argument, param_objects,
-				out exc_object, null, null);
+				null, null);
 			mono_debugger_server_wait (server_handle);
 			if (!result.IsCompleted)
 				throw new InternalError ("Call not completed");
-			return new TargetAddress (object_argument.Domain, (long) result.AsyncResult);
+
+			long exc_addr = (long) result.AsyncResult2;
+			long obj_addr = (long) result.AsyncResult;
+
+			if (exc_addr != 0) {
+				exc_object = new TargetAddress (object_argument.Domain, exc_addr);
+				return TargetAddress.Null;
+			}
+
+			exc_object = TargetAddress.Null;
+			if (obj_addr != 0)
+				return new TargetAddress (object_argument.Domain, obj_addr);
+			else
+				return TargetAddress.Null;
 		}
 
 		public int InsertBreakpoint (TargetAddress address)
@@ -485,7 +495,7 @@ namespace Mono.Debugger.Backends
 				TargetExited ();
 		}
 
-		void child_callback (long callback, long data)
+		void child_callback (long callback, long data, long data2)
 		{
 			change_target_state (TargetState.STOPPED);
 
@@ -495,7 +505,7 @@ namespace Mono.Debugger.Backends
 			TargetAsyncResult async = (TargetAsyncResult) pending_callbacks [callback];
 			pending_callbacks.Remove (callback);
 
-			async.Completed (data);
+			async.Completed (data, data2);
 
 			child_event (ChildEventType.CHILD_CALLBACK, 0);
 		}
@@ -578,6 +588,8 @@ namespace Mono.Debugger.Backends
 		public byte[] ReadBuffer (TargetAddress address, int size)
 		{
 			check_disposed ();
+			if (size == 0)
+				return new byte [0];
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = read_buffer (address, size);
@@ -965,11 +977,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		private delegate void TargetAsyncCallback (object user_data, object result);
+		private delegate void TargetAsyncCallback (object user_data, object result, object result2);
 
 		private class TargetAsyncResult
 		{
-			object user_data, result;
+			object user_data, result, result2;
 			bool completed;
 			TargetAsyncCallback callback;
 
@@ -979,21 +991,28 @@ namespace Mono.Debugger.Backends
 				this.user_data = user_data;
 			}
 
-			public void Completed (object result)
+			public void Completed (object result, object result2)
 			{
 				if (completed)
 					throw new InvalidOperationException ();
 
 				completed = true;
 				if (callback != null)
-					callback (user_data, result);
+					callback (user_data, result, result2);
 
 				this.result = result;
+				this.result2 = result2;
 			}
 
 			public object AsyncResult {
 				get {
 					return result;
+				}
+			}
+
+			public object AsyncResult2 {
+				get {
+					return result2;
 				}
 			}
 

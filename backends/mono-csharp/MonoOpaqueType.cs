@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override MonoObject GetObject (ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location, bool isbyref)
 		{
 			throw new InvalidOperationException ();
 		}

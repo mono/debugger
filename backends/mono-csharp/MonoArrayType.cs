@@ -144,12 +144,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override MonoObject GetObject (ITargetLocation location)
+		public override MonoObject GetObject (ITargetLocation location, bool isbyref)
 		{
 			if (!HasObject)
 				throw new InvalidOperationException ();
 
-			return new MonoArrayObject (this, location);
+			return new MonoArrayObject (this, location, isbyref);
 		}
 	}
 }

@@ -6,8 +6,8 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFundamentalObject : MonoObject
 	{
-		public MonoFundamentalObject (MonoType type, ITargetLocation location)
-			: base (type, location)
+		public MonoFundamentalObject (MonoType type, ITargetLocation location, bool isbyref)
+			: base (type, location, isbyref)
 		{ }
 
 		public override bool HasObject {

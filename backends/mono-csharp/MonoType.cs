@@ -5,6 +5,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoType : ITargetType
 	{
 		protected Type type;
+		protected static MonoObjectType ObjectType;
 
 		bool has_fixed_size;
 		int size;
@@ -67,15 +68,28 @@ namespace Mono.Debugger.Languages.CSharp
 				return new MonoClassType (type, size, info, table);
 
 			case 7:
-				return new MonoObjectType (type, size, table);
+				if (ObjectType == null) {
+					if (type != typeof (object))
+						throw new InternalError ();
+					ObjectType = new MonoObjectType (type, size, table);
+				}
+
+				return ObjectType;
 
 			default:
 				return new MonoOpaqueType (type, size);
 			}
 		}
 
+		protected virtual TargetAddress GetAddress (ITargetLocation location,
+							    out ITargetMemoryAccess memory)
+		{
+			return GetAddress (location, out memory, IsByRef);
+		}
+
 		internal virtual TargetAddress GetAddress (ITargetLocation location,
-							   out ITargetMemoryAccess memory)
+							   out ITargetMemoryAccess memory,
+							   bool isbyref)
 		{
 			TargetAddress address = location.Address;
 			StackFrame frame = location.Handle as StackFrame;
@@ -83,7 +97,7 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new LocationInvalidException ();
 
 			memory = frame.TargetMemoryAccess;
-			if (IsByRef) {
+			if (isbyref) {
 				try {
 					address = memory.ReadAddress (address);
 				} catch {
@@ -123,7 +137,12 @@ namespace Mono.Debugger.Languages.CSharp
 			get;
 		}
 
-		public abstract MonoObject GetObject (ITargetLocation location);
+		public virtual MonoObject GetObject (ITargetLocation location)
+		{
+			return GetObject (location, IsByRef);
+		}
+
+		public abstract MonoObject GetObject (ITargetLocation location, bool isbyref);
 
 		public override string ToString ()
 		{
