@@ -105,6 +105,15 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string Name {
+			get {
+				if (IsDaemon)
+					return String.Format ("Daemon process @{0}", id);
+				else
+					return String.Format ("Process @{0}", id);
+			}
+		}
+
 		public int PID {
 			get {
 				return engine.PID;
