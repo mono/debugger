@@ -466,11 +466,17 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override SourceMethodInfo FindMethod (string name)
 			{
+				if (!SymbolsLoaded)
+					return null;
+
 				return reader.FindMethod (name);
 			}
 
 			protected override ISymbolTable GetSymbolTable ()
 			{
+				if (!SymbolsLoaded)
+					return null;
+
 				return reader.SymbolTable;
 			}
 		}
