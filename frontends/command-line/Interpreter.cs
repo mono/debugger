@@ -219,7 +219,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					stderr.WriteLine ("Command requires an argument");
 					break;
 				}
-				Breakpoint breakpoint = new SimpleBreakpoint ();
+				Breakpoint breakpoint = new SimpleBreakpoint (args [0]);
 				if (args [0].IndexOf (':') != -1) {
 					string[] tmp = args [0].Split (':');
 					string file = Path.GetFullPath (tmp [0]);

@@ -36,13 +36,6 @@ namespace Mono.Debugger.GUI
 			IdCol.AddAttribute (IdRenderer, "text", 0);
 			tree.AppendColumn (IdCol);
 
-			TreeViewColumn NameCol = new TreeViewColumn ();
-			CellRenderer NameRenderer = new CellRendererText ();
-			NameCol.Title = "Name";
-			NameCol.PackStart (NameRenderer, false);
-			NameCol.AddAttribute (NameRenderer, "text", 1);
-			tree.AppendColumn (NameCol);
-
 			TreeViewColumn EnabledCol = new TreeViewColumn ();
 			CellRendererToggle EnabledRenderer = new CellRendererToggle ();
 			EnabledRenderer.Activatable = true;
@@ -51,6 +44,13 @@ namespace Mono.Debugger.GUI
 			EnabledCol.PackStart (EnabledRenderer, false);
 			EnabledCol.AddAttribute (EnabledRenderer, "active", 2);
 			tree.AppendColumn (EnabledCol);
+
+			TreeViewColumn NameCol = new TreeViewColumn ();
+			CellRenderer NameRenderer = new CellRendererText ();
+			NameCol.Title = "Name";
+			NameCol.PackStart (NameRenderer, false);
+			NameCol.AddAttribute (NameRenderer, "text", 1);
+			tree.AppendColumn (NameCol);
 
 			container.Add (tree);
 			container.ShowAll ();
@@ -92,7 +92,7 @@ namespace Mono.Debugger.GUI
 
 			store.Append (out iter);
 			store.SetValue (iter, 0, new GLib.Value (breakpoint.Index.ToString ()));
-			store.SetValue (iter, 1, new GLib.Value (""));
+			store.SetValue (iter, 1, new GLib.Value (breakpoint.Name));
 			store.SetValue (iter, 2, new GLib.Value (breakpoint.Enabled));
 		}
 

@@ -49,13 +49,13 @@ namespace Mono.Debugger.Architecture
 
 				bfd = value;
 				if (bfd != null) {
-					OnSymbolsLoadedEvent ();
 					if (bfd.IsContinuous) {
 						start = bfd.StartAddress;
 						end = bfd.EndAddress;
 						is_library = true;
 						CheckLoaded ();
 					}
+					OnSymbolsLoadedEvent ();
 				} else
 					OnSymbolsUnLoadedEvent ();
 			}
@@ -95,7 +95,7 @@ namespace Mono.Debugger.Architecture
 		protected override SourceInfo[] GetSources ()
 		{
 			if (Bfd == null)
-				return new SourceInfo [0];
+				return null;
 
 			return Bfd.GetSources ();
 		}

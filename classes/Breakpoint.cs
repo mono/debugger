@@ -13,6 +13,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string Name {
+			get {
+				return name;
+			}
+		}
+
 		public bool Enabled {
 			get {
 				return enabled;
@@ -33,18 +39,25 @@ namespace Mono.Debugger
 		// </summary>
 		public abstract bool BreakpointHit (StackFrame frame);
 
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1}:{2}:{3})", GetType (), Index, Name, Enabled);
+		}
+
 		//
 		// Everything below is private.
 		//
 
 		protected int index;
+		protected string name;
 		protected bool enabled;
 		static int next_breakpoint_index = 0;
 
-		protected Breakpoint ()
+		protected Breakpoint (string name, bool enabled)
 		{
 			this.index = ++next_breakpoint_index;
-			this.enabled = true;
+			this.enabled = enabled;
+			this.name = name;
 		}
 
 		protected virtual void OnBreakpointChangedEvent ()

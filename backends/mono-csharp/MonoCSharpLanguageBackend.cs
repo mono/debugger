@@ -436,7 +436,7 @@ namespace Mono.Debugger.Languages.CSharp
 			protected override SourceInfo[] GetSources ()
 			{
 				if (!SymbolsLoaded)
-					return new SourceInfo [0];
+					return null;
 
 				return reader.GetSources ();
 			}

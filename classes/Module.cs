@@ -161,7 +161,6 @@ namespace Mono.Debugger
 
 		protected virtual void OnBreakpointsChangedEvent ()
 		{
-			Console.WriteLine ("ON BREAKPOINTS CHANGED");
 			if (BreakpointsChangedEvent != null)
 				BreakpointsChangedEvent (this);
 		}
@@ -224,8 +223,6 @@ namespace Mono.Debugger
 					return;
 
 				sources = GetSources ();
-				if (sources == null)
-					sources = new SourceInfo [0];
 			}
 		}
 
@@ -233,7 +230,10 @@ namespace Mono.Debugger
 
 		public SourceInfo[] Sources {
 			get {
-				return sources;
+				if (sources != null)
+					return sources;
+
+				return new SourceInfo [0];
 			}
 		}
 
@@ -241,6 +241,8 @@ namespace Mono.Debugger
 		{
 			if (!SymbolsLoaded)
 				return null;
+
+			ReadModuleData ();
 
 			foreach (SourceInfo source in Sources) {
 				SourceMethodInfo method = source.FindMethod (name);
@@ -331,19 +333,27 @@ namespace Mono.Debugger
 			{
 				load_handler = null;
 
+				TargetAddress address = get_address ();
+				if (address.IsNull)
+					return;
+
+				handle = Module.EnableBreakpoint (this, address);
+				enabled = handle != null;
+			}
+
+			TargetAddress get_address ()
+			{
 				TargetAddress address;
 				if (Line != 0)
 					address = Method.Lookup (Line);
 				else
 					address = Method.Method.StartAddress;
 
-				Console.WriteLine ("METHOD LOADED: {0} {1}", method, address);
-
 				if (address.IsNull)
-					return;
+					Console.WriteLine ("WARNING: Cannot insert breakpoint {0}!",
+							   Breakpoint);
 
-				handle = Module.EnableBreakpoint (this, address);
-				enabled = handle != null;
+				return address;
 			}
 
 			public void Enable ()
@@ -354,7 +364,9 @@ namespace Mono.Debugger
 				}
 
 				if (Method.IsLoaded) {
-					handle = Module.EnableBreakpoint (this, Method.Method.StartAddress);
+					TargetAddress address = get_address ();
+					if (!address.IsNull)
+						handle = Module.EnableBreakpoint (this, address);
 					if (handle != null)
 						enabled = true;
 				} else if (Method.IsDynamic) {
