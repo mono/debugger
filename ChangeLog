@@ -1,5 +1,9 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IBreakPoint.cs: Killed.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/ISourceFile.cs: Removed.
 	* classes/SourceFileFactory.cs: This is the only implementation.
 

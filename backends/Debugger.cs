@@ -823,11 +823,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IBreakPoint AddBreakPoint (ITargetLocation location)
-		{
-			throw new NotImplementedException ();
-		}
-
 		[DllImport("glib-2.0")]
 		extern static IntPtr g_main_context_default ();
 
