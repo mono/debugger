@@ -1,3 +1,8 @@
+2004-04-20  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/scripting/Command.cs: Do not try to resolve if we have
+	no current process, it leads to a crash.
+
 2004-04-16  Peter Williams  <peter@newton.cx>
 
 	* frontends/scripting/Command.cs: (ShowMethodsCommand.DoResolve):

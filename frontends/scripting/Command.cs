@@ -24,6 +24,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		public override string Execute (CL.Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
+
+			if (engine.Context.CurrentProcess == null){
+				engine.Context.Error ("No process to debug", this, null);
+				return null;
+			}
+			
 			if (!Resolve (engine.Context))
 				return null;
 
