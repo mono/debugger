@@ -1,4 +1,5 @@
-noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ Interpreter.exe
+noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ \
+		 Interpreter.exe SymbolFileReader.exe
 
 EXTRA_SCRIPTS = Debugger.exe
 
@@ -21,6 +22,9 @@ BACKEND_SRCLIST = \
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/mono-csharp/*.cs		\
 	@top_srcdir@/arch/*.cs
+
+SYMFILE_READER_SRCLIST = \
+	@top_srcdir@/lib/SymbolFileReader.cs
 
 LIBRARY_DEPS = \
 	-r Mono.CSharp.Debugger
@@ -51,6 +55,10 @@ INTERPRETER_DEPS = \
 	-r Mono.Debugger.dll	\
 	-r Mono.Debugger.Backend.dll
 
+SYMFILE_READER_DEPS = \
+	-r Mono.GetOptions	\
+	-r Mono.CSharp.Debugger
+
 GUIDIR = @top_srcdir@/frontends/gui
 RESOURCES = \
 	-resource:$(GUIDIR)/debugger.glade,debugger.glade	\
@@ -69,6 +77,9 @@ Debugger.exe: $(ALL_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
 
 Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
 	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SRCLIST) $(MCS_FLAGS)
+
+SymbolFileReader.exe: $(SYMFILE_READER_SRCLIST)
+	$(MCS) -o SymbolFileReader.exe $(SYMFILE_READER_DEPS) $(SYMFILE_READER_SRCLIST) $(MCS_FLAGS)
 
 Debugger.exe.config: Debugger.exe.config.in Makefile
 	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-jit-wrapper,g' \
