@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <config.h>
 #include <server.h>
 #include <signal.h>
 #include <unistd.h>
@@ -148,6 +149,10 @@ static gboolean initialized = FALSE;
 extern InferiorInfo i386_ptrace_inferior;
 #include "i386-ptrace.c"
 #endif
+#if defined(PLATFORM_WIN32)
+extern InferiorInfo i386_win32_inferior;
+#include "i386-win32.c"
+#endif
 
 sigset_t mono_debugger_signal_mask;
 
@@ -171,6 +176,11 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 
 #if defined(__linux__) || defined(__FreeBSD__)
 	handle->info = &i386_ptrace_inferior;
+	handle->arch = (* handle->info->arch_initialize) ();
+	handle->inferior = (* handle->info->initialize) (breakpoint_manager);
+#endif
+#if defined(PLATFORM_WIN32)
+	handle->info = &i386_win32_inferior;
 	handle->arch = (* handle->info->arch_initialize) ();
 	handle->inferior = (* handle->info->initialize) (breakpoint_manager);
 #endif

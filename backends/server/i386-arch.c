@@ -298,10 +298,12 @@ i386_arch_child_stopped (InferiorHandle *handle, ArchInfo *arch, int stopsig,
 	if (!arch->call_address || arch->call_address != INFERIOR_REG_EIP (arch->current_regs)) {
 		int code;
 
+#if defined(__linux__) || defined(__FreeBSD__)
 		if (stopsig != SIGTRAP) {
 			arch->last_signal = stopsig;
 			return STOP_ACTION_SEND_STOPPED;
 		}
+#endif
 
 		if (server_peek_word (handle, arch, (guint32) (INFERIOR_REG_EIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
 			return STOP_ACTION_SEND_STOPPED;
