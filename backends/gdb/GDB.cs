@@ -9,6 +9,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Collections;
 
+using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.CSharp.Debugger;
 
@@ -37,6 +38,8 @@ namespace Mono.Debugger.Backends
 		ManualResetEvent gdb_event;
 		Mutex gdb_mutex;
 
+		ArrayList symtabs;
+
 		int last_breakpoint_id;
 
 		readonly uint target_address_size;
@@ -44,11 +47,14 @@ namespace Mono.Debugger.Backends
 		readonly uint target_long_integer_size;
 
 		public GDB (string application, string[] arguments)
-			: this (Path_GDB, Path_Mono, application, arguments)
+			: this (Path_GDB, Path_Mono, application, arguments,
+				new SourceFileFactory ())
 		{ }
 
-		public GDB (string gdb_path, string mono_path, string application, string[] arguments)
+		public GDB (string gdb_path, string mono_path, string application,
+			    string[] arguments, ISourceFileFactory source_factory)
 		{
+			this.source_file_factory = source_factory;
 			this.application = Assembly.LoadFrom (application);
 
 			MethodInfo main = this.application.EntryPoint;
@@ -94,6 +100,7 @@ namespace Mono.Debugger.Backends
 
 			symbols = new Hashtable ();
 			breakpoints = new Hashtable ();
+			symtabs = new ArrayList ();
 
 			send_gdb_command ("run");
 
@@ -143,12 +150,12 @@ namespace Mono.Debugger.Backends
 
 		public void Step ()
 		{
-			gdb_pipe.WriteLine ("step");
+			gdb_pipe.WriteLine ("stepi");
 		}
-
+		
 		public void Next ()
 		{
-			gdb_pipe.WriteLine ("next");
+			gdb_pipe.WriteLine ("nexti");
 			gdb_pipe.WriteLine ("frame");
 		}
 
@@ -305,6 +312,16 @@ namespace Mono.Debugger.Backends
 					return -1;
 				}
 			}
+
+			int ITargetLocation.SourceRange {
+				get {
+					return 0;
+				}
+
+				set {
+					throw new NotSupportedException ();
+				}
+			}
 		}
 
 		protected class BreakPoint : IBreakPoint
@@ -363,6 +380,7 @@ namespace Mono.Debugger.Backends
 		protected class TargetLocation : ITargetLocation
 		{
 			public long Address = -1;
+			int SourceRange = 0;
 
 			long ITargetLocation.Location {
 				get {
@@ -370,49 +388,30 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			public override string ToString ()
-			{
-				if (Address > 0)
-					return "0x" + Address.ToString ("x");
-				else
-					return "<unknown>";
-			}
-		}
-
-		protected class SourceLocation : ISourceLocation
-		{
-			public ISourceBuffer SourceBuffer = null;
-			public int Row = 0;
-
-			ISourceBuffer ISourceLocation.Buffer {
+			int ITargetLocation.SourceRange {
 				get {
-					return SourceBuffer;
+					return SourceRange;
 				}
-			}
 
-			int ISourceLocation.Row {
-				get {
-					return Row;
-				}
-			}
-
-			int ISourceLocation.Column {
-				get {
-					return 0;
+				set {
+					SourceRange = value;
 				}
 			}
 
 			public override string ToString ()
 			{
 				StringBuilder builder = new StringBuilder ();
-				if (SourceBuffer != null)
-					builder.Append (SourceBuffer.Name);
-				else
+
+				if (Address > 0) {
+					builder.Append ("0x");
+					builder.Append (Address.ToString ("x"));
+					if (SourceRange > 0) {
+						builder.Append ("(");
+						builder.Append (SourceRange);
+						builder.Append (")");
+					}
+				} else
 					builder.Append ("<unknown>");
-				if (Row > 0) {
-					builder.Append (" line ");
-					builder.Append (Row);
-				}
 
 				return builder.ToString ();
 			}
@@ -420,7 +419,7 @@ namespace Mono.Debugger.Backends
 
 		protected class StackFrame : IStackFrame
 		{
-			public SourceLocation SourceLocation = new SourceLocation ();
+			public ISourceLocation SourceLocation = null;
 			public TargetLocation TargetLocation = new TargetLocation ();
 
 			ISourceLocation IStackFrame.SourceLocation {
@@ -439,7 +438,10 @@ namespace Mono.Debugger.Backends
 			{
 				StringBuilder builder = new StringBuilder ();
 
-				builder.Append (SourceLocation);
+				if (SourceLocation != null)
+					builder.Append (SourceLocation);
+				else
+					builder.Append ("<unknown>");
 				builder.Append (" at ");
 				builder.Append (TargetLocation);
 
@@ -458,8 +460,6 @@ namespace Mono.Debugger.Backends
 			BREAKPOINT,
 			FRAME,
 			FRAME_ADDRESS,
-			SOURCE_FILE,
-			SOURCE_LINE,
 			BYTE_VALUE,
 			BYTE_VALUE_2,
 			INTEGER_VALUE,
@@ -506,9 +506,11 @@ namespace Mono.Debugger.Backends
 
 				string tmpfile;
 				BinaryReader reader = GetTargetMemoryReader (start, size, out tmpfile);
-				new MonoSymbolTableReader (reader);
+				MonoSymbolTableReader symreader = new MonoSymbolTableReader (reader);
 				reader.Close ();
 				File.Delete (tmpfile);
+
+				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
 			}
 		}
 
@@ -603,6 +605,21 @@ namespace Mono.Debugger.Backends
 			return new BinaryReader (stream);
 		}
 
+		void frame_changed (StackFrame frame)
+		{
+			foreach (ISymbolTable symtab in symtabs) {
+				ISourceLocation source = symtab.Lookup (frame.TargetLocation);
+
+				if (source != null) {
+					current_frame.SourceLocation = source;
+					break;
+				}
+			}
+
+			if (current_frame_event != null)
+				current_frame_event (frame);
+		}
+
 		void HandleAnnotation (string annotation, string[] args)
 		{
 			switch (annotation) {
@@ -644,33 +661,9 @@ namespace Mono.Debugger.Backends
 				wait_for = WaitForOutput.FRAME_ADDRESS;
 				break;
 
-			case "frame-source-file":
-				wait_for = WaitForOutput.SOURCE_FILE;
-				source_file = null;
-				break;
-
-			case "frame-source-file-end":
-				if ((current_frame == null) || (source_file_factory == null) ||
-				    (source_file == null))
-					break;
-
-				current_frame.SourceLocation.SourceBuffer =
-					source_file_factory.FindFile (source_file);
-
-				if (current_frame.SourceLocation.SourceBuffer == null) {
-					if (target_error != null)
-						target_error ("Can't find source file: " + source_file);
-				}
-
-				break;
-
-			case "frame-source-line":
-				wait_for = WaitForOutput.SOURCE_LINE;
-				break;
-
 			case "frame-end":
-				if ((current_frame != null) && (current_frame_event != null))
-					current_frame_event (current_frame);
+				if (current_frame != null)
+					frame_changed (current_frame);
 				break;
 
 			case "frames-invalid":
@@ -810,24 +803,6 @@ namespace Mono.Debugger.Backends
 			case WaitForOutput.BREAKPOINT:
 				if (check_breakpoint (line))
 					return true;
-				break;
-
-			case WaitForOutput.SOURCE_FILE:
-				source_file = line;
-				wait_for = WaitForOutput.FRAME;
-				return true;
-
-			case WaitForOutput.SOURCE_LINE:	
-				wait_for = WaitForOutput.FRAME;
-				if (current_frame == null)
-					break;
-
-				try {
-					current_frame.SourceLocation.Row = Int32.Parse (line);
-					return true;
-				} catch {
-					// FIXME: report error
-				}
 				break;
 
 			case WaitForOutput.FRAME_ADDRESS:

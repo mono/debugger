@@ -56,8 +56,6 @@ namespace Mono.Debugger.GUI {
 			backend.CurrentFrameEvent += new StackFrameHandler (CurrentFrameEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
-			backend.SourceFileFactory = new SourceFileFactory ();
-
 			interpreter = new Interpreter (backend, output_writer, output_writer);
 		}
 
