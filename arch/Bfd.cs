@@ -184,7 +184,7 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				symbols.Add (name, address);
+				symbols.Add (name, base_address.Address + address);
 			}
 
 			g_free (symtab);
@@ -245,11 +245,13 @@ namespace Mono.Debugger.Architecture
 			if (reader.ReadInteger () != 0)
 				return false;
 
+#if FALSE
 			if (inferior.State != TargetState.CORE_FILE) {
 				dynlink_breakpoint_id = backend.SingleSteppingEngine.InsertBreakpoint (
 					dynlink_breakpoint, new BreakpointHitHandler (dynlink_handler),
 					false, null);
 			}
+#endif
 
 			has_shlib_info = true;
 			return true;
