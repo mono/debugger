@@ -2027,9 +2027,19 @@ namespace Mono.Debugger.Languages.CSharp
 								MethodLoadedHandler handler,
 								object user_data)
 			{
-				string full_name = String.Format (
-					"{0}:{1}", rmethod.ReflectedType.FullName,
-					rmethod.Name);
+				StringBuilder sb = new StringBuilder ();
+				sb.Append (rmethod.ReflectedType.FullName);
+				sb.Append (":");
+				sb.Append (rmethod.Name);
+				sb.Append ("(");
+				R.ParameterInfo[] pi = rmethod.GetParameters ();
+				for (int i = 0; i < pi.Length; i++) {
+					if (i > 0)
+						sb.Append (",");
+					sb.Append (pi [i].ParameterType.FullName);
+				}
+				sb.Append (")");
+				string full_name = sb.ToString ();
 
 				if (load_handlers != null)
 					throw new TargetException (
