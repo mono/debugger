@@ -67,6 +67,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("background", Token.BACKGROUND);
 			keywords.Add ("bg", Token.BACKGROUND);
 			keywords.Add ("stop", Token.STOP);
+			keywords.Add ("registers", Token.REGISTERS);
+			keywords.Add ("regs", Token.REGISTERS);
 		}
 
 		ScriptingContext context;

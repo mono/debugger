@@ -57,6 +57,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token AT
 
 %token PROCESSES
+%token REGISTERS
 
 %token FRAME
 %token START
@@ -134,6 +135,10 @@ command
 	| SHOW PROCESSES
 	  {
 		$$ = new ShowProcessesCommand ();
+	  }
+	| SHOW REGISTERS opt_process
+	  {
+		$$ = new ShowRegistersCommand ((ProcessExpression) $3);
 	  }
 	| expression
 	  {

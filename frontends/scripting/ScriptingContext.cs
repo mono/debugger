@@ -185,6 +185,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.Continue (true, false);
 		}
 
+		public IArchitecture Architecture {
+			get {
+				if (process == null)
+					throw new ScriptingException ("Process @{0} not running.", id);
+
+				return process.Architecture;
+			}
+		}
+
 		public int ID {
 			get {
 				return id;
@@ -263,6 +272,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 				else
 					return process.SingleSteppingEngine.State;
 			}
+		}
+
+		public long[] GetRegisters (int[] registers)
+		{
+			if (State == TargetState.NO_TARGET)
+				throw new ScriptingException ("No stack.");
+			else if (State != TargetState.STOPPED)
+				throw new ScriptingException ("Process @{0} is not stopped.", id);
+
+			return process.GetRegisters (registers);
 		}
 
 		public override string ToString ()
@@ -394,8 +413,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void thread_created (ThreadManager manager, Process process)
 		{
-			Console.WriteLine ("THREAD CREATED!");
-
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			procs.Add (handle);
 		}

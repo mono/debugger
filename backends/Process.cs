@@ -316,14 +316,32 @@ namespace Mono.Debugger
 
 		public long GetRegister (int register)
 		{
-			check_inferior ();
-			return inferior.GetRegister (register);
+			check_disposed ();
+			if (sse == null)
+				return core.GetRegister (register);
+
+			long[] regs = sse.GetRegisters ();
+			if (regs == null)
+				throw new TargetNotStoppedException ();
+
+			return regs [register];
 		}
 
 		public long[] GetRegisters (int[] registers)
 		{
-			check_inferior ();
-			return inferior.GetRegisters (registers);
+			check_disposed ();
+			if (sse == null)
+				return core.GetRegisters (registers);
+
+			long[] regs = sse.GetRegisters ();
+			if (regs == null)
+				throw new TargetNotStoppedException ();
+
+			long[] retval = new long [registers.Length];
+			for (int i = 0; i < registers.Length; i++)
+				retval [i] = regs [registers [i]];
+
+			return retval;
 		}
 
 		public void SetRegister (int register, long value)

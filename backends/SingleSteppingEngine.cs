@@ -394,6 +394,11 @@ namespace Mono.Debugger.Backends
 				ok = current_backtrace != null;
 				break;
 
+			case CommandType.GetRegisters:
+				registers = get_registers ();
+				ok = registers != null;
+				break;
+
 			default:
 				throw new InternalError ();
 			}
@@ -583,6 +588,33 @@ namespace Mono.Debugger.Backends
 			return backtrace;
 		}
 
+		public long[] GetRegisters ()
+		{
+			check_inferior ();
+
+			if (Thread.CurrentThread == engine_thread)
+				return get_registers ();
+
+			if (registers != null)
+				return registers;
+
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return null;
+			}
+
+			send_sync_command (new Command (CommandType.GetRegisters));
+
+			command_mutex.ReleaseMutex ();
+
+			return registers;
+		}
+
+		long[] get_registers ()
+		{
+			return inferior.GetRegisters (arch.AllRegisterIndices);
+		}
+
 		// <summary>
 		//   The current method  May only be used when the engine is stopped
 		//   (State == TargetState.STOPPED).  The single stepping engine
@@ -737,7 +769,8 @@ namespace Mono.Debugger.Backends
 		private enum CommandType {
 			StepOperation,
 			ReloadSymtab,
-			GetBacktrace
+			GetBacktrace,
+			GetRegisters
 		}
 
 		private class Command {
@@ -847,6 +880,7 @@ namespace Mono.Debugger.Backends
 		IMethod current_method;
 		StackFrame current_frame;
 		StackFrame[] current_backtrace;
+		long[] registers;
 
 		// <summary>
 		//   Compute the StackFrame for target address @address.

@@ -266,5 +266,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowRegistersCommand : Command
+	{
+		ProcessExpression process_expr;
 
+		public ShowRegistersCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			string[] names = process.Architecture.RegisterNames;
+			int[] indices = process.Architecture.RegisterIndices;
+			long[] regs = process.GetRegisters (indices);
+			for (int i = 0; i < regs.Length; i++)
+				context.Print ("%{0} = 0x{1:x}", names [indices [i]], regs [i]);
+		}
+	}
 }
