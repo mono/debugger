@@ -91,7 +91,7 @@ namespace Mono.Debugger.Backends
 
 			string[] argv = { Path_GDB, "-n", "-nw", "-q", "--annotate=2", "--async",
 					  "--args", Path_Mono, "--break", main_name, "--debug=mono",
-					  "--noinline", "--nols", "--precompile", "@" + application,
+					  "--noinline", "--nols", //"--precompile", "@" + application,
 					  "--debug-args", "internal_mono_debugger",
 					  application };
 			string[] envp = { "PATH=" + Environment_Path };
@@ -460,6 +460,7 @@ namespace Mono.Debugger.Backends
 
 		enum WaitForOutput {
 			UNKNOWN,
+			DISCARD,
 			INFO_ADDRESS,
 			ADD_BREAKPOINT,
 			BREAKPOINT,
@@ -526,7 +527,7 @@ namespace Mono.Debugger.Backends
 			symtab_generation = ReadInteger (ptr);
 			ptr += target_integer_size;
 
-			Console.WriteLine ("SYMTABS: {0:x} {1:x} {2:x}", size, count, symtab_generation);
+			// Console.WriteLine ("SYMTABS: {0:x} {1:x} {2:x}", size, count, symtab_generation);
 
 			string symtab_tmpfile;
 			MyBinaryReader symtab_reader = GetTargetMemoryReader (
@@ -560,10 +561,12 @@ namespace Mono.Debugger.Backends
 				BinaryReader address_reader = GetTargetMemoryReader (
 					address_table, address_table_size, out tmpfile2);
 				
+#if FALSE
 				Console.WriteLine ("SYMTAB: {0:x} {1} {2} - {3:x} {4} {5} - {6}",
 						   raw_contents, raw_contents_size, tmpfile,
 						   address_table, address_table_size, tmpfile2,
 						   image_file);
+#endif
 
 				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
 					image_file, reader, address_reader);
@@ -700,6 +703,11 @@ namespace Mono.Debugger.Backends
 				throw new TargetException ("Can't read target memory at address " + address);
 
 			return last_string_value;
+		}
+
+		public int ReadIntegerRegister (string name)
+		{
+			return ReadSignedInteger ("print $" + name);
 		}
 
 		MyBinaryReader GetTargetMemoryReader (long address, long size, out string tmpfile)
@@ -967,6 +975,9 @@ namespace Mono.Debugger.Backends
 		bool HandleOutput (string line)
 		{
 			switch (wait_for) {
+			case WaitForOutput.DISCARD:
+				return true;
+
 			case WaitForOutput.INFO_ADDRESS:
 				if (check_info_symbol (line) || check_info_no_symbol (line))
 					return true;
@@ -1124,18 +1135,18 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			Console.WriteLine ("CALL TARGET: {0:x} {1}", call_target, insn_size);
+			// Console.WriteLine ("CALL TARGET: {0:x} {1}", call_target, insn_size);
 			if (mode == StepMode.STEP_LINE) {
 				long trampoline = arch.GetTrampoline (
 					this, call_target, generic_trampoline_code);
 
 				if (trampoline != 0) {
-					Console.WriteLine ("TRAMPOLINE: {0:x}", trampoline);
+					// Console.WriteLine ("TRAMPOLINE: {0:x}", trampoline);
 
 					long method = ReadAddress (
 						"call/a mono_compile_method (" + trampoline + ")");
 
-					Console.WriteLine ("COMPILED: {0:x}", method);
+					// Console.WriteLine ("COMPILED: {0:x}", method);
 
 					update_symbol_files ();
 
@@ -1144,20 +1155,20 @@ namespace Mono.Debugger.Backends
 						stop_address = current_frame_address + insn_size;
 					else {
 						stop_address = method;
-						Console.WriteLine ("TRAMPOLINE CALL: {0}", source);
+						// Console.WriteLine ("TRAMPOLINE CALL: {0}", source);
 					}
 				} else {
 					ISourceLocation source = LookupAddress (call_target);
 					if (source == null)
 						stop_address = current_frame_address + insn_size;
-					else
-						Console.WriteLine ("CALL: {0}", source);
 				}
 			} else
 				stop_address = current_frame_address + insn_size;
 
 			if (stop_address != 0) {
+				wait_for = WaitForOutput.DISCARD;
 				send_gdb_command ("tbreak *" + stop_address);
+				wait_for = WaitForOutput.DISCARD;
 				command = "continue";
 				// step_mode = StepMode.RUN;
 			}

@@ -145,6 +145,11 @@ namespace Mono.Debugger
 		string ReadString (long address);
 
 		// <summary>
+		//   Returns the contents of the integer register @name.
+		// </summary>
+		int ReadIntegerRegister (string name);
+
+		// <summary>
 		//   Adds a breakpoint at the specified target location.
 		// </summary>
 		IBreakPoint AddBreakPoint (ITargetLocation location);
