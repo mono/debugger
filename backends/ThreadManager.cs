@@ -59,9 +59,6 @@ namespace Mono.Debugger
 			TargetAddress mdebug = bfdc.LookupSymbol ("mono_debugger_threads_debug");
 			mono_thread_info = bfdc.LookupSymbol ("mono_debugger_thread_info");
 
-			Console.WriteLine ("MONO THREADS: {0} {1} {2}", mdebug, mono_thread_info,
-					   process.PID);
-
 			if (!mdebug.IsNull && !mono_thread_info.IsNull) {
 				inferior.WriteInteger (mdebug, PTraceInferior.MonoThreadDebugSignal);
 
@@ -77,8 +74,6 @@ namespace Mono.Debugger
 			thread_handles = bfdc.LookupSymbol ("__pthread_handles");
 			thread_handles_num = bfdc.LookupSymbol ("__pthread_handles_num");
 			last_thread_event = bfdc.LookupSymbol ("__pthread_last_event");
-
-			Console.WriteLine ("THREADS: {0}", tdebug);
 
 			if (tdebug.IsNull || thread_handles.IsNull ||
 			    thread_handles_num.IsNull || last_thread_event.IsNull) {
@@ -235,9 +230,6 @@ namespace Mono.Debugger
 			thread_info += memory.TargetIntegerSize;
 
 			if ((background_pid != 0) && (debugger_process == null)) {
-				Console.WriteLine ("CREATING DAEMON PROCESS: {0} {1}",
-						   background_pid, csharp_handler);
-
 				debugger_process = main_process.CreateDaemonThread (
 					background_pid, 0, csharp_handler);
 
@@ -251,8 +243,6 @@ namespace Mono.Debugger
 
 				if ((pid == 0) || thread_hash.Contains (pid))
 					continue;
-
-				Console.WriteLine ("CREATING PROCESS: {0} {1}", i, pid);
 
 				Process new_process = main_process.CreateThread (pid);
 				thread_hash.Add (pid, new_process);
