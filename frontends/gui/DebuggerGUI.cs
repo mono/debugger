@@ -93,7 +93,7 @@ namespace Mono.Debugger.GUI
 
 		public DebuggerGUI (string[] arguments)
 		{
-			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
+			program = new Program ("Debugger", "0.2", Modules.UI, arguments);
 
 			backend = new DebuggerBackend ();
 			backend.DebuggerError += new DebuggerErrorHandler (ErrorHandler);
