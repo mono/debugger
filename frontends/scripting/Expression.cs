@@ -92,35 +92,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		protected virtual ITargetFunctionObject DoEvaluateMethod (ScriptingContext ctx,
-									  Expression[] args)
-		{
-			return null;
-		}
-
-		public ITargetFunctionObject EvaluateMethod (ScriptingContext context,
-							     Expression[] args)
-		{
-			if (!resolved)
-				throw new InvalidOperationException (
-					String.Format (
-						"Some clown tried to evaluate the " +
-						"unresolved expression `{0}'", Name));
-
-			try {
-				ITargetFunctionObject retval = DoEvaluateMethod (context, args);
-				if (retval == null)
-					throw new ScriptingException (
-						"Expression `{0}' is not a method", Name);
-
-				return retval;
-			} catch (LocationInvalidException ex) {
-				throw new ScriptingException (
-					"Location of variable `{0}' is invalid: {1}",
-					Name, ex.Message);
-			}
-		}
-
 		protected virtual SourceLocation DoEvaluateLocation (ScriptingContext context,
 								     Expression[] types)
 		{
@@ -306,6 +277,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		public TypeExpression (ITargetType type)
 		{
 			this.type = type;
+			resolved = true;
 		}
 
 		public override string Name {
@@ -314,13 +286,11 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
-			resolved = true;
 			return this;
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			resolved = true;
 			return this;
 		}
 
@@ -394,25 +364,19 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return name; }
 		}
 
-		Expression LookupField (ScriptingContext context, FrameHandle frame)
+		Expression LookupMember (ScriptingContext context, FrameHandle frame)
 		{
 			IMethod method = frame.Frame.Method;
 			if ((method == null) || (method.DeclaringType == null))
 				return null;
 
-			ITargetMemberInfo member = StructAccessExpression.FindMember (
-				method.DeclaringType, !method.HasThis, name);
-			if (member == null)
-				return null;
+			ITargetObject instance = null;
+			if (method.HasThis)
+				instance = (ITargetObject) frame.GetVariable (method.This);
 
-			if (method.HasThis) {
-				ITargetObject instance = frame.GetVariable (method.This);
-
-				return new StructAccessExpression (
-					frame.Frame, (ITargetStructObject) instance, name);
-			} else
-				return new StructAccessExpression (
-					frame.Frame, method.DeclaringType, name);
+			return StructAccessExpression.FindMember (
+				method.DeclaringType, frame.Frame,
+				(ITargetStructObject) instance, name);
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
@@ -422,11 +386,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (var != null)
 				return new VariableAccessExpression (var);
 
-			Expression expr = LookupField (context, frame);
-			if (expr != null)
-				return expr;
-
-			return null;
+			return LookupMember (context, frame);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -467,7 +427,8 @@ namespace Mono.Debugger.Frontends.Scripting
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", ltype.Name);
 
-				return new StructAccessExpression (frame, stype, name);
+				return StructAccessExpression.FindMember (
+					stype, frame, null, name);
 			}
 
 			Expression lexpr = left.TryResolve (context);
@@ -481,7 +442,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException (
 					"`{0}' is not a struct or class", left.Name);
 
-			return new StructAccessExpression (frame, sobj, name);
+			return StructAccessExpression.FindMember (
+				sobj.Type, frame, sobj, name);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -502,6 +464,135 @@ namespace Mono.Debugger.Frontends.Scripting
 				return null;
 
 			return new TypeExpression (the_type);
+		}
+	}
+
+	public class MethodGroupExpression : Expression
+	{
+		ITargetStructType stype;
+		ITargetStructObject instance;
+		ILanguage language;
+		string name;
+		ArrayList methods;
+
+		public MethodGroupExpression (ITargetStructType stype, string name,
+					      ITargetStructObject instance,
+					      ILanguage language, ArrayList methods)
+		{
+			this.stype = stype;
+			this.instance = instance;
+			this.language = language;
+			this.name = name;
+			this.methods = methods;
+			resolved = true;
+		}
+
+		public override string Name {
+			get { return stype.Name + "." + name; }
+		}
+
+		public bool IsStatic {
+			get { return instance == null; }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
+		}
+
+		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
+								      Expression[] types)
+		{
+			ITargetMethodInfo method = OverloadResolve (context, types);
+			return new SourceLocation (method.Type.Source);
+		}
+
+		public ITargetFunctionObject EvaluateMethod (ScriptingContext context,
+							     StackFrame frame,
+							     Expression[] arguments)
+		{
+			ITargetMethodInfo method = OverloadResolve (context, arguments);
+
+			if (method.IsStatic)
+				return stype.GetStaticMethod (frame, method.Index);
+			else if (!IsStatic)
+				return instance.GetMethod (method.Index);
+			else
+				throw new ScriptingException (
+					"Instance method {0} cannot be used in " +
+					"static context.", Name);
+		}
+
+		protected ITargetMethodInfo OverloadResolve (ScriptingContext context,
+							     Expression[] types)
+		{
+			ArrayList candidates = new ArrayList ();
+
+			foreach (ITargetMethodInfo method in methods) {
+				if ((types != null) &&
+				    (method.Type.ParameterTypes.Length != types.Length))
+					continue;
+
+				candidates.Add (method);
+			}
+
+			if (candidates.Count == 1)
+				return (ITargetMethodInfo) candidates [0];
+
+			if (candidates.Count == 0)
+				throw new ScriptingException (
+					"No overload of method `{0}' has {1} arguments.",
+					Name, types.Length);
+
+			if (types == null)
+				throw new ScriptingException (
+					"Ambiguous method `{0}'; need to use " +
+					"full name", Name);
+
+			ITargetMethodInfo match = OverloadResolve (
+				context, language, stype, types, candidates);
+
+			if (match == null)
+				throw new ScriptingException (
+					"Ambiguous method `{0}'; need to use " +
+					"full name", Name);
+
+			return match;
+		}
+
+		public static ITargetMethodInfo OverloadResolve (ScriptingContext context,
+								 ILanguage language,
+								 ITargetStructType stype,
+								 Expression[] types,
+								 ArrayList candidates)
+		{
+			// We do a very simple overload resolution here
+			ITargetType[] argtypes = new ITargetType [types.Length];
+			for (int i = 0; i < types.Length; i++)
+				argtypes [i] = types [i].EvaluateType (context);
+
+			// Ok, no we need to find an exact match.
+			ITargetMethodInfo match = null;
+			foreach (ITargetMethodInfo method in candidates) {
+				bool ok = true;
+				for (int i = 0; i < types.Length; i++) {
+					if (method.Type.ParameterTypes [i].TypeHandle != argtypes [i].TypeHandle) {
+						ok = false;
+						break;
+					}
+				}
+
+				if (!ok)
+					continue;
+
+				// We need to find exactly one match
+				if (match != null)
+					return null;
+
+				match = method;
+			}
+
+			return match;
 		}
 	}
 

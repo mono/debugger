@@ -145,6 +145,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				return false;
 
 			expression = expression.Resolve (context);
+			Console.WriteLine ("RESOLVE: {0}", expression);
 			return expression != null;
 		}
 
