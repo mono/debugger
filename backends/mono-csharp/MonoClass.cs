@@ -425,8 +425,12 @@ namespace Mono.Debugger.Languages.CSharp
 				TargetAddress data_address = frame.CallMethod (
 					ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
-				TargetLocation field_loc = new AbsoluteTargetLocation (
+
+				TargetLocation location = new AbsoluteTargetLocation (
 					frame, data_address);
+				TargetLocation field_loc = location.GetLocationAtOffset (
+					static_fields [index].Offset,
+					static_fields [index].Type.IsByRef);
 
 				return static_fields [index].Type.GetObject (field_loc);
 			} catch (TargetException ex) {
