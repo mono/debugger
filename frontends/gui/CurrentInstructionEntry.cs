@@ -19,7 +19,7 @@ namespace Mono.Debugger.GUI
 
 		protected void Update ()
 		{
-			entry.Text = current_insn;
+			entry.Text = current_insn != null ? current_insn : "";
 			widget.Sensitive = current_insn != null;
 		}
 
@@ -35,15 +35,17 @@ namespace Mono.Debugger.GUI
 
 		protected override void RealFrameChanged (StackFrame frame)
 		{
-			try {
-				IDisassembler dis = process.Disassembler;
-				TargetAddress old_addr = frame.TargetAddress;
-				TargetAddress addr = old_addr;
-				string insn = dis.DisassembleInstruction (ref addr);
-				current_insn = String.Format ("0x{0:x}   {1}", old_addr.Address, insn);
-			} catch (Exception e) {
-				Console.WriteLine (e);
-				current_insn = null;
+			lock (this) {
+				try {
+					IDisassembler dis = process.Disassembler;
+					TargetAddress old_addr = frame.TargetAddress;
+					TargetAddress addr = old_addr;
+					string insn = dis.DisassembleInstruction (ref addr);
+					current_insn = String.Format ("0x{0:x}   {1}", old_addr.Address, insn);
+				} catch (Exception e) {
+					Console.WriteLine (e);
+					current_insn = null;
+				}
 			}
 
 			base.RealFrameChanged (frame);
@@ -51,7 +53,9 @@ namespace Mono.Debugger.GUI
 
 		protected override void RealFramesInvalid ()
 		{
-			current_insn = null;
+			lock (this) {
+				current_insn = null;
+			}
 			base.RealFramesInvalid ();
 		}
 		
