@@ -120,6 +120,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			context.Print ("");
 			context.Print ("Type `help' followed by a command name to get more info.");
+
+			if (subgroups.Count == 0)
+				return;
+
 			context.Print ("The following commands have sub-commands; type `help' followed");
 			context.Print ("by the command name to get more information.");
 			context.Print ("");
@@ -140,23 +144,57 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			arg_list = arg_list.TrimStart (' ', '\t');
 			arg_list = arg_list.TrimEnd (' ', '\t');
-			string[] arguments = arg_list.Split (' ', '\t');
 
-			Console.WriteLine ("HELP: |{0}|", arguments);
+			if (arg_list.Length == 0)
+				PrintHelp (context);
+			else {
+				string[] arguments = arg_list.Split (' ', '\t');
+				PrintHelp (context, arguments, 0);
+			}
+		}
 
-			if (arguments.Length == 0) {
+		void PrintHelp (ScriptingContext context, string[] arguments, int pos)
+		{
+			if (pos >= arguments.Length) {
 				PrintHelp (context);
 				return;
 			}
 
-			string token = arguments [0];
+			string token = arguments [pos].ToUpper ();
 			Entry entry = (Entry) command_hash [token];
 			if (entry == null) {
 				context.Print ("No such command: `{0}'", token);
 				return;
 			}
 
-			context.Print ("Help for command `{0}'", token);
+			if (entry.IsGroup)
+				entry.Group.PrintHelp (context, arguments, pos + 1);
+			else {
+				foreach (CommandClass command in entry.Commands)
+					PrintHelp (context, command);
+				context.Print ("");
+				context.Print ("To get help about the arguments, type `help' followed by ");
+				context.Print ("one of the expression names.");
+			}
+		}
+
+		void PrintHelp (ScriptingContext context, CommandClass command)
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			sb.Append ("  ");
+			sb.Append (String.Join (" ", command.Tokens).ToLower ());
+
+			foreach (ExpressionClass argument in command.Arguments) {
+				sb.Append (" <");
+				sb.Append (argument.Name);
+				sb.Append (">");
+			}
+
+			context.Print ("Command:");
+			context.Print (sb.ToString ());
+			context.Print ("");
+			context.Print (command.ShortDescription);
 		}
 
 		class Entry
@@ -274,6 +312,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string ShortDescription {
 			get {
 				return attribute.ShortDescription;
+			}
+		}
+
+		public ExpressionClass[] Arguments {
+			get {
+				return args;
 			}
 		}
 
