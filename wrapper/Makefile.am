@@ -47,7 +47,8 @@ LIBRARY_SRCLIST = \
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/mono-csharp/*.cs		\
 	@top_srcdir@/backends/native/*.cs		\
-	@top_srcdir@/arch/*.cs
+	@top_srcdir@/arch/*.cs				\
+	@top_srcdir@/wrapper/AssemblyInfo.cs
 
 LIBRARY_DEPS = \
 	-r Mono.GetOptions	\
@@ -64,12 +65,20 @@ Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
+ASSEMBLY = Mono.Debugger.dll
+
 CLEANFILES = *.exe *.dll mdb
 
 EXTRA_DIST = \
-	mdb.in
+	mdb.in mono.snk mono.pub
 
 mdb: mdb.in Makefile
 	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
+
+install-data-local:
+	$(GACUTIL) /i $(ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
+
+uninstall-local:
+	$(GACUTIL) /u $(ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
 

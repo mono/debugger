@@ -220,12 +220,22 @@ AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
 if test x$server_only != xyes ; then
-   MONO_REQUIRED_VERSION=0.25
+   MONO_REQUIRED_VERSION=0.96
    PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
    AC_SUBST(WRAPPER_CFLAGS)
    AC_SUBST(WRAPPER_LIBS)
+
+   GACUTIL_FLAGS='/package $(PACKAGE) /gacdir $(libdir)'
+   AC_PATH_PROG(GACUTIL, gacutil, no)
+   if test "x$GACUTIL" = "xno" ; then
+      AC_MSG_ERROR([No gacutil tool found])
+   fi
+else
+   GACUTIL_FLAGS=
 fi
 
+AC_SUBST(GACUTIL)
+AC_SUBST(GACUTIL_FLAGS)
 AC_SUBST(CFLAGS)
 
 if test x$server_only != xyes; then

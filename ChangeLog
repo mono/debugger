@@ -1,5 +1,12 @@
 2004-06-12  Martin Baulig  <martin@ximian.com>
 
+	* configure.in, wrapper/Makefile.am: GACify the debugger :-)
+
+	* wrapper/AssemblyInfo.cs: New file.
+	* wrapper/mono.snk, wrapper/mono.pub: New files.
+
+2004-06-12  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Bumped version number to 0.9.
 
 2004-06-12  Martin Baulig  <martin@ximian.com>
