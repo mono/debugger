@@ -187,10 +187,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void send_result (CommandResultType type)
+		void send_result (CommandResult result)
 		{
 			lock (this) {
-				command_result = new CommandResult (type);
+				command_result = result;
 				completed_event.Set ();
 			}
 		}
@@ -381,32 +381,7 @@ namespace Mono.Debugger.Backends
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.
-			switch (command.Type) {
-			case CommandType.ReloadSymtab:
-				frames_invalid ();
-				current_method = null;
-				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-				ok = true;
-				break;
-
-			case CommandType.GetBacktrace:
-				current_backtrace = get_backtrace ();
-				ok = current_backtrace != null;
-				break;
-
-			case CommandType.GetRegisters:
-				registers = get_registers ();
-				ok = registers != null;
-				break;
-
-			default:
-				throw new InternalError ();
-			}
-
-			if (!ok)
-				send_result (CommandResultType.UnknownError);
-			else
-				send_result (CommandResultType.CommandOk);
+			send_result (command.CommandFunc (command.CommandFuncData));
 			return;
 
 		step_operation:
@@ -480,14 +455,20 @@ namespace Mono.Debugger.Backends
 			send_result (ChildEventType.CHILD_STOPPED, 0);
 		}
 
+		CommandResult reload_symtab (object data)
+		{
+			frames_invalid ();
+			current_method = null;
+			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+			return new CommandResult (CommandResultType.CommandOk);
+		}
+
 		void update_symtabs (object sender, ISymbolTable symbol_table)
 		{
 			disassembler.SymbolTable = symbol_table;
 			current_symtab = symbol_table;
 
-			if (check_can_run ())
-				send_sync_command (new Command (CommandType.ReloadSymtab));
-			command_mutex.ReleaseMutex ();
+			send_sync_command (new CommandFunc (reload_symtab), null);
 		}
 
 		public IMethod Lookup (TargetAddress address)
@@ -554,22 +535,12 @@ namespace Mono.Debugger.Backends
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			if (Thread.CurrentThread == engine_thread)
-				return get_backtrace ();
-
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
-				return null;
-			}
-
-			send_sync_command (new Command (CommandType.GetBacktrace));
-
-			command_mutex.ReleaseMutex ();
+			send_sync_command (new CommandFunc (get_backtrace), null);
 
 			return current_backtrace;
 		}
 
-		StackFrame[] get_backtrace ()
+		CommandResult get_backtrace (object data)
 		{
 			backend.UpdateSymbolTable ();
 
@@ -588,34 +559,26 @@ namespace Mono.Debugger.Backends
 					backtrace [i] = new StackFrame (inferior, address, frames [i], i);
 			}
 
-			return backtrace;
+			current_backtrace = backtrace;
+			return new CommandResult (CommandResultType.CommandOk);
 		}
 
 		public long[] GetRegisters ()
 		{
 			check_inferior ();
 
-			if (Thread.CurrentThread == engine_thread)
-				return get_registers ();
-
 			if (registers != null)
 				return registers;
 
-			if (!check_can_run ()) {
-				command_mutex.ReleaseMutex ();
-				return null;
-			}
-
-			send_sync_command (new Command (CommandType.GetRegisters));
-
-			command_mutex.ReleaseMutex ();
+			send_sync_command (new CommandFunc (get_registers), null);
 
 			return registers;
 		}
 
-		long[] get_registers ()
+		CommandResult get_registers (object data)
 		{
-			return inferior.GetRegisters (arch.AllRegisterIndices);
+			registers = inferior.GetRegisters (arch.AllRegisterIndices);
+			return new CommandResult (CommandResultType.CommandOk);
 		}
 
 		// <summary>
@@ -769,11 +732,11 @@ namespace Mono.Debugger.Backends
 			StepFrame
 		}
 
+		private delegate CommandResult CommandFunc (object data);
+
 		private enum CommandType {
 			StepOperation,
-			ReloadSymtab,
-			GetBacktrace,
-			GetRegisters
+			Command
 		}
 
 		private class Command {
@@ -781,6 +744,8 @@ namespace Mono.Debugger.Backends
 			public StepOperation Operation;
 			public StepFrame StepFrame;
 			public TargetAddress Until;
+			public CommandFunc CommandFunc;
+			public object CommandFuncData;
 
 			public Command (StepOperation operation, StepFrame frame)
 			{
@@ -806,9 +771,11 @@ namespace Mono.Debugger.Backends
 				this.Until = TargetAddress.Null;
 			}
 
-			public Command (CommandType type)
+			public Command (CommandFunc func, object data)
 			{
-				this.Type = type;
+				this.Type = CommandType.Command;
+				this.CommandFunc = func;
+				this.CommandFuncData = data;
 			}
 		}
 
@@ -1289,10 +1256,18 @@ namespace Mono.Debugger.Backends
 		//   Sends a synchronous command to the background thread.  This is only
 		//   used for non-steping commands such as getting a backtrace.
 		// </summary>
-		CommandResult send_sync_command (Command command)
+		CommandResult send_sync_command (CommandFunc func, object data)
 		{
+			if (Thread.CurrentThread == engine_thread)
+				return func (data);
+
+			if (!check_can_run ()) {
+				command_mutex.ReleaseMutex ();
+				return new CommandResult (CommandResultType.UnknownError);
+			}
+
 			lock (this) {
-				current_command = command;
+				current_command = new Command (func, data);
 				step_event.Set ();
 				completed_event.Reset ();
 			}
@@ -1305,6 +1280,7 @@ namespace Mono.Debugger.Backends
 				command_result = null;
 			}
 
+			command_mutex.ReleaseMutex ();
 			if (result != null)
 				return result;
 			else
