@@ -92,6 +92,17 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
+		public TargetAddress GlobalAddress {
+			get {
+				TargetAddress address = Address;
+				if (address.IsNull)
+					return TargetAddress.Null;
+
+				return new TargetAddress (
+					TargetAccess.GlobalAddressDomain, address.Address);
+			}
+		}
+
 		// <summary>
 		//   Whether this location is currently valid.  A location becomes invalid
 		//   if the variable's lifetime has expired.  This usually happens the

@@ -1,5 +1,9 @@
 2004-06-23  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (LookupCommand): New command.
+
+2004-06-23  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (PrintFrameCommand): Only derive
 	from ProcessCommand, not from FrameCommand.  Parse the arguments
 	to get the (optional) frame number.

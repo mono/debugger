@@ -456,6 +456,13 @@ namespace Mono.Debugger
 				engine.SendSyncCommand (CommandType.RemoveBreakpoint, index);
 		}
 
+		public ISimpleSymbolTable SimpleSymbolTable {
+			get {
+				check_engine ();
+				return engine.SimpleSymbolTable;
+			}
+		}
+
 		//
 		// Disassembling.
 		//
