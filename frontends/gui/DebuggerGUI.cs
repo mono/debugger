@@ -129,6 +129,10 @@ namespace Mono.Debugger.GUI
 			get { return gxml; }
 		}
 
+		internal DebuggerBackend DebuggerBackend {
+			get { return backend; }
+		}
+
 		//
 		// Called back when the debugger finds an error
 		//
@@ -265,7 +269,7 @@ namespace Mono.Debugger.GUI
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
-				SetProcess (backend, process);
+				SetProcess (process);
 				process.SingleSteppingEngine.Run (true);
 			}
 
@@ -277,24 +281,24 @@ namespace Mono.Debugger.GUI
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
 
 #if FALSE
-			variable_display.SetBackend (backend, process);
-			hex_editor.SetBackend (backend, process);
-			breakpoint_manager.SetBackend (backend, process);
+			variable_display.SetProcess (process);
+			hex_editor.SetProcess (process);
+			breakpoint_manager.SetProcess (process);
 #endif
 			
 			process.StateChanged += new StateChangedHandler (BackendStateChanged);
 		}
 
-		void SetProcess (DebuggerBackend backend, Process process)
+		void SetProcess (Process process)
 		{
-			current_insn.SetBackend (backend, process);
-			register_display.SetBackend (backend, process);
-			source_status.SetBackend (backend, process);
-			backtrace_view.SetBackend (backend, process);
-			source_manager.SetBackend (backend, process);
-			disassembler_view.SetBackend (backend, process);
-			module_display.SetBackend (backend, process);
-			memory_maps_display.SetBackend (backend, process);
+			current_insn.SetProcess (process);
+			register_display.SetProcess (process);
+			source_status.SetProcess (process);
+			backtrace_view.SetProcess (process);
+			source_manager.SetProcess (process);
+			disassembler_view.SetProcess (process);
+			module_display.SetProcess (process);
+			memory_maps_display.SetProcess (process);
 		}
 
 		void UpdateGUIState (TargetState state)

@@ -52,6 +52,9 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
+
+			backend.ModulesChangedEvent += new ModulesChangedHandler (breakpoints_changed);
+			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (breakpoints_changed);
 		}
 
 		void enabled_toggled (object sender, GtkSharp.ToggledArgs args)
@@ -92,14 +95,6 @@ namespace Mono.Debugger.GUI
 			store.SetValue (iter, 0, new GLib.Value (breakpoint.Index.ToString ()));
 			store.SetValue (iter, 1, new GLib.Value (breakpoint.Name));
 			store.SetValue (iter, 2, new GLib.Value (breakpoint.Enabled));
-		}
-
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-
-			backend.ModulesChangedEvent += new ModulesChangedHandler (breakpoints_changed);
-			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (breakpoints_changed);
 		}
 	}
 }

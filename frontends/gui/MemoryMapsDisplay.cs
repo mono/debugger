@@ -57,6 +57,8 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
+
+			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
 		TargetMemoryArea[] memory_maps = null;
@@ -90,13 +92,6 @@ namespace Mono.Debugger.GUI
 
 			foreach (TargetMemoryArea area in memory_maps)
 				add_area (area);
-		}
-
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 	}
 }

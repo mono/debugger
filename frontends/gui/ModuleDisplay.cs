@@ -82,6 +82,8 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
+
+			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
 		Module[] modules = null;
@@ -121,13 +123,6 @@ namespace Mono.Debugger.GUI
 
 			foreach (Module module in modules)
 				add_module (module);
-		}
-
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 	}
 }

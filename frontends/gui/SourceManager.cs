@@ -41,6 +41,7 @@ namespace Mono.Debugger.GUI {
 		public SourceList (SourceManager manager, ISourceBuffer source_buffer, string filename)
 		{
 			this.manager = manager;
+			this.backend = manager.DebuggerBackend;
 			Console.WriteLine ("Filename: " + filename);
 			this.filename = filename;
 			tab = new ClosableNotebookTab (filename);
@@ -141,9 +142,8 @@ namespace Mono.Debugger.GUI {
 			return file.Contents;
 		}
 
-		public void SetBackend (DebuggerBackend backend, Process process)
+		public void SetProcess (Process process)
 		{
-			this.backend = backend;
 			this.process = process;
 		}
 
@@ -258,14 +258,14 @@ namespace Mono.Debugger.GUI {
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 		
-		public override void SetBackend (DebuggerBackend backend, Process process)
+		public override void SetProcess (Process process)
 		{
-			base.SetBackend (backend, process);
+			base.SetProcess (process);
 
 			foreach (DictionaryEntry de in sources){
 				SourceList source = (SourceList) de.Value;
 
-				source.SetBackend (backend, process);
+				source.SetProcess (process);
 			}
 		}
 
@@ -365,8 +365,8 @@ namespace Mono.Debugger.GUI {
 			
 				if (view == null){
 					view = CreateSourceView (source_buffer, filename);
-					if (backend != null)
-						view.SetBackend (backend, process);
+					if (process != null)
+						view.SetProcess (process);
 					
 					sources [filename] = view;
 					notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);

@@ -56,11 +56,6 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-		}
-		
 		protected override void RealFramesInvalid ()
 		{
 			current_backtrace = null;

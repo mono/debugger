@@ -50,9 +50,9 @@ namespace Mono.Debugger.GUI
 			color_stable.blue = 0;
 		}
 
-		public override void SetBackend (DebuggerBackend backend, Process process)
+		public override void SetProcess (Process process)
 		{
-			base.SetBackend (backend, process);
+			base.SetProcess (process);
 
 			arch = process.Architecture;
 			if (arch is ArchitectureI386)

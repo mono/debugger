@@ -1,5 +1,11 @@
 2002-12-25  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerWidget.cs: Renamed SetBackend -> SetProcess;
+	the DebuggerBackend can already be set in the ctor, so this only
+	takes a Process argument.
+
+2002-12-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/NativeMethod.cs: Create the ISourceBuffer in the ctor.
 
 	* frontends/gui/SourceView.cs: Make this work again.

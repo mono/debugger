@@ -23,6 +23,7 @@ namespace Mono.Debugger.GUI
 		{
 			this.gui = gui;
 			this.thread_notify = gui.ThreadNotify;
+			this.backend = gui.DebuggerBackend;
 			this.gxml = gui.GXML;
 			this.widget = widget;
 			this.container = container;
@@ -47,9 +48,16 @@ namespace Mono.Debugger.GUI
 			} catch {}
 		}
 
-		public virtual void SetBackend (DebuggerBackend backend, Process process)
+		public DebuggerBackend DebuggerBackend {
+			get { return backend; }
+		}
+
+		public Process Process {
+			get { return process; }
+		}
+
+		public virtual void SetProcess (Process process)
 		{
-			this.backend = backend;
 			this.process = process;
 
 			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);

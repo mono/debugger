@@ -19,11 +19,6 @@ namespace Mono.Debugger.GUI
 			status_id = status_bar.GetContextId ("message");
 		}
 
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-		}
-		
 		public void Message (string message)
 		{
 			if (!IsVisible)

@@ -155,14 +155,6 @@ namespace Mono.Debugger.GUI
 			add_message (args.Iter, "<unknown object>");
 		}
 
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-
-			process.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
-		}
-
 		void add_data (ITargetObject obj, TreeIter parent)
 		{
 			TreeIter iter;

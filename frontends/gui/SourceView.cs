@@ -30,20 +30,6 @@ namespace Mono.Debugger.GUI
 			factory = new SourceFileFactory ();
 		}
 
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-
-#if FALSE
-			process.TargetExited += new TargetExitedHandler (TargetExitedEvent);
-#endif
-		}
-
-		void TargetExitedEvent ()
-		{
-			MethodInvalid ();
-		}
-
 		protected override void MethodInvalid ()
 		{
 			if (!IsVisible)
