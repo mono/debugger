@@ -224,54 +224,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string id = (string) lexer.value ();
 
-			ArgumentAttribute attr;
-			PropertyInfo pi = engine.GetParameter (current_command, id, out attr);
-			if ((pi == null) || (attr == null))
+			PropertyInfo pi = engine.GetParameter (current_command, id);
+			if (pi == null)
 				throw new ParserError ("No such parameter: {0}", id);
 
 			object result = null;
-			switch (attr.Type) {
-			case ArgumentType.Integer:
+			if (pi.PropertyType == typeof (int)) {
 				state = State.Integer;
 				result = ParseInteger ();
-				break;
-
-			case ArgumentType.Flag:
+			} else if (pi.PropertyType == typeof (bool)) {
 				result = true;
-				break;
-
-			case ArgumentType.Process: {
-				ProcessCommand pcommand = (ProcessCommand) current_command;
-				if (pcommand.ProcessExpression != null)
-					throw new ParserError (
-						"The `{0}' argument can only be given once",
-						attr.Name);
-
-				FrameCommand fcommand = current_command as FrameCommand;
-				if ((fcommand != null) && (fcommand.FrameExpression != null))
-					throw new ParserError (
-						"When specifying both a process and a stack " +
-						"frame, the process must come first");
-
-				state = State.Integer;
-				result = new ProcessExpression (ParseInteger ());
-				break;
-			}
-
-			case ArgumentType.Frame: {
-				FrameCommand fcommand = (FrameCommand) current_command;
-				if (fcommand.FrameExpression != null)
-					throw new ParserError (
-						"The `{0}' argument can only be given once",
-						attr.Name);
-
-				state = State.Integer;
-				result = new FrameExpression (
-					fcommand.ProcessExpression, ParseInteger ());
-				break;
-			}
-
-			default:
+			} else {
 				throw new InternalError ();
 			}
 

@@ -711,6 +711,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+#if FIXME
 	public class NewExpression : VariableExpression
 	{
 		FrameExpression frame_expr;
@@ -795,4 +796,5 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 	}
+#endif
 }

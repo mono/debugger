@@ -37,44 +37,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[AttributeUsage (AttributeTargets.Property)]
-	public class ArgumentAttribute : Attribute
-	{
-		ArgumentType type;
-		string name;
-		string short_description;
-		string help_text;
-
-		public ArgumentAttribute (ArgumentType type, string name, string descr)
-			: this (type, name, descr, null)
-		{ }
-
-		public ArgumentAttribute (ArgumentType type, string name, string descr,
-					  string help)
-		{
-			this.type = type;
-			this.name = name;
-			this.short_description = descr;
-			this.help_text = help;
-		}
-
-		public ArgumentType Type {
-			get { return type; }
-		}
-
-		public string Name {
-			get { return name; }
-		}
-
-		public string ShortDescription {
-			get { return short_description; }
-		}
-
-		public string HelpText {
-			get { return help_text; }
-		}
-	}
-
 	[AttributeUsage (AttributeTargets.Class)]
 	public class ExpressionAttribute : Attribute
 	{ 
@@ -104,16 +66,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string HelpText {
 			get { return help_text; }
 		}
-	}
-
-	public enum ArgumentType
-	{
-		None,
-		Integer,
-		String,
-		Flag,
-		Process,
-		Frame
 	}
 
 	public class CommandGroup
@@ -230,28 +182,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return root; }
 		}
 
-		public PropertyInfo GetParameter (Command command, string name,
-						  out ArgumentAttribute attr)
+		public PropertyInfo GetParameter (Command command, string name)
 		{
 			Type type = command.GetType ();
 			foreach (PropertyInfo pi in type.GetProperties ()) {
 				if (!pi.CanWrite)
 					continue;
 
-				object[] attrs = pi.GetCustomAttributes (
-					typeof (ArgumentAttribute), true);
-
-				if (attrs.Length != 1)
-					continue;
-
-				attr = (ArgumentAttribute) attrs [0];
-				if (attr.Name != name)
+				if (pi.Name.ToLower () != name)
 					continue;
 
 				return pi;
 			}
 
-			attr = null;
 			return null;
 		}
 	}

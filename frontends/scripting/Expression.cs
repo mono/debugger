@@ -393,68 +393,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 	}
 #endif
 
-	[Expression("process_expression", "Process",
-		    "Syntax:  [@<number>]\n\n" +
-		    "Specifies on which process a command operates.\n\n" +
-		    "This argument may be omitted in which case the current process\n" +
-		    "is used.\n" +
-		    "To change the current process, use the `process' command.\n" +
-		    "To get a list of all processes, use `show processes'.")]
-	public class ProcessExpression : Expression
-	{
-		int number;
-
-		public ProcessExpression (int number)
-		{
-			this.number = number;
-		}
-
-		public override string Name {
-			get { return "@" + number; }
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			return context.Interpreter.GetProcess (number);
-		}
-	}
-
-	[Expression("frame_expression", "Stack frame",
-		    "Syntax:  [<process_expression>] [#<number>]\n\n" +
-		    "Specifies the stack frame a command operates on.\n\n" +
-		    "Both the process expression and the frame number are optional.\n" +
-		    "If no process is specified, the current process is used; if the\n" +
-		    "frame number is omitted, the current frame of that process is used.\n\n" +
-		    "Examples:  #3\n" +
-		    "           @1\n" +
-		    "           @2 #4"
-		)]
-	public class FrameExpression : Expression
-	{
-		ProcessExpression process_expr;
-		int number;
-
-		public FrameExpression (ProcessExpression process_expr, int number)
-		{
-			this.process_expr = process_expr;
-			this.number = number;
-		}
-
-		public override string Name {
-			get { return "#" + number; }
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			ProcessHandle process;
-			if (process_expr != null)
-				process = (ProcessHandle) process_expr.Resolve (context);
-			else
-				process = context.CurrentProcess;
-			return process.GetFrame (number);
-		}
-	}
-
 #if FIXME
 	[Expression("breakpoint_expression", "Breakpoint number")]
 	public class BreakpointNumberExpression : Expression

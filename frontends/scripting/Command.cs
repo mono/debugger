@@ -13,6 +13,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected abstract void DoExecute (ScriptingContext context);
 
+		protected virtual bool DoResolveBase (ScriptingContext context)
+		{
+			return true;
+		}
+
 		protected virtual bool DoResolve (ScriptingContext context, object[] args)
 		{
 			if (args != null) {
@@ -20,7 +25,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return false;
 			}
 
-			return true;
+			return DoResolveBase (context);
 		}
 
 		public bool Resolve (ScriptingContext context, object[] arguments)
@@ -45,18 +50,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public abstract class ProcessCommand : Command
 	{
-		ProcessExpression process_expr;
+		int process;
 
-		[Argument(ArgumentType.Process, "proc", "Target process to operate on")]
-		public ProcessExpression ProcessExpression {
-			get { return process_expr; }
-			set { process_expr = value; }
+		public int Process {
+			get { return process; }
+			set { process = value; }
 		}
 
 		protected virtual ProcessHandle ResolveProcess (ScriptingContext context)
 		{
-			if (process_expr != null)
-				return (ProcessHandle) process_expr.Resolve (context);
+			if (process > 0)
+				return context.Interpreter.GetProcess (process);
 
 			return context.CurrentProcess;
 		}
@@ -64,22 +68,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public abstract class FrameCommand : ProcessCommand
 	{
-		FrameExpression frame_expr;
+		int frame;
 
-		[Argument(ArgumentType.Frame, "frame", "Stack frame")]
-		public FrameExpression FrameExpression {
-			get { return frame_expr; }
-			set { frame_expr = value; }
+		public int Frame {
+			get { return frame; }
+			set { frame = value; }
 		}
 
 		protected virtual FrameHandle ResolveFrame (ScriptingContext context)
 		{
-			if (frame_expr != null)
-				return (FrameHandle) frame_expr.Resolve (context);
-			else if (ProcessExpression != null)
-				return ResolveProcess (context).CurrentFrame;
+			ProcessHandle process = ResolveProcess (context);
+			if (frame > 0)
+				return process.GetFrame (frame);
 			else
-				return context.CurrentFrame;
+				return process.CurrentFrame;
 		}
 	}
 
@@ -107,9 +109,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ScriptingContext new_context = context.GetExpressionContext ();
-			if (ProcessExpression != null)
+			if (Process > 0)
 				new_context.CurrentProcess = ResolveProcess (new_context);
-			if (FrameExpression != null)
+			if (Frame > 0)
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
 			object retval = expression.Resolve (new_context);
@@ -141,9 +143,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ScriptingContext new_context = context.GetExpressionContext ();
-			if (ProcessExpression != null)
+			if (Process > 0)
 				new_context.CurrentProcess = ResolveProcess (new_context);
-			if (FrameExpression != null)
+			if (Frame > 0)
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
 			Expression type_expr = new TypeOfExpression (expression);
@@ -158,7 +160,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Expression expression;
 		int size = 16;
 
-		[Argument(ArgumentType.Integer, "size", "Size")]
 		public int Size {
 			get { return size; }
 			set { size = value; }
@@ -244,7 +245,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		bool method;
 
-		[Argument(ArgumentType.Flag, "method", "Disassemble the whole method")]
 		public bool Method {
 			get { return method; }
 			set { method = value; }
@@ -365,7 +365,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		bool native;
 
-		[Argument(ArgumentType.Flag, "native", "Enter trampolines")]
 		public bool Native {
 			get { return native; }
 			set { native = value; }
@@ -407,8 +406,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		int max_frames = -1;
 
-		[Argument(ArgumentType.Integer, "max", "Maximum number of frames")]
-		public int MaxFrames {
+		public int Max {
 			get { return max_frames; }
 			set { max_frames = value; }
 		}
