@@ -3,7 +3,7 @@ DESTDIR=
 
 all: Makefile linux
 
-linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe Interpreter.exe
+linux: Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ Interpreter.exe
 
 ALL_SOURCES = \
 	@top_srcdir@/frontends/gui/*.cs			\

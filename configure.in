@@ -53,12 +53,15 @@ AC_MSG_RESULT($build_gui)
 if test "x$build_gui" = "xyes"; then
 	BUILD_GTK_CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0 libgnome-2.0`
 	BUILD_GTK_LIBS=`$PKG_CONFIG --libs gtk+-2.0 libgnome-2.0`
+	GUI_TARGETS=Debugger.exe
 else
 	BUILD_GTK_CFLAGS=
 	BUILD_GTK_LIBS=
+	GUI_TARGETS=
 fi
 AC_SUBST(BUILD_GTK_CFLAGS)
 AC_SUBST(BUILD_GTK_LIBS)
+AC_SUBST(GUI_TARGETS)
 
 AM_CONDITIONAL(BUILD_GUI, test "x$build_gui" = "xyes")
 
