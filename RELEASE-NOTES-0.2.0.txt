@@ -3,12 +3,6 @@ The Mono Debugger - 0.2.0 "Boston"
 
 This is the first public release of the Mono Debugger :-)
 
-[If everything works fine, I'll make the release on sunday.
-
- January 17th, 2003
- Martin Baulig <martin@ximian.com>
-]
-
 About the Mono Debugger
 -----------------------
 
@@ -207,5 +201,5 @@ GUI does not have:
 - it can be used as regression test suite.
 
 
-January 18th, 2003
+January 19th, 2003
 Martin Baulig <martin@ximian.com>
