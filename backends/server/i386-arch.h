@@ -38,28 +38,28 @@ typedef enum {
 	STOP_ACTION_CALLBACK
 } ChildStoppedAction;
 
-ArchInfo *
+static ArchInfo *
 i386_arch_initialize (void);
 
-void
+static void
 i386_arch_finalize (ArchInfo *arch);
 
-void
+static void
 i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 start,
 						 guint32 size, gpointer buffer);
 
-ServerCommandError
+static ServerCommandError
 i386_arch_get_frame (ServerHandle *handle, guint32 eip,
 		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame);
 
-ChildStoppedAction
+static ChildStoppedAction
 i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 			 guint64 *callback_arg, guint64 *retval, guint64 *retval2);
 
-ServerCommandError
+static ServerCommandError
 i386_arch_get_registers (ServerHandle *handle);
 
-guint32
+static guint32
 i386_arch_get_tid (ServerHandle *handle);
 
 /* Debug registers' indices.  */

@@ -1,5 +1,12 @@
 2004-04-09  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c: Put this back.
+
+	* backends/server/server.h: Put the vtable back.
+	(mono_debugger_server_get_target_info): Don't take a ServerHandle.
+	
+2004-04-09  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetException.cs
 	(TargetException): Don't make this abstract.
 	(TargetMemoryException): Added parameterless .ctor.	

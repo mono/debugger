@@ -1,10 +1,14 @@
 #ifndef __MONO_DEBUGGER_I386_PTRACE_H__
 #define __MONO_DEBUGGER_I386_PTRACE_H__
 
-#ifndef PTRACE_EVENT_FORK
-
+#ifndef PTRACE_SETOPTIONS
 #define PTRACE_SETOPTIONS	0x4200
+#endif
+#ifndef PTRACE_GETEVENTMSG
 #define PTRACE_GETEVENTMSG	0x4201
+#endif
+
+#ifndef PTRACE_EVENT_FORK
 
 /* options set using PTRACE_SETOPTIONS */
 #define PTRACE_O_TRACESYSGOOD	0x00000001
@@ -25,14 +29,14 @@
 
 #endif /* PTRACE_EVENT_FORK */
 
-ServerCommandError _mono_debugger_server_get_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
-ServerCommandError _mono_debugger_server_set_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
-ServerCommandError _mono_debugger_server_get_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
-ServerCommandError _mono_debugger_server_set_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
-ServerCommandError _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long value);
-void _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main);
-gboolean _mono_debugger_server_has_thread_manager (ServerHandle *handle);
-gboolean _mono_debugger_server_setup_thread_manager (ServerHandle *handle);
+ServerCommandError _server_ptrace_get_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
+ServerCommandError _server_ptrace_set_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
+ServerCommandError _server_ptrace_get_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
+ServerCommandError _server_ptrace_set_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
+ServerCommandError _server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value);
+void _server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main);
+gboolean _server_ptrace_has_thread_manager (ServerHandle *handle);
+gboolean _server_ptrace_setup_thread_manager (ServerHandle *handle);
 
 extern pthread_t mono_debugger_thread;
 extern int pending_sigint;

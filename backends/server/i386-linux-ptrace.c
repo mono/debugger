@@ -1,5 +1,5 @@
-ServerCommandError
-_mono_debugger_server_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
+static ServerCommandError
+_server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
 	if (ptrace (PT_GETREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
@@ -13,8 +13,8 @@ _mono_debugger_server_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYP
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-_mono_debugger_server_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
+static ServerCommandError
+_server_ptrace_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
 	if (ptrace (PT_SETREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
@@ -28,8 +28,8 @@ _mono_debugger_server_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYP
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-_mono_debugger_server_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
+static ServerCommandError
+_server_ptrace_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
 {
 	if (ptrace (PT_GETFPREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
@@ -43,8 +43,8 @@ _mono_debugger_server_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREG
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-_mono_debugger_server_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
+static ServerCommandError
+_server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
 {
 	if (ptrace (PT_SETFPREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
@@ -58,9 +58,9 @@ _mono_debugger_server_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREG
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_read_memory (ServerHandle *handle, guint64 start,
-				  guint32 size, gpointer buffer)
+static ServerCommandError
+server_ptrace_read_memory (ServerHandle *handle, guint64 start,
+			   guint32 size, gpointer buffer)
 {
 	guint8 *ptr = buffer;
 	guint32 old_size = size;
@@ -72,9 +72,10 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start,
 				continue;
 			else if (errno == EIO)
 				return COMMAND_ERROR_MEMORY_ACCESS;
-			g_message (G_STRLOC ": Can't read target memory of %d at "
-				   "address %08Lx: %s", handle->inferior->pid,
-				   start, g_strerror (errno));
+			g_message (G_STRLOC ": %lx - can't read target memory of %d at "
+				   "address %08Lx : %s", pthread_self (),
+				   handle->inferior->pid, start, g_strerror (errno));
+			G_BREAKPOINT ();
 			return COMMAND_ERROR_UNKNOWN;
 		}
 
@@ -87,8 +88,8 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start,
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-_mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
+static ServerCommandError
+_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 {
 	errno = 0;
 	ptrace (PTRACE_POKEUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]), value);
@@ -122,11 +123,12 @@ do_wait (int pid, guint32 *status)
 static int first_status = 0;
 static int first_ret = 0;
 
+static int global_pid = 0;
 static int stop_requested = 0;
 static int stop_status = 0;
 
-guint32
-mono_debugger_server_global_wait (guint64 *status_ret)
+static guint32
+server_ptrace_global_wait (guint64 *status_ret)
 {
 	int ret, status;
 
@@ -161,8 +163,8 @@ mono_debugger_server_global_wait (guint64 *status_ret)
 	return ret;
 }
 
-ServerCommandError
-mono_debugger_server_stop (ServerHandle *handle)
+static ServerCommandError
+server_ptrace_stop (ServerHandle *handle)
 {
 	ServerCommandError result;
 
@@ -187,8 +189,14 @@ mono_debugger_server_stop (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
+static void
+server_ptrace_global_stop (void)
+{
+	kill (global_pid, SIGSTOP);
+}
+
+static ServerCommandError
+server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 {
 	ServerCommandError result;
 	int ret;
@@ -201,7 +209,7 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	g_message (G_STRLOC ": stop and wait %d", handle->inferior->pid);
 #endif
 	g_static_mutex_lock (&wait_mutex_2);
-	result = mono_debugger_server_stop (handle);
+	result = server_ptrace_stop (handle);
 	if (result != COMMAND_ERROR_NONE) {
 #if DEBUG_WAIT
 		g_message (G_STRLOC ": %d - cannot stop %d", handle->inferior->pid, result);
@@ -257,8 +265,8 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	return COMMAND_ERROR_NONE;
 }
 
-void
-_mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main)
+static void
+_server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
 	int status, ret;
@@ -288,8 +296,8 @@ _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main)
 	}
 }
 
-gboolean
-_mono_debugger_server_setup_thread_manager (ServerHandle *handle)
+static gboolean
+_server_ptrace_setup_thread_manager (ServerHandle *handle)
 {
 	int flags = PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORKDONE | PTRACE_O_TRACECLONE;
 
@@ -299,11 +307,13 @@ _mono_debugger_server_setup_thread_manager (ServerHandle *handle)
 		return FALSE;
 	}
 
+	global_pid = handle->inferior->pid;
+
 	return TRUE;
 }
 
-ServerCommandError
-mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
+static ServerCommandError
+server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 {
 	sinfo->sigkill = SIGKILL;
 	sinfo->sigstop = SIGSTOP;

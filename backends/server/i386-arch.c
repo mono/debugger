@@ -53,8 +53,8 @@ i386_arch_finalize (ArchInfo *arch)
 	g_free (arch);
 }
 
-ServerCommandError
-mono_debugger_server_current_insn_is_bpt (ServerHandle *handle, guint32 *is_breakpoint)
+static ServerCommandError
+server_ptrace_current_insn_is_bpt (ServerHandle *handle, guint32 *is_breakpoint)
 {
 	mono_debugger_breakpoint_manager_lock (handle->bpm);
 	if (mono_debugger_breakpoint_manager_lookup (handle->bpm, INFERIOR_REG_EIP (handle->arch->current_regs)))
@@ -93,8 +93,8 @@ i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 s
 	mono_debugger_breakpoint_manager_unlock (handle->bpm);
 }
 
-ServerCommandError
-mono_debugger_server_get_pc (ServerHandle *handle, guint64 *pc)
+static ServerCommandError
+server_ptrace_get_pc (ServerHandle *handle, guint64 *pc)
 {
 	*pc = (guint32) INFERIOR_REG_EIP (handle->arch->current_regs);
 	return COMMAND_ERROR_NONE;
@@ -105,10 +105,10 @@ mono_debugger_server_get_pc (ServerHandle *handle, guint64 *pc)
  * It will only work on the i386.
  */
 
-ServerCommandError
-mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
-				  guint64 method_argument1, guint64 method_argument2,
-				  guint64 callback_argument)
+static ServerCommandError
+server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
+			   guint64 method_argument1, guint64 method_argument2,
+			   guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
@@ -138,17 +138,17 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+16)) = method_argument1 & 0xffffffff;
 	*((guint32 *) (code+21)) = call_disp - 25;
 
-	mono_debugger_server_write_memory (handle, (unsigned long) new_esp, size, code);
+	server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
-	result = _mono_debugger_server_set_registers (handle->inferior, &arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	return mono_debugger_server_continue (handle);
+	return server_ptrace_continue (handle);
 }
 
 /*
@@ -156,10 +156,10 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
  * It will only work on the i386.
  */
 
-ServerCommandError
-mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address,
-				    guint64 method_argument, const gchar *string_argument,
-				    guint64 callback_argument)
+static ServerCommandError
+server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
+			     guint64 method_argument, const gchar *string_argument,
+			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
@@ -191,24 +191,24 @@ mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address
 	*((guint32 *) (code+11)) = method_argument & 0xffffffff;
 	*((guint32 *) (code+16)) = call_disp - 20;
 
-	result = mono_debugger_server_write_memory (handle, (unsigned long) new_esp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
-	result = _mono_debugger_server_set_registers (handle->inferior, &arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	return mono_debugger_server_continue (handle);
+	return server_ptrace_continue (handle);
 }
 
-ServerCommandError
-mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
-					 guint64 method_argument, guint64 object_argument,
-					 guint32 num_params, guint64 *param_data,
-					 guint64 callback_argument)
+static ServerCommandError
+server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
+				  guint64 method_argument, guint64 object_argument,
+				  guint32 num_params, guint64 *param_data,
+				  guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
@@ -252,18 +252,18 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 	*((guint32 *) (code+21)) = call_disp - 25;
 	*((guint32 *) (code+33)) = 14 + (num_params + 1) * 4;
 
-	result = mono_debugger_server_write_memory (handle, (unsigned long) new_esp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 	g_ptr_array_add (arch->rti_stack, rdata);
 
-	result = _mono_debugger_server_set_registers (handle->inferior, &arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	return mono_debugger_server_continue (handle);
+	return server_ptrace_continue (handle);
 }
 
 static gboolean
@@ -292,16 +292,16 @@ get_runtime_invoke_data (ArchInfo *arch)
 	return g_ptr_array_index (arch->rti_stack, arch->rti_stack->len - 1);
 }
 
-ServerCommandError
+static ServerCommandError
 i386_arch_get_registers (ServerHandle *handle)
 {
 	ServerCommandError result;
 
-	result = _mono_debugger_server_get_registers (handle->inferior, &handle->arch->current_regs);
+	result = _server_ptrace_get_registers (handle->inferior, &handle->arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	_mono_debugger_server_get_fp_registers (handle->inferior, &handle->arch->current_fpregs);
+	_server_ptrace_get_fp_registers (handle->inferior, &handle->arch->current_fpregs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -314,7 +314,7 @@ i386_arch_get_tid (ServerHandle *handle)
 	guint32 start = INFERIOR_REG_ESP (handle->arch->current_regs) + 12;
 	guint32 tid;
 
-	if (mono_debugger_server_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
+	if (server_ptrace_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get tid");
 
 	return tid;
@@ -332,16 +332,16 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	if (check_breakpoint (handle, INFERIOR_REG_EIP (arch->current_regs) - 1, retval)) {
 		INFERIOR_REG_EIP (arch->current_regs)--;
-		_mono_debugger_server_set_registers (inferior, &arch->current_regs);
+		_server_ptrace_set_registers (inferior, &arch->current_regs);
 		return STOP_ACTION_BREAKPOINT_HIT;
 	}
 
 	rdata = get_runtime_invoke_data (arch);
 	if (rdata && (rdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
-		if (_mono_debugger_server_set_registers (inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
+		if (_server_ptrace_set_registers (inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
-		if (_mono_debugger_server_set_fp_registers (inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
+		if (_server_ptrace_set_fp_registers (inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 		*callback_arg = rdata->callback_argument;
@@ -366,7 +366,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 			return STOP_ACTION_SEND_STOPPED;
 #endif
 
-		if (mono_debugger_server_peek_word (handle, (guint32) (INFERIOR_REG_EIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
+		if (server_ptrace_peek_word (handle, (guint32) (INFERIOR_REG_EIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
 			return STOP_ACTION_SEND_STOPPED;
 
 		if ((code & 0xff) == 0xcc) {
@@ -377,10 +377,10 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 		return STOP_ACTION_SEND_STOPPED;
 	}
 
-	if (_mono_debugger_server_set_registers (inferior, arch->saved_regs) != COMMAND_ERROR_NONE)
+	if (_server_ptrace_set_registers (inferior, arch->saved_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
-	if (_mono_debugger_server_set_fp_registers (inferior, arch->saved_fpregs) != COMMAND_ERROR_NONE)
+	if (_server_ptrace_set_fp_registers (inferior, arch->saved_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 	*callback_arg = arch->callback_argument;
@@ -400,9 +400,9 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 	return STOP_ACTION_CALLBACK;
 }
 
-ServerCommandError
-mono_debugger_server_get_target_info (ServerHandle *handle, guint32 *target_int_size,
-				      guint32 *target_long_size, guint32 *target_address_size)
+static ServerCommandError
+server_ptrace_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
+			       guint32 *target_address_size)
 {
 	*target_int_size = sizeof (guint32);
 	*target_long_size = sizeof (guint64);
@@ -411,9 +411,9 @@ mono_debugger_server_get_target_info (ServerHandle *handle, guint32 *target_int_
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_get_registers (ServerHandle *handle, guint32 count,
-				    guint32 *registers, guint64 *values)
+static ServerCommandError
+server_ptrace_get_registers (ServerHandle *handle, guint32 count,
+			     guint32 *registers, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
 	int i;
@@ -476,9 +476,9 @@ mono_debugger_server_get_registers (ServerHandle *handle, guint32 count,
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_set_registers (ServerHandle *handle, guint32 count,
-				    guint32 *registers, guint64 *values)
+static ServerCommandError
+server_ptrace_set_registers (ServerHandle *handle, guint32 count,
+			     guint32 *registers, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
 	int i;
@@ -538,23 +538,23 @@ mono_debugger_server_set_registers (ServerHandle *handle, guint32 count,
 		}
 	}
 
-	return _mono_debugger_server_set_registers (handle->inferior, &arch->current_regs);
+	return _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 }
 
-ServerCommandError
+static ServerCommandError
 i386_arch_get_frame (ServerHandle *handle, guint32 eip,
 		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame)
 {
 	ServerCommandError result;
 	guint32 value;
 
-	result = mono_debugger_server_peek_word (handle, eip, &value);
+	result = server_ptrace_peek_word (handle, eip, &value);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	if ((value == 0xec8b5590) || (value == 0xec8b55cc) ||
 	    ((value & 0xffffff) == 0xec8b55) || ((value & 0xffffff) == 0xe58955)) {
-		result = mono_debugger_server_peek_word (handle, esp, &value);
+		result = server_ptrace_peek_word (handle, esp, &value);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
@@ -563,12 +563,12 @@ i386_arch_get_frame (ServerHandle *handle, guint32 eip,
 		return COMMAND_ERROR_NONE;
 	}
 
-	result = mono_debugger_server_peek_word (handle, eip - 1, &value);
+	result = server_ptrace_peek_word (handle, eip - 1, &value);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	if (((value & 0xffffff) == 0xec8b55) || ((value & 0xffffff) == 0xe58955)) {
-		result = mono_debugger_server_peek_word (handle, esp + 4, &value);
+		result = server_ptrace_peek_word (handle, esp + 4, &value);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
@@ -577,19 +577,19 @@ i386_arch_get_frame (ServerHandle *handle, guint32 eip,
 		return COMMAND_ERROR_NONE;
 	}
 
-	result = mono_debugger_server_peek_word (handle, ebp, frame);
+	result = server_ptrace_peek_word (handle, ebp, frame);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = mono_debugger_server_peek_word (handle, ebp + 4, retaddr);
+	result = server_ptrace_peek_word (handle, ebp + 4, retaddr);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_get_ret_address (ServerHandle *handle, guint64 *retval)
+static ServerCommandError
+server_ptrace_get_ret_address (ServerHandle *handle, guint64 *retval)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
@@ -606,9 +606,9 @@ mono_debugger_server_get_ret_address (ServerHandle *handle, guint64 *retval)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_get_backtrace (ServerHandle *handle, gint32 max_frames,
-				    guint64 stop_address, guint32 *count, StackFrame **data)
+static ServerCommandError
+server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
+			     guint64 stop_address, guint32 *count, StackFrame **data)
 {
 	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
 	ServerCommandError result = COMMAND_ERROR_NONE;
@@ -644,11 +644,11 @@ mono_debugger_server_get_backtrace (ServerHandle *handle, gint32 max_frames,
 
 		g_array_append_val (frames, sframe);
 
-		result = mono_debugger_server_peek_word (handle, frame + 4, &address);
+		result = server_ptrace_peek_word (handle, frame + 4, &address);
 		if (result != COMMAND_ERROR_NONE)
 			goto out;
 
-		result = mono_debugger_server_peek_word (handle, frame, &frame);
+		result = server_ptrace_peek_word (handle, frame, &frame);
 		if (result != COMMAND_ERROR_NONE)
 			goto out;
 	}
@@ -682,19 +682,19 @@ do_enable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 		I386_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
 		I386_DR_LOCAL_ENABLE (arch, breakpoint->dr_index);
 
-		result = _mono_debugger_server_set_dr (inferior, breakpoint->dr_index, address);
+		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, address);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
-		result = _mono_debugger_server_set_dr (inferior, DR_CONTROL, arch->dr_control);
+		result = _server_ptrace_set_dr (inferior, DR_CONTROL, arch->dr_control);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	} else {
-		result = mono_debugger_server_read_memory (handle, address, 1, &breakpoint->saved_insn);
+		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
-		result = mono_debugger_server_write_memory (handle, address, 1, &bopcode);
+		result = server_ptrace_write_memory (handle, address, 1, &bopcode);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	}
@@ -720,15 +720,15 @@ do_disable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 	if (breakpoint->dr_index >= 0) {
 		I386_DR_DISABLE (arch, breakpoint->dr_index);
 
-		result = _mono_debugger_server_set_dr (inferior, breakpoint->dr_index, 0L);
+		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, 0L);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
-		result = _mono_debugger_server_set_dr (inferior, DR_CONTROL, arch->dr_control);
+		result = _server_ptrace_set_dr (inferior, DR_CONTROL, arch->dr_control);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	} else {
-		result = mono_debugger_server_write_memory (handle, address, 1, &breakpoint->saved_insn);
+		result = server_ptrace_write_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	}
@@ -738,8 +738,8 @@ do_disable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *bhandle)
+static ServerCommandError
+server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *bhandle)
 {
 	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
@@ -774,8 +774,8 @@ mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, g
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
+static ServerCommandError
+server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
 	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
@@ -798,9 +798,9 @@ mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 	return result;
 }
 
-ServerCommandError
-mono_debugger_server_insert_hw_breakpoint (ServerHandle *handle, guint32 idx,
-					   guint64 address, guint32 *bhandle)
+static ServerCommandError
+server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 idx,
+				    guint64 address, guint32 *bhandle)
 {
 	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
@@ -833,8 +833,8 @@ mono_debugger_server_insert_hw_breakpoint (ServerHandle *handle, guint32 idx,
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
+static ServerCommandError
+server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
 	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
@@ -851,8 +851,8 @@ mono_debugger_server_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 	return result;
 }
 
-ServerCommandError
-mono_debugger_server_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
+static ServerCommandError
+server_ptrace_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
 	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
@@ -869,8 +869,8 @@ mono_debugger_server_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
 	return result;
 }
 
-ServerCommandError
-mono_debugger_server_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **retval)
+static ServerCommandError
+server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **retval)
 {
 	int i;
 	GPtrArray *breakpoints;

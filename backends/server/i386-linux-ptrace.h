@@ -24,6 +24,39 @@
 #define INFERIOR_REG_SS(r)	r.ss
 #define INFERIOR_REG_GS(r)	r.gs
 
+static ServerCommandError
+_server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs);
+
+static ServerCommandError
+_server_ptrace_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs);
+
+static ServerCommandError
+_server_ptrace_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs);
+
+static ServerCommandError
+_server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs);
+
+static ServerCommandError
+server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer);
+
+static ServerCommandError
+_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value);
+
+static ServerCommandError
+server_ptrace_stop (ServerHandle *handle);
+
+static ServerCommandError
+server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status);
+
+static void
+_server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main);
+
+static gboolean
+_server_ptrace_setup_thread_manager (ServerHandle *handle);
+
+static ServerCommandError
+server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo *sinfo);
+
 #include "i386-ptrace.h"
 
 #endif

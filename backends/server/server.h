@@ -19,7 +19,9 @@ typedef enum {
 	COMMAND_ERROR_NO_SUCH_BREAKPOINT,
 	COMMAND_ERROR_UNKNOWN_REGISTER,
 	COMMAND_ERROR_DR_OCCUPIED,
-	COMMAND_ERROR_MEMORY_ACCESS
+	COMMAND_ERROR_MEMORY_ACCESS,
+	COMMAND_ERROR_NOT_IMPLEMENTED,
+	COMMAND_ERROR_IO
 } ServerCommandError;
 
 typedef enum {
@@ -45,7 +47,9 @@ typedef struct {
 } StackFrame;
 
 /* This is an opaque data structure which the backend may use to store stuff. */
+typedef struct InferiorVTable InferiorVTable;
 typedef struct InferiorHandle InferiorHandle;
+typedef struct ServerHandle ServerHandle;
 typedef struct ArchInfo ArchInfo;
 
 /* C# delegates. */
@@ -68,17 +72,248 @@ typedef struct {
 } SignalInfo;
 
 /*
+ * Server functions.
+ *
+ * When porting the debugger to another architecture, you need to implement all functions
+ * in this vtable.
+ *
+ * It is a requirement that all functions always return immediately without blocking.
+ * If the requested operation cannot be performed (for instance because the target is currently
+ * running, don't wait for it but return an error condition!).
+ */
+
+struct ServerHandle {
+	ArchInfo *arch;
+	InferiorHandle *inferior;
+	BreakpointManager *bpm;
+};
+
+struct InferiorVTable {
+	ServerHandle *        (* initialize)          (BreakpointManager  *bpm);
+
+	ServerCommandError    (* spawn)               (ServerHandle       *handle,
+						       const gchar        *working_directory,
+						       const gchar       **argv,
+						       const gchar       **envp,
+						       gint               *child_pid,
+						       ChildOutputFunc     stdout_handler,
+						       ChildOutputFunc     stderr_handler,
+						       gchar             **error);
+
+	ServerCommandError    (* attach)              (ServerHandle       *handle,
+						       guint32             pid,
+						       guint32            *tid);
+
+	ServerCommandError    (* detach)              (ServerHandle       *handle);
+
+	void                  (* finalize)            (ServerHandle        *handle);
+
+	guint32               (* global_wait)         (guint64             *status_ret);
+
+	ServerCommandError    (* stop_and_wait)       (ServerHandle        *handle,
+						       guint32             *status);
+
+	ServerStatusMessageType (* dispatch_event)    (ServerHandle        *handle,
+						       guint64              status,
+						       guint64             *arg,
+						       guint64             *data1,
+						       guint64             *data2);
+
+	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
+	ServerCommandError    (* get_target_info)     (guint32            *target_int_size,
+						       guint32            *target_long_size,
+						       guint32            *target_address_size);
+
+	/*
+	 * Continue the target.
+	 * This operation must start the target and then return immediately
+	 * (without waiting for the target to stop).
+	 */
+	ServerCommandError    (* run)                 (ServerHandle     *handle);
+
+	/*
+	 * Single-step one machine instruction.
+	 * This operation must start the target and then return immediately
+	 * (without waiting for the target to stop).
+	 */
+	ServerCommandError    (* step)                (ServerHandle     *handle);
+
+	/*
+	 * Get the current program counter.
+	 * Return COMMAND_ERROR_NOT_STOPPED if the target is currently running.
+	 * This is a time-critical function, it must return immediately without blocking.
+	 */
+	ServerCommandError    (* get_pc)              (ServerHandle     *handle,
+						       guint64          *pc);
+
+	/*
+	 * Checks whether the current instruction is a breakpoint.
+	 */
+	ServerCommandError    (* current_insn_is_bpt) (ServerHandle     *handle,
+						       guint32          *is_breakpoint);
+
+	ServerCommandError    (* peek_word)           (ServerHandle     *handle,
+						       guint64           start,
+						       guint32          *word);
+
+	/*
+	 * Read `size' bytes from the target's address space starting at `start'.
+	 * Writes the result into `buffer' (which has been allocated by the caller).
+	 */
+	ServerCommandError    (* read_memory)         (ServerHandle     *handle,
+						       guint64           start,
+						       guint32           size,
+						       gpointer          buffer);
+
+	/*
+	 * Write `size' bytes from `buffer' to the target's address space starting at `start'.
+	 */
+	ServerCommandError    (* write_memory)        (ServerHandle     *handle,
+						       guint64           start,
+						       guint32           size,
+						       gconstpointer     data);
+
+	/*
+	 * Call `guint64 (*func) (guint64)' function at address `method' in the target address
+	 * space, pass it argument `method_argument', send a MESSAGE_CHILD_CALLBACK with the
+	 * `callback_argument' and the function's return value when the function returns.
+	 * This function must return immediately without waiting for the target !
+	 */
+	ServerCommandError    (* call_method)         (ServerHandle     *handle,
+						       guint64           method,
+						       guint64           method_argument1,
+						       guint64           method_argument2,
+						       guint64           callback_argument);
+
+	/*
+	 * Call `guint64 (*func) (guint64, const gchar *)' function at address `method' in the
+	 * target address space, pass it arguments `method_argument' and `string_argument' , send
+	 * a MESSAGE_CHILD_CALLBACK with the `callback_argument' and the function's return value
+	 * when the function returns.
+	 * This function must return immediately without waiting for the target !
+	 */
+	ServerCommandError    (* call_method_1)       (ServerHandle     *handle,
+						       guint64           method,
+						       guint64           method_argument,
+						       const gchar      *string_argument,
+						       guint64           callback_argument);
+
+	ServerCommandError    (* call_method_invoke)  (ServerHandle     *handle,
+						       guint64           invoke_method,
+						       guint64           method_argument,
+						       guint64           object_argument,
+						       guint32           num_params,
+						       guint64          *param_data,
+						       guint64           callback_argument);
+
+	/*
+	 * Insert a breakpoint at address `address' in the target's address space.
+	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
+	 * to remove the breakpoint.
+	 */
+	ServerCommandError    (* insert_breakpoint)   (ServerHandle     *handle,
+						       guint64           address,
+						       guint32          *bhandle);
+
+	/*
+	 * Insert a hardware breakpoint at address `address' in the target's address space.
+	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
+	 * to remove the breakpoint.
+	 */
+	ServerCommandError    (* insert_hw_breakpoint)(ServerHandle     *handle,
+						       guint32           idx,
+						       guint64           address,
+						       guint32          *bhandle);
+
+	/*
+	 * Remove breakpoint `bhandle'.
+	 */
+	ServerCommandError    (* remove_breakpoint)   (ServerHandle     *handle,
+						       guint32           bhandle);
+
+	/*
+	 * Enables breakpoint `bhandle'.
+	 */
+	ServerCommandError    (* enable_breakpoint)   (ServerHandle     *handle,
+						       guint32           bhandle);
+
+	/*
+	 * Disables breakpoint `bhandle'.
+	 */
+	ServerCommandError    (* disable_breakpoint)  (ServerHandle     *handle,
+						       guint32           bhandle);
+
+	/*
+	 * Get all breakpoints.  Writes number of breakpoints into `count' and returns a g_new0()
+	 * allocated list of guint32's in `breakpoints'.  The caller is responsible for freeing this
+	 * data structure.
+	 */
+	ServerCommandError    (* get_breakpoints)     (ServerHandle     *handle,
+						       guint32          *count,
+						       guint32         **breakpoints);
+
+	/*
+	 * Get processor registers.
+	 *
+	 */
+	ServerCommandError    (* get_registers)       (ServerHandle     *handle,
+						       guint32           count,
+						       guint32          *registers,
+						       guint64          *values);
+
+	/*
+	 * Set processor registers.
+	 *
+	 */
+	ServerCommandError    (* set_registers)       (ServerHandle     *handle,
+						       guint32           count,
+						       guint32          *registers,
+						       guint64          *values);
+
+	/*
+	 * Get backtrace.  This tries to return a partial backtrace if possible, so check the `count'
+	 * and `frames' values even on an error.
+	 */
+	ServerCommandError    (* get_backtrace)       (ServerHandle     *handle,
+						       gint32            max_frames,
+						       guint64           stop_address,
+						       guint32          *count,
+						       StackFrame       **frames);
+
+	/*
+	 * This is only allowed on the first instruction of a method.
+	 */
+	ServerCommandError    (* get_ret_address)     (ServerHandle     *handle,
+						       guint64          *retval);
+
+	/*
+	 * Stop the target.
+	 */
+	ServerCommandError    (* stop)                (ServerHandle     *handle);
+	void                  (* global_stop)         (void);
+
+	/*
+	 * Send signal `sig' to the target the next time it is continued.
+	 */
+	ServerCommandError    (* set_signal)          (ServerHandle     *handle,
+						       guint32           sig,
+						       guint32           send_it);
+
+	/*
+	 * Kill the target.
+	 */
+	ServerCommandError    (* kill)                (ServerHandle     *handle);
+
+	ServerCommandError    (* get_signal_info)     (ServerHandle     *handle,
+						       SignalInfo       *sinfo);
+};
+
+/*
  * Library functions.
  *
  * These functions just call the corresponding function in the ServerHandle's vtable.
  * They're just here to be called from C#.
  */
-
-typedef struct {
-	ArchInfo *arch;
-	InferiorHandle *inferior;
-	BreakpointManager *bpm;
-} ServerHandle;
 
 void
 mono_debugger_server_static_init          (void);
@@ -89,8 +324,8 @@ mono_debugger_server_initialize           (BreakpointManager  *bpm);
 ServerCommandError
 mono_debugger_server_spawn                (ServerHandle       *handle,
 					   const gchar        *working_directory,
-					   gchar             **argv,
-					   gchar             **envp,
+					   const gchar       **argv,
+					   const gchar       **envp,
 					   gint               *child_pid,
 					   ChildOutputFunc     stdout_handler,
 					   ChildOutputFunc     stderr_handler,
@@ -115,8 +350,7 @@ mono_debugger_server_dispatch_event       (ServerHandle            *handle,
 					   guint64                 *data2);
 
 ServerCommandError
-mono_debugger_server_get_target_info      (ServerHandle       *handle,
-					   guint32            *target_int_size,
+mono_debugger_server_get_target_info      (guint32            *target_int_size,
 					   guint32            *target_long_size,
 					   guint32            *target_address_size);
 
@@ -225,6 +459,9 @@ mono_debugger_server_get_ret_address     (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_stop                (ServerHandle        *handle);
+
+void
+mono_debugger_server_global_stop         (void);
 
 ServerCommandError
 mono_debugger_server_stop_and_wait       (ServerHandle        *handle,

@@ -49,8 +49,8 @@ struct InferiorHandle
 	int is_thread;
 };
 
-void
-mono_debugger_server_finalize (ServerHandle *handle)
+static void
+server_ptrace_finalize (ServerHandle *handle)
 {
 	if (handle->inferior->pid) {
 		ptrace (PT_KILL, handle->inferior->pid, NULL, 0);
@@ -62,8 +62,8 @@ mono_debugger_server_finalize (ServerHandle *handle)
 	g_free (handle);
 }
 
-ServerCommandError
-mono_debugger_server_continue (ServerHandle *handle)
+static ServerCommandError
+server_ptrace_continue (ServerHandle *handle)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -78,8 +78,8 @@ mono_debugger_server_continue (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_step (ServerHandle *handle)
+static ServerCommandError
+server_ptrace_step (ServerHandle *handle)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -94,8 +94,8 @@ mono_debugger_server_step (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_detach (ServerHandle *handle)
+static ServerCommandError
+server_ptrace_detach (ServerHandle *handle)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -107,8 +107,8 @@ mono_debugger_server_detach (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_kill (ServerHandle *handle)
+static ServerCommandError
+server_ptrace_kill (ServerHandle *handle)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -117,15 +117,15 @@ mono_debugger_server_kill (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_peek_word (ServerHandle *handle, guint64 start, guint32 *retval)
+static ServerCommandError
+server_ptrace_peek_word (ServerHandle *handle, guint64 start, guint32 *retval)
 {
-	return mono_debugger_server_read_memory (handle, start, sizeof (int), retval);
+	return server_ptrace_read_memory (handle, start, sizeof (int), retval);
 }
 
-ServerCommandError
-mono_debugger_server_write_memory (ServerHandle *handle, guint64 start,
-				   guint32 size, gconstpointer buffer)
+static ServerCommandError
+server_ptrace_write_memory (ServerHandle *handle, guint64 start,
+			    guint32 size, gconstpointer buffer)
 {
 	InferiorHandle *inferior = handle->inferior;
 	ServerCommandError result;
@@ -153,18 +153,18 @@ mono_debugger_server_write_memory (ServerHandle *handle, guint64 start,
 	if (!size)
 		return COMMAND_ERROR_NONE;
 
-	result = mono_debugger_server_read_memory (handle, (guint32) addr, 4, &temp);
+	result = server_ptrace_read_memory (handle, (guint32) addr, 4, &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 	memcpy (&temp, ptr, size);
 
-	return mono_debugger_server_write_memory (handle, (guint32) addr, 4, &temp);
+	return server_ptrace_write_memory (handle, (guint32) addr, 4, &temp);
 }	
 
 
-ServerStatusMessageType
-mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg,
-				     guint64 *data1, guint64 *data2)
+static ServerStatusMessageType
+server_ptrace_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg,
+			      guint64 *data1, guint64 *data2)
 {
 	if (status >> 16) {
 		switch (status >> 16) {
@@ -236,84 +236,8 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 	return MESSAGE_UNKNOWN_ERROR;
 }
 
-static gboolean initialized = FALSE;
-static sem_t manager_semaphore;
-static int pending_sigint = 0;
-
-static void
-sigint_signal_handler (int _dummy)
-{
-	pending_sigint++;
-	sem_post (&manager_semaphore);
-}
-
-static void
-thread_abort_signal_handler (int _dummy)
-{
-	pthread_exit (NULL);
-}
-
-int
-mono_debugger_server_get_pending_sigint (void)
-{
-	if (pending_sigint > 0)
-		return pending_sigint--;
-
-	return 0;
-}
-
-void
-mono_debugger_server_sem_init (void)
-{
-	sem_init (&manager_semaphore, 1, 0);
-}
-
-void
-mono_debugger_server_sem_wait (void)
-{
-	sem_wait (&manager_semaphore);
-}
-
-void
-mono_debugger_server_sem_post (void)
-{
-	sem_post (&manager_semaphore);
-}
-
-int
-mono_debugger_server_sem_get_value (void)
-{
-	int ret;
-
-	sem_getvalue (&manager_semaphore, &ret);
-	return ret;
-}
-
-void
-mono_debugger_server_static_init (void)
-{
-	struct sigaction sa;
-
-	if (initialized)
-		return;
-
-	/* catch SIGINT */
-	sa.sa_handler = sigint_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-
-	/* catch SIGINT */
-	sa.sa_handler = thread_abort_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
-
-	initialized = TRUE;
-}
-
-ServerHandle *
-mono_debugger_server_initialize (BreakpointManager *bpm)
+static ServerHandle *
+server_ptrace_initialize (BreakpointManager *bpm)
 {
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
 
@@ -330,11 +254,11 @@ child_setup_func (gpointer data)
 		g_error (G_STRLOC ": Can't PT_TRACEME: %s", g_strerror (errno));
 }
 
-ServerCommandError
-mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
-			    gchar **argv, gchar **envp, gint *child_pid,
-			    ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
-			    gchar **error)
+static ServerCommandError
+server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
+		     const gchar **argv, const gchar **envp, gint *child_pid,
+		     ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
+		     gchar **error)
 {	
 	InferiorHandle *inferior = handle->inferior;
 	int fd[2], open_max, ret, len, i;
@@ -354,7 +278,7 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		setsid ();
 
 		child_setup_func (NULL);
-		execve (argv [0], argv, envp);
+		execve (argv [0], (char **) argv, (char **) envp);
 
 		error_message = g_strdup_printf ("Cannot exec `%s': %s", argv [0], g_strerror (errno));
 		len = strlen (error_message) + 1;
@@ -376,14 +300,14 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 	}
 
 	inferior->pid = *child_pid;
-	_mono_debugger_server_setup_inferior (handle, TRUE);
-	_mono_debugger_server_setup_thread_manager (handle);
+	_server_ptrace_setup_inferior (handle, TRUE);
+	_server_ptrace_setup_thread_manager (handle);
 
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, guint32 pid, guint32 *tid)
+static ServerCommandError
+server_ptrace_attach (ServerHandle *handle, guint32 pid, guint32 *tid)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -392,7 +316,7 @@ mono_debugger_server_attach (ServerHandle *handle, guint32 pid, guint32 *tid)
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
-	_mono_debugger_server_setup_inferior (handle, FALSE);
+	_server_ptrace_setup_inferior (handle, FALSE);
 
 	*tid = inferior->tid;
 
@@ -434,8 +358,8 @@ check_io (InferiorHandle *inferior)
 		process_output (inferior, inferior->error_fd [0], inferior->stderr_handler);
 }
 
-ServerCommandError
-mono_debugger_server_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
+static ServerCommandError
+server_ptrace_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
 {
 	if (send_it)
 		kill (handle->inferior->pid, sig);
@@ -455,3 +379,41 @@ extern void GC_end_blocking (void);
 #include "i386-freebsd-ptrace.c"
 #endif
 
+#include "i386-arch.c"
+
+InferiorVTable i386_ptrace_inferior = {
+	server_ptrace_initialize,
+	server_ptrace_spawn,
+	server_ptrace_attach,
+	server_ptrace_detach,
+	server_ptrace_finalize,
+	server_ptrace_global_wait,
+	server_ptrace_stop_and_wait,
+	server_ptrace_dispatch_event,
+	server_ptrace_get_target_info,
+	server_ptrace_continue,
+	server_ptrace_step,
+	server_ptrace_get_pc,
+	server_ptrace_current_insn_is_bpt,
+	server_ptrace_peek_word,
+	server_ptrace_read_memory,
+	server_ptrace_write_memory,
+	server_ptrace_call_method,
+	server_ptrace_call_method_1,
+	server_ptrace_call_method_invoke,
+	server_ptrace_insert_breakpoint,
+	server_ptrace_insert_hw_breakpoint,
+	server_ptrace_remove_breakpoint,
+	server_ptrace_enable_breakpoint,
+	server_ptrace_disable_breakpoint,
+	server_ptrace_get_breakpoints,
+	server_ptrace_get_registers,
+	server_ptrace_set_registers,
+	server_ptrace_get_backtrace,
+	server_ptrace_get_ret_address,
+	server_ptrace_stop,
+	server_ptrace_global_stop,
+	server_ptrace_set_signal,
+	server_ptrace_kill,
+	server_ptrace_get_signal_info
+};
