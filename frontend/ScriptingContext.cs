@@ -830,7 +830,7 @@ namespace Mono.Debugger.Frontend
 
 			if (print)
 				interpreter.Print ("\nYou may use either the full method signature,\n" +
-						   "'-id N' where N is the number to the left of the method, or\n"
+						   "'-id N' where N is the number to the left of the method, or\n" +
 						   "'-all' to select all methods.");
 		}
 
