@@ -310,14 +310,8 @@ namespace Mono.Debugger.Frontends.Scripting
 					ITargetObject deref = pobj.DereferencedObject;
 					return String.Format ("&({0}) {1}", deref.Type.Name,
 							      FormatObject (deref));
-				} else if (pobj.HasAddress) {
-					TargetAddress addr = pobj.Address;
-					if (addr.IsNull)
-						return "null";
-					else
-						return pobj.Address.ToString ();
 				} else
-					return "<unknown pointer>";
+					return pobj.Print ();
 			}
 
 			case TargetObjectKind.Class:
