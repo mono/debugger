@@ -76,6 +76,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token LOWER
 %token UPPER
 
+%token KIND
+%token ACCESSABLE
+%token CONTENTS
+%token NOT
+
+%token UNKNOWN
+%token FUNDAMENTAL
+%token ARRAY
+%token STRUCT
+%token CLASS
+%token POINTER
+
 %token FRAME
 %token START
 %token SHOW
@@ -93,6 +105,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token PRINT
 %token DISASSEMBLE
 %token SET
+%token ASSERT
 
 %token SELECT
 %token BACKGROUND
@@ -224,6 +237,60 @@ command
 	| SET BANG IDENTIFIER ASSIGN variable_expression
 	  {
 		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
+	  }
+	| assert_command
+	  {
+		$$ = $1;
+	  }
+	;
+
+kind
+	: UNKNOWN
+	  {
+		$$ = TargetObjectKind.Unknown;
+	  }
+	| FUNDAMENTAL
+	  {
+		$$ = TargetObjectKind.Fundamental;
+	  }
+	| ARRAY
+	  {
+		$$ = TargetObjectKind.Array;
+	  }
+	| STRUCT
+	  {
+		$$ = TargetObjectKind.Struct;
+	  }
+	| CLASS
+	  {
+		$$ = TargetObjectKind.Class;
+	  }
+	| POINTER
+	  {
+		$$ = TargetObjectKind.Pointer;
+	  }
+	;
+
+assert_command
+	: ASSERT KIND kind variable_expression
+	  {
+		$$ = new AssertKindCommand ((TargetObjectKind) $3, (VariableExpression) $4);
+	  }
+	| ASSERT ACCESSABLE variable_expression
+	  {
+		$$ = new AssertAccessableCommand ((VariableExpression) $3, true);
+	  }
+	| ASSERT NOT ACCESSABLE variable_expression
+	  {
+		$$ = new AssertAccessableCommand ((VariableExpression) $4, false);
+	  }
+	| ASSERT TYPE STRING variable_expression
+	  {
+		$$ = new AssertTypeCommand ((string) $3, (VariableExpression) $4);
+	  }
+	| ASSERT CONTENTS STRING variable_expression
+	  {
+		$$ = new AssertContentsCommand ((string) $3, (VariableExpression) $4);
 	  }
 	;
 

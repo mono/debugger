@@ -74,6 +74,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("length", Token.LENGTH);
 			keywords.Add ("lower", Token.LOWER);
 			keywords.Add ("upper", Token.UPPER);
+			keywords.Add ("assert", Token.ASSERT);
+
+			keywords.Add ("kind", Token.KIND);
+			keywords.Add ("accessable", Token.ACCESSABLE);
+			keywords.Add ("not", Token.NOT);
+			keywords.Add ("contents", Token.CONTENTS);
+
+			keywords.Add ("unknown", Token.UNKNOWN);
+			keywords.Add ("fundamental", Token.FUNDAMENTAL);
+			keywords.Add ("array", Token.ARRAY);
+			keywords.Add ("struct", Token.STRUCT);
+			keywords.Add ("class", Token.CLASS);
+			keywords.Add ("pointer", Token.POINTER);
 
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);
