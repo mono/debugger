@@ -1,5 +1,5 @@
 static ServerCommandError
-get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
+server_get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 {
 	if (ptrace (PT_GETREGS, handle->pid, (caddr_t) regs, 0) != 0) {
 		if (errno == ESRCH)
@@ -14,7 +14,7 @@ get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 }
 
 static ServerCommandError
-set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
+server_set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 {
 	if (ptrace (PT_SETREGS, handle->pid, (caddr_t) regs, 0) != 0) {
 		if (errno == ESRCH)
@@ -29,7 +29,7 @@ set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 }
 
 static ServerCommandError
-get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
+server_get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 {
 	if (ptrace (PT_GETFPREGS, handle->pid, (caddr_t) regs, 0) != 0) {
 		if (errno == ESRCH)
@@ -44,7 +44,7 @@ get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 }
 
 static ServerCommandError
-set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
+server_set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 {
 	if (ptrace (PT_SETFPREGS, handle->pid, (caddr_t) regs, 0) != 0) {
 		if (errno == ESRCH)
@@ -59,7 +59,8 @@ set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 }
 
 static ServerCommandError
-server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
+server_ptrace_read_data (InferiorHandle *handle, ArchInfo *arch, guint64 start,
+			 guint32 size, gpointer buffer)
 {
 	guint32 old_size = size;
         int *ptr = buffer;
@@ -87,19 +88,19 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
                 }
         }
 
-	debugger_arch_i386_remove_breakpoints_from_target_memory (handle, start, old_size, buffer);
+	i386_arch_remove_breakpoints_from_target_memory (handle, arch, start, old_size, buffer);
 
 	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
-server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
+server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 {
 	return COMMAND_ERROR_UNKNOWN;
 }
 
 static int
-do_wait (InferiorHandle *handle)
+server_do_wait (InferiorHandle *handle)
 {
 	int options, ret, status = 0;
 	sigset_t mask, oldmask;
@@ -132,7 +133,7 @@ do_wait (InferiorHandle *handle)
 }
 
 static void
-setup_inferior (InferiorHandle *handle)
+server_setup_inferior (InferiorHandle *handle, ArchInfo *arch)
 {
 	sigset_t mask;
 
@@ -140,10 +141,10 @@ setup_inferior (InferiorHandle *handle)
 	sigaddset (&mask, SIGINT);
 	sigprocmask (SIG_BLOCK, &mask, NULL);
 
-	do_wait (handle);
+	server_do_wait (handle);
 
-	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
+	if (server_get_registers (handle, &arch->current_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get registers");
-	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
+	if (server_get_fp_registers (handle, &arch->current_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get fp registers");
 }

@@ -45,10 +45,12 @@ struct InferiorHandle
 #ifdef __linux__
 	int mem_fd;
 #endif
+	InferiorInfo *inferior;
 	int output_fd [2], error_fd [2];
 	ChildOutputFunc stdout_handler, stderr_handler;
 	int is_thread;
 	int last_signal;
+#if 0
 	long call_address;
 	guint64 callback_argument;
 	INFERIOR_REGS_TYPE current_regs;
@@ -56,27 +58,25 @@ struct InferiorHandle
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	GPtrArray *rti_stack;
+#endif
 	unsigned dr_control, dr_status;
 	BreakpointManager *bpm;
 };
 
 static void
-server_ptrace_finalize (InferiorHandle *handle)
+server_ptrace_finalize (InferiorHandle *handle, ArchInfo *arch)
 {
 	if (handle->pid) {
 		ptrace (PT_KILL, handle->pid, NULL, 0);
 		ptrace (PT_DETACH, handle->pid, NULL, 0);
 		kill (handle->pid, SIGKILL);
 	}
-
-	g_ptr_array_free (handle->rti_stack, TRUE);
-	g_free (handle->saved_regs);
-	g_free (handle->saved_fpregs);
+	i386_arch_finalize (arch);
 	g_free (handle);
 }
 
 static ServerCommandError
-server_ptrace_continue (InferiorHandle *handle)
+server_ptrace_continue (InferiorHandle *handle, ArchInfo *arch)
 {
 	errno = 0;
 	if (ptrace (PT_CONTINUE, handle->pid, (caddr_t) 1, handle->last_signal)) {
@@ -90,7 +90,7 @@ server_ptrace_continue (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_step (InferiorHandle *handle)
+server_ptrace_step (InferiorHandle *handle, ArchInfo *arch)
 {
 	errno = 0;
 	if (ptrace (PT_STEP, handle->pid, (caddr_t) 1, handle->last_signal)) {
@@ -104,7 +104,7 @@ server_ptrace_step (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_detach (InferiorHandle *handle)
+server_ptrace_detach (InferiorHandle *handle, ArchInfo *arch)
 {
 	if (ptrace (PT_DETACH, handle->pid, NULL, 0)) {
 		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
@@ -115,7 +115,7 @@ server_ptrace_detach (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_kill (InferiorHandle *handle)
+server_ptrace_kill (InferiorHandle *handle, ArchInfo *arch)
 {
 	if (handle->pid)
 		kill (handle->pid, SIGKILL);
@@ -123,22 +123,14 @@ server_ptrace_kill (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
+server_peek_word (InferiorHandle *handle, ArchInfo *arch, guint64 start, int *retval)
 {
-	return server_ptrace_read_data (handle, start, sizeof (int), retval);
-
-	errno = 0;
-	*retval = ptrace (PT_READ_D, handle->pid, (gpointer) ((guint32) start), 0);
-	if (errno) {
-		g_message (G_STRLOC ": %d - %08Lx - %s", handle->pid, start, g_strerror (errno));
-		return COMMAND_ERROR_UNKNOWN;
-	}
-
-	return COMMAND_ERROR_NONE;
+	return server_ptrace_read_data (handle, arch, start, sizeof (int), retval);
 }
 
 static ServerCommandError
-server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, gconstpointer buffer)
+server_ptrace_write_data (InferiorHandle *handle, ArchInfo *arch, guint64 start,
+			  guint32 size, gconstpointer buffer)
 {
 	ServerCommandError result;
 	const int *ptr = buffer;
@@ -165,26 +157,76 @@ server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, g
 	if (!size)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_read_data (handle, (guint32) addr, 4, &temp);
+	result = server_ptrace_read_data (handle, arch, (guint32) addr, 4, &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 	memcpy (&temp, ptr, size);
 
-	return server_ptrace_write_data (handle, (guint32) addr, 4, &temp);
+	return server_ptrace_write_data (handle, arch, (guint32) addr, 4, &temp);
 }	
 
+
+static gboolean
+dispatch_event (InferiorHandle *handle, ArchInfo *arch, int status, ServerStatusMessageType *type,
+		guint64 *arg, guint64 *data1, guint64 *data2)
+{
+	if (WIFSTOPPED (status)) {
+		guint64 callback_arg, retval, retval2;
+		ChildStoppedAction action = i386_arch_child_stopped
+			(handle, arch, WSTOPSIG (status), &callback_arg, &retval, &retval2);
+
+		switch (action) {
+		case STOP_ACTION_SEND_STOPPED:
+			*type = MESSAGE_CHILD_STOPPED;
+			if (WSTOPSIG (status) == SIGTRAP)
+				*arg = 0;
+			else
+				*arg = WSTOPSIG (status);
+			return TRUE;
+
+		case STOP_ACTION_BREAKPOINT_HIT:
+			*type = MESSAGE_CHILD_HIT_BREAKPOINT;
+			*arg = (int) retval;
+			return TRUE;
+
+		case STOP_ACTION_CALLBACK:
+			*type = MESSAGE_CHILD_CALLBACK;
+			*arg = callback_arg;
+			*data1 = retval;
+			*data2 = retval2;
+			return TRUE;
+
+		default:
+			g_assert_not_reached ();
+		}
+	} else if (WIFEXITED (status)) {
+		*type = MESSAGE_CHILD_EXITED;
+		*arg = WEXITSTATUS (status);
+		handle->pid = 0;
+		return TRUE;
+	} else if (WIFSIGNALED (status)) {
+		*type = MESSAGE_CHILD_SIGNALED;
+		*arg = WTERMSIG (status);
+		handle->pid = 0;
+		return TRUE;
+	}
+
+	g_warning (G_STRLOC ": Got unknown waitpid() result: %d", status);
+	return FALSE;
+}
+
 static void
-server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint64 *arg,
-		    guint64 *data1, guint64 *data2)
+server_ptrace_wait (InferiorHandle *handle, ArchInfo *arch, ServerStatusMessageType *type,
+		    guint64 *arg, guint64 *data1, guint64 *data2)
 {
 	int status;
 
 	do {
-		status = do_wait (handle);
+		status = server_do_wait (handle);
 		if (status == -1)
 			return;
 
-	} while (!debugger_arch_i386_dispatch_event (handle, status, type, arg, data1, data2));
+	} while (!dispatch_event (handle, arch, status, type, arg, data1, data2));
 }
 
 static InferiorHandle *
@@ -192,8 +234,8 @@ server_ptrace_initialize (BreakpointManager *bpm)
 {
 	InferiorHandle *handle = g_new0 (InferiorHandle, 1);
 
+	handle->inferior = &i386_ptrace_inferior;
 	handle->bpm = bpm;
-	handle->rti_stack = g_ptr_array_new ();
 	return handle;
 }
 
@@ -217,9 +259,9 @@ set_socket_flags (int fd, long flags)
 }
 
 static ServerCommandError
-server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gchar **argv, gchar **envp,
-		     gint *child_pid, ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
-		     gchar **error)
+server_ptrace_spawn (InferiorHandle *handle, ArchInfo *arch, const gchar *working_directory,
+		     gchar **argv, gchar **envp, gint *child_pid, ChildOutputFunc stdout_handler,
+		     ChildOutputFunc stderr_handler, gchar **error)
 {
 	int fd[2], open_max, ret, len, i;
 
@@ -284,13 +326,13 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 	}
 
 	handle->pid = *child_pid;
-	setup_inferior (handle);
+	server_setup_inferior (handle, arch);
 
 	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
-server_ptrace_attach (InferiorHandle *handle, int pid)
+server_ptrace_attach (InferiorHandle *handle, ArchInfo *arch, int pid)
 {
 	if (ptrace (PT_ATTACH, pid, NULL, 0)) {
 		g_warning (G_STRLOC ": Cannot attach to process %d: %s", pid, g_strerror (errno));
@@ -300,7 +342,7 @@ server_ptrace_attach (InferiorHandle *handle, int pid)
 	handle->pid = pid;
 	handle->is_thread = TRUE;
 
-	setup_inferior (handle);
+	server_setup_inferior (handle, arch);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -341,7 +383,7 @@ check_io (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_stop (InferiorHandle *handle)
+server_ptrace_stop (InferiorHandle *handle, ArchInfo *arch)
 {
 	kill (handle->pid, SIGSTOP);
 
@@ -349,7 +391,7 @@ server_ptrace_stop (InferiorHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_set_signal (InferiorHandle *handle, guint32 sig, guint32 send_it)
+server_ptrace_set_signal (InferiorHandle *handle, ArchInfo *arch, guint32 sig, guint32 send_it)
 {
 	if (send_it)
 		kill (handle->pid, sig);
@@ -375,32 +417,33 @@ extern void GC_end_blocking (void);
  * Method VTable for this backend.
  */
 InferiorInfo i386_ptrace_inferior = {
+	i386_arch_initialize,
 	server_ptrace_initialize,
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,
 	server_ptrace_finalize,
 	server_ptrace_wait,
-	server_ptrace_get_target_info,
+	i386_arch_get_target_info,
 	server_ptrace_continue,
 	server_ptrace_step,
-	server_ptrace_get_pc,
-	server_ptrace_current_insn_is_bpt,
+	i386_arch_get_pc,
+	i386_arch_current_insn_is_bpt,
 	server_ptrace_read_data,
 	server_ptrace_write_data,
-	server_ptrace_call_method,
-	server_ptrace_call_method_1,
-	server_ptrace_call_method_invoke,
-	server_ptrace_insert_breakpoint,
-	server_ptrace_insert_hw_breakpoint,
-	server_ptrace_remove_breakpoint,
-	server_ptrace_enable_breakpoint,
-	server_ptrace_disable_breakpoint,
-	server_ptrace_get_breakpoints,
-	server_ptrace_get_registers,
-	server_ptrace_set_registers,
-	server_ptrace_get_backtrace,
-	server_ptrace_get_ret_address,
+	i386_arch_call_method,
+	i386_arch_call_method_1,
+	i386_arch_call_method_invoke,
+	i386_arch_insert_breakpoint,
+	i386_arch_insert_hw_breakpoint,
+	i386_arch_remove_breakpoint,
+	i386_arch_enable_breakpoint,
+	i386_arch_disable_breakpoint,
+	i386_arch_get_breakpoints,
+	i386_arch_get_registers,
+	i386_arch_set_registers,
+	i386_arch_get_backtrace,
+	i386_arch_get_ret_address,
 	server_ptrace_stop,
 	server_ptrace_set_signal,
 	server_ptrace_kill

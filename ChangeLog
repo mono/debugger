@@ -1,3 +1,11 @@
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/: Did some API cleanups; separate
+	architecture-specific code a bit more.
+
+	* backends/server/i386-arch.c (ArchInfo): New struct; store all
+	architecture-specific stuff here.
+
 2003-12-09  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.5 "Clemson" of the Mono Debugger :-)

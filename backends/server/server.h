@@ -41,6 +41,7 @@ typedef struct {
 
 /* This is an opaque data structure which the backend may use to store stuff. */
 typedef struct InferiorHandle InferiorHandle;
+typedef struct ArchInfo ArchInfo;
 
 /* C# delegates. */
 typedef void (*ChildOutputFunc) (const char *output);
@@ -57,9 +58,10 @@ typedef void (*ChildOutputFunc) (const char *output);
  */
 
 typedef struct {
+	ArchInfo *            (* arch_initialize)     (void);
 	InferiorHandle *      (* initialize)          (BreakpointManager  *bpm);
 
-	ServerCommandError    (* spawn)               (InferiorHandle     *handle,
+	ServerCommandError    (* spawn)               (InferiorHandle     *handle, ArchInfo *arch,
 						       const gchar        *working_directory,
 						       gchar             **argv,
 						       gchar             **envp,
@@ -68,21 +70,21 @@ typedef struct {
 						       ChildOutputFunc     stderr_handler,
 						       gchar             **error);
 
-	ServerCommandError    (* attach)              (InferiorHandle     *handle,
+	ServerCommandError    (* attach)              (InferiorHandle     *handle, ArchInfo *arch,
 						       int                 pid);
 
-	ServerCommandError    (* detach)              (InferiorHandle     *handle);
+	ServerCommandError    (* detach)              (InferiorHandle     *handle, ArchInfo *arch);
 
-	void                  (* finalize)            (InferiorHandle     *handle);
+	void                  (* finalize)            (InferiorHandle     *handle, ArchInfo *arch);
 
-	void                  (* wait)                (InferiorHandle          *handle,
+	void                  (* wait)                (InferiorHandle          *handle, ArchInfo *arch,
 						       ServerStatusMessageType *message,
 						       guint64                 *arg,
 						       guint64                 *data1,
 						       guint64                 *data2);
 
 	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
-	ServerCommandError    (* get_target_info)     (InferiorHandle     *handle,
+	ServerCommandError    (* get_target_info)     (InferiorHandle     *handle, ArchInfo *arch,
 						       guint32            *target_int_size,
 						       guint32            *target_long_size,
 						       guint32            *target_address_size);
@@ -92,34 +94,34 @@ typedef struct {
 	 * This operation must start the target and then return immediately
 	 * (without waiting for the target to stop).
 	 */
-	ServerCommandError    (* run)                 (InferiorHandle   *handle);
+	ServerCommandError    (* run)                 (InferiorHandle   *handle, ArchInfo *arch);
 
 	/*
 	 * Single-step one machine instruction.
 	 * This operation must start the target and then return immediately
 	 * (without waiting for the target to stop).
 	 */
-	ServerCommandError    (* step)                (InferiorHandle   *handle);
+	ServerCommandError    (* step)                (InferiorHandle   *handle, ArchInfo *arch);
 
 	/*
 	 * Get the current program counter.
 	 * Return COMMAND_ERROR_NOT_STOPPED if the target is currently running.
 	 * This is a time-critical function, it must return immediately without blocking.
 	 */
-	ServerCommandError    (* get_pc)              (InferiorHandle   *handle,
+	ServerCommandError    (* get_pc)              (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64          *pc);
 
 	/*
 	 * Checks whether the current instruction is a breakpoint.
 	 */
-	ServerCommandError    (* current_insn_is_bpt) (InferiorHandle   *handle,
+	ServerCommandError    (* current_insn_is_bpt) (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32          *is_breakpoint);
 
 	/*
 	 * Read `size' bytes from the target's address space starting at `start'.
 	 * Writes the result into `buffer' (which has been allocated by the caller).
 	 */
-	ServerCommandError    (* read_data)           (InferiorHandle   *handle,
+	ServerCommandError    (* read_data)           (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64           start,
 						       guint32           size,
 						       gpointer          buffer);
@@ -127,7 +129,7 @@ typedef struct {
 	/*
 	 * Write `size' bytes from `buffer' to the target's address space starting at `start'.
 	 */
-	ServerCommandError    (* write_data)          (InferiorHandle   *handle,
+	ServerCommandError    (* write_data)          (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64           start,
 						       guint32           size,
 						       gconstpointer     data);
@@ -138,7 +140,7 @@ typedef struct {
 	 * `callback_argument' and the function's return value when the function returns.
 	 * This function must return immediately without waiting for the target !
 	 */
-	ServerCommandError    (* call_method)         (InferiorHandle   *handle,
+	ServerCommandError    (* call_method)         (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64           method,
 						       guint64           method_argument1,
 						       guint64           method_argument2,
@@ -151,13 +153,13 @@ typedef struct {
 	 * when the function returns.
 	 * This function must return immediately without waiting for the target !
 	 */
-	ServerCommandError    (* call_method_1)       (InferiorHandle   *handle,
+	ServerCommandError    (* call_method_1)       (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64           method,
 						       guint64           method_argument,
 						       const gchar      *string_argument,
 						       guint64           callback_argument);
 
-	ServerCommandError    (* call_method_invoke)  (InferiorHandle   *handle,
+	ServerCommandError    (* call_method_invoke)  (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64           invoke_method,
 						       guint64           method_argument,
 						       guint64           object_argument,
@@ -170,7 +172,7 @@ typedef struct {
 	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
 	 * to remove the breakpoint.
 	 */
-	ServerCommandError    (* insert_breakpoint)   (InferiorHandle   *handle,
+	ServerCommandError    (* insert_breakpoint)   (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64           address,
 						       guint32          *bhandle);
 
@@ -179,7 +181,7 @@ typedef struct {
 	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
 	 * to remove the breakpoint.
 	 */
-	ServerCommandError    (* insert_hw_breakpoint)(InferiorHandle   *handle,
+	ServerCommandError    (* insert_hw_breakpoint)(InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           idx,
 						       guint64           address,
 						       guint32          *bhandle);
@@ -187,19 +189,19 @@ typedef struct {
 	/*
 	 * Remove breakpoint `bhandle'.
 	 */
-	ServerCommandError    (* remove_breakpoint)   (InferiorHandle   *handle,
+	ServerCommandError    (* remove_breakpoint)   (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           bhandle);
 
 	/*
 	 * Enables breakpoint `bhandle'.
 	 */
-	ServerCommandError    (* enable_breakpoint)   (InferiorHandle   *handle,
+	ServerCommandError    (* enable_breakpoint)   (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           bhandle);
 
 	/*
 	 * Disables breakpoint `bhandle'.
 	 */
-	ServerCommandError    (* disable_breakpoint)  (InferiorHandle   *handle,
+	ServerCommandError    (* disable_breakpoint)  (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           bhandle);
 
 	/*
@@ -207,7 +209,7 @@ typedef struct {
 	 * allocated list of guint32's in `breakpoints'.  The caller is responsible for freeing this
 	 * data structure.
 	 */
-	ServerCommandError    (* get_breakpoints)     (InferiorHandle   *handle,
+	ServerCommandError    (* get_breakpoints)     (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32          *count,
 						       guint32         **breakpoints);
 
@@ -215,7 +217,7 @@ typedef struct {
 	 * Get processor registers.
 	 *
 	 */
-	ServerCommandError    (* get_registers)       (InferiorHandle   *handle,
+	ServerCommandError    (* get_registers)       (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           count,
 						       guint32          *registers,
 						       guint64          *values);
@@ -224,7 +226,7 @@ typedef struct {
 	 * Set processor registers.
 	 *
 	 */
-	ServerCommandError    (* set_registers)       (InferiorHandle   *handle,
+	ServerCommandError    (* set_registers)       (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           count,
 						       guint32          *registers,
 						       guint64          *values);
@@ -233,7 +235,7 @@ typedef struct {
 	 * Get backtrace.  This tries to return a partial backtrace if possible, so check the `count'
 	 * and `frames' values even on an error.
 	 */
-	ServerCommandError    (* get_backtrace)       (InferiorHandle   *handle,
+	ServerCommandError    (* get_backtrace)       (InferiorHandle   *handle, ArchInfo *arch,
 						       gint32            max_frames,
 						       guint64           stop_address,
 						       guint32          *count,
@@ -242,25 +244,31 @@ typedef struct {
 	/*
 	 * This is only allowed on the first instruction of a method.
 	 */
-	ServerCommandError    (* get_ret_address)     (InferiorHandle   *handle,
+	ServerCommandError    (* get_ret_address)     (InferiorHandle   *handle, ArchInfo *arch,
 						       guint64          *retval);
 
 	/*
 	 * Stop the target.
 	 */
-	ServerCommandError    (* stop)                (InferiorHandle   *handle);
+	ServerCommandError    (* stop)                (InferiorHandle   *handle, ArchInfo *arch);
 
 	/*
 	 * Send signal `sig' to the target the next time it is continued.
 	 */
-	ServerCommandError    (* set_signal)          (InferiorHandle   *handle,
+	ServerCommandError    (* set_signal)          (InferiorHandle   *handle, ArchInfo *arch,
 						       guint32           sig,
 						       guint32           send_it);
 
 	/*
 	 * Kill the target.
 	 */
-	ServerCommandError    (* kill)                (InferiorHandle   *handle);
+	ServerCommandError    (* kill)                (InferiorHandle   *handle, ArchInfo *arch);
+
+	/*
+	 * Internal.
+	 */
+	ServerCommandError    (* do_set_registers)    (InferiorHandle   *handle, ArchInfo *arch);
+	ServerCommandError    (* do_get_registers)    (InferiorHandle   *handle, ArchInfo *arch);
 
 } InferiorInfo;
 
@@ -274,6 +282,7 @@ typedef struct {
 typedef struct {
 	int has_inferior;
 	InferiorHandle *inferior;
+	ArchInfo *arch;
 	InferiorInfo *info;
 } ServerHandle;
 

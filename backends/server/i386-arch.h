@@ -38,20 +38,14 @@ typedef enum {
 	STOP_ACTION_CALLBACK
 } ChildStoppedAction;
 
+static ArchInfo *
+i386_arch_initialize (void);
+
 static void
-debugger_arch_i386_remove_breakpoints_from_target_memory (InferiorHandle *, guint64, guint32, gpointer);
+i386_arch_finalize (ArchInfo *arch);
 
 static ChildStoppedAction
-debugger_arch_i386_child_stopped (InferiorHandle *, int, guint64 *, guint64 *, guint64 *);
-
-static gboolean
-debugger_arch_i386_dispatch_event (InferiorHandle *, int, ServerStatusMessageType *,
-				   guint64 *, guint64 *, guint64 *);
-
-static ServerCommandError server_ptrace_read_data (InferiorHandle *, guint64, guint32, gpointer);
-static ServerCommandError server_ptrace_set_dr (InferiorHandle *, int, unsigned long);
-static int do_wait (InferiorHandle *);
-static void setup_inferior (InferiorHandle *);
+i386_arch_child_stopped (InferiorHandle *, ArchInfo *arch, int, guint64 *, guint64 *, guint64 *);
 
 
 /* Debug registers' indices.  */
