@@ -1,3 +1,9 @@
+2005-02-10  Martin Baulig  <martin@ximian.com>
+
+	* backends/: Renamed the `mono-csharp' directory to `mono'.
+	* backends/mono/*.cs: Completely reworked the unmanaged debugger
+	interface in the runtime.
+
 2005-02-04  Chris Toshok  <toshok@ximian.com>
 
 	* configure.in: add a mono dep to SERVER_DEPENDENCIES so we can

@@ -1,22 +1,20 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoOpaqueType : MonoType
 	{
-		public MonoOpaqueType (Type type, int size)
-			: base (TargetObjectKind.Opaque, type, size)
+		public MonoOpaqueType (MonoSymbolFile file, Type type)
+			: base (file, TargetObjectKind.Opaque, type)
 		{ }
 
 		public override bool IsByRef {
-			get {
-				return false;
-			}
+			get { return false; }
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
 		{
-			return new MonoOpaqueObject (this, location);
+			return null;
 		}
 	}
 }

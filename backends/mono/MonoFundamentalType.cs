@@ -1,20 +1,28 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFundamentalType : MonoClass, ITargetFundamentalType
+	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
 	{
 		protected readonly Heap Heap;
+		protected readonly int size;
+		protected readonly TargetAddress klass_address;
 
-		public MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
-			: this (type, size, info, table, true)
-		{ }
-
-		protected MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file,
-					       bool has_fixed_size)
-			: base (TargetObjectKind.Fundamental, type, size, false, info, file, has_fixed_size)
+		public MonoFundamentalType (MonoSymbolFile file, Type type, int size, TargetAddress klass)
+			: base (file, TargetObjectKind.Fundamental, type)
 		{
-			this.Heap = file.Table.CSharpLanguage.DataHeap;
+			this.size = size;
+			this.klass_address = klass;
+			this.Heap = file.MonoLanguage.DataHeap;
+		}
+
+		protected override MonoTypeInfo CreateTypeInfo ()
+		{
+			return new MonoFundamentalTypeInfo (this, size, klass_address);
+		}
+
+		public override bool IsByRef {
+			get { return type.IsByRef; }
 		}
 
 		public static bool Supports (Type type)
@@ -54,15 +62,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool IsByRef {
-			get {
-				return type.IsByRef;
-			}
-		}
-
-		public override MonoClassObject GetClassObject (TargetLocation location)
+		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
 		{
-			return new MonoFundamentalObject (this, location);
+			throw new InvalidOperationException ();
 		}
 
 		public virtual byte[] CreateObject (object obj)
@@ -114,14 +116,6 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 				throw new ArgumentException ();
 			}
-		}
-
-		internal virtual MonoFundamentalObjectBase CreateInstance (StackFrame frame, object obj)
-		{
-			TargetLocation location = Heap.Allocate (frame, Size);
-			frame.TargetAccess.WriteBuffer (location.Address, CreateObject (obj));
-
-			return new MonoFundamentalObject (this, location);
 		}
 	}
 }

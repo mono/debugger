@@ -1,27 +1,23 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoClassObject : MonoObject, ITargetClassObject
 	{
-		new MonoClass type;
+		new MonoClassInfo type;
 
-		public MonoClassObject (MonoClass type, TargetLocation location)
+		public MonoClassObject (MonoClassInfo type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
 		}
 
 		ITargetStructType ITargetStructObject.Type {
-			get {
-				return type;
-			}
+			get { return type.Type; }
 		}
 
 		ITargetClassType ITargetClassObject.Type {
-			get {
-				return type;
-			}
+			get { return type.Type; }
 		}
 
 		ITargetClassObject ITargetClassObject.CurrentObject {
@@ -34,18 +30,21 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			ITargetAccess target = location.TargetAccess;
 			TargetAddress vtable = target.ReadAddress (location.Address);
-			TargetAddress klass = target.ReadAddress (vtable);
+			TargetAddress klass_address = target.ReadAddress (vtable);
 
-			MonoType ctype = type.File.Table.GetTypeFromClass (type.Type, klass.Address);
-			return ((MonoClass) ctype).GetClassObject (location);
+			MonoType klass = type.Type.File.MonoLanguage.GetClass (klass_address);
+			Console.WriteLine ("KLASS CURRENT: {0} {1}", klass_address, klass);
+			// return klass.GetClassObject (location);
+			return null;
 		}
 
 		public ITargetClassObject Parent {
 			get {
-				if (type.ParentType == null)
+				if (type.Type.ParentType == null)
 					return null;
 
-				return type.ParentType.GetClassObject (location);
+				// return type.Type.ParentType.GetClassObject (location);
+				return null;
 			}
 		}
 
@@ -61,7 +60,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetObject GetEvent (int index)
 		{
-			return type.GetEvent (location, index);
+			// return type.GetEvent (location, index);
+			return null;
 		}
 
 		public ITargetFunctionObject GetMethod (int index)

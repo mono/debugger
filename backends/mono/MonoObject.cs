@@ -1,21 +1,21 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoObject : ITargetObject
 	{
-		protected MonoType type;
+		protected MonoTypeInfo type;
 		protected TargetLocation location;
 		protected bool is_valid;
 
-		public MonoObject (MonoType type, TargetLocation location)
+		public MonoObject (MonoTypeInfo type, TargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
 			is_valid = true;
 		}
 
-		public ITargetType Type {
+		public ITargetTypeInfo Type {
 			get {
 				return type;
 			}

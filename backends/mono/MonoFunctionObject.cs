@@ -1,21 +1,19 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFunctionObject : MonoObject, ITargetFunctionObject
 	{
-		new MonoFunctionType type;
+		new MonoFunctionTypeInfo type;
 
-		public MonoFunctionObject (MonoFunctionType type, TargetLocation location)
+		public MonoFunctionObject (MonoFunctionTypeInfo type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
 		}
 
 		ITargetFunctionType ITargetFunctionObject.Type {
-			get {
-				return type;
-			}
+			get { return type.Type; }
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,

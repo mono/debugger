@@ -1,7 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoVariable : IVariable
 	{
@@ -64,33 +64,23 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public DebuggerBackend Backend {
-			get {
-				return backend;
-			}
+			get { return backend; }
 		}
 
 		public string Name {
-			get {
-				return name;
-			}
+			get { return name; }
 		}
 
 		public ITargetType Type {
-			get {
-				return type;
-			}
+			get { return type; }
 		}
 
 		public TargetAddress StartLiveness {
-			get {
-				return start_liveness;
-			}
+			get { return start_liveness; }
 		}
 
 		public TargetAddress EndLiveness {
-			get {
-				return end_liveness;
-			}
+			get { return end_liveness; }
 		}
 
 		TargetLocation GetLocation (StackFrame frame)
@@ -130,7 +120,11 @@ namespace Mono.Debugger.Languages.CSharp
 			if ((location == null) || !location.IsValid)
 				throw new LocationInvalidException ();
 
-			return type.GetObject (location);
+			ITargetTypeInfo tinfo = type.Resolve ();
+			if (tinfo == null)
+				return null;
+
+			return tinfo.GetObject (location);
 		}
 
 		public bool CanWrite {
@@ -139,10 +133,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public void SetObject (StackFrame frame, ITargetObject obj)
 		{
-			if (obj.Type != Type)
+			if (obj.Type.Type != Type)
 				throw new InvalidOperationException ();
 			TargetLocation location = GetLocation (frame);
-			type.SetObject (location, (MonoObject) obj);
+			// type.SetObject (location, (MonoObject) obj);
 		}
 
 		public override string ToString ()

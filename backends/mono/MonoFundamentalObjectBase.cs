@@ -1,10 +1,10 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoFundamentalObjectBase : MonoClassObject, ITargetFundamentalObject
+	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
 	{
-		public MonoFundamentalObjectBase (MonoClass type, TargetLocation location)
+		public MonoFundamentalObjectBase (MonoTypeInfo type, TargetLocation location)
 			: base (type, location)
 		{ }
 

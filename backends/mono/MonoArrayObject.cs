@@ -1,10 +1,10 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoArrayObject : MonoClassObject, ITargetArrayObject
+	internal class MonoArrayObject : MonoObject, ITargetArrayObject
 	{
-		protected new MonoArrayType type;
+		protected new MonoArrayTypeInfo type;
 
 		protected readonly int rank;
 		protected readonly int length;
@@ -12,36 +12,35 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly int base_index;
 		protected readonly MonoArrayBounds[] bounds;
 
-		public MonoArrayObject (MonoArrayType type, TargetLocation location)
+		public MonoArrayObject (MonoArrayTypeInfo type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
 			this.dimension = 0;
-			this.rank = type.Rank;
+			this.rank = type.Type.Rank;
+
+			ITargetInfo target_info = type.Type.File.TargetInfo;
+			int object_size = 2 * target_info.TargetAddressSize;
 
 			try {
 				ITargetMemoryReader reader = location.ReadMemory (type.Size);
 
-				reader.Offset = type.LengthOffset;
-				length = (int) reader.BinaryReader.ReadInteger (type.LengthSize);
+				reader.Offset = 3 * target_info.TargetAddressSize;
+				length = reader.BinaryReader.ReadInt32 ();
 
-				if (rank == 0)
+				if (rank == 1)
 					return;
 
-				reader.Offset = type.BoundsOffset;
+				reader.Offset = 2 * target_info.TargetAddressSize;
 				TargetAddress bounds_address = reader.ReadAddress ();
 				ITargetMemoryReader breader = location.TargetAccess.ReadMemory (
-					bounds_address, type.BoundsSize * rank);
+					bounds_address, 8 * rank);
 
 				bounds = new MonoArrayBounds [rank];
 
 				for (int i = 0; i < rank; i++) {
-					breader.Offset = i * type.BoundsSize + type.BoundsLowerOffset;
-					int b_lower = (int) breader.BinaryReader.ReadInteger (
-						type.BoundsLowerSize);
-					breader.Offset = i * type.BoundsSize + type.BoundsLengthOffset;
-					int b_length = (int) breader.BinaryReader.ReadInteger (
-						type.BoundsLengthSize);
+					int b_length = breader.BinaryReader.ReadInt32 ();
+					int b_lower = breader.BinaryReader.ReadInt32 ();
 					bounds [i] = new MonoArrayBounds (b_lower, b_length);
 				}
 			} catch (TargetException ex) {
@@ -62,7 +61,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public int LowerBound {
 			get {
-				if (rank == 0)
+				if (rank == 1)
 					return 0;
 
 				return bounds [dimension].Lower;
@@ -71,7 +70,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public int UpperBound {
 			get {
-				if (rank == 0)
+				if (rank == 1)
 					return length;
 
 				return bounds [dimension].Lower + bounds [dimension].Length;
@@ -95,7 +94,7 @@ namespace Mono.Debugger.Languages.CSharp
 					}
 
 					int offset;
-					if (type.ElementType.IsByRef)
+					if (type.Type.ElementType.IsByRef)
 						offset = index * reader.TargetAddressSize;
 					else if (type.ElementType.HasFixedSize)
 						offset = index * type.ElementType.Size;
@@ -104,7 +103,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 					TargetLocation new_location =
 						dynamic_location.GetLocationAtOffset (
-							offset, type.ElementType.IsByRef);
+							offset, type.Type.ElementType.IsByRef);
 
 					return type.ElementType.GetObject (new_location);
 				}
@@ -118,7 +117,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		int GetElementSize (ITargetInfo info)
 		{
-			if (type.ElementType.IsByRef)
+			if (type.Type.ElementType.IsByRef)
 				return info.TargetAddressSize;
 			else if (type.ElementType.HasFixedSize)
 				return type.ElementType.Size;
@@ -140,14 +139,14 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			int element_size = GetElementSize (reader);
 			dynamic_location = location.GetLocationAtOffset (
-				type.DataOffset + element_size * base_index, false);
+				type.Size + element_size * base_index, false);
 			return element_size * GetLength ();
 		}
 
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}:{2}:{3}]", GetType (), type,
-					      type.ElementType, length);
+					      type.Type.ElementType, length);
 		}
 	}
 }

@@ -1,24 +1,22 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectObject : MonoClassObject, ITargetPointerObject
+	internal class MonoObjectObject : MonoObject, ITargetPointerObject
 	{
-		new MonoObjectType type;
+		new MonoObjectTypeInfo type;
 
-		public MonoObjectObject (MonoObjectType type, TargetLocation location)
+		public MonoObjectObject (MonoObjectTypeInfo type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
 		}
 
 		public new ITargetPointerType Type {
-			get {
-				return type;
-			}
+			get { return type.Type; }
 		}
 
-		protected MonoType GetCurrentType ()
+		protected MonoTypeInfo GetCurrentType ()
 		{
 			try {
 				// location.Address resolves to the address of the MonoObject,
@@ -26,16 +24,21 @@ namespace Mono.Debugger.Languages.CSharp
 				// twice the class.
 				TargetAddress address;
 				address = location.TargetAccess.ReadAddress (location.Address);
-				address = location.TargetAccess.ReadAddress (address);
-				return type.File.Table.GetTypeFromClass (type.Type, address.Address);
+				address = location.TargetAccess.ReadGlobalAddress (address);
+
+				MonoType klass = type.Type.File.MonoLanguage.GetClass (address);
+				if (klass == null)
+					return null;
+
+				return klass.Resolve ();
 			} catch {
 				return null;
 			}
 		}
 
-		public MonoType CurrentType {
+		public MonoTypeInfo CurrentType {
 			get {
-				MonoType type = GetCurrentType ();
+				MonoTypeInfo type = GetCurrentType ();
 				if (type == null)
 					throw new LocationInvalidException ();
 				return type;
@@ -44,7 +47,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		ITargetType ITargetPointerObject.CurrentType {
 			get {
-				return CurrentType;
+				return CurrentType.Type;
 			}
 		}
 
@@ -56,14 +59,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetObject DereferencedObject {
 			get {
-				MonoType current_type = CurrentType;
+				MonoTypeInfo current_type = CurrentType;
 
 				// If this is a reference type, then the `MonoObject *' already
 				// points to the boxed object itself.
 				// If it's a valuetype, then the boxed contents is immediately
 				// after the `MonoObject' header.
 
-				int offset = current_type.IsByRef ? 0 : type.Size;
+				int offset = current_type.Type.IsByRef ? 0 : type.Size;
 				TargetLocation new_location = location.GetLocationAtOffset (offset, false);
 
 				return current_type.GetObject (new_location);

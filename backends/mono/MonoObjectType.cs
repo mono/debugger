@@ -1,52 +1,49 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectType : MonoClass, ITargetPointerType
+	internal class MonoObjectType : MonoType, ITargetPointerType
 	{
-		public MonoObjectType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
-			: base (TargetObjectKind.Pointer, type, size, false, info, table, true)
-		{ }
+		int size;
+		TargetAddress klass_address;
+
+		public MonoObjectType (MonoSymbolFile file, Type type, int size, TargetAddress klass)
+			: base (file, TargetObjectKind.Pointer, type)
+		{
+			this.size = size;
+			this.klass_address = klass;
+		}
+
+		protected override MonoTypeInfo CreateTypeInfo ()
+		{
+			return new MonoObjectTypeInfo (this, size, klass_address);
+		}
+
+		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
+		{
+			throw new InvalidOperationException ();
+		}
 
 		public override bool IsByRef {
-			get {
-				return true;
-			}
+			get { return true; }
 		}
 
 		public bool IsTypesafe {
-			get {
-				return true;
-			}
+			get { return true; }
 		}
 
 		public bool HasStaticType {
-			get {
-				return false;
-			}
+			get { return false; }
 		}
 
 		public bool IsArray {
-			get {
-				return false;
-			}
+			get { return false; }
 		}
 
 		public ITargetType StaticType {
 			get {
 				throw new InvalidOperationException ();
 			}
-		}
-
-		public override MonoClassObject GetClassObject (TargetLocation location)
-		{
-			return new MonoObjectObject (this, location);
-		}
-
-		public MonoObjectObject CreateObject (StackFrame frame, TargetAddress address)
-		{
-			TargetLocation location = new AbsoluteTargetLocation (frame, address);
-			return new MonoObjectObject (this, location);
 		}
 	}
 }

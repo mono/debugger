@@ -1,12 +1,12 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoStringObject : MonoFundamentalObjectBase
 	{
-		new MonoStringType type;
+		new MonoStringTypeInfo type;
 
-		public MonoStringObject (MonoStringType type, TargetLocation location)
+		public MonoStringObject (MonoStringTypeInfo type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override int MaximumDynamicSize {
 			get {
-				return MonoStringType.MaximumStringLength;
+				return MonoStringTypeInfo.MaximumStringLength;
 			}
 		}
 

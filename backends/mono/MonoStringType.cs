@@ -1,24 +1,25 @@
 using System;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoStringType : MonoFundamentalType
 	{
-		static int max_string_length = 10000;
+		int object_size;
 
-		internal readonly int LengthOffset;
-		internal readonly int LengthSize;
-		internal readonly int DataOffset;
-
-		protected readonly TargetAddress CreateString;
-
-		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file)
-			: base (type, size, info, file, false)
+		public MonoStringType (MonoSymbolFile file, Type type, int object_size,
+				       int size, TargetAddress klass)
+			: base (file, type, size, klass)
 		{
-			LengthOffset = info.ReadByte ();
-			LengthSize = info.ReadByte ();
-			DataOffset = info.ReadByte ();
-			CreateString = file.Table.CSharpLanguage.MonoDebuggerInfo.CreateString;
+			this.object_size = object_size;
+		}
+
+		protected override MonoTypeInfo CreateTypeInfo ()
+		{
+			return new MonoStringTypeInfo (this, object_size, size, klass_address);
+		}
+
+		public override bool IsByRef {
+			get { return true; }
 		}
 
 		new public static bool Supports (Type type)
@@ -26,53 +27,9 @@ namespace Mono.Debugger.Languages.CSharp
 			return type == typeof (string);
 		}
 
-		public override bool IsByRef {
-			get {
-				return true;
-			}
-		}
-
-		public static int MaximumStringLength {
-			get {
-				return max_string_length;
-			}
-
-			set {
-				max_string_length = value;
-			}
-		}
-
-		public override MonoObject GetObject (TargetLocation location)
+		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
 		{
-			return new MonoStringObject (this, location);
-		}
-
-		public override byte[] CreateObject (object obj)
-		{
-			string str = obj as string;
-			if (str == null)
-				throw new ArgumentException ();
-
-			char[] carray = ((string) obj).ToCharArray ();
-			byte[] retval = new byte [carray.Length * 2];
-
-			for (int i = 0; i < carray.Length; i++) {
-				retval [2*i] = (byte) (carray [i] & 0x00ff);
-				retval [2*i+1] = (byte) (carray [i] >> 8);
-			}
-
-			return retval;
-		}
-
-		internal override MonoFundamentalObjectBase CreateInstance (StackFrame frame, object obj)
-		{
-			string str = obj as string;
-			if (str == null)
-				throw new ArgumentException ();
-
-			TargetAddress retval = frame.Process.CallMethod (CreateString, str);
-			TargetLocation location = new AbsoluteTargetLocation (frame, retval);
-			return new MonoStringObject (this, location);
+			throw new InvalidOperationException ();
 		}
 	}
 }
