@@ -478,6 +478,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 
+			Expression expr;
 			Expression ltype = left.TryResolveType (context);
 			if (ltype != null) {
 				ITargetStructType stype = ltype.EvaluateType (context)
@@ -486,8 +487,14 @@ namespace Mono.Debugger.Frontends.Scripting
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", ltype.Name);
 
-				return StructAccessExpression.FindMember (
+				expr = StructAccessExpression.FindMember (
 					stype, frame, null, name);
+				if (expr == null)
+					throw new ScriptingException (
+						"Type `{0}' has no member `{1}'",
+						stype.Name, name);
+
+				return expr;
 			}
 
 			Expression lexpr = left.TryResolve (context);
@@ -501,8 +508,14 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException (
 					"`{0}' is not a struct or class", left.Name);
 
-			return StructAccessExpression.FindMember (
+			expr = StructAccessExpression.FindMember (
 				sobj.Type, frame, sobj, name);
+			if (expr == null)
+				throw new ScriptingException (
+					"Type `{0}' has no member `{1}'",
+					sobj.Type.Name, name);
+
+			return expr;
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
