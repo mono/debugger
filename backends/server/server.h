@@ -154,8 +154,8 @@ struct InferiorVTable {
 	 * Return COMMAND_ERROR_NOT_STOPPED if the target is currently running.
 	 * This is a time-critical function, it must return immediately without blocking.
 	 */
-	ServerCommandError    (* get_pc)              (ServerHandle     *handle,
-						       guint64          *pc);
+	ServerCommandError    (* get_frame)           (ServerHandle     *handle,
+						       StackFrame       *frame);
 
 	/*
 	 * Checks whether the current instruction is a breakpoint.
@@ -373,8 +373,8 @@ mono_debugger_server_get_target_info      (guint32            *target_int_size,
 					   guint32            *is_bigendian);
 
 ServerCommandError
-mono_debugger_server_get_pc               (ServerHandle       *handle,
-					   guint64            *pc);
+mono_debugger_server_get_frame            (ServerHandle       *handle,
+					   StackFrame         *frame);
 
 ServerCommandError
 mono_debugger_server_current_insn_is_bpt  (ServerHandle       *handle,

@@ -403,7 +403,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_get_target_info,
 	server_ptrace_continue,
 	server_ptrace_step,
-	server_ptrace_get_pc,
+	server_ptrace_get_frame,
 	server_ptrace_current_insn_is_bpt,
 	server_ptrace_peek_word,
 	server_ptrace_read_memory,

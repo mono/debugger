@@ -1,5 +1,15 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/server.h (InferiorVTable): Renamed `get_pc' to
+	`get_frame'; changed argument to `StackFrame *frame', this is an
+	"out ServerStackFrame" argument.
+
+	* backends/Inferior.cs (mono_debugger_server_get_frame): This now
+	has an "out ServerStackFrame" argument; use it to get the current
+	frame rather than creating a 1-frame-backtrace.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs
 	(StackFrame.Registers): Don't make this abstract.
 	(StackFrame..ctor): Take the registers as argument.

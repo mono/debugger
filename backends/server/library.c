@@ -104,12 +104,12 @@ mono_debugger_server_get_target_info (guint32 *target_int_size, guint32 *target_
 }
 
 ServerCommandError
-mono_debugger_server_get_pc (ServerHandle *handle, guint64 *pc)
+mono_debugger_server_get_frame (ServerHandle *handle, StackFrame *frame)
 {
-	if (!global_vtable->get_pc)
+	if (!global_vtable->get_frame)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->get_pc) (handle, pc);
+	return (* global_vtable->get_frame) (handle, frame);
 }
 
 ServerCommandError

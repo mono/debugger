@@ -70,7 +70,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_pc (IntPtr handle, out long pc);
+		static extern TargetError mono_debugger_server_get_frame (IntPtr handle, out ServerStackFrame frame);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_current_insn_is_bpt (IntPtr handle, out int is_breakpoint);
@@ -863,13 +863,8 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress CurrentFrame {
 			get {
-				long pc;
-				check_disposed ();
-				TargetError result = mono_debugger_server_get_pc (server_handle, out pc);
-				if (result != TargetError.None)
-					throw new TargetException (TargetError.NoStack);
-
-				return new TargetAddress (GlobalAddressDomain, pc);
+				ServerStackFrame frame = get_current_frame ();
+				return new TargetAddress (GlobalAddressDomain, frame.Address);
 			}
 		}
 
@@ -982,18 +977,11 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress address, stack, frame;
 
-			internal StackFrame (Inferior inferior, ServerStackFrame frame)
+			internal StackFrame (ITargetMemoryInfo info, ServerStackFrame frame)
 			{
-				this.address = new TargetAddress (inferior.GlobalAddressDomain, frame.Address);
-				this.stack = new TargetAddress (inferior.AddressDomain, frame.StackPointer);
-				this.frame = new TargetAddress (inferior.AddressDomain, frame.FrameAddress);
-			}
-
-			internal StackFrame (TargetAddress address, TargetAddress stack)
-			{
-				this.address = address;
-				this.stack = stack;
-				this.frame = TargetAddress.Null;
+				this.address = new TargetAddress (info.GlobalAddressDomain, frame.Address);
+				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);
+				this.frame = new TargetAddress (info.AddressDomain, frame.FrameAddress);
 			}
 
 			public TargetAddress Address {
@@ -1015,13 +1003,21 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		ServerStackFrame get_current_frame ()
+		{
+			check_disposed ();
+			ServerStackFrame frame;
+			TargetError result = mono_debugger_server_get_frame (
+				server_handle, out frame);
+			if (result != TargetError.None)
+				throw new TargetException (TargetError.NoStack);
+			return frame;
+		}
+
 		public StackFrame GetCurrentFrame ()
 		{
-			StackFrame[] iframes = GetBacktrace (1, TargetAddress.Null);
-			if (iframes.Length > 0)
-				return iframes [0];
-
-			return new StackFrame (CurrentFrame, GetStackPointer ());
+			ServerStackFrame frame = get_current_frame ();
+			return new StackFrame (this, frame);
 		}
 
 		public StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)

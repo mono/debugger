@@ -103,9 +103,11 @@ i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 s
 }
 
 static ServerCommandError
-server_ptrace_get_pc (ServerHandle *handle, guint64 *pc)
+server_ptrace_get_frame (ServerHandle *handle, StackFrame *frame)
 {
-	*pc = (guint32) INFERIOR_REG_EIP (handle->arch->current_regs);
+	frame->address = (guint32) INFERIOR_REG_EIP (handle->arch->current_regs);
+	frame->stack_pointer = (guint32) INFERIOR_REG_ESP (handle->arch->current_regs);
+	frame->frame_address = (guint32) INFERIOR_REG_EBP (handle->arch->current_regs);
 	return COMMAND_ERROR_NONE;
 }
 
