@@ -3,8 +3,6 @@
 #include <breakpoints.h>
 #include <sys/stat.h>
 #include <sys/ptrace.h>
-#include <asm/ptrace.h>
-#include <asm/user.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
