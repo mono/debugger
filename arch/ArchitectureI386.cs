@@ -31,23 +31,23 @@ namespace Mono.Debugger
 	// </summary>
 	internal class ArchitectureI386 : IArchitecture
 	{
-		IInferior inferior;
-		ThreadManager thread_manager;
+		ITargetAccess target;
+		object global_address_domain;
 
-		public ArchitectureI386 (IInferior inferior)
+		public ArchitectureI386 (ITargetAccess target, object global_address_domain)
 		{
-			this.inferior = inferior;
-			thread_manager = inferior.DebuggerBackend.ThreadManager;
+			this.target = target;
+			this.global_address_domain = global_address_domain;
 		}
 
 		public bool IsRetInstruction (TargetAddress address)
 		{
-			return inferior.ReadByte (address) == 0xc3;
+			return target.ReadByte (address) == 0xc3;
 		}
 
 		public TargetAddress GetCallTarget (TargetAddress address, out int insn_size)
 		{
-			ITargetMemoryReader reader = inferior.ReadMemory (address, 6);
+			ITargetMemoryReader reader = target.ReadMemory (address, 6);
 
 			byte opcode = reader.ReadByte ();
 
@@ -116,12 +116,12 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 			}
 
-			long addr = inferior.GetRegister ((int) reg);
+			long addr = target.GetRegister ((int) reg);
 
-			TargetAddress vtable_addr = new TargetAddress (thread_manager, addr + disp);
+			TargetAddress vtable_addr = new TargetAddress (global_address_domain, addr + disp);
 
 			if (dereference_addr)
-				return inferior.ReadGlobalAddress (vtable_addr);
+				return target.ReadGlobalAddress (vtable_addr);
 			else
 				return vtable_addr;
 		}
@@ -132,7 +132,7 @@ namespace Mono.Debugger
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
-			ITargetMemoryReader reader = inferior.ReadMemory (location, 10);
+			ITargetMemoryReader reader = target.ReadMemory (location, 10);
 
 			byte opcode = reader.ReadByte ();
 			if (opcode != 0x68)
@@ -149,7 +149,7 @@ namespace Mono.Debugger
 			if (location + call_disp + 10 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (thread_manager, method_info);
+			return new TargetAddress (global_address_domain, method_info);
 		}
 
 		public string[] RegisterNames {
@@ -254,15 +254,15 @@ namespace Mono.Debugger
 							out TargetAddress retaddr)
 		{
 			TargetAddress stack = new TargetAddress (
-				inferior, inferior.GetRegister ((int) I386Register.ESP));
+				target, target.GetRegister ((int) I386Register.ESP));
 
-			method = inferior.ReadGlobalAddress (stack);
-			code = inferior.ReadGlobalAddress (stack + inferior.TargetAddressSize +
-							   inferior.TargetIntegerSize);
-			retaddr = inferior.ReadGlobalAddress (stack + 2 * inferior.TargetAddressSize +
-							      inferior.TargetIntegerSize);
+			method = target.ReadGlobalAddress (stack);
+			code = target.ReadGlobalAddress (stack + target.TargetAddressSize +
+							 target.TargetIntegerSize);
+			retaddr = target.ReadGlobalAddress (stack + 2 * target.TargetAddressSize +
+							    target.TargetIntegerSize);
 
-			return inferior.ReadInteger (stack + inferior.TargetAddressSize);
+			return target.ReadInteger (stack + target.TargetAddressSize);
 		}
 
 		public int MaxPrologueSize {
@@ -327,8 +327,8 @@ namespace Mono.Debugger
 			pos += 2;
 
 			TargetAddress ebp = new TargetAddress (memory, regs [0]);
-			regs [0] = (uint) memory.ReadInteger (ebp);
-			ebp -= memory.TargetAddressSize;
+			regs [0] = (uint) target.ReadInteger (ebp);
+			ebp -= target.TargetAddressSize;
 
 			while (pos < length) {
 				byte opcode = code [pos++];
@@ -338,26 +338,26 @@ namespace Mono.Debugger
 
 				switch (opcode) {
 				case 0x50: /* eax */
-					regs [1] = (uint) memory.ReadInteger (ebp);
+					regs [1] = (uint) target.ReadInteger (ebp);
 					break;
 				case 0x51: /* ecx */
-					regs [3] = (uint) memory.ReadInteger (ebp);
+					regs [3] = (uint) target.ReadInteger (ebp);
 					break;
 				case 0x52: /* edx */
-					regs [4] = (uint) memory.ReadInteger (ebp);
+					regs [4] = (uint) target.ReadInteger (ebp);
 					break;
 				case 0x53: /* ebx */
-					regs [2] = (uint) memory.ReadInteger (ebp);
+					regs [2] = (uint) target.ReadInteger (ebp);
 					break;
 				case 0x56: /* esi */
-					regs [5] = (uint) memory.ReadInteger (ebp);
+					regs [5] = (uint) target.ReadInteger (ebp);
 					break;
 				case 0x57: /* edi */
-					regs [6] = (uint) memory.ReadInteger (ebp);
+					regs [6] = (uint) target.ReadInteger (ebp);
 					break;
 				}
 
-				ebp -= memory.TargetIntegerSize;
+				ebp -= target.TargetIntegerSize;
 			}
 
 			new_data = regs;

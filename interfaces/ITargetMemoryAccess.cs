@@ -121,4 +121,9 @@ namespace Mono.Debugger
 
 		void WriteAddress (TargetAddress address, TargetAddress value);
 	}
+
+	public interface ITargetAccess : ITargetMemoryAccess
+	{
+		long GetRegister (int register);
+	}
 }

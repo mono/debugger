@@ -60,7 +60,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
+	public interface IInferior : ITargetAccess, ITargetNotification, IDisposable
 	{
 		/// <summary>
 		///   Start the target.

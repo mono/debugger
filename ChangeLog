@@ -1,5 +1,15 @@
 2003-01-01  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs (ITargetAccess): New
+	interface; derives from ITargetMemoryAccess has has a function to
+	read a register.
+
+	* arch/ArchitectureI386.cs: The ctor now takes an ITargetAccess
+	and the global address domain; we don't use the IInferior here any
+	longer.
+
+2003-01-01  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.cs: Added `disassemble' and
 	`disassemble method' commands.
 

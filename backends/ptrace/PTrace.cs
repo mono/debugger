@@ -350,10 +350,10 @@ namespace Mono.Debugger.Backends
 			this.native = !(start is ManagedProcessStart);
 			this.bfd_container = bfd_container;
 			this.error_handler = error_handler;
-			this.arch = new ArchitectureI386 (this);
 			this.breakpoint_manager = breakpoint_manager;
 
 			thread_manager = backend.ThreadManager;
+			arch = new ArchitectureI386 (this, thread_manager);
 
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)

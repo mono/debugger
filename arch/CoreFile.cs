@@ -25,7 +25,7 @@ namespace Mono.Debugger.Architecture
 			this.backend = backend;
 			this.symtab_manager = backend.SymbolTableManager;
 
-			arch = new ArchitectureI386 (this);
+			arch = new ArchitectureI386 (this, backend.ThreadManager);
 
 			core_file = Path.GetFullPath (core_file);
 			application = Path.GetFullPath (application);
