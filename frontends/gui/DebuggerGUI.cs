@@ -103,6 +103,7 @@ namespace Mono.Debugger.GUI
 		MemoryMapsDisplay memory_maps_display;
 		BreakpointManager breakpoint_manager;
 		ThreadNotify thread_notify;
+		FileOpenDialog file_open_dialog;
 
 		Gtk.TextView target_output;
 		Gtk.TextView command_output;
@@ -224,6 +225,9 @@ namespace Mono.Debugger.GUI
 			source_manager = new SourceManager (this, "code-browser-notebook",
 							    "disassembler-view", "status-bar",
 							    "register-notebook");
+
+			file_open_dialog = new FileOpenDialog (this, "Open File");
+			file_open_dialog.FileSelectedEvent += new FileSelectedHandler (file_selected);
 
 			SetButtonImage ("step-over");
 			SetButtonImage ("step-into");
@@ -362,18 +366,7 @@ namespace Mono.Debugger.GUI
 		//
 		void OnFileOpenActivate (object sender, EventArgs args)
 		{
-			Gtk.FileSelection fs = new Gtk.FileSelection ("Open File");
-			fs.ShowFileops = false;
-
-			int v = fs.Run ();
-			string file = fs.Filename;
-			fs.Destroy ();
-			fs = null;
-
-			if (v != (int) ResponseType.Ok)
-				return;
-
-			source_manager.LoadFile (file);
+			file_open_dialog.Show ();
 		}
 
 		ProgramToDebug program_to_debug;
@@ -525,6 +518,11 @@ namespace Mono.Debugger.GUI
 				}
 				Application.Quit ();
 			}
+		}
+
+		void file_selected (string filename)
+		{
+			source_manager.LoadFile (filename);
 		}
 
 		public void Run ()
