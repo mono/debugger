@@ -516,7 +516,7 @@ namespace Mono.Debugger
 				current_event_status = 0;
 			}
 
-			if (event_engine != null) {
+			if ((event_engine != null) && !abort_requested) {
 				try {
 					event_engine.ProcessEvent (status);
 				} catch (ThreadAbortException) {
