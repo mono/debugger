@@ -1,3 +1,8 @@
+February 2nd, 2003 - Martin Baulig
+----------------------------------
+
+When single-stepping into an interncall, don't stop in the wrapper.
+
 January 25th, 2003 - Martin Baulig
 ----------------------------------
 
