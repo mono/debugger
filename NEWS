@@ -1,3 +1,15 @@
+April 6th, 2003 - Martin Baulig
+-------------------------------
+
+Released version 0.3 "The White Mountains" of the Mono Debugger :-)
+
+April 5th, 2003 - Martin Baulig
+-------------------------------
+
+Finally fixed a bug which made the debugger hang the first time the
+garbage collector was run.  You need a modified version of Boehm GC to
+make this work, see README.build for details.
+
 March 28th, 2003 - Martin Baulig
 --------------------------------
 

@@ -1,3 +1,7 @@
+2003-04-07  Martin Baulig  <martin@ximian.com>
+
+	Released version 0.3 "The White Mountains" of the Mono Debugger :-)
+
 2003-04-06  Martin Baulig  <martin@ximian.com>
 
 	* README.build: New file.  Please read it before compiling the
