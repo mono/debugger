@@ -34,13 +34,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 			stderr.WriteLine ("Commands:");
 			stderr.WriteLine ("  q, quit,exit     Quit the debugger");
 			stderr.WriteLine ("  r, run           Start/continue the target");
+			stderr.WriteLine ("  c, continue      Continue execution");
+			stderr.WriteLine ("  i, stepi         single instruction step");
+			stderr.WriteLine ("  t, nexti         next instruction step");
 			stderr.WriteLine ("  abort            Abort the target");
 			stderr.WriteLine ("  kill             Kill the target");
-			stderr.WriteLine ("  b, break-method  Add breakpoint for a CSharp method");
 			stderr.WriteLine ("  f, frame         Get current stack frame");
 			stderr.WriteLine ("  s, step          Single-step");
 			stderr.WriteLine ("  n, next          Single-step");
-			stderr.WriteLine ("  !, gdb           Send command to gdb");
+			stderr.WriteLine ("  finish           Continues till the end of the function");
+			stderr.WriteLine ("  stop             Stops the program");
+			stderr.WriteLine ("  core FILE        Reads a core file");
+			stderr.WriteLine ("  frame            Display current frame");
+			stderr.WriteLine ("  bt               Displays backtrace");
+			stderr.WriteLine ("  params           Displays parameters");
+			stderr.WriteLine ("  locals           Displays local variables");
+			stderr.WriteLine ("  modules          Displays modules loaded");
 		}
 
 		// <summary>
