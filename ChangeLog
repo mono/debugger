@@ -1,3 +1,29 @@
+2002-09-27  Martin Baulig  <martin@gnome.org>
+
+	* interfaces/IArchitecture.cs (IArchitecture.GetBreakpointTrampolineData):
+	New method to read the data from a JIT breakpoint trampoline.
+
+	* inferfaces/ILanguageBackends.cs (ILanguageBackend.BreakpointHit): New
+	method.  The language backend may decide to continue the target if hit
+	a breakpoint.
+
+	* backends/ptrace/PTrace.cs (PTraceInferior.Continue): Don't check
+	the `until' address, this is now done in DebuggerBackend.
+	* backends/Debugger.cs (DebuggerBackend.Continue): Moved the check
+	here.
+
+	* backends/Debugger.cs (DebuggerBackend.frame_changed): If we hit
+	a breakpoint and the language backend told us to continue, do so.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoCSharpLanguageBackend.BreakpointHit): If we're in the
+	breakpoint trampoline, get its data but ignore the breakpoint for
+	the moment.
+
+	* backends/server/i386-linux-ptrace.c (server_ptrace_child_stopped):
+	Send a `(MESSAGE_CHILD_HIT_BREAKPOINT, 0)' if we hit an unknown
+	breakpoint, ie. there was an `int 3' in the code which we did not insert.
+
 2002-09-26  Martin Baulig  <martin@gnome.org>
 
 	* classes/ILDisassembler.cs: Removed.  We use the .il which has

@@ -438,8 +438,22 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 		return STOP_ACTION_BREAKPOINT_HIT;
 	}
 
-	if (!handle->call_address || handle->call_address != regs.eip)
+	if (!handle->call_address || handle->call_address != regs.eip) {
+		int code;
+
+		if (stopsig != SIGTRAP)
+			return STOP_ACTION_SEND_STOPPED;
+
+		if (server_ptrace_peek_word (handle, (guint32) (regs.eip - 1), &code) != COMMAND_ERROR_NONE)
+			return STOP_ACTION_SEND_STOPPED;
+
+		if ((code & 0xff) == 0xcc) {
+			*retval = 0;
+			return STOP_ACTION_BREAKPOINT_HIT;
+		}
+
 		return STOP_ACTION_SEND_STOPPED;
+	}
 
 	if (set_registers (handle, handle->saved_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore registers after returning from a call");

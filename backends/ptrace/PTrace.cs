@@ -84,7 +84,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		public event TargetExitedHandler TargetExited;
-		public event ChildMessageHandler ChildMessage;
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, TargetExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
@@ -436,8 +435,6 @@ namespace Mono.Debugger.Backends
 
 			if ((message == ChildMessageType.CHILD_STOPPED) && (arg != 0)) {
 				change_target_state (TargetState.STOPPED, arg);
-				if (ChildMessage != null)
-					ChildMessage (message, arg);
 				return;
 			}
 
@@ -489,9 +486,6 @@ namespace Mono.Debugger.Backends
 				Console.WriteLine ("CHILD MESSAGE: {0} {1}", message, arg);
 				break;
 			}
-
-			if (ChildMessage != null)
-				ChildMessage (message, arg);
 		}
 
 		void inferior_output (string line)
@@ -767,20 +761,7 @@ namespace Mono.Debugger.Backends
 		public void Continue (TargetAddress until)
 		{
 			check_disposed ();
-			TargetAddress current = CurrentFrame;
-
-			inferior_output (String.Format ("Requested to run from {0:x} until {1:x}.",
-							current, until));
-
-			while (current < until)
-				current += bfd_disassembler.GetInstructionSize (current);
-
-			if (current != until)
-				inferior_output (String.Format (
-					"Oooops: reached {0:x} but symfile had {1:x}",
-					current, until));
-
-			insert_temporary_breakpoint (current);
+			insert_temporary_breakpoint (until);
 			Continue ();
 		}
 

@@ -246,5 +246,20 @@ namespace Mono.Debugger
 				return String.Format ("{0:x}", value);
 			}
 		}
+
+		public int GetBreakpointTrampolineData (out TargetAddress method, out TargetAddress code,
+							out TargetAddress retaddr)
+		{
+			TargetAddress stack = new TargetAddress (
+				inferior, inferior.GetRegister ((int) I386Register.ESP));
+
+			method = inferior.ReadAddress (stack);
+			code = inferior.ReadAddress (stack + inferior.TargetAddressSize +
+						     inferior.TargetIntegerSize);
+			retaddr = inferior.ReadAddress (stack + 2 * inferior.TargetAddressSize +
+							inferior.TargetIntegerSize);
+
+			return inferior.ReadInteger (stack + inferior.TargetAddressSize);
+		}
 	}
 }

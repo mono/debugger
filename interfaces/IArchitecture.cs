@@ -51,5 +51,12 @@ namespace Mono.Debugger
 		// </summary>
 		TargetAddress GetTrampoline (TargetAddress address,
 					     TargetAddress generic_trampoline_address);
+
+		// <summary>
+		//   Assumes that the target just stopped in the JIT generated breakpoint trampoline
+		//   and returns its data.
+		// </summary>
+		int GetBreakpointTrampolineData (out TargetAddress method, out TargetAddress code,
+						 out TargetAddress retaddr);
 	}
 }

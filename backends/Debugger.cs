@@ -44,6 +44,7 @@ namespace Mono.Debugger
 
 		bool step_line;
 		bool next_line;
+		StepFrame current_step_frame;
 		bool must_send_update;
 		bool native;
 
@@ -475,6 +476,25 @@ namespace Mono.Debugger
 			inferior.Continue ();
 		}
 
+		public void Continue (TargetAddress until)
+		{
+			check_can_run ();
+			TargetAddress current = CurrentFrameAddress;
+
+			Console.WriteLine (String.Format ("Requested to run from {0:x} until {1:x}.",
+							  current, until));
+
+			while (current < until)
+				current += inferior.Disassembler.GetInstructionSize (current);
+
+			if (current != until)
+				Console.WriteLine (String.Format (
+					"Oooops: reached {0:x} but symfile had {1:x}",
+					current, until));
+
+			inferior.Continue (until);
+		}
+
 		public void Stop ()
 		{
 			check_inferior ();
@@ -488,8 +508,9 @@ namespace Mono.Debugger
 			if (frame.Method == null)
 				throw new NoMethodException ();
 
-			inferior.Step (new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
+			current_step_frame = new StepFrame (
+				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish);
+			inferior.Step (current_step_frame);
 		}
 
 		public void TestBreakpoint (string name)
@@ -611,11 +632,22 @@ namespace Mono.Debugger
 			bool old_step_line = step_line;
 			bool old_next_line = next_line;
 
-			step_line = false;
-			next_line = false;
-
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, true);
 			TargetAddress address = frames [0].Address;
+
+			if ((language != null) && !language.BreakpointHit (address))
+				return false;
+
+			if ((current_step_frame != null) &&
+			    ((address >= current_step_frame.Start) &&
+			     (address < current_step_frame.End))) {
+				inferior.Step (current_step_frame);
+				return false;
+			}
+
+			step_line = false;
+			next_line = false;
+			current_step_frame = null;
 
 			if (!must_send_update && (current_frame != null) && current_frame.IsValid &&
 			    (current_frame.TargetAddress == address))

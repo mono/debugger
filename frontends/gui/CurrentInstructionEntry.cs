@@ -37,8 +37,9 @@ namespace Mono.Debugger.GUI
 				try {
 					IDisassembler dis = backend.Disassembler;
 					TargetAddress frame = backend.CurrentFrameAddress;
+					TargetAddress old_frame = frame;
 					string insn = dis.DisassembleInstruction (ref frame);
-					entry.Text = String.Format ("0x{0:x}   {1}", frame.Address, insn);
+					entry.Text = String.Format ("0x{0:x}   {1}", old_frame.Address, insn);
 					widget.Sensitive = true;
 				} catch (Exception e) {
 					Console.WriteLine (e);

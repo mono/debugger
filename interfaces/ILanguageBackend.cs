@@ -16,6 +16,14 @@ namespace Mono.Debugger
 		}
 
 		TargetAddress GetTrampoline (TargetAddress address);
+
+		// <summary>
+		//   Called when a breakpoint has been hit.  Returns true if the
+		//   target is still stopped.  The implementation may decide to
+		//   ignore the breakpoint and continue the target - in this case,
+		//   it'll return false.
+		// </summary>
+		bool BreakpointHit (TargetAddress address);
 	}
 }
 

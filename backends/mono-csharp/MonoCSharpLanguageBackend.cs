@@ -923,6 +923,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			long retval = inferior.CallStringMethod (
 				info.insert_breakpoint, 0x12345678abcdef79, method_name);
+			Console.WriteLine ("RESULT: {0:x}", retval);
 		}
 
 		public TargetAddress GenericTrampolineCode {
@@ -959,6 +960,48 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			return method;
+		}
+
+		public bool BreakpointHit (TargetAddress address)
+		{
+			if (info == null)
+				return true;
+
+			try {
+				TargetAddress trampoline = inferior.ReadAddress (
+					info.breakpoint_trampoline_code);
+				if (trampoline.IsNull || (inferior.CurrentFrame != trampoline + 1))
+					return true;
+
+				TargetAddress method, code, retaddr;
+				int breakpoint_id = arch.GetBreakpointTrampolineData (
+					out method, out code, out retaddr);
+
+				Console.WriteLine ("TRAMPOLINE BREAKPOINT: {0} {1} {2} {3}",
+						   code, method, breakpoint_id, retaddr);
+
+				inferior.Continue (retaddr);
+				return false;
+			} catch {
+				// Do nothing.
+			}
+			return true;
+		}
+	}
+
+	internal class ManagedBreakpointLocation : TargetLocation
+	{
+		string method_name;
+
+		internal ManagedBreakpointLocation (string method_name, int offset)
+			: base (offset)
+		{
+			this.method_name = method_name;
+		}
+
+		public override object Clone ()
+		{
+			return new ManagedBreakpointLocation (method_name, (int) Offset);
 		}
 	}
 }
