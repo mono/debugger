@@ -1279,6 +1279,7 @@ namespace Mono.Debugger.Languages.Mono
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		ArrayList symbol_files;
+		int last_num_symbol_files;
 		Hashtable assembly_hash;
 		Hashtable class_hash;
 		MonoSymbolFile corlib;
@@ -1409,9 +1410,8 @@ namespace Mono.Debugger.Languages.Mono
 			int num_symbol_files = header.ReadInteger ();
 			TargetAddress symfiles_address = header.ReadAddress ();
 
-			symfiles_address += symbol_files.Count * memory.TargetAddressSize;
-
-			for (int i = symbol_files.Count; i < num_symbol_files; i++) {
+			symfiles_address += last_num_symbol_files * memory.TargetAddressSize;
+			for (int i = last_num_symbol_files; i < num_symbol_files; i++) {
 				TargetAddress address = memory.ReadGlobalAddress (symfiles_address);
 				symfiles_address += memory.TargetAddressSize;
 
@@ -1433,6 +1433,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
+			last_num_symbol_files = num_symbol_files;
 			read_data_table (memory, header);
 		}
 
@@ -1440,61 +1441,61 @@ namespace Mono.Debugger.Languages.Mono
 		void read_data_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
 		{
 			int num_data_tables = header.ReadInteger ();
-			int chunk_size = header.ReadInteger ();
 			TargetAddress data_tables = header.ReadAddress ();
 
-			Report.Debug (DebugFlags.JitSymtab, "DATA TABLES: {0} {1} {2} {3}",
-				      last_num_data_tables, num_data_tables, chunk_size,
-				      data_tables);
+			Report.Debug (DebugFlags.JitSymtab, "DATA TABLES: {0} {1} {2}",
+				      last_num_data_tables, num_data_tables, data_tables);
 
 			if (num_data_tables != last_num_data_tables) {
-				int old_offset = 0;
-				int old_count = num_data_tables;
-				int old_size = old_count * chunk_size;
+				int old_offset = last_data_table_offset;
 
-				for (int i = 0; i < num_data_tables; i++) {
+				data_tables += last_num_data_tables * memory.TargetAddressSize;
+
+				for (int i = last_num_data_tables; i < num_data_tables; i++) {
 					TargetAddress old_table = memory.ReadAddress (data_tables);
 					data_tables += memory.TargetAddressSize;
 
-					read_data_items (memory, old_table, old_offset, chunk_size);
-					old_offset += chunk_size;
+					int old_size = memory.ReadInteger (old_table);
+					read_data_items (memory, old_table, old_offset, old_size);
+					old_offset = 0;
 				}
 
 				last_num_data_tables = num_data_tables;
-				last_data_table_offset = old_size;
+				last_data_table_offset = 0;
 			}
 
 			TargetAddress data_table_address = header.ReadAddress ();
-			int data_table_total_size = header.ReadInteger ();
+			int data_table_size = header.ReadInteger ();
 			int offset = header.ReadInteger ();
-			int start = header.ReadInteger ();
 
 			int size = offset - last_data_table_offset;
-			int read_offset = last_data_table_offset - start;
 
 			Report.Debug (DebugFlags.JitSymtab,
-				      "DATA TABLE: {0} {1} {2} {3} - {4} {5}",
-				      data_table_address, data_table_total_size,
-				      offset, start, read_offset, size);
+				      "DATA TABLE: {0} {1} {2} - {3} {4}",
+				      data_table_address, data_table_size, offset,
+				      last_data_table_offset, size);
 
-			if (size != 0) {
-				data_table_address += read_offset;
-				read_data_items (memory, data_table_address, last_data_table_offset, size);
-			}
+			if (size != 0)
+				read_data_items (memory, data_table_address, last_data_table_offset, offset);
 
 			last_data_table_offset = offset;
 		}
 
-		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int offset, int size)
+		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int start, int end)
 		{
-			ITargetMemoryReader reader = memory.ReadMemory (address, size);
+			ITargetMemoryReader reader = memory.ReadMemory (address + start, end - start);
 
 			Report.Debug (DebugFlags.JitSymtab,
-				      "READ DATA ITEMS: {0} {1} {2} {3} - {4} {5}", address, offset,
-				      address + offset, size, reader.BinaryReader.Position, reader.Size);
+				      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address, start, end,
+				      reader.BinaryReader.Position, reader.Size);
 
-			while (reader.BinaryReader.Position < reader.Size) {
+			if (start == 0)
+				reader.BinaryReader.Position = 4;
+
+			while (reader.BinaryReader.Position + 4 < reader.Size) {
 				int item_size = reader.BinaryReader.ReadInt32 ();
+				if (item_size == 0)
+					break;
 				DataItemType item_type = (DataItemType) reader.BinaryReader.ReadInt32 ();
 
 				long pos = reader.BinaryReader.Position;
@@ -1510,7 +1511,6 @@ namespace Mono.Debugger.Languages.Mono
 				}
 
 				reader.BinaryReader.Position = pos + item_size;
-				offset += item_size + 8;
 			}
 		}
 
@@ -1528,7 +1528,15 @@ namespace Mono.Debugger.Languages.Mono
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
-			MonoSymbolFile file = (MonoSymbolFile) symbol_files [reader.BinaryReader.ReadInt32 ()];
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+
+			if (file_idx >= symbol_files.Count)
+				return;
+
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
+			if (file == null)
+				return;
+
 			file.AddClassEntry (reader, contents);
 		}
 
@@ -1772,6 +1780,7 @@ namespace Mono.Debugger.Languages.Mono
 				do_update_symbol_table (inferior);
 				break;
 
+			case NotificationType.AddModule:
 			case NotificationType.ReloadSymtabs:
 				do_update_symbol_table (inferior);
 				break;
