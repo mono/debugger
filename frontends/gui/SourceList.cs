@@ -69,7 +69,7 @@ namespace Mono.Debugger.GUI {
 
 		protected override void PopulateViewPopup (Gtk.Menu menu)
 		{
-			Prepend (menu, "_Duplicate View", new EventHandler (DuplicateViewCB));
+			Prepend (menu, "_Duplicate this view", new EventHandler (DuplicateViewCB));
 			base.PopulateViewPopup (menu);
 		}
 

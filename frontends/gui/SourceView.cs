@@ -102,6 +102,7 @@ namespace Mono.Debugger.GUI {
 		
 		void PopulateViewPopup (object o, PopulatePopupArgs args)
 		{
+			args.Menu.Prepend (new SeparatorMenuItem ());
 			PopulateViewPopup (args.Menu);
 		}
 
