@@ -70,6 +70,12 @@ namespace Mono.Debugger.Backends
 			string[] envp = { };
 			string working_directory = ".";
 
+			arch = new ArchitectureI386 ();
+
+			symbols = new Hashtable ();
+			breakpoints = new Hashtable ();
+			symtabs = new ArrayList ();
+
 			process = new Spawn (working_directory, argv, envp, out gdb_input, out gdb_output,
 					     out gdb_errors);
 
@@ -83,16 +89,7 @@ namespace Mono.Debugger.Backends
 			target_integer_size = ReadInteger ("print sizeof (long)");
 			target_long_integer_size = ReadInteger ("print sizeof (long long)");
 
-			arch = new ArchitectureI386 ();
-
-			symbols = new Hashtable ();
-			breakpoints = new Hashtable ();
-			symtabs = new ArrayList ();
-
 			send_gdb_command ("set prompt");
-			start_target ("run", StepMode.RUN);
-
-			UpdateSymbolFiles ();
 		}
 
 		//
@@ -109,6 +106,7 @@ namespace Mono.Debugger.Backends
 		public void Run ()
 		{
 			start_target ("run", StepMode.RUN);
+			UpdateSymbolFiles ();
 		}
 
 		public void Continue ()
@@ -928,18 +926,14 @@ namespace Mono.Debugger.Backends
 
 		void send_gdb_command (string command)
 		{
-			// Console.WriteLine ("SENDING `{0}'", command);
 			gdb_event = false;
 			gdb_input.WriteLine (command);
 			while (!gdb_event)
 				MainIteration ();
-			// Console.WriteLine ("DONE");
 		}
 
 		void start_target (string command, StepMode mode)
 		{
-			Console.WriteLine ("STARTING TARGET: {0} {1}", mode, command);
-
 			step_mode = mode;
 
 			if (mode != StepMode.STEP_LINE_2) {
@@ -958,7 +952,7 @@ namespace Mono.Debugger.Backends
 				long address = current_frame.TargetLocation.Address;
 				long call_target = arch.GetCallTarget (this, address);
 
-				if (call_target != null) {
+				if (call_target != 0) {
 					Console.WriteLine ("CALL: {0:x} {1:x}", address, call_target);
 					send_gdb_command ("x/i $eip");
 					send_gdb_command ("x/5b $eip");

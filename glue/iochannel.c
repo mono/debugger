@@ -53,5 +53,7 @@ mono_debugger_glue_write_line (GIOChannel *channel, const char *line)
 	GIOStatus status;
 
 	status = g_io_channel_write_chars (channel, line, strlen (line), &count, NULL);
+	if ((status != G_IO_STATUS_NORMAL) || (count != strlen (line)))
+		g_message (G_STRLOC ": %d - %d - %d", status, strlen (line), count);
 	g_io_channel_flush (channel, NULL);
 }

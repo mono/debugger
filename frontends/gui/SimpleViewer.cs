@@ -56,6 +56,9 @@ namespace Mono.Debugger.GUI {
 			backend.CurrentFrameEvent += new StackFrameHandler (CurrentFrameEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
+			command_entry.Sensitive = true;
+			command_entry.HasFocus = true;
+
 			interpreter = new Interpreter (backend, output_writer, output_writer);
 		}
 
@@ -185,6 +188,7 @@ namespace Mono.Debugger.GUI {
 
 			command_entry.ActivatesDefault = true;
 			command_entry.Activated += new EventHandler (DoOneCommand);
+			command_entry.Sensitive = false;
 
 			VBox vbox = new VBox (false, 0);
 
