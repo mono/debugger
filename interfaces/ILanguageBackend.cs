@@ -8,8 +8,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		void UpdateSymbolTable ();
-
 		// <summary>
 		//   The address of the JIT's generic trampoline code.
 		// </summary>

@@ -199,13 +199,29 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public virtual bool IsLoaded {
+			get {
+				return true;
+			}
+		}
+
+		public virtual void UpdateSymbolTable ()
+		{
+			if (SymbolTableChanged != null)
+				SymbolTableChanged ();
+		}
+
+		public event SymbolTableChangedHandler SymbolTableChanged;
+
 		public override string ToString ()
 		{
 			if (is_continuous)
-				return String.Format ("SymbolTable({0:x},{1:x},{2})",
-						      start_address, end_address, method_table != null);
+				return String.Format ("SymbolTable({3},{0:x},{1:x},{2})",
+						      start_address, end_address, method_table != null,
+						      GetType ());
 			else
-				return String.Format ("SymbolTable({0})", method_table != null);
+				return String.Format ("SymbolTable({0},{1})",
+						      GetType (),method_table != null);
 		}
 	}
 }

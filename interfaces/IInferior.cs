@@ -135,7 +135,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   The symbol table from native executables and shared libraries.
 		// </summary>
-		ISymbolTableCollection SymbolTables {
+		ISymbolTableCollection SymbolTable {
 			get;
 		}
 	}

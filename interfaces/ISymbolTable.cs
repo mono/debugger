@@ -49,6 +49,8 @@ namespace Mono.Debugger
 		}
 	}
 
+	public delegate void SymbolTableChangedHandler ();
+
 	public interface ISymbolTable : ISymbolLookup, ISymbolContainer
 	{
 		// <summary>
@@ -74,6 +76,14 @@ namespace Mono.Debugger
 		ISymbolRange[] SymbolRanges {
 			get;
 		}
+
+		bool IsLoaded {
+			get;
+		}
+
+		void UpdateSymbolTable ();
+
+		event SymbolTableChangedHandler SymbolTableChanged;
 	}
 
 	public interface ISymbolTableCollection : ISymbolTable, ICollection

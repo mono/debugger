@@ -266,14 +266,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override bool HasRanges {
 			get {
-				return true;
+				return ranges != null;
 			}
 		}
 
 		public override ISymbolRange[] SymbolRanges {
 			get {
 				if (ranges == null)
-					return null;
+					throw new InvalidOperationException ();
 				ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 				ranges.CopyTo (retval, 0);
 				return retval;
@@ -317,7 +317,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		bool updating_symfiles;
-		public void UpdateSymbolTable ()
+		public override void UpdateSymbolTable ()
 		{
 			if (updating_symfiles)
 				return;
@@ -347,6 +347,7 @@ namespace Mono.Debugger.Languages.CSharp
 				ranges = null;
 			} finally {
 				updating_symfiles = false;
+				base.UpdateSymbolTable ();
 			}
 		}
 

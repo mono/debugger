@@ -9,11 +9,16 @@ namespace Mono.Debugger
 	{
 		ArrayList symtabs = new ArrayList ();
 		ArrayList ranges = new ArrayList ();
+		bool has_ranges;
+		bool in_update;
 
 		public void AddSymbolTable (ISymbolTable symtab)
 		{
+			if (symtab == null)
+				return;
 			symtabs.Add (symtab);
-			update_ranges ();
+			symtab.SymbolTableChanged += new SymbolTableChangedHandler (update_handler);
+			update_handler ();
 		}
 
 		public bool IsContinuous {
@@ -38,22 +43,25 @@ namespace Mono.Debugger
 		{
 			ranges = new ArrayList ();
 			foreach (ISymbolTable symtab in symtabs) {
-				if (!symtab.HasRanges)
+				if (!symtab.IsLoaded || !symtab.HasRanges)
 					continue;
 
 				ranges.AddRange (symtab.SymbolRanges);
+				has_ranges = true;
 			}
 			ranges.Sort ();
 		}
 
 		public bool HasRanges {
 			get {
-				return true;
+				return has_ranges;
 			}
 		}
 
 		public ISymbolRange[] SymbolRanges {
 			get {
+				if (!has_ranges)
+					throw new InvalidOperationException ();
 				ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 				ranges.CopyTo (retval, 0);
 				return retval;
@@ -63,6 +71,9 @@ namespace Mono.Debugger
 		public IMethod Lookup (ITargetLocation target)
 		{
 			foreach (ISymbolTable symtab in symtabs) {
+				if (!symtab.IsLoaded)
+					continue;
+
 				IMethod method = symtab.Lookup (target);
 
 				if (method != null)
@@ -71,6 +82,35 @@ namespace Mono.Debugger
 
 			return null;
 		}
+
+		public bool IsLoaded {
+			get {
+				return true;
+			}
+		}
+
+		void update_handler ()
+		{
+			if (in_update)
+				return;
+
+			update_ranges ();
+
+			if (SymbolTableChanged != null)
+				SymbolTableChanged ();
+		}
+
+		public void UpdateSymbolTable ()
+		{
+			in_update = true;
+			foreach (ISymbolTable symtab in symtabs)
+				symtab.UpdateSymbolTable ();
+			in_update = false;
+
+			update_handler ();
+		}
+
+		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		//
 		// ICollection

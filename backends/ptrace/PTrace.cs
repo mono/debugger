@@ -769,7 +769,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ISymbolTableCollection SymbolTables {
+		public ISymbolTableCollection SymbolTable {
 			get {
 				check_disposed ();
 				return native_symtabs;

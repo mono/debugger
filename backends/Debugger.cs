@@ -376,6 +376,7 @@ namespace Mono.Debugger.Backends
 		public readonly string Environment_Path	= "/usr/bin";
 
 		ISourceFileFactory source_factory;
+		ISymbolTableCollection symtabs;
 
 		Assembly application;
 		Inferior inferior;
@@ -526,6 +527,7 @@ namespace Mono.Debugger.Backends
 			inferior.Dispose ();
 			inferior = null;
 			language = null;
+			symtabs = null;
 			initialized = false;
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
@@ -556,8 +558,13 @@ namespace Mono.Debugger.Backends
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
 
-			if (!native)
+			symtabs = new SymbolTableCollection ();
+			symtabs.AddSymbolTable (inferior.SymbolTable);
+
+			if (!native) {
 				language = new MonoCSharpLanguageBackend (inferior);
+				symtabs.AddSymbolTable (language.SymbolTable);
+			}
 		}
 
 		public void Quit ()
@@ -611,8 +618,7 @@ namespace Mono.Debugger.Backends
 
 				ITargetLocation location = inferior.CurrentFrame;
 
-				if (language != null)
-					language.UpdateSymbolTable ();
+				symtabs.UpdateSymbolTable ();
 
 				IMethod method = Lookup (location);
 				if ((method != null) && method.HasSource) {
@@ -626,19 +632,7 @@ namespace Mono.Debugger.Backends
 
 		public IMethod Lookup (ITargetLocation address)
 		{
-			if (inferior == null)
-				return null;
-
-			if (inferior.SymbolTables != null) {
-				IMethod method = inferior.SymbolTables.Lookup (address);
-				if (method != null)
-					return method;
-			}
-
-			if (language == null)
-				return null;
-
-			return language.SymbolTable.Lookup (address);
+			return symtabs.Lookup (address);
 		}
 
 		void frame_changed ()
