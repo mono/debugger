@@ -170,8 +170,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 					if (!var.Type.HasObject)
 						continue;
 
-					ITargetObject obj = var.GetObject (backend.CurrentFrame);
-					print_object (obj);
+					try {
+						ITargetObject obj = var.GetObject (backend.CurrentFrame);
+						print_object (obj);
+					} catch (LocationInvalidException) {
+						// Do nothing.
+					}
 				}
 				break;
 			}
@@ -186,8 +190,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 					if (!var.Type.HasObject)
 						continue;
 
-					ITargetObject obj = var.GetObject (backend.CurrentFrame);
-					print_object (obj);
+					try {
+						ITargetObject obj = var.GetObject (backend.CurrentFrame);
+						print_object (obj);
+					} catch (LocationInvalidException) {
+						// Do nothing
+					}
 				}
 				break;
 			}
