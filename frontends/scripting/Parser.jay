@@ -57,6 +57,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token PERCENT
 %token DOLLAR
 %token DOT
+%token BANG
+%token ASSIGN
 
 %token PROCESSES
 %token REGISTERS
@@ -81,6 +83,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token BREAK
 %token PRINT
 %token DISASSEMBLE
+%token SET
 
 %token SELECT
 %token BACKGROUND
@@ -205,29 +208,37 @@ command
 	  {
 		$$ = new StopProcessCommand ((ProcessExpression) $2);
 	  }
+	| SET BANG IDENTIFIER ASSIGN variable_expression
+	  {
+		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
+	  }
 	;
 
 expression
 	: AT INTEGER
-	{
+	  {
 		$$ = new ProcessExpression ((int) $2);
-	}
+	  }
 	| opt_process opt_frame_number PERCENT IDENTIFIER
-	{
+	  {
 		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
-	}
+	  }
 	| variable_expression
 	;
 
 variable_expression
-	: opt_process opt_frame_number DOLLAR IDENTIFIER
-	{
-		$$ = new VariableExpression ((ProcessExpression) $1, (int) $2, (string) $4);
-	}
+	: BANG IDENTIFIER
+	  {
+		$$ = new ScriptingVariableReference ((string) $2);
+	  }
+	| opt_process opt_frame_number DOLLAR IDENTIFIER
+	  {
+		$$ = new VariableReferenceExpression ((ProcessExpression) $1, (int) $2, (string) $4);
+	  }
 	| variable_expression DOT IDENTIFIER
-	{
+	  {
 		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
-	}
+	  }
 	;
 
 program_arguments

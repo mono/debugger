@@ -396,6 +396,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ScriptingVariableAssignCommand : Command
+	{
+		string identifier;
+		VariableExpression expr;
+
+		public ScriptingVariableAssignCommand (string identifier, VariableExpression expr)
+		{
+			this.identifier = identifier;
+			this.expr = expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context [identifier] = expr;
+		}
+	}
+
 	public class ProcessExpression : Expression
 	{
 		int number;
@@ -450,21 +467,57 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class VariableExpression : Expression
+	public abstract class VariableExpression : Expression
+	{
+		public abstract string Name {
+			get;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType (), Name);
+		}
+	}
+
+	public class ScriptingVariableReference : VariableExpression
+	{
+		string identifier;
+
+		public ScriptingVariableReference (string identifier)
+		{
+			this.identifier = identifier;
+		}
+
+		public override string Name {
+			get { return '!' + identifier; }
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			VariableExpression expr = context [identifier];
+			if (expr == null)
+				return null;
+
+			return expr.Resolve (context);
+		}
+	}
+
+	public class VariableReferenceExpression : VariableExpression
 	{
 		int number;
 		ProcessExpression process_expr;
 		string identifier;
 
-		public VariableExpression (ProcessExpression process_expr, int number, string identifier)
+		public VariableReferenceExpression (ProcessExpression process_expr, int number,
+						    string identifier)
 		{
 			this.process_expr = process_expr;
 			this.number = number;
 			this.identifier = identifier;
 		}
 
-		public string Name {
-			get { return identifier; }
+		public override string Name {
+			get { return '$' + identifier; }
 		}
 
 		protected override object DoResolve (ScriptingContext context)
@@ -481,7 +534,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class StructAccessExpression : Expression
+	public class StructAccessExpression : VariableExpression
 	{
 		VariableExpression var_expr;
 		string identifier;
@@ -490,6 +543,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			this.var_expr = var_expr;
 			this.identifier = identifier;
+		}
+
+		public override string Name {
+			get {
+				return String.Format ("{0}.{1}", var_expr.Name, identifier);
+			}
 		}
 
 		ITargetFieldInfo get_field (ITargetStructType tstruct)

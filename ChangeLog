@@ -1,5 +1,16 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs: Renamed the old
+	VariableExpression to VariableReferenceExpression.
+	(VariableExpression): New abstract class.
+
+	* frontends/scripting/Parser.jay (variable_expression): This is
+	now always a VariableExpression.  Added scripting variables; you
+	can now say "set !foo = $b.Test" and then later reference it with
+	"print !foo".
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* backends/IInferior.cs (Bfd): New public property.
 
 	* backends/Debugger.cs: Create a MonoCSharpLanguageBackend for

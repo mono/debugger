@@ -69,6 +69,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("type", Token.TYPE);
 			keywords.Add ("disassemble", Token.DISASSEMBLE);
 			keywords.Add ("method", Token.METHOD);
+			keywords.Add ("set", Token.SET);
 
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);
@@ -440,6 +441,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.DOLLAR;
 				else if (c == '.')
 					return Token.DOT;
+				else if (c == '!')
+					return Token.BANG;
+				else if (c == '=')
+					return Token.ASSIGN;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

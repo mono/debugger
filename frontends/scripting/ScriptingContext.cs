@@ -599,6 +599,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		internal static readonly string DirectorySeparatorStr;
 
 		SourceFileFactory source_factory;
+		Hashtable scripting_variables;
 
 		static ScriptingContext ()
 		{
@@ -616,6 +617,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			procs = new ArrayList ();
 			current_process = null;
+
+			scripting_variables = new Hashtable ();
 
 			foreach (Process process in backend.ThreadManager.Threads) {
 				ProcessHandle handle = new ProcessHandle (this, backend, process);
@@ -786,6 +789,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			Print ("{0} is a {1}", name, type);
+		}
+
+		public VariableExpression this [string identifier] {
+			get {
+				return (VariableExpression) scripting_variables [identifier];
+			}
+
+			set {
+				if (scripting_variables.Contains (identifier))
+					scripting_variables [identifier] = value;
+				else
+					scripting_variables.Add (identifier, value);
+			}
 		}
 	}
 }
