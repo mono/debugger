@@ -66,12 +66,8 @@ mono_debugger_wait (void)
 }
 
 static void
-mono_debugger_signal (gboolean modified)
+mono_debugger_signal (void)
 {
-#if 0
-	if (modified)
-		mono_debugger_symbol_file_table_modified = TRUE;
-#endif
 	mono_debugger_lock ();
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
@@ -105,7 +101,7 @@ debugger_compile_method (MonoMethod *method)
 
 	mono_debugger_lock ();
 	retval = mono_compile_method (method);
-	mono_debugger_signal (FALSE);
+	mono_debugger_signal ();
 	mono_debugger_unlock ();
 	return retval;
 }
@@ -116,13 +112,13 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 	switch (event) {
 	case MONO_DEBUGGER_EVENT_TYPE_ADDED:
 	case MONO_DEBUGGER_EVENT_METHOD_ADDED:
-		mono_debugger_signal (TRUE);
+		mono_debugger_signal ();
 		break;
 
 	case MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE:
 		mono_debugger_lock ();
 		must_send_finished = TRUE;
-		mono_debugger_signal (TRUE);
+		mono_debugger_signal ();
 		mono_debugger_unlock ();
 
 		mono_debugger_wait ();
@@ -224,8 +220,6 @@ debugger_thread_handler (gpointer user_data)
 		 */
 		debugger_notification_function ();
 
-		/* Clear modified and signalled flag. */
-		// mono_debugger_symbol_file_table_modified = FALSE;
 		debugger_signalled = FALSE;
 
 		if (must_send_finished) {
@@ -332,7 +326,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 * Reload symbol tables.
 	 */
 	must_send_finished = TRUE;
-	mono_debugger_signal (TRUE);
+	mono_debugger_signal ();
 	mono_debugger_unlock ();
 
 	mono_debugger_wait ();
