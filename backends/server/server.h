@@ -451,7 +451,9 @@ ServerCommandError
 mono_debugger_server_get_signal_info     (ServerHandle       *handle,
 					  SignalInfo         *sinfo);
 
+#if defined(__linux__) || defined(__FreeBSD__)
 extern sigset_t mono_debugger_signal_mask;
+#endif
 
 G_END_DECLS
 
