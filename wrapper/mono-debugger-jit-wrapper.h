@@ -21,7 +21,8 @@ struct _MonoDebuggerInfo {
 	guint8 **generic_trampoline_code;
 	MonoDebuggerSymbolTable **symbol_table;
 	guint32 symbol_table_size;
-	guint64 (*compile_method) (MonoMethod *method);
+	guint64 (*compile_method) (guint64 method_argument);
+	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);
 	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
 	guint64 (*remove_breakpoint) (guint64 breakpoint);
 	MonoInvokeFunc runtime_invoke;

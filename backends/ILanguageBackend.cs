@@ -38,6 +38,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		TargetAddress GetVirtualMethodFunc {
+			get;
+		}
+
 		TargetAddress GetTrampolineAddress (ITargetMemoryAccess memory,
 						    TargetAddress address,
 						    out bool is_start);

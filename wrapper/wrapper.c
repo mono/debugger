@@ -19,7 +19,8 @@ static MonoMethod *debugger_main_method;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
-static guint64 debugger_compile_method (MonoMethod *method);
+static guint64 debugger_compile_method (guint64 method_arg);
+static guint64 debugger_get_virtual_method (guint64 class_arg, guint64 method_arg);
 static guint64 debugger_create_string (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
@@ -38,6 +39,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_symbol_table,
 	sizeof (MonoDebuggerSymbolTable),
 	&debugger_compile_method,
+	&debugger_get_virtual_method,
 	&debugger_insert_breakpoint,
 	&debugger_remove_breakpoint,
 	&mono_debugger_runtime_invoke,
@@ -74,8 +76,9 @@ debugger_remove_breakpoint (guint64 breakpoint)
 }
 
 static guint64
-debugger_compile_method (MonoMethod *method)
+debugger_compile_method (guint64 method_arg)
 {
+	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER (method_arg);
 	gpointer retval;
 
 	mono_debugger_lock ();
@@ -85,6 +88,15 @@ debugger_compile_method (MonoMethod *method)
 	mono_debugger_notification_function (NOTIFICATION_METHOD_COMPILED, retval, 0);
 
 	return GPOINTER_TO_UINT (retval);
+}
+
+static guint64
+debugger_get_virtual_method (guint64 object_arg, guint64 method_arg)
+{
+	MonoObject *object = (MonoObject *) GUINT_TO_POINTER (object_arg);
+	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER (method_arg);
+
+	return GPOINTER_TO_UINT (mono_object_get_virtual_method (object, method));
 }
 
 static guint64

@@ -7,6 +7,7 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
+		MonoClass klass;
 		R.MethodBase method_info;
 		TargetAddress method;
 		MonoType return_type;
@@ -17,6 +18,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public MonoFunctionType (MonoClass klass, R.MethodBase mbase, TargetBinaryReader info, MonoSymbolFile file)
 			: base (TargetObjectKind.Function, mbase.ReflectedType, 0)
 		{
+			this.klass = klass;
 			this.method_info = mbase;
 			this.file = file;
 			this.method = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
@@ -51,6 +53,7 @@ namespace Mono.Debugger.Languages.CSharp
 					 MonoType return_type, MonoSymbolFile file)
 			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
 		{
+			this.klass = klass;
 			this.method_info = minfo;
 			this.method = method;
 			this.return_type = return_type;

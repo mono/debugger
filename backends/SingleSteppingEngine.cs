@@ -1987,24 +1987,45 @@ namespace Mono.Debugger.Backends
 		protected class CallbackRuntimeInvoke : Callback
 		{
 			RuntimeInvokeData rdata;
+			TargetAddress method;
 			bool method_compiled;
 
 			public CallbackRuntimeInvoke (RuntimeInvokeData rdata)
 			{
 				this.rdata = rdata;
+				this.method = TargetAddress.Null;
 			}
 
 			protected override void DoExecute (SingleSteppingEngine sse,
 							   Inferior inferior)
 			{
-				inferior.CallMethod (rdata.Language.CompileMethodFunc,
-						     rdata.MethodArgument.Address, 0, ID);
+				if (!rdata.ObjectArgument.IsNull)
+					inferior.CallMethod (
+						rdata.Language.GetVirtualMethodFunc,
+						rdata.ObjectArgument.Address,
+						rdata.MethodArgument.Address, ID);
+				else {
+					method = rdata.MethodArgument;
+					inferior.CallMethod (
+						rdata.Language.CompileMethodFunc,
+						method.Address, 0, ID);
+				}
 			}
 
 			protected override bool DoProcessEvent (SingleSteppingEngine sse,
 								Inferior inferior,
 								long data1, long data2)
 			{
+				if (method.IsNull) {
+					method = new TargetAddress (
+						inferior.AddressDomain, data1);
+
+					inferior.CallMethod (rdata.Language.CompileMethodFunc,
+							     method.Address,
+							     rdata.ObjectArgument.Address, ID);
+					return false;
+				}
+
 				if (!method_compiled) {
 					method_compiled = true;
 
@@ -2019,7 +2040,7 @@ namespace Mono.Debugger.Backends
 
 					inferior.RuntimeInvoke (
 						rdata.Language.RuntimeInvokeFunc,
-						rdata.MethodArgument, rdata.ObjectArgument,
+						method, rdata.ObjectArgument,
 						rdata.ParamObjects, ID, rdata.Debug);
 					return false;
 				}

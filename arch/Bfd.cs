@@ -970,13 +970,19 @@ namespace Mono.Debugger.Architecture
 
 		TargetAddress ILanguageBackend.RuntimeInvokeFunc {
 			get {
-				return TargetAddress.Null;
+				throw new InvalidOperationException ();
 			}
 		}
 
 		TargetAddress ILanguageBackend.CompileMethodFunc {
 			get {
 				return TargetAddress.Null;
+			}
+		}
+
+		TargetAddress ILanguageBackend.GetVirtualMethodFunc {
+			get {
+				throw new InvalidOperationException ();
 			}
 		}
 

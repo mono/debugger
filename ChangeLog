@@ -1,5 +1,16 @@
 2004-07-07  Martin Baulig  <martin@ximian.com>
 
+	* backends/ILanguageBackend.cs
+	(ILanguageBackend.GetVirtualMethodFunc): New property.
+
+	* wrapper/wrapper.c (MonoDebuggerInfo): Added
+	`get_virtual_method', which calls mono_object_get_virtual_method().
+
+	* backends/SingleSteppingEngine.cs (CallbackruntimeInvoke): Call
+	the `GetVirtualMethodFunc' to get the actual method from the vtable.
+
+2004-07-07  Martin Baulig  <martin@ximian.com>
+
 	* backends/native/NativeLanguage.cs: Make this a "real" language
 	backend, ie. we just create one instance of it and it's also doing
 	type lookups.
