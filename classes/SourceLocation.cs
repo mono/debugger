@@ -28,7 +28,12 @@ namespace Mono.Debugger
 		}
 
 		public int Line {
-			get { return line; }
+			get {
+				if (line == -1)
+					return method.StartRow;
+				else
+					return line;
+			}
 		}
 
 		public string Name {

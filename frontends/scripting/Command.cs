@@ -1436,10 +1436,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			IMethodSource source = method.Source;
 			if (name == null) {
-				if (source.SourceFile == null)
-					throw new ScriptingException ("Current method has no source file.");
+				if (source.IsDynamic || (frame.SourceAddress == null))
+					throw new ScriptingException ("Current method has no source code.");
 
-				return context.FindLocation (source.SourceFile.FileName, line);
+				if (line == -1)
+					return frame.SourceAddress.Location;
+				else
+					return context.FindLocation (source.SourceFile.FileName, line);
 			}
 
 			SourceMethod[] result = source.MethodLookup (name);
@@ -1470,11 +1473,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
+			if (source_expr == null) {
+				context.ListSourceCode (null);
+				return;
+			}
+
 			SourceLocation location = source_expr.ResolveLocation (context);
 			if (location == null)
 				return;
 
-			context.Print ("Location: {0}", location);
+			context.ListSourceCode (location);
 		}
 	}
 }

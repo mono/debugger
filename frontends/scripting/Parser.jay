@@ -359,6 +359,10 @@ command
 	  {
 		$$ = new ListCommand ((SourceExpression) $2);
 	  }
+	| LIST CONTINUE
+	  {
+		$$ = new ListCommand (null);
+	  }
 	;
 
 kind
@@ -557,7 +561,11 @@ opt_line
 	;
 
 source_expression
-	: opt_process opt_frame_number IDENTIFIER opt_line
+	: opt_process opt_frame_number
+	  {
+		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, null, -1);
+	  }
+	| opt_process opt_frame_number IDENTIFIER opt_line
 	  {
 		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, (string) $3, (int) $4);
 	  }

@@ -1369,5 +1369,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			return (SourceMethod) method_search_results [index - 1];
 		}
+
+		int last_line = -1;
+		string[] current_source_code = null;
+
+		public void ListSourceCode (SourceLocation location)
+		{
+			int start;
+			if (location == null) {
+				if (current_source_code == null)
+					return;
+
+				start = last_line;
+			} else {
+				string filename = location.SourceFile.FileName;
+				ISourceBuffer buffer = source_factory.FindFile (filename);
+				if (buffer == null)
+					throw new ScriptingException (
+						"Cannot find source file `{0}'", filename);
+
+				current_source_code = buffer.Contents;
+				start = Math.Max (location.Line - 2, 0);
+			}
+
+			last_line = Math.Min (start + 5, current_source_code.Length);
+
+			for (int line = start; line < last_line; line++)
+				Print (String.Format ("{0,4} {1}", line, current_source_code [line]));
+		}
 	}
 }
+
