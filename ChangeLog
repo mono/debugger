@@ -1,5 +1,13 @@
 2003-01-02  Martin Baulig  <martin@ximian.com>
 
+	* frontends/command-line/Main.cs: If the user gave any command
+	line arguments, immediately start the program.
+
+	* frontends/scripting/Parser.jay: The `start' command no longer
+	has any default arguments, so it doesn't accept an empty list anymore.
+
+2003-01-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs (Process.Inferior): Removed this property.
 	The IInferior is now a private interface and is not exposed to the
 	outside.

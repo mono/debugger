@@ -26,7 +26,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			backend = new DebuggerBackend ();
 			writer = new ConsoleTextWriter ();
 			context = new ScriptingContext (backend, writer, writer, true);
-			parser = new Parser (context, "Debugger", args);
+			parser = new Parser (context, "Debugger");
+
+			if ((args != null) && (args.Length > 0))
+				context.Start (args);
 		}
 
 		public void Run ()

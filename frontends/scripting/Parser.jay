@@ -12,7 +12,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ScriptingContext current_context;
 		MyTextReader reader;
 		bool do_quit = false;
-		string[] default_args;
 
 		protected bool yacc_verbose_flag = false;
 
@@ -232,11 +231,7 @@ variable_expression
 	;
 
 program_arguments
-	: /* empty */
-	  {
-		$$ = default_args;
-	  }
-	| program_arglist
+	: program_arglist
 	  {
 		ArrayList args = (ArrayList) $1;
 		string[] retval = new string [args.Count];
@@ -297,12 +292,11 @@ function_name
 
 %%
 
-public Parser (ScriptingContext context, string name, string[] args)
+public Parser (ScriptingContext context, string name)
 {
 	this.name = name;
 	this.reader = new MyTextReader ();
 	this.current_context = context;
-	this.default_args = args;
 
 	lexer = new Tokenizer (context, reader, name);
 }

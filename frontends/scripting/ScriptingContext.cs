@@ -692,6 +692,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public ProcessHandle Start (string[] args)
+		{
+			return Start (args, -1);
+		}
+
 		public ProcessHandle Start (string[] args, int pid)
 		{
 			if (args.Length == 0)

@@ -30,7 +30,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.inferior_output = inferior_output;
 
 			context = new ScriptingContext (backend, command_output, inferior_output, false);
-			parser = new Parser (context, "Debugger", new string [0]);
+			parser = new Parser (context, "Debugger");
 		}
 
 		public bool ProcessCommand (string line)
@@ -50,3 +50,4 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 }
+
