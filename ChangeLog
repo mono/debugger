@@ -1,3 +1,22 @@
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
+	* arch/ArchitecturePowerPC.cs: New file.
+
+	* arch/StabsReader.cs: New file.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetInfo): Added `bool IsBigEndian'.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/server.h
+	(mono_debugger_server_global_wait): Take a `guint32 *', not a
+	`guint64 *'.
+	(mono_debugger_server_dispatch_event): `status' is now a
+	`guint32', not a `guint64'.
+
 2004-04-10  Martin Baulig  <martin@ximian.com>
 
 	* arch/: Imported Binutils 2.14.
