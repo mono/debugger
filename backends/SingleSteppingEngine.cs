@@ -149,6 +149,9 @@ namespace Mono.Debugger.Backends
 
 			this.pid = pid;
 
+			reached_main = true;
+			initialized = true;
+
 			engine_thread = new Thread (new ThreadStart (start_engine_thread_attach));
 			engine_thread.Start ();
 
