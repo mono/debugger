@@ -17,14 +17,18 @@ namespace Mono.Debugger.GUI {
 		Hashtable sources; 
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
+		DisassemblerView disassembler_view;
+		SourceFileFactory factory;
 		bool initialized;
 
 		//
 		// State tracking
 		//
-		SourceList current_source = null;
+		SourceView current_source = null;
 		
-		public SourceManager (DebuggerGUI gui, Gtk.Notebook notebook, SourceStatusbar source_status)
+		public SourceManager (DebuggerGUI gui, Gtk.Notebook notebook,
+				      Gtk.Container disassembler_container,
+				      SourceStatusbar source_status)
 			: base (gui, notebook)
 		{
 			sources = new Hashtable ();
@@ -32,18 +36,19 @@ namespace Mono.Debugger.GUI {
 			this.notebook = notebook;
 			this.source_status = source_status;
 
+			disassembler_view = new DisassemblerView (this, disassembler_container);
+
+			factory = new SourceFileFactory ();
+
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 
 		public override void SetProcess (Process process)
 		{
+			disassembler_view.SetProcess (process);
+			disassembler_view.Active = true;
+
 			base.SetProcess (process);
-
-			foreach (DictionaryEntry de in sources){
-				SourceList source = (SourceList) de.Value;
-
-				source.SetProcess (process);
-			}
 		}
 
 		public event MethodInvalidHandler MethodInvalidEvent;
@@ -51,9 +56,9 @@ namespace Mono.Debugger.GUI {
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 
-		SourceList CreateSourceView (ISourceBuffer source_buffer, string filename)
+		SourceList CreateSourceView (string filename, string contents)
 		{
-			return new SourceList (this, source_buffer, filename);
+			return new SourceList (this, filename, contents);
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -71,7 +76,7 @@ namespace Mono.Debugger.GUI {
 			} while (v != null);
 			return -1;
 		}
-		
+
 		void close_tab (object o, EventArgs args)
 		{
 			foreach (DictionaryEntry de in sources){
@@ -100,6 +105,7 @@ namespace Mono.Debugger.GUI {
 		void switch_page (object o, SwitchPageArgs args)
 		{
 			source_status.IsSourceStatusBar = args.PageNum != 0;
+			disassembler_view.Active = args.PageNum == 0;
 		}
 
 		protected override void FrameChanged (StackFrame frame)
@@ -123,47 +129,79 @@ namespace Mono.Debugger.GUI {
 			if (MethodInvalidEvent != null)
 				MethodInvalidEvent ();
 		}
-		
+
+		protected string GetSource (ISourceBuffer buffer)
+		{
+			if (buffer.HasContents)
+				return buffer.Contents;
+
+			SourceFile file = factory.FindFile (buffer.Name);
+			if (file == null) {
+				Console.WriteLine ("Can't find source file {0}.", buffer.Name);
+				return null;
+			}
+
+			return file.Contents;
+		}
+
+		protected SourceView GetSourceView (IMethod method, IMethodSource source)
+		{
+			if (source == null)
+				return disassembler_view;
+
+			ISourceBuffer source_buffer = source.SourceBuffer;
+			if (source_buffer == null)
+				return disassembler_view;
+
+			string filename = source_buffer.Name;
+			SourceList view = (SourceList) sources [filename];
+
+			if (view != null)
+				return view;
+
+			string contents = GetSource (source_buffer);
+			if (contents == null)
+				return disassembler_view;
+			
+			view = CreateSourceView (filename, contents);
+			view.SetProcess (process);
+					
+			sources [filename] = view;
+			notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);
+			notebook.SetMenuLabelText (view.ToplevelWidget, filename);
+			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
+
+			return view;
+		}
+
+		protected override void RealMethodChanged (IMethod method)
+		{
+			base.RealMethodChanged (method);
+
+			disassembler_view.RealMethodChanged (method);
+		}
+
+		protected override void RealMethodInvalid ()
+		{
+			base.RealMethodInvalid ();
+
+			disassembler_view.RealMethodInvalid ();
+		}
+
 		protected override void MethodChanged (IMethod method, IMethodSource source)
 		{
 			MethodInvalid ();
 
-			if (source != null){
-				ISourceBuffer source_buffer = source.SourceBuffer;
+			current_source = GetSourceView (method, source);
+			current_source.Active = true;
 
-				if (source_buffer == null) {
-					current_source = null;
-					goto done;
-				}
-
-				string filename = source_buffer.Name;
-
-				SourceList view = (SourceList) sources [filename];
-			
-				if (view == null){
-					view = CreateSourceView (source_buffer, filename);
-					if (process != null)
-						view.SetProcess (process);
-					
-					sources [filename] = view;
-					notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);
-					notebook.SetMenuLabelText (view.ToplevelWidget, filename);
-					view.TabWidget.ButtonClicked += new EventHandler (close_tab);
-				}
-
-				view.Active = true;
-
-				if (!initialized || (notebook.Page != 0)) {
-					int idx = GetPageIdx (view.ToplevelWidget);
-					if (idx != -1)
-						notebook.Page = idx;
-				}
-
-				current_source = view;
-			} else {
-				Console.WriteLine ("********* Need to show disassembly **********");
-				current_source = null;
+			if (!initialized || (notebook.Page != 0)) {
+				int idx = GetPageIdx (current_source.ToplevelWidget);
+				if (idx != -1)
+					notebook.Page = idx;
 			}
+
+			disassembler_view.Active = notebook.Page == 0;
 
 		done:
 			initialized = true;

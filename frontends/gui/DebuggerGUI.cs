@@ -86,7 +86,6 @@ namespace Mono.Debugger.GUI
 
 		Gtk.Entry command_entry;
 		CurrentInstructionEntry current_insn;
-		DisassemblerView disassembler_view;
 		RegisterDisplay register_display;
 		VariableDisplay variable_display;
 		BackTraceView backtrace_view;
@@ -189,11 +188,9 @@ namespace Mono.Debugger.GUI
 
 			source_status = new SourceStatusbar (this, (Gtk.Statusbar) gxml ["status-bar"]);
 			source_manager = new SourceManager (this, (Gtk.Notebook) gxml ["code-browser-notebook"],
+							    (Gtk.Container) gxml ["disassembler-view"],
 							    source_status);
 
-			disassembler_view = new DisassemblerView (
-				this, null, (Gtk.TextView) gxml ["disassembler-view"]);
-			
 			gxml.Autoconnect (this);
 
 			command_entry.ActivatesDefault = true;
@@ -326,7 +323,6 @@ namespace Mono.Debugger.GUI
 			source_status.SetProcess (process);
 			backtrace_view.SetProcess (process);
 			source_manager.SetProcess (process);
-			disassembler_view.SetProcess (process);
 			module_display.SetProcess (process);
 			memory_maps_display.SetProcess (process);
 			process_manager.SetProcess (process);

@@ -8,27 +8,53 @@ namespace Mono.Debugger.GUI
 {
 	public class DisassemblerView : SourceView
 	{
-		public DisassemblerView (DebuggerGUI gui, Gtk.Container container, Gtk.TextView widget)
-			: base (gui, container, widget)
+		public DisassemblerView (SourceManager manager, Gtk.Container container)
+			: base (manager, container)
 		{ }
 
-		protected override IMethodSource GetMethodSource (IMethod method)
+		IMethodSource current_method_source = null;
+		bool dirty = false;
+
+		public void RealMethodChanged (IMethod method)
 		{
+			RealMethodInvalid ();
+
 			if (method == null)
-				return null;
+				return;
 
 			if (!process.HasTarget || (process.Disassembler == null))
-				return null;
+				return;
 
-			return process.Disassembler.DisassembleMethod (method);
+			current_method_source = process.Disassembler.DisassembleMethod (method);
 		}
 
-		protected override SourceLocation GetSource (StackFrame frame)
+		public void RealMethodInvalid ()
 		{
-			if (CurrentMethodSource == null)
+			current_method_source = null;
+			dirty = true;
+		}
+
+		void update_buffer ()
+		{
+			if (!dirty)
+				return;
+
+			if (current_method_source == null)
+				text_buffer.Text = "";
+			else
+				text_buffer.Text = current_method_source.SourceBuffer.Contents;
+
+			dirty = false;
+		}
+
+		protected override SourceLocation GetSourceLocation (StackFrame frame)
+		{
+			if (current_method_source == null)
 				return null;
 
-			return CurrentMethodSource.Lookup (frame.TargetAddress);
+			update_buffer ();
+
+			return current_method_source.Lookup (frame.TargetAddress);
 		}
 	}
 }

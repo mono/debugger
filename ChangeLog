@@ -1,5 +1,16 @@
 2003-01-11  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/SourceView.cs: Don't derive from DebuggerWidget;
+	moved most of the functionality from SourceList here.
+
+	* frontends/gui/SourceList.cs: Derive from SourceView.
+
+	* frontends/gui/DisassemblerView.cs: Derive from SourceView.
+
+	* frontends/gui/SourceManager.cs: Nicely integrate the DisassemblerView.
+
+2003-01-11  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/SourceList.cs: Moved the SourceList class from
 	SourceManager.cs into its own file.
 
