@@ -15,6 +15,7 @@ extern unsigned mono_debugger_io_add_watch_hangup (GIOChannel *channel, IOHangup
 extern void mono_debugger_io_set_async (GIOChannel *channel, gboolean is_async);
 extern int mono_debugger_io_read_byte (GIOChannel *channel);
 extern int mono_debugger_io_write_byte (GIOChannel *channel, int data);
+extern int mono_debugger_io_write_integer (GIOChannel *channel, int data);
 extern void mono_debugger_io_write_line (GIOChannel *channel, const char *line);
 extern void mono_debugger_io_set_data_mode (GIOChannel *channel);
 

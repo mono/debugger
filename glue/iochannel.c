@@ -27,14 +27,14 @@ static gboolean
 watch_data_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
 {
 	if (condition == G_IO_IN) {
-		char ch;
+		int tmp;
 		GIOStatus status;
 		gsize count;
 
-		status = g_io_channel_read_chars (channel, &ch, 1, &count, NULL);
+		status = g_io_channel_read_chars (channel, &tmp, sizeof (int), &count, NULL);
 
 		if (status == G_IO_STATUS_NORMAL)
-			((IODataInputHandler) data) ((int) ch);
+			((IODataInputHandler) data) (tmp);
 	}
 
 	return TRUE;
@@ -132,6 +132,19 @@ mono_debugger_io_write_byte (GIOChannel *channel, int data)
 	GIOStatus status;
 
 	status = g_io_channel_write_chars (channel, &ch, 1, &count, NULL);
+	if (status == G_IO_STATUS_NORMAL)
+		return 0;
+	else
+		return -1;
+}
+
+int
+mono_debugger_io_write_integer (GIOChannel *channel, int data)
+{
+	int count;
+	GIOStatus status;
+
+	status = g_io_channel_write_chars (channel, (char *) &data, sizeof (int), &count, NULL);
 	if (status == G_IO_STATUS_NORMAL)
 		return 0;
 	else

@@ -1,5 +1,6 @@
 using GLib;
 using System;
+using System.Collections;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -12,6 +13,7 @@ namespace Mono.Debugger
 		IOInputChannel input_channel;
 		IOOutputChannel output_channel;
 		ReadyEventHandler ready_event;
+		ArrayList listeners;
 
 		[DllImport("glib-2.0")]
 		static extern IntPtr g_io_channel_unix_new (int fd);
@@ -21,17 +23,28 @@ namespace Mono.Debugger
 
 		public void Signal ()
 		{
-			output_channel.WriteByte (0);
+			Signal (0);
 		}
 
-		void read_data_handler (byte data)
+		public void Signal (int id)
 		{
-			ready_event ();
+			output_channel.WriteInteger (id);
+		}
+
+		void read_data_handler (int data)
+		{
+			if (data >= listeners.Count)
+				return;
+
+			ReadyEventHandler handler = (ReadyEventHandler) listeners [data];
+			if (handler != null)
+				handler ();
 		}
 
 		public ThreadNotify (ReadyEventHandler ready_event)
 		{
-			this.ready_event = ready_event;
+			listeners = new ArrayList ();
+			listeners.Add (ready_event);
 
 			mono_debugger_glue_make_pipe (out input_fd, out output_fd);
 
@@ -39,6 +52,22 @@ namespace Mono.Debugger
 			output_channel = new IOOutputChannel (output_fd, false, true);
 
 			input_channel.ReadDataEvent += new ReadDataHandler (read_data_handler);
+		}
+
+		public ThreadNotify ()
+			: this (null)
+		{ }
+
+		public int RegisterListener (ReadyEventHandler ready_event)
+		{
+			int id = listeners.Count;
+			listeners.Add (ready_event);
+			return id;
+		}
+
+		public void UnRegisterListener (int id)
+		{
+			listeners [id] = null;
 		}
 
 		[DllImport("monodebuggerglue")]

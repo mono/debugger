@@ -114,7 +114,7 @@ namespace GLib {
 
 	public delegate void HangupHandler ();
 	public delegate void ReadLineHandler (string line);
-	public delegate void ReadDataHandler (byte data);
+	public delegate void ReadDataHandler (int data);
 
 	public class IOInputChannel : IOChannel
 	{
@@ -177,7 +177,7 @@ namespace GLib {
 			}
 		}
 
-		void read_data (byte data)
+		void read_data (int data)
 		{
 			if (ReadDataEvent != null)
 				ReadDataEvent (data);
@@ -215,6 +215,11 @@ namespace GLib {
 			mono_debugger_io_write_byte (_channel, data);
 		}
 
+		public void WriteInteger (int data)
+		{
+			mono_debugger_io_write_integer (_channel, data);
+		}
+
 		public IOOutputChannel (int fd, bool is_async, bool is_data)
 			: base (fd, is_async, is_data)
 		{ }
@@ -228,6 +233,9 @@ namespace GLib {
 
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_io_write_byte (IntPtr channel, int data);
+
+		[DllImport("monodebuggerglue")]
+		static extern void mono_debugger_io_write_integer (IntPtr channel, int data);
 	}
 
 	public class Spawn
