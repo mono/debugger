@@ -103,7 +103,7 @@ namespace Mono.Debugger.GUI
 		{
 			TreeIter child;
 			if (store.IterChildren (out child, parent)) {
-				while (!child.IsNull && (child.stamp != 0))
+				while (child != Gtk.TreeIter.Zero && (child.stamp != 0))
 					store.Remove (ref child);
 			}
 
@@ -120,7 +120,7 @@ namespace Mono.Debugger.GUI
 
 			TreeIter child;
 			if (store.IterChildren (out child, args.Iter)) {
-				while (!child.IsNull && (child.stamp != 0))
+				while (child != Gtk.TreeIter.Zero && (child.stamp != 0))
 					store.Remove (ref child);
 			}
 

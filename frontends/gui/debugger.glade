@@ -49,6 +49,14 @@
 		      </child>
 
 		      <child>
+			<widget class="GtkImageMenuItem" id="open1">
+			  <property name="visible">True</property>
+			  <property name="stock_item">GNOMEUIINFO_MENU_OPEN_ITEM</property>
+			  <signal name="activate" handler="OnOpenActivate" last_modification_time="Fri, 01 Nov 2002 23:05:41 GMT"/>
+			</widget>
+		      </child>
+
+		      <child>
 			<widget class="GtkMenuItem" id="separator1">
 			  <property name="visible">True</property>
 			</widget>

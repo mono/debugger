@@ -226,6 +226,7 @@ namespace Mono.Debugger.GUI
 		
 		void StateSensitivityUpdate (TargetState state)
 		{
+			Console.WriteLine ("New state: " + state);
 			return;
 			
 			foreach (Widget w in all_state_widgets)
@@ -315,6 +316,30 @@ namespace Mono.Debugger.GUI
 			string [] argsv = arg_string.Split (new char [] { ' ' });
 
 			LoadProgram (program, argsv);
+		}
+
+		FileSelection fs_window;
+
+		void OnFileSelectionOK (object sender, EventArgs args)
+		{
+			fs_window.Hide ();
+		}
+
+		void OnFileSelectionCancel (object sender, EventArgs args)
+		{
+			fs_window.Hide ();
+		}
+			
+		void OnOpenActivate (object sender, EventArgs args)
+		{
+			if (fs_window == null){
+				fs_window = new FileSelection ("Open File");
+				
+				fs_window.OkButton.Clicked += new EventHandler (OnFileSelectionOK);
+				fs_window.CancelButton.Clicked += new EventHandler (OnFileSelectionCancel);
+			}
+
+			fs_window.ShowAll ();
 		}
 		
 		void OnQuitActivate (object sender, EventArgs args)
