@@ -315,9 +315,6 @@ namespace Mono.Debugger
 			return true;
 		}
 
-		[DllImport("glib-2.0")]
-		extern static IntPtr g_main_context_default ();
-
 		//
 		// IDisposable
 		//
