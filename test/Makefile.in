@@ -47,13 +47,13 @@ RESOURCES = \
 	-resource:$(GUIDIR)/mono.png,mono.png
 
 Mono.Debugger.dll: $(LIBRARY_SOURCES)
-	$(MCS) /target:library /out:Mono.Debugger.dll $(LIBRARY_DEPS) $(LIBRARY_SOURCES)
+	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SOURCES)
 
 Mono.Debugger.Backend.dll: $(BACKEND_SOURCES) Mono.Debugger.dll
-	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(BACKEND_DEPS) $(BACKEND_SOURCES)
+	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(MCS_FLAGS) $(BACKEND_DEPS) $(BACKEND_SOURCES)
 
 Debugger.exe: $(ALL_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
-	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES)
+	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES) $(MCS_FLAGS)
 
 clean:
 	rm -f *.exe

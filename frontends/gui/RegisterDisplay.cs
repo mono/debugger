@@ -57,15 +57,14 @@ namespace Mono.Debugger.GUI
 		{
 			base.SetBackend (backend);
 
-			//
-			// This is really ugly, I would like to use a different handler for this
-			//
-			backend.InferiorStateNotify += new DebuggerBackend.InferiorState (InferiorRunning);
+			backend.StateChanged += new StateChangedHandler (state_changed);
 		}
 
-		void InferiorRunning (bool state)
+		void state_changed (TargetState new_state, int arg)
 		{
-			if (state){
+			switch (new_state) {
+			case TargetState.STOPPED:
+			case TargetState.CORE_FILE:
 				arch = backend.Architecture;
 				
 				if (arch is ArchitectureI386){
@@ -73,9 +72,12 @@ namespace Mono.Debugger.GUI
 					notebook.Page = 1;
 				} else
 					notebook.Page = 0;
-			} else {
+				break;
+
+			default:
 				notebook.Page = 0;
 				arch = null;
+				break;
 			}
 		}
 		

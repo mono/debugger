@@ -95,6 +95,12 @@ namespace Mono.Debugger.GUI
 
 		void add_message (TreeIter parent, string message)
 		{
+			TreeIter child;
+			if (store.IterChildren (out child, parent)) {
+				while (!child.IsNull && (child.stamp != 0))
+					store.Remove (ref child);
+			}
+
 			TreeIter iter;
 			store.Append (out iter, parent);
 			store.SetValue (iter, 2, new GLib.Value (message));
@@ -123,6 +129,7 @@ namespace Mono.Debugger.GUI
 					inserted = add_array (args.Iter, array);
 				} catch {
 					add_message (args.Iter, "<can't display array>");
+					inserted = true;
 				}
 				if (!inserted)
 					add_message (args.Iter, "<empty array>");
@@ -135,6 +142,7 @@ namespace Mono.Debugger.GUI
 					inserted = add_struct (args.Iter, sobj);
 				} catch {
 					add_message (args.Iter, "<can't display struct>");
+					inserted = true;
 				}
 				if (!inserted)
 					add_message (args.Iter, "<empty struct>");

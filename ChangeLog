@@ -1,3 +1,13 @@
+2002-10-08  Martin Baulig  <martin@gnome.org>
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoCSharpLanguageBackend): Don't derive from SymbolTable but use
+	a separate symbol table. This allows us to release the symbol
+	table completely when the target exits.
+
+	* backends/Debugger.cs (InferiorStateNotify): Removed this event,
+	use the StateChanged event instead.
+
 2002-10-05  Martin Baulig  <martin@gnome.org>
 
 	* frontends/gui/: Display the SourceStatusbar while the source

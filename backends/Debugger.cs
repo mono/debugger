@@ -232,14 +232,11 @@ namespace Mono.Debugger
 			inferior.Dispose ();
 			inferior = null;
 
-			if (InferiorStateNotify != null)
-				InferiorStateNotify (false);
-
 			languages = new ArrayList ();
 
 			sse = null;
-
 			symtabs = null;
+
 			frames_invalid ();	
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
@@ -357,10 +354,6 @@ namespace Mono.Debugger
 				do_run (new_argv);
 		}
 
-		public delegate void InferiorState (bool state);
-
-		public event InferiorState InferiorStateNotify;
-
 		void do_run (string[] argv)
 		{
 			if (native)
@@ -374,6 +367,16 @@ namespace Mono.Debugger
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
+			symtabs = new SymbolTableCollection ();
+			if (load_native_symtab)
+				symtabs.AddSymbolTable (inferior.SymbolTable);
+
+			if (!native) {
+				csharp_language.Inferior = inferior;
+				symtabs.AddSymbolTable (csharp_language.SymbolTable);
+				inferior.ApplicationSymbolTable = csharp_language.SymbolTable;
+			}
+
 			sse = new SingleSteppingEngine (this, inferior, native);
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
 			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
@@ -381,21 +384,8 @@ namespace Mono.Debugger
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 
-			if (InferiorStateNotify != null)
-				InferiorStateNotify (true);
-
-			symtabs = new SymbolTableCollection ();
-			Console.WriteLine ("RUN: {0} {1}", native, load_native_symtab);
-			if (load_native_symtab)
-				symtabs.AddSymbolTable (inferior.SymbolTable);
-
-			if (native)
-				return;
-
-			symtabs.AddSymbolTable (csharp_language);
-			csharp_language.Inferior = inferior;
-			inferior.ApplicationSymbolTable = csharp_language;
-			sse.ApplicationSymbolTable = csharp_language;
+			if (!native)
+				sse.ApplicationSymbolTable = csharp_language.SymbolTable;
 		}
 
 		void method_invalid ()
@@ -431,17 +421,15 @@ namespace Mono.Debugger
 		void load_core (string core_file, string[] argv)
 		{
 			inferior = new CoreFileElfI386 (argv [0], core_file, bfd_container);
-			if (InferiorStateNotify != null)
-				InferiorStateNotify (true);
 
 			symtabs = new SymbolTableCollection ();
 			symtabs.AddSymbolTable (inferior.SymbolTable);
 
 			if (!native) {
-				symtabs.AddSymbolTable (csharp_language);
+				symtabs.AddSymbolTable (csharp_language.SymbolTable);
 				csharp_language.Inferior = inferior;
-				inferior.ApplicationSymbolTable = csharp_language;
-				symtabs.UpdateSymbolTable ();
+				inferior.ApplicationSymbolTable = csharp_language.SymbolTable;
+				UpdateSymbolTable ();
 			}
 		}
 
