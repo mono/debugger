@@ -1017,7 +1017,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			StackFrame frame = context.CurrentProcess.CurrentFrame;
 
-			return frame.SourceLocation.Row == line;
+			if (frame.SourceLocation == null)
+				return false;
+			else
+				return frame.SourceLocation.Row == line;
 		}
 	}
 }
