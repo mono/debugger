@@ -40,7 +40,10 @@ static ServerCommandError
 server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer);
 
 static ServerCommandError
-_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value);
+_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned value);
+
+static ServerCommandError
+_server_ptrace_get_dr (InferiorHandle *handle, int regnum, unsigned *value);
 
 static ServerCommandError
 server_ptrace_stop (ServerHandle *handle);

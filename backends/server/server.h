@@ -230,7 +230,7 @@ struct InferiorVTable {
 	 * to remove the breakpoint.
 	 */
 	ServerCommandError    (* insert_hw_breakpoint)(ServerHandle     *handle,
-						       guint32           idx,
+						       guint32          *idx,
 						       guint64           address,
 						       guint32          *bhandle);
 
@@ -434,7 +434,7 @@ mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_insert_hw_breakpoint(ServerHandle        *handle,
-					  guint32              idx,
+					  guint32             *idx,
 					  guint64              address,
 					  guint32             *breakpoint);
 

@@ -88,7 +88,7 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 }
 
 static ServerCommandError
-_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
+_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned value)
 {
 	errno = 0;
 	ptrace (PTRACE_POKEUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]), value);
@@ -97,6 +97,23 @@ _server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 		return COMMAND_ERROR_UNKNOWN;
 	}
 
+	return COMMAND_ERROR_NONE;
+}
+
+
+static ServerCommandError
+_server_ptrace_get_dr (InferiorHandle *handle, int regnum, unsigned *value)
+{
+	int ret;
+
+	errno = 0;
+	ret = ptrace (PTRACE_PEEKUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]));
+	if (errno) {
+		g_message (G_STRLOC ": %d - %d - %s", handle->pid, regnum, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	*value = ret;
 	return COMMAND_ERROR_NONE;
 }
 

@@ -24,6 +24,7 @@ struct ArchInfo
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	GPtrArray *rti_stack;
 	unsigned dr_control, dr_status;
+	int dr_regs [DR_NADDR];
 };
 
 typedef struct
@@ -317,6 +318,10 @@ i386_arch_get_registers (ServerHandle *handle)
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	_server_ptrace_get_dr (handle->inferior, DR_STATUS, &handle->arch->dr_status);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
 	return COMMAND_ERROR_NONE;
 }
 
@@ -339,6 +344,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
 	RuntimeInvokeData *rdata;
+	int i;
 
 	i386_arch_get_registers (handle);
 
@@ -354,6 +360,13 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 		*retval2 = data [2];
 
 		return STOP_ACTION_NOTIFICATION;
+	}
+
+	for (i = 0; i < DR_NADDR; i++) {
+		if (I386_DR_WATCH_HIT (arch, i)) {
+			*retval = arch->dr_regs [i];
+			return STOP_ACTION_BREAKPOINT_HIT;
+		}
 	}
 
 	if (check_breakpoint (handle, INFERIOR_REG_EIP (arch->current_regs) - 1, retval)) {
@@ -717,12 +730,18 @@ do_enable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 		I386_DR_LOCAL_ENABLE (arch, breakpoint->dr_index);
 
 		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, address);
-		if (result != COMMAND_ERROR_NONE)
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC);
 			return result;
+		}
 
 		result = _server_ptrace_set_dr (inferior, DR_CONTROL, arch->dr_control);
-		if (result != COMMAND_ERROR_NONE)
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC);
 			return result;
+		}
+
+		arch->dr_regs [breakpoint->dr_index] = breakpoint->info.id;
 	} else {
 		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
@@ -755,12 +774,18 @@ do_disable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 		I386_DR_DISABLE (arch, breakpoint->dr_index);
 
 		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, 0L);
-		if (result != COMMAND_ERROR_NONE)
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC ": %d", result);
 			return result;
+		}
 
 		result = _server_ptrace_set_dr (inferior, DR_CONTROL, arch->dr_control);
-		if (result != COMMAND_ERROR_NONE)
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC ": %d", result);
 			return result;
+		}
+
+		arch->dr_regs [breakpoint->dr_index] = 0;
 	} else {
 		result = server_ptrace_write_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
@@ -838,17 +863,30 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 }
 
 static ServerCommandError
-server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 idx,
+find_free_hw_register (ServerHandle *handle, guint32 *idx)
+{
+	int i;
+
+	for (i = 0; i < DR_NADDR; i++) {
+		if (!handle->arch->dr_regs [i]) {
+			*idx = i;
+			return COMMAND_ERROR_NONE;
+		}
+	}
+
+	return COMMAND_ERROR_DR_OCCUPIED;
+}
+
+static ServerCommandError
+server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 				    guint64 address, guint32 *bhandle)
 {
 	I386BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
-	if ((idx < 0) || (idx > DR_NADDR))
-		return COMMAND_ERROR_DR_OCCUPIED;
-
-	if (!I386_DR_VACANT (handle->arch, idx))
-		return COMMAND_ERROR_DR_OCCUPIED;
+	result = find_free_hw_register (handle, idx);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
 
 	mono_debugger_breakpoint_manager_lock (handle->bpm);
 	breakpoint = g_new0 (I386BreakpointInfo, 1);
@@ -856,7 +894,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 idx,
 	breakpoint->info.refcount = 1;
 	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
 	breakpoint->info.is_hardware_bpt = TRUE;
-	breakpoint->dr_index = idx;
+	breakpoint->dr_index = *idx;
 
 	result = do_enable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
