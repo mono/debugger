@@ -1,5 +1,9 @@
 2004-12-09  Chris Toshok  <toshok@ximian.com>
 
+	* wrapper/Makefile.am (MDB_SRCLIST): add frontend/Completer.cs
+
+2004-12-09  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/CL.cs (Engine..ctor): create our Completer.
 
 	* frontend/Completer.cs: new file/class.  provides the completion

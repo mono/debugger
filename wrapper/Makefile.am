@@ -26,30 +26,31 @@ MCS_FLAGS = -g -define:DEBUG
 noinst_SCRIPTS = Mono.Debugger.dll
 
 MDB_SRCLIST = \
-	@top_srcdir@/frontend/DebuggerTextWriter.cs	\
-	@top_srcdir@/frontend/GnuReadLine.cs		\
-	@top_srcdir@/frontend/Main.cs			\
 	@top_srcdir@/frontend/CL.cs			\
-	@top_srcdir@/frontend/ExpressionParser.cs	\
-	@top_srcdir@/frontend/Tokenizer.cs		\
 	@top_srcdir@/frontend/Command.cs		\
+	@top_srcdir@/frontend/Completer.cs		\
+	@top_srcdir@/frontend/DebuggerTextWriter.cs	\
 	@top_srcdir@/frontend/Expression.cs		\
+	@top_srcdir@/frontend/ExpressionParser.cs	\
+	@top_srcdir@/frontend/GnuReadLine.cs		\
 	@top_srcdir@/frontend/Interpreter.cs		\
+	@top_srcdir@/frontend/Main.cs			\
 	@top_srcdir@/frontend/MyTextReader.cs		\
 	@top_srcdir@/frontend/ScriptingContext.cs	\
 	@top_srcdir@/frontend/Session.cs		\
 	@top_srcdir@/frontend/Style.cs			\
+	@top_srcdir@/frontend/Tokenizer.cs		\
 	AssemblyInfo.cs
 
 LIBRARY_SRCLIST = \
-	@top_srcdir@/interfaces/*.cs			\
-	@top_srcdir@/classes/*.cs			\
+	@top_srcdir@/arch/*.cs				\
 	@top_srcdir@/backends/*.cs			\
 	@top_srcdir@/backends/classes/*.cs		\
-	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/mono-csharp/*.cs		\
 	@top_srcdir@/backends/native/*.cs		\
-	@top_srcdir@/arch/*.cs				\
+	@top_srcdir@/backends/ptrace/*.cs		\
+	@top_srcdir@/classes/*.cs			\
+	@top_srcdir@/interfaces/*.cs			\
 	AssemblyInfo.cs
 
 LIBRARY_DEPS = \
