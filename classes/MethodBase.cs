@@ -25,6 +25,11 @@ namespace Mono.Debugger
 			else
 				return 0;
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("LineEntry ({0}:{1})", Line, Address);
+		}
 	}
 
 	public abstract class MethodBase : IMethod, ISymbolLookup, IComparable
