@@ -4,7 +4,7 @@
 //
 // (c) 2002 Ximian, Inc
 
-namespace GLib {
+namespace Mono.Debugger {
 
 	using System;
 	using System.Text;

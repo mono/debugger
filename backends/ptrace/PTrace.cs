@@ -1,4 +1,3 @@
-using GLib;
 using System;
 using System.IO;
 using System.Text;
@@ -1055,7 +1054,10 @@ namespace Mono.Debugger.Backends
 			// the current file position and System.IO will try to "fix" this
 			// by seeking back.
 			string mapfile = String.Format ("/proc/{0}/maps", child_pid);
-			string contents = FileUtils.GetFileContents (mapfile);
+			string contents = Utils.GetFileContents (mapfile);
+
+			if (contents == null)
+				return null;
 
 			ArrayList list = new ArrayList ();
 

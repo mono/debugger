@@ -5,7 +5,6 @@ using System.Threading;
 using System.Reflection;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using GLib;
 using Mono.Debugger;
 
 namespace Mono.Debugger.Frontends.CommandLine

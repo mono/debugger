@@ -1,5 +1,17 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Link against -liberty as well as -lbfd.
+
+	* classes/IOChannel.cs: Put this into the namespace Mono.Debugger.
+
+	* classes/Utils.cs: Duplicate the contents of GLib.FileUtils here;
+	this was the only method which we were using from glib-sharp in
+	the backend, so this dependency is now gone.
+
+	* test/Makefile.in: Don't link against glib-sharp.dll in the backend.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* classes/Backtrace.cs: Don't make this abstract; move the stack
 	unwind stuff from the SingleSteppingEngine here.
 
