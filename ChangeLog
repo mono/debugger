@@ -1,5 +1,10 @@
 2004-12-06  Chris Toshok  <toshok@ximian.com>
 
+	* configure.in: nuke the LT_VERSION stuff, as it breaks the ppc
+	build.
+
+2004-12-06  Chris Toshok  <toshok@ximian.com>
+
 	* backends/server/Makefile.am (libmonodebuggerserver_la_LDFLAGS):
 	remove -module and -version-info, as it's unnecessary (for the
 	moment, at the very least) and it breaks the ppc build.

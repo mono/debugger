@@ -202,14 +202,6 @@ if test x$server_only != xyes ; then
 fi
 
 dnl
-dnl Libtool versioning
-dnl
-LT_VERSION_INFO=0:0:0
-LT_VERSION_SUFFIX=.so.0.0.0
-AC_SUBST(LT_VERSION_INFO)
-AC_SUBST(LT_VERSION_SUFFIX)
-
-dnl
 dnl BFD checks
 dnl
 
