@@ -148,7 +148,8 @@ namespace Mono.Debugger.Languages.CSharp
 				MonoStringObject exc_obj = (MonoStringObject) file.Table.StringType.GetObject (exc_loc);
 				string exc_message = (string) exc_obj.Object;
 
-				throw new TargetInvocationException (exc_message);
+				throw new TargetException (
+					TargetExceptionType.InvocationException, exc_message);
 			}
 
 			TargetLocation retval_loc = new AbsoluteTargetLocation (frame, retval);

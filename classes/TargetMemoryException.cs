@@ -5,11 +5,11 @@ namespace Mono.Debugger
 	public class TargetMemoryException : TargetException
 	{
 		public TargetMemoryException ()
-			: base ("Memory access")
+			: this ("Memory access")
 		{ }
 
 		public TargetMemoryException (string message)
-			: base (message)
+			: base (TargetExceptionType.MemoryAccess, message)
 		{ }
 
 		public TargetMemoryException (TargetAddress address)

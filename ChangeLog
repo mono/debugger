@@ -1,4 +1,11 @@
-2004-06-24  Martin Baulig  <martin@ximian.com>
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetException.cs
+	(TargetExceptionType): New public enum.
+	(TargetException): Don't make this abstract; the .ctor now takes a
+	TargetExceptionType argument.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetInvocationException.cs
 	(TargetInvocationException): Don't derive from TargetException.

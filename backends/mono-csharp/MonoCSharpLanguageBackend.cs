@@ -1549,7 +1549,10 @@ namespace Mono.Debugger.Languages.CSharp
 					rmethod.Name);
 
 				if (load_handlers != null)
-					throw new AlreadyHaveBreakpointException (full_name);
+					throw new TargetException (
+						TargetExceptionType.AlreadyHaveBreakpoint,
+						"Already have a breakpoint on method {0}.",
+						full_name);
 
 				HandlerData data = new HandlerData (this, handler, user_data);
 

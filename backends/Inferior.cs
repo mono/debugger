@@ -251,31 +251,39 @@ namespace Mono.Debugger.Backends
 		{
 			switch (error) {
 			case CommandError.NotStopped:
-				throw new TargetNotStoppedException ();
+				throw new TargetException (
+					TargetExceptionType.NotStopped);
 
 			case CommandError.NoInferior:
-				throw new NoTargetException ();
+				throw new TargetException (
+					TargetExceptionType.NoTarget);
 
 			case CommandError.AlreadyHaveInferior:
-				throw new AlreadyHaveTargetException ();
-
+				throw new TargetException (
+					TargetExceptionType.AlreadyHaveTarget);
 			case CommandError.Fork:
-				throw new CannotStartTargetException ();
+				throw new TargetException (
+					TargetExceptionType.CannotStartTarget);
 
 			case CommandError.NoSuchBreakpoint:
-				throw new NoSuchBreakpointException ();
+				throw new TargetException (
+					TargetExceptionType.NoSuchBreakpoint);
 
 			case CommandError.UnknownRegister:
-				throw new NoSuchRegisterException ();
+				throw new TargetException (
+					TargetExceptionType.NoSuchRegister);
 
 			case CommandError.MemoryAccess:
-				throw new TargetMemoryException ();
+				throw new TargetException (
+					TargetExceptionType.MemoryAccess);
 
 			case CommandError.NotImplemented:
-				throw new TargetException ("Feature not implemented");
+				throw new TargetException (
+					TargetExceptionType.NotImplemented);
 
 			case CommandError.IOError:
-				throw new TargetException ("Unknown I/O error");
+				throw new TargetException (
+					TargetExceptionType.IOError);
 
 			default:
 				throw new InternalError ("Got unknown error condition from inferior: {0}",
@@ -405,7 +413,8 @@ namespace Mono.Debugger.Backends
 		public void Run (bool redirect_fds)
 		{
 			if (initialized)
-				throw new AlreadyHaveTargetException ();
+				throw new TargetException (
+					TargetExceptionType.AlreadyHaveTarget);
 
 			initialized = true;
 
@@ -421,7 +430,8 @@ namespace Mono.Debugger.Backends
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
 
-				throw new CannotStartTargetException (message);
+				throw new TargetException (
+					TargetExceptionType.CannotStartTarget, message);
 			}
 
 			SetupInferior ();
@@ -432,7 +442,8 @@ namespace Mono.Debugger.Backends
 		public void Attach (int pid)
 		{
 			if (initialized)
-				throw new AlreadyHaveTargetException ();
+				throw new TargetException (
+					TargetExceptionType.AlreadyHaveTarget);
 
 			initialized = true;
 
@@ -561,7 +572,8 @@ namespace Mono.Debugger.Backends
 		public AddressDomain AddressDomain {
 			get { 
 				if (address_domain == null)
-					throw new NoTargetException ();
+					throw new TargetException (
+						TargetExceptionType.NoTarget);
 
 				return address_domain;
 			}
@@ -921,7 +933,8 @@ namespace Mono.Debugger.Backends
 				check_disposed ();
 				CommandError result = mono_debugger_server_get_pc (server_handle, out pc);
 				if (result != CommandError.None)
-					throw new NoStackException ();
+					throw new TargetException (
+						TargetExceptionType.NoStack);
 
 				return new TargetAddress (GlobalAddressDomain, pc);
 			}
@@ -934,7 +947,8 @@ namespace Mono.Debugger.Backends
 				CommandError result = mono_debugger_server_current_insn_is_bpt (
 					server_handle, out is_breakpoint);
 				if (result != CommandError.None)
-					throw new NoStackException ();
+					throw new TargetException (
+						TargetExceptionType.NoStack);
 
 				return is_breakpoint != 0;
 			}

@@ -1031,7 +1031,8 @@ namespace Mono.Debugger.Backends
 		public void SendCallbackCommand (Command command)
 		{
 			if (!StartOperation ())
-				throw new TargetNotStoppedException ();
+				throw new TargetException (
+					TargetExceptionType.NotStopped);
 
 			lock (this) {
 				operation_completed_event.Reset ();
@@ -1130,7 +1131,7 @@ namespace Mono.Debugger.Backends
 		protected void check_inferior ()
 		{
 			if (inferior == null)
-				throw new NoTargetException ();
+				throw new TargetException (TargetExceptionType.NoTarget);
 		}
 
 		public IArchitecture Architecture {
