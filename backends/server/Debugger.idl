@@ -1,0 +1,123 @@
+module Debugger
+{
+	enum ErrorCondition {
+		Unknown,
+		NoInferior,
+		AlreadyHaveInferior,
+		Fork,
+		NotStopped,
+		AlreadyStopped,
+		RecursiveCall,
+		NoSuchBreakpoint,
+		UnknownRegister,
+		MemoryAccess,
+		NotImplemented
+	};
+
+	typedef long long Address;
+
+	exception Error {
+		ErrorCondition condition;
+	};
+
+	exception ForkFailed {
+		string message;
+	};
+
+	struct Register {
+		long Index;
+		Address Value;
+	};
+
+	struct StackFrame {
+		Address Frame;
+		Address FrameAddress;
+	};
+
+	struct TargetInfo {
+		short IntSize;
+		short LongSize;
+		short AddressSize;
+	};
+
+	typedef sequence<string> stringList;
+	typedef sequence<octet> Blob;
+	typedef sequence<Register> RegisterList;
+	typedef sequence<StackFrame> StackFrameList;
+
+	interface Thread
+	{
+		long DispatchEvent (in long long status, out Address arg,
+				    out Address data1, out Address data2);
+
+		Address GetFrame ()
+			raises (Error);
+
+		boolean CurrentInsnIsBreakpoint ()
+			raises (Error);
+
+		void Step ()
+			raises (Error);
+
+		void Continue ()
+			raises (Error);
+
+		void Detach ()
+			raises (Error);
+
+		long PeekWord (in Address address)
+			raises (Error);
+
+		Blob ReadMemory (in Address address, in long size)
+			raises (Error);
+
+		void WriteMemory (in Address address, in Blob data)
+			raises (Error);
+
+		long InsertBreakpoint (in Address address)
+			raises (Error);
+
+		long InsertHardwareBreakpoint (in long index, in Address address)
+			raises (Error);
+
+		void RemoveBreakpoint (in long index)
+			raises (Error);
+
+		void EnableBreakpoint (in long index)
+			raises (Error);
+
+		void DisableBreakpoint (in long index)
+			raises (Error);
+
+		void GetRegisters (inout RegisterList registers)
+			raises (Error);
+
+		void SetRegisters (inout RegisterList registers)
+			raises (Error);
+
+		Address GetReturnAddress ()
+			raises (Error);
+
+		StackFrameList GetBacktrace (in long MaxFrames, in Address StopAddress)
+			raises (Error);
+
+		void Stop ()
+			raises (Error);
+
+		long long StopAndWait ()
+			raises (Error);
+	};
+
+	interface Manager
+	{
+		Thread Spawn (in string workingDirectory,
+			      in stringList argv, in stringList envp,
+			      out long pid)
+			raises (ForkFailed);
+
+		Thread Attach (in long pid, out long tid)
+			raises (Error);
+
+		TargetInfo GetTargetInfo ();
+	};
+};
