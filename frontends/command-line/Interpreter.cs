@@ -29,7 +29,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.command_output = command_output;
 			this.inferior_output = inferior_output;
 
-			context = new ScriptingContext (backend, command_output, inferior_output, false);
+			context = new ScriptingContext (backend, command_output, inferior_output, false, true);
 			parser = new Parser (context, "Debugger");
 		}
 

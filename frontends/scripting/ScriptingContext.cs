@@ -151,6 +151,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 
 			case TargetState.STOPPED:
+				if (!context.IsInteractive)
+					break;
+
 				if (arg != 0)
 					context.Print ("Process @{0} received signal {1}{2}.", id, arg, frame);
 				else
@@ -454,7 +457,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public int InsertBreakpoint (string file, int line)
 		{
 			string full_file = context.GetFullPath (file);
-			Console.WriteLine ("FILE: {0}", full_file);
 			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
 			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, full_file, line);
 		}
@@ -598,6 +600,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		DebuggerTextWriter inferior_output;
 		ProcessStart start;
 		bool is_synchronous;
+		bool is_interactive;
+		int exit_code = 0;
 		internal static readonly string DirectorySeparatorStr;
 
 		SourceFileFactory source_factory;
@@ -610,12 +614,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 
 		public ScriptingContext (DebuggerBackend backend, DebuggerTextWriter command_output,
-					 DebuggerTextWriter inferior_output, bool is_synchronous)
+					 DebuggerTextWriter inferior_output, bool is_synchronous,
+					 bool is_interactive)
 		{
 			this.backend = backend;
 			this.command_output = command_output;
 			this.inferior_output = inferior_output;
 			this.is_synchronous = is_synchronous;
+			this.is_interactive = is_interactive;
 
 			procs = new ArrayList ();
 			current_process = null;
@@ -652,6 +658,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return is_synchronous; }
 		}
 
+		public bool IsInteractive {
+			get { return is_interactive; }
+		}
+
+		public int ExitCode {
+			get { return exit_code; }
+			set { exit_code = value; }
+		}
+
 		public ProcessHandle[] Processes {
 			get {
 				ProcessHandle[] retval = new ProcessHandle [procs.Count];
@@ -660,16 +675,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public void Error (string message)
+		{
+			command_output.WriteLine (true, message);
+			if (!IsInteractive) {
+				Print ("Caught fatal error while running non-interactively; exiting!");
+				Environment.Exit (-1);
+			}
+		}
+
 		public void Error (string format, params object[] args)
 		{
-			string message = String.Format (format, args);
-
-			command_output.WriteLine (true, message);
+			Error (String.Format (format, args));
 		}
 
 		public void Error (ScriptingException ex)
 		{
-			command_output.WriteLine (true, ex.Message);
+			Error (ex.Message);
 		}
 
 		public void Print (string format, params object[] args)
@@ -742,8 +764,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public string GetFullPath (string filename)
 		{
-			Console.WriteLine ("#0: {0} {1} {2}", filename, start, Path.IsPathRooted (filename));
-
 			if (start == null)
 				return Path.GetFullPath (filename);
 

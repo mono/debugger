@@ -10,6 +10,9 @@ namespace Mono.Debugger
 		extern static void mono_debugger_readline_init ();
 
 		[DllImport("libmonodebuggerreadline")]
+		extern static int mono_debugger_readline_is_a_tty (int fd);
+
+		[DllImport("libmonodebuggerreadline")]
 		extern static string mono_debugger_readline_readline (IntPtr channel, string prompt);
 
 		[DllImport("libmonodebuggerreadline")]
@@ -27,6 +30,11 @@ namespace Mono.Debugger
 		{
 			this.channel = channel;
 			this.prompt = prompt;
+		}
+
+		public static bool IsTerminal (int fd)
+		{
+			return mono_debugger_readline_is_a_tty (fd) != 0;
 		}
 
 		public string ReadLine ()

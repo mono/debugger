@@ -80,6 +80,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("accessable", Token.ACCESSABLE);
 			keywords.Add ("not", Token.NOT);
 			keywords.Add ("contents", Token.CONTENTS);
+			keywords.Add ("line", Token.LINE);
 
 			keywords.Add ("unknown", Token.UNKNOWN);
 			keywords.Add ("fundamental", Token.FUNDAMENTAL);

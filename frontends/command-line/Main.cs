@@ -12,7 +12,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class CommandLineInterpreter
 	{
 		IOChannel channel;
-		GnuReadLine readline;
+		GnuReadLine readline = null;
 		DebuggerBackend backend;
 		ScriptingContext context;
 		DebuggerTextWriter writer;
@@ -20,11 +20,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public CommandLineInterpreter (string[] args)
 		{
-			channel = new IOChannel (0, false, true);
-			readline = new GnuReadLine (channel, "$ ");
+			if (GnuReadLine.IsTerminal (0)) {
+				channel = new IOChannel (0, false, true);
+				readline = new GnuReadLine (channel, "$ ");
+			}
+
 			backend = new DebuggerBackend ();
 			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (backend, writer, writer, true);
+			context = new ScriptingContext (backend, writer, writer, true, readline != null);
 			parser = new Parser (context, "Debugger");
 
 			if ((args != null) && (args.Length > 0))
@@ -36,7 +39,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			string last_line = null;
 
 			while (!parser.Quit) {
-				string line = readline.ReadLine ();
+				string line;
+				if (readline != null)
+					line = readline.ReadLine ();
+				else
+					line = Console.ReadLine ();
 				if (line == null)
 					break;
 
@@ -48,7 +55,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (!parser.Parse (line))
 					continue;
 
-				if (line != last_line)
+				if ((readline != null) && (line != last_line))
 					readline.AddHistory (line);
 				last_line = line;					
 			}
@@ -57,7 +64,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Exit ()
 		{
 			backend.Dispose ();
-			Environment.Exit (0);
+			Environment.Exit (context.ExitCode);
 		}
 
 		public static void Main (string[] args)

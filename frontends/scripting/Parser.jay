@@ -79,6 +79,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token KIND
 %token ACCESSABLE
 %token CONTENTS
+%token LINE
 %token NOT
 
 %token UNKNOWN
@@ -291,6 +292,10 @@ assert_command
 	| ASSERT CONTENTS STRING variable_expression
 	  {
 		$$ = new AssertContentsCommand ((string) $3, (VariableExpression) $4);
+	  }
+	| ASSERT LINE INTEGER
+	  {
+		$$ = new AssertLineCommand ((int) $3);
 	  }
 	;
 

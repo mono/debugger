@@ -1,5 +1,6 @@
 #include <mono-debugger-readline.h>
 #include <signal.h>
+#include <unistd.h>
 
 static gboolean in_readline = FALSE;
 static GIOChannel *readline_channel = NULL;
@@ -41,6 +42,12 @@ mono_debugger_readline_init (void)
 	sigaction (SIGINT, &sa, NULL);
 
 	rl_getc_function = getc_func;
+}
+
+int
+mono_debugger_readline_is_a_tty (int fd)
+{
+	return isatty (fd);
 }
 
 char *

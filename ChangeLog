@@ -1,5 +1,11 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/ScriptingContext.cs: Support non-interactive
+	debugging sessions; when reading commands from a file, we don't
+	print the current frame when we stop and all errors are always fatal.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added a couple of `assert'
 	commands to be used in a test suite.
 

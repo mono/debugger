@@ -870,15 +870,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			try {
 				bool ok = DoCheck (context);
-				if (ok)
-					context.Print ("OK");
-				else
-					context.Print ("ASSERTION FAILED: {0}", Name);
+				if (ok) {
+					if (context.IsInteractive)
+						context.Print ("OK");
+					return;
+				}
+
+				context.Print ("ASSERTION ({0}) FAILED AT {1}",
+					       Name, context.CurrentProcess.CurrentFrame);
 			} catch (ScriptingException e) {
-				context.Print ("ASSERTION ({0}) FAILED WITH ERROR: {1}", Name, e.Message);
+				context.Print ("ASSERTION ({0}) FAILED WITH ERROR ({1}) AT {2}",
+					       Name, e.Message, context.CurrentProcess.CurrentFrame);
 			} catch (Exception e) {
-				context.Print ("ASSERTION ({0}) FAILED WITH EXCEPTION: {1}", Name, e);
+				context.Print ("ASSERTION ({0}) FAILED WITH EXCEPTION ({1}) AT {2}",
+					       Name, e.Message, context.CurrentProcess.CurrentFrame);
+				context.Print ("FULL EXPCETION TEXT: {0}", e);
 			}
+
+			context.ExitCode++;
 		}
 	}
 
@@ -986,6 +995,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 							      var_expr.Name);
 
 			return obj.Object.ToString () == contents;
+		}
+	}
+
+	public class AssertLineCommand : AssertCommand
+	{
+		int line;
+
+		public override string Name {
+			get {
+				return String.Format ("line == {0}", line);
+			}
+		}
+
+		public AssertLineCommand (int line)
+		{
+			this.line = line;
+		}
+
+		protected override bool DoCheck (ScriptingContext context)
+		{
+			StackFrame frame = context.CurrentProcess.CurrentFrame;
+
+			return frame.SourceLocation.Row == line;
 		}
 	}
 }
