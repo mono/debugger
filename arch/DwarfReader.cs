@@ -600,7 +600,8 @@ namespace Mono.Debugger.Architecture
 						break;
 
 					string name = reader.ReadString ();
-					names.Add (name, new NameEntry (debug_offset, offset));
+					if (!names.Contains (name))
+						names.Add (name, new NameEntry (debug_offset, offset));
 				}
 			}
 

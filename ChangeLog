@@ -1,3 +1,8 @@
+2004-08-27  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs (DwarfReader.read_pubnames): Ignore
+	duplicate entries.
+
 2004-07-12  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ILanguage.cs (ILanguage.CreatePointer): New method.
