@@ -903,9 +903,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return false;
 
-			Console.WriteLine ("EXPR: {0}", expr);
 			ITargetFunctionObject func = expr.ResolveMethod (context, null);
-			Console.WriteLine ("FUNC: {0}", func);
 			return false;
 		}
 

@@ -30,7 +30,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 			if (!ok)
 				throw new ScriptingException (
-					"Can't resolve expression `{0}.", Name);
+					"Can't resolve expression `{0}'.", Name);
 		}
 
 		protected virtual ITargetType DoResolveType (ScriptingContext context)
@@ -316,6 +316,26 @@ namespace Mono.Debugger.Frontends.Scripting
 			return expr.ResolveVariable (context);
 		}
 
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
+		{
+			FrameHandle frame = context.CurrentFrame;
+			IMethod method = frame.Frame.Method;
+			if ((method == null) || (method.DeclaringType == null))
+				return null;
+
+			Expression expr;
+			if (method.HasThis) {
+				ITargetObject instance = frame.GetVariable (method.This);
+
+				expr = new StructAccessExpression (
+					frame.Frame, (ITargetStructObject) instance, name);
+			} else
+				expr = new StructAccessExpression (
+					frame.Frame, method.DeclaringType, name);
+
+			return expr.ResolveMethod (context, args);
+		}
+
 		protected override object DoResolve (ScriptingContext context)
 		{
 			Expression expr = ResolveSimpleName (context);
@@ -385,6 +405,13 @@ namespace Mono.Debugger.Frontends.Scripting
 			Expression expr = ResolveMemberAccess (context);
 
 			return expr.ResolveType (context);
+		}
+
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
+		{
+			Expression expr = ResolveMemberAccess (context);
+
+			return expr.ResolveMethod (context, args);
 		}
 
 		protected override object DoResolve (ScriptingContext context)

@@ -115,9 +115,40 @@ expression
 	  {
 		$$ = new ArrayAccessExpression ((Expression) $1, (Expression) $3);
 	  }
-	| expression OPEN_PARENS CLOSE_PARENS
+	| expression OPEN_PARENS argument_list CLOSE_PARENS
 	  {
-		$$ = new InvocationExpression ((Expression) $1, null);
+		$$ = new InvocationExpression ((Expression) $1, ((Expression []) $3));
+	  }
+	;
+
+argument_list
+	: /* empty */
+	  {
+		$$ = new Expression [0];
+	  }
+	| argument_list_0
+	  {
+		Expression[] args = new Expression [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (args, 0);
+
+		$$ = args;
+	  }
+	;
+
+argument_list_0
+	: expression
+	  {
+		ArrayList args = new ArrayList ();
+		args.Add ($1);
+
+		$$ = args;
+	  }
+	| argument_list_0 COMMA expression
+	  {
+		ArrayList args = (ArrayList) $1;
+		args.Add ($3);
+
+		$$ = args;
 	  }
 	;
 

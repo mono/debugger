@@ -1454,6 +1454,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override ITargetStructType DeclaringType {
 				get {
+					if (!is_loaded)
+						throw new InvalidOperationException ();
+
+					get_variables ();
 					return decl_type;
 				}
 			}
