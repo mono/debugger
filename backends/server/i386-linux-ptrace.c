@@ -48,6 +48,12 @@ typedef struct {
 	int status;
 } PTraceSource;
 
+typedef enum {
+	STOP_ACTION_SEND_STOPPED,
+	STOP_ACTION_BREAKPOINT_HIT,
+	STOP_ACTION_CALLBACK
+} ChildStoppedAction;
+
 static ServerCommandError
 get_registers (InferiorHandle *handle, struct user_regs_struct *regs)
 {
@@ -623,7 +629,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_read_data,
 	server_ptrace_write_data,
 	server_ptrace_call_method,
-	server_ptrace_child_stopped,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_remove_breakpoint,
 	server_ptrace_get_breakpoints

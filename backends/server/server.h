@@ -9,21 +9,6 @@ G_BEGIN_DECLS
 #define MONO_SYMBOL_FILE_MAGIC			"45e82623fd7fa614"
 
 typedef enum {
-	SERVER_COMMAND_GET_PC = 1,
-	SERVER_COMMAND_DETACH,
-	SERVER_COMMAND_SHUTDOWN,
-	SERVER_COMMAND_KILL,
-	SERVER_COMMAND_CONTINUE,
-	SERVER_COMMAND_STEP,
-	SERVER_COMMAND_READ_DATA,
-	SERVER_COMMAND_WRITE_DATA,
-	SERVER_COMMAND_GET_TARGET_INFO,
-	SERVER_COMMAND_CALL_METHOD,
-	SERVER_COMMAND_INSERT_BREAKPOINT,
-	SERVER_COMMAND_REMOVE_BREAKPOINT
-} ServerCommand;
-
-typedef enum {
 	COMMAND_ERROR_NONE = 0,
 	COMMAND_ERROR_NO_INFERIOR,
 	COMMAND_ERROR_ALREADY_HAVE_INFERIOR,
@@ -45,19 +30,15 @@ typedef enum {
 	MESSAGE_CHILD_HIT_BREAKPOINT
 } ServerStatusMessageType;
 
-typedef enum {
-	STOP_ACTION_SEND_STOPPED,
-	STOP_ACTION_BREAKPOINT_HIT,
-	STOP_ACTION_CALLBACK
-} ChildStoppedAction;
-
 typedef struct {
 	ServerStatusMessageType type;
 	guint32 arg;
 } ServerStatusMessage;
 
+/* This is an opaque data structure which the backend may use to store stuff. */
 typedef struct InferiorHandle InferiorHandle;
 
+/* C# delegates. */
 typedef void (*ChildSetupFunc) (void);
 typedef void (*ChildExitedFunc) (void);
 typedef void (*ChildMessageFunc) (ServerStatusMessageType type, int arg);
@@ -65,6 +46,13 @@ typedef void (*ChildCallbackFunc) (guint64 callback, guint64 data);
 
 /*
  * Server functions.
+ *
+ * When porting the debugger to another architecture, you need to implement all functions
+ * in this vtable.
+ *
+ * It is a requirement that all functions always return immediately without blocking.
+ * If the requested operation cannot be performed (for instance because the target is currently
+ * running, don't wait for it but return an error condition!).
  */
 
 typedef struct {
@@ -88,47 +76,86 @@ typedef struct {
 
 	ServerCommandError    (* detach)              (InferiorHandle     *handle);
 
+	/* These two are private, will provide docu soon. */
 	GSource *             (* get_g_source)        (InferiorHandle     *handle);
-
 	void                  (* wait)                (InferiorHandle     *handle);
 
+	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
 	ServerCommandError    (* get_target_info)     (InferiorHandle     *handle,
 						       guint32            *target_int_size,
 						       guint32            *target_long_size,
 						       guint32            *target_address_size);
 
+	/*
+	 * Continue the target.
+	 * This operation must start the target and then return immediately
+	 * (without waiting for the target to stop).
+	 */
 	ServerCommandError    (* run)                 (InferiorHandle   *handle);
 
+	/*
+	 * Single-step one machine instruction.
+	 * This operation must start the target and then return immediately
+	 * (without waiting for the target to stop).
+	 */
 	ServerCommandError    (* step)                (InferiorHandle   *handle);
 
+	/*
+	 * Get the current program counter.
+	 * Return COMMAND_ERROR_NOT_STOPPED if the target is currently running.
+	 * This is a time-critical function, it must return immediately without blocking.
+	 */
 	ServerCommandError    (* get_pc)              (InferiorHandle   *handle,
 						       guint64          *pc);
 
+	/*
+	 * Read `size' bytes from the target's address space starting at `start'.
+	 * Writes the result into `buffer' (which has been allocated by the caller).
+	 */
 	ServerCommandError    (* read_data)           (InferiorHandle   *handle,
 						       guint64           start,
 						       guint32           size,
 						       gpointer          buffer);
 
+	/*
+	 * Write `size' bytes from `buffer' to the target's address space starting at `start'.
+	 */
 	ServerCommandError    (* write_data)          (InferiorHandle   *handle,
 						       guint64           start,
 						       guint32           size,
 						       gconstpointer     data);
 
+	/*
+	 * Call `guint64 (*func) (guint64)' function at address `method' in the target address
+	 * space, pass it argument `method_argument', send a MESSAGE_CHILD_CALLBACK with the
+	 * `callback_argument' and the function's return value when the function returns.
+	 * This function must return immediately without waiting for the target !
+	 */
 	ServerCommandError    (* call_method)         (InferiorHandle   *handle,
 						       guint64           method,
 						       guint64           method_argument,
 						       guint64           callback_argument);
 
-	ChildStoppedAction    (* child_stopped)       (InferiorHandle   *handle,
-						       int               signumber,
-						       guint64          *callback_arg,
-						       guint64          *retval);
-
+	/*
+	 * Insert a breakpoint at address `address' in the target's address space.
+	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
+	 * to remove the breakpoint.
+	 */
 	ServerCommandError    (* insert_breakpoint)   (InferiorHandle   *handle,
 						       guint64           address,
 						       guint32          *bhandle);
+
+	/*
+	 * Remove breakpoint `bhandle'.
+	 */
 	ServerCommandError    (* remove_breakpoint)   (InferiorHandle   *handle,
 						       guint32           bhandle);
+
+	/*
+	 * Get all breakpoints.  Writes number of breakpoints into `count' and returns a g_new0()
+	 * allocated list of guint32's in `breakpoints'.  The caller is responsible for freeing this
+	 * data structure.
+	 */
 	ServerCommandError    (* get_breakpoints)     (InferiorHandle   *handle,
 						       guint32          *count,
 						       guint32         **breakpoints);
@@ -138,6 +165,9 @@ extern InferiorInfo i386_linux_ptrace_inferior;
 
 /*
  * Library functions.
+ *
+ * These functions just call the corresponding function in the ServerHandle's vtable.
+ * They're just here to be called from C#.
  */
 
 typedef struct {
