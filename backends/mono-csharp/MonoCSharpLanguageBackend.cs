@@ -920,19 +920,19 @@ namespace Mono.Debugger.Languages.CSharp
 				return null;
 
 			ensure_sources ();
-			MonoMethodSourceEntry method = (MonoMethodSourceEntry) method_index_hash [index];
+			SourceMethodInfo method = (SourceMethodInfo) method_index_hash [index];
 			if (method != null)
-				return method.Method;
+				return method;
 
 			MethodEntry entry = File.GetMethod (index);
 			MonoSourceInfo info = (MonoSourceInfo) source_hash [entry.SourceFile];
 			MethodSourceEntry source = File.GetMethodSource (index);
 
 			string name = entry.FullName;
-			method = new MonoMethodSourceEntry (this, source, info, name);
+			method = new MonoSourceMethod (info, this, source, name);
 			method_name_hash.Add (name, method);
 			method_index_hash.Add (index, method);
-			return method.Method;
+			return method;
 		}
 
 		public SourceMethodInfo FindMethod (string name)
@@ -941,22 +941,15 @@ namespace Mono.Debugger.Languages.CSharp
 				return null;
 
 			ensure_sources ();
-			MonoMethodSourceEntry method = (MonoMethodSourceEntry) method_name_hash [name];
+			SourceMethodInfo method = (SourceMethodInfo) method_name_hash [name];
 			if (method != null)
-				return method.Method;
+				return method;
 
 			int method_index = File.FindMethod (name);
 			if (method_index < 0)
 				return null;
 
-			MethodEntry entry = File.GetMethod (method_index);
-			MonoSourceInfo info = (MonoSourceInfo) source_hash [entry.SourceFile];
-			MethodSourceEntry source = File.GetMethodSource (method_index);
-
-			method = new MonoMethodSourceEntry (this, source, info, name);
-			method_name_hash.Add (name, method);
-			method_index_hash.Add (method_index, method);
-			return method.Method;
+			return GetMethod (method_index);
 		}
 
 		internal ArrayList SymbolRanges {
@@ -969,49 +962,6 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				return symtab;
 			}
-		}
-
-		// <remarks>
-		//   Wrapper around MethodSourceEntry; holds a reference to the
-		//   MonoSourceMethod while the method is loaded.  We only create the
-		//   MonoSourceMethod when the method is actually used since it consumes a
-		//   lot of memory and also takes some time to create it.
-		// </remarks>
-		private class MonoMethodSourceEntry
-		{
-			// <summary>
-			//   This is read from the symbol file.
-			// </summary>
-			public readonly MethodSourceEntry Entry;
-			public readonly MonoSourceInfo SourceInfo;
-
-			// <summary>
-			//   The method name is read from the JIT.
-			// </summary>
-			public readonly string Name;
-
-			public MonoMethodSourceEntry (MonoSymbolTableReader reader, MethodSourceEntry entry,
-						      MonoSourceInfo source, string name)
-			{
-				this.reader = reader;
-				this.Entry = entry;
-				this.SourceInfo = source;
-				this.Name = name;
-			}
-
-			MonoSymbolTableReader reader;
-			MonoSourceMethod method = null;
-
-			public MonoSourceMethod Method {
-				get {
-					if (method != null)
-						return method;
-
-					method = new MonoSourceMethod (SourceInfo, reader, Entry, Name);
-					return method;
-				}
-			}
-
 		}
 
 		private class MonoSourceInfo : SourceInfo
