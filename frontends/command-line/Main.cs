@@ -83,8 +83,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					line = readline.ReadLine ();
 				else
 					line = Console.ReadLine ();
-				if (line == null)
-					break;
+				if (line == null || line == "")
+					line = last_line;
 
 				line = line.TrimStart (' ', '\t');
 				line = line.TrimEnd (' ', '\t');
