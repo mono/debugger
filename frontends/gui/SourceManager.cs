@@ -267,6 +267,12 @@ namespace Mono.Debugger.GUI {
 			if (method.HasSource){
 				ISourceBuffer source_buffer = method.Source.SourceBuffer;
 
+				if (source_buffer == null) {
+					current_source = null;
+					initialized = true;
+					return;
+				}
+
 				string filename = source_buffer.Name;
 
 				SourceList view = (SourceList) sources [filename];
