@@ -29,6 +29,7 @@ namespace Mono.Debugger
 		CoreFile core;
 		IInferior inferior;
 		int pid, id;
+		bool has_pid;
 
 		static int next_id = 0;
 
@@ -39,7 +40,6 @@ namespace Mono.Debugger
 			this.start = start;
 			this.bfd_container = bfd_container;
 			this.id = ++next_id;
-			this.pid = pid;
 
 			thread_group = new ThreadGroup (this);
 
@@ -73,10 +73,12 @@ namespace Mono.Debugger
 				  int pid)
 			: this (backend, start, bfd_container, true)
 		{
-			if (pid != -1)
+			if (pid != -1) {
+				this.pid = pid;
 				sse.Attach (pid, false);
-			else
-				pid = inferior.PID;
+			} else
+				this.pid = inferior.PID;
+			has_pid = true;
 		}
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
@@ -84,6 +86,8 @@ namespace Mono.Debugger
 			: this (backend, start, bfd_container, false)
 		{
 			runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
+			this.pid = pid;
+			has_pid = true;
 		}
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
@@ -176,6 +180,11 @@ namespace Mono.Debugger
 
 		public int PID {
 			get{
+				check_inferior ();
+				if (!has_pid) {
+					pid = inferior.PID;
+					has_pid = true;
+				}
 				return pid;
 			}
 		}
@@ -346,7 +355,7 @@ namespace Mono.Debugger
 
 		public void SetSignal (int signal, bool send_it)
 		{
-			check_stopped ();
+			check_inferior ();
 			inferior.SetSignal (signal, send_it);
 		}
 
