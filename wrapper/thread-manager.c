@@ -8,8 +8,6 @@
 
 static GPtrArray *thread_array = NULL;
 
-static void (*notification_function) (int tid, gpointer data, gpointer data2);
-
 extern void GC_push_all_stack (gpointer b, gpointer t);
 
 static void
@@ -57,9 +55,6 @@ mono_debugger_thread_manager_init (void)
 		thread_array = g_ptr_array_new ();
 
 	gc_thread_vtable = &mono_debugger_thread_vtable;
-
-	notification_function = mono_debugger_create_notification_function (
-		(gpointer) &MONO_DEBUGGER__manager.thread_manager_notification);
 }
 
 void
@@ -71,7 +66,7 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 	thread->func = func;
 	thread->start_stack = start_stack;
 
-	notification_function (tid, func, &thread->end_stack);
+	mono_debugger_notification_function (NOTIFICATION_THREAD_CREATED, thread, tid);
 
 	mono_debugger_thread_manager_thread_created (thread);
 }

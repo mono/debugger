@@ -48,13 +48,12 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		TargetAddress notification_address;
-		TargetAddress mono_thread_notification;
 
 		public TargetAddress Initialize (SingleSteppingEngine sse, Inferior inferior)
 		{
-			main_function = inferior.ReadGlobalAddress (info + 4);
+			main_function = inferior.ReadGlobalAddress (info + 8);
 			notification_address = inferior.ReadGlobalAddress (
-				info + 4 + inferior.TargetAddressSize);
+				info + 8 + inferior.TargetAddressSize);
 
 			mono_debugger_server_set_notification (notification_address.Address);
 
@@ -69,6 +68,7 @@ namespace Mono.Debugger.Backends
 			int size = inferior.ReadInteger (info);
 			ITargetMemoryReader reader = inferior.ReadMemory (info, size);
 			reader.ReadInteger ();
+			thread_size = reader.ReadInteger ();
 
 			main_function = reader.ReadGlobalAddress ();
 			notification_address = reader.ReadGlobalAddress ();
@@ -76,10 +76,12 @@ namespace Mono.Debugger.Backends
 			main_tid = reader.ReadInteger ();
 
 			main_thread = reader.ReadGlobalAddress ();
-			mono_thread_notification = reader.ReadGlobalAddress ();
+
+			thread_created (inferior, main_thread, true);
 		}
 
 		int main_tid;
+		int thread_size;
 		SingleSteppingEngine manager_sse;
 		SingleSteppingEngine main_sse;
 		ILanguageBackend csharp_language;
@@ -114,7 +116,6 @@ namespace Mono.Debugger.Backends
 			} else if (thread_hash.Count > first_index) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed thread: {0}", sse);
-				sse.DaemonEventHandler = new DaemonEventHandler (managed_handler);
 				return false;
 			} else {
 				sse.IsDaemon = true;
@@ -122,37 +123,21 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		bool managed_handler (SingleSteppingEngine sse, Inferior inferior,
-				      TargetEventArgs args)
+		void thread_created (Inferior inferior, TargetAddress data, bool is_main)
 		{
-			if ((args.Type != TargetEventType.TargetStopped) ||
-			    ((int) args.Data != 0))
-				return false;
-
-			if (inferior.CurrentFrame != mono_thread_notification)
-				return false;
-
-			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
-			TargetAddress esp = frame.StackPointer;
-			esp += inferior.TargetAddressSize;
-			int tid = inferior.ReadInteger (esp);
-			esp += inferior.TargetIntegerSize;
-			TargetAddress until = inferior.ReadAddress (esp);
-			esp += inferior.TargetAddressSize;
-			TargetAddress data = inferior.ReadAddress (esp);
+			ITargetMemoryReader reader = inferior.ReadMemory (data, thread_size);
+			TargetAddress end_stack = reader.ReadAddress ();
+			int tid = reader.BinaryReader.ReadInt32 ();
+			int locked = reader.BinaryReader.ReadInt32 ();
+			TargetAddress func = reader.ReadGlobalAddress ();
+			TargetAddress start_stack = reader.ReadAddress ();
 
 			ThreadData thread = (ThreadData) thread_hash [tid];
-			sse.EndStackAddress = data;
-			thread.IsManaged = true;
-			thread.Engine = sse;
-			thread.Data = data;
+			thread.StartStack = start_stack;
+			thread.Engine.EndStackAddress = data;
 
-			if ((thread == null) || (thread.Engine != sse))
-				throw new InternalError ();
-
-			sse.Start (until, false);
-			sse.DaemonEventHandler = null;
-			return true;
+			if (!is_main)
+				thread.Engine.Start (func, false);
 		}
 
 		internal bool HandleChildEvent (Inferior inferior,
@@ -173,6 +158,15 @@ namespace Mono.Debugger.Backends
 					int tid = (int) cevent.Data2;
 					ThreadData thread = (ThreadData) thread_hash [tid];
 					thread_manager.ReleaseGlobalThreadLock (thread.Engine);
+					break;
+				}
+
+				case NotificationType.ThreadCreated: {
+					int tid = (int) cevent.Data2;
+					TargetAddress data = new TargetAddress (
+						inferior.GlobalAddressDomain, cevent.Data1);
+
+					thread_created (inferior, data, false);
 					break;
 				}
 
@@ -218,28 +212,31 @@ namespace Mono.Debugger.Backends
 			public readonly int PID;
 			public bool IsManaged;
 			public SingleSteppingEngine Engine;
-			public readonly TargetAddress StartStack;
-			public TargetAddress Data;
+			public TargetAddress StartStack;
 
 			public ThreadData (SingleSteppingEngine sse, int tid, int pid,
-					   TargetAddress start_stack, TargetAddress data)
+					   TargetAddress start_stack)
 			{
 				this.IsManaged = true;
 				this.Engine = sse;
 				this.TID = tid;
 				this.PID = pid;
 				this.StartStack = start_stack;
-				this.Data = data;
 			}
 
-			public ThreadData (SingleSteppingEngine sse, int pid, int tid)
+			public ThreadData (SingleSteppingEngine sse, int tid, int pid)
 			{
 				this.IsManaged = false;
 				this.Engine = sse;
 				this.TID = tid;
 				this.PID = pid;
 				this.StartStack = TargetAddress.Null;
-				this.Data = TargetAddress.Null;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("ThreadData ({0:x}:{1}:{2}:{3})",
+						      TID, PID, IsManaged, StartStack);
 			}
 		}
 	}

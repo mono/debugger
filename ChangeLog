@@ -1,5 +1,25 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/mono-debugger-jit-wrapper.h (MonoDebuggerManager): Added
+	`guint32 thread_size' (which is `sizeof (MonoDebuggerThread)') and
+	removed `thread_manager_notification'.
+	(NOTIFICATION_THREAD_CREATED): New notification.
+
+	* wrapper/thread-manager.c
+	(mono_debugger_thread_manager_add_thread): Use the normal
+	mono_debugger_notification_function() notification mechanism; the
+	`notification_function' is gone.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.managed_handler): Removed.
+	(MonoThreadManager.thread_created): Call this via the
+	NotificationType.ThreadCreated notification.
+	(MonoThreadManager.do_initialize): Call thread_created() on the
+	`main_thread'; this is very important because it tells GC about
+	the main thread's stack.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-linux-ptrace.c
 	(_server_ptrace_setup_thread_manager): Don't set
 	PTRACE_O_TRACEFORK and PTRACE_O_TRACEVFORKDONE; we don't follow

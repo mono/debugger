@@ -46,11 +46,11 @@ struct _MonoDebuggerThread {
 
 struct _MonoDebuggerManager {
 	guint32 size;
+	guint32 thread_size;
 	gpointer main_function;
 	gpointer notification_address;
 	guint32 main_tid;
 	MonoDebuggerThread *main_thread;
-	gpointer thread_manager_notification;
 };
 
 enum {
@@ -68,7 +68,8 @@ enum {
 	NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK,
 	NOTIFICATION_WRAPPER_MAIN,
 	NOTIFICATION_MAIN_EXITED,
-	NOTIFICATION_UNHANDLED_EXCEPTION
+	NOTIFICATION_UNHANDLED_EXCEPTION,
+	NOTIFICATION_THREAD_CREATED
 };
 
 #define IO_LAYER(func) (* mono_debugger_io_layer.func)

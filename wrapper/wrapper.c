@@ -50,7 +50,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 
 MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
-	NULL, NULL, 0, NULL, NULL
+	sizeof (MonoDebuggerThread),
+	NULL, NULL, 0, NULL
 };
 
 static guint64

@@ -2033,13 +2033,13 @@ namespace Mono.Debugger.Backends
 
 			stopped = inferior.Stop (out stop_event);
 
-			Report.Debug (DebugFlags.Threads,
-				      "{0} acquired thread lock: {1} {2}",
-				      this, stopped, stop_event);
-
 			get_registers ();
 			long esp = registers [(int) I386Register.ESP].Value;
 			TargetAddress addr = new TargetAddress (AddressDomain, esp);
+
+			Report.Debug (DebugFlags.Threads,
+				      "{0} acquired thread lock: {1} {2} {3} {4}",
+				      this, stopped, stop_event, EndStackAddress, addr);
 
 			if (!EndStackAddress.IsNull)
 				inferior.WriteAddress (EndStackAddress, addr);
