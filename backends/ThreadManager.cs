@@ -110,6 +110,7 @@ namespace Mono.Debugger
 		}
 
 		public event ThreadEventHandler InitializedEvent;
+		public event ThreadEventHandler MainThreadCreatedEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 
@@ -117,6 +118,12 @@ namespace Mono.Debugger
 		{
 			if (InitializedEvent != null)
 				InitializedEvent (this, new_process);
+		}
+
+		protected virtual void OnMainThreadCreatedEvent (Process new_process)
+		{
+			if (MainThreadCreatedEvent != null)
+				MainThreadCreatedEvent (this, new_process);
 		}
 
 		protected virtual void OnThreadCreatedEvent (Process new_process)
@@ -324,6 +331,7 @@ namespace Mono.Debugger
 				backend, process, inferior, handler, start);
 
 			main_started_event.WaitOne ();
+			OnMainThreadCreatedEvent (main_process);
 			return runner;
 		}
 

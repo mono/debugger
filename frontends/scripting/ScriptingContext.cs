@@ -51,10 +51,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (process.SingleSteppingEngine == null)
 				return;
 
-			if (pid > 0)
-				process.SingleSteppingEngine.Attach (pid, true);
-			else
-				process.SingleSteppingEngine.Run (!context.IsSynchronous, true);
+			if (process.SingleSteppingEngine.HasTarget) {
+				context.Print ("Process @{0} stopped at {1}.", id, CurrentFrame);
+				PrintFrameSource (CurrentFrame);
+			} else {
+				if (pid > 0)
+					process.SingleSteppingEngine.Attach (pid, true);
+				else
+					process.SingleSteppingEngine.Run (!context.IsSynchronous, true);
+			}
 			initialize ();
 			process_events ();
 		}
@@ -379,6 +384,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void PrintFrame (StackFrame frame)
 		{
 			context.Print (frame);
+			PrintFrameSource (frame);
+		}
+
+		public void PrintFrameSource (StackFrame frame)
+		{
 			Disassemble (frame);
 
 			SourceLocation location = frame.SourceLocation;
@@ -680,7 +690,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected void Initialize ()
 		{
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (manager_initialized);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}
 
@@ -810,15 +819,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 				start = ProcessStart.Create (null, args, null);
 				process = backend.ReadCoreFile (start, "thecore");
 				current_process = new ProcessHandle (this, backend, process, "thecore");
-				add_process (current_process);
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
-				ProcessHandle handle = new ProcessHandle (this, backend, process, pid);
-				add_process (handle);
-				if (current_process == null)
-					current_process = handle;
+				current_process = new ProcessHandle (this, backend, process, pid);
 			}
+
+			add_process (current_process);
 
 			return process;
 		}
@@ -838,12 +845,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			add_process (handle);
-		}
-
-		void manager_initialized (ThreadManager manager, Process process)
-		{
-			current_process = new ProcessHandle (this, process.DebuggerBackend, process);
-			add_process (current_process);
 		}
 
 		public void ShowVariableType (ITargetType type, string name)

@@ -491,6 +491,8 @@ namespace Mono.Debugger.Backends
 			if (initialized && !reached_main) {
 				backend.ReachedMain (process, inferior);
 				main_method_retaddr = inferior.GetReturnAddress ();
+				disassembler.SymbolTable = symtab_manager.SymbolTable;
+				current_symtab = symtab_manager.SymbolTable;
 				reached_main = true;
 			}
 
@@ -1885,7 +1887,7 @@ namespace Mono.Debugger.Backends
 		//
 
 		public bool HasTarget {
-			get { return inferior != null; }
+			get { return (inferior != null) && (engine_thread != null); }
 		}
 
 		public bool CanRun {

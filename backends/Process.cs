@@ -102,11 +102,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
-			: this (backend, start, bfd_container, ProcessType.Normal, null, -1, null, 0)
-		{ }
-
-
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
 				  string core_file)
 			: this (backend, start, bfd_container, ProcessType.CoreFile, core_file, -1, null, 0)
@@ -415,6 +410,17 @@ namespace Mono.Debugger
 		{
 			check_iprocess ();
 			return iprocess.GetMemoryMaps ();
+		}
+
+		internal static Process StartApplication (DebuggerBackend backend, ProcessStart start,
+							  BfdContainer bfd_container)
+		{
+			Process process = new Process (
+				backend, start, bfd_container, ProcessType.Normal, null, -1, null, 0);
+			if (backend.ThreadManager.MainProcess != null)
+				return backend.ThreadManager.MainProcess;
+			else
+				return process;
 		}
 
 		public Process CreateThread (int pid)

@@ -112,8 +112,9 @@ namespace Mono.Debugger
 
 			module_manager.Lock ();
 
-			process = new Process (this, start, bfd_container);
+			process = Process.StartApplication (this, start, bfd_container);
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+
 			main_group.AddThread (process);
 			return process;
 		}
@@ -169,6 +170,9 @@ namespace Mono.Debugger
 				module.BackendLoaded = true;
 
 			thread_manager.Initialize (process, inferior);
+
+			module_manager.UnLock ();
+			symtab_manager.Wait ();
 		}
 
 		internal Process CreateDebuggerProcess (Process manager, int pid)
