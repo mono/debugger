@@ -122,8 +122,6 @@ namespace Mono.Debugger
 
 		byte[] ReadBuffer (TargetAddress address, int size);
 
-		Register GetRegister (int register);
-
 		Register[] GetRegisters ();
 
 		bool CanWrite {

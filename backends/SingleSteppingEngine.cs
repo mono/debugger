@@ -698,8 +698,8 @@ namespace Mono.Debugger.Backends
 
 		void set_register (Register reg)
 		{
-			inferior.SetRegister (reg.Index, (long) reg.Data);
-			registers = inferior.GetRegisters ();
+			registers [reg.Index] = reg;
+			inferior.SetRegisters (registers);
 		}
 
 		int get_insn_size (TargetAddress address)
@@ -1763,7 +1763,8 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			TargetAddress stack = inferior.GetStackPointer ();
+			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
+			TargetAddress stack = frame.StackPointer;
 			if (current_operation.Until.IsNull) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} starting finish native until {1}",

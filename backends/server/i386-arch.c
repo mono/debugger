@@ -454,66 +454,26 @@ server_ptrace_get_target_info (guint32 *target_int_size, guint32 *target_long_si
 }
 
 static ServerCommandError
-server_ptrace_get_registers (ServerHandle *handle, guint32 count,
-			     guint32 *registers, guint64 *values)
+server_ptrace_get_registers (ServerHandle *handle, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
-	int i;
 
-	for (i = 0; i < count; i++) {
-		switch (registers [i]) {
-		case DEBUGGER_REG_EBX:
-			values [i] = (guint32) INFERIOR_REG_EBX (arch->current_regs);
-			break;
-		case DEBUGGER_REG_ECX:
-			values [i] = (guint32) INFERIOR_REG_ECX (arch->current_regs);
-			break;
-		case DEBUGGER_REG_EDX:
-			values [i] = (guint32) INFERIOR_REG_EDX (arch->current_regs);
-			break;
-		case DEBUGGER_REG_ESI:
-			values [i] = (guint32) INFERIOR_REG_ESI (arch->current_regs);
-			break;
-		case DEBUGGER_REG_EDI:
-			values [i] = (guint32) INFERIOR_REG_EDI (arch->current_regs);
-			break;
-		case DEBUGGER_REG_EBP:
-			values [i] = (guint32) INFERIOR_REG_EBP (arch->current_regs);
-			break;
-		case DEBUGGER_REG_EAX:
-			values [i] = (guint32) INFERIOR_REG_EAX (arch->current_regs);
-			break;
-		case DEBUGGER_REG_DS:
-			values [i] = (guint32) INFERIOR_REG_DS (arch->current_regs);
-			break;
-		case DEBUGGER_REG_ES:
-			values [i] = (guint32) INFERIOR_REG_ES (arch->current_regs);
-			break;
-		case DEBUGGER_REG_FS:
-			values [i] = (guint32) INFERIOR_REG_FS (arch->current_regs);
-			break;
-		case DEBUGGER_REG_GS:
-			values [i] = (guint32) INFERIOR_REG_GS (arch->current_regs);
-			break;
-		case DEBUGGER_REG_EIP:
-			values [i] = (guint32) INFERIOR_REG_EIP (arch->current_regs);
-			break;
-		case DEBUGGER_REG_CS:
-			values [i] = (guint32) INFERIOR_REG_CS (arch->current_regs);
-			break;
-		case DEBUGGER_REG_EFLAGS:
-			values [i] = (guint32) INFERIOR_REG_EFLAGS (arch->current_regs);
-			break;
-		case DEBUGGER_REG_ESP:
-			values [i] = (guint32) INFERIOR_REG_ESP (arch->current_regs);
-			break;
-		case DEBUGGER_REG_SS:
-			values [i] = (guint32) INFERIOR_REG_SS (arch->current_regs);
-			break;
-		default:
-			return COMMAND_ERROR_NO_SUCH_REGISTER;
-		}
-	}
+	values [DEBUGGER_REG_EBX] = (guint32) INFERIOR_REG_EBX (arch->current_regs);
+	values [DEBUGGER_REG_ECX] = (guint32) INFERIOR_REG_ECX (arch->current_regs);
+	values [DEBUGGER_REG_EDX] = (guint32) INFERIOR_REG_EDX (arch->current_regs);
+	values [DEBUGGER_REG_ESI] = (guint32) INFERIOR_REG_ESI (arch->current_regs);
+	values [DEBUGGER_REG_EDI] = (guint32) INFERIOR_REG_EDI (arch->current_regs);
+	values [DEBUGGER_REG_EBP] = (guint32) INFERIOR_REG_EBP (arch->current_regs);
+	values [DEBUGGER_REG_EAX] = (guint32) INFERIOR_REG_EAX (arch->current_regs);
+	values [DEBUGGER_REG_DS] = (guint32) INFERIOR_REG_DS (arch->current_regs);
+	values [DEBUGGER_REG_ES] = (guint32) INFERIOR_REG_ES (arch->current_regs);
+	values [DEBUGGER_REG_FS] = (guint32) INFERIOR_REG_FS (arch->current_regs);
+	values [DEBUGGER_REG_GS] = (guint32) INFERIOR_REG_GS (arch->current_regs);
+	values [DEBUGGER_REG_EIP] = (guint32) INFERIOR_REG_EIP (arch->current_regs);
+	values [DEBUGGER_REG_CS] = (guint32) INFERIOR_REG_CS (arch->current_regs);
+	values [DEBUGGER_REG_EFLAGS] = (guint32) INFERIOR_REG_EFLAGS (arch->current_regs);
+	values [DEBUGGER_REG_ESP] = (guint32) INFERIOR_REG_ESP (arch->current_regs);
+	values [DEBUGGER_REG_SS] = (guint32) INFERIOR_REG_SS (arch->current_regs);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -523,62 +483,23 @@ server_ptrace_set_registers (ServerHandle *handle, guint32 count,
 			     guint32 *registers, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
-	int i;
 
-	for (i = 0; i < count; i++) {
-		switch (registers [i]) {
-		case DEBUGGER_REG_EBX:
-			INFERIOR_REG_EBX (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_ECX:
-			INFERIOR_REG_ECX (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_EDX:
-			INFERIOR_REG_EDX (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_ESI:
-			INFERIOR_REG_ESI (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_EDI:
-			INFERIOR_REG_EDI (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_EBP:
-			INFERIOR_REG_EBP (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_EAX:
-			INFERIOR_REG_EAX (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_DS:
-			INFERIOR_REG_DS (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_ES:
-			INFERIOR_REG_ES (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_FS:
-			INFERIOR_REG_FS (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_GS:
-			INFERIOR_REG_GS (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_EIP:
-			INFERIOR_REG_EIP (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_CS:
-			INFERIOR_REG_CS (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_EFLAGS:
-			INFERIOR_REG_EFLAGS (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_ESP:
-			INFERIOR_REG_ESP (arch->current_regs) = values [i];
-			break;
-		case DEBUGGER_REG_SS:
-			INFERIOR_REG_SS (arch->current_regs) = values [i];
-			break;
-		default:
-			return COMMAND_ERROR_NO_SUCH_REGISTER;
-		}
-	}
+	INFERIOR_REG_EBX (arch->current_regs) = values [DEBUGGER_REG_EBX];
+	INFERIOR_REG_ECX (arch->current_regs) = values [DEBUGGER_REG_ECX];
+	INFERIOR_REG_EDX (arch->current_regs) = values [DEBUGGER_REG_EDX];
+	INFERIOR_REG_ESI (arch->current_regs) = values [DEBUGGER_REG_ESI];
+	INFERIOR_REG_EDI (arch->current_regs) = values [DEBUGGER_REG_EDI];
+	INFERIOR_REG_EBP (arch->current_regs) = values [DEBUGGER_REG_EBP];
+	INFERIOR_REG_EAX (arch->current_regs) = values [DEBUGGER_REG_EAX];
+	INFERIOR_REG_DS (arch->current_regs) = values [DEBUGGER_REG_DS];
+	INFERIOR_REG_ES (arch->current_regs) = values [DEBUGGER_REG_ES];
+	INFERIOR_REG_FS (arch->current_regs) = values [DEBUGGER_REG_FS];
+	INFERIOR_REG_GS (arch->current_regs) = values [DEBUGGER_REG_GS];
+	INFERIOR_REG_EIP (arch->current_regs) = values [DEBUGGER_REG_EIP];
+	INFERIOR_REG_CS (arch->current_regs) = values [DEBUGGER_REG_CS];
+	INFERIOR_REG_EFLAGS (arch->current_regs) = values [DEBUGGER_REG_EFLAGS];
+	INFERIOR_REG_ESP (arch->current_regs) = values [DEBUGGER_REG_ESP];
+	INFERIOR_REG_SS (arch->current_regs) = values [DEBUGGER_REG_SS];
 
 	return _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 }

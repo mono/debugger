@@ -269,8 +269,6 @@ struct InferiorVTable {
 	 *
 	 */
 	ServerCommandError    (* get_registers)       (ServerHandle     *handle,
-						       guint32           count,
-						       guint32          *registers,
 						       guint64          *values);
 
 	/*
@@ -278,8 +276,6 @@ struct InferiorVTable {
 	 *
 	 */
 	ServerCommandError    (* set_registers)       (ServerHandle     *handle,
-						       guint32           count,
-						       guint32          *registers,
 						       guint64          *values);
 
 	/*
@@ -455,14 +451,10 @@ mono_debugger_server_disable_breakpoint  (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_get_registers       (ServerHandle        *handle,
-					  guint32              count,
-					  guint32             *registers,
 					  guint64             *values);
 
 ServerCommandError
 mono_debugger_server_set_registers       (ServerHandle        *handle,
-					  guint32              count,
-					  guint32             *registers,
 					  guint64             *values);
 
 ServerCommandError

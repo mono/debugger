@@ -117,7 +117,8 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 			}
 
-			Register addr = target.GetRegister ((int) reg);
+			Register[] regs = target.GetRegisters ();
+			Register addr = regs [(int) reg];
 
 			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr);
 			vtable_addr += disp;
@@ -170,6 +171,12 @@ namespace Mono.Debugger
 		public int[] AllRegisterIndices {
 			get {
 				return all_regs;
+			}
+		}
+
+		public int CountRegisters {
+			get {
+				return (int) I386Register.COUNT;
 			}
 		}
 

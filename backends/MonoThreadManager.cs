@@ -132,7 +132,8 @@ namespace Mono.Debugger.Backends
 			if (inferior.CurrentFrame != mono_thread_notification)
 				return false;
 
-			TargetAddress esp = inferior.GetStackPointer ();
+			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
+			TargetAddress esp = frame.StackPointer;
 			esp += inferior.TargetAddressSize;
 			int tid = inferior.ReadInteger (esp);
 			esp += inferior.TargetIntegerSize;

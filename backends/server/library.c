@@ -262,23 +262,21 @@ mono_debugger_server_disable_breakpoint (ServerHandle *handle, guint32 breakpoin
 }
 
 ServerCommandError
-mono_debugger_server_get_registers (ServerHandle *handle, guint32 count, guint32 *registers,
-				    guint64 *values)
+mono_debugger_server_get_registers (ServerHandle *handle, guint64 *values)
 {
 	if (!global_vtable->get_registers)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->get_registers) (handle, count, registers, values);
+	return (* global_vtable->get_registers) (handle, values);
 }
 
 ServerCommandError
-mono_debugger_server_set_registers (ServerHandle *handle, guint32 count, guint32 *registers,
-				    guint64 *values)
+mono_debugger_server_set_registers (ServerHandle *handle, guint64 *values)
 {
 	if (!global_vtable->set_registers)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->set_registers) (handle, count, registers, values);
+	return (* global_vtable->set_registers) (handle, values);
 }
 
 ServerCommandError

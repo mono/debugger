@@ -26,6 +26,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		int CountRegisters {
+			get;
+		}
+
 		string PrintRegister (Register register);
 
 		string PrintRegisters (StackFrame frame);

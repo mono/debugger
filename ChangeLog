@@ -1,5 +1,24 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IArchitecture
+	(IArchitecture.CountRegisters): New property.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryAccess.GetRegister): Removed.
+
+	* backends/Inferior.cs (Inferior.GetStackPointer): Removed.
+	(Inferior.GetRegister, Inferior.SetRegister): Removed.
+	(Inferior.GetRegisters, Inferior.SetRegisters): Don't take an
+	array of register indices; we always get/set all registers and
+	they're always in the correct order.
+
+	* backends/server/server.h
+	(mono_debugger_server_get_registers): Removed the `count' and
+	`registers' argument; always return all registers.
+	(mono_debugger_server_set_registers): Likewise.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.h (InferiorVTable): Renamed `get_pc' to
 	`get_frame'; changed argument to `StackFrame *frame', this is an
 	"out ServerStackFrame" argument.

@@ -121,10 +121,10 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_disable_breakpoint (IntPtr handle, int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
+		static extern TargetError mono_debugger_server_get_registers (IntPtr handle, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_set_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
+		static extern TargetError mono_debugger_server_set_registers (IntPtr handle, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);
@@ -901,66 +901,47 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Register GetRegister (int register)
-		{
-			Register[] retval = GetRegisters (new int[] { register });
-			return retval [0];
-		}
-
 		public Register[] GetRegisters ()
 		{
-			return GetRegisters (arch.AllRegisterIndices);
-		}
-
-		public Register[] GetRegisters (int[] registers)
-		{
-			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;
+			IntPtr buffer = IntPtr.Zero;
 			try {
-				int size = registers.Length * 4;
-				int buffer_size = registers.Length * 8;
-				data = Marshal.AllocHGlobal (size);
-				Marshal.Copy (registers, 0, data, registers.Length);
+				int count = arch.CountRegisters;
+				int buffer_size = count * 8;
 				buffer = Marshal.AllocHGlobal (buffer_size);
 				TargetError result = mono_debugger_server_get_registers (
-					server_handle, registers.Length, data, buffer);
+					server_handle, buffer);
 				check_error (result);
-				long[] retval = new long [registers.Length];
-				Marshal.Copy (buffer, retval, 0, registers.Length);
+				long[] retval = new long [count];
+				Marshal.Copy (buffer, retval, 0, count);
 
-				Register[] regs = new Register [registers.Length];
-				for (int i = 0; i < registers.Length; i++)
-					regs [i] = new Register (registers [i], retval [i]);
+				Register[] regs = new Register [count];
+				for (int i = 0; i < count; i++)
+					regs [i] = new Register (i, retval [i]);
 
 				return regs;
 			} finally {
-				if (data != IntPtr.Zero)
-					Marshal.FreeHGlobal (data);
 				if (buffer != IntPtr.Zero)
 					Marshal.FreeHGlobal (buffer);
 			}
 		}
 
-		public void SetRegister (int register, long value)
+		public void SetRegisters (Register[] registers)
 		{
-			SetRegisters (new int[] { register }, new long[] { value });
-		}
-
-		public void SetRegisters (int[] registers, long[] values)
-		{
-			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;
+			IntPtr buffer = IntPtr.Zero;
 			try {
-				int size = registers.Length * 4;
-				int buffer_size = registers.Length * 8;
-				data = Marshal.AllocHGlobal (size);
-				Marshal.Copy (registers, 0, data, registers.Length);
+				int count = arch.CountRegisters;
+				if (registers.Length != count)
+					throw new ArgumentException ();
+				int buffer_size = count * 8;
 				buffer = Marshal.AllocHGlobal (buffer_size);
+				long[] values = new long [count];
+				for (int i = 0; i < count; i++)
+					values [i] = (long) registers [i].Data;
 				Marshal.Copy (values, 0, buffer, registers.Length);
 				TargetError result = mono_debugger_server_set_registers (
-					server_handle, registers.Length, data, buffer);
+					server_handle, buffer);
 				check_error (result);
 			} finally {
-				if (data != IntPtr.Zero)
-					Marshal.FreeHGlobal (data);
 				if (buffer != IntPtr.Zero)
 					Marshal.FreeHGlobal (buffer);
 			}
@@ -1062,13 +1043,6 @@ namespace Mono.Debugger.Backends
 			check_error (result);
 
 			return new TargetAddress (GlobalAddressDomain, address);
-		}
-
-		public TargetAddress GetStackPointer ()
-		{
-			Register esp = GetRegister ((int) I386Register.ESP);
-
-			return new TargetAddress (address_domain, esp);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()

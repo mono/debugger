@@ -108,19 +108,11 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (indices == null)
 				return registers;
 
-			ArrayList list = new ArrayList ();
-			for (int i = 0; i < indices.Length; i++) {
-				foreach (Register register in registers) {
-					if (register.Index == indices [i]) {
-						list.Add (register);
-						break;
-					}
-				}
-			}
+			Register[] retval = new Register [indices.Length];
+			for (int i = 0; i < indices.Length; i++)
+				retval [i] = registers [indices [i]];
 
-			Register[] retval = new Register [list.Count];
-			list.CopyTo (retval, 0);
-			return retval;	
+			return retval;
 		}
 
 		public int FindRegister (string name)

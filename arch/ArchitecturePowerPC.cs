@@ -47,7 +47,9 @@ namespace Mono.Debugger
 		CTR,
 		XER,
 		MQ,
-		VRSAVE
+		VRSAVE,
+
+		COUNT
 	}
 
 	// <summary>
@@ -139,6 +141,12 @@ namespace Mono.Debugger
 		public int[] AllRegisterIndices {
 			get {
 				return all_regs;
+			}
+		}
+
+		public int CountRegisters {
+			get {
+				return (int) PowerPCRegister.COUNT;
 			}
 		}
 

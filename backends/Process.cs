@@ -218,12 +218,7 @@ namespace Mono.Debugger
 
 		public Register GetRegister (int index)
 		{
-			foreach (Register register in GetRegisters ()) {
-				if (register.Index == index)
-					return register;
-			}
-
-			throw new TargetException (TargetError.NoSuchRegister);
+			return GetRegisters () [index];
 		}
 
 		public Register[] GetRegisters ()
