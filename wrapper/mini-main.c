@@ -18,9 +18,9 @@ main (int argc, char **argv, char **envp)
 
 	g_set_prgname (file);
 
-	mini_parse_default_optimizations (argv [1]);
+	mono_parse_default_optimizations (argv [1]);
 
-	domain = mini_init (argv [0]);
+	domain = mono_init (argv [0]);
 
 	mono_config_parse (NULL);
 
@@ -32,7 +32,7 @@ main (int argc, char **argv, char **envp)
 
 	retval = mono_debugger_main (domain, file, argc, argv, envp);
 
-	mini_cleanup (domain);
+	mono_jit_cleanup (domain);
 
 	return retval;
 }
