@@ -1,5 +1,19 @@
 2003-01-24  Martin Baulig  <martin@ximian.com>
 
+	Made the serialization stuff actually work.  You can now save a
+	debugger session - including all your breakpoints - to disk and
+	read it back next time you start the debugger :-)
+
+	* backend/ProcessStart.cs: Made this serializable.
+
+	* backend/DebuggerBackend.cs: Made this serializable.
+
+	* class/Module.cs: Make the serialization stuff actually work.  We
+	can now serialize the module list, including all the breakpoints,
+	to disk and reload it later.
+
+2003-01-24  Martin Baulig  <martin@ximian.com>
+
 	* classes/ModuleData.cs: Split out all the dynamic stuff from
 	`Module'; this is now also the base class for `NativeModule'.
 

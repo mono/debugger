@@ -132,7 +132,7 @@ namespace Mono.Debugger.GUI
 
 			main_window.DeleteEvent += new DeleteEventHandler (Window_Delete);
 
-			interpreter = new Interpreter (backend, command_writer, output_writer);
+			interpreter = new Interpreter (command_writer, output_writer);
 			context = interpreter.Context;
 
 			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (main_process_started);

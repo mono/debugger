@@ -1177,4 +1177,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return frame.SourceLocation.Row == line;
 		}
 	}
+
+	public class SaveCommand : Command
+	{
+		string filename;
+
+		public SaveCommand (string filename)
+		{
+			this.filename = filename;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Save (filename);
+		}
+	}
+
+	public class LoadCommand : Command
+	{
+		string filename;
+
+		public LoadCommand (string filename)
+		{
+			this.filename = filename;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Load (filename);
+		}
+	}
 }

@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+
 namespace Mono.Debugger.Frontends.CommandLine
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
@@ -467,7 +470,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public int InsertBreakpoint (string method)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (method);
-			int index = backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, method);
+			int index = backend.InsertBreakpoint (breakpoint, method);
 			if (index < 0)
 				throw new ScriptingException ("Could not insert breakpoint.");
 			return index;
@@ -477,7 +480,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			string full_file = context.GetFullPath (file);
 			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
-			int index = backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, full_file, line);
+			int index = backend.InsertBreakpoint (breakpoint, full_file, line);
 			if (index < 0)
 				throw new ScriptingException ("Could not insert breakpoint.");
 			return index;
@@ -655,13 +658,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
 		}
 
-		public ScriptingContext (DebuggerBackend backend, DebuggerTextWriter command_output,
-					 DebuggerTextWriter inferior_output, bool is_synchronous,
-					 bool is_interactive)
+		public ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
+					 bool is_synchronous, bool is_interactive)
 		{
-			this.backend = backend;
-			this.command_output = command_output;
-			this.inferior_output = inferior_output;
+			this.command_output = command_out;
+			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 
@@ -670,6 +671,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			scripting_variables = new Hashtable ();
 
+			source_factory = new SourceFileFactory ();
+		}
+
+		protected void Initialize ()
+		{
 			foreach (Process process in backend.ThreadManager.Threads) {
 				ProcessHandle handle = new ProcessHandle (this, backend, process);
 				add_process (handle);
@@ -678,7 +684,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 					current_process = handle;
 			}
 
-			source_factory = new SourceFileFactory ();
 
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
@@ -693,7 +698,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 
 		public DebuggerBackend DebuggerBackend {
-			get { return backend; }
+			get {
+				if (backend != null)
+					return backend;
+
+				throw new ScriptingException ("No backend loaded.");
+			}
 		}
 
 		public bool IsSynchronous {
@@ -778,13 +788,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public Process Start (string[] args)
 		{
-			return Start (args, -1);
+			if (args [0] == "load")
+				return Load (args [1]);
+			else
+				return Start (args, -1);
 		}
 
 		public Process Start (string[] args, int pid)
 		{
+			if (backend != null)
+				throw new ScriptingException ("Already have a target.");
 			if (args.Length == 0)
 				throw new ScriptingException ("No program specified.");
+
+			backend = new DebuggerBackend ();
+			Initialize ();
 
 			Process process;
 
@@ -1019,6 +1037,38 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 			procs.Add (process);
+		}
+
+		public void Save (string filename)
+		{
+			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
+			BinaryFormatter formatter = new BinaryFormatter (null, context);
+
+			using (FileStream stream = new FileStream (filename, FileMode.Create)) {
+				formatter.Serialize (stream, backend);
+			}
+		}
+
+		public Process Load (string filename)
+		{
+			if (backend != null)
+				throw new ScriptingException ("Already have a target.");
+
+			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
+			BinaryFormatter formatter = new BinaryFormatter (null, context);
+
+			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
+				backend = (DebuggerBackend) formatter.Deserialize (stream);
+			}
+
+			Initialize ();
+
+			Process process = backend.Run (backend.ProcessStart);
+			current_process = new ProcessHandle (this, backend, process, -1);
+
+			add_process (current_process);
+
+			return process;
 		}
 	}
 }

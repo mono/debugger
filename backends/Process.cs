@@ -23,7 +23,6 @@ namespace Mono.Debugger
 		DebuggerBackend backend;
 		ProcessStart start;
 		BfdContainer bfd_container;
-		ThreadGroup thread_group;
 
 		SingleSteppingEngine sse;
 		DaemonThreadRunner runner;
@@ -47,8 +46,6 @@ namespace Mono.Debugger
 			this.start = start;
 			this.bfd_container = bfd_container;
 			this.id = ++next_id;
-
-			thread_group = new ThreadGroup (this);
 
 			IInferior inferior = new PTraceInferior (
 				backend, start, bfd_container, backend.ThreadManager.BreakpointManager,
@@ -153,11 +150,6 @@ namespace Mono.Debugger
 				check_iprocess ();
 				return iprocess.Architecture;
 			}
-		}
-
-		public static explicit operator ThreadGroup (Process process)
-		{
-			return process.thread_group;
 		}
 
 		//

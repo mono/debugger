@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
@@ -19,11 +20,9 @@ namespace Mono.Debugger
 	public delegate void MethodInvalidHandler ();
 	public delegate void MethodChangedHandler (IMethod method);
 
-	public class DebuggerBackend : IDisposable
+	[Serializable]
+	public class DebuggerBackend : IDisposable, ISerializable, IDeserializationCallback
 	{
-		public readonly string Path_Mono	= "mono";
-		public readonly string Environment_Path	= "/usr/bin";
-
 		BfdContainer bfd_container;
 
 		ArrayList languages;
@@ -33,34 +32,25 @@ namespace Mono.Debugger
 		ThreadManager thread_manager;
 		ThreadGroup main_group;
 		Process process;
+		ProcessStart start;
 
 		public DebuggerBackend ()
 		{
-			NameValueCollection settings = ConfigurationSettings.AppSettings;
-
-			foreach (string key in settings.AllKeys) {
-				string value = settings [key];
-
-				switch (key) {
-				case "mono-path":
-					Path_Mono = value;
-					break;
-
-				case "environment-path":
-					Environment_Path = value;
-					break;
-
-				default:
-					break;
-				}
-			}
-
-			this.languages = new ArrayList ();
-			this.module_manager = new ModuleManager ();
-			this.bfd_container = new BfdContainer (this);
-			this.thread_manager = new ThreadManager (this, bfd_container);
-
+			module_manager = new ModuleManager ();
 			main_group = new ThreadGroup ("main");
+
+			Initialize ();
+		}
+
+		protected void Initialize ()
+		{
+			if (initialized)
+				throw new InternalError ();
+			initialized = true;
+
+			languages = new ArrayList ();
+			bfd_container = new BfdContainer (this);
+			thread_manager = new ThreadManager (this, bfd_container);
 
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent +=
@@ -88,6 +78,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public ProcessStart ProcessStart {
+			get {
+				return start;
+			}
+		}
+
 		public event TargetExitedHandler TargetExited;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
@@ -108,6 +104,8 @@ namespace Mono.Debugger
 		public Process Run (ProcessStart start)
 		{
 			check_disposed ();
+
+			this.start = start;
 
 			if (process != null)
 				throw new AlreadyHaveTargetException ();
@@ -313,6 +311,37 @@ namespace Mono.Debugger
 				return action;
 
 			return true;
+		}
+
+		//
+		// IDeserializationCallback
+		//
+
+		bool initialized = false;
+
+		public void OnDeserialization (object sender)
+		{
+			Initialize ();
+
+			symtab_manager.SetModules (module_manager.Modules);
+		}
+
+		//
+		// ISerializable
+		//
+
+		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			info.AddValue ("modules", module_manager);
+			info.AddValue ("start", start);
+			info.AddValue ("main_group", main_group);
+		}
+
+		protected DebuggerBackend (SerializationInfo info, StreamingContext context)
+		{
+			module_manager = (ModuleManager) info.GetValue ("modules", typeof (ModuleManager));
+			start = (ProcessStart) info.GetValue ("start", typeof (ProcessStart));
+			main_group = (ThreadGroup) info.GetValue ("main_group", typeof (ThreadGroup));
 		}
 
 		//

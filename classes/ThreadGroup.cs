@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -8,25 +9,15 @@ namespace Mono.Debugger
 	//   This is used to share information about breakpoints and signal handlers
 	//   between different invocations of the same target.
 	// </summary>
-	public class ThreadGroup
+	[Serializable]
+	public class ThreadGroup : ISerializable
 	{
 		string name;
 		Hashtable threads;
 
 		public ThreadGroup (string name)
-			: this ()
 		{
 			this.name = name;
-		}
-
-		public ThreadGroup (IProcess process)
-			: this ()
-		{
-			AddThread (process);
-		}
-
-		public ThreadGroup ()
-		{
 			this.threads = Hashtable.Synchronized (new Hashtable ());
 		}
 
@@ -49,6 +40,21 @@ namespace Mono.Debugger
 					return retval;
 				}
 			}
+		}
+
+		//
+		// ISerializable
+		//
+
+		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			info.AddValue ("name", name);
+		}
+
+		protected ThreadGroup (SerializationInfo info, StreamingContext context)
+		{
+			name = info.GetString ("name");
+			threads = Hashtable.Synchronized (new Hashtable ());
 		}
 	}
 }

@@ -17,22 +17,23 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public class Module : ISerializable
+	[Serializable]
+	public class Module : ISerializable, IDeserializationCallback
 	{
 		string name;
 		bool load_symbols;
 		bool step_into;
 		bool backend_loaded;
 		ModuleData module_data;
-		Hashtable breakpoints;
+		Hashtable breakpoints = new Hashtable ();
 
 		internal Module (string name)
 		{
 			this.name = name;
 
-			breakpoints = new Hashtable ();
 			load_symbols = true;
 			step_into = true;
+			initialized = true;
 		}
 
 		public ModuleData ModuleData {
@@ -309,10 +310,12 @@ namespace Mono.Debugger
 
 		protected int AddBreakpoint (BreakpointHandle handle)
 		{
-			int index = handle.Breakpoint.Index;
-			breakpoints.Add (index, handle);
-			OnBreakpointsChangedEvent ();
-			return index;
+			lock (this) {
+				int index = handle.Breakpoint.Index;
+				breakpoints.Add (index, handle);
+				OnBreakpointsChangedEvent ();
+				return index;
+			}
 		}
 
 		// <summary>
@@ -320,13 +323,15 @@ namespace Mono.Debugger
 		// </summary>
 		public void RemoveBreakpoint (int index)
 		{
-			if (!breakpoints.Contains (index))
-				return;
+			lock (this) {
+				if (!breakpoints.Contains (index))
+					return;
 
-			BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
-			handle.DisableBreakpoint ();
-			breakpoints.Remove (index);
-			OnBreakpointsChangedEvent ();
+				BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
+				handle.DisableBreakpoint ();
+				breakpoints.Remove (index);
+				OnBreakpointsChangedEvent ();
+			}
 		}
 
 		// <summary>
@@ -334,12 +339,14 @@ namespace Mono.Debugger
 		// </summary>
 		public Breakpoint[] Breakpoints {
 			get {
-				ArrayList list = new ArrayList ();
-				foreach (BreakpointHandle handle in breakpoints.Values)
-					list.Add (handle.Breakpoint);
-				Breakpoint[] retval = new Breakpoint [list.Count];
-				list.CopyTo (retval, 0);
-				return retval;
+				lock (this) {
+					ArrayList list = new ArrayList ();
+					foreach (BreakpointHandle handle in breakpoints.Values)
+						list.Add (handle.Breakpoint);
+					Breakpoint[] retval = new Breakpoint [list.Count];
+					list.CopyTo (retval, 0);
+					return retval;
+				}
 			}
 		}
 
@@ -453,6 +460,25 @@ namespace Mono.Debugger
 		}
 
 		//
+		// IDeserializationCallback
+		//
+
+		bool initialized = false;
+		ArrayList create_bpts = null;
+
+		public void OnDeserialization (object sender)
+		{
+			if (initialized)
+				throw new InternalError ();
+			initialized = true;
+
+			foreach (BreakpointHandle handle in create_bpts)
+				AddBreakpoint (handle);
+
+			create_bpts = null;
+		}
+
+		//
 		// ISerializable
 		//
 
@@ -461,6 +487,11 @@ namespace Mono.Debugger
 			info.AddValue ("name", Name);
 			info.AddValue ("load_symbols", LoadSymbols);
 			info.AddValue ("step_into", StepInto);
+
+			ArrayList list = new ArrayList ();
+			foreach (BreakpointHandle handle in breakpoints.Values)
+				list.Add (handle);
+			info.AddValue ("breakpoints", list);
 		}
 
 		protected Module (SerializationInfo info, StreamingContext context)
@@ -468,6 +499,8 @@ namespace Mono.Debugger
 			name = info.GetString ("name");
 			load_symbols = info.GetBoolean ("load_symbols");
 			step_into = info.GetBoolean ("step_into");
+
+			create_bpts = (ArrayList) info.GetValue ("breakpoints", typeof (ArrayList));
 		}
 	}
 }

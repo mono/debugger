@@ -10,23 +10,36 @@ namespace Mono.Debugger
 	public delegate void ModulesChangedHandler ();
 	public delegate void BreakpointsChangedHandler ();
 
-	public class ModuleManager
+	[Serializable]
+	public class ModuleManager : ISerializable, IDeserializationCallback
 	{
-		ArrayList modules = new ArrayList ();
+		Hashtable modules = new Hashtable ();
+
+		public ModuleManager ()
+		{
+			initialized = true;
+		}
 
 		public Module CreateModule (string name)
 		{
-			Module module = new Module (name);
+			Module module = (Module) modules [name];
+			if (module != null)
+				return module;
 
-			modules.Add (module);
+			module = new Module (name);
+			AddModule (module);
+			return module;
+		}
+
+		protected void AddModule (Module module)
+		{
+			modules.Add (module.Name, module);
 
 			module.SymbolsLoadedEvent += new ModuleEventHandler (module_changed);
 			module.SymbolsUnLoadedEvent += new ModuleEventHandler (module_changed);
 			module.BreakpointsChangedEvent += new ModuleEventHandler (breakpoints_changed);
 
 			module_changed (module);
-
-			return module;
 		}
 
 		public event ModulesChangedHandler ModulesChanged;
@@ -34,8 +47,8 @@ namespace Mono.Debugger
 
 		public Module[] Modules {
 			get {
-				Module[] retval = new Module [modules.Count];
-				modules.CopyTo (retval, 0);
+				Module[] retval = new Module [modules.Values.Count];
+				modules.Values.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -102,6 +115,42 @@ namespace Mono.Debugger
 
 			if (BreakpointsChanged != null)
 				BreakpointsChanged ();
+		}
+
+		//
+		// IDeserializationCallback
+		//
+
+		ArrayList deserialized_modules = null;
+		bool initialized = false;
+
+		public void OnDeserialization (object sender)
+		{
+			if (initialized)
+				throw new InternalError ();
+			initialized = true;
+
+			foreach (Module module in deserialized_modules)
+				AddModule (module);
+
+			deserialized_modules = null;
+		}
+
+		//
+		// ISerializable
+		//
+
+		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			ArrayList list = new ArrayList ();
+			foreach (Module module in modules.Values)
+				list.Add (module);
+			info.AddValue ("modules", list);
+		}
+
+		protected ModuleManager (SerializationInfo info, StreamingContext context)
+		{
+			deserialized_modules = (ArrayList) info.GetValue ("modules", typeof (ArrayList));
 		}
 	}
 }

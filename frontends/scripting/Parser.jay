@@ -114,6 +114,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token SET
 %token ASSERT
 %token BREAKPOINT
+%token SAVE
+%token LOAD
 
 %token SELECT
 %token BACKGROUND
@@ -287,6 +289,14 @@ command
 	| assert_command
 	  {
 		$$ = $1;
+	  }
+	| SAVE STRING
+	  {
+		$$ = new SaveCommand ((string) $2);
+	  }
+	| LOAD STRING
+	  {
+		$$ = new LoadCommand ((string) $2);
 	  }
 	;
 

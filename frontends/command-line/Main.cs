@@ -12,7 +12,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class CommandLineInterpreter
 	{
 		GnuReadLine readline = null;
-		DebuggerBackend backend;
 		ScriptingContext context;
 		DebuggerTextWriter writer;
 		Parser parser;
@@ -23,9 +22,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				readline = new GnuReadLine ("$ ");
 			}
 
-			backend = new DebuggerBackend ();
 			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (backend, writer, writer, true, readline != null);
+			context = new ScriptingContext (writer, writer, true, readline != null);
 			parser = new Parser (context, "Debugger");
 
 			if ((args != null) && (args.Length > 0))
@@ -61,7 +59,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Exit ()
 		{
-			backend.Dispose ();
 			Environment.Exit (context.ExitCode);
 		}
 

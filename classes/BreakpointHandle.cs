@@ -1,8 +1,10 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
-	public abstract class BreakpointHandle
+	[Serializable]
+	public abstract class BreakpointHandle : ISerializable, IDeserializationCallback
 	{
 		Module module;
 		ThreadGroup group;
@@ -14,10 +16,7 @@ namespace Mono.Debugger
 			this.group = group;
 			this.breakpoint = breakpoint;
 
-			module.ModuleLoadedEvent += new ModuleEventHandler (ModuleLoaded);
-			module.ModuleUnLoadedEvent += new ModuleEventHandler (ModuleUnLoaded);
-
-			breakpoint.BreakpointChangedEvent += new BreakpointEventHandler (breakpoint_changed);
+			Initialize ();
 		}
 
 		public Module Module {
@@ -28,6 +27,20 @@ namespace Mono.Debugger
 			get { return breakpoint; }
 		}
 
+		void Initialize ()
+		{
+			if (initialized)
+				throw new InternalError ();
+			initialized = true;
+
+			module.SymbolsLoadedEvent += new ModuleEventHandler (SymbolsLoaded);
+			module.ModuleLoadedEvent += new ModuleEventHandler (ModuleLoaded);
+			module.ModuleUnLoadedEvent += new ModuleEventHandler (ModuleUnLoaded);
+
+			breakpoint.BreakpointChangedEvent += new BreakpointEventHandler (breakpoint_changed);
+		}
+
+		protected abstract void SymbolsLoaded (Module module);
 		protected abstract void ModuleLoaded (Module module);
 		protected abstract void ModuleUnLoaded (Module module);
 
@@ -90,11 +103,43 @@ namespace Mono.Debugger
 				bpt_address = TargetAddress.Null;
 			}
 		}
+
+		//
+		// IDeserializationCallback
+		//
+
+		bool initialized = false;
+
+		public void OnDeserialization (object sender)
+		{
+			Initialize ();
+		}
+
+		//
+		// ISerializable
+		//
+
+		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			info.AddValue ("breakpoint", breakpoint);
+			info.AddValue ("module", module);
+			info.AddValue ("group", group);
+		}
+
+		protected BreakpointHandle (SerializationInfo info, StreamingContext context)
+		{
+			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
+			module = (Module) info.GetValue ("module", typeof (Module));
+			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
+		}
 	}
 
+	[Serializable]
 	public class BreakpointHandleMethod : BreakpointHandle
 	{
 		SourceMethodInfo method;
+		bool is_loaded;
+		string name;
 		int line;
 
 		public BreakpointHandleMethod (Breakpoint breakpoint, Module module, ThreadGroup group,
@@ -107,6 +152,7 @@ namespace Mono.Debugger
 			: base (breakpoint, module, group)
 		{
 			this.method = method;
+			this.name = method.Name;
 			this.line = line;
 
 			if (module.IsLoaded)
@@ -140,8 +186,24 @@ namespace Mono.Debugger
 			EnableBreakpoint (address);
 		}
 
+		protected override void SymbolsLoaded (Module module)
+		{
+			if (method != null)
+				return;
+
+			method = module.FindMethod (name);
+			if (method == null)
+				return;
+
+			if (module.IsLoaded)
+				ModuleLoaded (module);
+		}
+
 		protected override void ModuleLoaded (Module module)
 		{
+			if (is_loaded || (method == null))
+				return;
+			is_loaded = true;
 			if (method.IsLoaded)
 				EnableBreakpoint (get_address (method));
 			else if (method.IsDynamic) {
@@ -156,11 +218,26 @@ namespace Mono.Debugger
 
 		protected override void ModuleUnLoaded (Module module)
 		{
+			is_loaded = false;
 			if (load_handler != null) {
 				load_handler.Dispose ();
 				load_handler = null;
 			}
 			DisableBreakpoint ();
+		}
+
+		public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			base.GetObjectData (info, context);
+			info.AddValue ("name", name);
+			info.AddValue ("line", line);
+		}
+
+		protected BreakpointHandleMethod (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{
+			name = info.GetString ("name");
+			line = info.GetInt32 ("line");
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -21,5 +22,18 @@ namespace Mono.Debugger
 			if (BreakpointHitEvent != null)
 				BreakpointHitEvent (this);
 		}
+
+		//
+		// ISerializable
+		//
+
+		public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			base.GetObjectData (info, context);
+		}
+
+		protected SimpleBreakpoint (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{ }
 	}
 }

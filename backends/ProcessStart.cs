@@ -16,6 +16,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public class ProcessStart
 	{
 		public readonly string Path_Mono		= "mono";
@@ -196,8 +197,16 @@ namespace Mono.Debugger
 			else
 				return new ProcessStart (cwd, argv, envp);
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1},{2},{3},{4},{5},{6},{7})", GetType (),
+					      cwd, base_dir, argv, envp, native, load_native_symtab,
+					      initialized);
+		}
 	}
 
+	[Serializable]
 	public class ManagedProcessStart : ProcessStart
 	{
 		Assembly application;
