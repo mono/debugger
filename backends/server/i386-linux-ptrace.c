@@ -100,12 +100,6 @@ _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long 
 	return COMMAND_ERROR_NONE;
 }
 
-void
-mono_debugger_server_abort_wait (void)
-{
-	pthread_kill (mono_debugger_thread, SIGUSR1);
-}
-
 static int
 do_wait (int pid, guint32 *status)
 {
@@ -123,13 +117,11 @@ do_wait (int pid, guint32 *status)
 }
 
 guint32
-mono_debugger_server_global_wait (guint64 *status_ret, guint32 *aborted)
+mono_debugger_server_global_wait (guint64 *status_ret)
 {
 	int ret, status;
 
 	ret = do_wait (-1, &status);
-	*aborted = pending_sigint;
-	pending_sigint = 0;
 	if (ret <= 0)
 		return ret;
 
@@ -156,7 +148,6 @@ ServerCommandError
 mono_debugger_server_stop (ServerHandle *handle)
 {
 	ServerCommandError result;
-	int ret;
 
 	/*
 	 * Try to get the thread's registers.  If we suceed, then it's already stopped

@@ -28,7 +28,7 @@ namespace Mono.Debugger
 			breakpoint_manager = new BreakpointManager ();
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
-
+			
 			global_group = ThreadGroup.CreateThreadGroup ("global");
 			thread_lock_mutex = new Mutex ();
 			address_domain = new AddressDomain ("global");
@@ -38,6 +38,8 @@ namespace Mono.Debugger
 			command_mutex = new Mutex ();
 
 			ready_event = new ManualResetEvent (false);
+			engine_event = Semaphore.CreateThreadManagerSemaphore ();
+			wait_event = new AutoResetEvent (false);
 		}
 
 		SingleSteppingEngine the_engine;
@@ -47,7 +49,10 @@ namespace Mono.Debugger
 		DebuggerBackend backend;
 		BreakpointManager breakpoint_manager;
 		Thread inferior_thread;
+		Thread wait_thread;
 		ManualResetEvent ready_event;
+		AutoResetEvent wait_event;
+		Semaphore engine_event;
 		Hashtable thread_hash;
 
 		int thread_lock_level;
@@ -64,10 +69,10 @@ namespace Mono.Debugger
 		bool abort_requested;
 
 		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_global_wait (out long status, out int aborted);
+		static extern int mono_debugger_server_global_wait (out long status);
 
 		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_abort_wait ();
+		static extern int mono_debugger_server_get_pending_sigint ();
 
 		void start_inferior ()
 		{
@@ -78,6 +83,8 @@ namespace Mono.Debugger
 			thread_hash.Add (the_engine.PID, the_engine);
 
 			OnThreadCreatedEvent (the_engine.Process);
+
+			wait_event.Set ();
 
 			while (!abort_requested) {
 				engine_thread_main ();
@@ -94,6 +101,8 @@ namespace Mono.Debugger
 		Command current_command = null;
 		CommandResult command_result = null;
 		SingleSteppingEngine command_engine = null;
+		SingleSteppingEngine current_event = null;
+		long current_event_status = 0;
 
 		void engine_error (Exception ex)
 		{
@@ -119,6 +128,9 @@ namespace Mono.Debugger
 		public Process StartApplication (ProcessStart start)
 		{
 			this.start = start;
+
+			wait_thread = new Thread (new ThreadStart (start_wait_thread));
+			wait_thread.Start ();
 
 			inferior_thread = new Thread (new ThreadStart (start_inferior));
 			inferior_thread.Start ();
@@ -397,9 +409,9 @@ namespace Mono.Debugger
 
 			lock (this) {
 				current_command = command;
-				mono_debugger_server_abort_wait ();
 				completed_event.Reset ();
 				sync_command_running = true;
+				engine_event.Set ();
 			}
 
 			completed_event.WaitOne ();
@@ -431,7 +443,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				current_command = command;
-				mono_debugger_server_abort_wait ();
+				engine_event.Set ();
 			}
 		}
 
@@ -448,29 +460,19 @@ namespace Mono.Debugger
 		{
 			Report.Debug (DebugFlags.Wait, "SSE waiting");
 
-			//
-			// Wait until we got an event from the target or a command from the user.
-			//
+			engine_event.Wait ();
 
-			int pid;
-			int aborted;
+			Report.Debug (DebugFlags.Wait, "SSE woke up");
+
 			long status;
-			pid = mono_debugger_server_global_wait (out status, out aborted);
+			SingleSteppingEngine event_engine;
 
-			//
-			// Note: `pid' is basically just an unique number which identifies the
-			//       SingleSteppingEngine of this event.
-			//
+			lock (this) {
+				event_engine = current_event;
+				status = current_event_status;
+			}
 
-			if (pid > 0) {
-				Report.Debug (DebugFlags.Wait,
-					      "SSE received event: {0} {1:x}", pid, status);
-
-				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
-				if (event_engine == null)
-					throw new InternalError ("Got event {0:x} for unknown pid {1}",
-								 status, pid);
-
+			if (event_engine != null) {
 				try {
 					event_engine.ProcessEvent (status);
 				} catch (ThreadAbortException) {
@@ -479,17 +481,23 @@ namespace Mono.Debugger
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
 
+				lock (this) {
+					current_event = null;
+					current_event_status = 0;
+					wait_event.Set ();
+				}
+
 				if (!engine_is_ready) {
 					engine_is_ready = true;
 					start_event.Set ();
 				}
+				return;
 			}
 
 			//
 			// We caught a SIGINT.
 			//
-
-			if (aborted > 0) {
+			if (mono_debugger_server_get_pending_sigint () > 0) {
 				Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT: {0} {1}",
 					      command_engine, sync_command_running);
 
@@ -557,6 +565,58 @@ namespace Mono.Debugger
 			}
 		}
 
+		void start_wait_thread ()
+		{
+			while (!abort_requested) {
+				wait_thread_main ();
+			}
+		}
+
+		void wait_thread_main ()
+		{
+			Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
+			wait_event.WaitOne ();
+
+			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
+
+			//
+			// Wait until we got an event from the target or a command from the user.
+			//
+
+			int pid;
+			long status;
+			pid = mono_debugger_server_global_wait (out status);
+
+			//
+			// Note: `pid' is basically just an unique number which identifies the
+			//       SingleSteppingEngine of this event.
+			//
+
+			if (pid > 0) {
+				Report.Debug (DebugFlags.Wait,
+					      "SSE received event: {0} {1:x}", pid, status);
+
+				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
+				if (event_engine == null)
+					throw new InternalError ("Got event {0:x} for unknown pid {1}",
+								 status, pid);
+
+				lock (this) {
+					if (current_event != null)
+						throw new InternalError ();
+
+					current_event = event_engine;
+					current_event_status = status;
+					engine_event.Set ();
+				}
+			}
+
+			if (abort_requested) {
+				Report.Debug (DebugFlags.Wait, "Abort requested");
+				return;
+			}
+		}
+
 		//
 		// IDisposable
 		//
@@ -566,9 +626,10 @@ namespace Mono.Debugger
 			if (inferior_thread != null) {
 				lock (this) {
 					abort_requested = true;
-					mono_debugger_server_abort_wait ();
+					engine_event.Set ();
 				}
 				inferior_thread.Join ();
+				wait_thread.Abort ();
 			}
 
 			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];

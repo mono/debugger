@@ -101,12 +101,8 @@ mono_debugger_server_attach               (ServerHandle       *handle,
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
 
-void
-mono_debugger_server_abort_wait           (void);
-
 guint32
-mono_debugger_server_global_wait          (guint64                 *status,
-					   guint32                 *aborted);
+mono_debugger_server_global_wait          (guint64                 *status);
 
 ServerCommandError
 mono_debugger_server_wait                 (ServerHandle            *handle,
@@ -247,6 +243,15 @@ ServerCommandError
 mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo          *sinfo);
 
+
+/* POSIX semaphores */
+
+void mono_debugger_server_sem_init (void);
+void mono_debugger_server_sem_wait (void);
+void mono_debugger_server_sem_post (void);
+int mono_debugger_server_sem_get_value (void);
+
+int mono_debugger_server_get_pending_sigint (void);
 
 G_END_DECLS
 

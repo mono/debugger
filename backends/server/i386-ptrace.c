@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <sys/stat.h>
 #include <sys/ptrace.h>
 #include <sys/socket.h>
@@ -236,19 +237,50 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 }
 
 static gboolean initialized = FALSE;
-pthread_t mono_debugger_thread;
-int pending_sigint = 0;
-
-static void
-sigusr1_signal_handler (int _dummy)
-{ }
+static sem_t manager_semaphore;
+static int pending_sigint = 0;
 
 static void
 sigint_signal_handler (int _dummy)
 {
 	pending_sigint++;
-	if (pthread_self () != mono_debugger_thread)
-		mono_debugger_server_abort_wait ();
+	sem_post (&manager_semaphore);
+}
+
+int
+mono_debugger_server_get_pending_sigint (void)
+{
+	if (pending_sigint > 0)
+		return pending_sigint--;
+
+	return 0;
+}
+
+void
+mono_debugger_server_sem_init (void)
+{
+	sem_init (&manager_semaphore, 1, 0);
+}
+
+void
+mono_debugger_server_sem_wait (void)
+{
+	sem_wait (&manager_semaphore);
+}
+
+void
+mono_debugger_server_sem_post (void)
+{
+	sem_post (&manager_semaphore);
+}
+
+int
+mono_debugger_server_sem_get_value (void)
+{
+	int ret;
+
+	sem_getvalue (&manager_semaphore, &ret);
+	return ret;
 }
 
 ServerHandle *
@@ -259,19 +291,11 @@ mono_debugger_server_initialize (BreakpointManager *bpm)
 	if (!initialized) {
 		struct sigaction sa;
 
-		/* catch SIGUSR1 */
-		sa.sa_handler = sigusr1_signal_handler;
-		sigemptyset (&sa.sa_mask);
-		sa.sa_flags = 0;
-		g_assert (sigaction (SIGUSR1, &sa, NULL) != -1);
-
 		/* catch SIGINT */
 		sa.sa_handler = sigint_signal_handler;
 		sigemptyset (&sa.sa_mask);
 		sa.sa_flags = 0;
 		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-
-		mono_debugger_thread = pthread_self ();
 
 		initialized = TRUE;
 	}
@@ -287,17 +311,6 @@ child_setup_func (gpointer data)
 {
 	if (ptrace (PT_TRACE_ME, getpid (), NULL, 0))
 		g_error (G_STRLOC ": Can't PT_TRACEME: %s", g_strerror (errno));
-}
-
-static void
-set_socket_flags (int fd, long flags)
-{
-	long arg;
-
-	arg = fcntl (fd, F_GETFL);
-	fcntl (fd, F_SETFL, arg | flags);
-
-	fcntl (fd, F_SETOWN, getpid ());
 }
 
 ServerCommandError
