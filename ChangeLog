@@ -1,5 +1,10 @@
 2003-02-26  Martin Baulig  <martin@ximian.com>
 
+	* arch/DwarfReader.cs: Started to add support for native types to
+	access parameters and local variables in native methods.
+
+2003-02-26  Martin Baulig  <martin@ximian.com>
+
 	* backends/native/: New directory.
 
 	* backends/native/NativeFundamentalObject.cs: New file.

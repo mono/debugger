@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Languages.Native;
 
 namespace Mono.Debugger.Architecture
 {
@@ -556,6 +557,18 @@ namespace Mono.Debugger.Architecture
 			type			= 0x49,
 			virtuality		= 0x4c,
 			vtable_elem_location	= 0x4d
+		}
+
+		public enum DwarfBaseTypeEncoding {
+			address			= 0x01,
+			boolean			= 0x02,
+			complex_float		= 0x03,
+			normal_float		= 0x04,
+			signed			= 0x05,
+			signed_char		= 0x06,
+			unsigned		= 0x07,
+			unsigned_char		= 0x08,
+			imaginary_float		= 0x09
 		}
 
 		public enum DwarfForm {
@@ -1173,16 +1186,16 @@ namespace Mono.Debugger.Architecture
 				}
 
 				case DwarfForm.block1:
-					data_size = reader.PeekByte (offset);
-					return reader.PeekBuffer (offset + 1, data_size);
+					data_size = reader.PeekByte (offset) + 1;
+					return reader.PeekBuffer (offset + 1, data_size - 1);
 
 				case DwarfForm.block2:
-					data_size = reader.PeekInt16 (offset);
-					return reader.PeekBuffer (offset + 2, data_size);
+					data_size = reader.PeekInt16 (offset) + 2;
+					return reader.PeekBuffer (offset + 2, data_size - 2);
 
 				case DwarfForm.block4:
-					data_size = reader.PeekInt32 (offset);
-					return reader.PeekBuffer (offset + 4, data_size);
+					data_size = reader.PeekInt32 (offset) + 4;
+					return reader.PeekBuffer (offset + 4, data_size - 4);
 
 				case DwarfForm.block: {
 					int size;
@@ -1292,17 +1305,21 @@ namespace Mono.Debugger.Architecture
 			public readonly long Offset;
 			public readonly long ChildrenOffset;
 
-			protected virtual int ReadAttributes ()
+			protected virtual int ReadAttributes (DwarfBinaryReader reader)
 			{
 				int total_size = 0;
 
 				foreach (AttributeEntry entry in abbrev.Attributes) {
 					Attribute attribute = entry.ReadAttribute (Offset + total_size);
+					ProcessAttribute (attribute);
 					total_size += attribute.DataSize;
 				}
 
 				return total_size;
 			}
+
+			protected virtual void ProcessAttribute (Attribute attribute)
+			{ }
 
 			ObjectCache children_cache;
 
@@ -1314,7 +1331,7 @@ namespace Mono.Debugger.Architecture
 				ArrayList children = new ArrayList ();
 
 				while (reader.PeekByte () != 0)
-					children.Add (Die.CreateDie (reader, comp_unit));
+					children.Add (CreateDie (reader, comp_unit));
 
 				reader.Position++;
 				return children;
@@ -1345,14 +1362,15 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected Die (DwarfBinaryReader reader, CompilationUnit comp_unit, AbbrevEntry abbrev)
+			protected Die (DwarfBinaryReader reader, CompilationUnit comp_unit,
+				       AbbrevEntry abbrev)
 			{
 				this.comp_unit = comp_unit;
 				this.dwarf = comp_unit.DwarfReader;
 				this.abbrev = abbrev;
 
 				Offset = reader.Position;
-				ChildrenOffset = Offset + ReadAttributes ();
+				ChildrenOffset = Offset + ReadAttributes (reader);
 				reader.Position = ChildrenOffset;
 
 				if (this is DieCompileUnit)
@@ -1361,36 +1379,37 @@ namespace Mono.Debugger.Architecture
 				ReadChildren (reader);
 			}
 
-			protected static AbbrevEntry get_abbrev (DwarfBinaryReader reader,
-								 CompilationUnit comp_unit)
+			public Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit)
 			{
+				long offset = reader.Position;
 				int abbrev_id = reader.ReadLeb128 ();
-				return comp_unit [abbrev_id];
+				AbbrevEntry abbrev = comp_unit [abbrev_id];
+
+				return CreateDie (reader, comp_unit, offset, abbrev);
 			}
 
-			protected static AbbrevEntry get_abbrev (DwarfBinaryReader reader,
-								 CompilationUnit comp_unit, DwarfTag tag)
+			public static DieCompileUnit CreateDieCompileUnit (DwarfBinaryReader reader,
+									   CompilationUnit comp_unit)
 			{
-				AbbrevEntry abbrev = get_abbrev (reader, comp_unit);
+				long offset = reader.Position;
+				int abbrev_id = reader.ReadLeb128 ();
+				AbbrevEntry abbrev = comp_unit [abbrev_id];
 
-				if (abbrev.Tag == tag)
-					return abbrev;
-
-				throw new DwarfException (
-					comp_unit.DwarfReader, String.Format (
-						"Expected tag {0}, but found {1}", tag, abbrev.Tag));
+				return new DieCompileUnit (reader, comp_unit, abbrev);
 			}
 
-			public static Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit)
+			protected virtual Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit,
+							 long offset, AbbrevEntry abbrev)
 			{
-				AbbrevEntry abbrev = get_abbrev (reader, comp_unit);
-
 				switch (abbrev.Tag) {
 				case DwarfTag.compile_unit:
-					return new DieCompileUnit (reader, comp_unit, abbrev);
+					throw new InternalError ();
 
 				case DwarfTag.subprogram:
 					return new DieSubprogram (reader, comp_unit, abbrev);
+
+				case DwarfTag.base_type:
+					return new DieBaseType (reader, comp_unit, offset, abbrev);
 
 				default:
 					return new Die (reader, comp_unit, abbrev);
@@ -1408,6 +1427,9 @@ namespace Mono.Debugger.Architecture
 					       AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
 			{
+				if ((start_pc != 0) && (end_pc != 0))
+					is_continuous = true;
+
 				string file_name;
 				if (comp_dir != null)
 					file_name = String.Concat (
@@ -1417,11 +1439,6 @@ namespace Mono.Debugger.Architecture
 				file = new DwarfSourceFile (dwarf, file_name);
 				symtab = new CompileUnitSymbolTable (this);
 			}
-
-			public DieCompileUnit (DwarfBinaryReader reader, CompilationUnit comp_unit)
-				: this (reader, comp_unit,
-					get_abbrev (reader, comp_unit, DwarfTag.compile_unit))
-			{ }
 
 			long start_pc, end_pc;
 			string name;
@@ -1474,45 +1491,30 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected override int ReadAttributes ()
+			protected override void ProcessAttribute (Attribute attribute)
 			{
-				int total_size = 0;
-				foreach (AttributeEntry entry in abbrev.Attributes) {
-					Attribute attribute = entry.ReadAttribute (Offset + total_size);
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.low_pc:
+					start_pc = (long) attribute.Data;
+					break;
 
-					switch (attribute.DwarfAttribute) {
-					case DwarfAttribute.low_pc:
-						start_pc = (long) attribute.Data;
-						break;
+				case DwarfAttribute.high_pc:
+					end_pc = (long) attribute.Data;
+					break;
 
-					case DwarfAttribute.high_pc:
-						end_pc = (long) attribute.Data;
-						break;
+				case DwarfAttribute.stmt_list:
+					line_offset = (long) attribute.Data;
+					has_lines = true;
+					break;
 
-					case DwarfAttribute.stmt_list:
-						line_offset = (long) attribute.Data;
-						has_lines = true;
-						break;
+				case DwarfAttribute.comp_dir:
+					comp_dir = (string) attribute.Data;
+					break;
 
-					case DwarfAttribute.comp_dir:
-						comp_dir = (string) attribute.Data;
-						break;
-
-					case DwarfAttribute.name:
-						name = (string) attribute.Data;
-						break;
-
-					default:
-						break;
-					}
-
-					total_size += attribute.DataSize;
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
 				}
-
-				if ((start_pc != 0) && (end_pc != 0))
-					is_continuous = true;
-
-				return total_size;
 			}
 
 			public string ImageFile {
@@ -1648,45 +1650,49 @@ namespace Mono.Debugger.Architecture
 			long start_pc, end_pc;
 			bool is_continuous;
 			string name;
-			DwarfNativeMethod method;
+			DwarfTargetMethod method;
 			LineNumberEngine engine;
+			ArrayList parameters, locals;
 
-			protected override int ReadAttributes ()
+			protected override void ProcessAttribute (Attribute attribute)
 			{
-				int total_size = 0;
-				foreach (AttributeEntry entry in abbrev.Attributes) {
-					Attribute attribute = entry.ReadAttribute (Offset + total_size);
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.low_pc:
+					start_pc = (long) attribute.Data;
+					break;
 
-					switch (attribute.DwarfAttribute) {
-					case DwarfAttribute.low_pc:
-						start_pc = (long) attribute.Data;
-						break;
+				case DwarfAttribute.high_pc:
+					end_pc = (long) attribute.Data;
+					break;
 
-					case DwarfAttribute.high_pc:
-						end_pc = (long) attribute.Data;
-						break;
-
-					case DwarfAttribute.name:
-						name = (string) attribute.Data;
-						break;
-
-					default:
-						break;
-					}
-
-					total_size += attribute.DataSize;
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
 				}
+			}
 
-				if ((start_pc != 0) && (end_pc != 0))
-					is_continuous = true;
+			protected override Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit,
+							  long offset, AbbrevEntry abbrev)
+			{
+				switch (abbrev.Tag) {
+				case DwarfTag.formal_parameter:
+					return new DieFormalParameter (this, reader, comp_unit, abbrev);
 
-				return total_size;
+				case DwarfTag.variable:
+					return new DieVariable (this, reader, comp_unit, abbrev);
+
+				default:
+					return base.CreateDie (reader, comp_unit, offset, abbrev);
+				}
 			}
 
 			public DieSubprogram (DwarfBinaryReader reader, CompilationUnit comp_unit,
-						AbbrevEntry abbrev)
+					      AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
-			{ }
+			{
+				if ((start_pc != 0) && (end_pc != 0))
+					is_continuous = true;
+			}
 
 			public SourceFile SourceFile {
 				get {
@@ -1761,7 +1767,45 @@ namespace Mono.Debugger.Architecture
 			public void SetEngine (LineNumberEngine engine)
 			{
 				this.engine = engine;
-				method = new DwarfNativeMethod (this, engine);
+				method = new DwarfTargetMethod (this, engine);
+			}
+
+			public void AddParameter (TargetVariable variable)
+			{
+				if (parameters == null)
+					parameters = new ArrayList ();
+
+				parameters.Add (variable);
+			}
+
+			public void AddLocal (TargetVariable variable)
+			{
+				if (locals == null)
+					locals = new ArrayList ();
+
+				locals.Add (variable);
+			}
+
+			public IVariable[] Parameters {
+				get {
+					if (parameters == null)
+						return new IVariable [0];
+
+					IVariable[] retval = new IVariable [parameters.Count];
+					parameters.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+
+			public IVariable[] Locals {
+				get {
+					if (locals == null)
+						return new IVariable [0];
+
+					IVariable[] retval = new IVariable [locals.Count];
+					locals.CopyTo (retval, 0);
+					return retval;
+				}
 			}
 
 			public override string ToString ()
@@ -1770,7 +1814,7 @@ namespace Mono.Debugger.Architecture
 						      Name, start_pc, end_pc);
 			}
 
-			protected class DwarfNativeMethod : MethodBase
+			protected class DwarfTargetMethod : MethodBase
 			{
 				LineNumberEngine engine;
 				DieSubprogram subprog;
@@ -1778,7 +1822,7 @@ namespace Mono.Debugger.Architecture
 				int start_row, end_row;
 				ArrayList addresses;
 
-				public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
+				public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
 					: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
 				{
 					this.subprog = subprog;
@@ -1788,25 +1832,19 @@ namespace Mono.Debugger.Architecture
 						SetAddresses (subprog.StartAddress, subprog.EndAddress);
 
 					read_source ();
-					SetSource (new DwarfNativeMethodSource (this, subprog.SourceFile));
+					SetSource (new DwarfTargetMethodSource (this, subprog.SourceFile));
 				}
 
 				public override object MethodHandle {
-					get {
-						return this;
-					}
+					get { return this; }
 				}
 
 				public override IVariable[] Parameters {
-					get {
-						throw new NotSupportedException ();
-					}
+					get { return subprog.Parameters; }
 				}
 
 				public override IVariable[] Locals {
-					get {
-						throw new NotSupportedException ();
-					}
+					get { return subprog.Locals; }
 				}
 
 				public int StartRow {
@@ -1847,11 +1885,11 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected class DwarfNativeMethodSource : MethodSource
+			protected class DwarfTargetMethodSource : MethodSource
 			{
-				DwarfNativeMethod method;
+				DwarfTargetMethod method;
 
-				public DwarfNativeMethodSource (DwarfNativeMethod method, SourceFile file)
+				public DwarfTargetMethodSource (DwarfTargetMethod method, SourceFile file)
 					: base (method, file)
 				{
 					this.method = method;
@@ -1874,7 +1912,7 @@ namespace Mono.Debugger.Architecture
 			{
 				IMethod method;
 
-				public DwarfSourceMethod (SourceFile source, DwarfNativeMethod method)
+				public DwarfSourceMethod (SourceFile source, DwarfTargetMethod method)
 					: base (source, method.Name, method.StartRow, method.EndRow, false)
 				{
 					this.method = method;
@@ -1915,6 +1953,7 @@ namespace Mono.Debugger.Architecture
 			int version, address_size;
 			DieCompileUnit comp_unit_die;
 			Hashtable abbrevs;
+			Hashtable types;
 
 			public CompilationUnit (DwarfReader dwarf, DwarfBinaryReader reader)
 			{
@@ -1930,9 +1969,8 @@ namespace Mono.Debugger.Architecture
 					throw new DwarfException (
 						dwarf, String.Format ("Wrong DWARF version: {0}", version));
 
-				// Console.WriteLine (this);
-
 				abbrevs = new Hashtable ();
+				types = new Hashtable ();
 
 				DwarfBinaryReader abbrev_reader = dwarf.DebugAbbrevReader;
 
@@ -1942,7 +1980,7 @@ namespace Mono.Debugger.Architecture
 					abbrevs.Add (entry.ID, entry);
 				}
 
-				comp_unit_die = new DieCompileUnit (reader, this);
+				comp_unit_die = Die.CreateDieCompileUnit (reader, this);
 
 				reader.Position = start_offset + unit_length;
 			}
@@ -1976,6 +2014,16 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public void AddType (long offset, DieType type)
+			{
+				types.Add (offset, type);
+			}
+
+			public DieType GetType (long offset)
+			{
+				return (DieType) types [offset];
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("CompilationUnit ({0},{1},{2} - {3},{4},{5})",
@@ -1983,6 +2031,237 @@ namespace Mono.Debugger.Architecture
 						      address_size, start_offset, unit_length,
 						      abbrev_offset);
 			}
+		}
+
+		protected class TargetVariable : IVariable
+		{
+			string name;
+			NativeType type;
+			bool is_local;
+			TargetBinaryReader location;
+			DieSubprogram subprog;
+
+			public TargetVariable (DieSubprogram subprog, string name, NativeType type,
+					       bool is_local, TargetBinaryReader location)
+			{
+				this.subprog = subprog;
+				this.name = name;
+				this.type = type;
+				this.is_local = is_local;
+				this.location = location;
+			}
+
+			public string Name {
+				get { return name; }
+			}
+
+			public ITargetType Type {
+				get { return type; }
+			}
+
+			public bool IsValid (StackFrame frame)
+			{
+				return true;
+			}
+
+			protected MonoTargetLocation GetAddress (StackFrame frame)
+			{
+				location.Position = 0;
+				switch (location.ReadByte ()) {
+				case 0x91: // DW_OP_fbreg
+					int offset = location.ReadSLeb128 ();
+
+					if (!location.IsEof)
+						return null;
+
+					return new MonoStackLocation (
+						frame, false, is_local, offset, 0,
+						subprog.StartAddress, subprog.EndAddress);
+				}
+
+				return null;
+			}
+
+			public ITargetObject GetObject (StackFrame frame)
+			{
+				MonoTargetLocation location = GetAddress (frame);
+				if (location == null)
+					return null;
+
+				return type.GetObject (location);
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("{0} ({1}:{2})", GetType (), Name, Type);
+			}
+		}
+
+		protected abstract class DieType : Die
+		{
+			public DieType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, abbrev)
+			{
+				comp_unit.AddType (offset, this);
+			}
+
+			public abstract NativeType Type {
+				get;
+			}
+		}
+
+		protected class DieBaseType : DieType
+		{
+			string name;
+			int byte_size;
+			int encoding;
+			Type type;
+			NativeType native_type;
+
+			public DieBaseType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					    long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{
+				type = GetMonoType ((DwarfBaseTypeEncoding) encoding, byte_size);
+				if (type != null)
+					native_type = new NativeFundamentalType (name, type, byte_size);
+				else
+					native_type = new NativeOpaqueType (name, byte_size);
+			}
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.byte_size:
+					byte_size = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.encoding:
+					encoding = (int) (long) attribute.Data;
+					break;
+				}
+			}
+
+			protected Type GetMonoType (DwarfBaseTypeEncoding encoding, int byte_size)
+			{
+				switch (encoding) {
+				case DwarfBaseTypeEncoding.signed:
+					if (byte_size == 1)
+						return typeof (sbyte);
+					else if (byte_size == 2)
+						return typeof (short);
+					else if (byte_size <= 4)
+						return typeof (int);
+					else if (byte_size <= 8)
+						return typeof (long);
+					break;
+
+				case DwarfBaseTypeEncoding.unsigned:
+					if (byte_size == 1)
+						return typeof (byte);
+					else if (byte_size == 2)
+						return typeof (ushort);
+					else if (byte_size <= 4)
+						return typeof (uint);
+					else if (byte_size <= 8)
+						return typeof (ulong);
+					break;
+
+				case DwarfBaseTypeEncoding.signed_char:
+				case DwarfBaseTypeEncoding.unsigned_char:
+					if (byte_size <= 2)
+						return typeof (char);
+					break;
+
+				case DwarfBaseTypeEncoding.normal_float:
+					if (byte_size <= 4)
+						return typeof (float);
+					else if (byte_size <= 8)
+						return typeof (double);
+					break;
+				}
+
+				return null;
+			}
+
+			public override NativeType Type {
+				get { return native_type; }
+			}
+		}
+
+		protected abstract class DieVariableBase : Die
+		{
+			string name;
+			long type_offset;
+			byte[] location;
+			bool is_local;
+			TargetVariable variable;
+
+			public DieVariableBase (DieSubprogram parent, DwarfBinaryReader reader,
+						CompilationUnit comp_unit, AbbrevEntry abbrev,
+						bool is_local)
+				: base (reader, comp_unit, abbrev)
+			{
+				variable = get_variable (parent, reader.TargetInfo);
+				if (variable == null)
+					return;
+
+				if (is_local)
+					parent.AddLocal (variable);
+				else
+					parent.AddParameter (variable);
+			}
+
+			protected TargetVariable get_variable (DieSubprogram parent, ITargetInfo info)
+			{
+				if ((type_offset == 0) || (location == null) || (name == null))
+					return null;
+
+				DieType type = comp_unit.GetType (type_offset);
+				if (type == null)
+					return null;
+
+				TargetBinaryReader locreader = new TargetBinaryReader (location, info);
+				return new TargetVariable (parent, name, type.Type, false, locreader);
+			}
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.location:
+					location = (byte []) attribute.Data;
+					break;
+				}
+			}
+		}
+
+		protected class DieFormalParameter : DieVariableBase
+		{
+			public DieFormalParameter (DieSubprogram parent, DwarfBinaryReader reader,
+						   CompilationUnit comp_unit, AbbrevEntry abbrev)
+				: base (parent, reader, comp_unit, abbrev, false)
+			{ }
+		}
+
+		protected class DieVariable : DieVariableBase
+		{
+			public DieVariable (DieSubprogram parent, DwarfBinaryReader reader,
+					    CompilationUnit comp_unit, AbbrevEntry abbrev)
+				: base (parent, reader, comp_unit, abbrev, true)
+			{ }
 		}
 	}
 }
