@@ -149,9 +149,12 @@ namespace Mono.Debugger
 				ModulesChangedEvent ();
 		}
 
-		internal void ReachedMain ()
+		internal void ReachedMain (IInferior inferior)
 		{
 			module_manager.Locked = true;
+			if (csharp_language != null)
+				csharp_language.Inferior = inferior;
+			inferior.UpdateModules ();
 			UpdateSymbolTable ();
 
 			foreach (Module module in Modules)

@@ -275,7 +275,7 @@ namespace Mono.Debugger.Backends
 
 			if (initialized && !reached_main) {
 				main_method_retaddr = inferior.GetReturnAddress ();
-				backend.ReachedMain ();
+				backend.ReachedMain (inferior);
 				reached_main = true;
 			}
 
