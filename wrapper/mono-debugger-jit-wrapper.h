@@ -42,8 +42,10 @@ volatile void MONO_DEBUGGER__main (void);
 
 extern volatile void (*mono_debugger_thread_manager_notification_function) (gpointer func);
 extern volatile gpointer MONO_DEBUGGER__thread_manager_notification;
+extern volatile gpointer MONO_DEBUGGER__command_notification;
 extern volatile int MONO_DEBUGGER__main_thread;
 extern volatile int MONO_DEBUGGER__debugger_thread;
+extern volatile int MONO_DEBUGGER__command_thread;
 extern volatile int MONO_DEBUGGER__thread_manager_last_pid;
 extern volatile MonoMethod *MONO_DEBUGGER__main_method;
 extern volatile gpointer MONO_DEBUGGER__main_function;

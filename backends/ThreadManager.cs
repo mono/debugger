@@ -26,6 +26,7 @@ namespace Mono.Debugger
 		Process main_process;
 		Process debugger_process;
 		Process manager_process;
+		Process command_process;
 		Mutex thread_lock_mutex;
 		AddressDomain address_domain;
 		BreakpointManager breakpoint_manager;
@@ -42,6 +43,7 @@ namespace Mono.Debugger
 		bool reached_main = false;
 
 		TargetAddress mono_thread_notification = TargetAddress.Null;
+		TargetAddress mono_command_notification = TargetAddress.Null;
 		TargetAddress thread_manager_last_pid = TargetAddress.Null;
 		TargetAddress thread_manager_last_func = TargetAddress.Null;
 		TargetAddress thread_manager_last_thread = TargetAddress.Null;
@@ -258,10 +260,12 @@ namespace Mono.Debugger
 		{
 			if (!initialized) {
 				TargetAddress maddr = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notification");
+				TargetAddress caddr = bfdc.LookupSymbol ("MONO_DEBUGGER__command_notification");
 				TargetAddress dpid = bfdc.LookupSymbol ("MONO_DEBUGGER__debugger_thread");
 				TargetAddress mpid = bfdc.LookupSymbol ("MONO_DEBUGGER__main_thread");
+				TargetAddress cpid = bfdc.LookupSymbol ("MONO_DEBUGGER__command_thread");
 
-				if (maddr.IsNull || dpid.IsNull || mpid.IsNull)
+				if (maddr.IsNull || caddr.IsNull || dpid.IsNull || mpid.IsNull || cpid.IsNull)
 					return false;
 
 				thread_manager_last_pid = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_pid");
@@ -272,13 +276,22 @@ namespace Mono.Debugger
 				if (address != mono_thread_notification)
 					return false;
 
+				mono_command_notification = runner.Inferior.ReadGlobalAddress (caddr);
+
 				int debugger_pid = runner.Inferior.ReadInteger (dpid);
 				int main_pid = runner.Inferior.ReadInteger (mpid);
+				int command_pid = runner.Inferior.ReadInteger (cpid);
 
 				manager_process = runner.Process;
 				add_process (manager_process, manager_process.PID, true);
 
-				debugger_process = backend.CreateDebuggerProcess (runner.Process, debugger_pid);
+				command_process = runner.Process.CreateDaemonThread (command_pid);
+				add_process (command_process, command_pid, true);
+
+				command_process.SingleSteppingEngine.Continue (true, false);
+
+				debugger_process = backend.CreateDebuggerProcess (
+					command_process, debugger_pid);
 				add_process (debugger_process, debugger_pid, true);
 
 				main_process = runner.Process.CreateThread (main_pid);

@@ -10,6 +10,8 @@
 static gpointer debugger_thread_cond;
 static gpointer debugger_started_cond;
 static gpointer main_started_cond;
+static gpointer command_started_cond;
+static gpointer command_ready_cond;
 static gpointer main_ready_cond;
 
 static gpointer debugger_finished_cond;
@@ -22,6 +24,8 @@ volatile MonoMethod *MONO_DEBUGGER__main_method = NULL;
 volatile gpointer MONO_DEBUGGER__main_function = NULL;
 volatile int MONO_DEBUGGER__main_thread = 0;
 volatile int MONO_DEBUGGER__debugger_thread = 0;
+volatile int MONO_DEBUGGER__command_thread = 0;
+volatile gpointer MONO_DEBUGGER__command_notification = NULL;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -29,6 +33,7 @@ static gpointer debugger_compile_method (MonoMethod *method);
 
 static gpointer debugger_notification_address;
 static void (*debugger_notification_function) (void);
+static void (*command_notification_function) (void);
 
 /*
  * This is a global data symbol which is read by the debugger.
@@ -118,7 +123,7 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 	case MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE:
 		mono_debug_lock ();
 		must_send_finished = TRUE;
-		mono_debugger_signal (FALSE);
+		mono_debugger_signal (TRUE);
 		mono_debug_unlock ();
 
 		mono_debugger_wait ();
@@ -145,12 +150,17 @@ initialize_debugger_support (void)
 	debugger_thread_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 	debugger_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 	main_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	command_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	command_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 	main_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
 	IO_LAYER (InitializeCriticalSection) (&debugger_finished_mutex);
 	debugger_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
-	debugger_notification_function = mono_debug_create_notification_function (&debugger_notification_address);
+	debugger_notification_function = mono_debug_create_notification_function
+		(&debugger_notification_address);
+	command_notification_function = mono_debug_create_notification_function
+		(&MONO_DEBUGGER__command_notification);
 
 	mono_debug_init (TRUE);
 }
@@ -262,6 +272,25 @@ main_thread_handler (gpointer user_data)
 	return retval;
 }
 
+static guint32
+command_thread_handler (gpointer user_data)
+{
+	MONO_DEBUGGER__command_thread = getpid ();
+	IO_LAYER (ReleaseSemaphore) (command_started_cond, 1, NULL);
+
+	/*
+	 * Wait until everything is ready.
+	 */
+	mono_debugger_wait_cond (command_ready_cond);
+
+	/*
+	 * This call will never return.
+	 */
+	debugger_notification_function ();
+
+	return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -313,6 +342,13 @@ main (int argc, char **argv, char **envp)
 	mono_debugger_wait_cond (main_started_cond);
 
 	/*
+	 * Create the command thread and wait until it's ready.
+	 */
+
+	mono_thread_create (domain, command_thread_handler, NULL);
+	mono_debugger_wait_cond (command_started_cond);
+
+	/*
 	 * Initialize the thread manager.
 	 */
 
@@ -333,6 +369,7 @@ main (int argc, char **argv, char **envp)
 	 * Signal the main thread that it can execute the managed Main().
 	 */
 	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
+	IO_LAYER (ReleaseSemaphore) (command_ready_cond, 1, NULL);
 
 	mono_debugger_thread_manager_main ();
 

@@ -1059,6 +1059,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			void breakpoint_hit (TargetAddress address, object user_data)
 			{
+				Console.WriteLine ("BREAKPOINT HIT!");
+
 				if (load_handlers == null)
 					return;
 
@@ -1533,8 +1535,6 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
 					       object user_data)
 		{
-			throw new InternalError ();
-
 			SingleSteppingEngine sse = process.SingleSteppingEngine;
 			sse.AcquireThreadLock ();
 			long retval;

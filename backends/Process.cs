@@ -38,7 +38,8 @@ namespace Mono.Debugger
 			Normal,
 			CoreFile,
 			Daemon,
-			ManagedWrapper
+			ManagedWrapper,
+			CommandProcess
 		}
 
 		protected Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
@@ -79,8 +80,15 @@ namespace Mono.Debugger
 				this.pid = runner.Inferior.PID;
 				break;
 
+			case ProcessType.CommandProcess:
+				is_daemon = true;
+				goto case ProcessType.Normal;
+
 			case ProcessType.Normal:
-				id = ++next_id;
+				if (is_daemon)
+					id = --next_daemon_id;
+				else
+					id = ++next_id;
 				sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
 				sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
@@ -183,10 +191,10 @@ namespace Mono.Debugger
 
 		public TargetState State {
 			get {
-				if (iprocess != null)
-					return iprocess.State;
-				else if (is_daemon)
+				if (is_daemon)
 					return TargetState.DAEMON;
+				else if (iprocess != null)
+					return iprocess.State;
 				else
 					return TargetState.NO_TARGET;
 			}
@@ -436,6 +444,12 @@ namespace Mono.Debugger
 		public Process CreateThread (int pid)
 		{
 			return new Process (backend, start, bfd_container, ProcessType.Normal,
+					    null, pid, null, 0);
+		}
+
+		public Process CreateDaemonThread (int pid)
+		{
+			return new Process (backend, start, bfd_container, ProcessType.CommandProcess,
 					    null, pid, null, 0);
 		}
 

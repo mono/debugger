@@ -175,12 +175,12 @@ namespace Mono.Debugger
 			symtab_manager.Wait ();
 		}
 
-		internal Process CreateDebuggerProcess (Process manager, int pid)
+		internal Process CreateDebuggerProcess (Process command_process, int pid)
 		{
-			csharp_language = new MonoCSharpLanguageBackend (this, manager);
+			csharp_language = new MonoCSharpLanguageBackend (this, command_process);
 			languages.Add (csharp_language);
 
-			return manager.CreateDaemonThread (
+			return command_process.CreateDaemonThread (
 				pid, 0, new DaemonThreadHandler (csharp_language.DaemonThreadHandler));
 		}
 

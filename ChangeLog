@@ -1,5 +1,11 @@
 2003-02-08  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/main.c: Create a special command thread which is always
+	stopped.  It is used by the debugger to invoke methods on the JIT,
+	such as compiling a method or inserting a breakpoint.
+
+2003-02-08  Martin Baulig  <martin@ximian.com>
+
 	* classes/ModuleData.cs (FindMethod): New abstract method.
 
 	* classes/Module.cs (FindMethod): Call ModuleData.FindMethod().
