@@ -488,7 +488,7 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 			     guint32 *count, StackFrame **data)
 {
 	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
-	ServerCommandError result;
+	ServerCommandError result = COMMAND_ERROR_NONE;
 	guint32 address, frame;
 	StackFrame sframe;
 	int i;
