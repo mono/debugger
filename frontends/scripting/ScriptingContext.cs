@@ -54,20 +54,29 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void Disassemble (ScriptingContext context)
 		{
-			Disassemble (context, frame.TargetAddress);
-		}
-
-		public AssemblerLine Disassemble (ScriptingContext context,
-						  TargetAddress address)
-		{
-			AssemblerLine line = frame.DisassembleInstruction (address);
+			AssemblerLine line = Disassemble ();
 
 			if (line != null)
 				context.PrintInstruction (line);
 			else
-				context.Error ("Cannot disassemble instruction at address {0}.", address);
+				context.Error ("Cannot disassemble instruction at address {0}.",
+					       frame.TargetAddress);
+		}
 
-			return line;
+		public AssemblerLine Disassemble ()
+		{
+			return Disassemble (frame.TargetAddress);
+		}
+
+		public AssemblerLine Disassemble (TargetAddress address)
+		{
+			IMethod method = frame.Method;
+			if ((method == null) || !method.IsLoaded)
+				return process.Process.DisassembleInstruction (null, address);
+			else if ((address < method.StartAddress) || (address >= method.EndAddress))
+				return process.Process.DisassembleInstruction (null, address);
+			else
+				return process.Process.DisassembleInstruction (method, address);
 		}
 
 		public void DisassembleMethod (ScriptingContext context)
@@ -77,7 +86,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if ((method == null) || !method.IsLoaded)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			AssemblerMethod asm = frame.DisassembleMethod ();
+			AssemblerMethod asm = process.Process.DisassembleMethod (method);
 			foreach (AssemblerLine line in asm.Lines)
 				context.PrintInstruction (line);
 		}
@@ -327,7 +336,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				current_frame_idx = -1;
 				current_backtrace = null;
 
-				current_insn = args.Frame.DisassembleInstruction (args.Frame.TargetAddress);
+				current_insn = current_frame.Disassemble ();
 			} else {
 				current_insn = null;
 				current_frame = null;

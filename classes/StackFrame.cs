@@ -27,24 +27,27 @@ namespace Mono.Debugger
 		TargetAddress address, stack, frame;
 		SourceAddress source;
 		AddressDomain address_domain;
+		Register[] registers;
 		string name;
 		int level;
 
 		public StackFrame (TargetAddress address, TargetAddress stack,
-				   TargetAddress frame, int level, SourceAddress source,
-				   IMethod method)
-			: this (address, stack, frame, level, method.Name)
+				   TargetAddress frame, Register[] registers,
+				   int level, SourceAddress source, IMethod method)
+			: this (address, stack, frame, registers, level, method.Name)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
 		public StackFrame (TargetAddress address, TargetAddress stack,
-				   TargetAddress frame, int level, string name)
+				   TargetAddress frame, Register[] registers,
+				   int level, string name)
 		{
 			this.address = address;
 			this.stack = stack;
 			this.frame = frame;
+			this.registers = registers;
 			this.level = level;
 			this.name = name != "" ? name : null;
 		}
@@ -102,8 +105,11 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract Register[] Registers {
-			get;
+		public Register[] Registers {
+			get {
+				check_disposed ();
+				return registers;
+			}
 		}
 
 		public virtual long GetRegister (int index)
@@ -149,23 +155,6 @@ namespace Mono.Debugger
 		}
 
 		public event ObjectInvalidHandler FrameInvalidEvent;
-
-		public AssemblerLine DisassembleInstruction (TargetAddress address)
-		{
-			check_disposed ();
-
-			if ((method == null) || !method.IsLoaded)
-				return DoDisassembleInstruction (address);
-
-			if ((address < method.StartAddress) || (address >= method.EndAddress))
-				throw new ArgumentException ();
-
-			return DoDisassembleInstruction (address);
-		}
-
-		protected abstract AssemblerLine DoDisassembleInstruction (TargetAddress address);
-
-		public abstract AssemblerMethod DisassembleMethod ();
 
 		public abstract TargetAddress CallMethod (TargetAddress method, string arg);
 

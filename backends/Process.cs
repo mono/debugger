@@ -794,17 +794,23 @@ namespace Mono.Debugger
 		// Stack frames.
 		//
 
-		internal StackFrame CreateFrame (Inferior.StackFrame frame, int level,
-						 Backtrace bt, SourceAddress source,
-						 IMethod method)
+		internal StackFrame CreateFrame (Inferior.StackFrame frame, Register[] regs,
+						 int level, IMethod method)
 		{
-			if (source != null)
-				return new MyStackFrame (this, frame, level,
-							 bt, source, method);
-			else
-				return new MyStackFrame (this, frame, level, bt);
+			if ((method != null) && method.HasSource) {
+				SourceAddress source = method.Source.Lookup (frame.Address);
+				return new MyStackFrame (
+					this, frame, regs, level, source, method);
+			} else
+				return new MyStackFrame (this, frame, regs, level);
 		}
 
+		internal StackFrame CreateFrame (Inferior.StackFrame frame, Register[] regs,
+						 int level, IMethod method,
+						 SourceAddress source)
+		{
+			return new MyStackFrame (this, frame, regs, level, source, method);
+		}
 
 		//
 		// IDisposable
@@ -860,7 +866,6 @@ namespace Mono.Debugger
 		protected class MyStackFrame : StackFrame
 		{
 			Process process;
-			Backtrace backtrace;
 			ILanguage language;
 			ILanguageBackend lbackend;
 
@@ -868,46 +873,28 @@ namespace Mono.Debugger
 			bool has_registers;
 
 			internal MyStackFrame (Process process, Inferior.StackFrame frame,
-					       int level, Backtrace backtrace,
+					       Register[] registers, int level,
 					       SourceAddress source, IMethod method)
 				: base (frame.Address, frame.StackPointer, frame.FrameAddress,
-					level, source, method)
+					registers, level, source, method)
 			{
 				this.process = process;
-				this.backtrace = backtrace;
 				this.language = method.Module.Language;
 				this.lbackend = method.Module.LanguageBackend as ILanguageBackend;
 			}
 
 			internal MyStackFrame (Process process, Inferior.StackFrame frame,
-					       int level, Backtrace backtrace)
+					       Register[] registers, int level)
 				: base (frame.Address, frame.StackPointer, frame.FrameAddress,
-					level, process.SimpleLookup (frame.Address, false))
+					registers, level,
+					process.SimpleLookup (frame.Address, false))
 			{
 				this.process = process;
-				this.backtrace = backtrace;
 				this.language = process.NativeLanguage;
 			}
 
 			public override ITargetAccess TargetAccess {
 				get { return process; }
-			}
-
-			public override Register[] Registers {
-				get {
-					if (has_registers)
-						return registers;
-
-					if (backtrace == null) {
-						registers = process.GetRegisters ();
-						has_registers = true;
-					} else {
-						registers = backtrace.UnwindStack (Level);
-						has_registers = true;
-					}
-
-					return registers;
-				}
 			}
 
 			public override TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset)
@@ -917,7 +904,7 @@ namespace Mono.Debugger
 
 			public override void SetRegister (int index, long value)
 			{
-				if (backtrace != null)
+				if (Level > 0)
 					throw new NotImplementedException ();
 
 				process.SetRegister (index, value);
@@ -930,19 +917,6 @@ namespace Mono.Debugger
 				get {
 					return language;
 				}
-			}
-
-			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
-			{
-				return process.DisassembleInstruction (Method, address);
-			}
-
-			public override AssemblerMethod DisassembleMethod ()
-			{
-				if (Method == null)
-					throw new TargetException (TargetError.NoMethod);
-
-				return process.DisassembleMethod (Method);
 			}
 
 			public override TargetAddress CallMethod (TargetAddress method,

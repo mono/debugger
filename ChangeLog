@@ -1,5 +1,16 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs
+	(StackFrame.Registers): Don't make this abstract.
+	(StackFrame..ctor): Take the registers as argument.
+	(StackFrame.DisassembleInstruction): Removed.
+	(StackFrame.DisassembleMethod): Removed.
+
+	* backends/Process.cs (Process.CreateFrame): Added `Register[]'
+	argument, removed the `Backtrace' argument.	
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetException.cs (TargetExceptionType): Renamed to
 	TargetError and synced this with the error codes from the unmanged
 	code in backends/server/server.h.
