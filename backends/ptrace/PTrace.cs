@@ -666,6 +666,12 @@ namespace Mono.Debugger.Backends
 			return new TargetReader (retval, this);
 		}
 
+		public ITargetMemoryReader ReadMemory (byte[] buffer)
+		{
+			check_disposed ();
+			return new TargetReader (buffer, this);
+		}
+
 		public bool CanWrite {
 			get {
 				return true;

@@ -82,6 +82,16 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public virtual long GetRegister (int index)
+		{
+			foreach (Register register in Registers) {
+				if (register.Index == index)
+					return (long) register.Data;
+			}
+
+			throw new NoSuchRegisterException ();
+		}
+
 		public IMethod Method {
 			get {
 				check_disposed ();

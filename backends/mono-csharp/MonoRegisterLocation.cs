@@ -24,48 +24,44 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override TargetAddress GetAddress ()
 		{
-			throw new NotImplementedException ();
-#if FIXME
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
 			// register and return it.
-			long contents = Inferior.GetRegister (register);
+			long contents = frame.GetRegister (register);
 			if (contents == 0)
 				throw new LocationInvalidException ();
 
-			return new TargetAddress (Inferior, contents);
-#endif
+			return new TargetAddress (TargetMemoryAccess, contents);
 		}
 
 		public override ITargetMemoryReader ReadMemory (int size)
 		{
-			throw new NotImplementedException ();
-#if FIXME
 			if (IsByRef)
 				return base.ReadMemory (size);
 
 			// If this is a valuetype, the register hold the whole data.
-			long contents = Inferior.GetRegister (register);
+			long contents = frame.GetRegister (register);
+
+			ITargetMemoryAccess memory = TargetMemoryAccess;
 
 			// We can read at most Inferior.TargetIntegerSize from a register
 			// (a word on the target).
-			if (Offset + size > Inferior.TargetIntegerSize)
+			if (Offset + size > memory.TargetIntegerSize)
 				throw new ArgumentException ();
 
 			// Using ITargetMemoryReader for this is just an ugly hack, but I
 			// wanted to hide the fact that the data is cominig from a
 			// register from the caller.
 			ITargetMemoryReader reader;
-			if (Inferior.TargetIntegerSize == 4)
-				reader = new TargetReader (BitConverter.GetBytes ((int) contents), Inferior);
-			else if (Inferior.TargetIntegerSize == 8)
-				reader = new TargetReader (BitConverter.GetBytes (contents), Inferior);
+			if (memory.TargetIntegerSize == 4)
+				reader = memory.ReadMemory (BitConverter.GetBytes ((int) contents));
+			else if (memory.TargetIntegerSize == 8)
+				reader = memory.ReadMemory (BitConverter.GetBytes (contents));
 			else
 				throw new InternalError ();
 
 			reader.Offset = Offset;
 			return reader;
-#endif
 		}
 
 		protected override MonoTargetLocation Clone (int offset)

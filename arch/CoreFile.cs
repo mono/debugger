@@ -410,6 +410,11 @@ namespace Mono.Debugger.Architecture
 			return new TargetReader (ReadBuffer (address, size), this);
 		}
 
+		public ITargetMemoryReader ReadMemory (byte[] buffer)
+		{
+			return new TargetReader (buffer, this);
+		}
+
 		public byte[] ReadBuffer (TargetAddress address, int size)
 		{
 			return core_bfd.GetReader (address).BinaryReader.ReadBuffer (size);

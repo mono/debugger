@@ -103,6 +103,8 @@ namespace Mono.Debugger
 
 		ITargetMemoryReader ReadMemory (TargetAddress address, int size);
 
+		ITargetMemoryReader ReadMemory (byte[] buffer);
+
 		byte[] ReadBuffer (TargetAddress address, int size);
 
 		bool CanWrite {
