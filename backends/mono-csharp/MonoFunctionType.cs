@@ -120,8 +120,19 @@ namespace Mono.Debugger.Languages.CSharp
 					parameter_types.Length, args.Length);
 
 			TargetAddress[] arg_ptr = new TargetAddress [args.Length];
-			for (int i = 0; i < args.Length; i++)
-				arg_ptr [i] = args [i].Location.Address;
+			for (int i = 0; i < args.Length; i++) {
+				if (args [i].Location.HasAddress) {
+					arg_ptr [i] = args [i].Location.Address;
+					continue;
+				}
+
+				Heap heap = file.Table.Language.DataHeap;
+				byte[] contents = args [i].RawContents;
+				TargetLocation new_loc = heap.Allocate (frame, contents.Length);
+				frame.TargetAccess.WriteBuffer (new_loc.Address, contents);
+
+				arg_ptr [i] = new_loc.Address;
+			}
 
 			if (debug) {
 				frame.RuntimeInvoke (method, this_object, arg_ptr);
