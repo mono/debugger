@@ -8,7 +8,6 @@ linux: Debugger.exe
 ALL_SOURCES = \
 	@top_srcdir@/frontends/gui/*.cs		\
 	@top_srcdir@/frontends/command-line/*.cs	\
-	@top_srcdir@/backends/gdb/*.cs			\
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/*.cs			\
 	@top_srcdir@/arch/*.cs				\

@@ -53,7 +53,7 @@ namespace Mono.Debugger.GUI {
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);
 			backend.StateChanged += new StateChangedHandler (StateChanged);
-			backend.CurrentFrameEvent += new StackFrameHandler (CurrentFrameEvent);
+			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
 			command_entry.Sensitive = true;
@@ -90,6 +90,7 @@ namespace Mono.Debugger.GUI {
 		{
 			switch (new_state) {
 			case TargetState.RUNNING:
+				has_frame = false;
 				StatusMessage ("Running ....");
 				break;
 
@@ -99,11 +100,18 @@ namespace Mono.Debugger.GUI {
 				break;
 
 			case TargetState.EXITED:
+				has_frame = false;
 				StatusMessage ("Program terminated.");
 				break;
 
 			case TargetState.NO_TARGET:
+				has_frame = false;
 				StatusMessage ("No target to debug.");
+				break;
+
+			case TargetState.BUSY:
+				has_frame = false;
+				StatusMessage ("Debugger busy ...");
 				break;
 			}
 		}
@@ -117,7 +125,7 @@ namespace Mono.Debugger.GUI {
 			StateChanged (backend.State);
 		}
 
-		void CurrentFrameEvent (IStackFrame frame)
+		void FrameChangedEvent (IStackFrame frame)
 		{
 			has_frame = true;
 			StatusMessage (frame.ToString ());

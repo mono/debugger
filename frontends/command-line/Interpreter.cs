@@ -89,7 +89,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "c":
 			case "continue":
-				backend.Continue ();
+				if (backend.Inferior == null)
+					throw new NoTargetException ();
+				backend.Inferior.Continue ();
 				break;
 
 			case "f":
@@ -99,20 +101,28 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "s":
 			case "step":
-				backend.Step ();
+				if (backend.Inferior == null)
+					throw new NoTargetException ();
+				backend.Inferior.Step ();
 				break;
 
 			case "n":
 			case "next":
-				backend.Next ();
+				if (backend.Inferior == null)
+					throw new NoTargetException ();
+				backend.Inferior.Next ();
 				break;
 
 			case "abort":
-				backend.Shutdown ();
+				if (backend.Inferior == null)
+					throw new NoTargetException ();
+				backend.Inferior.Shutdown ();
 				break;
 
 			case "kill":
-				backend.Kill ();
+				if (backend.Inferior == null)
+					throw new NoTargetException ();
+				backend.Inferior.Kill ();
 				break;
 
 			case "sleep":
@@ -159,19 +169,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				else
 					stderr.WriteLine ("Unable to add breakpoint!");
 
-				break;
-			}
-
-			case "!":
-			case "gdb": {
-				GDB gdb = backend as GDB;
-				if (gdb == null) {
-					stderr.WriteLine ("This command is only available when using " +
-							  "gdb as backend");
-					break;
-				}
-
-				gdb.SendUserCommand (String.Join (" ", args));
 				break;
 			}
 

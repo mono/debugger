@@ -17,6 +17,11 @@ namespace Mono.Debugger
 		NO_TARGET,
 
 		// <summary>
+		//   The debugger is busy doing some things.
+		// </summary>
+		BUSY,
+
+		// <summary>
 		//   The target is running.
 		// </summary>
 		RUNNING,
@@ -32,7 +37,28 @@ namespace Mono.Debugger
 		EXITED
 	}
 
-	public interface IInferior : IDisposable
+	public interface ITargetNotification
+	{
+		// <summary>
+		//   This event is called when the target we're currently debugging has sent any
+		//   output to stdout.
+		// </summary>
+		event TargetOutputHandler TargetOutput;
+
+		// <summary>
+		//   This event is called when the target we're currently debugging has sent any
+		//   error messages to stderr.
+		// </summary>
+		event TargetOutputHandler TargetError;
+
+		// <summary>
+		//   This event is called when the state of the target we're currently debugging
+		//   has changed, for instance when the target has stopped or exited.
+		// </summary>
+		event StateChangedHandler StateChanged;
+	}
+
+	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
 		// <summary>
 		//   Get the state of the target we're debugging.
@@ -79,24 +105,6 @@ namespace Mono.Debugger
 		IDisassembler Disassembler {
 			get;
 		}
-
-		// <summary>
-		//   This event is called when the target we're currently debugging has sent any
-		//   output to stdout.
-		// </summary>
-		event TargetOutputHandler TargetOutput;
-
-		// <summary>
-		//   This event is called when the target we're currently debugging has sent any
-		//   error messages to stderr.
-		// </summary>
-		event TargetOutputHandler TargetError;
-
-		// <summary>
-		//   This event is called when the state of the target we're currently debugging
-		//   has changed, for instance when the target has stopped or exited.
-		// </summary>
-		event StateChangedHandler StateChanged;
 	}
 
 
@@ -108,8 +116,17 @@ namespace Mono.Debugger
 	///   one application at a time, it will create multiple instances of a class which
 	///   implements this interface.
 	/// </summary>
-	public interface IDebuggerBackend : IInferior, IDisposable
+	public interface IDebuggerBackend : ITargetNotification, IDisposable
 	{
+		// <summary>
+		//   The inferior is a handle to the program being debugged while this interface
+		//   is more a container which contains higher-level stuff like symbol tables etc.
+		//   This may be null if there's currently no program being debugged.
+		// </summary>
+		IInferior Inferior {
+			get;
+		}
+
 		// <summary>
 		//   Get the state of the target we're debugging.
 		// </summary>
@@ -138,63 +155,6 @@ namespace Mono.Debugger
 		IStackFrame Frame ();
 
 		// <summary>
-		//   Size of an address in the target.
-		// <summary>
-		uint TargetAddressSize {
-			get;
-		}
-
-		// <summary>
-		//   Size of an integer in the target.
-		// <summary>
-		uint TargetIntegerSize {
-			get;
-		}
-
-		// <summary>
-		//   Size of a long integer in the target.
-		// <summary>
-		uint TargetLongIntegerSize {
-			get;
-		}
-
-		// <summary>
-		//   Read an address from the target's address space at address @address.
-		// </summary>
-		long ReadAddress (long address);
-
-		// <summary>
-		//   Read a single byte from the target's address space at address @address.
-		// </summary>
-		byte ReadByte (long address);
-
-		// <summary>
-		//   Read an integer from the target's address space at address @address.
-		// </summary>
-		uint ReadInteger (long address);
-
-		// <summary>
-		//   Read a signed integer from the target's address space at address @address.
-		// </summary>
-		int ReadSignedInteger (long address);
-
-		// <summary>
-		//   Read a long int from the target's address space at address @address.
-		// </summary>
-		long ReadLongInteger (long address);
-
-		// <summary>
-		//   Read an zero-terminated string from the target's address space at
-		//   address @address.
-		// </summary>
-		string ReadString (long address);
-
-		// <summary>
-		//   Returns the contents of the integer register @name.
-		// </summary>
-		int ReadIntegerRegister (string name);
-
-		// <summary>
 		//   Adds a breakpoint at the specified target location.
 		// </summary>
 		IBreakPoint AddBreakPoint (ITargetLocation location);
@@ -205,7 +165,7 @@ namespace Mono.Debugger
 		//   highlight the source line corresponding to the
 		//   current stack frame.
 		// </summary>
-		event StackFrameHandler CurrentFrameEvent;
+		event StackFrameHandler FrameChangedEvent;
 
 		// <summary>
 		//   This event is emitted when the stack frames have

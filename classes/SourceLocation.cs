@@ -7,18 +7,20 @@ namespace Mono.Debugger
 	{
 		ISourceBuffer SourceBuffer;
 		int Row;
+		int SourceOffset;
 		int SourceRange;
 
 		public static SourceLocation Null = new SourceLocation (null, 0);
 
 		public SourceLocation (ISourceBuffer buffer, int row)
-			: this (buffer, row, 0)
+			: this (buffer, row, 0, 0)
 		{ }
 
-		public SourceLocation (ISourceBuffer buffer, int row, int range)
+		public SourceLocation (ISourceBuffer buffer, int row, int offset, int range)
 		{
 			this.SourceBuffer = buffer;
 			this.Row = row;
+			this.SourceOffset = offset;
 			this.SourceRange = range;
 		}
 
@@ -46,6 +48,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		int ISourceLocation.SourceOffset {
+			get {
+				return SourceOffset;
+			}
+		}
+
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();
@@ -57,8 +65,15 @@ namespace Mono.Debugger
 				builder.Append (" line ");
 				builder.Append (Row);
 			}
+			if (SourceOffset > 0) {
+				builder.Append (" (");
+				builder.Append ("offset ");
+				builder.Append (SourceOffset);
+				builder.Append (")");
+			}
 			if (SourceRange > 0) {
-				builder.Append (" (range ");
+				builder.Append (" (");
+				builder.Append ("range ");
 				builder.Append (SourceRange);
 				builder.Append (")");
 			}

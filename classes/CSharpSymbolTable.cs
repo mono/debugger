@@ -44,22 +44,23 @@ namespace Mono.Debugger
 			if (!IsInSameMethod (target))
 				return null;
 
-			int source_range;
+			int source_range, source_offset;
 			ulong address = (ulong) target.Location;
-			uint row = FindMethodLine (method, lines, address, out source_range);
+			uint row = FindMethodLine (method, lines, address,
+						   out source_offset, out source_range);
 
 			if (row == 0) {
 				row = end_row;
 				source_range = (int) (method.Address.EndAddress - address);
 			}
 
-			return new SourceLocation (source, (int) row, source_range);
+			return new SourceLocation (source, (int) row, source_offset, source_range);
 		}
 
 		uint FindMethodLine (MethodEntry method, LineNumberEntry[] LineNumbers, ulong address,
-				     out int source_range)
+				     out int source_offset, out int source_range)
 		{
-			source_range = 0;
+			source_range = source_offset = 0;
 			int count = LineNumbers.Length;
 			uint offset = (uint) (address - method.Address.StartAddress);
 
@@ -77,6 +78,11 @@ namespace Mono.Debugger
 						continue;
 				} else
 					source_range = (int) (method.Address.EndAddress - address);
+
+				if (idx > 0)
+					source_offset = (int) (offset - method.Address.LineAddresses [idx-1]);
+				else
+					source_offset = (int) (offset - 1);
 
 				return lne.Row;
 			}

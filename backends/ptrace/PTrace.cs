@@ -48,7 +48,7 @@ namespace Mono.Debugger.Backends
 	internal delegate void ChildCallbackHandler (long argument, long data);
 	internal delegate void ChildMessageHandler (ChildMessageType message, int arg);
 
-	internal class Inferior : IInferior, ITargetMemoryAccess, IDisposable
+	internal class Inferior : IInferior, IDisposable
 	{
 		IntPtr server_handle;
 		IOOutputChannel inferior_stdin;
@@ -79,10 +79,6 @@ namespace Mono.Debugger.Backends
 		MonoDebuggerInfo mono_debugger_info = null;
 		public MonoDebuggerInfo MonoDebuggerInfo {
 			get {
-				if (mono_debugger_info != null)
-					return mono_debugger_info;
-
-				read_mono_debugger_info ();
 				return mono_debugger_info;
 			}
 		}
@@ -161,6 +157,7 @@ namespace Mono.Debugger.Backends
 			CommandError result = mono_debugger_server_call_method (
 				server_handle, method.Location, method_argument, number);
 			check_error (result);
+			change_target_state (TargetState.RUNNING);
 			return async;
 		}
 
@@ -291,8 +288,33 @@ namespace Mono.Debugger.Backends
 			async.Completed (data);
 		}
 
+		bool initialized;
+		bool debugger_info_read;
 		void child_message (ChildMessageType message, int arg)
 		{
+			switch (message) {
+			case ChildMessageType.CHILD_STOPPED:
+				if (!initialized) {
+					Continue ();
+					initialized = true;
+					break;
+				} else if (!debugger_info_read) {
+					debugger_info_read = true;
+					read_mono_debugger_info ();
+				}
+				change_target_state (TargetState.STOPPED);
+				break;
+
+			case ChildMessageType.CHILD_EXITED:
+			case ChildMessageType.CHILD_SIGNALED:
+				change_target_state (TargetState.EXITED);
+				break;
+
+			default:
+				Console.WriteLine ("CHILD MESSAGE: {0} {1}", message, arg);
+				break;
+			}
+
 			if (ChildMessage != null)
 				ChildMessage (message, arg);
 		}
@@ -496,6 +518,7 @@ namespace Mono.Debugger.Backends
 		public void Continue ()
 		{
 			send_command (ServerCommand.CONTINUE);
+			change_target_state (TargetState.RUNNING);
 		}
 
 		public void Detach ()
@@ -516,11 +539,13 @@ namespace Mono.Debugger.Backends
 		public void Step ()
 		{
 			send_command (ServerCommand.STEP);
+			change_target_state (TargetState.RUNNING);
 		}
 
 		public void Next ()
 		{
 			throw new NotImplementedException ();
+			// change_target_state (TargetState.RUNNING);
 		}
 
 		public ITargetLocation Frame ()
@@ -528,9 +553,8 @@ namespace Mono.Debugger.Backends
 			try {
 				send_command (ServerCommand.GET_PC);
 				return new TargetLocation (read_long ());
-			} catch {
-				Console.WriteLine ("Can't get current frame!");
-				return TargetLocation.Null;
+			} catch (TargetException e) {
+				throw new NoStackException ();
 			}
 		}
 

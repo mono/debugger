@@ -275,8 +275,15 @@ namespace Mono.Debugger.Backends
 		public readonly ITargetLocation TargetLocation = null;
 		public readonly ISymbolHandle SymbolHandle = null;
 		public readonly IInferior Inferior;
+		public readonly string Instruction;
 
-		string instruction;
+		public StackFrame (IInferior inferior, ITargetLocation location,
+				   ISourceLocation source, ISymbolHandle handle)
+			: this (inferior, location)
+		{
+			SourceLocation = source;
+			SymbolHandle = handle;
+		}
 
 		public StackFrame (IInferior inferior, ITargetLocation location)
 		{
@@ -287,7 +294,7 @@ namespace Mono.Debugger.Backends
 				ITargetLocation loc = (ITargetLocation) location.Clone ();
 
 				try {
-					instruction = Inferior.Disassembler.DisassembleInstruction (ref loc);
+					Instruction = Inferior.Disassembler.DisassembleInstruction (ref loc);
 				} catch (TargetException e) {
 					// Catch any target exceptions.
 				}
@@ -316,9 +323,9 @@ namespace Mono.Debugger.Backends
 			}
 			builder.Append (TargetLocation);
 
-			if (instruction != null) {
+			if ((SourceLocation == null) && (Instruction != null)) {
 				builder.Append (" (");
-				builder.Append (instruction);
+				builder.Append (Instruction);
 				builder.Append (")");
 			}
 
@@ -381,8 +388,6 @@ namespace Mono.Debugger.Backends
 		int symtab_generation;
 		ArrayList symtabs;
 
-		MonoDebuggerInfo mono_debugger_info;
-
 		public Debugger (string application, string[] arguments)
 			: this (application, arguments, new SourceFileFactory ())
 		{ }
@@ -427,90 +432,40 @@ namespace Mono.Debugger.Backends
 		// IInferior
 		//
 
-		TargetState target_state = TargetState.NO_TARGET;
+		bool busy = false;
 		public TargetState State {
 			get {
-				return target_state;
+				if (busy)
+					return TargetState.BUSY;
+				else if (inferior == null)
+					return TargetState.NO_TARGET;
+				else
+					return inferior.State;
 			}
 		}
 
-		void change_target_state (TargetState new_state)
+		bool DebuggerBusy {
+			get {
+				return busy;
+			}
+
+			set {
+				if (busy == value)
+					return;
+
+				busy = value;
+				if (StateChanged != null)
+					StateChanged (State);
+			}
+		}
+
+		void target_state_changed (TargetState new_state)
 		{
-			if (new_state == target_state)
-				return;
-
-			target_state = new_state;
-
 			if (new_state == TargetState.STOPPED)
-				IDebuggerBackend.Frame ();
+				frame_changed ();
 
 			if (StateChanged != null)
-				StateChanged (target_state);
-		}
-
-		public void Continue ()
-		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			inferior.Continue ();
-			change_target_state (TargetState.RUNNING);
-		}
-
-		public void Shutdown ()
-		{
-			if (inferior != null) {
-				inferior.Shutdown ();
-				inferior.Dispose ();
-				inferior = null;
-			}
-		}
-
-		public void Kill ()
-		{
-			if (inferior != null) {
-				inferior.Kill ();
-				inferior.Dispose ();
-				inferior = null;
-			}
-		}
-
-		ITargetLocation IInferior.Frame ()
-		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			ITargetLocation frame = inferior.Frame ();
-			if (frame.IsNull)
-				throw new NoStackException ();
-
-			return frame;
-		}
-
-		public void Step ()
-		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			inferior.Step ();
-			change_target_state (TargetState.RUNNING);
-		}
-		
-		public void Next ()
-		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			throw new NotSupportedException ();
-		}
-
-		public IDisassembler Disassembler {
-			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
-				return inferior.Disassembler;
-			}
+				StateChanged (new_state);
 		}
 
 		public event TargetOutputHandler TargetOutput;
@@ -521,8 +476,14 @@ namespace Mono.Debugger.Backends
 		// IDebuggerBackend
 		//
 
-		public event StackFrameHandler CurrentFrameEvent;
+		public event StackFrameHandler FrameChangedEvent;
 		public event StackFramesInvalidHandler FramesInvalidEvent;
+
+		public IInferior Inferior {
+			get {
+				return inferior;
+			}
+		}
 
 		void child_exited ()
 		{
@@ -530,7 +491,6 @@ namespace Mono.Debugger.Backends
 			inferior = null;
 			initialized = false;
 			symtabs_read = false;
-			mono_debugger_info = null;
 		}
 
 		void inferior_output (string line)
@@ -557,12 +517,25 @@ namespace Mono.Debugger.Backends
 			if ((long) result == 0)
 				return;
 
-			symtabs = new ArrayList ();
+			DebuggerBusy = true;
+			try {
+				symtabs = do_update_symbol_files ();
+			} catch {
+				symtabs = null;
+			} finally {
+				DebuggerBusy = false;
+				frame_changed ();
+			}
+		}
+
+		ArrayList do_update_symbol_files ()
+		{
+			ArrayList symtabs = new ArrayList ();
 
 			int header_size = 3 * inferior.TargetIntegerSize;
 
 			ITargetLocation symbol_file_table = inferior.ReadAddress (
-				mono_debugger_info.symbol_file_table);
+				inferior.MonoDebuggerInfo.symbol_file_table);
 
 			ITargetMemoryReader header = inferior.ReadMemory (
 				symbol_file_table, header_size);
@@ -611,12 +584,14 @@ namespace Mono.Debugger.Backends
 
 				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
 			}
+
+			return symtabs;
 		}
 
 		bool updating_symfiles;
 		void update_symbol_files ()
 		{
-			if ((inferior == null) || (mono_debugger_info == null))
+			if ((inferior == null) || (inferior.MonoDebuggerInfo == null))
 				return;
 
 			if (updating_symfiles)
@@ -624,39 +599,13 @@ namespace Mono.Debugger.Backends
 
 			updating_symfiles = true;
 
-			int generation = inferior.ReadInteger (mono_debugger_info.symbol_file_generation);
+			int generation = inferior.ReadInteger (
+				inferior.MonoDebuggerInfo.symbol_file_generation);
 			if (generation == symtab_generation)
 				return;
 
-			inferior.call_method (mono_debugger_info.update_symbol_file_table, 0,
+			inferior.call_method (inferior.MonoDebuggerInfo.update_symbol_file_table, 0,
 					      new TargetAsyncCallback (do_update_symbol_files), generation);
-			change_target_state (TargetState.RUNNING);
-		}
-
-		void child_message (ChildMessageType message, int args)
-		{
-			switch (message) {
-			case ChildMessageType.CHILD_STOPPED:
-				if (!initialized) {
-					Continue ();
-					initialized = true;
-					break;
-				} else if (!symtabs_read) {
-					symtabs_read = true;
-					mono_debugger_info = inferior.MonoDebuggerInfo;
-				}
-				change_target_state (TargetState.STOPPED);
-				break;
-
-			case ChildMessageType.CHILD_EXITED:
-			case ChildMessageType.CHILD_SIGNALED:
-				change_target_state (TargetState.EXITED);
-				break;
-
-			default:
-				Console.WriteLine ("CHILD MESSAGE: {0} {1}", message, args);
-				break;
-			}
 		}
 
 		public void Run ()
@@ -666,16 +615,15 @@ namespace Mono.Debugger.Backends
 
 			inferior = new Inferior (working_directory, argv, envp);
 			inferior.ChildExited += new ChildExitedHandler (child_exited);
-			inferior.ChildMessage += new ChildMessageHandler (child_message);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
-
-			change_target_state (TargetState.STOPPED);
+			inferior.StateChanged += new StateChangedHandler (target_state_changed);
 		}
 
 		public void Quit ()
 		{
-			Shutdown ();
+			if (inferior != null)
+				inferior.Shutdown ();
 		}
 
 		public IStackFrame Frame ()
@@ -683,16 +631,41 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
-			ITargetLocation location = IInferior.Frame ();
+			ITargetLocation location = inferior.Frame ();
 
 			update_symbol_files ();
 
-			IStackFrame frame = new StackFrame (inferior, location);
+			ISymbolHandle symbol_handle;
+			ISourceLocation source = LookupAddress (location, out symbol_handle);
 
-			if (CurrentFrameEvent != null)
-				CurrentFrameEvent (frame);
+			if (source != null)
+				return new StackFrame (inferior, location, source, symbol_handle);
+			else
+				return new StackFrame (inferior, location);
+		}
 
-			return frame;
+		ISourceLocation LookupAddress (ITargetLocation address, out ISymbolHandle handle)
+		{
+			handle = null;
+			if (symtabs == null)
+				return null;
+
+			foreach (ISymbolTable symtab in symtabs) {
+				ISourceLocation source = symtab.Lookup (address, out handle);
+
+				if (source != null)
+					return source;
+			}
+
+			return null;
+		}
+
+		void frame_changed ()
+		{
+			IStackFrame frame = Frame ();
+
+			if (FrameChangedEvent != null)
+				FrameChangedEvent (frame);
 		}
 
 		public ISourceFileFactory SourceFileFactory {
@@ -703,59 +676,6 @@ namespace Mono.Debugger.Backends
 			set {
 				source_file_factory = value;
 			}
-		}
-
-		uint IDebuggerBackend.TargetAddressSize {
-			get {
-				throw new NotImplementedException ();
-			}
-		}
-
-		uint IDebuggerBackend.TargetIntegerSize {
-			get {
-				throw new NotImplementedException ();
-			}
-		}
-
-		uint IDebuggerBackend.TargetLongIntegerSize {
-			get {
-				throw new NotImplementedException ();
-			}
-		}
-
-		public byte ReadByte (long address)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public uint ReadInteger (long address)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public int ReadSignedInteger (long address)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public long ReadAddress (long address)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public long ReadLongInteger (long address)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public string ReadString (long address)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public int ReadIntegerRegister (string name)
-		{
-			throw new NotImplementedException ();
 		}
 
 		public IBreakPoint AddBreakPoint (ITargetLocation location)
@@ -777,7 +697,8 @@ namespace Mono.Debugger.Backends
 				// dispose all managed resources.
 				if (disposing) {
 					// Do stuff here
-					Kill ();
+					if (inferior != null)
+						inferior.Kill ();
 				}
 				
 				// Release unmanaged resources
