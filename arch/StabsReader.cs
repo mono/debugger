@@ -190,16 +190,19 @@ namespace Mono.Debugger.Architecture
 
 				start = stabs.bfd.GetAddress (entry.n_value);
 
+				bool has_lines = false;
+
 				while (reader.Position < reader.Size) {
 					entry = new Entry (reader, str_reader);
 
 					if (entry.n_type == (byte) StabType.N_SO) {
 						end = stabs.bfd.GetAddress (entry.n_value);
 						break;
-					} else if (entry.n_type == (byte) StabType.N_SLINE)
+					} else if (entry.n_type == (byte) StabType.N_SLINE) {
+						has_lines = true;
 						lines.Add (new LineNumberEntry (
 								   entry.n_ndesc, entry.n_value));
-					else if (entry.n_type == (byte) StabType.N_FUN) {
+					} else if (entry.n_type == (byte) StabType.N_FUN) {
 						MethodEntry mentry = new MethodEntry (
 							this, reader, str_reader,
 							ref entry, ref lines);
@@ -207,7 +210,7 @@ namespace Mono.Debugger.Architecture
 					}
 				}
 
-				if (lines.Count > 0)
+				if (has_lines)
 					SourceBuffer = stabs.factory.FindFile (name);
 			}
 
@@ -299,9 +302,11 @@ namespace Mono.Debugger.Architecture
 					addresses.Add (new LineEntry (addr, line.Line));
 				}
 
+				SourceMethod source = new StabsSourceMethod (method);
+
 				return new MethodSourceData (
 					method.StartLine, method.EndLine, addresses,
-					method.File.SourceBuffer);
+					source, method.File.SourceBuffer);
 			}
 		}
 

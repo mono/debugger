@@ -53,6 +53,9 @@ namespace Mono.Debugger
 		{
 			this.method = method;
 			this.line = line;
+
+			if (method == null)
+				throw new InvalidOperationException ();
 		}
 
 		internal TargetAddress GetAddress ()
