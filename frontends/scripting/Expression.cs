@@ -1358,10 +1358,10 @@ namespace Mono.Debugger.Frontends.Scripting
 				ITargetPointerObject pobj = obj as ITargetPointerObject;
 				if ((pobj != null) && pobj.Type.IsArray)
 					return pobj.GetArrayElement (i);
-			}
 
-			throw new ScriptingException (
-				"Variable {0} is not an array type.", expr.Name);
+				throw new ScriptingException (
+							      "Variable {0} is not an array type.", expr.Name);
+			}
 
 			if ((i < aobj.LowerBound) || (i >= aobj.UpperBound))
 				throw new ScriptingException (

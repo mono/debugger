@@ -1,5 +1,14 @@
 2004-09-20  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/scripting/Expression.cs
+	(ArrayAccessExpression.DoEvaluateVariable): don't unconditionally
+	throw an exception about the variable not being an array type -
+	only do that if casting to both ITargetArrayObject and
+	ITargetPointerObject fails.  this should fix printing array
+	elements from the (mdb) prompt.
+
+2004-09-20  Chris Toshok  <toshok@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.frame_changed): in the else block of the if,
 	current_method might be null, so take that into account before
