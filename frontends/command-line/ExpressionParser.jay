@@ -72,13 +72,13 @@ namespace Mono.Debugger.Frontends.Scripting
 %token COLON
 %token AMPERSAND
 
-%token PARENT
 %token LENGTH
 %token LOWER
 %token UPPER
 
 %token NEW
-%token TYPEOF
+%token THIS
+%token BASE
 
 %start parse_expression
 %%
@@ -110,6 +110,14 @@ expression
 	| STRING
 	  {
 		$$ = new StringExpression ((string) $1);
+	  }
+	| THIS
+	  {
+		$$ = new ThisExpression ();
+	  }
+	| BASE DOT IDENTIFIER
+	  {
+		$$ = new MemberAccessExpression (new BaseExpression (), (string) $3);
 	  }
 	| variable_or_type_name
 	| PERCENT IDENTIFIER

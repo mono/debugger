@@ -49,6 +49,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			short_keywords = new Hashtable ();
 
 			keywords.Add ("new", Token.NEW);
+			keywords.Add ("this", Token.THIS);
+			keywords.Add ("base", Token.BASE);
 		}
 
 		ScriptingContext context;

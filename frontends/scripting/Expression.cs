@@ -291,6 +291,67 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class ThisExpression : Expression
+	{
+		public override string Name {
+			get { return "this"; }
+		}
+
+		protected FrameHandle frame;
+		protected IVariable var;
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			frame = context.CurrentFrame;
+			IMethod method = frame.Frame.Method;
+			if (method == null)
+				throw new ScriptingException (
+					"Keyword `this' not allowed: no current method.");
+
+			if (!method.HasThis)
+				throw new ScriptingException (
+					"Keyword `this' not allowed: current method is " +
+					"either static or unmanaged.");
+
+			var = method.This;
+			resolved = true;
+			return this;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			return (ITargetObject) frame.GetVariable (var);
+		}
+	}
+
+	public class BaseExpression : ThisExpression
+	{
+		public override string Name {
+			get { return "base"; }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			Expression expr = base.DoResolve (context);
+			if (expr == null)
+				return null;
+
+			if (var.Type.Kind != TargetObjectKind.Class)
+				throw new ScriptingException (
+					"`base' is only allowed in a class.");
+			if (!((ITargetClassType) var.Type).HasParent)
+				throw new ScriptingException (
+					"Current class has no base class.");
+
+			return expr;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			return ((ITargetClassObject) base.DoEvaluateVariable (context)).Parent;
+		}
+	}
+
 	public class TypeExpression : Expression
 	{
 		ITargetType type;

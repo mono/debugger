@@ -1,6 +1,11 @@
 2004-06-21  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Expression.cs
+	(ThisExpression, BaseExpression): New public classes.
+
+2004-06-21  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/Expression.cs
 	(ParentClassExpression): Removed.
 
 2004-06-20  Martin Baulig  <martin@ximian.com>
