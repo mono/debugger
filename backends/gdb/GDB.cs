@@ -709,13 +709,7 @@ namespace Mono.Debugger.Backends
 			}
 
 		again:
-			current_frame = new_frame;
-
-			ISourceLocation source = LookupAddress (current_frame.TargetLocation);
-			if (source != null)
-				current_frame.SourceLocation = source;
-
-			long address = current_frame.TargetLocation.Address;
+			long address = new_frame.TargetLocation.Address;
 
 			switch (step_mode) {
 			case StepMode.RUN:
@@ -739,8 +733,14 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
+			ISourceLocation source = LookupAddress (new_frame.TargetLocation);
+			if (source != null)
+				new_frame.SourceLocation = source;
+
+			current_frame = new_frame;
+
 			if (send_event && (current_frame_event != null))
-				current_frame_event (new_frame);
+				current_frame_event (current_frame);
 		}
 
 		void change_target_state (TargetState new_state)
