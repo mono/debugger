@@ -489,6 +489,9 @@ namespace Mono.Debugger.Backends
 			if (initialized && !reached_main_2) {
 				main_method_retaddr = inferior.GetReturnAddress ();
 				reached_main_2 = true;
+
+				disassembler.SymbolTable = symtab_manager.SymbolTable;
+				current_symtab = symtab_manager.SymbolTable;
 			}
 
 			TargetAddress frame = inferior.CurrentFrame;
