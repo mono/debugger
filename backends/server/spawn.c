@@ -116,7 +116,7 @@ watch_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
   if (condition != G_IO_IN)
     return TRUE;
 
-  return mono_debugger_process_server_message (channel, data);
+  return mono_debugger_process_server_message (data);
 }
 
 static gboolean
@@ -145,7 +145,7 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 			   SpawnChildSetupFunc       child_setup_cb,
 			   gint                     *child_pid,
 			   GIOChannel              **status_channel,
-			   GIOChannel              **command_channel,
+			   ServerHandle            **server_handle,
 			   SpawnChildExitedFunc      child_exited_cb,
 			   SpawnChildMessageFunc     child_message_cb,
 			   gint                     *standard_input,
@@ -159,7 +159,7 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 
   g_return_val_if_fail (argv != NULL, FALSE);
   g_return_val_if_fail (status_channel != NULL, FALSE);
-  g_return_val_if_fail (command_channel != NULL, FALSE);
+  g_return_val_if_fail (server_handle != NULL, FALSE);
   g_return_val_if_fail (standard_output != NULL, FALSE);
   g_return_val_if_fail (standard_error != NULL, FALSE);
   g_return_val_if_fail (standard_input != NULL, FALSE);
@@ -177,21 +177,34 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 				 standard_error,
 				 error);
 
-  if (!retval) {
-    g_warning (G_STRLOC ": Can't spawn: %s", (*error)->message);
-    return FALSE;
-  }
+  if (!retval)
+    {
+      g_warning (G_STRLOC ": Can't spawn: %s", (*error)->message);
+      return FALSE;
+    }
 
   g_message (G_STRLOC ": %d - %d - %d", *child_pid, status_fd, command_fd);
-
-  *command_channel = g_io_channel_unix_new (command_fd);
 
   *status_channel = g_io_channel_unix_new (status_fd);
   flags = g_io_channel_get_flags (*status_channel);
   g_io_channel_set_flags (*status_channel, flags | G_IO_FLAG_NONBLOCK, NULL);
 
+  if (g_io_channel_set_encoding (*status_channel, NULL, error) != G_IO_STATUS_NORMAL)
+    {
+      g_warning (G_STRLOC ": Can't set encoding on status channel: %s", (*error)->message);
+      return 1;
+    }
+
+  g_io_channel_set_buffered (*status_channel, FALSE);
+
+  *server_handle = g_new0 (ServerHandle, 1);
+  (*server_handle)->status_channel = *status_channel;
+  (*server_handle)->child_message_cb = child_message_cb;
+  (*server_handle)->fd = command_fd;
+  (*server_handle)->pid = *child_pid;
+
   if (child_message_cb)
-    g_io_add_watch (*status_channel, G_IO_IN, watch_input_func, child_message_cb);
+    g_io_add_watch (*status_channel, G_IO_IN, watch_input_func, *server_handle);
   if (child_exited_cb)
     g_io_add_watch (*status_channel, G_IO_HUP, watch_hangup_func, child_exited_cb);
 

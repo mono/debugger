@@ -4,6 +4,7 @@ bin_PROGRAMS = mono-debugger-server
 
 mono_debugger_server_SOURCES = \
 	server.c		\
+	i386-linux-ptrace.c	\
 	server.h		\
 	#
 

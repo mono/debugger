@@ -9,6 +9,21 @@ G_BEGIN_DECLS
 #define MONO_SYMBOL_FILE_MAGIC			"45e82623fd7fa614"
 
 typedef enum {
+	SERVER_COMMAND_GET_PC = 1,
+	SERVER_COMMAND_CONTINUE,
+	SERVER_COMMAND_DETACH,
+	SERVER_COMMAND_SHUTDOWN,
+	SERVER_COMMAND_KILL
+} ServerCommand;
+
+typedef enum {
+	COMMAND_ERROR_NONE = 0,
+	COMMAND_ERROR_IO,
+	COMMAND_ERROR_UNKNOWN,
+	COMMAND_ERROR_INVALID_COMMAND
+} ServerCommandError;
+
+typedef enum {
 	MESSAGE_CHILD_EXITED = 1,
 	MESSAGE_CHILD_STOPPED,
 	MESSAGE_CHILD_SIGNALED
@@ -19,9 +34,17 @@ typedef struct {
 	int arg;
 } ServerStatusMessage;
 
+typedef struct InferiorHandle InferiorHandle;
+
 typedef void (*SpawnChildSetupFunc) (void);
 typedef void (*SpawnChildExitedFunc) (void);
 typedef void (*SpawnChildMessageFunc) (ServerStatusMessageType type, int arg);
+
+typedef struct {
+	GIOChannel *status_channel;
+	SpawnChildMessageFunc child_message_cb;
+	int fd, pid;
+} ServerHandle;
 
 extern GQuark mono_debugger_spawn_error_quark (void);
 
@@ -33,7 +56,7 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 			   SpawnChildSetupFunc       child_setup_cb,
 			   gint                     *child_pid,
 			   GIOChannel              **status_channel,
-			   GIOChannel              **command_channel,
+			   ServerHandle            **server_handle,
 			   SpawnChildExitedFunc      child_exited_cb,
 			   SpawnChildMessageFunc     child_message_cb,
 			   gint                     *standard_input,
@@ -41,10 +64,50 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 			   gint                     *standard_error,
 			   GError                  **error);
 
-extern gboolean
-mono_debugger_process_server_message (GIOChannel              *channel,
-				      SpawnChildMessageFunc    child_message_cb);
+/*
+ * Server functions.
+ */
 
+extern InferiorHandle *
+server_ptrace_get_handle             (int                      pid);
+
+extern void
+server_ptrace_traceme                (int                      pid);
+
+extern InferiorHandle *
+server_ptrace_attach                 (int                      pid);
+
+extern ServerCommandError
+server_ptrace_continue               (InferiorHandle          *handle);
+
+extern ServerCommandError
+server_ptrace_detach                 (InferiorHandle          *handle);
+
+extern ServerCommandError
+server_get_program_counter           (InferiorHandle          *handle,
+				      guint64                 *pc);
+
+/*
+ * Library functions.
+ */
+
+extern gboolean
+mono_debugger_process_server_message (ServerHandle            *handle);
+
+extern guint64
+mono_debugger_get_program_counter    (ServerHandle            *handle);
+
+extern void
+mono_debugger_continue               (ServerHandle            *handle);
+
+extern void
+mono_debugger_detach                 (ServerHandle            *handle);
+
+extern void
+mono_debugger_shutdown               (ServerHandle            *handle);
+
+extern void
+mono_debugger_kill                   (ServerHandle            *handle);
 
 G_END_DECLS
 
