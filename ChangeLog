@@ -1,3 +1,12 @@
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/Command.cs: Moved some stuff into the
+	following three new files.
+
+	* frontends/scripting/Expression.cs: New file.
+	* frontends/scripting/VariableExpression.cs: New file.
+	* frontends/scripting/AssertCommand.cs: New file.
+
 2003-03-01  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/ScriptingContext.cs: Automatically run newly
