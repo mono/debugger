@@ -6,13 +6,15 @@
 
 static gboolean in_readline = FALSE;
 
+#if USE_READLINE
 static void
 sigint_handler (int dummy)
 {
 	/* do nothing. */
 }
+#endif
 
-void
+int
 mono_debugger_readline_static_init (void)
 {
 #if USE_READLINE
@@ -23,6 +25,10 @@ mono_debugger_readline_static_init (void)
 	sa.sa_flags = SA_RESTART;
 
 	sigaction (SIGINT, &sa, NULL);
+
+	return TRUE;
+#else
+	return FALSE;
 #endif
 }
 
@@ -37,27 +43,21 @@ mono_debugger_readline_readline (const char *prompt)
 {
 #if USE_READLINE
 	char *line;
-#else
-	char buffer [BUFSIZ];
-#endif
 	char *retval = NULL;
 
 	g_assert (!in_readline);
 	in_readline = TRUE;
 
-#if USE_READLINE
 	line = readline (prompt);
 	retval = g_strdup (line);
 	if (line)
 		free (line);
-#else
-	printf (prompt); fflush (stdout);
-	if (fgets (buffer, BUFSIZ, stdin))
-		retval = g_strdup (buffer);
-#endif
 
 	in_readline = FALSE;
 	return retval;
+#else
+	return NULL;
+#endif
 }
 
 void

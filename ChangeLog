@@ -1,5 +1,12 @@
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/GnuReadLine.cs: Check whether readline is supported and
+	use Console.ReadLine() if not.
+
+	* glue/Check whether readline is supported.
+
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Allow windows.
 	(glue_cflags, server_cflags): AC_SUBST() them.
 
