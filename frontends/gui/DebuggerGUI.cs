@@ -142,15 +142,6 @@ namespace Mono.Debugger.GUI
 
 		public DebuggerGUI (string[] arguments)
 		{
-			DebuggerOptions options = new DebuggerOptions ();
-			string error_message = options.ParseArguments (arguments);
-			if (error_message != null) {
-				Console.WriteLine (error_message);
-				Environment.Exit (1);
-			}
-
-			start = options.ProcessStart;
-
 			thread_notify = new ThreadNotify ();
 			program = new Program ("Debugger", "0.2", Modules.UI, new string [0]);
 			manager = new DebuggerManager (this);
@@ -159,7 +150,8 @@ namespace Mono.Debugger.GUI
 
 			main_window.DeleteEvent += new DeleteEventHandler (Window_Delete);
 
-			context = new ScriptingContext (command_writer, output_writer, false, true, options);
+			context = new ScriptingContext (command_writer, output_writer, false, true, arguments);
+			start = context.ProcessStart;
 			interpreter = new Interpreter (context);
 
 			if (start != null)
@@ -256,7 +248,7 @@ namespace Mono.Debugger.GUI
 					"run-button", "run-program-menu",
 					"program-to-debug-menu"
 				},
-				TargetState.NO_TARGET);
+				TargetState.NO_TARGET, TargetState.EXITED);
 
 			// I considered adding "register-notebook", but it looks
 			// ugly.
@@ -313,7 +305,7 @@ namespace Mono.Debugger.GUI
 		void StartProgram ()
 		{
 			if (backend == null) {
-				backend = context.DebuggerBackend;
+				backend = context.Initialize ();
 				backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
 					main_process_started);
 				backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (
@@ -421,7 +413,10 @@ namespace Mono.Debugger.GUI
 		void OnRunProgramActivate (object sender, EventArgs args)
 		{
 			source_manager.SwitchToSourceView ();
-			if ((process != null) && process.HasTarget)
+
+			if (backend == null)
+				StartProgram ();
+			else if ((process != null) && process.HasTarget)
 				process.Continue (false);
 		}
 

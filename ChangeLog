@@ -1,3 +1,14 @@
+2003-04-16  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs: Moved to ../backends/.
+
+	* backends/ProcessStart.cs (ProcessStart): Make this abstract.
+	(ProcessStart.Create): Take a `DebuggerOptions options' and a
+	`string[] args' argument; parse the arguments here.
+
+	* frontends/scripting/DebuggerOptions.cs: This is now part of
+	../backends/ProcessStart.cs.
+
 2003-04-15  Martin Baulig  <martin@ximian.com>
 
 	* backends/BreakpointManager.cs: Correctly implement Dispose().

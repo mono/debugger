@@ -54,10 +54,11 @@ namespace Mono.Debugger.GUI
 			list.CopyTo (argsv);
 
 			string opt_flags = optimizations.Text;
-			if (opt_flags == "")
-				opt_flags = null;
 
-			ProcessStart start = context.Start (argsv, opt_flags);
+			DebuggerOptions options = new DebuggerOptions ();
+			options.JitOptimizations = opt_flags;
+
+			ProcessStart start = context.Start (options, argsv);
 			ActivatedEvent (start);
 		}
 

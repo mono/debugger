@@ -56,15 +56,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
-			DebuggerOptions options = new DebuggerOptions ();
-			string error_message = options.ParseArguments (args);
-			if (error_message != null) {
-				Console.WriteLine (error_message);
-				Environment.Exit (1);
-			}
-
 			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (writer, writer, true, is_terminal, options);
+			context = new ScriptingContext (writer, writer, true, is_terminal, args);
 			parser = new Parser (context, "Debugger");
 
 			if (is_terminal)

@@ -604,8 +604,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		internal static readonly string DirectorySeparatorStr;
 		static readonly Generator generator;
 
-		DebuggerOptions options;
-
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
 		Module[] modules;
@@ -619,13 +617,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 
 		public ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
-					 bool is_synchronous, bool is_interactive, DebuggerOptions options)
+					 bool is_synchronous, bool is_interactive, string[] args)
 		{
 			this.command_output = command_out;
 			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
-			this.options = options;
 
 			procs = new ArrayList ();
 			current_process = null;
@@ -633,21 +630,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
 
-			backend = options.DebuggerBackend;
-			start = options.ProcessStart;
+			start = ProcessStart.Create (null, args);
+			if (start != null)
+				Initialize ();
 		}
 
-		protected void Initialize ()
+		public DebuggerBackend Initialize ()
 		{
+			if (backend != null)
+				return backend;
+			if (start == null)
+				throw new ScriptingException ("No program loaded.");
+
+			backend = start.Run ();
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 			backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
-
-			if (options.JitWrapper != null)
-				ProcessStart.Path_Mono = options.JitWrapper;
-			if (options.JitOptimizations != null)
-				ProcessStart.JitOptimizations = options.JitOptimizations;
+			return backend;
 		}
 
 		public ProcessStart ProcessStart {
@@ -767,13 +767,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public ProcessStart Start (string[] args,  string opt_flags)
+		public ProcessStart Start (DebuggerOptions options, string[] args)
 		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
 
-			backend = new DebuggerBackend ();
-			start = ProcessStart.Create (null, args, null, opt_flags);
+			start = ProcessStart.Create (options, args);
 
 			return start;
 		}
@@ -782,8 +781,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (current_process != null)
 				throw new ScriptingException ("Process already started.");
-
-			Initialize ();
+			if (backend == null)
+				throw new ScriptingException ("No program loaded.");
 
 			Process process = backend.Run (start);
 			current_process = new ProcessHandle (this, backend, process, -1);
