@@ -96,5 +96,10 @@ namespace Mono.Debugger.GUI {
 				return tab;
 			}
 		}
+
+		public override void InsertBreakpoint ()
+		{
+			Console.WriteLine ("INFO: Implement me, insert a breakpoint here");
+		}
 	}
 }

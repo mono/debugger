@@ -1344,7 +1344,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return new SourceLocation (method);
 			}
 
-			throw new ScriptingException ("No such method.");
+			//
+			// it is ok to return null
+			// 
+			return null;
 		}
 
 		public void AddMethodSearchResult (SourceMethod[] methods)

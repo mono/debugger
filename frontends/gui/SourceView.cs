@@ -44,6 +44,7 @@ namespace Mono.Debugger.GUI {
 
 			text_buffer = new Gtk.SourceBuffer (new Gtk.TextTagTable ());
 			source_view = new Gtk.SourceView (text_buffer);
+			source_view.PopulatePopup += new PopulatePopupHandler (PopulateViewPopup);
 			source_view.Editable = false;
 
 			//FontDescription font = FontDescription.FromString ("Monospace 14");
@@ -84,6 +85,29 @@ namespace Mono.Debugger.GUI {
 			process = manager.Process;
 		}
 
+		void Prepend (Gtk.Menu menu, string text, EventHandler cb)
+		{
+			Gtk.MenuItem item = new MenuItem ("_Insert Breakpoint");
+			item.Show ();
+			item.Activated += cb;
+			menu.Prepend (item);
+		}
+
+		void BreakpointCB (object o, EventArgs a)
+		{
+			InsertBreakpoint ();
+		}
+		
+		public abstract void InsertBreakpoint ();
+		
+		void PopulateViewPopup (object o, PopulatePopupArgs args)
+		{
+			Gtk.Menu menu = args.Menu;
+			Gtk.MenuItem item;
+
+			Prepend (menu, "_Insert Breakpoint", new EventHandler (BreakpointCB));
+		}
+		
 		protected abstract Gtk.Widget CreateWidget (Gtk.SourceView source_view);
 
 		void process_created (object sender, Process process)
