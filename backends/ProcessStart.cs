@@ -223,10 +223,7 @@ namespace Mono.Debugger
 			MethodInfo main = application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
 
-			string[] start_argv = {
-				Path_Mono, "--break", main_name, "--debug=internal_mono_debugger",
-				"--noinline"
-			};
+			string[] start_argv = { Path_Mono };
 
 			string[] new_argv = new string [old_argv.Length + start_argv.Length];
 			start_argv.CopyTo (new_argv, 0);

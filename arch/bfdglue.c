@@ -55,10 +55,6 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int only_functi
 		   !strcmp (symbol->name, "__pthread_last_event")) {
 		*address = symbol->section->vma + symbol->value;
 		return symbol->name;
-	} else if (!strcmp (symbol->name, "mono_debugger_threads_debug") ||
-		   !strcmp (symbol->name, "mono_debugger_thread_info")) {
-		*address = symbol->section->vma + symbol->value;
-		return symbol->name;
 	} else
 		return NULL;
 

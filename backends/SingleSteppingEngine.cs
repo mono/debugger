@@ -17,7 +17,8 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	public delegate bool BreakpointHitHandler (StackFrame frame, int index, object user_data);
+	public delegate bool BreakpointCheckHandler (StackFrame frame, int index, object user_data);
+	public delegate void BreakpointHitHandler (StackFrame frame, int index, object user_data);
 
 	// <summary>
 	//   The single stepping engine is responsible for doing all the stepping
@@ -226,6 +227,9 @@ namespace Mono.Debugger.Backends
 
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
+
+			disassembler.SymbolTable = symtab_manager.SymbolTable;
+			current_symtab = symtab_manager.SymbolTable;
 
 			initialized = true;
 
@@ -978,7 +982,17 @@ namespace Mono.Debugger.Backends
 			// so we should only do it when it's actually needed.
 			if (handle.NeedsFrame)
 				frame = get_frame (inferior.CurrentFrame);
-			return handle.Handler (frame, breakpoint, handle.UserData);
+			if ((handle.CheckHandler != null) &&
+			    !handle.CheckHandler (frame, breakpoint, handle.UserData))
+				return false;
+
+			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+			send_result (ChildEventType.CHILD_STOPPED, 0);
+
+			if (handle.HitHandler != null)
+				handle.HitHandler (frame, breakpoint, handle.UserData);
+
+			return true;
 		}
 
 		bool step_over_breakpoint (bool current, out ChildEvent new_event)
@@ -1686,8 +1700,9 @@ namespace Mono.Debugger.Backends
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (TargetAddress address, BreakpointHitHandler handler,
-					     bool needs_frame, object user_data)
+		public int InsertBreakpoint (TargetAddress address, BreakpointCheckHandler check_handler,
+					     BreakpointHitHandler hit_handler, bool needs_frame,
+					     object user_data)
 		{
 			check_inferior ();
 
@@ -1696,7 +1711,8 @@ namespace Mono.Debugger.Backends
 				throw new Exception ();
 
 			int index = (int) result.Data;
-			breakpoints.Add (index, new BreakpointHandle (index, handler, needs_frame, user_data));
+			breakpoints.Add (index, new BreakpointHandle (
+				index, check_handler, hit_handler, needs_frame, user_data));
 			return index;
 		}
 
@@ -1716,14 +1732,17 @@ namespace Mono.Debugger.Backends
 		{
 			public readonly int Index;
 			public readonly bool NeedsFrame;
-			public readonly BreakpointHitHandler Handler;
+			public readonly BreakpointCheckHandler CheckHandler;
+			public readonly BreakpointHitHandler HitHandler;
 			public readonly object UserData;
 
-			public BreakpointHandle (int index, BreakpointHitHandler handler,
-						 bool needs_frame, object user_data)
+			public BreakpointHandle (int index, BreakpointCheckHandler check_handler,
+						 BreakpointHitHandler hit_handler, bool needs_frame,
+						 object user_data)
 			{
 				this.Index = index;
-				this.Handler = handler;
+				this.CheckHandler = check_handler;
+				this.HitHandler = hit_handler;
 				this.NeedsFrame = needs_frame;
 				this.UserData = user_data;
 			}

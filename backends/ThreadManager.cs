@@ -25,10 +25,12 @@ namespace Mono.Debugger
 		Hashtable thread_hash;
 		Process main_process;
 		Process debugger_process;
+		Process manager_process;
 		Mutex thread_lock_mutex;
 		AddressDomain address_domain;
 		BreakpointManager breakpoint_manager;
 		DaemonThreadHandler csharp_handler;
+		AutoResetEvent thread_started_event;
 		int thread_lock_level = 0;
 
 		TargetAddress thread_handles = TargetAddress.Null;
@@ -36,7 +38,10 @@ namespace Mono.Debugger
 		TargetAddress last_thread_event = TargetAddress.Null;
 		bool initialized = false;
 
-		TargetAddress mono_thread_info = TargetAddress.Null;
+		TargetAddress mono_thread_notification = TargetAddress.Null;
+		TargetAddress thread_manager_last_pid = TargetAddress.Null;
+		TargetAddress thread_manager_last_func = TargetAddress.Null;
+		TargetAddress thread_manager_last_thread = TargetAddress.Null;
 
 		internal ThreadManager (DebuggerBackend backend, BfdContainer bfdc)
 		{
@@ -47,6 +52,8 @@ namespace Mono.Debugger
 			thread_lock_mutex = new Mutex ();
 			breakpoint_manager = new BreakpointManager ();
 
+			thread_started_event = new AutoResetEvent (false);
+
 			address_domain = new AddressDomain ("global");
 		}
 
@@ -56,14 +63,31 @@ namespace Mono.Debugger
 			this.main_process = process;
 			thread_hash.Add (process.PID, process);
 
-			TargetAddress mdebug = bfdc.LookupSymbol ("mono_debugger_threads_debug");
-			mono_thread_info = bfdc.LookupSymbol ("mono_debugger_thread_info");
+			TargetAddress mpid = bfdc.LookupSymbol ("mono_debugger_thread_manager");
+			TargetAddress maddr = bfdc.LookupSymbol ("mono_debugger_thread_manager_notification");
+			thread_manager_last_pid = bfdc.LookupSymbol ("mono_debugger_thread_manager_last_pid");
+			thread_manager_last_func = bfdc.LookupSymbol ("mono_debugger_thread_manager_last_func");
+			thread_manager_last_thread = bfdc.LookupSymbol ("mono_debugger_thread_manager_last_thread");
+			TargetAddress bpid = bfdc.LookupSymbol ("mono_debugger_background_thread");
 
-			if (!mdebug.IsNull && !mono_thread_info.IsNull) {
-				inferior.WriteInteger (mdebug, PTraceInferior.MonoThreadDebugSignal);
+			if (!mpid.IsNull && !maddr.IsNull) {
+				int manager_pid = inferior.ReadInteger (mpid);
+				mono_thread_notification = inferior.ReadGlobalAddress (maddr);
+
+				manager_process = main_process.CreateDaemonThread (
+					manager_pid, 0, new DaemonThreadHandler (mono_thread_handler));
+
+				thread_hash.Add (manager_pid, manager_process);
+				add_process (manager_process);
+
+				int background_pid = inferior.ReadInteger (bpid);
+				debugger_process = main_process.CreateDaemonThread (
+					background_pid, 0, csharp_handler);
+
+				thread_hash.Add (background_pid, debugger_process);
+				add_process (debugger_process);
 
 				initialized = true;
-
 				OnInitializedEvent (main_process);
 
 				return true;
@@ -158,15 +182,6 @@ namespace Mono.Debugger
 				return true;
 			}
 
-			if (signal == PTraceInferior.MonoThreadDebugSignal) {
-				inferior.SetSignal (0,false);
-				action = false;
-
-				reload_mono_threads (inferior);
-
-				return true;
-			}
-
 			if (signal != PTraceInferior.ThreadDebugSignal) {
 				action = true;
 				return false;
@@ -176,6 +191,50 @@ namespace Mono.Debugger
 
 			inferior.SetSignal (PTraceInferior.ThreadRestartSignal, false);
 			action = false;
+			return true;
+		}
+
+		TargetAddress last_thread = TargetAddress.Null;
+		SingleSteppingEngine last_sse = null;
+
+		void thread_started (StackFrame frame, int index, object user_data)
+		{
+			thread_started_event.Set ();
+		}
+
+		bool mono_thread_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
+		{
+			if ((address != mono_thread_notification) || (signal != 0))
+				return false;
+
+			int pid = runner.Inferior.ReadInteger (thread_manager_last_pid);
+			TargetAddress func = runner.Inferior.ReadAddress (thread_manager_last_func);
+			TargetAddress thread = runner.Inferior.ReadAddress (thread_manager_last_thread);
+
+			if (pid == -1) {
+				if (thread != last_thread)
+					throw new InternalError ();
+
+				thread_started_event.WaitOne ();
+				return true;
+			}
+
+			Process new_process = main_process.CreateThread (pid);
+			new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
+
+			if (func.IsNull)
+				throw new InternalError ("Created thread with start function");
+
+			last_thread = thread;
+			last_sse = new_process.SingleSteppingEngine;
+			int ret = last_sse.InsertBreakpoint (
+				func, null, new BreakpointHitHandler (thread_started), true, null);
+
+			thread_hash.Add (pid, new_process);
+			add_process (new_process);
+
+			new_process.SingleSteppingEngine.Continue (true, false);
+
 			return true;
 		}
 
@@ -229,38 +288,6 @@ namespace Mono.Debugger
 				add_process (new_process);
 			}
 		}
-
-		void reload_mono_threads (ITargetMemoryAccess memory)
-		{
-			TargetAddress thread_info = memory.ReadAddress (mono_thread_info);
-
-			int count = memory.ReadInteger (thread_info);
-			thread_info += memory.TargetIntegerSize;
-
-			int background_pid = memory.ReadInteger (thread_info);
-			thread_info += memory.TargetIntegerSize;
-
-			if ((background_pid != 0) && (debugger_process == null)) {
-				debugger_process = main_process.CreateDaemonThread (
-					background_pid, 0, csharp_handler);
-
-				thread_hash.Add (background_pid, debugger_process);
-				add_process (debugger_process);
-			}
-
-			for (int i = 0; i < count; i++) {
-				int pid = memory.ReadInteger (thread_info);
-				thread_info += memory.TargetIntegerSize;
-
-				if ((pid == 0) || thread_hash.Contains (pid))
-					continue;
-
-				Process new_process = main_process.CreateThread (pid);
-				thread_hash.Add (pid, new_process);
-				add_process (new_process);
-			}
-		}
-
 
 		// <summary>
 		//   Stop all currently running threads without sending any notifications.

@@ -534,7 +534,10 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress MainMethodAddress {
 			get {
-				return bfd ["main"];
+				if (native)
+					return bfd ["main"];
+				else
+					return bfd ["mono_debugger_main"];
 			}
 		}
 
