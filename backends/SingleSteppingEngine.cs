@@ -26,11 +26,11 @@ namespace Mono.Debugger.Backends
 //     stepping operation   - an operation which has been invoked by the user such
 //                            as StepLine(), NextLine() etc.
 //
-//     target operation     - an operation which the sse invokes on the target
+//     atomic operation     - an operation which the sse invokes on the target
 //                            such as stepping one machine instruction or resuming
 //                            the target until a breakpoint is hit.
 //
-//     step frame           - an address range; the sse invokes target operations
+//     step frame           - an address range; the sse invokes atomic operations
 //                            until the target hit a breakpoint, received a signal
 //                            or stopped at an address outside this range.
 //
@@ -477,15 +477,28 @@ public class SingleSteppingEngine : ThreadManager
 	// <summary>
 	//   The heart of the SingleSteppingEngine.  This runs in a background
 	//   thread and processes stepping commands and events.
+	//
+	//   For each application we're debugging, there is just one SingleSteppingEngine,
+	//   no matter how many threads the application has.  The engine is using one single
+	//   event loop which is processing commands from the user and events from all of
+	//   the application's threads.
 	// </summary>
 	void engine_thread_main ()
 	{
 		Report.Debug (DebugFlags.Wait, "SSE waiting");
 
+		//
+		// Wait until we got an event from the target or a command from the user.
+		//
+
 		int pid;
 		long status;
-
 		pid = mono_debugger_server_global_wait (out status);
+
+		//
+		// Note: `pid' is basically just an unique number which identifies the
+		//       EngineProcess of this event.
+		//
 
 		if (pid > 0) {
 			Report.Debug (DebugFlags.Wait,
@@ -723,6 +736,17 @@ public class SingleSteppingEngine : ThreadManager
 		{ }
 	}
 
+	// <summary>
+	//   The SingleSteppingEngine creates one TheEngine instance for each thread
+	//   in the target.
+	//
+	//   The `TheEngine' class is basically just responsible for whatever happens
+	//   in the background thread: processing commands and events.  Their methods
+	//   are just meant to be called from the SingleSteppingEngine (since it's a
+	//   protected nested class they can't actually be called from anywhere else).
+	//
+	//   See the `EngineProcess' class for the "user interface".
+	// </summary>
 	protected abstract class TheEngine : NativeProcess
 	{
 		protected TheEngine (SingleSteppingEngine sse, Inferior inferior)
@@ -783,6 +807,18 @@ public class SingleSteppingEngine : ThreadManager
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 		}
 
+		// <summary>
+		//   This is called from the SingleSteppingEngine's main event loop to give
+		//   us the next event - `status' has no meaning to us, it's just meant to
+		//   be passed to inferior.ProcessEvent() to get the actual event.
+		// </summary>
+		// <remarks>
+		//   Actually, `status' is the waitpid() status code.  In Linux 2.6.x, you
+		//   can call waitpid() from any thread in the debugger, but we need to get
+		//   the target's registers to find out whether it's a breakpoint etc.
+		//   That's done in inferior.ProcessEvent() - which must always be called
+		//   from the engine's thread.
+		// </remarks>
 		public void ProcessEvent (long status)
 		{
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
@@ -847,15 +883,9 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		// <summary>
-		//   Waits until the target stopped and returns false if it already sent
-		//   the result back to the caller (this normally happens on an error
-		//   where some sub-method already sent an error message back).  Normally
-		//   this method will return true to signal the main loop that it still
-		//   needs to send the result.
+		//   Checks whether we got a "fatal" event: target died, received a
+		//   signal or hit a breakpoint.
 		// </summary>
-		// <remarks>
-		//   This method may only be used in the background thread.
-		// </remarks>
 		TargetEventArgs process_child_event (ref Inferior.ChildEvent child_event)
 		{
 		again:
@@ -903,7 +933,7 @@ public class SingleSteppingEngine : ThreadManager
 				// execution.
 				if (stop_requested) {
 					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, 0, null);
+					frame_changed (inferior.CurrentFrame, null);
 					return new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
 				} else if (step_over_breakpoint (arg, out new_event)) {
 					child_event = new_event;
@@ -925,7 +955,7 @@ public class SingleSteppingEngine : ThreadManager
 			case Inferior.ChildEventType.CHILD_STOPPED:
 				if (stop_requested || (arg != 0)) {
 					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, 0, null);
+					frame_changed (inferior.CurrentFrame, null);
 					return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 				}
 
@@ -941,7 +971,7 @@ public class SingleSteppingEngine : ThreadManager
 				return new TargetEventArgs (TargetEventType.TargetExited, arg);
 
 			case Inferior.ChildEventType.CHILD_CALLBACK:
-				frame_changed (inferior.CurrentFrame, 0, null);
+				frame_changed (inferior.CurrentFrame, null);
 				return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 			}
 
@@ -949,8 +979,26 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		// <summary>
-		//   The heart of the SingleSteppingEngine's background thread - process a
-		//   command and send the result back to the caller.
+		//   Start a new stepping operation.
+		//
+		//   All stepping operations are done asynchronously.
+		//
+		//   The inferior basically just knows two kinds of stepping operations:
+		//   there is do_continue() to continue execution (until a breakpoint is
+		//   hit or the target receives a signal or exits) and there is do_step()
+		//   to single-step one machine instruction.  There's also a version of
+		//   do_continue() which takes an address - it inserts a temporary breakpoint
+		//   on that address and calls do_continue().
+		//
+		//   Let's call these "atomic operations" while a "stepping operation" is
+		//   something like stepping until the next source line.  We normally need to
+		//   do several atomic operations for each stepping operation.
+		//
+		//   We start a new stepping operation here, but what we actually do is
+		//   starting an atomic operation on the target.  Note that we just start it,
+		//   but don't wait until is completed.  Once the target is running, we go
+		//   back to the main event loop and wait for it (or another thread) to stop
+		//   (or to get another command from the user).
 		// </summary>
 		public void ProcessCommand (Operation operation)
 		{
@@ -962,8 +1010,9 @@ public class SingleSteppingEngine : ThreadManager
 			case OperationType.RunInBackground:
 				TargetAddress until = operation.Until;
 				if (!until.IsNull)
-					insert_temporary_breakpoint (until);
-				do_continue ();
+					do_continue (until);
+				else
+					do_continue ();
 				break;
 
 			case OperationType.StepNativeInstruction:
@@ -1019,27 +1068,58 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		}
 
+		// <summary>
+		//   Process one event from the target.  The return value specifies whether
+		//   we started another atomic operation or whether the target is still
+		//   stopped.
+		//
+		//   This method is called each time an atomic operation is completed - or
+		//   something unexpected happened, for instance we hit a breakpoint, received
+		//   a signal or just died.
+		//
+		//   Now, our first task is figuring out whether the atomic operation actually
+		//   completed, ie. the target stopped normally.
+		// </summary>
 		protected bool ProcessEvent (Inferior.ChildEvent cevent)
 		{
+			// Callbacks happen when the user (or the engine) called a method
+			// in the target (RuntimeInvoke).
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK) {
 				bool ret;
 				if (handle_callback (cevent, out ret))
 					return ret;
 			}
 
+			// If the target stopped abnormally, this returns an event which
+			// we should send back to the user to inform him that something
+			// went wrong.
 			TargetEventArgs result = process_child_event (ref cevent);
 
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
 				if (DaemonEventHandler != null) {
+					// The `DaemonEventHandler' may decide to discard
+					// this event in which case it returns true.
 					if (DaemonEventHandler (this, inferior, result))
 						return false;
 				}
+				// Ok, inform the user that we stopped.
+				step_operation_finished ();
 				SendTargetEvent (result);
 				sse.SetCompleted (this);
 				return true;
 			}
+
+			//
+			// Sometimes, we need to do just one atomic operation - in all
+			// other cases, `current_operation' is the current stepping
+			// operation.
+			//
+			// DoStep() will either start another atomic operation (and
+			// return false) or tell us the stepping operation is completed
+			// by returning true.
+			//
 
 			if (current_operation != null) {
 				if (current_operation.Type == OperationType.Initialize) {
@@ -1063,17 +1143,25 @@ public class SingleSteppingEngine : ThreadManager
 				return false;
 			}
 
-			// `frame_changed' computes the new stack frame - and it may also
-			// send us a new step command.  This happens for instance, if we
-			// stopped within a method's prologue or epilogue code.
-			Operation new_operation = frame_changed (frame, 0, current_operation);
+			//
+			// We're done with our stepping operation, but first we need to
+			// compute the new StackFrame.  While doing this, `frame_changed'
+			// may discover that we need to do another stepping operation
+			// before telling the user that we're finished.  This is to avoid
+			// that we stop in things like a method's prologue or epilogue
+			// code.  If that happens, we just continue stepping until we reach
+			// the first actual source line in the method.
+			//
+			Operation new_operation = frame_changed (frame, current_operation);
 			if (new_operation != null) {
 				ProcessCommand (new_operation);
 				return false;
 			}
 
+			//
+			// Now we're really finished.
+			//
 			step_operation_finished ();
-
 			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
 			goto send_result;
 		}
@@ -1084,7 +1172,7 @@ public class SingleSteppingEngine : ThreadManager
 			current_backtrace = null;
 			registers = null;
 			current_method = null;
-			frame_changed (inferior.CurrentFrame, 0, null);
+			frame_changed (inferior.CurrentFrame, null);
 			return CommandResult.Ok;
 		}
 
@@ -1221,7 +1309,7 @@ public class SingleSteppingEngine : ThreadManager
 			    !handle.CheckHandler (frame, index, handle.UserData))
 				return false;
 
-			frame_changed (inferior.CurrentFrame, 0, current_operation);
+			frame_changed (inferior.CurrentFrame, current_operation);
 			send_frame_event (current_frame, handle.BreakpointHandle);
 
 			return true;
@@ -1311,15 +1399,14 @@ public class SingleSteppingEngine : ThreadManager
                 }
 
 		// <summary>
-		//   This is called when the target left the current step frame, received
-		//   a signal or hit a breakpoint whose action was to remain stopped.
+		//   This is called when a stepping operation is completed or something
+		//   unexpected happened (received signal etc.).
 		//
-		//   The `current_operation' is the currently running stepping operation
-		//   and `current_operation_frame' is a step frame corresponding to this
-		//   operation.  In this method, we check whether the stepping operation
-		//   has been completed or what to do next.
+		//   Normally, we just compute the new StackFrame here, but we may also
+		//   discover that we need to do one more stepping operation, see
+		//   check_method_operation().
 		// </summary>
-		Operation frame_changed (TargetAddress address, int arg, Operation operation)
+		Operation frame_changed (TargetAddress address, Operation operation)
 		{
 			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
@@ -1449,28 +1536,32 @@ public class SingleSteppingEngine : ThreadManager
 			// Check whether this is a call instruction.
 			int insn_size;
 			TargetAddress call = arch.GetCallTarget (inferior, address, out insn_size);
+			// Step one instruction unless this is a call
 			if (call.IsNull) {
-				// Step one instruction unless this is a call
 				do_step ();
 				return;
 			}
 
 			// Insert a temporary breakpoint immediately behind it and continue.
 			address += insn_size;
-			insert_temporary_breakpoint (address);
-			do_continue ();
+			do_continue (address);
 		}
 
 		// <summary>
-		//   Resume the target.  If @is_breakpoint is true, the current
-		//   instruction is a breakpoint; in this case we need to step one
-		//   instruction before we can resume the target (see `must_continue' in
-		//   child_event() for more info).
+		//   Resume the target.
 		// </summary>
 		void do_continue ()
 		{
 			check_inferior ();
 			frames_invalid ();
+			inferior.Continue ();
+		}
+
+		void do_continue (TargetAddress until)
+		{
+			check_inferior ();
+			frames_invalid ();
+			insert_temporary_breakpoint (until);
 			inferior.Continue ();
 		}
 
@@ -1512,8 +1603,7 @@ public class SingleSteppingEngine : ThreadManager
 			TargetAddress compile = frame.Language.CompileMethodFunc;
 
 			if (compile.IsNull) {
-				insert_temporary_breakpoint (trampoline);
-				do_continue ();
+				do_continue (trampoline);
 				return false;
 			}
 
@@ -1536,11 +1626,18 @@ public class SingleSteppingEngine : ThreadManager
 				return false;
 			}
 
-			insert_temporary_breakpoint (trampoline);
-			do_continue ();
+			do_continue (trampoline);
 			return true;
 		}
 
+		// <summary>
+		//   If `first' is true, start a new stepping operation.
+		//   Otherwise, we've already completed one or more atomic operations and
+		//   need to find out whether we need another one.
+		//   Returns true if the stepping operation is completed (and thus the
+		//   target is still stopped) and false if it started another atomic
+		//   operation.
+		// </summary>
 		protected bool DoStep (bool first)
 		{
 			StepFrame frame = current_operation.StepFrame;
@@ -1638,8 +1735,7 @@ public class SingleSteppingEngine : ThreadManager
 					return false;
 				}
 
-				insert_temporary_breakpoint (wrapper);
-				do_continue ();
+				do_continue (wrapper);
 				return false;
 			}
 
@@ -1802,7 +1898,7 @@ public class SingleSteppingEngine : ThreadManager
 			else
 				rdata.ExceptionObject = TargetAddress.Null;
 
-			frame_changed (inferior.CurrentFrame, 0, null);
+			frame_changed (inferior.CurrentFrame, null);
 			sse.SetCompleted (this);
 			return true;
 		}
