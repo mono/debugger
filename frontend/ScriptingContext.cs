@@ -1,5 +1,4 @@
 using System;
-using Math = System.Math;
 using System.Text;
 using System.IO;
 using System.Reflection;
@@ -840,7 +839,7 @@ namespace Mono.Debugger.Frontend
 				location = CurrentLocation;
 			if (location == null) {
 				if (count < 0){
-					start = Math.Max (last_line + 2 * count, 0);
+					start = System.Math.Max (last_line + 2 * count, 0);
 					count = -count;
 				} else 
 					start = last_line;
@@ -854,12 +853,12 @@ namespace Mono.Debugger.Frontend
 				current_source_code = buffer.Contents;
 
 				if (count < 0)
-					start = Math.Max (location.Line + 2, 0);
+					start = System.Math.Max (location.Line + 2, 0);
 				else 
-					start = Math.Max (location.Line - 2, 0);
+					start = System.Math.Max (location.Line - 2, 0);
 			}
 
-			last_line = Math.Min (start + count, current_source_code.Length);
+			last_line = System.Math.Min (start + count, current_source_code.Length);
 
 			if (start > last_line){
 				int t = start;
