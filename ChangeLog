@@ -1,5 +1,10 @@
 2003-03-11  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerGUI.cs: Use Log.PrintTraceLogFunction for
+	glib and gtk+ to get backtraces.
+
+2003-03-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs (FindLocation): New convenience function.
 	Walks the module list and calls FindLocation() on all modules
 	until finding a match - or returns null.
