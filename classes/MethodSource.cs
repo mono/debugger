@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public abstract class MethodSource : IMethodSource
+	public abstract class MethodSource
 	{
 		SourceFile file;
 		string name;
@@ -163,8 +163,6 @@ namespace Mono.Debugger
 
 			return null;
 		}
-
-		public abstract SourceMethod[] MethodLookup (string query);
 
 		public void DumpLineNumbers ()
 		{

@@ -50,7 +50,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if ((method == null) || !method.HasSource || (method.Source == null))
 				return;
 
-			IMethodSource source = method.Source;
+			MethodSource source = method.Source;
 			if (source.SourceBuffer == null)
 				return;
 

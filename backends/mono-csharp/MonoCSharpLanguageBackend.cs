@@ -1053,20 +1053,6 @@ namespace Mono.Debugger.Languages.CSharp
 			return retval;
 		}
 
-		public SourceMethod[] MethodLookup (string name)
-		{
-			if (File == null)
-				return null;
-
-			int[] methods = File.MethodLookup (name);
-			SourceMethod[] retval = new SourceMethod [methods.Length];
-
-			for (int i = 0; i < methods.Length; i++)
-				retval [i] = GetMethod (methods [i]);
-
-			return retval;
-		}
-
 		MonoSourceMethod GetMethod_internal (int index)
 		{
 			if (File == null)
@@ -1103,24 +1089,6 @@ namespace Mono.Debugger.Languages.CSharp
 			if (entry == null)
 				return null;
 			return GetMethod_internal (entry.Index);
-		}
-
-		public override SourceMethod FindMethod (string name)
-		{
-			if (File == null)
-				return null;
-
-			ensure_sources ();
-
-			SourceMethod method = (SourceMethod) method_name_hash [name];
-			if (method != null)
-				return method;
-
-			int method_index = File.FindMethod (name);
-			if (method_index < 0)
-				return null;
-
-			return GetMethod (method_index);
 		}
 
 		internal ArrayList SymbolRanges {
@@ -1382,7 +1350,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!address.WrapperAddress.IsNull)
 					SetWrapperAddress (address.WrapperAddress);
 
-				IMethodSource source = new CSharpMethod (
+				MethodSource source = new CSharpMethod (
 					reader, this, info, method, address.LineNumbers);
 
 				if (source != null)

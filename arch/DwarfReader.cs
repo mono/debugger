@@ -1938,11 +1938,6 @@ namespace Mono.Debugger.Architecture
 						method.StartRow, method.EndRow, method.Addresses,
 						method.SourceMethod, method.SourceBuffer);
 				}
-
-				public override SourceMethod[] MethodLookup (string query)
-				{
-					return new SourceMethod [0];
-				}
 			}
 
 			protected class DwarfSourceMethod : SourceMethod

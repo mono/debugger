@@ -1,5 +1,17 @@
 2004-01-16  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IMethod.cs (IMethodSource): Removed this interface;
+	the abstract class `MethodSource' is identical to this interface.
+
+	* classes/MethodSource.cs (MethodSource.MethodLookup): Removed.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Removed the
+	old method lookup code.
+
+	* lib/SymbolFileReader.cs: Removed.
+
+2004-01-16  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Merged
 	MonoSymbolFile and MonoModule.
 

@@ -134,10 +134,5 @@ namespace Mono.Debugger
 			buffer = new SourceBuffer (name, contents);
 			return new MethodSourceData (start_row, end_row, addresses, buffer);
 		}
-
-		public override SourceMethod[] MethodLookup (string query)
-		{
-			return new SourceMethod [0];
-		}
 	}
 }

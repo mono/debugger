@@ -64,12 +64,5 @@ namespace Mono.Debugger.Languages.CSharp
 			ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
 			return new MethodSourceData (start_row, end_row, lines, source_method, buffer);
 		}
-
-		public override SourceMethod[] MethodLookup (string query)
-		{
-			string class_name = method.MethodBase.ReflectedType.FullName;
-			string full_name = String.Concat (class_name, ".", query);
-			return reader.MethodLookup (full_name);
-		}
 	}
 }

@@ -17,18 +17,18 @@ namespace Mono.Debugger
 	// </summary>
 	public class SourceAddress
 	{
-		IMethodSource source;
+		MethodSource source;
 		int row;
 		int source_offset;
 		int source_range;
 
 		public static SourceAddress Null = new SourceAddress (null, 0);
 
-		public SourceAddress (IMethodSource source, int row)
+		public SourceAddress (MethodSource source, int row)
 			: this (source, row, 0, 0)
 		{ }
 
-		public SourceAddress (IMethodSource source, int row, int offset, int range)
+		public SourceAddress (MethodSource source, int row, int offset, int range)
 		{
 			this.source = source;
 			this.row = row;
@@ -45,7 +45,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IMethodSource MethodSource {
+		public MethodSource MethodSource {
 			get {
 				return source;
 			}

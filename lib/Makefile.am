@@ -6,8 +6,6 @@ assdir = $(libdir)
 
 ass_SCRIPTS = Mono.Debugger.dll
 
-noinst_SCRIPTS = SymbolFileReader.exe
-
 EXTRA_SCRIPTS = Debugger.exe
 
 INTERPRETER_SRCLIST = \
@@ -24,9 +22,6 @@ LIBRARY_SRCLIST = \
 	@top_srcdir@/backends/native/*.cs		\
 	@top_srcdir@/arch/*.cs
 
-SYMFILE_READER_SRCLIST = \
-	@top_srcdir@/lib/SymbolFileReader.cs
-
 LIBRARY_DEPS = \
 	-r Mono.GetOptions	\
 	-r Mono.CSharp.Debugger
@@ -36,18 +31,11 @@ INTERPRETER_DEPS = \
 	-r Mono.CSharp.Debugger	\
 	-r Mono.Debugger.dll
 
-SYMFILE_READER_DEPS = \
-	-r Mono.GetOptions	\
-	-r Mono.CSharp.Debugger
-
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SRCLIST) $(MCS_FLAGS)
-
-SymbolFileReader.exe: $(SYMFILE_READER_SRCLIST)
-	$(MCS) -o SymbolFileReader.exe $(SYMFILE_READER_DEPS) $(SYMFILE_READER_SRCLIST) $(MCS_FLAGS)
 
 Interpreter.exe.config: Interpreter.exe.config.in Makefile
 	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-mini-wrapper,g' \
@@ -61,8 +49,7 @@ config_DATA = Interpreter.exe.config
 CLEANFILES = *.exe *.dll
 
 EXTRA_DIST = \
-	mdb.in SymbolFileReader.cs \
-	Interpreter.exe.config.in
+	mdb.in Interpreter.exe.config.in
 
 mdb: mdb.in
 	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \

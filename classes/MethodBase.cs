@@ -39,7 +39,7 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 		TargetAddress wrapper_addr = TargetAddress.Null;
-		IMethodSource source;
+		MethodSource source;
 		Module module;
 		bool is_loaded, has_bounds;
 		string image_file;
@@ -83,7 +83,7 @@ namespace Mono.Debugger
 			this.has_bounds = true;
 		}
 
-		protected void SetSource (IMethodSource source)
+		protected void SetSource (MethodSource source)
 		{
 			this.source = source;
 		}
@@ -188,7 +188,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IMethodSource Source {
+		public MethodSource Source {
 			get {
 				if (!HasSource)
 					throw new InvalidOperationException ();
