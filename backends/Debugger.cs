@@ -12,7 +12,7 @@ using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
-using Mono.Debugger.Languages.CSharp;
+using Mono.Debugger.Languages.Mono;
 using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
@@ -24,7 +24,7 @@ namespace Mono.Debugger
 
 		ArrayList languages;
 		SourceFileFactory source_factory;
-		MonoCSharpLanguageBackend csharp_language;
+		MonoLanguageBackend mono_language;
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
 		ThreadManager thread_manager;
@@ -102,9 +102,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal MonoCSharpLanguageBackend CSharpLanguage {
+		internal MonoLanguageBackend MonoLanguage {
 			get {
-				return csharp_language;
+				return mono_language;
 			}
 		}
 
@@ -176,10 +176,10 @@ namespace Mono.Debugger
 
 		internal ILanguageBackend CreateDebuggerHandler ()
 		{
-			csharp_language = new MonoCSharpLanguageBackend (this);
-			languages.Add (csharp_language);
+			mono_language = new MonoLanguageBackend (this);
+			languages.Add (mono_language);
 
-			return csharp_language;
+			return mono_language;
 		}
 
 		public SourceLocation FindLocation (string file, int line)
@@ -227,12 +227,12 @@ namespace Mono.Debugger
 				ass = null;
 			}
 			if (ass != null) {
-				if (csharp_language == null)
+				if (mono_language == null)
 					throw new SymbolTableException (
 						"Cannot load .NET assembly {0} while " +
 						"debugging an unmanaged application",
 						filename);
-				csharp_language.FindImage (process, filename);
+				// mono_language.FindImage (process, filename);
 			} else
 				bfd_container.AddFile (process, filename, true, false, false);
 		}
