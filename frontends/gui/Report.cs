@@ -9,6 +9,7 @@ namespace Mono.Debugger.GUI {
 			MessageDialog d = new MessageDialog (null, 0, MessageType.Error, ButtonsType.Ok, msg);
 
 			d.Run ();
+			d.Destroy ();
 		}
 	}
 }
