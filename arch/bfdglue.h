@@ -7,7 +7,7 @@
 
 G_BEGIN_DECLS
 
-extern const char *
+extern gchar *
 bfd_glue_get_target_name (bfd *abfd);
 
 extern gboolean
@@ -19,7 +19,7 @@ bfd_glue_check_format_core (bfd *abfd);
 extern int
 bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table);
 
-extern const char *
+extern gchar *
 bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_function, guint64 *address);
 
 extern int

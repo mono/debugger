@@ -20,10 +20,10 @@ bfd_glue_openr (const char *filename, const char *target)
 	return bfd_openr (g_strdup (filename), NULL);
 }
 
-const char *
+gchar *
 bfd_glue_get_target_name (bfd *abfd)
 {
-	return abfd->xvec->name;
+	return g_strdup (abfd->xvec->name);
 }
 
 gboolean
@@ -53,7 +53,7 @@ bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 	return bfd_canonicalize_symtab (abfd, *symbol_table);
 }
 
-const char *
+gchar *
 bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_function, guint64 *address)
 {
 	asymbol *symbol;
@@ -80,7 +80,7 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 		*address = symbol->section->vma + symbol->value;
 	}
 
-	return symbol->name;
+	return g_strdup (symbol->name);
 }
 
 int

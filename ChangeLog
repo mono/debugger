@@ -1,3 +1,9 @@
+2004-05-29  Martin Baulig  <martin@ximian.com>
+
+	* arch/bfdglue.c (bfd_glue_get_target_name): Return a g_strdup()ed
+	copy since the managed->unmanaged wrapper now g_free()s it.
+	(bfd_glue_get_symbol): Likewise.
+
 2004-03-16  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.7 "Wilmington" of the Mono Debugger :-)
