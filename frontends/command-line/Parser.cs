@@ -54,6 +54,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Engine engine;
 		InputProvider input;
 		State state;
+		ArrayList arguments = null;
 		CommandGroup current_group;
 		Command current_command;
 		ExpressionParser parser;
@@ -78,6 +79,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			state = State.Command;
 			current_group = Engine.Root;
 			current_command = null;
+			arguments = null;
 			lexer.restart ();
 		}
 
@@ -282,7 +284,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected void ParseArgument ()
 		{
+			lexer.dont_advance ();
+
 			object expression = parser.Parse ();
+
+			lexer.advance ();
+
+			if (arguments == null)
+				arguments = new ArrayList ();
+
+			arguments.Add (expression);
 
 			state = State.ParameterOrArgument;
 		}
@@ -297,6 +308,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (current_command == null)
 				return;
+
+			object[] args = null;
+			if (arguments != null) {
+				args = new object [arguments.Count];
+				arguments.CopyTo (args);
+			}
+
+			if (!current_command.Resolve (context, args))
+				throw new ParserError ("Cannot resolve command");
 
 			current_command.Execute (context);
 		}

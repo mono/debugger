@@ -43,7 +43,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		// Whether tokens have been seen on this line
 		//
 		bool tokens_seen = false;
-		bool dollar_seen = false;
+		bool first_token = false;
 
 		//
 		// Details about the error encoutered by the tokenizer
@@ -221,8 +221,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			putback_char = c;
 		}
 
+		public void dont_advance ()
+		{
+			first_token = true;
+		}
+
 		public bool advance ()
 		{
+			if (first_token) {
+				first_token = false;
+				return true;
+			}
+
 			if (peekChar () < 0) {
 				current_token = Token.EOF;
 				return false;
@@ -428,18 +438,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.AT;
 				else if (c == '%')
 					return Token.PERCENT;
-				else if (c == '$') {
-					dollar_seen = true;
-					return Token.DOLLAR;
-				}
 				else if (c == '.')
 					return Token.DOT;
 				else if (c == '!')
 					return Token.BANG;
-				else if (c == '=') {
-					dollar_seen = false;
+				else if (c == '=')
 					return Token.ASSIGN;
-				}
 				else if (c == '*')
 					return Token.STAR;
 				else if (c == '+')

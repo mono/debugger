@@ -13,6 +13,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected abstract void DoExecute (ScriptingContext context);
 
+		protected virtual bool DoResolve (ScriptingContext context, object[] args)
+		{
+			if (args != null) {
+				context.Error ("This command doesn't take any arguments");
+				return false;
+			}
+
+			return true;
+		}
+
+		public bool Resolve (ScriptingContext context, object[] arguments)
+		{
+			try {
+				return DoResolve (context, arguments);
+			} catch (ScriptingException ex) {
+				context.Error (ex);
+				return false;
+			}
+		}
+
 		public void Execute (ScriptingContext context)
 		{
 			try {
@@ -61,14 +81,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("PRINT", "Print the result of an expression")]
+	[Command("print", "Print the result of an expression")]
 	public class PrintCommand : Command
 	{
 		Expression expression;
 
-		public PrintCommand (Expression expression)
+		protected override bool DoResolve (ScriptingContext context, object[] args)
 		{
-			this.expression = expression;
+			if ((args == null) || (args.Length != 1)) {
+				context.Error ("`print' takes exactly one argument");
+				return false;
+			}
+
+			expression = args [0] as Expression;
+			if (expression == null) {
+				context.Print ("Argument is not an expression");
+				return false;
+			}
+
+			Console.WriteLine ("PRINT: {0}", expression);
+
+			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)

@@ -108,6 +108,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public enum ArgumentType
 	{
+		None,
 		Integer,
 		String,
 		Flag,

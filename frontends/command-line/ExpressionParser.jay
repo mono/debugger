@@ -71,160 +71,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token NEW
 %token TYPEOF
 
-%start parse_expression
+%start expression
 %%
 
-parse_expression
-	: expression
-	  {
-		return $1;
-	  }
-	;
-
 expression
-	: LENGTH OPEN_PARENS variable_expression CLOSE_PARENS
+	: NUMBER
 	  {
-		$$ = new ArrayLengthExpression ((VariableExpression) $3);
-	  }
-	| LOWER OPEN_PARENS variable_expression CLOSE_PARENS
-	  {
-		$$ = new ArrayLowerBoundExpression ((VariableExpression) $3);
-	  }
-	| UPPER OPEN_PARENS variable_expression CLOSE_PARENS
-	  {
-		$$ = new ArrayUpperBoundExpression ((VariableExpression) $3);
-	  }
-	| NUMBER
-	  {
-		$$ = new NumberExpression ((long) $1);
+		return new NumberExpression ((long) $1);
 	  }
 	| INTEGER
 	  {
-		$$ = new NumberExpression ((int) $1);
+		return new NumberExpression ((int) $1);
 	  }
 	| STRING
 	  {
-		$$ = new StringExpression ((string) $1);
-	  }
-	| variable_expression
-	  {
-		$$ = $1;
-	  }
-	;
-
-type_name
-	: IDENTIFIER
-	| type_name DOT IDENTIFIER
-	  {
-		$$ = String.Concat ((string) $1, ".", (string) $3);
-	  }
-	;
-
-variable_expression
-	: STAR variable_expression
-	  {
-		$$ = new VariableDereferenceExpression ((VariableExpression) $2);
-	  }
-	| BANG IDENTIFIER
-	  {
-		$$ = new ScriptingVariableReference ((string) $2);
-	  }
-	| DOLLAR IDENTIFIER
-	  {
-		// $$ = new VariableReferenceExpression ((string) $2);
-	  }
-	| STAR NUMBER
-	  {
-		// $$ = new PointerExpression ((long) $2);
-	  }
-	| PERCENT IDENTIFIER opt_regoffset
-	  {
-		// $$ = new RegisterExpression ((string) $2, (long) $3);
-	  }
-	| variable_expression DOT IDENTIFIER
-	  {
-		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
-	  }
-	| variable_expression MINUS OP_GT IDENTIFIER
-	  {
-		$$ = new StructAccessExpression (new VariableDereferenceExpression ((VariableExpression) $1), (string) $4);
-	  }
-	| variable_expression OPEN_BRACKET expression CLOSE_BRACKET
-	  {
-		$$ = new ArrayAccessExpression ((VariableExpression) $1, (Expression) $3);
-	  }
-	| variable_expression OPEN_PARENS argument_list CLOSE_PARENS
-	  {
-		$$ = new InvocationExpression ((VariableExpression) $1, (Expression []) $3);
-	  }
-	| NEW type_name OPEN_PARENS argument_list CLOSE_PARENS
-	  {
-		$$ = new NewExpression ((FrameExpression) $2, (string) $3, (Expression []) $5);
-	  }
-	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
-	  {
-		$$ = new ParentClassExpression ((VariableExpression) $3);
-	  }
-	| OPEN_PARENS variable_expression CLOSE_PARENS
-	  {
-		$$ = (VariableExpression) $2;
-	  }
-	;
-
-argument_list
-	: /* empty */
-	  {
-		$$ = new Expression [0];
-	  }
-	| argument_list_0
-	  {
-		Expression[] args = new Expression [((ArrayList) $1).Count];
-		((ArrayList) $1).CopyTo (args, 0);
-
-		$$ = args;
-	  }
-	;
-
-argument_list_0
-	: expression
-	  {
-		ArrayList args = new ArrayList ();
-		args.Add ($1);
-
-		$$ = args;
-	  }
-	| argument_list_0 COMMA expression
-	  {
-		ArrayList args = (ArrayList) $1;
-		args.Add ($3);
-
-		$$ = args;
-	  }
-	;
-
-opt_regoffset
-	: /* empty */
-	  {
-		$$ = (long) 0;
-	  }
-	| PLUS integer_or_number
-	  {
-		$$ = (long) $2;
-	  }
-	| MINUS integer_or_number
-	  {
-		$$ = -(long) $2;
-	  }
-	;
-
-integer_or_number
-	: INTEGER
-	  {
-		$$ = (long)(int) $1;
-	  }
-	| NUMBER
-	  {
-		$$ = (long) $1;
+		return new StringExpression ((string) $1);
 	  }
 	;
 
@@ -239,7 +100,6 @@ public ExpressionParser (Parser parser, Tokenizer lexer)
 public object Parse ()
 {
 	try {
-		lexer.restart ();
 		if (yacc_verbose_flag)
 			return yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
