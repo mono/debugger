@@ -1,1 +1,1 @@
-SUBDIRS = gtksourceview
+SUBDIRS = gtksourceview debuggerwidgets

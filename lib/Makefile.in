@@ -43,8 +43,9 @@ DEPS = \
 	-r System.Drawing	\
 	-r Mono.CSharp.Debugger	\
 	-r Mono.Debugger.dll	\
-	-r Mono.Debugger.Backend.dll	\
-	-r ../widgets/gtk/gtksourceview-sharp.dll
+	-r Mono.Debugger.Backend.dll			\
+	-r ../widgets/gtk/gtksourceview-sharp.dll	\
+	-r ../widgets/mono.debugger.gui/debugger-widgets.dll
 
 INTERPRETER_DEPS = \
 	-r Mono.CSharp.Debugger	\

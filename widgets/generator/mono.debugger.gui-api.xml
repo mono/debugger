@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<api>
+  <namespace name="Mono.Debugger.GUI" library="debuggerwidgets">
+    <object name="DebuggerEntry" cname="DebuggerEntry" parent="GtkEntry">
+      <signal name="PreviousLine" cname="previous_line" when="LAST">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="DebuggerEntry*" name="entry"/>
+        </parameters>
+      </signal>
+      <signal name="NextLine" cname="next_line" when="LAST">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="DebuggerEntry*" name="entry"/>
+        </parameters>
+      </signal>
+      <method name="GetType" cname="debugger_entry_get_type" shared="true">
+        <return-type type="GType"/>
+      </method>
+      <constructor cname="debugger_entry_new"/>
+    </object>
+  </namespace>
+</api>

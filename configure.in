@@ -125,9 +125,11 @@ lib/Debugger.exe.config
 lib/Interpreter.exe.config
 widgets/Makefile
 widgets/gtk/Makefile
+widgets/mono.debugger.gui/Makefile
 widgets/generator/Makefile
 widgets/sources/Makefile
 widgets/sources/gtksourceview/Makefile
+widgets/sources/debuggerwidgets/Makefile
 backends/Makefile
 backends/server/Makefile
 frontends/Makefile

@@ -1,0 +1,8 @@
+.libs
+.deps
+Makefile.in
+Makefile
+debuggerwidgets-marshal.c
+debuggerwidgets-marshal.h
+*.lo
+*.la

@@ -1,5 +1,18 @@
 2003-01-12  Martin Baulig  <martin@ximian.com>
 
+	* widgets/sources/debuggerwidgets/: New directory.
+
+	* widgets/sources/debuggerwidgets/debuggerentry.[ch]: New widget.
+	This is derived from GtkEntry and has "previos_line" and
+	"next_line" signals which are emitted when the user presses the
+	Up/Down keys.
+
+	* frontends/gui/CurrentInstructionEntry.cs: Use the new
+	DebuggerEntry widget; if the user presses the Up/Down keys,
+	display the next/previous instruction.
+
+2003-01-12  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerGUI.cs: Make the "Program to Debug" menu
 	item work again.
 

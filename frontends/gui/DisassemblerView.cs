@@ -15,6 +15,8 @@ namespace Mono.Debugger.GUI
 			: base (manager, container)
 		{
 			this.register_display = register_display;
+
+			manager.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalid);
 		}
 
 		IMethod current_method = null;
@@ -40,8 +42,10 @@ namespace Mono.Debugger.GUI
 			current_method_source = null;
 			current_method = null;
 
-			if ((frame.Method == null) || !frame.Method.IsLoaded)
+			if ((frame.Method == null) || !frame.Method.IsLoaded) {
+				text_buffer.Text = "";
 				return;
+			}
 
 			current_method = frame.Method;
 			current_method_source = frame.DisassembleMethod ();
@@ -50,6 +54,11 @@ namespace Mono.Debugger.GUI
 				text_buffer.Text = "";
 			else
 				text_buffer.Text = current_method_source.SourceBuffer.Contents;
+		}
+
+		void MethodInvalid ()
+		{
+			text_buffer.Text = "";
 		}
 
 		protected override SourceLocation GetSourceLocation (StackFrame frame)

@@ -158,6 +158,8 @@ namespace Mono.Debugger.GUI
 		//
 		void SetupGUI ()
 		{
+			GtkSharp.Mono.Debugger.GUI.ObjectManager.Initialize ();
+
 			gxml = new Glade.XML (null, "debugger.glade", null, null);
 
 			main_window = (App) gxml ["debugger-toplevel"];
@@ -187,7 +189,8 @@ namespace Mono.Debugger.GUI
 			breakpoint_manager = new BreakpointManager (
 				this, null, (Gtk.Container) gxml ["breakpoint-manager"]);
 
-			current_insn = new CurrentInstructionEntry (this, (Gtk.Entry) gxml ["current-insn"]);
+			current_insn = new CurrentInstructionEntry (
+				this, (Gtk.Container) gxml ["current-insn"]);
 
 			source_status = new SourceStatusbar (this, (Gtk.Statusbar) gxml ["status-bar"]);
 			source_manager = new SourceManager (this, (Gtk.Notebook) gxml ["code-browser-notebook"],

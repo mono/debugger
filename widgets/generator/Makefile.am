@@ -1,5 +1,6 @@
 APIS = \
-	gtk-api.xml
+	gtk-api.xml	\
+	mono.debugger.gui-api.xml
 
 API_INCLUDES = \
 	$(GTKSHARP_PREFIX)/share/gapi/gdk-api.xml \
