@@ -563,6 +563,17 @@ namespace Mono.Debugger
 				current_method = Lookup (address);
 			}
 
+			// If some clown requested a backtrace while doing the symbol lookup ....
+			frames_invalid ();
+
+			if ((current_method != null) && current_method.HasSource) {
+				SourceLocation source = current_method.Source.Lookup (address);
+				current_frame = new StackFrame (
+					inferior, address, frames [0], source, current_method);
+			} else
+				current_frame = new StackFrame (
+					inferior, address, frames [0]);
+
 			if (current_method != old_method) {
 				if (current_method != null) {
 					if (MethodChangedEvent != null)
@@ -572,14 +583,6 @@ namespace Mono.Debugger
 						MethodInvalidEvent ();
 				}
 			}
-
-			if ((current_method != null) && current_method.HasSource) {
-				SourceLocation source = current_method.Source.Lookup (address);
-				current_frame = new StackFrame (
-					inferior, address, frames [0], source, current_method);
-			} else
-				current_frame = new StackFrame (
-					inferior, address, frames [0]);
 
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (current_frame);
