@@ -78,6 +78,28 @@ namespace Mono.Debugger.Languages.CSharp
 			Offset = reader.ReadInt32 ();
 			Address = reader.ReadInt32 ();
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[JitLineNumberEntry {0}:{1}:{2:x}]", Line, Offset, Address);
+		}
+	}
+
+	internal struct JitLexicalBlockEntry
+	{
+		public readonly int StartAddress;
+		public readonly int EndAddress;
+
+		public JitLexicalBlockEntry (TargetBinaryReader reader)
+		{
+			StartAddress = reader.ReadInt32 ();
+			EndAddress = reader.ReadInt32 ();
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[JitLexicalBlockEntry {0:x}:{1:x}]", StartAddress, EndAddress);
+		}
 	}
 
 	internal class MethodAddress
@@ -88,6 +110,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress MethodEndAddress;
 		public readonly TargetAddress WrapperAddress;
 		public readonly JitLineNumberEntry[] LineNumbers;
+		public readonly JitLexicalBlockEntry[] LexicalBlocks;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
@@ -103,7 +126,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return new TargetAddress (domain, address);
 			else
 				return TargetAddress.Null;
-		}				
+		}
 
 		public MethodAddress (MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
 		{
@@ -122,6 +145,8 @@ namespace Mono.Debugger.Languages.CSharp
 			LineNumbers = new JitLineNumberEntry [num_line_numbers];
 
 			int line_number_offset = reader.ReadInt32 ();
+
+			int lexical_block_table_offset = reader.ReadInt32 ();
 
 			Report.Debug (DebugFlags.METHOD_ADDRESS,
 				      "METHOD ADDRESS: {0} {1} {2} {3} {4} {5} {6} {7}",
@@ -156,6 +181,11 @@ namespace Mono.Debugger.Languages.CSharp
 			LocalTypeInfoOffsets = new int [entry.NumLocals];
 			for (int i = 0; i < entry.NumLocals; i++)
 				LocalTypeInfoOffsets [i] = reader.ReadInt32 ();
+
+			reader.Position = lexical_block_table_offset;
+			LexicalBlocks = new JitLexicalBlockEntry [entry.LexicalBlocks.Length];
+			for (int i = 0; i < LexicalBlocks.Length; i++)
+				LexicalBlocks [i] = new JitLexicalBlockEntry (reader);
 		}
 
 		public override string ToString ()
@@ -1309,6 +1339,16 @@ namespace Mono.Debugger.Languages.CSharp
 				locals = new IVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					LocalVariableEntry local = method.Locals [i];
+
+					int start_scope = -1;
+					int end_scope = -1;
+
+					if (local.BlockIndex > 0) {
+						int index = local.BlockIndex - 1;
+						JitLexicalBlockEntry block = address.LexicalBlocks [index];
+						start_scope = block.StartAddress;
+						end_scope = block.EndAddress;
+					}
 
 					locals [i] = new MonoVariable (
 						reader.backend, local.Name, local_types [i],
