@@ -15,6 +15,7 @@ sigint_handler (int dummy)
 void
 mono_debugger_readline_static_init (void)
 {
+#if USE_READLINE
 	struct sigaction sa;
 
 	sa.sa_handler = sigint_handler;
@@ -22,6 +23,7 @@ mono_debugger_readline_static_init (void)
 	sa.sa_flags = SA_RESTART;
 
 	sigaction (SIGINT, &sa, NULL);
+#endif
 }
 
 int
