@@ -8,13 +8,80 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
-	[Expression("variable_expression", "Variable expression")]
-	public abstract class VariableExpression : Expression
+	[Expression("type_expression", "Type expression")]
+	public abstract class TypeExpression : Expression
 	{
 		public abstract string Name {
 			get;
 		}
 
+		protected abstract ITargetType DoResolveType (ScriptingContext context);
+
+		public ITargetType ResolveType (ScriptingContext context)
+		{
+			ITargetType type = DoResolveType (context);
+			if (type == null)
+				throw new ScriptingException ("Can't get type `{0}'.", Name);
+
+			return type;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return ResolveType (context);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType (), Name);
+		}
+	}
+
+	public class TypeOfExpression : TypeExpression
+	{
+		VariableExpression var_expr;
+
+		public TypeOfExpression (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		public override string Name {
+			get { return String.Format ("typeof ({0})", var_expr.Name); }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			return var_expr.ResolveType (context);
+		}
+	}
+
+	public class TypeNameExpression : TypeExpression
+	{
+		FrameExpression frame_expr;
+		string identifier;
+
+		public TypeNameExpression (FrameExpression frame_expr, string identifier)
+		{
+			this.frame_expr = frame_expr;
+			this.identifier = identifier;
+		}
+
+		public override string Name {
+			get { return identifier; }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+
+			return frame.Frame.Language.LookupType (identifier);
+		}
+	}
+
+	[Expression("variable_expression", "Variable expression")]
+	public abstract class VariableExpression : TypeExpression
+	{
 		protected abstract ITargetObject DoResolveVariable (ScriptingContext context);
 
 		public ITargetObject ResolveVariable (ScriptingContext context)
@@ -48,17 +115,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Location of variable {0} is invalid: {1}",
 							      Name, ex.Message);
 			}
-		}
-
-		protected abstract ITargetType DoResolveType (ScriptingContext context);
-
-		public ITargetType ResolveType (ScriptingContext context)
-		{
-			ITargetType type = DoResolveType (context);
-			if (type == null)
-				throw new ScriptingException ("Can't get type of variable `{0}'.", Name);
-
-			return type;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
@@ -236,111 +292,119 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class StructAccessExpression : VariableExpression
 	{
-		VariableExpression var_expr;
-		string identifier;
+		FrameExpression frame_expr;
+		VariableExpression instance_expr;
+		TypeExpression type_expr;
+		string name;
 
-		public StructAccessExpression (VariableExpression var_expr, string identifier)
+		public readonly string Identifier;
+		public readonly bool IsStatic;
+
+		ITargetStructType Type;
+		ITargetStructObject Instance;
+		StackFrame Frame;
+
+		public StructAccessExpression (FrameExpression frame_expr, TypeExpression type_expr, string identifier)
 		{
-			this.var_expr = var_expr;
-			this.identifier = identifier;
+			this.frame_expr = frame_expr;
+			this.type_expr = type_expr;
+			this.Identifier = identifier;
+			this.name = String.Concat (type_expr.Name, ".", identifier);
+			this.IsStatic = true;
+		}
+
+		public StructAccessExpression (VariableExpression instance_expr, string identifier)
+		{
+			this.type_expr = instance_expr;
+			this.instance_expr = instance_expr;
+			this.Identifier = identifier;
+			this.name = String.Concat (instance_expr.Name, ".", identifier);
+			this.IsStatic = false;
 		}
 
 		public override string Name {
 			get {
-				return String.Format ("{0}.{1}", var_expr.Name, identifier);
+				return name;
 			}
 		}
 
-		ITargetObject get_property (ITargetStructObject sobj, ITargetFieldInfo field)
+		protected ITargetObject GetField (ITargetStructObject sobj, ITargetFieldInfo field)
 		{
 			try {
-				return sobj.GetProperty (field.Index);
+				return sobj.GetField (field.Index);
 			} catch (TargetInvocationException ex) {
-				throw new ScriptingException (
-					"Can't get property {0}.{1}: {2}", var_expr.Name, field.Name, ex.Message);
+				throw new ScriptingException ("Can't get field {0}: {1}", Name, ex.Message);
 			}
 		}
 
-		ITargetObject get_static_property (ITargetStructObject sobj, ITargetFieldInfo field)
+		protected ITargetObject GetStaticField (ITargetStructType stype, StackFrame frame, ITargetFieldInfo field)
 		{
 			try {
-				return sobj.Type.GetStaticProperty (sobj.Location.StackFrame, field.Index);
+				return stype.GetStaticField (frame, field.Index);
 			} catch (TargetInvocationException ex) {
-				throw new ScriptingException (
-					"Can't get property {0}.{1}: {2}", var_expr.Name, field.Name, ex.Message);
+				throw new ScriptingException ("Can't get field {0}: {1}", Name, ex.Message);
 			}
 		}
 
-		ITargetObject get_field (ITargetStructObject sobj)
+		protected ITargetObject GetProperty (ITargetStructObject sobj, ITargetPropertyInfo property)
 		{
-			foreach (ITargetFieldInfo field in sobj.Type.Fields)
-				if (field.Name == identifier)
-					return sobj.GetField (field.Index);
-
-			foreach (ITargetFieldInfo field in sobj.Type.StaticFields)
-				if (field.Name == identifier)
-					return sobj.Type.GetStaticField (sobj.Location.StackFrame, field.Index);
-
-			foreach (ITargetFieldInfo field in sobj.Type.Properties)
-				if (field.Name == identifier)
-					return get_property (sobj, field);
-
-			foreach (ITargetFieldInfo field in sobj.Type.StaticProperties)
-				if (field.Name == identifier)
-					return get_static_property (sobj, field);
-
-			throw new ScriptingException ("Variable {0} has no field {1}.", var_expr.Name,
-						      identifier);
+			try {
+				return sobj.GetProperty (property.Index);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException ("Can't get property {0}: {1}", Name, ex.Message);
+			}
 		}
 
-		ITargetType get_field_type (ITargetStructType tstruct)
+		protected ITargetObject GetStaticProperty (ITargetStructType stype, StackFrame frame, ITargetPropertyInfo property)
 		{
-			foreach (ITargetFieldInfo field in tstruct.Fields)
-				if (field.Name == identifier)
-					return field.Type;
-
-			foreach (ITargetFieldInfo field in tstruct.StaticFields)
-				if (field.Name == identifier)
-					return field.Type;
-
-			foreach (ITargetFieldInfo field in tstruct.Properties)
-				if (field.Name == identifier)
-					return field.Type;
-
-			throw new ScriptingException ("Variable {0} has no field {1}.", var_expr.Name,
-						      identifier);
+			try {
+				return stype.GetStaticProperty (frame, property.Index);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException ("Can't get property {0}: {1}", Name, ex.Message);
+			}
 		}
 
-		ITargetFunctionObject get_exact_method (ITargetStructObject sobj)
+		protected ITargetObject GetMember (ITargetStructObject sobj, ITargetMemberInfo member)
 		{
-		again:
-			ITargetFunctionObject match = null;
-			foreach (ITargetMethodInfo method in sobj.Type.Methods) {
-				if (method.FullName != identifier)
-					continue;
+			if (member is ITargetPropertyInfo)
+				return GetProperty (sobj, (ITargetPropertyInfo) member);
+			else
+				return GetField (sobj, (ITargetFieldInfo) member);
+		}
 
-				if (match != null)
-					throw new ScriptingException (
-						"Ambiguous method `{0}'; need to use full name", identifier);
+		protected ITargetObject GetStaticMember (ITargetStructType stype, StackFrame frame, ITargetMemberInfo member)
+		{
+			if (member is ITargetPropertyInfo)
+				return GetStaticProperty (stype, frame, (ITargetPropertyInfo) member);
+			else
+				return GetStaticField (stype, frame, (ITargetFieldInfo) member);
+		}
 
-				match = sobj.GetMethod (method.Index);
+		protected ITargetMemberInfo FindMember (ITargetStructType stype)
+		{
+			if (!IsStatic) {
+				foreach (ITargetFieldInfo field in stype.Fields)
+					if (field.Name == Identifier)
+						return field;
+
+				foreach (ITargetPropertyInfo property in stype.Properties)
+					if (property.Name == Identifier)
+						return property;
 			}
 
-			if (match != null)
-				return match;
+			foreach (ITargetFieldInfo field in stype.StaticFields)
+				if (field.Name == Identifier)
+					return field;
 
-			ITargetClassObject cobj = sobj as ITargetClassObject;
-			if ((cobj != null) && cobj.Type.HasParent) {
-				sobj = cobj.Parent;
-				goto again;
-			}
+			foreach (ITargetPropertyInfo property in stype.StaticProperties)
+				if (property.Name == Identifier)
+					return property;
 
-			throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
-						      identifier);
+			return null;
 		}
 
-		ITargetFunctionObject overload_resolve (ScriptingContext context, ITargetStructObject sobj,
-							Expression[] args, ArrayList candidates)
+		protected ITargetMethodInfo OverloadResolve (ScriptingContext context, ITargetStructType stype,
+							     Expression[] args, ArrayList candidates)
 		{
 			// We do a very simple overload resolution here
 			VariableExpression[] vargs = new VariableExpression [args.Length];
@@ -375,22 +439,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 				match = method;
 			}
 
-			if (match != null)
-				return sobj.GetMethod (match.Index);
-			else
-				return null;
+			return match;
 		}
 
-		ITargetFunctionObject get_method (ScriptingContext context, ITargetStructObject sobj, Expression[] args)
+		protected ITargetMethodInfo FindMethod (ScriptingContext context, ITargetStructType stype, Expression[] args)
 		{
 		again:
 			bool found_match = false;
 			ArrayList candidates = new ArrayList ();
-			foreach (ITargetMethodInfo method in sobj.Type.Methods) {
-				if (method.Name != identifier)
+
+			if (!IsStatic) {
+				foreach (ITargetMethodInfo method in stype.Methods) {
+					if (method.Name != Identifier)
+						continue;
+
+					if ((args != null) && (method.Type.ParameterTypes.Length != args.Length)) {
+						found_match = true;
+						continue;
+					}
+
+					candidates.Add (method);
+				}
+			}
+
+			foreach (ITargetMethodInfo method in stype.StaticMethods) {
+				if (method.Name != Identifier)
 					continue;
 
-				if (method.Type.ParameterTypes.Length != args.Length) {
+				if ((args != null) && (method.Type.ParameterTypes.Length != args.Length)) {
 					found_match = true;
 					continue;
 				}
@@ -399,62 +475,111 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			if (candidates.Count == 1)
-				return sobj.GetMethod (((ITargetMethodInfo) candidates [0]).Index);
+				return (ITargetMethodInfo) candidates [0];
 
 			if (candidates.Count > 1) {
-				ITargetFunctionObject retval = overload_resolve (context, sobj, args, candidates);
+				ITargetMethodInfo retval = null;
+				if (args != null)
+					retval = OverloadResolve (context, stype, args, candidates);
 				if (retval == null)
-					throw new ScriptingException (
-						"Ambiguous method `{0}.{1}'; need to use full name", var_expr.Name, identifier);
-
+					throw new ScriptingException ("Ambiguous method `{0}'; need to use full name", Name);
 				return retval;
 			}
 
-			ITargetClassObject cobj = sobj as ITargetClassObject;
-			if ((cobj != null) && cobj.Type.HasParent) {
-				sobj = cobj.Parent;
+			ITargetClassType ctype = stype as ITargetClassType;
+			if ((ctype != null) && ctype.HasParent) {
+				stype = ctype.ParentType;
 				goto again;
 			}
 
-			if (found_match)
-				throw new ScriptingException ("No overload of method `{0}.{1}' has {2} arguments.",
-							      var_expr.Name, identifier, args.Length);
-			else
-				throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
-							      identifier);
+			if (found_match && (args != null))
+				throw new ScriptingException ("No overload of method `{0}' has {1} arguments.",
+							      Name, args.Length);
+
+			return null;
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected ITargetMemberInfo ResolveTypeBase (ScriptingContext context, bool report_error)
 		{
-			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
-			if (sobj == null)
-				throw new ScriptingException ("Variable {0} is not a struct or class type.",
-							      var_expr.Name);
+			Type = type_expr.ResolveType (context) as ITargetStructType;
+			if (Type == null)
+				throw new ScriptingException (
+					"Type `{0}' is not a struct or class type.", type_expr.Name);
 
-			return get_field (sobj);
-		}
+			ITargetMemberInfo member = FindMember (Type);
+			if ((member != null) || !report_error)
+				return member;
 
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
-		{
-			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
-			if (sobj == null)
-				throw new ScriptingException ("Variable {0} is not a struct or class type.",
-							      var_expr.Name);
-
-			if (identifier.IndexOf ('(') != -1)
-				return get_exact_method (sobj);
+			if (IsStatic)
+				throw new ScriptingException ("Type {0} has no static member {1}.", Type.Name, Identifier);
 			else
-				return get_method (context, sobj, args);
+				throw new ScriptingException ("Type {0} has no member {1}.", Type.Name, Identifier);
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ITargetStructType tstruct = var_expr.ResolveType (context) as ITargetStructType;
-			if (tstruct == null)
-				throw new ScriptingException ("Variable {0} is not a struct or class type.",
-							      var_expr.Name);
+			return ResolveTypeBase (context, true).Type;
+		}
 
-			return get_field_type (tstruct);
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			ITargetMemberInfo member = ResolveTypeBase (context, true);
+
+			if (!IsStatic) {
+				Instance = instance_expr.ResolveVariable (context) as ITargetStructObject;
+				if (Instance == null)
+					throw new ScriptingException ("Variable {0} is not a struct or class type.",
+								      instance_expr.Name);
+
+				Frame = Instance.Location.StackFrame;
+			} else {
+				Frame = ((FrameHandle) frame_expr.Resolve (context)).Frame;
+			}
+
+			if (member.IsStatic)
+				return GetStaticMember (Type, Frame, member);
+			else if (!IsStatic)
+				return GetMember (Instance, member);
+			else
+				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
+		}
+
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
+		{
+			ITargetMemberInfo member = ResolveTypeBase (context, false);
+			if (member != null)
+				throw new ScriptingException ("Member {0} of type {1} is not a method.", Identifier, Type.Name);
+
+			if (!IsStatic) {
+				Instance = instance_expr.ResolveVariable (context) as ITargetStructObject;
+				if (Instance == null)
+					throw new ScriptingException ("Variable {0} is not a struct or class type.",
+								      instance_expr.Name);
+
+				Frame = Instance.Location.StackFrame;
+			} else {
+				Frame = ((FrameHandle) frame_expr.Resolve (context)).Frame;
+			}
+
+			ITargetMethodInfo method;
+			if (Identifier.IndexOf ('(') != -1)
+				method = FindMethod (context, Type, null);
+			else
+				method = FindMethod (context, Type, args);
+
+			if (method != null) {
+				if (method.IsStatic)
+					return Type.GetStaticMethod (Frame, method.Index);
+				else if (!IsStatic)
+					return Instance.GetMethod (method.Index);
+				else
+					throw new ScriptingException ("Instance method {0} cannot be used in static context.", Name);
+			}
+
+			if (IsStatic)
+				throw new ScriptingException ("Type {0} has no static method {1}.", Type.Name, Identifier);
+			else
+				throw new ScriptingException ("Type {0} has no method {1}.", Type.Name, Identifier);
 		}
 	}
 

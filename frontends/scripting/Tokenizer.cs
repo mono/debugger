@@ -95,6 +95,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("methods", Token.METHODS);
 			keywords.Add ("breakpoints", Token.BREAKPOINTS);
 			keywords.Add ("threadgroups", Token.THREADGROUPS);
+			keywords.Add ("typeof", Token.TYPEOF);
 
 			keywords.Add ("module", Token.MODULE);
 			keywords.Add ("ignore", Token.IGNORE);

@@ -178,7 +178,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_fields.Length, num_fields);
 
 			for (int i = 0; i < num_fields; i++)
-				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], info, Table);
+				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], false, info, Table);
 		}
 
 		ITargetFieldInfo[] ITargetStructType.Fields {
@@ -212,7 +212,7 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_static_fields.Length, num_static_fields);
 
 			for (int i = 0; i < num_static_fields; i++)
-				static_fields [i] = new MonoFieldInfo (this, i, mono_static_fields [i], info, Table);
+				static_fields [i] = new MonoFieldInfo (this, i, mono_static_fields [i], true, info, Table);
 		}
 
 		ITargetFieldInfo[] ITargetStructType.StaticFields {
@@ -228,51 +228,91 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected class MonoFieldInfo : ITargetFieldInfo
+		protected abstract class MonoStructMember : ITargetMemberInfo
 		{
-			public readonly MonoType Type;
-			public readonly FieldInfo FieldInfo;
-			public readonly int Offset;
+			public readonly MonoClass Klass;
+			public readonly MemberInfo MemberInfo;
 			public readonly int Index;
+			public readonly bool IsStatic;
 
-			internal MonoFieldInfo (MonoClass klass, int index, FieldInfo finfo,
-						TargetBinaryReader info, MonoSymbolTable table)
+			public MonoStructMember (MonoClass klass, MemberInfo minfo, int index, bool is_static)
 			{
-				Index = index;
-				FieldInfo = finfo;
-				Offset = info.ReadInt32 ();
-				int type_info = info.ReadInt32 ();
-				Type = table.GetType (finfo.FieldType, type_info);
+				this.Klass = klass;
+				this.MemberInfo = minfo;
+				this.Index = index;
+				this.IsStatic = is_static;
 			}
 
-			ITargetType ITargetFieldInfo.Type {
+			public abstract MonoType Type {
+				get;
+			}
+
+			ITargetType ITargetMemberInfo.Type {
 				get {
 					return Type;
 				}
 			}
 
-			string ITargetFieldInfo.Name {
+			string ITargetMemberInfo.Name {
 				get {
-					return FieldInfo.Name;
+					return MemberInfo.Name;
 				}
 			}
 
-			int ITargetFieldInfo.Index {
+			int ITargetMemberInfo.Index {
 				get {
 					return Index;
 				}
 			}
 
-			object ITargetFieldInfo.FieldHandle {
+			bool ITargetMemberInfo.IsStatic {
 				get {
-					return FieldInfo;
+					return IsStatic;
 				}
 			}
 
+			object ITargetMemberInfo.Handle {
+				get {
+					return MemberInfo;
+				}
+			}
+
+			protected abstract string MyToString ();
+
 			public override string ToString ()
 			{
-				return String.Format ("MonoField ({0:x}:{1}:{2})",
-						      Offset, FieldInfo.Name, Type);
+				return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",
+						      GetType (), Name, Type, Index, IsStatic, MyToString ());
+			}
+		}
+
+		protected class MonoFieldInfo : MonoStructMember, ITargetFieldInfo
+		{
+			MonoType type;
+			public readonly int Offset;
+
+			public readonly FieldInfo FieldInfo;
+
+			internal MonoFieldInfo (MonoClass klass, int index, FieldInfo finfo, bool is_static,
+						TargetBinaryReader info, MonoSymbolTable table)
+				: base (klass, finfo, index, is_static)
+			{
+				FieldInfo = finfo;
+				Offset = info.ReadInt32 ();
+				type = table.GetType (finfo.FieldType, info.ReadInt32 ());
+			}
+
+			public override MonoType Type {
+				get { return type; }
+			}
+
+			int ITargetFieldInfo.Offset {
+				get { return Offset; }
+			}
+
+			protected override string MyToString ()
+			{
+				return String.Format ("{0:x}", Offset);
 			}
 		}
 
@@ -322,11 +362,10 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_properties.Length, num_properties);
 
 			for (int i = 0; i < num_properties; i++)
-				properties [i] = new MonoPropertyInfo (
-					this, i, mono_properties [i], info, Table);
+				properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], false, info, Table);
 		}
 
-		ITargetFieldInfo[] ITargetStructType.Properties {
+		ITargetPropertyInfo[] ITargetStructType.Properties {
 			get {
 				return Properties;
 			}
@@ -359,11 +398,10 @@ namespace Mono.Debugger.Languages.CSharp
 					mono_properties.Length, num_static_properties);
 
 			for (int i = 0; i < num_static_properties; i++)
-				static_properties [i] = new MonoPropertyInfo (
-					this, i, mono_properties [i], info, Table);
+				static_properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], true, info, Table);
 		}
 
-		ITargetFieldInfo[] ITargetStructType.StaticProperties {
+		ITargetPropertyInfo[] ITargetStructType.StaticProperties {
 			get {
 				return StaticProperties;
 			}
@@ -376,53 +414,44 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected class MonoPropertyInfo : ITargetFieldInfo
+		protected class MonoPropertyInfo : MonoStructMember, ITargetPropertyInfo
 		{
-			public readonly MonoClass Klass;
-			public readonly MonoType Type;
+			MonoType type;
 			public readonly PropertyInfo PropertyInfo;
-			public readonly int Index;
 			public readonly TargetAddress Getter, Setter;
 			public readonly MonoFunctionType GetterType, SetterType;
 
-			internal MonoPropertyInfo (MonoClass klass, int index, PropertyInfo pinfo,
+			internal MonoPropertyInfo (MonoClass klass, int index, PropertyInfo pinfo, bool is_static,
 						   TargetBinaryReader info, MonoSymbolTable table)
+				: base (klass, pinfo, index, is_static)
 			{
-				Klass = klass;
-				Index = index;
 				PropertyInfo = pinfo;
-				int type_info = info.ReadInt32 ();
-				if (type_info != 0)
-					Type = table.GetType (pinfo.PropertyType, type_info);
+				type = table.GetType (pinfo.PropertyType, info.ReadInt32 ());
 				Getter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 				Setter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 
 				if (PropertyInfo.CanRead)
 					GetterType = new MonoFunctionType (
 						Klass, PropertyInfo.GetGetMethod (false), Getter, Type, table);
+				if (PropertyInfo.CanWrite)
+					SetterType = new MonoFunctionType (
+						Klass, PropertyInfo.GetSetMethod (false), Setter, Type, table);
+
 			}
 
-			ITargetType ITargetFieldInfo.Type {
+			public override MonoType Type {
+				get { return type; }
+			}
+
+			public bool CanRead {
 				get {
-					return Type;
+					return PropertyInfo.CanRead;
 				}
 			}
 
-			string ITargetFieldInfo.Name {
+			public bool CanWrite {
 				get {
-					return PropertyInfo.Name;
-				}
-			}
-
-			int ITargetFieldInfo.Index {
-				get {
-					return Index;
-				}
-			}
-
-			object ITargetFieldInfo.FieldHandle {
-				get {
-					return PropertyInfo;
+					return PropertyInfo.CanWrite;
 				}
 			}
 
@@ -446,10 +475,9 @@ namespace Mono.Debugger.Languages.CSharp
 				return GetterType.InvokeStatic (frame, new object [0]);
 			}
 
-			public override string ToString ()
+			protected override string MyToString ()
 			{
-				return String.Format ("MonoProperty ({0:x}:{1}:{2})",
-						      Index, PropertyInfo.Name, Type);
+				return String.Format ("{0}:{1}", CanRead, CanWrite);
 			}
 		}
 
@@ -494,7 +522,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_methods; i++)
 				methods [i] = new MonoMethodInfo (
-					this, i, (MethodInfo) list [i], info, Table);
+					this, i, (MethodInfo) list [i], false, info, Table);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.Methods {
@@ -538,7 +566,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			for (int i = 0; i < num_static_methods; i++)
 				static_methods [i] = new MonoMethodInfo (
-					this, i, (MethodInfo) list [i], info, Table);
+					this, i, (MethodInfo) list [i], true, info, Table);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.StaticMethods {
@@ -554,31 +582,26 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected class MonoMethodInfo : ITargetMethodInfo
+		protected class MonoMethodInfo : MonoStructMember, ITargetMethodInfo
 		{
-			public readonly MonoClass Klass;
 			public readonly MethodInfo MethodInfo;
-			public readonly int Index;
 			public readonly MonoFunctionType FunctionType;
 
-			internal MonoMethodInfo (MonoClass klass, int index, MethodInfo minfo,
+			internal MonoMethodInfo (MonoClass klass, int index, MethodInfo minfo, bool is_static,
 						 TargetBinaryReader info, MonoSymbolTable table)
+				: base (klass, minfo, index, is_static)
 			{
-				Klass = klass;
 				MethodInfo = minfo;
-				Index = index;
 				FunctionType = new MonoFunctionType (Klass, minfo, info, table);
+			}
+
+			public override MonoType Type {
+				get { return FunctionType; }
 			}
 
 			ITargetFunctionType ITargetMethodInfo.Type {
 				get {
 					return FunctionType;
-				}
-			}
-
-			string ITargetMethodInfo.Name {
-				get {
-					return MethodInfo.Name;
 				}
 			}
 
@@ -598,15 +621,9 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			int ITargetMethodInfo.Index {
-				get {
-					return Index;
-				}
-			}
-
-			public override string ToString ()
+			protected override string MyToString ()
 			{
-				return String.Format ("MonoMethod ({0:x}:{1}:{2})", Index, MethodInfo.Name, FunctionType);
+				return String.Format ("{0}", FunctionType);
 			}
 		}
 
@@ -621,12 +638,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetFunctionType GetStaticMethod (int index)
+		internal ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
 		{
 			init_static_methods ();
 
 			try {
-				return static_methods [index].FunctionType;
+				return static_methods [index].FunctionType.GetStaticObject (frame);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

@@ -145,6 +145,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token CREATE
 %token ADD
 %token REMOVE
+%token TYPEOF
 
 %token HELP
 %start command_loop
@@ -339,11 +340,15 @@ other_command
 	  {
 		$$ = new PrintCommand ((Expression) $2);
 	  }
+	| PRINT type_expression
+	  {
+		$$ = new PrintCommand ((Expression) $2);
+	  }
 	| EXAMINE examine_format variable_expression
 	  {
 		$$ = new ExamineCommand ((ExamineCommand.Format) $2, (VariableExpression) $3);
 	  }
-	| EXAMINE examine_format frame_expression NUMBER
+	| EXAMINE examine_format frame_prefix NUMBER
 	  {
 		$$ = new ExamineCommand ((ExamineCommand.Format) $2, (FrameExpression) $3, (long) $4);
 	  }
@@ -450,6 +455,25 @@ expression
 	  }
 	;
 
+type_expression
+	: TYPEOF OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = new TypeOfExpression ((VariableExpression) $3);
+	  }
+	| TYPEOF OPEN_PARENS frame_prefix type_name CLOSE_PARENS
+	  {
+		$$ = new TypeNameExpression ((FrameExpression) $3, (string) $4);
+	  }
+	;
+
+type_name
+	: IDENTIFIER
+	| type_name DOT IDENTIFIER
+	  {
+		$$ = String.Concat ((string) $1, ".", (string) $3);
+	  }
+	;
+
 variable_expression
 	: STAR variable_expression
 	  {
@@ -463,17 +487,26 @@ variable_expression
 	  {
 		$$ = new LastObjectExpression ();
 	  }
-	| frame_expression DOLLAR IDENTIFIER
+	| frame_prefix DOLLAR IDENTIFIER
 	  {
 		$$ = new VariableReferenceExpression ((FrameExpression) $1, (string) $3);
 	  }
-	| frame_expression PERCENT NUMBER
+	| frame_prefix PERCENT NUMBER
 	  {
 		$$ = new PointerExpression ((FrameExpression) $1, (long) $3);
 	  }
-	| frame_expression PERCENT IDENTIFIER opt_regoffset
+	| frame_prefix PERCENT IDENTIFIER opt_regoffset
 	  {
 		$$ = new RegisterExpression ((FrameExpression) $1, (string) $3, (long) $4);
+	  }
+	| frame_prefix type_expression DOT IDENTIFIER
+	  {
+		$$ = new StructAccessExpression ((FrameExpression) $1, (TypeExpression) $2, (string) $4);
+	  }
+	| frame_prefix type_name DOT IDENTIFIER
+	  {
+		TypeExpression type = new TypeNameExpression ((FrameExpression) $1, (string) $2);
+		$$ = new StructAccessExpression ((FrameExpression) $1, type, (string) $4);
 	  }
 	| variable_expression DOT IDENTIFIER
 	  {
@@ -645,6 +678,28 @@ frame_expression
 		$$ = new FrameExpression ((ProcessExpression) $1, -1);
 	  }
 	| process_expression HASH INTEGER
+	  {
+		$$ = new FrameExpression ((ProcessExpression) $1, (int) $3);
+	  }
+	;
+
+process_prefix
+	: /* empty */
+	  {
+		$$ = new ProcessExpression (-1);
+	  }
+	| AT INTEGER COLON
+	  {
+		$$ = new ProcessExpression ((int) $2);
+	  }
+	;	
+
+frame_prefix
+	: process_prefix /* empty */
+	  {
+		$$ = new FrameExpression ((ProcessExpression) $1, -1);
+	  }
+	| process_prefix HASH INTEGER COLON
 	  {
 		$$ = new FrameExpression ((ProcessExpression) $1, (int) $3);
 	  }

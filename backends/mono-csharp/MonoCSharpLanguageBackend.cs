@@ -588,6 +588,17 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return pointer_type; }
 		}
 
+		public ITargetType LookupType (string name)
+		{
+			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
+				Type type = symfile.Assembly.GetType (name);
+				if (type != null)
+					return (MonoType) types [type];
+			}
+
+			return null;
+		}
+
 		//
 		// IDisposable
 		//

@@ -19,6 +19,8 @@ namespace Mono.Debugger
 		ITargetType PointerType {
 			get;
 		}
+
+		ITargetType LookupType (string name);
 	}
 }
 

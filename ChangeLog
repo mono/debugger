@@ -1,3 +1,16 @@
+2003-08-07  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ILanguage.cs (ILanguage.LookupType): New method.
+
+	* interfaces/ITargetStructType.cs
+	(ITargetMemberInfo): New public interface.
+	(ITargetFieldInfo, ITargetPropertyInfo, ITargetMethodInfo): Derive
+	from ITargetMemberInfo.
+
+	* frontends/scripting/Parser.jay: Added `Type.StaticField',
+	`Type.StaticProperty' and `Type.StaticFunc (args)' syntax to
+	access static members of a type without an instance.
+
 2003-08-06  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-cshap/MonoClass.cs: Added support for static

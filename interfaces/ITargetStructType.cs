@@ -2,18 +2,12 @@ using System;
 
 namespace Mono.Debugger
 {
-	public interface ITargetFieldInfo
+	public interface ITargetMemberInfo
 	{
-		// <summary>
-		//   Type of this field.
-		// </summary>
 		ITargetType Type {
 			get;
 		}
 
-		// <summary>
-		//   Name of this field.
-		// </summary>
 		string Name {
 			get;
 		}
@@ -22,31 +16,45 @@ namespace Mono.Debugger
 			get;
 		}
 
+		bool IsStatic {
+			get;
+		}
+
 		// <summary>
-		//   The current programming language's native representation of
-		//   a field.  This is a System.Reflection.FieldInfo or a
-		//   System.Reflection.PropertyInfo for managed data types.
+		//   The current programming language's native representation of this member.
+		//   This is a System.Reflection.MemberInfo for managed data types.
 		// </summary>
-		object FieldHandle {
+		object Handle {
+			get;
+		}
+
+	}
+
+	public interface ITargetFieldInfo : ITargetMemberInfo
+	{
+		int Offset {
 			get;
 		}
 	}
 
-	public interface ITargetMethodInfo
+	public interface ITargetPropertyInfo : ITargetMemberInfo
+	{
+		bool CanRead {
+			get;
+		}
+
+		bool CanWrite {
+			get;
+		}
+	}
+
+	public interface ITargetMethodInfo : ITargetMemberInfo
 	{
 		ITargetFunctionType Type {
 			get;
 		}
 
-		string Name {
-			get;
-		}
-
 		string FullName {
-			get;
-		}
-
-		int Index {
 			get;
 		}
 	}
@@ -63,11 +71,11 @@ namespace Mono.Debugger
 
 		ITargetObject GetStaticField (StackFrame frame, int index);
 
-		ITargetFieldInfo[] Properties {
+		ITargetPropertyInfo[] Properties {
 			get;
 		}
 
-		ITargetFieldInfo[] StaticProperties {
+		ITargetPropertyInfo[] StaticProperties {
 			get;
 		}
 
@@ -81,6 +89,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetFunctionType GetStaticMethod (int index);
+		ITargetFunctionObject GetStaticMethod (StackFrame frame, int index);
 	}
 }

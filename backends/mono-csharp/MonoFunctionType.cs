@@ -180,5 +180,10 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			return new MonoFunctionObject (this, location);
 		}
+
+		public MonoFunctionObject GetStaticObject (StackFrame frame)
+		{
+			return new MonoFunctionObject (this, new AbsoluteTargetLocation (frame, TargetAddress.Null));
+		}
 	}
 }

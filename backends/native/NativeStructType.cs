@@ -3,49 +3,66 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeFieldInfo : ITargetFieldInfo
+	internal abstract class NativeStructMember : ITargetMemberInfo
 	{
-		NativeType type;
-		string name;
-		int index;
-		int offset;
+		public readonly NativeType Type;
+		public readonly string Name;
+		public readonly int Index;
+		public readonly bool IsStatic;
 
-		public NativeFieldInfo (NativeType type, string name, int index, int offset)
+		public NativeStructMember (NativeType type, string name, int index, bool is_static)
 		{
-			this.type = type;
-			this.name = name;
-			this.index = index;
-			this.offset = offset;
+			this.Type = type;
+			this.Name = name;
+			this.Index = index;
+			this.IsStatic = is_static;
 		}
 
-		ITargetType ITargetFieldInfo.Type {
+		ITargetType ITargetMemberInfo.Type {
 			get {
-				return type;
+				return Type;
 			}
 		}
 
-		public NativeType Type {
+		string ITargetMemberInfo.Name {
 			get {
-				return type;
+				return Name;
 			}
 		}
 
-		public string Name {
+		int ITargetMemberInfo.Index {
 			get {
-				return name;
+				return Index;
 			}
 		}
 
-		public int Index {
+		bool ITargetMemberInfo.IsStatic {
 			get {
-				return index;
+				return IsStatic;
 			}
 		}
 
-		public object FieldHandle {
+		object ITargetMemberInfo.Handle {
 			get {
 				return null;
 			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1}:{2}:{3}:{4})",
+					      GetType (), Name, Type, Index, IsStatic);
+		}
+	}
+
+	internal class NativeFieldInfo : NativeStructMember, ITargetFieldInfo
+	{
+		int offset;
+
+		public NativeFieldInfo (NativeType type, string name, int index, int offset)
+			: base (type, name, index, false)
+		{
+			this.offset = offset;
 		}
 
 		public int Offset {
@@ -55,46 +72,25 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
-	internal class NativeMethodInfo  : ITargetMethodInfo
+	internal class NativeMethodInfo  : NativeStructMember, ITargetMethodInfo
 	{
-		int index;
-		string name;
-		NativeFunctionType function_type;
+		public new readonly NativeFunctionType Type;
 
 		public NativeMethodInfo (string name, int index, NativeFunctionType function_type)
+			: base (function_type, name, index, false)
 		{
-			this.name = name;
-			this.index = index;
-			this.function_type = function_type;
-		}
-
-		public NativeFunctionType Type {
-			get {
-				return function_type;
-			}
+			this.Type = function_type;
 		}
 
 		ITargetFunctionType ITargetMethodInfo.Type {
 			get {
-				return function_type;
+				return Type;
 			}
 		}
 
-		public string Name {
+		string ITargetMethodInfo.FullName {
 			get {
-				return name;
-			}
-		}
-
-		public string FullName {
-			get {
-				return name;
-			}
-		}
-
-		public int Index {
-			get {
-				return index;
+				return Name;
 			}
 		}
 	}
@@ -135,15 +131,15 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetFieldInfo[] Properties {
+		public ITargetPropertyInfo[] Properties {
 			get {
-				return new ITargetFieldInfo [0];
+				return new ITargetPropertyInfo [0];
 			}
 		}
 
-		public ITargetFieldInfo[] StaticProperties {
+		public ITargetPropertyInfo[] StaticProperties {
 			get {
-				return new ITargetFieldInfo [0];
+				return new ITargetPropertyInfo [0];
 			}
 		}
 
@@ -164,7 +160,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetFunctionType GetStaticMethod (int index)
+		public ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -32,5 +32,10 @@ namespace Mono.Debugger.Languages.Native
 		public ITargetType PointerType {
 			get { return pointer_type; }
 		}
+
+		public ITargetType LookupType (string name)
+		{
+			return null;
+		}
 	}
 }
