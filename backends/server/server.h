@@ -498,13 +498,14 @@ mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 void
 mono_debugger_server_set_notification    (guint64              notification);
 
-
 /* POSIX semaphores */
 
 void mono_debugger_server_sem_init (void);
 void mono_debugger_server_sem_wait (void);
 void mono_debugger_server_sem_post (void);
 int mono_debugger_server_sem_get_value (void);
+
+guint64 mono_debugger_server_get_current_thread (void);
 
 int mono_debugger_server_get_pending_sigint (void);
 

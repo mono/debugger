@@ -11,20 +11,24 @@ namespace Mono.Debugger
 	public class SymbolTableManager : IDisposable
 	{
 		Thread symtab_thread;
-		ManualResetEvent symtab_reload_event;
-		ManualResetEvent symtabs_loaded_event;
-		ManualResetEvent modules_loaded_event;
-		ManualResetEvent update_completed_event;
+		DebuggerManualResetEvent symtab_reload_event;
+		DebuggerManualResetEvent symtabs_loaded_event;
+		DebuggerManualResetEvent modules_loaded_event;
+		DebuggerManualResetEvent update_completed_event;
 		bool symtab_update_in_progress;
 		bool module_update_in_progress;
 		bool reload_requested;
 
 		public SymbolTableManager ()
 		{
-			symtab_reload_event = new ManualResetEvent (false);
-			symtabs_loaded_event = new ManualResetEvent (true);
-			modules_loaded_event = new ManualResetEvent (true);
-			update_completed_event = new ManualResetEvent (true);
+			symtab_reload_event = new DebuggerManualResetEvent (
+				"symtab_reload_event", false);
+			symtabs_loaded_event = new DebuggerManualResetEvent (
+				"symtabs_loaded_event", true);
+			modules_loaded_event = new DebuggerManualResetEvent (
+				"modules_loaded_event", true);
+			update_completed_event = new DebuggerManualResetEvent (
+				"update_completed_event", true);
 			symtab_thread = new Thread (new ThreadStart (symtab_thread_start));
 			symtab_thread.IsBackground = true;
 			symtab_thread.Start ();
@@ -88,7 +92,7 @@ namespace Mono.Debugger
 		public ISymbolTable SymbolTable {
 			get {
 				if (symtab_thread != null)
-					symtabs_loaded_event.WaitOne ();
+					symtabs_loaded_event.Wait ();
 				lock (this) {
 					return current_symtab;
 				}
@@ -102,7 +106,7 @@ namespace Mono.Debugger
 		public ISimpleSymbolTable SimpleSymbolTable {
 			get {
 				if (symtab_thread != null)
-					symtabs_loaded_event.WaitOne ();
+					symtabs_loaded_event.Wait ();
 				lock (this) {
 					return current_simple_symtab;
 				}
@@ -112,7 +116,7 @@ namespace Mono.Debugger
 		public void Wait ()
 		{
 			if (symtab_thread != null)
-				update_completed_event.WaitOne ();
+				update_completed_event.Wait ();
 		}
 
 		// <summary>
@@ -128,7 +132,7 @@ namespace Mono.Debugger
 		public Module[] Modules {
 			get {
 				if (symtab_thread != null)
-					modules_loaded_event.WaitOne ();
+					modules_loaded_event.Wait ();
 				lock (this) {
 					return current_modules;
 				}
@@ -180,7 +184,8 @@ namespace Mono.Debugger
 
 		void symtab_thread_main ()
 		{
-			while (symtab_reload_event.WaitOne ()) {
+			while (true) {
+				symtab_reload_event.Wait ();
 			again:
 				ICollection my_new_modules;
 

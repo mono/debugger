@@ -1727,7 +1727,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoDebuggerInfo info;
 		TargetAddress trampoline_address;
 		bool initialized;
-		Mutex mutex;
+		DebuggerMutex mutex;
 		protected MonoSymbolTable table;
 		Heap heap;
 
@@ -1735,7 +1735,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			this.backend = backend;
 
-			mutex = new Mutex ();
+			mutex = new DebuggerMutex ("csharp_mutex");
 		}
 
 		public string Name {
@@ -1801,6 +1801,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void do_update_symbol_table (ITargetMemoryAccess memory, bool force_update)
 		{
+			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
 			backend.ModuleManager.Lock ();
 			try {
 				TargetAddress address = memory.ReadAddress (info.SymbolTable);
@@ -1823,6 +1824,7 @@ namespace Mono.Debugger.Languages.CSharp
 			} finally {
 				backend.ModuleManager.UnLock ();
 			}
+			Report.Debug (DebugFlags.JitSymtab, "Done updating symbol table");
 		}
 
 		Hashtable breakpoints = new Hashtable ();
@@ -1914,18 +1916,18 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int LookupType (StackFrame frame, string name)
 		{
 			int offset;
-			mutex.WaitOne ();
+			mutex.Lock ();
 			offset = (int) frame.CallMethod (info.LookupType, name).Address;
-			mutex.ReleaseMutex ();
+			mutex.Unlock ();
 			return offset;
 		}
 
 		internal int LookupAssembly (Process process, string name)
 		{
 			int retval;
-			mutex.WaitOne ();
+			mutex.Lock ();
 			retval = (int) process.CallMethod (info.LookupAssembly, name).Address;
-			mutex.ReleaseMutex ();
+			mutex.Unlock ();
 			return retval;
 		}
 

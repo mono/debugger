@@ -79,7 +79,8 @@ namespace Mono.Debugger.Backends
 
 			PID = inferior.PID;
 
-			operation_completed_event = new ManualResetEvent (false);
+			operation_completed_event = new DebuggerManualResetEvent (
+				"operation_completed_event", false);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
@@ -109,7 +110,8 @@ namespace Mono.Debugger.Backends
 		{
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
-			Report.Debug (DebugFlags.Threads, "New SSE: {0}", this);
+			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
+				      DebuggerWaitHandle.CurrentThread, this);
 
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
@@ -575,8 +577,13 @@ namespace Mono.Debugger.Backends
 
 			if (current_operation != null) {
 				if (current_operation.Type == OperationType.Initialize) {
+					Report.Debug (DebugFlags.SSE,
+						      "{0} initialize ({1})", this,
+						      DebuggerWaitHandle.CurrentThread);
 					if (is_main)
 						manager.Initialize (inferior);
+					Report.Debug (DebugFlags.SSE, "{0} initialize done",
+						      this);
 				} else if (current_operation.Type == OperationType.Exception) {
 					frame_changed (inferior.CurrentFrame, null);
 					result = new TargetEventArgs (
@@ -816,7 +823,7 @@ namespace Mono.Debugger.Backends
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		bool engine_stopped;
-		ManualResetEvent operation_completed_event;
+		DebuggerManualResetEvent operation_completed_event;
 		bool stop_requested;
 		bool is_main, reached_main;
 		bool native;
@@ -935,7 +942,7 @@ namespace Mono.Debugger.Backends
 				// This will never block.  The only thing which can
 				// happen here is that we were running an async operation
 				// and did not wait for the event yet.
-				operation_completed_event.WaitOne ();
+				operation_completed_event.Wait ();
 				engine_stopped = false;
 				Report.Debug (DebugFlags.Wait,
 					      "{0} got command mutex", this);
@@ -1010,7 +1017,7 @@ namespace Mono.Debugger.Backends
 
 			if (wait) {
 				Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-				operation_completed_event.WaitOne ();
+				operation_completed_event.Wait ();
 				Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 			}
 			Report.Debug (DebugFlags.Wait,
@@ -1029,7 +1036,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.WaitOne ();
+			operation_completed_event.Wait ();
 			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 			Report.Debug (DebugFlags.Wait,
 				      "{0} released command mutex", this);
@@ -1090,7 +1097,7 @@ namespace Mono.Debugger.Backends
 			// Ok, we got the `command_mutex'.
 			// Now we can wait for the operation to finish.
 			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.WaitOne ();
+			operation_completed_event.Wait ();
 			Report.Debug (DebugFlags.Wait, "{0} stopped", this);
 			manager.ReleaseCommandMutex ();
 			return true;

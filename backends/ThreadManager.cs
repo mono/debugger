@@ -29,16 +29,16 @@ namespace Mono.Debugger
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			
-			thread_lock_mutex = new Mutex ();
+			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 			address_domain = new AddressDomain ("global");
 
-			start_event = new ManualResetEvent (false);
-			completed_event = new AutoResetEvent (false);
-			command_mutex = new Mutex ();
+			start_event = new DebuggerManualResetEvent ("start_event", false);
+			completed_event = new DebuggerAutoResetEvent ("completed_event", false);
+			command_mutex = new DebuggerMutex ("command_mutex");
 
-			ready_event = new ManualResetEvent (false);
+			ready_event = new DebuggerManualResetEvent ("ready_event", false);
 			engine_event = Semaphore.CreateThreadManagerSemaphore ();
-			wait_event = new AutoResetEvent (false);
+			wait_event = new DebuggerAutoResetEvent ("wait_event", false);
 
 			mono_debugger_server_global_init ();
 		}
@@ -56,20 +56,20 @@ namespace Mono.Debugger
 		BreakpointManager breakpoint_manager;
 		Thread inferior_thread;
 		Thread wait_thread;
-		ManualResetEvent ready_event;
-		AutoResetEvent wait_event;
+		DebuggerManualResetEvent ready_event;
+		DebuggerEvent wait_event;
 		Semaphore engine_event;
 		Hashtable thread_hash;
 
 		int thread_lock_level;
-		Mutex thread_lock_mutex;
+		DebuggerMutex thread_lock_mutex;
 		AddressDomain address_domain;
 
 		Process main_process;
 
-		ManualResetEvent start_event;
-		AutoResetEvent completed_event;
-		Mutex command_mutex;
+		DebuggerEvent start_event;
+		DebuggerEvent completed_event;
+		DebuggerMutex command_mutex;
 		bool sync_command_running;
 		bool abort_requested;
 
@@ -94,8 +94,8 @@ namespace Mono.Debugger
 				return;
 			}
 
-			Report.Debug (DebugFlags.Threads, "Thread manager started: {0}",
-				      the_engine.PID);
+			Report.Debug (DebugFlags.Threads, "Thread manager ({0}) started: {1}",
+				      DebuggerWaitHandle.CurrentThread, the_engine.PID);
 
 			thread_hash.Add (the_engine.PID, the_engine);
 
@@ -135,8 +135,7 @@ namespace Mono.Debugger
 		// </summary>
 		void wait_until_engine_is_ready ()
 		{
-			while (!start_event.WaitOne ())
-				;
+			start_event.Wait ();
 
 			if (start_error != null)
 				throw start_error;
@@ -159,7 +158,7 @@ namespace Mono.Debugger
 
 		public Process WaitForApplication ()
 		{
-			ready_event.WaitOne ();
+			ready_event.Wait ();
 
 			return main_process;
 		}
@@ -205,7 +204,7 @@ namespace Mono.Debugger
 		// </summary>
 		internal void AcquireGlobalThreadLock (SingleSteppingEngine caller)
 		{
-			thread_lock_mutex.WaitOne ();
+			thread_lock_mutex.Lock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Acquiring global thread lock: {0} {1}",
 				      caller, thread_lock_level);
@@ -227,7 +226,7 @@ namespace Mono.Debugger
 				      "Releasing global thread lock: {0} {1}",
 				      caller, thread_lock_level);
 			if (--thread_lock_level > 0) {
-				thread_lock_mutex.ReleaseMutex ();
+				thread_lock_mutex.Unlock ();
 				return;
 			}
 				
@@ -236,7 +235,7 @@ namespace Mono.Debugger
 					continue;
 				engine.ReleaseThreadLock ();
 			}
-			thread_lock_mutex.ReleaseMutex ();
+			thread_lock_mutex.Lock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock: {0}", caller);
 		}
@@ -403,7 +402,7 @@ namespace Mono.Debugger
 		// </summary>
 		internal bool AcquireCommandMutex (SingleSteppingEngine engine)
 		{
-			if (!command_mutex.WaitOne (0, false))
+			if (!command_mutex.TryLock ())
 				return false;
 
 			command_engine = engine;
@@ -413,7 +412,7 @@ namespace Mono.Debugger
 		internal void ReleaseCommandMutex ()
 		{
 			command_engine = null;
-			command_mutex.ReleaseMutex ();
+			command_mutex.Unlock ();
 		}
 
 		internal bool InBackgroundThread {
@@ -456,12 +455,12 @@ namespace Mono.Debugger
 
 			lock (this) {
 				current_command = command;
-				completed_event.Reset ();
+				// completed_event.Reset ();
 				sync_command_running = true;
 				engine_event.Set ();
 			}
 
-			completed_event.WaitOne ();
+			completed_event.Wait ();
 
 			CommandResult result;
 			lock (this) {
@@ -470,7 +469,7 @@ namespace Mono.Debugger
 				current_command = null;
 			}
 
-			command_mutex.ReleaseMutex ();
+			command_mutex.Unlock ();
 			if (result != null)
 				return result;
 			else
@@ -627,7 +626,7 @@ namespace Mono.Debugger
 		void wait_thread_main ()
 		{
 			Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
-			wait_event.WaitOne ();
+			wait_event.Wait ();
 
 		again:
 			Report.Debug (DebugFlags.Wait, "Wait thread waiting");

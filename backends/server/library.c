@@ -39,6 +39,12 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 #endif
 }
 
+guint64
+mono_debugger_server_get_current_thread (void)
+{
+	return pthread_self ();
+}
+
 ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    const gchar **argv, const gchar **envp, gint *child_pid,

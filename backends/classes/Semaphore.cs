@@ -29,11 +29,17 @@ namespace Mono.Debugger.Backends
 
 		public void Wait ()
 		{
+			Report.Debug (DebugFlags.Mutex, "{0} waiting for semaphore",
+				      DebuggerWaitHandle.CurrentThread);
 			mono_debugger_server_sem_wait ();
+			Report.Debug (DebugFlags.Mutex, "{0} done waiting for semaphore",
+				      DebuggerWaitHandle.CurrentThread);
 		}
 
 		public void Set ()
 		{
+			Report.Debug (DebugFlags.Mutex, "{0} signalling semaphore",
+				      DebuggerWaitHandle.CurrentThread);
 			mono_debugger_server_sem_post ();
 		}
 

@@ -5,7 +5,7 @@ class X
 {
 	static void Loop (int seconds)
 	{
-		Thread.Sleep (seconds * 1000);
+		Thread.Sleep (seconds * 10);
 	}
 
 	static void CommonFunction (int seconds)

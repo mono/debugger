@@ -13,7 +13,8 @@ namespace Mono.Debugger
 		EventLoop		= 16,
 		Wait			= 32,
 		SSE			= 64,
-		Notification		= 128
+		Notification		= 128,
+		Mutex			= 256
 	}
 
 	public class Report

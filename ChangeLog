@@ -1,3 +1,9 @@
+2004-06-23  Martin Baulig  <martin@ximian.com>
+
+	* classes/Threading.cs: New public class.  Contains wrappers
+	around Mutex, ManualResetEvent and AutoResetEvent which have some
+	debugging support.
+
 2004-06-21  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ILanguage.cs (ILanguage.CreateObject): New method.
