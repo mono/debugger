@@ -160,7 +160,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			DebuggerOptions options = new DebuggerOptions ();
 			options.ProcessArgs (args);
-			Report.CurrentDebugFlags = options.DebugFlags;
+			if (options.DebugFlags != 0)
+				Report.CurrentDebugFlags = options.DebugFlags;
 
 			Console.WriteLine ("Mono Debugger");
 

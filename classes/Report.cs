@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -24,6 +25,32 @@ namespace Mono.Debugger
 	{
 		public static int CurrentDebugFlags = 0;
 
+		static StreamWriter writer;
+
+		static Report ()
+		{
+			initialize ();
+		}
+
+		[Conditional("DEBUG")]
+		static void initialize ()
+		{
+			string file = Environment.GetEnvironmentVariable ("MDB_DEBUG_OUTPUT");
+			if (file != null)
+				writer = new StreamWriter (file, true);
+			else
+				writer = new StreamWriter (Console.OpenStandardError ());
+			writer.AutoFlush = true;
+
+			string var = Environment.GetEnvironmentVariable ("MDB_DEBUG_FLAGS");
+			if (var != null) {
+				CurrentDebugFlags = Int32.Parse (var);
+			} catch {
+				Console.WriteLine ("Invalid `MDB_DEBUG_FLAGS' environment " +
+						   "variable.");
+			}
+		}
+
 		[Conditional("DEBUG")]
 		public static void Debug (DebugFlags category, object argument)
 		{
@@ -36,7 +63,7 @@ namespace Mono.Debugger
 			if (((int) category & (int) CurrentDebugFlags) == 0)
 				return;
 
-			Console.WriteLine (message, args);
+			writer.WriteLine (message, args);
 		}
 	}
 }

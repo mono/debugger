@@ -1,5 +1,12 @@
 2004-07-02  Martin Baulig  <martin@ximian.com>
 
+	* classes/Report.cs: There's now MDB_DEBUG_FLAGS environment
+	variable which sets the default debugging flags and a
+	MDB_DEBUG_OUTPUT one which redirects the debugging output into a
+	file.	
+
+2004-07-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.Callback): Make this class abstract, moved
 	the callback code into classes derived from this.
