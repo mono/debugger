@@ -311,8 +311,10 @@ namespace Mono.Debugger
 				retval = mono_manager.HandleChildEvent (inferior, ref cevent);
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
-			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED))
+			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
+				abort_requested = true;
 				OnTargetExitedEvent ();
+			}
 
 			return retval;
 		}
