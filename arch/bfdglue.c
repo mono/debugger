@@ -3,8 +3,10 @@
 #include <string.h>
 #include <link.h>
 #include <elf.h>
+#ifdef __linux__
 #include <sys/user.h>
 #include <sys/procfs.h>
+#endif
 
 gboolean
 bfd_glue_check_format_object (bfd *abfd)
@@ -229,8 +231,9 @@ bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size)
 }
 
 gboolean
-bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct user_regs_struct **regs)
+bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, gpointer *regs)
 {
+#ifdef __linux__
 	int pos = 0;
 
 	while (pos < size) {
@@ -245,7 +248,7 @@ bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct u
 			}
 
 			prstatus = (struct elf_prstatus *) (data + pos + sizeof (Elf32_Nhdr) + note->n_namesz);
-			*regs = (struct user_regs_struct *) &prstatus->pr_reg;
+			*regs = &prstatus->pr_reg;
 			return TRUE;
 		}
 
@@ -254,4 +257,7 @@ bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct u
 
 	g_warning (G_STRLOC ": Can't find NT_PRSTATUS note in core file.");
 	return FALSE;
+#else
+	return FALSE;
+#endif
 }

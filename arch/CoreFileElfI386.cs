@@ -31,7 +31,7 @@ namespace Mono.Debugger.Architecture
 				data = Marshal.AllocHGlobal (notes.Length);
 				Marshal.Copy (notes, 0, data, notes.Length);
 				if (!bfd_glue_core_file_elfi386_get_registers (data, notes.Length, out regs))
-					throw new InvalidCoreFileException ("Can't get registers");
+					return null;
 				int[] registers = new int [18];
 				Marshal.Copy (regs, registers, 0, 18);
 				long[] retval = new long [18];
@@ -75,11 +75,17 @@ namespace Mono.Debugger.Architecture
 
 		protected override TargetAddress GetCurrentFrame ()
 		{
-			return new TargetAddress (AddressDomain, registers [(int) I386Register.EIP]);
+			if (registers != null)
+				return new TargetAddress (AddressDomain, registers [(int) I386Register.EIP]);
+			else
+				return TargetAddress.Null;
 		}
 
 		public override Register[] GetRegisters ()
 		{
+			if (registers == null)
+				return null;
+
 			Register[] retval = new Register [registers.Length];
 			for (int i = 0; i < registers.Length; i++)
 				retval [i] = new Register (i, registers [i]);

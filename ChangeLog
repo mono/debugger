@@ -1,5 +1,16 @@
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
+	* glue/bfdglue.c (bfd_glue_core_file_elfi386_get_registers):
+	Changed the type of the `regs' argument to `gpointer *' to make it
+	portable.
+
+	* glue/bfdglue.h: Don't #include Linux-specific header files.
+
+	* configure.in: Check whether we're actually on Linux.
+	(--disable-gui): New command argument to disable building the gui.
+
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs (Name): New public property.  Returns the
 	method name from ISymbolLookup.SimpleLookup().
 
