@@ -20,7 +20,7 @@ namespace Mono.Debugger.Backends
 	internal class PTraceInferior : Inferior
 	{
 		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_wait (IntPtr handle, out ChildEventType message, out long arg, out long data1, out long data2);
+		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, long status, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_signal_info (IntPtr handle, ref SignalInfo sinfo);
@@ -52,24 +52,23 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected readonly NativeThreadManager thread_manager;
-
 		bool has_signals;
 		SignalInfo signal_info;
 
 		public PTraceInferior (DebuggerBackend backend, ProcessStart start,
-				       BfdContainer bfdc, BreakpointManager bpm,
+				       BreakpointManager bpm,
 				       DebuggerErrorHandler error_handler,
-				       NativeThreadManager thread_manager)
-			: base (backend, start, bfdc, bpm, error_handler)
+				       AddressDomain global_domain,
+				       ThreadManager thread_manager)
+			: base (backend, start, bpm, error_handler, global_domain)
 		{
 			this.thread_manager = thread_manager;
 		}
 
 		public override Inferior CreateThread ()
 		{
-			return new PTraceInferior (backend, start, bfd_container,
-						   breakpoint_manager, error_handler,
+			return new PTraceInferior (backend, start, breakpoint_manager,
+						   error_handler, global_address_domain,
 						   thread_manager);
 		}
 
@@ -83,40 +82,44 @@ namespace Mono.Debugger.Backends
 
 		public override ChildEvent Wait ()
 		{
-			long arg, data1, data2;
+			throw new InvalidOperationException ("FUCK");
+
+#if FIXME
+			int arg;
 			ChildEventType message;
 
 		again:
 			Report.Debug (DebugFlags.EventLoop, "Waiting for event from {0}", PID);
-			mono_debugger_server_wait (server_handle, out message, out arg, out data1, out data2);
+			mono_debugger_server_wait (server_handle, out message, out arg);
 			Report.Debug (DebugFlags.EventLoop,
 				      "Received event for {0}: {1} {2} {3}",
 				      PID, message, arg, CurrentFrame);
 
-			if (message == ChildEventType.CHILD_CALLBACK)
-				return new ChildEvent (arg, data1, data2);
+			ChildEvent cevent = new ChildEvent (message, arg, 0, 0);
+
+			if ((thread_manager != null) &&
+			    thread_manager.HandleChildEvent (this, cevent)) {
+				Continue ();
+				goto again;
+			}
 
 			if ((message == ChildEventType.CHILD_EXITED) ||
 			    (message == ChildEventType.CHILD_SIGNALED))
 				child_exited ();
 
-			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
-				bool action;
-				if (thread_manager.SignalHandler (this, (int) arg, out action)){
-					if (!action) {
-						Continue ();
-						goto again;
-					}
-				}
-			}
-
-			return new ChildEvent (message, (int) arg);
+			return cevent;
+#endif
 		}
 
-		public override AddressDomain GlobalAddressDomain {
-			get {
-				return thread_manager.AddressDomain;
-			}
+		public override ChildEvent ProcessEvent (long status)
+		{
+			long arg, data1, data2;
+			ChildEventType message;
+
+			message = mono_debugger_server_dispatch_event (
+				server_handle, status, out arg, out data1, out data2);
+
+			return new ChildEvent (message, arg, data1, data2);
 		}
 
 		public override int SIGKILL {

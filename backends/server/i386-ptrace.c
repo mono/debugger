@@ -3,6 +3,7 @@
 #include <breakpoints.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/ptrace.h>
 #include <sys/socket.h>
@@ -159,69 +160,71 @@ mono_debugger_server_write_memory (ServerHandle *handle, guint64 start,
 }	
 
 
-static gboolean
-dispatch_event (ServerHandle *handle, int status, ServerStatusMessageType *type,
-		guint64 *arg, guint64 *data1, guint64 *data2)
+ServerStatusMessageType
+mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg,
+				     guint64 *data1, guint64 *data2)
 {
+	if (status >> 16) {
+		switch (status >> 16) {
+		case PTRACE_EVENT_CLONE: {
+			int new_pid;
+
+			if (ptrace (PTRACE_GETEVENTMSG, handle->inferior->pid, 0, &new_pid)) {
+				g_warning (G_STRLOC ": %d - %s", handle->inferior->pid,
+					   g_strerror (errno));
+				return FALSE;
+			}
+
+			*arg = new_pid;
+			return MESSAGE_CHILD_CREATED_THREAD;
+		}
+
+		default:
+			g_warning (G_STRLOC ": Received unknown wait result %lx on child %d",
+				   status, handle->inferior->pid);
+			return MESSAGE_UNKNOWN_ERROR;
+		}
+	}
+
 	if (WIFSTOPPED (status)) {
 		guint64 callback_arg, retval, retval2;
-		ChildStoppedAction action = i386_arch_child_stopped
-			(handle, WSTOPSIG (status), &callback_arg, &retval, &retval2);
+		ChildStoppedAction action;
+
+		action = i386_arch_child_stopped (handle, WSTOPSIG (status),
+						  &callback_arg, &retval, &retval2);
 
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
-			*type = MESSAGE_CHILD_STOPPED;
 			if (WSTOPSIG (status) == SIGTRAP)
 				*arg = 0;
 			else {
 				handle->inferior->last_signal = WSTOPSIG (status);
 				*arg = WSTOPSIG (status);
 			}
-			return TRUE;
+			return MESSAGE_CHILD_STOPPED;
 
 		case STOP_ACTION_BREAKPOINT_HIT:
-			*type = MESSAGE_CHILD_HIT_BREAKPOINT;
 			*arg = (int) retval;
-			return TRUE;
+			return MESSAGE_CHILD_HIT_BREAKPOINT;
 
 		case STOP_ACTION_CALLBACK:
-			*type = MESSAGE_CHILD_CALLBACK;
 			*arg = callback_arg;
 			*data1 = retval;
 			*data2 = retval2;
-			return TRUE;
-
-		default:
-			g_assert_not_reached ();
+			return MESSAGE_CHILD_CALLBACK;
 		}
+
+		g_assert_not_reached ();
 	} else if (WIFEXITED (status)) {
-		*type = MESSAGE_CHILD_EXITED;
 		*arg = WEXITSTATUS (status);
-		handle->inferior->pid = 0;
-		return TRUE;
+		return MESSAGE_CHILD_EXITED;
 	} else if (WIFSIGNALED (status)) {
-		*type = MESSAGE_CHILD_SIGNALED;
 		*arg = WTERMSIG (status);
-		handle->inferior->pid = 0;
-		return TRUE;
+		return MESSAGE_CHILD_SIGNALED;
 	}
 
-	g_warning (G_STRLOC ": Got unknown waitpid() result: %d", status);
-	return FALSE;
-}
-
-void
-mono_debugger_server_wait (ServerHandle *handle, ServerStatusMessageType *type,
-			   guint64 *arg, guint64 *data1, guint64 *data2)
-{
-	int status;
-
-	do {
-		status = _mono_debugger_server_wait (handle->inferior);
-		if (status == -1)
-			return;
-
-	} while (!dispatch_event (handle, status, type, arg, data1, data2));
+	g_warning (G_STRLOC ": Got unknown waitpid() result: %lx", status);
+	return MESSAGE_UNKNOWN_ERROR;
 }
 
 static gboolean initialized = FALSE;
@@ -272,7 +275,7 @@ ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    gchar **argv, gchar **envp, gint *child_pid,
 			    ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
-			    gchar **error)
+			    gchar **error, gboolean *has_thread_manager)
 {	
 	InferiorHandle *inferior = handle->inferior;
 	int fd[2], open_max, ret, len, i;
@@ -281,38 +284,13 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 
 	pipe (fd);
 
-	/*
-	 * Create two pairs of connected sockets to read the target's stdout and stderr.
-	 * We set these sockets to O_ASYNC to receive a SIGIO when output becomes available.
-	 *
-	 * NOTE: Another way of implementing this is just using a pipe and monitoring it from
-	 *       the glib main loop, but I don't want to require having a running glib main
-	 *       loop.
-	 */
-	socketpair (AF_LOCAL, SOCK_STREAM, 0, inferior->output_fd);
-	socketpair (AF_LOCAL, SOCK_STREAM, 0, inferior->error_fd);
-
-	inferior->stdout_handler = stdout_handler;
-	inferior->stderr_handler = stderr_handler;
-
-	set_socket_flags (inferior->output_fd [0], O_ASYNC | O_NONBLOCK);
-	set_socket_flags (inferior->error_fd [0], O_ASYNC | O_NONBLOCK);
-
 	*child_pid = fork ();
 	if (*child_pid == 0) {
 		gchar *error_message;
 
-#if FIXME
-		close (0); close (1); close (2);
-		dup2 (inferior->output_fd [0], 0);
-		dup2 (inferior->output_fd [1], 1);
-		dup2 (inferior->error_fd [1], 2);
-
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 3; i < open_max; i++)
 			fcntl (i, F_SETFD, FD_CLOEXEC);
-#endif
-
 
 		child_setup_func (NULL);
 		execve (argv [0], argv, envp);
@@ -324,7 +302,6 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		_exit (1);
 	}
 
-#if FIXME
 	close (fd [1]);
 	ret = read (fd [0], &len, sizeof (len));
 
@@ -334,16 +311,12 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		*error = g_malloc0 (len);
 		read (fd [0], *error, len);
 		close (fd [0]);
-		close (inferior->output_fd [0]);
-		close (inferior->output_fd [1]);
-		close (inferior->error_fd [0]);
-		close (inferior->error_fd [1]);
 		return COMMAND_ERROR_FORK;
 	}
-#endif
 
 	inferior->pid = *child_pid;
 	_mono_debugger_server_setup_inferior (handle);
+	*has_thread_manager = _mono_debugger_server_setup_thread_manager (handle);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -353,10 +326,7 @@ mono_debugger_server_attach (ServerHandle *handle, int pid)
 {
 	InferiorHandle *inferior = handle->inferior;
 
-	if (ptrace (PT_ATTACH, pid, NULL, 0)) {
-		g_warning (G_STRLOC ": Cannot attach to process %d: %s", pid, g_strerror (errno));
-		return COMMAND_ERROR_FORK;
-	}
+	ptrace (PT_ATTACH, pid, NULL, 0);
 
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;

@@ -22,11 +22,14 @@ typedef enum {
 } ServerCommandError;
 
 typedef enum {
+	MESSAGE_UNKNOWN_ERROR = 0,
 	MESSAGE_CHILD_EXITED = 1,
 	MESSAGE_CHILD_STOPPED,
 	MESSAGE_CHILD_SIGNALED,
 	MESSAGE_CHILD_CALLBACK,
-	MESSAGE_CHILD_HIT_BREAKPOINT
+	MESSAGE_CHILD_HIT_BREAKPOINT,
+	MESSAGE_CHILD_MEMORY_CHANGED,
+	MESSAGE_CHILD_CREATED_THREAD
 } ServerStatusMessageType;
 
 typedef struct {
@@ -86,7 +89,8 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 					   gint               *child_pid,
 					   ChildOutputFunc     stdout_handler,
 					   ChildOutputFunc     stderr_handler,
-					   gchar             **error);
+					   gchar             **error,
+					   gboolean           *has_thread_manager);
 
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
@@ -95,9 +99,12 @@ mono_debugger_server_attach               (ServerHandle       *handle,
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
 
-void
-mono_debugger_server_wait                 (ServerHandle            *handle,
-					   ServerStatusMessageType *message,
+guint32
+mono_debugger_server_wait                 (guint64                 *status);
+
+ServerStatusMessageType
+mono_debugger_server_dispatch_event       (ServerHandle            *handle,
+					   guint64                  status,
 					   guint64                 *arg,
 					   guint64                 *data1,
 					   guint64                 *data2);

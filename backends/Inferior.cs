@@ -25,6 +25,7 @@ namespace Mono.Debugger.Backends
 		protected Bfd bfd;
 		protected BfdDisassembler bfd_disassembler;
 		protected AddressDomain address_domain;
+		protected ThreadManager thread_manager;
 
 		protected readonly ProcessStart start;
 
@@ -34,6 +35,7 @@ namespace Mono.Debugger.Backends
 		protected readonly DebuggerBackend backend;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
+		protected readonly AddressDomain global_address_domain;
 		protected readonly bool native;
 
 		int child_pid;
@@ -44,6 +46,12 @@ namespace Mono.Debugger.Backends
 		long last_callback_id = 0;
 
 		SingleSteppingEngine sse = null;
+
+		public bool HasTarget {
+			get {
+				return initialized;
+			}
+		}
 
 		public int PID {
 			get {
@@ -65,7 +73,7 @@ namespace Mono.Debugger.Backends
 		public event TargetExitedHandler TargetExited;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error, out bool has_thread_manager);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid);
@@ -151,7 +159,8 @@ namespace Mono.Debugger.Backends
 			CHILD_SIGNALED,
 			CHILD_CALLBACK,
 			CHILD_HIT_BREAKPOINT,
-			CHILD_MEMORY_CHANGED
+			CHILD_MEMORY_CHANGED,
+			CHILD_CREATED_THREAD
 		}
 
 		public delegate void ChildEventHandler (ChildEventType message, int arg);
@@ -159,27 +168,24 @@ namespace Mono.Debugger.Backends
 		public sealed class ChildEvent
 		{
 			public readonly ChildEventType Type;
-			public readonly int Argument;
+			public readonly long Argument;
 
-			public readonly long Callback;
 			public readonly long Data1;
 			public readonly long Data2;
 
-			public ChildEvent (ChildEventType type, int arg)
+			public ChildEvent (ChildEventType type, long arg,
+					   long data1, long data2)
 			{
 				this.Type = type;
 				this.Argument = arg;
-				this.Callback = this.Data1 = this.Data2 = 0;
+				this.Data1 = data1;
+				this.Data2 = data2;
 			}
 
-			public ChildEvent (long callback, long data, long data2)
+			public override string ToString ()
 			{
-				this.Type = ChildEventType.CHILD_CALLBACK;
-				this.Argument = 0;
-
-				this.Callback = callback;
-				this.Data1 = data;
-				this.Data2 = data2;
+				return String.Format ("ChildEvent ({0}:{1}:{2:x}:{3:x})",
+						      Type, Argument, Data1, Data2);
 			}
 		}
 
@@ -198,21 +204,32 @@ namespace Mono.Debugger.Backends
 		}
 
 		protected Inferior (DebuggerBackend backend, ProcessStart start,
-				    BfdContainer bfd_container, BreakpointManager bpm,
-				    DebuggerErrorHandler error_handler)
+				    BreakpointManager bpm,
+				    DebuggerErrorHandler error_handler,
+				    AddressDomain global_address_domain)
 		{
 			this.backend = backend;
 			this.start = start;
 			this.native = !(start is ManagedProcessStart);
-			this.bfd_container = bfd_container;
+			this.bfd_container = backend.BfdContainer;
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
+			this.global_address_domain = global_address_domain;
 
 			arch = new ArchitectureI386 ();
 
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
+		}
+
+		public static Inferior CreateInferior (DebuggerBackend backend,
+						       ProcessStart start)
+		{
+			BreakpointManager bpm = new BreakpointManager ();
+			AddressDomain global_domain = new AddressDomain ("global");
+			return new PTraceInferior (
+				backend, start, bpm, null, global_domain, null);
 		}
 
 		public abstract Inferior CreateThread ();
@@ -442,12 +459,13 @@ namespace Mono.Debugger.Backends
 
 			IntPtr error;
 
+			bool has_thread_manager;
 			CommandError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, out child_pid,
 				new ChildOutputHandler (inferior_stdout_handler),
 				new ChildOutputHandler (inferior_stderr_handler),
-				out error);
+				out error, out has_thread_manager);
 			if (result != CommandError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
@@ -456,6 +474,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			SetupInferior ();
+
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
@@ -474,6 +493,8 @@ namespace Mono.Debugger.Backends
 		}
 
 		public abstract ChildEvent Wait ();
+
+		public abstract ChildEvent ProcessEvent (long status);
 
 		public ChildEvent WaitForCallback ()
 		{
@@ -592,8 +613,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public abstract AddressDomain GlobalAddressDomain {
-			get;
+		public AddressDomain GlobalAddressDomain {
+			get {
+				return global_address_domain;
+			}
 		}
 
 		IntPtr read_buffer (TargetAddress address, int size)
@@ -871,22 +894,6 @@ namespace Mono.Debugger.Backends
 			} catch {
 				change_target_state (old_state);
 			}
-		}
-
-		public void Continue (TargetAddress until)
-		{
-			int break_id = InsertBreakpoint (until);
-
-			Continue ();
-			ChildEvent cevent = Wait ();
-
-			if ((cevent.Type != ChildEventType.CHILD_HIT_BREAKPOINT) ||
-			    (cevent.Argument != break_id))
-				throw new CannotStartTargetException (
-					"Child {0} stopped unexpectedly: {1} {2}",
-					PID, cevent.Type, cevent.Argument);
-
-			RemoveBreakpoint (break_id);
 		}
 
 		public void Stop ()

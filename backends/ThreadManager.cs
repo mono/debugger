@@ -28,10 +28,10 @@ namespace Mono.Debugger
 
 		bool initialized = false;
 
-		protected ThreadManager (DebuggerBackend backend, BfdContainer bfdc)
+		protected ThreadManager (DebuggerBackend backend)
 		{
 			this.backend = backend;
-			this.bfdc = bfdc;
+			this.bfdc = backend.BfdContainer;
 
 			breakpoint_manager = new BreakpointManager ();
 		}
@@ -50,6 +50,7 @@ namespace Mono.Debugger
 			}
 		}
 
+#if FIXME
 		protected Process CreateThread (Inferior inferior, int pid)
 		{
 			Inferior new_inferior = inferior.CreateThread ();
@@ -73,11 +74,15 @@ namespace Mono.Debugger
 
 		protected Process CreateMainThread (Inferior inferior)
 		{
-			return new NativeProcess (this, inferior);
+			return new NativeProcess (inferior);
 		}
+#endif
 
 		protected abstract void AddThread (Inferior inferior, Process new_process,
 						   int pid, bool is_daemon);
+
+		internal abstract bool HandleChildEvent (Inferior inferior,
+							 Inferior.ChildEvent cevent);
 
 		public bool Initialized {
 			get { return initialized; }
@@ -256,15 +261,15 @@ namespace Mono.Debugger
 			Dispose (false);
 		}
 
+#if FIXME
 		protected class NativeProcess : Process
 		{
 			ThreadManager thread_manager;
 			protected readonly Inferior inferior;
 
-			public NativeProcess (ThreadManager thread_manager, Inferior inferior)
+			public NativeProcess (Inferior inferior)
 				: base (inferior)
 			{
-				this.thread_manager = thread_manager;
 				this.inferior = inferior;
 			}
 
@@ -272,13 +277,15 @@ namespace Mono.Debugger
 			{
 				inferior.Run (false);
 
+				return;
+
 				TargetAddress main = inferior.MainMethodAddress;
 				Report.Debug (DebugFlags.Threads, "Main address is {0}", main);
 				inferior.Continue (main);
 
 				inferior.UpdateModules ();
 
-				thread_manager.Initialize (inferior);
+				// thread_manager.Initialize (inferior);
 			}
 		}
 
@@ -324,5 +331,6 @@ namespace Mono.Debugger
 				inferior.Attach (tid);
 			}
 		}
+#endif
 	}
 }

@@ -99,39 +99,40 @@ _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long 
 	return COMMAND_ERROR_NONE;
 }
 
-int
-_mono_debugger_server_wait (InferiorHandle *inferior)
+static int
+do_wait (guint32 *status)
 {
-	int ret, status = 0, signo = 0;
+	int ret;
 
- again:
-	if (!inferior->is_thread)
-		check_io (inferior);
-	/* Check whether the target changed its state in the meantime. */
-	ret = waitpid (inferior->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
+	ret = waitpid (-1, status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
 	if (ret < 0) {
-		g_warning (G_STRLOC ": Can't waitpid (%d): %s", inferior->pid, g_strerror (errno));
-		status = -1;
-		goto out;
-	} else if (ret) {
-		goto out;
+		g_warning (G_STRLOC ": Can't waitpid: %s", g_strerror (errno));
+		return -1;
+	} else if (ret)
+		return ret;
+
+	GC_start_blocking ();
+	ret = waitpid (-1, status, WUNTRACED | __WALL | __WCLONE);
+	GC_end_blocking ();
+	if (ret < 0) {
+		g_warning (G_STRLOC ": Can't waitpid: %s", g_strerror (errno));
+		return -1;
 	}
 
-	/*
-	 * Wait until the target changed its state (in this case, we receive a SIGCHLD), I/O is
-	 * possible or another event occured.
-	 *
-	 * Each time I/O is possible, emit the corresponding events.  Note that we must read the
-	 * target's stdout/stderr as soon as it becomes available since otherwise the target may
-	 * block in __libc_write().
-	 */
-	GC_start_blocking ();
-	sigwait (&mono_debugger_signal_mask, &signo);
-	GC_end_blocking ();
-	goto again;
+	return ret;
+}
 
- out:
-	return status;
+guint32
+mono_debugger_server_wait (guint64 *status_ret)
+{
+	int ret, status;
+
+	ret = do_wait (&status);
+	if (ret < 0)
+		return -1;
+
+	*status_ret = status;
+	return ret;
 }
 
 void
@@ -139,16 +140,23 @@ _mono_debugger_server_setup_inferior (ServerHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
 
-	_mono_debugger_server_wait (handle->inferior);
-
 	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
 
 	if (handle->inferior->mem_fd < 0)
 		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
 
 	g_free (filename);
+}
 
-	i386_arch_get_registers (handle);
+gboolean
+_mono_debugger_server_setup_thread_manager (ServerHandle *handle)
+{
+	int flags = PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORKDONE | PTRACE_O_TRACECLONE;
+
+	if (ptrace (PTRACE_SETOPTIONS, handle->inferior->pid, 0, flags))
+		return FALSE;
+
+	return TRUE;
 }
 
 ServerCommandError
