@@ -1,3 +1,10 @@
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
+	* interfaces/IMethod.cs (IMethod.Locals): New property.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs (MonoMethod):
+	Added support for local variables.
+
 2002-09-20  Martin Baulig  <martin@gnome.org>
 
 	* interfaces/IStackFrame.cs (IStackFrame.GetLocalVariableLocation): Removed.

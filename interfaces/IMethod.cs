@@ -111,5 +111,12 @@ namespace Mono.Debugger
 		IVariable[] Parameters {
 			get;
 		}
+
+		// <summary>
+		//   The method's local variables
+		// </summary>
+		IVariable[] Locals {
+			get;
+		}
 	}
 }

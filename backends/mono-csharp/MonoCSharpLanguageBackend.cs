@@ -194,10 +194,13 @@ namespace Mono.Debugger.Languages.CSharp
 			ISourceFileFactory factory;
 			System.Reflection.MethodBase rmethod;
 			MonoType[] param_types;
+			MonoType[] local_types;
 			IVariable[] parameters;
+			IVariable[] locals;
 			bool has_variables;
 
 			static MethodInfo get_method;
+			static MethodInfo get_local_type_from_sig;
 
 			static MonoMethod ()
 			{
@@ -206,6 +209,11 @@ namespace Mono.Debugger.Languages.CSharp
 				if (get_method == null)
 					throw new InternalError (
 						"Can't find Assembly.MonoDebugger_GetMethod");
+				get_local_type_from_sig = type.GetMethod ("MonoDebugger_GetLocalTypeFromSignature");
+				if (get_local_type_from_sig == null)
+					throw new InternalError (
+						"Can't find Assembly.MonoDebugger_GetLocalTypeFromSignature");
+
 			}
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
@@ -247,6 +255,27 @@ namespace Mono.Debugger.Languages.CSharp
 						reader.backend, param_info [i].Name, param_types [i],
 						false, this, method.ParameterVarInfo [i]);
 
+				local_types = new MonoType [method.NumLocals];
+				for (int i = 0; i < method.NumLocals; i++) {
+					LocalVariableEntry local = method.Locals [i];
+
+					object[] args = new object[] { local.Signature };
+					Type type = (Type) get_local_type_from_sig.Invoke (
+						reader.assembly, args);
+
+					local_types [i] = MonoType.GetType (
+						type, method.LocalVarInfo [i].Size);
+				}
+
+				locals = new IVariable [method.NumLocals];
+				for (int i = 0; i < method.NumLocals; i++) {
+					LocalVariableEntry local = method.Locals [i];
+
+					locals [i] = new MonoVariable (
+						reader.backend, local.Name, local_types [i],
+						true, this, method.LocalVarInfo [i]);
+				}
+
 				has_variables = true;
 			}
 
@@ -282,6 +311,13 @@ namespace Mono.Debugger.Languages.CSharp
 				get {
 					get_variables ();
 					return parameters;
+				}
+			}
+
+			public override IVariable[] Locals {
+				get {
+					get_variables ();
+					return locals;
 				}
 			}
 		}

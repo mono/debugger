@@ -188,6 +188,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract IVariable[] Locals {
+			get;
+		}
+
 		//
 		// IMethodSource
 		//
