@@ -109,6 +109,15 @@ AC_CHECK_LIB(opcodes, disassembler,, [AC_MSG_ERROR(
 [Can't find libopcodes, make sure you have binutils >= 2.12 installed.])], -lbfd)
 LIBS=$old_LIBS
 
+old_LIBS=$LIBS
+LIBS="-lbfd"
+AC_MSG_CHECKING(whether we have a shared libbfd.so)
+AC_TRY_LINK_FUNC(_sch_istable,,[AC_MSG_ERROR([
+*** You libbfd is unusable for the debugger.
+ *** Please read the binutils and libbfd issues section in README.FreeBSD.])])
+LIBS=$old_LIBS
+AC_MSG_RESULT(ok)
+
 AC_PATH_PROG(MONO, mono, mono)
 AC_SUBST(PATH)
 

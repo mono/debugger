@@ -107,3 +107,7 @@
   don't work everywhere (so you won't be able to step through x86_magic_trampoline(), for
   instance).
 
+* I'm getting an undefined symbol `_sch_istable'.
+
+  Please read the section "binutils and libbfd issues" in README.FreeBSD.
+

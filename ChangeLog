@@ -1,5 +1,15 @@
 2003-01-16  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Check whether we have a shared libbfd.so; if not,
+	tell people to read the "binutils and libbfd issues" section in
+	README.FreeBSD.
+
+	* README.FreeBSD: New file.
+
+	* doc/FAQ.txt: Also added this to the FAQ.
+
+2003-01-16  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs: Don't hardcode signal numbers.
 
 	* backends/ptrace/PTrace.cs
