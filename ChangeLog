@@ -1,5 +1,9 @@
 2004-01-15  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFunctionType.cs (Source): New property.
+
+2004-01-15  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend: Renamed
 	`MonoSymbolTableReader' to `MonoSymbolfile'.
 

@@ -50,6 +50,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		SourceMethod ITargetFunctionType.Source {
+			get {
+				return null;
+			}
+		}
+
 		object ITargetFunctionType.MethodHandle {
 			get {
 				return null;

@@ -14,6 +14,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		SourceMethod Source {
+			get;
+		}
+
 		// <summary>
 		//   The current programming language's native representation of
 		//   a method.  This is a System.Reflection.MethodInfo for managed

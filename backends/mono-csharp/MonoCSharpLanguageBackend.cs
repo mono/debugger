@@ -914,17 +914,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int TypeInfo;
 		public readonly Type Type;
 
-		static R.MethodInfo get_type;
-
-		static ClassEntry ()
-		{
-			Type type = typeof (R.Assembly);
-			get_type = type.GetMethod ("MonoDebugger_GetType");
-			if (get_type == null)
-				throw new InternalError (
-					"Can't find Assembly.MonoDebugger_GetType");
-		}
-
 		internal ClassEntry (MonoSymbolFile reader, ITargetMemoryReader memory)
 		{
 			KlassAddress = memory.ReadAddress ();
@@ -932,10 +921,8 @@ namespace Mono.Debugger.Languages.CSharp
 			Token = memory.BinaryReader.ReadInt32 ();
 			TypeInfo = memory.BinaryReader.ReadInt32 ();
 
-			if (Token != 0) {
-				object[] args = new object[] { (int) Token };
-				Type = (Type) get_type.Invoke (reader.Assembly, args);
-			}
+			if (Token != 0)
+				Type = C.MonoDebuggerSupport.GetType (reader.Assembly, Token);
 		}
 
 		public static void ReadClasses (MonoSymbolFile reader,
@@ -1011,6 +998,8 @@ namespace Mono.Debugger.Languages.CSharp
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
 
+			Assembly = R.Assembly.LoadFrom (ImageFile);
+
 			table.AddImage (this);
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
@@ -1018,8 +1007,6 @@ namespace Mono.Debugger.Languages.CSharp
 			class_entry_size = memory.ReadInteger (address);
 			address += int_size;
 			dynamic_address = address;
-
-			Assembly = R.Assembly.LoadFrom (ImageFile);
 
 			File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
 

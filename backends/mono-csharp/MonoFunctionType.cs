@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using R = System.Reflection;
+using C = Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Languages.CSharp
 {
@@ -94,10 +95,16 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public SourceMethod Source {
+			get {
+				int token = C.MonoDebuggerSupport.GetMethodToken (method_info);
+
+				return file.GetMethodByToken (token);
+			}
+		}
+
 		object ITargetFunctionType.MethodHandle {
 			get {
-				Console.WriteLine ("GET METHOD HANDLE: {0}", this);
-
 				return method_info;
 			}
 		}
