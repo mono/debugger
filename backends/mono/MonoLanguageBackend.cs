@@ -255,7 +255,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void AddClass (TargetAddress klass_address, MonoType type)
 		{
-		  Console.WriteLine ("AddClass {0}", type);
 			class_hash.Add (klass_address, type);
 		}
 
