@@ -34,6 +34,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		DebuggerBackend backend;
 		Module[] modules;
 		ProcessStart start;
+		DebuggerOptions options;
 
 		ScriptingContext context;
 
@@ -48,7 +49,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		DebuggerTextWriter inferior_output;
 		bool is_synchronous;
 		bool is_interactive;
-		bool is_script;
 		bool initialized;
 		int exit_code = 0;
 
@@ -71,7 +71,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
-			this.is_script = options.IsScript;
+			this.options = options;
 
 			procs = new Hashtable ();
 			breakpoints = new Hashtable ();
@@ -87,14 +87,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			start_event = new AutoResetEvent (false);
 
 			context = new ScriptingContext (this, is_interactive, true);
-
-			try {
-				start = ProcessStart.Create (options);
-				if (start != null)
-					Initialize ();
-			} catch (TargetException e) {
-				Error (e);
-			}
 		}
 
 		public DebuggerBackend Initialize ()
@@ -165,7 +157,11 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		public bool IsScript {
-			get { return is_script; }
+			get { return options.IsScript; }
+		}
+
+		public DebuggerOptions Options {
+			get { return options; }
 		}
 
 		public int ExitCode {
@@ -288,6 +284,16 @@ namespace Mono.Debugger.Frontends.Scripting
 			inferior_output.Write (is_stderr, line);
 		}
 
+		public bool Query (string prompt) {
+
+			command_output.Write (false, prompt);
+			command_output.Write (false, " (y or n) ");
+	    
+			int c = Console.Read ();
+			Console.Read (); /* consume the \n */
+			return (c == 'y');
+		}
+
 		public bool HasBackend {
 			get {
 				return backend != null;
@@ -300,7 +306,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		public ProcessStart Start (DebuggerOptions options, string[] argv)
+		public ProcessStart Start (string[] argv)
 		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");

@@ -6,48 +6,45 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
 using C = Mono.CompilerServices.SymbolWriter;
-using Mono.GetOptions;
 
 namespace Mono.Debugger
 {
-	public class DebuggerOptions : Options
+	public class DebuggerOptions
 	{
-		public DebuggerOptions ()
-		{
-			ParsingMode = OptionsParsingMode.Linux;
-			EndOptionProcessingWithDoubleDash = true;
-		}
+		/* The executable file we're debugging */
+		public string File = "";
 
-		[Option("The command-line prompt", 'p', "prompt")]
+		/* argv[1...n] for the inferior process */
+		public string[] InferiorArgs = null;
+
+		/* The command line prompt.  should we really even
+		 * bother letting the user set this?  why? */
 		public string Prompt = "(mdb) ";
 
-		[Option("JIT Optimizations", "jit-optimizations")]
+		/* JIT optimization flags affecting the inferior
+		 * process */
 		public string JitOptimizations = "";
 
-		[Option("Working directory", "cd", "working-directory")]
+		/* The inferior process's working directory */
 		public string WorkingDirectory = ".";
 
-		[Option("Load native symtabs", "native-symtabs")]
+		/* Whether or not we load native symbol tables */
 		public bool LoadNativeSymbolTable = false;
 
-		[Option("Running in a script", "script")]
+		/* true if we're running in a script */
 		public bool IsScript = false;
-
-		[Option("Debugging flags", "debug-flags")]
+	  
+		/* the value of the -debug-flags: command line
+		 * argument */
 		public int DebugFlags = 0;
 
-		[Option("Running in Emacs", 'f', "fullname")]
+		/* true if -f/-fullname is specified on the command
+		 * line */
 		public bool InEmacs = false;
 
-		[Option("Override Mono prefix", "mono-prefix")]
+		/* non-null if the user specified the -mono-prefix
+		 * command line argument */
 		public string MonoPrefix = null;
-
-		[Option("Display version and licensing information", 'V', "version")]
-		public override WhatToDoNext DoAbout()
-		{
-			base.DoAbout ();
-			return WhatToDoNext.AbandonProgram;
-		}
 	}
 
 	[Serializable]
@@ -252,10 +249,13 @@ namespace Mono.Debugger
 
 		public static ProcessStart Create (DebuggerOptions options)
 		{
-			string[] args = options.RemainingArguments;
-
-			if (args.Length == 0)
+			if (options.File == null || options.File == "")
 				return null;
+
+			string[] args = new string[1 + (options.InferiorArgs == null ? 0 : options.InferiorArgs.Length)];
+
+			args[0] = options.File;
+			options.InferiorArgs.CopyTo (args, 1);
 
 			return new ProcessStart (options, args);
 		}

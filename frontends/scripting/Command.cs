@@ -559,7 +559,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class StartCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class FileCommand : DebuggerCommand, CL.IDocumentableCommand
 	{
 		protected override bool NeedsProcess {
 			get { return false; }
@@ -567,13 +567,8 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((Args == null) || (Args.Count < 1)) {
-				context.Error ("Filename and arguments expected");
-				return false;
-			}
-
-			if (context.Interpreter.HasBackend) {
-				context.Error ("Already have a target.");
+			if (Args != null && Args.Count != 1) {
+				context.Error ("This command requires either zero or one argument");
 				return false;
 			}
 
@@ -582,17 +577,14 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			string [] args = (string []) Args.ToArray (typeof (string));
-
-			try {
-				DebuggerOptions options = new DebuggerOptions ();
-
-				context.Interpreter.Start (options, args);
-				context.Interpreter.Initialize ();
-				context.Interpreter.Run ();
-			} catch (TargetException e) {
-				context.Interpreter.Kill ();
-				throw new ScriptingException (e.Message);
+			if (Args == null) {
+				Console.WriteLine ("No executable file.");
+				context.Interpreter.Options.File = null;
+			}
+			else {
+				context.Interpreter.Options.File = (string)Args[0];
+				Console.WriteLine ("Executable file: {0}.",
+						   context.Interpreter.Options.File);
 			}
 		}
 
@@ -853,9 +845,60 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return false; }
 		}
 
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (context.Interpreter.HasBackend && context.Interpreter.IsInteractive) {
+				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
+							       "Start it from the beginning?")) {
+					context.Interpreter.Kill ();
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.Run ();
+			string [] argv;
+			string [] cmd_args;
+
+			if (Args == null) {
+				cmd_args = context.Interpreter.Options.InferiorArgs;
+			}
+			else {
+				cmd_args = (string []) Args.ToArray (typeof (string));
+			}
+
+			if (cmd_args == null) {
+				argv = new string [1];
+			}
+			else {
+				argv = new string [cmd_args.Length + 1];
+				cmd_args.CopyTo (argv, 1);
+
+				/* store them for the next invocation of this command */
+				context.Interpreter.Options.InferiorArgs = cmd_args;
+			}
+
+			argv[0] = context.Interpreter.Options.File;
+
+			Console.Write ("Starting program:");
+			foreach (string a in argv) {
+				Console.Write (" {0}", a);
+			}
+			Console.WriteLine ();
+			try {
+				context.Interpreter.Start (argv);
+				context.Interpreter.Initialize ();
+				context.Interpreter.Run ();
+			} catch (TargetException e) {
+				context.Interpreter.Kill ();
+				throw new ScriptingException (e.Message);
+			}
 		}
 
 		// IDocumentableCommand
@@ -877,14 +920,30 @@ namespace Mono.Debugger.Frontends.Scripting
 		public string Documentation { get { return ""; } }
 	}
 
-	public class QuitCommand : CL.Command, CL.IDocumentableCommand
+	public class QuitCommand : DebuggerCommand, CL.IDocumentableCommand
 	{
-		public override string Execute (CL.Engine e)
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			DebuggerEngine engine = (DebuggerEngine) e;
-			
-			engine.Context.Interpreter.Exit ();
-			return null;
+			if (context.Interpreter.HasBackend && context.Interpreter.IsInteractive) {
+				if (context.Interpreter.Query ("The program is running.  Exit anyway?")) {
+					return true;
+				}
+				else {
+					Console.WriteLine ("Not confirmed.");
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.Exit ();
 		}
 
 		// IDocumentableCommand

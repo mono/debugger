@@ -1,3 +1,56 @@
+2004-11-27  Chris Toshok  <toshok@ximian.com>
+
+	* frontends/scripting/ScriptingContext.cs
+	(ScriptingContext.AddMethodSearchResult): give a little helpful
+	note about using "-id N".
+
+	* frontends/command-line/Main.cs
+	(CommandLineInterpreter.SetupEngine): add the "file" command, and
+	remove the "start" command.
+	(CommandLineInterpreter.ParseOption): new function to parse a
+	command line arg.  Basically ripped from mcs and tweaked.
+	(CommandLineInterpreter.ParseCommandLine): new function to parse
+	the command line.  special handling for accumulating inferior args
+	when the -args cmd line arg is present.
+	(CommandLineInterpreter.Usage): new function.
+	(CommandLineInterpreter.About): new function.
+	(CommandLineInterpreter.Main): rework this to use ParseCommandLine
+	instead of the GetOptions stuff.
+
+	* frontends/scripting/Interpreter.cs (Interpreter): instead of
+	duplicating fields of DebuggerOptions here, just save off the
+	options passed to our ctor.
+	(Interpreter.Interpreter): store off options, and don't attempt to
+	initialize start here.  We do this when the user explicitly "run"s
+	the executable.
+	(Interpreter.IsScript): change the getter to use options.
+	(Interpreter.Options): DebuggerOptions getter.
+	(Interpreter.Start): we don't need to pass the DebuggerOptions
+	here, as they were passed in to our ctor.
+	(Interpreter.Query): new function to prompt the user for a 'y' or
+	'n' response.
+	
+	* frontends/scripting/Command.cs (StartCommand): remove class.
+	(FileCommand): new class, which allows setting and clearing
+	DebuggerOptions.File.
+	(RunCommand.DoResolve): Implement, and query the user if we're
+	already debugging something (and we're interactive).
+	(RunCommand.DoExecute): build up the inferior args array using the
+	command args if they're present, or from the debugger options if
+	they aren't.  Also, output the command line we're executing.
+	(QuitCommand.NeedsProcess): override, return false.
+	(QuitCommand.DoResolve): override, querying the user if there's a
+	running inferior process.
+	
+	* classes/ProcessStart.cs (DebuggerOptions): remove the Options
+	superclass.  This is still the place to look for options that
+	effect execution of the debugger and of the inferior process, but
+	parsing of the command line happens elsewhere now (Main.cs).
+	Also, add File and InferiorArgs options, which constitute the
+	inferior process's argv.
+	(ProcessStart.Create): build up the args based on
+	File/InferiorArgs.
+
 2004-11-21  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetStructObject.cs (ITargetStructObject.Type):

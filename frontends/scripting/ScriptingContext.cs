@@ -791,6 +791,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			interpreter.Print ("More than one method matches your query:");
 			PrintMethods (methods);
+			interpreter.Print ("\nYou may use either the full method signature,\n" +
+					   "or '-id N' where N is the number to the left of the method.");
 		}
 
 		public void PrintMethods (SourceMethod[] methods)

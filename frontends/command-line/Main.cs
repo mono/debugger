@@ -43,6 +43,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.RegisterCommand ("style", typeof (StyleCommand));
 			e.RegisterCommand ("examine", typeof (ExamineCommand));
 			e.RegisterAlias   ("x", typeof (ExamineCommand));
+			e.RegisterCommand ("file", typeof (FileCommand));
 			e.RegisterCommand ("frame", typeof (PrintFrameCommand));
 			e.RegisterAlias   ("f", typeof (PrintFrameCommand));
 			e.RegisterCommand ("disassemble", typeof (DisassembleCommand));
@@ -88,7 +89,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.RegisterCommand ("run", typeof (RunCommand));
 			e.RegisterAlias   ("r", typeof (RunCommand));
 			e.RegisterCommand ("about", typeof (AboutCommand));
-			e.RegisterCommand ("start", typeof (StartCommand));
 			e.RegisterCommand ("lookup", typeof (LookupCommand));
 			e.RegisterCommand ("unwind", typeof (UnwindCommand));
 
@@ -150,14 +150,194 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		static bool ParseOption (DebuggerOptions debug_options,
+					 string option,
+					 ref string [] args,
+					 ref int i,
+					 ref bool args_follow_exe)
+		{
+			int idx = option.IndexOf (':');
+			string arg, value;
+
+			if (idx == -1){
+				arg = option;
+				value = "";
+			} else {
+				arg = option.Substring (0, idx);
+				value = option.Substring (idx + 1);
+			}
+
+			switch (arg) {
+			case "-args":
+				if (value != "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				args_follow_exe = true;
+				return true;
+
+			case "-working-directory":
+			case "-cd":
+				if (value == "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.WorkingDirectory = value;
+				return true;
+
+			case "-debug-flags":
+				if (value == "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.DebugFlags = Int32.Parse (value);
+				return true;
+
+			case "-jit-optimizations":
+				if (value == "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.JitOptimizations = value;
+				return true;
+
+			case "-fullname":
+			case "-f":
+				if (value != "") { 
+					Usage ();
+					Environment.Exit (1);
+				}
+
+				debug_options.InEmacs = true;
+				return true;
+
+			case "-mono-prefix":
+				if (value == "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.MonoPrefix = value;
+				return true;
+
+			case "-prompt":
+				if (value == "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.Prompt = value;
+				return true;
+
+			case "-script":
+				if (value != "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.IsScript = true;
+				return true;
+
+			case "-version":
+			case "-V":
+				if (value != "") {
+					Usage ();
+					Environment.Exit (1);
+				}
+				About();
+				Environment.Exit (1);
+				return true;
+
+			case "-usage":
+				Usage();
+				Environment.Exit (1);
+				return true;
+			}
+
+			return false;
+		}
+
+		static DebuggerOptions ParseCommandLine (string[] args)
+		{
+			DebuggerOptions options = new DebuggerOptions ();
+			int i;
+			bool parsing_options = true;
+			bool args_follow = false;
+			string[] inferior_args = null;
+
+			for (i = 0; i < args.Length; i ++) {
+				string arg = args[i];
+
+				if (arg == "")
+					continue;
+
+				if (parsing_options) {
+
+					if (arg.StartsWith ("-")) {
+						if (ParseOption (options, arg, ref args, ref i, ref args_follow))
+							continue;
+					}
+					else if (arg.StartsWith ("/")) {
+						string unix_opt = "-" + arg.Substring (1);
+						if (ParseOption (options, unix_opt, ref args, ref i, ref args_follow))
+							continue;
+					}
+
+					options.File = arg;
+					break;
+				}
+			}
+
+			if (args_follow) {
+				inferior_args = new string [args.Length - i - 1];
+				Array.Copy (args, i + 1, inferior_args, 0, args.Length - i - 1);
+			}
+
+			options.InferiorArgs = inferior_args;
+
+			return options;
+		}
+
+		static void Usage ()
+		{
+			Console.WriteLine (
+				"Mono Debugger, (C) 2003-2004 Novell, Inc.\n" +
+				"mdb [options] [exe-file]\n" +
+				"mdb [options] -args exe-file [inferior-arguments ...]\n\n" +
+				
+				"   -args                     Arguments after exe-file are passed to inferior\n" +
+				"   -debug-flags:PARAM        Sets the debugging flags\n" +
+				"   -fullname                 Sets the debugging flags (short -f)\n" +
+				"   -jit-optimizations:PARAM  Set jit optimizations used on the inferior process\n" +
+				"   -mono-prefix:PATH         Override the mono prefix\n" +
+				"   -native-symtabs           Load native symtabs\n" +
+				"   -prompt:PROMPT            Override the default command-line prompt (short -p)\n" +
+				"   -script                  \n" +
+				"   -usage                   \n" +
+				"   -version                  Display version and licensing information (short -V)\n" +
+				"   -working-directory:DIR    Sets the working directory (short -cd)\n"
+				);
+		}
+
+		static void About ()
+		{
+			Console.WriteLine (
+				"The Mono Debugger is (C) 2003, 2004 Novell, Inc.\n\n" +
+				"The debugger source code is released under the terms of the GNU GPL\n\n" +
+
+				"For more information on Mono, visit the project Web site\n" +
+				"   http://www.go-mono.com\n\n" +
+
+				"The debugger was written by Martin Baulig and Chris Toshok");
+
+			Environment.Exit (0);
+		}
+
 		public static void Main (string[] args)
 		{
 			ConsoleTextWriter writer = new ConsoleTextWriter ();
 
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
-			DebuggerOptions options = new DebuggerOptions ();
-			options.ProcessArgs (args);
+			DebuggerOptions options = ParseCommandLine (args);
+
 			if (options.DebugFlags != 0)
 				Report.CurrentDebugFlags = options.DebugFlags;
 
