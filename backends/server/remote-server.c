@@ -279,6 +279,14 @@ main (int argc, char **argv)
 
 	g_thread_create (debugger_thread, NULL, TRUE, NULL);
 	g_thread_create (wait_thread, NULL, TRUE, NULL);
+
+	/*
+	 * FIXME:
+	 *
+	 * This may be looking a bit strange, but the debugger backend may only
+	 * be used from one single thread.  See bug #139618 in GNOME bugzilla.
+	 *
+	 */
      
 	sock = socket (PF_INET, SOCK_STREAM, 0);
 	g_assert (sock >= 0);
