@@ -1,5 +1,10 @@
 2004-06-17  Martin Baulig  <martin@ximian.com>
 
+	* arch/CoreFile.cs: Removed.
+	* arch/CoreFileElfI386.cs: Removed.
+
+2004-06-17  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (DisassembleCommand): Take an
 	optional pointer expression, add auto-repeat support.
 

@@ -47,6 +47,7 @@ typedef struct {
 
 typedef struct {
 	guint64 address;
+	guint64 stack_pointer;
 	guint64 frame_address;
 } StackFrame;
 

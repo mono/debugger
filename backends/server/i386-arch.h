@@ -51,7 +51,8 @@ i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 s
 
 static ServerCommandError
 i386_arch_get_frame (ServerHandle *handle, guint32 eip,
-		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame);
+		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame,
+		     guint32 *stack);
 
 static ChildStoppedAction
 i386_arch_child_stopped (ServerHandle *handle, int stopsig,

@@ -566,7 +566,8 @@ server_ptrace_set_registers (ServerHandle *handle, guint32 count,
 
 static ServerCommandError
 i386_arch_get_frame (ServerHandle *handle, guint32 eip,
-		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame)
+		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame,
+		     guint32 *stack)
 {
 	ServerCommandError result;
 	guint32 value;
@@ -608,6 +609,8 @@ i386_arch_get_frame (ServerHandle *handle, guint32 eip,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	*stack = ebp + 8;
+
 	return COMMAND_ERROR_NONE;
 }
 
@@ -616,12 +619,12 @@ server_ptrace_get_ret_address (ServerHandle *handle, guint64 *retval)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
-	guint32 retaddr, frame;
+	guint32 retaddr, frame, stack;
 
 	result = i386_arch_get_frame (handle, INFERIOR_REG_EIP (arch->current_regs),
 				      INFERIOR_REG_ESP (arch->current_regs),
 				      INFERIOR_REG_EBP (arch->current_regs),
-				      &retaddr, &frame);
+				      &retaddr, &frame, &stack);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -636,11 +639,12 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
-	guint32 address, frame;
+	guint32 address, frame, stack;
 	StackFrame sframe;
 	int i;
 
 	sframe.address = (guint32) INFERIOR_REG_EIP (arch->current_regs);
+	sframe.stack_pointer = (guint32) INFERIOR_REG_ESP (arch->current_regs);
 	sframe.frame_address = (guint32) INFERIOR_REG_EBP (arch->current_regs);
 
 	g_array_append_val (frames, sframe);
@@ -651,7 +655,7 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 	result = i386_arch_get_frame (handle, INFERIOR_REG_EIP (arch->current_regs),
 				      INFERIOR_REG_ESP (arch->current_regs),
 				      INFERIOR_REG_EBP (arch->current_regs),
-				      &address, &frame);
+				      &address, &frame, &stack);
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
@@ -663,9 +667,12 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 			goto out;
 
 		sframe.address = address;
+		sframe.stack_pointer = stack;
 		sframe.frame_address = frame;
 
 		g_array_append_val (frames, sframe);
+
+		stack = frame + 8;
 
 		result = server_ptrace_peek_word (handle, frame + 4, &address);
 		if (result != COMMAND_ERROR_NONE)

@@ -660,6 +660,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			case "sources":
 				subcommand = new ShowSourcesCommand ();
 				break;
+			case "frame":
+				subcommand = new ShowFrameCommand ();
+				break;
 			default:
 				context.Error ("Syntax error");
 				return false;
@@ -821,6 +824,18 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected override void DoExecute (ScriptingContext context)
 		{
 			context.Interpreter.ShowThreadGroups ();
+		}
+	}
+
+	public class ShowFrameCommand : FrameCommand
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			StackFrame frame = ResolveFrame (context).Frame;
+
+			context.Print ("Stack level {0}, stack pointer at {1}, " +
+				       "frame pointer at {2}.", frame.Level,
+				       frame.StackPointer, frame.FrameAddress);
 		}
 	}
 

@@ -1,6 +1,7 @@
 #include <mono-debugger-jit-wrapper.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
 #define IN_MONO_DEBUGGER
 #include <mono/private/libgc-mono-debugger.h>
@@ -199,6 +200,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 {
 	MainThreadArgs main_args;
 	MonoAssembly *assembly;
+	MonoImage *image;
 
 	initialize_debugger_support ();
 
@@ -221,8 +223,9 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 * Get and compile the main function.
 	 */
 
+	image = mono_assembly_get_image (assembly);
 	debugger_main_method = mono_get_method (
-		assembly->image, mono_image_get_entry_point (assembly->image), NULL);
+		image, mono_image_get_entry_point (image), NULL);
 	MONO_DEBUGGER__manager.main_function = mono_compile_method (debugger_main_method);
 
 	/*

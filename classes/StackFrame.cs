@@ -24,23 +24,27 @@ namespace Mono.Debugger
 	public abstract class StackFrame : IDisposable
 	{
 		IMethod method;
-		TargetAddress address;
+		TargetAddress address, stack, frame;
 		SourceAddress source;
 		AddressDomain address_domain;
 		string name;
 		int level;
 
-		public StackFrame (TargetAddress address, int level,
-				   SourceAddress source, IMethod method)
-			: this (address, level, method.Name)
+		public StackFrame (TargetAddress address, TargetAddress stack,
+				   TargetAddress frame, int level, SourceAddress source,
+				   IMethod method)
+			: this (address, stack, frame, level, method.Name)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (TargetAddress address, int level, string name)
+		public StackFrame (TargetAddress address, TargetAddress stack,
+				   TargetAddress frame, int level, string name)
 		{
 			this.address = address;
+			this.stack = stack;
+			this.frame = frame;
 			this.level = level;
 			this.name = name != "" ? name : null;
 		}
@@ -68,6 +72,20 @@ namespace Mono.Debugger
 			get {
 				check_disposed ();
 				return address;
+			}
+		}
+
+		public TargetAddress StackPointer {
+			get {
+				check_disposed ();
+				return stack;
+			}
+		}
+
+		public TargetAddress FrameAddress {
+			get {
+				check_disposed ();
+				return frame;
 			}
 		}
 

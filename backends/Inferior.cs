@@ -1017,6 +1017,7 @@ namespace Mono.Debugger.Backends
 		internal struct ServerStackFrame
 		{
 			public long Address;
+			public long StackPointer;
 			public long FrameAddress;
 		}
 
@@ -1034,6 +1035,19 @@ namespace Mono.Debugger.Backends
 			public TargetAddress Address {
 				get {
 					return new TargetAddress (inferior.GlobalAddressDomain, frame.Address);
+				}
+			}
+
+			public TargetAddress StackPointer {
+				get {
+					return new TargetAddress (inferior.AddressDomain, frame.StackPointer);
+				}
+			}
+
+
+			public TargetAddress FrameAddress {
+				get {
+					return new TargetAddress (inferior.AddressDomain, frame.FrameAddress);
 				}
 			}
 		}
