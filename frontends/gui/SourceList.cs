@@ -48,7 +48,9 @@ namespace Mono.Debugger.GUI {
 			//
 			// Load contents
 			//
+			text_buffer.BeginNotUndoableAction ();
 			text_buffer.Text = contents;
+			text_buffer.EndNotUndoableAction ();
 		}
 
 		void button_pressed (object obj, ButtonPressEventArgs args)

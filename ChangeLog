@@ -1,5 +1,11 @@
 2003-03-24  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/debugger.glade: Disable the popup menu in the
+	code-browser-notebook.
+
+	* frontends/gui/SourceList.cs: Embed the setting of the contents
+	in BeginNotUndoableAction()/EndNotUndoableAction().	
+
 	* frontends/gui/ProgramToDebug.cs: Don't make the dialog modal and
 	don't use Dialog.Run().
 

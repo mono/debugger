@@ -398,7 +398,7 @@
 		  <property name="scrollable">True</property>
 		  <property name="tab_hborder">2</property>
 		  <property name="tab_vborder">2</property>
-		  <property name="enable_popup">True</property>
+		  <property name="enable_popup">False</property>
 
 		  <child>
 		    <widget class="GtkHBox" id="hbox3">
