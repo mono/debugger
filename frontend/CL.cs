@@ -19,22 +19,22 @@ namespace Mono.Debugger.Frontend
 
 		public Engine () {
 
-		  Completer = new Completer (this);
+			Completer = new Completer (this);
 
-		  CommandsByFamily = new ArrayList[Enum.GetValues(typeof (CommandFamily)).Length];
-		  CommandFamilyBlurbs = new string [Enum.GetValues(typeof (CommandFamily)).Length];
+			CommandsByFamily = new ArrayList[Enum.GetValues(typeof (CommandFamily)).Length];
+			CommandFamilyBlurbs = new string [Enum.GetValues(typeof (CommandFamily)).Length];
 		  
 
-		  CommandFamilyBlurbs[ (int)CommandFamily.Running ] = "Running the program";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Breakpoints ] = "Making program stops at certain points";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Catchpoints ] = "Dealing with exceptions";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Threads ] = "Dealing with multiple threads";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Stack ] = "Examining the stack";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Files ] = "Specifying and examining files";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Data ] = "Examining data";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Internal ] = "Maintenance commands";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Obscure ] = "Obscure features";
-		  CommandFamilyBlurbs[ (int)CommandFamily.Support ] = "Support facilities";
+			CommandFamilyBlurbs[ (int)CommandFamily.Running ] = "Running the program";
+			CommandFamilyBlurbs[ (int)CommandFamily.Breakpoints ] = "Making program stops at certain points";
+			CommandFamilyBlurbs[ (int)CommandFamily.Catchpoints ] = "Dealing with exceptions";
+			CommandFamilyBlurbs[ (int)CommandFamily.Threads ] = "Dealing with multiple threads";
+			CommandFamilyBlurbs[ (int)CommandFamily.Stack ] = "Examining the stack";
+			CommandFamilyBlurbs[ (int)CommandFamily.Files ] = "Specifying and examining files";
+			CommandFamilyBlurbs[ (int)CommandFamily.Data ] = "Examining data";
+			CommandFamilyBlurbs[ (int)CommandFamily.Internal ] = "Maintenance commands";
+			CommandFamilyBlurbs[ (int)CommandFamily.Obscure ] = "Obscure features";
+			CommandFamilyBlurbs[ (int)CommandFamily.Support ] = "Support facilities";
 		}
 
 		public void RegisterCommand (string s, Type t)
