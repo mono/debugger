@@ -28,21 +28,19 @@ namespace Mono.Debugger.Backends
 
 	internal enum CommandError {
 		NONE = 0,
+		NO_INFERIOR,
+		ALREADY_HAVE_INFERIOR,
+		FORK,
 		IO,
 		UNKNOWN,
 		INVALID_COMMAND,
-		NOT_STOPPED
+		NOT_STOPPED,
+		ALIGNMENT,
+		RECURSIVE_CALL,
+		NO_SUCH_BREAKPOINT,
+		UNKNOWN_REGISTER
 	}
 	
-	internal enum ServerCommand {
-		GET_PC = 1,
-		DETACH,
-		SHUTDOWN,
-		KILL,
-		CONTINUE,
-		STEP
-	}
-
 	internal delegate void ChildSetupHandler ();
 	internal delegate void ChildExitedHandler ();
 	internal delegate void ChildCallbackHandler (long argument, long data);
@@ -172,9 +170,24 @@ namespace Mono.Debugger.Backends
 			case CommandError.NOT_STOPPED:
 				throw new TargetNotStoppedException ();
 
+			case CommandError.NO_INFERIOR:
+				throw new NoTargetException ();
+
+			case CommandError.ALREADY_HAVE_INFERIOR:
+				throw new AlreadyHaveTargetException ();
+
+			case CommandError.FORK:
+				throw new CannotStartTargetException ();
+
+			case CommandError.NO_SUCH_BREAKPOINT:
+				throw new NoSuchBreakpointException ();
+
+			case CommandError.UNKNOWN_REGISTER:
+				throw new NoSuchRegisterException ();
+
 			default:
-				throw new TargetException (
-					"Got unknown error condition from inferior: " + error);
+				throw new InternalError ("Got unknown error condition from inferior: {0}",
+							 error);
 			}
 		}
 
@@ -203,7 +216,7 @@ namespace Mono.Debugger.Backends
 				method, method_argument, null, null);
 			mono_debugger_server_wait (server_handle);
 			if (!result.IsCompleted)
-				throw new TargetException ("Call not completed");
+				throw new InternalError ("Call not completed");
 			return (long) result.AsyncResult;
 		}
 
@@ -243,7 +256,7 @@ namespace Mono.Debugger.Backends
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
-				throw new TargetException ("Can't get server handle");
+				throw new InternalError ("mono_debugger_server_initialize() failed.");
 
 			check_error (mono_debugger_server_spawn (
 				server_handle, working_directory, argv, envp, true,
@@ -269,7 +282,7 @@ namespace Mono.Debugger.Backends
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
-				throw new TargetException ("Can't get server handle");
+				throw new InternalError ("mono_debugger_server_initialize() failed.");
 
 			check_error (mono_debugger_server_attach (
 				server_handle, pid, new ChildExitedHandler (child_exited),

@@ -1,5 +1,11 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* class/TargetException (TargetException): Made this abstract.
+
+	* class/InternalError.cs: New exception class.
+
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/ITargetMemoryAccess.cs (ITargetMemoryReader.BinaryReader):
 	Return a TargetBinaryReader instead of a BinaryReader.
 

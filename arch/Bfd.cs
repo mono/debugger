@@ -60,10 +60,10 @@ namespace Mono.Debugger.Architecture
 		{
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
-				throw new TargetException ("Can't read symbol file: " + filename);
+				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
 
 			if (!bfd_glue_check_format_object (bfd))
-				throw new TargetException ("Not an object file: " + filename);
+				throw new SymbolTableException ("Not an object file: {0}", filename);
 
 			this.inferior = inferior;
 			this.filename = filename;

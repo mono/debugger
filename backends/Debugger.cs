@@ -573,7 +573,7 @@ namespace Mono.Debugger.Backends
 		public void Run ()
 		{
 			if (inferior != null)
-				throw new TargetException ("Debugger already has an inferior.");
+				throw new AlreadyHaveTargetException ();
 
 			bool native = application == null;
 
@@ -677,8 +677,6 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End);
-
 			inferior.Step (new StepFrame (
 				frame.Start, frame.End, null, StepMode.Finish));
 		}
@@ -693,7 +691,7 @@ namespace Mono.Debugger.Backends
 
 			IStackFrame frame = CurrentFrame;
 			if (frame.Method == null)
-				throw new TargetException ("Can't find bounds of current method");
+				throw new NoMethodException ();
 
 			inferior.Step (new StepFrame (
 				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
