@@ -1,5 +1,14 @@
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
+	Rewrote and redesigned the SingleSteppingEngine to do all the
+	stepping in a background thread.
+
+	* backends/server/*, backends/ptrace/PTrace.cs: Simplified this
+	ugly async stuff; since we're now running in our own thread, we
+	can just wait for our child.
+
+2002-12-13  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.cs: Added `finish' command.
 
 	* frontends/command-line/Interpreter.cs: Commented out almost

@@ -6,22 +6,14 @@
 #include <sys/time.h>
 #include <errno.h>
 
-GSource *
-mono_debugger_server_get_g_source (ServerHandle *handle)
-{
-	if (!handle->inferior)
-		return NULL;
-
-	return (* handle->info->get_g_source) (handle->inferior);
-}
-
 void
-mono_debugger_server_wait (ServerHandle *handle)
+mono_debugger_server_wait (ServerHandle *handle, ServerStatusMessageType *type, guint64 *arg,
+			   guint64 *data1, guint64 *data2)
 {
 	if (!handle->inferior)
 		return;
 
-	(* handle->info->wait) (handle->inferior);
+	(* handle->info->wait) (handle->inferior, type, arg, data1, data2);
 }
 
 ServerCommandError
@@ -186,16 +178,13 @@ mono_debugger_server_initialize (void)
 ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    gchar **argv, gchar **envp, gboolean search_path,
-			    ChildExitedFunc child_exited, ChildMessageFunc child_message,
-			    ChildCallbackFunc child_callback, gint *child_pid,
-			    gint *standard_input, gint *standard_output, gint *standard_error,
-			    GError **error)
+			    gint *child_pid, gint *standard_input, gint *standard_output,
+			    gint *standard_error, GError **error)
 {
 	if (handle->inferior)
 		return COMMAND_ERROR_ALREADY_HAVE_INFERIOR;
 
 	handle->inferior = (* handle->info->spawn) (working_directory, argv, envp, search_path,
-						    child_exited, child_message, child_callback,
 						    child_pid, standard_input, standard_output,
 						    standard_error, error);
 	if (!handle->inferior)
@@ -205,14 +194,12 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 }
 
 ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, int pid, ChildExitedFunc child_exited,
-			     ChildMessageFunc child_message, ChildCallbackFunc child_callback)
+mono_debugger_server_attach (ServerHandle *handle, int pid)
 {
 	if (handle->inferior)
 		return COMMAND_ERROR_ALREADY_HAVE_INFERIOR;
 
-	handle->inferior = (* handle->info->attach) (pid, child_exited, child_message,
-						     child_callback);
+	handle->inferior = (* handle->info->attach) (pid);
 	if (!handle->inferior)
 		return COMMAND_ERROR_FORK;
 

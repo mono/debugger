@@ -26,9 +26,6 @@ struct InferiorHandle
 	int mem_fd;
 	int last_signal;
 	long call_address;
-	ChildExitedFunc child_exited_cb;
-	ChildMessageFunc child_message_cb;
-	ChildCallbackFunc child_callback_cb;
 	guint64 callback_argument;
 	struct user_regs_struct current_regs;
 	struct user_i387_struct current_fpregs;
@@ -47,12 +44,6 @@ typedef struct {
 	char saved_insn;
 	guint32 address;
 } BreakpointInfo;
-
-typedef struct {
-	GSource source;
-	InferiorHandle *handle;
-	int status;
-} PTraceSource;
 
 typedef enum {
 	STOP_ACTION_SEND_STOPPED,
@@ -124,6 +115,10 @@ static void
 setup_inferior (InferiorHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
+	int ret, status;
+
+	ret = waitpid (handle->pid, &status, WUNTRACED);
+
 	handle->mem_fd = open64 (filename, O_RDONLY);
 
 	if (handle->mem_fd < 0)
@@ -138,8 +133,7 @@ setup_inferior (InferiorHandle *handle)
 }
 
 static InferiorHandle *
-server_ptrace_attach (int pid, ChildExitedFunc child_exited, ChildMessageFunc child_message,
-		      ChildCallbackFunc child_callback)
+server_ptrace_attach (int pid)
 {
 	InferiorHandle *handle;
 
@@ -148,9 +142,6 @@ server_ptrace_attach (int pid, ChildExitedFunc child_exited, ChildMessageFunc ch
 
 	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = pid;
-	handle->child_exited_cb = child_exited;
-	handle->child_message_cb = child_message;
-	handle->child_callback_cb = child_callback;
 
 	setup_inferior (handle);
 
@@ -242,19 +233,6 @@ server_ptrace_current_insn_is_bpt (InferiorHandle *handle, guint32 *is_breakpoin
 }
 
 static ServerCommandError
-server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
-{
-	errno = 0;
-	*retval = ptrace (PTRACE_PEEKDATA, handle->pid, start, NULL);
-	if (errno) {
-		g_message (G_STRLOC ": %d - %08Lx - %s", handle->pid, start, g_strerror (errno));
-		return COMMAND_ERROR_UNKNOWN;
-	}
-
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
 server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
 	guint8 *ptr = buffer;
@@ -271,6 +249,21 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
 
 		size -= ret;
 		ptr += ret;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
+{
+	return server_ptrace_read_data (handle, start, sizeof (int), retval);
+
+	errno = 0;
+	*retval = ptrace (PTRACE_PEEKDATA, handle->pid, start, NULL);
+	if (errno) {
+		g_message (G_STRLOC ": %d - %08Lx - %s", handle->pid, start, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -535,6 +528,11 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 	handle->call_address = 0;
 	handle->callback_argument = 0;
 
+	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get registers");
+	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get fp registers");
+
 	return STOP_ACTION_CALLBACK;
 }
 
@@ -724,9 +722,8 @@ child_setup_func (gpointer data)
 
 static InferiorHandle *
 server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp, gboolean search_path,
-		     ChildExitedFunc child_exited, ChildMessageFunc child_message,
-		     ChildCallbackFunc child_callback, gint *child_pid, gint *standard_input,
-		     gint *standard_output, gint *standard_error, GError **error)
+		     gint *child_pid, gint *standard_input, gint *standard_output, gint *standard_error,
+		     GError **error)
 {
 	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
 	InferiorHandle *handle;
@@ -739,9 +736,6 @@ server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp,
 
 	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = *child_pid;
-	handle->child_exited_cb = child_exited;
-	handle->child_message_cb = child_message;
-	handle->child_callback_cb = child_callback;
 
 	setup_inferior (handle);
 
@@ -759,8 +753,9 @@ server_ptrace_get_target_info (InferiorHandle *handle, guint32 *target_int_size,
 	return COMMAND_ERROR_NONE;
 }
 
-static void
-do_dispatch (InferiorHandle *handle, int status)
+static gboolean
+do_dispatch (InferiorHandle *handle, int status, ServerStatusMessageType *type, guint64 *arg,
+	     guint64 *data1, guint64 *data2)
 {
 	if (WIFSTOPPED (status)) {
 		guint64 callback_arg, retval, retval2;
@@ -769,133 +764,74 @@ do_dispatch (InferiorHandle *handle, int status)
 
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
+			*type = MESSAGE_CHILD_STOPPED;
 			if (WSTOPSIG (status) == SIGTRAP)
-				handle->child_message_cb (MESSAGE_CHILD_STOPPED, 0);
+				*arg = 0;
 			else
-				handle->child_message_cb (MESSAGE_CHILD_STOPPED, WSTOPSIG (status));
-			break;
+				*arg = WSTOPSIG (status);
+			return TRUE;
 
 		case STOP_ACTION_BREAKPOINT_HIT:
-			handle->child_message_cb (MESSAGE_CHILD_HIT_BREAKPOINT, (int) retval);
-			break;
+			*type = MESSAGE_CHILD_HIT_BREAKPOINT;
+			*arg = (int) retval;
+			return TRUE;
 
 		case STOP_ACTION_CALLBACK:
-			handle->child_callback_cb (callback_arg, retval, retval2);
-			break;
+			*type = MESSAGE_CHILD_CALLBACK;
+			*arg = callback_arg;
+			*data1 = retval;
+			*data2 = retval2;
+			return TRUE;
 
 		default:
 			g_assert_not_reached ();
 		}
 	} else if (WIFEXITED (status)) {
-		handle->child_message_cb (MESSAGE_CHILD_EXITED, WEXITSTATUS (status));
-		handle->child_exited_cb ();
-	} else if (WIFSIGNALED (status)) {
-		handle->child_message_cb (MESSAGE_CHILD_SIGNALED, WTERMSIG (status));
-		handle->child_exited_cb ();
-	} else
-		g_warning (G_STRLOC ": Got unknown waitpid() result: %d", status);
-}
-
-static gboolean 
-source_check (GSource *source)
-{
-	PTraceSource *psource = (PTraceSource *) source;
-	InferiorHandle *handle = psource->handle;
-	int ret, status;
-
-	if (psource->status)
+		*type = MESSAGE_CHILD_EXITED;
+		*arg = WEXITSTATUS (status);
 		return TRUE;
-
-	/* If the child stopped in the meantime. */
-	ret = waitpid (handle->pid, &status, WNOHANG | WUNTRACED);
-
-	if (ret < 0) {
-		g_error (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
-		return FALSE;
-	} else if (ret == 0)
-		return FALSE;
-
-	psource->status = status;
-
-	// do_dispatch (handle, status);
-
-	return TRUE;
-}
-
-static gboolean 
-source_prepare (GSource *source, gint *timeout)
-{
-	PTraceSource *psource = (PTraceSource *) source;
-
-	*timeout = -1;
-
-	psource->status = 0;
-
-	return source_check (source);
-}
-
-static gboolean
-source_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
-{
-	PTraceSource *psource = (PTraceSource *) source;
-
-	if (callback) {
-		g_warning ("Ooops, you must not set a callback on this source!");
-		return FALSE;
+	} else if (WIFSIGNALED (status)) {
+		*type = MESSAGE_CHILD_SIGNALED;
+		*arg = WTERMSIG (status);
+		return TRUE;
 	}
 
-	do_dispatch (psource->handle, psource->status);
-
-	return TRUE;
-}
-
-/* NOTE: You need to poll at least one file descriptor in the glib mainloop - no
- *       matter which file descriptor this is.
- *
- *       The trick here is that this source never blocks, whenever the child stops,
- *       we get a SIGCHLD - and this signal interrupts the main loop's poll().
- */
-
-GSourceFuncs mono_debugger_source_funcs =
-{
-	source_prepare,
-	source_check,
-	source_dispatch,
-	NULL
-};
-
-static GSource *
-server_ptrace_get_g_source (InferiorHandle *handle)
-{
-	GSource *source = g_source_new (&mono_debugger_source_funcs, sizeof (PTraceSource));
-	PTraceSource *psource = (PTraceSource *) source;
-
-	psource->handle = handle;
-
-	return source;
+	g_warning (G_STRLOC ": Got unknown waitpid() result: %d", status);
+	return FALSE;
 }
 
 static void
-server_ptrace_wait (InferiorHandle *handle)
+server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint64 *arg,
+		    guint64 *data1, guint64 *data2)
 {
-	int ret, status;
+	int ret, status = 0;
+	sigset_t mask, oldmask;
 
-	/* Wait until the child stops. */
-	ret = waitpid (handle->pid, &status, WUNTRACED);
+	sigemptyset (&mask);
+	sigaddset (&mask, SIGCHLD);
 
+	sigprocmask (SIG_BLOCK, &mask, &oldmask);
+
+ again:
+	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG);
 	if (ret < 0) {
 		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
-		return;
-	} else if (ret == 0)
-		return;
+		goto out;
+	} else if (ret) {
+		if (do_dispatch (handle, status, type, arg, data1, data2))
+			goto out;
+	}
 
-	do_dispatch (handle, status);
+	sigsuspend (&oldmask);
+	goto again;
+
+ out:
+	sigprocmask (SIG_UNBLOCK, &mask, NULL);
 }
 
 static ServerCommandError
 server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *registers, guint64 *values)
 {
-	ServerCommandError result;
 	int i;
 
 	for (i = 0; i < count; i++) {
@@ -1171,7 +1107,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_attach,
 	server_ptrace_detach,
 	server_ptrace_finalize,
-	server_ptrace_get_g_source,
 	server_ptrace_wait,
 	server_ptrace_get_target_info,
 	server_ptrace_continue,

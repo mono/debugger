@@ -18,8 +18,6 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	internal delegate void ChildCallbackHandler (long argument, long data, long data2);
-
 	internal enum CommandError {
 		NONE = 0,
 		NO_INFERIOR,
@@ -39,7 +37,7 @@ namespace Mono.Debugger.Backends
 
 	internal class PTraceInferior : IInferior, IDisposable
 	{
-		IntPtr server_handle, g_source;
+		IntPtr server_handle;
 		IOOutputChannel inferior_stdin;
 		IOInputChannel inferior_stdout;
 		IOInputChannel inferior_stderr;
@@ -52,9 +50,11 @@ namespace Mono.Debugger.Backends
 		IArchitecture arch;
 		SymbolTableCollection symtab_collection;
 		DebuggerBackend backend;
+		DebuggerErrorHandler error_handler;
 
 		int child_pid;
 		bool native;
+		bool initialized;
 
 		ITargetInfo target_info;
 		Hashtable pending_callbacks = new Hashtable ();
@@ -83,16 +83,13 @@ namespace Mono.Debugger.Backends
 		internal event ChildEventHandler ChildEvent;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, TargetExitedHandler child_exited, ChildEventHandler child_event, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, TargetExitedHandler child_exited, ChildEventHandler child_event, ChildCallbackHandler child_callback);
+		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid);
 
 		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_server_get_g_source (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_wait (IntPtr handle);
+		static extern void mono_debugger_server_wait (IntPtr handle, out ChildEventType message, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_pc (IntPtr handle, out long pc);
@@ -173,12 +170,6 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_initialize ();
 
 		[DllImport("glib-2.0")]
-		extern static uint g_source_attach (IntPtr source, IntPtr context);
-
-		[DllImport("glib-2.0")]
-		extern static void g_source_destroy (IntPtr source);
-
-		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
 		void check_error (CommandError error)
@@ -216,78 +207,46 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetAsyncResult call_method (TargetAddress method, long method_argument,
-					       TargetAsyncCallback callback, object user_data)
+		public long CallMethod (TargetAddress method, long method_argument)
 		{
 			check_disposed ();
-			long number = ++last_callback_id;
-			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
-			pending_callbacks.Add (number, async);
 
 			TargetState old_state = change_target_state (TargetState.BUSY);
 			try {
 				check_error (mono_debugger_server_call_method (
-					server_handle, method.Address, method_argument, number));
+					server_handle, method.Address, method_argument, 0));
 			} catch {
 				change_target_state (old_state);
 			}
-			return async;
-		}
 
-		public long CallMethod (TargetAddress method, long method_argument)
-		{
-			check_disposed ();
-			TargetAsyncResult result = call_method (
-				method, method_argument, null, null);
-			mono_debugger_server_wait (server_handle);
-			if (!result.IsCompleted)
-				throw new InternalError ("Call not completed");
-			return (long) result.AsyncResult;
-		}
-
-		TargetAsyncResult call_method_1 (TargetAddress method, long method_argument,
-						 string string_argument, TargetAsyncCallback callback,
-						 object user_data)
-		{
-			check_disposed ();
-			long number = ++last_callback_id;
-			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
-			pending_callbacks.Add (number, async);
-
-			TargetState old_state = change_target_state (TargetState.RUNNING);
-			try {
-				check_error (mono_debugger_server_call_method_1 (
-					server_handle, method.Address, method_argument,
-					string_argument, number));
-			} catch {
-				change_target_state (old_state);
-			}
-			return async;
+			ChildEvent cevent = WaitForCallback ();
+			return cevent.Data1;
 		}
 
 		public long CallStringMethod (TargetAddress method, long method_argument,
 					      string string_argument)
 		{
 			check_disposed ();
-			TargetAsyncResult result = call_method_1 (
-				method, method_argument, string_argument, null, null);
-			mono_debugger_server_wait (server_handle);
-			if (!result.IsCompleted)
-				throw new InternalError ("Call not completed");
-			return (long) result.AsyncResult;
+
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_call_method_1 (
+					server_handle, method.Address, method_argument,
+					string_argument, 0));
+			} catch {
+				change_target_state (old_state);
+			}
+
+			ChildEvent cevent = WaitForCallback ();
+			return cevent.Data1;
 		}
 
-		TargetAsyncResult call_method_invoke (TargetAddress invoke_method,
-						      TargetAddress method_argument,
-						      TargetAddress object_argument,
-						      TargetAddress[] param_objects,
-						      TargetAsyncCallback callback,
-						      object user_data)
+		ChildEvent call_method_invoke (TargetAddress invoke_method,
+					       TargetAddress method_argument,
+					       TargetAddress object_argument,
+					       TargetAddress[] param_objects)
 		{
 			check_disposed ();
-			long number = ++last_callback_id;
-			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
-			pending_callbacks.Add (number, async);
 
 			int size = param_objects.Length;
 			long[] param_addresses = new long [size];
@@ -304,7 +263,7 @@ namespace Mono.Debugger.Backends
 
 				check_error (mono_debugger_server_call_method_invoke (
 					server_handle, invoke_method.Address, method_argument.Address,
-					object_argument.Address, size, data, number));
+					object_argument.Address, size, data, 0));
 			} catch {
 				change_target_state (old_state);
 			} finally {
@@ -312,7 +271,7 @@ namespace Mono.Debugger.Backends
 					Marshal.FreeHGlobal (data);
 			}
 
-			return async;
+			return WaitForCallback ();
 		}
 
 		public TargetAddress CallInvokeMethod (TargetAddress invoke_method,
@@ -322,15 +281,11 @@ namespace Mono.Debugger.Backends
 						       out TargetAddress exc_object)
 		{
 			check_disposed ();
-			TargetAsyncResult result = call_method_invoke (
-				invoke_method, method_argument, object_argument, param_objects,
-				null, null);
-			mono_debugger_server_wait (server_handle);
-			if (!result.IsCompleted)
-				throw new InternalError ("Call not completed");
+			ChildEvent cevent = call_method_invoke (
+				invoke_method, method_argument, object_argument, param_objects);
 
-			long exc_addr = (long) result.AsyncResult2;
-			long obj_addr = (long) result.AsyncResult;
+			long exc_addr = cevent.Data2;
+			long obj_addr = cevent.Data1;
 
 			if (exc_addr != 0) {
 				exc_object = new TargetAddress (object_argument.Domain, exc_addr);
@@ -393,20 +348,26 @@ namespace Mono.Debugger.Backends
 			this.start = start;
 			this.native = !(start is ManagedProcessStart);
 			this.bfd_container = bfd_container;
-
-			int stdin_fd, stdout_fd, stderr_fd;
-			IntPtr error;
+			this.error_handler = error_handler;
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
+		}
+
+		public void Run ()
+		{
+			if (initialized)
+				throw new AlreadyHaveTargetException ();
+
+			initialized = true;
+
+			int stdin_fd, stdout_fd, stderr_fd;
+			IntPtr error;
 
 			check_error (mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, true,
-				new TargetExitedHandler (child_exited),
-				new ChildEventHandler (child_event),
-				new ChildCallbackHandler (child_callback),
 				out child_pid, out stdin_fd, out stdout_fd, out stderr_fd,
 				out error));
 
@@ -415,27 +376,50 @@ namespace Mono.Debugger.Backends
 			inferior_stderr = new IOInputChannel (stderr_fd);
 
 			setup_inferior (start, error_handler);
+			change_target_state (TargetState.STOPPED, 0);
+		}
+
+		public void Attach (int pid)
+		{
+			if (initialized)
+				throw new AlreadyHaveTargetException ();
+
+			initialized = true;
+
+			check_error (mono_debugger_server_attach (server_handle, pid));
+
+			setup_inferior (start, error_handler);
 
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public PTraceInferior (DebuggerBackend backend, ProcessStart start, int pid,
-				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
+		public ChildEvent Wait ()
 		{
-			this.backend = backend;
-			this.start = start;
-			this.bfd_container = bfd_container;
+			long arg, data1, data2;
+			ChildEventType message;
 
-			server_handle = mono_debugger_server_initialize ();
-			if (server_handle == IntPtr.Zero)
-				throw new InternalError ("mono_debugger_server_initialize() failed.");
+			mono_debugger_server_wait (server_handle, out message, out arg, out data1, out data2);
+			if (message == ChildEventType.CHILD_CALLBACK)
+				return new ChildEvent (arg, data1, data2);
 
-			check_error (mono_debugger_server_attach (
-				server_handle, pid, new TargetExitedHandler (child_exited),
-				new ChildEventHandler (child_event),
-				new ChildCallbackHandler (child_callback)));
+			if ((message == ChildEventType.CHILD_EXITED) ||
+			    (message == ChildEventType.CHILD_SIGNALED))
+				child_exited ();
 
-			setup_inferior (start, error_handler);
+			return new ChildEvent (message, (int) arg);
+		}
+
+		public ChildEvent WaitForCallback ()
+		{
+		again:
+			ChildEvent cevent = Wait ();
+
+			if (cevent == null)
+				goto again;
+			else if (cevent.Type != ChildEventType.CHILD_CALLBACK)
+				throw new InternalError ("Call not completed");
+
+			return cevent;
 		}
 
 		void setup_inferior (ProcessStart start, DebuggerErrorHandler error_handler)
@@ -452,12 +436,6 @@ namespace Mono.Debugger.Backends
 
 			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
 			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
-
-			g_source = mono_debugger_server_get_g_source (server_handle);
-			if (g_source == IntPtr.Zero)
-				handle_error (CommandError.UNKNOWN);
-
-			g_source_attach (g_source, IntPtr.Zero);
 
 			int target_int_size, target_long_size, target_address_size;
 			check_error (mono_debugger_server_get_target_info
@@ -510,46 +488,6 @@ namespace Mono.Debugger.Backends
 			Dispose ();
 			if (TargetExited != null)
 				TargetExited ();
-		}
-
-		void child_callback (long callback, long data, long data2)
-		{
-			change_target_state (TargetState.STOPPED);
-
-			if (!pending_callbacks.Contains (callback))
-				return;
-
-			TargetAsyncResult async = (TargetAsyncResult) pending_callbacks [callback];
-			pending_callbacks.Remove (callback);
-
-			async.Completed (data, data2);
-
-			child_event (ChildEventType.CHILD_CALLBACK, 0);
-		}
-
-		void child_event (ChildEventType message, int arg)
-		{
-			switch (message) {
-			case ChildEventType.CHILD_STOPPED:
-				change_target_state (TargetState.STOPPED, arg);
-				break;
-
-			case ChildEventType.CHILD_EXITED:
-			case ChildEventType.CHILD_SIGNALED:
-				backend.ChildExited ();
-				change_target_state (TargetState.EXITED, arg);
-				break;
-
-			case ChildEventType.CHILD_HIT_BREAKPOINT:
-				change_target_state (TargetState.STOPPED, 0);
-				break;
-
-			default:
-				break;
-			}
-
-			if (ChildEvent != null)
-				ChildEvent (message, arg);
 		}
 
 		void inferior_output (string line)
@@ -1019,52 +957,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		private delegate void TargetAsyncCallback (object user_data, object result, object result2);
-
-		private class TargetAsyncResult
-		{
-			object user_data, result, result2;
-			bool completed;
-			TargetAsyncCallback callback;
-
-			public TargetAsyncResult (TargetAsyncCallback callback, object user_data)
-			{
-				this.callback = callback;
-				this.user_data = user_data;
-			}
-
-			public void Completed (object result, object result2)
-			{
-				if (completed)
-					throw new InvalidOperationException ();
-
-				completed = true;
-				if (callback != null)
-					callback (user_data, result, result2);
-
-				this.result = result;
-				this.result2 = result2;
-			}
-
-			public object AsyncResult {
-				get {
-					return result;
-				}
-			}
-
-			public object AsyncResult2 {
-				get {
-					return result2;
-				}
-			}
-
-			public bool IsCompleted {
-				get {
-					return completed;
-				}
-			}
-		}
-
 		public IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
 		{
 			IntPtr data = IntPtr.Zero;
@@ -1169,7 +1061,7 @@ namespace Mono.Debugger.Backends
 
 		protected virtual void OnMemoryChanged ()
 		{
-			child_event (ChildEventType.CHILD_MEMORY_CHANGED, 0);
+			// child_event (ChildEventType.CHILD_MEMORY_CHANGED, 0);
 		}
 
 		//
@@ -1201,10 +1093,6 @@ namespace Mono.Debugger.Backends
 				this.disposed = true;
 
 				lock (this) {
-					if (g_source != IntPtr.Zero) {
-						g_source_destroy (g_source);
-						g_source = IntPtr.Zero;
-					}
 					if (server_handle != IntPtr.Zero) {
 						mono_debugger_server_finalize (server_handle);
 						server_handle = IntPtr.Zero;

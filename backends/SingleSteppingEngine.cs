@@ -55,16 +55,214 @@ namespace Mono.Debugger.Backends
 			this.backend = backend;
 			this.symtab_manager = backend.SymbolTableManager;
 			this.inferior = inferior;
-			this.arch = inferior.Architecture;
-			this.disassembler = inferior.Disassembler;
 			this.native = native;
 
 			inferior.SingleSteppingEngine = this;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
-			inferior.ChildEvent += new ChildEventHandler (child_event);
 
 			symtab_manager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
+
+			step_event = new AutoResetEvent (false);
+			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
+		}
+
+		void ready_event_handler ()
+		{
+			lock (this) {
+				switch (command_result.EventType) {
+				case ChildEventType.CHILD_HIT_BREAKPOINT:
+					change_target_state (TargetState.STOPPED, 0);
+					break;
+
+				case ChildEventType.CHILD_SIGNALED:
+				case ChildEventType.CHILD_EXITED:
+					change_target_state (TargetState.EXITED, command_result.Argument);
+					break;
+
+				default:
+					change_target_state (TargetState.STOPPED, command_result.Argument);
+					break;
+				}
+
+				command_result = null;
+			}
+		}
+
+		public void Run ()
+		{
+			if (engine_thread != null)
+				throw new AlreadyHaveTargetException ();
+
+			engine_thread = new Thread (new ThreadStart (engine_thread_main));
+			engine_thread.Start ();
+		}
+
+		void send_result (ChildEventType message, int arg)
+		{
+			lock (this) {
+				command_result = new CommandResult (message, arg);
+				thread_notify.Signal ();
+			}
+		}
+
+		void engine_thread_main ()
+		{
+			inferior.Run ();
+
+			arch = inferior.Architecture;
+			disassembler = inferior.Disassembler;
+
+			initialized = true;
+
+			TargetAddress main = TargetAddress.Null;
+			if (native)
+				main = inferior.MainMethodAddress;
+			Command command = new Command (StepOperation.Run, main);
+
+			do {
+				try {
+					process_command (command);
+				} catch (Exception e) {
+					Console.WriteLine ("EXCEPTION: {0}", e);
+				}
+
+				while (!step_event.WaitOne ())
+					;
+
+				lock (this) {
+					command = current_command;
+					current_command = null;
+				}
+			} while (true);
+		}
+
+		bool wait ()
+		{
+		again:
+			ChildEvent child_event = inferior.Wait ();
+
+			if (child_event == null)
+				goto again;
+
+			ChildEventType message = child_event.Type;
+			int arg = child_event.Argument;
+
+			// To step over a method call, the sse inserts a temporary
+			// breakpoint immediately after the call instruction and then
+			// resumes the target.
+			//
+			// If the target stops and we have such a temporary breakpoint, we
+			// need to distinguish a few cases:
+			//
+			// a) we may have received a signal
+			// b) we may have hit another breakpoint
+			// c) we actually hit the temporary breakpoint
+			//
+			// In either case, we need to remove the temporary breakpoint if
+			// the target is to remain stopped.  Note that this piece of code
+			// here only deals with the temporary breakpoint, the handling of
+			// a signal or another breakpoint is done later.
+			if (temp_breakpoint_id != 0) {
+				if ((message == ChildEventType.CHILD_EXITED) ||
+				    (message == ChildEventType.CHILD_SIGNALED))
+					// we can't remove the breakpoint anymore after
+					// the target exited, but we need to clear this id.
+					temp_breakpoint_id = 0;
+				else if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
+					if (arg == temp_breakpoint_id) {
+						// we hit the temporary breakpoint.
+						message = ChildEventType.CHILD_STOPPED;
+						arg = 0;
+					} else if (!child_breakpoint (arg)) {
+						// we hit any breakpoint, but its handler told us
+						// to resume the target and continue.
+						do_continue (true);
+						goto again;
+					}
+				}
+
+				if (temp_breakpoint_id != 0) {
+					inferior.RemoveBreakpoint (temp_breakpoint_id);
+					temp_breakpoint_id = 0;
+				}
+			}
+
+			switch (message) {
+			case ChildEventType.CHILD_STOPPED:
+				if (arg != 0) {
+					send_result (message, arg);
+					return false;
+				}
+
+				return true;
+
+			case ChildEventType.CHILD_HIT_BREAKPOINT:
+				Console.WriteLine ("BREAKPOINT: {0}", arg);
+				return true;
+
+			default:
+				send_result (message, arg);
+				return false;
+			}
+		}
+
+		void process_command (Command command)
+		{
+			bool ok;
+
+		again:
+			switch (command.Operation) {
+			case StepOperation.Run:
+				TargetAddress until = command.Until;
+				if (!until.IsNull)
+					insert_temporary_breakpoint (until);
+				ok = do_continue (false);
+				break;
+
+			case StepOperation.StepInstruction:
+				ok = do_step ();
+				break;
+
+			case StepOperation.NextInstruction:
+				ok = do_next ();
+				break;
+
+			case StepOperation.StepLine:
+			case StepOperation.NextLine:
+				ok = Step (command.StepFrame);
+				break;
+
+			default:
+				ok = Step (command.StepFrame);
+				break;
+			}
+
+			if (!ok)
+				return;
+
+			if (initialized && !reached_main) {
+				main_method_retaddr = inferior.GetReturnAddress ();
+				backend.ReachedMain ();
+				reached_main = true;
+			}
+
+			TargetAddress frame = inferior.CurrentFrame;
+
+			// After returning from `main', resume the target and keep
+			// running until it exits (or hit a breakpoint or receives
+			// a signal).
+			if (frame == main_method_retaddr) {
+				ok = do_continue (false);
+				return;
+			}
+
+			Command new_command = frame_changed (frame, 0, command.Operation);
+			if (new_command != null) {
+				command = new_command;
+				goto again;
+			}
+			send_result (ChildEventType.CHILD_STOPPED, 0);
 		}
 
 		void update_symtabs (object sender, ISymbolTable symbol_table)
@@ -75,7 +273,7 @@ namespace Mono.Debugger.Backends
 				frames_invalid ();
 				current_method = null;
 				must_send_update = true;
-				frame_changed (inferior.CurrentFrame, 0);
+				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 			}
 		}
 
@@ -184,6 +382,9 @@ namespace Mono.Debugger.Backends
 		IDisassembler disassembler;
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
+		Thread engine_thread;
+		AutoResetEvent step_event;
+		ThreadNotify thread_notify;
 		bool native;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
@@ -264,22 +465,67 @@ namespace Mono.Debugger.Backends
 				FramesInvalidEvent ();
 		}
 
-		bool initialized;
+		bool initialized
+;
 		bool reached_main;
 		bool debugger_info_read;
-		StepFrame current_step_frame = null;
 
 		private enum StepOperation {
 			None,
 			Native,
 			Run,
+			StepInstruction,
+			NextInstruction,
 			StepLine,
 			NextLine,
 			StepFrame
 		}
 
-		StepOperation current_operation = StepOperation.None;
-		StepFrame current_operation_frame = null;
+		private class Command {
+			public StepOperation Operation;
+			public StepFrame StepFrame;
+			public TargetAddress Until;
+
+			public Command (StepOperation operation, StepFrame frame)
+			{
+				this.Operation = operation;
+				this.StepFrame = frame;
+				this.Until = TargetAddress.Null;
+			}
+
+			public Command (StepOperation operation, TargetAddress until)
+			{
+				this.Operation = operation;
+				this.StepFrame = null;
+				this.Until = until;
+			}
+
+			public Command (StepOperation operation)
+			{
+				this.Operation = operation;
+				this.StepFrame = null;
+				this.Until = TargetAddress.Null;
+			}
+		}
+
+		private class CommandResult {
+			public ChildEventType EventType;
+			public int Argument;
+
+			public CommandResult (ChildEventType type, int arg)
+			{
+				this.EventType = type;
+				this.Argument = arg;
+			}
+		}
+
+		// <remarks>
+		//   These two variables are shared between the two threads, so you need to
+		//   lock (this) before accessing/modifying them.
+		// </remarks>
+		Command current_command = null;
+		CommandResult command_result = null;
+
 		bool must_continue = false;
 
 		// <summary>
@@ -316,186 +562,6 @@ namespace Mono.Debugger.Backends
 			if (handle.NeedsFrame)
 				frame = get_frame (inferior.CurrentFrame);
 			return handle.Handler (frame, breakpoint, handle.UserData);
-		}
-
-		// <summary>
-		//   This is called each time the target's state changed, for instance if
-		//   a target operation completed, the target hit a breakpoint, exited or
-		//   received a signal.
-		// </summary>
-		void child_event (ChildEventType message, int arg)
-		{
-			if (inferior == null) {
-				change_target_state (TargetState.EXITED, arg);
-				return;
-			}
-
-			// We disable all breakpoints each time the target stops.
-			// When we disabling a breakpoint, the breakpoint instruction is
-			// removed and the actual code is restored.  This is important if
-			// a client is inspecting or even modifying the target's code.
-			if (((message == ChildEventType.CHILD_STOPPED) ||
-			     (message == ChildEventType.CHILD_HIT_BREAKPOINT)))
-				inferior.DisableAllBreakpoints ();
-
-			// Ok, this piece of code needs some explanation.
-			// Assume the child hit a breakpoint and the user invoked
-			// Continue().  Now we have the problem that the current
-			// instruction is the breakpoint, so if we just resumed the
-			// target, we would immediately hit the same breakpoint again.
-			// On the other hand, we can't just disable this breakpoint
-			// because the child may execute a few instructions before
-			// reaching the current code position again and in this case we
-			// actually want it to hit the breakpoint a second time.
-			//
-			// To solve this, the sse disables all breakpoints, sets
-			// `must_continue' to true and steps a single machine instruction.
-			// That's just enough to get past that breakpoint.  However, the
-			// user asked us to Continue(), so after this single instruction
-			// step, we need to enable all breakpoints and resume the target.
-			if (must_continue && (message == ChildEventType.CHILD_STOPPED)) {
-				must_continue = false;
-				do_continue (false);
-				return;
-			} else {
-				// In either case, we must clear the `must_continue' flag
-				// the next time the target stopped.
-				must_continue = false;
-			}
-
-			// To step over a method call, the sse inserts a temporary
-			// breakpoint immediately after the call instruction and then
-			// resumes the target.
-			//
-			// If the target stops and we have such a temporary breakpoint, we
-			// need to distinguish a few cases:
-			//
-			// a) we may have received a signal
-			// b) we may have hit another breakpoint
-			// c) we actually hit the temporary breakpoint
-			//
-			// In either case, we need to remove the temporary breakpoint if
-			// the target is to remain stopped.  Note that this piece of code
-			// here only deals with the temporary breakpoint, the handling of
-			// a signal or another breakpoint is done later.
-			if (temp_breakpoint_id != 0) {
-				if ((message == ChildEventType.CHILD_EXITED) ||
-				    (message == ChildEventType.CHILD_SIGNALED))
-					// we can't remove the breakpoint anymore after
-					// the target exited, but we need to clear this id.
-					temp_breakpoint_id = 0;
-				else if ((message != ChildEventType.CHILD_HIT_BREAKPOINT) ||
-					 (arg == temp_breakpoint_id) || child_breakpoint (arg)) {
-					// either we received a signal or we hit a
-					// breakpoint (the temporary one or any other
-					// breakpoint whose handler told us to remain
-					// stopped).
-					inferior.RemoveBreakpoint (temp_breakpoint_id);
-					temp_breakpoint_id = 0;
-					// if we hit a breakpoint, tell our clients that
-					// we just stopped.
-					if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
-						child_event (ChildEventType.CHILD_STOPPED, 0);
-						return;
-					}
-				} else {
-					// we hit any breakpoint, but its handler told us
-					// to resume the target and continue.
-					do_continue (true);
-					return;
-				}
-			}
-
-			// If `arg != 0', we received a signal and it's the signal number.
-			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
-				frame_changed (inferior.CurrentFrame, arg);
-				return;
-			}
-
-			// The first time the target stops in its life is in its `main'
-			// function.  In this case, we save the current stack frame's
-			// return address and when doing backtraces, we stop at this
-			// address.  This is to `hide' any stack frames beyond `main' from
-			// the user.
-			if (initialized && !reached_main &&
-			    ((message == ChildEventType.CHILD_STOPPED) ||
-			     (message == ChildEventType.CHILD_HIT_BREAKPOINT))) {
-				reached_main = true;
-				main_method_retaddr = inferior.GetReturnAddress ();
-				frames_invalid ();
-				// Tell the backend that we reached `main' and that it may
-				// load its symbol tables.
-				backend.ReachedMain ();
-			}
-
-			switch (message) {
-			case ChildEventType.CHILD_STOPPED: {
-				TargetAddress frame = inferior.CurrentFrame;
-				
-				// The target stops the first time immediately after
-				// exec() - somewhere in the libc's init function.  We
-				// can't do anything there, so resume the target until we
-				// reach `main'.
-				if (!initialized) {
-					initialized = true;
-					if (!native || start_native ()) {
-						current_operation = StepOperation.Run;
-						do_continue (false);
-						break;
-					}
-				} else if (current_step_frame != null) {
-					// If the target stopped inside the current step
-					// frame, continue stepping.
-					if ((frame >= current_step_frame.Start) &&
-					    (frame < current_step_frame.End)) {
-						try {
-							Step (current_step_frame);
-						} catch (Exception e) {
-							Console.WriteLine ("EXCEPTION: " + e.ToString ());
-						}
-						break;
-					}
-					current_step_frame = null;
-				}
-				// After returning from `main', resume the target and keep
-				// running until it exits (or hit a breakpoint or receives
-				// a signal).
-				if (frame == main_method_retaddr) {
-					do_continue (false);
-					break;
-				}
-
-				// Ok, we stopped somewhere outside the current step frame
-				// (if we had any), frame_changed() will decide what to do next.
-				frame_changed (frame, arg);
-				break;
-			}
-
-			case ChildEventType.CHILD_EXITED:
-			case ChildEventType.CHILD_SIGNALED:
-				change_target_state (TargetState.EXITED, arg);
-				break;
-
-			case ChildEventType.CHILD_HIT_BREAKPOINT:
-				// If the hit a breakpoint and the target is to remain
-				// stopped, frame_changed() decides what to do next.
-				// Otherwise, just resume the target.
-				if (child_breakpoint (arg))
-					frame_changed (inferior.CurrentFrame, 0);
-				else
-					do_continue (true);
-				break;
-
-			case ChildEventType.CHILD_MEMORY_CHANGED:
-				// Someone poked around in the target's memory; the GUI
-				// needs to reload a disassembly view since it may have
-				// changed.
-				backend.Reload ();
-				break;
-
-			default:
-				break;
-			}
 		}
 
 		IMethod current_method;
@@ -559,10 +625,11 @@ namespace Mono.Debugger.Backends
 		//   operation.  In this method, we check whether the stepping operation
 		//   has been completed or what to do next.
 		// </summary>
-		void frame_changed (TargetAddress address, int arg)
+		Command frame_changed (TargetAddress address, int arg, StepOperation operation)
 		{
 			IMethod old_method = current_method;
 
+#if FALSE
 			// We stopped normally (not because of a signal), a source
 			// stepping operation is running in we're still within it's step
 			// frame - so continue stepping.
@@ -588,6 +655,8 @@ namespace Mono.Debugger.Backends
 				change_target_state (TargetState.STOPPED, arg);
 				return;
 			}
+#endif
+
 
 			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
@@ -612,21 +681,16 @@ namespace Mono.Debugger.Backends
 				// If check_method_operation() returns true, it already
 				// started a stepping operation, so the target is
 				// currently running.
-				if (check_method_operation (address, current_method, source)) {
-					must_send_update = true;
-					return;
-				}
+				Command new_command = check_method_operation (
+					address, current_method, source, operation);
+				if (new_command != null)
+					return new_command;
 
 				current_frame = new StackFrame (
 					inferior, address, frames [0], 0, source, current_method);
 			} else
 				current_frame = new StackFrame (
 					inferior, address, frames [0], 0);
-
-			// Ok, the current operation has now been completed.
-			current_operation = StepOperation.None;
-
-			change_target_state (TargetState.STOPPED, arg);
 
 			// If the method changed or we `must_send_update', notify our clients.
 			if (must_send_update || (current_method != old_method)) {
@@ -644,7 +708,7 @@ namespace Mono.Debugger.Backends
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (current_frame);
 
-			return;
+			return null;
 		}
 
 		// <summary>
@@ -654,39 +718,38 @@ namespace Mono.Debugger.Backends
 		//   that we don't stop somewhere inside a method's prologue code or
 		//   between two source lines.
 		// </summary>
-		bool check_method_operation (TargetAddress address, IMethod method, SourceLocation source)
+		Command check_method_operation (TargetAddress address, IMethod method,
+						SourceLocation source, StepOperation operation)
 		{
 			ILanguageBackend language = method.Module.Language;
 			if (language == null)
-				return false;
+				return null;
 
 			// Do nothing if this is not a source stepping operation.
-			if ((current_operation != StepOperation.StepLine) &&
-			    (current_operation != StepOperation.NextLine) &&
-			    (current_operation != StepOperation.Run))
-				return false;
+			if ((operation != StepOperation.StepLine) &&
+			    (operation != StepOperation.NextLine) &&
+			    (operation != StepOperation.Run))
+				return null;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
 				// We stopped between two source lines.  This normally
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
 				// next source line.
-				start_step_operation (StepOperation.Native, new StepFrame (
+				return new Command (StepOperation.Native, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
-					language, current_operation == StepOperation.StepLine ?
+					language, operation == StepOperation.StepLine ?
 					StepMode.StepFrame : StepMode.Finish));
-				return true;
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
 				// method's actual code).
-				start_step_operation (StepOperation.Native, new StepFrame (
+				return new Command (StepOperation.Native, new StepFrame (
 					method.StartAddress, method.MethodStartAddress,
 					null, StepMode.Finish));
-				return true;
 			}
 
-			return false;
+			return null;
 		}
 
 		void frames_invalid ()
@@ -710,57 +773,35 @@ namespace Mono.Debugger.Backends
 			temp_breakpoint_id = inferior.InsertBreakpoint (address);
 		}
 
-		void set_step_frame (StepFrame frame)
-		{
-			if (frame != null) {
-				switch (frame.Mode) {
-				case StepMode.StepFrame:
-				case StepMode.NativeStepFrame:
-				case StepMode.Finish:
-					current_step_frame = frame;
-					break;
-
-				default:
-					current_step_frame = null;
-					break;
-				}
-			} else
-				current_step_frame = null;
-		}
-
 		// <summary>
-		//   Single-step until leaving @frame.
+		//   Single-step one machine instruction.
 		// </summary>
-		void do_step (StepFrame frame)
+		bool do_step ()
 		{
 			check_inferior ();
-			set_step_frame (frame);
 
-			if (!inferior.CurrentInstructionIsBreakpoint)
-				inferior.EnableAllBreakpoints ();
 			inferior.Step ();
-			change_target_state (TargetState.RUNNING);
+
+			return wait ();
 		}
 
 		// <summary>
 		//   Step over the next machine instruction.
 		// </summary>
-		void do_next ()
+		bool do_next ()
 		{
 			check_inferior ();
 			TargetAddress address = inferior.CurrentFrame;
-			if (arch.IsRetInstruction (address)) {
+			if (arch.IsRetInstruction (address))
 				// If this is a `ret' instruction, step one instruction.
-				do_step (null);
-				return;
-			}
+				return do_step ();
 
 			// Get the size of the current instruction, insert a temporary
 			// breakpoint immediately behind it and continue.
 			address += disassembler.GetInstructionSize (address);
 
 			insert_temporary_breakpoint (address);
-			do_continue (false);
+			return do_continue (false);
 		}
 
 		// <summary>
@@ -769,126 +810,125 @@ namespace Mono.Debugger.Backends
 		//   instruction before we can resume the target (see `must_continue' in
 		//   child_event() for more info).
 		// </summary>
-		void do_continue (bool is_breakpoint)
+		bool do_continue (bool is_breakpoint)
 		{
 			check_inferior ();
 
-			TargetState old_state = change_target_state (TargetState.RUNNING);
-			try {
-				if (is_breakpoint || inferior.CurrentInstructionIsBreakpoint) {
-					must_continue = true;
-					inferior.Step ();
-				} else {
-					inferior.EnableAllBreakpoints ();
-					inferior.Continue ();
-				}
-			} catch {
-				change_target_state (old_state);
+			if (is_breakpoint || inferior.CurrentInstructionIsBreakpoint) {
+				must_continue = true;
+				inferior.Step ();
+			} else {
+				inferior.EnableAllBreakpoints ();
+				inferior.Continue ();
 			}
+
+			return wait ();
 		}
 
-		protected void Step (StepFrame frame)
+		protected bool Step (StepFrame frame)
 		{
 			check_inferior ();
 
 			/*
 			 * If no step frame is given, just step one machine instruction.
 			 */
-			if (frame == null) {
-				do_step (null);
-				return;
-			}
+			if (frame == null)
+				return do_step ();
 
 			/*
 			 * Step one instruction, but step over function calls.
 			 */
-			if (frame.Mode == StepMode.NextInstruction) {
-				do_next ();
-				return;
-			}
+			if (frame.Mode == StepMode.NextInstruction)
+				return do_next ();
 
-			TargetAddress current_frame = inferior.CurrentFrame;
+			bool first = true;
+			do {
+				TargetAddress current_frame = inferior.CurrentFrame;
 
-			/*
-			 * If this is not a call instruction, continue stepping until we leave
-			 * the specified step frame.
-			 */
-			int insn_size;
-			TargetAddress call = arch.GetCallTarget (current_frame, out insn_size);
-			if (call.IsNull) {
-				do_step (frame);
-				return;
-			}
-
-			/*
-			 * If we have a source language, check for trampolines.
-			 * This will trigger a JIT compilation if neccessary.
-			 */
-			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-				TargetAddress trampoline = frame.Language.GetTrampoline (call);
+				if (first)
+					first = false;
+				else if (!is_in_step_frame (frame, current_frame))
+					return true;
 
 				/*
-				 * If this is a trampoline, insert a breakpoint at the start of
-				 * the corresponding method and continue.
-				 *
-				 * We don't need to distinguish between StepMode.SingleInstruction
-				 * and StepMode.StepFrame here since we'd leave the step frame anyways
-				 * when entering the method.
+				 * If this is not a call instruction, continue stepping until we leave
+				 * the specified step frame.
 				 */
-				if (!trampoline.IsNull) {
-					IMethod tmethod = null;
-					if (current_symtab != null) {
-						backend.UpdateSymbolTable ();
-						tmethod = Lookup (trampoline);
-					}
-					if ((tmethod == null) || !tmethod.Module.StepInto) {
-						set_step_frame (frame);
-						do_next ();
-						return;
-					}
-
-					insert_temporary_breakpoint (trampoline);
-					do_continue (false);
-					return;
+				int insn_size;
+				TargetAddress call = arch.GetCallTarget (current_frame, out insn_size);
+				if (call.IsNull) {
+					if (!do_step ())
+						return false;
+					continue;
 				}
-			}
 
-			/*
-			 * When StepMode.SingleInstruction was requested, enter the method no matter
-			 * whether it's a system function or not.
-			 */
-			if (frame.Mode == StepMode.SingleInstruction) {
-				do_step (null);
-				return;
-			}
+				/*
+				 * If we have a source language, check for trampolines.
+				 * This will trigger a JIT compilation if neccessary.
+				 */
+				if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
+					TargetAddress trampoline = frame.Language.GetTrampoline (call);
 
-			/*
-			 * In StepMode.Finish, always step over all methods.
-			 */
-			if (frame.Mode == StepMode.Finish) {
-				current_step_frame = frame;
-				do_next ();
-				return;
-			}
+					/*
+					 * If this is a trampoline, insert a breakpoint at the start of
+					 * the corresponding method and continue.
+					 *
+					 * We don't need to distinguish between StepMode.SingleInstruction
+					 * and StepMode.StepFrame here since we'd leave the step frame anyways
+					 * when entering the method.
+					 */
+					if (!trampoline.IsNull) {
+						IMethod tmethod = null;
+						if (current_symtab != null) {
+							backend.UpdateSymbolTable ();
+							tmethod = Lookup (trampoline);
+						}
+						if ((tmethod == null) || !tmethod.Module.StepInto) {
+							if (!do_next ())
+								return false;
+							continue;
+						}
 
-			/*
-			 * Try to find out whether this is a system function by doing a symbol lookup.
-			 * If it can't be found in the symbol tables, assume it's a system function
-			 * and step over it.
-			 */
-			IMethod method = Lookup (call);
-			if (current_symtab != null)
-				method = current_symtab.Lookup (call);
-			if ((method == null) || !method.Module.StepInto) {
-				set_step_frame (frame);
-				do_next ();
-				return;
-			}
+						insert_temporary_breakpoint (trampoline);
+						return do_continue (false);
+					}
+				}
 
-			/*
-			 * Finally, step into the method.
-			 */
-			do_step (null);
+				/*
+				 * When StepMode.SingleInstruction was requested, enter the method no matter
+				 * whether it's a system function or not.
+				 */
+				if (frame.Mode == StepMode.SingleInstruction)
+					return do_step ();
+
+				/*
+				 * In StepMode.Finish, always step over all methods.
+				 */
+				if (frame.Mode == StepMode.Finish) {
+					if (!do_next ())
+						return false;
+					continue;
+				}
+
+				/*
+				 * Try to find out whether this is a system function by doing a symbol lookup.
+				 * If it can't be found in the symbol tables, assume it's a system function
+				 * and step over it.
+				 */
+				IMethod method = Lookup (call);
+				if (current_symtab != null)
+					method = current_symtab.Lookup (call);
+				if ((method == null) || !method.Module.StepInto) {
+					if (!do_next ())
+						return false;
+					continue;
+				}
+
+				/*
+				 * Finally, step into the method.
+				 */
+				return do_step ();
+			} while (true);
 		}
 
 		// <summary>
@@ -899,8 +939,7 @@ namespace Mono.Debugger.Backends
 		public void Continue (TargetAddress until)
 		{
 			check_inferior ();
-			insert_temporary_breakpoint (until);
-			Continue ();
+			start_step_operation (StepOperation.Run);
 		}
 
 		// <summary>
@@ -909,8 +948,7 @@ namespace Mono.Debugger.Backends
 		public void Continue ()
 		{
 			check_inferior ();
-			current_operation = StepOperation.Run;
-			do_continue (false);
+			start_step_operation (StepOperation.Run, TargetAddress.Null);
 		}
 
 		// <summary>
@@ -946,17 +984,41 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
-			ILanguageBackend language = (frame.Method != null) ?
-				frame.Method.Module.Language : null;
+			ILanguageBackend language;
+
+			if (frame != null)
+				language = (frame.Method != null) ? frame.Method.Module.Language : null;
+			else
+				language = null;
 
 			return new StepFrame (language, mode);
 		}
 
 		void start_step_operation (StepOperation operation, StepFrame frame)
 		{
-			current_operation = operation;
-			current_operation_frame = frame;
-			Step (frame);
+			lock (this) {
+				change_target_state (TargetState.RUNNING, 0);
+				current_command = new Command (operation, frame);
+				step_event.Set ();
+			}
+		}
+
+		void start_step_operation (StepOperation operation, TargetAddress until)
+		{
+			lock (this) {
+				change_target_state (TargetState.RUNNING, 0);
+				current_command = new Command (operation, until);
+				step_event.Set ();
+			}
+		}
+
+		void start_step_operation (StepOperation operation)
+		{
+			lock (this) {
+				change_target_state (TargetState.RUNNING, 0);
+				current_command = new Command (operation);
+				step_event.Set ();
+			}
 		}
 
 		void start_step_operation (StepMode mode)
@@ -970,7 +1032,7 @@ namespace Mono.Debugger.Backends
 		public void StepInstruction ()
 		{
 			check_can_run ();
-			start_step_operation (StepMode.SingleInstruction);
+			start_step_operation (StepOperation.StepInstruction);
 		}
 
 		// <summary>
@@ -979,7 +1041,7 @@ namespace Mono.Debugger.Backends
 		public void NextInstruction ()
 		{
 			check_can_run ();
-			start_step_operation (StepMode.NextInstruction);
+			start_step_operation (StepOperation.NextInstruction);
 		}
 
 		// <summary>

@@ -33,8 +33,44 @@ namespace Mono.Debugger.Backends
 
 	public delegate void ChildEventHandler (ChildEventType message, int arg);
 
+	public sealed class ChildEvent
+	{
+		public readonly ChildEventType Type;
+		public readonly int Argument;
+
+		public readonly long Callback;
+		public readonly long Data1;
+		public readonly long Data2;
+
+		public ChildEvent (ChildEventType type, int arg)
+		{
+			this.Type = type;
+			this.Argument = arg;
+			this.Callback = this.Data1 = this.Data2 = 0;
+		}
+
+		public ChildEvent (long callback, long data, long data2)
+		{
+			this.Type = ChildEventType.CHILD_CALLBACK;
+			this.Argument = 0;
+
+			this.Callback = callback;
+			this.Data1 = data;
+			this.Data2 = data2;
+		}
+	}
+
 	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
+		/// <summary>
+		///   Start the target.
+		/// </summary>
+		/// <remarks>
+		///   Some of the other methods and properties of this interface may only
+		///   by used in the thread which called this function !
+		/// </remarks>
+		void Run ();
+
 		/// <summary>
 		///   Continue the target.
 		/// </summary>
@@ -97,6 +133,8 @@ namespace Mono.Debugger.Backends
 						TargetAddress object_argument, TargetAddress[] param_objects,
 						out TargetAddress exc_object);
 		TargetAddress SimpleLookup (string name);
+
+		ChildEvent Wait ();
 
 		void UpdateModules ();
 

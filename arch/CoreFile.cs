@@ -398,6 +398,16 @@ namespace Mono.Debugger.Architecture
 			// Do nothing.
 		}
 
+		public void Run ()
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public ChildEvent Wait ()
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
 		public void Step ()
 		{
 			throw new CannotExecuteCoreFileException ();

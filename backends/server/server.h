@@ -45,8 +45,6 @@ typedef struct InferiorHandle InferiorHandle;
 /* C# delegates. */
 typedef void (*ChildSetupFunc) (void);
 typedef void (*ChildExitedFunc) (void);
-typedef void (*ChildMessageFunc) (ServerStatusMessageType type, int arg);
-typedef void (*ChildCallbackFunc) (guint64 callback, guint64 data, guint64 data2);
 
 /*
  * Server functions.
@@ -64,27 +62,23 @@ typedef struct {
 						       gchar             **argv,
 						       gchar             **envp,
 						       gboolean            search_path,
-						       ChildExitedFunc     child_exited,
-						       ChildMessageFunc    child_message,
-						       ChildCallbackFunc   child_callback,
 						       gint               *child_pid,
 						       gint               *standard_input,
 						       gint               *standard_output,
 						       gint               *standard_error,
 						       GError            **error);
 
-	InferiorHandle *      (* attach)              (int                 pid,
-						       ChildExitedFunc     child_exited,
-						       ChildMessageFunc    child_message,
-						       ChildCallbackFunc   child_callback);
+	InferiorHandle *      (* attach)              (int                 pid);
 
 	ServerCommandError    (* detach)              (InferiorHandle     *handle);
 
 	void                  (* finalize)            (InferiorHandle     *handle);
 
-	/* These two are private, will provide docu soon. */
-	GSource *             (* get_g_source)        (InferiorHandle     *handle);
-	void                  (* wait)                (InferiorHandle     *handle);
+	void                  (* wait)                (InferiorHandle          *handle,
+						       ServerStatusMessageType *message,
+						       guint64                 *arg,
+						       guint64                 *data1,
+						       guint64                 *data2);
 
 	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
 	ServerCommandError    (* get_target_info)     (InferiorHandle     *handle,
@@ -273,8 +267,6 @@ extern InferiorInfo i386_linux_ptrace_inferior;
  */
 
 typedef struct {
-	ChildMessageFunc child_message_cb;
-	ChildCallbackFunc child_callback_cb;
 	InferiorHandle *inferior;
 	InferiorInfo *info;
 	int fd, pid;
@@ -289,9 +281,6 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 					   gchar             **argv,
 					   gchar             **envp,
 					   gboolean            search_path,
-					   ChildExitedFunc     child_exited,
-					   ChildMessageFunc    child_message,
-					   ChildCallbackFunc   child_callback,
 					   gint               *child_pid,
 					   gint               *standard_input,
 					   gint               *standard_output,
@@ -300,19 +289,17 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
-					   int                 pid,
-					   ChildExitedFunc     child_exited,
-					   ChildMessageFunc    child_message,
-					   ChildCallbackFunc   child_callback);
-
-GSource *
-mono_debugger_server_get_g_source         (ServerHandle       *handle);
+					   int                 pid);
 
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
 
 void
-mono_debugger_server_wait                 (ServerHandle       *handle);
+mono_debugger_server_wait                 (ServerHandle            *handle,
+					   ServerStatusMessageType *message,
+					   guint64                 *arg,
+					   guint64                 *data1,
+					   guint64                 *data2);
 
 ServerCommandError
 mono_debugger_server_get_target_info      (ServerHandle       *handle,
