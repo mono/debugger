@@ -172,6 +172,9 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
 		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigkill ();
+
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_sigstop ();
 
 		[DllImport("monodebuggerserver")]
@@ -195,12 +198,13 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_mono_thread_debug_signal ();
 
-		static int sigstop, sigint, sigchld, sigprof;
+		static int sigkill, sigstop, sigint, sigchld, sigprof;
 		static int thread_abort_signal, thread_restart_signal;
 		static int thread_debug_signal, mono_thread_debug_signal;
 
 		static PTraceInferior ()
 		{
+			sigkill = mono_debugger_server_get_sigkill ();
 			sigstop = mono_debugger_server_get_sigstop ();
 			sigint = mono_debugger_server_get_sigint ();
 			sigchld = mono_debugger_server_get_sigchld ();
@@ -580,6 +584,10 @@ namespace Mono.Debugger.Backends
 			get {
 				return target_info.TargetAddressSize;
 			}
+		}
+
+		public static int SIGKILL {
+			get { return sigkill; }
 		}
 
 		public static int SIGSTOP {

@@ -86,6 +86,10 @@ namespace Mono.Debugger.Backends
 			int arg = child_event.Argument;
 
 			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
+				if (arg == PTraceInferior.SIGKILL) {
+					Console.WriteLine ("Daemon thread {0} received SIGKILL.", pid);
+					return;
+				}
 				if (!daemon_received_signal (inferior.CurrentFrame, arg))
 					throw new InternalError (
 						"Daemon thread {0} received unexpected " +

@@ -428,6 +428,7 @@ ServerCommandError
 mono_debugger_server_kill                (ServerHandle       *handle);
 
 /* Signals. */
+int mono_debugger_server_get_sigkill                  (void);
 int mono_debugger_server_get_sigstop                  (void);
 int mono_debugger_server_get_sigint                   (void);
 int mono_debugger_server_get_sigchld                  (void);

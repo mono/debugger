@@ -340,6 +340,12 @@ mono_debugger_server_kill (ServerHandle *handle)
 }
 
 int
+mono_debugger_server_get_sigkill (void)
+{
+	return SIGKILL;
+}
+
+int
 mono_debugger_server_get_sigstop (void)
 {
 	return SIGSTOP;
