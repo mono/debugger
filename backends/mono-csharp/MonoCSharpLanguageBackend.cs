@@ -154,7 +154,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			this.memory = memory;
 
+			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE: {0}", address);
+
 			ITargetMemoryReader header = memory.ReadMemory (address, 24);
+
+			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE HEADER: {0}", header);
 
 			long magic = header.ReadLongInteger ();
 			if (magic != DynamicMagic)
@@ -171,7 +175,15 @@ namespace Mono.Debugger.Languages.CSharp
 			int count = header.ReadInteger ();
 			Generation = header.ReadInteger ();
 
+			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE HEADER: {0} {1} {2}",
+				      TotalSize, count, Generation);
+
+			if ((TotalSize == 0) || (count == 0))
+				return;
+
 			ITargetMemoryReader reader = memory.ReadMemory (address + 24, TotalSize - 24);
+
+			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE READER: {0}", reader);
 
 			ranges = new ArrayList ();
 			types = new Hashtable ();
@@ -258,14 +270,17 @@ namespace Mono.Debugger.Languages.CSharp
 			compile_method = reader.ReadAddress ();
 			insert_breakpoint = reader.ReadAddress ();
 			remove_breakpoint = reader.ReadAddress ();
+			Report.Debug (DebugFlags.JIT_SYMTAB, this);
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x})",
-					      generic_trampoline_code, breakpoint_trampoline_code,
-					      symbol_file_generation, symbol_file_table,
-					      update_symbol_file_table, compile_method);
+			return String.Format (
+				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x})",
+				generic_trampoline_code, breakpoint_trampoline_code,
+				symbol_file_generation, symbol_file_table,
+				update_symbol_file_table, compile_method,
+				insert_breakpoint, remove_breakpoint);
 		}
 	}
 
