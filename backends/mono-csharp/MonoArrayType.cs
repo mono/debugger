@@ -129,9 +129,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override MonoObject GetObject (MonoTargetLocation location)
 		{
-			if (Dimension + 1 >= Rank)
-				throw new InvalidOperationException ();
-
 			return new MonoArrayObject (this, location);
 		}
 	}

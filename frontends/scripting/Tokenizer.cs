@@ -451,6 +451,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.OPEN_PARENS;
 				else if (c == ')')
 					return Token.CLOSE_PARENS;
+				else if (c == '[')
+					return Token.OPEN_BRACKET;
+				else if (c == ']')
+					return Token.CLOSE_BRACKET;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;
