@@ -50,7 +50,7 @@ using Mono.Debugger.GUI;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("0.2.*")]
+[assembly: AssemblyVersion("0.4.*")]
 
 namespace Mono.Debugger.GUI
 {
@@ -143,7 +143,7 @@ namespace Mono.Debugger.GUI
 		public DebuggerGUI (string[] arguments)
 		{
 			thread_notify = new ThreadNotify ();
-			program = new Program ("Debugger", "0.2", Modules.UI, new string [0]);
+			program = new Program ("Debugger", "0.4", Modules.UI, new string [0]);
 			manager = new DebuggerManager (this);
 
 			SetupGUI ();
@@ -475,7 +475,7 @@ namespace Mono.Debugger.GUI
 				Pixbuf pixbuf = new Pixbuf (null, "mono.png");
 
 				about_dialog = new About (
-					"Mono Debugger", "0.3",
+					"Mono Debugger", "0.4",
 					"Copyright (C) 2002-2003 Ximian, Inc.",
 					"",
 					new string [] { "Martin Baulig (martin@ximian.com)",

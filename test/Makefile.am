@@ -7,10 +7,10 @@ debugger = '$(MONO) ../lib/Interpreter.exe'
 
 test_FILES = TestManagedTypes.exe TestLexicalScopes.exe
 
-EXTRA_DIST = @srcdir@/*.cs
+EXTRA_DIST = @srcdir@/*.cs runtest.pl
 
 %.exe:%.cs
-	$(MCS) $(MCS_FLAGS) $<
+	$(MCS) $(MCS_FLAGS) -o $@ $<
 
 CLEANFILES = *.exe *.dbg a.out
 
