@@ -75,7 +75,10 @@ namespace Mono.Debugger
 
 		public ProcessStart (DebuggerOptions options, string[] argv)
 		{
-			this.options = options;
+			if (options == null)
+				this.options = new DebuggerOptions ();
+			else
+				this.options = options;
 
 			if ((argv == null) || (argv.Length == 0))
 				throw new ArgumentException ();
