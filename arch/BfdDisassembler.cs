@@ -78,7 +78,8 @@ namespace Mono.Debugger.Architecture
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
 
 			if (current_method != null) {
-				SourceMethod method = current_method.GetTrampoline (maddress);
+				SourceMethod method = current_method.GetTrampoline (
+					memory, maddress);
 
 				if (method != null) {
 					output_func (method.Name);

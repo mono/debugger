@@ -1547,7 +1547,8 @@ namespace Mono.Debugger.Backends
 			 * This will trigger a JIT compilation if neccessary.
 			 */
 			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-				TargetAddress trampoline = frame.Language.GetTrampoline (inferior, call);
+				TargetAddress trampoline = frame.Language.GetTrampolineAddress (
+					inferior, call);
 				IMethod tmethod = null;
 
 				/*

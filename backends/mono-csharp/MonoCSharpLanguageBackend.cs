@@ -1439,9 +1439,10 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			public override SourceMethod GetTrampoline (TargetAddress address)
+			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+								    TargetAddress address)
 			{
-				return reader.Table.Language.GetTrampoline (address);
+				return reader.Table.Language.GetTrampoline (memory, address);
 			}
 		}
 
@@ -1700,14 +1701,14 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		TargetAddress ILanguageBackend.GetTrampoline (Inferior inferior, TargetAddress address)
+		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
+								     TargetAddress address)
 		{
-			IArchitecture arch = inferior.Architecture;
-
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
-			return arch.GetTrampoline (inferior, address, trampoline_address);
+			return memory.Architecture.GetTrampoline (
+				memory, address, trampoline_address);
 		}
 
 		TargetAddress ILanguageBackend.CompileMethodFunc {
@@ -1716,22 +1717,21 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public SourceMethod GetTrampoline (TargetAddress address)
+		public SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+						   TargetAddress address)
 		{
-			IArchitecture arch = process.Architecture;
-			ITargetAccess target = process.TargetAccess;
-
 			if (trampoline_address.IsNull)
 				return null;
 
-			TargetAddress trampoline = arch.GetTrampoline (target, address, trampoline_address);
+			TargetAddress trampoline = memory.Architecture.GetTrampoline (
+				memory, address, trampoline_address);
 
 			if (trampoline.IsNull)
 				return null;
 
-			int token = target.ReadInteger (trampoline + 4);
-			TargetAddress klass = target.ReadAddress (trampoline + 8);
-			TargetAddress image = target.ReadAddress (klass);
+			int token = memory.ReadInteger (trampoline + 4);
+			TargetAddress klass = memory.ReadAddress (trampoline + 8);
+			TargetAddress image = memory.ReadAddress (klass);
 			MonoSymbolFile reader = table.GetImage (image);
 
 			// Console.WriteLine ("TRAMPOLINE: {0} {1:x} {2} {3} {4}", trampoline, token, klass, image, reader);

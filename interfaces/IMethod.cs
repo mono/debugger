@@ -109,6 +109,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		SourceMethod GetTrampoline (TargetAddress address);
+		SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+					    TargetAddress address);
 	}
 }

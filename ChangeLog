@@ -1,5 +1,18 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryInfo.Architecture): New property.
+
+	* interface/IMethod.cs (IMethod.GetTrampoline): Added
+	ITargetMemoryAccess argument.
+
+	* backends/ILanguageBackend.cs (ILanguageBackend.GetTrampoline):
+	Renamed to GetTrampolineAddress() and take an ITargetMemoryAccess
+	instead of an Inferior.  Added ITargetMemoryAccess argument to the
+	other overloaded version.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	Rewrote and simplified the notification code.
 
 	* backends/Inferior.cs (Inferior.ChildEventType): Added

@@ -89,6 +89,10 @@ namespace Mono.Debugger
 
 	public interface ITargetMemoryInfo : ITargetInfo
 	{
+		IArchitecture Architecture {
+			get;
+		}
+
 		AddressDomain AddressDomain {
 			get;
 		}

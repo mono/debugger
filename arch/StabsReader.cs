@@ -405,7 +405,8 @@ namespace Mono.Debugger.Architecture
 				get { return new IVariable [0]; }
 			}
 
-			public override SourceMethod GetTrampoline (TargetAddress address)
+			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+								    TargetAddress address)
 			{
 				return null;
 			}

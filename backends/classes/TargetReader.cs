@@ -116,6 +116,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public IArchitecture Architecture {
+			get {
+				return info.Architecture;
+			}
+		}
+
 		public AddressDomain AddressDomain {
 			get {
 				return info.AddressDomain;

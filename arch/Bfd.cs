@@ -931,12 +931,14 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		TargetAddress ILanguageBackend.GetTrampoline (Inferior inferior, TargetAddress address)
+		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
+								     TargetAddress address)
 		{
 			return GetTrampoline (address);
 		}
 
-		SourceMethod ILanguageBackend.GetTrampoline (TargetAddress address)
+		SourceMethod ILanguageBackend.GetTrampoline (ITargetMemoryAccess memory,
+							     TargetAddress address)
 		{
 			return null;
 		}

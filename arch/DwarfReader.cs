@@ -1914,9 +1914,9 @@ namespace Mono.Debugger.Architecture
 					buffer = subprog.dwarf.factory.FindFile (subprog.SourceFile.FileName);
 				}
 
-				public override SourceMethod GetTrampoline (TargetAddress address)
+				public override SourceMethod GetTrampoline (ITargetMemoryAccess memory, TargetAddress address)
 				{
-					return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (address);
+					return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
 				}
 			}
 
