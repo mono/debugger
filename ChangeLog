@@ -1,5 +1,9 @@
 2003-06-20  Martin Baulig  <martin@ximian.com>
 
+	* doc/debugger.sxi: Added the slides from the GUADEC talk.
+
+2003-06-20  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IArchitecture.cs
 	(GetBreakpointTrampolineData): Removed.
 	(IsRetInstruction): Added ITargetMemoryAccess argument.
