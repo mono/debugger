@@ -14,3 +14,4 @@ thecore
 mono-debugger-*.tar.gz
 diff*
 log*
+*.pc
