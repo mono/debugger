@@ -25,11 +25,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeType CreateAlias (string name)
-		{
-			return new NativeFundamentalType (name, type, Size);
-		}
-
 		public override NativeObject GetObject (TargetLocation location)
 		{
 			return new NativeFundamentalObject (this, location);

@@ -24,6 +24,15 @@ struct _FunctionStruct
 	void (* foo) (int a);
 };
 
+typedef struct
+{
+	int a : 1;
+	int b : 5;
+	int c : 3;
+	int d : 5;
+	int e : 9;
+} BitField;
+
 void
 simple (void)
 {
@@ -93,13 +102,27 @@ test_function_struct (void)
 	test.foo = test_func;
 }
 
+void
+test_bitfield (void)
+{
+	BitField bitfield;
+
+	bitfield.a = 1;
+	bitfield.b = 3;
+	bitfield.c = 4;
+	bitfield.d = 9;
+	bitfield.e = 15;
+}
+
 int
 main (void)
 {
+	printf ("%d,%d,%d\n", sizeof (long int), sizeof (long long int), sizeof (long));
 	simple ();
 	test_struct ();
 	test_struct_2 ();
 	test_struct_3 ();
 	test_function_struct ();
+	test_bitfield ();
 	return 0;
 }

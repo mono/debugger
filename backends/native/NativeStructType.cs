@@ -56,7 +56,8 @@ namespace Mono.Debugger.Languages.Native
 
 	internal class NativeFieldInfo : NativeStructMember, ITargetFieldInfo
 	{
-		int offset, size;
+		int offset;
+		int bit_offset, bit_size;
 
 		public NativeFieldInfo (NativeType type, string name, int index, int offset)
 			: base (type, name, index, false)
@@ -64,16 +65,36 @@ namespace Mono.Debugger.Languages.Native
 			this.offset = offset;
 		}
 
-		public NativeFieldInfo (NativeType type, string name, int index, int offset,
-					int size)
-			: this (type, name, index, offset)
+		public NativeFieldInfo (NativeType type, string name, int index,
+					int global_bit_offset, int bit_size)
+			: base (type, name, index, false)
 		{
-			this.size = size;
+			this.offset = global_bit_offset >> 3;
+			this.bit_offset = global_bit_offset % 8;
+			this.bit_size = bit_size;
 		}
 
 		public int Offset {
 			get {
 				return offset;
+			}
+		}
+
+		public int BitOffset {
+			get {
+				return bit_offset;
+			}
+		}
+
+		public int BitSize {
+			get {
+				return bit_size;
+			}
+		}
+
+		public bool IsBitfield {
+			get {
+				return ((bit_offset % 8) != 0) || ((bit_size % 8) != 0);
 			}
 		}
 	}
@@ -118,11 +139,6 @@ namespace Mono.Debugger.Languages.Native
 		internal void SetFields (NativeFieldInfo[] fields)
 		{
 			this.fields = fields;
-		}
-
-		public override NativeType CreateAlias (string name)
-		{
-			return new NativeStructType (name, fields, Size);
 		}
 
 		public override bool IsByRef {
@@ -200,10 +216,16 @@ namespace Mono.Debugger.Languages.Native
 
 		internal NativeObject GetField (TargetLocation location, int index)
 		{
-			TargetLocation field_loc = location.GetLocationAtOffset (
-				fields [index].Offset, fields [index].Type.IsByRef);
+			NativeFieldInfo field = fields [index];
 
-			return fields [index].Type.GetObject (field_loc);
+			TargetLocation field_loc = location.GetLocationAtOffset (
+				field.Offset, field.Type.IsByRef);
+
+			if (!field.Type.IsByRef && field.IsBitfield)
+				field_loc = new BitfieldTargetLocation (
+					field_loc, field.BitOffset, field.BitSize);
+
+			return field.Type.GetObject (field_loc);
 		}
 	}
 }

@@ -9,6 +9,7 @@ namespace Mono.Debugger
 		Class,
 		Pointer,
 		Function,
-		Opaque
+		Opaque,
+		Alias
 	}
 }

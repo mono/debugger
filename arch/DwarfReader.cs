@@ -2255,7 +2255,7 @@ namespace Mono.Debugger.Architecture
 					this.name = name;
 					return Type;
 				} else
-					return Type.CreateAlias (name);
+					return new NativeTypeAlias (name, this.name, Type);
 			}
 
 			public override string ToString ()

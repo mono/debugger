@@ -238,6 +238,16 @@ namespace Mono.Debugger.Frontends.Scripting
 				return sb.ToString ();
 			}
 
+			case TargetObjectKind.Alias: {
+				ITargetTypeAlias alias = (ITargetTypeAlias) type;
+				string target;
+				if (alias.TargetType != null)
+					target = FormatType (prefix, alias.TargetType);
+				else
+					target = "<unknown type>";
+				return String.Format ("typedef {0} = {1}", alias.Name, target);
+			}
+
 			default:
 				return type.Name;
 			}

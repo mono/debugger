@@ -56,6 +56,7 @@ namespace Mono.Debugger.Architecture
 
 			types = new Hashtable ();
 
+			string_type = new NativeStringType (0);
 			int_type = RegisterFundamental (
 				"int", typeof (int), 4);
 			char_type = RegisterFundamental (
@@ -110,6 +111,7 @@ namespace Mono.Debugger.Architecture
 			return native;
 		}
 
+		NativeStringType string_type;
 		NativeFundamentalType int_type;
 		NativeFundamentalType char_type;
 		NativeFundamentalType long_type;
@@ -258,6 +260,19 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
+		protected void RecordType (string name, NativeType type)
+		{
+			NativeType old = (NativeType) types [name];
+			if (old == null) {
+				types.Add (name, type);
+				return;
+			}
+
+			NativeTypeAlias typedef = (NativeTypeAlias) old;
+			Console.WriteLine ("TYPEDEF: {0}", typedef);
+			typedef.TargetType = type;
+		}
+
 		protected NativeType ParseType (string name, string alias, string def,
 						ref int pos)
 		{
@@ -267,33 +282,34 @@ namespace Mono.Debugger.Architecture
 			NativeType type;
 
 			if (def [pos] == '(') {
-				int new_pos = def.IndexOf ('=', pos);
-				if (new_pos > 0) {
-					alias = def.Substring (pos, new_pos-pos);
-					pos = new_pos+1;
+				int new_pos = def.IndexOf (')', pos);
+				alias = def.Substring (pos, new_pos-pos+1);
+				pos = new_pos+1;
+
+				if ((pos < def.Length) && (def [pos] == '=')) {
+					pos++;
 					type = ParseType (name, alias, def, ref pos);
 					Console.WriteLine ("ALIAS: |{0}| - {1}", alias, type);
-					types.Add (alias, type);
+					RecordType (alias, type);
 					return type;
 				} else {
-					new_pos = def.IndexOf (')', pos);
-					string reftype = def.Substring (pos, new_pos-pos+1);
-					pos = new_pos+1;
-
-					type = (NativeType) types [reftype];
+					type = (NativeType) types [alias];
 					Console.WriteLine ("REFERENCE: |{0}| - {1}",
-							   reftype, type);
+							   alias, type);
 					return type;
 				}
 			}
 
 			if (def [pos] == 'r')
 				return ParseRange (name, alias, def, ref pos);
-			else if (def [pos] == '*') {
-				pos++;
-				type = ParseType (name, alias, def, ref pos);
-				Console.WriteLine ("POINTER: {0} {1}", name, type);
-				return new NativePointerType (name, type, 4);
+			else if (def [pos] == '*')
+				return ParsePointer (name, alias, def, ref pos);
+			else if (def [pos] == 'x') {
+				int new_pos = def.IndexOf (':', pos+2);
+				string reftype = def.Substring (pos+2, new_pos-pos-2);
+				pos = new_pos+1;
+				Console.WriteLine ("XREF: |{0}| - |{1}|", name, reftype);
+				return new NativeTypeAlias (name, reftype);
 			} else if (def [pos] == 's')
 				return ParseStruct (name, def, ref pos);
 			else if (def [pos] == 'a')
@@ -301,6 +317,22 @@ namespace Mono.Debugger.Architecture
 
 			Console.WriteLine ("UNKNOWN TYPE: |{0}|", def.Substring (pos));
 			return null;
+		}
+
+		protected NativeType ParsePointer (string name, string alias, string def,
+						   ref int pos)
+		{
+			pos++;
+			NativeType type = ParseType (name, alias, def, ref pos);
+			if (type == null)
+				type = NativeType.VoidType;
+			Console.WriteLine ("POINTER: {0} {1} {2}", name, alias, type);
+			if (name == null)
+				name = type.Name + " *";
+			if (type == char_type)
+				return string_type;
+			else
+				return new NativePointerType (name, type, 4);
 		}
 
 		protected NativeType ParseStruct (string name, string def, ref int pos)
@@ -326,7 +358,13 @@ namespace Mono.Debugger.Architecture
 				string mname = def.Substring (pos, p-pos);
 				pos = p+1;
 
-				NativeType type = ParseType (name, null, def, ref pos);
+				Console.WriteLine ("MEMBER #0: {0} |{1}|", mname,
+						   def.Substring (pos));
+
+				NativeType type = ParseType (null, null, def, ref pos);
+
+				Console.WriteLine ("MEMBER #1: {0} {1} |{2}|", mname, type,
+						   def.Substring (pos));
 
 				if (def [pos++] != ',') {
 					Console.WriteLine ("UNKNOWN STRUCT DEF: |{0}|", def);
@@ -341,17 +379,15 @@ namespace Mono.Debugger.Architecture
 				int mbits = (int) UInt32.Parse (def.Substring (pos, p-pos));
 				pos = p+1;
 
-				int msize = (mbits + 7) >> 3;
-
 				if (type == null)
-					type = new NativeOpaqueType (null, msize);
+					type = NativeType.VoidType;
 
-				Console.WriteLine ("MEMBER: {0} {1} {2} {3} {4} - |{5}|",
-						   mname, mbits, moffs, msize, type,
+				Console.WriteLine ("MEMBER: {0} {1} {2} {3} - |{4}|",
+						   mname, mbits, moffs, type,
 						   def.Substring (pos));
 
 				NativeFieldInfo field = new NativeFieldInfo (
-					type, mname, members.Count, moffs, msize);
+					type, mname, members.Count, moffs, mbits);
 				members.Add (field);
 			}
 
