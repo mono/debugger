@@ -140,6 +140,17 @@ namespace Mono.Debugger.Backends
 				thread.Engine.Start (func, false);
 		}
 
+		void thread_abort (Inferior inferior, int tid)
+		{
+			Report.Debug (DebugFlags.Threads, "Aborting thread {0:x}", tid);
+
+			ThreadData thread = (ThreadData) thread_hash [tid];
+			thread_hash.Remove (tid);
+
+			inferior.Continue ();
+			thread_manager.KillThread (thread.Engine);
+		}
+
 		internal bool HandleChildEvent (Inferior inferior,
 						ref Inferior.ChildEvent cevent)
 		{
@@ -168,6 +179,12 @@ namespace Mono.Debugger.Backends
 
 					thread_created (inferior, data, false);
 					break;
+				}
+
+				case NotificationType.ThreadAbort: {
+					int tid = (int) cevent.Data2;
+					thread_abort (inferior, tid);
+					return true;
 				}
 
 				case NotificationType.InitializeThreadManager:
@@ -206,15 +223,8 @@ namespace Mono.Debugger.Backends
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 			    (cevent.Argument == inferior.MonoThreadAbortSignal)) {
-				Console.WriteLine ("THREAD ABORT: {0}", inferior.PID);
-
-				inferior.SetSignal (inferior.SIGKILL, true);
-				return false;
-
-				cevent = new Inferior.ChildEvent (
-					Inferior.ChildEventType.CHILD_EXITED,
-					0, 0, 0);
-				return false;
+				inferior.Continue ();
+				return true;
 			}
 
 			return false;

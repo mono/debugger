@@ -7,6 +7,7 @@
 #include <mono/private/libgc-mono-debugger.h>
 #include <unistd.h>
 #include <locale.h>
+#include <string.h>
 
 static gpointer main_started_cond;
 static gpointer main_ready_cond;
@@ -123,6 +124,26 @@ debugger_class_get_static_field_data (guint64 value)
 }
 
 static void
+unhandled_exception (gpointer data, guint32 arg)
+{
+	MonoObject *exc = (MonoObject *) data;
+	MonoClass *klass;
+	gchar *name;
+
+	klass = mono_object_get_class (exc);
+	name = mono_class_get_name (klass);
+
+	if (!strcmp (name, "ThreadAbortException")) {
+		guint32 tid = pthread_self ();
+
+		mono_debugger_notification_function (NOTIFICATION_THREAD_ABORT, NULL, tid);
+		pthread_exit (NULL);
+	}
+
+	mono_debugger_notification_function (NOTIFICATION_UNHANDLED_EXCEPTION, data, arg);
+}
+
+static void
 debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 {
 	switch (event) {
@@ -135,7 +156,7 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 		break;
 
 	case MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION:
-		mono_debugger_notification_function (NOTIFICATION_UNHANDLED_EXCEPTION, data, arg);
+		unhandled_exception (data, arg);
 		break;
 	}
 }

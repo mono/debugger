@@ -56,6 +56,12 @@ namespace Mono.Debugger
 				TargetExitedEvent ();
 		}
 
+		protected virtual void OnProcessExitedEvent ()
+		{
+			if (ProcessExitedEvent != null)
+				ProcessExitedEvent (this);
+		}
+
 		public event TargetOutputHandler TargetOutput;
 		public event DebuggerOutputHandler DebuggerOutput;
 		public event DebuggerErrorHandler DebuggerError;
@@ -407,6 +413,7 @@ namespace Mono.Debugger
 
 		public void Kill ()
 		{
+			OnProcessExitedEvent ();
 			Dispose ();
 		}
 

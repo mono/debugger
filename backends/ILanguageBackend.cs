@@ -13,7 +13,8 @@ namespace Mono.Debugger.Backends
 		WrapperMain,
 		MainExited,
 		UnhandledException,
-		ThreadCreated
+		ThreadCreated,
+		ThreadAbort
 	}
 
 	internal interface ILanguageBackend

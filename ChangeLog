@@ -1,3 +1,11 @@
+2004-06-30  Martin Baulig  <martin@ximian.com>
+
+	* backends/ILanguageBackend.cs
+	(NotificationType.ThreadAbort): New notification.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Handle thread abort.	
+
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
 	* classes/Threading.cs (DebuggerWaitHandler.DebugFlags): New

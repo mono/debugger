@@ -269,6 +269,13 @@ namespace Mono.Debugger
 			inferior.Continue ();
 		}
 
+		internal void KillThread (SingleSteppingEngine engine)
+		{
+			thread_hash.Remove (engine.PID);
+			OnThreadExitedEvent (engine.Process);
+			engine.Process.Kill ();
+		}
+
 		internal bool HandleChildEvent (Inferior inferior,
 						ref Inferior.ChildEvent cevent)
 		{
