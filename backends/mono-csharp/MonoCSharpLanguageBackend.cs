@@ -796,6 +796,10 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return builtin.IntType; }
 		}
 
+		ITargetType ILanguage.ExceptionType {
+			get { return builtin.ExceptionType; }
+		}
+
 		private ITargetType LookupType (StackFrame frame, Type type, string name)
 		{
 			int offset = CSharpLanguage.LookupType (frame, name);

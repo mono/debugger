@@ -24,6 +24,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetType ExceptionType {
+			get;
+		}
+
 		ITargetType LookupType (StackFrame frame, string name);
 
 		bool CanCreateInstance (Type type);

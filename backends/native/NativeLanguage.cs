@@ -41,6 +41,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return pointer_type; }
 		}
 
+		public ITargetType ExceptionType {
+			get { return null; }
+		}
+
 		public ITargetType LookupType (StackFrame frame, string name)
 		{
 			return bfd_container.LookupType (frame, name);
