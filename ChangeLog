@@ -1,3 +1,11 @@
+2004-12-14  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Completer.cs (Completer.CommandCompleter): this isn't
+	*really* the right spot for it, but we need to insert the prefix
+	of all matches as the first element in the matches array, so that
+	readline will know to insert only that and display the rest of the
+	list to the user so they can choose from it..
+
 2004-12-12  Martin Baulig  <martin@ximian.com>
 
 	* classes/ProcessStart.cs (DebuggerOptions.StartTarget): New field.

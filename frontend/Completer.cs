@@ -57,7 +57,17 @@ namespace Mono.Debugger.Frontend
 					matched_commands.Add (key);
 			}
 
+
 			if (matched_commands.Count > 0) {
+				if (matched_commands.Count > 1) {
+					/* always add the prefix at
+					 * the beginning when we have
+					 * > 1 matches, so that
+					 * readline will display the
+					 * matches. */
+					matched_commands.Insert (0, text);
+				}
+
 				match_strings = new string [matched_commands.Count + 1];
 				matched_commands.CopyTo (match_strings);
 				match_strings [matched_commands.Count] = null;
