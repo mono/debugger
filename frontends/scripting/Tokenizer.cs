@@ -79,6 +79,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("save", Token.SAVE);
 			keywords.Add ("load", Token.LOAD);
 			keywords.Add ("kill", Token.KILL);
+			keywords.Add ("threadgroup", Token.THREADGROUP);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);
@@ -87,6 +88,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("line", Token.LINE);
 			keywords.Add ("modules", Token.MODULES);
 			keywords.Add ("breakpoints", Token.BREAKPOINTS);
+			keywords.Add ("threadgroups", Token.THREADGROUPS);
 
 			keywords.Add ("module", Token.MODULE);
 			keywords.Add ("ignore", Token.IGNORE);
@@ -95,6 +97,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("enable", Token.ENABLE);
 			keywords.Add ("disable", Token.DISABLE);
 			keywords.Add ("delete", Token.DELETE);
+			keywords.Add ("create", Token.CREATE);
+			keywords.Add ("add", Token.ADD);
+			keywords.Add ("remove", Token.REMOVE);
 
 			keywords.Add ("unknown", Token.UNKNOWN);
 			keywords.Add ("fundamental", Token.FUNDAMENTAL);
@@ -102,6 +107,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("struct", Token.STRUCT);
 			keywords.Add ("class", Token.CLASS);
 			keywords.Add ("pointer", Token.POINTER);
+			keywords.Add ("global", Token.GLOBAL);
 
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);

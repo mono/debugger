@@ -74,6 +74,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			initialize ();
 		}
 
+		public Process Process {
+			get { return process; }
+		}
+
 		public event ProcessExitedHandler ProcessExitedEvent;
 
 		void initialize ()
@@ -483,25 +487,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return retval;	
 		}
 		
-		public int InsertBreakpoint (string method)
-		{
-			Breakpoint breakpoint = new SimpleBreakpoint (method);
-			int index = backend.InsertBreakpoint (breakpoint, method);
-			if (index < 0)
-				throw new ScriptingException ("Could not insert breakpoint.");
-			return index;
-		}
-
-		public int InsertBreakpoint (string file, int line)
-		{
-			string full_file = context.GetFullPath (file);
-			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
-			int index = backend.InsertBreakpoint (breakpoint, full_file, line);
-			if (index < 0)
-				throw new ScriptingException ("Could not insert breakpoint.");
-			return index;
-		}
-
 		public void ShowParameters (int frame_number)
 		{
 			StackFrame frame = GetFrame (frame_number);
@@ -913,15 +898,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void ShowBreakpoints (Module module)
 		{
-			Breakpoint[] breakpoints = module.Breakpoints;
+			BreakpointHandle[] breakpoints = module.BreakpointHandles;
 			if (breakpoints.Length == 0)
 				return;
 
 			Print ("Breakpoints for module {0}:", module.Name);
-			for (int i = 0; i < breakpoints.Length; i++) {
-				Breakpoint breakpoint = breakpoints [i];
-
-				Print ("{0}", breakpoint);
+			foreach (BreakpointHandle handle in breakpoints) {
+				Print ("{0} ({1}): {2}", handle.Breakpoint.Index,
+				       handle.ThreadGroup.Name, handle.Breakpoint);
 			}
 		}
 
@@ -1087,6 +1071,83 @@ namespace Mono.Debugger.Frontends.CommandLine
 			add_process (current_process);
 
 			return process;
+		}
+
+		public ProcessHandle ProcessByID (int number)
+		{
+			if (number == -1)
+				return CurrentProcess;
+
+			foreach (ProcessHandle proc in Processes)
+				if (proc.ID == number)
+					return proc;
+
+			throw new ScriptingException ("No such process: {0}", number);
+		}
+
+		public void ShowThreadGroups ()
+		{
+			foreach (ThreadGroup group in ThreadGroup.ThreadGroups) {
+				StringBuilder ids = new StringBuilder ();
+				foreach (IProcess thread in group.Threads) {
+					ids.Append (" @");
+					ids.Append (thread.ID);
+				}
+				Print ("{0}:{1}", group.Name, ids.ToString ());
+			}
+		}
+
+		public void CreateThreadGroup (string name, int[] threads)
+		{
+			if (ThreadGroup.ThreadGroupExists (name))
+				throw new ScriptingException ("A thread group with that name already exists.");
+
+			AddToThreadGroup (name, threads);
+		}
+
+		public void AddToThreadGroup (string name, int[] threads)
+		{
+			ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
+
+			if (group.IsSystem)
+				throw new ScriptingException ("Cannot modify system-created thread group.");
+
+			foreach (int thread in threads) {
+				ProcessHandle process = ProcessByID (thread);
+				group.AddThread (process.Process);
+			}
+		}
+
+		public void RemoveFromThreadGroup (string name, int[] threads)
+		{
+			ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
+	
+			if (group.IsSystem)
+				throw new ScriptingException ("Cannot modify system-created thread group.");
+
+			foreach (int thread in threads) {
+				ProcessHandle process = ProcessByID (thread);
+				group.RemoveThread (process.Process);
+			}
+		}
+
+		public int InsertBreakpoint (ThreadGroup group, string method)
+		{
+			Breakpoint breakpoint = new SimpleBreakpoint (method);
+			int index = backend.InsertBreakpoint (breakpoint, group, method);
+			if (index < 0)
+				throw new ScriptingException ("Could not insert breakpoint.");
+			return index;
+		}
+
+		public int InsertBreakpoint (ThreadGroup group, string file, int line)
+		{
+			string full_file = GetFullPath (file);
+			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
+			int index = backend.InsertBreakpoint (breakpoint, group, full_file, line);
+			if (index < 0)
+				throw new ScriptingException ("Could not insert breakpoint.");
+			return index;
 		}
 	}
 }

@@ -391,6 +391,65 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowThreadGroupsCommand : Command
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.ShowThreadGroups ();
+		}
+	}
+
+	public class ThreadGroupCreateCommand : Command
+	{
+		string name;
+		int[] threads;
+
+		public ThreadGroupCreateCommand (string name, int[] threads)
+		{
+			this.name = name;
+			this.threads = threads;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.CreateThreadGroup (name, threads);
+		}
+	}
+
+	public class ThreadGroupAddCommand : Command
+	{
+		string name;
+		int[] threads;
+
+		public ThreadGroupAddCommand (string name, int[] threads)
+		{
+			this.name = name;
+			this.threads = threads;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.AddToThreadGroup (name, threads);
+		}
+	}
+
+	public class ThreadGroupRemoveCommand : Command
+	{
+		string name;
+		int[] threads;
+
+		public ThreadGroupRemoveCommand (string name, int[] threads)
+		{
+			this.name = name;
+			this.threads = threads;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.RemoveFromThreadGroup (name, threads);
+		}
+	}
+
 	public class BreakpointEnableCommand : Command
 	{
 		int index;
@@ -465,32 +524,32 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class BreakCommand : Command
 	{
-		ProcessExpression process_expr;
+		ThreadGroupExpression thread_group_expr;
 		string identifier;
 		int line;
 
-		public BreakCommand (ProcessExpression process_expr, string identifier)
+		public BreakCommand (ThreadGroupExpression thread_group_expr, string identifier)
 		{
-			this.process_expr = process_expr;
+			this.thread_group_expr = thread_group_expr;
 			this.identifier = identifier;
 			this.line = -1;
 		}
 
-		public BreakCommand (ProcessExpression process_expr, string identifier, int line)
+		public BreakCommand (ThreadGroupExpression thread_group_expr, string identifier, int line)
 		{
-			this.process_expr = process_expr;
+			this.thread_group_expr = thread_group_expr;
 			this.identifier = identifier;
 			this.line = line;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ThreadGroup group = (ThreadGroup) thread_group_expr.Resolve (context);
 			int index;
 			if (line != -1)
-				index = process.InsertBreakpoint (identifier, line);
+				index = context.InsertBreakpoint (group, identifier, line);
 			else
-				index = process.InsertBreakpoint (identifier);
+				index = context.InsertBreakpoint (group, identifier);
 			context.Print ("Inserted breakpoint {0}.", index);
 		}
 	}
@@ -597,19 +656,36 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			if (number == -1)
-				return context.CurrentProcess;
-
-			foreach (ProcessHandle proc in context.Processes)
-				if (proc.ID == number)
-					return proc;
-
-			throw new ScriptingException ("No such process: {0}", number);
+			return context.ProcessByID (number);
 		}
 
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), number);
+		}
+	}
+
+	public class ThreadGroupExpression : Expression
+	{
+		string name;
+
+		public ThreadGroupExpression (string name)
+		{
+			this.name = name;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ThreadGroup group = ThreadGroup.ThreadGroupByName (name);
+			if (group == null)
+				throw new ScriptingException ("No such thread group.");
+
+			return group;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType (), name);
 		}
 	}
 

@@ -12,10 +12,43 @@ namespace Mono.Debugger
 	[Serializable]
 	public class ThreadGroup : ISerializable
 	{
+		static Hashtable groups = Hashtable.Synchronized (new Hashtable ());
+
+		public static ThreadGroup CreateThreadGroup (string name)
+		{
+			ThreadGroup group = (ThreadGroup) groups [name];
+			if (group != null)
+				return group;
+
+			group = new ThreadGroup (name);
+			groups.Add (name, group);
+			return group;
+		}
+
+		public static bool ThreadGroupExists (string name)
+		{
+			return groups.Contains (name);
+		}
+
+		public static ThreadGroup[] ThreadGroups {
+			get {
+				lock (groups) {
+					ThreadGroup[] retval = new ThreadGroup [groups.Values.Count];
+					groups.Values.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+		}
+
+		public static ThreadGroup ThreadGroupByName (string name)
+		{
+			return (ThreadGroup) groups [name];
+		}
+
 		string name;
 		Hashtable threads;
 
-		public ThreadGroup (string name)
+		protected ThreadGroup (string name)
 		{
 			this.name = name;
 			this.threads = Hashtable.Synchronized (new Hashtable ());
@@ -42,6 +75,19 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string Name {
+			get { return name; }
+		}
+
+		public bool IsSystem {
+			get { return (name == "main") || (name == "global"); }
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType (), name);
+		}
+
 		//
 		// ISerializable
 		//
@@ -55,6 +101,7 @@ namespace Mono.Debugger
 		{
 			name = info.GetString ("name");
 			threads = Hashtable.Synchronized (new Hashtable ());
+			groups.Add (name, this);
 		}
 	}
 }

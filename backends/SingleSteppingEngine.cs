@@ -575,6 +575,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public int ID {
+			get { return process.ID; }
+		}
+
 		public int PID {
 			get {
 				check_inferior ();

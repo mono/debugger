@@ -27,6 +27,10 @@ namespace Mono.Debugger
 			get { return breakpoint; }
 		}
 
+		public ThreadGroup ThreadGroup {
+			get { return group; }
+		}
+
 		void Initialize ()
 		{
 			if (initialized)

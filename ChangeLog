@@ -1,5 +1,9 @@
 2003-01-26  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/: Implemented ThreadGroup support.
+
+2003-01-26  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added `kill' command.	
 
 2003-01-24  Martin Baulig  <martin@ximian.com>

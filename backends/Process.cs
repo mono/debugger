@@ -99,7 +99,7 @@ namespace Mono.Debugger
 
 			case ProcessType.CoreFile:
 				id = ++next_id;
-				CoreFile core = new CoreFileElfI386 (backend, start.TargetApplication,
+				CoreFile core = new CoreFileElfI386 (backend, this, start.TargetApplication,
 								     core_file, bfd_container);
 
 				backend.InitializeCoreFile (this, core);

@@ -94,6 +94,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token POINTER
 %token MODULES
 %token BREAKPOINTS
+%token THREADGROUPS
+%token GLOBAL
 
 %token FRAME
 %token START
@@ -117,6 +119,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token SAVE
 %token LOAD
 %token KILL
+%token THREADGROUP
 
 %token SELECT
 %token BACKGROUND
@@ -129,6 +132,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token ENABLE
 %token DISABLE
 %token DELETE
+%token CREATE
+%token ADD
+%token REMOVE
 
 %start command_loop
 %%
@@ -213,17 +219,21 @@ command
 	  {
 		$$ = new ShowBreakpointsCommand ();
 	  }
+	| SHOW THREADGROUPS
+	  {
+		$$ = new ShowThreadGroupsCommand ();
+	  }
 	| SHOW TYPE variable_expression
 	  {
 		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
 	  }
-	| BREAK opt_process function_name
+	| BREAK opt_thread_group function_name
 	  {
-		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3);
+		$$ = new BreakCommand ((ThreadGroupExpression) $2, (string) $3);
 	  }
-	| BREAK opt_process STRING INTEGER
+	| BREAK opt_thread_group STRING INTEGER
 	  {
-		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3, (int) $4);
+		$$ = new BreakCommand ((ThreadGroupExpression) $2, (string) $3, (int) $4);
 	  }
 	| BREAKPOINT INTEGER ENABLE
 	  {
@@ -302,6 +312,27 @@ command
 	| LOAD STRING
 	  {
 		$$ = new LoadCommand ((string) $2);
+	  }
+	| THREADGROUP CREATE STRING opt_number_list
+	  {
+		int[] threads = new int [((ArrayList) $4).Count];
+		((ArrayList) $4).CopyTo (threads, 0);
+
+		$$ = new ThreadGroupCreateCommand ((string) $3, threads);
+	  }
+	| THREADGROUP ADD STRING opt_number_list
+	  {
+		int[] threads = new int [((ArrayList) $4).Count];
+		((ArrayList) $4).CopyTo (threads, 0);
+
+		$$ = new ThreadGroupAddCommand ((string) $3, threads);
+	  }
+	| THREADGROUP REMOVE STRING opt_number_list
+	  {
+		int[] threads = new int [((ArrayList) $4).Count];
+		((ArrayList) $4).CopyTo (threads, 0);
+
+		$$ = new ThreadGroupRemoveCommand ((string) $3, threads);
 	  }
 	;
 
@@ -452,6 +483,21 @@ program_arglist
 	  }
 	;
 
+opt_thread_group
+	: /* empty */
+	  {
+		$$ = new ThreadGroupExpression ("main");
+	  }
+	| AT IDENTIFIER
+	  {
+		$$ = new ThreadGroupExpression ((string) $2);
+	  }
+	| AT GLOBAL
+	  {
+		$$ = new ThreadGroupExpression ("global");
+	  }
+	;
+
 opt_process
 	: /* empty */
 	  {
@@ -483,6 +529,14 @@ function_name
 	  {
 		$$ = (string) $1;
 	  }
+	;
+
+opt_number_list
+	: /* empty */
+	  {
+		$$ = new ArrayList ();
+	  }
+	| number_list
 	;
 
 number_list

@@ -350,6 +350,22 @@ namespace Mono.Debugger
 			}
 		}
 
+		// <summary>
+		//   Returns all breakpoints which have been registered with this module.
+		// </summary>
+		public BreakpointHandle[] BreakpointHandles {
+			get {
+				lock (this) {
+					ArrayList list = new ArrayList ();
+					foreach (BreakpointHandle handle in breakpoints.Values)
+						list.Add (handle);
+					BreakpointHandle[] retval = new BreakpointHandle [list.Count];
+					list.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+		}
+
 		// <remarks>
 		//   This is called from the SymbolTableManager's background thread when
 		//   the module is changed.  It creates a hash table which maps a method

@@ -37,7 +37,7 @@ namespace Mono.Debugger
 		public DebuggerBackend ()
 		{
 			module_manager = new ModuleManager ();
-			main_group = new ThreadGroup ("main");
+			main_group = ThreadGroup.CreateThreadGroup ("main");
 
 			Initialize ();
 		}

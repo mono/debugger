@@ -15,13 +15,14 @@ namespace Mono.Debugger.Architecture
 		protected BfdDisassembler bfd_disassembler;
 		protected IArchitecture arch;
 
+		Process process;
 		DebuggerBackend backend;
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
 		AddressDomain address_domain;
 
-		public CoreFile (DebuggerBackend backend, string application, string core_file,
-				 BfdContainer bfd_container)
+		public CoreFile (DebuggerBackend backend, Process process, string application,
+				 string core_file, BfdContainer bfd_container)
 		{
 			this.backend = backend;
 			this.symtab_manager = backend.SymbolTableManager;
@@ -80,6 +81,10 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd Bfd {
 			get { return bfd; }
+		}
+
+		public int ID {
+			get { return process.ID; }
 		}
 
 		public void UpdateModules ()

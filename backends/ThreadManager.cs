@@ -31,6 +31,7 @@ namespace Mono.Debugger
 		BreakpointManager breakpoint_manager;
 		DaemonThreadHandler csharp_handler;
 		AutoResetEvent thread_started_event;
+		ThreadGroup global_group;
 		int thread_lock_level = 0;
 
 		ManualResetEvent main_started_event;
@@ -53,6 +54,8 @@ namespace Mono.Debugger
 			this.bfdc = bfdc;
 			this.thread_hash = Hashtable.Synchronized (new Hashtable ());
 
+			global_group = ThreadGroup.CreateThreadGroup ("global");
+
 			thread_lock_mutex = new Mutex ();
 			breakpoint_manager = new BreakpointManager ();
 
@@ -66,7 +69,7 @@ namespace Mono.Debugger
 		{
 			this.csharp_handler = csharp_handler;
 			this.main_process = process;
-			thread_hash.Add (process.PID, process);
+			add_process (process, process.PID, false);
 
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
 
@@ -198,8 +201,11 @@ namespace Mono.Debugger
 			}
 		}
 
-		void add_process (Process process, bool send_event)
+		void add_process (Process process, int pid, bool send_event)
 		{
+			thread_hash.Add (pid, process);
+			if (process.State != TargetState.DAEMON)
+				global_group.AddThread (process);
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 			if (send_event)
 				OnThreadCreatedEvent (process);
@@ -239,9 +245,7 @@ namespace Mono.Debugger
 					new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
 				}
 
-				thread_hash.Add (pid, new_process);
-
-				add_process (new_process, true);
+				add_process (new_process, pid, true);
 			}
 		}
 
@@ -276,16 +280,13 @@ namespace Mono.Debugger
 				int main_pid = runner.Inferior.ReadInteger (mpid);
 
 				manager_process = runner.Process;
-				thread_hash.Add (manager_process.PID, manager_process);
-				add_process (manager_process, true);
+				add_process (manager_process, manager_process.PID, true);
 
 				debugger_process = backend.CreateDebuggerProcess (runner.Process, debugger_pid);
-				thread_hash.Add (debugger_pid, debugger_process);
-				add_process (debugger_process, true);
+				add_process (debugger_process, debugger_pid, true);
 
 				main_process = runner.Process.CreateThread (main_pid);
-				thread_hash.Add (main_pid, main_process);
-				add_process (main_process, false);
+				add_process (main_process, main_pid, false);
 
 				initialized = true;
 				OnInitializedEvent (main_process);
@@ -328,8 +329,7 @@ namespace Mono.Debugger
 			Process new_process = runner.Process.CreateThread (pid);
 			new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
 
-			thread_hash.Add (pid, new_process);
-			add_process (new_process, true);
+			add_process (new_process, pid, true);
 
 			if (func.Address == 0)
 				throw new InternalError ("Created thread without start function");
