@@ -1,3 +1,10 @@
+2003-03-30  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs: Run the BreakpointHitHandler()
+	from the ready_event_handler() because it should be run after the
+	target state has changed to TargetState.STOPPED and the
+	corresponding notification has been sent.
+
 2003-03-28  Martin Baulig  <martin@ximian.com>
 
 	* backends/ThreadManager.cs (SignalHandler): Ignore SIGPWR and

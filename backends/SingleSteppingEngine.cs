@@ -104,6 +104,11 @@ namespace Mono.Debugger.Backends
 				switch (command_result.EventType) {
 				case ChildEventType.CHILD_HIT_BREAKPOINT:
 					change_target_state (TargetState.STOPPED, 0);
+
+					BreakpointHandle handle = (BreakpointHandle) command_result.Data;
+					if ((handle != null) && (handle.HitHandler != null))
+						handle.HitHandler (current_frame, 0, handle.UserData);
+
 					break;
 
 				case ChildEventType.CHILD_SIGNALED:
@@ -940,6 +945,13 @@ namespace Mono.Debugger.Backends
 				this.Argument = arg;
 			}
 
+			public CommandResult (ChildEventType type, object data)
+			{
+				this.EventType = type;
+				this.Argument = 0;
+				this.Data = data;
+			}
+
 			public CommandResult (CommandResultType type)
 				: this (type, null)
 			{ }
@@ -998,10 +1010,7 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			send_result (ChildEventType.CHILD_STOPPED, 0);
-
-			if (handle.HitHandler != null)
-				handle.HitHandler (frame, breakpoint, handle.UserData);
+			send_result (new CommandResult (ChildEventType.CHILD_HIT_BREAKPOINT, handle));
 
 			return true;
 		}
@@ -1691,6 +1700,17 @@ namespace Mono.Debugger.Backends
 			ready_event_handler ();
 		}
 
+		internal void Wait ()
+		{
+			check_inferior ();
+			command_mutex.WaitOne ();
+
+			wait_for_completion ();
+			ready_event_handler ();
+
+			command_mutex.ReleaseMutex ();
+		}
+
 		public void Kill ()
 		{
 			if (inferior == null)
@@ -1814,7 +1834,7 @@ namespace Mono.Debugger.Backends
 			breakpoints.Remove (index);
 		}
 
-		private struct BreakpointHandle
+		private class BreakpointHandle
 		{
 			public readonly int Index;
 			public readonly bool NeedsFrame;
