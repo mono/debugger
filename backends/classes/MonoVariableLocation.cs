@@ -51,6 +51,7 @@ namespace Mono.Debugger.Backends
 
 			// If this is a valuetype, the register hold the whole data.
 			long contents = frame.GetRegister (register);
+			contents += regoffset;
 
 			ITargetAccess memory = TargetAccess;
 

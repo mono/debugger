@@ -119,18 +119,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return retval;	
 		}
 
-		public ITargetObject GetRegister (string name, long offset)
+		public int FindRegister (string name)
 		{
-			int register = process.GetRegisterIndex (name);
-
-			return frame.GetRegister (register, offset);
+			return process.GetRegisterIndex (name);
 		}
 
-		public void SetRegister (string name, long value)
+		public ITargetType GetRegisterType (int index)
 		{
-			int register = process.GetRegisterIndex (name);
+			return frame.Language.PointerType;
+		}
 
-			frame.SetRegister (register, value);
+		public TargetLocation GetRegisterLocation (int index, long offset, bool dereference)
+		{
+			return frame.GetRegisterLocation (index, offset, dereference, 0);
+		}
+
+		public ITargetObject GetRegister (int index, long offset)
+		{
+			ITargetType type = GetRegisterType (index);
+			TargetLocation location = GetRegisterLocation (index, offset, false);
+			return type.GetObject (location);
+		}
+
+		public void SetRegister (int index, long value)
+		{
+			frame.SetRegister (index, value);
 		}
 
 		public void ShowParameters (ScriptingContext context)
@@ -198,11 +211,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable cannot be accessed.");
 
 			return var.Type;
-		}
-
-		public ITargetType GetRegisterType (string register)
-		{
-			return frame.Language.LongIntegerType;
 		}
 
 		public override string ToString ()

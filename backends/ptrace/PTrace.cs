@@ -491,21 +491,21 @@ namespace Mono.Debugger.Backends
 		{
 			address_domain = new AddressDomain (String.Format ("ptrace ({0})", child_pid));
 
+			int target_int_size, target_long_size, target_address_size;
+			check_error (mono_debugger_server_get_target_info
+				(server_handle, out target_int_size, out target_long_size,
+				 out target_address_size));
+
+			target_info = new TargetInfo (target_int_size, target_long_size, target_address_size);
+
 			try {
 				bfd = bfd_container.AddFile (this, start.TargetApplication,
 							     start.LoadNativeSymtab);
 			} catch (Exception e) {
 				error_handler (this, String.Format (
 					"Can't read symbol file {0}", start.TargetApplication), e);
+				return;
 			}
-
-			int target_int_size, target_long_size, target_address_size;
-			check_error (mono_debugger_server_get_target_info
-				(server_handle, out target_int_size, out target_long_size,
-				 out target_address_size));
-
-			target_info = new TargetInfo (target_int_size, target_long_size,
-						      target_address_size);
 
 			bfd_disassembler = bfd.GetDisassembler (this);
 		}

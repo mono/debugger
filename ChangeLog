@@ -1,3 +1,19 @@
+2003-08-12  Martin Baulig  <martin@ximian.com>
+
+	* classes/StackFrame.cs (StackFrame.GetRegister): Removed.
+	(StackFrame.GetRegisterLocation): New public method.
+
+	* backends/native/NativeLanguage.cs: The .ctor now takes an
+	ITargetInfo because NativePointerType needs the target address
+	size.
+
+	* backends/native/NativePointerType.cs: Always set the correct
+	size.
+
+	* frontends/scripting/VariableExpression.cs
+	(RegisterExpression.ResolveLocation): New public method.  This is
+	used when resolving an `x %eax'.
+
 2003-08-11  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Parser.jay: Use a colon instead of a dot to

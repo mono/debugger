@@ -77,8 +77,6 @@ namespace Mono.Debugger.Backends
 			inferior.SingleSteppingEngine = this;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
-			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ();
-
 			step_event = new AutoResetEvent (false);
 			start_event = new ManualResetEvent (false);
 			completed_event = new ManualResetEvent (false);
@@ -140,6 +138,8 @@ namespace Mono.Debugger.Backends
 
 			if (start_error != null)
 				throw start_error;
+
+			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ((ITargetInfo) inferior);
 
 			symtab_manager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
@@ -2408,10 +2408,9 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			protected override ITargetObject GetRegister (int index, long contents, long offset)
+			public override TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset)
 			{
-				return Language.PointerType.GetObject (
-					new MonoVariableLocation (this, true, index, offset, false, 0));
+				return new MonoVariableLocation (this, dereference, index, reg_offset, false, offset);
 			}
 
 			public override void SetRegister (int index, long value)

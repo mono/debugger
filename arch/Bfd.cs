@@ -247,7 +247,7 @@ namespace Mono.Debugger.Architecture
 
 			simple_symtab = new BfdSymbolTable (this);
 
-			bfd_module = new BfdModule (backend, module, this);
+			bfd_module = new BfdModule (backend, module, this, (ITargetInfo) memory);
 
 			InternalSection plt_section = GetSectionByName (".plt", false);
 			InternalSection got_section = GetSectionByName (".got", false);

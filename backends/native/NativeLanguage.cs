@@ -10,11 +10,11 @@ namespace Mono.Debugger.Languages.Native
 		NativeFundamentalType long_type;
 		NativePointerType pointer_type;
 
-		public NativeLanguage ()
+		public NativeLanguage (ITargetInfo info)
 		{
 			integer_type = new NativeFundamentalType ("int", typeof (int), Marshal.SizeOf (typeof (int)));
 			long_type = new NativeFundamentalType ("long", typeof (long), Marshal.SizeOf (typeof (long)));
-			pointer_type = new NativePointerType ("pointer");
+			pointer_type = new NativePointerType ("pointer", info.TargetAddressSize);
 		}
 
 		public string Name {

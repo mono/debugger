@@ -43,7 +43,7 @@ namespace Mono.Debugger.Architecture
 
 			bfd_disassembler = bfd.GetDisassembler (this);
 
-			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ();
+			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ((ITargetInfo) this);
 
 			string crash_program = Path.GetFullPath (core_bfd.CrashProgram);
 			string[] crash_program_args = crash_program.Split (' ');
@@ -255,6 +255,11 @@ namespace Mono.Debugger.Architecture
 				get {
 					return language;
 				}
+			}
+
+			public override TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset)
+			{
+				throw new NotImplementedException ();
 			}
 
 			public override void SetRegister (int index, long value)

@@ -1,12 +1,13 @@
 using System;
+using System.Runtime.InteropServices;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {
 	internal class NativePointerType : NativeType, ITargetPointerType
 	{
-		public NativePointerType (string name)
-			: base (name, TargetObjectKind.Pointer, 0)
+		public NativePointerType (string name, int size)
+			: base (name, TargetObjectKind.Pointer, size)
 		{ }
 
 		public NativePointerType (string name, NativeType target_type, int size)

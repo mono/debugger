@@ -96,13 +96,7 @@ namespace Mono.Debugger
 			throw new NoSuchRegisterException ();
 		}
 
-		public virtual ITargetObject GetRegister (int index, long offset)
-		{
-			long data = GetRegister (index);
-			return GetRegister (index, data, offset);
-		}
-
-		protected abstract ITargetObject GetRegister (int index, long contents, long offset);
+		public abstract TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset);
 
 		public abstract void SetRegister (int index, long value);
 

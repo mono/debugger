@@ -244,25 +244,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class RegisterExpression : VariableExpression
 	{
 		FrameExpression frame_expr;
-		string register;
+		string name;
+		int register;
 		long offset;
 		FrameHandle frame;
 
 		public RegisterExpression (FrameExpression frame_expr, string register, long offset)
 		{
 			this.frame_expr = frame_expr;
-			this.register = register;
+			this.name = register;
 			this.offset = offset;
 		}
 
 		public override string Name {
-			get { return '%' + register; }
+			get { return '%' + name; }
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
 			frame = (FrameHandle) frame_expr.Resolve (context);
 
+			register = frame.FindRegister (name);
 			return frame.GetRegisterType (register);
 		}
 
@@ -271,6 +273,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ITargetType type = DoResolveType (context);
 
 			return frame.GetRegister (register, offset);
+		}
+
+		public TargetLocation ResolveLocation (ScriptingContext context)
+		{
+			ITargetType type = DoResolveType (context);
+
+			return frame.GetRegisterLocation (register, offset, true);
 		}
 
 		public override void Assign (ScriptingContext context, object obj)

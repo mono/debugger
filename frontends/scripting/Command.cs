@@ -65,7 +65,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			TargetAddress taddress;
 			byte[] data;
 
-			if (expression != null) {
+			RegisterExpression rexp = expression as RegisterExpression;
+			if (rexp != null) {
+				TargetLocation location = rexp.ResolveLocation (context);
+
+				taddress = location.Address;
+				data = location.ReadBuffer (format.Size);
+			} else if (expression != null) {
 				ITargetObject obj = expression.ResolveVariable (context);
 
 				if (!obj.Location.HasAddress)

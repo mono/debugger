@@ -61,7 +61,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override string Print ()
 		{
-			return GetObject ().ToString ();
+			object obj = GetObject ();
+			if (obj is IntPtr)
+				return String.Format ("0x{0:x}", ((IntPtr) obj).ToInt64 ());
+			else if (obj is UIntPtr)
+				return String.Format ("0x{0:x}", ((UIntPtr) obj).ToUInt64 ());
+			else
+				return obj.ToString ();
 		}
 	}
 }
