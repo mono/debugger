@@ -10,7 +10,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	public class Bfd : IDisposable
+	internal class Bfd : IDisposable
 	{
 		IntPtr bfd;
 		protected IInferior inferior;

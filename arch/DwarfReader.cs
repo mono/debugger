@@ -9,7 +9,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	public class DwarfReader : IDisposable
+	internal class DwarfReader : IDisposable
 	{
 		protected Bfd bfd;
 		protected IInferior inferior;

@@ -10,7 +10,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	public class BfdDisassembler : IDisassembler, IDisposable
+	internal class BfdDisassembler : IDisassembler, IDisposable
 	{
 		IntPtr dis;
 		IntPtr info;
