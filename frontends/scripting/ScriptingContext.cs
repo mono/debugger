@@ -27,15 +27,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.process = process;
 			this.id = process.ID;
 
-			registers = new Hashtable ();
-			arch = process.Architecture;
-
-			for (int i = 0; i < arch.RegisterNames.Length; i++) {
-				string register = arch.RegisterNames [i];
-
-				registers.Add (register, arch.AllRegisterIndices [i]);
-			}				
-
 			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 			process.MethodChangedEvent += new MethodChangedHandler (method_changed);
@@ -55,7 +46,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 				process.SingleSteppingEngine.Attach (pid, true);
 			else
 				process.SingleSteppingEngine.Run (true);
+			initialize ();
 			process_events ();
+		}
+
+		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
+				      string core_file)
+			: this (context, backend, process)
+		{
+			initialize ();
+		}
+
+		void initialize ()
+		{
+			registers = new Hashtable ();
+			arch = process.Architecture;
+
+			for (int i = 0; i < arch.RegisterNames.Length; i++) {
+				string register = arch.RegisterNames [i];
+
+				registers.Add (register, arch.AllRegisterIndices [i]);
+			}
 		}
 
 		int current_frame_idx = -1;
@@ -254,10 +265,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public IArchitecture Architecture {
 			get {
-				if (process == null)
+				if (arch == null)
 					throw new ScriptingException ("Process @{0} not running.", id);
 
-				return process.Architecture;
+				return arch;
 			}
 		}
 
@@ -712,7 +723,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				start = ProcessStart.Create (null, args, null);
 				process = backend.ReadCoreFile (start, "thecore");
-				current_process = new ProcessHandle (this, backend, process);
+				current_process = new ProcessHandle (this, backend, process, "thecore");
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);

@@ -759,7 +759,7 @@ namespace Mono.Debugger.Backends
 				throw new NoTargetException ();
 		}
 
-		protected IArchitecture Architecture {
+		public IArchitecture Architecture {
 			get { return arch; }
 		}
 
