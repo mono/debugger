@@ -1074,6 +1074,61 @@ namespace Mono.Debugger.Frontends.CommandLine
 			module.RemoveBreakpoint (index);
 		}
 
+		public Module[] GetModules (int[] indices)
+		{
+			if (modules == null)
+				throw new ScriptingException ("No modules.");
+
+			backend.ModuleManager.Lock ();
+
+			int pos = 0;
+			Module[] retval = new Module [indices.Length];
+
+			foreach (int index in indices) {
+				if ((index < 0) || (index > modules.Length))
+					throw new ScriptingException ("No such module {0}.", index);
+
+				retval [pos++] = modules [index];
+			}
+
+			backend.ModuleManager.UnLock ();
+
+			return retval;
+		}
+
+		public SourceFile[] GetSources (int[] indices)
+		{
+			if (modules == null)
+				throw new ScriptingException ("No modules.");
+
+			Hashtable source_hash = new Hashtable ();
+
+			backend.ModuleManager.Lock ();
+
+			foreach (Module module in modules) {
+				if (!module.SymbolsLoaded)
+					continue;
+
+				foreach (SourceFile source in module.Sources)
+					source_hash.Add (source.ID, source);
+			}
+
+			int pos = 0;
+			SourceFile[] retval = new SourceFile [indices.Length];
+
+			foreach (int index in indices) {
+				SourceFile source = (SourceFile) source_hash [index];
+				if (source == null)
+					throw new ScriptingException ("No such source file: {0}", index);
+
+				retval [pos++] = source;
+			}
+
+			backend.ModuleManager.UnLock ();
+
+			return retval;
+		}
+
 		public void ShowModules ()
 		{
 			if (modules == null) {
@@ -1117,63 +1172,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public void ModuleOperations (int[] module_indices, ModuleOperation[] operations)
+		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
 		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
-			}
-
 			backend.ModuleManager.Lock ();
-
-			foreach (int index in module_indices) {
-				if ((index < 0) || (index > modules.Length)) {
-					Error ("No such module {0}.", index);
-					return;
-				}
-
-				module_operation (modules [index], operations);
-			}
-
-			backend.ModuleManager.UnLock ();
-			backend.SymbolTableManager.Wait ();
-		}
-
-		public void ModuleOperations (ModuleOperation[] operations)
-		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
-			}
 
 			foreach (Module module in modules)
 				module_operation (module, operations);
-		}
-
-		public void ShowSources (int[] module_indices)
-		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
-			}
-
-			backend.ModuleManager.Lock ();
-
-			if (module_indices.Length == 0) {
-				foreach (Module module in modules)
-					ShowSources (module);
-			} else {
-				foreach (int index in module_indices) {
-					if ((index < 0) || (index > modules.Length)) {
-						Error ("No such module {0}.", index);
-						return;
-					}
-
-					ShowSources (modules [index]);
-				}
-			}
 
 			backend.ModuleManager.UnLock ();
+			backend.SymbolTableManager.Wait ();
 		}
 
 		public void ShowSources (Module module)
@@ -1185,38 +1192,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			foreach (SourceFile source in module.Sources)
 				Print ("  {0}", source);
-		}
-
-		public void ShowMethods (int[] source_indices)
-		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
-			}
-
-			Hashtable source_hash = new Hashtable ();
-
-			backend.ModuleManager.Lock ();
-
-			foreach (Module module in modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				foreach (SourceFile source in module.Sources)
-					source_hash.Add (source.ID, source);
-			}
-
-			foreach (int index in source_indices) {
-				SourceFile source = (SourceFile) source_hash [index];
-				if (source == null) {
-					Print ("No such source file: {0}", index);
-					continue;
-				}
-
-				ShowMethods (source);
-			}
-
-			backend.ModuleManager.UnLock ();
 		}
 
 		public void ShowMethods (SourceFile source)
@@ -1249,7 +1224,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public ProcessHandle ProcessByID (int number)
+		public ProcessHandle GetProcess (int number)
 		{
 			if (number == -1)
 				return CurrentProcess;
@@ -1259,6 +1234,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return proc;
 
 			throw new ScriptingException ("No such process: {0}", number);
+		}
+
+		public ProcessHandle[] GetProcesses (int[] indices)
+		{
+			ProcessHandle[] retval = new ProcessHandle [indices.Length];
+
+			for (int i = 0; i < indices.Length; i++)
+				retval [i] = GetProcess (indices [i]);
+
+			return retval;
 		}
 
 		public void ShowThreadGroups ()
@@ -1273,38 +1258,41 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public void CreateThreadGroup (string name, int[] threads)
+		public void CreateThreadGroup (string name)
 		{
 			if (ThreadGroup.ThreadGroupExists (name))
 				throw new ScriptingException ("A thread group with that name already exists.");
 
-			AddToThreadGroup (name, threads);
+			ThreadGroup.CreateThreadGroup (name);
 		}
 
-		public void AddToThreadGroup (string name, int[] threads)
+		public ThreadGroup GetThreadGroup (string name, bool writable)
 		{
+			if (!ThreadGroup.ThreadGroupExists (name))
+				throw new ScriptingException ("No such thread group.");
+
 			ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
 
-			if (group.IsSystem)
+			if (writable && group.IsSystem)
 				throw new ScriptingException ("Cannot modify system-created thread group.");
 
-			foreach (int thread in threads) {
-				ProcessHandle process = ProcessByID (thread);
+			return group;
+		}
+
+		public void AddToThreadGroup (string name, ProcessHandle[] threads)
+		{
+			ThreadGroup group = GetThreadGroup (name, true);
+
+			foreach (ProcessHandle process in threads)
 				group.AddThread (process.Process);
-			}
 		}
 
-		public void RemoveFromThreadGroup (string name, int[] threads)
+		public void RemoveFromThreadGroup (string name, ProcessHandle[] threads)
 		{
-			ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
+			ThreadGroup group = GetThreadGroup (name, true);
 	
-			if (group.IsSystem)
-				throw new ScriptingException ("Cannot modify system-created thread group.");
-
-			foreach (int thread in threads) {
-				ProcessHandle process = ProcessByID (thread);
+			foreach (ProcessHandle process in threads)
 				group.RemoveThread (process.Process);
-			}
 		}
 
 		public int InsertBreakpoint (ThreadGroup group, SourceLocation location)

@@ -1,5 +1,11 @@
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Expression.cs
+	(ModuleListExpression, SourceListExpression, ProcessListExpression):
+	New expressions.
+
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (StepCommand): Use a separate
 	class for the individual stepping commands.
 

@@ -222,19 +222,13 @@ command
 	  {
 		$$ = new ShowModulesCommand ();
 	  }
-	| SHOW SOURCES opt_number_list
+	| SHOW SOURCES module_list_expression
 	  {
-		int[] modules = new int [((ArrayList) $3).Count];
-		((ArrayList) $3).CopyTo (modules, 0);
-
-		$$ = new ShowSourcesCommand (modules);
+		$$ = new ShowSourcesCommand ((ModuleListExpression) $3);
 	  }
-	| SHOW METHODS opt_number_list
+	| SHOW METHODS source_list_expression
 	  {
-		int[] sources = new int [((ArrayList) $3).Count];
-		((ArrayList) $3).CopyTo (sources, 0);
-
-		$$ = new ShowMethodsCommand (sources);
+		$$ = new ShowMethodsCommand ((SourceListExpression) $3);
 	  }
 	| SHOW BREAKPOINTS
 	  {
@@ -304,19 +298,11 @@ command
 	  {
 		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
 	  }
-	| MODULE number_list module_operations
+	| MODULE module_list_expression module_operations
 	  {
-		int[] modules = new int [((ArrayList) $2).Count];
-		((ArrayList) $2).CopyTo (modules, 0);
 		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $3).Count];
 		((ArrayList) $3).CopyTo (operations, 0);
-		$$ = new ModuleOperationCommand (modules, operations);
-	  }
-	| MODULE ALL module_operations
-	  {
-		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $2).Count];
-		((ArrayList) $2).CopyTo (operations, 0);
-		$$ = new ModuleOperationCommand (operations);
+		$$ = new ModuleOperationCommand ((ModuleListExpression) $2, operations);
 	  }
 	| assert_command
 	  {
@@ -326,26 +312,17 @@ command
 	  {
 		$$ = new SaveCommand ((string) $2);
 	  }
-	| THREADGROUP CREATE STRING opt_number_list
+	| THREADGROUP CREATE STRING
 	  {
-		int[] threads = new int [((ArrayList) $4).Count];
-		((ArrayList) $4).CopyTo (threads, 0);
-
-		$$ = new ThreadGroupCreateCommand ((string) $3, threads);
+		$$ = new ThreadGroupCreateCommand ((string) $3);
 	  }
-	| THREADGROUP ADD STRING opt_number_list
+	| THREADGROUP ADD STRING process_list_expression
 	  {
-		int[] threads = new int [((ArrayList) $4).Count];
-		((ArrayList) $4).CopyTo (threads, 0);
-
-		$$ = new ThreadGroupAddCommand ((string) $3, threads);
+		$$ = new ThreadGroupAddCommand ((string) $3, (ProcessListExpression) $4);
 	  }
-	| THREADGROUP REMOVE STRING opt_number_list
+	| THREADGROUP REMOVE STRING process_list_expression
 	  {
-		int[] threads = new int [((ArrayList) $4).Count];
-		((ArrayList) $4).CopyTo (threads, 0);
-
-		$$ = new ThreadGroupRemoveCommand ((string) $3, threads);
+		$$ = new ThreadGroupRemoveCommand ((string) $3, (ProcessListExpression) $4);
 	  }
 	| HELP SHOW
 	  {
@@ -587,12 +564,34 @@ source_expression
 	  }
 	;
 
-opt_number_list
-	: /* empty */
+module_list_expression
+	: number_list
 	  {
-		$$ = new ArrayList ();
+		int[] indices = new int [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (indices, 0);
+
+		$$ = new ModuleListExpression (indices);
 	  }
-	| number_list
+	;
+
+source_list_expression
+	: number_list
+	  {
+		int[] indices = new int [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (indices, 0);
+
+		$$ = new SourceListExpression (indices);
+	  }
+	;
+
+process_list_expression
+	: number_list
+	  {
+		int[] indices = new int [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (indices, 0);
+
+		$$ = new ProcessListExpression (indices);
+	  }
 	;
 
 number_list

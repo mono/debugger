@@ -438,31 +438,37 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ShowSourcesCommand : Command
 	{
-		int[] modules;
+		ModuleListExpression module_list_expr;
 
-		public ShowSourcesCommand (int[] modules)
+		public ShowSourcesCommand (ModuleListExpression module_list_expr)
 		{
-			this.modules = modules;
+			this.module_list_expr = module_list_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ShowSources (modules);
+			Module[] modules = (Module []) module_list_expr.Resolve (context);
+
+			foreach (Module module in modules)
+				context.ShowSources (module);
 		}
 	}
 
 	public class ShowMethodsCommand : Command
 	{
-		int[] sources;
+		SourceListExpression source_list_expr;
 
-		public ShowMethodsCommand (int[] sources)
+		public ShowMethodsCommand (SourceListExpression source_list_expr)
 		{
-			this.sources = sources;
+			this.source_list_expr = source_list_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ShowMethods (sources);
+			SourceFile[] sources = (SourceFile []) source_list_expr.Resolve (context);
+
+			foreach (SourceFile source in sources)
+				context.ShowMethods (source);
 		}
 	}
 
@@ -485,33 +491,33 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ThreadGroupCreateCommand : Command
 	{
 		string name;
-		int[] threads;
 
-		public ThreadGroupCreateCommand (string name, int[] threads)
+		public ThreadGroupCreateCommand (string name)
 		{
 			this.name = name;
-			this.threads = threads;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.CreateThreadGroup (name, threads);
+			context.CreateThreadGroup (name);
 		}
 	}
 
 	public class ThreadGroupAddCommand : Command
 	{
 		string name;
-		int[] threads;
+		ProcessListExpression process_list_expr;
 
-		public ThreadGroupAddCommand (string name, int[] threads)
+		public ThreadGroupAddCommand (string name, ProcessListExpression process_list_expr)
 		{
 			this.name = name;
-			this.threads = threads;
+			this.process_list_expr = process_list_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
+			ProcessHandle[] threads = (ProcessHandle []) process_list_expr.Resolve (context);
+
 			context.AddToThreadGroup (name, threads);
 		}
 	}
@@ -519,16 +525,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ThreadGroupRemoveCommand : Command
 	{
 		string name;
-		int[] threads;
+		ProcessListExpression process_list_expr;
 
-		public ThreadGroupRemoveCommand (string name, int[] threads)
+		public ThreadGroupRemoveCommand (string name, ProcessListExpression process_list_expr)
 		{
 			this.name = name;
-			this.threads = threads;
+			this.process_list_expr = process_list_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
+			ProcessHandle[] threads = (ProcessHandle []) process_list_expr.Resolve (context);
+
 			context.RemoveFromThreadGroup (name, threads);
 		}
 	}
@@ -582,26 +590,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ModuleOperationCommand : Command
 	{
-		int[] modules;
+		ModuleListExpression module_list_expr;
 		ModuleOperation[] operations;
 
-		public ModuleOperationCommand (int[] modules, ModuleOperation[] operations)
+		public ModuleOperationCommand (ModuleListExpression module_list_expr,
+					       ModuleOperation[] operations)
 		{
-			this.modules = modules;
-			this.operations = operations;
-		}
-
-		public ModuleOperationCommand (ModuleOperation[] operations)
-		{
+			this.module_list_expr = module_list_expr;
 			this.operations = operations;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			if (modules != null)
-				context.ModuleOperations (modules, operations);
-			else
-				context.ModuleOperations (operations);
+			Module[] modules = (Module []) module_list_expr.Resolve (context);
+
+			context.ModuleOperations (modules, operations);
 		}
 	}
 

@@ -108,7 +108,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.ProcessByID (number);
+			return context.GetProcess (number);
 		}
 
 		public override string ToString ()
@@ -363,6 +363,75 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Requested line number outside of method.");
 
 			return new SourceLocation (result [0], line);
+		}
+	}
+
+	public class ModuleListExpression : Expression
+	{
+		int[] modules;
+
+		public ModuleListExpression (int[] modules)
+		{
+			this.modules = modules;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return context.GetModules (modules);
+		}
+
+		public override string ToString ()
+		{
+			string[] temp = new string [modules.Length];
+			for (int i = 0; i < modules.Length;i ++)
+				temp [i] = modules [i].ToString ();
+			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
+		}
+	}
+
+	public class SourceListExpression : Expression
+	{
+		int[] sources;
+
+		public SourceListExpression (int[] sources)
+		{
+			this.sources = sources;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return context.GetSources (sources);
+		}
+
+		public override string ToString ()
+		{
+			string[] temp = new string [sources.Length];
+			for (int i = 0; i < sources.Length;i ++)
+				temp [i] = sources [i].ToString ();
+			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
+		}
+	}
+
+	public class ProcessListExpression : Expression
+	{
+		int[] processes;
+
+		public ProcessListExpression (int[] processes)
+		{
+			this.processes = processes;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return context.GetProcesses (processes);
+		}
+
+		public override string ToString ()
+		{
+			string[] temp = new string [processes.Length];
+			for (int i = 0; i < processes.Length;i ++)
+				temp [i] = processes [i].ToString ();
+			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
 		}
 	}
 }
