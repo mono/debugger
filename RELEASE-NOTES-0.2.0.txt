@@ -3,13 +3,9 @@ The Mono Debugger - 0.2.0 "Boston"
 
 This is the first public release of the Mono Debugger :-)
 
-[We're still about a month far from the release.
+[If everything works fine, I'll make the release on sunday.
 
- The debugger entered a feature-freeze yesterday and is now in
- bug-fixing mode, but it'll take some time to get the all the
- outstanding problems fixed.
-
- January 6th, 2003
+ January 17th, 2003
  Martin Baulig <martin@ximian.com>
 ]
 
