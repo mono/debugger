@@ -145,8 +145,9 @@ namespace Mono.Debugger.Backends
 
 			if (stepping_over_breakpoint > 0) {
 				Report.Debug (DebugFlags.SSE,
-					      "{0} stepped over breakpoint {1}",
-					      this, stepping_over_breakpoint);
+					      "{0} stepped over breakpoint {1}: {2}",
+					      this, stepping_over_breakpoint,
+					      inferior.CurrentFrame);
 
 				inferior.EnableBreakpoint (stepping_over_breakpoint);
 				manager.ReleaseGlobalThreadLock (this);
@@ -459,7 +460,7 @@ namespace Mono.Debugger.Backends
 					result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
 				} else if (arg == 0) {
 					// Unknown breakpoint, always stop.
-				} else if (step_over_breakpoint (false)) {
+				} else if (step_over_breakpoint (TargetAddress.Null, false)) {
 					return;
 				} else if (!child_breakpoint (arg)) {
 					// we hit any breakpoint, but its handler told us
@@ -1139,7 +1140,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool step_over_breakpoint (bool current)
+		bool step_over_breakpoint (TargetAddress until, bool current)
 		{
 			int index;
 			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (
@@ -1157,7 +1158,12 @@ namespace Mono.Debugger.Backends
 			inferior.DisableBreakpoint (index);
 
 			stepping_over_breakpoint = index;
-			inferior.Step ();
+			if (until.IsNull)
+				inferior.Step ();
+			else {
+				insert_temporary_breakpoint (until);
+				inferior.Continue ();
+			}
 			manager.RequestWait ();
 
 			return true;
@@ -1395,7 +1401,7 @@ namespace Mono.Debugger.Backends
 
 		void do_continue_internal (bool step)
 		{
-			if (step_over_breakpoint (true))
+			if (step_over_breakpoint (TargetAddress.Null, true))
 				return;
 
 			if (step)
@@ -1486,10 +1492,14 @@ namespace Mono.Debugger.Backends
 			}
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} entering trampoline: {1}",
-				      this, trampoline);
+				      "{0} entering trampoline: {1} {2}",
+				      this, trampoline, current_operation);
 
-			do_continue (trampoline);
+			if (step_over_breakpoint (trampoline, true))
+				return false;
+
+			insert_temporary_breakpoint (trampoline);
+			inferior.Continue ();
 			return false;
 		}
 

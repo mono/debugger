@@ -1,3 +1,9 @@
+2004-06-09  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs: When entering a JIT
+	trampoline, breakpoints on that call must remain disabled while
+	we're inside the trampoline function.
+
 2004-06-08  Martin Baulig  <martin@ximian.com>
 
 	* frontends/command-line/ExpressionParser.jay: Added
