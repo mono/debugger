@@ -29,6 +29,25 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Private data.
+		// </summary>
+		object FrameHandle {
+			get;
+		}
+
+		// <summary>
+		//   Returns an ITargetLocation which can be used to access a local
+		//   variable at offset @offset.
+		// </summary>
+		ITargetLocation GetLocalVariableLocation (long offset);
+
+		// <summary>
+		//   Returns an ITargetLocation which can be used to access a method
+		//   parameter at offset @offset.
+		// </summary>
+		ITargetLocation GetParameterLocation (long offset);
+
+		// <summary>
 		//   This event is emitted when the frame becomes invalid.
 		// </summary>
 		event StackFrameInvalidHandler FrameInvalid;

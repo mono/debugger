@@ -26,7 +26,9 @@ namespace Mono.Debugger
 			get;
 		}
 
-		bool HasAddress {
+		bool ReValidate ();
+
+		bool IsValid {
 			get;
 		}
 	}

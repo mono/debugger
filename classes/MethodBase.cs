@@ -33,7 +33,8 @@ namespace Mono.Debugger
 		ObjectCache source;
 		int start_row, end_row;
 		TargetAddress start, end;
-		bool is_loaded;
+		TargetAddress method_start, method_end;
+		bool is_loaded, has_bounds;
 		bool has_source;
 		string image_file;
 		string name;
@@ -68,6 +69,16 @@ namespace Mono.Debugger
 			this.start = start;
 			this.end = end;
 			this.is_loaded = true;
+			this.has_bounds = false;
+		}
+
+		protected void SetMethodBounds (TargetAddress method_start, TargetAddress method_end)
+		{
+			this.method_start = method_start;
+			this.method_end = method_end;
+			this.has_bounds = true;
+
+			Console.WriteLine ("SET BOUNDS: {0} {1} {2}", this, method_start, method_end);
 		}
 
 		object read_source (object user_data)
@@ -118,6 +129,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public bool HasMethodBounds {
+			get {
+				return has_bounds;
+			}
+		}
+
 		public TargetAddress StartAddress {
 			get {
 				if (!is_loaded)
@@ -133,6 +150,24 @@ namespace Mono.Debugger
 					throw new InvalidOperationException ();
 
 				return end;
+			}
+		}
+
+		public TargetAddress MethodStartAddress {
+			get {
+				if (!has_bounds)
+					throw new InvalidOperationException ();
+
+				return method_start;
+			}
+		}
+
+		public TargetAddress MethodEndAddress {
+			get {
+				if (!has_bounds)
+					throw new InvalidOperationException ();
+
+				return method_end;
 			}
 		}
 

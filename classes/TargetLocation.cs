@@ -3,46 +3,56 @@ using System.Text;
 
 namespace Mono.Debugger
 {
+	public class LocationInvalidException : TargetException
+	{
+		public LocationInvalidException (ITargetLocation location)
+			: base ("Location is invalid.")
+		{ }
+	}
+
 	public abstract class TargetLocation : ITargetLocation
 	{
-		TargetAddress address;
 		long offset;
 
-		internal TargetLocation (TargetAddress address, long offset)
+		protected bool is_valid;
+
+		protected TargetLocation (long offset)
 		{
-			this.address = address;
 			this.offset = offset;
 		}
 
-		public abstract TargetAddress Address {
-			get;
+		public TargetAddress Address {
+			get {
+				if (!IsValid)
+					throw new LocationInvalidException (this);
+
+				try {
+					return GetAddress ();
+				} catch {
+					is_valid = false;
+					throw new LocationInvalidException (this);
+				}
+			}
 		}
 
-		public abstract bool HasAddress {
-			get;
+		public bool IsValid {
+			get {
+				try {
+					return ReValidate ();
+				} catch {
+					return false;
+				}
+			}
 		}
+
+		public abstract TargetAddress GetAddress ();
+
+		public abstract bool ReValidate ();
 
 		public long Offset {
 			get {
 				return offset;
 			}
-
-			set {
-				offset = value;
-			}
-		}
-
-		public override string ToString ()
-		{
-			StringBuilder builder = new StringBuilder ();
-
-			builder.Append (address);
-			if (offset > 0) {
-				builder.Append ("+0x");
-				builder.Append (offset.ToString ("x"));
-			}
-
-			return builder.ToString ();
 		}
 
 		public abstract object Clone ();

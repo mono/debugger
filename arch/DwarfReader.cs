@@ -473,6 +473,13 @@ namespace Mono.Debugger.Architecture
 				if (file == null)
 					return null;
 
+				if ((addresses != null) && (addresses.Count > 2)) {
+					LineEntry start = (LineEntry) addresses [1];
+					LineEntry end = (LineEntry) addresses [addresses.Count - 1];
+
+					SetMethodBounds (start.Address, end.Address);
+				}
+
 				return factory.FindFile (file);
 			}
 		}

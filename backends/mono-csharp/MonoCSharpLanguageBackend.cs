@@ -200,8 +200,17 @@ namespace Mono.Debugger.Languages.CSharp
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
 								     out ArrayList addresses)
 			{
-				return CSharpMethod.GetMethodSource (
+				ISourceBuffer retval = CSharpMethod.GetMethodSource (
 					this, method, factory, out start_row, out end_row, out addresses);
+
+				if ((addresses != null) && (addresses.Count > 2)) {
+					LineEntry start = (LineEntry) addresses [1];
+					LineEntry end = (LineEntry) addresses [addresses.Count - 1];
+
+					SetMethodBounds (start.Address, end.Address);
+				}
+
+				return retval;
 			}
 
 			public override ILanguageBackend Language {

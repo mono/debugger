@@ -3,6 +3,7 @@ using System.Text;
 using System.IO;
 using System.Threading;
 using System.Reflection;
+using System.Globalization;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
@@ -73,7 +74,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			try {
 				return ProcessCommand (tmp_args [0], args);
-			} catch (TargetException e) {
+			} catch (Exception e) {
 				Console.WriteLine (e);
 				stderr.WriteLine (e);
 				return true;
@@ -143,6 +144,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case "sleep":
 				Thread.Sleep (50000);
 				break;
+
+			case "local": {
+				if (args.Length != 1) {
+					stderr.WriteLine ("Command requires an argument");
+					break;
+				}
+				int offset = Int32.Parse (args [0]);
+				IStackFrame frame = backend.CurrentFrame;
+				ITargetLocation location = frame.GetLocalVariableLocation (offset);
+				Console.WriteLine ("TEST: {0} {1}", location, location.Address);
+				int value = backend.TargetMemoryAccess.ReadInteger (location.Address);
+				Console.WriteLine ("VALUE: {0:x}", value);
+				break;
+			}
+
+			case "param": {
+				if (args.Length != 1) {
+					stderr.WriteLine ("Command requires an argument");
+					break;
+				}
+				int offset = Int32.Parse (args [0]);
+				IStackFrame frame = backend.CurrentFrame;
+				ITargetLocation location = frame.GetParameterLocation (offset);
+				Console.WriteLine ("TEST: {0} {1}", location, location.Address);
+				int value = backend.TargetMemoryAccess.ReadInteger (location.Address);
+				Console.WriteLine ("VALUE: {0:x}", value);
+				break;
+			}
 
 			case "b":
 			case "break-method": {

@@ -250,21 +250,26 @@ namespace Mono.Debugger.Backends
 	{
 		IMethod method;
 		TargetAddress address;
+		IDebuggerBackend backend;
 		IInferior inferior;
 		ISourceLocation source;
+		object frame_handle;
 
-		public StackFrame (IInferior inferior, TargetAddress address,
-				   ISourceLocation source, IMethod method)
-			: this (inferior, address)
+		public StackFrame (IDebuggerBackend backend, IInferior inferior, TargetAddress address,
+				   object frame_handle, ISourceLocation source, IMethod method)
+			: this (backend, inferior, address, frame_handle)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (IInferior inferior, TargetAddress address)
+		public StackFrame (IDebuggerBackend backend, IInferior inferior, TargetAddress address,
+				   object frame_handle)
 		{
+			this.backend = backend;
 			this.inferior = inferior;
 			this.address = address;
+			this.frame_handle = frame_handle;
 		}
 
 		ISourceLocation IStackFrame.SourceLocation {
@@ -286,6 +291,37 @@ namespace Mono.Debugger.Backends
 				check_disposed ();
 				return method;
 			}
+		}
+
+		object IStackFrame.FrameHandle {
+			get {
+				check_disposed ();
+				return frame_handle;
+			}
+		}
+
+		ITargetLocation IStackFrame.GetLocalVariableLocation (long offset)
+		{
+			check_disposed ();
+
+			if ((method == null) || !method.HasMethodBounds)
+				throw new NoMethodException ();
+
+			return new TargetStackLocation (backend, this, true, offset,
+							method.MethodStartAddress,
+							method.MethodEndAddress);
+		}
+
+		ITargetLocation IStackFrame.GetParameterLocation (long offset)
+		{
+			check_disposed ();
+
+			if ((method == null) || !method.HasMethodBounds)
+				throw new NoMethodException ();
+
+			return new TargetStackLocation (backend, this, false, offset,
+							method.MethodStartAddress,
+							method.MethodEndAddress);
 		}
 
 		public event StackFrameInvalidHandler FrameInvalid;
@@ -325,6 +361,7 @@ namespace Mono.Debugger.Backends
 					method = null;
 					inferior = null;
 					source = null;
+					frame_handle = null;
 				}
 				
 				this.disposed = true;
@@ -901,9 +938,10 @@ namespace Mono.Debugger.Backends
 				if ((method != null) && method.HasSource) {
 					ISourceLocation source = method.Source.Lookup (address);
 					current_backtrace [i] = new StackFrame (
-						inferior, address, source, method);
+						this, inferior, address, frames [i], source, method);
 				} else
-					current_backtrace [i] = new StackFrame (inferior, address);
+					current_backtrace [i] = new StackFrame (
+						this, inferior, address, frames [i]);
 			}
 
 			return current_backtrace;
@@ -961,7 +999,9 @@ namespace Mono.Debugger.Backends
 		{
 			IMethod old_method = current_method;
 
-			TargetAddress address = inferior.CurrentFrame;
+			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, true);
+			TargetAddress address = frames [0].Address;
+
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
 				symtabs.UpdateSymbolTable ();
@@ -980,9 +1020,11 @@ namespace Mono.Debugger.Backends
 
 			if ((current_method != null) && current_method.HasSource) {
 				ISourceLocation source = current_method.Source.Lookup (address);
-				current_frame = new StackFrame (inferior, address, source, current_method);
+				current_frame = new StackFrame (
+					this, inferior, address, frames [0], source, current_method);
 			} else
-				current_frame = new StackFrame (inferior, address);
+				current_frame = new StackFrame (
+					this, inferior, address, frames [0]);
 
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (current_frame);

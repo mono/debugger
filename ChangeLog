@@ -1,3 +1,18 @@
+2002-09-19  Martin Baulig  <martin@gnome.org>
+
+	* interfaces/ITargetLocation.cs: Make this work again.
+
+	* classes/TargetLocation.cs: This is now an abstract base class.
+
+	* classes/TargetStackLocation.cs: New class to represent an
+	address on the stack.
+
+	* interfaces/IMethod.cs: Added HasMethodBounds, MethodStartAddress
+	and MethodEndAddress.
+
+	* interfaces/IStackFrame.cs: Added GetLocalVariableLocation and
+	GetParameterLocation.
+
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
 	* interface/IStackFrame.cs: Added FrameInvalid event.

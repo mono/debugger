@@ -64,6 +64,29 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   MethodStartAddress and MethodEndAddress are only valid if this is true.
+		// </summary>
+		bool HasMethodBounds {
+			get;
+		}
+
+		// <summary>
+		//   This is the address of the actual start of the method's code, ie. just after
+		//   the prologue.
+		// </summary>
+		TargetAddress MethodStartAddress {
+			get;
+		}
+
+		// <summary>
+		//   This is the address of the actual end of the method's code, ie. just before
+		//   the epilogue.
+		// </summary>
+		TargetAddress MethodEndAddress {
+			get;
+		}
+
+		// <summary>
 		//   Source is only valid if this is true.
 		// </summary>
 		bool HasSource {
