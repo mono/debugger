@@ -1,5 +1,11 @@
 2004-11-17  Chris Toshok  <toshok@ximian.com>
 
+	* test/regress.exp: some changes - add pass/fail procs, keep track
+	of the number of operations performed, and sometimes (rarely)
+	choose "finish".
+
+2004-11-17  Chris Toshok  <toshok@ximian.com>
+
 	* test/regress.exp: add the current state of the "run the compiler
 	compiling itself inside the debugger" regression test.  it has
 	some hardcoded paths, and assumes you'll run it from the mcs/mcs

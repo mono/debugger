@@ -3,13 +3,26 @@
 set mono mono
 set mdb "/home/toshok/src/mono/debugger/wrapper/mdb.exe"
 set max_repeat 10
-set timeout 20
+set timeout 45
 set mdb_prompt "\[\(mdb\)\]"
 set verbose 2
 set file "/usr/lib/mono/1.0/mcs.exe"
 set args "/d:NET_1_1 /d:ONLY_1_1 -g /target:exe /out:mcs.exe cs-parser.cs @mcs.exe.sources"
 set compilation_succeeded 0
-set num_steps 0
+set num_steps 1
+set start_time [clock format [clock seconds] -format "%D %T"]
+
+proc pass {msg} {
+    global start_time
+
+    send_user "$start_time PASS: $msg"
+}
+
+proc fail {msg} {
+    global start_time
+
+    send_user "$start_time FAIL: $msg"
+}
 
 proc mdb_start {} {
     global mdb_prompt
@@ -30,6 +43,7 @@ proc mdb_start {} {
 	}
 	timeout {
 	    fail "(timeout) Mono Debugger not starting"
+	    exit 1
 	}
     }
 }
@@ -39,11 +53,13 @@ proc mdb_send_step { } {
 
     set num_steps [expr $num_steps + 1]
 
-    set v [expr int( rand() * 2)]
-
-    switch $v {
-	1 { mdb_send "next" }
-	default { mdb_send "step" }
+    set v [expr int( rand() * 1000)]
+    if {$v == 453} {
+	mdb_send "finish"
+    } elseif {$v < 100} {
+	mdb_send "next"
+    } else {
+	mdb_send "step"
     }
 }
 
@@ -52,18 +68,18 @@ proc mdb_step_until_finished { } {
     global compilation_succeeded
 
     expect {
-	-re "^Compilation succeeded" {
-	    set compilation_succeeded 1
-	    exp_continue
-	}
-	-re "No program loaded.\[\r\n\]+" {
-	    send_user "FAIL: no child to debug\n"
-	    exit 1
-	}
 	-re "No program to debug.\[\r\n\]+" {
 	    return
 	}
-	-re "Process already started.*$mdb_prompt $" {
+	-re "^ \[0-9\]+\[^\r\n\]+\[\r\n\]+" {
+	    exp_continue
+	}
+	-re "Compilation succeeded" {
+	    set compilation_succeeded 1
+	    mdb_send_step
+	    exp_continue
+	}
+	-re "Process @\[0-9\]+ terminated normally.*$mdb_prompt $" {
 	    mdb_send_step
 	    exp_continue
 	}
@@ -71,16 +87,22 @@ proc mdb_step_until_finished { } {
 	    mdb_send_step
 	    exp_continue
 	}
-	-re "^ \[0-9\]+\[^\r\n\]+\[\r\n\]+" {
+	-re "Process already started.*$mdb_prompt $" {
+	    mdb_send_step
 	    exp_continue
 	}
 	-re "^ERROR:(\[^\n\r\]+)" {
 	    set message $expect_out(1,string)
-	    send_user "FAIL: Could not step: $message\n"
+	    fail "Could not step: $message\n"
+	    exit 1
+	}
+	-re "No program loaded.\[\r\n\]+" {
+	    fail "no child to debug\n"
 	    exit 1
 	}
 	timeout {
-	    send_user "timeout waiting for step prompt\n"
+	    fail "timeout waiting for step prompt\n"
+	    exit 1
 	}
     }
 
@@ -101,11 +123,11 @@ proc mdb_style {style} {
 	    return 0
 	}
 	-re ".*$mdb_prompt $" {
-	    send_user "Error setting style\n"
+	    send_user "FAIL: Error setting style\n"
 	    exit 1
 	}
 	timeout {
-	    send_user "timeout setting style\n"
+	    send_user "FAIL: timeout setting style\n"
 	    exit 1
 	}
     }
@@ -115,10 +137,10 @@ mdb_start
 #mdb_style "regress"
 mdb_send "start $file $args"
 mdb_send "print args"
-mdb_send "run"
+mdb_send "step"
 mdb_step_until_finished
 if {$compilation_succeeded == 1} {
-    send_user "PASS: Compilation succeeded using $num_steps steps\n"
+    pass "$num_steps steps\n"
 } else {
-    send_user "FAIL: Compilation failed using $num_steps steps\n"
+    fail "Compilation failed\n"
 }
