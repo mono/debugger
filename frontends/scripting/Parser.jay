@@ -1,0 +1,195 @@
+%{
+using System.Text;
+using System.IO;
+using System;
+
+namespace Mono.Debugger.Frontends.CommandLine
+{
+	public class Parser
+	{
+		string name;
+		GnuReadLineReader reader;
+		ScriptingContext current_context;
+		bool do_quit = false;
+
+		protected bool yacc_verbose_flag = false;
+
+		public bool yacc_verbose {
+			set {
+				yacc_verbose_flag = value;
+			}
+
+			get {
+				return yacc_verbose_flag;
+			}
+		}
+
+		public bool Quit {
+			get {
+				return do_quit;
+			}
+		}
+
+		Tokenizer lexer;
+
+		public Tokenizer Lexer {
+			get {
+				return lexer;
+			}
+		}		   
+
+%}
+
+%token EOL
+%token EOF
+%token NONE	// This token is never returned by our lexer
+%token ERROR	// This is used not by the parser, but by the tokenizer.
+		// do not remove.
+
+%token IDENTIFIER
+%token INTEGER
+%token NUMBER
+%token STRING
+%token HASH
+%token AT
+
+%token PROCESSES
+
+%token FRAME
+%token START
+%token RUN
+%token SHOW
+%token PROCESS
+%token CONTINUE
+%token BACKTRACE
+%token UP
+%token DOWN
+
+%start command_loop
+%%
+
+command_loop
+	: /* empty */
+	| command_loop command EOL
+	{
+		((Command) $2).Execute (current_context);
+	}
+	| command_loop EOL
+	| command_loop EOF
+	{
+		do_quit = true;
+		reader.Close ();
+	}
+	;
+
+command
+	: RUN opt_process
+	{
+		$$ = new RunCommand ((ProcessExpression) $2);
+	}
+	| CONTINUE opt_process
+	{
+		$$ = new ContinueCommand ((ProcessExpression) $2);
+	}
+	| BACKTRACE opt_process
+	{
+		$$ = new BacktraceCommand ((ProcessExpression) $2);
+	}
+	| UP opt_process
+	{
+		$$ = new UpCommand ((ProcessExpression) $2);
+	}
+	| DOWN opt_process
+	{
+		$$ = new DownCommand ((ProcessExpression) $2);
+	}
+	| SHOW PROCESSES
+	{
+		$$ = new ShowProcessesCommand ();
+	}
+	| expression
+	{
+		$$ = new CommandExpression ((Expression) $1);
+	}
+	;
+
+expression
+	: FRAME opt_process opt_frame_number
+	{
+		$$ = new FrameExpression ((ProcessExpression) $2, (int) $3);
+	}
+	| START program_name
+	{
+		$$ = new StartExpression ((string) $2);
+	}
+	| PROCESS opt_process
+	{
+		$$ = new SelectProcessExpression ((ProcessExpression) $2);
+	}
+	;
+
+program_name
+	: /* empty */
+	{
+		$$ = "./a.out";
+	}
+	| STRING
+	{
+		$$ = $1;
+	}
+	;
+
+opt_process
+	: /* empty */
+	{
+		$$ = new ProcessExpression (-1);
+	}
+	| AT INTEGER
+	{
+		$$ = new ProcessExpression ((int) $2);
+	}
+	;	
+
+opt_frame_number
+	: /* empty */
+	{
+		$$ = -1;
+	}
+	| HASH INTEGER
+	{
+		$$ = $2;
+	}
+	;
+
+%%
+
+public Parser (ScriptingContext context, GnuReadLineReader reader, string name)
+{
+	this.name = name;
+	this.reader = reader;
+	this.current_context = context;
+
+	lexer = new Tokenizer (context, reader, name);
+}
+
+public void parse ()
+{
+	try {
+		reader.Discard ();
+		lexer.restart ();
+		if (yacc_verbose_flag)
+			yyparse (lexer, new yydebug.yyDebugSimple ());
+		else
+			yyparse (lexer);
+	} catch (Exception e){
+		// Please do not remove this, it is used during debugging
+		// of the grammar
+		//
+		Console.WriteLine (lexer.location + "  : Parsing error ");
+		Console.WriteLine (e);
+	}
+}
+
+/* end end end */
+}
+

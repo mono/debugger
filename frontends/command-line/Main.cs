@@ -13,13 +13,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		DebuggerBackend backend;
 		Interpreter interpreter;
-		GnuReadLine readline;
+		GnuReadLineReader reader;
+		ScriptingContext context;
+		Parser parser;
 
 		public CommandLineInterpreter (string[] args)
 		{
 			backend = new DebuggerBackend ();
 			interpreter = new Interpreter (backend, Console.Out, Console.Error);
-			readline = new GnuReadLine ();
+			reader = new GnuReadLineReader (new GnuReadLine ("$ "));
+			context = new ScriptingContext ();
+			parser = new Parser (context, reader, "Debugger");
 
 			interpreter.PrintCurrentInsn = true;
 
@@ -113,25 +117,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Run ()
 		{
-			string line, last_command = null;
-			while ((line = readline.ReadLine ("$ ")) != null) {
-				line = line.TrimStart (' ', '\t');
-				line = line.TrimEnd (' ', '\t');
-				if (line == "") {
-					if (interpreter.CanRepeatLastCommand)
-						line = last_command;
-					else
-						continue;
-				}
-
-				if (!ProcessCommand (line))
-					break;
-
-				if (line != last_command)
-					readline.AddHistory (line);
-					
-				last_command = line;
-			}
+			while (!parser.Quit)
+				parser.parse ();
 		}
 
 		public static void Main (string[] args)

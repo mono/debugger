@@ -1,3 +1,7 @@
+2002-12-01  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/: Added new scripting interface.
+
 2002-11-30  Martin Baulig  <martin@ximian.com>
 
 	* glue/mono-debugger-readline.[ch]: New files.

@@ -84,15 +84,26 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			StringBuilder builder = new StringBuilder ();
+			StringBuilder sb = new StringBuilder ();
 
-			if (source != null) {
-				builder.Append (source);
-				builder.Append (" at ");
-			}
-			builder.Append (address);
+			sb.Append (String.Format ("#{0}: ", level));
 
-			return builder.ToString ();
+			if (method != null) {
+				sb.Append (String.Format ("{0} in {1}", address, method.Name));
+				if (method.IsLoaded) {
+					long offset = address - method.StartAddress;
+					if (offset > 0)
+						sb.Append (String.Format ("+0x{0:x}", offset));
+					else if (offset < 0)
+						sb.Append (String.Format ("-0x{0:x}", -offset));
+				}
+			} else
+				sb.Append (String.Format ("{0}", address));
+
+			if (source != null)
+				sb.Append (String.Format (" at {0}", source.Name));
+
+			return sb.ToString ();
 		}
 
 		//
