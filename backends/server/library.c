@@ -3,50 +3,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-static gboolean
-my_read (ServerHandle *handle, gpointer data, int size)
-{
-	guint8 *ptr = data;
-
-	while (size) {
-		int ret = read (handle->fd, ptr, size);
-		if (ret < 0) {
-			if (errno == EINTR)
-				continue;
-			g_warning (G_STRLOC ": Can't read from server (%d): %s (%d)",
-				   handle->pid, g_strerror (errno), errno);
-			return FALSE;
-		}
-
-		size -= ret;
-		ptr += ret;
-	}
-
-	return TRUE;
-}
-
-static gboolean
-my_write (ServerHandle *handle, gpointer data, int size)
-{
-	guint8 *ptr = data;
-
-	while (size) {
-		int ret = write (handle->fd, ptr, size);
-		if (ret < 0) {
-			if (errno == EINTR)
-				continue;
-			g_warning (G_STRLOC ": Can't write to server (%d): %s (%d)",
-				   handle->pid, g_strerror (errno), errno);
-			return FALSE;
-		}
-
-		size -= ret;
-		ptr += ret;
-	}
-
-	return TRUE;
-}
-
 static ServerCommandError
 write_command (ServerHandle *handle, ServerCommand command)
 {
@@ -63,7 +19,7 @@ read_status (ServerHandle *handle)
 {
 	ServerCommandError result;
 
-	if (!my_read (handle, &result, sizeof (result)))
+	if (!mono_debugger_util_read (handle->fd, &result, sizeof (result)))
 		return COMMAND_ERROR_IO;
 
 	return result;
@@ -132,10 +88,10 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start, guint32 s
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	if (!my_write (handle, &start, sizeof (start)))
+	if (!mono_debugger_util_write (handle->fd, &start, sizeof (start)))
 		return COMMAND_ERROR_IO;
 
-	if (!my_write (handle, &l_size, sizeof (l_size)))
+	if (!mono_debugger_util_write (handle->fd, &l_size, sizeof (l_size)))
 		return COMMAND_ERROR_IO;
 
 	kill (handle->pid, SIGUSR1);
@@ -146,7 +102,7 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start, guint32 s
 
 	*data = g_malloc (size);
 
-	if (!my_read (handle, *data, size))
+	if (!mono_debugger_util_read (handle->fd, *data, size))
 		return COMMAND_ERROR_IO;
 
 	return COMMAND_ERROR_NONE;
@@ -163,13 +119,13 @@ mono_debugger_server_write_memory (ServerHandle *handle, gpointer data, guint64 
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	if (!my_write (handle, &start, sizeof (start)))
+	if (!mono_debugger_util_write (handle->fd, &start, sizeof (start)))
 		return COMMAND_ERROR_IO;
 
-	if (!my_write (handle, &l_size, sizeof (l_size)))
+	if (!mono_debugger_util_write (handle->fd, &l_size, sizeof (l_size)))
 		return COMMAND_ERROR_IO;
 
-	if (!my_write (handle, data, size))
+	if (!mono_debugger_util_write (handle->fd, data, size))
 		return COMMAND_ERROR_IO;
 
 	kill (handle->pid, SIGUSR1);
@@ -192,15 +148,15 @@ mono_debugger_server_get_target_info (ServerHandle *handle, guint32 *target_int_
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	if (!my_read (handle, &arg, sizeof (arg)))
+	if (!mono_debugger_util_read (handle->fd, &arg, sizeof (arg)))
 		return COMMAND_ERROR_IO;
 	*target_int_size = arg;
 
-	if (!my_read (handle, &arg, sizeof (arg)))
+	if (!mono_debugger_util_read (handle->fd, &arg, sizeof (arg)))
 		return COMMAND_ERROR_IO;
 	*target_long_size = arg;
 
-	if (!my_read (handle, &arg, sizeof (arg)))
+	if (!mono_debugger_util_read (handle->fd, &arg, sizeof (arg)))
 		return COMMAND_ERROR_IO;
 	*target_address_size = arg;
 
@@ -218,13 +174,13 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	if (!my_write (handle, &method_address, sizeof (method_address)))
+	if (!mono_debugger_util_write (handle->fd, &method_address, sizeof (method_address)))
 		return COMMAND_ERROR_IO;
 
-	if (!my_write (handle, &method_argument, sizeof (method_argument)))
+	if (!mono_debugger_util_write (handle->fd, &method_argument, sizeof (method_argument)))
 		return COMMAND_ERROR_IO;
 
-	if (!my_write (handle, &callback_argument, sizeof (callback_argument)))
+	if (!mono_debugger_util_write (handle->fd, &callback_argument, sizeof (callback_argument)))
 		return COMMAND_ERROR_IO;
 
 	kill (handle->pid, SIGUSR1);
@@ -239,11 +195,11 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 gboolean
 mono_debugger_server_read_uint64 (ServerHandle *handle, guint64 *arg)
 {
-	return my_read (handle, arg, sizeof (*arg));
+	return mono_debugger_util_read (handle->fd, arg, sizeof (*arg));
 }
 
 gboolean
 mono_debugger_server_write_uint64 (ServerHandle *handle, guint64 arg)
 {
-	return my_write (handle, &arg, sizeof (arg));
+	return mono_debugger_util_write (handle->fd, &arg, sizeof (arg));
 }

@@ -5,6 +5,8 @@ bin_PROGRAMS = mono-debugger-server
 mono_debugger_server_SOURCES = \
 	server.c		\
 	i386-linux-ptrace.c	\
+	util.c			\
+	util.h			\
 	server.h		\
 	#
 
@@ -15,6 +17,8 @@ lib_LTLIBRARIES = libmonodebuggerserver.la
 libmonodebuggerserver_la_SOURCES = \
 	spawn.c			\
 	library.c		\
+	util.c			\
+	util.h			\
 	server.h		\
 	#
 

@@ -13,31 +13,31 @@ static int shutdown = 0;
 static void
 write_result (int fd, ServerCommandError result)
 {
-	if (write (fd, &result, sizeof (result)) != sizeof (result))
+	if (!mono_debugger_util_write (fd, &result, sizeof (result)))
 		g_error (G_STRLOC ": Can't send command status: %s", g_strerror (errno));
 }
 
 static void
 write_arg (int fd, guint64 arg)
 {
-	if (write (fd, &arg, sizeof (arg)) != sizeof (arg))
+	if (!mono_debugger_util_write (fd, &arg, sizeof (arg)))
 		g_error (G_STRLOC ": Can't send command argument: %s", g_strerror (errno));
 }
 
 static void
-command_func (InferiorHandle *handle, int fd)
+command_func (InferiorInfo *info, InferiorHandle *handle, int fd)
 {
 	ServerCommand command;
 	ServerCommandError result;
 	guint64 arg, arg2, arg3;
 	gpointer data;
 
-	if (read (fd, &command, sizeof (command)) != sizeof (command))
+	if (!mono_debugger_util_read (fd, &command, sizeof (command)))
 		g_error (G_STRLOC ": Can't read command: %s", g_strerror (errno));
 
 	switch (command) {
 	case SERVER_COMMAND_GET_PC:
-		result = server_get_program_counter (handle, &arg);
+		result = (* info->get_pc) (handle, &arg);
 		if (result != COMMAND_ERROR_NONE)
 			break;
 
@@ -46,7 +46,7 @@ command_func (InferiorHandle *handle, int fd)
 		return;
 
 	case SERVER_COMMAND_DETACH:
-		result = server_ptrace_detach (handle);
+		result = (* info->detach) (handle);
 		break;
 
 	case SERVER_COMMAND_SHUTDOWN:
@@ -60,39 +60,39 @@ command_func (InferiorHandle *handle, int fd)
 		break;
 
 	case SERVER_COMMAND_CONTINUE:
-		result = server_ptrace_continue (handle);
+		result = (* info->run) (handle);
 		break;
 
 	case SERVER_COMMAND_STEP:
-		result = server_ptrace_step (handle);
+		result = (* info->step) (handle);
 		break;
 
 	case SERVER_COMMAND_READ_DATA:
-		if (read (fd, &arg, sizeof (arg)) != sizeof (arg))
+		if (!mono_debugger_util_read (fd, &arg, sizeof (arg)))
 			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
-		if (read (fd, &arg2, sizeof (arg2)) != sizeof (arg2))
+		if (!mono_debugger_util_read (fd, &arg2, sizeof (arg2)))
 			g_error (G_STRLOC ": Can't read command: %s", g_strerror (errno));
 		data = g_malloc (arg2);
-		result = server_ptrace_read_data (handle, arg, arg2, data);
+		result = (* info->read_data) (handle, arg, arg2, data);
 		if (result != COMMAND_ERROR_NONE) {
 			g_free (data);
 			break;
 		}
 		write_result (fd, COMMAND_ERROR_NONE);
-		if (write (fd, data, arg2) != arg2)
+		if (!mono_debugger_util_write (fd, data, arg2))
 			g_error (G_STRLOC ": Can't send command argument: %s", g_strerror (errno));
 		g_free (data);
 		return;
 
 	case SERVER_COMMAND_WRITE_DATA:
-		if (read (fd, &arg, sizeof (arg)) != sizeof (arg))
+		if (!mono_debugger_util_read (fd, &arg, sizeof (arg)))
 			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
-		if (read (fd, &arg2, sizeof (arg2)) != sizeof (arg2))
+		if (!mono_debugger_util_read (fd, &arg2, sizeof (arg2)))
 			g_error (G_STRLOC ": Can't read command: %s", g_strerror (errno));
 		data = g_malloc (arg2);
-		if (read (fd, data, arg2) != arg2)
+		if (!mono_debugger_util_read (fd, data, arg2))
 			g_error (G_STRLOC ": Can't read command argument: %s", g_strerror (errno));
-		result = server_ptrace_write_data (handle, arg, arg2, data);
+		result = (* info->write_data) (handle, arg, arg2, data);
 		g_free (data);
 		break;
 
@@ -104,13 +104,13 @@ command_func (InferiorHandle *handle, int fd)
 		return;
 
 	case SERVER_COMMAND_CALL_METHOD:
-		if (read (fd, &arg, sizeof (arg)) != sizeof (arg))
+		if (!mono_debugger_util_read (fd, &arg, sizeof (arg)))
 			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
-		if (read (fd, &arg2, sizeof (arg2)) != sizeof (arg2))
+		if (!mono_debugger_util_read (fd, &arg2, sizeof (arg2)))
 			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
-		if (read (fd, &arg3, sizeof (arg3)) != sizeof (arg3))
+		if (!mono_debugger_util_read (fd, &arg3, sizeof (arg3)))
 			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
-		result = server_ptrace_call_method (handle, arg, arg2, arg3);
+		result = (* info->call_method) (handle, arg, arg2, arg3);
 		break;
 
 	default:
@@ -156,7 +156,7 @@ send_callback_message (GIOChannel *channel, guint64 callback, guint64 data)
 static void
 child_setup_func (gpointer data)
 {
-	server_ptrace_traceme (getpid ());
+	(* ((InferiorInfo *) data)->traceme) (getpid ());
 }
 
 #define usage() g_error (G_STRLOC ": This program must not be called directly.");
@@ -182,6 +182,7 @@ sigterm_handler (int dummy)
 int
 main (int argc, char **argv, char **envp)
 {
+	InferiorInfo *info = &i386_linux_ptrace_inferior;
 	InferiorHandle *handle = NULL;
 	GIOChannel *status_channel;
 	struct stat statb;
@@ -226,16 +227,16 @@ main (int argc, char **argv, char **envp)
 		if (argc < 6)
 			usage ();
 
-		if (!g_spawn_async (argv [4], argv + 5, envp, flags, child_setup_func, NULL, &pid, &error))
+		if (!g_spawn_async (argv [4], argv + 5, envp, flags, child_setup_func, info, &pid, &error))
 			g_error (G_STRLOC ": Can't spawn child: %s", error->message);
 
-		handle = server_ptrace_get_handle (pid);
+		handle = (* info->initialize) (pid);
 		attached = FALSE;
 	} else {
 		if (sscanf (argv [3], "%d", &pid) != 1)
 			usage ();
 
-		handle = server_ptrace_attach (pid);
+		handle = (* info->attach) (pid);
 		attached = TRUE;
 	}
 
@@ -261,8 +262,8 @@ main (int argc, char **argv, char **envp)
 		if (ret != 0) {
 			if (WIFSTOPPED (status)) {
 				guint64 callback_arg, retval;
-				if (!server_handle_child_stopped (handle, WSTOPSIG (status),
-								  &callback_arg, &retval))
+				if (! (* info->child_stopped)
+				    (handle, WSTOPSIG (status), &callback_arg, &retval))
 					send_status_message (status_channel, MESSAGE_CHILD_STOPPED,
 							     WSTOPSIG (status));
 				else
@@ -286,12 +287,12 @@ main (int argc, char **argv, char **envp)
 		sigsuspend (&mask);
 
 		if (command_available)
-			command_func (handle, command_fd);
+			command_func (info, handle, command_fd);
 	}
 
 	/* If we attached to a running process, detach from it, otherwise kill it. */
 	if (attached)
-		server_ptrace_detach (handle);
+		(* info->detach) (handle);
 	else if (shutdown == 2)
 		kill (pid, SIGKILL);
 	else

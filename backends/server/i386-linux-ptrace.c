@@ -23,7 +23,7 @@ struct InferiorHandle
 	struct user_i387_struct *saved_fpregs;
 };
 
-void
+static void
 server_ptrace_traceme (int pid)
 {
 	if (ptrace (PTRACE_TRACEME, pid))
@@ -90,7 +90,7 @@ set_fp_registers (InferiorHandle *handle, struct user_i387_struct *regs)
 	return COMMAND_ERROR_NONE;
 }
 
-InferiorHandle *
+static InferiorHandle *
 server_ptrace_get_handle (int pid)
 {
 	InferiorHandle *handle;
@@ -101,7 +101,7 @@ server_ptrace_get_handle (int pid)
 	return handle;
 }
 
-InferiorHandle *
+static InferiorHandle *
 server_ptrace_attach (int pid)
 {
 	InferiorHandle *handle;
@@ -115,7 +115,7 @@ server_ptrace_attach (int pid)
 	return handle;
 }
 
-ServerCommandError
+static ServerCommandError
 server_ptrace_continue (InferiorHandle *handle)
 {
 	errno = 0;
@@ -130,7 +130,7 @@ server_ptrace_continue (InferiorHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
+static ServerCommandError
 server_ptrace_step (InferiorHandle *handle)
 {
 	errno = 0;
@@ -145,7 +145,7 @@ server_ptrace_step (InferiorHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
+static ServerCommandError
 server_ptrace_detach (InferiorHandle *handle)
 {
 	if (ptrace (PTRACE_DETACH, handle->pid, NULL, NULL)) {
@@ -156,8 +156,8 @@ server_ptrace_detach (InferiorHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-server_get_program_counter (InferiorHandle *handle, guint64 *pc)
+static ServerCommandError
+server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 {
 	ServerCommandError result;
 	struct user_regs_struct regs;
@@ -170,7 +170,7 @@ server_get_program_counter (InferiorHandle *handle, guint64 *pc)
 	return result;
 }
 
-ServerCommandError
+static ServerCommandError
 server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
 	int *ptr = buffer;
@@ -201,11 +201,11 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
 	return COMMAND_ERROR_NONE;
 }
 
-ServerCommandError
-server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
+static ServerCommandError
+server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, gconstpointer buffer)
 {
 	ServerCommandError result;
-	int *ptr = buffer;
+	const int *ptr = buffer;
 	int addr = start;
 	char temp [4];
 
@@ -242,7 +242,7 @@ server_ptrace_write_data (InferiorHandle *handle, guint64 start, guint32 size, g
  * It will only work on the i386.
  */
 
-ServerCommandError
+static ServerCommandError
 server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 			   guint64 method_argument, guint64 callback_argument)
 {
@@ -291,8 +291,8 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 	return server_ptrace_continue (handle);
 }
 
-gboolean
-server_handle_child_stopped (InferiorHandle *handle, int stopsig,
+static gboolean
+server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 			     guint64 *callback_arg, guint64 *retval)
 {
 	struct user_regs_struct regs;
@@ -328,3 +328,20 @@ server_handle_child_stopped (InferiorHandle *handle, int stopsig,
 
 	return TRUE;
 }
+
+/*
+ * Method VTable for this backend.
+ */
+InferiorInfo i386_linux_ptrace_inferior = {
+	server_ptrace_get_handle,
+	server_ptrace_attach,
+	server_ptrace_traceme,
+	server_ptrace_detach,
+	server_ptrace_continue,
+	server_ptrace_step,
+	server_ptrace_get_pc,
+	server_ptrace_read_data,
+	server_ptrace_write_data,
+	server_ptrace_call_method,
+	server_ptrace_child_stopped
+};

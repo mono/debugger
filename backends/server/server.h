@@ -2,6 +2,7 @@
 #define __MONO_DEBUGGER_SERVER_H__
 
 #include <glib.h>
+#include <util.h>
 
 G_BEGIN_DECLS
 
@@ -80,51 +81,44 @@ mono_debugger_spawn_async (const gchar              *working_directory,
  * Server functions.
  */
 
-extern InferiorHandle *
-server_ptrace_get_handle             (int                      pid);
+typedef struct {
+	InferiorHandle *      (* initialize)     (int               pid);
 
-extern void
-server_ptrace_traceme                (int                      pid);
+	InferiorHandle *      (* attach)         (int               pid);
 
-extern InferiorHandle *
-server_ptrace_attach                 (int                      pid);
+	void                  (* traceme)        (int               pid);
 
-extern ServerCommandError
-server_ptrace_continue               (InferiorHandle          *handle);
+	ServerCommandError    (* detach)         (InferiorHandle   *handle);
 
-extern ServerCommandError
-server_ptrace_step                   (InferiorHandle          *handle);
+	ServerCommandError    (* run)            (InferiorHandle   *handle);
 
-extern ServerCommandError
-server_ptrace_detach                 (InferiorHandle          *handle);
+	ServerCommandError    (* step)           (InferiorHandle   *handle);
 
-extern ServerCommandError
-server_get_program_counter           (InferiorHandle          *handle,
-				      guint64                 *pc);
+	ServerCommandError    (* get_pc)         (InferiorHandle   *handle,
+						  guint64          *pc);
 
-extern ServerCommandError
-server_ptrace_read_data              (InferiorHandle          *handle,
-				      guint64                  start,
-				      guint32                  size,
-				      gpointer                 buffer);
+	ServerCommandError    (* read_data)      (InferiorHandle   *handle,
+						  guint64           start,
+						  guint32           size,
+						  gpointer          buffer);
 
-extern ServerCommandError
-server_ptrace_write_data             (InferiorHandle          *handle,
-				      guint64                  start,
-				      guint32                  size,
-				      gpointer                 buffer);
+	ServerCommandError    (* write_data)     (InferiorHandle   *handle,
+						  guint64           start,
+						  guint32           size,
+						  gconstpointer     data);
 
-extern ServerCommandError
-server_ptrace_call_method            (InferiorHandle          *handle,
-				      guint64                  method,
-				      guint64                  method_argument,
-				      guint64                  callback_argument);
+	ServerCommandError    (* call_method)    (InferiorHandle   *handle,
+						  guint64           method,
+						  guint64           method_argument,
+						  guint64           callback_argument);
 
-extern gboolean
-server_handle_child_stopped          (InferiorHandle          *handle,
-				      int                      signumber,
-				      guint64                 *callback_arg,
-				      guint64                 *retval);
+	gboolean              (* child_stopped)  (InferiorHandle   *handle,
+						  int               signumber,
+						  guint64          *callback_arg,
+						  guint64          *retval);
+} InferiorInfo;
+
+extern InferiorInfo i386_linux_ptrace_inferior;
 
 /*
  * Library functions.
