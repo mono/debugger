@@ -152,6 +152,8 @@ namespace Mono.Debugger.Backends
 
 		int InsertBreakpoint (TargetAddress address);
 
+		int InsertHardwareBreakpoint (TargetAddress address, int index);
+
 		void RemoveBreakpoint (int breakpoint);
 
 		void EnableBreakpoint (int breakpoint);

@@ -100,6 +100,16 @@ mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, g
 }
 
 ServerCommandError
+mono_debugger_server_insert_hw_breakpoint (ServerHandle *handle, guint32 idx, guint64 address,
+					   guint32 *breakpoint)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->insert_hw_breakpoint) (handle->inferior, idx, address, breakpoint);
+}
+
+ServerCommandError
 mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 breakpoint)
 {
 	if (!handle->inferior)

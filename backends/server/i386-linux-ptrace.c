@@ -31,16 +31,86 @@ struct InferiorHandle
 	struct user_i387_struct current_fpregs;
 	struct user_regs_struct *saved_regs;
 	struct user_i387_struct *saved_fpregs;
+	unsigned dr_control, dr_status;
 	GPtrArray *breakpoints;
 	GHashTable *breakpoint_hash;
 	GHashTable *breakpoint_by_addr;
 };
+
+/* Debug registers' indices.  */
+#define DR_NADDR		4  /* the number of debug address registers */
+#define DR_STATUS		6  /* index of debug status register (DR6) */
+#define DR_CONTROL		7  /* index of debug control register (DR7) */
+
+/* DR7 Debug Control register fields.  */
+
+/* How many bits to skip in DR7 to get to R/W and LEN fields.  */
+#define DR_CONTROL_SHIFT	16
+/* How many bits in DR7 per R/W and LEN field for each watchpoint.  */
+#define DR_CONTROL_SIZE		4
+
+/* Watchpoint/breakpoint read/write fields in DR7.  */
+#define DR_RW_EXECUTE		(0x0) /* break on instruction execution */
+#define DR_RW_WRITE		(0x1) /* break on data writes */
+#define DR_RW_READ		(0x3) /* break on data reads or writes */
+
+/* This is here for completeness.  No platform supports this
+   functionality yet (as of Mar-2001).  Note that the DE flag in the
+   CR4 register needs to be set to support this.  */
+#ifndef DR_RW_IORW
+#define DR_RW_IORW		(0x2) /* break on I/O reads or writes */
+#endif
+
+/* Watchpoint/breakpoint length fields in DR7.  The 2-bit left shift
+   is so we could OR this with the read/write field defined above.  */
+#define DR_LEN_1		(0x0 << 2) /* 1-byte region watch or breakpt */
+#define DR_LEN_2		(0x1 << 2) /* 2-byte region watch */
+#define DR_LEN_4		(0x3 << 2) /* 4-byte region watch */
+#define DR_LEN_8		(0x2 << 2) /* 8-byte region watch (x86-64) */
+
+/* Local and Global Enable flags in DR7. */
+#define DR_LOCAL_ENABLE_SHIFT	0   /* extra shift to the local enable bit */
+#define DR_GLOBAL_ENABLE_SHIFT	1   /* extra shift to the global enable bit */
+#define DR_ENABLE_SIZE		2   /* 2 enable bits per debug register */
+
+/* The I'th debug register is vacant if its Local and Global Enable
+   bits are reset in the Debug Control register.  */
+#define I386_DR_VACANT(handle,i) \
+  ((handle->dr_control & (3 << (DR_ENABLE_SIZE * (i)))) == 0)
+
+/* Locally enable the break/watchpoint in the I'th debug register.  */
+#define I386_DR_LOCAL_ENABLE(handle,i) \
+  handle->dr_control |= (1 << (DR_LOCAL_ENABLE_SHIFT + DR_ENABLE_SIZE * (i)))
+
+/* Globally enable the break/watchpoint in the I'th debug register.  */
+#define I386_DR_GLOBAL_ENABLE(handle,i) \
+  handle->dr_control |= (1 << (DR_GLOBAL_ENABLE_SHIFT + DR_ENABLE_SIZE * (i)))
+
+/* Disable the break/watchpoint in the I'th debug register.  */
+#define I386_DR_DISABLE(handle,i) \
+  handle->dr_control &= ~(3 << (DR_ENABLE_SIZE * (i)))
+
+/* Set in DR7 the RW and LEN fields for the I'th debug register.  */
+#define I386_DR_SET_RW_LEN(handle,i,rwlen) \
+  do { \
+    handle->dr_control &= ~(0x0f << (DR_CONTROL_SHIFT+DR_CONTROL_SIZE*(i)));   \
+    handle->dr_control |= ((rwlen) << (DR_CONTROL_SHIFT+DR_CONTROL_SIZE*(i))); \
+  } while (0)
+
+/* Get from DR7 the RW and LEN fields for the I'th debug register.  */
+#define I386_DR_GET_RW_LEN(handle,i) \
+  ((handle->dr_control >> (DR_CONTROL_SHIFT + DR_CONTROL_SIZE * (i))) & 0x0f)
+
+/* Did the watchpoint whose address is in the I'th register break?  */
+#define I386_DR_WATCH_HIT(handle,i) \
+  (handle->dr_status & (1 << (i)))
 
 static int last_breakpoint_id = 0;
 
 typedef struct {
 	int id;
 	int enabled;
+	int dr_index;
 	char saved_insn;
 	guint32 address;
 } BreakpointInfo;
@@ -264,6 +334,19 @@ server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
 	*retval = ptrace (PTRACE_PEEKDATA, handle->pid, start, NULL);
 	if (errno) {
 		g_message (G_STRLOC ": %d - %08Lx - %s", handle->pid, start, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
+{
+	errno = 0;
+	ptrace (PTRACE_POKEUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]), value);
+	if (errno) {
+		g_message (G_STRLOC ": %d - %d - %s", handle->pid, regnum, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
 
@@ -546,13 +629,26 @@ do_enable (InferiorHandle *handle, BreakpointInfo *breakpoint)
 	if (breakpoint->enabled)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_read_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	if (breakpoint->dr_index >= 0) {
+		I386_DR_SET_RW_LEN (handle, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
+		I386_DR_LOCAL_ENABLE (handle, breakpoint->dr_index);
 
-	result = server_ptrace_write_data (handle, breakpoint->address, 1, &bopcode);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+		result = server_ptrace_set_dr (handle, breakpoint->dr_index, breakpoint->address);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		result = server_ptrace_set_dr (handle, DR_CONTROL, handle->dr_control);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+	} else {
+		result = server_ptrace_read_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		result = server_ptrace_write_data (handle, breakpoint->address, 1, &bopcode);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+	}
 
 	breakpoint->enabled = TRUE;
 
@@ -567,9 +663,21 @@ do_disable (InferiorHandle *handle, BreakpointInfo *breakpoint)
 	if (!breakpoint->enabled)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_write_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	if (breakpoint->dr_index >= 0) {
+		I386_DR_DISABLE (handle, breakpoint->dr_index);
+
+		result = server_ptrace_set_dr (handle, breakpoint->dr_index, 0L);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		result = server_ptrace_set_dr (handle, DR_CONTROL, handle->dr_control);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+	} else {
+		result = server_ptrace_write_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+	}
 
 	breakpoint->enabled = FALSE;
 
@@ -590,6 +698,7 @@ server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint3
 
 	breakpoint->address = (guint32) address;
 	breakpoint->id = ++last_breakpoint_id;
+	breakpoint->dr_index = -1;
 
 	result = do_enable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
@@ -626,6 +735,43 @@ server_ptrace_remove_breakpoint (InferiorHandle *handle, guint32 bhandle)
 	g_hash_table_remove (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address));
 	g_ptr_array_remove_fast (handle->breakpoints, breakpoint);
 	g_free (breakpoint);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, int idx, guint64 address, guint32 *bhandle)
+{
+	BreakpointInfo *breakpoint;
+	ServerCommandError result;
+
+	if (!handle->breakpoints) {
+		handle->breakpoints = g_ptr_array_new ();
+		handle->breakpoint_hash = g_hash_table_new (NULL, NULL);
+		handle->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
+	}
+
+	if ((idx < 0) || (idx > DR_NADDR))
+		return COMMAND_ERROR_DR_OCCUPIED;
+
+	if (!I386_DR_VACANT (handle, idx))
+		return COMMAND_ERROR_DR_OCCUPIED;
+
+	breakpoint = g_new0 (BreakpointInfo, 1);
+	breakpoint->address = (guint32) address;
+	breakpoint->id = ++last_breakpoint_id;
+	breakpoint->dr_index = idx;
+
+	result = do_enable (handle, breakpoint);
+	if (result != COMMAND_ERROR_NONE) {
+		g_free (breakpoint);
+		return result;
+	}
+
+	g_ptr_array_add (handle->breakpoints, breakpoint);
+	g_hash_table_insert (handle->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id), breakpoint);
+	g_hash_table_insert (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address), breakpoint);
+	*bhandle = breakpoint->id;
 
 	return COMMAND_ERROR_NONE;
 }
@@ -1120,6 +1266,7 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_call_method_1,
 	server_ptrace_call_method_invoke,
 	server_ptrace_insert_breakpoint,
+	server_ptrace_insert_hw_breakpoint,
 	server_ptrace_remove_breakpoint,
 	server_ptrace_enable_breakpoint,
 	server_ptrace_disable_breakpoint,

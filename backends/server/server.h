@@ -17,7 +17,8 @@ typedef enum {
 	COMMAND_ERROR_ALIGNMENT,
 	COMMAND_ERROR_RECURSIVE_CALL,
 	COMMAND_ERROR_NO_SUCH_BREAKPOINT,
-	COMMAND_ERROR_UNKNOWN_REGISTER
+	COMMAND_ERROR_UNKNOWN_REGISTER,
+	COMMAND_ERROR_DR_OCCUPIED
 } ServerCommandError;
 
 typedef enum {
@@ -169,6 +170,16 @@ typedef struct {
 	 * to remove the breakpoint.
 	 */
 	ServerCommandError    (* insert_breakpoint)   (InferiorHandle   *handle,
+						       guint64           address,
+						       guint32          *bhandle);
+
+	/*
+	 * Insert a hardware breakpoint at address `address' in the target's address space.
+	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
+	 * to remove the breakpoint.
+	 */
+	ServerCommandError    (* insert_hw_breakpoint)(InferiorHandle   *handle,
+						       guint32           idx,
 						       guint64           address,
 						       guint32          *bhandle);
 
@@ -360,6 +371,12 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,
+					  guint64              address,
+					  guint32             *breakpoint);
+
+ServerCommandError
+mono_debugger_server_insert_hw_breakpoint(ServerHandle        *handle,
+					  guint32              idx,
 					  guint64              address,
 					  guint32             *breakpoint);
 

@@ -131,6 +131,9 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_insert_hw_breakpoint (IntPtr handle, int index, long address, out int breakpoint);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
 
 		[DllImport("monodebuggerserver")]
@@ -304,6 +307,14 @@ namespace Mono.Debugger.Backends
 			int retval;
 			check_error (mono_debugger_server_insert_breakpoint (
 				server_handle, address.Address, out retval));
+			return retval;
+		}
+
+		public int InsertHardwareBreakpoint (TargetAddress address, int index)
+		{
+			int retval;
+			check_error (mono_debugger_server_insert_hw_breakpoint (
+				server_handle, index, address.Address, out retval));
 			return retval;
 		}
 

@@ -1,5 +1,13 @@
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-linux-ptrace.c: Added hardware breakpoints.
+
+	* backends/SingleSteppingEngine.cs: Use a hardware breakpoint for
+	the temporary breakpoints; this'll avoid some bigger headaches
+	with threads.
+
+2002-12-13  Martin Baulig  <martin@ximian.com>
+
 	WARNING: The Debugger is currently more or less broken since I
 	haven't finished all this stuff yet.
 

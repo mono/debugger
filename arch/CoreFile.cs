@@ -453,6 +453,11 @@ namespace Mono.Debugger.Architecture
 			throw new CannotExecuteCoreFileException ();
 		}
 
+		public int InsertHardwareBreakpoint (TargetAddress address, int index)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
 		public void RemoveBreakpoint (int breakpoint)
 		{
 			throw new CannotExecuteCoreFileException ();
