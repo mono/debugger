@@ -112,8 +112,10 @@ namespace Mono.Debugger
 		// </summary>
 		void Next ();
 
+		// <remarks>
+		//   The following two methods are more or less private.
+		// </remarks>
 		long CallMethod (ITargetLocation method, long method_argument);
-
 		ITargetLocation SimpleLookup (string name);
 
 		// <summary>

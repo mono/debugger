@@ -231,7 +231,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class MonoSymbolTableCollection : SymbolTable
+	internal class MonoSymbolTableCollection : SymbolTable, ILanguageBackend
 	{
 		IInferior inferior;
 		ITargetMemoryAccess memory;
@@ -298,7 +298,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		bool updating_symfiles;
-		public void UpdateSymbolTables ()
+		public void UpdateSymbolTable ()
 		{
 			if (updating_symfiles)
 				return;

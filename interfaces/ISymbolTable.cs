@@ -11,6 +11,9 @@ namespace Mono.Debugger
 
 	public interface ISymbolContainer
 	{
+		// <summary>
+		//   StartAddress and EndAddress are only valid if this is true.
+		// </summary>
 		bool IsContinuous {
 			get;
 		}
@@ -48,6 +51,9 @@ namespace Mono.Debugger
 
 	public interface ISymbolTable : ISymbolLookup, ISymbolContainer
 	{
+		// <summary>
+		//   Whether this symbol table has an address range table.
+		// </summary>
 		bool HasRanges {
 			get;
 		}

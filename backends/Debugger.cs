@@ -371,7 +371,7 @@ namespace Mono.Debugger.Backends
 
 		Assembly application;
 		Inferior inferior;
-		MonoSymbolTableCollection mono_symtab;
+		ILanguageBackend language;
 
 		readonly uint target_address_size;
 		readonly uint target_integer_size;
@@ -517,7 +517,7 @@ namespace Mono.Debugger.Backends
 		{
 			inferior.Dispose ();
 			inferior = null;
-			mono_symtab = null;
+			language = null;
 			initialized = false;
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
@@ -549,7 +549,7 @@ namespace Mono.Debugger.Backends
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
 
 			if (!native)
-				mono_symtab = new MonoSymbolTableCollection (inferior);
+				language = new MonoSymbolTableCollection (inferior);
 		}
 
 		public void Quit ()
@@ -602,8 +602,8 @@ namespace Mono.Debugger.Backends
 
 				ITargetLocation location = inferior.CurrentFrame;
 
-				if (mono_symtab != null)
-					mono_symtab.UpdateSymbolTables ();
+				if (language != null)
+					language.UpdateSymbolTable ();
 
 				IMethod method = Lookup (location);
 				if ((method != null) && method.HasSource) {
@@ -626,12 +626,11 @@ namespace Mono.Debugger.Backends
 					return method;
 			}
 
-			if (mono_symtab == null)
+			if (language == null)
 				return null;
 
-			return mono_symtab.Lookup (address);
+			return language.Lookup (address);
 		}
-
 
 		void frame_changed ()
 		{
