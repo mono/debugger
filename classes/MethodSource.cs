@@ -58,10 +58,6 @@ namespace Mono.Debugger
 
 		protected abstract MethodSourceData ReadSource ();
 
-		//
-		// IMethodSource
-		//
-
 		public virtual string Name {
 			get {
 				return name;
