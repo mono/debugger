@@ -131,7 +131,7 @@ expression
 	  }
 	| STAR expression
 	  {
-		$$ = new PointerDereferenceExpression ((Expression) $2);
+		$$ = new PointerDereferenceExpression ((Expression) $2, false);
 	  }
 	| AMPERSAND expression
 	  {
@@ -201,7 +201,7 @@ variable_or_type_name
 	  }
 	| expression MINUS OP_GT IDENTIFIER
 	  {
-		Expression expr = new PointerDereferenceExpression ((Expression) $1);
+		Expression expr = new PointerDereferenceExpression ((Expression) $1, true);
 		$$ = new MemberAccessExpression (expr, (string) $4);
 	  }
 	;

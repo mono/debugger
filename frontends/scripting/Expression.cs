@@ -1164,10 +1164,12 @@ namespace Mono.Debugger.Frontends.Scripting
 	{
 		Expression expr;
 		string name;
+		bool current_ok;
 
-		public PointerDereferenceExpression (Expression expr)
+		public PointerDereferenceExpression (Expression expr, bool current_ok)
 		{
 			this.expr = expr;
+			this.current_ok = current_ok;
 			name = '*' + expr.Name;
 		}
 
@@ -1191,28 +1193,35 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = context.CurrentFrame;
 
-			ITargetPointerType ptype = expr.EvaluateType (context)
-				as ITargetPointerType;
-			if (ptype == null)
-				throw new ScriptingException (
-					"Expression `{0}' is not a pointer.", expr.Name);
+			ITargetType type = expr.EvaluateType (context);
 
-			return ptype.StaticType;
+			ITargetPointerType ptype = type as ITargetPointerType;
+			if (ptype != null)
+				return ptype.StaticType;
+
+			throw new ScriptingException (
+				"Expression `{0}' is not a pointer.", expr.Name);
 		}
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			ITargetPointerObject pobj = expr.EvaluateVariable (context)
-				as ITargetPointerObject;
-			if (pobj == null)
-				throw new ScriptingException (
-					"Expression `{0}' is not a pointer type.", expr.Name);
+			ITargetObject obj = expr.EvaluateVariable (context);
 
-			if (!pobj.HasDereferencedObject)
-				throw new ScriptingException (
-					"Cannot dereference `{0}'.", expr.Name);
+			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			if (pobj != null) {
+				if (!pobj.HasDereferencedObject)
+					throw new ScriptingException (
+						"Cannot dereference `{0}'.", expr.Name);
 
-			return pobj.DereferencedObject;
+				return pobj.DereferencedObject;
+			}
+
+			ITargetClassObject cobj = obj as ITargetClassObject;
+			if (current_ok && (cobj != null))
+				return cobj.CurrentObject;
+
+			throw new ScriptingException (
+				"Expression `{0}' is not a pointer type.", expr.Name);
 		}
 
 		public override TargetLocation EvaluateAddress (ScriptingContext context)
