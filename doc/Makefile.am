@@ -11,5 +11,3 @@ debugger.tree debugger.zip: api/*/*.xml
 update:
 	mono --debug $(libdir)/monodoc/updater.exe @prefix@/lib/Mono.Debugger.dll -o ./api -f -p
 	mono --debug $(libdir)/monodoc/updater.exe @prefix@/lib/Mono.Debugger.Backend.dll -o ./api -f -p
-	mono --debug $(libdir)/monodoc/updater.exe @prefix@/bin/Interpreter.exe -o ./api -f -p
-
