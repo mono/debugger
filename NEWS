@@ -4,6 +4,9 @@ January 25th, 2003 - Martin Baulig
 The Mono runtime now executes all managed code in a separate thread; rewrote the
 Debugger's thread manager to make this work again.
 
+You can now save a debugger session with all your breakpoints to disk and load it
+back at a later time.
+
 January 19th, 2003 - Martin Baulig
 ----------------------------------
 
