@@ -1,5 +1,12 @@
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
+	* classes/ThreadNotify.cs: New class; this is basically the same
+	than Gtk.ThreadNotify, but we can't link against gtk in the
+	backend.
+
+	* classes/IOChannel.cs (IODataInputChannel, IODataOutputChannel):
+	Added these classes for data channels.
+
 	* backends/Process.cs, backends/Debugger.cs: Moved all
 	process-specific stuff to the new `Process' class.
 

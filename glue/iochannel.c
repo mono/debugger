@@ -34,6 +34,13 @@ watch_hangup_func (GIOChannel *channel, GIOCondition condition, gpointer data)
 	return TRUE;
 }
 
+static gboolean
+watch_data_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
+{
+	((MonoDebuggerGlueEventHandler) data) ();
+	return TRUE;
+}
+
 unsigned
 mono_debugger_glue_add_watch_input (GIOChannel *channel, MonoDebuggerGlueReadHandler cb)
 {
@@ -57,6 +64,28 @@ mono_debugger_glue_add_watch_output (GIOChannel *channel)
 }
 
 void
+mono_debugger_glue_setup_data_output (GIOChannel *channel)
+{
+	g_io_channel_set_encoding (channel, NULL, NULL);
+	g_io_channel_set_buffered (channel, FALSE);
+}
+
+GSource *
+mono_debugger_glue_create_watch_input (GIOChannel *channel, MonoDebuggerGlueEventHandler cb)
+{
+	GIOFlags flags = g_io_channel_get_flags (channel);
+	GSource *source;
+
+	g_io_channel_set_encoding (channel, NULL, NULL);
+	g_io_channel_set_buffered (channel, FALSE);
+
+	source = g_io_create_watch (channel, G_IO_IN | G_IO_HUP);
+	g_source_set_callback (source, (GSourceFunc) watch_data_input_func, cb, NULL);
+
+	return source;
+}
+
+void
 mono_debugger_glue_kill_process (int pid, int force)
 {
 	if (force)
@@ -75,6 +104,34 @@ mono_debugger_glue_write_line (GIOChannel *channel, const char *line)
 	if ((status != G_IO_STATUS_NORMAL) || (count != strlen (line)))
 		g_message (G_STRLOC ": %d - %d - %d", status, strlen (line), count);
 	g_io_channel_flush (channel, NULL);
+}
+
+int
+mono_debugger_glue_read_byte (GIOChannel *channel)
+{
+	char ch;
+	int count;
+	GIOStatus status;
+
+	status = g_io_channel_read_chars (channel, &ch, 1, &count, NULL);
+	if (status == G_IO_STATUS_NORMAL)
+		return (int) ch;
+	else
+		return -1;
+}
+
+int
+mono_debugger_glue_write_byte (GIOChannel *channel, int data)
+{
+	char ch = (char) data;
+	int count;
+	GIOStatus status;
+
+	status = g_io_channel_write_chars (channel, &ch, 1, &count, NULL);
+	if (status == G_IO_STATUS_NORMAL)
+		return 0;
+	else
+		return -1;
 }
 
 void

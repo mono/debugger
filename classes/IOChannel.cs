@@ -84,6 +84,55 @@ namespace GLib {
 
 	public delegate void HangupHandler ();
 	public delegate void ReadLineHandler (string line);
+	public delegate void ReadyEventHandler ();
+
+	public class IODataInputChannel : IOChannel
+	{
+		public IODataInputChannel (int fd, ReadyEventHandler ready_event)
+			: base (fd)
+		{
+			_source = mono_debugger_glue_create_watch_input (_channel, ready_event);
+			g_source_attach (_source, IntPtr.Zero);
+		}
+
+		public int ReadByte ()
+		{
+			return mono_debugger_glue_read_byte (_channel);
+		}
+
+		IntPtr _source;
+
+		[DllImport("monodebuggerglue")]
+		extern static IntPtr mono_debugger_glue_create_watch_input (IntPtr _channel, ReadyEventHandler ready_event);
+
+		[DllImport("monodebuggerglue")]
+		extern static int mono_debugger_glue_read_byte (IntPtr _channel);
+
+		[DllImport("glib-2.0")]
+		extern static uint g_source_attach (IntPtr source, IntPtr context);
+
+		[DllImport("glib-2.0")]
+		extern static void g_source_destroy (IntPtr source);
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		protected override void Dispose (bool disposing)
+		{
+			if (!this.disposed) {
+				this.disposed = true;
+
+				lock (this) {
+					g_source_destroy (_source);
+				}
+			}
+
+			base.Dispose (disposing);
+		}
+	}
 
 	public class IOInputChannel : IOChannel
 	{
@@ -181,6 +230,30 @@ namespace GLib {
 
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_write_line (IntPtr channel, string line);
+	}
+
+	public class IODataOutputChannel : IOChannel
+	{
+		public void WriteByte (int data)
+		{
+			mono_debugger_glue_write_byte (_channel, data);
+		}
+
+		//		
+		// Everything below is private.
+		//
+
+		public IODataOutputChannel (int fd)
+			: base (fd)
+		{
+			mono_debugger_glue_setup_data_output (_channel);
+		}
+
+		[DllImport("monodebuggerglue")]
+		static extern void mono_debugger_glue_setup_data_output (IntPtr channel);
+
+		[DllImport("monodebuggerglue")]
+		static extern void mono_debugger_glue_write_byte (IntPtr channel, int data);
 	}
 
 	public class Spawn
