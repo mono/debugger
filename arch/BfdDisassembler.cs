@@ -100,7 +100,7 @@ namespace Mono.Debugger.Architecture
 			if (name == null)
 				output_func (address);
 			else
-				output_func (name.ToString ());
+				output_func (String.Format ("0x{0:x}:{1}", address, name.ToString ()));
 		}
 
 		//
