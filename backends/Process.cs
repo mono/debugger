@@ -375,8 +375,10 @@ namespace Mono.Debugger
 		{
 			if (disposed)
 				return;
-			if (sse != null)
+			if (sse != null) {
 				sse.Kill ();
+				sse = null;
+			}
 			child_exited ();
 			Dispose ();
 		}

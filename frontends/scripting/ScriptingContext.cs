@@ -581,7 +581,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Kill ()
 		{
 			process.Kill ();
-			process.Dispose ();
+			process = null;
 			target_exited ();
 		}
 
