@@ -656,6 +656,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	internal class MyOptions : Options
 	{
+		public MyOptions()
+		{
+			ParsingMode = OptionsParsingMode.Linux;
+			EndOptionProcessingWithDoubleDash = true;
+		}
+
 		StartMode start_mode = StartMode.Unknown;
 
 		[Option("PARAM is one of `core' (to load a core file),\n\t\t\t" +

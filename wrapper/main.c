@@ -329,8 +329,8 @@ main (int argc, char **argv, char **envp)
 
 	main_args.domain = domain;
 	main_args.method = MONO_DEBUGGER__main_method;
-	main_args.argc = argc;
-	main_args.argv = argv;
+	main_args.argc = argc - 1;
+	main_args.argv = argv + 1;
 
 	mono_thread_create (domain, main_thread_handler, &main_args);
 	mono_debugger_wait_cond (main_started_cond);
