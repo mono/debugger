@@ -50,9 +50,11 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	public class SingleSteppingEngine
 	{
-		public SingleSteppingEngine (DebuggerBackend backend, IInferior inferior, bool native)
+		public SingleSteppingEngine (DebuggerBackend backend, Process process,
+					     IInferior inferior, bool native)
 		{
 			this.backend = backend;
+			this.process = process;
 			this.symtab_manager = backend.SymbolTableManager;
 			this.inferior = inferior;
 			this.native = native;
@@ -64,12 +66,16 @@ namespace Mono.Debugger.Backends
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 
 			step_event = new AutoResetEvent (false);
+			start_event = new ManualResetEvent (false);
 			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
 		}
 
 		void ready_event_handler ()
 		{
 			lock (this) {
+				if (command_result == null)
+					return;
+
 				switch (command_result.EventType) {
 				case ChildEventType.CHILD_HIT_BREAKPOINT:
 					change_target_state (TargetState.STOPPED, 0);
@@ -96,6 +102,8 @@ namespace Mono.Debugger.Backends
 
 			engine_thread = new Thread (new ThreadStart (start_engine_thread));
 			engine_thread.Start ();
+
+			wait_until_engine_is_ready ();
 		}
 
 		public void Attach (int pid)
@@ -107,6 +115,16 @@ namespace Mono.Debugger.Backends
 
 			engine_thread = new Thread (new ThreadStart (start_engine_thread_attach));
 			engine_thread.Start ();
+
+			wait_until_engine_is_ready ();
+		}
+
+		void wait_until_engine_is_ready ()
+		{
+			while (!start_event.WaitOne ())
+				;
+
+			ready_event_handler ();
 		}
 
 		void send_result (ChildEventType message, int arg)
@@ -114,6 +132,7 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				command_result = new CommandResult (message, arg);
 				thread_notify.Signal ();
+				result_sent = true;
 			}
 		}
 
@@ -127,8 +146,7 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 
 			TargetAddress main = TargetAddress.Null;
-			if (native)
-				main = inferior.MainMethodAddress;
+			main = inferior.MainMethodAddress;
 			engine_thread_main (new Command (StepOperation.Run, main));
 		}
 
@@ -141,19 +159,35 @@ namespace Mono.Debugger.Backends
 
 			initialized = true;
 
-			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			send_result (ChildEventType.CHILD_STOPPED, 0);
-
 			engine_thread_main (null);
+		}
+
+		void engine_ready ()
+		{
+			lock (this) {
+				if (!result_sent) {
+					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+					send_result (ChildEventType.CHILD_STOPPED, 0);
+				}
+
+				start_event.Set ();
+			}
 		}
 
 		void engine_thread_main (Command command)
 		{
+			bool first = true;
+
 			do {
 				try {
 					process_command (command);
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0}", e);
+				}
+
+				if (first) {
+					engine_ready ();
+					first = false;
 				}
 
 				while (!step_event.WaitOne ())
@@ -206,7 +240,7 @@ namespace Mono.Debugger.Backends
 					} else if (!child_breakpoint (arg)) {
 						// we hit any breakpoint, but its handler told us
 						// to resume the target and continue.
-						do_continue (true);
+						do_continue_nowait (true);
 						goto again;
 					}
 				}
@@ -220,6 +254,11 @@ namespace Mono.Debugger.Backends
 			switch (message) {
 			case ChildEventType.CHILD_STOPPED:
 				if (arg != 0) {
+					if (!backend.SignalHandler (process, arg)) {
+						do_continue_nowait (false);
+						goto again;
+					}
+					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 					send_result (message, arg);
 					return false;
 				}
@@ -228,6 +267,10 @@ namespace Mono.Debugger.Backends
 
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
 				Console.WriteLine ("BREAKPOINT: {0}", arg);
+				if (!child_breakpoint (arg)) {
+					do_continue_nowait (true);
+					goto again;
+				}
 				return true;
 
 			default:
@@ -275,7 +318,7 @@ namespace Mono.Debugger.Backends
 
 			if (initialized && !reached_main) {
 				main_method_retaddr = inferior.GetReturnAddress ();
-				backend.ReachedMain (inferior);
+				backend.ReachedMain (process);
 				reached_main = true;
 			}
 
@@ -299,6 +342,7 @@ namespace Mono.Debugger.Backends
 
 		void update_symtabs (object sender, ISymbolTable symbol_table)
 		{
+#if FALSE
 			disassembler.SymbolTable = symbol_table;
 			current_symtab = symbol_table;
 			if (State == TargetState.STOPPED) {
@@ -306,6 +350,7 @@ namespace Mono.Debugger.Backends
 				current_method = null;
 				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 			}
+#endif
 		}
 
 		public IMethod Lookup (TargetAddress address)
@@ -410,12 +455,15 @@ namespace Mono.Debugger.Backends
 		IInferior inferior;
 		IArchitecture arch;
 		DebuggerBackend backend;
+		Process process;
 		IDisassembler disassembler;
 		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
 		Thread engine_thread;
+		ManualResetEvent start_event;
 		AutoResetEvent step_event;
 		ThreadNotify thread_notify;
+		bool result_sent = false;
 		bool native;
 		int pid = -1;
 
@@ -435,20 +483,22 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		TargetState change_target_state (TargetState new_state, int arg)
 		{
-			if (new_state == target_state)
-				return target_state;
+			lock (this) {
+				if (new_state == target_state)
+					return target_state;
 
-			TargetState old_state = target_state;
-			target_state = new_state;
+				TargetState old_state = target_state;
+				target_state = new_state;
 
-			in_event = true;
+				in_event = true;
 
-			if (StateChangedEvent != null)
-				StateChangedEvent (target_state, arg);
+				if (StateChangedEvent != null)
+					StateChangedEvent (target_state, arg);
 
-			in_event = false;
+				in_event = false;
 
-			return old_state;
+				return old_state;
+			}
 		}
 
 		void check_disposed ()
@@ -811,17 +861,26 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		bool do_continue (bool is_breakpoint)
 		{
+			if (!do_continue_nowait (is_breakpoint))
+				return false;
+
+			return wait ();
+		}
+
+		bool do_continue_nowait (bool is_breakpoint)
+		{
 			check_inferior ();
 
 			if (is_breakpoint || inferior.CurrentInstructionIsBreakpoint) {
 				must_continue = true;
 				inferior.Step ();
-			} else {
-				inferior.EnableAllBreakpoints ();
-				inferior.Continue ();
+				if (!wait ())
+					return false;
 			}
 
-			return wait ();
+			inferior.EnableAllBreakpoints ();
+			inferior.Continue ();
+			return true;
 		}
 
 		protected bool Step (StepFrame frame)

@@ -42,7 +42,7 @@ namespace Mono.Debugger
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
-			sse = new SingleSteppingEngine (backend, inferior, start.IsNative);
+			sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
 			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
@@ -381,6 +381,13 @@ namespace Mono.Debugger
 		{
 			check_inferior ();
 			return inferior.GetMemoryMaps ();
+		}
+
+		public Process CreateThread (int pid)
+		{
+			Process new_process = new Process (backend, start, bfd_container);
+			new_process.SingleSteppingEngine.Attach (pid);
+			return new_process;
 		}
 
 		void child_exited ()

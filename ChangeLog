@@ -1,3 +1,7 @@
+2002-12-14  Martin Baulig  <martin@ximian.com>
+
+	* backends/ThreadManager.cs: New file.
+
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/i386-linux-ptrace.c: Added hardware breakpoints.

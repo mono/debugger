@@ -19,8 +19,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		static int next_id = 0;
 		int pid, id;
 
-		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
-				      int pid)
+		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
 		{
 			this.context = context;
 			this.backend = backend;
@@ -34,7 +33,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.TargetError += new TargetOutputHandler (inferior_error);
 			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
+		}
 
+		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
+				      int pid)
+			: this (context, backend, process)
+		{
 			running = true;
 			if (pid > 0)
 				process.SingleSteppingEngine.Attach (pid);
@@ -55,6 +59,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_backtrace = null;
 
 			context.Print ("Process @{0} stopped at {1}", id, frame);
+
+			if (process.State != TargetState.STOPPED)
+				return;
+
+			IDisassembler dis = process.Disassembler;
+			if (dis != null) {
+				TargetAddress address = frame.TargetAddress;
+				context.Print ("{0:11x}\t{1}", address,
+					       dis.DisassembleInstruction (ref address));
+			}
 		}
 
 		void frames_invalid ()
@@ -226,7 +240,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (process == null)
 					return TargetState.NO_TARGET;
 				else
-					return process.State;
+					return process.SingleSteppingEngine.State;
 			}
 		}
 
@@ -258,10 +272,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ProcessHandle current_process;
 		ArrayList procs;
 
+		DebuggerBackend backend;
+
 		public ScriptingContext ()
 		{
 			procs = new ArrayList ();
 			current_process = null;
+
+			backend = new DebuggerBackend ();
+			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 		}
 
 		public ProcessHandle[] Processes {
@@ -318,8 +337,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (args.Length == 0)
 				throw new ScriptingException ("No program specified.");
 
-			DebuggerBackend backend = new DebuggerBackend ();
-
 			ProcessStart start;
 			Process process;
 
@@ -340,6 +357,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			procs.Add (current_process);
 
 			return current_process;
+		}
+
+		void thread_created (ThreadManager manager, Process process)
+		{
+			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
+			procs.Add (handle);
 		}
 	}
 }

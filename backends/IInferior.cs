@@ -164,6 +164,10 @@ namespace Mono.Debugger.Backends
 
 		void DisableAllBreakpoints ();
 
+		int PID {
+			get;
+		}
+
 		TargetAddress MainMethodAddress {
 			get;
 		}

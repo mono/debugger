@@ -377,6 +377,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public int PID {
+			get {
+				throw new CannotExecuteCoreFileException ();
+			}
+		}
+
 		public bool CurrentInstructionIsBreakpoint {
 			get {
 				throw new CannotExecuteCoreFileException ();

@@ -31,6 +31,7 @@ namespace Mono.Debugger
 		MonoCSharpLanguageBackend csharp_language;
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
+		ThreadManager thread_manager;
 		Process process;
 
 		public DebuggerBackend ()
@@ -57,6 +58,7 @@ namespace Mono.Debugger
 			this.languages = new ArrayList ();
 			this.module_manager = new ModuleManager ();
 			this.bfd_container = new BfdContainer (this);
+			this.thread_manager = new ThreadManager (this, bfd_container);
 
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent +=
@@ -83,6 +85,12 @@ namespace Mono.Debugger
 		public SingleSteppingEngine SingleSteppingEngine {
 			get {
 				throw new NotSupportedException ("THIS WILL GO AWAY SOON");
+			}
+		}
+
+		public ThreadManager ThreadManager {
+			get {
+				return thread_manager;
 			}
 		}
 
@@ -149,18 +157,20 @@ namespace Mono.Debugger
 				ModulesChangedEvent ();
 		}
 
-		internal void ReachedMain (IInferior inferior)
+		internal void ReachedMain (Process process)
 		{
 			module_manager.Locked = true;
 			if (csharp_language != null)
-				csharp_language.Inferior = inferior;
-			inferior.UpdateModules ();
+				csharp_language.Inferior = process.Inferior;
+			process.Inferior.UpdateModules ();
 			UpdateSymbolTable ();
 
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;
 
 			module_manager.Locked = false;
+
+			thread_manager.Initialize (process);
 		}
 
 		public void Quit ()
@@ -260,6 +270,7 @@ namespace Mono.Debugger
 
 		public void UpdateSymbolTable ()
 		{
+			return;
 			if (csharp_language != null)
 				csharp_language.UpdateSymbolTable ();
 		}
@@ -279,6 +290,15 @@ namespace Mono.Debugger
 				if (!language.BreakpointHit (address))
 					return false;
 			}
+
+			return true;
+		}
+
+		public bool SignalHandler (Process process, int signal)
+		{
+			bool action;
+			if (thread_manager.SignalHandler (process, signal, out action))
+				return action;
 
 			return true;
 		}
