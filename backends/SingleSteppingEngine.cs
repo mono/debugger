@@ -56,707 +56,57 @@ namespace Mono.Debugger.Backends
 //   time.  So if you attempt to issue a step command while the engine is still
 //   busy, the step command will return false to signal this error.
 // </summary>
-public class SingleSteppingEngine : ThreadManager
-{
-	internal SingleSteppingEngine (DebuggerBackend backend)
-		: base (backend)
-	{
-		this.SymbolTableManager = DebuggerBackend.SymbolTableManager;
-
-		thread_hash = Hashtable.Synchronized (new Hashtable ());
-
-		global_group = ThreadGroup.CreateThreadGroup ("global");
-		thread_lock_mutex = new Mutex ();
-		address_domain = new AddressDomain ("global");
-
-		start_event = new ManualResetEvent (false);
-		completed_event = new AutoResetEvent (false);
-		command_mutex = new Mutex ();
-
-		ready_event = new ManualResetEvent (false);
-	}
-
-	EngineProcess the_engine;
-	protected readonly SymbolTableManager SymbolTableManager;
-
-	ProcessStart start;
-	Thread inferior_thread;
-	ManualResetEvent ready_event;
-	Hashtable thread_hash;
-
-	int thread_lock_level;
-	Mutex thread_lock_mutex;
-	AddressDomain address_domain;
-	ThreadGroup global_group;
-
-	ManualResetEvent start_event;
-	AutoResetEvent completed_event;
-	Mutex command_mutex;
-	bool sync_command_running;
-	bool abort_requested;
-
-	[DllImport("monodebuggerserver")]
-	static extern int mono_debugger_server_global_wait (out long status, out int aborted);
-
-	[DllImport("monodebuggerserver")]
-	static extern void mono_debugger_server_abort_wait ();
-
-	void start_inferior ()
-	{
-		the_engine = new EngineProcess (this, start);
-
-		Report.Debug (DebugFlags.Threads, "Engine started: {0}", the_engine.PID);
-
-		thread_hash.Add (the_engine.PID, the_engine);
-
-		OnThreadCreatedEvent (the_engine);
-
-		while (!abort_requested) {
-			engine_thread_main ();
-		}
-	}
-
-	bool engine_is_ready = false;
-	Exception start_error = null;
-
-	// <remarks>
-	//   These three variables are shared between the two threads, so you need to
-	//   lock (this) before accessing/modifying them.
-	// </remarks>
-	Command current_command = null;
-	CommandResult command_result = null;
-	TheEngine command_engine = null;
-
-	void engine_error (Exception ex)
-	{
-		lock (this) {
-			start_error = ex;
-			start_event.Set ();
-		}
-	}
-
-	// <remarks>
-	//   This is only called on startup and blocks until the background thread
-	//   has actually been started and it's waiting for commands.
-	// </summary>
-	void wait_until_engine_is_ready ()
-	{
-		while (!start_event.WaitOne ())
-			;
-
-		if (start_error != null)
-			throw start_error;
-	}
-
-	public override Process StartApplication (ProcessStart start)
-	{
-		this.start = start;
-
-		inferior_thread = new Thread (new ThreadStart (start_inferior));
-		inferior_thread.Start ();
-
-		ready_event.WaitOne ();
-
-		OnInitializedEvent (main_process);
-		OnMainThreadCreatedEvent (main_process);
-		return main_process;
-	}
-
-	bool initialized;
-	MonoThreadManager mono_manager;
-	TargetAddress main_method = TargetAddress.Null;
-
-	protected override void DoInitialize (Inferior inferior)
-	{
-		TargetAddress frame = inferior.CurrentFrame;
-		if (frame != main_method)
-			throw new InternalError ("Target stopped unexpectedly at {0}, " +
-						 "but main is at {1}", frame, main_method);
-
-		backend.ReachedMain ();
-	}
-
-	protected void ReachedMain ()
-	{
-		ready_event.Set ();
-	}
-
-	public override Process[] Threads {
-		get {
-			lock (this) {
-				Process[] procs = new Process [thread_hash.Count];
-				int i = 0;
-				foreach (EngineProcess engine in thread_hash.Values)
-					procs [i] = engine;
-				return procs;
-			}
-		}
-	}
 
 	// <summary>
-	//   Stop all currently running threads without sending any notifications.
-	//   The threads are automatically resumed to their previos state when
-	//   ReleaseGlobalThreadLock() is called.
-	// </summary>
-	internal override void AcquireGlobalThreadLock (Inferior inferior, Process caller)
-	{
-		thread_lock_mutex.WaitOne ();
-		Report.Debug (DebugFlags.Threads, "Acquiring global thread lock: {0} {1}",
-			      caller, thread_lock_level);
-		if (thread_lock_level++ > 0)
-			return;
-		foreach (EngineProcess engine in thread_hash.Values) {
-			if (engine == caller)
-				continue;
-			Register[] regs = engine.AcquireThreadLock ();
-			long esp = (long) regs [(int) I386Register.ESP].Data;
-			TargetAddress addr = new TargetAddress (inferior.AddressDomain, esp);
-			Report.Debug (DebugFlags.Threads, "Got thread lock on {0}: {1}",
-				      engine, addr);
-		}
-		Report.Debug (DebugFlags.Threads, "Done acquiring global thread lock: {0}",
-			      caller);
-	}
-
-	internal override void ReleaseGlobalThreadLock (Inferior inferior, Process caller)
-	{
-		Report.Debug (DebugFlags.Threads, "Releasing global thread lock: {0} {1}",
-			      caller, thread_lock_level);
-		if (--thread_lock_level > 0) {
-			thread_lock_mutex.ReleaseMutex ();
-			return;
-		}
-				
-		foreach (EngineProcess engine in thread_hash.Values) {
-			if (engine == caller)
-				continue;
-			engine.ReleaseThreadLock ();
-		}
-		thread_lock_mutex.ReleaseMutex ();
-		Report.Debug (DebugFlags.Threads, "Released global thread lock: {0}", caller);
-	}
-
-	internal override Inferior CreateInferior (ProcessStart start)
-	{
-		throw new NotSupportedException ();
-	}
-
-	protected override void AddThread (Inferior inferior, Process new_thread,
-					   int pid, bool is_daemon)
-	{
-		Report.Debug (DebugFlags.Threads, "Add thread: {0} {1}",
-			      new_thread, pid);
-	}
-
-	void thread_created (Inferior inferior, int pid)
-	{
-		Report.Debug (DebugFlags.Threads, "Thread created: {0}", pid);
-
-		Inferior new_inferior = inferior.CreateThread ();
-
-		EngineProcess new_thread = new EngineProcess (this, new_inferior, pid);
-
-		thread_hash.Add (pid, new_thread);
-
-		if ((mono_manager != null) &&
-		    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
-			main_process = new_thread;
-
-			main_method = mono_manager.Initialize (the_engine, inferior);
-
-			Report.Debug (DebugFlags.Threads, "Managed main address is {0}",
-				      main_method);
-
-			new_thread.Start (main_method, true);
-		}
-
-		new_inferior.Continue ();
-		OnThreadCreatedEvent (new_thread);
-
-		inferior.Continue ();
-	}
-
-	internal override bool HandleChildEvent (Inferior inferior,
-						 Inferior.ChildEvent cevent)
-	{
-		if (cevent.Type == Inferior.ChildEventType.NONE) {
-			inferior.Continue ();
-			return true;
-		}
-
-		if (!initialized) {
-			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
-			    (cevent.Argument != 0))
-				throw new InternalError (
-					"Received unexpected initial child event {0}", cevent);
-
-			mono_manager = MonoThreadManager.Initialize (this, inferior);
-
-			main_process = the_engine;
-			if (mono_manager == null)
-				main_method = inferior.MainMethodAddress;
-			else
-				main_method = TargetAddress.Null;
-			the_engine.Start (main_method, true);
-
-			initialized = true;
-			return true;
-		}
-
-		if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
-			thread_created (inferior, (int) cevent.Argument);
-
-			return true;
-		}
-
-		return false;
-	}
-
-	// <summary>
-	//   The 'command_mutex' is used to protect the engine's main loop.
-	//
-	//   Before sending any command to it, you must acquire the mutex
-	//   and release it when you're done with the command.
-	//
-	//   Note that you must not keep this mutex when returning from the
-	//   function which acquired it.
-	// </summary>
-	protected bool AcquireCommandMutex (TheEngine engine)
-	{
-		if (!command_mutex.WaitOne (0, false))
-			return false;
-
-		command_engine = engine;
-		return true;
-	}
-
-	protected void ReleaseCommandMutex ()
-	{
-		command_engine = null;
-		command_mutex.ReleaseMutex ();
-	}
-
-	// <summary>
-	//   Sends a synchronous command to the background thread and wait until
-	//   it is completed.  This command never throws any exceptions, but returns
-	//   an appropriate CommandResult if something went wrong.
-	//
-	//   This is used for non-steping commands such as getting a backtrace.
-	// </summary>
-	// <remarks>
-	//   You must own either the 'command_mutex' or the `this' lock prior to
-	//   calling this and you must make sure you aren't currently running any
-	//   async operations.
-	// </remarks>
-	protected CommandResult SendSyncCommand (Command command)
-	{
-		if (Thread.CurrentThread == inferior_thread) {
-			try {
-				return command.Process.ProcessCommand (command);
-			} catch (ThreadAbortException) {
-				;
-			} catch (Exception e) {
-				return new CommandResult (e);
-			}
-		}
-
-		if (!AcquireCommandMutex (null))
-			return CommandResult.Busy;
-
-		lock (this) {
-			current_command = command;
-			mono_debugger_server_abort_wait ();
-			completed_event.Reset ();
-			sync_command_running = true;
-		}
-
-		completed_event.WaitOne ();
-
-		CommandResult result;
-		lock (this) {
-			result = command_result;
-			command_result = null;
-			current_command = null;
-		}
-
-		command_mutex.ReleaseMutex ();
-		if (result != null)
-			return result;
-		else
-			return new CommandResult (CommandResultType.UnknownError, null);
-	}
-
-	// <summary>
-	//   Sends an asynchronous command to the background thread.  This is used
-	//   for all stepping commands, no matter whether the user requested a
-	//   synchronous or asynchronous operation.
-	// </summary>
-	// <remarks>
-	//   You must own the 'command_mutex' before calling this method and you must
-	//   make sure you aren't currently running any async commands.
-	// </remarks>
-	protected void SendAsyncCommand (Command command)
-	{
-		lock (this) {
-			current_command = command;
-			mono_debugger_server_abort_wait ();
-		}
-	}
-
-	// <summary>
-	//   The heart of the SingleSteppingEngine.  This runs in a background
-	//   thread and processes stepping commands and events.
-	//
-	//   For each application we're debugging, there is just one SingleSteppingEngine,
-	//   no matter how many threads the application has.  The engine is using one single
-	//   event loop which is processing commands from the user and events from all of
-	//   the application's threads.
-	// </summary>
-	void engine_thread_main ()
-	{
-		Report.Debug (DebugFlags.Wait, "SSE waiting");
-
-		//
-		// Wait until we got an event from the target or a command from the user.
-		//
-
-		int pid;
-		int aborted;
-		long status;
-		pid = mono_debugger_server_global_wait (out status, out aborted);
-
-		//
-		// Note: `pid' is basically just an unique number which identifies the
-		//       EngineProcess of this event.
-		//
-
-		if (pid > 0) {
-			Report.Debug (DebugFlags.Wait,
-				      "SSE received event: {0} {1:x}", pid, status);
-
-			EngineProcess event_engine = (EngineProcess) thread_hash [pid];
-			if (event_engine == null)
-				throw new InternalError ("Got event {0:x} for unknown pid {1}",
-							 status, pid);
-
-			try {
-				event_engine.ProcessEvent (status);
-			} catch (ThreadAbortException) {
-				;
-			} catch (Exception e) {
-				Console.WriteLine ("EXCEPTION: {0}", e);
-			}
-
-			if (!engine_is_ready) {
-				engine_is_ready = true;
-				start_event.Set ();
-			}
-		}
-
-		//
-		// We caught a SIGINT.
-		//
-
-		if (aborted > 0) {
-			Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT: {0} {1}",
-				      command_engine, sync_command_running);
-
-			lock (this) {
-				if (sync_command_running) {
-					command_result = CommandResult.Interrupted;
-					current_command = null;
-					sync_command_running = false;
-					completed_event.Set ();
-					return;
-				}
-
-				if (command_engine != null)
-					command_engine.Interrupt ();
-			}
-			return;
-		}
-
-		if (abort_requested) {
-			Report.Debug (DebugFlags.Wait, "Abort requested");
-			return;
-		}
-
-		Command command;
-		lock (this) {
-			command = current_command;
-			current_command = null;
-
-			if (command == null)
-				return;
-		}
-
-		if (command == null)
-			return;
-
-		Report.Debug (DebugFlags.EventLoop, "SSE received command: {0}", command);
-
-		// These are synchronous commands; ie. the caller blocks on us
-		// until we finished the command and sent the result.
-		if (command.Type != CommandType.Operation) {
-			CommandResult result;
-			try {
-				result = command.Process.ProcessCommand (command);
-			} catch (ThreadAbortException) {
-				;
-				return;
-			} catch (Exception e) {
-				result = new CommandResult (e);
-			}
-
-			lock (this) {
-				command_result = result;
-				current_command = null;
-				sync_command_running = false;
-				completed_event.Set ();
-			}
-		} else {
-			try {
-				command.Process.ProcessCommand (command.Operation);
-			} catch (ThreadAbortException) {
-				return;
-			} catch (Exception e) {
-				Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
-			}
-		}
-	}
-
-	public override AddressDomain AddressDomain {
-		get { return address_domain; }
-	}
-
-	protected sealed class Operation {
-		public readonly OperationType Type;
-		public readonly TargetAddress Until;
-		public readonly RuntimeInvokeData RuntimeInvokeData;
-		public readonly CallMethodData CallMethodData;
-
-		public Operation (OperationType type)
-		{
-			this.Type = type;
-			this.Until = TargetAddress.Null;
-		}
-
-		public Operation (OperationType type, StepFrame frame)
-		{
-			this.Type = type;
-			this.StepFrame = frame;
-		}
-
-		public Operation (OperationType type, TargetAddress until)
-		{
-			this.Type = type;
-			this.Until = until;
-		}
-
-		public Operation (RuntimeInvokeData data)
-		{
-			this.Type = OperationType.RuntimeInvoke;
-			this.RuntimeInvokeData = data;
-		}
-
-		public Operation (CallMethodData data)
-		{
-			this.Type = OperationType.CallMethod;
-			this.CallMethodData = data;
-		}
-
-		public StepMode StepMode;
-		public StepFrame StepFrame;
-
-		public bool IsNative {
-			get { return Type == OperationType.StepNativeInstruction; }
-		}
-
-		public bool IsSourceOperation {
-			get {
-				return (Type == OperationType.StepLine) ||
-					(Type == OperationType.NextLine) ||
-					(Type == OperationType.Run) ||
-					(Type == OperationType.RunInBackground) ||
-					(Type == OperationType.RuntimeInvoke) ||
-					(Type == OperationType.Initialize);
-			}
-		}
-
-		public override string ToString ()
-		{
-			if (StepFrame != null)
-				return String.Format ("Operation ({0}:{1}:{2}:{3})",
-						      Type, Until, StepMode, StepFrame);
-			else if (!Until.IsNull)
-				return String.Format ("Operation ({0}:{1})", Type, Until);
-			else
-				return String.Format ("Operation ({0})", Type);
-		}
-	}
-
-	protected enum OperationType {
-		Initialize,
-		Run,
-		RunInBackground,
-		StepInstruction,
-		StepNativeInstruction,
-		NextInstruction,
-		StepLine,
-		NextLine,
-		StepFrame,
-		RuntimeInvoke,
-		CallMethod
-	}
-
-	protected enum CommandType {
-		Operation,
-		GetBacktrace,
-		SetRegister,
-		InsertBreakpoint,
-		RemoveBreakpoint,
-		GetInstructionSize,
-		DisassembleInstruction,
-		DisassembleMethod,
-		ReadMemory,
-		ReadString,
-		WriteMemory
-	}
-
-	protected class Command {
-		public TheEngine Process;
-		public CommandType Type;
-		public Operation Operation;
-		public object Data1, Data2;
-
-		public Command (TheEngine process, Operation operation)
-		{
-			this.Process = process;
-			this.Type = CommandType.Operation;
-			this.Operation = operation;
-		}
-
-		public Command (TheEngine process, CommandType type, object data, object data2)
-		{
-			this.Process = process;
-			this.Type = type;
-			this.Data1 = data;
-			this.Data2 = data2;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
-					      Process, Type, Operation, Data1, Data2);
-		}
-	}
-
-	protected enum CommandResultType {
-		ChildEvent,
-		CommandOk,
-		NotStopped,
-		Interrupted,
-		UnknownError,
-		Exception
-	}
-
-	protected class CommandResult {
-		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk, null);
-		public readonly static CommandResult Busy = new CommandResult (CommandResultType.NotStopped, null);
-		public readonly static CommandResult Interrupted = new CommandResult (CommandResultType.Interrupted, null);
-
-		public readonly CommandResultType Type;
-		public readonly Inferior.ChildEventType EventType;
-		public readonly int Argument;
-		public readonly object Data;
-
-		public CommandResult (Inferior.ChildEventType type, int arg)
-		{
-			this.EventType = type;
-			this.Argument = arg;
-		}
-
-		public CommandResult (Inferior.ChildEventType type, object data)
-		{
-			this.EventType = type;
-			this.Argument = 0;
-			this.Data = data;
-		}
-
-		public CommandResult (CommandResultType type, object data)
-		{
-			this.Type = type;
-			this.Data = data;
-		}
-
-		public CommandResult (Exception e)
-		{
-			this.Type = CommandResultType.Exception;
-			this.Data = e;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("CommandResult ({0}:{1}:{2}:{3})",
-					      Type, EventType, Argument, Data);
-		}
-	}
-
-	// <summary>
-	//   The SingleSteppingEngine creates one TheEngine instance for each thread
+	//   The ThreadManager creates one SingleSteppingEngine instance for each thread
 	//   in the target.
 	//
-	//   The `TheEngine' class is basically just responsible for whatever happens
+	//   The `SingleSteppingEngine' class is basically just responsible for whatever happens
 	//   in the background thread: processing commands and events.  Their methods
 	//   are just meant to be called from the SingleSteppingEngine (since it's a
 	//   protected nested class they can't actually be called from anywhere else).
 	//
-	//   See the `EngineProcess' class for the "user interface".
+	//   See the `Process' class for the "user interface".
 	// </summary>
-	protected abstract class TheEngine : NativeProcess
+	internal class SingleSteppingEngine : ITargetMemoryInfo
 	{
-		protected TheEngine (SingleSteppingEngine sse, Inferior inferior)
-			: base (inferior.ProcessStart)
+		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
 		{
-			this.sse = sse;
+			this.manager = manager;
 			this.inferior = inferior;
-			this.target = (EngineProcess) this;
+			this.start = inferior.ProcessStart;
+			this.process = new Process (this, start, inferior);
 
-			pid = inferior.PID;
+			PID = inferior.PID;
 
 			operation_completed_event = new ManualResetEvent (false);
-
-			inferior.TargetOutput += new TargetOutputHandler (OnInferiorOutput);
-			inferior.DebuggerOutput += new DebuggerOutputHandler (OnDebuggerOutput);
-			inferior.DebuggerError += new DebuggerErrorHandler (OnDebuggerError);
 		}
 
-		protected TheEngine (SingleSteppingEngine sse, ProcessStart start)
-			: this (sse, Inferior.CreateInferior (sse, start))
+		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
+			: this (manager, Inferior.CreateInferior (manager, start))
 		{
 			inferior.Run (true);
-			pid = inferior.PID;
+			PID = inferior.PID;
 
 			is_main = true;
 
 			setup_engine ();
 		}
 
-		protected TheEngine (SingleSteppingEngine sse, Inferior inferior, int pid)
-			: this (sse, inferior)
+		public SingleSteppingEngine (ThreadManager manager, Inferior inferior, int pid)
+			: this (manager, inferior)
 		{
-			this.pid = pid;
+			this.PID = pid;
 			inferior.Attach (pid);
 
 			is_main = false;
-			tid = inferior.TID;
+			TID = inferior.TID;
 
 			setup_engine ();
 		}
 
 		void setup_engine ()
 		{
-			inferior.SingleSteppingEngine = sse;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
 			Report.Debug (DebugFlags.Threads, "New SSE: {0}", this);
@@ -764,13 +114,13 @@ public class SingleSteppingEngine : ThreadManager
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			disassembler.SymbolTable = sse.SymbolTableManager.SimpleSymbolTable;
-			current_simple_symtab = sse.SymbolTableManager.SimpleSymbolTable;
-			current_symtab = sse.SymbolTableManager.SymbolTable;
+			disassembler.SymbolTable = manager.SymbolTableManager.SimpleSymbolTable;
+			current_simple_symtab = manager.SymbolTableManager.SimpleSymbolTable;
+			current_symtab = manager.SymbolTableManager.SymbolTable;
 
 			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ((ITargetInfo) inferior);
 
-			sse.SymbolTableManager.SymbolTableChangedEvent +=
+			manager.SymbolTableManager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 		}
 
@@ -792,7 +142,7 @@ public class SingleSteppingEngine : ThreadManager
 			Report.Debug (DebugFlags.EventLoop,
 				      "SSE {0} received event {1} ({2:x})",
 				      this, cevent, status);
-			if (sse.HandleChildEvent (inferior, cevent))
+			if (manager.HandleChildEvent (inferior, cevent))
 				return;
 			ProcessEvent (cevent);
 		}
@@ -829,7 +179,6 @@ public class SingleSteppingEngine : ThreadManager
 			case TargetEventType.TargetSignaled:
 			case TargetEventType.TargetExited:
 				target_state = TargetState.EXITED;
-				OnTargetExitedEvent ();
 				break;
 
 			default:
@@ -837,10 +186,10 @@ public class SingleSteppingEngine : ThreadManager
 				break;
 			}
 
-			OnTargetEvent (args);
+			process.SendTargetEvent (args);
 		}
 
-		public override void Start (TargetAddress func, bool is_main)
+		public void Start (TargetAddress func, bool is_main)
 		{
 			if (!func.IsNull) {
 				insert_temporary_breakpoint (func);
@@ -969,8 +318,10 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			switch (type) {
 			case CommandType.GetBacktrace:
-				get_backtrace ((int) data);
-				break;
+				return get_backtrace ((int) data);
+
+			case CommandType.GetRegisters:
+				return get_registers ();
 
 			case CommandType.SetRegister:
 				set_register ((Register) data);
@@ -1140,7 +491,7 @@ public class SingleSteppingEngine : ThreadManager
 				operation_completed (result);
 				if (is_main && !reached_main) {
 					reached_main = true;
-					sse.ReachedMain ();
+					manager.ReachedMain ();
 				}
 				return true;
 			}
@@ -1158,7 +509,7 @@ public class SingleSteppingEngine : ThreadManager
 			if (current_operation != null) {
 				if (current_operation.Type == OperationType.Initialize) {
 					if (is_main)
-						sse.Initialize (inferior);
+						manager.Initialize (inferior.CurrentFrame);
 				} else if (!DoStep (false))
 					return false;
 			}
@@ -1234,18 +585,19 @@ public class SingleSteppingEngine : ThreadManager
 			return current_simple_symtab.SimpleLookup (address, exact_match);
 		}
 
-		void get_registers ()
+		Register[] get_registers ()
 		{
 			registers = inferior.GetRegisters ();
+			return registers;
 		}
 
-		void get_backtrace (int max_frames)
+		Backtrace get_backtrace (int max_frames)
 		{
-			sse.DebuggerBackend.UpdateSymbolTable ();
+			manager.DebuggerBackend.UpdateSymbolTable ();
 
 			Inferior.StackFrame[] iframes = inferior.GetBacktrace (max_frames, main_method_retaddr);
 			StackFrame[] frames = new StackFrame [iframes.Length];
-			MyBacktrace backtrace = new MyBacktrace (target, arch);
+			MyBacktrace backtrace = new MyBacktrace (process, arch);
 
 			for (int i = 0; i < iframes.Length; i++) {
 				TargetAddress address = iframes [i].Address;
@@ -1253,15 +605,16 @@ public class SingleSteppingEngine : ThreadManager
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceAddress source = method.Source.Lookup (address);
-					frames [i] = CreateFrame (
+					frames [i] = process.CreateFrame (
 						address, i, iframes [i], backtrace, source, method);
 				} else
-					frames [i] = CreateFrame (
+					frames [i] = process.CreateFrame (
 						address, i, iframes [i], backtrace, null, null);
 			}
 
 			backtrace.SetFrames (frames);
 			current_backtrace = backtrace;
+			return backtrace;
 		}
 
 		void set_register (Register reg)
@@ -1272,12 +625,12 @@ public class SingleSteppingEngine : ThreadManager
 
 		int insert_breakpoint (BreakpointManager.Handle handle)
 		{
-			return sse.BreakpointManager.InsertBreakpoint (inferior, handle);
+			return manager.BreakpointManager.InsertBreakpoint (inferior, handle);
 		}
 
 		void remove_breakpoint (int index)
 		{
-			sse.BreakpointManager.RemoveBreakpoint (inferior, index);
+			manager.BreakpointManager.RemoveBreakpoint (inferior, index);
 		}
 
 		int get_insn_size (TargetAddress address)
@@ -1301,6 +654,22 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		}
 
+		public ISimpleSymbolTable SimpleSymbolTable {
+			get {
+				check_inferior ();
+				lock (disassembler) {
+					return disassembler.SymbolTable;
+				}
+			}
+
+			set {
+				check_inferior ();
+				lock (disassembler) {
+					disassembler.SymbolTable = value;
+				}
+			}
+		}
+
 		byte[] do_read_memory (TargetAddress address, int size)
 		{
 			return inferior.ReadBuffer (address, size);
@@ -1316,23 +685,97 @@ public class SingleSteppingEngine : ThreadManager
 			inferior.WriteBuffer (address, data);
 		}
 
-		protected SingleSteppingEngine sse;
-		protected Inferior inferior;
-		protected IArchitecture arch;
-		protected IDisassembler disassembler;
-		ITargetAccess target;
+		//
+		// ITargetInfo
+		//
+
+		public int TargetAddressSize {
+			get {
+				check_inferior ();
+				return inferior.TargetAddressSize;
+			}
+		}
+
+		public int TargetIntegerSize {
+			get {
+				check_inferior ();
+				return inferior.TargetIntegerSize;
+			}
+		}
+
+		public int TargetLongIntegerSize {
+			get {
+				check_inferior ();
+				return inferior.TargetLongIntegerSize;
+			}
+		}
+
+		//
+		// ITargetMemoryInfo
+		//
+
+		public AddressDomain AddressDomain {
+			get {
+				check_inferior ();
+				return inferior.AddressDomain;
+			}
+		}
+
+		public AddressDomain GlobalAddressDomain {
+			get {
+				return manager.AddressDomain;
+			}
+		}
+
+		public Process Process {
+			get { return process; }
+		}
+
+		ThreadManager manager;
+		Process process;
+		Inferior inferior;
+		IArchitecture arch;
+		IDisassembler disassembler;
+		ILanguage native_language;
+		ProcessStart start;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
-		ILanguage native_language;
 		bool engine_stopped;
 		ManualResetEvent operation_completed_event;
-		protected bool stop_requested = false;
+		bool stop_requested = false;
 		bool is_main, reached_main;
 		bool native;
-		protected int pid, tid;
+		public readonly int PID;
+		public readonly int TID;
 
-		protected TargetAddress main_method_retaddr = TargetAddress.Null;
-		protected TargetState target_state = TargetState.NO_TARGET;
+		internal DaemonEventHandler DaemonEventHandler;
+		internal bool IsDaemon;
+
+		TargetAddress main_method_retaddr = TargetAddress.Null;
+		TargetState target_state = TargetState.NO_TARGET;
+
+		public ILanguage NativeLanguage {
+			get {
+				return native_language;
+			}
+		}
+
+		public TargetState State {
+			get {
+				lock (this) {
+					if (IsDaemon)
+						return TargetState.DAEMON;
+					else
+						return target_state;
+				}
+			}
+		}
+
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			check_inferior ();
+			return inferior.GetMemoryMaps ();
+		}
 
 		//
 		// We support two kinds of commands:
@@ -1392,13 +835,13 @@ public class SingleSteppingEngine : ThreadManager
 		//   If this returns true, you must call either AbortOperation() or
 		//   SendAsyncCommand().
 		// </remarks>
-		protected bool StartOperation ()
+		public bool StartOperation ()
 		{
 			lock (this) {
 				// First try to get the `command_mutex'.
 				// If we succeed, then no synchronous command is currently
 				// running.
-				if (!sse.AcquireCommandMutex (this)) {
+				if (!manager.AcquireCommandMutex (this)) {
 					Report.Debug (DebugFlags.Wait,
 						      "SSE {0} cannot get command mutex", this);
 					return false;
@@ -1408,7 +851,7 @@ public class SingleSteppingEngine : ThreadManager
 				if (!engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
 						      "SSE {0} not stopped", this);
-					sse.ReleaseCommandMutex ();
+					manager.ReleaseCommandMutex ();
 					return false;
 				}
 				// This will never block.  The only thing which can
@@ -1426,20 +869,20 @@ public class SingleSteppingEngine : ThreadManager
 		//   Use this if you previously called StartOperation() and you changed
 		//   your mind and don't want to start an operation anymore.
 		// </summary>
-		protected void AbortOperation ()
+		public void AbortOperation ()
 		{
 			lock (this) {
 				Report.Debug (DebugFlags.Wait,
 					      "SSE {0} aborted operation", this);
 				engine_stopped = true;
-				sse.ReleaseCommandMutex ();
+				manager.ReleaseCommandMutex ();
 			}
 		}
 
 		// <summary>
 		//   Sends a synchronous command to the engine.
 		// </summary>
-		protected CommandResult SendSyncCommand (Command command)
+		public CommandResult SendSyncCommand (Command command)
 		{
 			lock (this) {
 				// Check whether we're curring performing an async
@@ -1452,7 +895,7 @@ public class SingleSteppingEngine : ThreadManager
 
 				Report.Debug (DebugFlags.Wait,
 					      "SSE {0} sending sync command", this);
-				CommandResult result = sse.SendSyncCommand (command);
+				CommandResult result = manager.SendSyncCommand (command);
 				Report.Debug (DebugFlags.Wait,
 					      "SSE {0} finished sync command", this);
 
@@ -1460,13 +903,13 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		}
 
-		protected CommandResult SendSyncCommand (CommandType type, object data1,
-							 object data2)
+		public CommandResult SendSyncCommand (CommandType type, object data1,
+						      object data2)
 		{
 			return SendSyncCommand (new Command (this, type, data1, data2));
 		}
 
-		protected CommandResult SendSyncCommand (CommandType type, object data)
+		public CommandResult SendSyncCommand (CommandType type, object data)
 		{
 			return SendSyncCommand (new Command (this, type, data, null));
 		}
@@ -1477,12 +920,12 @@ public class SingleSteppingEngine : ThreadManager
 		// <remarks>
 		//   You must call StartOperation() prior to calling this.
 		// </remarks>	     
-		protected void SendAsyncCommand (Command command, bool wait)
+		public void SendAsyncCommand (Command command, bool wait)
 		{
 			lock (this) {
 				operation_completed_event.Reset ();
 				send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
-				sse.SendAsyncCommand (command);
+				manager.SendAsyncCommand (command);
 			}
 
 			if (wait) {
@@ -1492,23 +935,23 @@ public class SingleSteppingEngine : ThreadManager
 			}
 			Report.Debug (DebugFlags.Wait,
 				      "SSE {0} released command mutex", this);
-			sse.ReleaseCommandMutex ();
+			manager.ReleaseCommandMutex ();
 		}
 
-		protected void SendCallbackCommand (Command command)
+		public void SendCallbackCommand (Command command)
 		{
 			if (!StartOperation ())
 				throw new TargetNotStoppedException ();
 
-			sse.SendAsyncCommand (command);
+			manager.SendAsyncCommand (command);
 		}
 
-		public override bool Stop ()
+		public bool Stop ()
 		{
 			return do_wait (true);
 		}
 
-		public override bool Wait ()
+		public bool Wait ()
 		{
 			return do_wait (false);
 		}
@@ -1519,7 +962,7 @@ public class SingleSteppingEngine : ThreadManager
 				// First try to get the `command_mutex'.
 				// If we succeed, then no synchronous command is currently
 				// running.
-				if (!sse.AcquireCommandMutex (this)) {
+				if (!manager.AcquireCommandMutex (this)) {
 					Report.Debug (DebugFlags.Wait,
 						      "SSE {0} cannot get command mutex", this);
 					return false;
@@ -1529,7 +972,7 @@ public class SingleSteppingEngine : ThreadManager
 				if (engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
 						      "SSE {0} already stopped", this);
-					sse.ReleaseCommandMutex ();
+					manager.ReleaseCommandMutex ();
 					return true;
 				}
 
@@ -1542,7 +985,7 @@ public class SingleSteppingEngine : ThreadManager
 						engine_stopped = true;
 						stop_requested = false;
 						operation_completed_event.Set ();
-						sse.ReleaseCommandMutex ();
+						manager.ReleaseCommandMutex ();
 						return true;
 					}
 				}
@@ -1553,7 +996,7 @@ public class SingleSteppingEngine : ThreadManager
 			Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
 			operation_completed_event.WaitOne ();
 			Report.Debug (DebugFlags.Wait, "SSE {0} stopped", this);
-			sse.ReleaseCommandMutex ();
+			manager.ReleaseCommandMutex ();
 			return true;
 		}
 
@@ -1584,16 +1027,10 @@ public class SingleSteppingEngine : ThreadManager
 				throw new NoTargetException ();
 		}
 
-		public override IArchitecture Architecture {
+		public IArchitecture Architecture {
 			get { return arch; }
 		}
 
-
-		public ILanguage NativeLanguage {
-			get {
-				return native_language;
-			}
-		}
 
 		bool start_native ()
 		{
@@ -1645,7 +1082,7 @@ public class SingleSteppingEngine : ThreadManager
 			if (index == 0)
 				return true;
 
-			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (index);
+			BreakpointManager.Handle handle = manager.BreakpointManager.LookupBreakpoint (index);
 			if (handle == null)
 				return false;
 
@@ -1673,22 +1110,22 @@ public class SingleSteppingEngine : ThreadManager
 			}
 
 			int index;
-			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (
+			BreakpointManager.Handle handle = manager.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index);
 
-			if ((handle != null) && handle.BreakpointHandle.Breaks (this)) {
+			if ((handle != null) && handle.BreakpointHandle.Breaks (process.ID)) {
 				new_event = null;
 				return false;
 			}
 
-			sse.AcquireGlobalThreadLock (inferior, this);
+			manager.AcquireGlobalThreadLock (this);
 			inferior.DisableBreakpoint (index);
 			inferior.Step ();
 			do {
 				new_event = inferior.Wait ();
 			} while (new_event == null);
 			inferior.EnableBreakpoint (index);
-			sse.ReleaseGlobalThreadLock (inferior, this);
+			manager.ReleaseGlobalThreadLock (this);
 			return true;
 		}
 
@@ -1696,6 +1133,18 @@ public class SingleSteppingEngine : ThreadManager
 		protected StackFrame current_frame;
 		protected Backtrace current_backtrace;
 		protected Register[] registers;
+
+		public Backtrace CurrentBacktrace {
+			get { return current_backtrace; }
+		}
+
+		public StackFrame CurrentFrame {
+			get { return current_frame; }
+		}
+
+		public IMethod CurrentMethod {
+			get { return current_method; }
+		}
 
 		// <summary>
 		//   Compute the StackFrame for target address @address.
@@ -1706,7 +1155,7 @@ public class SingleSteppingEngine : ThreadManager
 			// that method, we don't need to do a method lookup.
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
-				sse.DebuggerBackend.UpdateSymbolTable ();
+				manager.DebuggerBackend.UpdateSymbolTable ();
 				current_method = Lookup (address);
 			}
 
@@ -1719,20 +1168,14 @@ public class SingleSteppingEngine : ThreadManager
 			if ((current_method != null) && current_method.HasSource) {
 				SourceAddress source = current_method.Source.Lookup (address);
 
-				current_frame = CreateFrame (
+				current_frame = process.CreateFrame (
 					address, 0, frames [0], null, source, current_method);
 			} else
-				current_frame = CreateFrame (
+				current_frame = process.CreateFrame (
 					address, 0, frames [0], null, null, null);
 
 			return current_frame;
 		}
-
-		protected abstract StackFrame CreateFrame (TargetAddress address, int level,
-							   Inferior.StackFrame frame,
-							   Backtrace backtrace,
-							   SourceAddress source,
-							   IMethod method);
 
 		// <summary>
 		//   Check whether @address is inside @frame.
@@ -1764,7 +1207,7 @@ public class SingleSteppingEngine : ThreadManager
 			// Only do a method lookup if we actually need it.
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
-				sse.DebuggerBackend.UpdateSymbolTable ();
+				manager.DebuggerBackend.UpdateSymbolTable ();
 				current_method = Lookup (address);
 			}
 
@@ -1788,10 +1231,10 @@ public class SingleSteppingEngine : ThreadManager
 					return new_operation;
 				}
 
-				current_frame = CreateFrame (
+				current_frame = process.CreateFrame (
 					address, 0, frames [0], null, source, current_method);
 			} else
-				current_frame = CreateFrame (
+				current_frame = process.CreateFrame (
 					address, 0, frames [0], null, null, null);
 
 			return null;
@@ -1965,10 +1408,10 @@ public class SingleSteppingEngine : ThreadManager
 
 		bool callback_method_compiled (Callback cb, long data1, long data2)
 		{
-			TargetAddress trampoline = new TargetAddress (sse.AddressDomain, data1);
+			TargetAddress trampoline = new TargetAddress (manager.AddressDomain, data1);
 			IMethod method = null;
 			if (current_symtab != null) {
-				sse.DebuggerBackend.UpdateSymbolTable ();
+				manager.DebuggerBackend.UpdateSymbolTable ();
 				method = Lookup (trampoline);
 			}
 			if ((method == null) || !method.Module.StepInto) {
@@ -2220,7 +1663,7 @@ public class SingleSteppingEngine : ThreadManager
 
 		bool callback_do_runtime_invoke (Callback cb, long data1, long data2)
 		{
-			TargetAddress invoke = new TargetAddress (sse.AddressDomain, data1);
+			TargetAddress invoke = new TargetAddress (manager.AddressDomain, data1);
 
 			Report.Debug (DebugFlags.EventLoop, "Runtime invoke: {0}", invoke);
 
@@ -2263,7 +1706,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			cb.Data.Result = data1;
 
-			// sse.SetCompleted (this);
+			// manager.SetCompleted (this);
 			return true;
 		}
 
@@ -2275,7 +1718,7 @@ public class SingleSteppingEngine : ThreadManager
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		public override Register[] AcquireThreadLock ()
+		public Register[] AcquireThreadLock ()
 		{
 			stopped = inferior.Stop (out stop_event);
 
@@ -2283,7 +1726,7 @@ public class SingleSteppingEngine : ThreadManager
 			return registers;
 		}
 
-		public override void ReleaseThreadLock ()
+		public void ReleaseThreadLock ()
 		{
 			// If the target was already stopped, there's nothing to do for us.
 			if (!stopped)
@@ -2294,7 +1737,7 @@ public class SingleSteppingEngine : ThreadManager
 				Inferior.ChildEvent cevent = stop_event;
 				stop_event = null;
 
-				if (sse.HandleChildEvent (inferior, cevent))
+				if (manager.HandleChildEvent (inferior, cevent))
 					return;
 				ProcessEvent (cevent);
 			} else {
@@ -2323,26 +1766,227 @@ public class SingleSteppingEngine : ThreadManager
 		// IDisposable
 		//
 
-		protected override void DoDispose ()
+		private bool disposed = false;
+
+		private void check_disposed ()
 		{
-			if (inferior != null)
-				inferior.Kill ();
-			inferior = null;
+			if (disposed)
+				throw new ObjectDisposedException ("SingleSteppingEngine");
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				if (inferior != null)
+					inferior.Kill ();
+				inferior = null;
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~SingleSteppingEngine ()
+		{
+			Dispose (false);
 		}
 	}
 
-	//
-	// Calling methods.
-	//
+	internal sealed class Operation {
+		public readonly OperationType Type;
+		public readonly TargetAddress Until;
+		public readonly RuntimeInvokeData RuntimeInvokeData;
+		public readonly CallMethodData CallMethodData;
 
-	protected enum CallMethodType
+		public Operation (OperationType type)
+		{
+			this.Type = type;
+			this.Until = TargetAddress.Null;
+		}
+
+		public Operation (OperationType type, StepFrame frame)
+		{
+			this.Type = type;
+			this.StepFrame = frame;
+		}
+
+		public Operation (OperationType type, TargetAddress until)
+		{
+			this.Type = type;
+			this.Until = until;
+		}
+
+		public Operation (RuntimeInvokeData data)
+		{
+			this.Type = OperationType.RuntimeInvoke;
+			this.RuntimeInvokeData = data;
+		}
+
+		public Operation (CallMethodData data)
+		{
+			this.Type = OperationType.CallMethod;
+			this.CallMethodData = data;
+		}
+
+		public StepMode StepMode;
+		public StepFrame StepFrame;
+
+		public bool IsNative {
+			get { return Type == OperationType.StepNativeInstruction; }
+		}
+
+		public bool IsSourceOperation {
+			get {
+				return (Type == OperationType.StepLine) ||
+					(Type == OperationType.NextLine) ||
+					(Type == OperationType.Run) ||
+					(Type == OperationType.RunInBackground) ||
+					(Type == OperationType.RuntimeInvoke) ||
+					(Type == OperationType.Initialize);
+			}
+		}
+
+		public override string ToString ()
+		{
+			if (StepFrame != null)
+				return String.Format ("Operation ({0}:{1}:{2}:{3})",
+						      Type, Until, StepMode, StepFrame);
+			else if (!Until.IsNull)
+				return String.Format ("Operation ({0}:{1})", Type, Until);
+			else
+				return String.Format ("Operation ({0})", Type);
+		}
+	}
+
+	internal enum OperationType {
+		Initialize,
+		Run,
+		RunInBackground,
+		StepInstruction,
+		StepNativeInstruction,
+		NextInstruction,
+		StepLine,
+		NextLine,
+		StepFrame,
+		RuntimeInvoke,
+		CallMethod
+	}
+
+	internal enum CommandType {
+		Operation,
+		GetBacktrace,
+		GetRegisters,
+		SetRegister,
+		InsertBreakpoint,
+		RemoveBreakpoint,
+		GetInstructionSize,
+		DisassembleInstruction,
+		DisassembleMethod,
+		ReadMemory,
+		ReadString,
+		WriteMemory
+	}
+
+	internal class Command {
+		public SingleSteppingEngine Process;
+		public CommandType Type;
+		public Operation Operation;
+		public object Data1, Data2;
+
+		public Command (SingleSteppingEngine process, Operation operation)
+		{
+			this.Process = process;
+			this.Type = CommandType.Operation;
+			this.Operation = operation;
+		}
+
+		public Command (SingleSteppingEngine process, CommandType type, object data, object data2)
+		{
+			this.Process = process;
+			this.Type = type;
+			this.Data1 = data;
+			this.Data2 = data2;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
+					      Process, Type, Operation, Data1, Data2);
+		}
+	}
+
+	internal enum CommandResultType {
+		ChildEvent,
+		CommandOk,
+		NotStopped,
+		Interrupted,
+		UnknownError,
+		Exception
+	}
+
+	internal class CommandResult {
+		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk, null);
+		public readonly static CommandResult Busy = new CommandResult (CommandResultType.NotStopped, null);
+		public readonly static CommandResult Interrupted = new CommandResult (CommandResultType.Interrupted, null);
+
+		public readonly CommandResultType Type;
+		public readonly Inferior.ChildEventType EventType;
+		public readonly int Argument;
+		public readonly object Data;
+
+		public CommandResult (Inferior.ChildEventType type, int arg)
+		{
+			this.EventType = type;
+			this.Argument = arg;
+		}
+
+		public CommandResult (Inferior.ChildEventType type, object data)
+		{
+			this.EventType = type;
+			this.Argument = 0;
+			this.Data = data;
+		}
+
+		public CommandResult (CommandResultType type, object data)
+		{
+			this.Type = type;
+			this.Data = data;
+		}
+
+		public CommandResult (Exception e)
+		{
+			this.Type = CommandResultType.Exception;
+			this.Data = e;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("CommandResult ({0}:{1}:{2}:{3})",
+					      Type, EventType, Argument, Data);
+		}
+	}
+
+	internal enum CallMethodType
 	{
 		LongLong,
 		LongString,
 		RuntimeInvoke
 	}
 
-	protected sealed class CallMethodData
+	internal sealed class CallMethodData
 	{
 		public readonly CallMethodType Type;
 		public readonly TargetAddress Method;
@@ -2381,7 +2025,7 @@ public class SingleSteppingEngine : ThreadManager
 		}
 	}
 
-	protected sealed class RuntimeInvokeData
+	internal sealed class RuntimeInvokeData
 	{
 		public readonly ILanguageBackend Language;
 		public readonly TargetAddress MethodArgument;
@@ -2403,773 +2047,4 @@ public class SingleSteppingEngine : ThreadManager
 			this.ParamObjects = param_objects;
 		}
 	}
-
-	protected class EngineProcess : TheEngine, ITargetAccess, IDisassembler
-	{
-		public EngineProcess (SingleSteppingEngine sse, ProcessStart start)
-			: base (sse, start)
-		{ }
-
-		public EngineProcess (SingleSteppingEngine sse, Inferior inferior, int pid)
-			: base (sse, inferior, pid)
-		{
-		}
-
-		// <summary>
-		//   The single-stepping engine's target state.  This will be
-		//   TargetState.RUNNING while the engine is stepping.
-		// </summary>
-		public override TargetState State {
-			get {
-				lock (this) {
-					if (is_daemon)
-						return TargetState.DAEMON;
-					else
-						return target_state;
-				}
-			}
-		}
-
-		public override int PID {
-			get {
-				return pid;
-			}
-		}
-
-		public override int TID {
-			get {
-				return tid;
-			}
-		}
-
-		internal Inferior TheInferior {
-			get {
-				return inferior;
-			}
-		}
-
-		// <summary>
-		//   The current stack frame.  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The single stepping engine
-		//   automatically computes the current frame and current method each time
-		//   a stepping operation is completed.  This ensures that we do not
-		//   unnecessarily compute this several times if more than one client
-		//   accesses this property.
-		// </summary>
-		public override StackFrame CurrentFrame {
-			get {
-				check_inferior ();
-				return current_frame;
-			}
-		}
-
-		public override TargetAddress CurrentFrameAddress {
-			get {
-				StackFrame frame = CurrentFrame;
-				return frame != null ? frame.TargetAddress : TargetAddress.Null;
-			}
-		}
-
-		// <summary>
-		//   The current stack frame.  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The backtrace is generated on
-		//   demand, when this function is called.  However, the single stepping
-		//   engine will compute this only once each time a stepping operation is
-		//   completed.  This means that if you call this function several times
-		//   without doing any stepping operations in the meantime, you'll always
-		//   get the same backtrace.
-		// </summary>
-		public override Backtrace GetBacktrace ()
-		{
-			check_inferior ();
-
-			if (current_backtrace != null)
-				return current_backtrace;
-
-			SendSyncCommand (CommandType.GetBacktrace, -1);
-
-			return current_backtrace;
-		}
-
-		public override Backtrace GetBacktrace (int max_frames)
-		{
-			check_inferior ();
-
-			if ((max_frames == -1) && (current_backtrace != null))
-				return current_backtrace;
-
-			SendSyncCommand (CommandType.GetBacktrace, max_frames);
-
-			return current_backtrace;
-		}
-
-		public override Register GetRegister (int index)
-		{
-			foreach (Register register in GetRegisters ()) {
-				if (register.Index == index)
-					return register;
-			}
-
-			throw new NoSuchRegisterException ();
-		}
-
-		public override Register[] GetRegisters ()
-		{
-			check_inferior ();
-
-			return registers;
-		}
-
-		public override void SetRegister (int register, long value)
-		{
-			Register reg = new Register (register, value);
-			SendSyncCommand (CommandType.SetRegister, reg);
-		}
-
-		public override void SetRegisters (int[] registers, long[] values)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public override TargetMemoryArea[] GetMemoryMaps ()
-		{
-			check_inferior ();
-			return inferior.GetMemoryMaps ();
-		}
-
-		// <summary>
-		//   The current method  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The single stepping engine
-		//   automatically computes the current frame and current method each time
-		//   a stepping operation is completed.  This ensures that we do not
-		//   unnecessarily compute this several times if more than one client
-		//   accesses this property.
-		// </summary>
-		public IMethod CurrentMethod {
-			get {
-				check_inferior ();
-				return current_method;
-			}
-		}
-
-		bool start_step_operation (Operation operation, bool wait)
-		{
-			check_inferior ();
-			if (!StartOperation ())
-				return false;
-			SendAsyncCommand (new Command (this, operation), wait);
-			return true;
-		}
-
-		bool start_step_operation (OperationType operation, TargetAddress until,
-					   bool wait)
-		{
-			return start_step_operation (new Operation (operation, until), wait);
-		}
-
-		bool start_step_operation (OperationType operation, bool wait)
-		{
-			return start_step_operation (new Operation (operation), wait);
-		}
-
-		void call_method (CallMethodData cdata)
-		{
-			SendCallbackCommand (new Command (this, new Operation (cdata)));
-		}
-
-		void call_method (RuntimeInvokeData rdata)
-		{
-			SendCallbackCommand (new Command (this, new Operation (rdata)));
-		}
-
-		// <summary>
-		//   Step one machine instruction, but don't step into trampolines.
-		// </summary>
-		public override bool StepInstruction (bool wait)
-		{
-			return start_step_operation (OperationType.StepInstruction, wait);
-		}
-
-		// <summary>
-		//   Step one machine instruction, always step into method calls.
-		// </summary>
-		public override bool StepNativeInstruction (bool wait)
-		{
-			return start_step_operation (OperationType.StepNativeInstruction, wait);
-		}
-
-		// <summary>
-		//   Step one machine instruction, but step over method calls.
-		// </summary>
-		public override bool NextInstruction (bool wait)
-		{
-			return start_step_operation (OperationType.NextInstruction, wait);
-		}
-
-		// <summary>
-		//   Step one source line.
-		// </summary>
-		public override bool StepLine (bool wait)
-		{
-			return start_step_operation (OperationType.StepLine, wait);
-		}
-
-		// <summary>
-		//   Step one source line, but step over method calls.
-		// </summary>
-		public override bool NextLine (bool wait)
-		{
-			return start_step_operation (OperationType.NextLine, wait);
-		}
-
-		// <summary>
-		//   Continue until leaving the current method.
-		// </summary>
-		public override bool Finish (bool wait)
-		{
-			check_inferior ();
-			if (!StartOperation ())
-				return false;
-
-			StackFrame frame = CurrentFrame;
-			if (frame.Method == null) {
-				AbortOperation ();
-				throw new NoMethodException ();
-			}
-
-			StepFrame sf = new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress,
-				null, StepMode.Finish);
-
-			Operation operation = new Operation (OperationType.StepFrame, sf);
-			SendAsyncCommand (new Command (this, operation), wait);
-			return true;
-		}
-
-		public override bool Continue (TargetAddress until, bool in_background, bool wait)
-		{
-			if (in_background)
-				return start_step_operation (OperationType.RunInBackground,
-							     until, wait);
-			else
-				return start_step_operation (OperationType.Run, until, wait);
-		}
-
-		public override void Kill ()
-		{
-			Dispose ();
-		}
-
-		// <summary>
-		//   Insert a breakpoint at address @address.  Each time this breakpoint
-		//   is hit, @handler will be called and @user_data will be passed to it
-		//   as argument.  @needs_frame specifies whether the @handler needs the
-		//   StackFrame argument.
-		//
-		//   Returns a number which may be passed to RemoveBreakpoint() to remove
-		//   the breakpoint.
-		// </summary>
-		public override int InsertBreakpoint (BreakpointHandle handle,
-						      TargetAddress address,
-						      BreakpointCheckHandler check_handler,
-						      BreakpointHitHandler hit_handler,
-						      bool needs_frame, object user_data)
-		{
-			check_inferior ();
-
-			BreakpointManager.Handle data = new BreakpointManager.Handle (
-				address, handle, check_handler, hit_handler, needs_frame, user_data);
-
-			CommandResult result = SendSyncCommand (
-				CommandType.InsertBreakpoint, data);
-			if (result.Type != CommandResultType.CommandOk)
-				throw new Exception ();
-
-			return (int) result.Data;
-		}
-
-		// <summary>
-		//   Remove breakpoint @index.  @index is the breakpoint number which has
-		//   been returned by InsertBreakpoint().
-		// </summary>
-		public override void RemoveBreakpoint (int index)
-		{
-			check_disposed ();
-			if (inferior != null)
-				SendSyncCommand (CommandType.RemoveBreakpoint, index);
-		}
-
-		//
-		// Disassembling.
-		//
-
-		public override IDisassembler Disassembler {
-			get { return this; }
-		}
-
-		ISimpleSymbolTable IDisassembler.SymbolTable {
-			get {
-				check_inferior ();
-				lock (disassembler) {
-					return disassembler.SymbolTable;
-				}
-			}
-
-			set {
-				check_inferior ();
-				lock (disassembler) {
-					disassembler.SymbolTable = value;
-				}
-			}
-		}
-
-		public int GetInstructionSize (TargetAddress address)
-		{
-			check_inferior ();
-			CommandResult result = SendSyncCommand (CommandType.GetInstructionSize, address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (int) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
-		}
-
-		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
-		{
-			check_inferior ();
-			CommandResult result = SendSyncCommand (CommandType.DisassembleInstruction, method, address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (AssemblerLine) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				return null;
-		}
-
-		public AssemblerMethod DisassembleMethod (IMethod method)
-		{
-			check_inferior ();
-			CommandResult result = SendSyncCommand (CommandType.DisassembleMethod, method);
-			if (result.Type == CommandResultType.CommandOk)
-				return (AssemblerMethod) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
-		}
-
-		public override long CallMethod (TargetAddress method, long method_argument,
-						 string string_argument)
-		{
-			CallMethodData data = new CallMethodData (
-				method, method_argument, string_argument, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-			return (long) data.Result;
-		}
-
-		public override TargetAddress CallMethod (TargetAddress method, string arg)
-		{
-			CallMethodData data = new CallMethodData (method, 0, arg, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-			long retval = (long) data.Result;
-			if (inferior.TargetAddressSize == 4)
-				retval &= 0xffffffffL;
-			return new TargetAddress (inferior.AddressDomain, retval);
-		}
-
-		public override TargetAddress CallMethod (TargetAddress method,
-							  TargetAddress arg1,
-							  TargetAddress arg2)
-		{
-			CallMethodData data = new CallMethodData (
-				method, arg1.Address, arg2.Address, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-
-			long retval = (long) data.Result;
-			if (inferior.TargetAddressSize == 4)
-				retval &= 0xffffffffL;
-			return new TargetAddress (inferior.AddressDomain, retval);
-		}
-
-		protected bool RuntimeInvoke (ILanguageBackend language,
-					      TargetAddress method_argument,
-					      TargetAddress object_argument,
-					      TargetAddress[] param_objects)
-		{
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				language, method_argument, object_argument, param_objects);
-			return start_step_operation (new Operation (data), true);
-		}
-
-		protected TargetAddress RuntimeInvoke (ILanguageBackend language,
-						       TargetAddress method_argument,
-						       TargetAddress object_argument,
-						       TargetAddress[] param_objects,
-						       out TargetAddress exc_object)
-		{
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				language, method_argument, object_argument, param_objects);
-
-			call_method (data);
-			if (!data.InvokeOk)
-				throw new Exception ();
-
-			exc_object = data.ExceptionObject;
-			return data.ReturnObject;
-		}
-
-		public override bool HasTarget {
-			get { return inferior != null; }
-		}
-
-		public override bool CanRun {
-			get { return true; }
-		}
-
-		public override bool CanStep {
-			get { return true; }
-		}
-
-		public override bool IsStopped {
-			get { return State == TargetState.STOPPED; }
-		}
-
-		public override ITargetAccess TargetAccess {
-			get { return this; }
-		}
-
-		public override ITargetMemoryAccess TargetMemoryAccess {
-			get { return this; }
-		}
-
-		public override ITargetMemoryInfo TargetMemoryInfo {
-			get { return this; }
-		}
-
-		//
-		// ITargetInfo
-		//
-
-		public int TargetAddressSize {
-			get {
-				check_inferior ();
-				return inferior.TargetAddressSize;
-			}
-		}
-
-		public int TargetIntegerSize {
-			get {
-				check_inferior ();
-				return inferior.TargetIntegerSize;
-			}
-		}
-
-		public int TargetLongIntegerSize {
-			get {
-				check_inferior ();
-				return inferior.TargetLongIntegerSize;
-			}
-		}
-
-		//
-		// ITargetMemoryAccess
-		//
-
-		protected byte[] read_memory (TargetAddress address, int size)
-		{
-			CommandResult result = SendSyncCommand (CommandType.ReadMemory, address, size);
-			if (result.Type == CommandResultType.CommandOk)
-				return (byte []) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
-		}
-
-		string read_string (TargetAddress address)
-		{
-			CommandResult result = SendSyncCommand (CommandType.ReadString, address);
-			if (result.Type == CommandResultType.CommandOk)
-				return (string) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
-		}
-
-		ITargetMemoryReader get_memory_reader (TargetAddress address, int size)
-		{
-			byte[] buffer = read_memory (address, size);
-			return new TargetReader (buffer, inferior);
-		}
-
-		protected void write_memory (TargetAddress address, byte[] buffer)
-		{
-			CommandResult result = SendSyncCommand (CommandType.WriteMemory, address, buffer);
-			if (result.Type == CommandResultType.CommandOk)
-				return;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
-		}
-
-		AddressDomain ITargetMemoryInfo.AddressDomain {
-			get {
-				return inferior.AddressDomain;
-			}
-		}
-
-		AddressDomain ITargetMemoryInfo.GlobalAddressDomain {
-			get {
-				return sse.AddressDomain;
-			}
-		}
-
-		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
-		{
-			byte[] data = read_memory (address, 1);
-			return data [0];
-		}
-
-		int ITargetMemoryAccess.ReadInteger (TargetAddress address)
-		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
-			return reader.ReadInteger ();
-		}
-
-		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
-		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
-			return reader.ReadLongInteger ();
-		}
-
-		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
-		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
-			return reader.ReadAddress ();
-		}
-
-		TargetAddress ITargetMemoryAccess.ReadGlobalAddress (TargetAddress address)
-		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
-			return reader.ReadGlobalAddress ();
-		}
-
-		string ITargetMemoryAccess.ReadString (TargetAddress address)
-		{
-			return read_string (address);
-		}
-
-		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
-		{
-			return get_memory_reader (address, size);
-		}
-
-		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (byte[] buffer)
-		{
-			return new TargetReader (buffer, inferior);
-		}
-
-		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
-		{
-			return read_memory (address, size);
-		}
-
-		bool ITargetMemoryAccess.CanWrite {
-			get { return false; }
-		}
-
-		void ITargetAccess.WriteBuffer (TargetAddress address, byte[] buffer)
-		{
-			write_memory (address, buffer);
-		}
-
-		void ITargetAccess.WriteByte (TargetAddress address, byte value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		void ITargetAccess.WriteInteger (TargetAddress address, int value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		void ITargetAccess.WriteLongInteger (TargetAddress address, long value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		void ITargetAccess.WriteAddress (TargetAddress address, TargetAddress value)
-		{
-			TargetBinaryWriter writer = new TargetBinaryWriter (TargetAddressSize, this);
-			writer.WriteAddress (value);
-			write_memory (address, writer.Contents);
-		}
-
-
-		//
-		// Stack frames.
-		//
-
-		protected override StackFrame CreateFrame (TargetAddress address, int level,
-							   Inferior.StackFrame frame,
-							   Backtrace bt, SourceAddress source,
-							   IMethod method)
-		{
-			if (source != null)
-				return new MyStackFrame (this, address, level, frame,
-							 bt, source, method);
-			else
-				return new MyStackFrame (this, address, level, frame, bt);
-		}
-
-		protected class MyStackFrame : StackFrame
-		{
-			EngineProcess sse;
-			Inferior.StackFrame frame;
-			Backtrace backtrace;
-			ILanguage language;
-			ILanguageBackend lbackend;
-
-			Register[] registers;
-			bool has_registers;
-
-			public MyStackFrame (EngineProcess sse, TargetAddress address, int level,
-					     Inferior.StackFrame frame, Backtrace backtrace,
-					     SourceAddress source, IMethod method)
-				: base (address, level, source, method)
-			{
-				this.sse = sse;
-				this.frame = frame;
-				this.backtrace = backtrace;
-				this.language = method.Module.Language;
-				this.lbackend = method.Module.LanguageBackend as ILanguageBackend;
-			}
-
-			public MyStackFrame (EngineProcess sse, TargetAddress address, int level,
-					     Inferior.StackFrame frame, Backtrace backtrace)
-				: base (address, level, sse.SimpleLookup (address, false))
-			{
-				this.sse = sse;
-				this.frame = frame;
-				this.backtrace = backtrace;
-				this.language = sse.NativeLanguage;
-			}
-
-			public override Process Process {
-				get { return sse; }
-			}
-
-			public override ITargetAccess TargetAccess {
-				get { return sse; }
-			}
-
-			public override Register[] Registers {
-				get {
-					if (has_registers)
-						return registers;
-
-					if (backtrace == null) {
-						registers = sse.GetRegisters ();
-						has_registers = true;
-					} else {
-						registers = backtrace.UnwindStack (Level);
-						has_registers = true;
-					}
-
-					return registers;
-				}
-			}
-
-			public override TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset)
-			{
-				return new MonoVariableLocation (this, dereference, index, reg_offset, false, offset);
-			}
-
-			public override void SetRegister (int index, long value)
-			{
-				if (backtrace != null)
-					throw new NotImplementedException ();
-
-				sse.SetRegister (index, value);
-
-				has_registers = false;
-				registers = null;
-			}
-
-			public override ILanguage Language {
-				get {
-					return language;
-				}
-			}
-
-			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
-			{
-				return sse.DisassembleInstruction (Method, address);
-			}
-
-			public override AssemblerMethod DisassembleMethod ()
-			{
-				if (Method == null)
-					throw new NoMethodException ();
-
-				return sse.DisassembleMethod (Method);
-			}
-
-			public override bool RuntimeInvoke (TargetAddress method_argument,
-							    TargetAddress object_argument,
-							    TargetAddress[] param_objects)
-			{
-				if (lbackend == null)
-					throw new InvalidOperationException ();
-
-				return sse.RuntimeInvoke (lbackend, method_argument,
-							  object_argument, param_objects);
-			}
-
-			public override TargetAddress RuntimeInvoke (TargetAddress method_arg,
-								     TargetAddress object_arg,
-								     TargetAddress[] param,
-								     out TargetAddress exc_obj)
-			{
-				if (lbackend == null)
-					throw new InvalidOperationException ();
-
-				return sse.RuntimeInvoke (lbackend, method_arg,
-							  object_arg, param, out exc_obj);
-			}
-		}
-	}
-
-	//
-	// IDisposable
-	//
-
-	protected override void DoDispose ()
-	{
-		if (inferior_thread != null) {
-			lock (this) {
-				abort_requested = true;
-				mono_debugger_server_abort_wait ();
-			}
-			inferior_thread.Join ();
-		}
-
-		TheEngine[] threads = new TheEngine [thread_hash.Count];
-		thread_hash.Values.CopyTo (threads, 0);
-		for (int i = 0; i < threads.Length; i++)
-			threads [i].Dispose ();
-	}
-}
 }

@@ -18,74 +18,255 @@ namespace Mono.Debugger
 {
 	public delegate void ThreadEventHandler (ThreadManager manager, Process process);
 
-	public abstract class ThreadManager : IDisposable
+	public class ThreadManager
 	{
-		protected readonly BfdContainer bfdc;
-		protected readonly DebuggerBackend backend;
-		protected readonly BreakpointManager breakpoint_manager;
-
-		protected Process main_process;
-
-		bool initialized = false;
-
-		protected ThreadManager (DebuggerBackend backend)
+		internal ThreadManager (DebuggerBackend backend)
 		{
 			this.backend = backend;
 			this.bfdc = backend.BfdContainer;
+			this.SymbolTableManager = backend.SymbolTableManager;
 
 			breakpoint_manager = new BreakpointManager ();
+
+			thread_hash = Hashtable.Synchronized (new Hashtable ());
+
+			global_group = ThreadGroup.CreateThreadGroup ("global");
+			thread_lock_mutex = new Mutex ();
+			address_domain = new AddressDomain ("global");
+
+			start_event = new ManualResetEvent (false);
+			completed_event = new AutoResetEvent (false);
+			command_mutex = new Mutex ();
+
+			ready_event = new ManualResetEvent (false);
 		}
 
-		public abstract Process StartApplication (ProcessStart start);
+		SingleSteppingEngine the_engine;
+		internal readonly SymbolTableManager SymbolTableManager;
 
-		internal abstract Inferior CreateInferior (ProcessStart start);
+		ProcessStart start;
+		BfdContainer bfdc;
+		DebuggerBackend backend;
+		BreakpointManager breakpoint_manager;
+		Thread inferior_thread;
+		ManualResetEvent ready_event;
+		Hashtable thread_hash;
 
-		protected abstract void DoInitialize (Inferior inferior);
+		int thread_lock_level;
+		Mutex thread_lock_mutex;
+		AddressDomain address_domain;
+		ThreadGroup global_group;
 
-		protected void Initialize (Inferior inferior)
+		Process main_process;
+
+		ManualResetEvent start_event;
+		AutoResetEvent completed_event;
+		Mutex command_mutex;
+		bool sync_command_running;
+		bool abort_requested;
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_global_wait (out long status, out int aborted);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_abort_wait ();
+
+		void start_inferior ()
 		{
-			if (!initialized) {
-				DoInitialize (inferior);
-				initialized = true;
+			the_engine = new SingleSteppingEngine (this, start);
+
+			Report.Debug (DebugFlags.Threads, "Engine started: {0}", the_engine.PID);
+
+			thread_hash.Add (the_engine.PID, the_engine);
+
+			OnThreadCreatedEvent (the_engine.Process);
+
+			while (!abort_requested) {
+				engine_thread_main ();
 			}
 		}
 
-#if FIXME
-		protected Process CreateThread (Inferior inferior, int pid)
+		bool engine_is_ready = false;
+		Exception start_error = null;
+
+		// <remarks>
+		//   These three variables are shared between the two threads, so you need to
+		//   lock (this) before accessing/modifying them.
+		// </remarks>
+		Command current_command = null;
+		CommandResult command_result = null;
+		SingleSteppingEngine command_engine = null;
+
+		void engine_error (Exception ex)
 		{
+			lock (this) {
+				start_error = ex;
+				start_event.Set ();
+			}
+		}
+
+		// <remarks>
+		//   This is only called on startup and blocks until the background thread
+		//   has actually been started and it's waiting for commands.
+		// </summary>
+		void wait_until_engine_is_ready ()
+		{
+			while (!start_event.WaitOne ())
+				;
+
+			if (start_error != null)
+				throw start_error;
+		}
+
+		public Process StartApplication (ProcessStart start)
+		{
+			this.start = start;
+
+			inferior_thread = new Thread (new ThreadStart (start_inferior));
+			inferior_thread.Start ();
+
+			ready_event.WaitOne ();
+
+			OnInitializedEvent (main_process);
+			OnMainThreadCreatedEvent (main_process);
+			return main_process;
+		}
+
+		bool initialized;
+		MonoThreadManager mono_manager;
+		TargetAddress main_method = TargetAddress.Null;
+
+		internal void Initialize (TargetAddress frame)
+		{
+			if (frame != main_method)
+				throw new InternalError ("Target stopped unexpectedly at {0}, " +
+							 "but main is at {1}", frame, main_method);
+
+			backend.ReachedMain ();
+		}
+
+		internal void ReachedMain ()
+		{
+			ready_event.Set ();
+		}
+
+		public Process[] Threads {
+			get {
+				lock (this) {
+					Process[] procs = new Process [thread_hash.Count];
+					int i = 0;
+					foreach (SingleSteppingEngine engine in thread_hash.Values)
+						procs [i] = engine.Process;
+					return procs;
+				}
+			}
+		}
+
+		// <summary>
+		//   Stop all currently running threads without sending any notifications.
+		//   The threads are automatically resumed to their previos state when
+		//   ReleaseGlobalThreadLock() is called.
+		// </summary>
+		internal void AcquireGlobalThreadLock (SingleSteppingEngine caller)
+		{
+			thread_lock_mutex.WaitOne ();
+			Report.Debug (DebugFlags.Threads, "Acquiring global thread lock: {0} {1}",
+				      caller, thread_lock_level);
+			if (thread_lock_level++ > 0)
+				return;
+			foreach (SingleSteppingEngine engine in thread_hash.Values) {
+				if (engine == caller)
+					continue;
+				Register[] regs = engine.AcquireThreadLock ();
+				long esp = (long) regs [(int) I386Register.ESP].Data;
+				TargetAddress addr = new TargetAddress (engine.AddressDomain, esp);
+				Report.Debug (DebugFlags.Threads, "Got thread lock on {0}: {1}",
+					      engine, addr);
+			}
+			Report.Debug (DebugFlags.Threads, "Done acquiring global thread lock: {0}",
+				      caller);
+		}
+
+		internal void ReleaseGlobalThreadLock (SingleSteppingEngine caller)
+		{
+			Report.Debug (DebugFlags.Threads, "Releasing global thread lock: {0} {1}",
+				      caller, thread_lock_level);
+			if (--thread_lock_level > 0) {
+				thread_lock_mutex.ReleaseMutex ();
+				return;
+			}
+				
+			foreach (SingleSteppingEngine engine in thread_hash.Values) {
+				if (engine == caller)
+					continue;
+				engine.ReleaseThreadLock ();
+			}
+			thread_lock_mutex.ReleaseMutex ();
+			Report.Debug (DebugFlags.Threads, "Released global thread lock: {0}", caller);
+		}
+
+		void thread_created (Inferior inferior, int pid)
+		{
+			Report.Debug (DebugFlags.Threads, "Thread created: {0}", pid);
+
 			Inferior new_inferior = inferior.CreateThread ();
-			Process new_process = new NativeThread (new_inferior, pid);
 
-			AddThread (inferior, new_process, pid, false);
+			SingleSteppingEngine new_thread = new SingleSteppingEngine (this, new_inferior, pid);
 
-			return new_process;
+			thread_hash.Add (pid, new_thread);
+
+			if ((mono_manager != null) &&
+			    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
+				main_process = new_thread.Process;
+
+				main_method = mono_manager.Initialize (the_engine, inferior);
+
+				Report.Debug (DebugFlags.Threads, "Managed main address is {0}",
+					      main_method);
+
+				new_thread.Start (main_method, true);
+			}
+
+			new_inferior.Continue ();
+			OnThreadCreatedEvent (new_thread.Process);
+
+			inferior.Continue ();
 		}
 
-		protected Process CreateThread (Inferior inferior, int pid,
-						DaemonThreadHandler handler)
+		internal bool HandleChildEvent (Inferior inferior, Inferior.ChildEvent cevent)
 		{
-			Inferior new_inferior = inferior.CreateThread ();
-			Process new_process = new DaemonThread (new_inferior, pid, handler);
+			if (cevent.Type == Inferior.ChildEventType.NONE) {
+				inferior.Continue ();
+				return true;
+			}
 
-			AddThread (inferior, new_process, pid, true);
+			if (!initialized) {
+				if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
+				    (cevent.Argument != 0))
+					throw new InternalError (
+						"Received unexpected initial child event {0}",
+						cevent);
 
-			return new_process;
-		}
+				mono_manager = MonoThreadManager.Initialize (this, inferior);
 
-		protected Process CreateMainThread (Inferior inferior)
-		{
-			return new NativeProcess (inferior);
-		}
-#endif
+				main_process = the_engine.Process;
+				if (mono_manager == null)
+					main_method = inferior.MainMethodAddress;
+				else
+					main_method = TargetAddress.Null;
+				the_engine.Start (main_method, true);
 
-		protected abstract void AddThread (Inferior inferior, Process new_process,
-						   int pid, bool is_daemon);
+				initialized = true;
+				return true;
+			}
 
-		internal abstract bool HandleChildEvent (Inferior inferior,
-							 Inferior.ChildEvent cevent);
+			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
+				thread_created (inferior, (int) cevent.Argument);
 
-		public bool Initialized {
-			get { return initialized; }
+				return true;
+			}
+
+			return false;
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -98,10 +279,6 @@ namespace Mono.Debugger
 
 		public Process MainProcess {
 			get { return main_process; }
-		}
-
-		public abstract AddressDomain AddressDomain {
-			get;
 		}
 
 		public event ThreadEventHandler InitializedEvent;
@@ -145,10 +322,6 @@ namespace Mono.Debugger
 				TargetExitedEvent ();
 		}
 
-		public abstract Process[] Threads {
-			get;
-		}
-
 		public void Kill ()
 		{
 			if (main_process != null)
@@ -174,16 +347,237 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Stop all currently running threads without sending any notifications.
-		//   The threads are automatically resumed to their previos state when
-		//   ReleaseGlobalThreadLock() is called.
+		//   The 'command_mutex' is used to protect the engine's main loop.
+		//
+		//   Before sending any command to it, you must acquire the mutex
+		//   and release it when you're done with the command.
+		//
+		//   Note that you must not keep this mutex when returning from the
+		//   function which acquired it.
 		// </summary>
-		internal abstract void AcquireGlobalThreadLock (Inferior inferior, Process caller);
-		internal abstract void ReleaseGlobalThreadLock (Inferior inferior, Process caller);
+		internal bool AcquireCommandMutex (SingleSteppingEngine engine)
+		{
+			if (!command_mutex.WaitOne (0, false))
+				return false;
+
+			command_engine = engine;
+			return true;
+		}
+
+		internal void ReleaseCommandMutex ()
+		{
+			command_engine = null;
+			command_mutex.ReleaseMutex ();
+		}
+
+		// <summary>
+		//   Sends a synchronous command to the background thread and wait until
+		//   it is completed.  This command never throws any exceptions, but returns
+		//   an appropriate CommandResult if something went wrong.
+		//
+		//   This is used for non-steping commands such as getting a backtrace.
+		// </summary>
+		// <remarks>
+		//   You must own either the 'command_mutex' or the `this' lock prior to
+		//   calling this and you must make sure you aren't currently running any
+		//   async operations.
+		// </remarks>
+		internal CommandResult SendSyncCommand (Command command)
+		{
+			if (Thread.CurrentThread == inferior_thread) {
+				try {
+					return command.Process.ProcessCommand (command);
+				} catch (ThreadAbortException) {
+					;
+				} catch (Exception e) {
+					return new CommandResult (e);
+				}
+			}
+
+			if (!AcquireCommandMutex (null))
+				return CommandResult.Busy;
+
+			lock (this) {
+				current_command = command;
+				mono_debugger_server_abort_wait ();
+				completed_event.Reset ();
+				sync_command_running = true;
+			}
+
+			completed_event.WaitOne ();
+
+			CommandResult result;
+			lock (this) {
+				result = command_result;
+				command_result = null;
+				current_command = null;
+			}
+
+			command_mutex.ReleaseMutex ();
+			if (result != null)
+				return result;
+			else
+				return new CommandResult (CommandResultType.UnknownError, null);
+		}
+
+		// <summary>
+		//   Sends an asynchronous command to the background thread.  This is used
+		//   for all stepping commands, no matter whether the user requested a
+		//   synchronous or asynchronous operation.
+		// </summary>
+		// <remarks>
+		//   You must own the 'command_mutex' before calling this method and you must
+		//   make sure you aren't currently running any async commands.
+		// </remarks>
+		internal void SendAsyncCommand (Command command)
+		{
+			lock (this) {
+				current_command = command;
+				mono_debugger_server_abort_wait ();
+			}
+		}
+
+		// <summary>
+		//   The heart of the SingleSteppingEngine.  This runs in a background
+		//   thread and processes stepping commands and events.
+		//
+		//   For each application we're debugging, there is just one SingleSteppingEngine,
+		//   no matter how many threads the application has.  The engine is using one single
+		//   event loop which is processing commands from the user and events from all of
+		//   the application's threads.
+		// </summary>
+		void engine_thread_main ()
+		{
+			Report.Debug (DebugFlags.Wait, "SSE waiting");
+
+			//
+			// Wait until we got an event from the target or a command from the user.
+			//
+
+			int pid;
+			int aborted;
+			long status;
+			pid = mono_debugger_server_global_wait (out status, out aborted);
+
+			//
+			// Note: `pid' is basically just an unique number which identifies the
+			//       SingleSteppingEngine of this event.
+			//
+
+			if (pid > 0) {
+				Report.Debug (DebugFlags.Wait,
+					      "SSE received event: {0} {1:x}", pid, status);
+
+				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
+				if (event_engine == null)
+					throw new InternalError ("Got event {0:x} for unknown pid {1}",
+								 status, pid);
+
+				try {
+					event_engine.ProcessEvent (status);
+				} catch (ThreadAbortException) {
+					;
+				} catch (Exception e) {
+					Console.WriteLine ("EXCEPTION: {0}", e);
+				}
+
+				if (!engine_is_ready) {
+					engine_is_ready = true;
+					start_event.Set ();
+				}
+			}
+
+			//
+			// We caught a SIGINT.
+			//
+
+			if (aborted > 0) {
+				Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT: {0} {1}",
+					      command_engine, sync_command_running);
+
+				lock (this) {
+					if (sync_command_running) {
+						command_result = CommandResult.Interrupted;
+						current_command = null;
+						sync_command_running = false;
+						completed_event.Set ();
+						return;
+					}
+
+					if (command_engine != null)
+						command_engine.Interrupt ();
+				}
+				return;
+			}
+
+			if (abort_requested) {
+				Report.Debug (DebugFlags.Wait, "Abort requested");
+				return;
+			}
+
+			Command command;
+			lock (this) {
+				command = current_command;
+				current_command = null;
+
+				if (command == null)
+					return;
+			}
+
+			if (command == null)
+				return;
+
+			Report.Debug (DebugFlags.EventLoop, "SSE received command: {0}", command);
+
+			// These are synchronous commands; ie. the caller blocks on us
+			// until we finished the command and sent the result.
+			if (command.Type != CommandType.Operation) {
+				CommandResult result;
+				try {
+					result = command.Process.ProcessCommand (command);
+				} catch (ThreadAbortException) {
+					;
+					return;
+				} catch (Exception e) {
+					result = new CommandResult (e);
+				}
+
+				lock (this) {
+					command_result = result;
+					current_command = null;
+					sync_command_running = false;
+					completed_event.Set ();
+				}
+			} else {
+				try {
+					command.Process.ProcessCommand (command.Operation);
+				} catch (ThreadAbortException) {
+					return;
+				} catch (Exception e) {
+					Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
+				}
+			}
+		}
 
 		//
 		// IDisposable
 		//
+
+		protected virtual void DoDispose ()
+		{
+			if (inferior_thread != null) {
+				lock (this) {
+					abort_requested = true;
+					mono_debugger_server_abort_wait ();
+				}
+				inferior_thread.Join ();
+			}
+
+			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
+			thread_hash.Values.CopyTo (threads, 0);
+			for (int i = 0; i < threads.Length; i++)
+				threads [i].Dispose ();
+		}
 
 		private bool disposed = false;
 
@@ -192,8 +586,6 @@ namespace Mono.Debugger
 			if (disposed)
 				throw new ObjectDisposedException ("ThreadManager");
 		}
-
-		protected abstract void DoDispose ();
 
 		protected virtual void Dispose (bool disposing)
 		{
@@ -223,76 +615,8 @@ namespace Mono.Debugger
 			Dispose (false);
 		}
 
-#if FIXME
-		protected class NativeProcess : Process
-		{
-			ThreadManager thread_manager;
-			protected readonly Inferior inferior;
-
-			public NativeProcess (Inferior inferior)
-				: base (inferior)
-			{
-				this.inferior = inferior;
-			}
-
-			internal override void RunInferior ()
-			{
-				inferior.Run (false);
-
-				return;
-
-				TargetAddress main = inferior.MainMethodAddress;
-				Report.Debug (DebugFlags.Threads, "Main address is {0}", main);
-				inferior.Continue (main);
-
-				inferior.UpdateModules ();
-
-				// thread_manager.Initialize (inferior);
-			}
+		public AddressDomain AddressDomain {
+			get { return address_domain; }
 		}
-
-		protected class NativeThread : Process
-		{
-			protected readonly Inferior inferior;
-			protected readonly int tid;
-
-			public NativeThread (Inferior inferior, int tid)
-				: base (inferior)
-			{
-				this.inferior = inferior;
-				this.tid = tid;
-			}
-
-			internal override void RunInferior ()
-			{
-				inferior.Attach (tid);
-			}
-		}
-
-		protected class DaemonThread : Process
-		{
-			protected readonly Inferior inferior;
-			protected readonly DaemonThreadRunner runner;
-			protected readonly DaemonThreadHandler handler;
-			protected readonly int tid;
-
-			public DaemonThread (Inferior inferior, int tid,
-					     DaemonThreadHandler handler)
-				: base (inferior)
-			{
-				this.inferior = inferior;
-				this.handler = handler;
-				this.tid = tid;
-				
-				runner = new DaemonThreadRunner (this, inferior, tid, sse, handler);
-				SetDaemonThreadRunner (runner);
-			}
-
-			internal override void RunInferior ()
-			{
-				inferior.Attach (tid);
-			}
-		}
-#endif
 	}
 }

@@ -78,7 +78,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract Process Process {
+		public abstract object Process {
 			get;
 		}
 

@@ -6,6 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
+#if FIXME
 	public abstract class CoreFile : ITargetMemoryAccess
 	{
 		protected Bfd bfd;
@@ -508,4 +509,5 @@ namespace Mono.Debugger.Architecture
 			Dispose (false);
 		}
 	}
+#endif
 }

@@ -1172,9 +1172,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			foreach (ThreadGroup group in ThreadGroup.ThreadGroups) {
 				StringBuilder ids = new StringBuilder ();
-				foreach (Process thread in group.Threads) {
+				foreach (int thread in group.Threads) {
 					ids.Append (" @");
-					ids.Append (thread.ID);
+					ids.Append (thread);
 				}
 				Print ("{0}:{1}", group.Name, ids.ToString ());
 			}
@@ -1206,7 +1206,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ThreadGroup group = GetThreadGroup (name, true);
 
 			foreach (ProcessHandle process in threads)
-				group.AddThread (process.Process);
+				group.AddThread (process.Process.ID);
 		}
 
 		public void RemoveFromThreadGroup (string name, ProcessHandle[] threads)
@@ -1214,7 +1214,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ThreadGroup group = GetThreadGroup (name, true);
 	
 			foreach (ProcessHandle process in threads)
-				group.RemoveThread (process.Process);
+				group.RemoveThread (process.Process.ID);
 		}
 
 		public int InsertBreakpoint (ThreadGroup group, SourceLocation location)

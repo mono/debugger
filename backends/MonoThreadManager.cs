@@ -52,12 +52,12 @@ namespace Mono.Debugger.Backends
 		TargetAddress thread_manager_notify_command = TargetAddress.Null;
 		TargetAddress thread_manager_notify_tid = TargetAddress.Null;
 
-		public TargetAddress Initialize (NativeProcess process, Inferior inferior)
+		public TargetAddress Initialize (SingleSteppingEngine sse, Inferior inferior)
 		{
 			main_function = inferior.ReadGlobalAddress (info + 4);
 
-			manager_process = process;
-			new DaemonThreadRunner (process, this.inferior,
+			manager_sse = sse;
+			new DaemonThreadRunner (sse, this.inferior,
 						new DaemonThreadHandler (main_handler));
 
 			return main_function;
@@ -86,24 +86,24 @@ namespace Mono.Debugger.Backends
 		int command_tid;
 		int debugger_tid;
 		int main_tid;
-		NativeProcess manager_process;
-		NativeProcess command_process;
-		NativeProcess debugger_process;
-		NativeProcess main_process;
+		SingleSteppingEngine manager_sse;
+		SingleSteppingEngine command_sse;
+		SingleSteppingEngine debugger_sse;
+		SingleSteppingEngine main_sse;
 		DaemonThreadHandler debugger_handler;
 		bool initialized;
 
 		bool is_nptl;
 		int first_index;
 
-		public bool ThreadCreated (NativeProcess process, Inferior inferior,
+		public bool ThreadCreated (SingleSteppingEngine sse, Inferior inferior,
 					   Inferior caller_inferior)
 		{
-			ThreadData tdata = new ThreadData (process, inferior.TID, inferior.PID);
+			ThreadData tdata = new ThreadData (sse, inferior.TID, inferior.PID);
 			thread_hash.Add (inferior.TID, tdata);
 
 			if (thread_hash.Count == 1) {
-				process.SetDaemonFlag ();
+				sse.IsDaemon = true;
 				return false;
 			}
 
@@ -113,40 +113,40 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (thread_hash.Count == first_index) {
-				command_process = process;
-				command_process.SetDaemonFlag ();
+				command_sse = sse;
+				command_sse.IsDaemon = true;
 				Report.Debug (DebugFlags.Threads,
-					      "Created managed command process: {0}",
-					      process);
-				process.DaemonEventHandler = new DaemonEventHandler (command_handler);
+					      "Created managed command sse: {0}",
+					      sse);
+				sse.DaemonEventHandler = new DaemonEventHandler (command_handler);
 				return false;
 			} else if (thread_hash.Count == first_index+1) {
-				debugger_process = process;
-				debugger_process.SetDaemonFlag ();
+				debugger_sse = sse;
+				debugger_sse.IsDaemon = true;
 				Report.Debug (DebugFlags.Threads,
-					      "Created managed debugger process: {0}",
-					      process);
-				debugger_handler = thread_manager.DebuggerBackend.CreateDebuggerHandler (command_process);
-				new DaemonThreadRunner (process, inferior, debugger_handler);
+					      "Created managed debugger sse: {0}",
+					      sse);
+				debugger_handler = thread_manager.DebuggerBackend.CreateDebuggerHandler (command_sse.Process);
+				new DaemonThreadRunner (sse, inferior, debugger_handler);
 				return false;
 			} else if (thread_hash.Count == first_index+2) {
 				Report.Debug (DebugFlags.Threads,
-					      "Created managed main process: {0}",
-					      process);
-				main_process = process;
+					      "Created managed main sse: {0}",
+					      sse);
+				main_sse = sse;
 				return true;
 			} else if (thread_hash.Count > first_index+2) {
 				Report.Debug (DebugFlags.Threads,
-					      "Created managed thread: {0}", process);
-				process.DaemonEventHandler = new DaemonEventHandler (managed_handler);
+					      "Created managed thread: {0}", sse);
+				sse.DaemonEventHandler = new DaemonEventHandler (managed_handler);
 				return false;
 			} else {
-				process.SetDaemonFlag ();
+				sse.IsDaemon = true;
 				return false;
 			}
 		}
 
-		bool command_handler (NativeProcess process, Inferior inferior,
+		bool command_handler (SingleSteppingEngine sse, Inferior inferior,
 				      TargetEventArgs args)
 		{
 			Console.WriteLine ("COMMAND HANDLER: {0}", args);
@@ -154,7 +154,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool managed_handler (NativeProcess process, Inferior inferior,
+		bool managed_handler (SingleSteppingEngine sse, Inferior inferior,
 				      TargetEventArgs args)
 		{
 			if ((args.Type != TargetEventType.TargetStopped) ||
@@ -173,13 +173,13 @@ namespace Mono.Debugger.Backends
 			ThreadData thread = (ThreadData) thread_hash [tid];
 
 			Console.WriteLine ("MONO THREAD MANAGER #1: {0:x} {1} {2}",
-					   tid, until, process);
+					   tid, until, sse);
 
-			if ((thread == null) || (thread.Process != process))
+			if ((thread == null) || (thread.Engine != sse))
 				throw new InternalError ();
 
-			process.Start (until, false);
-			process.DaemonEventHandler = null;
+			sse.Start (until, false);
+			sse.DaemonEventHandler = null;
 			return true;
 		}
 
@@ -205,25 +205,25 @@ namespace Mono.Debugger.Backends
 			public readonly int TID;
 			public readonly int PID;
 			public readonly bool IsManaged;
-			public readonly Process Process;
+			public readonly SingleSteppingEngine Engine;
 			public readonly TargetAddress StartStack;
 			public readonly TargetAddress Data;
 
-			public ThreadData (Process process, int tid, int pid,
+			public ThreadData (SingleSteppingEngine sse, int tid, int pid,
 					   TargetAddress start_stack, TargetAddress data)
 			{
 				this.IsManaged = true;
-				this.Process = process;
+				this.Engine = sse;
 				this.TID = tid;
 				this.PID = pid;
 				this.StartStack = start_stack;
 				this.Data = data;
 			}
 
-			public ThreadData (Process process, int pid, int tid)
+			public ThreadData (SingleSteppingEngine sse, int pid, int tid)
 			{
 				this.IsManaged = false;
-				this.Process = process;
+				this.Engine = sse;
 				this.TID = tid;
 				this.PID = pid;
 				this.StartStack = TargetAddress.Null;

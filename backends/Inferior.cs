@@ -45,8 +45,6 @@ namespace Mono.Debugger.Backends
 		Hashtable pending_callbacks = new Hashtable ();
 		long last_callback_id = 0;
 
-		SingleSteppingEngine sse = null;
-
 		public bool HasTarget {
 			get {
 				return initialized;
@@ -64,16 +62,6 @@ namespace Mono.Debugger.Backends
 			get {
 				check_disposed ();
 				return tid;
-			}
-		}
-
-		public SingleSteppingEngine SingleSteppingEngine {
-			get {
-				return sse;
-			}
-
-			set {
-				sse = value;
 			}
 		}
 

@@ -6,6 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
+#if FIXME
 	internal class CoreFileElfI386 : CoreFile
 	{
 		[DllImport("libmonodebuggerbfdglue")]
@@ -95,4 +96,5 @@ namespace Mono.Debugger.Architecture
 			return retval;
 		}
 	}
+#endif
 }

@@ -10,12 +10,15 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate bool DaemonThreadHandler (DaemonThreadRunner sender, TargetAddress address, int signal);
 
+	internal delegate bool DaemonEventHandler (SingleSteppingEngine engine, Inferior inferior,
+						   TargetEventArgs args);
+
 	// <summary>
 	//   This is a minimalistic SingleSteppingEngine for undebuggable daemon threads.
 	// </summary>
 	internal class DaemonThreadRunner : IDisposable
 	{
-		internal DaemonThreadRunner (NativeProcess process, Inferior inferior,
+		internal DaemonThreadRunner (SingleSteppingEngine process, Inferior inferior,
 					     DaemonThreadHandler handler)
 		{
 			this.process = process;
@@ -24,14 +27,13 @@ namespace Mono.Debugger.Backends
 			this.daemon_thread_handler = handler;
 
 			process.DaemonEventHandler = new DaemonEventHandler (daemon_event);
-			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
-			process.SetDaemonFlag ();
+			process.Process.TargetExitedEvent += new TargetExitedHandler (target_exited);
+			process.IsDaemon = true;
 		}
 
 		public void Run ()
 		{
-			// process.Run ();
-			process.Continue (true, false);
+			process.Process.Continue (true, false);
 		}
 
 		void target_exited ()
@@ -40,7 +42,7 @@ namespace Mono.Debugger.Backends
 				TargetExited ();
 		}
 
-		bool daemon_event (NativeProcess process, Inferior inferior,
+		bool daemon_event (SingleSteppingEngine process, Inferior inferior,
 				   TargetEventArgs args)
 		{
 			if (inferior != this.inferior)
@@ -86,7 +88,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public Process Process {
-			get { return process; }
+			get { return process.Process; }
 		}
 
 		internal Inferior Inferior {
@@ -96,7 +98,7 @@ namespace Mono.Debugger.Backends
 		public event TargetExitedHandler TargetExited;
 
 		Inferior inferior;
-		Process process;
+		SingleSteppingEngine process;
 		DaemonThreadHandler daemon_thread_handler;
 		ProcessStart start;
 		bool is_main_thread;
@@ -147,7 +149,7 @@ namespace Mono.Debugger.Backends
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
 				if (process != null) {
-					process.Kill ();
+					process.Process.Kill ();
 					process = null;
 				}
 			}

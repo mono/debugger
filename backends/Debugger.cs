@@ -58,7 +58,7 @@ namespace Mono.Debugger
 			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
 
-			thread_manager = new SingleSteppingEngine (this);
+			thread_manager = new ThreadManager (this);
 		}
 
 		public ModuleManager ModuleManager {
@@ -128,7 +128,7 @@ namespace Mono.Debugger
 			process = thread_manager.StartApplication (start);
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 
-			main_group.AddThread (process);
+			main_group.AddThread (process.ID);
 			return process;
 		}
 

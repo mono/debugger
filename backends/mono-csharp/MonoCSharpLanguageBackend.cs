@@ -610,7 +610,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (mtype != null)
 					return mtype;
 
-				return LookupType (frame.Process, type, name);
+				return LookupType ((Process) frame.Process, type, name);
 			}
 
 			return null;
@@ -1830,13 +1830,7 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
 					       object user_data)
 		{
-			process.AcquireThreadLock ();
-			long retval;
-			try {
-				retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
-			} finally {
-				process.ReleaseThreadLock ();
-			}
+			long retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
 
 			int index = (int) retval;
 
