@@ -1,5 +1,11 @@
 2004-12-14  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs (Command.Complete): add parameter completion
+	here - for instance, you type "command -<tab><tab>" and it'll list
+	"command"'s possible arguments.
+
+2004-12-14  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Completer.cs (Completer.CommandCompleter): this isn't
 	*really* the right spot for it, but we need to insert the prefix
 	of all matches as the first element in the matches array, so that

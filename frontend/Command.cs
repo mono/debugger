@@ -80,7 +80,46 @@ namespace Mono.Debugger.Frontend
 
 		/* override this to provide command specific completion */
                 public virtual void Complete (Engine e, string text, int start, int end) {
-                        GnuReadLine.Instance().SetCompletionMatches (null);
+			if (text.StartsWith ("-")) {
+				/* do our super cool argument completion on the command's
+				 * properties, if there are any.
+				 */
+				Type t = GetType();
+				ArrayList matched_args = new ArrayList();
+				PropertyInfo [] pi = t.GetProperties ();
+
+				foreach (PropertyInfo p in pi) {
+					if (!p.CanWrite)
+						continue;
+					if (text == "-" ||
+					    p.Name.ToLower().StartsWith (text.Substring (1))) {
+						matched_args.Add ("-" + p.Name.ToLower());
+					}
+				}
+
+				string[] match_strings = null;
+
+				if (matched_args.Count > 0) {
+					if (matched_args.Count > 1) {
+						/* always add the prefix at
+						 * the beginning when we have
+						 * > 1 matches, so that
+						 * readline will display the
+						 * matches. */
+						matched_args.Insert (0, text);
+					}
+
+					match_strings = new string [matched_args.Count + 1];
+					matched_args.CopyTo (match_strings);
+					match_strings [matched_args.Count] = null;
+				}
+
+				GnuReadLine.Instance().SetCompletionMatches (match_strings);
+			}
+			else {
+				/* otherwise punt */
+				GnuReadLine.Instance().SetCompletionMatches (null);
+			}
                 }
 	}
 
