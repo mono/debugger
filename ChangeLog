@@ -1,5 +1,9 @@
 2002-12-25  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/ProcessManager.cs: Added thread manager GUI.
+
+2002-12-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerTextWriter.cs: New abstract base class.
 
 	* frontends/scripting/ScriptingContext.cs: Use two

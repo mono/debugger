@@ -16,15 +16,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ScriptingContext context;
 		Process process;
 
-		static int next_id = 0;
-		int pid, id;
+		int id, pid;
 
 		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
 		{
 			this.context = context;
 			this.backend = backend;
 			this.process = process;
-			this.id = ++next_id;
+			this.id = process.ID;
 
 			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);

@@ -26,12 +26,16 @@ namespace Mono.Debugger
 		SingleSteppingEngine sse;
 		CoreFile core;
 		IInferior inferior;
+		int id;
+
+		static int next_id = 0;
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
 		{
 			this.backend = backend;
 			this.start = start;
 			this.bfd_container = bfd_container;
+			this.id = ++next_id;
 
 			inferior = new PTraceInferior (backend, start, bfd_container,
 						       backend.ThreadManager.BreakpointManager,
@@ -113,6 +117,12 @@ namespace Mono.Debugger
 		//
 		// ITargetNotification
 		//
+
+		public int ID {
+			get {
+				return id;
+			}
+		}
 
 		public TargetState State {
 			get {

@@ -85,6 +85,7 @@ namespace Mono.Debugger.GUI
 		VariableDisplay variable_display;
 		BackTraceView backtrace_view;
 		ModuleDisplay module_display;
+		ProcessManager process_manager;
 		HexEditor hex_editor;
 		MemoryMapsDisplay memory_maps_display;
 		BreakpointManager breakpoint_manager;
@@ -167,6 +168,8 @@ namespace Mono.Debugger.GUI
 				this, null, (Gtk.Container) gxml ["backtrace-view"]);
 			module_display = new ModuleDisplay (
 				this, null, (Gtk.Container) gxml ["module-view"]);
+			process_manager = new ProcessManager (
+				this, null, (Gtk.Container) gxml ["process-manager"]);
 			hex_editor_dialog = (Gtk.Dialog) gxml ["hexeditor-dialog"];
 			hex_editor = new HexEditor (
 				this, hex_editor_dialog, (Gtk.Container) gxml ["hexeditor-view"]);
@@ -308,6 +311,7 @@ namespace Mono.Debugger.GUI
 			disassembler_view.SetProcess (process);
 			module_display.SetProcess (process);
 			memory_maps_display.SetProcess (process);
+			process_manager.SetProcess (process);
 		}
 
 		void UpdateGUIState (TargetState state)

@@ -69,6 +69,8 @@ namespace Mono.Debugger
 
 			Console.WriteLine ("Initialized thread manager.");
 
+			OnInitializedEvent (main_process);
+
 			return true;
 		}
 
@@ -84,8 +86,15 @@ namespace Mono.Debugger
 			get { return breakpoint_manager; }
 		}
 
+		public event ThreadEventHandler InitializedEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
+
+		protected virtual void OnInitializedEvent (Process new_process)
+		{
+			if (InitializedEvent != null)
+				InitializedEvent (this, new_process);
+		}
 
 		protected virtual void OnThreadCreatedEvent (Process new_process)
 		{
