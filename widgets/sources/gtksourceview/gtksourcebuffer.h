@@ -139,7 +139,7 @@ gint             gtk_source_buffer_line_has_markers    (GtkSourceBuffer *buffer,
 gint             gtk_source_buffer_line_remove_markers (GtkSourceBuffer *buffer,
 							gint             line);
 GList           *gtk_source_buffer_get_all_markers     (GtkSourceBuffer *buffer);
-gint             gtk_source_view_remove_all_markers    (GtkSourceBuffer *buffer,
+gint             gtk_source_buffer_remove_all_markers  (GtkSourceBuffer *buffer,
 							gint             line_start,
 							gint             line_end);
 
