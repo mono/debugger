@@ -1,5 +1,10 @@
 2004-03-02  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Bumped version number to 0.6.  This is not a
+	release, but 0.5 was the old Clemson release.
+
+2004-03-02  Martin Baulig  <martin@ximian.com>
+
 	* classes/SimpleBreakpoint.cs: Added simpler .ctor.
 
 2004-01-16  Martin Baulig  <martin@ximian.com>
