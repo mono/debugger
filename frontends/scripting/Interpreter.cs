@@ -100,9 +100,13 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			context = new ScriptingContext (this, is_interactive, true);
 
-			start = ProcessStart.Create (options);
-			if (start != null)
-				Initialize ();
+			try {
+				start = ProcessStart.Create (options);
+				if (start != null)
+					Initialize ();
+			} catch (TargetException e) {
+				Error (e);
+			}
 
 			if (!HasBackend)
 				return;

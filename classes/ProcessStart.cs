@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
+using C = Mono.CompilerServices.SymbolWriter;
 using Mono.GetOptions;
 
 namespace Mono.Debugger
@@ -95,6 +96,12 @@ namespace Mono.Debugger
 			}
 
 			if (application != null) {
+				string error = C.MonoDebuggerSupport.CheckRuntimeVersion (argv [0]);
+				if (error != null)
+					throw new TargetException (
+						TargetError.CannotStartTarget, "Cannot start target: {0}",
+						error);
+
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 

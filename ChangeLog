@@ -1,3 +1,9 @@
+2004-09-21  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs (ProcessStart..ctor): If we're debugging
+	a managed application, check whether it has the correct runtime
+	version.	
+
 2004-09-07  Martin Baulig  <martin@ximian.com>
 
 	* arch/BfdDisassembler.cs: Store the delegates in a class field
