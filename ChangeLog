@@ -1,5 +1,11 @@
 2004-06-18  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Expression.cs (CastExpression): New
+	expression.  Currently only works from a class type to one of its
+	parent classes.
+
+2004-06-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoClass.cs: If we have a parent class,
 	correctly index our fields, properties and methods so we can
 	distinguish members from our parent class.

@@ -132,9 +132,13 @@ expression
 	  {
 		$$ = new InvocationExpression ((Expression) $1, ((Expression []) $3));
 	  }
-	| NEW expression OPEN_PARENS argument_list CLOSE_PARENS
+	| NEW variable_or_type_name OPEN_PARENS argument_list CLOSE_PARENS
 	  {
 		$$ = new NewExpression ((Expression) $2, ((Expression []) $4));
+	  }
+	| OPEN_PARENS variable_or_type_name CLOSE_PARENS expression
+	  {
+		$$ = new CastExpression ((Expression) $2, (Expression) $4);
 	  }
 	| PARENT OPEN_PARENS expression CLOSE_PARENS
 	  {

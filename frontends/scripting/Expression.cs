@@ -1292,6 +1292,103 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class CastExpression : Expression
+	{
+		Expression target, expr;
+		string name;
+
+		public CastExpression (Expression target, Expression expr)
+		{
+			this.target = target;
+			this.expr = expr;
+			this.name = String.Format ("({0}) {1}", target, expr);
+		}
+
+		public override string Name {
+			get {
+				return name;
+			}
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			target = target.ResolveType (context);
+			if (target == null)
+				return null;
+
+			expr = expr.Resolve (context);
+			if (expr == null)
+				return null;
+
+			resolved = true;
+			return this;
+		}
+
+		static ITargetClassObject TryParentCast (ScriptingContext context,
+							 ITargetClassObject source,
+							 ITargetClassType source_type,
+							 ITargetClassType target_type)
+		{
+			if (source_type == target_type)
+				return source;
+
+			if (!source_type.HasParent)
+				return null;
+
+			source = TryParentCast (
+				context, source, source_type.ParentType, target_type);
+			if (source == null)
+				return null;
+
+			return source.Parent;
+		}
+
+		static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
+					      ITargetClassType target_type)
+		{
+			if (source.Type == target_type)
+				return source;
+
+			ITargetClassObject sobj = source as ITargetClassObject;
+			if (sobj == null)
+				return null;
+
+			return TryParentCast (context, sobj, sobj.Type, target_type);
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			ITargetClassType type = target.EvaluateType (context)
+				as ITargetClassType;
+			if (type == null)
+				throw new ScriptingException (
+					"Variable {0} is not a class type.", target.Name);
+
+			ITargetClassObject source = expr.EvaluateVariable (context)
+				as ITargetClassObject;
+			if (source == null)
+				throw new ScriptingException (
+					"Variable {0} is not a class type.", expr.Name);
+
+			ITargetObject obj = TryCast (context, source, type);
+			if (obj == null)
+				throw new ScriptingException (
+					"Cannot cast from {0} to {1}.", source.Type.Name,
+					type.Name);
+
+			return obj;
+		}
+
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
+		{
+			ITargetObject obj = EvaluateVariable (context);
+			if (obj == null)
+				return null;
+
+			return obj.Type;
+		}
+	}
+
 	public class InvocationExpression : Expression
 	{
 		Expression method_expr;
