@@ -19,8 +19,8 @@ volatile gpointer MONO_DEBUGGER__thread_manager_notification = NULL;
 volatile int MONO_DEBUGGER__thread_manager = 0;
 volatile int MONO_DEBUGGER__thread_manager_last_pid = 0;
 volatile gpointer MONO_DEBUGGER__thread_manager_last_func = NULL;
-volatile MonoThread *MONO_DEBUGGER__thread_manager_last_thread = NULL;
-static MonoThread *last_thread = NULL;
+volatile guint32 MONO_DEBUGGER__thread_manager_last_thread = 0;
+static guint32 last_thread = 0;
 
 /*
  * NOTE: We must not call any functions here which we ever may want to debug !
@@ -30,7 +30,7 @@ thread_manager_func (gpointer dummy)
 {
 	int last_stack = 0;
 
-	mono_new_thread_init (NULL, &last_stack, NULL);
+	mono_new_thread_init (0, &last_stack, NULL);
 	MONO_DEBUGGER__thread_manager = getpid ();
 
 	/*
@@ -100,7 +100,7 @@ mono_debugger_thread_manager_init (void)
 }
 
 static void
-signal_thread_manager (MonoThread *thread, int pid, gpointer func)
+signal_thread_manager (guint32 thread, int pid, gpointer func)
 {
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
 	MONO_DEBUGGER__thread_manager_last_pid = pid;
@@ -112,11 +112,11 @@ signal_thread_manager (MonoThread *thread, int pid, gpointer func)
 	mono_debugger_wait_cond (thread_manager_finished_cond);
 	MONO_DEBUGGER__thread_manager_last_pid = 0;
 	MONO_DEBUGGER__thread_manager_last_func = NULL;
-	MONO_DEBUGGER__thread_manager_last_thread = NULL;
+	MONO_DEBUGGER__thread_manager_last_thread = 0;
 }
 
 void
-mono_debugger_thread_manager_add_thread (MonoThread *thread, int pid, gpointer func)
+mono_debugger_thread_manager_add_thread (guint32 thread, int pid, gpointer func)
 {
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 	g_assert (!last_thread || (last_thread == thread));
@@ -130,18 +130,18 @@ mono_debugger_thread_manager_add_thread (MonoThread *thread, int pid, gpointer f
 }
 
 void
-mono_debugger_thread_manager_start_resume (MonoThread *thread)
+mono_debugger_thread_manager_start_resume (guint32 thread)
 {
 	IO_LAYER (EnterCriticalSection) (&thread_manager_start_mutex);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
-	g_assert (last_thread == NULL);
+	g_assert (last_thread == 0);
 	last_thread = thread;
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
 }
 
 void
-mono_debugger_thread_manager_end_resume (MonoThread *thread)
+mono_debugger_thread_manager_end_resume (guint32 thread)
 {
 	mono_debugger_wait_cond (thread_manager_thread_started_cond);
 

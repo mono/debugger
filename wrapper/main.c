@@ -120,7 +120,7 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 		break;
 
 	case MONO_DEBUGGER_EVENT_THREAD_CREATED:
-		mono_debugger_thread_manager_add_thread (data, getpid (), data2);
+		mono_debugger_thread_manager_add_thread ((guint32) data, getpid (), data2);
 		break;
 
 	default:
@@ -142,7 +142,7 @@ debugger_thread_func (gpointer dummy)
 {
 	int last_generation = 0;
 
-	mono_new_thread_init (NULL, &last_generation, NULL);
+	mono_new_thread_init (0, &last_generation, NULL);
 	MONO_DEBUGGER__background_thread = getpid ();
 
 	/*

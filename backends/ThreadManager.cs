@@ -194,7 +194,7 @@ namespace Mono.Debugger
 			return true;
 		}
 
-		TargetAddress last_thread = TargetAddress.Null;
+		int last_thread = 0;
 		SingleSteppingEngine last_sse = null;
 
 		void thread_started (StackFrame frame, int index, object user_data)
@@ -209,7 +209,7 @@ namespace Mono.Debugger
 
 			int pid = runner.Inferior.ReadInteger (thread_manager_last_pid);
 			TargetAddress func = runner.Inferior.ReadAddress (thread_manager_last_func);
-			TargetAddress thread = runner.Inferior.ReadAddress (thread_manager_last_thread);
+			int thread = runner.Inferior.ReadInteger (thread_manager_last_thread);
 
 			if (pid == -1) {
 				if (thread != last_thread)
