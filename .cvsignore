@@ -12,3 +12,5 @@ stamp*
 core
 thecore
 mono-debugger-*.tar.gz
+diff*
+log*
