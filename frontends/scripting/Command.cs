@@ -145,7 +145,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			context.Step (process, which);
+			process.Step (which);
 		}
 	}
 

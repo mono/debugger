@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (iframe == null)
 				throw new InternalError ();
 
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (SetInvalid);
+			// backend.FramesInvalidEvent += new StackFrameInvalidHandler (SetInvalid);
 		}
 
 		protected MonoTargetLocation (MonoTargetLocation relative_to, TargetAddress address,

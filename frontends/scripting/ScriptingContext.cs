@@ -19,11 +19,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 		static int next_id = 0;
 		int id;
 
-		public ProcessHandle (ScriptingContext context, DebuggerBackend backend)
+		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
 		{
 			this.context = context;
 			this.backend = backend;
+			this.process = process;
 			this.id = ++next_id;
+
+			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+			process.StateChanged += new StateChangedHandler (state_changed);
+			process.TargetOutput += new TargetOutputHandler (inferior_output);
+			process.TargetError += new TargetOutputHandler (inferior_error);
+			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
+
+			if (process.State == TargetState.RUNNING) {
+				running = true;
+				wait_until_stopped ();
+			}
 		}
 
 		int current_frame_idx = -1;
@@ -91,24 +105,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Step (WhichStepCommand which)
 		{
-			if (which == WhichStepCommand.Run) {
-				if (process != null)
-					throw new ScriptingException ("Process @{0} already running.", id);
-			} else {
-				if (process == null)
-					throw new ScriptingException ("Process @{0} not running.", id);
-				else if (!process.CanRun)
-					throw new ScriptingException ("Process @{0} cannot be executed.", id);
-				else if (!process.IsStopped)
-					throw new ScriptingException ("Process @{0} is not stopped.", id);
-			}
+			if (process == null)
+				throw new ScriptingException ("Process @{0} not running.", id);
+			else if (!process.CanRun)
+				throw new ScriptingException ("Process @{0} cannot be executed.", id);
+			else if (!process.IsStopped)
+				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
 			running = true;
 
 			switch (which) {
-			case WhichStepCommand.Run:
-				Run ();
-				break;
 			case WhichStepCommand.Continue:
 				process.Continue ();
 				break;
@@ -128,11 +134,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new Exception ();
 			}
 
+			wait_until_stopped ();
+		}
+
+		void wait_until_stopped ()
+		{
 			while (g_main_context_iteration (IntPtr.Zero, false))
 				;
 
 			while (running)
 				g_main_context_iteration (IntPtr.Zero, true);
+
+			while (g_main_context_iteration (IntPtr.Zero, false))
+				;
 		}
 
 		public int ID {
@@ -165,7 +179,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return current_backtrace;
 
 			if (current_frame != null)
-				current_backtrace = backend.GetBacktrace ();
+				current_backtrace = process.GetBacktrace ();
 
 			if (current_backtrace == null)
 				throw new ScriptingException ("No stack.");
@@ -181,30 +195,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public StackFrame GetFrame (int number)
 		{
-			if (backend.State == TargetState.NO_TARGET)
+			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
 
-			if (number == -1)
+			if (number == -1) {
+				if (current_frame == null)
+					current_frame = process.CurrentFrame;
+
 				return current_frame;
+			}
 
 			GetBacktrace ();
 			if (number >= current_backtrace.Length)
 				throw new ScriptingException ("No such frame: {0}", number);
 
 			return current_backtrace [number];
-		}
-
-		public void Run ()
-		{
-			process = backend.Run ();
-
-			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
-			process.StateChanged += new StateChangedHandler (state_changed);
-			process.TargetOutput += new TargetOutputHandler (inferior_output);
-			process.TargetError += new TargetOutputHandler (inferior_error);
-			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
-			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 		}
 
 		public TargetState State {
@@ -231,7 +236,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public enum WhichStepCommand
 	{
-		Run,
 		Continue,
 		Step,
 		Next,
@@ -248,11 +252,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			procs = new ArrayList ();
 			current_process = null;
-		}
-
-		public void Step (ProcessHandle process, WhichStepCommand which)
-		{
-			process.Step (which);
 		}
 
 		public ProcessHandle[] Processes {
@@ -310,26 +309,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("No program specified.");
 
 			DebuggerBackend backend = new DebuggerBackend ();
-			current_process = new ProcessHandle (this, backend);
-			procs.Add (current_process);
+
+			ProcessStart start;
+			Process process;
 
 			if (args [0] == "core") {
-				string [] program_args = new string [args.Length-2];
-				if (args.Length > 2)
-					Array.Copy (args, 2, program_args, 0, args.Length-2);
-
-				backend.CommandLineArguments = program_args;
-				backend.TargetApplication = args [1];
-				backend.ReadCoreFile ("thecore");
-			} else{
-				string [] program_args = new string [args.Length-1];
+				string [] temp_args = new string [args.Length-1];
 				if (args.Length > 1)
-					Array.Copy (args, 1, program_args, 0, args.Length-1);
+					Array.Copy (args, 1, temp_args, 0, args.Length-1);
+				args = temp_args;
 
-				backend.CommandLineArguments = program_args;
-				backend.TargetApplication = args [0];
-				Step (current_process, WhichStepCommand.Run);
+				start = new ProcessStart (null, args, null);
+				process = backend.ReadCoreFile (start, "thecore");
+			} else{
+				start = new ProcessStart (null, args, null);
+				process = backend.Run (start);
 			}
+
+			current_process = new ProcessHandle (this, backend, process);
+			procs.Add (current_process);
 
 			return current_process;
 		}

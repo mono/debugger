@@ -60,7 +60,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 %token FRAME
 %token START
-%token RUN
 %token SHOW
 %token PROCESS
 %token CONTINUE
@@ -91,11 +90,7 @@ command_loop
 	;
 
 command
-	: RUN opt_process
-	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Run);
-	  }
-	| CONTINUE opt_process
+	: CONTINUE opt_process
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Continue);
 	  }

@@ -1,3 +1,8 @@
+2002-12-11  Martin Baulig  <martin@ximian.com>
+
+	* backends/ProcessStart.cs: New class.  Moved the argv and envp
+	stuff here; this class specifies how to launch an application.
+
 2002-12-10  Martin Baulig  <martin@ximian.com>
 
 	* backends/Debugger.cs (DebuggerBackend.Run): This method

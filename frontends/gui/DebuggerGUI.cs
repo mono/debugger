@@ -242,32 +242,21 @@ namespace Mono.Debugger.GUI
 		//
 		void LoadProgram (string [] args)
 		{
+			ProcessStart start;
 			if (args [0] == "core") {
-				string [] program_args = new string [args.Length-2];
-				if (args.Length > 2)
-					Array.Copy (args, 2, program_args, 0, args.Length-2);
-
-				LoadProgram (args [1], program_args);
-				backend.ReadCoreFile ("thecore");
-			} else{
-				string [] program_args = new string [args.Length-1];
+				string [] temp_args = new string [args.Length-1];
 				if (args.Length > 1)
-					Array.Copy (args, 1, program_args, 0, args.Length-1);
+					Array.Copy (args, 1, temp_args, 0, args.Length-1);
+				args = temp_args;
 
-				LoadProgram (args [0], program_args);
+				start = ProcessStart.Create (null, args, null);
+				backend.ReadCoreFile (start, "thecore");
+			} else {
+				start = ProcessStart.Create (null, args, null);
+				backend.Run (start);
 			}
-		}
 
-		//
-		// This constructor takes the name of the program, and the arguments as a vector
-		// for the program.
-		//
-		void LoadProgram (string program, string [] args)
-		{
-			backend.CommandLineArguments = args;
-			backend.TargetApplication = program;
 			//
-			
 			// FIXME: chdir here to working_dir
 			//
 
@@ -316,10 +305,15 @@ namespace Mono.Debugger.GUI
 
 			if (!program_to_debug.RunDialog (ref program, ref arg_string, ref working_dir))
 				return;
-			
-			string [] argsv = arg_string.Split (new char [] { ' ' });
 
-			LoadProgram (program, argsv);
+			ArrayList list = new ArrayList ();
+			list.Add (program);
+			list.AddRange (arg_string.Split (new char [] { ' ' }));
+
+			string[] argsv = new string [list.Count];
+			list.CopyTo (argsv);
+
+			LoadProgram (argsv);
 		}
 
 		FileSelection fs_window;
@@ -366,9 +360,7 @@ namespace Mono.Debugger.GUI
 
 		void OnRunProgramActivate (object sender, EventArgs args)
 		{
-			if (!backend.HasTarget)
-				backend.Run ();
-			else
+			if (backend.HasTarget)
 				backend.CurrentProcess.Continue ();
 		}
 
@@ -386,7 +378,7 @@ namespace Mono.Debugger.GUI
 		void OnRestartProgramActivate (object sender, EventArgs args)
 		{
 			backend.CurrentProcess.Stop ();
-			backend.Run ();
+			// backend.Run ();
 		}
 
 		void OnStepIntoActivate (object sender, EventArgs args)

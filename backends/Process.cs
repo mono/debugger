@@ -24,17 +24,20 @@ namespace Mono.Debugger
 		CoreFile core;
 		IInferior inferior;
 
-		internal Process (DebuggerBackend backend, SingleSteppingEngine sse, IInferior inferior)
+		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
 		{
 			this.backend = backend;
-			this.sse = sse;
-			this.inferior = inferior;
+
+			inferior = new PTraceInferior (backend, start, bfd_container,
+						       new DebuggerErrorHandler (debugger_error));
 
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
+
+			sse = new SingleSteppingEngine (backend, inferior, start.IsNative);
 
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
 			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
@@ -43,11 +46,14 @@ namespace Mono.Debugger
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 		}
 
-		internal Process (DebuggerBackend backend, CoreFile core)
+		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
+				  string core_file)
 		{
 			this.backend = backend;
-			this.inferior = core;
-			this.core = core;
+
+			core = new CoreFileElfI386 (backend, start.TargetApplication,
+						    core_file, bfd_container);
+			inferior = core;
 		}
 
 		public DebuggerBackend DebuggerBackend {

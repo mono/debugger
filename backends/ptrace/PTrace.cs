@@ -44,9 +44,7 @@ namespace Mono.Debugger.Backends
 		IOInputChannel inferior_stdout;
 		IOInputChannel inferior_stderr;
 
-		string working_directory;
-		string[] argv;
-		string[] envp;
+		ProcessStart start;
 
 		Bfd bfd;
 		BfdContainer bfd_container;
@@ -388,16 +386,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public PTraceInferior (DebuggerBackend backend, string working_directory,
-				       string[] argv, string[] envp, bool native,
-				       bool load_native_symtab, BfdContainer bfd_container,
-				       DebuggerErrorHandler error_handler)
+		public PTraceInferior (DebuggerBackend backend, ProcessStart start,
+				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
 		{
 			this.backend = backend;
-			this.working_directory = working_directory;
-			this.argv = argv;
-			this.envp = envp;
-			this.native = native;
+			this.start = start;
+			this.native = !(start is ManagedProcessStart);
 			this.bfd_container = bfd_container;
 
 			int stdin_fd, stdout_fd, stderr_fd;
@@ -408,7 +402,8 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 
 			check_error (mono_debugger_server_spawn (
-				server_handle, working_directory, argv, envp, true,
+				server_handle, start.WorkingDirectory, start.CommandLineArguments,
+				start.Environment, true,
 				new TargetExitedHandler (child_exited),
 				new ChildEventHandler (child_event),
 				new ChildCallbackHandler (child_callback),
@@ -419,24 +414,16 @@ namespace Mono.Debugger.Backends
 			inferior_stdout = new IOInputChannel (stdout_fd);
 			inferior_stderr = new IOInputChannel (stderr_fd);
 
-			try {
-				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
-				if (load_native_symtab)
-					bfd.ReadDwarf ();
-			} catch (Exception e) {
-				error_handler (this, String.Format (
-					"Can't read symbol file {0}", argv [0]), e);
-			}
+			setup_inferior (start, error_handler);
 
-			setup_inferior (load_native_symtab);
+			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public PTraceInferior (DebuggerBackend backend, int pid, string[] envp,
-				       bool load_native_symtab, BfdContainer bfd_container,
-				       DebuggerErrorHandler error_handler)
+		public PTraceInferior (DebuggerBackend backend, ProcessStart start, int pid,
+				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
 		{
 			this.backend = backend;
-			this.envp = envp;
+			this.start = start;
 			this.bfd_container = bfd_container;
 
 			server_handle = mono_debugger_server_initialize ();
@@ -448,20 +435,21 @@ namespace Mono.Debugger.Backends
 				new ChildEventHandler (child_event),
 				new ChildCallbackHandler (child_callback)));
 
+			setup_inferior (start, error_handler);
+		}
+
+		void setup_inferior (ProcessStart start, DebuggerErrorHandler error_handler)
+		{
 			try {
-				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
-				if (load_native_symtab)
+				bfd = bfd_container.AddFile (this, start.TargetApplication,
+							     start.LoadNativeSymtab);
+				if (start.LoadNativeSymtab)
 					bfd.ReadDwarf ();
 			} catch (Exception e) {
 				error_handler (this, String.Format (
-					"Can't read symbol file {0}", argv [0]), e);
+					"Can't read symbol file {0}", start.TargetApplication), e);
 			}
 
-			setup_inferior (load_native_symtab);
-		}
-
-		void setup_inferior (bool load_native_symtab)
-		{
 			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
 			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
 
@@ -482,7 +470,7 @@ namespace Mono.Debugger.Backends
 			bfd_disassembler = bfd.GetDisassembler (this);
 			arch = new ArchitectureI386 (this);
 
-			if (load_native_symtab) {
+			if (start.LoadNativeSymtab) {
 				try {
 					ISymbolTable bfd_symtab = bfd.SymbolTable;
 				} catch (Exception e) {

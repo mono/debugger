@@ -146,11 +146,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case "exit":
 				return false;
 
-			case "r":
-			case "run":
-				backend.Run ();
-				break;
-
 			case "c":
 			case "continue":
 				backend.CurrentProcess.Continue ();
@@ -300,15 +295,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case "sleep":
 				Thread.Sleep (50000);
 				break;
-
-			case "core": {
-				if (args.Length != 1) {
-					stderr.WriteLine ("Command requires an argument");
-					break;
-				}
-				backend.ReadCoreFile (args [0]);
-				break;
-			}
 
 			case "reload":
 				backend.Reload ();

@@ -283,110 +283,49 @@ namespace Mono.Debugger
 		{
 		}
 
-		public Process Run ()
+		public Process Run (ProcessStart start)
 		{
 			check_disposed ();
-			process = do_run ((string) null);
-			return process;
-		}
 
-		public Process ReadCoreFile (string core_file)
-		{
-			check_disposed ();
-			process = do_run (core_file);
-			return process;
-		}
-
-		Process do_run (string core_file)
-		{
 			if (inferior != null)
 				throw new AlreadyHaveTargetException ();
 
-			if (target_application == null)
-				throw new CannotStartTargetException ("You must specify a program to debug.");
-
-			if (!native) {
-				Assembly application;
-				try {
-					application = Assembly.LoadFrom (target_application);
-				} catch (Exception e) {
-					application = null;
-				}
-
-				if (application != null)
-					// Start it as a CIL application.
-					return do_run (target_application, core_file, application);
-			}
-
-			// Start it as a native application.
-			setup_environment ();
-
-			string[] new_argv = new string [argv.Length + 1];
-			new_argv [0] = target_application;
-			argv.CopyTo (new_argv, 1);
-
-			native = true;
-			if (core_file != null)
-				return load_core (core_file, new_argv);
-			else
-				return do_run (new_argv);
-		}
-
-		void setup_environment ()
-		{
-			if (argv == null)
-				argv = new string [0];
-			if (envp == null)
-				envp = new string[] { "PATH=" + Environment_Path, "LD_BIND_NOW=yes" };
-			if (working_directory == null)
-				working_directory = ".";
-		}
-
-		Process do_run (string target_application, string core_file, Assembly application)
-		{
-			MethodInfo main = application.EntryPoint;
-			string main_name = main.DeclaringType + ":" + main.Name;
-
-			setup_environment ();
-
-			string[] start_argv = {
-				Path_Mono, "--break", main_name, "--debug=mono",
-				"--noinline", "--debug-args", "internal_mono_debugger",
-				target_application };
-
-			string[] new_argv = new string [argv.Length + start_argv.Length];
-			start_argv.CopyTo (new_argv, 0);
-			argv.CopyTo (new_argv, start_argv.Length);
-
-			native = false;
-			if (core_file != null)
-				return load_core (core_file, new_argv);
-			else
-				return do_run (new_argv);
-		}
-
-		Process do_run (string[] argv)
-		{
 			module_manager.Locked = true;
 
-			if (native)
-				load_native_symtab = true;
-			inferior = new PTraceInferior (this, working_directory, argv, envp, native,
-						       load_native_symtab, bfd_container,
-						       new DebuggerErrorHandler (debugger_error));
+			process = new Process (this, start, bfd_container);
+			inferior = process.Inferior;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
-			if (!native)
+			if (!start.IsNative)
 				csharp_language.Inferior = inferior;
 
-			sse = new SingleSteppingEngine (this, inferior, native);
+			sse = process.SingleSteppingEngine;
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
 			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
 			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 
-			return new Process (this, sse, inferior);
+			return process;
+		}
+
+		public Process ReadCoreFile (ProcessStart start, string core_file)
+		{
+			check_disposed ();
+
+			if (inferior != null)
+				throw new AlreadyHaveTargetException ();
+
+			process = new Process (this, start, bfd_container, core_file);
+			inferior = process.Inferior;
+			core = inferior as CoreFile;
+
+			if (!start.IsNative)
+				csharp_language.Inferior = inferior;
+
+			Reload ();
+
+			return process;
 		}
 
 		void method_invalid ()
@@ -452,19 +391,6 @@ namespace Mono.Debugger
 		internal void ChildExited ()
 		{
 			module_manager.UnLoadAllModules ();
-		}
-
-		Process load_core (string core_file, string[] argv)
-		{
-			core = new CoreFileElfI386 (this, argv [0], core_file, bfd_container);
-			inferior = core;
-
-			if (!native)
-				csharp_language.Inferior = inferior;
-
-			Reload ();
-
-			return new Process (this, core);
 		}
 
 		public void Quit ()

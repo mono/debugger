@@ -45,8 +45,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("exit", Token.QUIT);
 			keywords.Add ("q", Token.QUIT);
 			keywords.Add ("start", Token.START);
-			keywords.Add ("run", Token.RUN);
-			keywords.Add ("r", Token.RUN);
 			keywords.Add ("show", Token.SHOW);
 			keywords.Add ("processes", Token.PROCESSES);
 			keywords.Add ("process", Token.PROCESS);
