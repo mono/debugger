@@ -7,41 +7,27 @@ namespace Mono.Debugger
 	public class SourceBuffer : ISourceBuffer
 	{
 		string name;
-		string contents;
-		bool has_contents;
+		string[] contents;
 
-		public SourceBuffer (string name, string contents)
+		public SourceBuffer (string name, string[] contents)
 		{
 			this.name = name;
 			this.contents = contents;
-			this.has_contents = true;
 		}
 
-		public SourceBuffer (string name)
+		public SourceBuffer (string name, ICollection contents)
 		{
 			this.name = name;
-			this.has_contents = false;
+			this.contents = new string [contents.Count];
+			contents.CopyTo (this.contents, 0);
 		}
 
 		public string Name {
-			get {
-				return name;
-			}
+			get { return name; }
 		}
 
-		public bool HasContents {
-			get {
-				return has_contents;
-			}
-		}
-
-		public string Contents {
-			get {
-				if (!HasContents)
-					throw new InvalidOperationException ();
-
-				return contents;
-			}
+		public string[] Contents {
+			get { return contents; }
 		}
 	}
 }

@@ -122,6 +122,7 @@ namespace Mono.Debugger.Architecture
 		{
 			Hashtable source_hash = new Hashtable ();
 
+#if FIXME
 			foreach (IMethod method in symtab.GetAllMethods ()) {
 				if (!method.HasSource)
 					continue;
@@ -137,6 +138,7 @@ namespace Mono.Debugger.Architecture
 				}
 				source.AddMethod (new DwarfSourceMethod (source, method));
 			}
+#endif
 
 			SourceFile[] retval = new SourceFile [source_hash.Values.Count];
 			source_hash.Values.CopyTo (retval, 0);
@@ -708,15 +710,16 @@ namespace Mono.Debugger.Architecture
 			private class DwarfNativeMethodSource : MethodSource
 			{
 				DwarfNativeMethod method;
+				int start_row, end_row;
+				ArrayList addresses;
 
 				public DwarfNativeMethodSource (DwarfNativeMethod method)
-					: base (method)
+					: base (method, null)
 				{
 					this.method = method;
 				}
 
-				protected override ISourceBuffer ReadSource (
-					out int start_row, out int end_row, out ArrayList addresses)
+				protected override MethodSourceData ReadSource ()
 				{
 					start_row = end_row = 0;
 					addresses = null;
@@ -736,7 +739,7 @@ namespace Mono.Debugger.Architecture
 						method.SetMethodBounds (start.Address, end.Address);
 					}
 
-					return new SourceBuffer (file);
+					return new MethodSourceData (start_row, end_row, addresses);
 				}
 
 				public override SourceMethod[] MethodLookup (string query)

@@ -7,50 +7,28 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class CSharpMethod : MethodSource
 	{
 		int start_row, end_row;
+		ArrayList addresses;
 		MonoSymbolTableReader reader;
-		ISourceBuffer source;
 		JitLineNumberEntry[] line_numbers;
 		MethodEntry method;
 		IMethod imethod;
+		SourceFile file;
 
-		protected CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
-					ISourceBuffer source, MethodEntry method,
-					JitLineNumberEntry[] line_numbers)
-			: base (imethod)
+		public CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
+				     SourceFile file, MethodEntry method,
+				     JitLineNumberEntry[] line_numbers)
+			: base (imethod, file)
 		{
 			this.reader = reader;
 			this.imethod = imethod;
-			this.source = source;
 			this.method = method;
+			this.file = file;
 			this.line_numbers = line_numbers;
 			this.start_row = method.StartRow;
 			this.end_row = method.EndRow;
 		}
 
-		public static CSharpMethod GetMethodSource (MonoSymbolTableReader reader,
-							    IMethod imethod, MethodEntry method,
-							    JitLineNumberEntry[] line_numbers)
-		{
-			if (method.SourceFile == null)
-				return null;
-
-			ISourceBuffer buffer = null;
-			if (buffer == null)
-				buffer = new SourceBuffer (method.SourceFile.FileName);
-
-			return new CSharpMethod (reader, imethod, buffer, method, line_numbers);
-		}
-
-		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
-							     out ArrayList addresses)
-		{
-			start_row = this.start_row;
-			end_row = this.end_row;
-			addresses = get_lines ();
-			return source;
-		}
-
-		ArrayList get_lines ()
+		protected override MethodSourceData ReadSource ()
 		{
 			ArrayList lines = new ArrayList ();
 
@@ -61,7 +39,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			lines.Sort ();
-			return lines;
+			return new MethodSourceData (start_row, end_row, lines);
 		}
 
 		public override SourceMethod[] MethodLookup (string query)

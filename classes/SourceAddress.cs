@@ -5,28 +5,28 @@ namespace Mono.Debugger
 {
 	public class SourceAddress
 	{
-		ISourceBuffer SourceBuffer;
+		IMethodSource source;
 		int row;
 		int source_offset;
 		int source_range;
 
 		public static SourceAddress Null = new SourceAddress (null, 0);
 
-		public SourceAddress (ISourceBuffer buffer, int row)
-			: this (buffer, row, 0, 0)
+		public SourceAddress (IMethodSource source, int row)
+			: this (source, row, 0, 0)
 		{ }
 
-		public SourceAddress (ISourceBuffer buffer, int row, int offset, int range)
+		public SourceAddress (IMethodSource source, int row, int offset, int range)
 		{
-			this.SourceBuffer = buffer;
+			this.source = source;
 			this.row = row;
 			this.source_offset = offset;
 			this.source_range = range;
 		}
 
-		public ISourceBuffer Buffer {
+		public IMethodSource MethodSource {
 			get {
-				return SourceBuffer;
+				return source;
 			}
 		}
 
@@ -56,19 +56,14 @@ namespace Mono.Debugger
 
 		public string Name {
 			get {
-				return String.Format (
-					"{0}:{1}", SourceBuffer != null ? SourceBuffer.Name : "<unknown>",
-					Row);
+				return String.Format ("{0}:{1}", source.Name, Row);
 			}
 		}
 
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();
-			if (SourceBuffer != null)
-				builder.Append (SourceBuffer.Name);
-			else
-				builder.Append ("<unknown>");
+			builder.Append (source.Name);
 			if (Row > 0) {
 				builder.Append (" line ");
 				builder.Append (Row);

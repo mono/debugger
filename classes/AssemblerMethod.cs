@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Collections;
 
 namespace Mono.Debugger
@@ -37,7 +36,7 @@ namespace Mono.Debugger
 		int end_row;
 		ArrayList addresses, lines;
 		TargetAddress start_address, end_address;
-		StringBuilder sb;
+		ArrayList contents;
 		string name;
 
 		public AssemblerMethod (TargetAddress start, TargetAddress end, string name,
@@ -53,7 +52,7 @@ namespace Mono.Debugger
 
 			lines = new ArrayList ();
 			addresses = new ArrayList ();
-			sb = new StringBuilder ();
+			contents = new ArrayList ();
 
 			TargetAddress current = start_address;
 
@@ -79,7 +78,7 @@ namespace Mono.Debugger
 
 			lines = new ArrayList ();
 			addresses = new ArrayList ();
-			sb = new StringBuilder ();
+			contents = new ArrayList ();
 
 			add_one_line (line);
 		}
@@ -88,18 +87,18 @@ namespace Mono.Debugger
 		{
 			if (line.Label != null) {
 				if (end_row > 0) {
-					sb.Append ("\n");
+					contents.Add ("");
 					end_row++;
 				} else
 					start_row++;
-				sb.Append (String.Format ("{0}:\n", line.Label));
+				contents.Add (String.Format ("{0}:", line.Label));
 				end_row++;
 			}
 
 			AppendOneLine (line);
 		}
 
-		public void AppendOneLine (AssemblerLine line)
+		void AppendOneLine (AssemblerLine line)
 		{
 			if (line.Address != EndAddress)
 				throw new ArgumentException (String.Format (
@@ -108,7 +107,7 @@ namespace Mono.Debugger
 
 			lines.Add (line);
 			addresses.Add (new LineEntry (line.Address, ++end_row));
-			sb.Append (String.Format ("  {0:x}   {1}\n", line.Address, line.Text));
+			contents.Add (String.Format ("  {0:x}   {1}", line.Address, line.Text));
 			SetEndAddress (line.Address + line.InstructionSize);
 		}
 
@@ -118,7 +117,7 @@ namespace Mono.Debugger
 			base.SetEndAddress (end);
 		}
 
-		public string Name {
+		public override string Name {
 			get { return name; }
 		}
 
@@ -138,13 +137,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
-							     out ArrayList addresses)
+		protected override MethodSourceData ReadSource ()
 		{
-			start_row = this.start_row;
-			end_row = this.end_row;
-			addresses = this.addresses;
-			return new SourceBuffer (name, sb.ToString ());
+			buffer = new SourceBuffer (name, contents);
+			return new MethodSourceData (start_row, end_row, addresses, buffer);
 		}
 
 		public override SourceMethod[] MethodLookup (string query)

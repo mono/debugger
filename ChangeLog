@@ -1,5 +1,20 @@
 2003-02-24  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ISourceBuffer.cs (ISourceBuffer.HasContents): Removed
+	this property; from now on, an ISourceBuffer always has contents.
+	(ISourceBuffer.Contents): Changed the type of this property from
+	`string' to `string[]'; it returns the source file splitted into
+	lines (it turned out to be more useful that way).
+
+	* interfaces/IMethod.cs (IMethodSource): Added Name, IsDynamic,
+	SourceBuffer and SourceFile properties.
+
+	* classes/SourceAddress.cs (SourceAddress.Buffer): Removed this
+	property.
+	(SourceAddress.MethodSource): New public property.
+
+2003-02-24  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceInfo.cs: Renamed `SourceInfo' into `SourceFile'
 	and `SourceMethodInfo' into `SourceMethod'.
 

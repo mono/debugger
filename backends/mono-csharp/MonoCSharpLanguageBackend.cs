@@ -1268,8 +1268,8 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!address.WrapperAddress.IsNull)
 					SetWrapperAddress (address.WrapperAddress);
 
-				IMethodSource source = CSharpMethod.GetMethodSource (
-					reader, this, method, address.LineNumbers);
+				IMethodSource source = new CSharpMethod (
+					reader, this, info.SourceFile, method, address.LineNumbers);
 
 				if (source != null)
 					SetSource (source);

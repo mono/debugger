@@ -21,11 +21,13 @@ public class SourceFileFactory
 			return null;
 		}
 
-		string contents = null;
+		ArrayList contents = new ArrayList ();
 		try {
 			Encoding encoding = Encoding.GetEncoding (28591);
 			using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
-				contents = reader.ReadToEnd ();
+				string line;
+				while ((line = reader.ReadLine ()) != null)
+					contents.Add (line);
 			}
 		} catch {
 			return null;

@@ -131,20 +131,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (!method.HasSource)
 				return;
 
-			string contents;
-			current_buffer = method.Source.SourceBuffer;
+			IMethodSource source = method.Source;
+			if (source.SourceFile != null)
+				current_buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
+			else
+				current_buffer = source.SourceBuffer;
+
 			if (current_buffer == null)
 				return;
-			if (current_buffer.HasContents)
-				contents = current_buffer.Contents;
-			else {
-				ISourceBuffer file = context.SourceFactory.FindFile (current_buffer.Name);
-				if (file == null)
-					return;
-				contents = file.Contents;
-			}
 
-			current_source = contents.Split ('\n');
+			current_source = current_buffer.Contents;
 		}
 
 		void method_invalid ()
@@ -212,7 +208,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			SourceAddress source = current_frame.SourceAddress;
-			if ((source == null) || (source.Buffer != current_buffer))
+			if ((source == null) || (source.MethodSource != current_method.Source))
 				return;
 
 			string line = current_source [source.Row - 1];
@@ -415,18 +411,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			string contents;
-			ISourceBuffer buffer = source.SourceBuffer;
-			if (buffer.HasContents)
-				contents = buffer.Contents;
-			else {
-				ISourceBuffer file = context.SourceFactory.FindFile (buffer.Name);
-				if (file == null)
-					return;
-				contents = file.Contents;
-			}
+			ISourceBuffer buffer;
+			if (source.SourceFile != null)
+				buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
+			else
+				buffer = source.SourceBuffer;
 
-			string[] lines = contents.Split ('\n');
-			string line = lines [location.Row - 1];
+			if (buffer == null)
+				return;
+
+			string line = buffer.Contents [location.Row - 1];
 			context.Print (String.Format ("{0,4} {1}", location.Row, line));
 		}
 

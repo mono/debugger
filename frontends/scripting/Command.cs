@@ -1428,10 +1428,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			IMethodSource source = method.Source;
 			if (name == null) {
-				if (source.SourceBuffer.HasContents)
+				if (source.SourceFile == null)
 					throw new ScriptingException ("Current method has no source file.");
 
-				return context.FindMethod (source.SourceBuffer.Name, line);
+				return context.FindMethod (source.SourceFile.FileName, line);
 			}
 
 			SourceMethod[] result = source.MethodLookup (name);

@@ -12,7 +12,36 @@ namespace Mono.Debugger
 	// </remarks>
 	public interface IMethodSource
 	{
+		// <summary>
+		//   The name of this source file or source buffer in a form suitable
+		//   to be presented to the user.
+		// </summary>
+		// <remarks>
+		//   Do not use this to load a source file, use SourceFile.FileName instead.
+		// </remarks>
+		string Name {
+			get;
+		}
+
+		// <summary>
+		//   Specifies whether this method has a dynamic source code.
+		// </summary>
+		bool IsDynamic {
+			get;
+		}
+
+		// <summary>
+		//   If @IsDynamic is true, this is the dynamically generated source code of
+		//   this method.
+		// </summary>
 		ISourceBuffer SourceBuffer {
+			get;
+		}
+
+		// <summary>
+		//   If @IsDynamic is false, the source file this method is contained in.
+		// </summary>
+		SourceFile SourceFile {
 			get;
 		}
 
