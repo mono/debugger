@@ -1,3 +1,11 @@
+2003-12-29  Martin Baulig  <martin@ximian.com>
+
+	WARNING WARNING WARNING WARNING:
+
+	Everything newer than the Clemson release is highly experimental
+	and will not work out-of-the-box.  You should not use the CVS
+	version of the debugger unless you know exactly what you're doing.
+
 2003-12-25  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/: Removed the `InferiorInfo' vtable; call the
