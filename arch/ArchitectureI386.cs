@@ -32,12 +32,10 @@ namespace Mono.Debugger
 	internal class ArchitectureI386 : IArchitecture
 	{
 		ITargetAccess target;
-		object global_address_domain;
 
-		public ArchitectureI386 (ITargetAccess target, object global_address_domain)
+		public ArchitectureI386 (ITargetAccess target)
 		{
 			this.target = target;
-			this.global_address_domain = global_address_domain;
 		}
 
 		public bool IsRetInstruction (TargetAddress address)
@@ -118,7 +116,7 @@ namespace Mono.Debugger
 
 			long addr = target.GetRegister ((int) reg);
 
-			TargetAddress vtable_addr = new TargetAddress (global_address_domain, addr + disp);
+			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr + disp);
 
 			if (dereference_addr)
 				return target.ReadGlobalAddress (vtable_addr);
@@ -149,7 +147,7 @@ namespace Mono.Debugger
 			if (location + call_disp + 10 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (global_address_domain, method_info);
+			return new TargetAddress (target.GlobalAddressDomain, method_info);
 		}
 
 		public string[] RegisterNames {

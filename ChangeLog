@@ -1,5 +1,10 @@
 2003-01-01  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs (ITargetMemoryAccess): Added
+	`AddressDomain' and `GlobalAddressDomain' properties.
+
+2003-01-01  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs (ITargetAccess): New
 	interface; derives from ITargetMemoryAccess has has a function to
 	read a register.

@@ -25,7 +25,7 @@ namespace Mono.Debugger.Architecture
 			this.backend = backend;
 			this.symtab_manager = backend.SymbolTableManager;
 
-			arch = new ArchitectureI386 (this, backend.ThreadManager);
+			arch = new ArchitectureI386 (this);
 
 			core_file = Path.GetFullPath (core_file);
 			application = Path.GetFullPath (application);
@@ -111,9 +111,11 @@ namespace Mono.Debugger.Architecture
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 
-					current_frame = new MyStackFrame (address, 0, null, source, method);
+					current_frame = new MyStackFrame (
+						this, address, 0, null, source, method);
 				} else
-					current_frame = new MyStackFrame (address, 0, null);
+					current_frame = new MyStackFrame (
+						this, address, 0, null);
 
 				has_current_frame = true;
 				return current_frame;
@@ -140,10 +142,10 @@ namespace Mono.Debugger.Architecture
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 					frames [i] = new MyStackFrame (
-						address, i, iframes [i], source, method);
+						this, address, i, iframes [i], source, method);
 				} else
 					frames [i] = new MyStackFrame (
-						address, i, iframes [i]);
+						this, address, i, iframes [i]);
 			}
 
 			has_backtrace = true;
@@ -195,26 +197,27 @@ namespace Mono.Debugger.Architecture
 		protected class MyStackFrame : StackFrame
 		{
 			IInferiorStackFrame frame;
+			CoreFile core;
 
-			public MyStackFrame (TargetAddress address, int level, IInferiorStackFrame frame,
-					     SourceLocation source, IMethod method)
+			public MyStackFrame (CoreFile core, TargetAddress address, int level,
+					     IInferiorStackFrame frame, SourceLocation source, IMethod method)
 				: base (address, level, source, method)
 			{
 				this.frame = frame;
+				this.core = core;
 			}
 
-			public MyStackFrame (TargetAddress address, int level, IInferiorStackFrame frame)
+			public MyStackFrame (CoreFile core, TargetAddress address, int level,
+					     IInferiorStackFrame frame)
 				: base (address, level)
 			{
 				this.frame = frame;
+				this.core = core;
 			}
 
 			public override ITargetMemoryAccess TargetMemoryAccess {
 				get {
-					if (frame != null)
-						return frame.Inferior;
-					else
-						return null;
+					return core;
 				}
 			}
 
@@ -374,6 +377,14 @@ namespace Mono.Debugger.Architecture
 		//
 		// ITargetMemoryAccess
 		//
+
+		public object GlobalAddressDomain {
+			get { return this; }
+		}
+
+		public object AddressDomain {
+			get { return this; }
+		}
 
 		public byte ReadByte (TargetAddress address)
 		{

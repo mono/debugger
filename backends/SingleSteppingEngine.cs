@@ -1832,6 +1832,18 @@ namespace Mono.Debugger.Backends
 			return new TargetReader (buffer, inferior);
 		}
 
+		object ITargetMemoryAccess.AddressDomain {
+			get {
+				return inferior;
+			}
+		}
+
+		object ITargetMemoryAccess.GlobalAddressDomain {
+			get {
+				return thread_manager;
+			}
+		}
+
 		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
 		{
 			byte[] data = read_memory (address, 1);

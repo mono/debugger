@@ -353,7 +353,7 @@ namespace Mono.Debugger.Backends
 			this.breakpoint_manager = breakpoint_manager;
 
 			thread_manager = backend.ThreadManager;
-			arch = new ArchitectureI386 (this, thread_manager);
+			arch = new ArchitectureI386 (this);
 
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
@@ -546,6 +546,14 @@ namespace Mono.Debugger.Backends
 		// ITargetMemoryAccess
 		//
 
+		public object AddressDomain {
+			get { return this; }
+		}
+
+		public object GlobalAddressDomain {
+			get { return thread_manager; }
+		}
+
 		IntPtr read_buffer (TargetAddress address, int size)
 		{
 			IntPtr data;
@@ -616,10 +624,10 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetAddress (this, (uint) ReadInteger (address));
+				return new TargetAddress (AddressDomain, (uint) ReadInteger (address));
 
 			case 8:
-				return new TargetAddress (this, ReadLongInteger (address));
+				return new TargetAddress (AddressDomain, ReadLongInteger (address));
 
 			default:
 				throw new TargetMemoryException (
@@ -632,10 +640,10 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetAddress (thread_manager, (uint) ReadInteger (address));
+				return new TargetAddress (GlobalAddressDomain, (uint) ReadInteger (address));
 
 			case 8:
-				return new TargetAddress (thread_manager, ReadLongInteger (address));
+				return new TargetAddress (GlobalAddressDomain, ReadLongInteger (address));
 
 			default:
 				throw new TargetMemoryException (
@@ -857,7 +865,7 @@ namespace Mono.Debugger.Backends
 				if (result != CommandError.NONE)
 					throw new NoStackException ();
 
-				return new TargetAddress (thread_manager, pc);
+				return new TargetAddress (GlobalAddressDomain, pc);
 			}
 		}
 
@@ -967,27 +975,21 @@ namespace Mono.Debugger.Backends
 				this.frame = frame;
 			}
 
-			public IInferior Inferior {
-				get {
-					return inferior;
-				}
-			}
-
 			public TargetAddress Address {
 				get {
-					return new TargetAddress (inferior.thread_manager, frame.Address);
+					return new TargetAddress (inferior.GlobalAddressDomain, frame.Address);
 				}
 			}
 
 			public TargetAddress ParamsAddress {
 				get {
-					return new TargetAddress (inferior, frame.ParamsAddress);
+					return new TargetAddress (inferior.AddressDomain, frame.ParamsAddress);
 				}
 			}
 
 			public TargetAddress LocalsAddress {
 				get {
-					return new TargetAddress (inferior, frame.LocalsAddress);
+					return new TargetAddress (inferior.AddressDomain, frame.LocalsAddress);
 				}
 			}
 		}
@@ -1029,7 +1031,7 @@ namespace Mono.Debugger.Backends
 					server_handle, out address);
 			check_error (result);
 
-			return new TargetAddress (thread_manager, address);
+			return new TargetAddress (GlobalAddressDomain, address);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
@@ -1082,8 +1084,8 @@ namespace Mono.Debugger.Backends
 						flags |= TargetMemoryFlags.ReadOnly;
 
 					TargetMemoryArea area = new TargetMemoryArea (
-						new TargetAddress (thread_manager, start),
-						new TargetAddress (thread_manager, end),
+						new TargetAddress (GlobalAddressDomain, start),
+						new TargetAddress (GlobalAddressDomain, end),
 						flags, name, this);
 					list.Add (area);
 				} while (true);
