@@ -18,7 +18,7 @@ namespace Mono.Debugger.Languages.Native
 
 			integer_type = new NativeFundamentalType ("int", typeof (int), Marshal.SizeOf (typeof (int)));
 			long_type = new NativeFundamentalType ("long", typeof (long), Marshal.SizeOf (typeof (long)));
-			pointer_type = new NativePointerType ("pointer", info.TargetAddressSize);
+			pointer_type = new NativePointerType ("void *", info.TargetAddressSize);
 		}
 
 		public string Name {
@@ -54,6 +54,13 @@ namespace Mono.Debugger.Languages.Native
 		public ITargetObject CreateInstance (StackFrame frame, object obj)
 		{
 			throw new InvalidOperationException ();
+		}
+
+		public ITargetPointerObject CreatePointer (StackFrame frame,
+							   TargetAddress address)
+		{
+			TargetLocation location = new AbsoluteTargetLocation (frame, address);
+			return new NativePointerObject (pointer_type, location);
 		}
 
 		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)

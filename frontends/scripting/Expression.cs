@@ -1293,14 +1293,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			FrameHandle frame = context.CurrentFrame;
 
 			TargetLocation location = EvaluateAddress (context);
-			long address = location.Address.Address;
-			IntPtr ptr;
-			if (IntPtr.Size == 4)
-				ptr = new IntPtr ((int) address);
-			else
-				ptr = new IntPtr (address);
-
-			return frame.Language.CreateInstance (frame.Frame, ptr);
+			return frame.Language.CreatePointer (frame.Frame, location.Address);
 		}
 
 		public override TargetLocation EvaluateAddress (ScriptingContext context)

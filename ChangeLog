@@ -1,5 +1,9 @@
 2004-07-12  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ILanguage.cs (ILanguage.CreatePointer): New method.
+
+2004-07-12  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetClassObject.cs
 	(ITargetClassObject.CurrentType): New property.
 

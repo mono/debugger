@@ -914,6 +914,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.CreateInstance (frame, obj);
 		}
 
+		public ITargetPointerObject CreatePointer (StackFrame frame,
+							   TargetAddress address)
+		{
+			return Backend.BfdContainer.NativeLanguage.CreatePointer (
+				frame, address);
+		}
+
 		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
 		{
 			MonoObjectObject obj = builtin.ObjectType.CreateObject (frame, address);
