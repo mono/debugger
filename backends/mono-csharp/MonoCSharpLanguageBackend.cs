@@ -160,7 +160,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 14;
+		public const int  DynamicVersion = 15;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -501,7 +501,8 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		public readonly TargetAddress generic_trampoline_code;
 		public readonly TargetAddress breakpoint_trampoline_code;
-		public readonly TargetAddress symbol_file_generation;
+		public readonly TargetAddress symbol_file_generation;	
+		public readonly TargetAddress symbol_file_modified;
 		public readonly TargetAddress symbol_file_table;
 		public readonly TargetAddress update_symbol_file_table;
 		public readonly TargetAddress compile_method;
@@ -516,6 +517,7 @@ namespace Mono.Debugger.Languages.CSharp
 			generic_trampoline_code = reader.ReadAddress ();
 			breakpoint_trampoline_code = reader.ReadAddress ();
 			symbol_file_generation = reader.ReadAddress ();
+			symbol_file_modified = reader.ReadAddress ();
 			symbol_file_table = reader.ReadAddress ();
 			update_symbol_file_table = reader.ReadAddress ();
 			compile_method = reader.ReadAddress ();
@@ -1428,6 +1430,7 @@ namespace Mono.Debugger.Languages.CSharp
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
+		int symtab_modified;
 		TargetAddress trampoline_address;
 		IArchitecture arch;
 		protected MonoSymbolFileTable table;
@@ -1479,6 +1482,7 @@ namespace Mono.Debugger.Languages.CSharp
 			inferior = null;
 			info = null;
 			symtab_generation = 0;
+			symtab_modified = 0;
 			arch = null;
 			trampoline_address = TargetAddress.Null;
 		}
@@ -1544,6 +1548,11 @@ namespace Mono.Debugger.Languages.CSharp
 			read_mono_debugger_info ();
 
 			try {
+				int modified = inferior.ReadInteger (info.symbol_file_modified);
+				if (modified == symtab_modified)
+					return;
+
+				symtab_modified = modified;
 				int generation = inferior.ReadInteger (info.symbol_file_generation);
 				if ((table != null) && (generation == symtab_generation)) {
 					do_update_table (false);
