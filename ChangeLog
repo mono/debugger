@@ -1,3 +1,8 @@
+2004-06-01  Martin Baulig  <martin@ximian.com>
+
+	* frontends/command-line/GnuReadline.cs
+	(mono_debugger_readline_add_history): This returns `void'.
+
 2004-05-29  Martin Baulig  <martin@ximian.com>
 
 	* arch/bfdglue.c (bfd_glue_get_target_name): Return a g_strdup()ed

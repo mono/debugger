@@ -16,7 +16,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		extern static string mono_debugger_readline_readline (string prompt);
 
 		[DllImport("libmonodebuggerreadline")]
-		extern static string mono_debugger_readline_add_history (string line);
+		extern static void mono_debugger_readline_add_history (string line);
 
 		static bool has_readline;
 
