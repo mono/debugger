@@ -1,3 +1,9 @@
+October 1st, 2002 - Martin Baulig
+---------------------------------
+
+Added support for breakpoints.  Breakpoints can be set for not-yet-JITed methods and will
+persist across multiple invocations of the same target.
+
 September 27th, 2002 - Martin Baulig
 ------------------------------------
 
