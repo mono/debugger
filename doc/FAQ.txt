@@ -1,12 +1,55 @@
 * How do I enter a JIT trampoline ?
 
   Normally, the debugger hides JIT trampolines from the user, even when stepping one single
-  instruction.  The only way to enter a JIT trampoline is to force the debugger to do so:
-  unload the current module (in the module list, check the module's "Ignore" checkbox), then
-  switch to the CPU view and step one machine instruction.
+  instruction.  To force the debugger to debug a JIT trampoline, you need to use the
+  `native stepi' command in the command line interface.
 
-  After unloading the module's symbol table, the debugger won't recognize the current method
-  as a managed method anymore.
+
+* How do I enter an interncall ?
+
+  There are two ways of entering an interncall: if the module the interncall is contained in
+  has debugging info and the `step' property is set (use `module <number> !ignore step' in the
+  command line interface), the debugger will automatically enter the interncall when stepping
+  by source lines.
+
+  Example debugging session:
+
+        [martin@einstein debugger]$ run-mono ./lib/Interpreter.exe ./test/N.exe
+        Process @1 stopped at #0: 0x08365f63 in X.Main()+0x7 at N.cs:7.
+        #0: 0x08365f63 in X.Main()+0x7 at N.cs:7
+        0x08365f63      push   $0x41
+           7            bool is_number = Char.IsNumber ('A');
+        Mono debugger
+        $ show modules
+        3 /home/martin/MONO-LINUX/libexec/mono-debugger-jit-wrapper loaded ignore
+        5 N loaded symbols step
+        7 /home/martin/MONO-LINUX/lib/libmono.so.0 loaded ignore
+        9 mscorlib loaded symbols step
+        $ module 7 !ignore step
+        $ s
+        Process @1 stopped at #0: 0x400aa12c in ves_icall_System_Char_IsNumber+0x1c at unicode.c:110.
+        0x400aa12c      movzwl 0xfffffff2(%ebp),%eax
+        110    GUnicodeType t = g_unichar_type (c);
+
+  You can also "force" the debugger to enter the intercalls by stepping by machine instructions;
+  in this case, the debugger will automatically jump over the JIT trampoline and stop at the
+  first instruction of the interncall.
+
+  Example debugging session:
+
+        [martin@einstein debugger]$ run-mono ./lib/Interpreter.exe ./test/N.exe
+        Process @1 stopped at #0: 0x08366013 in X.Main()+0x7 at N.cs:7.
+        #0: 0x08366013 in X.Main()+0x7 at N.cs:7
+        0x08366013      push   $0x41
+         7            bool is_number = Char.IsNumber ('A');
+        Mono debugger
+        $ i
+        Process @1 stopped at #0: 0x08366018 in X.Main()+0xc at N.cs:7.
+        0x08366018      call   System.Char.IsNumber(System.Char)
+         7            bool is_number = Char.IsNumber ('A');
+        $
+        Process @1 stopped at #0: 0x400aa110.
+        0x400aa110      push   %ebp
 
 
 * Why aren't we using gdb as the backend ?

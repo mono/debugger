@@ -1,5 +1,10 @@
 2003-03-21  Martin Baulig  <martin@ximian.com>
 
+	* doc/FAQ.txt: Updated documentation about JIT trampolines and
+	debugging interncalls.
+
+2003-03-21  Martin Baulig  <martin@ximian.com>
+
 	* classes/Module.cs (HasDebuggingInfo): New public property.
 
 	* frontends/scripting/ScriptingContext.cs (ShowModules): Ignore
