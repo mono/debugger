@@ -838,6 +838,7 @@ namespace Mono.Debugger.Backends
 		{
 			child_already_exited = true;
 
+			inferior.Dispose ();
 			inferior = null;
 			frames_invalid ();
 		}
@@ -2301,13 +2302,11 @@ namespace Mono.Debugger.Backends
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
+				if (inferior != null)
+					inferior.Kill ();
 				if ((engine_thread != null) && !child_already_exited)
 					engine_thread.Abort ();
 				engine_thread = null;
-				if (inferior != null) {
-					inferior.Dispose ();
-					inferior = null;
-				}
 			}
 		}
 

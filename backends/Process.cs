@@ -445,6 +445,7 @@ namespace Mono.Debugger
 				TargetExited ();
 			if (ProcessExitedEvent != null)
 				ProcessExitedEvent (this);
+			Dispose ();
 		}
 
 		void check_iprocess ()
@@ -459,6 +460,11 @@ namespace Mono.Debugger
 			check_disposed ();
 			if (sse == null)
 				throw new NoTargetException ();
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Process ({0}:{1}:{2})", is_daemon, id, pid);
 		}
 
 		//

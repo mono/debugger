@@ -1,3 +1,15 @@
+2003-04-15  Martin Baulig  <martin@ximian.com>
+
+	* backends/BreakpointManager.cs: Correctly implement Dispose().
+
+	* backends/ThreadManager.cs (Dispose): Also kill the main process.
+
+	* backends/Process.cs (child_exited): Call Dispose().
+
+	* backends/DaemonThreadRunner.cs, SingleSteppingEngine.cs (Dispose):
+	Don't dispose the inferior here; this needs to be done by the
+	daemon thread itself to avoid a race condition.
+
 2003-04-13  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs (ObjectInvalidHandler): New delegate.

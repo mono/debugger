@@ -27,8 +27,6 @@ namespace Mono.Debugger.Backends
 
 			thread_manager = backend.ThreadManager;
 
-			inferior.TargetExited += new TargetExitedHandler (child_exited);
-
 			daemon_thread = new Thread (new ThreadStart (daemon_thread_start));
 			daemon_thread.Start ();
 		}
@@ -44,8 +42,6 @@ namespace Mono.Debugger.Backends
 			this.redirect_fds = true;
 
 			thread_manager = backend.ThreadManager;
-
-			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
 			daemon_thread = new Thread (new ThreadStart (daemon_thread_start_wrapper));
 			daemon_thread.Start ();
@@ -112,6 +108,7 @@ namespace Mono.Debugger.Backends
 		{
 			inferior.Run (redirect_fds);
 			inferior.Continue ();
+			pid = inferior.PID;
 			daemon_thread_main ();
 		}
 
@@ -129,6 +126,9 @@ namespace Mono.Debugger.Backends
 		void daemon_thread_main_loop ()
 		{
 		again:
+			if (disposed)
+				return;
+
 			ChildEvent child_event = wait ();
 			ChildEventType message = child_event.Type;
 			int arg = child_event.Argument;
@@ -161,16 +161,16 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ("Daemon thread unexpectedly stopped at {0}.",
 							 inferior.CurrentFrame);
 
+			if (disposed)
+				return;
+
 			inferior.Continue ();
 			goto again;
 		}
 
 		void child_exited ()
 		{
-			if (inferior != null) {
-				inferior.Dispose ();
-				inferior = null;
-			}
+			inferior.Dispose ();
 
 			if (TargetExited != null)
 				TargetExited ();
@@ -203,6 +203,8 @@ namespace Mono.Debugger.Backends
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
+				if (inferior != null)
+					inferior.Kill ();
 				if (daemon_thread != null) {
 					daemon_thread.Abort ();
 					daemon_thread = null;

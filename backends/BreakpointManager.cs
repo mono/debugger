@@ -76,19 +76,17 @@ namespace Mono.Debugger.Backends
 		protected virtual void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-					// Do stuff here
-				}
-				
-				// Release unmanaged resources
-				this.disposed = true;
+			if (disposed)
+				return;
 
-				lock (this) {
-					mono_debugger_breakpoint_manager_free (_manager);
-				}
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+
+				mono_debugger_breakpoint_manager_free (_manager);
+				_manager = IntPtr.Zero;
 			}
 		}
 

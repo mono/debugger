@@ -568,6 +568,7 @@ namespace Mono.Debugger
 			if (disposing) {
 				foreach (ThreadData data in thread_hash.Values)
 					data.Process.Dispose ();
+				main_process.Dispose ();
 				breakpoint_manager.Dispose ();
 			}
 		}
