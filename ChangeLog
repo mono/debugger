@@ -1,5 +1,10 @@
 2003-03-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine: When debugging managed code,
+	don't step into methods without debugging info.
+
+2003-03-10  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceInfo.cs (SourceFile.Name): New property.
 
 	* classes/MethodSource.cs (IMethodSource.Name): Return the

@@ -1311,6 +1311,7 @@ namespace Mono.Debugger.Backends
 				 */
 				if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
 					TargetAddress trampoline = frame.Language.GetTrampoline (inferior, call);
+					IMethod tmethod = null;
 
 					/*
 					 * If this is a trampoline, insert a breakpoint at the start of
@@ -1321,7 +1322,6 @@ namespace Mono.Debugger.Backends
 					 * when entering the method.
 					 */
 					if (!trampoline.IsNull) {
-						IMethod tmethod = null;
 						if (current_symtab != null) {
 							backend.UpdateSymbolTable ();
 							tmethod = Lookup (trampoline);
@@ -1334,6 +1334,17 @@ namespace Mono.Debugger.Backends
 
 						insert_temporary_breakpoint (trampoline);
 						return do_continue ();
+					}
+
+					/*
+					 * If this is an ordinary method, check whether we have debugging
+					 * info for it and don't step into it if not.
+					 */
+					tmethod = Lookup (call);
+					if ((tmethod == null) || !tmethod.Module.StepInto) {
+						if (!do_next ())
+							return false;
+						continue;
 					}
 				}
 
