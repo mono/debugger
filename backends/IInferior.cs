@@ -168,6 +168,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		int StopSignal {
+			get;
+		}
+
 		TargetAddress MainMethodAddress {
 			get;
 		}

@@ -79,6 +79,7 @@ namespace Mono.Debugger.Backends
 			step_event = new AutoResetEvent (false);
 			start_event = new ManualResetEvent (false);
 			completed_event = new ManualResetEvent (false);
+			restart_event = new AutoResetEvent (false);
 			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
 			command_mutex = new Mutex ();
 		}
@@ -320,6 +321,16 @@ namespace Mono.Debugger.Backends
 				if (temp_breakpoint_id != 0) {
 					inferior.RemoveBreakpoint (temp_breakpoint_id);
 					temp_breakpoint_id = 0;
+				}
+			}
+
+			if (stop_requested) {
+				completed_event.Set ();
+				restart_event.WaitOne ();
+				if ((message == ChildEventType.CHILD_STOPPED) &&
+				    (arg == 0) || (arg == inferior.StopSignal)) {
+					do_continue_nowait (false);
+					goto again;
 				}
 			}
 
@@ -589,9 +600,11 @@ namespace Mono.Debugger.Backends
 		Thread engine_thread;
 		ManualResetEvent start_event;
 		ManualResetEvent completed_event;
+		AutoResetEvent restart_event;
 		AutoResetEvent step_event;
 		ThreadNotify thread_notify;
 		Mutex command_mutex;
+		bool stop_requested = false;
 		bool result_sent = false;
 		bool native;
 		int pid = -1;
@@ -1429,6 +1442,38 @@ namespace Mono.Debugger.Backends
 			wait_for_completion ();
 			ready_event_handler ();
 			command_mutex.ReleaseMutex ();
+		}
+
+		// <summary>
+		//   Interrupt any currently running stepping operation, but don't send
+		//   any notifications to the caller.  The currently running operation is
+		//   automatically resumed when ReleaseThreadLock() is called.
+		// </summary>
+		internal void AcquireThreadLock ()
+		{
+			// Try to get the command mutex; if we succeed, then no stepping operation
+			// is currently running.
+			bool stopped = check_can_run ();
+			if (stopped)
+				return;
+
+			// Ok, there's an operation running.  Stop the inferior and wait until the
+			// currently running operation completed.
+			stop_requested = true;
+			inferior.Stop ();
+			wait_for_completion ();
+		}
+
+		internal void ReleaseThreadLock ()
+		{
+			lock (this) {
+				if (stop_requested) {
+					stop_requested = false;
+					completed_event.Reset ();
+					restart_event.Set ();
+				}
+				command_mutex.ReleaseMutex ();
+			}
 		}
 
 		Hashtable breakpoints = new Hashtable ();

@@ -542,6 +542,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public int StopSignal {
+			get {
+				// FIXME: Return SIGSTOP
+				return 19;
+			}
+		}
+
 		//
 		// ITargetMemoryAccess
 		//

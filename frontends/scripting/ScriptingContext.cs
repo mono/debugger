@@ -383,5 +383,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			procs.Add (handle);
 		}
+
+		public void Lock ()
+		{
+			backend.ThreadManager.AcquireGlobalThreadLock ();
+		}
+
+		public void UnLock ()
+		{
+			backend.ThreadManager.ReleaseGlobalThreadLock ();
+		}
 	}
 }

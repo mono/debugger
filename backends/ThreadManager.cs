@@ -25,6 +25,8 @@ namespace Mono.Debugger
 		DebuggerBackend backend;
 		Hashtable thread_hash;
 		Process main_process;
+		Mutex thread_lock_mutex;
+		int thread_lock_level = 0;
 
 		TargetAddress thread_handles = TargetAddress.Null;
 		TargetAddress thread_handles_num = TargetAddress.Null;
@@ -41,6 +43,8 @@ namespace Mono.Debugger
 			this.backend = backend;
 			this.bfdc = bfdc;
 			this.thread_hash = new Hashtable ();
+
+			thread_lock_mutex = new Mutex ();
 		}
 
 		public bool Initialize (Process process)
@@ -141,6 +145,34 @@ namespace Mono.Debugger
 
 				OnThreadCreatedEvent (new_process);
 			}
+		}
+
+		// <summary>
+		//   Stop all currently running threads without sending any notifications.
+		//   The threads are automatically resumed to their previos state when
+		//   ReleaseGlobalThreadLock() is called.
+		// </summary>
+		public void AcquireGlobalThreadLock ()
+		{
+			thread_lock_mutex.WaitOne ();
+			if (thread_lock_level++ > 0)
+				return;
+			foreach (Process process in thread_hash.Values) {
+				process.SingleSteppingEngine.AcquireThreadLock ();
+			}
+		}
+
+		public void ReleaseGlobalThreadLock ()
+		{
+			if (--thread_lock_level > 0) {
+				thread_lock_mutex.ReleaseMutex ();
+				return;
+			}
+				
+			foreach (Process process in thread_hash.Values) {
+				process.SingleSteppingEngine.ReleaseThreadLock ();
+			}
+			thread_lock_mutex.ReleaseMutex ();
 		}
 
 		//

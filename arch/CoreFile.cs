@@ -282,6 +282,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public int StopSignal {
+			get {
+				throw new CannotExecuteCoreFileException ();
+			}
+		}
+
 		//
 		// ITargetMemoryAccess
 		//

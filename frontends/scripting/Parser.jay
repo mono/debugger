@@ -71,6 +71,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token STEPI
 %token NEXTI
 %token FINISH
+%token LOCK
+%token UNLOCK
 
 %token SELECT
 %token BACKGROUND
@@ -134,6 +136,14 @@ command
 	| SHOW PROCESSES
 	  {
 		$$ = new ShowProcessesCommand ();
+	  }
+	| LOCK
+	  {
+		$$ = new LockCommand ();
+	  }
+	| UNLOCK
+	  {
+		$$ = new UnLockCommand ();
 	  }
 	| expression
 	  {
