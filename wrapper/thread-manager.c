@@ -78,11 +78,6 @@ debugger_gc_push_all_stacks (void)
 GCThreadFunctions mono_debugger_thread_vtable = {
 	NULL,
 
-	pthread_create,
-	pthread_join,
-	pthread_detach,
-	pthread_sigmask,
-
 	debugger_gc_stop_world,
 	debugger_gc_push_all_stacks,
 	debugger_gc_start_world
