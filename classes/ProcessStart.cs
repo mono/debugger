@@ -78,13 +78,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ProcessStart (DebuggerOptions options, string[] argv)
+		protected ProcessStart (DebuggerOptions options, string[] argv)
 			: this (options)
 		{
 			this.argv = argv;
 		}
 
-		public ProcessStart (DebuggerOptions options)
+		protected ProcessStart (DebuggerOptions options)
 		{
 			this.options = options;
 			this.cwd = options.WorkingDirectory;
