@@ -67,10 +67,8 @@ namespace Mono.Debugger
 			symtab_manager.ModulesChangedEvent +=
 				new SymbolTableManager.ModuleHandler (modules_reloaded);
 
-			csharp_language = new MonoCSharpLanguageBackend (this);
 			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
-			languages.Add (csharp_language);
 		}
 
 		public ModuleManager ModuleManager {
@@ -117,6 +115,11 @@ namespace Mono.Debugger
 
 			module_manager.Locked = true;
 
+			if (!start.IsNative) {
+				csharp_language = new MonoCSharpLanguageBackend (this);
+				languages.Add (csharp_language);
+			}
+
 			process = new Process (this, start, bfd_container);
 			main_group.AddThread (process);
 			return process;
@@ -158,7 +161,7 @@ namespace Mono.Debugger
 		internal void ReachedMain (Process process)
 		{
 			module_manager.Locked = true;
-			if (!process.ProcessStart.IsNative)
+			if (csharp_language != null)
 				csharp_language.Process = process;
 			process.Inferior.UpdateModules ();
 			UpdateSymbolTable ();
@@ -279,7 +282,7 @@ namespace Mono.Debugger
 
 		public void UpdateSymbolTable ()
 		{
-			if ((process != null) && !process.ProcessStart.IsNative)
+			if ((process != null) && (csharp_language != null))
 				csharp_language.UpdateSymbolTable ();
 		}
 

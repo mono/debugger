@@ -1,5 +1,8 @@
 2002-12-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs: Only create the `csharp_language' if we're
+	actually debugging a managed application.
+
 	* backends/server/i386-linux-ptrace.c (server_ptrace_kill): Use
 	`kill (handle->pid, SIGKILL)', not `ptrace (PTRACE_KILL)' since
 	kill() works from any thread.
