@@ -164,27 +164,27 @@ command_loop
 command
 	: CONTINUE process_expression
 	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Continue);
+		$$ = new ContinueCommand ((ProcessExpression) $2);
 	  }
 	| STEP process_expression
 	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Step);
+		$$ = new StepCommand ((ProcessExpression) $2);
 	  }
 	| NEXT process_expression
 	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Next);
+		$$ = new NextCommand ((ProcessExpression) $2);
 	  }
 	| STEPI process_expression
 	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.StepInstruction);
+		$$ = new StepInstructionCommand ((ProcessExpression) $2);
 	  }
 	| NEXTI process_expression
 	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.NextInstruction);
+		$$ = new NextInstructionCommand ((ProcessExpression) $2);
 	  }
 	| FINISH process_expression
 	  {
-		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Finish);
+		$$ = new FinishCommand ((ProcessExpression) $2);
 	  }
 	| BACKTRACE process_expression
 	  {

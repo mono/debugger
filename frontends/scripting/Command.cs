@@ -168,21 +168,99 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class StepCommand : Command
+	public class ContinueCommand : Command
 	{
 		ProcessExpression process_expr;
-		WhichStepCommand which;
 
-		public StepCommand (ProcessExpression process_expr, WhichStepCommand which)
+		public ContinueCommand (ProcessExpression process_expr)
 		{
 			this.process_expr = process_expr;
-			this.which = which;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			process.Step (which);
+			process.Step (WhichStepCommand.Continue);
+		}
+	}
+
+	public class StepCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public StepCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Step (WhichStepCommand.Step);
+		}
+	}
+
+	public class NextCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public NextCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Step (WhichStepCommand.Next);
+		}
+	}
+
+	public class StepInstructionCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public StepInstructionCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Step (WhichStepCommand.StepInstruction);
+		}
+	}
+
+	public class NextInstructionCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public NextInstructionCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Step (WhichStepCommand.NextInstruction);
+		}
+	}
+
+	public class FinishCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public FinishCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Step (WhichStepCommand.Finish);
 		}
 	}
 
