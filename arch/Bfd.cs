@@ -717,6 +717,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		TargetAddress ILanguageBackend.RuntimeInvokeFunc {
+			get {
+				return TargetAddress.Null;
+			}
+		}
+
 		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
 		{
 			return GetTrampoline (address);
@@ -725,6 +731,11 @@ namespace Mono.Debugger.Architecture
 		SourceMethod ILanguageBackend.GetTrampoline (TargetAddress address)
 		{
 			return null;
+		}
+
+		TargetAddress ILanguageBackend.CompileMethod (IInferior inferior, TargetAddress method_address)
+		{
+			throw new InvalidOperationException ();
 		}
 
 		public TargetAddress GetTrampoline (TargetAddress address)

@@ -153,6 +153,7 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 				  guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
+	RuntimeInvokeData *rdata;
 	long new_esp, call_disp;
 	int i;
 
@@ -177,10 +178,11 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 
 	new_esp = INFERIOR_REG_ESP (handle->current_regs) - size;
 
-	handle->saved_regs = g_memdup (&handle->current_regs, sizeof (handle->current_regs));
-	handle->saved_fpregs = g_memdup (&handle->current_fpregs, sizeof (handle->current_fpregs));
-	handle->call_address = new_esp + static_size;
-	handle->callback_argument = callback_argument;
+	rdata = g_new0 (RuntimeInvokeData, 1);
+	rdata->saved_regs = g_memdup (&handle->current_regs, sizeof (handle->current_regs));
+	rdata->saved_fpregs = g_memdup (&handle->current_fpregs, sizeof (handle->current_fpregs));
+	rdata->call_address = new_esp + static_size;
+	rdata->callback_argument = callback_argument;
 
 	call_disp = (int) invoke_method - new_esp;
 
@@ -196,6 +198,7 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 		return result;
 
 	INFERIOR_REG_ESP (handle->current_regs) = INFERIOR_REG_EIP (handle->current_regs) = new_esp;
+	g_ptr_array_add (handle->rti_stack, rdata);
 
 	result = set_registers (handle, &handle->current_regs);
 	if (result != COMMAND_ERROR_NONE)
@@ -221,10 +224,21 @@ check_breakpoint (InferiorHandle *handle, guint64 address, guint64 *retval)
 	return TRUE;
 }
 
+static RuntimeInvokeData *
+get_runtime_invoke_data (InferiorHandle *handle)
+{
+	if (!handle->rti_stack->len)
+		return NULL;
+
+	return g_ptr_array_index (handle->rti_stack, handle->rti_stack->len - 1);
+}
+
 static ChildStoppedAction
 debugger_arch_i386_child_stopped (InferiorHandle *handle, int stopsig,
 				  guint64 *callback_arg, guint64 *retval, guint64 *retval2)
 {
+	RuntimeInvokeData *rdata;
+
 	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get registers");
 	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
@@ -234,6 +248,31 @@ debugger_arch_i386_child_stopped (InferiorHandle *handle, int stopsig,
 		INFERIOR_REG_EIP (handle->current_regs)--;
 		set_registers (handle, &handle->current_regs);
 		return STOP_ACTION_BREAKPOINT_HIT;
+	}
+
+	rdata = get_runtime_invoke_data (handle);
+	if (rdata && (rdata->call_address == INFERIOR_REG_EIP (handle->current_regs))) {
+		if (set_registers (handle, rdata->saved_regs) != COMMAND_ERROR_NONE)
+			g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+		if (set_fp_registers (handle, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
+			g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
+
+		*callback_arg = rdata->callback_argument;
+		*retval = (((guint64) INFERIOR_REG_ECX (handle->current_regs)) << 32) + ((gulong) INFERIOR_REG_EAX (handle->current_regs));
+		*retval2 = (((guint64) INFERIOR_REG_EBX (handle->current_regs)) << 32) + ((gulong) INFERIOR_REG_EDX (handle->current_regs));
+
+		g_free (rdata->saved_regs);
+		g_free (rdata->saved_fpregs);
+		g_ptr_array_remove (handle->rti_stack, rdata);
+		g_free (rdata);
+
+		if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
+			g_error (G_STRLOC ": Can't get registers");
+		if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
+			g_error (G_STRLOC ": Can't get fp registers");
+
+		return STOP_ACTION_CALLBACK;
 	}
 
 	if (!handle->call_address || handle->call_address != INFERIOR_REG_EIP (handle->current_regs)) {

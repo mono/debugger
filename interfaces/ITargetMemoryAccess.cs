@@ -130,9 +130,9 @@ namespace Mono.Debugger
 	{
 		long GetRegister (int register);
 
-		TargetAddress CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
-						TargetAddress object_argument, TargetAddress[] param_objects,
-						out TargetAddress exc_object);
+		TargetAddress RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+					     TargetAddress object_argument, TargetAddress[] param_objects,
+					     out TargetAddress exc_object);
 
 		TargetAddress CallMethod (TargetAddress method, string argument);
 		TargetAddress CallMethod (TargetAddress method, TargetAddress argument1, TargetAddress argument2);

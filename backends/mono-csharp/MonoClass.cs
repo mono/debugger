@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress KlassAddress;
 		public readonly MonoClass Parent;
 
-		protected readonly TargetAddress RuntimeInvoke;
+		// protected readonly TargetAddress StartRuntimeInvoke;
 		protected readonly TargetAddress ClassGetStaticFieldData;
 
 		public MonoClass (TargetObjectKind kind, Type type, int size, bool is_classinfo,
@@ -70,7 +70,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.Type = type;
 			this.InstanceSize = size;
 			this.Table = table;
-			RuntimeInvoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
+			// StartRuntimeInvoke = table.Language.MonoDebuggerInfo.StartRuntimeInvoke;
 			ClassGetStaticFieldData = table.Language.MonoDebuggerInfo.ClassGetStaticFieldData;
 
 			if (Type.IsEnum)
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.Type = type;
 			this.InstanceSize = size;
 			this.Table = old_class.Table;
-			RuntimeInvoke = old_class.RuntimeInvoke;
+			// StartRuntimeInvoke = old_class.StartRuntimeInvoke;
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -470,7 +470,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (func == null)
 					return null;
 
-				return func.Invoke (new object [0]);
+				return func.Invoke (new object [0], false);
 			}
 
 			internal ITargetObject Get (StackFrame frame)
@@ -478,7 +478,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!PropertyInfo.CanRead)
 					throw new InvalidOperationException ();
 
-				return GetterType.InvokeStatic (frame, new object [0]);
+				return GetterType.InvokeStatic (frame, new object [0], false);
 			}
 
 			protected override string MyToString ()

@@ -431,6 +431,10 @@ namespace Mono.Debugger.Backends
 
 			case ChildEventType.CHILD_EXITED:
 				return new TargetEventArgs (TargetEventType.TargetExited, arg);
+
+			case ChildEventType.CHILD_CALLBACK:
+				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+				return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 			}
 
 		done:
@@ -489,6 +493,10 @@ namespace Mono.Debugger.Backends
 			case StepOperation.StepLine:
 			case StepOperation.NextLine:
 				result = Step (command.StepFrame);
+				break;
+
+			case StepOperation.RuntimeInvoke:
+				result = do_runtime_invoke ((RuntimeInvokeData) command.CommandFuncData);
 				break;
 
 			default:
@@ -897,7 +905,8 @@ namespace Mono.Debugger.Backends
 			NextInstruction,
 			StepLine,
 			NextLine,
-			StepFrame
+			StepFrame,
+			RuntimeInvoke
 		}
 
 		private delegate CommandResult CommandFunc (object data);
@@ -937,6 +946,15 @@ namespace Mono.Debugger.Backends
 				this.Operation = operation;
 				this.StepFrame = null;
 				this.Until = TargetAddress.Null;
+			}
+
+			public Command (StepOperation operation, object data)
+			{
+				this.Type = CommandType.StepOperation;
+				this.Operation = operation;
+				this.StepFrame = null;
+				this.Until = TargetAddress.Null;
+				this.CommandFuncData = data;
 			}
 
 			public Command (CommandFunc func, object data)
@@ -1184,7 +1202,8 @@ namespace Mono.Debugger.Backends
 			if ((operation != StepOperation.StepLine) &&
 			    (operation != StepOperation.NextLine) &&
 			    (operation != StepOperation.Run) &&
-			    (operation != StepOperation.RunInBackground))
+			    (operation != StepOperation.RunInBackground) &&
+			    (operation != StepOperation.RuntimeInvoke))
 				return null;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
@@ -1544,6 +1563,11 @@ namespace Mono.Debugger.Backends
 		void start_step_operation (StepOperation operation)
 		{
 			send_async_command (new Command (operation));
+		}
+
+		void start_step_operation (StepOperation operation, object data)
+		{
+			send_async_command (new Command (operation, data));
 		}
 
 		void start_step_operation (StepMode mode)
@@ -2039,16 +2063,28 @@ namespace Mono.Debugger.Backends
 			return new TargetAddress (inferior.AddressDomain, retval);
 		}
 
-		private struct CallInvokeMethodData
+		private struct RuntimeInvokeData
 		{
 			public readonly TargetAddress InvokeMethod;
+			public readonly ILanguageBackend Language;
 			public readonly TargetAddress MethodArgument;
 			public readonly TargetAddress ObjectArgument;
 			public readonly TargetAddress[] ParamObjects;
 
-			public CallInvokeMethodData (TargetAddress invoke_method, TargetAddress method_argument,
-						     TargetAddress object_argument, TargetAddress[] param_objects)
+			public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
+						  TargetAddress object_argument, TargetAddress[] param_objects)
 			{
+				this.Language = language;
+				this.InvokeMethod = TargetAddress.Null;
+				this.MethodArgument = method_argument;
+				this.ObjectArgument = object_argument;
+				this.ParamObjects = param_objects;
+			}
+
+			public RuntimeInvokeData (TargetAddress invoke_method, TargetAddress method_argument,
+						  TargetAddress object_argument, TargetAddress[] param_objects)
+			{
+				this.Language = null;
 				this.InvokeMethod = invoke_method;
 				this.MethodArgument = method_argument;
 				this.ObjectArgument = object_argument;
@@ -2056,38 +2092,72 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		private struct CallInvokeMethodResult
+		TargetEventArgs do_runtime_invoke (RuntimeInvokeData rdata)
+		{
+			check_inferior ();
+
+			TargetAddress invoke = rdata.Language.CompileMethod (inferior, rdata.MethodArgument);
+
+			insert_temporary_breakpoint (invoke);
+
+			inferior.RuntimeInvoke (
+				rdata.Language.RuntimeInvokeFunc, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects);
+
+			return do_continue ();
+		}
+
+		CommandResult runtime_invoke_func (object data)
+		{
+			RuntimeInvokeData rdata = (RuntimeInvokeData) data;
+			TargetAddress exc_object;
+			TargetAddress retval = inferior.RuntimeInvoke (
+				rdata.InvokeMethod, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects,
+				out exc_object);
+			RuntimeInvokeResult result = new RuntimeInvokeResult (retval, exc_object);
+			return new CommandResult (CommandResultType.CommandOk, result);
+		}
+
+		private struct RuntimeInvokeResult
 		{
 			public readonly TargetAddress ReturnObject;
 			public readonly TargetAddress ExceptionObject;
 
-			public CallInvokeMethodResult (TargetAddress return_object, TargetAddress exc_object)
+			public RuntimeInvokeResult (TargetAddress return_object, TargetAddress exc_object)
 			{
 				this.ReturnObject = return_object;
 				this.ExceptionObject = exc_object;
 			}
 		}
 
-		CommandResult call_invoke_method (object data)
+		protected bool RuntimeInvoke (StackFrame frame, TargetAddress method_argument, TargetAddress object_argument,
+					      TargetAddress[] param_objects)
 		{
-			CallInvokeMethodData cdata = (CallInvokeMethodData) data;
-			TargetAddress exc_object;
-			TargetAddress retval = inferior.CallInvokeMethod (
-				cdata.InvokeMethod, cdata.MethodArgument, cdata.ObjectArgument, cdata.ParamObjects,
-				out exc_object);
-			CallInvokeMethodResult result = new CallInvokeMethodResult (retval, exc_object);
-			return new CommandResult (CommandResultType.CommandOk, result);
+			if ((frame == null) || (frame.Method == null))
+				throw new ArgumentException ();
+			ILanguageBackend language = frame.Method.Module.LanguageBackend as ILanguageBackend;
+			if (language == null)
+				throw new ArgumentException ();
+
+			if (!check_can_run ())
+				return false;
+
+			RuntimeInvokeData data = new RuntimeInvokeData (language, method_argument, object_argument, param_objects);
+
+			start_step_operation (StepOperation.RuntimeInvoke, data);
+			wait_for_completion ();
+			command_mutex.ReleaseMutex ();
+
+			return true;
 		}
 
-		TargetAddress ITargetAccess.CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
-							      TargetAddress object_argument, TargetAddress[] param_objects,
-							      out TargetAddress exc_object)
+		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+							   TargetAddress object_argument, TargetAddress[] param_objects,
+							   out TargetAddress exc_object)
 		{
-			CallInvokeMethodData data = new CallInvokeMethodData (
-				invoke_method, method_argument, object_argument, param_objects);
-			CommandResult result = send_sync_command (new CommandFunc (call_invoke_method), data);
+			RuntimeInvokeData data = new RuntimeInvokeData (invoke_method, method_argument, object_argument, param_objects);
+			CommandResult result = send_sync_command (new CommandFunc (runtime_invoke_func), data);
 			if (result.Type == CommandResultType.CommandOk) {
-				CallInvokeMethodResult retval = (CallInvokeMethodResult) result.Data;
+				RuntimeInvokeResult retval = (RuntimeInvokeResult) result.Data;
 				exc_object = retval.ExceptionObject;
 				return retval.ReturnObject;
 			} else if (result.Type == CommandResultType.Exception)
@@ -2441,6 +2511,12 @@ namespace Mono.Debugger.Backends
 					throw new NoMethodException ();
 
 				return sse.DisassembleMethod (Method);
+			}
+
+			public override bool RuntimeInvoke (TargetAddress method_argument, TargetAddress object_argument,
+							    TargetAddress[] param_objects)
+			{
+				return sse.RuntimeInvoke (this, method_argument, object_argument, param_objects);
 			}
 		}
 

@@ -31,6 +31,14 @@
 #include "i386-freebsd-ptrace.h"
 #endif
 
+typedef struct
+{
+	INFERIOR_REGS_TYPE *saved_regs;
+	INFERIOR_FPREGS_TYPE *saved_fpregs;
+	long call_address;
+	guint64 callback_argument;
+} RuntimeInvokeData;
+
 struct InferiorHandle
 {
 	int pid;
@@ -47,6 +55,7 @@ struct InferiorHandle
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
+	GPtrArray *rti_stack;
 	unsigned dr_control, dr_status;
 	BreakpointManager *bpm;
 };
@@ -60,6 +69,7 @@ server_ptrace_finalize (InferiorHandle *handle)
 		kill (handle->pid, SIGKILL);
 	}
 
+	g_ptr_array_free (handle->rti_stack, TRUE);
 	g_free (handle->saved_regs);
 	g_free (handle->saved_fpregs);
 	g_free (handle);
@@ -183,6 +193,7 @@ server_ptrace_initialize (BreakpointManager *bpm)
 	InferiorHandle *handle = g_new0 (InferiorHandle, 1);
 
 	handle->bpm = bpm;
+	handle->rti_stack = g_ptr_array_new ();
 	return handle;
 }
 

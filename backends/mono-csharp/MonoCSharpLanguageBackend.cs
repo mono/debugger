@@ -1900,22 +1900,18 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
+		public TargetAddress RuntimeInvokeFunc {
+			get {
+				return info.RuntimeInvoke;
+			}
+		}
+
+		protected TargetAddress CompileMethod (IInferior inferior, TargetAddress method_address)
 		{
-			IArchitecture arch = inferior.Architecture;
-
-			if (trampoline_address.IsNull)
-				return TargetAddress.Null;
-
-			TargetAddress trampoline = arch.GetTrampoline (inferior, address, trampoline_address);
-
-			if (trampoline.IsNull)
-				return TargetAddress.Null;
-
 			long result;
 			lock (this) {
 				reload_event.Reset ();
-				result = inferior.CallMethod (info.CompileMethod, trampoline.Address, 0);
+				result = inferior.CallMethod (info.CompileMethod, method_address.Address, 0);
 			}
 			reload_event.WaitOne ();
 
@@ -1935,6 +1931,26 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			return method;
+		}
+
+		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
+		{
+			IArchitecture arch = inferior.Architecture;
+
+			if (trampoline_address.IsNull)
+				return TargetAddress.Null;
+
+			TargetAddress trampoline = arch.GetTrampoline (inferior, address, trampoline_address);
+
+			if (trampoline.IsNull)
+				return TargetAddress.Null;
+
+			return CompileMethod (inferior, trampoline);
+		}
+
+		TargetAddress ILanguageBackend.CompileMethod (IInferior inferior, TargetAddress method_address)
+		{
+			return CompileMethod (inferior, method_address);
 		}
 
 		public SourceMethod GetTrampoline (TargetAddress address)

@@ -15,9 +15,15 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		TargetAddress RuntimeInvokeFunc {
+			get;
+		}
+
 		TargetAddress GetTrampoline (IInferior inferior, TargetAddress address);
 
 		SourceMethod GetTrampoline (TargetAddress address);
+
+		TargetAddress CompileMethod (IInferior inferior, TargetAddress method_address);
 	}
 }
 

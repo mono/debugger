@@ -25,6 +25,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetObject InvokeStatic (StackFrame frame, object[] args);
+		ITargetObject InvokeStatic (StackFrame frame, object[] args, bool debug);
 	}
 }

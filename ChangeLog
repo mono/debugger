@@ -1,3 +1,30 @@
+2003-09-08  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/: When invoking a method with the `call'
+	command, debug the invoked method.  See the NEWS file for details.
+
+	* backends/IInferior.cs (IInferior.CallInvokeMethod): Removed.
+	(IInferior.RuntimeInvoke): New method; there are two overloaded
+	versions: one is similar to the old CallInvokeMethod() and the
+	other one allows us to debug the invoked method.
+
+	* backends/ILanguageBackends.cs
+	(ILanguageBackend.RuntimeInvokeFunc): New property.
+	(ILanguageBackend.CompileMethod): New method.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.CallInvokeMethod): Renamed to RuntimeInvoke().
+	(SingleSteppingEngine.RuntimeInvoke): Added overloaded version
+	which allows us to debug the invoked function.
+
+	* interfaces/ITargetFunctionObject.cs
+	(ITargetFunctionObject.Invoke): Added `bool debug' argument; if
+	true, debug the invoked method.
+
+	* interfaces/ITargetFunctionType.cs
+	(ITargetFunctionType.Invoke): Added `bool debug' argument; if
+	true, debug the invoked method.
+
 2003-09-07  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetStructType.cs

@@ -147,6 +147,9 @@ namespace Mono.Debugger
 
 		public abstract AssemblerMethod DisassembleMethod ();
 
+		public abstract bool RuntimeInvoke (TargetAddress method_argument, TargetAddress object_argument,
+						    TargetAddress[] param_objects);
+
 		public abstract ILanguage Language {
 			get;
 		}

@@ -14,7 +14,8 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress method;
 		MonoType return_type;
 		MonoType[] parameter_types;
-		TargetAddress invoke_method;
+		TargetAddress compile_method;
+		TargetAddress runtime_invoke;
 		MonoSymbolTable table;
 		bool has_return_type;
 
@@ -52,7 +53,8 @@ namespace Mono.Debugger.Languages.CSharp
 				parameter_types [i] = table.GetType (parameters [i].ParameterType, param_info);
 			}
 
-			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
+			compile_method = table.Language.MonoDebuggerInfo.CompileMethod;
+			runtime_invoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
 		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetAddress method,
@@ -67,7 +69,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			parameter_types = new MonoType [0];
 
-			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
+			compile_method = table.Language.MonoDebuggerInfo.CompileMethod;
+			runtime_invoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
 		public override bool IsByRef {
@@ -128,7 +131,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return null;
 		}
 
-		protected ITargetObject Invoke (StackFrame frame, TargetAddress this_object, object[] args)
+		protected ITargetObject Invoke (StackFrame frame, TargetAddress this_object, object[] args, bool debug)
 		{
 			TargetAddress exc_object;
 
@@ -152,8 +155,13 @@ namespace Mono.Debugger.Languages.CSharp
 				arg_ptr [i] = obj.Location.Address;
 			}
 
-			TargetAddress retval = frame.TargetAccess.CallInvokeMethod (
-				invoke_method, method, this_object, arg_ptr, out exc_object);
+			if (debug) {
+				frame.RuntimeInvoke (method, this_object, arg_ptr);
+				return null;
+			}
+
+			TargetAddress retval = frame.TargetAccess.RuntimeInvoke (
+				runtime_invoke, method, this_object, arg_ptr, out exc_object);
 
 			if (retval.IsNull) {
 				if (exc_object.IsNull)
@@ -175,14 +183,14 @@ namespace Mono.Debugger.Languages.CSharp
 				return retval_obj.DereferencedObject;
 		}
 
-		internal ITargetObject Invoke (TargetLocation location, object[] args)
+		internal ITargetObject Invoke (TargetLocation location, object[] args, bool debug)
 		{
-			return Invoke (location.StackFrame, location.Address, args);
+			return Invoke (location.StackFrame, location.Address, args, debug);
 		}
 
-		public ITargetObject InvokeStatic (StackFrame frame, object[] args)
+		public ITargetObject InvokeStatic (StackFrame frame, object[] args, bool debug)
 		{
-			return Invoke (frame, TargetAddress.Null, args);
+			return Invoke (frame, TargetAddress.Null, args, debug);
 		}
 
 		public override MonoObject GetObject (TargetLocation location)

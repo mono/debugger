@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.Native
 			return null;
 		}
 
-		ITargetObject ITargetFunctionObject.Invoke (object[] args)
+		ITargetObject ITargetFunctionObject.Invoke (object[] args, bool debug)
 		{
 			return Invoke (args);
 		}

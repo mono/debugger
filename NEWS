@@ -1,3 +1,20 @@
+September 8th, 2003 - Martin Baulig
+-----------------------------------
+
+Improved the way how we invoke managed methods in the target.  The
+command line interface already provides two ways of invoking a method
+in the target:
+
+a) you can use `print $a.Hello (8)' to invoke the method and print
+   ints return value.
+
+b) you can use `call $a.Hello (8)' to call the method without printing
+   the return value.
+
+   This command is now improved: the debugger stops at the beginning
+   of the method to allow you to debug it and it stops again when
+   returning from the call.
+
 July 4th, 2003 - Martin Baulig
 ------------------------------
 

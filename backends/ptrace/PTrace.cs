@@ -291,10 +291,35 @@ namespace Mono.Debugger.Backends
 			return cevent.Data1;
 		}
 
-		ChildEvent call_method_invoke (TargetAddress invoke_method,
-					       TargetAddress method_argument,
-					       TargetAddress object_argument,
-					       TargetAddress[] param_objects)
+		public void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+					   TargetAddress object_argument, TargetAddress[] param_objects)
+		{
+			check_disposed ();
+
+			int size = param_objects.Length;
+			long[] param_addresses = new long [size];
+			for (int i = 0; i < param_objects.Length; i++)
+				param_addresses [i] = param_objects [i].Address;
+
+			IntPtr data = IntPtr.Zero;
+			try {
+				if (size > 0) {
+					data = Marshal.AllocHGlobal (size * 8);
+					Marshal.Copy (param_addresses, 0, data, size);
+				}
+
+				check_error (mono_debugger_server_call_method_invoke (
+					server_handle, invoke_method.Address, method_argument.Address,
+					object_argument.Address, size, data, 0));
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+			}
+		}
+
+		public TargetAddress RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+						    TargetAddress object_argument, TargetAddress[] param_objects,
+						    out TargetAddress exc_object)
 		{
 			check_disposed ();
 
@@ -314,6 +339,8 @@ namespace Mono.Debugger.Backends
 				check_error (mono_debugger_server_call_method_invoke (
 					server_handle, invoke_method.Address, method_argument.Address,
 					object_argument.Address, size, data, 0));
+
+				check_error (mono_debugger_server_continue (server_handle));
 			} catch {
 				change_target_state (old_state);
 			} finally {
@@ -321,18 +348,7 @@ namespace Mono.Debugger.Backends
 					Marshal.FreeHGlobal (data);
 			}
 
-			return WaitForCallback ();
-		}
-
-		public TargetAddress CallInvokeMethod (TargetAddress invoke_method,
-						       TargetAddress method_argument,
-						       TargetAddress object_argument,
-						       TargetAddress[] param_objects,
-						       out TargetAddress exc_object)
-		{
-			check_disposed ();
-			ChildEvent cevent = call_method_invoke (
-				invoke_method, method_argument, object_argument, param_objects);
+			ChildEvent cevent = WaitForCallback ();
 
 			long exc_addr = cevent.Data2;
 			long obj_addr = cevent.Data1;
@@ -347,6 +363,7 @@ namespace Mono.Debugger.Backends
 				return new TargetAddress (object_argument.Domain, obj_addr);
 			else
 				return TargetAddress.Null;
+
 		}
 
 		TargetAddress ITargetAccess.CallMethod (TargetAddress method, string argument)
@@ -355,6 +372,13 @@ namespace Mono.Debugger.Backends
 		}
 
 		TargetAddress ITargetAccess.CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_address, TargetAddress method_argument,
+							   TargetAddress object_argument, TargetAddress[] param_objects,
+							   out TargetAddress exc_object)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -482,7 +506,7 @@ namespace Mono.Debugger.Backends
 			if (cevent == null)
 				goto again;
 			else if (cevent.Type != ChildEventType.CHILD_CALLBACK)
-				throw new InternalError ("Call not completed");
+				throw new InternalError ("Call not completed: {0} {1}", cevent.Type, cevent.Argument);
 
 			return cevent;
 		}

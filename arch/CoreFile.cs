@@ -279,6 +279,12 @@ namespace Mono.Debugger.Architecture
 
 				return core.Disassembler.DisassembleMethod (Method);
 			}
+
+			public override bool RuntimeInvoke (TargetAddress method_argument, TargetAddress object_argument,
+							    TargetAddress[] param_objects)
+			{
+				throw new InvalidOperationException ();
+			}
 		}
 
 		//
@@ -386,9 +392,9 @@ namespace Mono.Debugger.Architecture
 			return core_bfd.GetMemoryMaps ();
 		}
 
-		TargetAddress ITargetAccess.CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
-							      TargetAddress object_argument, TargetAddress[] param_objects,
-							      out TargetAddress exc_object)
+		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+							   TargetAddress object_argument, TargetAddress[] param_objects,
+							   out TargetAddress exc_object)
 		{
 			throw new InvalidOperationException ();
 		}

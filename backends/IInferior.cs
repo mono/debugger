@@ -119,9 +119,11 @@ namespace Mono.Debugger.Backends
 		long CallMethod (TargetAddress method, long method_argument1, long method_argument2);
 		long CallStringMethod (TargetAddress method, long method_argument,
 				       string string_argument);
-		TargetAddress CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
-						TargetAddress object_argument, TargetAddress[] param_objects,
-						out TargetAddress exc_object);
+		void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+				    TargetAddress object_argument, TargetAddress[] param_objects);
+		TargetAddress RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+					     TargetAddress object_argument, TargetAddress[] param_objects,
+					     out TargetAddress exc_object);
 		TargetAddress SimpleLookup (string name);
 
 		ChildEvent Wait ();

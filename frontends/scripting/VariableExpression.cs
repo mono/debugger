@@ -821,7 +821,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				args [i] = arguments [i].Resolve (context);
 
 			try {
-				ITargetObject retval = func.Invoke (args);
+				ITargetObject retval = func.Invoke (args, !need_retval);
 				if (need_retval && !func.Type.HasReturnValue)
 					throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
 
@@ -897,7 +897,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				args [i] = arguments [i].Resolve (context);
 
 			try {
-				return ctor.Type.InvokeStatic (frame.Frame, args);
+				return ctor.Type.InvokeStatic (frame.Frame, args, need_retval);
 			} catch (MethodOverloadException ex) {
 				throw new ScriptingException ("Cannot invoke constructor on type `{0}': {1}", type_name, ex.Message);
 			} catch (TargetInvocationException ex) {
