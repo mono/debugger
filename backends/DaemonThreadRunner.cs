@@ -96,9 +96,16 @@ namespace Mono.Debugger.Backends
 						"signal {1} at {2}.", pid, arg, Inferior.CurrentFrame);
 				inferior.Continue ();
 				goto again;
-			} else if (message == ChildEventType.CHILD_EXITED)
+			} else if (message == ChildEventType.CHILD_EXITED) {
 				return;
-			else if ((message != ChildEventType.CHILD_HIT_BREAKPOINT) && (arg != 0))
+			} else if (message == ChildEventType.CHILD_SIGNALED) {
+				if (arg == PTraceInferior.SIGKILL)
+					return;
+				else
+					throw new InternalError (
+						"Daemon thread {0} unexpectedly died with fatal signal {1}.",
+						pid, arg);
+			} else if ((message != ChildEventType.CHILD_HIT_BREAKPOINT) && (arg != 0))
 				throw new InternalError ("Unexpected result from daemon thread: {0} {1}",
 							 message, arg);
 
