@@ -28,6 +28,12 @@ namespace GLib {
 				Hangup ();
 		}
 
+		internal IOChannel (IntPtr _channel)
+		{
+			this._channel = _channel;
+			mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
+		}
+
 		internal IOChannel (int fd)
 		{
 			_channel = g_io_channel_unix_new (fd);
