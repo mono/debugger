@@ -1,5 +1,19 @@
 2005-03-02  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono/MonoClassType.cs (MonoClassType.get_events): new
+	function.
+	(MonoClassType.get_Events, MonoClassType.get_StaticEvents):
+	implement.
+	(MonoClassType.get_constructors): new function.
+	(MonoClassType.get_Constructors,
+	MonoClassType.get_StaticConstructors): implement.
+	(MonoMethodInfo.Get): new function, returns the
+	ITargetFunctionObject corresponding to this MonoMethodInfo.
+	(MonoEventInfo): new class, more or less a c&p job from
+	MonoPropertyInfo.
+	
+2005-03-02  Chris Toshok  <toshok@ximian.com>
+
 	* backends/server/Makefile.am: clean this up substantially, since
 	we're no longer building the orbit stuff.
 

@@ -13,6 +13,11 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] static_methods;
 		MonoPropertyInfo[] properties;
 		MonoPropertyInfo[] static_properties;
+		MonoEventInfo[] events;
+		MonoEventInfo[] static_events;
+		MonoMethodInfo[] constructors;
+		MonoMethodInfo[] static_constructors;
+
 		MonoClassType parent_type;
 
 		public MonoClassType (MonoSymbolFile file, Type type)
@@ -225,35 +230,107 @@ namespace Mono.Debugger.Languages.Mono
 			return static_properties [index].Get (frame);
 		}
 
+		void get_events ()
+		{
+			if (events != null)
+				return;
+
+			R.EventInfo[] einfo = type.GetEvents (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+
+			events = new MonoEventInfo [einfo.Length];
+
+			for (int i = 0; i < einfo.Length; i++)
+				events [i] = new MonoEventInfo (this, i, einfo [i], false);
+
+			einfo = type.GetEvents (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+
+			static_events = new MonoEventInfo [einfo.Length];
+
+			for (int i = 0; i < einfo.Length; i++)
+				static_events [i] = new MonoEventInfo (this, i, einfo [i], true);
+		}
+
 		public ITargetEventInfo[] Events {
-			get { return new ITargetEventInfo [0]; }
+			get {
+				get_events ();
+				return events;
+			}
 		}
 
 		public ITargetEventInfo[] StaticEvents {
-			get { return new ITargetEventInfo [0]; }
+			get {
+				get_events ();
+				return static_events;
+			}
 		}
 
 		public ITargetObject GetStaticEvent (StackFrame frame, int index)
 		{
+			get_events ();
 			return null;
 		}
 
+		void get_constructors ()
+		{
+			if (constructors != null)
+				return;
+
+			int num_ctors = 0, num_sctors = 0;
+
+			R.ConstructorInfo[] minfo = type.GetConstructors (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+
+			foreach (R.ConstructorInfo method in minfo) {
+				if (method.IsStatic)
+					num_sctors++;
+				else
+					num_ctors++;
+			}
+
+			constructors = new MonoMethodInfo [num_ctors];
+			static_constructors = new MonoMethodInfo [num_sctors];
+
+			int pos = 0, spos = 0;
+			for (int i = 0; i < minfo.Length; i++) {
+				if (minfo [i].IsStatic) {
+					static_constructors [spos] = new MonoMethodInfo (this, spos, minfo [i]);
+					spos++;
+				} else {
+					constructors [pos] = new MonoMethodInfo (this, pos, minfo [i]);
+					pos++;
+				}
+			}
+		}
+
 		public ITargetMethodInfo[] Constructors {
-			get { return new ITargetMethodInfo [0]; }
+			get {
+				get_constructors ();
+				return constructors;
+			}
 		}
 
 		public ITargetFunctionObject GetConstructor (StackFrame frame, int index)
 		{
-			return null;
+			get_constructors ();
+ 			return constructors [index].Get (frame);
 		}
 
 		public ITargetMethodInfo[] StaticConstructors {
-			get { return new ITargetMethodInfo [0]; }
+			get {
+				get_constructors ();
+				return static_constructors;
+			}
 		}
 
 		public ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index)
 		{
-			return null;
+			get_constructors ();
+ 			return static_constructors [index].Get (frame);
 		}
 
 		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
@@ -379,9 +456,64 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
+			internal ITargetFunctionObject Get (StackFrame frame)
+			{
+				MonoFunctionTypeInfo func = (MonoFunctionTypeInfo) FunctionType.Resolve ();
+				if (func == null)
+					return null;
+
+				return func.GetStaticObject (frame);
+			}
+
 			protected override string MyToString ()
 			{
 				return String.Format ("{0}", FunctionType);
+			}
+		}
+
+		internal class MonoEventInfo : MonoStructMember, ITargetEventInfo
+		{
+			MonoType type;
+			public readonly R.EventInfo EventInfo;
+			public readonly MonoFunctionType AddType, RemoveType;
+
+			internal MonoEventInfo (MonoClassType klass, int index, R.EventInfo einfo,
+						bool is_static)
+				: base (klass, einfo, index, index, is_static)
+			{
+				int pos;
+
+				EventInfo = einfo;
+				type = klass.File.MonoLanguage.LookupMonoType (einfo.EventHandlerType);
+
+				R.MethodInfo add = EventInfo.GetAddMethod ();
+				pos = C.MonoDebuggerSupport.GetMethodIndex (add);
+				AddType = new MonoFunctionType (klass.File, Klass, add, pos - 1);
+
+				R.MethodInfo remove = EventInfo.GetRemoveMethod ();
+				pos = C.MonoDebuggerSupport.GetMethodIndex (remove);
+				RemoveType = new MonoFunctionType (klass.File, Klass, remove, pos - 1);
+			}
+
+			public override MonoType Type {
+				get { return type; }
+			}
+
+			ITargetFunctionType ITargetEventInfo.Add {
+				get {
+					return AddType;
+				}
+			}
+
+			ITargetFunctionType ITargetEventInfo.Remove {
+				get {
+					return RemoveType;
+				}
+			}
+
+			protected override string MyToString ()
+			{
+				return String.Format ("{0}:{1}", AddType, RemoveType);
 			}
 		}
 
