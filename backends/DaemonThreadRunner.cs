@@ -115,6 +115,17 @@ namespace Mono.Debugger.Backends
 
 		void daemon_thread_main ()
 		{
+			try {
+				daemon_thread_main_loop ();
+			} catch (ThreadAbortException) {
+				// We're exiting here.
+			} finally {
+				child_exited ();
+			}
+		}
+
+		void daemon_thread_main_loop ()
+		{
 		again:
 			ChildEvent child_event = wait ();
 			ChildEventType message = child_event.Type;

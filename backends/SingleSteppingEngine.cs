@@ -262,6 +262,7 @@ namespace Mono.Debugger.Backends
 				try {
 					process_command (command);
 				} catch (ThreadAbortException e) {
+					Console.WriteLine ("THREAD ABORT: {0}", pid);
 					// We're exiting here.
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0}", e);
@@ -1616,8 +1617,13 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			if (inferior != null)
-				inferior.Kill ();
+			Console.WriteLine ("KILL: {0} {1}", inferior, engine_thread);
+
+			if (inferior == null)
+				return;
+
+			if (engine_thread != null)
+				engine_thread.Abort ();
 		}
 
 		public void SetSignal (int signal, bool send_it)

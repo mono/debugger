@@ -64,11 +64,13 @@ namespace Mono.Debugger
 			switch (type) {
 			case ProcessType.Daemon:
 				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
+				runner.TargetExited += new TargetExitedHandler (child_exited);
 				this.pid = pid;
 				break;
 
 			case ProcessType.ManagedWrapper:
 				runner = backend.ThreadManager.StartManagedApplication (this, inferior, start);
+				runner.TargetExited += new TargetExitedHandler (child_exited);
 				this.pid = runner.Inferior.PID;
 				break;
 
@@ -168,7 +170,6 @@ namespace Mono.Debugger
 
 		public int PID {
 			get{
-				check_disposed ();
 				return pid;
 			}
 		}

@@ -132,11 +132,19 @@ namespace Mono.Debugger
 				ThreadCreatedEvent (this, new_process);
 		}
 
+		protected virtual void OnThreadExitedEvent (Process process)
+		{
+			if (ThreadExitedEvent != null)
+				ThreadExitedEvent (this, process);
+		}
+
 		public Process[] Threads {
 			get {
-				Process[] procs = new Process [thread_hash.Values.Count];
-				thread_hash.Values.CopyTo (procs, 0);
-				return procs;
+				lock (this) {
+					Process[] procs = new Process [thread_hash.Values.Count];
+					thread_hash.Values.CopyTo (procs, 0);
+					return procs;
+				}
 			}
 		}
 
@@ -178,7 +186,16 @@ namespace Mono.Debugger
 
 		void process_exited (Process process)
 		{
-			thread_hash.Remove (process.PID);
+			OnThreadExitedEvent (process);
+
+			lock (this) {
+				thread_hash.Remove (process.PID);
+				if (process != main_process)
+					return;
+
+				foreach (Process thread in thread_hash.Values)
+					thread.Dispose ();
+			}
 		}
 
 		void add_process (Process process, bool send_event)
@@ -257,6 +274,10 @@ namespace Mono.Debugger
 
 				int debugger_pid = runner.Inferior.ReadInteger (dpid);
 				int main_pid = runner.Inferior.ReadInteger (mpid);
+
+				manager_process = runner.Process;
+				thread_hash.Add (manager_process.PID, manager_process);
+				add_process (manager_process, true);
 
 				debugger_process = backend.CreateDebuggerProcess (runner.Process, debugger_pid);
 				thread_hash.Add (debugger_pid, debugger_process);
@@ -386,10 +407,6 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (main_process != null)
-						main_process.Dispose ();
-					if (debugger_process != null)
-						debugger_process.Dispose ();
 					foreach (Process thread in thread_hash.Values)
 						thread.Dispose ();
 					breakpoint_manager.Dispose ();

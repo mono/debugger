@@ -617,7 +617,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public override string ToString ()
 		{
-			return String.Format ("Process @{0}: {1} {2}", id, State, process);
+			return String.Format ("Process @{0}: {1} {2} {3}", id, State, process.PID, process);
 		}
 	}
 
