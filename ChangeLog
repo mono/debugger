@@ -1,5 +1,11 @@
 2004-10-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBakcend.cs
+	(MonoMethod.GetTypeSignature): New method.
+	[FIXME: This needs some love.]	
+
+2004-10-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
 	(MonoMethod.RegisterLoadHandler): Pass the full method signature
 	to the JIT; fixes #68527.

@@ -2023,6 +2023,43 @@ namespace Mono.Debugger.Languages.CSharp
 				load_handlers = null;
 			}
 
+			// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
+			string GetTypeSignature (Type t)
+			{
+				switch (Type.GetTypeCode (t)) {
+				case TypeCode.Char:
+					return "char";
+				case TypeCode.Boolean:
+					return "bool";
+				case TypeCode.Byte:
+					return "byte";
+				case TypeCode.SByte:
+					return "sbyte";
+				case TypeCode.Int16:
+					return "int16";
+				case TypeCode.UInt16:
+					return "uint16";
+				case TypeCode.Int32:
+					return "int";
+				case TypeCode.UInt32:
+					return "uint";
+				case TypeCode.Int64:
+					return "long";
+				case TypeCode.UInt64:
+					return "ulong";
+				case TypeCode.Single:
+					return "single";
+				case TypeCode.Double:
+					return "double";
+				case TypeCode.String:
+					return "string";
+				case TypeCode.Object:
+					return "object";
+				default:
+					return t.Name;
+				}
+			}
+
 			public IDisposable RegisterLoadHandler (Process process,
 								MethodLoadedHandler handler,
 								object user_data)
@@ -2036,7 +2073,7 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < pi.Length; i++) {
 					if (i > 0)
 						sb.Append (",");
-					sb.Append (pi [i].ParameterType.FullName);
+					sb.Append (GetTypeSignature (pi [i].ParameterType));
 				}
 				sb.Append (")");
 				string full_name = sb.ToString ();
