@@ -1,0 +1,40 @@
+This version of the Mono Debugger only runs on Linux >= 2.6.0 and not
+with the 2.4.x kernel.
+
+However, since the (2.4.20) kernel in Red Hat 9 contains a backport of
+the nptl changes and I'm only depending on full nptl support, it
+_should_ also work with Red Hat 9.  Unfortunately, their kernel
+contains more than 100 patches, so it's really hard to tell just from
+looking at the source code - someone needs to run the debugger on a
+Red Hat 9 system and tell me whether it works.
+
+The debugger depends on the following kernel features in particular:
+
+* The extended waitpid() result codes PTRACE_EVENT_* to get
+  notifications when threads are created etc.  These are enabled with
+  ptrace (PTRACE_SETOPTIONS).
+
+  A workaround is difficult, but they are in Red Hat's kernel - I can
+  confirm this from a look at the code.
+
+* Different semantics of waitpid().
+
+  Let's assume you have two threads A and B which are siblings and
+  belong to the same thread group.  A forks a child C.
+
+  Linux 2.4.x doesn't allow B to wait() for C.  There is nothing in
+  POSIX which forbids this - the reason was just that for the 2.4.x
+  kernel, A and B are distinct processes.
+
+  This is fixed in NPTL: A and B are now just two threads of the same
+  process.
+
+  Unfortunately, the nptl changes are really complex, so I can't say
+  from looking at the code whether this'll work with Red Hat's kernel
+  or not - but most likely, it does.
+
+  A workaround for this is not so difficult, but we'd need to maintain
+  two different event loops in the debugger: one for 2.4.x and one for
+  2.6.x (or Red Hat 9's kernel, so runtime detection might be
+  difficult).
+
