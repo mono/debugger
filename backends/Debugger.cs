@@ -171,7 +171,13 @@ namespace Mono.Debugger
 
 			module_manager.Locked = false;
 
-			thread_manager.Initialize (process);
+			DaemonThreadHandler handler = null;
+			if (csharp_language != null) {
+				csharp_language.Initialize ();
+				handler = new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
+			}
+
+			thread_manager.Initialize (process, handler);
 		}
 
 		public void Quit ()
@@ -281,10 +287,7 @@ namespace Mono.Debugger
 		}
 
 		public void UpdateSymbolTable ()
-		{
-			if ((process != null) && (csharp_language != null))
-				csharp_language.UpdateSymbolTable ();
-		}
+		{ }
 
 		public Module[] Modules {
 			get {

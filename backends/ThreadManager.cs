@@ -25,8 +25,10 @@ namespace Mono.Debugger
 		DebuggerBackend backend;
 		Hashtable thread_hash;
 		Process main_process;
+		Process debugger_process;
 		Mutex thread_lock_mutex;
 		BreakpointManager breakpoint_manager;
+		DaemonThreadHandler csharp_handler;
 		int thread_lock_level = 0;
 
 		TargetAddress thread_handles = TargetAddress.Null;
@@ -35,6 +37,7 @@ namespace Mono.Debugger
 		bool initialized = false;
 
 		const int Signal_SIGINT			= 2;
+		const int Signal_SIGCHLD		= 17;
 
 		const int PThread_Signal_Debug		= 34;
 		const int PThread_Signal_Abort		= 33;
@@ -50,9 +53,10 @@ namespace Mono.Debugger
 			breakpoint_manager = new BreakpointManager ();
 		}
 
-		public bool Initialize (Process process)
+		public bool Initialize (Process process, DaemonThreadHandler csharp_handler)
 		{
-			main_process = process;
+			this.csharp_handler = csharp_handler;
+			this.main_process = process;
 			thread_hash.Add (process.Inferior.PID, process);
 
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
@@ -67,6 +71,8 @@ namespace Mono.Debugger
 
 			process.Inferior.WriteInteger (tdebug, 1);
 			initialized = true;
+
+			reload_threads (process.Inferior);
 
 			Console.WriteLine ("Initialized thread manager.");
 
@@ -122,6 +128,17 @@ namespace Mono.Debugger
 				return true;
 			}
 
+			if (signal == PThread_Signal_Abort) {
+				action = false;
+				return true;
+			}
+
+			if (signal == Signal_SIGCHLD) {
+				process.Inferior.SetSignal (0, false);
+				action = false;
+				return true;
+			}
+
 			if (signal == Signal_SIGINT) {
 				process.Inferior.SetSignal (0, false);
 				action = true;
@@ -138,30 +155,6 @@ namespace Mono.Debugger
 			process.Inferior.SetSignal (PThread_Signal_Restart, false);
 			action = false;
 			return true;
-		}
-
-		bool daemon_thread_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
-		{
-			switch (signal) {
-			case 0:
-				return false;
-
-			case PThread_Signal_Restart:
-			case PThread_Signal_Abort:
-				return true;
-
-			case PThread_Signal_Debug:
-				reload_threads (runner.Inferior);
-				runner.Inferior.SetSignal (PThread_Signal_Restart, false);
-				return true;
-
-			case Signal_SIGINT:
-				runner.Inferior.SetSignal (0, false);
-				return true;
-
-			default:
-				return false;
-			}
 		}
 
 		void reload_threads (ITargetMemoryAccess memory)
@@ -189,8 +182,10 @@ namespace Mono.Debugger
 				Process new_process;
 				if (index == 1)
 					new_process = main_process.CreateDaemonThread (
-						pid, PThread_Signal_Restart,
-						new DaemonThreadHandler (daemon_thread_handler));
+						pid, PThread_Signal_Restart, null);
+				else if ((csharp_handler != null) && (index == 2))
+					new_process = debugger_process = main_process.CreateDaemonThread (
+						pid, 0, csharp_handler);
 				else {
 					new_process = main_process.CreateThread (pid);
 					new_process.Inferior.SetSignal (PThread_Signal_Restart, true);

@@ -1,5 +1,11 @@
 2002-12-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs: If we're debugging a managed
+	application, the JIT creates a special debugger thread for us;
+	create a DaemonThreadRunner for this thread.
+
+2002-12-30  Martin Baulig  <martin@ximian.com>
+
 	* arch/Bfd.cs: Use the ThreadManager as the TargetAddress domain
 	for all symbol table addresses; they must be shared between all
 	the threads.
