@@ -409,9 +409,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			TargetAddress trampoline = arch.GetTrampoline (address, trampoline_address);
 
-			Console.WriteLine ("CALL: {0:x} {1:x} => {2:x}",
-					   address, trampoline_address, trampoline);
-
 			if (trampoline.IsNull)
 				return TargetAddress.Null;
 
@@ -431,8 +428,6 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new TargetMemoryException (
 					"Unknown target address size " + inferior.TargetAddressSize);
 			}
-
-			Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
 
 			return method;
 		}

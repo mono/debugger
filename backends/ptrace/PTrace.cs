@@ -796,8 +796,6 @@ namespace Mono.Debugger.Backends
 			if (frame.Language != null) {
 				TargetAddress trampoline = frame.Language.GetTrampoline (call);
 
-				Console.WriteLine ("TRAMPOLINE: {0} {1}", CurrentFrame, trampoline);
-
 				/*
 				 * If this is a trampoline, insert a breakpoint at the start of
 				 * the corresponding method and continue.
@@ -807,13 +805,20 @@ namespace Mono.Debugger.Backends
 				 * when entering the method.
 				 */
 				if (!trampoline.IsNull) {
+					IMethod method = null;
+					if (application_symtab != null)
+						method = application_symtab.Lookup (trampoline);
+					if (method == null) {
+						current_step_frame = frame;
+						do_next ();
+						return;
+					}
+
 					insert_temporary_breakpoint (trampoline);
 					Continue ();
 					return;
 				}
 			}
-
-			Console.WriteLine ("STEP: {0} {1}", frame, call);
 
 			/*
 			 * When StepMode.SingleInstruction was requested, enter the method no matter
@@ -835,7 +840,6 @@ namespace Mono.Debugger.Backends
 			else if (application_symtab != null)
 				method = application_symtab.Lookup (call);
 			if (method == null) {
-				Console.WriteLine ("STEPPING OVER: {0}", call);
 				current_step_frame = frame;
 				do_next ();
 				return;

@@ -163,6 +163,7 @@ namespace Mono.Debugger
 		long CallMethod (TargetAddress method, long method_argument);
 		TargetAddress SimpleLookup (string name);
 
+		long GetRegister (int register);
 		long[] GetRegisters (int[] registers);
 
 		TargetAddress[] GetBacktrace (int max_frames, bool full_backtrace);

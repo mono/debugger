@@ -48,46 +48,42 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 			}
 
-#if FALSE
-			string regname;
+			I386Register reg;
 			switch (register) {
 			case 0:
-				regname = "eax";
+				reg = I386Register.EAX;
 				break;
 
 			case 1:
-				regname = "ecx";
+				reg = I386Register.ECX;
 				break;
 
 			case 2:
-				regname = "edx";
+				reg = I386Register.EDX;
 				break;
 
 			case 3:
-				regname = "ebx";
+				reg = I386Register.EBX;
 				break;
 
 			case 6:
-				regname = "esi";
+				reg = I386Register.ESI;
 				break;
 
 			case 7:
-				regname = "edi";
+				reg = I386Register.EDI;
 				break;
 
 			default:
 				insn_size = 0;
-				return 0;
+				return TargetAddress.Null;
 			}
 
-			int addr = backend.ReadIntegerRegister (regname);
+			long addr = inferior.GetRegister ((int) reg);
 
-			long vtable_addr = addr + disp;
+			TargetAddress vtable_addr = new TargetAddress (inferior, addr + disp);
 
-			return backend.ReadAddress (vtable_addr);
-#endif
-
-			return TargetAddress.Null;
+			return inferior.ReadAddress (vtable_addr);
 		}
 
 		public TargetAddress GetTrampoline (TargetAddress location,
