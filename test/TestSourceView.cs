@@ -1,22 +1,43 @@
 using System;
+using System.IO;
 using GLib;
 using Gtk;
 using GtkSharp;
 
 public class TestSourceView
 {
-	Gtk.Container container;
 	Gtk.SourceBuffer text_buffer;
 	Gtk.SourceView source_view;
-	Gtk.Entry entry;
+	string filename;
 
-	public TestSourceView ()
+	static Gtk.Notebook notebook;
+
+	public static void CreateWidgets ()
 	{
 		Gtk.Window win = new Gtk.Window ("SourceView Test");
 
 		Gtk.VBox vbox = new Gtk.VBox (false, 0);
 		win.Add (vbox);
 
+		notebook = new Gtk.Notebook ();
+		vbox.PackStart (notebook, true, true, 8);
+
+		Gtk.Entry entry = new Gtk.Entry ();
+		entry.Activated += new EventHandler (activated_event);
+
+		vbox.PackStart (entry, false, false, 8);
+
+		new TestSourceView ("/home/martin/monocvs/debugger/NEWS");
+
+		win.DefaultWidth = 800;
+		win.DefaultHeight = 500;
+
+		win.DeleteEvent += new DeleteEventHandler (delete_event);
+		win.ShowAll ();
+	}
+
+	public TestSourceView (string filename)
+	{
 		text_buffer = new Gtk.SourceBuffer (new Gtk.TextTagTable ());
 		source_view = new Gtk.SourceView (text_buffer);
 		source_view.Editable = false;
@@ -26,18 +47,21 @@ public class TestSourceView
 		Gtk.ScrolledWindow sw = new Gtk.ScrolledWindow ();
 		sw.Add (source_view);
 
-		vbox.PackStart (sw, true, true, 8);
+		string name = Path.GetFileName (filename);
 
-		entry = new Gtk.Entry ();
-		entry.Activated += new EventHandler (activated_event);
+		this.filename = filename;
+		sw.Mapped += new EventHandler (mapped_event);
 
-		vbox.PackStart (entry, false, false, 8);
+		sw.ShowAll ();
 
-		win.DefaultWidth = 800;
-		win.DefaultHeight = 500;
+		notebook.InsertPage (sw, new Gtk.Label (name), -1);
+		notebook.NextPage ();
+	}
 
-		win.DeleteEvent += new DeleteEventHandler (delete_event);
-		win.ShowAll ();
+	void mapped_event (object o, EventArgs args)
+	{
+		Console.WriteLine ("MAPPED!");
+		LoadFile (filename);
 	}
 
 	void LoadFile (string filename)
@@ -60,16 +84,18 @@ public class TestSourceView
 		source_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
 	}
 
-	void activated_event (object obj, EventArgs args)
+	static void activated_event (object obj, EventArgs args)
 	{
+		Gtk.Entry entry = (Gtk.Entry) obj;
+
 		try {
-			LoadFile (entry.Text);
+			new TestSourceView (entry.Text);
 		} catch (Exception e) {
 			Console.WriteLine ("Cannot load file: {0}", entry.Text, e.Message);
 		}
 	}
 
-	void delete_event (object obj, DeleteEventArgs args)
+	static void delete_event (object obj, DeleteEventArgs args)
 	{
 		SignalArgs sa = (SignalArgs) args;
 		Application.Quit ();
@@ -79,7 +105,7 @@ public class TestSourceView
 	public static int Main ()
 	{
 		Application.Init ();
-		TestSourceView test = new TestSourceView ();
+		CreateWidgets ();
 		Application.Run ();
 		return 0;
 	}
