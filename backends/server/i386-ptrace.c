@@ -36,6 +36,7 @@ struct InferiorHandle
 #ifdef __linux__
 	int mem_fd;
 #endif
+	int is_thread;
 	int last_signal;
 	long call_address;
 	guint64 callback_argument;
@@ -213,10 +214,16 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 		return COMMAND_ERROR_FORK;
 #else
 #warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)'"
+
+	*error = NULL;
+	*standard_input = 0;
+	*standard_output = 0;
+	*standard_error = 0;
+
 	*child_pid = fork ();
 	if (*child_pid == 0) {
 		child_setup_func (NULL);
-		exect (argv [0], argv+1, envp);
+		exect (argv [0], argv, envp);
 		g_assert_not_reached ();
 	}
 #endif
@@ -230,10 +237,13 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 static ServerCommandError
 server_ptrace_attach (InferiorHandle *handle, int pid)
 {
-	if (ptrace (PT_ATTACH, pid, NULL, 0))
+	if (ptrace (PT_ATTACH, pid, NULL, 0)) {
+		g_warning (G_STRLOC ": Cannot attach to process %d: %s", pid, g_strerror (errno));
 		return COMMAND_ERROR_FORK;
+	}
 
 	handle->pid = pid;
+	handle->is_thread = TRUE;
 
 	setup_inferior (handle);
 

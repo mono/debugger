@@ -1,5 +1,15 @@
 2003-01-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-freebsd-ptrace.c (do_wait): FreeBSD
+	requires the `WLINUXCLONE' option if and only if the target is a
+	thread.
+
+	* backends/server/i386-ptrace.c (InferiorHandle): Added
+	`is_thread' field; this is set to 1 by server_ptrace_attach()
+	since we currently only attach to threads.
+
+2003-01-16  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Check whether we have a shared libbfd.so; if not,
 	tell people to read the "binutils and libbfd issues" section in
 	README.FreeBSD.

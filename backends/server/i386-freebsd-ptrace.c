@@ -101,7 +101,7 @@ server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 static int
 do_wait (InferiorHandle *handle)
 {
-	int ret, status = 0;
+	int options, ret, status = 0;
 	sigset_t mask, oldmask;
 
 	sigemptyset (&mask);
@@ -111,7 +111,10 @@ do_wait (InferiorHandle *handle)
 	sigprocmask (SIG_BLOCK, &mask, &oldmask);
 
  again:
-	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG);
+	options = WUNTRACED;
+	if (handle->is_thread)
+		options |= WLINUXCLONE;
+	ret = waitpid (handle->pid, &status, options);
 	if (ret < 0) {
 		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
 		status = -1;
