@@ -1,7 +1,7 @@
 all: gtksourceview-sharp.dll
 
-gtksourceview-sharp.dll: generated/*.cs
-	$(MCS) --unsafe --target library -L $(GTKSHARP_PREFIX)/lib -r glib-sharp.dll -r gtk-sharp.dll -r gdk-sharp.dll -o gtksourceview-sharp.dll --recurse '*.cs'
+gtksourceview-sharp.dll: @srcdir@/generated/*.cs
+	$(MCS) --unsafe --target library -L $(GTKSHARP_PREFIX)/lib -r glib-sharp.dll -r gtk-sharp.dll -r gdk-sharp.dll -o gtksourceview-sharp.dll --recurse '@srcdir@/*.cs'
 
 clean:
 	rm -f *.dll
