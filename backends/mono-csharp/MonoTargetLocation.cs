@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.frame = frame;
 			this.is_valid = true;
 
-			if (frame.SourceLocation != null)
+			if ((frame.SourceLocation != null) && (start_scope == frame.TargetAddress))
 				this.start_scope += frame.SourceLocation.SourceRange;
 
 			frame.FrameInvalid += new StackFrameInvalidHandler (SetInvalid);
