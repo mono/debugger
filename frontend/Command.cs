@@ -1561,6 +1561,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class SourceCommand : DebuggerCommand
 	{
 		int method_id = -1;
+		bool all;
 		LocationType type = LocationType.Method;
 		protected SourceLocation location;
 
@@ -1589,6 +1590,11 @@ namespace Mono.Debugger.Frontend
 			set { type = LocationType.EventRemove; }
 		}
 
+		public bool All {
+			get { return all; }
+			set { all = value; }
+		}
+
 		protected bool DoResolveExpression (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
@@ -1603,8 +1609,17 @@ namespace Mono.Debugger.Frontend
 			if (expr == null)
 				return false;
 
-			location = expr.EvaluateLocation (context, type, null);
-			return location != null;
+			try {
+				location = expr.EvaluateLocation (context, type, null);
+				return location != null;
+			}
+			catch (MultipleLocationsMatchException ex) {
+				context.AddMethodSearchResult (ex.Sources, !all);
+				return all != false;
+			}
+			catch (ScriptingException ex) {
+				return false;
+			}
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -1613,6 +1628,12 @@ namespace Mono.Debugger.Frontend
 				if (Argument != "") {
 					context.Error ("Cannot specify both a method id " +
 						       "and an expression.");
+					return false;
+				}
+
+				if (All) {
+					context.Error ("Cannot specify both a method id " +
+						       "and -all.");
 					return false;
 				}
 
@@ -1705,6 +1726,11 @@ namespace Mono.Debugger.Frontend
 		int process_id = -1;
 		ProcessHandle process;
 		ThreadGroup tgroup;
+		bool pending;
+
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
 
 		public string Group {
 			get { return group; }
@@ -1718,8 +1744,26 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (!base.DoResolve (context))
-				return false;
+			bool resolved = false;
+
+			// only try to resolve the breakpoint if we're
+			// currently running a process (and therefore
+			// have symbols loaded)
+			if (context.CurrentProcess != null) {
+				try {
+					if (All) {
+						if (Argument == "" && context.NumMethodSearchResults == 0) {
+							context.Error ("to use -all you must either specify a method or have previously done a search");
+							return false;
+						}
+					}
+					  
+					resolved = base.DoResolve (context);
+				}
+				catch (ScriptingException ex) {
+					context.Error (ex);
+				}
+			}
 
 			if (process_id > 0) {
 				process = context.Interpreter.GetProcess (process_id);
@@ -1731,6 +1775,24 @@ namespace Mono.Debugger.Frontend
 			if (tgroup == null)
 				tgroup = context.Interpreter.GetThreadGroup (Group, false);
 
+			if (!resolved) {
+#if PENDING_BREAKPOINTS
+				if (context.Interpreter.IsInteractive) {
+					if (context.Interpreter.Query ("Make breakpoint pending on future shared library load?")) {
+						All = true;
+					  	context.Interpreter.InsertPendingBreakpoint (process, tgroup, Argument);
+						pending = true;
+						return true;
+					}
+					else {
+						return false;
+					}
+				}
+#endif
+				return false;
+			}
+
+
 			if (location == null)
 				location = context.CurrentLocation;
 
@@ -1739,10 +1801,35 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			int index = context.Interpreter.InsertBreakpoint (
-				process, tgroup, location);
-			context.Print ("Inserted breakpoint {0} at {1}",
-				       index, location.Name);
+#if PENDING_BREAKPOINTS
+			if (pending) {
+				int index = context.Interpreter.InsertPendingBreakpoint (
+						 process, tgroup, Argument);
+				context.Print ("Breakpoint {0} ({1}) pending.", index, Argument);
+			}
+			else {
+#endif
+				if (All) {
+					for (int i = 1; i <= context.NumMethodSearchResults; i ++) {
+						SourceMethod method = context.GetMethodSearchResult (i);
+						location = new SourceLocation (method);
+
+						int index = context.Interpreter.InsertBreakpoint (
+								process, tgroup, location);
+						context.Print ("Inserted breakpoint {0} at {1}",
+							       index, location.Name);
+					}
+					return;
+				}
+				else {
+					int index = context.Interpreter.InsertBreakpoint (
+								process, tgroup, location);
+					context.Print ("Inserted breakpoint {0} at {1}",
+						       index, location.Name);
+				}
+#if PENDING_BREAKPOINTS
+			}
+#endif
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)

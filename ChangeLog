@@ -1,5 +1,27 @@
 2005-02-03  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs: add "-all" to SourceCommand, and fix up
+	BreakCommand to deal with it.  Also add some ifdefed-out pending
+	breakpoint code here.
+
+	* frontend/Expression.cs
+	(MethodGroupExpression.DoEvaluateLocation): throw
+	MultpleLocationsMatchException instead of a ScriptingException
+	when multiple methods match.
+
+	* frontend/ScriptingContext.cs
+	(MultipleLocationsMatchException): as much as I hate to do it, add
+	an exception class to allow location resolution to pass back
+	multiple matches (and allow the caller to differentiate the two
+	cases of "more than one location" and "multiple locations")
+	(ScriptingContext.AddMethodSearchResult): add blurb about '-all'.
+	Also only print when @print = true.
+	(ScriptingContext.NumMethodSearchResults): new property.
+	(ScriptingContext.ClearMethodSearchResults): new method, clear out
+	both the hashtable and arraylist.
+	
+2005-02-03  Chris Toshok  <toshok@ximian.com>
+
 	* backends/mono-csharp/MonoClass.cs (MonoEventInfo..ctor): pass
 	the MonoSymbolField to the superclass's ctor.
 	(MonoMethodInfo..ctor): same.

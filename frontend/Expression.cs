@@ -729,8 +729,7 @@ namespace Mono.Debugger.Frontend
 				}
 				SourceMethod[] sources = new SourceMethod [list.Count];
 				list.CopyTo (sources, 0);
-				context.AddMethodSearchResult (sources);
-				throw new ScriptingException ("");
+				throw new MultipleLocationsMatchException (sources);
 			}
 		}
 

@@ -612,6 +612,16 @@ namespace Mono.Debugger.Frontend
 		{ }
 	}
 
+	public class MultipleLocationsMatchException : ScriptingException
+	{
+		public readonly SourceMethod[] Sources;
+		public MultipleLocationsMatchException (SourceMethod[] sources)
+		  : base ("")
+		{
+			Sources = sources;
+		}
+	}
+
 	public enum ModuleOperation
 	{
 		Ignore,
@@ -805,12 +815,23 @@ namespace Mono.Debugger.Frontend
 			Print ("{0:11x}\t{1}", line.Address, line.Text);
 		}
 
-		public void AddMethodSearchResult (SourceMethod[] methods)
+		public void AddMethodSearchResult (SourceMethod[] methods, bool print)
 		{
-			interpreter.Print ("More than one method matches your query:");
-			PrintMethods (methods);
-			interpreter.Print ("\nYou may use either the full method signature,\n" +
-					   "or '-id N' where N is the number to the left of the method.");
+			ClearMethodSearchResults ();
+
+			if (print)
+				interpreter.Print ("More than one method matches your query:");
+
+			foreach (SourceMethod method in methods) {
+				int id = AddMethodSearchResult (method);
+				if (print)
+					interpreter.Print ("{0,4}  {1}", id, method.Name);
+			}
+
+			if (print)
+				interpreter.Print ("\nYou may use either the full method signature,\n" +
+						   "'-id N' where N is the number to the left of the method, or\n"
+						   "'-all' to select all methods.");
 		}
 
 		public void PrintMethods (SourceMethod[] methods)
@@ -845,6 +866,19 @@ namespace Mono.Debugger.Frontend
 					"No such item in the method history.");
 
 			return (SourceMethod) method_search_results [index - 1];
+		}
+
+		public int NumMethodSearchResults
+		{
+			get {
+				return method_search_results.Count;
+			}
+		}
+
+		public void ClearMethodSearchResults ()
+		{
+			method_search_hash = new Hashtable ();
+			method_search_results = new ArrayList ();
 		}
 
 		int last_line = -1;
