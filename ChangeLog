@@ -1,5 +1,18 @@
 2004-06-17  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (StackFrame): Added `StackPointer' and
+	`FrameAddress'.
+
+	* backends/Inferior.cs
+	(Inferior.ServerStackFrame): Added `StackPointer'.
+	(Inferior.StackFrame): Added `StackPointer' and `FrameAddress'.
+
+	* frontends/scripting/Command.cs (ShowFrameCommand): Added
+	`show frame' command to get information about the current stack
+	frame.	
+
+2004-06-17  Martin Baulig  <martin@ximian.com>
+
 	* arch/CoreFile.cs: Removed.
 	* arch/CoreFileElfI386.cs: Removed.
 
