@@ -1,5 +1,10 @@
 2003-03-09  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Set version number to 0.2.3.  The next release
+	will be 0.3 "White Montains".
+
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
 	Released version 0.2.2 "Cambridge" of the Mono Debugger :-)
 
 2003-03-07  Martin Baulig  <martin@ximian.com>
