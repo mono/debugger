@@ -580,6 +580,11 @@ namespace Mono.Debugger.Languages.CSharp
 					OnSymbolsUnLoadedEvent ();
 				}
 			}
+
+			public override SourceMethodInfo FindMethod (string name)
+			{
+				return reader.FindMethod (name);
+			}
 		}
 	}
 
@@ -861,6 +866,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		ArrayList sources = null;
+		Hashtable source_hash = null;
 		Hashtable method_name_hash = null;
 		void ensure_sources ()
 		{
@@ -868,10 +874,15 @@ namespace Mono.Debugger.Languages.CSharp
 				return;
 
 			sources = new ArrayList ();
+			source_hash = new Hashtable ();
 			method_name_hash = new Hashtable ();
 
-			foreach (SourceFileEntry source in file.Sources)
-				sources.Add (new MonoSourceInfo (this, source));
+			foreach (SourceFileEntry source in file.Sources) {
+				MonoSourceInfo info = new MonoSourceInfo (this, source);
+
+				sources.Add (info);
+				source_hash.Add (source, info);
+			}
 		}
 
 		public SourceInfo[] GetSources ()
@@ -886,9 +897,19 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			ensure_sources ();
 			MonoMethodSourceEntry method = (MonoMethodSourceEntry) method_name_hash [name];
-			if (method == null)
+			if (method != null)
+				return method.Method;
+
+			int method_index = file.FindMethod (name);
+			if (method_index < 0)
 				return null;
 
+			MethodEntry entry = file.GetMethod (method_index);
+			MonoSourceInfo info = (MonoSourceInfo) source_hash [entry.SourceFile];
+			MethodSourceEntry source = file.GetMethodSource (method_index);
+
+			method = new MonoMethodSourceEntry (this, source, info, name);
+			method_name_hash.Add (name, method);
 			return method.Method;
 		}
 
@@ -1512,6 +1533,8 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
 					       object user_data)
 		{
+			throw new InternalError ();
+
 			SingleSteppingEngine sse = process.SingleSteppingEngine;
 			sse.AcquireThreadLock ();
 			long retval;

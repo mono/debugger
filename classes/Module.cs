@@ -411,14 +411,7 @@ namespace Mono.Debugger
 
 			ReadModuleData ();
 
-			foreach (SourceInfo source in Sources) {
-				SourceMethodInfo method = source.FindMethod (name);
-
-				if (method != null)
-					return method;
-			}
-
-			return null;
+			return module_data.FindMethod (name);
 		}
 
 		// <summary>

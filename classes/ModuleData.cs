@@ -41,6 +41,8 @@ namespace Mono.Debugger
 
 		protected internal abstract void ReadModuleData ();
 
+		public abstract SourceMethodInfo FindMethod (string name);
+
 		public abstract TargetAddress SimpleLookup (string name);
 
 		// <summary>

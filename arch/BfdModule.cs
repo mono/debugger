@@ -73,6 +73,18 @@ namespace Mono.Debugger.Architecture
 			return bfd [name];
 		}
 
+		public override SourceMethodInfo FindMethod (string name)
+		{
+			foreach (SourceInfo source in Sources) {
+				SourceMethodInfo method = source.FindMethod (name);
+
+				if (method != null)
+					return method;
+			}
+
+			return null;
+		}
+
 		void load_dwarf ()
 		{
 			if (dwarf_loaded)
