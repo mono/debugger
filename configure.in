@@ -260,42 +260,18 @@ AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
 
 if test x$server_only != xyes ; then
-   dnl
-   dnl See if readline needs -ltermcap
-   dnl
-   AC_MSG_CHECKING([if using the libedit library is requested])
-   AC_ARG_ENABLE(editline, [  --disable-libedit       don't use libedit], use_libedit=$enableval, use_libedit=yes)
-   AC_MSG_RESULT($use_libedit)
-   if test "x$use_libedit" = "xyes"; then
-      AC_DEFINE(USE_LIBEDIT,1,[Whether to use libedit])
+   AC_MSG_CHECKING([if using the libreadline library is requested])
+   AC_ARG_ENABLE(readline, [  --disable-readline       don't use readline/libedit], use_readline=$enableval, use_readline=yes)
+   AC_MSG_RESULT($use_readline)
+   if test "x$use_readline" = "xyes"; then
+      AC_DEFINE(USE_READLINE,1,[Whether to use readline])
 
-      old_LIBS=$LIBS
-      LIBS="-ledit"
-
-      AC_TRY_LINK(,,[LIBEDIT_DEPLIBS=$LIBS],[
-		LIBS="-ledit -ltermcap"
-		AC_TRY_LINK(,,[
-			LIBEDIT_DEPLIBS=$LIBS
-		],[
-			LIBS="-ledit -lcurses"
-			AC_TRY_LINK(,,[
-				LIBEDIT_DEPLIBS=$LIBS
-			],[
-				LIBS="-ledit -lncurses"
-				AC_TRY_LINK(,,[
-					LIBEDIT_DEPLIBS=$LIBS
-				],[
-					AC_MSG_ERROR([Cannot figure out how to link with the libedit library; see config.log for more information])
-				])
-			])
-		])
-      ])
-
-      LIBS=$old_LIBS
+      CHECK_READLINE
    else
-      LIBEDIT_DEPLIBS=	
+      READLINE_DEPLIBS=
    fi
-   AC_SUBST(LIBEDIT_DEPLIBS)
+
+   AC_SUBST(READLINE_DEPLIBS)
 fi
 
 dnl

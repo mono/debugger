@@ -1,3 +1,25 @@
+2004-12-06  Chris Toshok  <toshok@ximian.com>
+
+	* glue/Makefile.am: change all the LIBEDIT stuff back to
+	READLINE.  except now "READLINE" is a generic term, kinda like
+	"Coke".
+
+	* glue/mono-debugger-readline.c: LIBEDIT -> READLINE.
+
+	* glue/mono-debugger-readline.h: include the right headers
+	depending on whether we're readline or libedit.
+
+	* README: add readline info to the dependency section.
+
+	* configure.in (USE_READLINE): simplify the readline stuff here by
+	using the macros that are in acinclude.m4.  the rest of this file
+	(particularly the NPTL stuff) could stand a similar cleaning up.
+
+	* acinclude.m4: new file.  put some macros dealing with
+	readline/libedit here.  Make it deal with check readline and
+	editline, and allow the user to specify either on the configure
+	line.
+
 2004-11-28  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/scripting/Command.cs (ListSourceCode): The symbol "-"

@@ -1,9 +1,15 @@
 DEPENDENCIES
 ------------
 
+	Editline or Readline
+
 	* editline
 
 	    http://freshmeat.net/projects/editline/
+
+	* readline
+
+	    ftp://ftp.gnu.org/gnu/readline/
 
 DIRECTORY LAYOUT
 -----------------
