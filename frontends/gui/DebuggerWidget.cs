@@ -158,6 +158,14 @@ namespace Mono.Debugger.GUI
 			}
 		}
 
+		protected virtual IMethodSource GetMethodSource (IMethod method)
+		{
+			if ((method != null) && method.HasSource)
+				return method.Source;
+			else
+				return null;
+		}
+
 		// <remarks>
 		//   This method may get called from any thread, so we must not use gtk# here.
 		// </remarks>
@@ -165,10 +173,7 @@ namespace Mono.Debugger.GUI
 		{
 			lock (this) {
 				current_method = method;
-				if ((method != null) && method.HasSource)
-					current_method_source = method.Source;
-				else
-					current_method_source = null;
+				current_method_source = GetMethodSource (method);
 				thread_notify.Signal (method_notify_id);
 			}
 		}
@@ -201,6 +206,10 @@ namespace Mono.Debugger.GUI
 
 		protected IMethod CurrentMethod {
 			get { return current_method; }
+		}
+
+		protected IMethodSource CurrentMethodSource {
+			get { return current_method_source; }
 		}
 		
 		void mapped (object o, EventArgs args)

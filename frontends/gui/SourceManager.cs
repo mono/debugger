@@ -171,6 +171,8 @@ namespace Mono.Debugger.GUI {
 				text_buffer.LineRemoveMarker (last_line, "line");
 				last_line = -1;
 			}
+
+			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 		}
 		
 		void method_invalid_event ()
@@ -181,7 +183,6 @@ namespace Mono.Debugger.GUI {
 
 		void frame_invalid_event ()
 		{
-			Active = false;
 			ClearLine ();
 		}
 

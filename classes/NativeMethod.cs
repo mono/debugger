@@ -40,21 +40,36 @@ namespace Mono.Debugger
 		private class NativeMethodSource : MethodSource
 		{
 			NativeMethod method;
+			ISourceBuffer buffer;
+			int start_row;
+			int end_row;
+			ArrayList addresses;
 
 			public NativeMethodSource (NativeMethod method)
 				: base (method)
 			{
 				this.method = method;
+				real_read_source ();
 			}
 
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
 								     out ArrayList addresses)
 			{
+				start_row = this.start_row;
+				end_row = this.end_row;
+				addresses = this.addresses;
+				return this.buffer;
+			}
+
+			void real_read_source ()
+			{
 				start_row = end_row = 0;
 				addresses = null;
 
-				if (method.disassembler == null)
-					return null;
+				if (method.disassembler == null) {
+					buffer = null;
+					return;
+				}
 
 				TargetAddress current = method.StartAddress;
 
@@ -86,7 +101,7 @@ namespace Mono.Debugger
 					sb.Append (line);
 				}
 
-				return new SourceBuffer (method.Name, sb.ToString ());
+				buffer = new SourceBuffer (method.Name, sb.ToString ());
 			}
 		}
 	}

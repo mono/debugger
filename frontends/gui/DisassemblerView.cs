@@ -25,10 +25,10 @@ namespace Mono.Debugger.GUI
 
 		protected override SourceLocation GetSource (StackFrame frame)
 		{
-			if (current_method_source == null)
+			if (CurrentMethodSource == null)
 				return null;
 
-			return current_method_source.Lookup (frame.TargetAddress);
+			return CurrentMethodSource.Lookup (frame.TargetAddress);
 		}
 	}
 }

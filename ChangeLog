@@ -1,3 +1,9 @@
+2002-12-25  Martin Baulig  <martin@ximian.com>
+
+	* classes/NativeMethod.cs: Create the ISourceBuffer in the ctor.
+
+	* frontends/gui/SourceView.cs: Make this work again.
+
 2002-12-24  Martin Baulig  <martin@ximian.com>
 
 	This is my last commit for today, so merry x-mas !

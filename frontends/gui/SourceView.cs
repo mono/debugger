@@ -10,11 +10,7 @@ namespace Mono.Debugger.GUI
 		protected Gtk.TextView source_view;
 		protected Gtk.TextBuffer text_buffer;
 		protected Gtk.TextTag frame_tag;
-		protected IMethod current_method = null;
-		protected IMethodSource current_method_source = null;
 		protected SourceFileFactory factory;
-
-		bool has_frame;
 
 		public SourceView (DebuggerGUI gui, Gtk.Container container, Gtk.TextView widget)
 			: base (gui, container, widget)
@@ -37,35 +33,27 @@ namespace Mono.Debugger.GUI
 		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
 			base.SetBackend (backend, process);
-			
-			process.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
-			process.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
-			process.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
+
+#if FALSE
 			process.TargetExited += new TargetExitedHandler (TargetExitedEvent);
+#endif
 		}
 
 		void TargetExitedEvent ()
 		{
-			MethodInvalidEvent ();
+			MethodInvalid ();
 		}
 
-		void MethodInvalidEvent ()
+		protected override void MethodInvalid ()
 		{
-			current_method = null;
-			current_method_source = null;
-
 			if (!IsVisible)
 				return;
 
 			text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
 		}
 
-		void MethodChangedEvent (IMethod method)
+		protected override void MethodChanged (IMethod method, IMethodSource source)
 		{
-			current_method = method;
-			current_method_source = null;
-
 			if (!IsVisible)
 				return;
 
@@ -74,14 +62,9 @@ namespace Mono.Debugger.GUI
 			if (method == null)
 				return;
 
-			current_method_source = GetMethodSource (method);
-			if (current_method_source == null)
-				return;
-
-			ISourceBuffer buffer = current_method_source.SourceBuffer;
+			ISourceBuffer buffer = source.SourceBuffer;
 			if (buffer == null) {
 				Console.WriteLine ("The buffer is empty");
-				current_method_source = null;
 				return;
 			}
 
@@ -94,51 +77,38 @@ namespace Mono.Debugger.GUI
 			if (factory == null) {
 				Console.WriteLine (
 					"I don't have a SourceFileFactory, can't lookup source code.");
-				current_method_source = null;
 				return;
 			}
 
 			SourceFile file = factory.FindFile (buffer.Name);
 			if (file == null) {
 				Console.WriteLine ("Can't find source file {0}.", buffer.Name);
-				current_method_source = null;
 				return;
 			}
 
 			text_buffer.Insert (text_buffer.EndIter, file.Contents, file.Contents.Length);
 		}
 
-		void FramesInvalidEvent ()
+		protected override void FramesInvalid ()
 		{
 			if (!IsVisible)
 				return;
 
-			has_frame = false;
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
-		}
-
-		protected virtual IMethodSource GetMethodSource (IMethod method)
-		{
-			if ((method == null) || !method.HasSource)
-				return null;
-
-			return method.Source;
 		}
 
 		protected virtual SourceLocation GetSource (StackFrame frame)
 		{
-			if (current_method_source == null)
+			if (CurrentMethodSource == null)
 				return null;
 
-			return current_method_source.Lookup (frame.TargetAddress);
+			return CurrentMethodSource.Lookup (frame.TargetAddress);
 		}
 
-		void FrameChangedEvent (StackFrame frame)
+		protected override void FrameChanged (StackFrame frame)
 		{
 			if (!IsVisible)
 				return;
-
-			has_frame = true;
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 

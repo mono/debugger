@@ -15,7 +15,7 @@ common_function (int is_thread, int sleep_seconds)
 int
 thread_func (void *data)
 {
-	common_function (1, 10);
+	common_function (1, 2);
 	return 0;
 }
 
@@ -24,8 +24,9 @@ main (void)
 {
 	pthread_t *thread;
 
+	sleep (3);
 	pthread_create (&thread, NULL, thread_func, NULL);
-	common_function (0, 20);
+	common_function (0, 5);
 
 	return 0;
 }
