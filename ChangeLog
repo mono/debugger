@@ -1,5 +1,8 @@
 2002-10-01  Miguel de Icaza  <miguel@ximian.com>
 
+	* frontends/gui/RegisterDisplay.cs: Love touch ups, it now works
+	as intended.
+
 	* backends/Debugger.cs: Add a new event to notify when the
 	inferior is set/reset.
 	

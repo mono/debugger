@@ -35,7 +35,7 @@ namespace Mono.Debugger.GUI
 		Gtk.Notebook notebook;
 		IArchitecture arch;
 		StackFrame current_frame;
-		Gdk.Color blue, black;
+		Gdk.Color color_change, color_stable;
 		
 		public RegisterDisplay (Glade.XML gxml, Gtk.Container window, Gtk.Notebook notebook)
 			: base (window, notebook)
@@ -43,13 +43,13 @@ namespace Mono.Debugger.GUI
 			this.gxml = gxml;
 			this.notebook = notebook;
 
-			blue.red = 0;
-			blue.green = 0;
-			blue.blue = 0xffff;
+			color_change.red = 0xffff;
+			color_change.green = 0;
+			color_change.blue = 0;
 
-			black.red = 0xffff;
-			black.green = 0;
-			black.blue = 0;
+			color_stable.red = 0;
+			color_stable.green = 0;
+			color_stable.blue = 0;
 		}
 
 		public override void SetBackend (DebuggerBackend backend)
@@ -208,16 +208,13 @@ namespace Mono.Debugger.GUI
 			if (last_regs != null){
 				if (regs [idx] != last_regs [idx]){
 					entry.Text = String.Format ("{0:X8}", regs [idx]);
-					entry.ModifyBg (Gtk.StateType.Normal, blue);
-					entry.ModifyBg (Gtk.StateType.Active, blue);
-					entry.ModifyBg (Gtk.StateType.Prelight, blue);
-					entry.ModifyBg (Gtk.StateType.Selected, blue);
+					entry.ModifyText (Gtk.StateType.Normal, color_change);
 				} else {
-					entry.ModifyFg (Gtk.StateType.Normal, blue);
+					entry.ModifyText (Gtk.StateType.Normal, color_stable);
 				}
 			} else {
 				entry.Text = String.Format ("{0:X8}", regs [idx]);
-				entry.ModifyFg (Gtk.StateType.Normal, blue);
+				entry.ModifyText (Gtk.StateType.Normal, color_stable);
 			}
 		}
 
