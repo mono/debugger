@@ -4,4 +4,4 @@ else
 gui_SUBDIRS =
 endif
 
-SUBDIRS = glue arch backends $(gui_SUBDIRS) frontends lib test
+SUBDIRS = interfaces classes glue arch backends $(gui_SUBDIRS) frontends lib test

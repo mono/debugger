@@ -1,1 +1,3 @@
-SUBDIRS = server
+SUBDIRS = classes server ptrace
+
+EXTRA_DIST = *.cs

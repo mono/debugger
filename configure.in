@@ -163,6 +163,8 @@ AC_SUBST(GTKSHARP_PREFIX)
 
 AC_OUTPUT([
 Makefile
+interfaces/Makefile
+classes/Makefile
 glue/Makefile
 lib/Makefile
 lib/Debugger.exe.config
@@ -175,9 +177,13 @@ widgets/sources/Makefile
 widgets/sources/gtksourceview/Makefile
 widgets/sources/debuggerwidgets/Makefile
 backends/Makefile
+backends/classes/Makefile
 backends/server/Makefile
+backends/ptrace/Makefile
 frontends/Makefile
 frontends/scripting/Makefile
+frontends/command-line/Makefile
+frontends/gui/Makefile
 arch/Makefile
 test/Makefile
 ])

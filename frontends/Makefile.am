@@ -1,1 +1,1 @@
-SUBDIRS = scripting
+SUBDIRS = scripting command-line gui

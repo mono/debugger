@@ -1,24 +1,24 @@
 MCS=mcs
 DESTDIR=
 
-all: Makefile linux
+noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ Interpreter.exe
 
-linux: Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ Interpreter.exe
+EXTRA_SCRIPTS = Debugger.exe
 
-ALL_SOURCES = \
+ALL_SRCLIST = \
 	@top_srcdir@/frontends/gui/*.cs			\
 	@top_srcdir@/frontends/scripting/*.cs		\
 	@top_srcdir@/frontends/command-line/Interpreter.cs
 
-INTERPRETER_SOURCES = \
+INTERPRETER_SRCLIST = \
 	@top_srcdir@/frontends/command-line/*.cs	\
 	@top_srcdir@/frontends/scripting/*.cs
 
-LIBRARY_SOURCES = \
+LIBRARY_SRCLIST = \
 	@top_srcdir@/interfaces/*.cs			\
 	@top_srcdir@/classes/*.cs
 
-BACKEND_SOURCES = \
+BACKEND_SRCLIST = \
 	@top_srcdir@/backends/*.cs			\
 	@top_srcdir@/backends/classes/*.cs		\
 	@top_srcdir@/backends/ptrace/*.cs		\
@@ -59,22 +59,17 @@ RESOURCES = \
 	-resource:$(GUIDIR)/stop.png,stop.png			\
 	-resource:$(GUIDIR)/line.png,line.png
 
-Mono.Debugger.dll: $(LIBRARY_SOURCES)
-	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SOURCES)
+Mono.Debugger.dll: $(LIBRARY_SRCLIST)
+	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
-Mono.Debugger.Backend.dll: $(BACKEND_SOURCES) Mono.Debugger.dll
-	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(MCS_FLAGS) $(BACKEND_DEPS) $(BACKEND_SOURCES)
+Mono.Debugger.Backend.dll: $(BACKEND_SRCLIST) Mono.Debugger.dll
+	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(MCS_FLAGS) $(BACKEND_DEPS) $(BACKEND_SRCLIST)
 
-Debugger.exe: $(ALL_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
-	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES) $(MCS_FLAGS)
+Debugger.exe: $(ALL_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
+	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SRCLIST) $(RESOURCES) $(MCS_FLAGS)
 
-Interpreter.exe: $(INTERPRETER_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
-	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SOURCES) $(MCS_FLAGS)
+Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
+	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SRCLIST) $(MCS_FLAGS)
 
 clean:
 	rm -f *.exe *.dll
-
-install: all
-
-Makefile: @top_srcdir@/config.status Makefile.in
-	cd @top_srcdir@ && CONFIG_FILES=lib/Makefile CONFIG_HEADERS= ./config.status
