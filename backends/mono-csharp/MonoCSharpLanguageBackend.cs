@@ -1169,18 +1169,18 @@ namespace Mono.Debugger.Languages.CSharp
 			public override bool IsLoaded {
 				get {
 					ensure_method ();
-					return (method != null) &&
-						((reader != null) && reader.range_hash.Contains (index));
+					return (method != null) && method.IsLoaded;
 				}
 			}
 
 			void ensure_method ()
 			{
-				if ((method != null) && method.IsLoaded)
+				if ((reader == null) || ((method != null) && method.IsLoaded))
 					return;
 
 				MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [index];
-				method = entry.GetMethod ();
+				if (entry != null)
+					method = entry.GetMethod ();
 			}
 
 			public override IMethod Method {
