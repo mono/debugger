@@ -421,6 +421,15 @@ namespace Mono.Debugger
 			get { return start; }
 		}
 
+		public string DisassembleInstruction (ref TargetAddress address)
+		{
+			check_inferior ();
+			if (sse != null)
+				return sse.DisassembleInstruction (ref address);
+			else
+				return core.Disassembler.DisassembleInstruction (ref address);
+		}
+
 		void child_exited ()
 		{
 			inferior.Dispose ();

@@ -1,5 +1,10 @@
 2003-01-01  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.cs: Added `disassemble' and
+	`disassemble method' commands.
+
+2003-01-01  Martin Baulig  <martin@ximian.com>
+
 	Happy New Year 2003 :-)
 
 	* classes/Backtrace.cs: New public class; we're now using an

@@ -1661,6 +1661,47 @@ namespace Mono.Debugger.Backends
 		}
 
 		//
+		// Disassembling.
+		//
+
+		private struct DisassembleData {
+			public readonly TargetAddress Address;
+			public readonly string Disassembly;
+
+			public DisassembleData (TargetAddress address, string disasm)
+			{
+				this.Address = address;
+				this.Disassembly = disasm;
+			}
+		}
+
+		CommandResult disassemble_insn (object data)
+		{
+			try {
+				TargetAddress address = (TargetAddress) data;
+				string disasm = disassembler.DisassembleInstruction (ref address);
+				DisassembleData result = new DisassembleData (address, disasm);
+				return new CommandResult (CommandResultType.CommandOk, result);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		public string DisassembleInstruction (ref TargetAddress address)
+		{
+			check_inferior ();
+			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn), address);
+			if (result.Type == CommandResultType.CommandOk) {
+				DisassembleData data = (DisassembleData) result.Data;
+				address = data.Address;
+				return data.Disassembly;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		//
 		// Calling methods.
 		//
 

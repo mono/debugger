@@ -330,6 +330,49 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return current_backtrace [number];
 		}
 
+		public void PrintFrame ()
+		{
+			PrintFrame (CurrentFrame);
+		}
+
+		public void PrintFrame (int number)
+		{
+			PrintFrame (GetFrame (number));
+		}
+
+		public void PrintFrame (StackFrame frame)
+		{
+			context.Print (frame);
+			Disassemble (frame);
+
+			SourceLocation location = frame.SourceLocation;
+			if (location == null)
+				return;
+
+			IMethod method = frame.Method;
+			if ((method == null) || !method.HasSource)
+				return;
+
+			IMethodSource source = method.Source;
+			if (source == null)
+				return;
+
+			string contents;
+			ISourceBuffer buffer = source.SourceBuffer;
+			if (buffer.HasContents)
+				contents = buffer.Contents;
+			else {
+				SourceFile file = context.SourceFactory.FindFile (buffer.Name);
+				if (file == null)
+					return;
+				contents = file.Contents;
+			}
+
+			string[] lines = contents.Split ('\n');
+			string line = lines [location.Row - 1];
+			context.Print (String.Format ("{0,4} {1}", location.Row, line));
+		}
+
 		public long GetRegister (int frame_number, string name)
 		{
 			StackFrame frame = GetFrame (frame_number);
@@ -472,6 +515,41 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable out of scope.");
 
 			return var.GetObject (frame);
+		}
+
+		public void Disassemble (int frame_number)
+		{
+			Disassemble (GetFrame (frame_number));
+		}
+
+		public void Disassemble (StackFrame frame)
+		{
+			TargetAddress address = frame.TargetAddress;
+			TargetAddress old_address = address;
+			string disasm = process.DisassembleInstruction (ref address);
+
+			context.Print ("{0:11x}\t{1}", old_address, disasm);
+		}
+
+		public void DisassembleMethod (int frame_number)
+		{
+			DisassembleMethod (GetFrame (frame_number));
+		}
+
+		public void DisassembleMethod (StackFrame frame)
+		{
+			IMethod method = frame.Method;
+
+			if ((method == null) || !method.IsLoaded)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			TargetAddress address = method.StartAddress;
+			while (address < method.EndAddress) {
+				TargetAddress old_address = address;
+				string disasm = process.DisassembleInstruction (ref address);
+
+				context.Print ("{0:11x}\t{1}", old_address, disasm);
+			}
 		}
 
 		public override string ToString ()

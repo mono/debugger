@@ -67,6 +67,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("params", Token.PARAMETERS);
 			keywords.Add ("locals", Token.LOCALS);
 			keywords.Add ("type", Token.TYPE);
+			keywords.Add ("disassemble", Token.DISASSEMBLE);
+			keywords.Add ("method", Token.METHOD);
 
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);
@@ -80,6 +82,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			short_keywords.Add ("bg", Token.BACKGROUND);
 			short_keywords.Add ("b", Token.BREAK);
 			short_keywords.Add ("p", Token.PRINT);
+			short_keywords.Add ("dis", Token.DISASSEMBLE);
 		}
 
 		ScriptingContext context;

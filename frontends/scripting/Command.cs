@@ -78,7 +78,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
-			context.Print (process.GetFrame (number));
+			process.PrintFrame (number);
+		}
+	}
+
+	public class DisassembleCommand : Command
+	{
+		int number;
+		ProcessExpression process_expr;
+
+		public DisassembleCommand (ProcessExpression process_expr, int number)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			process.Disassemble (number);
+		}
+	}
+
+	public class DisassembleMethodCommand : Command
+	{
+		int number;
+		ProcessExpression process_expr;
+
+		public DisassembleMethodCommand (ProcessExpression process_expr, int number)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			process.DisassembleMethod (number);
 		}
 	}
 
@@ -207,7 +245,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			process.CurrentFrameIndex++;
-			context.Print (process.CurrentFrame);
+			process.PrintFrame ();
 		}
 	}
 
@@ -225,7 +263,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			process.CurrentFrameIndex--;
-			context.Print (process.CurrentFrame);
+			process.PrintFrame ();
 		}
 	}
 

@@ -64,6 +64,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token PARAMETERS
 %token LOCALS
 %token TYPE
+%token METHOD
 
 %token FRAME
 %token START
@@ -80,6 +81,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token FINISH
 %token BREAK
 %token PRINT
+%token DISASSEMBLE
 
 %token SELECT
 %token BACKGROUND
@@ -175,6 +177,14 @@ command
 	| FRAME opt_process opt_frame_number
 	  {
 		$$ = new FrameCommand ((ProcessExpression) $2, (int) $3);
+	  }
+	| DISASSEMBLE opt_process opt_frame_number
+	  {
+		$$ = new DisassembleCommand ((ProcessExpression) $2, (int) $3);
+	  }
+	| DISASSEMBLE METHOD opt_process opt_frame_number
+	  {
+		$$ = new DisassembleMethodCommand ((ProcessExpression) $3, (int) $4);
 	  }
 	| START INTEGER program_arguments
 	  {
