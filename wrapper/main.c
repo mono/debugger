@@ -101,7 +101,7 @@ debugger_compile_method (MonoMethod *method)
 	return retval;
 }
 
-static gpointer
+static void
 debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 {
 	switch (event) {
@@ -126,8 +126,6 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 	default:
 		g_assert_not_reached ();
 	}
-
-	return NULL;
 }
 
 static MonoThreadCallbacks thread_callbacks = {
@@ -207,6 +205,8 @@ initialize_debugger_support (void)
 	debugger_notification_function = mono_debug_create_notification_function (&debugger_notification_address);
 
 	mono_install_thread_callbacks (&thread_callbacks);
+
+	mono_debug_init ();
 
 	/*
 	 * We keep this mutex until mono_debugger_jit_exec().
