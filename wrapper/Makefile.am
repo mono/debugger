@@ -1,4 +1,6 @@
-lib_PROGRAMS = mono-debugger-mini-wrapper
+wrapperdir = $(libdir)
+
+wrapper_PROGRAMS = mono-debugger-mini-wrapper
 
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"MonoDebuggerJitWrapper\" \
