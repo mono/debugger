@@ -616,15 +616,25 @@ namespace Mono.Debugger
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
 
-				if ((old_step_line || old_next_line) &&
-				    (source.SourceOffset > 0) && (source.SourceRange > 0)) {
-					must_send_update = true;
+				if (old_step_line || old_next_line) {
+					if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
+						must_send_update = true;
 
-					inferior.Step (new StepFrame (
-						address - source.SourceOffset,
-						address + source.SourceRange, language,
-						old_next_line ? StepMode.Finish : StepMode.StepFrame));
-					return false;
+						inferior.Step (new StepFrame (
+							address - source.SourceOffset,
+							address + source.SourceRange, language,
+							old_next_line ? StepMode.Finish : StepMode.StepFrame));
+						return false;
+					} else if (current_method.HasMethodBounds &&
+						   (address < current_method.MethodStartAddress)) {
+						must_send_update = true;
+
+						inferior.Step (new StepFrame (
+							current_method.StartAddress,
+							current_method.MethodStartAddress,
+							null, StepMode.Finish));
+						return false;
+					}
 				}
 
 				current_frame = new StackFrame (
