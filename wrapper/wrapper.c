@@ -118,7 +118,7 @@ debugger_class_get_static_field_data (guint64 value)
 {
 	MonoClass *klass = GUINT_TO_POINTER ((guint32) value);
 	MonoVTable *vtable = mono_class_vtable (mono_domain_get (), klass);
-	return GPOINTER_TO_UINT (vtable->data);
+	return GPOINTER_TO_UINT (mono_vtable_get_static_field_data (vtable));
 }
 
 static void
