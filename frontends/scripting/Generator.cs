@@ -42,6 +42,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string Name {
 			get { return name; }
 		}
+
+		public string Description {
+			get { return description; }
+		}
 	}
 
 	public class GeneratorException : Exception
@@ -54,12 +58,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class CommandGroup
 	{
 		string name;
+		Generator generator;
 		Hashtable command_hash = new Hashtable ();
 		ArrayList commands = new ArrayList ();
 		ArrayList subgroups = new ArrayList ();
 
-		public CommandGroup (string name)
+		public CommandGroup (Generator generator, string name)
 		{
+			this.generator = generator;
 			this.name = name;
 		}
 
@@ -74,7 +80,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (entry == null) {
 				if (tokens.Length > 1) {
-					CommandGroup group = new CommandGroup (token);
+					CommandGroup group = new CommandGroup (generator, token);
 					subgroups.Add (group);
 					entry = new Entry (token, group);
 				} else
@@ -163,8 +169,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			string token = arguments [pos].ToUpper ();
 			Entry entry = (Entry) command_hash [token];
 			if (entry == null) {
-				context.Print ("No such command: `{0}'", token);
-				return;
+				if (pos + 1 < arguments.Length) {
+					context.Print ("No such command: `{0}'", arguments [pos]);
+					return;
+				} else {
+					generator.PrintExpressionHelp (context, arguments [pos]);
+					return;
+				}
 			}
 
 			if (entry.IsGroup)
@@ -271,6 +282,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return attribute.Name; }
 		}
 
+		public string Description {
+			get { return attribute.Description; }
+		}
+
 		public string TypeName {
 			get { return type.Name; }
 		}
@@ -281,7 +296,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return null;
 
 			Attribute[] attributes = Attribute.GetCustomAttributes (
-				type, typeof (ExpressionAttribute), true);
+				type, typeof (ExpressionAttribute), false);
 			if (attributes.Length != 1)
 				return null;
 
@@ -361,7 +376,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return null;
 
 			Attribute[] attributes = Attribute.GetCustomAttributes (
-				type, typeof (CommandAttribute), true);
+				type, typeof (CommandAttribute), false);
 			if (attributes.Length != 1)
 				return null;
 
@@ -402,6 +417,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		CommandClass[] commands;
 		ExpressionClass[] expressions;
 		Hashtable expression_hash;
+		Hashtable expression_name_hash;
 		CommandGroup global_group;
 
 		public Generator (Assembly assembly)
@@ -438,12 +454,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ArrayList list = new ArrayList ();
 			expression_hash = new Hashtable ();
+			expression_name_hash = new Hashtable ();
 
 			foreach (Type type in assembly.GetExportedTypes ()) {
 				ExpressionClass expression = ExpressionClass.Create (type);
 				if (expression != null) {
 					list.Add (expression);
 					expression_hash.Add (type, expression);
+					expression_name_hash.Add (expression.Name, expression);
 				}
 			}
 
@@ -464,10 +482,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			commands = new CommandClass [list.Count];
 			list.CopyTo (commands, 0);
 
-			global_group = new CommandGroup ("");
+			global_group = new CommandGroup (this, "");
 
 			foreach (CommandClass command in commands)
 				global_group.AddCommand (command, command.Tokens);
+		}
+
+		internal void PrintExpressionHelp (ScriptingContext context, string name)
+		{
+			ExpressionClass expression = (ExpressionClass) expression_name_hash [name];
+			if (expression == null) {
+				context.Print ("No such command or expression: `{0}'", name);
+				return;
+			}
+
+			context.Print (expression.Description);
 		}
 
 		public ExpressionClass GetExpression (Type type)
