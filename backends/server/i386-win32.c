@@ -43,7 +43,7 @@ server_get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 	regs->ContextFlags = CONTEXT_FULL;
 	if (!GetThreadContext (handle->hThread, regs)) {
 		g_message (G_STRLOC ": %ld - %ld", handle->dwThreadId, GetLastError ());
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -54,7 +54,7 @@ server_set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 {
 	if (!SetThreadContext (handle->hThread, regs)) {
 		g_message (G_STRLOC ": %ld - %ld", handle->dwThreadId, GetLastError ());
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -63,13 +63,13 @@ server_set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 static ServerCommandError
 server_get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 {
-	return COMMAND_ERROR_UNKNOWN;
+	return COMMAND_ERROR_UNKNOWN_ERROR;
 }
 
 static ServerCommandError
 server_set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 {
-	return COMMAND_ERROR_UNKNOWN;
+	return COMMAND_ERROR_UNKNOWN_ERROR;
 }
 
 static ServerCommandError
@@ -114,7 +114,7 @@ server_win32_continue (InferiorHandle *handle, ArchInfo *arch)
 	ret = ContinueDebugEvent (handle->dwProcessId, handle->dwThreadId, DBG_CONTINUE);
 	if (!ret) {
 		g_message (G_STRLOC ": %ld", GetLastError ());
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -131,7 +131,7 @@ server_win32_step (InferiorHandle *handle, ArchInfo *arch)
 	ret = ContinueDebugEvent (handle->dwProcessId, handle->dwThreadId, DBG_CONTINUE);
 	if (!ret) {
 		g_message (G_STRLOC ": %ld", GetLastError ());
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;

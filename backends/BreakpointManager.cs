@@ -78,7 +78,7 @@ namespace Mono.Debugger.Backends
 				Breakpoint old = LookupBreakpoint (address, out index);
 				if (old != null)
 					throw new TargetException (
-						TargetExceptionType.AlreadyHaveBreakpoint,
+						TargetError.AlreadyHaveBreakpoint,
 						"Already have breakpoint {0} at address {1}.",
 						address, old.Index);
 

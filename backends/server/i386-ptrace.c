@@ -75,7 +75,7 @@ server_ptrace_continue (ServerHandle *handle)
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -91,7 +91,7 @@ server_ptrace_step (ServerHandle *handle)
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -104,7 +104,7 @@ server_ptrace_detach (ServerHandle *handle)
 
 	if (ptrace (PT_DETACH, inferior->pid, NULL, 0)) {
 		g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -145,7 +145,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 				return COMMAND_ERROR_NOT_STOPPED;
 			else if (errno) {
 				g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-				return COMMAND_ERROR_UNKNOWN;
+				return COMMAND_ERROR_UNKNOWN_ERROR;
 			}
 		}
 
@@ -305,7 +305,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		*error = g_malloc0 (len);
 		read (fd [0], *error, len);
 		close (fd [0]);
-		return COMMAND_ERROR_FORK;
+		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
 	inferior->pid = *child_pid;

@@ -149,7 +149,7 @@ powerpc_spawn (ServerHandle *handle, const gchar *working_directory,
 		*error = g_malloc0 (len);
 		read (fd [0], *error, len);
 		close (fd [0]);
-		return COMMAND_ERROR_FORK;
+		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
 	inferior->pid = *child_pid;
@@ -274,7 +274,7 @@ _powerpc_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 	if (kret != KERN_SUCCESS) {
 		g_warning (G_STRLOC ": thread_get_state(%d) returned %x (%s)",
 			   inferior->thread, kret, mach_error_string (kret));
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -292,7 +292,7 @@ _powerpc_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 	if (kret != KERN_SUCCESS) {
 		g_warning (G_STRLOC ": thread_set_state(%d) returned %x (%s)",
 			   inferior->thread, kret, mach_error_string (kret));
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -308,7 +308,7 @@ powerpc_continue (ServerHandle *handle)
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -324,7 +324,7 @@ powerpc_step (ServerHandle *handle)
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;

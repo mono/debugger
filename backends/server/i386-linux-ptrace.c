@@ -6,7 +6,7 @@ _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -21,7 +21,7 @@ _server_ptrace_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -36,7 +36,7 @@ _server_ptrace_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE 
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -51,7 +51,7 @@ _server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE 
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -94,7 +94,7 @@ _server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned value)
 	ptrace (PTRACE_POKEUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]), value);
 	if (errno) {
 		g_message (G_STRLOC ": %d - %d - %s", handle->pid, regnum, g_strerror (errno));
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -110,7 +110,7 @@ _server_ptrace_get_dr (InferiorHandle *handle, int regnum, unsigned *value)
 	ret = ptrace (PTRACE_PEEKUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]));
 	if (errno) {
 		g_message (G_STRLOC ": %d - %d - %s", handle->pid, regnum, g_strerror (errno));
-		return COMMAND_ERROR_UNKNOWN;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	*value = ret;
@@ -199,9 +199,9 @@ server_ptrace_stop (ServerHandle *handle)
 		 * It's already dead.
 		 */
 		if (errno == ESRCH)
-			return COMMAND_ERROR_NO_INFERIOR;
+			return COMMAND_ERROR_NO_TARGET;
 		else
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -272,7 +272,7 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 	 * Should never happen.
 	 */
 	if (ret < 0)
-		return COMMAND_ERROR_NO_INFERIOR;
+		return COMMAND_ERROR_NO_TARGET;
 
 	/*
 	 * We expect a SIGSTOP, so don't explicitly report it.

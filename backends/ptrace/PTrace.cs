@@ -21,7 +21,7 @@ namespace Mono.Debugger.Backends
 		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_signal_info (IntPtr handle, ref SignalInfo sinfo);
+		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, ref SignalInfo sinfo);
 
 		private struct SignalInfo
 		{

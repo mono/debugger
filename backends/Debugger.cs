@@ -132,8 +132,7 @@ namespace Mono.Debugger
 			this.start = start;
 
 			if (process != null)
-				throw new TargetException (
-					TargetExceptionType.AlreadyHaveTarget);
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			module_manager.Lock ();
 

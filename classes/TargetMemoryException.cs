@@ -9,7 +9,7 @@ namespace Mono.Debugger
 		{ }
 
 		public TargetMemoryException (string message)
-			: base (TargetExceptionType.MemoryAccess, message)
+			: base (TargetError.MemoryAccess, message)
 		{ }
 
 		public TargetMemoryException (TargetAddress address)

@@ -113,7 +113,7 @@ namespace Mono.Debugger
 					return (long) register.Data;
 			}
 
-			throw new TargetException (TargetExceptionType.NoSuchRegister);
+			throw new TargetException (TargetError.NoSuchRegister);
 		}
 
 		public abstract TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset);

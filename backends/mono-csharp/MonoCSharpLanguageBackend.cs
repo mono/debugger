@@ -1550,7 +1550,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				if (load_handlers != null)
 					throw new TargetException (
-						TargetExceptionType.AlreadyHaveBreakpoint,
+						TargetError.AlreadyHaveBreakpoint,
 						"Already have a breakpoint on method {0}.",
 						full_name);
 

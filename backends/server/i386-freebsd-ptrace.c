@@ -6,7 +6,7 @@ server_get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -21,7 +21,7 @@ server_set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -36,7 +36,7 @@ server_get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -51,7 +51,7 @@ server_set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
 			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN;
+			return COMMAND_ERROR_UNKNOWN_ERROR;
 		}
 	}
 
@@ -75,7 +75,7 @@ server_ptrace_read_data (InferiorHandle *handle, ArchInfo *arch, guint64 start,
                         return COMMAND_ERROR_NOT_STOPPED;
                 else if (errno) {
                         g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-                        return COMMAND_ERROR_UNKNOWN;
+                        return COMMAND_ERROR_UNKNOWN_ERROR;
                 }
 
                 if (size >= sizeof (int)) {
@@ -96,7 +96,7 @@ server_ptrace_read_data (InferiorHandle *handle, ArchInfo *arch, guint64 start,
 static ServerCommandError
 server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 {
-	return COMMAND_ERROR_UNKNOWN;
+	return COMMAND_ERROR_UNKNOWN_ERROR;
 }
 
 static int

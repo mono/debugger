@@ -2,76 +2,94 @@ using System;
 
 namespace Mono.Debugger
 {
-	public enum TargetExceptionType {
-		CannotStartTarget,
-		AlreadyHaveTarget,
+	#region Keep in sync with ServerCommandError in backends/server/server.h
+	public enum TargetError {
+		None			= 0,
+
+		UnknownError		= 1,
 		NoTarget,
+		AlreadyHaveTarget,
+		CannotStartTarget,
 		NotStopped,
-		NoStack,
-		NoMethod,
+		AlreadyStopped,
+		RecursiveCall,
 		NoSuchBreakpoint,
-		AlreadyHaveBreakpoint,
 		NoSuchRegister,
+		DebugRegisterOccupied,
 		MemoryAccess,
 		NotImplemented,
 		IOError,
+
+		NoStack			= 101,
+		NoMethod,
+		AlreadyHaveBreakpoint,
 		SymbolTable,
 		InvocationException,
 		LocationInvalid
 	}
+	#endregion
 
 	public class TargetException : Exception
 	{
-		public readonly TargetExceptionType Type;
+		public readonly TargetError Type;
 
-		public TargetException (TargetExceptionType type, string message)
+		public TargetException (TargetError type, string message)
 			: base (message)
 		{
 			this.Type = type;
 		}
 
-		public TargetException (TargetExceptionType type, string format,
+		public TargetException (TargetError type, string format,
 					params object[] args)
 			: this (type, String.Format (format, args))
 		{ }
 
-		public TargetException (TargetExceptionType type)
+		public TargetException (TargetError type)
 			: this (type, GetMessage (type))
 		{ }
 
-		protected static string GetMessage (TargetExceptionType type)
+		protected static string GetMessage (TargetError type)
 		{
 			switch (type) {
-			case TargetExceptionType.CannotStartTarget:
-				return "Cannot start target.";
-			case TargetExceptionType.AlreadyHaveTarget:
-				return "Already have a program to debug.";
-			case TargetExceptionType.NoTarget:
+			case TargetError.UnknownError:
+				return "Unknown error.";
+			case TargetError.NoTarget:
 				return "No target.";
-			case TargetExceptionType.NotStopped:
+			case TargetError.AlreadyHaveTarget:
+				return "Already have a program to debug.";
+			case TargetError.CannotStartTarget:
+				return "Cannot start target.";
+			case TargetError.NotStopped:
 				return "The target is currently running, but it must be " +
 					"stopped to perform the requested operation.";
-			case TargetExceptionType.NoStack:
-				return "No stack.";
-			case TargetExceptionType.NoMethod:
-				return "Cannot get bounds of current method.";
-			case TargetExceptionType.NoSuchBreakpoint:
+			case TargetError.AlreadyStopped:
+				return "The target is already stopped.";
+			case TargetError.RecursiveCall:
+				return "Internal error: recursive call";
+			case TargetError.NoSuchBreakpoint:
 				return "No such breakpoint.";
-			case TargetExceptionType.AlreadyHaveBreakpoint:
-				return "Already have a breakpoint at this location.";
-			case TargetExceptionType.NoSuchRegister:
+			case TargetError.NoSuchRegister:
 				return "No such register.";
-			case TargetExceptionType.MemoryAccess:
+			case TargetError.DebugRegisterOccupied:
+				return "Cannot insert hardware breakpoint/watchpoint: " +
+					"all debugging registers are already occupied.";
+			case TargetError.MemoryAccess:
 				return "Memory access.";
-			case TargetExceptionType.NotImplemented:
+			case TargetError.NotImplemented:
 				return "Requested feature not implemented on this platform.";
-			case TargetExceptionType.IOError:
+			case TargetError.IOError:
 				return "Unknown I/O error.";
-			case TargetExceptionType.SymbolTable:
+			case TargetError.NoStack:
+				return "No stack.";
+			case TargetError.NoMethod:
+				return "Cannot get bounds of current method.";
+			case TargetError.AlreadyHaveBreakpoint:
+				return "Already have a breakpoint at this location.";
+			case TargetError.SymbolTable:
 				return "Symbol table error.";
-			case TargetExceptionType.InvocationException:
+			case TargetError.InvocationException:
 				return "Error while invoking a method in the target.";
-			case TargetExceptionType.LocationInvalid:
+			case TargetError.LocationInvalid:
 				return "Location is invalid.";
 			default:
 				return "Unknown error";
@@ -86,7 +104,7 @@ namespace Mono.Debugger
 		{ }
 
 		public LocationInvalidException (string message)
-			: base (TargetExceptionType.LocationInvalid, message)
+			: base (TargetError.LocationInvalid, message)
 		{ }
 
 		public LocationInvalidException (TargetException ex)

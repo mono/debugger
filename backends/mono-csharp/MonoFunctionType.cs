@@ -149,7 +149,7 @@ namespace Mono.Debugger.Languages.CSharp
 				string exc_message = (string) exc_obj.Object;
 
 				throw new TargetException (
-					TargetExceptionType.InvocationException, exc_message);
+					TargetError.InvocationException, exc_message);
 			}
 
 			TargetLocation retval_loc = new AbsoluteTargetLocation (frame, retval);

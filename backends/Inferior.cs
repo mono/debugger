@@ -64,88 +64,88 @@ namespace Mono.Debugger.Backends
 		public event TargetExitedHandler TargetExited;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
+		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);
+		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_pc (IntPtr handle, out long pc);
+		static extern TargetError mono_debugger_server_get_pc (IntPtr handle, out long pc);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_current_insn_is_bpt (IntPtr handle, out int is_breakpoint);
+		static extern TargetError mono_debugger_server_current_insn_is_bpt (IntPtr handle, out int is_breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_step (IntPtr handle);
+		static extern TargetError mono_debugger_server_step (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_continue (IntPtr handle);
+		static extern TargetError mono_debugger_server_continue (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_detach (IntPtr handle);
+		static extern TargetError mono_debugger_server_detach (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_finalize (IntPtr handle);
+		static extern TargetError mono_debugger_server_finalize (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, IntPtr data);
+		static extern TargetError mono_debugger_server_read_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, long start, int size, IntPtr data);
+		static extern TargetError mono_debugger_server_write_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_target_info (out int target_int_size, out int target_long_size, out int target_address_size, out int is_bigendian);
+		static extern TargetError mono_debugger_server_get_target_info (out int target_int_size, out int target_long_size, out int target_address_size, out int is_bigendian);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);
+		static extern TargetError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
+		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument, bool debug);
+		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument, bool debug);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
+		static extern TargetError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_insert_hw_breakpoint (IntPtr handle, out int index, long address, out int breakpoint);
+		static extern TargetError mono_debugger_server_insert_hw_breakpoint (IntPtr handle, out int index, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
+		static extern TargetError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_enable_breakpoint (IntPtr handle, int breakpoint);
+		static extern TargetError mono_debugger_server_enable_breakpoint (IntPtr handle, int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_disable_breakpoint (IntPtr handle, int breakpoint);
+		static extern TargetError mono_debugger_server_disable_breakpoint (IntPtr handle, int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
+		static extern TargetError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_set_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
+		static extern TargetError mono_debugger_server_set_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);
+		static extern TargetError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_ret_address (IntPtr handle, out long retval);
+		static extern TargetError mono_debugger_server_get_ret_address (IntPtr handle, out long retval);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_stop (IntPtr handle);
+		static extern TargetError mono_debugger_server_stop (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_global_stop ();
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_stop_and_wait (IntPtr handle, out int status);
+		static extern TargetError mono_debugger_server_stop_and_wait (IntPtr handle, out int status);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_set_signal (IntPtr handle, int signal, int send_it);
+		static extern TargetError mono_debugger_server_set_signal (IntPtr handle, int signal, int send_it);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_kill (IntPtr handle);
+		static extern TargetError mono_debugger_server_kill (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
@@ -190,23 +190,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected enum CommandError {
-			None = 0,
-			Unknown,
-			NoInferior,
-			AlreadyHaveInferior,
-			Fork,
-			NotStopped,
-			AlreadyStopped,
-			RecursiveCall,
-			NoSuchBreakpoint,
-			UnknownRegister,
-			DrOccupied,
-			MemoryAccess,
-			NotImplemented,
-			IOError
-		}
-
 		protected Inferior (DebuggerBackend backend, ProcessStart start,
 				    BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
@@ -239,56 +222,12 @@ namespace Mono.Debugger.Backends
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
-		protected void check_error (CommandError error)
+		protected void check_error (TargetError error)
 		{
-			if (error == CommandError.None)
+			if (error == TargetError.None)
 				return;
 
-			handle_error (error);
-		}
-
-		void handle_error (CommandError error)
-		{
-			switch (error) {
-			case CommandError.NotStopped:
-				throw new TargetException (
-					TargetExceptionType.NotStopped);
-
-			case CommandError.NoInferior:
-				throw new TargetException (
-					TargetExceptionType.NoTarget);
-
-			case CommandError.AlreadyHaveInferior:
-				throw new TargetException (
-					TargetExceptionType.AlreadyHaveTarget);
-			case CommandError.Fork:
-				throw new TargetException (
-					TargetExceptionType.CannotStartTarget);
-
-			case CommandError.NoSuchBreakpoint:
-				throw new TargetException (
-					TargetExceptionType.NoSuchBreakpoint);
-
-			case CommandError.UnknownRegister:
-				throw new TargetException (
-					TargetExceptionType.NoSuchRegister);
-
-			case CommandError.MemoryAccess:
-				throw new TargetException (
-					TargetExceptionType.MemoryAccess);
-
-			case CommandError.NotImplemented:
-				throw new TargetException (
-					TargetExceptionType.NotImplemented);
-
-			case CommandError.IOError:
-				throw new TargetException (
-					TargetExceptionType.IOError);
-
-			default:
-				throw new InternalError ("Got unknown error condition from inferior: {0}",
-							 error);
-			}
+			throw new TargetException (error);
 		}
 
 		public void CallMethod (TargetAddress method, long data1, long data2,
@@ -361,16 +300,15 @@ namespace Mono.Debugger.Backends
 						     out int index)
 		{
 			int retval;
-			CommandError result = mono_debugger_server_insert_hw_breakpoint (
+			TargetError result = mono_debugger_server_insert_hw_breakpoint (
 				server_handle, out index, address.Address, out retval);
-			if (result == CommandError.None)
+			if (result == TargetError.None)
 				return retval;
-			else if (fallback && (result == CommandError.DrOccupied)) {
+			else if (fallback && (result == TargetError.DebugRegisterOccupied)) {
 				index = -1;
 				return InsertBreakpoint (address);
 			} else {
-				handle_error (result);
-				return -1;
+				throw new TargetException (result);
 			}
 		}
 
@@ -413,25 +351,24 @@ namespace Mono.Debugger.Backends
 		public void Run (bool redirect_fds)
 		{
 			if (initialized)
-				throw new TargetException (
-					TargetExceptionType.AlreadyHaveTarget);
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			initialized = true;
 
 			IntPtr error;
 
-			CommandError result = mono_debugger_server_spawn (
+			TargetError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, out child_pid,
 				new ChildOutputHandler (inferior_stdout_handler),
 				new ChildOutputHandler (inferior_stderr_handler),
 				out error);
-			if (result != CommandError.None) {
+			if (result != TargetError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
 
 				throw new TargetException (
-					TargetExceptionType.CannotStartTarget, message);
+					TargetError.CannotStartTarget, message);
 			}
 
 			SetupInferior ();
@@ -442,8 +379,7 @@ namespace Mono.Debugger.Backends
 		public void Attach (int pid)
 		{
 			if (initialized)
-				throw new TargetException (
-					TargetExceptionType.AlreadyHaveTarget);
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			initialized = true;
 
@@ -572,8 +508,7 @@ namespace Mono.Debugger.Backends
 		public AddressDomain AddressDomain {
 			get { 
 				if (address_domain == null)
-					throw new TargetException (
-						TargetExceptionType.NoTarget);
+					throw new TargetException (TargetError.NoTarget);
 
 				return address_domain;
 			}
@@ -588,15 +523,14 @@ namespace Mono.Debugger.Backends
 		IntPtr read_buffer (TargetAddress address, int size)
 		{
 			IntPtr data = Marshal.AllocHGlobal (size);
-			CommandError result = mono_debugger_server_read_memory (
+			TargetError result = mono_debugger_server_read_memory (
 				server_handle, address.Address, size, data);
-			if (result == CommandError.MemoryAccess) {
+			if (result == TargetError.MemoryAccess) {
 				Marshal.FreeHGlobal (data);
 				throw new TargetMemoryException (address, size);
-			} else if (result != CommandError.None) {
+			} else if (result != TargetError.None) {
 				Marshal.FreeHGlobal (data);
-				handle_error (result);
-				throw new Exception ("Internal error: this line will never be reached");
+				throw new TargetException (result);
 			}
 			return data;
 		}
@@ -873,8 +807,8 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 			int status;
-			CommandError error = mono_debugger_server_stop_and_wait (server_handle, out status);
-			if (error != CommandError.None) {
+			TargetError error = mono_debugger_server_stop_and_wait (server_handle, out status);
+			if (error != TargetError.None) {
 				new_event = null;
 				return false;
 			} else if (status == 0) {
@@ -894,8 +828,8 @@ namespace Mono.Debugger.Backends
 		public bool Stop ()
 		{
 			check_disposed ();
-			CommandError error = mono_debugger_server_stop (server_handle);
-			return error == CommandError.None;
+			TargetError error = mono_debugger_server_stop (server_handle);
+			return error == TargetError.None;
 		}
 
 		public void GlobalStop ()
@@ -931,10 +865,9 @@ namespace Mono.Debugger.Backends
 			get {
 				long pc;
 				check_disposed ();
-				CommandError result = mono_debugger_server_get_pc (server_handle, out pc);
-				if (result != CommandError.None)
-					throw new TargetException (
-						TargetExceptionType.NoStack);
+				TargetError result = mono_debugger_server_get_pc (server_handle, out pc);
+				if (result != TargetError.None)
+					throw new TargetException (TargetError.NoStack);
 
 				return new TargetAddress (GlobalAddressDomain, pc);
 			}
@@ -944,11 +877,10 @@ namespace Mono.Debugger.Backends
 			get {
 				check_disposed ();
 				int is_breakpoint;
-				CommandError result = mono_debugger_server_current_insn_is_bpt (
+				TargetError result = mono_debugger_server_current_insn_is_bpt (
 					server_handle, out is_breakpoint);
-				if (result != CommandError.None)
-					throw new TargetException (
-						TargetExceptionType.NoStack);
+				if (result != TargetError.None)
+					throw new TargetException (TargetError.NoStack);
 
 				return is_breakpoint != 0;
 			}
@@ -994,7 +926,7 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (size);
 				Marshal.Copy (registers, 0, data, registers.Length);
 				buffer = Marshal.AllocHGlobal (buffer_size);
-				CommandError result = mono_debugger_server_get_registers (
+				TargetError result = mono_debugger_server_get_registers (
 					server_handle, registers.Length, data, buffer);
 				check_error (result);
 				long[] retval = new long [registers.Length];
@@ -1028,7 +960,7 @@ namespace Mono.Debugger.Backends
 				Marshal.Copy (registers, 0, data, registers.Length);
 				buffer = Marshal.AllocHGlobal (buffer_size);
 				Marshal.Copy (values, 0, buffer, registers.Length);
-				CommandError result = mono_debugger_server_set_registers (
+				TargetError result = mono_debugger_server_set_registers (
 					server_handle, registers.Length, data, buffer);
 				check_error (result);
 			} finally {
@@ -1101,10 +1033,10 @@ namespace Mono.Debugger.Backends
 				long stop_addr = 0;
 				if (!stop.IsNull)
 					stop_addr = stop.Address;
-				CommandError result = mono_debugger_server_get_backtrace (
+				TargetError result = mono_debugger_server_get_backtrace (
 					server_handle, max_frames, stop_addr, out count, out data);
 
-				if (result != CommandError.None)
+				if (result != TargetError.None)
 					return new StackFrame [0];
 
 				check_error (result);
@@ -1129,7 +1061,7 @@ namespace Mono.Debugger.Backends
 		public TargetAddress GetReturnAddress ()
 		{
 			long address;
-			CommandError result = mono_debugger_server_get_ret_address (
+			TargetError result = mono_debugger_server_get_ret_address (
 					server_handle, out address);
 			check_error (result);
 

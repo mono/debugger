@@ -1,5 +1,14 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetException.cs (TargetExceptionType): Renamed to
+	TargetError and synced this with the error codes from the unmanged
+	code in backends/server/server.h.
+
+	* backends/Inferior.cs (CommandError): Removed, we now use
+	TargetError from classes/TargetException.cs.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetException.cs
 	(TargetExceptionType): New public enum.
 	(TargetException): Don't make this abstract; the .ctor now takes a

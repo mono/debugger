@@ -193,7 +193,7 @@ remote_server_spawn (ServerHandle *handle, const gchar *working_directory,
 	*error = g_strdup (CORBA_exception_id (&ev));
 	CORBA_exception_free (&ev);
 
-	return COMMAND_ERROR_FORK;
+	return COMMAND_ERROR_CANNOT_START_TARGET;
 }
 
 static ServerCommandError

@@ -509,7 +509,7 @@ server_ptrace_get_registers (ServerHandle *handle, guint32 count,
 			values [i] = (guint32) INFERIOR_REG_SS (arch->current_regs);
 			break;
 		default:
-			return COMMAND_ERROR_UNKNOWN_REGISTER;
+			return COMMAND_ERROR_NO_SUCH_REGISTER;
 		}
 	}
 
@@ -574,7 +574,7 @@ server_ptrace_set_registers (ServerHandle *handle, guint32 count,
 			INFERIOR_REG_SS (arch->current_regs) = values [i];
 			break;
 		default:
-			return COMMAND_ERROR_UNKNOWN_REGISTER;
+			return COMMAND_ERROR_NO_SUCH_REGISTER;
 		}
 	}
 

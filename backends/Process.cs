@@ -150,7 +150,7 @@ namespace Mono.Debugger
 		void check_engine ()
 		{
 			if (engine == null)
-				throw new TargetException (TargetExceptionType.NoTarget);
+				throw new TargetException (TargetError.NoTarget);
 		}
 
 		internal void SendTargetEvent (TargetEventArgs args)
@@ -202,7 +202,7 @@ namespace Mono.Debugger
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else if (result.Type == CommandResultType.NotStopped)
-				throw new TargetException (TargetExceptionType.NotStopped);
+				throw new TargetException (TargetError.NotStopped);
 			else
 				throw new InternalError ();
 		}
@@ -223,7 +223,7 @@ namespace Mono.Debugger
 					return register;
 			}
 
-			throw new TargetException (TargetExceptionType.NoSuchRegister);
+			throw new TargetException (TargetError.NoSuchRegister);
 		}
 
 		public Register[] GetRegisters ()
@@ -357,7 +357,7 @@ namespace Mono.Debugger
 			StackFrame frame = CurrentFrame;
 			if (frame.Method == null) {
 				engine.AbortOperation ();
-				throw new TargetException (TargetExceptionType.NoMethod);
+				throw new TargetException (TargetError.NoMethod);
 			}
 
 			StepFrame sf = new StepFrame (
@@ -940,8 +940,7 @@ namespace Mono.Debugger
 			public override AssemblerMethod DisassembleMethod ()
 			{
 				if (Method == null)
-					throw new TargetException (
-						TargetExceptionType.NoMethod);
+					throw new TargetException (TargetError.NoMethod);
 
 				return process.DisassembleMethod (Method);
 			}
