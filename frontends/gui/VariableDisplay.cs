@@ -199,6 +199,8 @@ namespace Mono.Debugger.GUI
 			try {
 				ITargetObject obj = variable.GetObject (current_frame);
 				add_object (obj, variable.Name, iter);
+			} catch (LocationInvalidException) {
+				// Do nothing
 			} catch (Exception e) {
 				Console.WriteLine ("CAN'T ADD VARIABLE: {0} {1}", variable, e);
 			}
@@ -211,8 +213,6 @@ namespace Mono.Debugger.GUI
 			if (!IsVisible)
 				return;
 
-			Console.WriteLine ("UPDATE DISPLAY: {0}", current_frame);
-			
 			store.Clear ();
 			iters = new Hashtable ();
 
