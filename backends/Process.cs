@@ -750,15 +750,14 @@ namespace Mono.Debugger
 		//
 
 		internal StackFrame CreateFrame (TargetAddress address, int level,
-						 Inferior.StackFrame frame,
 						 Backtrace bt, SourceAddress source,
 						 IMethod method)
 		{
 			if (source != null)
-				return new MyStackFrame (this, address, level, frame,
+				return new MyStackFrame (this, address, level,
 							 bt, source, method);
 			else
-				return new MyStackFrame (this, address, level, frame, bt);
+				return new MyStackFrame (this, address, level, bt);
 		}
 
 
@@ -813,7 +812,6 @@ namespace Mono.Debugger
 		protected class MyStackFrame : StackFrame
 		{
 			Process process;
-			Inferior.StackFrame frame;
 			Backtrace backtrace;
 			ILanguage language;
 			ILanguageBackend lbackend;
@@ -822,25 +820,21 @@ namespace Mono.Debugger
 			bool has_registers;
 
 			internal MyStackFrame (Process process, TargetAddress address,
-					       int level, Inferior.StackFrame frame,
-					       Backtrace backtrace, SourceAddress source,
-					       IMethod method)
+					       int level, Backtrace backtrace,
+					       SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
 				this.process = process;
-				this.frame = frame;
 				this.backtrace = backtrace;
 				this.language = method.Module.Language;
 				this.lbackend = method.Module.LanguageBackend as ILanguageBackend;
 			}
 
 			internal MyStackFrame (Process process, TargetAddress address,
-					       int level, Inferior.StackFrame frame,
-					       Backtrace backtrace)
+					       int level, Backtrace backtrace)
 				: base (address, level, process.SimpleLookup (address, false))
 			{
 				this.process = process;
-				this.frame = frame;
 				this.backtrace = backtrace;
 				this.language = process.NativeLanguage;
 			}

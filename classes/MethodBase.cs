@@ -36,7 +36,6 @@ namespace Mono.Debugger
 
 	public abstract class MethodBase : IMethod, ISymbolLookup, IComparable
 	{
-		int start_row, end_row;
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 		TargetAddress wrapper_addr = TargetAddress.Null;

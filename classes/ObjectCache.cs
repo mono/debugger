@@ -16,7 +16,6 @@ namespace Mono.Debugger
 		int initial_ttl, ttl;
 		int id;
 
-		static Timer timer;
 		static ArrayList objects;
 		static int next_id = 0;
 
@@ -33,7 +32,7 @@ namespace Mono.Debugger
 		static ObjectCache ()
 		{
 			objects = ArrayList.Synchronized (new ArrayList ());
-			timer = new Timer (new TimerCallback (cleanup_process), null, 0, 60000);
+			new Timer (new TimerCallback (cleanup_process), null, 0, 60000);
 		}
 
 		static void cleanup_process (object dummy)

@@ -6,8 +6,6 @@ namespace Mono.Debugger
 	public class SimpleSymbolTableCollection : ISimpleSymbolTable, ICollection
 	{
 		ArrayList symtabs = new ArrayList ();
-		bool in_update;
-		bool needs_update = false;
 
 		public void AddSymbolTable (ISimpleSymbolTable symtab)
 		{

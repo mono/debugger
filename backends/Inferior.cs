@@ -40,8 +40,6 @@ namespace Mono.Debugger.Backends
 		bool initialized;
 
 		ITargetInfo target_info;
-		Hashtable pending_callbacks = new Hashtable ();
-		long last_callback_id = 0;
 
 		public bool HasTarget {
 			get {
@@ -66,7 +64,7 @@ namespace Mono.Debugger.Backends
 		public event TargetExitedHandler TargetExited;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error, out bool has_thread_manager);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);
@@ -389,13 +387,12 @@ namespace Mono.Debugger.Backends
 
 			IntPtr error;
 
-			bool has_thread_manager;
 			CommandError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, out child_pid,
 				new ChildOutputHandler (inferior_stdout_handler),
 				new ChildOutputHandler (inferior_stderr_handler),
-				out error, out has_thread_manager);
+				out error);
 			if (result != CommandError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
@@ -1109,7 +1106,7 @@ namespace Mono.Debugger.Backends
 					TargetMemoryArea area = new TargetMemoryArea (
 						new TargetAddress (GlobalAddressDomain, start),
 						new TargetAddress (GlobalAddressDomain, end),
-						flags, name, this);
+						flags, name);
 					list.Add (area);
 				} while (true);
 			}

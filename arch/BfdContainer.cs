@@ -112,7 +112,7 @@ namespace Mono.Debugger.Architecture
 			if (backend == null)
 				throw new InvalidOperationException ();
 
-			ICollection modules = (ICollection) info.GetValue ("modules", typeof (ICollection));
+			info.GetValue ("modules", typeof (ICollection));
 
 			bfd_hash = new Hashtable ();
 			module_hash = new Hashtable ();

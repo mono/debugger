@@ -11,8 +11,7 @@ namespace Mono.Debugger.Languages.CSharp
 		DebuggerBackend backend;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
-		bool has_scope_info, has_liveness_info;
-		bool is_local;
+		bool has_liveness_info;
 
 		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
 				     bool is_local, IMethod method, VariableInfo info,
@@ -22,7 +21,6 @@ namespace Mono.Debugger.Languages.CSharp
 			if (is_local) {
 				start_scope = method.StartAddress + start_scope_offset;
 				end_scope = method.StartAddress + end_scope_offset;
-				has_scope_info = true;
 			} else if (method.HasMethodBounds) {
 				start_scope = method.MethodStartAddress;
 				end_scope = method.MethodEndAddress;
@@ -49,7 +47,6 @@ namespace Mono.Debugger.Languages.CSharp
 			this.backend = backend;
 			this.name = name;
 			this.type = type;
-			this.is_local = is_local;
 			this.info = info;
 
 			if (info.HasLivenessInfo) {

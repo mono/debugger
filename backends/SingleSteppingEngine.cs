@@ -606,10 +606,10 @@ namespace Mono.Debugger.Backends
 				if ((method != null) && method.HasSource) {
 					SourceAddress source = method.Source.Lookup (address);
 					frames [i] = process.CreateFrame (
-						address, i, iframes [i], backtrace, source, method);
+						address, i, backtrace, source, method);
 				} else
 					frames [i] = process.CreateFrame (
-						address, i, iframes [i], backtrace, null, null);
+						address, i, backtrace, null, null);
 			}
 
 			backtrace.SetFrames (frames);
@@ -1047,15 +1047,10 @@ namespace Mono.Debugger.Backends
 
 		void child_exited ()
 		{
-			child_already_exited = true;
-
 			inferior.Dispose ();
 			inferior = null;
 			frames_invalid ();
 		}
-
-		bool child_already_exited;
-		bool debugger_info_read;
 
 		// <summary>
 		//   A breakpoint has been hit; now the sse needs to find out what do do:
@@ -1162,17 +1157,14 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
-			// This gets just one single stack frame.
-			Inferior.StackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
-
 			if ((current_method != null) && current_method.HasSource) {
 				SourceAddress source = current_method.Source.Lookup (address);
 
 				current_frame = process.CreateFrame (
-					address, 0, frames [0], null, source, current_method);
+					address, 0, null, source, current_method);
 			} else
 				current_frame = process.CreateFrame (
-					address, 0, frames [0], null, null, null);
+					address, 0, null, null, null);
 
 			return current_frame;
 		}
@@ -1232,10 +1224,10 @@ namespace Mono.Debugger.Backends
 				}
 
 				current_frame = process.CreateFrame (
-					address, 0, frames [0], null, source, current_method);
+					address, 0, null, source, current_method);
 			} else
 				current_frame = process.CreateFrame (
-					address, 0, frames [0], null, null, null);
+					address, 0, null, null, null);
 
 			return null;
 		}

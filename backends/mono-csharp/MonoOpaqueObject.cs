@@ -4,13 +4,9 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoOpaqueObject : MonoObject
 	{
-		new MonoOpaqueType type;
-
 		public MonoOpaqueObject (MonoOpaqueType type, TargetLocation location)
 			: base (type, location)
-		{
-			this.type = type;
-		}
+		{ }
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
 							TargetLocation location,

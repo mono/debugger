@@ -181,11 +181,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		//
 		int getHex (int count, out bool error)
 		{
-			int [] buffer = new int [8];
 			int i;
 			int total = 0;
 			int c;
-			char e;
 			int top = count != -1 ? count : 4;
 			
 			getChar ();
@@ -337,9 +335,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		//
 		int is_number (int c)
 		{
-			bool is_real = false;
-			int type;
-
 			number_builder.Length = 0;
 
 			if (c >= '0' && c <= '9'){
@@ -512,8 +507,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public int xtoken ()
 		{
-			int t;
-			bool doread = false;
 			int c;
 
 			val = null;

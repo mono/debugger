@@ -7,7 +7,6 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class CSharpMethod : MethodSource
 	{
 		int start_row, end_row;
-		ArrayList addresses;
 		MonoSymbolTableReader reader;
 		JitLineNumberEntry[] line_numbers;
 		MethodEntry method;

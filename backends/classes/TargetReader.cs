@@ -47,7 +47,6 @@ namespace Mono.Debugger.Backends
 	{
 		byte[] data;
 		TargetBinaryReader reader;
-		int offset;
 		ITargetMemoryInfo info;
 
 		internal TargetReader (byte[] data, ITargetMemoryInfo info)
@@ -55,7 +54,6 @@ namespace Mono.Debugger.Backends
 			this.reader = new TargetBinaryReader (data, info);
 			this.info = info;
 			this.data = data;
-			this.offset = 0;
 		}
 
 		public long Offset {

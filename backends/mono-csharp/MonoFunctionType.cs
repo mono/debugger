@@ -6,20 +6,16 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
-		MonoClass klass;
 		R.MethodBase method_info;
 		TargetAddress method;
 		MonoType return_type;
 		MonoType[] parameter_types;
-		TargetAddress compile_method;
-		TargetAddress runtime_invoke;
 		MonoSymbolTable table;
 		bool has_return_type;
 
 		public MonoFunctionType (MonoClass klass, R.MethodBase mbase, TargetBinaryReader info, MonoSymbolTable table)
 			: base (TargetObjectKind.Function, mbase.ReflectedType, 0)
 		{
-			this.klass = klass;
 			this.method_info = mbase;
 			this.table = table;
 			this.method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
@@ -29,7 +25,6 @@ namespace Mono.Debugger.Languages.CSharp
 				return_type = table.GetType (minfo.ReturnType, type_info);
 				has_return_type = minfo.ReturnType != typeof (void);
 			} else if (mbase is R.ConstructorInfo) {
-				R.ConstructorInfo cinfo = (R.ConstructorInfo) mbase;
 				return_type = klass;
 				has_return_type = true;
 			}
@@ -49,25 +44,18 @@ namespace Mono.Debugger.Languages.CSharp
 				int param_info = info.ReadInt32 ();
 				parameter_types [i] = table.GetType (parameters [i].ParameterType, param_info);
 			}
-
-			compile_method = table.Language.MonoDebuggerInfo.CompileMethod;
-			runtime_invoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
 		public MonoFunctionType (MonoClass klass, R.MethodInfo minfo, TargetAddress method,
 					 MonoType return_type, MonoSymbolTable table)
 			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
 		{
-			this.klass = klass;
 			this.method_info = minfo;
 			this.method = method;
 			this.return_type = return_type;
 			this.table = table;
 
 			parameter_types = new MonoType [0];
-
-			compile_method = table.Language.MonoDebuggerInfo.CompileMethod;
-			runtime_invoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
 		public override bool IsByRef {

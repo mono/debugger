@@ -11,11 +11,9 @@ namespace Mono.Debugger.Languages.Native
 		public NativePointerType (string name, NativeType target_type, int size)
 			: base (name, TargetObjectKind.Pointer, size)
 		{
-			this.size = size;
 			this.target_type = target_type;
 		}
 
-		int size;
 		NativeType target_type;
 
 		public override bool IsByRef {

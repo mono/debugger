@@ -11,13 +11,9 @@ namespace Mono.Debugger.Backends
 {
 	internal abstract class NativeModule : ModuleData
 	{
-		DebuggerBackend backend;
-
-		public NativeModule (DebuggerBackend backend, Module module, string name)
+		public NativeModule (Module module, string name)
 			: base (module, name)
-		{
-			this.backend = backend;
-		}
+		{ }
 
 		bool check_breakpoint_hit (StackFrame frame, int index, object user_data)
 		{

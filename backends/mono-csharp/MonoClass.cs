@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages.CSharp
 					goto again;
 				} else if (tkind != TypeKind.ClassInfo)
 					throw new InternalError ();
-				int new_size = info.ReadInt32 ();
+				info.ReadInt32 ();
 				is_valuetype = info.ReadByte () != 0;
 			} else {
 				is_valuetype = kind == TargetObjectKind.Struct;

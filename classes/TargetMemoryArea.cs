@@ -10,16 +10,13 @@ namespace Mono.Debugger
 
 	public sealed class TargetMemoryArea
 	{
-		ITargetMemoryAccess memory;
 		TargetAddress start, end;
 		TargetMemoryFlags flags;
 		string name;
 
 		public TargetMemoryArea (TargetAddress start, TargetAddress end,
-					 TargetMemoryFlags flags, string name,
-					 ITargetMemoryAccess memory)
+					 TargetMemoryFlags flags, string name)
 		{
-			this.memory = memory;
 			this.start = start;
 			this.end = end;
 			this.flags = flags;

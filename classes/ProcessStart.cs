@@ -12,48 +12,10 @@ namespace Mono.Debugger
 {
 	public class DebuggerOptions : Options
 	{
-		public enum StartMode
-		{
-			Unknown,
-			CoreFile,
-			StartApplication
-		}
-
 		public DebuggerOptions ()
 		{
 			ParsingMode = OptionsParsingMode.Linux;
 			EndOptionProcessingWithDoubleDash = true;
-		}
-
-		StartMode start_mode = StartMode.Unknown;
-
-		public StartMode Mode {
-			get { return start_mode; }
-		}
-
-		[Option("PARAM is one of `core' (to load a core file),\n\t\t\t" +
-			"   `load' (to load a previously saved debugging session)\n\t\t\t" +
-			"   or `start' (to start a new application).", 'm')]
-		public WhatToDoNext mode (string value)
-		{
-			if (start_mode != StartMode.Unknown) {
-				Console.WriteLine ("This argument cannot be used multiple times.");
-				return WhatToDoNext.AbandonProgram;
-			}
-
-			switch (value) {
-			case "core":
-				start_mode = StartMode.CoreFile;
-				return WhatToDoNext.GoAhead;
-
-			case "start":
-				start_mode = StartMode.StartApplication;
-				return WhatToDoNext.GoAhead;
-
-			default:
-				Console.WriteLine ("Invalid `--mode' argument.");
-				return WhatToDoNext.AbandonProgram;
-			}
 		}
 
 		[Option("The command-line prompt", 'p', "prompt")]
@@ -87,7 +49,6 @@ namespace Mono.Debugger
 		protected string base_dir;
 		string[] argv;
 		string[] envp;
-		string core_file;
 		DebuggerOptions options;
 		protected bool native;
 		protected bool load_native_symtab;
@@ -117,17 +78,22 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ProcessStart (DebuggerOptions options, string[] argv, string core_file)
+		public ProcessStart (DebuggerOptions options, string[] argv)
 			: this (options)
 		{
 			this.argv = argv;
-			this.core_file = core_file;
 		}
 
 		public ProcessStart (DebuggerOptions options)
 		{
 			this.options = options;
 			this.cwd = options.WorkingDirectory;
+		}
+
+		public DebuggerOptions Options {
+			get {
+				return options;
+			}
 		}
 
 		public string WorkingDirectory {
@@ -188,14 +154,6 @@ namespace Mono.Debugger
 
 				return load_native_symtab;
 			}
-		}
-
-		public bool IsCoreFile {
-			get { return core_file != null; }
-		}
-
-		public string CoreFile {
-			get { return core_file; }
 		}
 
 		public virtual string CommandLine {
@@ -270,21 +228,6 @@ namespace Mono.Debugger
 			initialized = true;
 		}
 
-		protected static ProcessStart Create (DebuggerOptions options, string[] argv, string core_file)
-		{
-			Assembly application;
-			try {
-				application = Assembly.LoadFrom (argv [0]);
-			} catch {
-				application = null;
-			}
-
-			if (application != null)
-				return new ManagedProcessStart (options, argv, application, core_file);
-			else
-				return new NativeProcessStart (options, argv, core_file);
-		}
-
 		public static ProcessStart Create (DebuggerOptions options, string[] args)
 		{
 			if (options == null)
@@ -293,43 +236,30 @@ namespace Mono.Debugger
 			options.ProcessArgs (args);
 			args = options.RemainingArguments;
 
-			switch (options.Mode) {
-			case DebuggerOptions.StartMode.CoreFile:
-				if (args.Length < 2)
-					throw new CannotStartTargetException (
-						"You need to specify at least the name of " +
-						"the core file and the application it was " +
-						"generated from.");
+			if (args.Length == 0)
+				throw new CannotStartTargetException (
+					"You need to specify the program you want " +
+					"to debug.");
 
-				string core_file = args [0];
-				string [] temp_args = new string [args.Length-1];
-				Array.Copy (args, 1, temp_args, 0, args.Length-1);
-				args = temp_args;
-
-				return Create (options, args, core_file);
-
-			case DebuggerOptions.StartMode.Unknown:
-				if (args.Length == 0)
-					return null;
-
-				return Create (options, args, null);
-
-			default:
-				if (args.Length == 0)
-					throw new CannotStartTargetException (
-						"You need to specify the program you want " +
-						"to debug.");
-
-				return Create (options, args, null);
+			Assembly application;
+			try {
+				application = Assembly.LoadFrom (args [0]);
+			} catch {
+				application = null;
 			}
+
+			if (application != null)
+				return new ManagedProcessStart (options, args);
+			else
+				return new NativeProcessStart (options, args);
 		}
 	}
 
 	[Serializable]
 	public class NativeProcessStart : ProcessStart
 	{
-		public NativeProcessStart (DebuggerOptions options, string[] argv, string core_file)
-			: base (options, argv, core_file)
+		public NativeProcessStart (DebuggerOptions options, string[] argv)
+			: base (options, argv)
 		{
 		}
 	}
@@ -337,15 +267,12 @@ namespace Mono.Debugger
 	[Serializable]
 	public class ManagedProcessStart : NativeProcessStart
 	{
-		Assembly application;
 		string[] old_argv;
 		string jit_wrapper, opt_flags;
 
-		public ManagedProcessStart (DebuggerOptions options, string[] argv, Assembly application,
-					    string core_file)
-			: base (options, argv, core_file)
+		public ManagedProcessStart (DebuggerOptions options, string[] argv)
+			: base (options, argv)
 		{
-			this.application = application;
 			this.jit_wrapper = options.JitWrapper;
 			this.opt_flags = options.JitOptimizations;
 		}
@@ -370,9 +297,6 @@ namespace Mono.Debugger
 		protected override string[] SetupArguments ()
 		{
 			old_argv = base.SetupArguments ();
-
-			MethodInfo main = application.EntryPoint;
-			string main_name = main.DeclaringType + ":" + main.Name;
 
 			string[] start_argv = { jit_wrapper, opt_flags };
 

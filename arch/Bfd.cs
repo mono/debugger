@@ -23,9 +23,7 @@ namespace Mono.Debugger.Architecture
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
-		int dynlink_breakpoint_id = -1;
 		Hashtable symbols;
-		Hashtable section_hash;
 		BfdSymbolTable simple_symtab;
 		Module module;
 		BfdModule bfd_module;
@@ -34,7 +32,7 @@ namespace Mono.Debugger.Architecture
 		bool initialized;
 		bool has_shlib_info;
 		TargetAddress base_address, start_address, end_address;
-		TargetAddress plt_start, plt_end, got_start, got_end;
+		TargetAddress plt_start, plt_end, got_start;
 		bool has_got;
 
 		[Flags]
@@ -194,8 +192,6 @@ namespace Mono.Debugger.Architecture
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
 
-			section_hash = new Hashtable ();
-
 			if (core_file) {
 				if (!bfd_glue_check_format_core (bfd))
 					throw new SymbolTableException ("Not a core file: {0}", filename);
@@ -261,8 +257,6 @@ namespace Mono.Debugger.Architecture
 
 				got_start = new TargetAddress (
 					memory.GlobalAddressDomain, base_address.Address + got_section.vma);
-				got_end = got_start + got_section.size;
-
 				has_got = true;
 			}
 		}
@@ -389,7 +383,7 @@ namespace Mono.Debugger.Architecture
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
-				TargetAddress l_ld = map_reader.ReadAddress ();
+				map_reader.ReadAddress ();
 
 				string name;
 				try {
@@ -412,8 +406,8 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				Bfd library_bfd = container.AddFile (
-					inferior, name, module.StepInto, l_addr, null);
+				container.AddFile (inferior, name, module.StepInto,
+						   l_addr, null);
 			}
 		}
 
@@ -425,9 +419,9 @@ namespace Mono.Debugger.Architecture
 			set {
 				core_file_bfd = value;
 				if (core_file_bfd != null) {
+#if FALSE
 					InternalSection text = GetSectionByName (".text", true);
 
-#if FALSE
 					base_address = new TargetAddress (
 						memory.GlobalAddressDomain, text.vma);
 					end_address = new TargetAddress (
@@ -571,13 +565,13 @@ namespace Mono.Debugger.Architecture
 					if ((last.Flags == flags) &&
 					    ((last.End + 1 == start) || (last.End == start))) {
 						list [list.Count - 1] = new TargetMemoryArea (
-							last.Start, end, last.Flags, last.Name, memory);
+							last.Start, end, last.Flags, last.Name);
 						continue;
 					}
 				}
 
 				string name = section.bfd.FileName;
-				list.Add (new TargetMemoryArea (start, end, flags, name, memory));
+				list.Add (new TargetMemoryArea (start, end, flags, name));
 			}
 
 			TargetMemoryArea[] maps = new TargetMemoryArea [list.Count];

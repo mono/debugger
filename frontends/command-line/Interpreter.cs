@@ -26,7 +26,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public bool ProcessCommand (string line)
 		{
-			bool ok;
 			if (line == "")
 				line = last_command;
 			if (line.StartsWith ("list"))
@@ -37,7 +36,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return false;
 
 			try {
-				ok = parser.Parse (line);
+				parser.Parse (line);
 				last_command = line;
 			} catch {
 				return true;

@@ -304,7 +304,7 @@ ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    gchar **argv, gchar **envp, gint *child_pid,
 			    ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
-			    gchar **error, gboolean *has_thread_manager)
+			    gchar **error)
 {	
 	InferiorHandle *inferior = handle->inferior;
 	int fd[2], open_max, ret, len, i;
@@ -347,7 +347,7 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 
 	inferior->pid = *child_pid;
 	_mono_debugger_server_setup_inferior (handle, TRUE);
-	*has_thread_manager = _mono_debugger_server_setup_thread_manager (handle);
+	_mono_debugger_server_setup_thread_manager (handle);
 
 	return COMMAND_ERROR_NONE;
 }

@@ -315,8 +315,6 @@ namespace Mono.Debugger.Languages.CSharp
 		int TotalSize;
 
 		int address_size;
-		int long_size;
-		int int_size;
 
 		int last_num_type_tables;
 		int last_type_table_offset;
@@ -330,8 +328,6 @@ namespace Mono.Debugger.Languages.CSharp
 			this.TargetInfo = memory;
 
 			address_size = memory.TargetAddressSize;
-			long_size = memory.TargetLongIntegerSize;
-			int_size = memory.TargetIntegerSize;
 
 			modules = new ArrayList ();
 			module_hash = new Hashtable ();
@@ -367,7 +363,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (total_size != TotalSize)
 				throw new InternalError ();
 
-			TargetAddress domain = header.ReadAddress ();
+			header.ReadAddress ();
 			TargetAddress corlib_address = header.ReadAddress ();
 			TargetAddress builtin_types_address = header.ReadAddress ();
 
@@ -726,7 +722,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 
 			public MonoModule (Module module, string name, MonoSymbolTableReader reader)
-				: base (reader.Table.Backend, module, name)
+				: base (module, name)
 			{
 				this.module = module;
 				this.reader = reader;
@@ -949,7 +945,6 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTableReader : ISimpleSymbolTable
 	{
-		MethodEntry[] Methods;
 		internal readonly int Index;
 		internal readonly Reflection.Assembly Assembly;
 		internal readonly MonoSymbolTable Table;
@@ -967,10 +962,8 @@ namespace Mono.Debugger.Languages.CSharp
 		ArrayList ranges;
 
 		TargetAddress dynamic_address;
-		TargetAddress global_symfile;
 		int class_entry_size;
 		int address_size;
-		int long_size;
 		int int_size;
 
 		int generation;
@@ -990,7 +983,6 @@ namespace Mono.Debugger.Languages.CSharp
 			GlobalAddressDomain = memory.GlobalAddressDomain;
 
 			address_size = TargetInfo.TargetAddressSize;
-			long_size = TargetInfo.TargetLongIntegerSize;
 			int_size = TargetInfo.TargetIntegerSize;
 
 			ranges = new ArrayList ();
@@ -1277,7 +1269,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			MonoSymbolTableReader reader;
 			SourceFileEntry source;
-			ArrayList methods;
 
 			public MonoSourceFile (MonoSymbolTableReader reader, SourceFileEntry source)
 				: base (reader.Module, source.FileName)
@@ -1304,10 +1295,8 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 			Hashtable load_handlers;
 			int index;
-			string full_name;
 			MethodEntry entry;
 			MonoMethod method;
-			MethodSourceEntry source;
 
 			public MonoSourceMethod (SourceFile info, MonoSymbolTableReader reader,
 						 MethodSourceEntry source, MethodEntry entry, string name)
@@ -1315,7 +1304,6 @@ namespace Mono.Debugger.Languages.CSharp
 			{
 				this.reader = reader;
 				this.index = source.Index;
-				this.source = source;
 				this.entry = entry;
 
 				info.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
@@ -1463,7 +1451,6 @@ namespace Mono.Debugger.Languages.CSharp
 			SourceMethod info;
 			MethodEntry method;
 			System.Reflection.MethodBase rmethod;
-			MonoType class_type;
 			MonoType[] param_types;
 			MonoType[] local_types;
 			IVariable[] parameters;
@@ -1524,9 +1511,6 @@ namespace Mono.Debugger.Languages.CSharp
 				if (has_variables || !is_loaded)
 					return;
 
-				class_type = reader.Table.GetType (
-					rmethod.ReflectedType, address.ClassTypeInfoOffset);
-
 				Reflection.ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
@@ -1554,9 +1538,6 @@ namespace Mono.Debugger.Languages.CSharp
 					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
-						int start_scope = block.StartAddress;
-						int end_scope = block.EndAddress;
-
 						locals [i] = new MonoVariable (
 							reader.backend, local.Name, local_types [i],
 							true, this, address.LocalVariableInfo [i],
@@ -1713,7 +1694,6 @@ namespace Mono.Debugger.Languages.CSharp
 		Process process;
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
-		int symtab_generation;
 		TargetAddress trampoline_address;
 		TargetAddress notification_address;
 		bool initialized;
@@ -1760,7 +1740,6 @@ namespace Mono.Debugger.Languages.CSharp
 			process = null;
 			info = null;
 			initialized = false;
-			symtab_generation = 0;
 			trampoline_address = TargetAddress.Null;
 
 			if (table != null) {

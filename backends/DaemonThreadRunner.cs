@@ -100,9 +100,6 @@ namespace Mono.Debugger.Backends
 		Inferior inferior;
 		SingleSteppingEngine process;
 		DaemonThreadHandler daemon_thread_handler;
-		ProcessStart start;
-		bool is_main_thread;
-		bool redirect_fds;
 		int pid;
 
 		protected bool daemon_stopped (TargetAddress address)

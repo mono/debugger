@@ -286,14 +286,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			ITargetType type = DoResolveType (context);
+			DoResolveType (context);
 
 			return frame.GetRegister (register, offset);
 		}
 
 		public TargetLocation ResolveLocation (ScriptingContext context)
 		{
-			ITargetType type = DoResolveType (context);
+			DoResolveType (context);
 
 			return frame.GetRegisterLocation (register, offset, true);
 		}

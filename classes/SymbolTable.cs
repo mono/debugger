@@ -117,8 +117,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		static int count = 0;
-
 		object get_methods (object user_data)
 		{
 			lock (this) {

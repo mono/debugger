@@ -91,8 +91,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 					   gint               *child_pid,
 					   ChildOutputFunc     stdout_handler,
 					   ChildOutputFunc     stderr_handler,
-					   gchar             **error,
-					   gboolean           *has_thread_manager);
+					   gchar             **error);
 
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,

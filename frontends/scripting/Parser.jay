@@ -8,7 +8,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 {
 	public class Parser
 	{
-		string name;
 		ScriptingContext current_context;
 		MyTextReader reader;
 		bool do_quit = false;
@@ -871,7 +870,6 @@ binary_operator
 
 public Parser (ScriptingContext context, string name)
 {
-	this.name = name;
 	this.reader = new MyTextReader ();
 	this.current_context = context;
 

@@ -4,13 +4,9 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeOpaqueObject : NativeObject
 	{
-		new NativeOpaqueType type;
-
 		public NativeOpaqueObject (NativeOpaqueType type, TargetLocation location)
 			: base (type, location)
-		{
-			this.type = type;
-		}
+		{ }
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
 							TargetLocation location,

@@ -24,7 +24,7 @@ namespace Mono.Debugger.Architecture
 		ILanguage language;
 
 		public BfdModule (DebuggerBackend backend, Module module, Bfd bfd, ITargetInfo info)
-			: base (backend, module, bfd.FileName)
+			: base (module, bfd.FileName)
 		{
 			this.backend = backend;
 			this.module = module;

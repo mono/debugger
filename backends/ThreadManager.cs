@@ -23,7 +23,6 @@ namespace Mono.Debugger
 		internal ThreadManager (DebuggerBackend backend)
 		{
 			this.backend = backend;
-			this.bfdc = backend.BfdContainer;
 			this.SymbolTableManager = backend.SymbolTableManager;
 
 			breakpoint_manager = new BreakpointManager ();
@@ -45,7 +44,6 @@ namespace Mono.Debugger
 		internal readonly SymbolTableManager SymbolTableManager;
 
 		ProcessStart start;
-		BfdContainer bfdc;
 		DebuggerBackend backend;
 		BreakpointManager breakpoint_manager;
 		Thread inferior_thread;

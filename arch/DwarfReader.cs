@@ -361,10 +361,6 @@ namespace Mono.Debugger.Architecture
 			if (contents == null)
 				throw new DwarfException (this, "Can't find DWARF 2 debugging info");
 
-			ITargetInfo target_info = null;
-			if (AddressSize != 0)
-				target_info = new TargetInfo (AddressSize);
-
 			return new TargetBlob (contents);
 		}
 
@@ -1252,7 +1248,6 @@ namespace Mono.Debugger.Architecture
 
 		protected class AbbrevEntry
 		{
-			DwarfReader dwarf;
 			int abbrev_id;
 			DwarfTag tag;
 			bool has_children;
@@ -1261,8 +1256,6 @@ namespace Mono.Debugger.Architecture
 
 			public AbbrevEntry (DwarfReader dwarf, DwarfBinaryReader reader)
 			{
-				this.dwarf = dwarf;
-
 				abbrev_id = reader.ReadLeb128 ();
 				tag = (DwarfTag) reader.ReadLeb128 ();
 				has_children = reader.ReadByte () != 0;
@@ -1393,7 +1386,6 @@ namespace Mono.Debugger.Architecture
 			public static DieCompileUnit CreateDieCompileUnit (DwarfBinaryReader reader,
 									   CompilationUnit comp_unit)
 			{
-				long offset = reader.Position;
 				int abbrev_id = reader.ReadLeb128 ();
 				AbbrevEntry abbrev = comp_unit [abbrev_id];
 
@@ -1603,13 +1595,11 @@ namespace Mono.Debugger.Architecture
 
 			protected class DwarfSourceFile : SourceFile
 			{
-				DwarfReader dwarf;
 				ArrayList methods;
 
 				public DwarfSourceFile (DwarfReader dwarf, string filename)
 					: base (dwarf.module, filename)
 				{
-					this.dwarf = dwarf;
 					this.methods = new ArrayList ();
 				}
 
@@ -1657,7 +1647,6 @@ namespace Mono.Debugger.Architecture
 					ArrayList methods = new ArrayList ();
 
 					ArrayList list = comp_unit_die.Subprograms;
-					LineNumberEngine engine = comp_unit_die.Engine;
 
 					foreach (DieSubprogram subprog in list)
 						methods.Add (subprog.Method);
@@ -2715,6 +2704,7 @@ namespace Mono.Debugger.Architecture
 					return ok;
 
 				ok = DoResolve ();
+				resolved = true;
 				return ok;
 			}
 

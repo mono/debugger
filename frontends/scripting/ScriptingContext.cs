@@ -233,15 +233,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class BacktraceHandle
 	{
-		ProcessHandle process;
-		Backtrace backtrace;
 		FrameHandle[] frames;
 
 		public BacktraceHandle (ProcessHandle process, Backtrace backtrace)
 		{
-			this.process = process;
-			this.backtrace = backtrace;
-
 			StackFrame[] bt_frames = backtrace.Frames;
 			if (bt_frames != null) {
 				frames = new FrameHandle [bt_frames.Length];
@@ -262,19 +257,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ProcessHandle
 	{
-		DebuggerBackend backend;
 		ScriptingContext context;	
 		IArchitecture arch;
 		Process process;
 		string name;
 
-		int id, pid;
+		int id;
 		Hashtable registers;
 
 		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
 		{
 			this.context = context;
-			this.backend = backend;
 			this.process = process;
 			this.id = process.ID;
 

@@ -7,9 +7,6 @@ namespace Mono.Debugger
 	public abstract class MethodSource : IMethodSource
 	{
 		SourceFile file;
-		SourceMethod source_method;
-		int start_row, end_row;
-		bool sources_read;
 		string name;
 
 		TargetAddress start, end;
@@ -175,7 +172,6 @@ namespace Mono.Debugger
 			Console.WriteLine ("DUMPING LINE NUMBER TABLE");
 			Console.WriteLine ("BOUNDS: start = {0} / {1}, end = {2} / {3}", 
 					   start, method_start, end, method_end);
-			Console.WriteLine ("SOURCE BOUNDS: start = {0}, end = {1}", start_row, end_row);
 			Console.WriteLine ("--------");
 			for (int i = 0; i < Addresses.Length; i++) {
 				LineEntry entry = (LineEntry) Addresses [i];

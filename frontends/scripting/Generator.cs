@@ -338,7 +338,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		Type type;
 		CommandAttribute attribute;
-		ConstructorInfo ctor;
 		ExpressionClass[] args;
 
 		protected CommandClass (Type type, CommandAttribute attribute, ExpressionClass[] args)
