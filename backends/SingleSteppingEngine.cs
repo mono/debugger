@@ -1117,6 +1117,7 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			frame_changed (inferior.CurrentFrame, current_operation);
+			bpt.BreakpointHit (frame);
 
 			return true;
 		}
