@@ -968,6 +968,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return null;
 
+			resolved = true;
 			return this;
 		}
 

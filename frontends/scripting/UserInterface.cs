@@ -241,6 +241,22 @@ namespace Mono.Debugger.Frontends.Scripting
 				return sb.ToString ();
 			}
 
+			case TargetObjectKind.Pointer: {
+				ITargetPointerObject pobj = (ITargetPointerObject) obj;
+				if (pobj.HasDereferencedObject) {
+					ITargetObject deref = pobj.DereferencedObject;
+					return String.Format ("&({0}) {1}", deref.Type.Name,
+							      FormatObject (deref));
+				} else if (pobj.HasAddress) {
+					TargetAddress addr = pobj.Address;
+					if (addr.IsNull)
+						return "null";
+					else
+						return pobj.Address.ToString ();
+				} else
+					return "<unknown pointer>";
+			}
+
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
 				ITargetStructObject sobj = (ITargetStructObject) obj;
