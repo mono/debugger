@@ -1,3 +1,9 @@
+April 24th, 2003 - Martin Baulig
+--------------------------------
+
+Reworked the way how we handle I/O from the target; we're now also using a nice
+terminal widget in the GUI for it.
+
 April 6th, 2003 - Martin Baulig
 -------------------------------
 
