@@ -1302,8 +1302,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			switch (type){
 			case "show":
 				context.Print (
-					"show process            Processes\n" +
-					"show register [p][f]    CPU register contents for [p]rocess/[f]rame\n"+
+					"show processes          Processes\n" +
+					"show registers [p][f]    CPU register contents for [p]rocess/[f]rame\n"+
 					"show parameters [p][f]  Parameters for [p]rocess/[f]rame\n"+
 					"show locals [p][f]      Local variables for [p]rocess/[f]rame\n"+
 					"show modules            The list of loaded modules\n" +
@@ -1314,7 +1314,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				context.Print (
 					"    backtrace            prints out the backtrace\n" +
 					"    frame [proc][fn]     Selects frame\n" + 
-					"    c, continue          continue execution" +
+					"    c, continue          continue execution\n" +
 					"    s, step              single steps\n" +
 					"    stepi                single step, at instruction level\n" + 
 					"    n, next              next line\n" +
