@@ -25,7 +25,6 @@ namespace Mono.Debugger.Architecture
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		Hashtable symbols;
 		BfdSymbolTable simple_symtab;
-		Module module;
 		BfdModule bfd_module;
 		string filename;
 		bool is_coredump;
@@ -179,12 +178,11 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public Bfd (BfdContainer container, ITargetMemoryAccess memory, string filename,
-			    bool core_file, Module module, TargetAddress base_address)
+			    bool core_file, TargetAddress base_address)
 		{
 			this.container = container;
 			this.memory = memory;
 			this.filename = filename;
-			this.module = module;
 			this.base_address = base_address;
 			this.backend = container.DebuggerBackend;
 
@@ -246,7 +244,7 @@ namespace Mono.Debugger.Architecture
 
 			simple_symtab = new BfdSymbolTable (this);
 
-			bfd_module = new BfdModule (backend, module, this, (ITargetInfo) memory);
+			bfd_module = new BfdModule (backend, this, (ITargetInfo) memory);
 
 			InternalSection plt_section = GetSectionByName (".plt", false);
 			InternalSection got_section = GetSectionByName (".got", false);
@@ -406,7 +404,7 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				container.AddFile (inferior, name, module.StepInto,
+				container.AddFile (inferior, name, bfd_module.StepInto,
 						   l_addr, null);
 			}
 		}
@@ -663,7 +661,7 @@ namespace Mono.Debugger.Architecture
 
 		public Module Module {
 			get {
-				return module;
+				return bfd_module;
 			}
 		}
 

@@ -10,17 +10,15 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class BfdContainer : ISerializable, IDisposable
+	internal class BfdContainer : IDisposable
 	{
 		Hashtable bfd_hash;
-		Hashtable module_hash;
 		DebuggerBackend backend;
 
 		public BfdContainer (DebuggerBackend backend)
 		{
 			this.backend = backend;
 			this.bfd_hash = new Hashtable ();
-			this.module_hash = new Hashtable ();
 
 			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
 		}
@@ -32,7 +30,7 @@ namespace Mono.Debugger.Architecture
 		public Module this [string filename] {
 			get {
 				check_disposed ();
-				return (Module) module_hash [filename];
+				return ((Bfd) bfd_hash [filename]).Module;
 			}
 		}
 
@@ -48,15 +46,7 @@ namespace Mono.Debugger.Architecture
 			if (bfd_hash.Contains (filename))
 				return (Bfd) bfd_hash [filename];
 
-			Module module = (Module) module_hash [filename];
-			if (module == null) {
-				module = backend.ModuleManager.CreateModule (filename);
-				module.LoadSymbols = step_into;
-				module.StepInto = step_into;
-				module_hash.Add (filename, module);
-			}
-
-			Bfd bfd = new Bfd (this, memory, filename, false, module, base_address);
+			Bfd bfd = new Bfd (this, memory, filename, false, base_address);
 			bfd.CoreFileBfd = core_bfd;
 
 			bfd_hash.Add (filename, bfd);
@@ -66,11 +56,8 @@ namespace Mono.Debugger.Architecture
 
 		public TargetAddress LookupSymbol (string name)
 		{
-			foreach (Module module in module_hash.Values) {
-				if (!module.IsLoaded)
-					continue;
-
-				TargetAddress symbol = module.SimpleLookup (name);
+			foreach (Bfd bfd in bfd_hash.Values) {
+				TargetAddress symbol = bfd [name];
 				if (!symbol.IsNull)
 					return symbol;
 			}
@@ -92,36 +79,6 @@ namespace Mono.Debugger.Architecture
 			foreach (Bfd bfd in bfd_hash.Values)
 				bfd.Dispose ();
 			bfd_hash = new Hashtable ();
-
-			foreach (Module module in module_hash.Values)
-				module.ModuleData = null;
-		}
-
-		//
-		// ISerializable
-		//
-
-		public void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			info.AddValue ("modules", module_hash.Values, typeof (ICollection));
-		}
-
-		private BfdContainer (SerializationInfo info, StreamingContext context)
-		{
-			backend = context.Context as DebuggerBackend;
-			if (backend == null)
-				throw new InvalidOperationException ();
-
-			info.GetValue ("modules", typeof (ICollection));
-
-			bfd_hash = new Hashtable ();
-			module_hash = new Hashtable ();
-
-			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
-
-			foreach (BfdModule module in module_hash) {
-				module_hash.Add (module.FullName, module);
-			}
 		}
 
 		//

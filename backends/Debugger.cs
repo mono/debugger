@@ -156,9 +156,6 @@ namespace Mono.Debugger
 
 		internal void ReachedMain ()
 		{
-			foreach (Module module in Modules)
-				module.BackendLoaded = true;
-
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
 		}
@@ -173,9 +170,6 @@ namespace Mono.Debugger
 
 		internal void ReachedManagedMain (Process process)
 		{
-			foreach (Module module in Modules)
-				module.BackendLoaded = true;
-
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
 		}

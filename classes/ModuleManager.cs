@@ -20,18 +20,7 @@ namespace Mono.Debugger
 			initialized = true;
 		}
 
-		public Module CreateModule (string name)
-		{
-			Module module = (Module) modules [name];
-			if (module != null)
-				return module;
-
-			module = new Module (name);
-			AddModule (module);
-			return module;
-		}
-
-		protected void AddModule (Module module)
+		public void AddModule (Module module)
 		{
 			modules.Add (module.Name, module);
 
@@ -75,14 +64,6 @@ namespace Mono.Debugger
 				needs_breakpoint_update = false;
 				OnBreakpointsChanged ();
 			}
-		}
-
-		public void UnLoadAllModules ()
-		{
-			Lock ();
-			foreach (Module module in modules)
-				module.ModuleData = null;
-			UnLock ();
 		}
 
 		void module_changed (Module module)

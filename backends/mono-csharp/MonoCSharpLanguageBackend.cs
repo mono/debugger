@@ -12,7 +12,8 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal delegate void BreakpointHandler (TargetAddress address, object user_data);
+	internal delegate void BreakpointHandler (Process process, TargetAddress address,
+						  object user_data);
 
 	internal class VariableInfo
 	{
@@ -386,17 +387,13 @@ namespace Mono.Debugger.Languages.CSharp
 					corlib = symfile;
 
 				string name = symfile.Assembly.GetName (true).Name;
-				Module module = (Module) module_hash [name];
+				MonoModule module = (MonoModule) module_hash [name];
 				if (module == null) {
-					module = Backend.ModuleManager.CreateModule (name);
+					module = new MonoModule (name, symfile);
+					modules.Add (module);
 					module_hash.Add (name, module);
 				}
 				symfile.Module = module;
-				if (!module.IsLoaded) {
-					MonoModule mono_module = new MonoModule (module, name, symfile);
-					module.ModuleData = mono_module;
-					modules.Add (mono_module);
-				}
 			}
 
 			int num_type_tables = header.ReadInteger ();
@@ -728,33 +725,28 @@ namespace Mono.Debugger.Languages.CSharp
 			throw new InternalError ("Can't find type entry at offset {0}.", offset);
 		}
 
-		private class MonoModule : ModuleData, IDisposable
+		private class MonoModule : Module, IDisposable
 		{
-			Module module;
-			bool symbols_loaded;
 			bool has_debugging_info;
 			MonoSymbolFile reader;
 
-			public MonoModule (Module module, string name, MonoSymbolFile reader)
-				: base (module, name)
+			public MonoModule (string name, MonoSymbolFile reader)
+				: base (name)
 			{
-				this.module = module;
 				this.reader = reader;
-
-				module.ModuleData = this;
 
 				has_debugging_info = reader.File != null;
 
-				module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
-				symbols_loaded = module.LoadSymbols;
-				module_changed (module);
+				reader.Table.Backend.ModuleManager.AddModule (this);
+
+				OnModuleChangedEvent ();
 			}
 
 			public override ILanguage Language {
 				get { return reader.Table; }
 			}
 
-			public override object LanguageBackend {
+			internal override ILanguageBackend LanguageBackend {
 				get { return reader.Table.Language; }
 			}
 
@@ -767,7 +759,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public override bool SymbolsLoaded {
-				get { return symbols_loaded; }
+				get { return LoadSymbols; }
 			}
 
 			public override SourceFile[] Sources {
@@ -794,17 +786,6 @@ namespace Mono.Debugger.Languages.CSharp
 				return TargetAddress.Null;
 			}
 
-			void module_changed (Module module)
-			{
-				if (module.LoadSymbols && !symbols_loaded) {
-					symbols_loaded = true;
-					OnSymbolsLoadedEvent ();
-				} else if (!module.LoadSymbols && symbols_loaded) {
-					symbols_loaded = false;
-					OnSymbolsUnLoadedEvent ();
-				}
-			}
-
 			public override SourceMethod FindMethod (string name)
 			{
 				return reader.FindMethod (name);
@@ -822,7 +803,6 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!this.disposed) {
 				// If this is a call to Dispose, dispose all managed resources.
 					if (disposing) {
-						module.ModuleData = null;
 					}
 				
 					// Release unmanaged resources
@@ -1295,18 +1275,10 @@ namespace Mono.Debugger.Languages.CSharp
 				this.reader = reader;
 				this.index = source.Index;
 				this.entry = entry;
-
-				info.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
 			}
 
 			public C.MethodEntry Entry {
 				get { return entry; }
-			}
-
-			void module_unloaded (Module module)
-			{
-				reader = null;
-				method = null;
 			}
 
 			public override bool IsLoaded {
@@ -1347,7 +1319,8 @@ namespace Mono.Debugger.Languages.CSharp
 					return TargetAddress.Null;
 			}
 
-			void breakpoint_hit (TargetAddress address, object user_data)
+			void breakpoint_hit (Process process, TargetAddress address,
+					     object user_data)
 			{
 				if (load_handlers == null)
 					return;
@@ -1355,7 +1328,7 @@ namespace Mono.Debugger.Languages.CSharp
 				ensure_method ();
 
 				foreach (HandlerData handler in load_handlers.Keys)
-					handler.Handler (handler.Method, handler.UserData);
+					handler.Handler (process, handler.Method, handler.UserData);
 
 				load_handlers = null;
 			}
@@ -1910,7 +1883,7 @@ namespace Mono.Debugger.Languages.CSharp
 						goto done;
 
 					MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [arg];
-					handle.Handler (data, handle.UserData);
+					handle.Handler (runner.Process, data, handle.UserData);
 					breakpoints.Remove (arg);
 					goto done;
 				}

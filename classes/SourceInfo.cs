@@ -146,7 +146,8 @@ namespace Mono.Debugger
 		}
 	}
 
-	public delegate void MethodLoadedHandler (SourceMethod method, object user_data);
+	public delegate void MethodLoadedHandler (Process process, SourceMethod method,
+						  object user_data);
 
 	// <summary>
 	//   This is a handle to a method which persists across different invocations of

@@ -11,23 +11,21 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Architecture
 {
-	internal sealed class BfdModule : ModuleData, ISymbolContainer, IDisposable
+	internal sealed class BfdModule : Module, ISymbolContainer, IDisposable
 	{
 		Bfd bfd;
 		bool dwarf_loaded;
 		bool has_debugging_info;
 		DwarfReader dwarf;
-		Module module;
 		bool is_library;
 		TargetAddress start, end;
 		DebuggerBackend backend;
 		ILanguage language;
 
-		public BfdModule (DebuggerBackend backend, Module module, Bfd bfd, ITargetInfo info)
-			: base (module, bfd.FileName)
+		public BfdModule (DebuggerBackend backend, Bfd bfd, ITargetInfo info)
+			: base (bfd.FileName)
 		{
 			this.backend = backend;
-			this.module = module;
 			this.bfd = bfd;
 
 			if (bfd.IsContinuous) {
@@ -40,17 +38,16 @@ namespace Mono.Debugger.Architecture
 
 			language = new Mono.Debugger.Languages.Native.NativeLanguage (info);
 
-			module.ModuleData = this;
+			backend.ModuleManager.AddModule (this);
 
-			module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
-			module_changed (module);
+			OnModuleChangedEvent ();
 		}
 
 		public override ILanguage Language {
 			get { return language; }
 		}
 
-		public override object LanguageBackend {
+		internal override ILanguageBackend LanguageBackend {
 			get { return bfd; }
 		}
 
@@ -112,7 +109,7 @@ namespace Mono.Debugger.Architecture
 				return;
 
 			try {
-				dwarf = new DwarfReader (bfd, module, backend.SourceFileFactory);
+				dwarf = new DwarfReader (bfd, this, backend.SourceFileFactory);
 			} catch {
 				// Silently ignore.
 			}
@@ -137,12 +134,14 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		void module_changed (Module module)
+		protected override void OnModuleChangedEvent ()
 		{
-			if (module.LoadSymbols)
+			if (LoadSymbols)
 				load_dwarf ();
 			else
 				unload_dwarf ();
+
+			base.OnModuleChangedEvent ();
 		}
 
 		//
@@ -185,7 +184,6 @@ namespace Mono.Debugger.Architecture
 			if (!this.disposed) {
 				// If this is a call to Dispose, dispose all managed resources.
 				if (disposing) {
-					module.ModuleData = null;
 					dwarf = null;
 				}
 				

@@ -1,5 +1,12 @@
 2004-01-16  Martin Baulig  <martin@ximian.com>
 
+	* classes/Module.cs: Made this class abstract and merge it with
+	ModuleData; modules can't be "unloaded" anymore.
+
+	* classes/ModuleData.cs: Removed.
+
+2004-01-16  Martin Baulig  <martin@ximian.com>
+
 	* backends/BreakpointManager.cs (BreakpointManager.Handle):
 	Removed this class; BreakpointManager now uses `Breakpoint'.
 

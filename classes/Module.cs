@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
@@ -19,13 +20,11 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public class Module
+	public abstract class Module
 	{
 		string name;
 		bool load_symbols;
 		bool step_into;
-		bool backend_loaded;
-		ModuleData module_data;
 		Hashtable breakpoints = new Hashtable ();
 
 		internal Module (string name)
@@ -36,44 +35,12 @@ namespace Mono.Debugger
 			step_into = true;
 		}
 
-		public ModuleData ModuleData {
-			get {
-				return module_data;
-			}
-
-			set {
-				lock (this) {
-					module_data = value;
-					if (module_data != null) {
-						set_module_data (module_data);
-						OnModuleLoadedEvent ();
-					} else {
-						OnModuleUnLoadedEvent ();
-					}
-				}
-			}
+		public abstract ILanguage Language {
+			get;
 		}
 
-		public ILanguage Language {
-			get {
-				lock (this) {
-					if (module_data == null)
-						throw new InvalidOperationException ();
-
-					return module_data.Language;
-				}
-			}
-		}
-
-		public object LanguageBackend {
-			get {
-				lock (this) {
-					if (module_data == null)
-						throw new InvalidOperationException ();
-
-					return module_data.LanguageBackend;
-				}
-			}
+		internal abstract ILanguageBackend LanguageBackend {
+			get;
 		}
 
 		// <summary>
@@ -92,14 +59,9 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if IsLoaded was false.
 		// </summary>
-		public string FullName {
+		public virtual string FullName {
 			get {
-				lock (this) {
-					if (module_data == null)
-						throw new InvalidOperationException ();
-
-					return module_data.FullName;
-				}
+				return name;
 			}
 		}
 
@@ -107,21 +69,14 @@ namespace Mono.Debugger
 		//   Whether the module is currently loaded in memory.
 		// </summary>
 		public bool IsLoaded {
-			get { return module_data != null; }
+			get { return true; }
 		}
 
 		// <summary>
 		//   Whether the module's symbol tables are currently loaded.
 		// </summary>
-		public bool SymbolsLoaded {
-			get {
-				lock (this) {
-					if (module_data == null)
-						return false;
-
-					return module_data.SymbolsLoaded;
-				}
-			}
+		public abstract bool SymbolsLoaded {
+			get;
 		}
 
 		// <summary>
@@ -177,51 +132,13 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   This is basically a private property.  It is used by the DebuggerBackend
-		//   to block the ModuleLoadedEvent from being sent before it created the
-		//   SingleSteppingEngine.
-		// </summary>
-		public bool BackendLoaded {
-			get {
-				return backend_loaded;
-			}
-
-			set {
-				if (backend_loaded == value)
-					return;
-				backend_loaded = value;
-				if (backend_loaded) {
-					if (IsLoaded)
-						OnModuleLoadedEvent ();
-				}
-			}
-		}
-
-		// <summary>
 		//   Returns whether this module has debugging info.
 		//   Note that this property is initialized when trying to read the debugging
 		//   info for the first time.
 		// </summary>
-		public bool HasDebuggingInfo {
-			get {
-				lock (this) {
-					if (module_data == null)
-						return false;
-
-					return module_data.HasDebuggingInfo;
-				}
-			}
+		public abstract bool HasDebuggingInfo {
+			get;
 		}
-
-		// <summary>
-		//   This event is emitted when the module is loaded.
-		// </summary>
-		public event ModuleEventHandler ModuleLoadedEvent;
-
-		// <summary>
-		//   This event is emitted when the module is unloaded.
-		// </summary>
-		public event ModuleEventHandler ModuleUnLoadedEvent;
 
 		// <summary>
 		//   This event is emitted when the module's symbol tables are loaded.
@@ -244,27 +161,6 @@ namespace Mono.Debugger
 		//   enabling/disabling a breakpoint.
 		// </summary>
 		public event ModuleEventHandler BreakpointsChangedEvent;
-
-		protected virtual void OnModuleLoadedEvent ()
-		{
-			if (!backend_loaded)
-				return;
-
-			if (ModuleLoadedEvent != null)
-				ModuleLoadedEvent (this);
-
-			OnModuleChangedEvent ();
-		}
-
-		protected virtual void OnModuleUnLoadedEvent ()
-		{
-			backend_loaded = false;
-
-			if (ModuleUnLoadedEvent != null)
-				ModuleUnLoadedEvent (this);
-
-			OnModuleChangedEvent ();
-		}
 
 		protected virtual void OnSymbolsLoadedEvent ()
 		{
@@ -290,37 +186,13 @@ namespace Mono.Debugger
 				BreakpointsChangedEvent (this);
 		}
 
-		void symbols_loaded (ModuleData data)
-		{
-			OnSymbolsLoadedEvent ();
-		}
-
-		void symbols_unloaded (ModuleData data)
-		{
-			OnSymbolsUnLoadedEvent ();
-		}
-
-		void set_module_data (ModuleData data)
-		{
-			data.SymbolsLoadedEvent += new ModuleDataEventHandler (symbols_loaded);
-			data.SymbolsUnLoadedEvent += new ModuleDataEventHandler (symbols_unloaded);
-		}
-
 		// <remarks>
 		//   This is called from the SymbolTableManager's background thread when
 		//   the module is changed.  It creates a hash table which maps a method
 		//   name to a SourceMethod and a list of SourceMethod's which is
 		//   sorted by the method's start line.
 		// </remarks>
-		protected internal void ReadModuleData ()
-		{
-			lock (this) {
-				if (module_data == null)
-					return;
-
-				module_data.ReadModuleData ();
-			}
-		}
+		internal abstract void ReadModuleData ();
 
 		// <summary>
 		//   Returns a list of all source files in this method.
@@ -329,30 +201,15 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if @SymbolsLoaded was false.
 		// </summary>
-		public SourceFile[] Sources {
-			get {
-				lock (this) {
-					if ((module_data == null) || !module_data.SymbolsLoaded)
-						throw new InvalidOperationException ();
-
-					return module_data.Sources;
-				}
-			}
+		public abstract SourceFile[] Sources {
+			get;
 		}
 
 		// <summary>
 		//   Find method @name, which must be a full method name including the
 		//   signature (System.DateTime.GetUtcOffset(System.DateTime)).
 		// </summary>
-		public virtual SourceMethod FindMethod (string name)
-		{
-			if (!SymbolsLoaded)
-				return null;
-
-			ReadModuleData ();
-
-			return module_data.FindMethod (name);
-		}
+		public abstract SourceMethod FindMethod (string name);
 
 		// <summary>
 		//   Find the method containing line @line in @source_file, which must be
@@ -373,15 +230,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public TargetAddress SimpleLookup (string name)
-		{
-			lock (this) {
-				if (module_data == null)
-					return TargetAddress.Null;
-
-				return module_data.SimpleLookup (name);
-			}
-		}
+		public abstract TargetAddress SimpleLookup (string name);
 
 		// <summary>
 		//   Returns the module's ISymbolTable which can be used to find a method
@@ -390,26 +239,12 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if @SymbolsLoaded was false
 		// </summary>
-		public ISymbolTable SymbolTable {
-			get {
-				lock (this) {
-					if ((module_data == null) || !module_data.SymbolsLoaded)
-						throw new InvalidOperationException ();
-
-					return module_data.SymbolTable;
-				}
-			}
+		public abstract ISymbolTable SymbolTable {
+			get;
 		}
 
-		public ISimpleSymbolTable SimpleSymbolTable {
-			get {
-				lock (this) {
-					if (module_data == null)
-						throw new InvalidOperationException ();
-
-					return module_data.SimpleSymbolTable;
-				}
-			}
+		public abstract ISimpleSymbolTable SimpleSymbolTable {
+			get;
 		}
 
 		public override string ToString ()
