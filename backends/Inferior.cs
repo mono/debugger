@@ -35,6 +35,9 @@ namespace Mono.Debugger.Backends
 		protected readonly AddressDomain global_address_domain;
 		protected readonly bool native;
 
+		protected ChildOutputHandler stdout_handler;
+		protected ChildOutputHandler stderr_handler;
+
 		int child_pid, tid;
 		bool initialized;
 
@@ -358,11 +361,15 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 
 			IntPtr error;
+
+			stdout_handler = new ChildOutputHandler (inferior_stdout_handler);
+			stderr_handler = new ChildOutputHandler (inferior_stderr_handler);
+
 			TargetError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, out child_pid,
-				new ChildOutputHandler (inferior_stdout_handler),
-				new ChildOutputHandler (inferior_stderr_handler),
+				stdout_handler,
+				stderr_handler,
 				out error);
 			if (result != TargetError.None) {
 				string message = Marshal.PtrToStringAuto (error);
