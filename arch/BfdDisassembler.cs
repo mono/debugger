@@ -151,6 +151,9 @@ namespace Mono.Debugger.Architecture
 				memory_exception = null;
 				sb = new StringBuilder ();
 
+				address = new TargetAddress (
+					memory.GlobalAddressDomain, address.Address);
+
 				string insn;
 				int insn_size;
 				try {

@@ -57,7 +57,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			Disassemble (context, frame.TargetAddress);
 		}
 
-		AssemblerLine Disassemble (ScriptingContext context, TargetAddress address)
+		public AssemblerLine Disassemble (ScriptingContext context,
+						  TargetAddress address)
 		{
 			AssemblerLine line = frame.DisassembleInstruction (address);
 

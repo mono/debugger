@@ -300,21 +300,91 @@ namespace Mono.Debugger.Frontends.Scripting
 	[ShortDescription("Disassemble current instruction or method")]
 	public class DisassembleCommand : FrameCommand
 	{
-		bool method;
+		bool do_method;
+		int count = -1;
+		FrameHandle frame;
+		TargetAddress address;
+		IMethod method;
+		IDisassembler dis;
+		Expression expression;
 
 		public bool Method {
-			get { return method; }
-			set { method = value; }
+			get { return do_method; }
+			set { do_method = value; }
+		}
+
+		public int Count {
+			get { return count; }
+			set { count = value; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Repeating)
+				return true;
+
+			frame = ResolveFrame (context);
+			dis = context.CurrentProcess.Process.Disassembler;
+
+			if (Argument != "") {
+				if (count < 0)
+					count = 1;
+
+				expression = ParseExpression (context);
+				if (expression == null)
+					return false;
+
+				expression = expression.Resolve (context);
+				return expression != null;
+			}
+
+			if (count < 0)
+				count = 10;
+
+			address = frame.Frame.TargetAddress;
+			method = frame.Frame.Method;
+			return true;
 		}
 	
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = ResolveFrame (context);
-
-			if (method)
+			if (do_method) {
 				frame.DisassembleMethod (context);
-			else
-				frame.Disassemble (context);
+				return;
+			}
+
+			if (!Repeating && (expression != null)) {
+				PointerExpression pexp = expression as PointerExpression;
+				if (pexp == null)
+					throw new ScriptingException (
+						"Expression `{0}' is not a pointer.",
+						expression.Name);
+
+				TargetLocation location = pexp.EvaluateAddress (context);
+
+				address = location.Address;
+			}
+
+			AssemblerLine line;
+			for (int i = 0; i < count; i++) {
+				if ((method != null) && (address >= method.EndAddress)) {
+					if (i > 0)
+						break;
+
+					context.Error ("Reached end of current method.");
+					return;
+				}
+
+				line = dis.DisassembleInstruction (method, address);
+				if (line == null) {
+					context.Error ("Cannot disassemble instruction at " +
+						       "address {0}.", address);
+					return;
+				}
+
+				context.PrintInstruction (line);
+				address += line.InstructionSize;
+			}
 		}
 	}
 
