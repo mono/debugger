@@ -1,5 +1,8 @@
 2002-10-02  Miguel de Icaza  <miguel@ximian.com>
 
+	* frontends/gui/SourceManager.cs: Add code to switch to a newly
+	loaded file by default.
+
 	* frontends/gui/RegisterDisplay.cs: Allow values to be changed,
 	rewrite code to minimize duplicated code.
 

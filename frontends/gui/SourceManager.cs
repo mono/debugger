@@ -173,6 +173,22 @@ namespace Mono.Debugger.GUI {
 			return new SourceList (source_buffer, filename);
 		}
 
+		int GetPageIdx (Gtk.Widget w)
+		{
+			Widget v;
+			int i = 0;
+			
+			do {
+				v = notebook.GetNthPage (i);
+				if (v != null){
+					if (w.Equals (v))
+						return i;
+				}
+				i++;
+			} while (v != null);
+			return -1;
+		}
+		
 		void close_tab (object o, EventArgs args)
 		{
 			foreach (DictionaryEntry de in sources){
@@ -216,7 +232,12 @@ namespace Mono.Debugger.GUI {
 					
 					sources [filename] = view;
 					notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);
+
+					int idx = GetPageIdx (view.ToplevelWidget);
+					if (idx != -1)
+						notebook.Page = idx;
 					view.TabWidget.ButtonClicked += new EventHandler (close_tab);
+					
 				}
 			} else {
 				Console.WriteLine ("********* Need to show disassembly **********");
