@@ -64,8 +64,11 @@ namespace Mono.Debugger.Backends
 
 			string[] argv = { gdb_path, "-n", "-nw", "-q", "--annotate=2", "--async",
 					  "--args", mono_path, "--break", main_name, "--debug=mono",
-					  "--noinline", "--precompile", "@" + application, application };
-			string[] envp = { };
+					  "--noinline", "--precompile", "@" + application,
+					  "--debug-args", "internal_mono_debugger",
+					  "--precompile", "@Hello",
+					  application };
+			string[] envp = { "PATH=/home/martin/MONO-LINUX/bin:/usr/bin" };
 			string working_directory = ".";
 
 			arch = new ArchitectureI386 ();
@@ -462,33 +465,62 @@ namespace Mono.Debugger.Backends
 			symtabs = new ArrayList ();
 
 			long original = ReadAddress ("call /a mono_debugger_internal_get_symbol_files ()");
-			long address = original;
-			long version = ReadInteger (address);
+			long ptr = original;
 
-			long start, offset, size;
-			address += 2 * target_address_size;
-
-			while (true) {
-				start = ReadAddress (address);
-				address += target_address_size;
-
-				if (start == 0)
+			do {
+				long magic = ReadLongInteger (ptr);
+				if (magic == 0)
 					break;
+				else if (magic != OffsetTable.Magic)
+					throw new SymbolTableException ();
+				ptr += target_long_integer_size;
 
-				offset = ReadAddress (address);
-				address += target_address_size;
+				uint version = ReadInteger (ptr);
+				version = ReadInteger (ptr);
+				if (version != OffsetTable.Version)
+					throw new SymbolTableException ();
+				ptr += target_integer_size;
 
-				size = ReadAddress (address);
-				address += target_address_size;
+				uint is_dynamic = ReadInteger (ptr);
+				ptr += target_integer_size;
 
-				string tmpfile;
-				BinaryReader reader = GetTargetMemoryReader (start, size, out tmpfile);
-				MonoSymbolTableReader symreader = new MonoSymbolTableReader (reader);
+				long raw_contents = ReadAddress (ptr);
+				ptr += target_address_size;
+
+				uint raw_contents_size = ReadInteger (ptr);
+				ptr += target_integer_size;
+
+				long address_table = ReadAddress (ptr);
+				ptr += target_address_size;
+
+				uint address_table_size = ReadInteger (ptr);
+				ptr += target_integer_size + target_address_size;
+
+				if ((raw_contents_size == 0) || (address_table_size == 0)) {
+					Console.WriteLine ("IGNORING SYMTAB");
+					continue;
+				}
+
+				string tmpfile, tmpfile2;
+				BinaryReader reader = GetTargetMemoryReader (
+					raw_contents, raw_contents_size, out tmpfile);
+				BinaryReader address_reader = GetTargetMemoryReader (
+					address_table, address_table_size, out tmpfile2);
+				
+				Console.WriteLine ("SYMTAB: {0:x} {1} {2} - {3:x} {4} {5}",
+						   raw_contents, raw_contents_size, tmpfile,
+						   address_table, address_table_size, tmpfile2);
+
+				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
+					reader, address_reader);
 				reader.Close ();
+				address_reader.Close ();
 				File.Delete (tmpfile);
+				File.Delete (tmpfile2);
 
 				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
-			}
+
+			} while (true);
 
 			send_gdb_command ("call mono_debugger_internal_free_symbol_files (" + original + ")");
 		}
@@ -1029,18 +1061,19 @@ namespace Mono.Debugger.Backends
 				bool step_over = false;
 
 				if (call_target != 0) {
+					Console.WriteLine ("CALL TARGET: {0:x} {1}", call_target, insn_size);
 					if (mode == StepMode.STEP_LINE) {
 						ISourceLocation source = LookupAddress (call_target);
 						if (source == null)
 							step_over = true;
 					} else
 						step_over = true;
-				}
 
-				if (step_over) {
-					long stop_address = address + insn_size;
-					send_gdb_command ("tbreak *" + stop_address);
-					command = "continue";
+					if (step_over) {
+						long stop_address = address + insn_size;
+						send_gdb_command ("tbreak *" + stop_address);
+						command = "continue";
+					}
 				}
 			}
 

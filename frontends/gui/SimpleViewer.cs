@@ -74,6 +74,7 @@ namespace Mono.Debugger.GUI {
 
 		void AddOutput (string output)
 		{
+			Console.WriteLine (output);
 			output_writer.WriteLine (output);
 		}
 
