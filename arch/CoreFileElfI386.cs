@@ -36,7 +36,7 @@ namespace Mono.Debugger.Architecture
 				Marshal.Copy (regs, registers, 0, 17);
 				long[] retval = new long [17];
 				for (int i = 0; i < 17; i++)
-					retval [i] = registers [i];
+					retval [i] = (uint) registers [i];
 				return retval;
 			} finally {
 				if (data != IntPtr.Zero)
