@@ -1,5 +1,10 @@
 2003-04-17  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (get_step_frame): Return a
+	StepMode.SingleInstruction frame if we don't have source code, not
+	just null.  This is required to handle JIT trampolines correctly
+	in a managed method for which we don't have source code.
+
 	* arch/ArchitectureI386.cs (GetCallTarget): Added support for the
 	`0xff 0x10' opcodes (call *(%eax)).
 

@@ -1402,7 +1402,7 @@ namespace Mono.Debugger.Backends
 			object language = (frame.Method != null) ? frame.Method.Module.Language : null;
 
 			if (frame.SourceAddress == null)
-				return null;
+				return new StepFrame (language, StepMode.SingleInstruction);
 
 			// The current source line started at the current address minus
 			// SourceOffset; the next source line will start at the current
