@@ -5,7 +5,7 @@ wrapper_PROGRAMS = mono-debugger-mini-wrapper
 
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"MonoDebuggerJitWrapper\" \
-	@WRAPPER_CFLAGS@
+	@WRAPPER_CFLAGS@ @glue_cflags@
 
 mono_debugger_mini_wrapper_SOURCES = \
 	mini-main.c			\

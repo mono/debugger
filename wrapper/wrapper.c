@@ -27,7 +27,7 @@ static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument);
 
-void (*mono_debugger_notification_function) (int command, gpointer data, guint32 data2);
+void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
 
 /*
  * This is a global data symbol which is read by the debugger.
@@ -77,26 +77,33 @@ debugger_remove_breakpoint (guint64 breakpoint)
 	return mono_debugger_remove_breakpoint (breakpoint);
 }
 
-static guint64
-debugger_compile_method (guint64 method_arg)
+static gpointer
+debugger_compile_method_cb (MonoMethod *method)
 {
-	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER (method_arg);
 	gpointer retval;
 
 	mono_debugger_lock ();
 	retval = mono_compile_method (method);
 	mono_debugger_unlock ();
 
-	mono_debugger_notification_function (NOTIFICATION_METHOD_COMPILED, retval, 0);
+	mono_debugger_notification_function (NOTIFICATION_METHOD_COMPILED, GPOINTER_TO_UINT (retval), 0);
 
-	return GPOINTER_TO_UINT (retval);
+	return retval;
+}
+
+static guint64
+debugger_compile_method (guint64 method_arg)
+{
+	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER ((gssize) method_arg);
+
+	return GPOINTER_TO_UINT (debugger_compile_method_cb (method));
 }
 
 static guint64
 debugger_get_virtual_method (guint64 object_arg, guint64 method_arg)
 {
-	MonoObject *object = (MonoObject *) GUINT_TO_POINTER (object_arg);
-	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER (method_arg);
+	MonoObject *object = (MonoObject *) GUINT_TO_POINTER ((gssize) object_arg);
+	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER ((gssize) method_arg);
 
 	if (mono_class_is_valuetype (mono_method_get_class (method)))
 		return method_arg;
@@ -108,8 +115,8 @@ static guint64
 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg)
 {
 	static MonoObject *last_boxed_object = NULL;
-	MonoMethod *klass = (MonoClass *) GUINT_TO_POINTER (klass_arg);
-	gpointer val = (gpointer) GUINT_TO_POINTER (val_arg);
+	MonoClass *klass = (MonoClass *) GUINT_TO_POINTER ((gssize) klass_arg);
+	gpointer val = (gpointer) GUINT_TO_POINTER ((gssize) val_arg);
 	MonoObject *boxed;
 
 	if (!mono_class_is_valuetype (klass))
@@ -158,11 +165,11 @@ debugger_class_get_static_field_data (guint64 value)
 }
 
 static void
-unhandled_exception (gpointer data, guint32 arg)
+unhandled_exception (guint64 data, guint64 arg)
 {
-	MonoObject *exc = (MonoObject *) data;
+	MonoObject *exc = (MonoObject *) GUINT_TO_POINTER ((gssize) data);
 	MonoClass *klass;
-	gchar *name;
+	const gchar *name;
 
 	klass = mono_object_get_class (exc);
 	name = mono_class_get_name (klass);
@@ -170,7 +177,7 @@ unhandled_exception (gpointer data, guint32 arg)
 	if (!strcmp (name, "ThreadAbortException")) {
 		guint32 tid = pthread_self ();
 
-		mono_debugger_notification_function (NOTIFICATION_THREAD_ABORT, NULL, tid);
+		mono_debugger_notification_function (NOTIFICATION_THREAD_ABORT, 0, tid);
 		pthread_exit (NULL);
 	}
 
@@ -178,11 +185,11 @@ unhandled_exception (gpointer data, guint32 arg)
 }
 
 static void
-debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
+debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg)
 {
 	switch (event) {
 	case MONO_DEBUGGER_EVENT_RELOAD_SYMTABS:
-		mono_debugger_notification_function (NOTIFICATION_RELOAD_SYMTABS, NULL, 0);
+		mono_debugger_notification_function (NOTIFICATION_RELOAD_SYMTABS, 0, 0);
 		break;
 
 	case MONO_DEBUGGER_EVENT_BREAKPOINT:
@@ -204,7 +211,7 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 }
 
 static MonoThreadCallbacks thread_callbacks = {
-	&debugger_compile_method,
+	&debugger_compile_method_cb,
 	&mono_debugger_thread_manager_add_thread,
 	&mono_debugger_thread_manager_start_resume,
 	&mono_debugger_thread_manager_end_resume
@@ -258,7 +265,7 @@ main_thread_handler (gpointer user_data)
 	/*
 	 * This will never return.
 	 */
-	mono_debugger_notification_function (NOTIFICATION_MAIN_EXITED, NULL, retval);
+	mono_debugger_notification_function (NOTIFICATION_MAIN_EXITED, 0, GPOINTER_TO_UINT (retval));
 
 	return retval;
 }
@@ -319,8 +326,8 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * Reload symbol tables.
 	 */
-	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, NULL, 0);
-	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, NULL, 0);
+	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, 0, 0);
+	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, 0, 0);
 
 	mono_debugger_unlock ();
 
@@ -332,7 +339,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * This will never return.
 	 */
-	mono_debugger_notification_function (NOTIFICATION_WRAPPER_MAIN, NULL, 0);
+	mono_debugger_notification_function (NOTIFICATION_WRAPPER_MAIN, 0, 0);
 
 	return 0;
 }

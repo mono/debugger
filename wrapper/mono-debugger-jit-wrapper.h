@@ -93,7 +93,7 @@ void mono_debugger_init_icalls (void);
 
 extern MonoDebuggerManager MONO_DEBUGGER__manager;
 
-extern void (*mono_debugger_notification_function) (int command, gpointer data, guint32 data2);
+extern void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
 
 G_END_DECLS
 

@@ -34,8 +34,8 @@ AC_SUBST(WARN_CFLAGS)
 AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-linux*)
-		glue_cflags=
-		server_cflags=
+		glue_cflags=-D_GNU_SOURCE
+		server_cflags=-D_GNU_SOURCE
 		server_only=no
 		bfd_target=i386linux
 		platform=i386linux

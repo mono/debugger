@@ -66,7 +66,8 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 	thread->func = func;
 	thread->start_stack = start_stack;
 
-	mono_debugger_notification_function (NOTIFICATION_THREAD_CREATED, thread, tid);
+	mono_debugger_notification_function (
+		NOTIFICATION_THREAD_CREATED, GPOINTER_TO_UINT (thread), tid);
 
 	mono_debugger_thread_manager_thread_created (thread);
 }
@@ -96,7 +97,7 @@ mono_debugger_thread_manager_acquire_global_thread_lock (void)
 	int tid = IO_LAYER (GetCurrentThreadId) ();
 
 	mono_debugger_notification_function (
-		NOTIFICATION_ACQUIRE_GLOBAL_THREAD_LOCK, NULL, tid);
+		NOTIFICATION_ACQUIRE_GLOBAL_THREAD_LOCK, 0, tid);
 }
 
 void
@@ -105,5 +106,5 @@ mono_debugger_thread_manager_release_global_thread_lock (void)
 	int tid = IO_LAYER (GetCurrentThreadId) ();
 
 	mono_debugger_notification_function (
-		NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK, NULL, tid);
+		NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK, 0, tid);
 }

@@ -352,9 +352,9 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	if (INFERIOR_REG_EIP (arch->current_regs) == notification_address) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
-		guint32 data [3];
+		guint64 data [3];
 
-		if (server_ptrace_read_memory (handle, addr, 12, &data))
+		if (server_ptrace_read_memory (handle, addr, 24, &data))
 			return STOP_ACTION_SEND_STOPPED;
 
 		*callback_arg = data [0];

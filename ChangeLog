@@ -1,3 +1,16 @@
+2004-12-08  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Add -D_GNU_SOURCE to `glue_cflags' and
+	`server_cflags' on Linux.
+
+	* wrapper/Makefile.am (WRAPPER_CFLAGS): Include `@glue_cflags@'.
+
+	* wrapper/wrapper.c (debugger_event_handler): Reflect latest
+	metadata changes; take two guint64 arguments.
+
+	* backends/server/i386-arch.c (i386_arch_child_stopped): The
+	notification function now takes two guint64 arguments.
+
 2004-12-07  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Command.cs (SourceCommand.Instance): Added
