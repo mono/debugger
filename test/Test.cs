@@ -2,9 +2,10 @@ using System;
 
 class X
 {
-	void Test (long a, bool b, int c, short d, float f)
+	int Test (ref long a, bool b, int c, short d, float f)
 	{
 		Console.WriteLine ("VALUE: {0}", a);
+		return c;
 	}
 
 	static void Main ()
@@ -12,6 +13,7 @@ class X
 		X x = new X ();
 
 		long b = 29;
-		x.Test (b, true, 59, -18, 3.14F);
+		int a = x.Test (ref b, true, 59, -18, 3.14F);
+		Console.WriteLine (a);
 	}
 }

@@ -23,6 +23,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return new MonoType (type, size);
 		}
 
+		public static MonoType GetType (Type type, int size, ITargetMemoryReader reader)
+		{
+			Console.WriteLine ("TEST: {0} {1} {2}", type, size, reader);
+
+			return GetType (type, size);;
+		}
+
 		public object TypeHandle {
 			get {
 				return type;
