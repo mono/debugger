@@ -5,6 +5,7 @@ set mdb "../wrapper/mdb.exe"
 set timeout 20
 set verbose 2
 set max_repeat 20
+set srcdir [absolute $srcdir]
 
 proc mdb_start {file args} {
     global mdb
