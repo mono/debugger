@@ -517,7 +517,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.ShowVariableType (var.Type, identifier);
 		}
 
-		public object GetVariable (int frame_number, string identifier)
+		public ITargetObject GetVariable (int frame_number, string identifier)
 		{
 			StackFrame frame = GetFrame (frame_number);
 

@@ -63,6 +63,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class PrintVariableCommand : Command
+	{
+		VariableExpression var_expr;
+
+		public PrintVariableCommand (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ITargetObject tobj = var_expr.ResolveVariable (context);
+
+			if (tobj.HasObject)
+				context.Print (tobj.Object);
+			else
+				context.Print (tobj);
+		}
+	}
+
 	public class FrameCommand : Command
 	{
 		int number;
@@ -473,6 +493,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get;
 		}
 
+		protected abstract ITargetObject DoResolveVariable (ScriptingContext context);
+
+		public ITargetObject ResolveVariable (ScriptingContext context)
+		{
+			ITargetObject retval = DoResolveVariable (context);
+
+			if (retval == null)
+				throw new ScriptingException ("Can't resolve variable: {0}", this);
+
+			return retval;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return ResolveVariable (context);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), Name);
@@ -492,13 +529,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return '!' + identifier; }
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
 			VariableExpression expr = context [identifier];
 			if (expr == null)
 				return null;
 
-			return expr.Resolve (context);
+			return expr.ResolveVariable (context);
 		}
 	}
 
@@ -520,7 +557,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return '$' + identifier; }
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
@@ -561,7 +598,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 						      identifier);
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
 			object variable = var_expr.Resolve (context);
 			if (variable == null)
@@ -592,7 +629,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
 			object variable = var_expr.Resolve (context);
 			if (variable == null)

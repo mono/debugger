@@ -177,6 +177,10 @@ command
 	  {
 		$$ = new PrintCommand ((Expression) $2);
 	  }
+	| PRINT variable_expression
+	  {
+		$$ = new PrintVariableCommand ((VariableExpression) $2);
+	  }
 	| FRAME opt_process opt_frame_number
 	  {
 		$$ = new FrameCommand ((ProcessExpression) $2, (int) $3);
@@ -224,7 +228,6 @@ expression
 	  {
 		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
 	  }
-	| variable_expression
 	;
 
 variable_expression

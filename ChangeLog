@@ -1,5 +1,8 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (VariableExpression): Added
+	`ResolveVariable' method which returns an ITargetObject.
+
 	* interfaces/ITargetPointerObject.cs
 	(HasDereferencedObject, DereferencedObject): New properties.
 
