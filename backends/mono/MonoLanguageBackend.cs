@@ -583,19 +583,19 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		ITargetFundamentalType ILanguage.IntegerType {
-			get { return null; }
+			get { return builtin_types.Int32Type; }
 		}
 
 		ITargetFundamentalType ILanguage.LongIntegerType {
-			get { return null; }
+			get { return builtin_types.Int64Type; }
 		}
 
 		ITargetFundamentalType ILanguage.StringType {
-			get { return null; }
+			get { return builtin_types.StringType; }
 		}
 
 		ITargetType ILanguage.PointerType {
-			get { return null; }
+			get { return builtin_types.IntType; }
 		}
 
 		ITargetType ILanguage.ExceptionType {
