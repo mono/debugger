@@ -66,9 +66,12 @@ namespace Mono.Debugger.Languages.Native
 						char_buffer [pos++] = '\\';
 						char_buffer [pos++] = '\\';
 						quoted_chars = true;
+					} else if ((ch == '\'') || (ch == '`')) {
+						char_buffer [pos++] = ch;
+						quoted_chars = true;
 					} else {
 						char_buffer [pos++] = '\\';
-						char_buffer [pos++] = hex_chars [(ch & 0xf0) >> 8];
+						char_buffer [pos++] = hex_chars [(ch & 0xf0) >> 4];
 						char_buffer [pos++] = hex_chars [ch & 0x0f];
 						quoted_chars = true;
 					}
