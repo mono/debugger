@@ -37,7 +37,7 @@ namespace Mono.Debugger.Languages.CSharp
 			TargetAddress klass = target.ReadAddress (vtable);
 
 			MonoType ctype = type.File.Table.GetTypeFromClass (klass.Address);
-			return new MonoClassObject ((MonoClass) ctype, location);
+			return ((MonoClass) ctype).GetClassObject (location);
 		}
 
 		public ITargetClassObject Parent {
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (type.ParentType == null)
 					return null;
 
-				return new MonoClassObject (type.ParentType, location);
+				return type.ParentType.GetClassObject (location);
 			}
 		}
 

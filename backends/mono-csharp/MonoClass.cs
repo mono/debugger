@@ -80,6 +80,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (parent != 0)
 				Parent = (MonoClass) file.Table.GetType (Type.BaseType, parent);
+			else if (type.IsInterface)
+				Parent = file.Table.ObjectType;
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -168,6 +170,11 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public override MonoObject GetObject (TargetLocation location)
+		{
+			return GetClassObject (location);
+		}
+
+		public virtual MonoClassObject GetClassObject (TargetLocation location)
 		{
 			return new MonoClassObject (this, location);
 		}
