@@ -124,7 +124,7 @@ namespace Mono.Debugger.Languages.CSharp
 					continue;
 				}
 
-				Heap heap = file.Table.Language.DataHeap;
+				Heap heap = file.Table.CSharpLanguage.DataHeap;
 				byte[] contents = args [i].RawContents;
 				TargetLocation new_loc = heap.Allocate (frame, contents.Length);
 				frame.TargetAccess.WriteBuffer (new_loc.Address, contents);

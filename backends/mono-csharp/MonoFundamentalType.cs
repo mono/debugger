@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.CSharp
 					       bool has_fixed_size)
 			: base (TargetObjectKind.Fundamental, type, size, false, info, file, has_fixed_size)
 		{
-			this.Heap = file.Table.Language.DataHeap;
+			this.Heap = file.Table.CSharpLanguage.DataHeap;
 		}
 
 		public static bool Supports (Type type)

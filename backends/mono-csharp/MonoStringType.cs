@@ -18,7 +18,7 @@ namespace Mono.Debugger.Languages.CSharp
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
 			DataOffset = info.ReadByte ();
-			CreateString = file.Table.Language.MonoDebuggerInfo.CreateString;
+			CreateString = file.Table.CSharpLanguage.MonoDebuggerInfo.CreateString;
 		}
 
 		new public static bool Supports (Type type)

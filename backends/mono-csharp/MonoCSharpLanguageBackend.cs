@@ -295,14 +295,14 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   Holds all the symbol tables from the target's JIT.
 	// </summary>
-	internal class MonoSymbolTable : SymbolTable, ILanguage, IDisposable
+	internal class MonoSymbolTable : Module, ISimpleSymbolTable, ILanguage, IDisposable
 	{
 		public const int  MinDynamicVersion = 43;
 		public const int  MaxDynamicVersion = 44;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
-		public readonly MonoCSharpLanguageBackend Language;
+		public readonly MonoCSharpLanguageBackend CSharpLanguage;
 		public readonly DebuggerBackend Backend;
 		public readonly ITargetMemoryInfo TargetInfo;
 		// ArrayList ranges;
@@ -310,11 +310,12 @@ namespace Mono.Debugger.Languages.CSharp
 		Hashtable types;
 		Hashtable image_hash;
 		Hashtable assembly_hash;
-		Hashtable wrappers;
+		ArrayList wrappers;
 
 		MonoBuiltinTypes builtin;
 		MonoSymbolFile corlib;
-		new TargetAddress StartAddress;
+		TargetAddress StartAddress;
+		SymbolTable symtab;
 		int TotalSize;
 
 		int address_size;
@@ -329,7 +330,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public MonoSymbolTable (DebuggerBackend backend, MonoCSharpLanguageBackend language,
 					ITargetMemoryAccess memory, TargetAddress address)
 		{
-			this.Language = language;
+			this.CSharpLanguage = language;
 			this.Backend = backend;
 			this.TargetInfo = memory;
 
@@ -341,14 +342,15 @@ namespace Mono.Debugger.Languages.CSharp
 
 			types = new Hashtable ();
 			class_table = new Hashtable ();
-			wrappers = new Hashtable ();
+			wrappers = new ArrayList ();
 
 			SymbolFiles = new ArrayList ();
 
 			TotalSize = language.MonoDebuggerInfo.SymbolTableSize;
 			StartAddress = address;
 
-			backend.SymbolTableManager.AddSymbolTable (this);
+			symtab = new WrapperSymbolTable (this);
+			backend.ModuleManager.AddModule (this);
 		}
 
 		internal void Update (ITargetMemoryAccess memory)
@@ -545,9 +547,7 @@ namespace Mono.Debugger.Languages.CSharp
 				int type = reader.BinaryReader.ReadInt32 ();
 				switch ((MiscEntryType) type) {
 				case MiscEntryType.Wrapper:
-					WrapperEntry entry = WrapperEntry.ReadWrapper (
-						this, reader);
-					wrappers.Add (entry.StartAddress, entry);
+					wrappers.Add (WrapperEntry.ReadWrapper ( this, reader));
 					break;
 
 				default:
@@ -600,10 +600,10 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public ICollection Wrappers {
+		public ArrayList Wrappers {
 			get {
 				lock (this) {
-					return wrappers.Values;
+					return wrappers;
 				}
 			}
 		}
@@ -672,7 +672,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private ITargetType LookupType (StackFrame frame, Type type, string name)
 		{
-			int offset = Language.LookupType (frame, name);
+			int offset = CSharpLanguage.LookupType (frame, name);
 			if (offset == 0)
 				return null;
 			return GetType (type, offset);
@@ -814,7 +814,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTable table;
 			TargetAddress func;
 			TargetAddress method_start, method_end;
-			string name;
+			public readonly string Name;
 
 			private WrapperEntry (MonoSymbolTable table, string name,
 					      TargetAddress start, TargetAddress end,
@@ -823,7 +823,7 @@ namespace Mono.Debugger.Languages.CSharp
 				: base (start, end)
 			{
 				this.table = table;
-				this.name = name;
+				this.Name = name;
 				this.func = func;
 				this.method_start = method_start;
 				this.method_end = method_end;
@@ -846,14 +846,14 @@ namespace Mono.Debugger.Languages.CSharp
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
 				return new WrapperMethod (
-					table, name, StartAddress, EndAddress, func,
+					table, Name, StartAddress, EndAddress, func,
 					method_start, method_end);
 			}
 
 			public override string ToString ()
 			{
 				return String.Format ("WrapperEntry [{0:x}:{1:x}:{2:x}:{3}]",
-						      StartAddress, EndAddress, func, name);
+						      StartAddress, EndAddress, func, Name);
 			}
 		}
 
@@ -912,29 +912,113 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasMethods {
-			get {
-				return false;
-			}
-		}
-
-		protected override ArrayList GetMethods ()
+		private class WrapperSymbolTable : SymbolTable
 		{
-			throw new InvalidOperationException ();
-		}
+			MonoSymbolTable table;
 
-		public override bool HasRanges {
-			get {
-				return true;
+			public WrapperSymbolTable (MonoSymbolTable table)
+			{
+				this.table = table;
+			}
+
+			public override bool HasMethods {
+				get {
+					return false;
+				}
+			}
+
+			protected override ArrayList GetMethods ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override bool HasRanges {
+				get {
+					return true;
+				}
+			}
+
+			public override ISymbolRange[] SymbolRanges {
+				get {
+					ArrayList ranges = table.Wrappers;
+					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
+					ranges.CopyTo (retval, 0);
+					return retval;
+				}
 			}
 		}
 
-		public override ISymbolRange[] SymbolRanges {
-			get {
-				ISymbolRange[] retval = new ISymbolRange [wrappers.Count];
-				wrappers.Values.CopyTo (retval, 0);
-				return retval;
+		public override string Name {
+			get { return "<Mono Runtime>"; }
+		}
+
+		public override ILanguage Language {
+			get { return this; }
+		}
+
+		internal override ILanguageBackend LanguageBackend {
+			get { return CSharpLanguage; }
+		}
+
+		public override ISymbolFile SymbolFile {
+			get { return null; }
+		}
+
+		public override bool SymbolsLoaded {
+			get { return true; }
+		}
+
+		public SourceFile[] Sources {
+			get { return null; }
+		}
+
+		public override bool HasDebuggingInfo {
+			get { return true; }
+		}
+
+		public override ISymbolTable SymbolTable {
+			get { return symtab; }
+		}
+
+		public override ISimpleSymbolTable SimpleSymbolTable {
+			get { return this; }
+		}
+
+		public override TargetAddress SimpleLookup (string name)
+		{
+			return TargetAddress.Null;
+		}
+
+		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			foreach (WrapperEntry wrapper in wrappers) {
+				if ((address < wrapper.StartAddress) ||
+				    (address > wrapper.EndAddress))
+					continue;
+
+				long offset = address - wrapper.StartAddress;
+				if (exact_match && (offset != 0))
+					continue;
+
+				return new Symbol (
+					wrapper.Name, wrapper.StartAddress, (int) offset);
 			}
+
+			return null;
+		}
+
+		internal override IDisposable RegisterLoadHandler (Process process,
+								   SourceMethod source,
+								   MethodLoadedHandler handler,
+								   object user_data)
+		{
+			return null;
+		}
+
+		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
+								ITargetMemoryAccess memory)
+		{
+			return null;
 		}
 
 		//
@@ -1352,7 +1436,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		internal override ILanguageBackend LanguageBackend {
-			get { return Table.Language; }
+			get { return Table.LanguageBackend; }
 		}
 
 		public override ISymbolFile SymbolFile {
@@ -1732,7 +1816,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
 								    TargetAddress address)
 			{
-				return reader.Table.Language.GetTrampoline (memory, address);
+				return reader.LanguageBackend.GetTrampoline (memory, address);
 			}
 
 			void breakpoint_hit (Inferior inferior, TargetAddress address,
@@ -1767,7 +1851,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				load_handlers = new Hashtable ();
 
-				reader.Table.Language.InsertBreakpoint (
+				reader.Table.CSharpLanguage.InsertBreakpoint (
 					process, full_name,
 					new BreakpointHandler (breakpoint_hit),
 					null);

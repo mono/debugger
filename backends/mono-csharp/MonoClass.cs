@@ -75,7 +75,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.offset = info.Position;
 			this.Type = type;
 			this.InstanceSize = size;
-			ClassGetStaticFieldData = file.Table.Language.MonoDebuggerInfo.ClassGetStaticFieldData;
+			ClassGetStaticFieldData = file.Table.CSharpLanguage.MonoDebuggerInfo.ClassGetStaticFieldData;
 
 			if (parent != 0)
 				Parent = (MonoClass) file.Table.GetType (Type.BaseType, parent);

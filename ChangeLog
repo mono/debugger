@@ -1,12 +1,10 @@
 2004-07-06  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
-	(MonoSymbolTable): Derive from SymbolTable.
+	(MonoSymbolTable): Derive from Module; we put all icall wrappers
+	into their own "<Mono Runtime>" module.
 	(MonoSymbolTable.WrapperMethod): New private class; we now get the
 	icall wrappers from the JIT.
-
-	* classes/SymbolTableManager.cs
-	(SymbolTableManager.AddSymbolTable): New public method.
 
 2004-07-02  Martin Baulig  <martin@ximian.com>
 

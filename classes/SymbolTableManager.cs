@@ -11,7 +11,6 @@ namespace Mono.Debugger
 	public class SymbolTableManager : IDisposable
 	{
 		Thread symtab_thread;
-		ArrayList fixed_symtabs;
 		DebuggerAutoResetEvent symtab_reload_event;
 		DebuggerManualResetEvent symtabs_loaded_event;
 		DebuggerManualResetEvent modules_loaded_event;
@@ -29,7 +28,6 @@ namespace Mono.Debugger
 				"modules_loaded_event", true);
 			update_completed_event = new DebuggerManualResetEvent (
 				"update_completed_event", true);
-			fixed_symtabs = new ArrayList ();
 			symtab_thread = new Thread (new ThreadStart (symtab_thread_start));
 			symtab_thread.IsBackground = true;
 			symtab_thread.Start ();
@@ -50,13 +48,6 @@ namespace Mono.Debugger
 				update_completed_event.Reset ();
 				symtab_update_in_progress = true;
 				module_update_in_progress = true;
-			}
-		}
-
-		public void AddSymbolTable (SymbolTable symtab)
-		{
-			lock (this) {
-				fixed_symtabs.Add (symtab);
 			}
 		}
 
@@ -219,10 +210,6 @@ namespace Mono.Debugger
 				symtabs.Lock ();
 
 				SimpleSymbolTableCollection simple_syms = new SimpleSymbolTableCollection ();
-
-				foreach (SymbolTable symtab in fixed_symtabs) {
-					symtabs.AddSymbolTable (symtab);
-				}
 
 				foreach (Module module in my_new_modules) {
 					if (module.IsLoaded)
