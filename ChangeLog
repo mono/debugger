@@ -1,3 +1,15 @@
+2002-10-01  Miguel de Icaza  <miguel@ximian.com>
+
+	* backends/Debugger.cs: Add a new event to notify when the
+	inferior is set/reset.
+	
+	* frontends/gui/RegisterDisplay.cs: Use a custom view for the x386
+	view of the register, so we can modify the flags at some point,
+	and also to encourage the creation of target-specific register
+	views that make sense for that particular target. 
+
+	* frontends/gui/Utils.cs: Bug fix.
+
 2002-10-01  Martin Baulig  <martin@gnome.org>
 
 	* backends/mono-csharp/: Make "boxing" of non-valuetypes actually

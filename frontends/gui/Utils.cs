@@ -39,8 +39,9 @@ namespace Mono.Debugger.GUI {
 		{
 			int idx = name.LastIndexOf ("/");
 
-			if (idx > -1)
-				name = name.Substring (idx);
+			if (idx > -1){
+				name = name.Substring (idx + 1);
+			}
 			
 			Gtk.Image close_image = new Gtk.Image (Stock.Close, IconSize.Menu);
 			PackStart (new Label (name));

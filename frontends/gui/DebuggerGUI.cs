@@ -122,7 +122,7 @@ namespace Mono.Debugger.GUI
 			target_status = new TargetStatusbar ((Gtk.Statusbar) gxml ["target-status"]);
 			line_debug_status = new LineDebugStatusbar ((Gtk.Statusbar) gxml ["line-debug-status"]);
 			register_display = new RegisterDisplay (
-				null, (Gtk.Container) gxml ["register-view"]);
+				gxml, null, (Gtk.Notebook) gxml ["register-notebook"]);
 			backtrace_view = new BackTraceView (
 				null, (Gtk.Container) gxml ["backtrace-view"]);
 
