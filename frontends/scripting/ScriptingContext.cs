@@ -258,7 +258,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ProcessHandle
 	{
 		ScriptingContext context;	
-		IArchitecture arch;
 		Process process;
 		string name;
 
@@ -315,7 +314,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		void initialize ()
 		{
 			registers = new Hashtable ();
-			arch = process.Architecture;
+			IArchitecture arch = process.Architecture;
 
 			for (int i = 0; i < arch.RegisterNames.Length; i++) {
 				string register = arch.RegisterNames [i];
@@ -460,10 +459,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public IArchitecture Architecture {
 			get {
-				if (arch == null)
-					throw new ScriptingException ("{0} not running.", Name);
+				if (process.Architecture == null)
+					throw new ScriptingException ("Unknown architecture");
 
-				return arch;
+				return process.Architecture;
 			}
 		}
 
