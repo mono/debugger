@@ -1,3 +1,17 @@
+2005-03-02  Chris Toshok  <toshok@ximian.com>
+
+	* backends/server/Makefile.am: clean this up substantially, since
+	we're no longer building the orbit stuff.
+
+	* backends/server/library.c (mono_debugger_server_initialize):
+	remove the MARTIN_HACKS stuff.
+
+	* configure.in: remove the MARTIN_HACKS orbit stuff.
+
+	* backends/server/remote-server.c, backends/server/debugger-srv.c,
+	backends/server/debugger-srv.h, backends/server/remote-client.c,
+	backends/server/Debugger.idl: nuke.
+
 2005-02-25  Chris Toshok  <toshok@ximian.com>
 
 	* interfaces/ITargetObject.cs (ITargetObject.TypeInfo): rename
