@@ -121,32 +121,33 @@ namespace Mono.Debugger.Architecture
 		}
 
 		bool has_backtrace = false;
-		StackFrame[] backtrace = null;
+		Backtrace backtrace = null;
 
-		public StackFrame[] GetBacktrace ()
+		public Backtrace GetBacktrace ()
 		{
 			if (has_backtrace)
 				return backtrace;
 
-			IInferiorStackFrame[] frames = GetBacktrace (-1, TargetAddress.Null);
-			backtrace = new StackFrame [frames.Length];
+			IInferiorStackFrame[] iframes = GetBacktrace (-1, TargetAddress.Null);
+			StackFrame[] frames = new StackFrame [iframes.Length];
 
-			for (int i = 0; i < frames.Length; i++) {
-				TargetAddress address = frames [i].Address;
+			for (int i = 0; i < iframes.Length; i++) {
+				TargetAddress address = iframes [i].Address;
 
 				IMethod method = null;
 				if (current_symtab != null)
 					method = current_symtab.Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
-					backtrace [i] = new MyStackFrame (
-						address, i, frames [i], source, method);
+					frames [i] = new MyStackFrame (
+						address, i, iframes [i], source, method);
 				} else
-					backtrace [i] = new MyStackFrame (
-						address, i, frames [i]);
+					frames [i] = new MyStackFrame (
+						address, i, iframes [i]);
 			}
 
 			has_backtrace = true;
+			backtrace = new MyBacktrace (this, frames);
 			return backtrace;
 		}
 
@@ -234,6 +235,27 @@ namespace Mono.Debugger.Architecture
 						return TargetAddress.Null;
 				}
 			}
+
+			public override Register[] Registers {
+				get {
+					throw new NotImplementedException ();
+				}
+			}
+		}
+
+		//
+		// Backtrace.
+		//
+
+		protected class MyBacktrace : Backtrace
+		{
+			CoreFile core;
+
+			public MyBacktrace (CoreFile core, StackFrame[] frames)
+				: base (frames)
+			{
+				this.core = core;
+			}
 		}
 
 		//
@@ -253,9 +275,25 @@ namespace Mono.Debugger.Architecture
 			return bfd [name];
 		}
 
-		public abstract long GetRegister (int register);
+		public virtual long GetRegister (int index)
+		{
+			foreach (Register register in GetRegisters ()) {
+				if (register.Index == index)
+					return (long) register.Data;
+			}
 
-		public abstract long[] GetRegisters (int[] registers);
+			throw new NoSuchRegisterException ();
+		}
+
+		public virtual long[] GetRegisters (int[] indices)
+		{
+			long[] retval = new long [indices.Length];
+			for (int i = 0; i < indices.Length; i++)
+				retval [i] = GetRegister (indices [i]);
+			return retval;
+		}
+
+		public abstract Register[] GetRegisters ();
 
 		public abstract IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 

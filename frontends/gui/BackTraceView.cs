@@ -10,7 +10,7 @@ namespace Mono.Debugger.GUI
 	{
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
-		StackFrame[] current_backtrace = null;
+		Backtrace current_backtrace = null;
 
 		public BackTraceView (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
 			: base (gui, window, container)

@@ -58,5 +58,14 @@ namespace Mono.Debugger
 		// </summary>
 		int GetBreakpointTrampolineData (out TargetAddress method, out TargetAddress code,
 						 out TargetAddress retaddr);
+
+		int MaxPrologueSize {
+			get;
+		}
+
+		object UnwindStack (Register[] registers);
+
+		Register[] UnwindStack (byte[] code, ITargetMemoryAccess memory, object last_data,
+					out object new_data);
 	}
 }

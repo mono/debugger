@@ -353,7 +353,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public StackFrame[] GetBacktrace ()
+		public Backtrace GetBacktrace ()
 		{
 			check_inferior ();
 			if (sse != null)
@@ -362,33 +362,30 @@ namespace Mono.Debugger
 				return core.GetBacktrace ();
 		}
 
-		public long GetRegister (int register)
+		public Register[] GetRegisters ()
 		{
 			check_disposed ();
 			if (sse == null)
-				return core.GetRegister (register);
+				return core.GetRegisters ();
 
-			long[] regs = sse.GetRegisters ();
-			if (regs == null)
-				throw new TargetNotStoppedException ();
-
-			return regs [register];
+			return sse.GetRegisters ();
 		}
 
-		public long[] GetRegisters (int[] registers)
+		public virtual long GetRegister (int index)
 		{
-			check_disposed ();
-			if (sse == null)
-				return core.GetRegisters (registers);
+			foreach (Register register in GetRegisters ()) {
+				if (register.Index == index)
+					return (long) register.Data;
+			}
 
-			long[] regs = sse.GetRegisters ();
-			if (regs == null)
-				throw new TargetNotStoppedException ();
+			throw new NoSuchRegisterException ();
+		}
 
-			long[] retval = new long [registers.Length];
-			for (int i = 0; i < registers.Length; i++)
-				retval [i] = regs [registers [i]];
-
+		public virtual long[] GetRegisters (int[] indices)
+		{
+			long[] retval = new long [indices.Length];
+			for (int i = 0; i < indices.Length; i++)
+				retval [i] = GetRegister (indices [i]);
 			return retval;
 		}
 

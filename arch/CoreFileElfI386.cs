@@ -78,16 +78,11 @@ namespace Mono.Debugger.Architecture
 			return new TargetAddress (this, registers [(int) I386Register.EIP]);
 		}
 
-		public override long GetRegister (int index)
+		public override Register[] GetRegisters ()
 		{
-			return registers [index];
-		}
-
-		public override long[] GetRegisters (int[] indices)
-		{
-			long[] retval = new long [indices.Length];
-			for (int i = 0; i < indices.Length; i++)
-				retval [i] = registers [indices [i]];
+			Register[] retval = new Register [registers.Length];
+			for (int i = 0; i < registers.Length; i++)
+				retval [i] = new Register (i, registers [i]);
 
 			return retval;
 		}

@@ -585,7 +585,7 @@ namespace Mono.Debugger.Backends
 		//   without doing any stepping operations in the meantime, you'll always
 		//   get the same backtrace.
 		// </summary>
-		public StackFrame[] GetBacktrace ()
+		public Backtrace GetBacktrace ()
 		{
 			check_inferior ();
 
@@ -601,26 +601,29 @@ namespace Mono.Debugger.Backends
 		{
 			backend.UpdateSymbolTable ();
 
-			IInferiorStackFrame[] frames = inferior.GetBacktrace (-1, main_method_retaddr);
-			StackFrame[] backtrace = new StackFrame [frames.Length];
+			IInferiorStackFrame[] iframes = inferior.GetBacktrace (-1, main_method_retaddr);
+			StackFrame[] frames = new StackFrame [iframes.Length];
+			MyBacktrace backtrace = new MyBacktrace (this);
 
-			for (int i = 0; i < frames.Length; i++) {
-				TargetAddress address = frames [i].Address;
+			for (int i = 0; i < iframes.Length; i++) {
+				TargetAddress address = iframes [i].Address;
 
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
-					backtrace [i] = new MyStackFrame (this, address, i,
-									  frames [i], source, method);
+					frames [i] = new MyStackFrame (
+						this, address, i, iframes [i], backtrace, source, method);
 				} else
-					backtrace [i] = new MyStackFrame (this, address, i, frames [i]);
+					frames [i] = new MyStackFrame (
+						this, address, i, iframes [i], backtrace);
 			}
 
+			backtrace.SetFrames (frames);
 			current_backtrace = backtrace;
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
-		public long[] GetRegisters ()
+		public Register[] GetRegisters ()
 		{
 			check_inferior ();
 
@@ -634,7 +637,10 @@ namespace Mono.Debugger.Backends
 
 		CommandResult get_registers (object data)
 		{
-			registers = inferior.GetRegisters (arch.AllRegisterIndices);
+			long[] regs = inferior.GetRegisters (arch.AllRegisterIndices);
+			registers = new Register [regs.Length];
+			for (int i = 0; i < regs.Length; i++)
+				registers [i] = new Register (arch.AllRegisterIndices [i], regs [i]);
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
@@ -714,6 +720,10 @@ namespace Mono.Debugger.Backends
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
+		}
+
+		protected IArchitecture Architecture {
+			get { return arch; }
 		}
 
 		// <summary>
@@ -945,8 +955,8 @@ namespace Mono.Debugger.Backends
 		IMethod old_method;
 		IMethod current_method;
 		StackFrame current_frame;
-		StackFrame[] current_backtrace;
-		long[] registers;
+		Backtrace current_backtrace;
+		Register[] registers;
 
 		// <summary>
 		//   Compute the StackFrame for target address @address.
@@ -972,10 +982,10 @@ namespace Mono.Debugger.Backends
 				ILanguageBackend language = current_method.Module.Language;
 
 				current_frame = new MyStackFrame (
-					this, address, 0, frames [0], source, current_method);
+					this, address, 0, frames [0], null, source, current_method);
 			} else
 				current_frame = new MyStackFrame (
-					this, address, 0, frames [0]);
+					this, address, 0, frames [0], null);
 
 			return current_frame;
 		}
@@ -1034,10 +1044,10 @@ namespace Mono.Debugger.Backends
 					return new_command;
 
 				current_frame = new MyStackFrame (
-					this, address, 0, frames [0], source, current_method);
+					this, address, 0, frames [0], null, source, current_method);
 			} else
 				current_frame = new MyStackFrame (
-					this, address, 0, frames [0]);
+					this, address, 0, frames [0], null);
 
 			// If the method changed, notify our clients.
 			if (current_method != old_method) {
@@ -1107,8 +1117,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (current_backtrace != null) {
-				foreach (StackFrame frame in current_backtrace)
-					frame.Dispose ();
+				current_backtrace.Dispose ();
 				current_backtrace = null;
 			}
 
@@ -1740,7 +1749,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		byte[] read_memory (TargetAddress address, int size)
+		protected byte[] read_memory (TargetAddress address, int size)
 		{
 			ReadMemoryData data = new ReadMemoryData (address, size);
 			CommandResult result = send_sync_command (new CommandFunc (do_read_memory), data);
@@ -1864,21 +1873,28 @@ namespace Mono.Debugger.Backends
 		{
 			SingleSteppingEngine sse;
 			IInferiorStackFrame frame;
+			MyBacktrace backtrace;
+
+			Register[] registers;
+			bool has_registers;
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
-					     IInferiorStackFrame frame, SourceLocation source, IMethod method)
+					     IInferiorStackFrame frame, MyBacktrace backtrace,
+					     SourceLocation source, IMethod method)
 				: base (address, level, source, method)
 			{
 				this.sse = sse;
 				this.frame = frame;
+				this.backtrace = backtrace;
 			}
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
-					     IInferiorStackFrame frame)
+					     IInferiorStackFrame frame, MyBacktrace backtrace)
 				: base (address, level)
 			{
 				this.sse = sse;
 				this.frame = frame;
+				this.backtrace = backtrace;
 			}
 
 			public override ITargetMemoryAccess TargetMemoryAccess {
@@ -1891,6 +1907,124 @@ namespace Mono.Debugger.Backends
 
 			public override TargetAddress ParamsAddress {
 				get { return frame.ParamsAddress; }
+			}
+
+			public override Register[] Registers {
+				get {
+					if (has_registers)
+						return registers;
+
+					if (backtrace == null) {
+						registers = sse.GetRegisters ();
+						has_registers = true;
+					} else {
+						registers = backtrace.UnwindStack (Level);
+						has_registers = true;
+					}
+
+					return registers;
+				}
+			}
+		}
+
+		//
+		// Backtrace.
+		//
+
+		protected class MyBacktrace : Backtrace
+		{
+			SingleSteppingEngine sse;
+			IArchitecture arch;
+
+			public MyBacktrace (SingleSteppingEngine sse, StackFrame[] frames)
+				: base (frames)
+			{
+				this.sse = sse;
+				arch = sse.Architecture;
+			}
+
+			public MyBacktrace (SingleSteppingEngine sse)
+				: this (sse, null)
+			{ }
+
+			public void SetFrames (StackFrame[] frames)
+			{
+				this.frames = frames;
+			}
+
+			protected struct UnwindInfo {
+				public readonly object Data;
+				public readonly Register[] Registers;
+
+				public UnwindInfo (object data, Register[] registers)
+				{
+					this.Data = data;
+					this.Registers = registers;
+				}
+			}
+
+			ArrayList unwind_info = null;
+
+			protected UnwindInfo StartUnwindStack ()
+			{
+				if (unwind_info == null)
+					unwind_info = new ArrayList ();
+				if (unwind_info.Count > 0)
+					return (UnwindInfo) unwind_info [0];
+
+				Register[] registers = sse.GetRegisters ();
+				object data = arch.UnwindStack (registers);
+
+				UnwindInfo info = new UnwindInfo (data, registers);
+				unwind_info.Add (info);
+				return info;
+			}
+
+			protected UnwindInfo GetUnwindInfo (int level)
+			{
+				UnwindInfo start = StartUnwindStack ();
+				if (level == 0)
+					return start;
+				else if (level < unwind_info.Count)
+					return (UnwindInfo) unwind_info [level];
+
+				level--;
+				UnwindInfo last = GetUnwindInfo (level);
+				StackFrame frame = frames [level];
+
+				IMethod method = frame.Method;
+				if ((method == null) || !method.IsLoaded || (last.Data == null)) {
+					UnwindInfo new_info = new UnwindInfo (null, null);
+					unwind_info.Add (new_info);
+					return new_info;
+				}
+
+				int prologue_size;
+				if (method.HasMethodBounds)
+					prologue_size = (int) (method.MethodStartAddress - method.StartAddress);
+				else
+					prologue_size = (int) (method.EndAddress - method.StartAddress);
+				int offset = (int) (frame.TargetAddress - method.StartAddress);
+				prologue_size = Math.Min (prologue_size, offset);
+				prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
+
+				byte[] prologue = sse.read_memory (method.StartAddress, prologue_size);
+				Console.WriteLine ("UNWIND STACK: {0} {1} {2} {3} - {4}", level,
+						   method.Name, method.StartAddress, prologue_size,
+						   TargetBinaryReader.HexDump (prologue));
+
+				object new_data;
+				Register[] regs = arch.UnwindStack (prologue, sse, last.Data, out new_data);
+
+				UnwindInfo info = new UnwindInfo (new_data, regs);
+				unwind_info.Add (info);
+				return info;
+			}
+
+			public Register[] UnwindStack (int level)
+			{
+				UnwindInfo info = GetUnwindInfo (level);
+				return info.Registers;
 			}
 		}
 

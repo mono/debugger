@@ -1,3 +1,19 @@
+2003-01-01  Martin Baulig  <martin@ximian.com>
+
+	Happy New Year 2003 :-)
+
+	* classes/Backtrace.cs: New public class; we're now using an
+	instance of this class instead of a `StackFrame[]' for a backtrace.
+
+	* classes/StackFrame.cs (Register): New public struct.
+	(StackFrame.Registers): New abstract property.
+
+	* backends/process.cs (Process.GetBacktrace): Return a Backtrace,
+	not a StackFrame[].
+
+	* arch/ArchitectureI386.cs (UnwindStack): New function to unwind
+	the stack to get the registers of another stack frame.
+
 2002-12-31  Martin Baulig  <martin@ximian.com>
 
 	This is the end of the Year 2002.

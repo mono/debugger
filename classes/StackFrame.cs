@@ -7,6 +7,18 @@ namespace Mono.Debugger
 	public delegate void StackFrameHandler (StackFrame frame);
 	public delegate void StackFrameInvalidHandler ();
 
+	public struct Register
+	{
+		public readonly int Index;
+		public readonly object Data;
+
+		public Register (int index, object data)
+		{
+			this.Index = index;
+			this.Data = data;
+		}
+	}
+
 	public abstract class StackFrame : IDisposable
 	{
 		IMethod method;
@@ -63,6 +75,10 @@ namespace Mono.Debugger
 		}
 
 		public abstract TargetAddress ParamsAddress {
+			get;
+		}
+
+		public abstract Register[] Registers {
 			get;
 		}
 

@@ -60,7 +60,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		int current_frame_idx = -1;
 		StackFrame current_frame = null;
-		StackFrame[] current_backtrace = null;
+		Backtrace current_backtrace = null;
 		string current_insn = null;
 		IMethod current_method = null;
 		ISourceBuffer current_buffer = null;
@@ -285,7 +285,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public StackFrame[] GetBacktrace ()
+		public Backtrace GetBacktrace ()
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
@@ -337,12 +337,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (!registers.Contains (name))
 				throw new ScriptingException ("No such register: %{0}", name);
 
-			if (frame != process.CurrentFrame)
-				throw new ScriptingException ("Printing registers from other stack frames " +
-							      "is not yet implemented.");
-
 			int register = (int) registers [name];
-			return process.GetRegister (register);
+
+			Register[] frame_registers = frame.Registers;
+			if (frame_registers == null)
+				throw new ScriptingException ("Cannot get registers of selected stack frame.");
+
+			foreach (Register reg in frame_registers) {
+				if (reg.Index == register)
+					return (long) reg.Data;
+			}
+
+			throw new ScriptingException ("Cannot get this register from the selected stack frame.");
 		}
 
 		public TargetState State {
@@ -354,14 +360,35 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public long[] GetRegisters (int[] registers)
+		public Register[] GetRegisters (int frame_number, int[] indices)
 		{
+			StackFrame frame = GetFrame (frame_number);
+
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
 			else if (State != TargetState.STOPPED)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
-			return process.GetRegisters (registers);
+			Register[] registers = frame.Registers;
+			if (registers == null)
+				throw new ScriptingException ("Cannot get registers of selected stack frame.");
+
+			if (indices == null)
+				return registers;
+
+			ArrayList list = new ArrayList ();
+			for (int i = 0; i < indices.Length; i++) {
+				foreach (Register register in registers) {
+					if (register.Index == indices [i]) {
+						list.Add (register);
+						break;
+					}
+				}
+			}
+
+			Register[] retval = new Register [list.Count];
+			list.CopyTo (retval, 0);
+			return retval;	
 		}
 		
 		public int InsertBreakpoint (string method)

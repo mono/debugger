@@ -47,10 +47,8 @@ namespace Mono.Debugger
 			get;
 		}
 
-		StackFrame[] GetBacktrace ();
+		Backtrace GetBacktrace ();
 
-		long GetRegister (int register);
-
-		long[] GetRegisters (int[] registers);
+		Register[] GetRegisters ();
 	}
 }

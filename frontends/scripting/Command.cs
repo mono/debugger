@@ -185,7 +185,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			int current_idx = process.CurrentFrameIndex;
-			StackFrame[] backtrace = process.GetBacktrace ();
+			Backtrace backtrace = process.GetBacktrace ();
 			for (int i = 0; i < backtrace.Length; i++) {
 				string prefix = i == current_idx ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, backtrace [i]);
@@ -249,10 +249,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ShowRegistersCommand : Command
 	{
 		ProcessExpression process_expr;
+		int number;
 
-		public ShowRegistersCommand (ProcessExpression process_expr)
+		public ShowRegistersCommand (ProcessExpression process_expr, int number)
 		{
 			this.process_expr = process_expr;
+			this.number = number;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
@@ -261,9 +263,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string[] names = process.Architecture.RegisterNames;
 			int[] indices = process.Architecture.RegisterIndices;
-			long[] regs = process.GetRegisters (indices);
-			for (int i = 0; i < regs.Length; i++)
-				context.Print ("%{0} = 0x{1:x}", names [indices [i]], regs [i]);
+
+			foreach (Register register in process.GetRegisters (number, indices))
+				context.Print ("%{0} = 0x{1:x}", names [register.Index], register.Data);
 		}
 	}
 

@@ -264,5 +264,114 @@ namespace Mono.Debugger
 
 			return inferior.ReadInteger (stack + inferior.TargetAddressSize);
 		}
+
+		public int MaxPrologueSize {
+			get { return 50; }
+		}
+
+		public object UnwindStack (Register[] registers)
+		{
+			uint[] retval = new uint [7];
+
+			foreach (Register register in registers) {
+				switch (register.Index) {
+				case (uint) I386Register.EBP:
+					retval [0] = (uint) ((long) register.Data);
+					break;
+				case (uint) I386Register.EAX:
+					retval [1] = (uint) ((long) register.Data);
+					break;
+				case (uint) I386Register.EBX:
+					retval [2] = (uint) ((long) register.Data);
+					break;
+				case (uint) I386Register.ECX:
+					retval [3] = (uint) ((long) register.Data);
+					break;
+				case (uint) I386Register.EDX:
+					retval [4] = (uint) ((long) register.Data);
+					break;
+				case (uint) I386Register.ESI:
+					retval [5] = (uint) ((long) register.Data);
+					break;
+				case (uint) I386Register.EDI:
+					retval [6] = (uint) ((long) register.Data);
+					break;
+				}
+			}
+
+			return retval;
+		}
+
+		public Register[] UnwindStack (byte[] code, ITargetMemoryAccess memory, object last_data,
+					       out object new_data)
+		{
+			int pos = 0;
+			int length = code.Length;
+
+			uint[] regs = (uint []) last_data;
+
+			new_data = null;
+			if (length == 0)
+				return null;
+
+			if ((code [pos] == 0x90) || (code [pos] == 0xcc))
+				pos++;
+
+			if (pos+2 >= length)
+				return null;
+			if (code [pos++] != 0x55)
+				return null;
+			if (((code [pos] != 0x8b) || (code [pos+1] != 0xec)) &&
+			    ((code [pos] != 0x89) || (code [pos+1] != 0xe5)))
+				return null;
+			pos += 2;
+
+			TargetAddress ebp = new TargetAddress (memory, regs [0]);
+			regs [0] = (uint) memory.ReadInteger (ebp);
+			ebp -= memory.TargetAddressSize;
+
+			while (pos < length) {
+				byte opcode = code [pos++];
+
+				if ((opcode < 0x50) || (opcode > 0x57))
+					break;
+
+				switch (opcode) {
+				case 0x50: /* eax */
+					regs [1] = (uint) memory.ReadInteger (ebp);
+					break;
+				case 0x51: /* ecx */
+					regs [3] = (uint) memory.ReadInteger (ebp);
+					break;
+				case 0x52: /* edx */
+					regs [4] = (uint) memory.ReadInteger (ebp);
+					break;
+				case 0x53: /* ebx */
+					regs [2] = (uint) memory.ReadInteger (ebp);
+					break;
+				case 0x56: /* esi */
+					regs [5] = (uint) memory.ReadInteger (ebp);
+					break;
+				case 0x57: /* edi */
+					regs [6] = (uint) memory.ReadInteger (ebp);
+					break;
+				}
+
+				ebp -= memory.TargetIntegerSize;
+			}
+
+			new_data = regs;
+
+			Register[] retval = new Register [7];
+			retval [0] = new Register ((int) I386Register.EBP, regs [0]);
+			retval [1] = new Register ((int) I386Register.EAX, regs [1]);
+			retval [2] = new Register ((int) I386Register.EBX, regs [2]);
+			retval [3] = new Register ((int) I386Register.ECX, regs [3]);
+			retval [4] = new Register ((int) I386Register.EDX, regs [4]);
+			retval [5] = new Register ((int) I386Register.ESI, regs [5]);
+			retval [6] = new Register ((int) I386Register.EDI, regs [6]);
+
+			return retval;
+		}
 	}
 }

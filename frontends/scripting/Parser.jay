@@ -144,9 +144,9 @@ command
 	  {
 		$$ = new ShowProcessesCommand ();
 	  }
-	| SHOW REGISTERS opt_process
+	| SHOW REGISTERS opt_process opt_frame_number
 	  {
-		$$ = new ShowRegistersCommand ((ProcessExpression) $3);
+		$$ = new ShowRegistersCommand ((ProcessExpression) $3, (int) $4);
 	  }
 	| SHOW PARAMETERS opt_process opt_frame_number
 	  {
