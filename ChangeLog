@@ -1,5 +1,10 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Added the dereferencing
+	expression "print *$a" where $a is a pointer or a Mono `object'.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs: Renamed the old
 	VariableExpression to VariableReferenceExpression.
 	(VariableExpression): New abstract class.

@@ -59,6 +59,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token DOT
 %token BANG
 %token ASSIGN
+%token STAR
 
 %token PROCESSES
 %token REGISTERS
@@ -238,6 +239,10 @@ variable_expression
 	| variable_expression DOT IDENTIFIER
 	  {
 		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
+	  }
+	| STAR variable_expression
+	  {
+		$$ = new VariableDereferenceExpression ((VariableExpression) $2);
 	  }
 	;
 

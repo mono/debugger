@@ -575,10 +575,38 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ITargetFieldInfo field = get_field (sobj.Type);
 			return sobj.GetField (field.Index);
 		}
+	}
 
-		public override string ToString ()
+	public class VariableDereferenceExpression : VariableExpression
+	{
+		VariableExpression var_expr;
+
+		public VariableDereferenceExpression (VariableExpression var_expr)
 		{
-			return String.Format ("{0} ({1},{2})", GetType (), var_expr, identifier);
+			this.var_expr = var_expr;
+		}
+
+		public override string Name {
+			get {
+				return '*' + var_expr.Name;
+			}
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			object variable = var_expr.Resolve (context);
+			if (variable == null)
+				return null;
+
+			ITargetPointerObject pobj = variable as ITargetPointerObject;
+			if (pobj == null)
+				throw new ScriptingException ("Variable {0} is not a pointer type.",
+							      var_expr.Name);
+
+			if (!pobj.HasObject)
+				throw new ScriptingException ("Cannot dereference {0}.", var_expr.Name);
+
+			return pobj.Object;
 		}
 	}
 }

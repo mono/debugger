@@ -445,6 +445,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.BANG;
 				else if (c == '=')
 					return Token.ASSIGN;
+				else if (c == '*')
+					return Token.STAR;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;
