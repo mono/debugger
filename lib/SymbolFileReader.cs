@@ -6,17 +6,47 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
 {
+	internal struct MethodSearch
+	{
+		public readonly string Name;
+		public readonly int Closure;
+
+		public MethodSearch (string name, int closure)
+		{
+			this.Name = name;
+			this.Closure = closure;
+		}
+	}
+
 	internal class MyOptions : Options
 	{
 		ArrayList methods = null;
 		ArrayList sources = null;
+		ArrayList tokens = null;
+		int current_closure = -1;
 
 		[Option("Find a method", 'm')]
 		public WhatToDoNext method (string value)
 		{
 			if (methods == null)
 				methods = new ArrayList ();
-			methods.Add (value);
+			methods.Add (new MethodSearch (value, current_closure));
+			return WhatToDoNext.GoAhead;
+		}
+
+		[Option("Next method lookup happens in this method", 'c')]
+		public WhatToDoNext closure (int value)
+		{
+			current_closure = value;
+			return WhatToDoNext.GoAhead;
+		}
+
+		[Option("Get method by token", 't')]
+		public WhatToDoNext token (int value)
+		{
+			if (tokens == null)
+				tokens = new ArrayList ();
+			tokens.Add (value);
 			return WhatToDoNext.GoAhead;
 		}
 
@@ -24,10 +54,22 @@ namespace Mono.Debugger
 			get { return methods != null; }
 		}
 
-		public string[] Methods {
+		public MethodSearch[] Methods {
 			get {
-				string[] retval = new string [methods.Count];
+				MethodSearch[] retval = new MethodSearch [methods.Count];
 				methods.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
+		public bool HasTokens {
+			get { return tokens != null; }
+		}
+
+		public int[] Tokens {
+			get {
+				int[] retval = new int [tokens.Count];
+				tokens.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -54,7 +96,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public class SymbolFileReader
+	internal class SymbolFileReader
 	{
 		MonoSymbolFile file;
 		Assembly assembly;
@@ -69,12 +111,25 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void FindMethod (string method)
+		public void FindMethod (MethodSearch method)
 		{
 			DateTime start = DateTime.Now;
-			int index = file.FindMethod (method);
+			MethodEntry closure = null;
+			if (method.Closure != -1) {
+				closure = file.GetMethod (method.Closure);
+				Console.WriteLine ("CLOSURE: {0}", closure);
+			}
+			int index = file.FindMethod (method.Name);
 			TimeSpan time = DateTime.Now - start;
 			Console.WriteLine ("FIND METHOD: {0} {1} {2}", method, index, time);
+		}
+
+		public void FindMethod (int token)
+		{
+			DateTime start = DateTime.Now;
+			MethodEntry method = file.GetMethodByToken (token);
+			TimeSpan time = DateTime.Now - start;
+			Console.WriteLine ("FIND METHOD: {0} {1} {2}", token, method, time);
 		}
 
 		public void FindSource (string source)
@@ -138,8 +193,14 @@ namespace Mono.Debugger
 
 			bool done_something = false;
 
+			if (options.HasTokens) {
+				foreach (int token in options.Tokens)
+					reader.FindMethod (token);
+				done_something = true;
+			}
+
 			if (options.HasMethods) {
-				foreach (string method in options.Methods)
+				foreach (MethodSearch method in options.Methods)
 					reader.FindMethod (method);
 				done_something = true;
 			}
