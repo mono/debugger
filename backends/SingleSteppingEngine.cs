@@ -296,7 +296,6 @@ namespace Mono.Debugger.Backends
 			if (stop_requested) {
 				stop_event.Set ();
 				restart_event.WaitOne ();
-				Console.WriteLine ("RESTART AFTER STOP: {0} {1} {2}", pid, arg, message);
 				// A stop was requested and we actually received the SIGSTOP.  Note that
 				// we may also have stopped for another reason before receiving the SIGSTOP.
 				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.StopSignal)) {
@@ -872,8 +871,6 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		bool child_breakpoint (int breakpoint)
 		{
-			Console.WriteLine ("BREAKPOINT: {0} {1}", breakpoint, inferior.CurrentFrame);
-
 			// The inferior knows about breakpoints from all threads, so if this is
 			// zero, then no other thread has set this breakpoint.
 			if (breakpoint == 0)
@@ -896,32 +893,23 @@ namespace Mono.Debugger.Backends
 		{
 			int owner;
 			int id = breakpoint_manager.LookupBreakpoint (inferior.CurrentFrame, out owner);
-			Console.WriteLine ("LOOKUP: {0} {1} {2} {3}", inferior.CurrentFrame, id, owner, pid);
 
 			new_event = null;
 
-			if (id == 0) {
-				Console.WriteLine ("UNKNOWN BREAKPOINT: {0} {1}", pid, inferior.CurrentFrame);
+			if (id == 0)
 				return true;
-			}
 
 			if ((owner == 0) || (owner == pid))
 				return true;
 
 			thread_manager.AcquireGlobalThreadLock (process);
-			Console.WriteLine ("ACQUIRED GLOBAL THREAD LOCK");
 			inferior.DisableBreakpoint (id);
-			Console.WriteLine ("DISABLED BREAKPOINT");
 			inferior.Step ();
-			Console.WriteLine ("STEPPED ONE INSTRUCTION");
 			do {
 				new_event = inferior.Wait ();
 			} while (new_event == null);
-			Console.WriteLine ("DONE WAITING: {0} {1}", new_event.Type, new_event.Argument);
 			inferior.EnableBreakpoint (id);
-			Console.WriteLine ("REENABLED BREAKPOINT");
 			thread_manager.ReleaseGlobalThreadLock (process);
-			Console.WriteLine ("RELEASED GLOBAL THREAD LOCK");
 			return false;
 		}
 
