@@ -29,6 +29,8 @@ namespace Mono.Debugger.Architecture
 		ArrayList aranges;
 		TargetInfo target_info;
 
+		SourceFile[] sources;
+
 		protected class DwarfException : Exception
 		{
 			public DwarfException (DwarfReader reader, string message)
@@ -77,6 +79,20 @@ namespace Mono.Debugger.Architecture
 			aranges = ArrayList.Synchronized (read_aranges ());
 
 			symtab = new DwarfSymbolTable (this, aranges, simple_symtab);
+
+			ArrayList source_list = new ArrayList ();
+
+			long offset = 0;
+			while (offset < reader.Size) {
+				CompileUnitBlock block = new CompileUnitBlock (this, offset);
+				compile_unit_hash.Add (offset, block);
+				offset += block.length;
+
+				source_list.AddRange (block.Sources);
+			}
+
+			sources = new SourceFile [source_list.Count];
+			source_list.CopyTo (sources, 0);
 		}
 
 		public TargetInfo TargetInfo {
@@ -90,52 +106,19 @@ namespace Mono.Debugger.Architecture
 			return bfd.GetAddress (address);
 		}
 
-		protected long find_compile_unit_block (long offset)
-		{
-			for (int i = aranges.Count-1; i >= 0; i--) {
-				RangeEntry entry = (RangeEntry) aranges [i];
-
-				if (entry.FileOffset < offset)
-					return entry.FileOffset;
-			}
-
-			return -1;
-		}
-
-		protected CompileUnitBlock get_block_at_offset (long offset)
-		{
-			CompileUnitBlock block;
-			lock (compile_unit_hash.SyncRoot) {
-				block = (CompileUnitBlock) compile_unit_hash [offset];
-				if (block == null) {
-					block = new CompileUnitBlock (this, offset);
-					compile_unit_hash.Add (offset, block);
-				}
-			}
-
-			return block;
-		}
-
 		protected ISymbolTable get_symtab_at_offset (long offset)
 		{
-			CompileUnitBlock block = get_block_at_offset (offset);
+			CompileUnitBlock block = (CompileUnitBlock) compile_unit_hash [offset];
 
 			// This either return the already-read symbol table or acquire the
 			// thread lock and read it.
 			return block.SymbolTable;
 		}
 
-		public SourceFile[] GetSources ()
-		{
-			Hashtable source_hash = new Hashtable ();
-
-			foreach (DwarfSourceFile source in symtab.GetSources ()) {
-				source_hash.Add (source.FileName, source);
+		public SourceFile[] Sources {
+			get {
+				return sources;
 			}
-
-			SourceFile[] retval = new SourceFile [source_hash.Values.Count];
-			source_hash.Values.CopyTo (retval, 0);
-			return retval;
 		}
 
 		protected class DwarfSourceMethod : SourceMethod
@@ -202,6 +185,7 @@ namespace Mono.Debugger.Architecture
 		{
 			public readonly DwarfReader dwarf;
 			public readonly long offset;
+			public readonly long length;
 
 			SymbolTableCollection symtabs;
 			ArrayList compile_units;
@@ -210,33 +194,24 @@ namespace Mono.Debugger.Architecture
 
 			public IMethod Lookup (TargetAddress address)
 			{
-				read_block ();
-				foreach (CompilationUnit comp_unit in compile_units) {
-					ISymbolTable symtab = comp_unit.SymbolTable;
-
-					IMethod method = symtab.Lookup (address);
-					if (method != null)
-						return method;
-				}
-
-				return null;
+				build_symtabs ();
+				return symtabs.Lookup (address);
 			}
 
 			public ISymbolTable SymbolTable {
 				get {
-					read_block ();
+					build_symtabs ();
 					return symtabs;
 				}
 			}
 
 			public SourceFile[] Sources {
 				get {
-					read_block ();
 					return sources;
 				}
 			}
 
-			void read_block ()
+			void build_symtabs ()
 			{
 				// If we're already initialized, we don't need to do any locking,
 				// so do this check here without locking.
@@ -252,35 +227,8 @@ namespace Mono.Debugger.Architecture
 					symtabs = new SymbolTableCollection ();
 					symtabs.Lock ();
 
-					DwarfBinaryReader reader = dwarf.DebugInfoReader;
-					reader.Position = offset;
-					long length = reader.ReadInitialLength ();
-					long stop = reader.Position + length;
-					int version = reader.ReadInt16 ();
-					if (version < 2)
-						throw new DwarfException (dwarf, String.Format (
-							"Wrong DWARF version: {0}", version));
-
-					reader.ReadOffset ();
-					int address_size = reader.ReadByte ();
-					reader.Position = offset;
-
-					if ((address_size != 4) && (address_size != 8))
-						throw new DwarfException (dwarf, String.Format (
-							"Unknown address size: {0}", address_size));
-
-					ArrayList source_list = new ArrayList ();
-					compile_units = new ArrayList ();
-
-					while (reader.Position < stop) {
-						CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
-						compile_units.Add (comp_unit);
+					foreach (CompilationUnit comp_unit in compile_units)
 						symtabs.AddSymbolTable (comp_unit.SymbolTable);
-						source_list.Add (comp_unit.DieCompileUnit.SourceFile);
-					}
-
-					sources = new SourceFile [source_list.Count];
-					source_list.CopyTo (sources, 0);
 
 					symtabs.UnLock ();
 
@@ -292,6 +240,37 @@ namespace Mono.Debugger.Architecture
 			{
 				this.dwarf = dwarf;
 				this.offset = start;
+
+				DwarfBinaryReader reader = dwarf.DebugInfoReader;
+				reader.Position = offset;
+				long length_field = reader.ReadInitialLength ();
+				long stop = reader.Position + length_field;
+				length = stop - offset;
+				int version = reader.ReadInt16 ();
+
+				if (version < 2)
+					throw new DwarfException (dwarf, String.Format (
+						"Wrong DWARF version: {0}", version));
+
+				reader.ReadOffset ();
+				int address_size = reader.ReadByte ();
+				reader.Position = offset;
+
+				if ((address_size != 4) && (address_size != 8))
+					throw new DwarfException (dwarf, String.Format (
+						"Unknown address size: {0}", address_size));
+
+				ArrayList source_list = new ArrayList ();
+				compile_units = new ArrayList ();
+
+				while (reader.Position < stop) {
+					CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
+					compile_units.Add (comp_unit);
+					source_list.Add (comp_unit.DieCompileUnit.SourceFile);
+				}
+
+				sources = new SourceFile [source_list.Count];
+				source_list.CopyTo (sources, 0);
 			}
 		}
 
@@ -356,19 +335,6 @@ namespace Mono.Debugger.Architecture
 				return methods;
 			}
 
-			public ArrayList GetSources ()
-			{
-				ArrayList sources = new ArrayList ();
-
-				foreach (RangeEntry range in ranges) {
-					CompileUnitBlock block = dwarf.get_block_at_offset (range.FileOffset);
-
-					sources.AddRange (block.Sources);
-				}
-
-				return sources;
-			}
-
 			public override string SimpleLookup (TargetAddress address, bool exact_match)
 			{
 				string name = base.SimpleLookup (address, exact_match);
@@ -410,54 +376,6 @@ namespace Mono.Debugger.Architecture
 						      StartAddress, EndAddress, FileOffset);
 			}
 		}
-
-#if FALSE
-		private class PubNameEntry : ISymbol
-		{
-			public readonly long FileOffset;
-			string name;
-			DwarfReader dwarf;
-
-			public PubNameEntry (DwarfReader dwarf, long offset, string name)
-			{
-				this.dwarf = dwarf;
-				this.FileOffset = dwarf.find_compile_unit_block (offset);
-				this.name = name;
-			}
-
-			public string Name {
-				get {
-					return name;
-				}
-			}
-
-			public ITargetLocation Location {
-				get {
-					ISourceLookup symtab = dwarf.get_symtab_at_offset (FileOffset);
-					if (symtab == null)
-						return null;
-
-					ISymbol symbol = symtab.Lookup (Name);
-					if (symbol == null)
-						return null;
-
-					return symbol.Location;
-				}
-			}
-
-			public int CompareTo (object obj)
-			{
-				PubNameEntry entry = (PubNameEntry) obj;
-
-				return name.CompareTo (entry.name);
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("DwarfSymbol ({0},{1:x})", Name, FileOffset);
-			}
-		}
-#endif
 
 		ArrayList read_aranges ()
 		{
@@ -1727,7 +1645,13 @@ namespace Mono.Debugger.Architecture
 					       AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
 			{
-				file = new DwarfSourceFile (dwarf, name);
+				string file_name;
+				if (comp_dir != null)
+					file_name = String.Concat (
+						comp_dir, Path.DirectorySeparatorChar, name);
+				else
+					file_name = name;
+				file = new DwarfSourceFile (dwarf, file_name);
 			}
 
 			public DieCompileUnit (DwarfBinaryReader reader, CompilationUnit comp_unit)

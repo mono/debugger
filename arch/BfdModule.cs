@@ -52,7 +52,7 @@ namespace Mono.Debugger.Architecture
 				if (dwarf == null)
 					return new SourceFile [0];
 
-				return dwarf.GetSources ();
+				return dwarf.Sources;
 			}
 		}
 
