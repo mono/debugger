@@ -23,6 +23,40 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public abstract class TargetCommand : Command
+	{
+		ProcessExpression process_expr;
+		FrameExpression frame_expr;
+
+		[Argument(ArgumentType.Process, "proc", "Target process to operate on")]
+		public ProcessExpression ProcessExpression {
+			get { return process_expr; }
+			set { process_expr = value; }
+		}
+
+		[Argument(ArgumentType.Frame, "frame", "Stack frame")]
+		public FrameExpression FrameExpression {
+			get { return frame_expr; }
+			set { frame_expr = value; }
+		}
+
+		protected virtual ProcessHandle ResolveProcess (ScriptingContext context)
+		{
+			if (process_expr != null)
+				return (ProcessHandle) process_expr.Resolve (context);
+
+			return context.CurrentProcess;
+		}
+
+		protected FrameHandle ResolveFrame (ScriptingContext context)
+		{
+			if (frame_expr != null)
+				return (FrameHandle) frame_expr.Resolve (context);
+
+			return ResolveProcess (context).CurrentFrame;
+		}
+	}
+
 	public class RepeatCommand : Command
 	{
 		Command command;
@@ -166,19 +200,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("FRAME", "Print the current stack frame.")]
-	public class FrameCommand : Command
+	[Command("frame", "Print the current stack frame.")]
+	public class FrameCommand : TargetCommand
 	{
-		FrameExpression frame_expr;
-
-		public FrameCommand (FrameExpression frame_expr)
-		{
-			this.frame_expr = frame_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+			FrameHandle frame = ResolveFrame (context);
 
 			frame.Print (context);
 		}

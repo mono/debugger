@@ -1,5 +1,10 @@
 2004-04-14  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (TargetCommand): New abstract
+	base class.
+
+2004-04-14  Martin Baulig  <martin@ximian.com>
+
 	* frontends/command-line/: Started working on a new command line
 	interface.
 
