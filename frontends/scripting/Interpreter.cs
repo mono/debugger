@@ -647,11 +647,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 
 			current_process = null;
-			context.CurrentProcess = null;
-			context.CurrentFrame = null;
-
 			procs = new Hashtable ();
 			breakpoints = new Hashtable ();
+
+			context = new ScriptingContext (this, is_interactive, true);
 		}
 
 		public void LoadLibrary (Process process, string filename)
