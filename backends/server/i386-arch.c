@@ -75,10 +75,10 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 
 	call_disp = (int) method_address - new_esp;
 
-	*((guint32 *) (code+1)) = method_argument1 >> 32;
-	*((guint32 *) (code+6)) = method_argument1 & 0xffffffff;
-	*((guint32 *) (code+11)) = method_argument2 >> 32;
-	*((guint32 *) (code+16)) = method_argument2 & 0xffffffff;
+	*((guint32 *) (code+1)) = method_argument2 >> 32;
+	*((guint32 *) (code+6)) = method_argument2 & 0xffffffff;
+	*((guint32 *) (code+11)) = method_argument1 >> 32;
+	*((guint32 *) (code+16)) = method_argument1 & 0xffffffff;
 	*((guint32 *) (code+21)) = call_disp - 25;
 
 	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
