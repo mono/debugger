@@ -631,8 +631,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			generator = new Generator (Assembly.GetExecutingAssembly ());
 		}
 
-		public ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
-					 bool is_synchronous, bool is_interactive, string[] args)
+		internal ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
+					   bool is_synchronous, bool is_interactive, string[] args)
 		{
 			this.command_output = command_out;
 			this.inferior_output = inferior_out;

@@ -1,9 +1,9 @@
 using System;
 using System.Text;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Frontends.CommandLine
 {
-	public abstract class DebuggerTextWriter
+	internal abstract class DebuggerTextWriter
 	{
 		public abstract void Write (bool is_stderr, string text);
 
@@ -14,7 +14,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public class ConsoleTextWriter : DebuggerTextWriter
+	internal class ConsoleTextWriter : DebuggerTextWriter
 	{
 		public override void Write (bool is_stderr, string text)
 		{

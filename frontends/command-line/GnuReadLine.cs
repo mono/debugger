@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Frontends.CommandLine
 {
-	public class GnuReadLine
+	internal class GnuReadLine
 	{
 		[DllImport("libmonodebuggerreadline")]
 		extern static bool mono_debugger_readline_static_init ();
