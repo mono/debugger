@@ -49,6 +49,7 @@ namespace Mono.Debugger.GUI
 				ProcessCreatedEvent (this, process);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (RealModulesChanged);
+			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (RealBreakpointsChanged);
 
 			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);

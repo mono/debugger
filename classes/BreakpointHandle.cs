@@ -111,6 +111,7 @@ namespace Mono.Debugger
 				Enable ();
 			else
 				Disable ();
+			module.OnBreakpointsChangedEvent ();
 		}
 
 		TargetAddress bpt_address = TargetAddress.Null;

@@ -273,7 +273,7 @@ namespace Mono.Debugger
 				ModuleChangedEvent (this);
 		}
 
-		protected virtual void OnBreakpointsChangedEvent ()
+		protected internal virtual void OnBreakpointsChangedEvent ()
 		{
 			if (BreakpointsChangedEvent != null)
 				BreakpointsChangedEvent (this);
