@@ -1532,7 +1532,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		ThreadGroup tgroup;
 		ITargetClassType type;
 
-		[CommandParamDescription ("limit this catchpoint to a particular thread group named ARG")]
 		public string Group {
 			get { return group; }
 			set { group = value; }

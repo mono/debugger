@@ -1,5 +1,10 @@
 2004-10-22  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/scripting/Command.cs: remove CommandParamAttribute.
+	Duncan is a GOD.
+
+2004-10-22  Chris Toshok  <toshok@ximian.com>
+
 	* frontends/command-line/Main.cs: differentiate between commands
 	and aliases (RegisterCommand/RegisterAlias).
 
