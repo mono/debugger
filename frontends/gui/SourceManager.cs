@@ -267,6 +267,24 @@ namespace Mono.Debugger.GUI {
 				MethodChangedEvent (method);
 		}
 
+		public void SwitchToCPUView ()
+		{
+			notebook.Page = 0;
+			disassembler_view.Active = notebook.Page == 0;
+		}
+
+		public void SwitchToSourceView ()
+		{
+			if ((notebook.Page != 0) || (current_source == null))
+				return;
+
+			int idx = GetPageIdx (current_source.Widget);
+			if (idx != -1)
+				notebook.Page = idx;
+
+			disassembler_view.Active = notebook.Page == 0;
+		}
+
 		public SourceLocation FindLocation (string filename, int line)
 		{
 			return backend.FindLocation (filename, line);

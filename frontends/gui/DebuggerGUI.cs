@@ -402,20 +402,19 @@ namespace Mono.Debugger.GUI
 
 		void OnCPUViewActivate (object sender, EventArgs args)
 		{
-			Gtk.Notebook n;
-			
-			n = (Gtk.Notebook) gxml ["code-browser-notebook"];
-			n.Page = 0;
+			source_manager.SwitchToCPUView ();
 		}
 
 		void OnRunProgramActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToSourceView ();
 			if ((process != null) && process.HasTarget)
 				process.Continue (false);
 		}
 
 		void OnContinueIgnoreSignalActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToSourceView ();
 			if (process != null)
 				process.ClearSignal ();
 			OnRunProgramActivate (sender, args);
@@ -429,30 +428,35 @@ namespace Mono.Debugger.GUI
 
 		void OnStepIntoActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToSourceView ();
 			if ((process != null) && process.CanStep)
 				process.StepLine (false);
 		}
 
 		void OnStepOverActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToSourceView ();
 			if ((process != null) && process.CanStep)
 				process.NextLine (false);
 		}
 
 		void OnStepOutActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToSourceView ();
 			if ((process != null) && process.CanStep)
 				process.Finish (false);
 		}
 
 		void OnInstructionStepIntoActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToCPUView ();
 			if ((process != null) && process.CanStep)
 				process.StepInstruction (false);
 		}
 
 		void OnInstructionStepOverActivate (object sender, EventArgs args)
 		{
+			source_manager.SwitchToCPUView ();
 			if ((process != null) && process.CanStep)
 				process.NextInstruction (false);
 		}
