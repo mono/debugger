@@ -120,7 +120,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override bool IsByRef {
 			get {
-				return Type.IsByRef;
+				return !is_valuetype;
 			}
 		}
 
