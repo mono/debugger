@@ -71,7 +71,7 @@ namespace Mono.Debugger.GUI {
 			// Load contents
 			//
 			string contents = GetSource (source_buffer);
-			text_buffer.SetText (contents);
+			text_buffer.Text = contents;
 
 			//
 			// Load our markers
