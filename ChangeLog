@@ -1,3 +1,31 @@
+2005-03-13  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Makefile.am (MAINTAINERCLEANFILES): add
+	CSharpTokenizer_lex.cs
+	(CSharpTokenizer_lex.cs): add cslex rule to build this file.
+	(EXTRA_DIST): add CSharpTokenizer_lex.cs/CSharpTokenizer.lex
+
+	* frontend/ (svn:ignore): ignore CSharpTokenizer_lex.cs
+	
+	* frontend/CSharpTokenizer.lex: new file, lexer specification that
+	implements the proper ifaces/properties that
+	CSharpExpressionParser.jay expects.
+
+	* frontend/CSharpExpressionParser.jay: clean up a little bit and
+	make it work with the cslex generated lexer.
+
+	* frontend/Expression.cs (NumberExpression..ctor): add a
+	constructor for floats.  might not be the right place to put it,
+	but it works.
+	(BoolExpression): add a new type to represent boolean
+	expressions. at the moment it can only deal with constant bool
+	expressions like "true" and "false".
+	(ConditionalExpression): add a new type to represent "a ? b : c".
+
+	* Makefile.am (SUBDIRS): add cslex
+
+	* configure.in (AC_OUTPUT): add cslex/Makefile
+
 2005-03-09  Chris Toshok  <toshok@ximian.com>
 
 	* acinclude.m4 (READLINE_TRYLINK): supply a function body calling

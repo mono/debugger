@@ -34,6 +34,7 @@ namespace Mono.Debugger.Frontend.CSharp
 
 %token IDENTIFIER
 %token INTEGER
+%token FLOAT
 %token NUMBER
 %token STRING
 %token HASH
@@ -42,21 +43,29 @@ namespace Mono.Debugger.Frontend.CSharp
 %token DOLLAR
 %token DOT
 %token DOTDOT
-%token BANG
+%token NOT
 %token COMMA
-%token ASSIGN
+%token EQUAL
+%token EQUALEQUAL
+%token NOTEQUAL
 %token STAR
 %token PLUS
 %token MINUS
 %token DIV
-%token OPEN_PARENS
-%token CLOSE_PARENS
-%token OPEN_BRACKET
-%token CLOSE_BRACKET
-%token OP_LT
-%token OP_GT
+%token OPAREN
+%token CPAREN
+%token OBRACKET
+%token CBRACKET
+%token LT
+%token GT
+%token LE
+%token GE
+%token AND
+%token OR
 %token COLON
+%token QUESTION
 %token AMPERSAND
+%token ARROW
 
 %token LENGTH
 %token LOWER
@@ -66,6 +75,9 @@ namespace Mono.Debugger.Frontend.CSharp
 %token THIS
 %token BASE
 %token CATCH
+%token TRUE
+%token FALSE
+%token NULL
 
 %start parse_expression
 %%
@@ -79,14 +91,22 @@ parse_expression
 
 primary_expression
 	: expression
-	| expression ASSIGN expression
+	| expression EQUAL expression
 	  {
 		$$ = new AssignmentExpression ((Expression) $1, (Expression) $3);
 	  }
 	;	
 
-expression
-	: NUMBER
+constant
+	: TRUE
+	  {
+		$$ = new BoolExpression (true);
+	  }
+	| FALSE
+	  {
+		$$ = new BoolExpression (false);
+	  }
+	| NUMBER
 	  {
 		$$ = new NumberExpression ((long) $1);
 	  }
@@ -94,10 +114,17 @@ expression
 	  {
 		$$ = new NumberExpression ((int) $1);
 	  }
+	| FLOAT
+	  {
+		$$ = new NumberExpression ((float) $1);
+	  }
 	| STRING
 	  {
 		$$ = new StringExpression ((string) $1);
 	  }
+
+expression
+	: constant
 	| THIS
 	  {
 		$$ = new ThisExpression ();
@@ -127,23 +154,27 @@ expression
 	  {
 		$$ = new AddressOfExpression ((Expression) $2);
 	  }
-	| expression OPEN_BRACKET expression CLOSE_BRACKET
+	| expression OBRACKET expression CBRACKET
 	  {
 		$$ = new ArrayAccessExpression ((Expression) $1, (Expression) $3);
 	  }
-	| expression OPEN_PARENS argument_list CLOSE_PARENS
+	| expression OPAREN argument_list CPAREN
 	  {
 		$$ = new InvocationExpression ((Expression) $1, ((Expression []) $3));
 	  }
-	| NEW variable_or_type_name OPEN_PARENS argument_list CLOSE_PARENS
+	| NEW variable_or_type_name OPAREN argument_list CPAREN
 	  {
 		$$ = new NewExpression ((Expression) $2, ((Expression []) $4));
 	  }
-	| OPEN_PARENS variable_or_type_name CLOSE_PARENS expression
+	| OPAREN variable_or_type_name CPAREN expression
 	  {
 		$$ = new CastExpression ((Expression) $2, (Expression) $4);
 	  }
-	| OPEN_PARENS expression CLOSE_PARENS
+	| expression QUESTION expression COLON expression
+	  {
+		$$ = new ConditionalExpression ((Expression)$1, (Expression)$3, (Expression)$5);
+	  }
+	| OPAREN expression CPAREN
 	  {
 		$$ = $2;
 	  }
@@ -193,10 +224,10 @@ variable_or_type_name
 	  { 
 		$$ = new MemberAccessExpression ((Expression) $1, "." + (string) $3);
 	  }
-	| expression MINUS OP_GT IDENTIFIER
+	| expression ARROW IDENTIFIER
 	  {
 		Expression expr = new PointerDereferenceExpression ((Expression) $1, true);
-		$$ = new MemberAccessExpression (expr, (string) $4);
+		$$ = new MemberAccessExpression (expr, (string) $3);
 	  }
 	;
 
@@ -207,7 +238,8 @@ public ExpressionParser (ScriptingContext context, string name)
 	this.reader = new MyTextReader ();
 	this.current_context = context;
 
-	lexer = new Tokenizer (context, reader, name);
+	lexer = new Tokenizer (reader);
+	lexer.Name = name;
 }
 
 public Expression Parse (string text)
@@ -223,7 +255,7 @@ public Expression Parse (string text)
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//
-		current_context.Error (lexer.location + "  : Parsing error ");
+		current_context.Error (lexer.Location + "  : Parsing error ");
 		current_context.Error (e.ToString ());
 		return null;
 	}

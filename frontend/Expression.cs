@@ -219,6 +219,11 @@ namespace Mono.Debugger.Frontend
 			this.val = val;
 		}
 
+		public NumberExpression (float val)
+		{
+			this.val = val;
+		}
+
 		public long Value {
 			get {
 				if (val is int)
@@ -294,6 +299,41 @@ namespace Mono.Debugger.Frontend
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (typeof (string)))
+				return null;
+
+			return frame.Language.CreateInstance (frame, val);
+		}
+	}
+
+	public class BoolExpression : Expression
+	{
+		bool val;
+
+		public BoolExpression (bool val)
+		{
+			this.val = val;
+		}
+
+		public override string Name {
+			get { return val.ToString(); }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			resolved = true;
+			return this;
+		}
+
+		protected override object DoEvaluate (ScriptingContext context)
+		{
+			return val;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			StackFrame frame = context.CurrentFrame.Frame;
+			if ((frame.Language == null) ||
+			    !frame.Language.CanCreateInstance (typeof (bool)))
 				return null;
 
 			return frame.Language.CreateInstance (frame, val);
@@ -1596,6 +1636,74 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			return obj.TypeInfo.Type;
+		}
+	}
+
+	public class ConditionalExpression : Expression
+	{
+		Expression test;
+		Expression true_expr;
+		Expression false_expr;
+
+		public override string Name {
+			get { return "conditional"; }
+		}
+
+		public ConditionalExpression (Expression test, Expression true_expr, Expression false_expr)
+		{
+		  this.test = test;
+		  this.true_expr = true_expr;
+		  this.false_expr = false_expr;
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+		  this.test = this.test.Resolve (context);
+		  if (this.test == null)
+		    return null;
+
+		  this.true_expr = this.true_expr.Resolve (context);
+		  if (this.true_expr == null)
+		    return null;
+
+		  this.false_expr = this.false_expr.Resolve (context);
+		  if (this.false_expr == null)
+		    return null;
+
+			resolved = true;
+			return this;
+		}
+
+		protected override object DoEvaluate (ScriptingContext context)
+		{
+		  bool cond;
+
+		  try {
+		  	cond = (bool) this.test.Evaluate (context);
+		  }
+		  catch (Exception e) {
+		    throw new ScriptingException (
+			   "Cannot convert {0} to a boolean for conditional: {1}",
+			   this.test, e);
+		  }
+
+		  return cond ? true_expr.Evaluate (context) : false_expr.Evaluate (context);
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+		  bool cond;
+
+		  try {
+		    cond = (bool) this.test.Evaluate (context);
+		  }
+		  catch (Exception e) {
+		    throw new ScriptingException (
+			   "Cannot convert {0} to a boolean for conditional: {1}",
+			   this.test, e);
+		  }
+
+		  return cond ? true_expr.EvaluateVariable (context) : false_expr.EvaluateVariable (context);
 		}
 	}
 

@@ -1,11 +1,15 @@
-noinst_DATA = CSharpExpressionParser.cs
+noinst_DATA = CSharpExpressionParser.cs CSharpTokenizer_lex.cs
 
 JAY = $(top_builddir)/jay/jay
+CSLEX = $(top_builddir)/cslex/cslex.exe
 
 CSharpExpressionParser.cs: CSharpExpressionParser.jay
-	$(JAY) -ctv < skeleton CSharpExpressionParser.jay > tmp-p && mv -f tmp-p CSharpExpressionParser.cs
+	$(JAY) -ctv < skeleton $< > tmp-p && mv -f tmp-p CSharpExpressionParser.cs
 
-MAINTAINERCLEANFILES = CSharpExpressionParser.cs y.output
+CSharpTokenizer_lex.cs: CSharpTokenizer.lex
+	mono $(CSLEX) $<
+
+MAINTAINERCLEANFILES = CSharpExpressionParser.cs CSharpTokenizer_lex.cs y.output
 
 EXTRA_DIST = \
 	CL.cs				\
@@ -14,6 +18,8 @@ EXTRA_DIST = \
 	Expression.cs			\
 	CSharpExpressionParser.cs	\
 	CSharpExpressionParser.jay	\
+	CSharpTokenizer_lex.cs		\
+	CSharpTokenizer.lex		\
 	GnuReadLine.cs			\
 	IExpressionParser.cs		\
 	Interpreter.cs			\
@@ -22,5 +28,4 @@ EXTRA_DIST = \
 	ScriptingContext.cs		\
 	Session.cs			\
 	Style.cs			\
-	skeleton			\
-	CSharpTokenizer.cs
+	skeleton
