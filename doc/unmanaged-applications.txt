@@ -1,0 +1,22 @@
+Some notes about debugging unmanaged applications:
+
+- we can't get the type information from System.Reflection,
+  so we need to read it from the DWARF 2 debugging info.
+  Not yet implemented.
+
+  This'd be a bit difficult to implement for someone who's
+  not familiar with the DWARF 2 debugging format, I can
+  probably do this on a weekend in december.
+
+- calling unmanaged methods: must have a marshaller, maybe
+  we can use PInvoke ?
+
+- also need to read address + size of locals / params from
+  DWARF 2.
+
+- already finished: single-stepping, backtraces, breakpoints
+  (TODO: breakpoints in not yet loaded shared libraries)
+
+- we already get a notification when shared libs are
+  changed, but we aren't doing anything in the event handler
+  yet.
