@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Languages.CSharp
 {
 	//
 	// FIXME: This class is just a big hack.  It's used when allocating objects to pass them to
