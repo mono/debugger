@@ -1231,7 +1231,8 @@ namespace Mono.Debugger.Languages.CSharp
 				load_handlers = null;
 			}
 
-			internal override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+			internal override IDisposable RegisterLoadHandler (Process process,
+									   MethodLoadedHandler handler,
 									   object user_data)
 			{
 				HandlerData data = new HandlerData (this, handler, user_data);
@@ -1248,7 +1249,9 @@ namespace Mono.Debugger.Languages.CSharp
 						"{0}:{1}", minfo.ReflectedType.FullName, minfo.Name);
 
 					reader.Table.Language.InsertBreakpoint (
-						full_name, new BreakpointHandler (breakpoint_hit), null);
+						process, full_name,
+						new BreakpointHandler (breakpoint_hit),
+						null);
 				}
 
 				load_handlers.Add (data, true);
@@ -1661,8 +1664,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		Hashtable breakpoints = new Hashtable ();
 
-		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
-					       object user_data)
+		internal int InsertBreakpoint (Process process, string method_name,
+					       BreakpointHandler handler, object user_data)
 		{
 			long retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
 

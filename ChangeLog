@@ -1,5 +1,14 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* classes/BreakpointHandle.cs (BreakpointHandle.Create): New
+	internal static method; takes a Process argument to create the
+	load handler.
+
+	* classes/SourceInfo.cs (SourceMethod.RegisterLoadHandler): Added
+	Process argument.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs
 	(ITargetMemoryInfo.Architecture): New property.
 

@@ -10,7 +10,8 @@ namespace Mono.Debugger
 		Breakpoint breakpoint;
 		SourceLocation location;
 
-		internal BreakpointHandle (Breakpoint breakpoint, SourceLocation location)
+		private BreakpointHandle (Process process, Breakpoint breakpoint,
+					  SourceLocation location)
 		{
 			this.breakpoint = breakpoint;
 			this.location = location;
@@ -23,8 +24,15 @@ namespace Mono.Debugger
 				// callback here and do the actual insertion when
 				// the method is loaded.
 				load_handler = location.Method.RegisterLoadHandler (
-					new MethodLoadedHandler (method_loaded), null);
+					process, new MethodLoadedHandler (method_loaded),
+					null);
 			}
+		}
+
+		internal static BreakpointHandle Create (Process process, Breakpoint bpt,
+							 SourceLocation location)
+		{
+			return new BreakpointHandle (process, bpt, location);
 		}
 
 		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)

@@ -230,7 +230,8 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
-		internal abstract IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+		internal abstract IDisposable RegisterLoadHandler (Process process,
+								   MethodLoadedHandler handler,
 								   object user_data);
 
 		public override string ToString ()
