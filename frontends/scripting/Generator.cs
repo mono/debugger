@@ -510,9 +510,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ArrayList list = new ArrayList ();
 
 			foreach (Type type in assembly.GetExportedTypes ()) {
-				CommandClass[] commands = CommandClass.Create (this, type);
-				if (commands != null)
-					list.AddRange (commands);
+				CommandClass[] tmp = CommandClass.Create (this, type);
+				if (tmp != null)
+					list.AddRange (tmp);
 			}
 
 			commands = new CommandClass [list.Count];
