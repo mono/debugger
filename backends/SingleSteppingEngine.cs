@@ -926,6 +926,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
+		IMethod old_method;
 		IMethod current_method;
 		StackFrame current_frame;
 		StackFrame[] current_backtrace;
@@ -988,8 +989,6 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		Command frame_changed (TargetAddress address, int arg, StepOperation operation)
 		{
-			IMethod old_method = current_method;
-
 			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
 
@@ -1026,6 +1025,7 @@ namespace Mono.Debugger.Backends
 
 			// If the method changed, notify our clients.
 			if (current_method != old_method) {
+				old_method = current_method;
 				if (current_method != null) {
 					if (MethodChangedEvent != null)
 						MethodChangedEvent (current_method);
