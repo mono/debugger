@@ -116,8 +116,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (args);
 
 			Console.WriteLine ("Mono debugger");
-			interpreter.Run ();
-			interpreter.Exit ();
+			try {
+				interpreter.Run ();
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0}", ex);
+			} finally {
+				interpreter.Exit ();
+			}
 		}
 	}
 }

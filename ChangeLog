@@ -1,5 +1,9 @@
 2004-03-05  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Added "repeat" command.
+
+2004-03-05  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs: Use method_has_source()
 	everywhere and made it actually work.
 

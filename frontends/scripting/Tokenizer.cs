@@ -118,6 +118,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("pointer", Token.POINTER);
 			keywords.Add ("global", Token.GLOBAL);
 
+			keywords.Add ("repeat", Token.REPEAT);
+
 			keywords.Add ("help", Token.HELP);
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);

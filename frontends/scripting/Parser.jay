@@ -129,6 +129,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token EXAMINE
 %token CALL
 %token NEW
+%token REPEAT
 
 %token NATIVE
 %token SELECT
@@ -362,6 +363,10 @@ other_command
 	| START program_arguments_expression
 	  {
 		$$ = new StartCommand ((ProgramArgumentsExpression) $2);
+	  }
+	| REPEAT command
+	  {
+		$$ = new RepeatCommand ((Command) $2);
 	  }
 	;
 

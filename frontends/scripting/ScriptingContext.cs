@@ -473,6 +473,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public bool IsAlive {
+			get {
+				return process != null;
+			}
+		}
+
 		public int CurrentFrameIndex {
 			get {
 				if (current_frame_idx == -1)

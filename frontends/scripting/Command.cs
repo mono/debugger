@@ -23,6 +23,28 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class RepeatCommand : Command
+	{
+		Command command;
+
+		public RepeatCommand (Command command)
+		{
+			this.command = command;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = context.CurrentProcess;
+
+			Console.WriteLine ("Go, baby, go ....");
+
+			while (process.IsAlive) {
+				Console.WriteLine (process.CurrentFrame);
+				command.Execute (context);
+			}
+		}
+	}
+
 	[Command("PRINT", "Print the result of an expression")]
 	public class PrintCommand : Command
 	{
