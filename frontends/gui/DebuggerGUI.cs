@@ -82,7 +82,6 @@ namespace Mono.Debugger.GUI
 
 		Gtk.TextView target_output;
 		SourceStatusbar source_status;
-		LineDebugStatusbar line_debug_status;
 
 		TextWriter output_writer;
 
@@ -126,7 +125,6 @@ namespace Mono.Debugger.GUI
 
 			output_writer = new OutputWindow (target_output);
 
-			line_debug_status = new LineDebugStatusbar ((Gtk.Statusbar) gxml ["line-debug-status"]);
 			register_display = new RegisterDisplay (
 				gxml, null, (Gtk.Notebook) gxml ["register-notebook"]);
 			backtrace_view = new BackTraceView (
@@ -243,7 +241,6 @@ namespace Mono.Debugger.GUI
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
 
 			source_status.SetBackend (backend);
-			line_debug_status.SetBackend (backend);
 			register_display.SetBackend (backend);
 			backtrace_view.SetBackend (backend);
 			current_insn.SetBackend (backend);
