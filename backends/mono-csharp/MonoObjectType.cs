@@ -3,18 +3,10 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoObjectType : MonoType, ITargetPointerType
+	internal class MonoObjectType : MonoClass, ITargetPointerType
 	{
-		internal readonly MonoSymbolTable Table;
-
-		public MonoObjectType (Type type, int size, TargetAddress klass, MonoSymbolTable table)
-			: base (TargetObjectKind.Pointer, type, size, klass, true)
-		{
-			this.Table = table;
-		}
-
-		public MonoObjectType (MonoType type, TargetAddress klass, MonoSymbolTable table)
-			: this ((Type) type.TypeHandle, type.Size, klass, table)
+		public MonoObjectType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+			: base (TargetObjectKind.Pointer, type, size, false, info, table, true)
 		{ }
 
 		public override bool IsByRef {

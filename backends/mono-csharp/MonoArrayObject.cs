@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoArrayObject : MonoObject, ITargetArrayObject
+	internal class MonoArrayObject : MonoClassObject, ITargetArrayObject
 	{
 		protected new MonoArrayType type;
 

@@ -3,26 +3,32 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoFundamentalType : MonoStructType, ITargetFundamentalType
+	internal class MonoFundamentalType : MonoClass, ITargetFundamentalType
 	{
 		protected readonly Heap Heap;
 
-		public MonoFundamentalType (Type type, int size, TargetAddress klass,
-					    TargetBinaryReader info, MonoSymbolTable table)
-			: this (type, size, klass, info, table, true)
+		public MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+			: this (type, size, info, table, true)
 		{ }
 
-		protected MonoFundamentalType (Type type, int size, TargetAddress klass,
-					       TargetBinaryReader info, MonoSymbolTable table, bool has_fixed_size)
-			: base (TargetObjectKind.Fundamental, type, size, klass, info, table, has_fixed_size)
+		protected MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table,
+					       bool has_fixed_size)
+			: base (TargetObjectKind.Fundamental, type, size, false, info, table, has_fixed_size)
 		{
 			this.Heap = table.Language.DataHeap;
 		}
 
 		public static bool Supports (Type type)
 		{
-			if (!type.IsPrimitive)
+			if (type.IsByRef)
+				type = type.GetElementType ();
+
+			if (!type.IsPrimitive) {
+				if ((type == typeof (IntPtr)) || (type == typeof (UIntPtr)))
+					return true;
+
 				return false;
+			}
 
 			switch (Type.GetTypeCode (type)) {
 			case TypeCode.Boolean:
@@ -44,15 +50,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool IsByRef {
+		Type ITargetFundamentalType.Type {
 			get {
-				return type.IsByRef;
+				return type;
 			}
 		}
 
-		public Type Type {
+		public override bool IsByRef {
 			get {
-				return type;
+				return type.IsByRef;
 			}
 		}
 

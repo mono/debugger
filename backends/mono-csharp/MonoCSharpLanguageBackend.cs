@@ -202,25 +202,28 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoBuiltinTypes
 	{
-		public readonly MonoClass ObjectClass;
-		public readonly MonoClass ByteClass;
-		public readonly MonoClass VoidClass;
-		public readonly MonoClass BooleanClass;
-		public readonly MonoClass SByteClass;
-		public readonly MonoClass Int16Class;
-		public readonly MonoClass UInt16Class;
-		public readonly MonoClass Int32Class;
-		public readonly MonoClass UInt32Class;
-		public readonly MonoClass IntClass;
-		public readonly MonoClass UIntClass;
-		public readonly MonoClass Int64Class;
-		public readonly MonoClass UInt64Class;
-		public readonly MonoClass SingleClass;
-		public readonly MonoClass DoubleClass;
-		public readonly MonoClass CharClass;
-		public readonly MonoClass StringClass;
-		public readonly MonoClass EnumClass;
-		public readonly MonoClass ArrayClass;
+		public readonly MonoObjectType ObjectType;
+		public readonly MonoFundamentalType ByteType;
+		public readonly MonoOpaqueType VoidType;
+		public readonly MonoFundamentalType BooleanType;
+		public readonly MonoFundamentalType SByteType;
+		public readonly MonoFundamentalType Int16Type;
+		public readonly MonoFundamentalType UInt16Type;
+		public readonly MonoFundamentalType Int32Type;
+		public readonly MonoFundamentalType UInt32Type;
+		public readonly MonoFundamentalType IntType;
+		public readonly MonoFundamentalType UIntType;
+		public readonly MonoFundamentalType Int64Type;
+		public readonly MonoFundamentalType UInt64Type;
+		public readonly MonoFundamentalType SingleType;
+		public readonly MonoFundamentalType DoubleType;
+		public readonly MonoFundamentalType CharType;
+		public readonly MonoStringType StringType;
+		public readonly MonoClass EnumType;
+		public readonly MonoClass ArrayType;
+		public readonly MonoClass ExceptionType;
+
+		protected readonly int TypeInfoSize;
 
 		public MonoBuiltinTypes (MonoSymbolTable table, ITargetMemoryAccess memory, TargetAddress address,
 					 MonoSymbolTableReader corlib)
@@ -229,25 +232,61 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryReader reader = memory.ReadMemory (address, size);
 
 			reader.Offset = reader.TargetIntegerSize;
-			ObjectClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			ByteClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			VoidClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			BooleanClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			SByteClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			Int16Class = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			UInt16Class = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			Int32Class = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			UInt32Class = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			IntClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			UIntClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			Int64Class = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			UInt64Class = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			SingleClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			DoubleClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			CharClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			StringClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			EnumClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
-			ArrayClass = corlib.GetClass (memory, reader.ReadGlobalAddress ());
+			TypeInfoSize = reader.ReadInteger ();
+			ObjectType = (MonoObjectType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			ByteType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			VoidType = (MonoOpaqueType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			BooleanType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			SByteType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			Int16Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			UInt16Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			Int32Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			UInt32Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			IntType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			UIntType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			Int64Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			UInt64Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			SingleType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			DoubleType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			CharType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			StringType = (MonoStringType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			EnumType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			ArrayType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+			ExceptionType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
+		}
+
+		private struct BuiltinTypeInfo
+		{
+			public readonly TargetAddress Klass;
+			public readonly TargetAddress ClassInfoAddress;
+			public readonly int TypeInfo;
+			public readonly int ClassInfo;
+			public readonly TargetAddress TypeData;
+
+			public BuiltinTypeInfo (ITargetMemoryReader reader)
+			{
+				Klass = reader.ReadGlobalAddress ();
+				ClassInfoAddress = reader.ReadGlobalAddress ();
+				TypeInfo = reader.ReadInteger ();
+				ClassInfo = reader.ReadInteger ();
+				TypeData = reader.ReadGlobalAddress ();
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})", GetType (), Klass,
+						      ClassInfoAddress, TypeInfo, ClassInfo, TypeData);
+			}
+
+			public static MonoType GetType (MonoBuiltinTypes builtin, ITargetMemoryAccess memory,
+							TargetAddress address, MonoSymbolTableReader corlib)
+			{
+				int size = builtin.TypeInfoSize;
+				ITargetMemoryReader reader = memory.ReadMemory (address, size);
+
+				BuiltinTypeInfo info = new BuiltinTypeInfo (reader);
+				return corlib.GetType (memory, info.ClassInfoAddress);
+			}
 		}
 	}
 
@@ -256,7 +295,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 33;
+		public const int  DynamicVersion = 34;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -264,8 +303,8 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly DebuggerBackend Backend;
 		public readonly ITargetMemoryInfo TargetInfo;
 		ArrayList ranges;
+		Hashtable class_table;
 		Hashtable types;
-		Hashtable type_cache;
 		Hashtable image_hash;
 		ArrayList modules;
 		protected Hashtable module_hash;
@@ -301,7 +340,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ranges = new ArrayList ();
 			types = new Hashtable ();
-			type_cache = new Hashtable ();
+			class_table = new Hashtable ();
 
 			SymbolFiles = new ArrayList ();
 
@@ -439,31 +478,29 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public MonoType GetType (Type type, int type_size, int offset)
+		public MonoType GetType (Type type, int offset)
 		{
-			if (type_cache.Contains (offset))
-				return (MonoType) type_cache [offset];
+			MonoType retval = (MonoType) types [type];
+			if (retval != null)
+				return retval;
 
-			MonoType retval;
-			if (offset != 0)
-				retval = MonoType.GetType (type, offset, this);
-			else
-				retval = new MonoOpaqueType (type, type_size);
-
-			type_cache.Add (offset, retval);
+			byte[] data = GetTypeInfo (offset);
+			TargetBinaryReader info = new TargetBinaryReader (data, TargetInfo);
+			retval = MonoType.GetType (type, info, this);
+			types.Add (type, retval);
 			return retval;
 		}
 
 		public MonoType GetTypeFromClass (long klass_address)
 		{
-			ClassEntry entry = (ClassEntry) types [klass_address];
+			ClassEntry entry = (ClassEntry) class_table [klass_address];
 
 			if (entry == null) {
 				Console.WriteLine ("Can't find class at address {0:x}", klass_address);
 				throw new InternalError ();
 			}
 
-			return MonoType.GetType (entry.Type, entry.TypeInfo, this);
+			return GetType (entry.Type, entry.TypeInfo);
 		}
 
 		public AddressDomain GlobalAddressDomain {
@@ -489,8 +526,8 @@ namespace Mono.Debugger.Languages.CSharp
 		internal void AddType (ClassEntry type)
 		{
 			lock (this) {
-				if (!types.Contains (type.KlassAddress.Address))
-					types.Add (type.KlassAddress.Address, type);
+				if (!class_table.Contains (type.KlassAddress.Address))
+					class_table.Add (type.KlassAddress.Address, type);
 			}
 		}
 
@@ -514,19 +551,29 @@ namespace Mono.Debugger.Languages.CSharp
 
 		MonoFundamentalType integer_type;
 		MonoFundamentalType long_type;
-		MonoPointerType pointer_type;
+		MonoFundamentalType pointer_type;
+		MonoObjectType object_type;
+		MonoStringType string_type;
 
 		void init_types ()
 		{
-#if FIXME
+			object_type = (MonoObjectType) builtin.ObjectType;
+			string_type = (MonoStringType) builtin.StringType;
 			integer_type = (MonoFundamentalType) builtin.Int32Type;
 			long_type = (MonoFundamentalType) builtin.Int64Type;
-			pointer_type = (MonoPointerType) builtin.IntType;
-#endif
+			pointer_type = (MonoFundamentalType) builtin.IntType;
 		}
 
 		string ILanguage.Name {
 			get { return "C#"; }
+		}
+
+		public MonoObjectType ObjectType {
+			get { return object_type; }
+		}
+
+		public MonoStringType StringType {
+			get { return string_type; }
 		}
 
 		ITargetFundamentalType ILanguage.IntegerType {
@@ -537,7 +584,7 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return long_type; }
 		}
 
-		ITargetPointerType ILanguage.PointerType {
+		ITargetType ILanguage.PointerType {
 			get { return pointer_type; }
 		}
 
@@ -562,7 +609,7 @@ namespace Mono.Debugger.Languages.CSharp
 					module_hash = new Hashtable ();
 					ranges = new ArrayList ();
 					types = new Hashtable ();
-					type_cache = new Hashtable ();
+					class_table = new Hashtable ();
 				}
 
 				// Release unmanaged resources
@@ -858,8 +905,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override string ToString ()
 		{
-			return String.Format ("ClassEntry [{0:x}:{1:x}:{2:x}]",
-					      KlassAddress, Token, TypeInfo);
+			return String.Format ("ClassEntry [{0:x}:{1}:{2:x}:{3:x}]",
+					      KlassAddress, Rank, Token, TypeInfo);
 		}
 	}
 
@@ -869,6 +916,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoSymbolTableReader : ISimpleSymbolTable
 	{
 		MethodEntry[] Methods;
+		internal readonly int Index;
 		internal readonly Reflection.Assembly Assembly;
 		internal readonly MonoSymbolTable Table;
 		internal readonly TargetAddress MonoImage;
@@ -914,6 +962,8 @@ namespace Mono.Debugger.Languages.CSharp
 			ranges = new ArrayList ();
 			range_hash = new Hashtable ();
 
+			Index = memory.ReadInteger (address);
+			address += int_size;
 			address += address_size;
 			MonoImage = memory.ReadAddress (address);
 			address += address_size;
@@ -1046,13 +1096,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return method;
 		}
 
-		internal MonoClass GetClass (ITargetMemoryAccess memory, TargetAddress address)
+		internal MonoType GetType (ITargetMemoryAccess memory, TargetAddress address)
 		{
 			ITargetMemoryReader reader = memory.ReadMemory (address, class_entry_size);
 			ClassEntry entry = new ClassEntry (this, reader);
 
 			Table.AddType (entry);
-			return MonoType.GetClass (entry.Type, entry.TypeInfo, Table);
+			return Table.GetType (entry.Type, entry.TypeInfo);
 		}
 
 		ArrayList sources = null;
@@ -1429,15 +1479,13 @@ namespace Mono.Debugger.Languages.CSharp
 					return;
 
 				class_type = reader.Table.GetType (
-					rmethod.ReflectedType, 0, address.ClassTypeInfoOffset);
+					rmethod.ReflectedType, address.ClassTypeInfoOffset);
 
 				Reflection.ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
 					param_types [i] = reader.Table.GetType (
-						param_info [i].ParameterType,
-						address.ParamVariableInfo [i].Size,
-						address.ParamTypeInfoOffsets [i]);
+						param_info [i].ParameterType, address.ParamTypeInfoOffsets [i]);
 
 				parameters = new IVariable [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
@@ -1450,8 +1498,7 @@ namespace Mono.Debugger.Languages.CSharp
 					Type type = method.LocalTypes [i];
 
 					local_types [i] = reader.Table.GetType (
-						type, address.LocalVariableInfo [i].Size,
-						address.LocalTypeInfoOffsets [i]);
+						type, address.LocalTypeInfoOffsets [i]);
 				}
 
 				locals = new IVariable [method.NumLocals];

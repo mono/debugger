@@ -6,7 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoClass
+	internal class MonoClass : MonoType, ITargetClassType
 	{
 		MonoFieldInfo[] fields;
 		MonoPropertyInfo[] properties;
@@ -19,16 +19,35 @@ namespace Mono.Debugger.Languages.CSharp
 		long offset;
 
 		public readonly Type Type;
+		public readonly Type EffectiveType;
 		public readonly int InstanceSize;
 		public readonly TargetAddress KlassAddress;
 		public readonly MonoClass Parent;
 
 		protected readonly TargetAddress RuntimeInvoke;
 
-		public MonoClass (Type type, TargetAddress klass_address, int size,
-				  TargetBinaryReader info, MonoSymbolTable table)
+		public MonoClass (TargetObjectKind kind, Type type, int size, bool is_classinfo,
+				  TargetBinaryReader info, MonoSymbolTable table, bool has_fixed_size)
+			: base (kind, type, size, has_fixed_size)
 		{
-			is_valuetype = info.ReadByte () != 0;
+			if (!is_classinfo) {
+			again:
+				int offset = info.ReadInt32 ();
+				byte[] data = table.GetTypeInfo (offset);
+				info = new TargetBinaryReader (data, table.TargetInfo);
+				TypeKind tkind = (TypeKind) info.ReadByte ();
+				if ((tkind == TypeKind.Class) || (tkind == TypeKind.Struct)) {
+					info.ReadInt32 ();
+					goto again;
+				} else if (tkind != TypeKind.ClassInfo)
+					throw new InternalError ();
+				int new_size = info.ReadInt32 ();
+				is_valuetype = info.ReadByte () != 0;
+			} else {
+				is_valuetype = kind == TargetObjectKind.Struct;
+			}
+
+			KlassAddress = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
 			num_fields = info.ReadInt32 ();
 			field_info_size = info.ReadInt32 ();
 			num_properties = info.ReadInt32 ();
@@ -38,10 +57,56 @@ namespace Mono.Debugger.Languages.CSharp
 			this.info = info;
 			this.offset = info.Position;
 			this.Type = type;
-			this.KlassAddress = klass_address;
 			this.InstanceSize = size;
 			this.Table = table;
 			RuntimeInvoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
+
+			if (Type.IsEnum)
+				EffectiveType = typeof (System.Enum);
+			else if (Type.IsArray)
+				EffectiveType = typeof (System.Array);
+			else
+				EffectiveType = Type;
+		}
+
+		protected MonoClass (TargetObjectKind kind, Type type, int size, bool has_fixed_size,
+				     MonoClass old_class)
+			: base (kind, type, size, has_fixed_size)
+		{
+			is_valuetype = old_class.is_valuetype;
+			KlassAddress = old_class.KlassAddress;
+			num_fields = old_class.num_fields;
+			field_info_size = old_class.field_info_size;
+			num_properties = old_class.num_properties;
+			property_info_size = old_class.property_info_size;
+			num_methods = old_class.num_methods;
+			method_info_size = old_class.method_info_size;
+			info = old_class.info;
+			offset = old_class.offset;
+			this.Type = type;
+			this.InstanceSize = size;
+			this.Table = old_class.Table;
+			RuntimeInvoke = old_class.RuntimeInvoke;
+
+			if (Type.IsEnum)
+				EffectiveType = typeof (System.Enum);
+			else if (Type.IsArray)
+				EffectiveType = typeof (System.Array);
+			else
+				EffectiveType = Type;
+		}
+
+		public static MonoClass GetClass (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+		{
+			bool is_valuetype = info.ReadByte () != 0;
+			TargetObjectKind kind = is_valuetype ? TargetObjectKind.Struct : TargetObjectKind.Class;
+			return new MonoClass (kind, type, size, true, info, table, true);
+		}
+
+		public override bool IsByRef {
+			get {
+				return Type.IsByRef;
+			}
 		}
 
 		public bool HasParent {
@@ -54,6 +119,26 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				return is_valuetype;
 			}
+		}
+
+		public MonoClass ParentType {
+			get {
+				if (!HasParent)
+					throw new InvalidOperationException ();
+
+				return Parent;
+			}
+		}
+
+		ITargetClassType ITargetClassType.ParentType {
+			get {
+				return ParentType;
+			}
+		}
+
+		public override MonoObject GetObject (TargetLocation location)
+		{
+			return new MonoClassObject (this, location);
 		}
 
 		// <remarks>
@@ -69,7 +154,7 @@ namespace Mono.Debugger.Languages.CSharp
 			info.Position = offset;
 			fields = new MonoFieldInfo [num_fields];
 
-			FieldInfo[] mono_fields = Type.GetFields (
+			FieldInfo[] mono_fields = EffectiveType.GetFields (
 				BindingFlags.DeclaredOnly | BindingFlags.Instance |
 				BindingFlags.Public | BindingFlags.NonPublic);
 			if (mono_fields.Length != num_fields)
@@ -81,7 +166,13 @@ namespace Mono.Debugger.Languages.CSharp
 				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], info, Table);
 		}
 
-		public ITargetFieldInfo[] Fields {
+		ITargetFieldInfo[] ITargetStructType.Fields {
+			get {
+				return Fields;
+			}
+		}
+
+		protected MonoFieldInfo[] Fields {
 			get {
 				init_fields ();
 				return fields;
@@ -102,7 +193,7 @@ namespace Mono.Debugger.Languages.CSharp
 				FieldInfo = finfo;
 				Offset = info.ReadInt32 ();
 				int type_info = info.ReadInt32 ();
-				Type = MonoType.GetType (finfo.FieldType, type_info, table);
+				Type = table.GetType (finfo.FieldType, type_info);
 			}
 
 			ITargetType ITargetFieldInfo.Type {
@@ -158,7 +249,7 @@ namespace Mono.Debugger.Languages.CSharp
 			info.Position = offset + field_info_size;
 			properties = new MonoPropertyInfo [num_properties];
 
-			PropertyInfo[] mono_properties = Type.GetProperties (
+			PropertyInfo[] mono_properties = EffectiveType.GetProperties (
 				BindingFlags.DeclaredOnly | BindingFlags.Instance |
 				BindingFlags.Public | BindingFlags.NonPublic);
 
@@ -172,7 +263,13 @@ namespace Mono.Debugger.Languages.CSharp
 					this, i, mono_properties [i], info, Table);
 		}
 
-		public ITargetFieldInfo[] Properties {
+		ITargetFieldInfo[] ITargetStructType.Properties {
+			get {
+				return Properties;
+			}
+		}
+
+		protected MonoPropertyInfo[] Properties {
 			get {
 				init_properties ();
 				return properties;
@@ -196,7 +293,7 @@ namespace Mono.Debugger.Languages.CSharp
 				PropertyInfo = pinfo;
 				int type_info = info.ReadInt32 ();
 				if (type_info != 0)
-					Type = MonoType.GetType (pinfo.PropertyType, type_info, table);
+					Type = table.GetType (pinfo.PropertyType, type_info);
 				Getter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 				Setter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 
@@ -263,7 +360,7 @@ namespace Mono.Debugger.Languages.CSharp
 			info.Position = offset + field_info_size + property_info_size;
 			methods = new MonoMethodInfo [num_methods];
 
-			MethodInfo[] mono_methods = Type.GetMethods (
+			MethodInfo[] mono_methods = EffectiveType.GetMethods (
 				BindingFlags.DeclaredOnly | BindingFlags.Instance |
 				BindingFlags.Public);
 
@@ -285,7 +382,13 @@ namespace Mono.Debugger.Languages.CSharp
 					this, i, (MethodInfo) list [i], info, Table);
 		}
 
-		public ITargetMethodInfo[] Methods {
+		ITargetMethodInfo[] ITargetStructType.Methods {
+			get {
+				return Methods;
+			}
+		}
+
+		protected MonoMethodInfo[] Methods {
 			get {
 				init_methods ();
 				return methods;

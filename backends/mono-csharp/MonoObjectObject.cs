@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoObjectObject : MonoObject, ITargetPointerObject
+	internal class MonoObjectObject : MonoClassObject, ITargetPointerObject
 	{
 		new MonoObjectType type;
 

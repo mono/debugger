@@ -4,9 +4,9 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal abstract class MonoFundamentalObjectBase : MonoStructObject, ITargetFundamentalObject
+	internal abstract class MonoFundamentalObjectBase : MonoClassObject, ITargetFundamentalObject
 	{
-		public MonoFundamentalObjectBase (MonoStructType type, TargetLocation location)
+		public MonoFundamentalObjectBase (MonoClass type, TargetLocation location)
 			: base (type, location)
 		{ }
 

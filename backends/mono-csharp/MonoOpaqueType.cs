@@ -6,7 +6,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoOpaqueType : MonoType
 	{
 		public MonoOpaqueType (Type type, int size)
-			: base (TargetObjectKind.Opaque, type, size, TargetAddress.Null)
+			: base (TargetObjectKind.Opaque, type, size)
 		{ }
 
 		public override bool IsByRef {

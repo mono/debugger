@@ -5,22 +5,20 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoStringType : MonoFundamentalType
 	{
-		static int max_string_length = 100;
+		static int max_string_length = 10000;
 
 		internal readonly TargetAddress VTableAddress;
 		internal readonly int LengthOffset;
 		internal readonly int LengthSize;
 		internal readonly int DataOffset;
 
-		public MonoStringType (Type type, int size, TargetAddress klass,
-				       TargetBinaryReader info, MonoSymbolTable table)
-			: base (type, size, klass, info, table, false)
+		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+			: base (type, size, info, table, false)
 		{
 			VTableAddress = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
 			DataOffset = info.ReadByte ();
-
 		}
 
 		new public static bool Supports (Type type)

@@ -5,9 +5,18 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoPointerType : MonoType, ITargetPointerType
 	{
-		public MonoPointerType (Type type, int size, TargetAddress klass)
-			: base (TargetObjectKind.Pointer, type, size, klass)
-		{ }
+		MonoType target_type;
+		Type etype;
+		bool is_void;
+
+		public MonoPointerType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table)
+			: base (TargetObjectKind.Pointer, type, size)
+		{
+			etype = type.GetElementType ();
+			is_void = etype == typeof (void);
+			int target_type_info = info.ReadInt32 ();
+			target_type = table.GetType (etype, target_type_info);
+		}
 
 		public override bool IsByRef {
 			get {
@@ -17,19 +26,31 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool IsTypesafe {
 			get {
-				return false;
+				return true;
 			}
 		}
 
 		public bool HasStaticType {
 			get {
-				return false;
+				return true;
 			}
 		}
 
 		public ITargetType StaticType {
 			get {
-				throw new InvalidOperationException ();
+				return target_type;
+			}
+		}
+
+		public MonoType TargetType {
+			get {
+				return target_type;
+			}
+		}
+
+		public bool IsVoid {
+			get {
+				return is_void;
 			}
 		}
 

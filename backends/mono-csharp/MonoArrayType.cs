@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class MonoArrayType : MonoType, ITargetArrayType
+	internal class MonoArrayType : MonoClass, ITargetArrayType
 	{
 		internal readonly int Rank;
 		internal readonly int Dimension;
@@ -32,9 +32,8 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly MonoType element_type;
 		MonoArrayType subarray_type;
 
-		public MonoArrayType (Type type, int size, TargetAddress klass, TargetBinaryReader info,
-				      bool is_multi, MonoSymbolTable table)
-			: base (TargetObjectKind.Array, type, size, klass, false)
+		public MonoArrayType (Type type, int size, TargetBinaryReader info, MonoSymbolTable table, bool is_multi)
+			: base (TargetObjectKind.Array, type, size, false, info, table, false)
 		{
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
@@ -51,8 +50,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			int element_type_info = info.ReadInt32 ();
-			Console.WriteLine ("ARRAY TYPE: {0} {1} {2}", type, element_type_info, type.GetElementType ());
-			element_type = GetType (type.GetElementType (), element_type_info, table);
+			element_type = table.GetType (type.GetElementType (), element_type_info);
 			setup ();
 		}
 
@@ -64,11 +62,11 @@ namespace Mono.Debugger.Languages.CSharp
 			for (int i = 2; i < type.GetArrayRank (); i++)
 				sb.Append (",");
 			sb.Append ("]");
-			return Type.GetType (sb.ToString ());
+			return System.Type.GetType (sb.ToString ());
 		}
 
 		private MonoArrayType (MonoArrayType type)
-			: base (TargetObjectKind.Array, get_subarray_type (type.type), type.Size, type.klass, false)
+			: base (TargetObjectKind.Array, get_subarray_type (type.type), type.Size, false, type)
 		{
 			Rank = type.Rank;
 			Dimension = type.Dimension + 1;

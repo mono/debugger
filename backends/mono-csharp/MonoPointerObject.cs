@@ -22,17 +22,23 @@ namespace Mono.Debugger.Languages.CSharp
 
 		ITargetType ITargetPointerObject.CurrentType {
 			get {
-				throw new InvalidOperationException ();
+				return type.TargetType;
 			}
 		}
 
 		bool ITargetPointerObject.HasDereferencedObject {
-			get { return false; }
+			get {
+				return !type.IsVoid;
+			}
 		}
 
 		ITargetObject ITargetPointerObject.DereferencedObject {
 			get {
-				throw new InvalidOperationException ();
+				if (type.IsVoid)
+					throw new InvalidOperationException ();
+
+				TargetLocation new_location = location.GetLocationAtOffset (0, false);
+				return type.TargetType.GetObject (new_location);
 			}
 		}
 

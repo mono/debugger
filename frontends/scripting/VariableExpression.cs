@@ -251,6 +251,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		ITargetObject get_property (ITargetStructObject sobj, ITargetFieldInfo field)
+		{
+			try {
+				return sobj.GetProperty (field.Index);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException (
+					"Can't get property {0}.{1}: {2}", var_expr.Name, field.Name, ex.Message);
+			}
+		}
+
 		ITargetObject get_field (ITargetStructObject sobj)
 		{
 			foreach (ITargetFieldInfo field in sobj.Type.Fields)
@@ -259,7 +269,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			foreach (ITargetFieldInfo field in sobj.Type.Properties)
 				if (field.Name == identifier)
-					return sobj.GetProperty (field.Index);
+					return get_property (sobj, field);
 
 			throw new ScriptingException ("Variable {0} has no field {1}.", var_expr.Name,
 						      identifier);
@@ -647,6 +657,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return retval;
 			} catch (MethodOverloadException ex) {
 				throw new ScriptingException ("Cannot invoke method `{0}': {1}", Name, ex.Message);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException ("Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
 			}
 		}
 	}

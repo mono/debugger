@@ -835,10 +835,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void ShowVariableType (ITargetType type, string name)
 		{
 			ITargetArrayType array = type as ITargetArrayType;
-			if (array != null) {
+			if (array != null)
 				Print ("{0} is an array of {1}", name, array.ElementType);
-				return;
-			}
 
 			ITargetClassType tclass = type as ITargetClassType;
 			ITargetStructType tstruct = type as ITargetStructType;

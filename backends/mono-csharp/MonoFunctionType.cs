@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoSymbolTable table;
 
 		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetBinaryReader info, MonoSymbolTable table)
-			: base (TargetObjectKind.Function, minfo.ReflectedType, 0, TargetAddress.Null)
+			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
 		{
 			this.klass = klass;
 			this.method_info = minfo;
@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 			int type_info = info.ReadInt32 ();
 			if (type_info != 0)
-				return_type = GetType (minfo.ReturnType, type_info, table);
+				return_type = table.GetType (minfo.ReturnType, type_info);
 
 			int num_params = info.ReadInt32 ();
 			parameter_types = new MonoType [num_params];
@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 			for (int i = 0; i < num_params; i++) {
 				int param_info = info.ReadInt32 ();
-				parameter_types [i] = GetType (parameters [i].ParameterType, param_info, table);
+				parameter_types [i] = table.GetType (parameters [i].ParameterType, param_info);
 			}
 
 			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
@@ -48,12 +48,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetAddress method,
 					 MonoType return_type, MonoSymbolTable table)
-			: base (TargetObjectKind.Function, minfo.ReflectedType, 0, TargetAddress.Null)
+			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
 		{
 			this.klass = klass;
 			this.method_info = minfo;
 			this.method = method;
 			this.return_type = return_type;
+			this.table = table;
 
 			parameter_types = new MonoType [0];
 
@@ -146,11 +147,24 @@ namespace Mono.Debugger.Languages.CSharp
 			TargetAddress retval = location.TargetAccess.CallInvokeMethod (
 				invoke_method, method, this_object, arg_ptr, out exc_object);
 
-			if (retval.IsNull)
-				return null;
+			if (retval.IsNull) {
+				if (exc_object.IsNull)
+					return null;
+
+				TargetLocation exc_loc = new RelativeTargetLocation (location, exc_object);
+				MonoStringObject exc_obj = (MonoStringObject) table.StringType.GetObject (exc_loc);
+				string exc_message = (string) exc_obj.Object;
+
+				throw new TargetInvocationException (exc_message);
+			}
 
 			TargetLocation retval_loc = new RelativeTargetLocation (location, retval);
-			return return_type.GetObject (retval_loc);
+			MonoObjectObject retval_obj = (MonoObjectObject) table.ObjectType.GetObject (retval_loc);
+
+			if ((retval_obj == null) || !retval_obj.HasDereferencedObject || (return_type == table.ObjectType))
+				return retval_obj;
+			else
+				return retval_obj.DereferencedObject;
 		}
 
 		public override MonoObject GetObject (TargetLocation location)

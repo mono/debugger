@@ -1,3 +1,11 @@
+2003-08-04  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/*.cs: Completely reworked the type support.
+	We're now just creating one single `MonoType' instance per type;
+	arrays, strings and enums now also derive from MonoClass which
+	allows us to access the System.Array, System.String and
+	System.Enum members.
+
 2003-07-28  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Tokenizer.cs: Allow identifiers to be quoted

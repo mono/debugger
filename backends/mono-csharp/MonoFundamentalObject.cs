@@ -61,6 +61,20 @@ namespace Mono.Debugger.Languages.CSharp
 			case TypeCode.Double:
 				return BitConverter.ToDouble (reader.Contents, 0);
 
+			case TypeCode.Object:
+				if (type.TypeHandle == typeof (System.IntPtr)) {
+					if (reader.Size == 4)
+						return new IntPtr (BitConverter.ToInt32 (reader.Contents, 0));
+					else
+						return new IntPtr (BitConverter.ToInt64 (reader.Contents, 0));
+				} else if (type.TypeHandle == typeof (System.UIntPtr)) {
+					if (reader.Size == 4)
+						return new UIntPtr (BitConverter.ToUInt32 (reader.Contents, 0));
+					else
+						return new UIntPtr (BitConverter.ToUInt64 (reader.Contents, 0));
+				}
+				throw new InvalidOperationException ();
+
 			default:
 				throw new InvalidOperationException ();
 			}

@@ -6,7 +6,8 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoType : ITargetType
 	{
 		internal enum TypeKind {
-			Fundamental = 1,
+			Unknown = 1,
+			Fundamental,
 			String,
 			SzArray,
 			Array,
@@ -19,30 +20,24 @@ namespace Mono.Debugger.Languages.CSharp
 		};
 
 		protected Type type;
-		protected static MonoObjectType ObjectType;
-		// internal static MonoClassType ObjectClass;
 		protected readonly TargetObjectKind kind;
-		protected readonly TargetAddress klass;
 
 		bool has_fixed_size;
 		int size;
 
-		protected MonoType (TargetObjectKind kind, Type type, int size, TargetAddress klass)
+		protected MonoType (TargetObjectKind kind, Type type, int size)
 		{
 			this.type = type;
 			this.size = size;
 			this.kind = kind;
-			this.klass = klass;
 			this.has_fixed_size = true;
 		}
 
-		protected MonoType (TargetObjectKind kind, Type type, int size, TargetAddress klass,
-				    bool has_fixed_size)
+		protected MonoType (TargetObjectKind kind, Type type, int size, bool has_fixed_size)
 		{
 			this.type = type;
 			this.size = size;
 			this.kind = kind;
-			this.klass = klass;
 			this.has_fixed_size = has_fixed_size;
 		}
 
@@ -52,79 +47,57 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public static MonoType GetType (Type type, int offset, MonoSymbolTable table)
+		public static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolTable table)
 		{
-			byte[] data = table.GetTypeInfo (offset);
-			TargetBinaryReader info = new TargetBinaryReader (data, table.TargetInfo);
-			return GetType (type, info, table);
-		}
-
-		public static MonoClass GetClass (Type type, int offset, MonoSymbolTable table)
-		{
-			byte[] data = table.GetTypeInfo (offset);
-			TargetBinaryReader info = new TargetBinaryReader (data, table.TargetInfo);
-			TypeKind kind = (TypeKind) info.ReadByte ();
-			if (kind != TypeKind.ClassInfo)
-				throw new InternalError ();
-
-			TargetAddress klass = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
-			int size = info.ReadInt32 ();
-
-			return new MonoClass (type, klass, size, info, table);
-		}
-
-		private static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolTable table)
-		{
-			if (type == typeof (void))
-				return new MonoOpaqueType (type, 0);
-
 			int kind = info.ReadByte ();
 			if (kind == 0)
-				return new MonoOpaqueType (type, 0);
+				throw new InternalError ();
 
-			TargetAddress klass = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
 			int size = info.ReadInt32 ();
 
 			switch ((TypeKind) kind) {
 			case TypeKind.Fundamental:
 				if (MonoFundamentalType.Supports (type))
-					return new MonoFundamentalType (type, size, klass, info, table);
+					return new MonoFundamentalType (type, size, info, table);
 				else
 					throw new InternalError ("Unknown fundamental type: {0} {1}",
 								 type, Type.GetTypeCode (type));
 
 			case TypeKind.String:
-				return new MonoStringType (type, size, klass, info, table);
+				return new MonoStringType (type, size, info, table);
 
 			case TypeKind.SzArray:
-				return new MonoArrayType (type, size, klass, info, false, table);
+				return new MonoArrayType (type, size, info, table, false);
 
 			case TypeKind.Array:
-				return new MonoArrayType (type, size, klass, info, true, table);
+				return new MonoArrayType (type, size, info, table, true);
 
 			case TypeKind.Pointer:
-				return new MonoPointerType (type, size, klass);
+				return new MonoPointerType (type, size, info, table);
 
 			case TypeKind.Enum:
-				return new MonoEnumType (type, size, klass, info, table);
+				return new MonoEnumType (type, size, info, table);
 
 			case TypeKind.Struct:
-				return new MonoStructType (type, size, klass, info, table);
+				return new MonoClass (TargetObjectKind.Struct, type, size, false, info, table, true);
 
 			case TypeKind.Class:
-				return new MonoClassType (type, size, klass, info, table);
-
-			case TypeKind.Object:
-				if (ObjectType == null)
-					ObjectType = new MonoObjectType (typeof (object), size, klass, table);
-
-				return ObjectType;
+				return new MonoClass (TargetObjectKind.Class, type, size, false, info, table, true);
 
 			case TypeKind.ClassInfo:
-				throw new InternalError ("CLASS INFO: {0}", type);
+				return MonoClass.GetClass (type, size, info, table);
+
+			case TypeKind.Object:
+				if (type != typeof (object))
+					throw new InternalError ();
+
+				return new MonoObjectType (type, size, info, table);
+
+			case TypeKind.Unknown:
+				return new MonoOpaqueType (type, size);
 
 			default:
-				return new MonoOpaqueType (type, size);
+				throw new InternalError ("KIND: {0}", kind);
 			}
 		}
 
@@ -143,12 +116,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public Type TypeHandle {
 			get {
 				return type;
-			}
-		}
-
-		public TargetAddress KlassAddress {
-			get {
-				return klass;
 			}
 		}
 
