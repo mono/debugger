@@ -1,5 +1,21 @@
 2004-12-06  Chris Toshok  <toshok@ximian.com>
 
+	* backends/server/Makefile.am (libmonodebuggerserver_la_LDFLAGS):
+	remove -module and -version-info, as it's unnecessary (for the
+	moment, at the very least) and it breaks the ppc build.
+
+	* glue/Makefile.am (libmonodebuggerreadline_la_LDFLAGS): remove
+	-module, as it's unnecessary and breaks the ppc build.
+
+	* autogen.sh: use glibtool if it's there.
+
+	* acinclude.m4: add the LINUX_NPTL_CHECK here.
+
+	* configure.in: and make use of it here, only if the platform is
+	i386linux and server_only = no.
+
+2004-12-06  Chris Toshok  <toshok@ximian.com>
+
 	* glue/Makefile.am: change all the LIBEDIT stuff back to
 	READLINE.  except now "READLINE" is a generic term, kinda like
 	"Coke".

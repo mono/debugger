@@ -9,14 +9,21 @@ test -z "$srcdir" && srcdir=.
 
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
   echo
-  echo "**Error**: You must have \`autoconf' installed to compile Gtk#."
+  echo "**Error**: You must have \`autoconf' installed to compile mdb."
   echo "Download the appropriate package for your distribution,"
   echo "or get the source tarball at ftp://ftp.gnu.org/pub/gnu/"
   DIE=1
 }
 
+if [ -z "$LIBTOOL" ]; then
+  LIBTOOL=`which glibtool 2>/dev/null`
+  if [ ! -x "$LIBTOOL" ]; then
+    LIBTOOL=`which libtool`
+  fi
+fi
+
 (grep "^AM_PROG_LIBTOOL" $srcdir/configure.in >/dev/null) && {
-  (libtool --version) < /dev/null > /dev/null 2>&1 || {
+  ($LIBTOOL --version) < /dev/null > /dev/null 2>&1 || {
     echo
     echo "**Error**: You must have \`libtool' installed to compile Gtk#."
     echo "Get ftp://ftp.gnu.org/pub/gnu/libtool-1.2d.tar.gz"
@@ -65,7 +72,7 @@ esac
 if grep "^AM_PROG_LIBTOOL" configure.in >/dev/null; then
   if test -z "$NO_LIBTOOLIZE" ; then 
     echo "Running libtoolize..."
-    libtoolize --force --copy
+    ${LIBTOOL}ize --force --copy
   fi
 fi
 

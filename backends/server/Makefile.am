@@ -58,7 +58,6 @@ libmonodebuggerserver_la_LIBADD = \
 	@SERVER_DEPENDENCIES_LIBS@ \
 	../../arch/libmonodebuggerbfdglue.la
 libmonodebuggerserver_la_LDFLAGS = \
-	 -no-undefined -module -export-dynamic -shared \
-	 -version-info @LT_VERSION_INFO@
+	 -no-undefined -export-dynamic -shared
 
 CLEANFILES = lib*.a lib*.dll
