@@ -396,7 +396,9 @@ namespace Mono.Debugger.Backends
 			// Callbacks happen when the user (or the engine) called a method
 			// in the target (RuntimeInvoke).
 			if (current_callback != null) {
-				if (!current_callback.ProcessEvent (this, inferior, cevent))
+				TargetEventArgs args;
+				if (!current_callback.ProcessEvent (this, inferior, cevent,
+								    out args))
 					return;
 
 				current_callback = null;
@@ -406,8 +408,6 @@ namespace Mono.Debugger.Backends
 						      "{0} completed callback", this);
 
 					// Ok, inform the user that we stopped.
-					TargetEventArgs args = new TargetEventArgs (
-						TargetEventType.FrameChanged, current_frame);
 					step_operation_finished ();
 					operation_completed (args);
 					return;
@@ -1853,12 +1853,14 @@ namespace Mono.Debugger.Backends
 
 			public bool ProcessEvent (SingleSteppingEngine sse,
 						  Inferior inferior,
-						  Inferior.ChildEvent cevent)
+						  Inferior.ChildEvent cevent,
+						  out TargetEventArgs args)
 			{
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} while waiting for " +
 					      "callback {2}", sse, cevent, this);
 
+				args = null;
 				if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
 					Abort ();
 					return true;
@@ -1866,16 +1868,22 @@ namespace Mono.Debugger.Backends
 
 				if (ID != cevent.Argument) {
 					Abort ();
-					return true;
+					goto out_frame_changed;
 				}
 
 				if (!DoProcessEvent (sse, inferior, cevent.Data1, cevent.Data2))
 					return false;
 
-				if (stack_data != null)
+				if (stack_data != null) {
 					sse.restore_stack (stack_data);
-				else 
-					sse.frame_changed (inferior.CurrentFrame, null);
+					return true;
+				}
+
+			out_frame_changed:
+				sse.frame_changed (inferior.CurrentFrame, null);
+				args = new TargetEventArgs (
+					TargetEventType.FrameChanged,
+					sse.current_frame);
 				return true;
 			}
 

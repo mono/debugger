@@ -1,5 +1,12 @@
 2004-07-07  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(Callback.ProcessEvent): Added `out TargetEventArgs'.
+	(SingleSteppingEngine.ProcessEvent): Only send an event if the
+	callback told us to do so.
+
+2004-07-07  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(ILanguageBackend.GetVirtualMethodFunc): New property.
 
