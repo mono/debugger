@@ -208,7 +208,7 @@ namespace Mono.Debugger
 
 		public SourceInfo[] Sources {
 			get {
-				if (symbol_data == null)
+				if ((symbol_data == null) || (symbol_data.Data == null))
 					return new SourceInfo [0];
 
 				return ((ModuleSymbolData) symbol_data.Data).Sources;
