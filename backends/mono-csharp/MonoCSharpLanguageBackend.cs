@@ -271,11 +271,11 @@ namespace Mono.Debugger.Languages.CSharp
 					this, Backend, Inferior, Inferior, reader.ReadAddress (), Language);
 
 			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
-				AssemblyName name = symfile.Assembly.GetName ();
-				MonoModule module = (MonoModule) modules [name.FullName];
+				AssemblyName name = symfile.Assembly.GetName (true);
+				MonoModule module = (MonoModule) modules [name.Name];
 				if (module == null) {
 					module = new MonoModule (this, name);
-					modules.Add (name.FullName, module);
+					modules.Add (name.Name, module);
 				}
 				symfile.Module = module;
 				module.MonoSymbolTableReader = symfile;
@@ -380,7 +380,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 
 			public MonoModule (MonoSymbolFileTable table, AssemblyName name)
-				: base (name.FullName, table.Backend)
+				: base (name.Name, table.Backend)
 			{
 				this.table = table;
 
@@ -464,11 +464,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 				AssemblyName[] references = Assembly.GetReferencedAssemblies ();
 				foreach (AssemblyName name in references) {
-					if (table.modules.Contains (name.FullName))
+					if (table.modules.Contains (name.Name))
 						continue;
 
 					MonoModule module = new MonoModule (table, name);
-					table.modules.Add (name.FullName, module);
+					table.modules.Add (name.Name, module);
 				}
 			}
 
