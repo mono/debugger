@@ -20,7 +20,7 @@ main (int argc, char **argv, char **envp)
 
 	mono_parse_default_optimizations (argv [1]);
 
-	domain = mono_init (argv [0]);
+	domain = mono_jit_init (argv [0]);
 
 	mono_config_parse (NULL);
 
