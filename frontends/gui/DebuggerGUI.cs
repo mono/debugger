@@ -154,6 +154,7 @@ namespace Mono.Debugger.GUI
 				TargetState.EXITED, TargetState.NO_TARGET);
 			StateRegister (
 				new string [] {
+					"run-button", "run-program-menu",
 					"step-over-button", "step-into-button",
 					"step-into-menu", "step-over-menu",
 					"instruction-step-into-menu",

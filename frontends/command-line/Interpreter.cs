@@ -49,6 +49,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			stderr.WriteLine ("  bt               Displays backtrace");
 			stderr.WriteLine ("  params           Displays parameters");
 			stderr.WriteLine ("  locals           Displays local variables");
+			stderr.WriteLine ("  break LOC        Inserts breakpoint");
 			stderr.WriteLine ("  modules          Displays modules loaded");
 		}
 
