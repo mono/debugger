@@ -38,6 +38,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		void PrintVariable (IVariable variable, StackFrame frame);
 
 		string FormatObject (object obj);
+
+		string FormatType (ITargetType type);
 	}
 
 	public class UserInterfaceMono : UserInterfaceNative
@@ -109,16 +111,117 @@ namespace Mono.Debugger.Frontends.Scripting
 			else if (obj is string)
 				return '"' + (string) obj + '"';
 			else if (obj is ITargetType)
-				return FormatType ((ITargetType) obj);
+				return ((ITargetType) obj).Name;
 			else if (obj is ITargetObject)
 				return FormatObject ((ITargetObject) obj);
 			else
 				return obj.ToString ();
 		}
 
+		protected string FormatMember (ITargetMemberInfo member, bool is_static)
+		{
+			if (is_static)
+				return String.Format ("    static {0} {1}",
+						      member.Type.Name, member.Name);
+			else
+				return String.Format ("           {0} {1}",
+						      member.Type.Name, member.Name);
+		}
+
+		protected string FormatProperty (ITargetPropertyInfo prop, bool is_static)
+		{
+			StringBuilder sb = new StringBuilder (FormatMember (prop, is_static));
+			sb.Append (" {");
+			if (prop.CanRead)
+				sb.Append (" get;");
+			if (prop.CanWrite)
+				sb.Append (" set;");
+			sb.Append (" };\n");
+			return sb.ToString ();
+		}
+
+		protected string FormatMethod (ITargetMethodInfo method, bool is_static,
+					       bool is_ctor)
+		{
+			StringBuilder sb = new StringBuilder ();
+			if (is_ctor)
+				sb.Append ("    ctor   ");
+			else if (is_static)
+				sb.Append ("    static ");
+			else
+				sb.Append ("           ");
+
+			ITargetFunctionType ftype = method.Type;
+			if (!is_ctor) {
+				if (ftype.HasReturnValue)
+					sb.Append (ftype.ReturnType.Name);
+				else
+					sb.Append ("void");
+				sb.Append (" ");
+				sb.Append (method.Name);
+				sb.Append (" ");
+			}
+			sb.Append ("(");
+			bool first = true;
+			foreach (ITargetType ptype in ftype.ParameterTypes) {
+				if (first)
+					first = false;
+				else
+					sb.Append (", ");
+				sb.Append (ptype.Name);
+			}
+			sb.Append (");\n");
+			return sb.ToString ();
+		}
+
 		public string FormatType (ITargetType type)
 		{
-			return type.Name;
+			switch (type.Kind) {
+			case TargetObjectKind.Array: {
+				ITargetArrayType atype = (ITargetArrayType) type;
+				return String.Format ("{0} []", atype.ElementType.Name);
+			}
+
+			case TargetObjectKind.Class:
+			case TargetObjectKind.Struct: {
+				ITargetStructType stype = (ITargetStructType) type;
+				StringBuilder sb = new StringBuilder ();
+				ITargetClassType ctype = type as ITargetClassType;
+				if (ctype != null) {
+					sb.Append ("class ");
+					sb.Append (ctype.Name);
+					if (ctype.HasParent) {
+						sb.Append (" : ");
+						sb.Append (ctype.ParentType.Name);
+					}
+				} else {
+					sb.Append ("struct ");
+					sb.Append (stype.Name);
+				}
+				sb.Append (" {\n");
+				foreach (ITargetFieldInfo field in stype.Fields)
+					sb.Append (FormatMember (field, false) + ";\n");
+				foreach (ITargetFieldInfo field in stype.StaticFields)
+					sb.Append (FormatMember (field, true) + ";\n");
+				foreach (ITargetPropertyInfo property in stype.Properties)
+					sb.Append (FormatProperty (property, false));
+				foreach (ITargetPropertyInfo property in stype.StaticProperties)
+					sb.Append (FormatProperty (property, true));
+				foreach (ITargetMethodInfo method in stype.Methods)
+					sb.Append (FormatMethod (method, false, false));
+				foreach (ITargetMethodInfo method in stype.StaticMethods)
+					sb.Append (FormatMethod (method, true, false));
+				foreach (ITargetMethodInfo method in stype.Constructors)
+					sb.Append (FormatMethod (method, true, true));
+
+				sb.Append ("}\n");
+
+				return sb.ToString ();
+			}
+
+			default:
+				return type.Name;
+			}
 		}
 
 		public string FormatObject (ITargetObject obj)
@@ -249,6 +352,11 @@ namespace Mono.Debugger.Frontends.Scripting
 				return String.Format ("0x{0:x}", (long) obj);
 			else
 				return obj.ToString ();
+		}
+
+		public string FormatType (ITargetType type)
+		{
+			return type.ToString ();
 		}
 
 		public void ShowVariableType (ITargetType type, string name)

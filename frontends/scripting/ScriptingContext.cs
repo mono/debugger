@@ -717,6 +717,18 @@ namespace Mono.Debugger.Frontends.Scripting
 			Print (formatted);
 		}
 
+		public void PrintType (ITargetType type)
+		{
+			string formatted;
+			try {
+				formatted = interpreter.UI.FormatType (type);
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0}", ex);
+				formatted = "<cannot display type>";
+			}
+			Print (formatted);
+		}
+
 		public void PrintInstruction (AssemblerLine line)
 		{
 			if (line.Label != null)

@@ -185,7 +185,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
 			ITargetType type = expression.EvaluateType (new_context);
-			new_context.PrintObject (type);
+			new_context.PrintType (type);
 		}
 	}
 

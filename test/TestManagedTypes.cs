@@ -32,6 +32,10 @@ public class B
 
 	public static float Test = 3.14F;
 
+	public float Property {
+		get { return Test; }
+	}
+
 	public B (int a, long b, string c)
 	{
 		this.a = a;
@@ -43,6 +47,11 @@ public class B
 	{
 		Console.WriteLine (a);
 		Console.WriteLine (Test);
+	}
+
+	public void Foo (string hello)
+	{
+		Console.WriteLine (hello);
 	}
 }
 
