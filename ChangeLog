@@ -1,3 +1,10 @@
+2002-10-14  Martin Baulig  <martin@gnome.org>
+
+	* configure.in: We don't need to check for gdb anymore.
+
+	* test/Debugger.exe.config.in: The configuration file is now
+	finally called `Debugger.exe.config'.
+
 2002-10-13  Martin Baulig  <martin@gnome.org>
 
 	* class/SourceInfo.cs: Only read the methods when they're needed.

@@ -425,6 +425,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (modules == null)
 				return;
 
+			int module_count = 0;
+			int source_count = 0;
+			int method_count = 0;
+
 			foreach (Module module in modules) {
 				string language = module.Language != null ?
 					module.Language.Name : "native";
@@ -448,11 +452,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (module.Sources == null)
 					continue;
 
+				module_count++;
+
 				foreach (SourceInfo source in module.Sources) {
 					Console.WriteLine ("    SOURCE: {0}", source);
 
-					foreach (SourceMethodInfo method in source.Methods)
+					++source_count;
+
+					foreach (SourceMethodInfo method in source.Methods) {
 						Console.WriteLine ("      METHOD: {0}", method);
+						++method_count;
+					}
 				}
 
 				foreach (Breakpoint breakpoint in module.Breakpoints)
@@ -463,6 +473,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (module.Name == "Hello")
 					module.StepInto = false;
 			}
+
+			Console.WriteLine ("Total {0} modules, {1} source files and {2} methods.",
+					   module_count, source_count, method_count);
 		}
 	}
 }

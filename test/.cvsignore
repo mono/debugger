@@ -1,5 +1,5 @@
 Makefile
 *.exe
-Mono.Debugger.Backend.dll.config
+Debugger.exe.config
 *.dll
 a.out

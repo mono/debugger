@@ -83,7 +83,6 @@ AC_CHECK_LIB(opcodes, disassembler,, [AC_MSG_ERROR(
 [Can't find libopcodes, make sure you have binutils >= 2.12 installed.])], -lbfd)
 
 AC_PATH_PROG(MONO, mono, mono)
-AC_PATH_PROG(GDB, gdb, gdb)
 AC_SUBST(PATH)
 
 dnl
@@ -107,5 +106,5 @@ backends/Makefile
 backends/server/Makefile
 arch/Makefile
 test/Makefile
-test/Mono.Debugger.Backend.dll.config
+test/Debugger.exe.config
 ])

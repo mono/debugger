@@ -1,0 +1,6 @@
+<configuration>
+  <appSettings>
+    <add key="mono-path" value="@MONO@" />
+    <add key="environment-path" value="@PATH@" />
+  </appSettings>
+</configuration>
