@@ -1729,7 +1729,7 @@ namespace Mono.Debugger.Languages.CSharp
 			breakpoints = new Hashtable ();
 			reload_event = new ManualResetEvent (false);
 
-			process.TargetExited += new TargetExitedHandler (child_exited);
+			process.TargetExitedEvent += new TargetExitedHandler (child_exited);
 		}
 
 		public MonoCSharpLanguageBackend (DebuggerBackend backend, Process process, CoreFile core)
@@ -1835,13 +1835,12 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
 					       object user_data)
 		{
-			SingleSteppingEngine sse = process.SingleSteppingEngine;
-			sse.AcquireThreadLock ();
+			process.AcquireThreadLock ();
 			long retval;
 			try {
-				retval = sse.CallMethod (info.InsertBreakpoint, 0, method_name);
+				retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
 			} finally {
-				sse.ReleaseThreadLock ();
+				process.ReleaseThreadLock ();
 			}
 
 			int index = (int) retval;
@@ -1869,7 +1868,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal int EnableBreakpoint (BreakpointHandle handle, TargetAddress address)
 		{
-			return process.SingleSteppingEngine.InsertBreakpoint (
+			return process.InsertBreakpoint (
 				handle, address, new BreakpointCheckHandler (check_breakpoint_hit),
 				new BreakpointHitHandler (breakpoint_hit),
 				handle.Breakpoint.HandlerNeedsFrame, handle);
@@ -1877,7 +1876,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal void DisableBreakpoint (int index)
 		{
-			process.SingleSteppingEngine.RemoveBreakpoint (index);
+			process.RemoveBreakpoint (index);
 		}
 
 		private struct MyBreakpointHandle
@@ -1955,8 +1954,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public SourceMethod GetTrampoline (TargetAddress address)
 		{
-			IArchitecture arch = process.SingleSteppingEngine.Architecture;
-			ITargetAccess target = process.SingleSteppingEngine;
+			IArchitecture arch = process.Architecture;
+			ITargetAccess target = process.TargetAccess;
 
 			if (trampoline_address.IsNull)
 				return null;

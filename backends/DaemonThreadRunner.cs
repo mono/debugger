@@ -18,20 +18,19 @@ namespace Mono.Debugger.Backends
 		public DaemonThreadRunner (Process process, Inferior inferior, int pid,
 					   SingleSteppingEngine sse, DaemonThreadHandler handler)
 		{
-			this.sse = sse;
 			this.process = process;
 			this.inferior = inferior;
 			this.pid = pid;
 			this.daemon_thread_handler = handler;
 
-			sse.DaemonEvent += new DaemonEventHandler (daemon_event);
-			sse.TargetExitedEvent += new TargetExitedHandler (target_exited);
+			process.DaemonEvent += new DaemonEventHandler (daemon_event);
+			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
 		}
 
 		public void Run ()
 		{
-			sse.Run ();
-			sse.Continue (true, false);
+			// process.Run ();
+			process.Continue (true, false);
 		}
 
 		void target_exited ()
@@ -86,15 +85,10 @@ namespace Mono.Debugger.Backends
 			get { return inferior; }
 		}
 
-		public SingleSteppingEngine SingleSteppingEngine {
-			get { return sse; }
-		}
-
 		public event TargetExitedHandler TargetExited;
 
 		Inferior inferior;
 		Process process;
-		SingleSteppingEngine sse;
 		DaemonThreadHandler daemon_thread_handler;
 		ProcessStart start;
 		bool is_main_thread;
@@ -144,9 +138,9 @@ namespace Mono.Debugger.Backends
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				if (sse != null) {
-					sse.Kill ();
-					sse = null;
+				if (process != null) {
+					process.Kill ();
+					process = null;
 				}
 			}
 		}

@@ -30,10 +30,10 @@ SYMFILE_READER_SRCLIST = \
 	@top_srcdir@/lib/SymbolFileReader.cs
 
 LIBRARY_DEPS = \
+	-r Mono.GetOptions	\
 	-r Mono.CSharp.Debugger
 
 BACKEND_DEPS = \
-	-r Mono.GetOptions	\
 	-r Mono.Debugger.dll	\
 	-r Mono.CSharp.Debugger
 

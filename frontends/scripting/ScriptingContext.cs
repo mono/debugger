@@ -280,7 +280,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (!process.IsDaemon)
 				process.TargetEvent += new TargetEventHandler (target_event);
-			process.TargetExited += new TargetExitedHandler (target_exited);
+			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
@@ -294,12 +294,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				      int pid)
 			: this (context, backend, process)
 		{
-			if (process.SingleSteppingEngine == null)
-				return;
-
-			if (process.SingleSteppingEngine.HasTarget) {
+			if (process.HasTarget) {
 				if (!process.IsDaemon) {
-					StackFrame frame = process.SingleSteppingEngine.CurrentFrame;
+					StackFrame frame = process.CurrentFrame;
 					current_frame = new FrameHandle (this, frame);
 					context.Print ("{0} stopped at {1}.", Name, frame);
 					current_frame.Print (context);
@@ -666,7 +663,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (start == null)
 				throw new ScriptingException ("No program loaded.");
 
-			backend = start.Run ();
+			backend = new DebuggerBackend ();
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
@@ -848,7 +845,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void thread_created (ThreadManager manager, Process process)
 		{
-			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
+			ProcessHandle handle = new ProcessHandle (this, manager.DebuggerBackend, process);
 			add_process (handle);
 
 			if (!process.IsDaemon)
@@ -1173,7 +1170,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			foreach (ThreadGroup group in ThreadGroup.ThreadGroups) {
 				StringBuilder ids = new StringBuilder ();
-				foreach (IProcess thread in group.Threads) {
+				foreach (Process thread in group.Threads) {
 					ids.Append (" @");
 					ids.Append (thread.ID);
 				}

@@ -51,14 +51,14 @@ namespace Mono.Debugger
 				ModuleLoaded (module);
 		}
 
-		public bool Breaks (IProcess process)
+		public bool Breaks (Process process)
 		{
 			if (group == null)
 				return true;
 
 			int id = process.ID;
 
-			foreach (IProcess thread in group.Threads) {
+			foreach (Process thread in group.Threads) {
 				if (thread.ID == id)
 					return true;
 			}

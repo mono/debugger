@@ -10,7 +10,8 @@ namespace Mono.Debugger
 		MethodAddress		= 2,
 		Threads			= 4,
 		Signals			= 8,
-		EventLoop		= 16
+		EventLoop		= 16,
+		Wait			= 32
 	}
 
 	public class Report
