@@ -631,6 +631,9 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
+			if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
+
 			inferior.Step (get_simple_step_frame (StepMode.SingleInstruction));
 		}
 
@@ -638,6 +641,9 @@ namespace Mono.Debugger.Backends
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
+
+			if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
 
 			inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
 		}
@@ -647,6 +653,9 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
+			if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
+
 			inferior.Step (get_step_frame ());
 		}
 
@@ -654,6 +663,9 @@ namespace Mono.Debugger.Backends
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
+
+			if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
 
 			IStepFrame frame = get_step_frame ();
 			if (frame == null) {
@@ -671,6 +683,9 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
+			if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
+
 			IStackFrame frame = CurrentFrame;
 			if (frame.Method == null)
 				throw new TargetException ("Can't find bounds of current method");
@@ -684,6 +699,9 @@ namespace Mono.Debugger.Backends
 				if (inferior == null)
 					throw new NoTargetException ();
 
+				if (State != TargetState.STOPPED)
+					throw new TargetNotStoppedException ();
+
 				return current_frame;
 			}
 		}
@@ -693,6 +711,9 @@ namespace Mono.Debugger.Backends
 				if (inferior == null)
 					throw new NoTargetException ();
 
+				if (State != TargetState.STOPPED)
+					throw new TargetNotStoppedException ();
+
 				return current_method;
 			}
 		}
@@ -701,6 +722,9 @@ namespace Mono.Debugger.Backends
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
+
+			if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
 
 			symtabs.UpdateSymbolTable ();
 

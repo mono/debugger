@@ -221,7 +221,7 @@ server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
 	errno = 0;
 	*retval = ptrace (PTRACE_PEEKDATA, handle->pid, start, NULL);
 	if (errno) {
-		g_message (G_STRLOC ": %d - %Lx - %s", handle->pid, start, g_strerror (errno));
+		g_message (G_STRLOC ": %d - %08Lx - %s", handle->pid, start, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
 
@@ -238,7 +238,7 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
 		if (ret < 0) {
 			if (errno == EINTR)
 				continue;
-			g_warning (G_STRLOC ": Can't read target memory at address %Lx: %s",
+			g_warning (G_STRLOC ": Can't read target memory at address %08Lx: %s",
 				   start, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
