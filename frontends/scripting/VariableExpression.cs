@@ -90,58 +90,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class ScriptingVariableReference : VariableExpression
-	{
-		string identifier;
-
-		public ScriptingVariableReference (string identifier)
-		{
-			this.identifier = identifier;
-		}
-
-		public override string Name {
-			get { return '!' + identifier; }
-		}
-
-		VariableExpression expr;
-
-		protected override bool DoResolveBase (ScriptingContext context)
-		{
-			expr = context [identifier];
-			return expr != null;
-		}
-
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			return expr.ResolveVariable (context);
-		}
-
-		protected override ITargetType DoResolveType (ScriptingContext context)
-		{
-			return expr.ResolveType (context);
-		}
-	}
-
-	public class LastObjectExpression : VariableExpression
-	{
-		public override string Name {
-			get { return "!!"; }
-		}
-
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			return context.LastObject;
-		}
-
-		protected override ITargetType DoResolveType (ScriptingContext context)
-		{
-			if (context.LastObject == null)
-				return null;
-
-			return context.LastObject.Type;
-		}
-	}
-
 	public abstract class PointerExpression : VariableExpression
 	{
 		public new abstract TargetLocation ResolveLocation (ScriptingContext context);
@@ -637,43 +585,44 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public class ParentClassExpression : VariableExpression
 	{
-		VariableExpression var_expr;
+		Expression expr;
 
-		public ParentClassExpression (VariableExpression var_expr)
+		public ParentClassExpression (Expression expr)
 		{
-			this.var_expr = var_expr;
+			this.expr = expr;
 		}
 
 		public override string Name {
 			get {
-				return String.Format ("parent ({0})", var_expr.Name);
+				return String.Format ("parent ({0})", expr.Name);
 			}
 		}
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			ITargetClassObject obj = var_expr.ResolveVariable (context) as ITargetClassObject;
+			ITargetClassObject obj = expr.ResolveVariable (context) as ITargetClassObject;
 			if (obj == null)
 				throw new ScriptingException (
-					"Variable {0} is not a class type.", var_expr.Name);
+					"Variable {0} is not a class type.", expr.Name);
 
 			if (!obj.Type.HasParent)
-				throw new ScriptingException ("Variable {0} doesn't have a parent type.",
-							      var_expr.Name);
+				throw new ScriptingException (
+					"Variable {0} doesn't have a parent type.",
+					expr.Name);
 
 			return obj.Parent;
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ITargetClassType type = var_expr.ResolveType (context) as ITargetClassType;
+			ITargetClassType type = expr.ResolveType (context) as ITargetClassType;
 			if (type == null)
-				throw new ScriptingException ("Variable {0} is not a class type.",
-							      var_expr.Name);
+				throw new ScriptingException (
+					"Variable {0} is not a class type.", expr.Name);
 
 			if (!type.HasParent)
-				throw new ScriptingException ("Variable {0} doesn't have a parent type.",
-							      var_expr.Name);
+				throw new ScriptingException (
+					"Variable {0} doesn't have a parent type.", expr.Name);
 
 			return type.ParentType;
 		}

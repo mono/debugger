@@ -123,6 +123,10 @@ expression
 	  {
 		$$ = new NewExpression ((Expression) $2, ((Expression []) $4));
 	  }
+	| PARENT OPEN_PARENS expression CLOSE_PARENS
+	  {
+		$$ = new ParentClassExpression ((Expression) $3);
+	  }
 	;
 
 argument_list
