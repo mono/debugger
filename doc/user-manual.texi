@@ -10,6 +10,7 @@
 @menu
 * Thread Groups::               Thread Groups
 * Breakpoints::                 Breakpoints
+* Method lookups::              Method lookups
 @end menu
 
 @node Thread Groups, Breakpoints, Top, Top
@@ -50,7 +51,7 @@ threadgroup remove "bar" 3
 
 To get a list of all currently defined thread groups, use @code{show threadgroups}.
 
-@node Breakpoints,  , Thread Groups, Top
+@node Breakpoints, Method lookups, Thread Groups, Top
 @chapter Breakpoints
 
 Breakpoints are always inserted on a thread group (@pxref{Thread
@@ -67,8 +68,77 @@ defaults to the @samp{main} group, the application's main thread:
 
 @example
 break "hello"
-break @@global "foo"
-break @@foo "test.c" 84
+break <global> "foo"
+break <foo> "test.c" 84
 @end example
 
+@node Method lookups,  , Breakpoints, Top
+@chapter Method lookups
+
+There are several ways to insert a breakpoint:
+
+@table @asis
+@item Specifying a full method name:
+
+One way to insert a breakpoint is specifying the full method name in double quotes.  For managed functions, this is the name of the method, including its full class name (including the namespace) and the argument list:
+
+@example
+break "some_unmanaged_function"
+break "X.Test(System.Int32)"
+@end example
+
+@item Source file and line number:
+
+You may also specify a source file name in double quotes followed by a line number:
+
+@example
+break "Foo.cs" 18
+@end example
+
+@item Just the line number:
+
+If you're currently debugging a method which has source code, then you can also omit the file name and just specify the line number.
+
+The following will insert a breakpoint on line 18 in the current method:
+
+@example
+break 18
+@end example
+
+This version also supports the process / frame prefix:
+
+@example
+break #3 18
+break @@2 18
+break @@2 #1 18
+@end example
+
+@item Managed method in the same class:
+
+If you're currently debugging a managed method, you can specify the name of a method in the same class without quotes:
+
+@example
+break Test
+@end example
+
+If the requested method has several overloaded versions, you'll be presented with a list:
+
+@example
+$ break Test
+More than one method matches your query:
+   1  X.Test(System.Int32)
+   2  X.Test(System.Single)
+$ break !1
+Inserted breakpoint 1.
+@end example
+
+@item Result of a method lookup:
+
+If you've previously searched a method, you may specify an item in the search history by prefixing its number with an exclamation mark:
+
+@example
+break !2
+@end example
+
+@end table
 
