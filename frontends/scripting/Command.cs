@@ -492,6 +492,15 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	[ShortDescription("Quit the debugger")]
+	public class QuitCommand : DebuggerCommand
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.Exit ();
+		}
+	}
+
 	[ShortDescription("Show things")]
 	public class ShowCommand : DebuggerCommand
 	{

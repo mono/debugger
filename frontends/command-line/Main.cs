@@ -93,9 +93,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("continue", typeof (ContinueCommand));
 			e.Register ("c", typeof (ContinueCommand));
 			e.Register ("step", typeof (StepCommand));
+			e.Register ("s", typeof (StepCommand));
 			e.Register ("next", typeof (NextCommand));
+			e.Register ("n", typeof (NextCommand));
 			e.Register ("stepi", typeof (StepInstructionCommand));
+			e.Register ("i", typeof (StepInstructionCommand));
 			e.Register ("nexti", typeof (NextInstructionCommand));
+			e.Register ("t", typeof (NextInstructionCommand));
 			e.Register ("finish", typeof (FinishCommand));
 			e.Register ("backtrace", typeof (BacktraceCommand));
 			e.Register ("bt", typeof (BacktraceCommand));
@@ -109,6 +113,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("delete", typeof (BreakpointDeleteCommand));
 			e.Register ("list", typeof (ListCommand));
 			e.Register ("break", typeof (BreakCommand));
+			e.Register ("quit", typeof (QuitCommand));
+			e.Register ("q", typeof (QuitCommand));
 
 			return e;
 		}

@@ -473,6 +473,8 @@ namespace Mono.Debugger.Backends
 				temp_breakpoint_id = 0;
 			}
 
+			bool exiting = false;
+
 			switch (message) {
 			case Inferior.ChildEventType.CHILD_STOPPED:
 				if (stop_requested || (arg != 0)) {
@@ -488,10 +490,12 @@ namespace Mono.Debugger.Backends
 
 			case Inferior.ChildEventType.CHILD_SIGNALED:
 				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
+				exiting = true;
 				break;
 
 			case Inferior.ChildEventType.CHILD_EXITED:
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
+				exiting = true;	
 				break;
 
 			case Inferior.ChildEventType.CHILD_CALLBACK:
@@ -512,7 +516,7 @@ namespace Mono.Debugger.Backends
 				// Ok, inform the user that we stopped.
 				step_operation_finished ();
 				operation_completed (result);
-				if (is_main && !reached_main) {
+				if (is_main && !reached_main && !exiting) {
 					arch = inferior.Architecture;
 					reached_main = true;
 					main_method_retaddr = inferior.GetReturnAddress ();
