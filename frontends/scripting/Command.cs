@@ -185,39 +185,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("DISASSEMBLE INSTRUCTION", "Disassemble current instruction")]
-	public class DisassembleCommand : Command
+	[Command("disassemble", "Disassemble current instruction or method")]
+	public class DisassembleCommand : FrameCommand
 	{
-		FrameExpression frame_expr;
+		bool method;
 
-		public DisassembleCommand (FrameExpression frame_expr)
-		{
-			this.frame_expr = frame_expr;
+		[Argument(ArgumentType.Flag, "method", "Disassemble the whole method")]
+		public bool Method {
+			get { return method; }
+			set { method = value; }
 		}
-
+	
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+			FrameHandle frame = ResolveFrame (context);
 
-			frame.Disassemble (context);
-		}
-	}
-
-	[Command("DISASSEMBLE METHOD", "Disassemble current method")]
-	public class DisassembleMethodCommand : Command
-	{
-		FrameExpression frame_expr;
-
-		public DisassembleMethodCommand (FrameExpression frame_expr)
-		{
-			this.frame_expr = frame_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
-
-			frame.DisassembleMethod (context);
+			if (method)
+				frame.DisassembleMethod (context);
+			else
+				frame.Disassemble (context);
 		}
 	}
 
@@ -238,24 +224,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			string[] args = (string []) program_args_expr.Resolve (context);
 			DebuggerOptions options = new DebuggerOptions ();
 			context.Interpreter.Start (options, args);
-			context.Interpreter.Initialize ();
-			try {
-				context.Interpreter.Run ();
-			} catch (TargetException e) {
-				throw new ScriptingException (e.Message);
-			}
-		}
-	}
-
-	[Command("RUN", "Restart current program",
-		 "After the program being debugged exited, run it a second time.\n\n")]
-	public class RunCommand : Command
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			if (!context.IsSynchronous)
-				throw new ScriptingException ("This command cannot be used in the GUI.");
-
 			context.Interpreter.Initialize ();
 			try {
 				context.Interpreter.Run ();
@@ -436,7 +404,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("SHOW PROCESSES", "Show processes")]
+	[Command("show processes", "Show processes")]
 	public class ShowProcessesCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -457,19 +425,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("SHOW REGISTERS", "Show registers")]
-	public class ShowRegistersCommand : Command
+	[Command("show registers", "Show registers")]
+	public class ShowRegistersCommand : FrameCommand
 	{
-		FrameExpression frame_expr;
-
-		public ShowRegistersCommand (FrameExpression frame_expr)
-		{
-			this.frame_expr = frame_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+			FrameHandle frame = ResolveFrame (context);
 
 			string[] names = frame.RegisterNames;
 			int[] indices = frame.RegisterIndices;
@@ -479,37 +440,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("SHOW PARAMETERS", "Show method parameters")]
-	public class ShowParametersCommand : Command
+	[Command("show parameters", "Show method parameters")]
+	public class ShowParametersCommand : FrameCommand
 	{
-		FrameExpression frame_expr;
-
-		public ShowParametersCommand (FrameExpression frame_expr)
-		{
-			this.frame_expr = frame_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+			FrameHandle frame = ResolveFrame (context);
 
 			frame.ShowParameters (context);
 		}
 	}
 
-	[Command("SHOW LOCALS", "Show local variables")]
-	public class ShowLocalsCommand : Command
+	[Command("show locals", "Show local variables")]
+	public class ShowLocalsCommand : FrameCommand
 	{
-		FrameExpression frame_expr;
-
-		public ShowLocalsCommand (FrameExpression frame_expr)
-		{
-			this.frame_expr = frame_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+			FrameHandle frame = ResolveFrame (context);
 
 			frame.ShowLocals (context);
 		}
@@ -533,7 +480,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("SHOW MODULES", "Show modules")]
+	[Command("show modules", "Show modules")]
 	public class ShowModulesCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -580,7 +527,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("SHOW BREAKPOINTS", "Show breakpoints")]
+	[Command("show breakpoints", "Show breakpoints")]
 	public class ShowBreakpointsCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -589,7 +536,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("SHOW THREADGROUPS", "Show thread groups")]
+	[Command("show threadgroups", "Show thread groups")]
 	public class ShowThreadGroupsCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)

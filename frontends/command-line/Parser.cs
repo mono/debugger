@@ -54,6 +54,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Engine engine;
 		InputProvider input;
 		State state;
+		CommandGroup current_group;
 		Command current_command;
 		ExpressionParser parser;
 		ScriptingContext context;
@@ -75,6 +76,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		void Reset ()
 		{
 			state = State.Command;
+			current_group = Engine.Root;
 			current_command = null;
 			lexer.restart ();
 		}
@@ -92,6 +94,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			switch (state) {
 			case State.Command:
 				return "command";
+
+			case State.CommandGroup:
+				return current_group.ToString ();
 
 			case State.ParameterOrArgument:
 				return "parameter, argument or end of line";
@@ -156,10 +161,41 @@ namespace Mono.Debugger.Frontends.CommandLine
 			string identifier = (string) lexer.value ();
 			Advance ();
 
-			current_command = engine.GetCommand (identifier);
-			if (current_command == null)
+			object result = current_group.Lookup (identifier);
+			if (result == null)
 				throw new ParserError ("No such command: `{0}'", identifier);
 
+			if (result is CommandGroup) {
+				current_group = (CommandGroup) result;
+				state = State.CommandGroup;
+				return;
+			}
+
+			current_command = (Command) Activator.CreateInstance ((Type) result);
+			state = State.ParameterOrArgument;
+		}
+
+		protected void ParseCommandGroup ()
+		{
+			int token = NextToken ();
+			if (token != Token.IDENTIFIER)
+				throw new SyntaxError (this);
+
+			string identifier = (string) lexer.value ();
+			Advance ();
+
+			object result = current_group.Lookup (identifier);
+			if (result == null)
+				throw new ParserError ("No such command: `{0}'",
+						       current_group.MakeName (identifier));
+
+			if (result is CommandGroup) {
+				current_group = (CommandGroup) result;
+				state = State.CommandGroup;
+				return;
+			}
+
+			current_command = (Command) Activator.CreateInstance ((Type) result);
 			state = State.ParameterOrArgument;
 		}
 
@@ -280,6 +316,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public enum State
 		{
 			Command,
+			CommandGroup,
 			ParameterOrArgument,
 			Parameter,
 			Argument,
@@ -293,6 +330,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			switch (state) {
 			case State.Command:
 				ParseCommand ();
+				break;
+
+			case State.CommandGroup:
+				ParseCommandGroup ();
 				break;
 
 			case State.ParameterOrArgument:

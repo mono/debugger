@@ -115,6 +115,61 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Frame
 	}
 
+	public class CommandGroup
+	{
+		public readonly CommandGroup Parent;
+		public readonly string Name;
+
+		public CommandGroup (string name)
+		{
+			this.Name = name;
+		}
+
+		public CommandGroup (CommandGroup parent, string name)
+			: this (name)
+		{
+			this.Parent = parent;
+
+			if (parent.Name != "")
+				Name = parent.Name + " " + name;
+			else
+				Name = name;
+		}
+
+		public string MakeName (string id)
+		{
+			if (Name != "")
+				return Name + " " + id;
+			else
+				return id;
+		}
+
+		Hashtable commands = new Hashtable ();
+		
+		public void Register (string name, object o)
+		{
+			commands.Add (name, o);
+		}
+
+		public object Lookup (string name)
+		{
+			return commands [name];
+		}
+
+		public override string ToString ()
+		{
+			StringBuilder sb = new StringBuilder ();
+			bool first = true;
+			foreach (string name in commands.Keys) {
+				if (first)
+					first = false;
+				else
+					sb.Append (",");
+				sb.Append (name);
+			}
+			return sb.ToString ();
+		}
+	}
 
 	public class Engine
 	{
@@ -125,13 +180,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.context = context;
 		}
 
-		static Hashtable commands;
+		static CommandGroup root;
 		static Type command_type = typeof (Command);
 		static Type expression_type = typeof (Expression);
 
 		static Engine ()
 		{
-			commands = new Hashtable ();
+			root = new CommandGroup ("");
 
 			foreach (Type type in command_type.Assembly.GetTypes ()) {
 				if (!type.IsSubclassOf (command_type) || type.IsAbstract)
@@ -146,22 +201,32 @@ namespace Mono.Debugger.Frontends.CommandLine
 				}
 
 				CommandAttribute attr = (CommandAttribute) attrs [0];
-				commands.Add (attr.Name, type);
+				RegisterCommand (root, attr.Name, type);
 			}
 		}
 
-		public Command GetCommand (string name)
+		public static void RegisterCommand (CommandGroup group, string name, Type type)
 		{
-			Type t = (Type) commands [name];
-			if (t == null)
-				return null;
-
-			try {
-				return (Command) Activator.CreateInstance (t);
-			} catch (Exception ex) {
-				Console.WriteLine ("ERROR: {0}", ex);
-				return null;
+			int pos = name.IndexOf (' ');
+			if (pos < 0) {
+				group.Register (name, type);
+				return;
 			}
+
+			string first = name.Substring (0, pos);
+			string last = name.Substring (pos + 1);
+
+			CommandGroup first_group = (CommandGroup) group.Lookup (first);
+			if (first_group == null) {
+				first_group = new CommandGroup (group, first);
+				group.Register (first, first_group);
+			}
+
+			RegisterCommand (first_group, last, type);
+		}
+
+		public static CommandGroup Root {
+			get { return root; }
 		}
 
 		public PropertyInfo GetParameter (Command command, string name,
