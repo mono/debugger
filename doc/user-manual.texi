@@ -3,142 +3,200 @@
 @setfilename user-manual.info
 
 @ifnottex
-@node Top, Thread Groups, (dir), (dir)
+@node Top, Expressions, (dir), (dir)
 @top User Manual
 @end ifnottex
 
 @menu
-* Thread Groups::               Thread Groups
-* Breakpoints::                 Breakpoints
-* Method lookups::              Method lookups
+* Expressions::                 
+* Commands::                    
 @end menu
 
-@node Thread Groups, Breakpoints, Top, Top
-@chapter Thread Groups
+@node Expressions, Commands, Top, Top
+@chapter Expressions
 
-A @dfn{Thread Group} is a collection of processes which is identified by
-a name.  It is used when saving a debugging session to disk: the
-debugger can only write the name of the thread group to disk, but not
-the process IDs since they wouldn't have any meaning when the session is
-loaded.
+The Mono Debugger has a built-in expression parser to parse
+expressions in a C#-like language.  C#-like means that it is almost
+C#, but not everything is supported and some things are different due
+to the nature of being used in a debugger.
 
-This means that you must manually tell the debugger which threads belong
-to a particular thread group after loading the session.
+However, the semantic is different based on the language of the method
+you're currently debugging.  This means, that for instance while
+debugging unmanaged code, the debugger will behave more like C than
+like C#.
 
-There are two predefined thread groups:
+@menu
+* Simple Expressions::          
+* Source Locations::            
+@end menu
 
-@table @samp
-@item main
-This is always the main thread of the current application.
-@item global
-Refers to all debuggable threads.
-@end table
+@node Simple Expressions, Source Locations, Expressions, Expressions
+@section Simple Expressions
 
-To create a new thread group, use the @code{threadgroup create} command:
+You can specify variable, type and method names just like in C#.
+However, at the moment (as of April 19th, 2004), name lookup only
+happens in the programming language of the current frame.
 
-@example
-threadgroup create "foo"
-threadgroup create "bar" 2,3
-@end example
+This means that while debugging managed code, you can't insert
+breakpoints and things like that in unmanaged functions.
 
-You can add/remove threads with the @code{threadgroup add} and
-@code{threadgroup remove} commands:
-
-@example
-threadgroup add "foo" 2
-threadgroup remove "bar" 3
-@end example
-
-To get a list of all currently defined thread groups, use @code{show threadgroups}.
-
-@node Breakpoints, Method lookups, Thread Groups, Top
-@chapter Breakpoints
-
-Breakpoints are always inserted on a thread group (@pxref{Thread
-Groups}) and break on all the threads in the thread group.  You can add
-or remove threads to this thread group after the breakpoint has been
-created.
-
-When a debugging session is saved to disk, the debugger only saves the
-thread group name and not the particular process IDs.  When the session
-is loaded, you manually need to put the threads into the thread group.
-
-The @code{break} command takes an optional thread group argument, which
-defaults to the @samp{main} group, the application's main thread:
+Examples for unmanaged code:
 
 @example
-break "hello"
-break <global> "foo"
-break <foo> "test.c" 84
+break main
+break mono_class_init
 @end example
 
-@node Method lookups,  , Breakpoints, Top
-@chapter Method lookups
-
-There are several ways to insert a breakpoint:
-
-@table @asis
-@item Specifying a full method name:
-
-One way to insert a breakpoint is specifying the full method name in double quotes.  For managed functions, this is the name of the method, including its full class name (including the namespace) and the argument list:
+Examples for managed code:
 
 @example
-break "some_unmanaged_function"
-break "X.Test(System.Int32)"
+break Main
+break X.Main
 @end example
 
-@item Source file and line number:
+@node Source Locations,  , Simple Expressions, Expressions
+@section Source Locations
 
-You may also specify a source file name in double quotes followed by a line number:
+This is an expression which specifies the location for inserting a
+breakpoint or viewing the source code.  The @code{break}
+(@xref{break}) and @code{list} (@xref{list}) commands both use the
+same syntax.
+
+There are several ways to specify a source location
+
+@itemize @bullet
+@item You can just use a line number to specify that line in the
+current source file.
 
 @example
-break "Foo.cs" 18
+break 128
 @end example
 
-@item Just the line number:
+This inserts a breakpoint on line 128 in the current file.
 
-If you're currently debugging a method which has source code, then you can also omit the file name and just specify the line number.
-
-The following will insert a breakpoint on line 18 in the current method:
+@item You can use a file name and line number:
 
 @example
-break 18
+break TestManagedTypes.cs:128
 @end example
 
-This version also supports the process / frame prefix:
+This inserts a breakpoint on line 128 in @file{TestManagedTypes.cs}.
+
+@item Use a method name
+
+If it's not a line number or a file and line number, the debugger
+assumes that it's actually an expression and parses it.  This allows
+you to insert breakpoints on methods.
+
+Method lookup is done in a similar way than in C#, but no namespace
+lookup takes place.  Members are, however, looked up in the current
+class.
+
+Let's have a look at the following example:
 
 @example
-break #3 18
-break @@2 18
-break @@2 #1 18
+public class X
+@{
+        public static void Test ()
+        @{ @}
+
+        public void Foo ()
+        @{ @}
+
+        public static void Bar (X x)
+        @{
+                // You are here.
+        @}
 @end example
 
-@item Managed method in the same class:
-
-If you're currently debugging a managed method, you can specify the name of a method in the same class without quotes:
+Now, you can insert a breakpoint on the static method @code{X.Test} by
+just saying
 
 @example
 break Test
 @end example
 
-If the requested method has several overloaded versions, you'll be presented with a list:
+or
 
 @example
-$ break Test
+break X.Test
+@end example
+
+However, since you're in static code, you cannot say
+
+@example
+break Foo
+@end example
+
+to insert a breakpoint on the instance method @code{Foo}.  In C#, it
+would be an error to invoke the method by just saying @code{Foo ()},
+so the debugger doesn't allow it either (internally, the debugger is
+parsing your expression as if it was an invocation).
+
+The correct command is (@code{x} is an instance of @code{X} in the
+current context).
+
+@example
+break x.Foo
+@end example
+
+@item Overload Resolution
+
+Sometimes, just using the function name would be ambigous since there
+are several overloaded versions of that method.  In this case,
+overload resolution is done just like in C#.  Note that you need to
+use types, not actual arguments when inserting breakpoints:
+
+@example
+break System.Console.WriteLine(System.Int32)
+@end example
+
+@item Method Lookup History
+
+If you just specify a method name and it's ambiguous, the debugger
+presents you with a list from which you can choose:
+
+@example
+(mdb) break System.Console.WriteLine
 More than one method matches your query:
-   1  X.Test(System.Int32)
-   2  X.Test(System.Single)
-$ break !1
-Inserted breakpoint 1.
+   1  System.Console.WriteLine()
+   2  System.Console.WriteLine(System.Boolean)
+   3  System.Console.WriteLine(System.Char)
+   4  System.Console.WriteLine(System.Char[])
+   5  System.Console.WriteLine(System.Decimal)
+   6  System.Console.WriteLine(System.Double)
+   7  System.Console.WriteLine(System.Int32)
+   8  System.Console.WriteLine(System.Int64)
+   9  System.Console.WriteLine(System.Object)
+  10  System.Console.WriteLine(System.Single)
+  11  System.Console.WriteLine(System.String)
+  12  System.Console.WriteLine(System.UInt32)
+  13  System.Console.WriteLine(System.UInt64)
+  14  System.Console.WriteLine(System.String,System.Object)
+  15  System.Console.WriteLine(System.String,System.Object[])
+  16  System.Console.WriteLine(System.Char[],System.Int32,System.Int32)
+  17  System.Console.WriteLine(System.String,System.Object,System.Object)
+  18  System.Console.WriteLine(System.String,System.Object,System.Object,System.Object)
+  19  System.Console.WriteLine(System.String,System.Object,System.Object,System.Object,System.Object)
+
+(mdb) break -id 7
+Inserted breakpoint 2 at System.Console.WriteLine(System.Int32)
 @end example
 
-@item Result of a method lookup:
+@end itemize
 
-If you've previously searched a method, you may specify an item in the search history by prefixing its number with an exclamation mark:
+       
+@node Commands,  , Expressions, Top
+@chapter Commands
 
-@example
-break !2
-@end example
+@menu
+* break::                       
+* list::                        
+@end menu
 
-@end table
+@node break, list, Commands, Commands
+@section break
+
+@node list,  , break, Commands
+@section list
 
