@@ -222,7 +222,7 @@ remote_server_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 
 static ServerCommandError
 remote_server_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
-			       guint32 *target_address_size)
+			       guint32 *target_address_size, guint32 *is_bigendian)
 {
 	CORBA_Environment ev;
 	Debugger_TargetInfo info;
@@ -235,6 +235,7 @@ remote_server_get_target_info (guint32 *target_int_size, guint32 *target_long_si
 	*target_int_size = info.IntSize;
 	*target_long_size = info.LongSize;
 	*target_address_size = info.AddressSize;
+	*is_bigendian = info.IsBigEndian;
 
 	return COMMAND_ERROR_NONE;
 }

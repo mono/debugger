@@ -82,13 +82,13 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint32 status, guint
 
 ServerCommandError
 mono_debugger_server_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
-				      guint32 *target_address_size)
+				      guint32 *target_address_size, guint32 *is_bigendian)
 {
 	if (!global_vtable->get_target_info)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->get_target_info) (
-		target_int_size, target_long_size, target_address_size);
+		target_int_size, target_long_size, target_address_size, is_bigendian);
 }
 
 ServerCommandError

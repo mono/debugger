@@ -94,7 +94,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_target_info (out int target_int_size, out int target_long_size, out int target_address_size);
+		static extern CommandError mono_debugger_server_get_target_info (out int target_int_size, out int target_long_size, out int target_address_size, out int is_bigendian);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);
@@ -437,13 +437,13 @@ namespace Mono.Debugger.Backends
 		{
 			address_domain = new AddressDomain (String.Format ("ptrace ({0})", child_pid));
 
-			int target_int_size, target_long_size, target_address_size;
+			int target_int_size, target_long_size, target_addr_size, is_bigendian;
 			check_error (mono_debugger_server_get_target_info
 				(out target_int_size, out target_long_size,
-				 out target_address_size));
+				 out target_addr_size, out is_bigendian));
 
 			target_info = new TargetInfo (target_int_size, target_long_size,
-						      target_address_size, true);
+						      target_addr_size, is_bigendian != 0);
 
 			try {
 				bfd = bfd_container.AddFile (this, start.TargetApplication,

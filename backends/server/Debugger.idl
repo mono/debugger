@@ -38,6 +38,7 @@ module Debugger
 		short IntSize;
 		short LongSize;
 		short AddressSize;
+		boolean IsBigEndian;
 	};
 
 	typedef sequence<string> stringList;

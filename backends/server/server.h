@@ -122,7 +122,8 @@ struct InferiorVTable {
 	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
 	ServerCommandError    (* get_target_info)     (guint32            *target_int_size,
 						       guint32            *target_long_size,
-						       guint32            *target_address_size);
+						       guint32            *target_address_size,
+						       guint32            *is_bigendian);
 
 	/*
 	 * Continue the target.
@@ -352,7 +353,8 @@ mono_debugger_server_dispatch_event       (ServerHandle            *handle,
 ServerCommandError
 mono_debugger_server_get_target_info      (guint32            *target_int_size,
 					   guint32            *target_long_size,
-					   guint32            *target_address_size);
+					   guint32            *target_address_size,
+					   guint32            *is_bigendian);
 
 ServerCommandError
 mono_debugger_server_get_pc               (ServerHandle       *handle,

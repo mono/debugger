@@ -92,16 +92,18 @@ static Debugger_TargetInfo
 do_get_target_info (impl_POA_Debugger_Manager *servant, CORBA_Environment *ev)
 {
 	ServerCommandError result;
-	guint32 int_size, long_size, address_size;
+	guint32 int_size, long_size, address_size, is_bigendian;
 	Debugger_TargetInfo info;
 
 	CHECK_VTABLE_RET (get_target_info, info);
-	result = global_vtable->get_target_info (&int_size, &long_size, &address_size);
+	result = global_vtable->get_target_info (
+		&int_size, &long_size, &address_size, &is_bigendian);
 	CHECK_RESULT_RET (info);
 
 	info.IntSize = int_size;
 	info.LongSize = long_size;
 	info.AddressSize = address_size;
+	info.IsBigEndian = is_bigendian != 0;
 	return info;
 }
 
