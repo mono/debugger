@@ -121,43 +121,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class DwarfSourceMethod : SourceMethod
-		{
-			IMethod method;
-
-			public DwarfSourceMethod (SourceFile source, IMethod method, int start, int end)
-				: base (source, method.Name, start, end, false)
-			{
-				this.method = method;
-			}
-
-			public override bool IsLoaded {
-				get {
-					return true;
-				}
-			}
-
-			public override IMethod Method {
-				get {
-					return method;
-				}
-			}
-
-			public override TargetAddress Lookup (int line)
-			{
-				if (!method.HasSource)
-					return TargetAddress.Null;
-
-				return method.Source.Lookup (line);
-			}
-
-			public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
-									 object user_data)
-			{
-				throw new InvalidOperationException ();
-			}
-		}
-
 		protected class CompileUnitBlock
 		{
 			public readonly DwarfReader dwarf;
@@ -547,153 +510,6 @@ namespace Mono.Debugger.Architecture
 				} else
 					throw new DwarfException (dwarf, String.Format (
 						"Unknown initial length field {0:x}", length));
-			}
-		}
-
-		protected class DwarfNativeMethod : MethodBase
-		{
-			protected LineNumberEngine engine;
-			protected DieSubprogram subprog;
-			protected SourceFile file;
-
-			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
-				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
-			{
-				this.subprog = subprog;
-				this.engine = engine;
-
-				if (subprog.IsContinuous)
-					SetAddresses (subprog.StartAddress, subprog.EndAddress);
-
-				if (engine != null) {
-					file = subprog.comp_unit.DieCompileUnit.SourceFile;
-					SetSource (new DwarfNativeMethodSource (this));
-				}
-			}
-
-			public override object MethodHandle {
-				get {
-					return this;
-				}
-			}
-
-			public override IVariable[] Parameters {
-				get {
-					throw new NotSupportedException ();
-				}
-			}
-
-			public override IVariable[] Locals {
-				get {
-					throw new NotSupportedException ();
-				}
-			}
-
-			private class DwarfNativeMethodSource : MethodSource
-			{
-				DwarfNativeMethod method;
-				DwarfSourceMethod source;
-				int start_row, end_row;
-				ArrayList addresses;
-
-				public DwarfNativeMethodSource (DwarfNativeMethod method)
-					: base (method, method.file)
-				{
-					this.method = method;
-				}
-
-				protected override MethodSourceData ReadSource ()
-				{
-					start_row = end_row = 0;
-					addresses = null;
-
-					if (method.engine == null)
-						throw new InternalError ();
-
-					string file = method.engine.GetSource (
-						method.subprog, out start_row, out end_row, out addresses);
-					if (file == null)
-						return null;
-
-					if ((addresses != null) && (addresses.Count > 2)) {
-						LineEntry start = (LineEntry) addresses [1];
-						LineEntry end = (LineEntry) addresses [addresses.Count - 1];
-
-						method.SetMethodBounds (start.Address, end.Address);
-					}
-
-					source = new DwarfSourceMethod (
-						method.file, method, start_row, end_row);
-
-					return new MethodSourceData (start_row, end_row, addresses, source);
-				}
-
-				public override SourceMethod[] MethodLookup (string query)
-				{
-					return new SourceMethod [0];
-				}
-			}
-		}
-
-		protected class DwarfCompileUnitSymbolTable : SymbolTable
-		{
-			DieCompileUnit comp_unit_die;
-
-			public DwarfCompileUnitSymbolTable (DieCompileUnit comp_unit_die)
-				: base (comp_unit_die)
-			{
-				this.comp_unit_die = comp_unit_die;
-			}
-
-			public override bool HasRanges {
-				get {
-					return false;
-				}
-			}
-
-			public override ISymbolRange[] SymbolRanges {
-				get {
-					throw new InvalidOperationException ();
-				}
-			}
-
-			public override bool HasMethods {
-				get {
-					return true;
-				}
-			}
-
-			protected override ArrayList GetMethods ()
-			{
-				ArrayList methods = new ArrayList ();
-
-				ArrayList list = new ArrayList ();
-
-				lock (comp_unit_die) {
-					foreach (Die child in comp_unit_die.Children) {
-						DieSubprogram subprog = child as DieSubprogram;
-						if ((subprog == null) || !subprog.IsContinuous)
-							continue;
-
-						list.Add (subprog);
-					}
-				}
-
-				list.Sort ();
-
-				LineNumberEngine engine = null;
-				if (comp_unit_die.LineNumberOffset >= 0)
-					engine = new LineNumberEngine (
-						comp_unit_die.dwarf, comp_unit_die.LineNumberOffset,
-						comp_unit_die.CompilationDirectory, list);
-
-				foreach (DieSubprogram subprog in list) {
-					DwarfNativeMethod native = new DwarfNativeMethod (subprog, engine);
-
-					methods.Add (native);
-				}
-
-				return methods;
 			}
 		}
 
@@ -1580,6 +1396,10 @@ namespace Mono.Debugger.Architecture
 					return new Die (reader, comp_unit, abbrev);
 				}
 			}
+
+			public DieCompileUnit DieCompileUnit {
+				get { return comp_unit.DieCompileUnit; }
+			}
 		}
 
 		protected class DieCompileUnit : Die, ISymbolContainer
@@ -1595,6 +1415,7 @@ namespace Mono.Debugger.Architecture
 				else
 					file_name = name;
 				file = new DwarfSourceFile (dwarf, file_name);
+				symtab = new CompileUnitSymbolTable (this);
 			}
 
 			public DieCompileUnit (DwarfBinaryReader reader, CompilationUnit comp_unit)
@@ -1607,9 +1428,51 @@ namespace Mono.Debugger.Architecture
 			string comp_dir;
 			bool is_continuous;
 			DwarfSourceFile file;
+			CompileUnitSymbolTable symtab;
+			ArrayList children;
+			LineNumberEngine engine;
 
 			protected long line_offset;
 			protected bool has_lines;
+
+			void read_children ()
+			{
+				if (children != null)
+					return;
+
+				children = new ArrayList ();
+
+				foreach (Die child in Children) {
+					DieSubprogram subprog = child as DieSubprogram;
+					if ((subprog == null) || !subprog.IsContinuous)
+						continue;
+
+					children.Add (subprog);
+				}
+
+				children.Sort ();
+
+				if (has_lines) {
+					engine = new LineNumberEngine (dwarf, line_offset, comp_dir, children);
+
+					foreach (DieSubprogram subprog in children)
+						subprog.SetEngine (engine);
+				}
+			}
+
+			protected LineNumberEngine Engine {
+				get {
+					read_children ();
+					return engine;
+				}
+			}
+
+			protected ArrayList Subprograms {
+				get {
+					read_children ();
+					return children;
+				}
+			}
 
 			protected override int ReadAttributes ()
 			{
@@ -1679,6 +1542,12 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public ISymbolTable SymbolTable {
+				get {
+					return symtab;
+				}
+			}
+
 			public TargetAddress StartAddress {
 				get {
 					if (!is_continuous)
@@ -1703,6 +1572,11 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public void AddMethod (SourceMethod method)
+			{
+				file.AddMethod (method);
+			}
+
 			protected class DwarfSourceFile : SourceFile
 			{
 				DwarfReader dwarf;
@@ -1715,13 +1589,55 @@ namespace Mono.Debugger.Architecture
 					this.methods = new ArrayList ();
 				}
 
-				public void AddMethod (DwarfSourceMethod method)
+				public void AddMethod (SourceMethod method)
 				{
 					methods.Add (method);
 				}
 
 				protected override ArrayList GetMethods ()
 				{
+					return methods;
+				}
+			}
+
+			protected class CompileUnitSymbolTable : SymbolTable
+			{
+				DieCompileUnit comp_unit_die;
+
+				public CompileUnitSymbolTable (DieCompileUnit comp_unit_die)
+					: base (comp_unit_die)
+				{
+					this.comp_unit_die = comp_unit_die;
+				}
+
+				public override bool HasRanges {
+					get {
+						return false;
+					}
+				}
+
+				public override ISymbolRange[] SymbolRanges {
+					get {
+						throw new InvalidOperationException ();
+					}
+				}
+
+				public override bool HasMethods {
+					get {
+						return true;
+					}
+				}
+
+				protected override ArrayList GetMethods ()
+				{
+					ArrayList methods = new ArrayList ();
+
+					ArrayList list = comp_unit_die.Subprograms;
+					LineNumberEngine engine = comp_unit_die.Engine;
+
+					foreach (DieSubprogram subprog in list)
+						methods.Add (subprog.Method);
+
 					return methods;
 				}
 			}
@@ -1732,6 +1648,8 @@ namespace Mono.Debugger.Architecture
 			long start_pc, end_pc;
 			bool is_continuous;
 			string name;
+			DwarfNativeMethod method;
+			LineNumberEngine engine;
 
 			protected override int ReadAttributes ()
 			{
@@ -1769,6 +1687,12 @@ namespace Mono.Debugger.Architecture
 						AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
 			{ }
+
+			public SourceFile SourceFile {
+				get {
+					return DieCompileUnit.SourceFile;
+				}
+			}
 
 			public string ImageFile {
 				get {
@@ -1818,10 +1742,169 @@ namespace Mono.Debugger.Architecture
 					return 0;
 			}
 
+			public IMethod Method {
+				get {
+					if (method == null)
+						throw new InvalidOperationException ();
+					return method;
+				}
+			}
+
+			public LineNumberEngine Engine {
+				get {
+					if (engine == null)
+						throw new InvalidOperationException ();
+					return engine;
+				}
+			}
+
+			public void SetEngine (LineNumberEngine engine)
+			{
+				this.engine = engine;
+				method = new DwarfNativeMethod (this, engine);
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("{0} ({1}:{2:x}:{3:x})", GetType (),
 						      Name, start_pc, end_pc);
+			}
+
+			protected class DwarfNativeMethod : MethodBase
+			{
+				LineNumberEngine engine;
+				DieSubprogram subprog;
+				DwarfSourceMethod source;
+				int start_row, end_row;
+				ArrayList addresses;
+
+				public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
+					: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
+				{
+					this.subprog = subprog;
+					this.engine = engine;
+
+					if (subprog.IsContinuous)
+						SetAddresses (subprog.StartAddress, subprog.EndAddress);
+
+					read_source ();
+					SetSource (new DwarfNativeMethodSource (this, subprog.SourceFile));
+				}
+
+				public override object MethodHandle {
+					get {
+						return this;
+					}
+				}
+
+				public override IVariable[] Parameters {
+					get {
+						throw new NotSupportedException ();
+					}
+				}
+
+				public override IVariable[] Locals {
+					get {
+						throw new NotSupportedException ();
+					}
+				}
+
+				public int StartRow {
+					get { return start_row; }
+				}
+
+				public int EndRow {
+					get { return end_row; }
+				}
+
+				public ArrayList Addresses {
+					get { return addresses; }
+				}
+
+				public SourceMethod SourceMethod {
+					get { return source; }
+				}
+
+				void read_source ()
+				{
+					start_row = end_row = 0;
+					addresses = null;
+
+					string file = engine.GetSource (
+						subprog, out start_row, out end_row, out addresses);
+					if (file == null)
+						throw new InternalError ();
+
+					if ((addresses != null) && (addresses.Count > 2)) {
+						LineEntry start = (LineEntry) addresses [1];
+						LineEntry end = (LineEntry) addresses [addresses.Count - 1];
+
+						SetMethodBounds (start.Address, end.Address);
+					}
+
+					source = new DwarfSourceMethod (subprog.SourceFile, this);
+					subprog.DieCompileUnit.AddMethod (source);
+				}
+			}
+
+			protected class DwarfNativeMethodSource : MethodSource
+			{
+				DwarfNativeMethod method;
+
+				public DwarfNativeMethodSource (DwarfNativeMethod method, SourceFile file)
+					: base (method, file)
+				{
+					this.method = method;
+				}
+
+				protected override MethodSourceData ReadSource ()
+				{
+					return new MethodSourceData (
+						method.StartRow, method.EndRow, method.Addresses,
+						method.SourceMethod);
+				}
+
+				public override SourceMethod[] MethodLookup (string query)
+				{
+					return new SourceMethod [0];
+				}
+			}
+
+			protected class DwarfSourceMethod : SourceMethod
+			{
+				IMethod method;
+
+				public DwarfSourceMethod (SourceFile source, DwarfNativeMethod method)
+					: base (source, method.Name, method.StartRow, method.EndRow, false)
+				{
+					this.method = method;
+				}
+
+				public override bool IsLoaded {
+					get {
+						return true;
+					}
+				}
+
+				public override IMethod Method {
+					get {
+						return method;
+					}
+				}
+
+				public override TargetAddress Lookup (int line)
+				{
+					if (!method.HasSource)
+						return TargetAddress.Null;
+
+					return method.Source.Lookup (line);
+				}
+
+				public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+										 object user_data)
+				{
+					throw new InvalidOperationException ();
+				}
 			}
 		}
 
@@ -1831,7 +1914,6 @@ namespace Mono.Debugger.Architecture
 			long start_offset, unit_length, abbrev_offset;
 			int version, address_size;
 			DieCompileUnit comp_unit_die;
-			DwarfCompileUnitSymbolTable symtab;
 			Hashtable abbrevs;
 
 			public CompilationUnit (DwarfReader dwarf, DwarfBinaryReader reader)
@@ -1862,8 +1944,6 @@ namespace Mono.Debugger.Architecture
 
 				comp_unit_die = new DieCompileUnit (reader, this);
 
-				symtab = new DwarfCompileUnitSymbolTable (comp_unit_die);
-
 				reader.Position = start_offset + unit_length;
 			}
 
@@ -1881,7 +1961,7 @@ namespace Mono.Debugger.Architecture
 
 			public ISymbolTable SymbolTable {
 				get {
-					return symtab;
+					return DieCompileUnit.SymbolTable;
 				}
 			}
 
