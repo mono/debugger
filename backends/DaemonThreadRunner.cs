@@ -191,21 +191,21 @@ namespace Mono.Debugger.Backends
 		protected virtual void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-					if (daemon_thread != null) {
-						daemon_thread.Abort ();
-						daemon_thread = null;
-					}
-				}
+			if (disposed)
+				return;
 
-				// Release unmanaged resources
-				this.disposed = true;
+			lock (this) {
+				if (disposed)
+					return;
 
-				lock (this) {
-					// Nothing to do yet.
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				if (daemon_thread != null) {
+					daemon_thread.Abort ();
+					daemon_thread = null;
 				}
 			}
 		}

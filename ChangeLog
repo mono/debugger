@@ -1,3 +1,15 @@
+2003-04-12  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs (TargetExitedEvent): New event.
+	(Kill): Just call Dispose() here, this does everything for us.
+
+	* backends/ThreadManager.cs (Kill): New public method.  The is the
+	recommended API to kill the application being debugged.
+
+	* backends/DaemonThreadRunner.cs, Debugger.cs, Process.cs,
+	SingleSteppingEngine.cs, ThreadManager.cs (Dispose): Make this
+	thread-safe.
+
 2003-04-10  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetNotification.cs

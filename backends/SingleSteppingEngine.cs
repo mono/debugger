@@ -194,7 +194,8 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				command_result = new CommandResult (message, arg);
-				thread_notify.Signal ();
+				if (thread_notify != null)
+					thread_notify.Signal ();
 				result_sent = true;
 				completed_event.Set ();
 			}
@@ -601,6 +602,8 @@ namespace Mono.Debugger.Backends
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 
+		public event TargetExitedHandler TargetExitedEvent;
+
 		// <summary>
 		//   The single-stepping engine's target state.  This will be
 		//   TargetState.RUNNING while the engine is stepping.
@@ -883,14 +886,18 @@ namespace Mono.Debugger.Backends
 
 		void child_exited ()
 		{
+			child_already_exited = true;
+
 			inferior = null;
 			frames_invalid ();
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
+			if (TargetExitedEvent != null)
+				TargetExitedEvent ();
 		}
 
-		bool initialized
-;
+		bool child_already_exited;
+		bool initialized;
 		bool reached_main;
 		bool debugger_info_read;
 
@@ -1741,13 +1748,7 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			if (inferior == null)
-				return;
-
-			if (engine_thread != null) {
-				engine_thread.Abort ();
-				engine_thread = null;
-			}
+			Dispose ();
 		}
 
 		public void SetSignal (int signal, bool send_it)
@@ -2360,29 +2361,28 @@ namespace Mono.Debugger.Backends
 		protected virtual void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-					if (engine_thread != null) {
-						engine_thread.Abort ();
-						engine_thread = null;
-					}
-					if (thread_notify != null) {
-						thread_notify.Dispose ();
-						thread_notify = null;
-					}
-					if (inferior != null) {
-						inferior.Dispose ();
-						inferior = null;
-					}
+			if (disposed)
+				return;
+
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				if ((engine_thread != null) && !child_already_exited)
+					engine_thread.Abort ();
+				engine_thread = null;
+				if (thread_notify != null) {
+					thread_notify.Dispose ();
+					thread_notify = null;
 				}
-
-				// Release unmanaged resources
-				this.disposed = true;
-
-				lock (this) {
-					// Nothing to do yet.
+				if (inferior != null) {
+					inferior.Dispose ();
+					inferior = null;
 				}
 			}
 		}

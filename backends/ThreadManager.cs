@@ -115,6 +115,7 @@ namespace Mono.Debugger
 		public event ThreadEventHandler MainThreadCreatedEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
+		public event TargetExitedHandler TargetExitedEvent;
 
 		public event TargetOutputHandler TargetOutputEvent;
 		public event TargetOutputHandler TargetErrorOutputEvent;
@@ -199,6 +200,12 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		public void Kill ()
+		{
+			if (main_process != null)
+				main_process.Kill ();
+		}
+
 		bool main_exited = false;
 
 		void process_exited (Process process)
@@ -217,6 +224,9 @@ namespace Mono.Debugger
 
 				foreach (ThreadData data in thread_hash.Values)
 					data.Process.Kill ();
+
+				if (TargetExitedEvent != null)
+					TargetExitedEvent ();
 			}
 		}
 
@@ -547,21 +557,18 @@ namespace Mono.Debugger
 		protected virtual void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-					foreach (ThreadData data in thread_hash.Values)
-						data.Process.Dispose ();
-					breakpoint_manager.Dispose ();
-				}
-				
-				// Release unmanaged resources
-				this.disposed = true;
+			lock (this) {
+				if (disposed)
+					return;
 
-				lock (this) {
-					// Nothing to do yet.
-				}
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				foreach (ThreadData data in thread_hash.Values)
+					data.Process.Dispose ();
+				breakpoint_manager.Dispose ();
 			}
 		}
 

@@ -54,7 +54,6 @@ namespace Mono.Debugger
 				backend, start, bfd_container, backend.ThreadManager.BreakpointManager,
 				new DebuggerErrorHandler (debugger_error));
 
-			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
@@ -95,6 +94,7 @@ namespace Mono.Debugger
 				sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 				sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 				sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+				sse.TargetExitedEvent += new TargetExitedHandler (child_exited);
 
 				if (pid != -1) {
 					this.pid = pid;
@@ -504,22 +504,24 @@ namespace Mono.Debugger
 		protected virtual void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-					if (iprocess != null)
-						iprocess.Dispose ();
-					if (runner != null)
-						runner.Dispose ();
-				}
+			if (disposed)
+				return;
 
-				// Release unmanaged resources
-				this.disposed = true;
+			lock (this) {
+				if (disposed)
+					return;
 
-				lock (this) {
-					// Nothing to do yet.
-				}
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				if (iprocess != null)
+					iprocess.Dispose ();
+				iprocess = null;
+				if (runner != null)
+					runner.Dispose ();
+				runner = null;
 			}
 		}
 

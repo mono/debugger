@@ -205,9 +205,9 @@ generated_command
 	  {
 		$$ = new DownCommand ((ProcessExpression) $2);
 	  }
-	| KILL process_expression
+	| KILL
 	  {
-		$$ = new KillProcessCommand ((ProcessExpression) $2);
+		$$ = new KillCommand ();
 	  }
 	| SHOW PROCESSES
 	  {

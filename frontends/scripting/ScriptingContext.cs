@@ -672,6 +672,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
 
 			if (options.JitWrapper != null)
 				ProcessStart.Path_Mono = options.JitWrapper;
@@ -1093,6 +1094,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			procs.Add (process);
 		}
 
+		void target_exited ()
+		{
+			if (backend != null)
+				backend.Dispose ();
+			backend = null;
+		}
+
 		public void Save (string filename)
 		{
 			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
@@ -1252,6 +1260,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void PrintHelp (string arguments)
 		{
 			generator.PrintHelp (this, arguments);
+		}
+
+		public void Kill ()
+		{
+			if (backend != null)
+				backend.ThreadManager.Kill ();
 		}
 	}
 }
