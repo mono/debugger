@@ -154,6 +154,7 @@ namespace Mono.Debugger.Backends
 			this.pid = pid;
 
 			reached_main = true;
+			reached_main_2 = true;
 			initialized = true;
 
 			engine_thread = new Thread (new ThreadStart (start_engine_thread_attach));
@@ -475,9 +476,18 @@ namespace Mono.Debugger.Backends
 			//
 
 			if (initialized && !reached_main) {
-				main_method_retaddr = inferior.GetReturnAddress ();
 				backend.ReachedMain (process);
 				reached_main = true;
+
+				if (!process.ProcessStart.IsNative) {
+					command = new Command (StepOperation.Run);
+					goto again;
+				}
+			}
+
+			if (initialized && !reached_main_2) {
+				main_method_retaddr = inferior.GetReturnAddress ();
+				reached_main_2 = true;
 			}
 
 			TargetAddress frame = inferior.CurrentFrame;
@@ -766,6 +776,7 @@ namespace Mono.Debugger.Backends
 		bool initialized
 ;
 		bool reached_main;
+		bool reached_main_2;
 		bool debugger_info_read;
 
 		private enum StepOperation {

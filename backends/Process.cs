@@ -388,6 +388,10 @@ namespace Mono.Debugger
 			return new_process;
 		}
 
+		public ProcessStart ProcessStart {
+			get { return start; }
+		}
+
 		void child_exited ()
 		{
 			inferior.Dispose ();

@@ -158,7 +158,7 @@ namespace Mono.Debugger
 		internal void ReachedMain (Process process)
 		{
 			module_manager.Locked = true;
-			if (csharp_language != null)
+			if (!process.ProcessStart.IsNative)
 				csharp_language.Inferior = process.Inferior;
 			process.Inferior.UpdateModules ();
 			UpdateSymbolTable ();
@@ -279,8 +279,7 @@ namespace Mono.Debugger
 
 		public void UpdateSymbolTable ()
 		{
-			return;
-			if (csharp_language != null)
+			if ((process != null) && !process.ProcessStart.IsNative)
 				csharp_language.UpdateSymbolTable ();
 		}
 
