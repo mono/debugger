@@ -99,6 +99,10 @@ expression
 	  {
 		$$ = new RegisterExpression ((string) $2, 0);
 	  }
+	| STAR expression
+	  {
+		$$ = new VariableDereferenceExpression ((Expression) $2);
+	  }
 	;
 
 variable_or_type_name

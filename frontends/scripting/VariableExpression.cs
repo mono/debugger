@@ -452,42 +452,44 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class VariableDereferenceExpression : VariableExpression
 	{
-		VariableExpression var_expr;
+		Expression expr;
 
-		public VariableDereferenceExpression (VariableExpression var_expr)
+		public VariableDereferenceExpression (Expression expr)
 		{
-			this.var_expr = var_expr;
+			this.expr = expr;
 		}
 
 		public override string Name {
 			get {
-				return '*' + var_expr.Name;
+				return '*' + expr.Name;
 			}
 		}
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			ITargetPointerObject pobj = var_expr.ResolveVariable (context) as ITargetPointerObject;
+			ITargetPointerObject pobj = expr.ResolveVariable (context) as ITargetPointerObject;
 			if (pobj == null)
-				throw new ScriptingException ("Variable {0} is not a pointer type.",
-							      var_expr.Name);
+				throw new ScriptingException (
+					"Variable `{0}' is not a pointer type.", expr.Name);
 
 			if (!pobj.HasDereferencedObject)
-				throw new ScriptingException ("Cannot dereference {0}.", var_expr.Name);
+				throw new ScriptingException (
+					"Cannot dereference `{0}'.", expr.Name);
 
 			return pobj.DereferencedObject;
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ITargetPointerObject pobj = var_expr.ResolveVariable (context) as ITargetPointerObject;
+			ITargetPointerObject pobj = expr.ResolveVariable (context) as ITargetPointerObject;
 			if (pobj == null)
-				throw new ScriptingException ("Variable {0} is not a pointer type.",
-							      var_expr.Name);
+				throw new ScriptingException (
+					"Variable `{0}` is not a pointer type.", expr.Name);
 
 			ITargetType type = pobj.CurrentType;
 			if (type == null)
-				throw new ScriptingException ("Cannot get current type of {0}.", var_expr.Name);
+				throw new ScriptingException (
+					"Cannot get current type of `{0}'.", expr.Name);
 
 			return type;
 		}
