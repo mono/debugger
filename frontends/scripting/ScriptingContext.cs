@@ -168,7 +168,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void PrintVariable (ScriptingContext context, bool is_param, IVariable variable)
 		{
-			context.Print (variable);
+			ITargetObject obj = null;
+			try {
+				obj = variable.GetObject (frame);
+			} catch {
+			}
+
+			string contents;
+			if (obj != null)
+				contents = context.FormatObject (obj);
+			else
+				contents = "<cannot display object>";
+				
+			context.Print (String.Format ("${0} = ({1}) {2}", variable.Name, variable.Type.Name, contents));
 		}
 
 		public IVariable GetVariableInfo (string identifier)
@@ -746,13 +758,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void PrintObject (object obj)
 		{
+			Print (FormatObject (obj));
+		}
+
+		public string FormatObject (object obj)
+		{
 			if (obj is long)
-				Print (String.Format ("0x{0:x}", (long) obj));
+				return String.Format ("0x{0:x}", (long) obj);
 			else if (obj is ITargetObject) {
 				LastObject = (ITargetObject) obj;
-				Print (LastObject.Print ());
+				return LastObject.Print ();
 			} else
-				Print (obj);
+				return obj.ToString ();
 		}
 
 		public void PrintInstruction (AssemblerLine line)

@@ -1,3 +1,12 @@
+2003-09-13  Martin Baulig  <martin@ximian.com>
+
+	* arch/ArchitectureI386.cs (ArchitectureI386.UnwindStack): Use
+	`(long) (uint)' instead of just `(long)' to make this work for
+	registers having "negative" values (0xbfffffec for instance).
+
+	* frontends/scripting/ScriptingContext.cs
+	(FrameHandle.PrintVariable): Format this nicely.
+
 2003-09-08  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/: When invoking a method with the `call'

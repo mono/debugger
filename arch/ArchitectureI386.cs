@@ -306,7 +306,7 @@ namespace Mono.Debugger
 			pos += 2;
 
 			TargetAddress ebp = new TargetAddress (memory.AddressDomain, regs [0]);
-			regs [0] = (long) memory.ReadInteger (ebp);
+			regs [0] = (long) (uint) memory.ReadInteger (ebp);
 			ebp -= memory.TargetAddressSize;
 
 			while (pos < length) {
@@ -317,22 +317,22 @@ namespace Mono.Debugger
 
 				switch (opcode) {
 				case 0x50: /* eax */
-					regs [1] = (long) memory.ReadInteger (ebp);
+					regs [1] = (long) (uint) memory.ReadInteger (ebp);
 					break;
 				case 0x51: /* ecx */
-					regs [3] = (long) memory.ReadInteger (ebp);
+					regs [3] = (long) (uint) memory.ReadInteger (ebp);
 					break;
 				case 0x52: /* edx */
-					regs [4] = (long) memory.ReadInteger (ebp);
+					regs [4] = (long) (uint) memory.ReadInteger (ebp);
 					break;
 				case 0x53: /* ebx */
-					regs [2] = (long) memory.ReadInteger (ebp);
+					regs [2] = (long) (uint) memory.ReadInteger (ebp);
 					break;
 				case 0x56: /* esi */
-					regs [5] = (long) memory.ReadInteger (ebp);
+					regs [5] = (long) (uint) memory.ReadInteger (ebp);
 					break;
 				case 0x57: /* edi */
-					regs [6] = (long) memory.ReadInteger (ebp);
+					regs [6] = (long) (uint) memory.ReadInteger (ebp);
 					break;
 				}
 
