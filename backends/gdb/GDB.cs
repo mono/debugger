@@ -41,6 +41,9 @@ namespace Mono.Debugger.Backends
 		IArchitecture arch;
 
 		ArrayList symtabs;
+		uint symtab_generation = 0;
+
+		long generic_trampoline_code = 0;
 
 		int last_breakpoint_id;
 
@@ -460,18 +463,33 @@ namespace Mono.Debugger.Backends
 		string last_string_value;
 		bool last_value_ok;
 
-		void UpdateSymbolFiles ()
+		void update_symbol_files ()
 		{
+			uint generation = ReadInteger ("print/u mono_debugger_symbol_file_table_generation");
+			if (generation == symtab_generation)
+				return;
+
+			uint modified = ReadInteger ("call mono_debugger_update_symbol_file_table()");
+			if (modified == 0)
+				return;
+
+			generic_trampoline_code = ReadAddress ("print/a mono_generic_trampoline_code");
+			Console.WriteLine ("TRAMPOLINE: {0:x}", generic_trampoline_code);
+
 			symtabs = new ArrayList ();
 
-			long original = ReadAddress ("call /a mono_debugger_internal_get_symbol_files ()");
+			long original = ReadAddress ("print/a mono_debugger_symbol_file_table");
 			long ptr = original;
+			uint size = ReadInteger (ptr);
+			ptr += target_integer_size;
+			uint count = ReadInteger (ptr);
+			ptr += target_integer_size;
+			symtab_generation = ReadInteger (ptr);
+			ptr += target_integer_size;
 
-			do {
+			for (uint i = 0; i < count; i++) {
 				long magic = ReadLongInteger (ptr);
-				if (magic == 0)
-					break;
-				else if (magic != OffsetTable.Magic)
+				if (magic != OffsetTable.Magic)
 					throw new SymbolTableException ();
 				ptr += target_long_integer_size;
 
@@ -520,9 +538,7 @@ namespace Mono.Debugger.Backends
 
 				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
 
-			} while (true);
-
-			send_gdb_command ("call mono_debugger_internal_free_symbol_files (" + original + ")");
+			}
 		}
 
 		// <remarks>
@@ -680,10 +696,7 @@ namespace Mono.Debugger.Backends
 		{
 			bool send_event = false;
 
-			uint modified = ReadInteger ("print/u mono_debugger_internal_symbol_files_changed");
-
-			if (modified != 0)
-				UpdateSymbolFiles ();
+			update_symbol_files ();
 
 			int step_range = 0;
 			long start_address = 0;

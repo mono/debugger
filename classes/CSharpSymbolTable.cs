@@ -31,11 +31,6 @@ namespace Mono.Debugger
 
 				MethodAddress method_address = method.Address;
 
-				if (address == method_address.TrampolineAddress) {
-					Console.WriteLine ("Can't do trampolines yet: " + method);
-					return null;
-				}
-
 				if ((address < method_address.StartAddress) ||
 				    (address > method_address.EndAddress))
 					continue;
