@@ -6,13 +6,13 @@ MCS_FLAGS=-g
 
 noinst_SCRIPTS = \
 	TestManagedTypes.exe TestAssembly.exe TestNamespace.exe TestModule.dll \
-	TestInvocation.exe Simple.exe
+	TestInvocation.exe TestInheritance.exe Simple.exe
 
 noinst_PROGRAMS = testnativetypes module libfoo.so
 
 EXTRA_DIST = \
 	TestManagedTypes.cs TestAssembly.cs TestModule.cs TestNamespace.cs \
-	TestInvocation.cs Simple.cs mdb.exp
+	TestInvocation.cs Simple.cs TestInheritance.cs mdb.exp
 
 testnativetypes_SOURCES = testnativetypes.c
 
