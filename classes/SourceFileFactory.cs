@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using Mono.Debugger;
+using Mono.CSharp.Debugger;
 
 public class SourceFile : ISourceFile
 {

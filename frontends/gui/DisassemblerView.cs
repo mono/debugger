@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Runtime.InteropServices;
-using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.GUI
 {
@@ -33,7 +32,7 @@ namespace Mono.Debugger.GUI
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 		}
 
-		MethodEntry current_method = null;
+		IMethod current_method = null;
 		Hashtable address_hash = null;
 
 		void FramesInvalidEvent ()
@@ -48,14 +47,14 @@ namespace Mono.Debugger.GUI
 
 			Gtk.TextBuffer buffer = disassembler_view.Buffer;
 
-			if ((frame.SymbolHandle == null) || (backend.Inferior.Disassembler == null)) {
+			if ((frame.Method == null) || (backend.Inferior.Disassembler == null)) {
 				text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
 				current_method = null;
 				return;
 			}
 
 			IDisassembler dis = backend.Inferior.Disassembler;
-			MethodEntry method = frame.SymbolHandle.Method;
+			IMethod method = frame.Method;
 
 			int row = 0;
 			if (current_method != method) {
@@ -63,13 +62,10 @@ namespace Mono.Debugger.GUI
 
 				text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
 
-				long start = (long) method.Address.StartAddress;
-				long end = (long) method.Address.EndAddress;
-
-				ITargetLocation current = new TargetLocation (start);
+				ITargetLocation current = method.StartAddress;
 				address_hash = new Hashtable ();
 
-				while (current.Address < end) {
+				while (current.Address < method.EndAddress.Address) {
 					long address = current.Address;
 					string insn = dis.DisassembleInstruction (ref current);
 

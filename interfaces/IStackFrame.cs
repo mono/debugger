@@ -24,7 +24,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ISymbolHandle SymbolHandle {
+		IMethod Method {
 			get;
 		}
 	}

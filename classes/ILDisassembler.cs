@@ -8,7 +8,7 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
 {
-	public class Disassembler : ISourceBuffer
+	public class ILDisassembler : ISourceBuffer
 	{
 		string image_file;
 		string standard_output;
@@ -40,12 +40,18 @@ namespace Mono.Debugger
 			return retval;
 		}
 
-		public uint GetEndLine (int index)
+		public int GetEndLine (int index)
 		{
-			return (uint) end_lines [index - 1];
+			return (int) end_lines [index - 1];
 		}
 
-		protected Disassembler (string image_file)
+		public int GetStartLine (int index)
+		{
+			LineNumberEntry lne = (LineNumberEntry) ((ArrayList) methods [index - 1]) [0];
+			return (int) lne.Row;
+		}
+
+		protected ILDisassembler (string image_file)
 		{
 			this.image_file = image_file;
 			string command_line = "monodis " + image_file;
@@ -83,7 +89,7 @@ namespace Mono.Debugger
 					i++;
 
 					if (line.StartsWith ("}")) {
-						end_lines.Add ((uint) i);
+						end_lines.Add (i);
 						break;
 					}
 
@@ -98,12 +104,12 @@ namespace Mono.Debugger
 			}
 		}
 
-		public static Disassembler Disassemble (string image_file)
+		public static ILDisassembler Disassemble (string image_file)
 		{
 			if (files.Contains (image_file))
-				return (Disassembler) files [image_file];
+				return (ILDisassembler) files [image_file];
 
-			Disassembler dis = new Disassembler (image_file);
+			ILDisassembler dis = new ILDisassembler (image_file);
 			files.Add (image_file, dis);
 			return dis;
 		}

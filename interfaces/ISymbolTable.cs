@@ -9,17 +9,8 @@ namespace Mono.Debugger
 		ITargetLocation Lookup (ISourceLocation source);
 	}
 
-	public interface ISymbolHandle : ISymbolLookup
-	{
-		MethodEntry Method {
-			get;
-		}
-
-		bool IsInSameMethod (ITargetLocation target);
-	}
-
 	public interface ISymbolTable : ISymbolLookup
 	{
-		ISourceLocation Lookup (ITargetLocation target, out ISymbolHandle handle);
+		ISourceLocation Lookup (ITargetLocation target, out IMethod method);
 	}
 }

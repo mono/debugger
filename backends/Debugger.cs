@@ -274,14 +274,14 @@ namespace Mono.Debugger.Backends
 		public readonly ITargetLocation TargetLocation = null;
 		public readonly IInferior Inferior;
 
-		ISymbolHandle symbol_handle;
+		IMethod method;
 
 		public StackFrame (IInferior inferior, ITargetLocation location,
-				   ISourceLocation source, ISymbolHandle handle)
+				   ISourceLocation source, IMethod method)
 			: this (inferior, location)
 		{
-			SourceLocation = source;
-			symbol_handle = handle;
+			this.SourceLocation = source;
+			this.method = method;
 		}
 
 		public StackFrame (IInferior inferior, ITargetLocation location)
@@ -302,9 +302,9 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		ISymbolHandle IStackFrame.SymbolHandle {
+		IMethod IStackFrame.Method {
 			get {
-				return symbol_handle;
+				return method;
 			}
 		}
 
@@ -394,7 +394,7 @@ namespace Mono.Debugger.Backends
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
 
-		ISourceFileFactory source_file_factory;
+		ISourceFileFactory source_factory;
 
 		Assembly application;
 		Inferior inferior;
@@ -438,7 +438,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			this.source_file_factory = source_factory;
+			this.source_factory = source_factory;
 			this.application = Assembly.LoadFrom (application);
 
 			MethodInfo main = this.application.EntryPoint;
@@ -584,7 +584,7 @@ namespace Mono.Debugger.Backends
 				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
 					image_file, reader.BinaryReader, address_reader.BinaryReader);
 
-				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
+				symtabs.Add (new CSharpSymbolTable (symreader, source_factory));
 			}
 
 			inferior_output ("Done updating symbol files.");
@@ -682,7 +682,7 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End.Address);
+			Console.WriteLine ("RUNNING UNTIL: {1} {0:x}", frame.End.Address, frame.End);
 
 			inferior.Continue (frame.End);
 		}
@@ -696,24 +696,24 @@ namespace Mono.Debugger.Backends
 
 				update_symbol_files ();
 
-				ISymbolHandle symbol_handle;
-				ISourceLocation source = LookupAddress (location, out symbol_handle);
+				IMethod method;
+				ISourceLocation source = LookupAddress (location, out method);
 
 				if (source != null)
-					return new StackFrame (inferior, location, source, symbol_handle);
+					return new StackFrame (inferior, location, source, method);
 				else
 					return new StackFrame (inferior, location);
 			}
 		}
 
-		ISourceLocation LookupAddress (ITargetLocation address, out ISymbolHandle handle)
+		ISourceLocation LookupAddress (ITargetLocation address, out IMethod method)
 		{
-			handle = null;
+			method = null;
 			if (symtabs == null)
 				return null;
 
 			foreach (ISymbolTable symtab in symtabs) {
-				ISourceLocation source = symtab.Lookup (address, out handle);
+				ISourceLocation source = symtab.Lookup (address, out method);
 
 				if (source != null)
 					return source;
@@ -730,11 +730,11 @@ namespace Mono.Debugger.Backends
 
 		public ISourceFileFactory SourceFileFactory {
 			get {
-				return source_file_factory;
+				return source_factory;
 			}
 
 			set {
-				source_file_factory = value;
+				source_factory = value;
 			}
 		}
 
