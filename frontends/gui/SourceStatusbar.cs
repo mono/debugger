@@ -9,6 +9,10 @@ namespace Mono.Debugger.GUI
 {
 	public class SourceStatusbar : TargetStatusbar
 	{
+		public SourceStatusbar (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Statusbar) gui.GXML [glade_name])
+		{ }
+
 		public SourceStatusbar (DebuggerGUI gui, Gtk.Statusbar widget)
 			: base (gui, widget)
 		{

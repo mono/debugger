@@ -37,8 +37,12 @@ namespace Mono.Debugger.GUI
 		Gdk.Color color_change, color_stable;
 		bool active;
 
-		public RegisterDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Notebook notebook)
-			: base (gui, window, notebook)
+		public RegisterDisplay (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Notebook) gui.GXML [glade_name])
+		{ }
+
+		public RegisterDisplay (DebuggerGUI gui, Gtk.Notebook notebook)
+			: base (gui, null, notebook)
 		{
 			this.notebook = notebook;
 

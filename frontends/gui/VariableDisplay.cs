@@ -17,8 +17,12 @@ namespace Mono.Debugger.GUI
 		Gtk.TreeView tree;
 		Gtk.TreeStore store;
 
-		public VariableDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
-			: base (gui, window, container)
+		public VariableDisplay (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Container) gui.GXML [glade_name])
+		{ }
+
+		public VariableDisplay (DebuggerGUI gui, Gtk.Container container)
+			: base (gui, null, container)
 		{
 			store = new TreeStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,

@@ -12,6 +12,10 @@ namespace Mono.Debugger.GUI
 		DebuggerEntry entry;
 		Stack stack = null;
 
+		public CurrentInstructionEntry (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Container) gui.GXML [glade_name])
+		{ }
+
 		public CurrentInstructionEntry (DebuggerGUI gui, Gtk.Container container)
 			: base (gui, null, container)
 		{

@@ -15,8 +15,12 @@ namespace Mono.Debugger.GUI
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
 
-		public BreakpointManager (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
-			: base (gui, window, container)
+		public BreakpointManager (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Container) gui.GXML [glade_name])
+		{ }
+
+		public BreakpointManager (DebuggerGUI gui, Gtk.Container container)
+			: base (gui, null, container)
 		{
 			store = new ListStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,

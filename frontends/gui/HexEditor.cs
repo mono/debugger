@@ -24,10 +24,18 @@ namespace Mono.Debugger.GUI
 		CellRendererText[] DataRenderer;
 		Combo area_combo;
 		bool force_writable;
+		Gtk.Dialog dialog;
 
-		public HexEditor (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
-			: base (gui, window, container)
+		public HexEditor (DebuggerGUI gui, string dialog_glade, string container_glade)
+			: this (gui, (Gtk.Dialog) gui.GXML [dialog_glade],
+				(Gtk.Container) gui.GXML [container_glade])
+		{ }
+
+		public HexEditor (DebuggerGUI gui, Gtk.Dialog dialog, Gtk.Container container)
+			: base (gui, null, container)
 		{
+			this.dialog = dialog;
+
 			store = new ListStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,
@@ -420,6 +428,11 @@ namespace Mono.Debugger.GUI
 
 			store.SetValue (iter, 16, new GLib.Value (String.Format ("{0:x}  ", address)));
 			store.SetValue (iter, 18, new GLib.Value (new String (data)));
+		}
+
+		public void RunDialog ()
+		{
+			dialog.Show ();
 		}
 	}
 }

@@ -1,5 +1,10 @@
 2003-03-09  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/: Added .ctors which take the glade name instead
+	of a widget.
+
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/: Added "File / Open" menu item to open a source
 	view.  Not yet implemented, though.
 

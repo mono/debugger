@@ -89,7 +89,6 @@ namespace Mono.Debugger.GUI
 
 		Gtk.Entry command_entry;
 		CurrentInstructionEntry current_insn;
-		RegisterDisplay register_display;
 		VariableDisplay variable_display;
 		BackTraceView backtrace_view;
 		ModuleDisplay module_display;
@@ -97,12 +96,10 @@ namespace Mono.Debugger.GUI
 		HexEditor hex_editor;
 		MemoryMapsDisplay memory_maps_display;
 		BreakpointManager breakpoint_manager;
-		Dialog hex_editor_dialog;
 		ThreadNotify thread_notify;
 
 		Gtk.TextView target_output;
 		Gtk.TextView command_output;
-		SourceStatusbar source_status;
 
 		DebuggerTextWriter output_writer;
 		DebuggerTextWriter command_writer;
@@ -212,31 +209,19 @@ namespace Mono.Debugger.GUI
 			output_writer = new OutputWindow (target_output);
 			command_writer = new OutputWindow (command_output);
 
-			register_display = new RegisterDisplay (
-				this, null, (Gtk.Notebook) gxml ["register-notebook"]);
-			variable_display = new VariableDisplay (
-				this, null, (Gtk.Container) gxml ["variable-display"]);
-			backtrace_view = new BackTraceView (
-				this, null, (Gtk.Container) gxml ["backtrace-view"]);
-			module_display = new ModuleDisplay (
-				this, null, (Gtk.Container) gxml ["module-view"]);
-			process_manager = new ProcessManager (
-				this, null, (Gtk.Container) gxml ["process-manager"]);
-			hex_editor_dialog = (Gtk.Dialog) gxml ["hexeditor-dialog"];
-			hex_editor = new HexEditor (
-				this, hex_editor_dialog, (Gtk.Container) gxml ["hexeditor-view"]);
-			memory_maps_display = new MemoryMapsDisplay (
-				this, null, (Gtk.Container) gxml ["memory-maps-view"]);
-			breakpoint_manager = new BreakpointManager (
-				this, null, (Gtk.Container) gxml ["breakpoint-manager"]);
+			variable_display = new VariableDisplay (this, "variable-display");
+			backtrace_view = new BackTraceView (this, "backtrace-view");
+			module_display = new ModuleDisplay (this, "module-view");
+			process_manager = new ProcessManager (this, "process-manager");
+			hex_editor = new HexEditor (this, "hexeditor-dialog", "hexeditor-view");
+			memory_maps_display = new MemoryMapsDisplay (this, "memory-maps-view");
+			breakpoint_manager = new BreakpointManager (this, "breakpoint-manager");
 
-			current_insn = new CurrentInstructionEntry (
-				this, (Gtk.Container) gxml ["current-insn"]);
+			current_insn = new CurrentInstructionEntry (this, "current-insn");
 
-			source_status = new SourceStatusbar (this, (Gtk.Statusbar) gxml ["status-bar"]);
-			source_manager = new SourceManager (this, (Gtk.Notebook) gxml ["code-browser-notebook"],
-							    (Gtk.Container) gxml ["disassembler-view"],
-							    source_status, register_display);
+			source_manager = new SourceManager (this, "code-browser-notebook",
+							    "disassembler-view", "status-bar",
+							    "register-notebook");
 
 			SetButtonImage ("step-over");
 			SetButtonImage ("step-into");
@@ -491,7 +476,7 @@ namespace Mono.Debugger.GUI
 
 		void OnViewHexEditor (object sender, EventArgs args)
 		{
-			hex_editor_dialog.Show ();
+			hex_editor.RunDialog ();
 		}
 
 		void TargetOutput (string output)

@@ -24,6 +24,15 @@ namespace Mono.Debugger.GUI {
 		// State tracking
 		//
 		SourceView current_source = null;
+
+		public SourceManager (DebuggerGUI gui, string notebook_glade,
+				      string disassembler_glade, string source_status_glade,
+				      string register_display_glade)
+			: this (gui, (Gtk.Notebook) gui.GXML [notebook_glade],
+				(Gtk.Container) gui.GXML [disassembler_glade],
+				new SourceStatusbar (gui, source_status_glade),
+				new RegisterDisplay (gui, register_display_glade))
+		{ }
 		
 		public SourceManager (DebuggerGUI gui, Gtk.Notebook notebook,
 				      Gtk.Container disassembler_container,

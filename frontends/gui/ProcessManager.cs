@@ -16,8 +16,12 @@ namespace Mono.Debugger.GUI
 		Gtk.ListStore store;
 		int notify_id;
 
-		public ProcessManager (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
-			: base (gui, window, container)
+		public ProcessManager (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Container) gui.GXML [glade_name])
+		{ }
+
+		public ProcessManager (DebuggerGUI gui, Gtk.Container container)
+			: base (gui, container)
 		{
 			store = new ListStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,

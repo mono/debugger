@@ -12,8 +12,12 @@ namespace Mono.Debugger.GUI
 		Gtk.ListStore store;
 		Backtrace current_backtrace = null;
 
-		public BackTraceView (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
-			: base (gui, window, container)
+		public BackTraceView (DebuggerGUI gui, string glade_name)
+			: this (gui, (Gtk.Container) gui.GXML [glade_name])
+		{ }
+
+		public BackTraceView (DebuggerGUI gui, Gtk.Container container)
+			: base (gui, container)
 		{
 			store = new ListStore ((int)TypeFundamentals.TypeInt,
 					       (int)TypeFundamentals.TypeString,
