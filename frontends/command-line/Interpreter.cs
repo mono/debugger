@@ -56,7 +56,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Array.Copy (tmp_args, 1, args, 0, tmp_args.Length - 1);
 			string command = tmp_args [0];
 
-			return ProcessCommand (tmp_args [0], args);
+			try {
+				return ProcessCommand (tmp_args [0], args);
+			} catch (TargetException e) {
+				stderr.WriteLine (e);
+				return true;
+			}
 		}
 
 		// <summary>
