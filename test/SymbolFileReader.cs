@@ -62,7 +62,11 @@ namespace Mono.Debugger
 		public SymbolFileReader (string file_name)
 		{
 			assembly = Assembly.LoadFrom (file_name);
-			file = new MonoSymbolFile (assembly);
+			file = MonoSymbolFile.ReadSymbolFile (assembly);
+			if (file == null) {
+				Console.WriteLine ("Assembly doesn't contain any debugging info.");
+				Environment.Exit (1);
+			}
 		}
 
 		public void FindMethod (string method)
