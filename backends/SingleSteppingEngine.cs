@@ -209,11 +209,15 @@ namespace Mono.Debugger.Backends
 
 			initialized = true;
 
-			TargetAddress main = TargetAddress.Null;
-			main = inferior.MainMethodAddress;
+			TargetAddress main = inferior.MainMethodAddress;
 			pid = inferior.PID;
 
-			engine_thread_main (new Command (StepOperation.Run, main));
+			if (!main.IsNull) {
+				engine_thread_main (new Command (StepOperation.Run, main));
+			} else {
+				Console.WriteLine ("WARNING: Cannot get address of `main' function!");
+				engine_thread_main (null);
+			}
 		}
 
 		void start_engine_thread_attach ()
