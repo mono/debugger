@@ -144,6 +144,16 @@ namespace Mono.Debugger
 			if (add_envp != null)
 				list.AddRange (add_envp);
 
+			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
+
+                        foreach (string name in env_vars.Keys) {
+				if ((name == "PATH") || (name == "LD_LIBRARY_PATH") ||
+				    (name == "LD_BIND_NOW"))
+					continue;
+
+				list.Add (name + "=" + env_vars [name]);
+			}
+
 			envp = new string [list.Count];
 			list.CopyTo (envp, 0);
 		}
