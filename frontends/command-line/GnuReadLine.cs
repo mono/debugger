@@ -18,7 +18,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		[DllImport("libmonodebuggerreadline")]
 		extern static string mono_debugger_readline_add_history (string line);
 
-		string prompt;
 		static bool has_readline;
 
 		static GnuReadLine ()
@@ -26,17 +25,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			has_readline = mono_debugger_readline_static_init ();
 		}
 
-		public GnuReadLine (string prompt)
-		{
-			this.prompt = prompt;
-		}
-
 		public static bool IsTerminal (int fd)
 		{
 			return mono_debugger_readline_is_a_tty (fd) != 0;
 		}
 
-		public string ReadLine ()
+		public string ReadLine (string prompt)
 		{
 			if (has_readline)
 				return mono_debugger_readline_readline (prompt);

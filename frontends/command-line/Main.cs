@@ -45,23 +45,31 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
-	public class CommandLineInterpreter
+	public class CommandLineInterpreter : InputProvider
 	{
 		GnuReadLine readline = null;
 		ScriptingContext context;
 		DebuggerTextWriter writer;
+		Engine engine;
 		Parser parser;
+		string default_prompt, prompt;
+		int line = 0;
 
 		public CommandLineInterpreter (string[] args)
 		{
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
 			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (writer, writer, true, is_terminal, args);
-			parser = new Parser (context, "Debugger");
+			context = new ScriptingContext (
+				writer, writer, true, is_terminal, args);
 
-			if (is_terminal)
-				readline = new GnuReadLine (context.Prompt + " ");
+			engine = new Engine (context);
+			parser = new Parser (engine, this);
+
+			if (is_terminal) {
+				prompt = default_prompt = context.Prompt + " ";
+				readline = new GnuReadLine ();
+			}
 
 			if (!context.HasBackend)
 				return;
@@ -73,36 +81,42 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public string ReadInput ()
+		{
+			++line;
+			if (readline != null)
+				return readline.ReadLine (prompt);
+			else
+				return Console.ReadLine ();
+		}
+
+		public string ReadMoreInput ()
+		{
+			++line;
+			if (readline != null)
+				return readline.ReadLine (".. ");
+			else
+				return Console.ReadLine ();
+		}
+
+		public void Error (int pos, string message)
+		{
+			if (readline != null) {
+				string prefix = new String (' ', pos + prompt.Length);
+				Console.WriteLine ("{0}^", prefix);
+				Console.Write ("ERROR: ");
+				Console.WriteLine (message);
+			} else {
+				// If we're reading from a script, abort.
+				Console.Write ("ERROR in line {0}, column {1}: ", line, pos);
+				Console.WriteLine (message);
+				Environment.Exit (1);
+			}
+		}
+
 		public void Run ()
 		{
-			string last_line = "";
-
-			while (!parser.Quit) {
-				string line;
-				if (readline != null)
-					line = readline.ReadLine ();
-				else
-					line = Console.ReadLine ();
-				if (line == null)
-					break;
-				else if (line == "") {
-					line = last_line;
-					if (line.StartsWith ("list"))
-						line = "list continue";
-				}
-
-				line = line.TrimStart (' ', '\t');
-				line = line.TrimEnd (' ', '\t');
-				if (line == "")
-					continue;
-
-				if (!parser.Parse (line))
-					continue;
-
-				if ((readline != null) && (line != last_line))
-					readline.AddHistory (line);
-				last_line = line;					
-			}
+			parser.Run ();
 		}
 
 		public void Exit ()
