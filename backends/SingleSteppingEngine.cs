@@ -479,8 +479,10 @@ namespace Mono.Debugger.Backends
 						return;
 					// Ok, inform the user that we stopped.
 					frame_changed (inferior.CurrentFrame, null);
+					TargetEventArgs args = new TargetEventArgs (
+						TargetEventType.FrameChanged, current_frame);
 					step_operation_finished ();
-					operation_completed (null);
+					operation_completed (args);
 					return;
 				}
 			}

@@ -1,5 +1,12 @@
 2004-01-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetEvent.cs (TargetEventType): Added `FrameChanged'.
+
+	* backends/SingleSteppingEngine.cs: Emit a
+	TargetEventType.FrameChanged event after completing a callback.
+
+2004-01-15  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Expression.cs (SourceExpression): The .ctor
 	now just takes a VariableExpression and line number.  We try to
 	resolve the expr as a method and then use the new

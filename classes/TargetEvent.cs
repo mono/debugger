@@ -11,7 +11,8 @@ namespace Mono.Debugger
 		TargetStopped,
 		TargetHitBreakpoint,
 		TargetSignaled,
-		TargetExited
+		TargetExited,
+		FrameChanged
 	}
 
 	public class TargetEventArgs
@@ -28,6 +29,12 @@ namespace Mono.Debugger
 
 		public TargetEventArgs (TargetEventType type, object data, StackFrame frame)
 			: this (type, data)
+		{
+			this.Frame = frame;
+		}
+
+		public TargetEventArgs (TargetEventType type, StackFrame frame)
+			: this (type, null)
 		{
 			this.Frame = frame;
 		}
