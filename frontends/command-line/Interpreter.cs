@@ -14,6 +14,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class Interpreter
 	{
 		Parser parser;
+		string last_command = "";
 
 		// <summary>
 		//   Create a new command interpreter.
@@ -26,8 +27,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public bool ProcessCommand (string line)
 		{
 			bool ok;
+			if (line == "")
+				line = last_command;
+			if (line.StartsWith ("list"))
+				line = "list continue";
+			line = line.TrimStart (' ', '\t');
+			line = line.TrimEnd (' ', '\t');
+			if (line == "")
+				return false;
+
 			try {
 				ok = parser.Parse (line);
+				last_command = line;
 			} catch {
 				return true;
 			}

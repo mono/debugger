@@ -1,5 +1,10 @@
 2003-03-09  Martin Baulig  <martin@ximian.com>
 
+	* frontends/command-line/Interpreter.cs (ProcessCommand): Repeat
+	the last command when called with an empty string.
+
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
 	* backends/ProcessStart.cs
 	(Path_Mono, Environment_Path, Environment_LibPath): Made them
 	static and writable.
