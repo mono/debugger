@@ -2,52 +2,50 @@ using System;
 using System.Collections;
 using Mono.CSharp.Debugger;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages.CSharp
 {
 	internal class CSharpMethod : MethodSource
 	{
 		int start_row, end_row;
 		ISourceBuffer source;
-		LineNumberEntry[] line_numbers;
-		int[] line_addresses;
+		JitLineNumberEntry[] line_numbers;
 		MethodEntry method;
 		IMethod imethod;
 
-		private CSharpMethod (IMethod imethod, MethodEntry method, int[] line_addresses,
-				      ISourceBuffer source, int start_row, int end_row,
-				      LineNumberEntry[] line_numbers)
+		private CSharpMethod (IMethod imethod, MethodEntry method,
+				      JitLineNumberEntry[] line_numbers, ISourceBuffer source,
+				      int start_row, int end_row)
 			: base (imethod)
 		{
 			this.imethod = imethod;
 			this.method = method;
-			this.line_addresses = line_addresses;
+			this.line_numbers = line_numbers;
 			this.source = source;
 			this.start_row= start_row;
 			this.end_row = end_row;
-			this.line_numbers = line_numbers;
 		}
 
 		protected CSharpMethod (IMethod imethod, ISourceBuffer source,
-					MethodEntry method, int[] line_addresses)
+					MethodEntry method, JitLineNumberEntry[] line_numbers)
 			: base (imethod)
 		{
 			this.imethod = imethod;
 			this.source = source;
 			this.method = method;
-			this.line_addresses = line_addresses;
+			this.line_numbers = line_numbers;
 			this.start_row = method.StartRow;
 			this.end_row = method.EndRow;
-			this.line_numbers = method.LineNumbers;
 		}
 
 		public static CSharpMethod GetMethodSource (IMethod imethod, MethodEntry method,
-							    int[] line_addresses, SourceFileFactory factory)
+							    JitLineNumberEntry[] line_numbers,
+							    SourceFileFactory factory)
 		{
 			if (method.SourceFile != null) {
 				ISourceBuffer buffer = factory.FindFile (method.SourceFile);
 
 				if (buffer != null)
-					return new CSharpMethod (imethod, buffer, method, line_addresses);
+					return new CSharpMethod (imethod, buffer, method, line_numbers);
 			}
 
 			if (method.Token >> 24 != 6)
@@ -56,18 +54,17 @@ namespace Mono.Debugger
 			int index = (int) (method.Token & 0xffffff);
 			ILDisassembler dis = ILDisassembler.Disassemble (imethod.ImageFile);
 
-			return new CSharpMethod (imethod, method, line_addresses, dis,
-						 dis.GetStartLine (index), dis.GetEndLine (index),
-						 dis.GetLines (index));
+			return new CSharpMethod (imethod, method, line_numbers, dis,
+						 dis.GetStartLine (index), dis.GetEndLine (index));
 		}
 
 		internal static ISourceBuffer GetMethodSource (IMethod imethod, MethodEntry method,
-							       int[] line_addresses,
+							       JitLineNumberEntry[] line_numbers,
 							       SourceFileFactory factory,
 							       out int start_row, out int end_row,
 							       out ArrayList addresses)
 		{
-			CSharpMethod csharp = GetMethodSource (imethod, method, line_addresses, factory);
+			CSharpMethod csharp = GetMethodSource (imethod, method, line_numbers, factory);
 			if (csharp == null) {
 				start_row = end_row = 0;
 				addresses = null;
@@ -91,10 +88,9 @@ namespace Mono.Debugger
 			ArrayList lines = new ArrayList ();
 
 			for (int i = 0; i < line_numbers.Length; i++) {
-				LineNumberEntry lne = line_numbers [i];
-				int line_address = line_addresses [i];
+				JitLineNumberEntry lne = line_numbers [i];
 
-				lines.Add (new LineEntry (imethod.StartAddress + line_address, lne.Row));
+				lines.Add (new LineEntry (imethod.StartAddress + lne.Address, lne.Line));
 			}
 
 			lines.Sort ();
