@@ -38,6 +38,12 @@ public class B
 		this.b = b;
 		this.c = c;
 	}
+
+	public void Foo ()
+	{
+		Console.WriteLine (a);
+		Console.WriteLine (Test);
+	}
 }
 
 public class C : B
@@ -167,6 +173,7 @@ public class X
 	public static void ClassType ()
 	{
 		B b = new B (5, 256, "New England Patriots");
+		b.Foo ();
 		Console.WriteLine (b);
 	}
 

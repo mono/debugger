@@ -286,24 +286,25 @@ namespace Mono.Debugger.Frontends.Scripting
 				return GetStaticField (stype, frame, (ITargetFieldInfo) member);
 		}
 
-		protected ITargetMemberInfo FindMember (ITargetStructType stype)
+		public static ITargetMemberInfo FindMember (ITargetStructType stype,
+							    bool is_static, string name)
 		{
-			if (!IsStatic) {
+			if (!is_static) {
 				foreach (ITargetFieldInfo field in stype.Fields)
-					if (field.Name == Identifier)
+					if (field.Name == name)
 						return field;
 
 				foreach (ITargetPropertyInfo property in stype.Properties)
-					if (property.Name == Identifier)
+					if (property.Name == name)
 						return property;
 			}
 
 			foreach (ITargetFieldInfo field in stype.StaticFields)
-				if (field.Name == Identifier)
+				if (field.Name == name)
 					return field;
 
 			foreach (ITargetPropertyInfo property in stype.StaticProperties)
-				if (property.Name == Identifier)
+				if (property.Name == name)
 					return property;
 
 			return null;
@@ -400,7 +401,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected ITargetMemberInfo ResolveTypeBase (ScriptingContext context, bool report_error)
 		{
-			ITargetMemberInfo member = FindMember (Type);
+			ITargetMemberInfo member = FindMember (Type, IsStatic, Identifier);
 			if ((member != null) || !report_error)
 				return member;
 

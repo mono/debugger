@@ -390,7 +390,7 @@ namespace Mono.Debugger.Architecture
 				get { return null; }
 			}
 
-			public override ITargetType DeclaringType {
+			public override ITargetStructType DeclaringType {
 				get { return null; }
 			}
 

@@ -1315,7 +1315,7 @@ namespace Mono.Debugger.Languages.CSharp
 			SourceMethod info;
 			C.MethodEntry method;
 			R.MethodBase rmethod;
-			MonoType decl_type;
+			MonoClass decl_type;
 			MonoType[] param_types;
 			MonoType[] local_types;
 			IVariable this_var;
@@ -1415,7 +1415,7 @@ namespace Mono.Debugger.Languages.CSharp
 					}
 				}
 
-				decl_type = reader.Table.GetType (
+				decl_type = (MonoClass) reader.Table.GetType (
 					rmethod.DeclaringType, address.ClassTypeInfoOffset);
 
 				if (address.HasThis)
@@ -1452,7 +1452,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			public override ITargetType DeclaringType {
+			public override ITargetStructType DeclaringType {
 				get {
 					return decl_type;
 				}

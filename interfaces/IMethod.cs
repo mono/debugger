@@ -95,7 +95,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetType DeclaringType {
+		ITargetStructType DeclaringType {
 			get;
 		}
 

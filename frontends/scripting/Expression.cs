@@ -214,6 +214,35 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class VariableAccessExpression : Expression
+	{
+		IVariable var;
+
+		public VariableAccessExpression (IVariable var)
+		{
+			this.var = var;
+		}
+
+		public override string Name {
+			get { return var.Name; }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			return var.Type;
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			return context.CurrentFrame.GetVariable (var);
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return ResolveVariable (context);
+		}
+	}
+
 	public class SimpleNameExpression : Expression
 	{
 		string name;
@@ -227,40 +256,74 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return name; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		Expression LookupField (ScriptingContext context, FrameHandle frame)
+		{
+			IMethod method = frame.Frame.Method;
+			if ((method == null) || (method.DeclaringType == null))
+				return null;
+
+			ITargetMemberInfo member = StructAccessExpression.FindMember (
+				method.DeclaringType, !method.HasThis, name);
+			if (member == null)
+				return null;
+
+			if (method.HasThis) {
+				ITargetObject instance = frame.GetVariable (method.This);
+
+				return new StructAccessExpression (
+					frame.Frame, (ITargetStructObject) instance, name);
+			} else
+				return new StructAccessExpression (
+					frame.Frame, method.DeclaringType, name);
+		}
+
+		Expression ResolveSimpleName (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 			IVariable var = frame.GetVariableInfo (name, false);
 			if (var != null)
-				return var.Type;
+				return new VariableAccessExpression (var);
+
+			Expression expr = LookupField (context, frame);
+			if (expr != null)
+				return expr;
 
 			if (frame.Frame.Language == null)
 				return null;
 
-			return frame.Frame.Language.LookupType (frame.Frame, name);
-		}
-
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			FrameHandle frame = context.CurrentFrame;
-			IVariable var = frame.GetVariableInfo (name, false);
-			if (var != null)
-				return frame.GetVariable (var);
+			ITargetType type = frame.Frame.Language.LookupType (frame.Frame, name);
+			if (type != null)
+				return new TypeExpression (type);
 
 			return null;
 		}
 
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			Expression expr = ResolveSimpleName (context);
+			if (expr == null)
+				throw new ScriptingException ("No such type `{0}'", name);
+
+			return expr.ResolveType (context);
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			Expression expr = ResolveSimpleName (context);
+			if (expr == null)
+				throw new ScriptingException ("No such variable `{0}'", name);
+
+			return expr.ResolveVariable (context);
+		}
+
 		protected override object DoResolve (ScriptingContext context)
 		{
-			ITargetObject obj = DoResolveVariable (context);
-			if (obj != null)
-				return obj;
+			Expression expr = ResolveSimpleName (context);
+			if (expr == null)
+				throw new ScriptingException (
+					"No such variable or type `{0}'", name);
 
-			ITargetType type = DoResolveType (context);
-			if (type != null)
-				return type;
-
-			throw new ScriptingException ("No such variable or type: `{0}'", Name);
+			return expr.Resolve (context);
 		}
 	}
 
