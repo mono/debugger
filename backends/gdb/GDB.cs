@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections;
+using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -20,10 +21,10 @@ namespace Mono.Debugger.Backends
 		public const string Path_GDB	= "/usr/bin/gdb";
 		public const string Path_Mono	= "/home/martin/MONO-LINUX/bin/mono";
 
-		Process process;
-		StreamWriter gdb_pipe;
-		Stream gdb_output;
-		Stream gdb_errors;
+		Spawn process;
+		IOOutputChannel gdb_input;
+		IOInputChannel gdb_output;
+		IOInputChannel gdb_errors;
 
 		Thread gdb_output_thread;
 		Thread gdb_error_thread;
@@ -35,8 +36,7 @@ namespace Mono.Debugger.Backends
 
 		ISourceFileFactory source_file_factory;
 
-		ManualResetEvent gdb_event;
-		Mutex gdb_mutex;
+		bool gdb_event = false;
 
 		IArchitecture arch;
 
@@ -64,39 +64,20 @@ namespace Mono.Debugger.Backends
 			MethodInfo main = this.application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
 
-			string args = "-n -nw -q --annotate=2 --async " +
-				"--args " + mono_path + " --break " + main_name +  " --debug=mono " +
-				"--noinline --precompile @" + application + " " + application + " " +
-				String.Join (" ", arguments);
+			string[] argv = { gdb_path, "-n", "-nw", "-q", "--annotate=2", "--async",
+					  "--args", mono_path, "--break", main_name, "--debug=mono",
+					  "--noinline", "--precompile", "@" + application, application };
+			string[] envp = { };
+			string working_directory = ".";
 
-			ProcessStartInfo start_info = new ProcessStartInfo (gdb_path, args);
+			process = new Spawn (working_directory, argv, envp, out gdb_input, out gdb_output,
+					     out gdb_errors);
 
-			start_info.RedirectStandardInput = true;
-			start_info.RedirectStandardOutput = true;
-			start_info.RedirectStandardError = true;
-			start_info.UseShellExecute = false;
+			gdb_output.ReadLine += new ReadLineHandler (check_gdb_output);
+			gdb_errors.ReadLine += new ReadLineHandler (check_gdb_errors);
 
-			gdb_event = new ManualResetEvent (false);
-			gdb_mutex = new Mutex (false);
-
-			process = Process.Start (start_info);
-			gdb_pipe = process.StandardInput;
-			gdb_pipe.AutoFlush = true;
-
-			gdb_output = process.StandardOutput.BaseStream;
-			gdb_errors = process.StandardError.BaseStream;
-
-			gdb_output_thread = new Thread (new ThreadStart (check_gdb_output));
-			gdb_output_thread.Start ();
-
-			gdb_error_thread = new Thread (new ThreadStart (check_gdb_errors));
-			gdb_error_thread.Start ();
-
-			Timeout.Add (100, new TimeoutHandler (IdleLoop));
-
-			// Wait until gdb is started.
-			gdb_event.WaitOne ();
-			IdleLoop ();
+			while (!gdb_event)
+				MainIteration ();
 
 			target_address_size = ReadInteger ("print sizeof (void*)");
 			target_integer_size = ReadInteger ("print sizeof (long)");
@@ -137,22 +118,22 @@ namespace Mono.Debugger.Backends
 
 		public void Quit ()
 		{
-			gdb_pipe.WriteLine ("quit");
+			gdb_input.WriteLine ("quit");
 		}
 
 		public void Abort ()
 		{
-			gdb_pipe.WriteLine ("signal SIGTERM");
+			gdb_input.WriteLine ("signal SIGTERM");
 		}
 
 		public void Kill ()
 		{
-			gdb_pipe.WriteLine ("kill");
+			gdb_input.WriteLine ("kill");
 		}
 
 		public void Frame ()
 		{
-			gdb_pipe.WriteLine ("frame");
+			gdb_input.WriteLine ("frame");
 		}
 
 		public void Step ()
@@ -686,7 +667,7 @@ namespace Mono.Debugger.Backends
 
 			case "prompt":
 				wait_for = WaitForOutput.UNKNOWN;
-				gdb_event.Set ();
+				gdb_event = true;
 				break;
 
 			case "breakpoint":
@@ -948,16 +929,17 @@ namespace Mono.Debugger.Backends
 		void send_gdb_command (string command)
 		{
 			// Console.WriteLine ("SENDING `{0}'", command);
-			gdb_event.Reset ();
-			gdb_pipe.WriteLine (command);
-			gdb_event.WaitOne ();
+			gdb_event = false;
+			gdb_input.WriteLine (command);
+			while (!gdb_event)
+				MainIteration ();
 			// Console.WriteLine ("DONE");
-			IdleLoop ();
-			// Console.WriteLine ("IDLE-LOOP DONE");
 		}
 
 		void start_target (string command, StepMode mode)
 		{
+			Console.WriteLine ("STARTING TARGET: {0} {1}", mode, command);
+
 			step_mode = mode;
 
 			if (mode != StepMode.STEP_LINE_2) {
@@ -987,35 +969,6 @@ namespace Mono.Debugger.Backends
 			send_gdb_command (command);
 		}
 
-		string read_one_line (Stream stream)
-		{
-			StringBuilder text = new StringBuilder ();
-
-			while (true) {
-				int c = stream.ReadByte ();
-
-				if (c == -1) {				// end of stream
-					if (text.Length == 0)
-						return null;
-
-					break;
-				}
-
-				if (c == '\n') {			// newline
-					if ((text.Length > 0) && (text [text.Length - 1] == '\r'))
-						text.Length--;
-					break;
-				}
-
-				text.Append ((char) c);
-			}
-
-			return text.ToString ();
-		}
-
-		ArrayList gdb_output_list = new ArrayList ();
-		ArrayList gdb_error_list = new ArrayList ();
-
 		void check_gdb_output (string line, bool is_stderr)
 		{
 			if ((line.Length > 2) && (line [0] == 26) && (line [1] == 26)) {
@@ -1041,70 +994,23 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		bool IdleLoop ()
+		void check_gdb_output (string line)
 		{
-			gdb_mutex.WaitOne ();
-
-			foreach (string line in gdb_output_list)
-				check_gdb_output (line, false);
-
-			foreach (string line in gdb_error_list)
-				check_gdb_output (line, true);
-
-			gdb_output_list.Clear ();
-			gdb_error_list.Clear ();
-
-			gdb_mutex.ReleaseMutex ();
-
-			if (continue_stepping) {
-				continue_stepping = false;
-				start_target ("stepi", StepMode.STEP_LINE_2);
-			}
-
-			return true;
+			check_gdb_output (line, false);
 		}
 
-		void check_gdb_output ()
+		void check_gdb_errors (string line)
 		{
-			while (true) {
-				string line = read_one_line (gdb_output);
-
-				if (line == "")
-					continue;
-				if (line == null)
-					break;
-
-				gdb_mutex.WaitOne ();
-
-				if (line == "\x1a\x1aprompt")
-					gdb_event.Set ();
-
-				gdb_output_list.Add (line);
-
-				gdb_mutex.ReleaseMutex ();
-			}
+			check_gdb_output (line, true);
 		}
 
-		void check_gdb_errors ()
+		void MainIteration ()
 		{
-			while (true) {
-				string line = read_one_line (gdb_errors);
-
-				if (line == "")
-					continue;
-				if (line == null)
-					break;
-
-				gdb_mutex.WaitOne ();
-
-				if (line == "\x1a\x1aprompt")
-					gdb_event.Set ();
-
-				gdb_error_list.Add (line);
-
-				gdb_mutex.ReleaseMutex ();
-			}
+			g_main_context_iteration (IntPtr.Zero, true);
 		}
+
+		[DllImport("glib-2.0")]
+		static extern void g_main_context_iteration (IntPtr context, bool may_block);
 
 		//
 		// IDisposable
