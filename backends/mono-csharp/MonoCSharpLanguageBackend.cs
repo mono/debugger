@@ -1293,6 +1293,12 @@ namespace Mono.Debugger.Languages.CSharp
 			return method.RegisterLoadHandler (process, handler, user_data);
 		}
 
+		internal override StackFrame UnwindStack (StackFrame frame,
+							  ITargetMemoryAccess memory,
+							  ISymbolTable symtab)
+		{
+			return null;
+		}
 
 		//
 		// ISerializable

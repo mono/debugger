@@ -11,6 +11,86 @@ using Mono.Debugger.Languages.Native;
 
 namespace Mono.Debugger.Architecture
 {
+	internal class DwarfException : Exception
+	{
+		public DwarfException (Bfd bfd, string message, params object[] args)
+			: base (String.Format ("{0}: {1}", bfd.FileName,
+					       String.Format (message, args)))
+		{ }
+
+		public DwarfException (Bfd bfd, string message, Exception inner)
+			: base (String.Format ("{0}: {1}", bfd.FileName, message), inner)
+		{ }
+	}
+
+	internal class DwarfBinaryReader : TargetBinaryReader
+	{
+		Bfd bfd;
+		bool is64bit;
+
+		public DwarfBinaryReader (Bfd bfd, TargetBlob blob, bool is64bit)
+			: base (blob, bfd.TargetInfo)
+		{
+			this.bfd = bfd;
+			this.is64bit = is64bit;
+		}
+
+		public Bfd Bfd {
+			get {
+				return bfd;
+			}
+		}
+
+		public long PeekOffset (long pos)
+		{
+			if (is64bit)
+				return PeekInt64 (pos);
+			else
+				return PeekInt32 (pos);
+		}
+
+		public long PeekOffset (long pos, out int size)
+		{
+			if (is64bit) {
+				size = 8;
+				return PeekInt64 (pos);
+			} else {
+				size = 4;
+				return PeekInt32 (pos);
+			}
+		}
+
+		public long ReadOffset ()
+		{
+			if (is64bit)
+				return ReadInt64 ();
+			else
+				return ReadInt32 ();
+		}
+
+		public long ReadInitialLength ()
+		{
+			bool is64bit;
+			return ReadInitialLength (out is64bit);
+		}
+
+		public long ReadInitialLength (out bool is64bit)
+		{
+			long length = ReadInt32 ();
+
+			if (length < 0xfffffff0) {
+				is64bit = false;
+				return length;
+			} else if (length == 0xffffffff) {
+				is64bit = true;
+				return ReadInt64 ();
+			} else
+				throw new DwarfException (
+					bfd, "Unknown initial length field {0:x}",
+					length);
+		}
+	}
+
 	internal class DwarfReader : ISymbolFile
 	{
 		protected Bfd bfd;
@@ -36,17 +116,6 @@ namespace Mono.Debugger.Architecture
 		ITargetInfo target_info;
 		SourceFileFactory factory;
 
-		protected class DwarfException : Exception
-		{
-			public DwarfException (DwarfReader reader, string message)
-				: base (String.Format ("{0}: {1}", reader.FileName, message))
-			{ }
-
-			public DwarfException (DwarfReader reader, string message, Exception inner)
-				: base (String.Format ("{0}: {1}", reader.FileName, message), inner)
-			{ }
-		}
-
 		public DwarfReader (Bfd bfd, Module module, SourceFileFactory factory)
 		{
 			this.bfd = bfd;
@@ -63,15 +132,15 @@ namespace Mono.Debugger.Architecture
 			long stop = reader.Position + length;
 			int version = reader.ReadInt16 ();
 			if (version < 2)
-				throw new DwarfException (this, String.Format (
-					"Wrong DWARF version: {0}", version));
+				throw new DwarfException (
+					bfd, "Wrong DWARF version: {0}", version);
 
 			reader.ReadOffset ();
 			address_size = reader.ReadByte ();
 
 			if ((address_size != 4) && (address_size != 8))
-				throw new DwarfException (this, String.Format (
-					"Unknown address size: {0}", address_size));
+				throw new DwarfException (
+					bfd, "Unknown address size: {0}", address_size);
 
 			debug_abbrev_reader = create_reader (".debug_abbrev");
 			debug_line_reader = create_reader (".debug_line");
@@ -300,16 +369,17 @@ namespace Mono.Debugger.Architecture
 				int version = reader.ReadInt16 ();
 
 				if (version < 2)
-					throw new DwarfException (dwarf, String.Format (
-						"Wrong DWARF version: {0}", version));
+					throw new DwarfException (
+						dwarf.bfd, "Wrong DWARF version: {0}", version);
 
 				reader.ReadOffset ();
 				int address_size = reader.ReadByte ();
 				reader.Position = offset;
 
 				if ((address_size != 4) && (address_size != 8))
-					throw new DwarfException (dwarf, String.Format (
-						"Unknown address size: {0}", address_size));
+					throw new DwarfException (
+						dwarf.bfd, "Unknown address size: {0}",
+						address_size);
 
 				ArrayList source_list = new ArrayList ();
 				compile_units = new ArrayList ();
@@ -435,14 +505,16 @@ namespace Mono.Debugger.Architecture
 				int segment_size = reader.ReadByte ();
 
 				if ((address_size != 4) && (address_size != 8))
-					throw new DwarfException (this, String.Format (
-						"Unknown address size: {0}", address_size));
+					throw new DwarfException (
+						bfd, "Unknown address size: {0}", address_size);
 				if (segment_size != 0)
-					throw new DwarfException (this, "Segmented address mode not supported");
+					throw new DwarfException (
+						bfd, "Segmented address mode not supported");
 
 				if (version != 2)
-					throw new DwarfException (this, String.Format (
-						"Wrong version in .debug_aranges: {0}", version));
+					throw new DwarfException (
+						bfd, "Wrong version in .debug_aranges: {0}",
+						version);
 
 				if (AddressSize == 8)
 					reader.Position = ((reader.Position+15) >> 4) * 16;
@@ -501,8 +573,9 @@ namespace Mono.Debugger.Architecture
 				long debug_length = reader.ReadOffset ();
 
 				if (version != 2)
-					throw new DwarfException (this, String.Format (
-						"Wrong version in .debug_pubnames: {0}", version));
+					throw new DwarfException (
+						bfd, "Wrong version in .debug_pubnames: {0}",
+						version);
 
 				while (reader.Position < stop) {
 					long offset = reader.ReadInt32 ();
@@ -521,7 +594,8 @@ namespace Mono.Debugger.Architecture
 		{
 			byte[] contents = bfd.GetSectionContents ((string) user_data, false);
 			if (contents == null)
-				throw new DwarfException (this, "Can't find DWARF 2 debugging info");
+				throw new DwarfException (
+					bfd, "Can't find DWARF 2 debugging info");
 
 			return new TargetBlob (contents);
 		}
@@ -540,37 +614,43 @@ namespace Mono.Debugger.Architecture
 
 		public DwarfBinaryReader DebugInfoReader {
 			get {
-				return new DwarfBinaryReader (this, (TargetBlob) debug_info_reader.Data);
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_info_reader.Data, Is64Bit);
 			}
 		}
 
 		public DwarfBinaryReader DebugAbbrevReader {
 			get {
-				return new DwarfBinaryReader (this, (TargetBlob) debug_abbrev_reader.Data);
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_abbrev_reader.Data, Is64Bit);
 			}
 		}
 
 		public DwarfBinaryReader DebugPubnamesReader {
 			get {
-				return new DwarfBinaryReader (this, (TargetBlob) debug_pubnames_reader.Data);
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_pubnames_reader.Data, Is64Bit);
 			}
 		}
 
 		public DwarfBinaryReader DebugLineReader {
 			get {
-				return new DwarfBinaryReader (this, (TargetBlob) debug_line_reader.Data);
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_line_reader.Data, Is64Bit);
 			}
 		}
 
 		public DwarfBinaryReader DebugArangesReader {
 			get {
-				return new DwarfBinaryReader (this, (TargetBlob) debug_aranges_reader.Data);
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_aranges_reader.Data, Is64Bit);
 			}
 		}
 
 		public DwarfBinaryReader DebugStrReader {
 			get {
-				return new DwarfBinaryReader (this, (TargetBlob) debug_str_reader.Data);
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_str_reader.Data, Is64Bit);
 			}
 		}
 
@@ -595,73 +675,6 @@ namespace Mono.Debugger.Architecture
 		static void debug (string message, params object[] args)
 		{
 			Console.WriteLine (String.Format (message, args));
-		}
-
-		internal class DwarfBinaryReader : TargetBinaryReader
-		{
-			DwarfReader dwarf;
-			bool is64bit;
-
-			public DwarfBinaryReader (DwarfReader dwarf, TargetBlob blob)
-				: base (blob, dwarf.TargetInfo)
-			{
-				this.dwarf = dwarf;
-				this.is64bit = dwarf.Is64Bit;
-			}
-
-			public DwarfReader DwarfReader {
-				get {
-					return dwarf;
-				}
-			}
-
-			public long PeekOffset (long pos)
-			{
-				if (is64bit)
-					return PeekInt64 (pos);
-				else
-					return PeekInt32 (pos);
-			}
-
-			public long PeekOffset (long pos, out int size)
-			{
-				if (is64bit) {
-					size = 8;
-					return PeekInt64 (pos);
-				} else {
-					size = 4;
-					return PeekInt32 (pos);
-				}
-			}
-
-			public long ReadOffset ()
-			{
-				if (is64bit)
-					return ReadInt64 ();
-				else
-					return ReadInt32 ();
-			}
-
-			public long ReadInitialLength ()
-			{
-				bool is64bit;
-				return ReadInitialLength (out is64bit);
-			}
-
-			public long ReadInitialLength (out bool is64bit)
-			{
-				long length = ReadInt32 ();
-
-				if (length < 0xfffffff0) {
-					is64bit = false;
-					return length;
-				} else if (length == 0xffffffff) {
-					is64bit = true;
-					return ReadInt64 ();
-				} else
-					throw new DwarfException (dwarf, String.Format (
-						"Unknown initial length field {0:x}", length));
-			}
 		}
 
 		protected enum DwarfTag {
@@ -1116,7 +1129,7 @@ namespace Mono.Debugger.Architecture
 
 			void error (string message)
 			{
-				throw new DwarfException (dwarf, message);
+				throw new DwarfException (dwarf.bfd, message);
 			}
 
 			void debug (string message, params object[] args)
@@ -1341,8 +1354,9 @@ namespace Mono.Debugger.Architecture
 				}
 
 				default:
-					throw new DwarfException (dwarf, String.Format (
-						"Unknown DW_FORM: 0x{0:x}", (int) form));
+					throw new DwarfException (
+						dwarf.bfd, "Unknown DW_FORM: 0x{0:x}",
+						(int) form);
 				}
 			}
 
@@ -1429,7 +1443,8 @@ namespace Mono.Debugger.Architecture
 
 				default:
 					throw new DwarfException (
-						dwarf, String.Format ("Unknown DW_FORM: 0x{0:x}", (int) form));
+						dwarf.bfd, "Unknown DW_FORM: 0x{0:x}",
+						(int) form);
 				}
 			}
 
@@ -2248,7 +2263,8 @@ namespace Mono.Debugger.Architecture
 
 				if (version < 2)
 					throw new DwarfException (
-						dwarf, String.Format ("Wrong DWARF version: {0}", version));
+						dwarf.bfd, "Wrong DWARF version: {0}",
+						version);
 
 				abbrevs = new Hashtable ();
 				types = new Hashtable ();
@@ -2301,9 +2317,9 @@ namespace Mono.Debugger.Architecture
 					if (abbrevs.Contains (abbrev_id))
 						return (AbbrevEntry) abbrevs [abbrev_id];
 
-					throw new DwarfException (dwarf, String.Format (
-						"{0} does not contain an abbreviation entry {1}",
-						this, abbrev_id));
+					throw new DwarfException (
+						dwarf.bfd, "{0} does not contain an " +
+						"abbreviation entry {1}", this, abbrev_id);
 				}
 			}
 

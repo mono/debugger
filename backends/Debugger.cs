@@ -234,7 +234,7 @@ namespace Mono.Debugger
 						filename);
 				csharp_language.FindImage (process, filename);
 			} else
-				bfd_container.AddFile (process, filename, true, false);
+				bfd_container.AddFile (process, filename, true, false, false);
 		}
 
 		//

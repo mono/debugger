@@ -16,6 +16,10 @@ namespace Mono.Debugger
 		{
 			this.Contents = new byte [size];
 		}
+
+		public int Size {
+			get { return Contents.Length; }
+		}
 	}
 
 	// <summary>
@@ -150,6 +154,32 @@ namespace Mono.Debugger
 		public int ReadInt32 ()
 		{
 			int retval = PeekInt32 (pos);
+			pos += 4;
+			return retval;
+		}
+
+		public uint PeekUInt32 (long pos)
+		{
+			if (swap)
+				return ((uint) blob.Contents[pos+3] |
+					((uint) blob.Contents[pos+2] << 8) |
+					((uint) blob.Contents[pos+1] << 16) |
+					((uint) blob.Contents[pos] << 24));
+			else
+				return ((uint) blob.Contents[pos] |
+					((uint) blob.Contents[pos+1] << 8) |
+					((uint) blob.Contents[pos+2] << 16) |
+					((uint) blob.Contents[pos+3] << 24));
+		}
+
+		public uint PeekUInt32 ()
+		{
+			return PeekUInt32 (pos);
+		}
+
+		public uint ReadUInt32 ()
+		{
+			uint retval = PeekUInt32 (pos);
 			pos += 4;
 			return retval;
 		}

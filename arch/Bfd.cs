@@ -29,12 +29,14 @@ namespace Mono.Debugger.Architecture
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		TargetAddress entry_point = TargetAddress.Null;
 		bool is_main_module;
+		bool is_loaded;
 		int dynlink_breakpoint_id;
 		Hashtable load_handlers;
 		Hashtable symbols;
 		ArrayList simple_symbols;
 		ISimpleSymbolTable simple_symtab;
 		DwarfReader dwarf;
+		DwarfFrameReader frame_reader, eh_frame_reader;
 		StabsReader stabs;
 		bool dwarf_loaded;
 		bool stabs_loaded;
@@ -204,7 +206,7 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd (BfdContainer container, ITargetMemoryAccess memory,
 			    ITargetMemoryInfo info, string filename, bool core_file,
-			    TargetAddress base_address, bool is_main_module)
+			    TargetAddress base_address, bool is_main_module, bool is_loaded)
 		{
 			this.container = container;
 			this.info = info;
@@ -212,6 +214,7 @@ namespace Mono.Debugger.Architecture
 			this.base_address = base_address;
 			this.backend = container.DebuggerBackend;
 			this.is_main_module = is_main_module;
+			this.is_loaded = is_loaded;
 
 			load_handlers = new Hashtable ();
 			language = new Mono.Debugger.Languages.Native.NativeLanguage (info);
@@ -237,19 +240,15 @@ namespace Mono.Debugger.Architecture
 				arch = new ArchitectureI386 ();
 
 				InternalSection text = GetSectionByName (".text", true);
-				InternalSection bss = GetSectionByName (".bss", true);
 
-				if (!base_address.IsNull) {
+				if (!base_address.IsNull)
 					start_address = new TargetAddress (
 						info.GlobalAddressDomain,
-						base_address.Address);
-					end_address = start_address + bss.vma;
-				} else {
+						base_address.Address + text.vma);
+				else
 					start_address = new TargetAddress (
 						info.GlobalAddressDomain, text.vma);
-					end_address = new TargetAddress (
-						info.GlobalAddressDomain, bss.vma);
-				}
+				end_address = start_address + text.size;
 
 				read_bfd_symbols ();
 
@@ -278,13 +277,10 @@ namespace Mono.Debugger.Architecture
 
 				InternalSection text = GetSectionByName (
 					"LC_SEGMENT.__TEXT.__text", true);
-				InternalSection bss = GetSectionByName (
-					"LC_SEGMENT.__DATA.__common", true);
 
 				start_address = new TargetAddress (
 					info.GlobalAddressDomain, text.vma);
-				end_address = new TargetAddress (
-					info.GlobalAddressDomain, bss.vma);
+				end_address = start_address + text.size;
 
 				has_debugging_info = StabsReader.IsSupported (this);
 			} else
@@ -448,7 +444,7 @@ namespace Mono.Debugger.Architecture
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
-				map_reader.ReadAddress ();
+				TargetAddress tmp = map_reader.ReadAddress ();
 
 				string name;
 				try {
@@ -468,7 +464,7 @@ namespace Mono.Debugger.Architecture
 					continue;
 				}
 
-				if ((name == null) || l_addr.IsNull)
+				if (name == null)
 					continue;
 
 				Bfd bfd = container [name];
@@ -479,7 +475,7 @@ namespace Mono.Debugger.Architecture
 				}
 
 				bfd = container.AddFile (
-					inferior, name, StepInto, l_addr, null, false);
+					inferior, name, StepInto, l_addr, null, false, true);
 				bfd.ModuleLoaded (inferior, l_addr);
 			}
 		}
@@ -632,9 +628,34 @@ namespace Mono.Debugger.Architecture
 			get { return entry_point; }
 		}
 
+		void create_frame_reader ()
+		{
+			byte[] contents = GetSectionContents (".debug_frame", false);
+			if (contents != null) {
+				TargetBlob blob = new TargetBlob (contents);
+				frame_reader = new DwarfFrameReader (this, blob, false);
+			}
+
+			contents = GetSectionContents (".eh_frame", true);
+			if (contents != null) {
+				TargetBlob blob = new TargetBlob (contents);
+				eh_frame_reader = new DwarfFrameReader (this, blob, true);
+			}
+		}
+
 		void load_dwarf ()
 		{
-			if (dwarf_loaded || !has_debugging_info)
+			if (dwarf_loaded)
+				return;
+
+			try {
+				create_frame_reader ();
+			} catch (Exception ex) {
+				Console.WriteLine ("Cannot read DWARF frame info from " +
+						   "symbol file `{0}': {1}", FileName, ex);
+			}
+
+			if (!has_debugging_info)
 				return;
 
 			try {
@@ -658,6 +679,9 @@ namespace Mono.Debugger.Architecture
 		{
 			if (!dwarf_loaded || !has_debugging_info)
 				return;
+
+			frame_reader = null;
+			eh_frame_reader = null;
 
 			dwarf_loaded = false;
 			if (dwarf != null) {
@@ -912,7 +936,7 @@ namespace Mono.Debugger.Architecture
 
 		public override bool IsLoaded {
 			get {
-				return is_main_module || !base_address.IsNull;
+				return is_main_module || is_loaded || !base_address.IsNull;
 			}
 		}
 
@@ -1018,6 +1042,25 @@ namespace Mono.Debugger.Architecture
 			return memory.ReadGlobalAddress (got_start + 8);
 		}
 
+		internal override StackFrame UnwindStack (StackFrame frame,
+							  ITargetMemoryAccess memory,
+							  ISymbolTable symtab)
+		{
+			if (frame_reader != null) {
+				StackFrame new_frame = frame_reader.UnwindStack (
+					frame, memory, symtab, arch);
+				if (new_frame != null)
+					return new_frame;
+			}
+			if (eh_frame_reader != null) {
+				StackFrame new_frame = eh_frame_reader.UnwindStack (
+					frame, memory, symtab, arch);
+				if (new_frame != null)
+					return new_frame;
+			}
+			return null;
+		}
+
 		internal override IDisposable RegisterLoadHandler (Process process,
 								   SourceMethod method,
 								   MethodLoadedHandler handler,
@@ -1120,7 +1163,8 @@ namespace Mono.Debugger.Architecture
 				BfdContainer bfdc = process.DebuggerBackend.BfdContainer;
 				Module module = bfdc [filename];
 				if (module == null)
-					module = bfdc.AddFile (process, filename, true, false);
+					module = bfdc.AddFile (process, filename, true,
+							       false, false);
 
 				module.StepInto = step_into;
 				module.LoadSymbols = load_symbols;

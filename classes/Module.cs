@@ -253,6 +253,10 @@ namespace Mono.Debugger
 								   MethodLoadedHandler handler,
 								   object user_data);
 
+		internal abstract StackFrame UnwindStack (StackFrame frame,
+							  ITargetMemoryAccess memory,
+							  ISymbolTable symtab);
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",

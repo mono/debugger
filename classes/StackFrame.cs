@@ -39,6 +39,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		public long GetValue ()
+		{
+			return value;
+		}
+
 		public void SetValue (TargetAddress address, long value)
 		{
 			this.valid = true;
@@ -61,6 +66,10 @@ namespace Mono.Debugger
 		public bool Valid {
 			get {
 				return valid;
+			}
+
+			set {
+				valid = value;
 			}
 		}
 
@@ -93,6 +102,15 @@ namespace Mono.Debugger
 				regs [i] = new Register (
 					this, i, arch.RegisterSizes [i], true, values [i]);
 			from_current_frame = true;
+		}
+
+		public Registers (Registers old_regs)
+		{
+			regs = new Register [old_regs.regs.Length];
+			for (int i = 0; i < regs.Length; i++)
+				regs [i] = new Register (
+					this, i, old_regs [i].Size, false,
+					old_regs [i].GetValue ());
 		}
 
 		public Register this [int index] {

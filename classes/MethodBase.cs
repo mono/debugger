@@ -100,6 +100,10 @@ namespace Mono.Debugger
 			if (!IsLoaded)
 				return null;
 
+			StackFrame new_frame = Module.UnwindStack (frame, target, symtab);
+			if (new_frame != null)
+				return new_frame;
+
 			int prologue_size;
 			if (HasMethodBounds)
 				prologue_size = (int) (MethodStartAddress - StartAddress);

@@ -35,15 +35,16 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public Bfd AddFile (ITargetMemoryAccess memory, string filename,
-				    bool step_into, bool is_main)
+				    bool step_into, bool is_main, bool is_loaded)
 		{
 			return AddFile (
 				memory, filename, step_into, TargetAddress.Null,
-				null, is_main);
+				null, is_main, is_loaded);
 		}
 
 		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into,
-				    TargetAddress base_address, Bfd core_bfd, bool is_main)
+				    TargetAddress base_address, Bfd core_bfd, bool is_main,
+				    bool is_loaded)
 		{
 			check_disposed ();
 			Bfd bfd = (Bfd) bfd_hash [filename];
@@ -51,7 +52,7 @@ namespace Mono.Debugger.Architecture
 				return bfd;
 
 			bfd = new Bfd (this, memory, memory, filename, false,
-				       base_address, is_main);
+				       base_address, is_main, is_loaded);
 			bfd.StepInto = step_into;
 			bfd.CoreFileBfd = core_bfd;
 

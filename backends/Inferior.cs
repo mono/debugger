@@ -407,7 +407,7 @@ namespace Mono.Debugger.Backends
 			try {
 				bfd = bfd_container.AddFile (
 					this, start.TargetApplication,
-					start.LoadNativeSymbolTable, true);
+					start.LoadNativeSymbolTable, true, true);
 			} catch (Exception e) {
 				if (error_handler != null)
 					error_handler (this, String.Format (

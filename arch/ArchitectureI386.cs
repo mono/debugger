@@ -308,21 +308,22 @@ namespace Mono.Debugger
 					       ISymbolTable symtab, byte[] code)
 		{
 			int pos = 0;
-			int length = code.Length;
-			if (length == 0)
-				return null;
+			int length;
 
-			if ((code [pos] == 0x90) || (code [pos] == 0xcc))
-				pos++;
+			length = code != null ? code.Length : 0;
+			if (length > 0) {
+				if ((code [pos] == 0x90) || (code [pos] == 0xcc))
+					pos++;
 
-			if (pos+2 >= length)
-				return null;
-			if (code [pos++] != 0x55)
-				return null;
-			if (((code [pos] != 0x8b) || (code [pos+1] != 0xec)) &&
-			    ((code [pos] != 0x89) || (code [pos+1] != 0xe5)))
-				return null;
-			pos += 2;
+				if (pos+2 >= length)
+					return null;
+				if (code [pos++] != 0x55)
+					return null;
+				if (((code [pos] != 0x8b) || (code [pos+1] != 0xec)) &&
+				    ((code [pos] != 0x89) || (code [pos+1] != 0xe5)))
+					return null;
+				pos += 2;
+			}
 
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (this);

@@ -78,7 +78,7 @@ namespace Mono.Debugger.Languages.Native
 
 				long address;
 				if (type.Size == 4)
-					address = BitConverter.ToInt32 (data, 0);
+					address = (uint) BitConverter.ToInt32 (data, 0);
 				else
 					address = BitConverter.ToInt64 (data, 0);
 

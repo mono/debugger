@@ -50,7 +50,7 @@ namespace Mono.Debugger
 					  ISymbolTable symtab)
 		{
 			while (TryUnwind (target, arch, symtab)) {
-				if (frames.Count > max_frames)
+				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
 		}
@@ -62,13 +62,16 @@ namespace Mono.Debugger
 				return false;
 
 			StackFrame new_frame = UnwindStack (target, arch, symtab);
+			Console.WriteLine ("TRY UNWIND: {0}", new_frame);
 			if (new_frame == null) {
 				finished = true;
 				return false;
 			}
 
-			if (!until.IsNull && (new_frame.TargetAddress == until))
+			if (!until.IsNull && (new_frame.TargetAddress == until)) {
+				Console.WriteLine ("REACHED UNTIL");
 				return false;
+			}
 
 			frames.Add (new_frame);
 			last_frame = new_frame;
@@ -82,7 +85,14 @@ namespace Mono.Debugger
 			if (method != null)
 				return method.UnwindStack (target, arch, symtab, last_frame);
 
-			return null;
+			foreach (Module module in last_frame.Process.DebuggerBackend.Modules) {
+				StackFrame new_frame = module.UnwindStack (
+					last_frame, target, symtab);
+				if (new_frame != null)
+					return new_frame;
+			}
+
+			return arch.UnwindStack (last_frame, target, symtab, null);
 		}
 
 		//
