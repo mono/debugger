@@ -420,7 +420,7 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class VariableAccessExpression : Expression
+	public class VariableAccessExpression : PointerExpression
 	{
 		IVariable var;
 
@@ -448,6 +448,11 @@ namespace Mono.Debugger.Frontend
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			return context.CurrentFrame.GetVariable (var);
+		}
+
+		public override TargetLocation EvaluateAddress (ScriptingContext context)
+		{
+			return context.CurrentFrame.GetVariableLocation (var);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
@@ -1384,6 +1389,10 @@ namespace Mono.Debugger.Frontend
 
 		public override TargetLocation EvaluateAddress (ScriptingContext context)
 		{
+			PointerExpression pexpr = expr as PointerExpression;
+			if (pexpr != null)
+				return pexpr.EvaluateAddress (context);
+
 			ITargetObject obj = expr.EvaluateVariable (context);
 			if (!obj.Location.HasAddress)
 				throw new ScriptingException (

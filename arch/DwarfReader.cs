@@ -2422,7 +2422,7 @@ namespace Mono.Debugger.Architecture
 				return true;
 			}
 
-			protected TargetLocation GetAddress (StackFrame frame)
+			public TargetLocation GetLocation (StackFrame frame)
 			{
 				int off;
 
@@ -2450,7 +2450,7 @@ namespace Mono.Debugger.Architecture
 
 			public ITargetObject GetObject (StackFrame frame)
 			{
-				TargetLocation location = GetAddress (frame);
+				TargetLocation location = GetLocation (frame);
 				if (location == null)
 					return null;
 

@@ -849,7 +849,7 @@ namespace Mono.Debugger.Architecture
 				return true;
 			}
 
-			protected TargetLocation GetAddress (StackFrame frame)
+			public TargetLocation GetLocation (StackFrame frame)
 			{
 				return new MonoVariableLocation (
 					frame, true, (int) I386Register.EBP, offset,
@@ -858,7 +858,7 @@ namespace Mono.Debugger.Architecture
 
 			public ITargetObject GetObject (StackFrame frame)
 			{
-				TargetLocation location = GetAddress (frame);
+				TargetLocation location = GetLocation (frame);
 				if (location == null)
 					return null;
 

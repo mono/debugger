@@ -1,3 +1,12 @@
+2005-03-10  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/IVariable.cs (IVariable.GetLocation): New method.
+
+	* frontend/Expression.cs (VariableAccessExpression): Derive from
+	PointerExpression, not just Expression.
+	(AddressOfExpression.EvaluateAddress): If `expr' is a
+	PointerExpression, call EvaluateAddress() on it.
+
 2005-03-09  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono/MonoLanguageBackend.cs (MonoLanguageBackend):

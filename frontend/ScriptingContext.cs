@@ -195,6 +195,11 @@ namespace Mono.Debugger.Frontend
 			return var.GetObject (frame);
 		}
 
+		public TargetLocation GetVariableLocation (IVariable var)
+		{
+			return var.GetLocation (frame);
+		}
+
 		public ILanguage Language {
 			get {
 				if (frame.Language == null)

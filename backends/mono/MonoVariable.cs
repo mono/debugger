@@ -83,7 +83,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return end_liveness; }
 		}
 
-		TargetLocation GetLocation (StackFrame frame)
+		public TargetLocation GetLocation (StackFrame frame)
 		{
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return new MonoVariableLocation (
