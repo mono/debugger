@@ -1,3 +1,8 @@
+2003-01-03  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Breakpoints
+	in not-yet-JITed methods are finally working again :-)
+
 2003-01-02  Martin Baulig  <martin@ximian.com>
 
 	* frontends/command-line/Main.cs: If the user gave any command

@@ -158,7 +158,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 18;
+		public const int  DynamicVersion = 19;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -272,6 +272,7 @@ namespace Mono.Debugger.Languages.CSharp
 					module.Assembly = symfile.Assembly;
 					module.MonoSymbolTableReader = symfile;
 					module.FileName = symfile.ImageFile;
+					module.Load ();
 				}
 
 				foreach (MonoSymbolTableReader symfile in SymbolFiles)
@@ -1655,8 +1656,15 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
 					       object user_data)
 		{
-#if FIXME
-			long retval = sse.CallMethod (info.insert_breakpoint, 0, method_name);
+			SingleSteppingEngine sse = process.SingleSteppingEngine;
+			sse.AcquireThreadLock ();
+			long retval;
+			try {
+				retval = sse.CallMethod (info.insert_breakpoint, 0, method_name);
+			} finally {
+				sse.ReleaseThreadLock ();
+			}
+
 			int index = (int) retval;
 
 			if (index <= 0)
@@ -1664,9 +1672,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			breakpoints.Add (index, new BreakpointHandle (index, handler, user_data));
 			return index;
-#else
-			throw new NotImplementedException ();
-#endif
 		}
 
 		private struct BreakpointHandle
@@ -1734,9 +1739,9 @@ namespace Mono.Debugger.Languages.CSharp
 				return true;
 
 			try {
-				TargetAddress trampoline = inferior.ReadAddress (
+				TargetAddress trampoline = inferior.ReadGlobalAddress (
 					info.breakpoint_trampoline_code);
-				if (trampoline.IsNull || (inferior.CurrentFrame != trampoline + 1))
+				if (trampoline.IsNull || (inferior.CurrentFrame != trampoline + 6))
 					return true;
 
 				TargetAddress method, code, retaddr;
