@@ -1463,7 +1463,18 @@ namespace Mono.Debugger.Backends
 				manager.DebuggerBackend.UpdateSymbolTable ();
 				method = Lookup (trampoline);
 			}
+			Report.Debug (DebugFlags.SSE,
+				      "{0} compiled trampoline: {1} {2} {3} {4}",
+				      this, current_operation, trampoline, method,
+				      method != null ? method.Module : null);
 			if ((method == null) || !method.Module.StepInto) {
+				do_next ();
+				return false;
+			}
+
+			if ((current_operation != null) &&
+			    current_operation.IsSourceOperation &&
+			    method.HasSource) {
 				do_next ();
 				return false;
 			}

@@ -1,3 +1,9 @@
+2004-03-05  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs (callback_method_compiled):
+	Step over it if we're performing a source stepping operation and
+	the method doesn't have any source code.
+
 2004-03-04  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs (ProcessCommand): Call Step()
