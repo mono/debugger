@@ -1,3 +1,7 @@
+2002-10-17  Martin Baulig  <martin@gnome.org>
+
+	* interface/ILanguage.cs: Removed.
+
 2002-10-15  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/DebuggerGUI.cs: Check state of the backend before
