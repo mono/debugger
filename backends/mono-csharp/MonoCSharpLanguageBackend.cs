@@ -1,7 +1,8 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Reflection;
+// using System.Reflection;
+using Reflection = System.Reflection;
 using System.Collections;
 using System.Threading;
 using Mono.CSharp.Debugger;
@@ -550,7 +551,7 @@ namespace Mono.Debugger.Languages.CSharp
 				get { return reader; }
 			}
 
-			public Assembly Assembly {
+			public Reflection.Assembly Assembly {
 				get { return reader.Assembly; }
 			}
 
@@ -692,11 +693,11 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int TypeInfo;
 		public readonly Type Type;
 
-		static MethodInfo get_type;
+		static Reflection.MethodInfo get_type;
 
 		static ClassEntry ()
 		{
-			Type type = typeof (Assembly);
+			Type type = typeof (Reflection.Assembly);
 			get_type = type.GetMethod ("MonoDebugger_GetType");
 			if (get_type == null)
 				throw new InternalError (
@@ -738,7 +739,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoSymbolTableReader
 	{
 		MethodEntry[] Methods;
-		internal readonly Assembly Assembly;
+		internal readonly Reflection.Assembly Assembly;
 		internal readonly MonoSymbolTable Table;
 		internal readonly string ImageFile;
 		internal readonly MonoSymbolFile File;
@@ -790,7 +791,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			dynamic_address = address;
 
-			Assembly = Assembly.LoadFrom (ImageFile);
+			Assembly = Reflection.Assembly.LoadFrom (ImageFile);
 
 			File = MonoSymbolFile.ReadSymbolFile (Assembly);
 
@@ -1130,7 +1131,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 					if (method == null)
 						method = reader.GetMonoMethod (index);
-					MethodInfo minfo = (MethodInfo) method.MethodHandle;
+
+					Reflection.MethodBase minfo = (Reflection.MethodBase) method.MethodHandle;
 
 					string full_name = String.Format (
 						"{0}:{1}", minfo.ReflectedType.FullName, minfo.Name);
@@ -1255,7 +1257,7 @@ namespace Mono.Debugger.Languages.CSharp
 				class_type = reader.Table.GetType (
 					rmethod.ReflectedType, 0, address.ClassTypeInfoOffset);
 
-				ParameterInfo[] param_info = rmethod.GetParameters ();
+				Reflection.ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
 					param_types [i] = reader.Table.GetType (
