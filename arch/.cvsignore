@@ -5,3 +5,5 @@ Makefile
 *.la
 *.lo
 *.dll
+test
+testbfd
