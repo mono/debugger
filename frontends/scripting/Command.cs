@@ -200,7 +200,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("NEXT", "Next line")]
+	[Command("NEXT", "Next source line",
+		 "Steps one source line, but does not enter any methods.")]
 	public class NextCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -234,7 +235,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("NEXTI", "Next instruction")]
+	[Command("NEXTI", "Next instruction",
+		 "Steps one machine instruction, but steps over method calls.")]
 	public class NextInstructionCommand : Command
 	{
 		ProcessExpression process_expr;

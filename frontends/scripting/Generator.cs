@@ -11,11 +11,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		string jay;
 		string short_description;
+		string help_text;
 
 		public CommandAttribute (string jay, string short_description)
+			: this (jay, short_description, null)
+		{ }
+
+		public CommandAttribute (string jay, string short_description, string help_text)
 		{
 			this.jay = jay;
 			this.short_description = short_description;
+			this.help_text = help_text;
 		}
 
 		public string Jay {
@@ -25,26 +31,40 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string ShortDescription {
 			get { return short_description; }
 		}
+
+		public string HelpText {
+			get { return help_text; }
+		}
 	}
 
 	[AttributeUsage (AttributeTargets.Class)]
 	public class ExpressionAttribute : Attribute
 	{ 
 		string name;
-		string description;
+		string short_description;
+		string help_text;
 
-		public ExpressionAttribute (string name, string description)
+		public ExpressionAttribute (string name, string short_description)
+			: this (name, short_description, null)
+		{ }
+
+		public ExpressionAttribute (string name, string short_description, string help_text)
 		{
 			this.name = name;
-			this.description = description;
+			this.short_description = short_description;
+			this.help_text = help_text;
 		}
 
 		public string Name {
 			get { return name; }
 		}
 
-		public string Description {
-			get { return description; }
+		public string ShortDescription {
+			get { return short_description; }
+		}
+
+		public string HelpText {
+			get { return help_text; }
 		}
 	}
 
@@ -206,6 +226,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Print (sb.ToString ());
 			context.Print ("");
 			context.Print (command.ShortDescription);
+
+			if (command.HelpText != null) {
+				context.Print ("");
+				context.Print (command.HelpText);
+			}
 		}
 
 		class Entry
@@ -282,8 +307,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return attribute.Name; }
 		}
 
-		public string Description {
-			get { return attribute.Description; }
+		public string ShortDescription {
+			get { return attribute.ShortDescription; }
+		}
+
+		public string HelpText {
+			get { return attribute.HelpText; }
 		}
 
 		public string TypeName {
@@ -327,6 +356,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string ShortDescription {
 			get {
 				return attribute.ShortDescription;
+			}
+		}
+
+		public string HelpText {
+			get {
+				return attribute.HelpText;
 			}
 		}
 
@@ -496,7 +531,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 			}
 
-			context.Print (expression.Description);
+			context.Print (expression.ShortDescription);
+			context.Print ("");
+
+			if (expression.HelpText != null)
+				context.Print (expression.HelpText);
+			else
+				context.Print ("No help available yet.");
 		}
 
 		public ExpressionClass GetExpression (Type type)
