@@ -139,7 +139,6 @@ namespace Mono.Debugger.GUI
 
 				string full = String.Format ("386-{0}-entry", name.ToLower ());
 
-				Console.WriteLine ("Name: " + full);
 				Gtk.Entry entry = (Gtk.Entry) gxml [full];
 				entry.Activated += new EventHandler (i386_register_modified);
 				i386_registers [i] = entry;
@@ -169,10 +168,8 @@ namespace Mono.Debugger.GUI
 		{
 			foreach (string s in new string [] { "cs", "ds", "es", "ss", "fs", "gs"}){
 				string label = String.Format ("x{0}-label", s);
-				Console.WriteLine ("label: " + label);
 				gxml [label].Visible = false;
 				string entry = String.Format ("386-x{0}-entry", s);
-				Console.WriteLine ("entry: " + entry);
 				gxml [entry].Visible = false;
 			}
 		}

@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using Gtk;
 using GtkSharp;
+using Pango;
 
 namespace Mono.Debugger.GUI {
 
@@ -26,12 +27,15 @@ namespace Mono.Debugger.GUI {
 		{
 			tab = new ClosableNotebookTab (filename);
 
+			factory = new SourceFileFactory ();
+			
 			sw = new ScrolledWindow (null, null);
 			sw.SetPolicy (PolicyType.Automatic, PolicyType.Automatic);
 			source_view = new Gtk.SourceView ();
 			source_view.Editable = false;
-			
-			factory = new SourceFileFactory ();
+
+			FontDescription font = FontDescription.FromString ("Monospace");
+			source_view.ModifyFont (font);
 			
 			text_buffer = source_view.Buffer;
 			DateTime start = DateTime.Now;

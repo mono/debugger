@@ -2,7 +2,7 @@ using Gtk;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-
+using Pango;
 namespace Mono.Debugger.GUI
 {
 	public abstract class SourceView : DebuggerWidget
@@ -20,6 +20,8 @@ namespace Mono.Debugger.GUI
 			: base (container, widget)
 		{
 			source_view = widget;
+			FontDescription font = FontDescription.FromString ("Monospace");
+			source_view.ModifyFont (font);
 
 			frame_tag = new Gtk.TextTag ("frame");
 			frame_tag.Background = "red";
