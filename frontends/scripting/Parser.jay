@@ -72,6 +72,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token NEXTI
 %token FINISH
 
+%token SELECT
+%token BACKGROUND
+%token STOP
+
 %start command_loop
 %%
 
@@ -153,6 +157,14 @@ expression
 	| PROCESS opt_process
 	  {
 		$$ = new SelectProcessExpression ((ProcessExpression) $2);
+	  }
+	| BACKGROUND opt_process
+	  {
+		$$ = new BackgroundProcessExpression ((ProcessExpression) $2);
+	  }
+	| STOP opt_process
+	  {
+		$$ = new StopProcessExpression ((ProcessExpression) $2);
 	  }
 	;
 

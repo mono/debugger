@@ -279,7 +279,13 @@ namespace Mono.Debugger
 		public void Continue ()
 		{
 			check_can_run ();
-			sse.Continue ();
+			sse.Continue (false);
+		}
+
+		public void Continue (bool in_background)
+		{
+			check_can_run ();
+			sse.Continue (in_background);
 		}
 
 		public void Continue (TargetAddress until)

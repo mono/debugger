@@ -139,6 +139,40 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class BackgroundProcessExpression : Expression
+	{
+		ProcessExpression process_expr;
+
+		public BackgroundProcessExpression (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Background ();
+			return process;
+		}
+	}
+
+	public class StopProcessExpression : Expression
+	{
+		ProcessExpression process_expr;
+
+		public StopProcessExpression (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Stop ();
+			return process;
+		}
+	}
+
 	public class StepCommand : Command
 	{
 		ProcessExpression process_expr;

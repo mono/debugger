@@ -336,6 +336,7 @@ namespace Mono.Debugger.Backends
 		again:
 			switch (command.Operation) {
 			case StepOperation.Run:
+			case StepOperation.RunInBackground:
 				TargetAddress until = command.Until;
 				if (!until.IsNull)
 					insert_temporary_breakpoint (until);
@@ -607,6 +608,7 @@ namespace Mono.Debugger.Backends
 			None,
 			Native,
 			Run,
+			RunInBackground,
 			StepInstruction,
 			NextInstruction,
 			StepLine,
@@ -832,9 +834,6 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			if (FrameChangedEvent != null)
-				FrameChangedEvent (current_frame);
-
 			return null;
 		}
 
@@ -855,7 +854,8 @@ namespace Mono.Debugger.Backends
 			// Do nothing if this is not a source stepping operation.
 			if ((operation != StepOperation.StepLine) &&
 			    (operation != StepOperation.NextLine) &&
-			    (operation != StepOperation.Run))
+			    (operation != StepOperation.Run) &&
+			    (operation != StepOperation.RunInBackground))
 				return null;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
@@ -1081,10 +1081,13 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Resume the target until a breakpoint is hit or it receives a signal.
 		// </summary>
-		public void Continue ()
+		public void Continue (bool in_background)
 		{
 			check_inferior ();
-			start_step_operation (StepOperation.Run, TargetAddress.Null);
+			if (in_background)
+				start_step_operation (StepOperation.RunInBackground, TargetAddress.Null);
+			else
+				start_step_operation (StepOperation.Run, TargetAddress.Null);
 		}
 
 		// <summary>

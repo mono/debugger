@@ -26,7 +26,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.process = process;
 			this.id = ++next_id;
 
-			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
+			// process.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 			process.StateChanged += new StateChangedHandler (state_changed);
 			process.TargetOutput += new TargetOutputHandler (inferior_output);
@@ -61,12 +61,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (process.State != TargetState.STOPPED)
 				return;
 
+#if FALSE
 			IDisassembler dis = process.Disassembler;
 			if (dis != null) {
 				TargetAddress address = frame.TargetAddress;
 				context.Print ("{0:11x}\t{1}", address,
 					       dis.DisassembleInstruction (ref address));
 			}
+#endif
 		}
 
 		void frames_invalid ()
@@ -78,7 +80,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void state_changed (TargetState state, int arg)
 		{
-			// Console.WriteLine ("STATE CHANGED: {0} {1}", state, arg);
 			switch (state) {
 			case TargetState.EXITED:
 				if (arg == 0)
@@ -90,6 +91,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case TargetState.STOPPED:
 				if (arg != 0)
 					context.Print ("Process @{0} received signal {1}.", id, arg);
+				else {
+					frame_changed (process.SingleSteppingEngine.CurrentFrame);
+				}
 				break;
 			}
 		}
@@ -150,6 +154,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			wait_until_stopped ();
+		}
+
+		public void Stop ()
+		{
+			while (g_main_context_iteration (IntPtr.Zero, false))
+				;
+
+			return;
+
+
+			if (process == null)
+				throw new ScriptingException ("Process @{0} not running.", id);
+			process.Stop ();
+		}
+
+		public void Background ()
+		{
+			if (process == null)
+				throw new ScriptingException ("Process @{0} not running.", id);
+			else if (!process.CanRun)
+				throw new ScriptingException ("Process @{0} cannot be executed.", id);
+			else if (!process.IsStopped)
+				throw new ScriptingException ("Process @{0} is not stopped.", id);
+
+			process.Continue (true);
 		}
 
 		void wait_until_stopped ()
