@@ -46,13 +46,6 @@ mono_debugger_thread_manager_main (void)
 	}
 }
 
-
-static void
-debugger_gc_thread_init (void)
-{
-	g_message (G_STRLOC);
-}
-
 static void
 debugger_gc_stop_world (void)
 {
@@ -84,15 +77,12 @@ debugger_gc_push_all_stacks (void)
 }
 
 GCThreadFunctions mono_debugger_thread_vtable = {
-	debugger_gc_thread_init,
+	NULL,
 
 	pthread_create,
 	pthread_join,
-	NULL,
-	NULL,
 	pthread_detach,
 	pthread_sigmask,
-	NULL,
 
 	debugger_gc_stop_world,
 	debugger_gc_push_all_stacks,
@@ -114,7 +104,6 @@ mono_debugger_thread_manager_init (void)
 		thread_array = g_ptr_array_new ();
 
 	gc_thread_vtable = &mono_debugger_thread_vtable;
-	GC_quiet = 0;
 
 	notification_function = mono_debug_create_notification_function (
 		(gpointer) &MONO_DEBUGGER__thread_manager_notification);
