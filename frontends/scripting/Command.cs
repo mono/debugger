@@ -499,11 +499,14 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[ShortDescription("Quit the debugger")]
-	public class QuitCommand : DebuggerCommand
+	public class QuitCommand : CL.Command
 	{
-		protected override void DoExecute (ScriptingContext context)
+		public override string Execute (CL.Engine e)
 		{
-			context.Interpreter.Exit ();
+			DebuggerEngine engine = (DebuggerEngine) e;
+			
+			engine.Context.Interpreter.Exit ();
+			return null;
 		}
 	}
 
@@ -1083,4 +1086,35 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 	}
+
+	public class HelpCommand : CL.Command {
+		public override string Execute (CL.Engine e)
+		{
+			if (Args == null || Args.Count == 0){
+				Console.WriteLine ("Topics:\n" +
+				   "Examining data:\n" + 
+				   "   print/p [expr]  prints value of expr   ptype [expr]    prints type of expr\n" +
+				   "   examine/x expr  Examines memory\n" +
+				   "\n" +
+				   "Stack:\n" + 
+				   "   frame           Shows current frame    backtrace/bt    Shows stack trace\n" + 
+				   "   up              Goes up one frame      down            Goes down one frame\n" +
+				   "\n" +
+				   "Examining code:\n" + 
+				   "   list source     Display source code    dis address     Disassemble at addr\n" + 
+				   "\n" + 
+				   "Breakpoints:\n" + 
+				   "   b [-id n] expr  Sets a breakpoint      delete N        Deletes a breakpoint\n" +
+				   "   disable N       disables breakpoint    enable N        Enables breakpoint N\n" +
+				   "\n" +
+				   "Execution:\n" +
+				   "   continue/c      Continues execution\n" + 
+				   "   step/s          Single-step execution  next/n          Step-over execution\n" +
+				   "   stepi/i         Machine single step    nexti/t         Machine step-over\n" + 
+				   "   kill            Kills the process\n");
+			}
+			return null;
+		}
+	}
+
 }

@@ -114,9 +114,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("delete", typeof (BreakpointDeleteCommand));
 			e.Register ("list", typeof (ListCommand));
 			e.Register ("break", typeof (BreakCommand));
+			e.Register ("b", typeof (BreakCommand));
 			e.Register ("quit", typeof (QuitCommand));
 			e.Register ("q", typeof (QuitCommand));
 			e.Register ("dump", typeof (DumpCommand));
+			e.Register ("help", typeof (HelpCommand));
 
 			return e;
 		}
