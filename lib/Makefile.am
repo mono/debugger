@@ -26,6 +26,7 @@ BACKEND_SRCLIST = \
 	@top_srcdir@/backends/classes/*.cs		\
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/mono-csharp/*.cs		\
+	@top_srcdir@/backends/native/*.cs		\
 	@top_srcdir@/arch/*.cs
 
 SYMFILE_READER_SRCLIST = \

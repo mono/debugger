@@ -1,5 +1,15 @@
 2003-02-26  Martin Baulig  <martin@ximian.com>
 
+	* backends/native/: New directory.
+
+	* backends/native/NativeFundamentalObject.cs: New file.
+	* backends/native/NativeFundamentalType.cs: New file.
+	* backends/native/NativeObject.cs: New file.
+	* backends/native/NativeOpaqueType.cs: New file.
+	* backends/native/NativeType.cs: New file.
+
+2003-02-26  Martin Baulig  <martin@ximian.com>
+
 	Moved MonoTargetLocation.cs, MonoRelativeTargetLocation.cs,
 	MonoStackLocation.cs and MonoRegisterLocation.cs from
 	backends/mono-csharp/ to backends/classes/ and put them into the
