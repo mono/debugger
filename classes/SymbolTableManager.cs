@@ -11,17 +11,16 @@ namespace Mono.Debugger
 	public class SymbolTableManager : IDisposable
 	{
 		Thread symtab_thread;
-		DebuggerManualResetEvent symtab_reload_event;
+		DebuggerAutoResetEvent symtab_reload_event;
 		DebuggerManualResetEvent symtabs_loaded_event;
 		DebuggerManualResetEvent modules_loaded_event;
 		DebuggerManualResetEvent update_completed_event;
 		bool symtab_update_in_progress;
 		bool module_update_in_progress;
-		bool reload_requested;
 
 		public SymbolTableManager ()
 		{
-			symtab_reload_event = new DebuggerManualResetEvent (
+			symtab_reload_event = new DebuggerAutoResetEvent (
 				"symtab_reload_event", false);
 			symtabs_loaded_event = new DebuggerManualResetEvent (
 				"symtabs_loaded_event", true);
@@ -49,7 +48,6 @@ namespace Mono.Debugger
 				update_completed_event.Reset ();
 				symtab_update_in_progress = true;
 				module_update_in_progress = true;
-				reload_requested = true;
 			}
 		}
 
@@ -115,8 +113,9 @@ namespace Mono.Debugger
 
 		public void Wait ()
 		{
-			if (symtab_thread != null)
+			if (symtab_thread != null) {
 				update_completed_event.Wait ();
+			}
 		}
 
 		// <summary>
@@ -192,10 +191,6 @@ namespace Mono.Debugger
 				lock (this) {
 					my_new_modules = new_modules;
 					new_modules = null;
-					// We must clear the event and the flag while we're still holding
-					// the lock to avoid a race condition.
-					symtab_reload_event.Reset ();
-					reload_requested = false;
 				}
 
 				if (my_new_modules == null) {
@@ -230,12 +225,6 @@ namespace Mono.Debugger
 				symtabs.UnLock ();
 
 				lock (this) {
-					// After acquiring the lock, check whether another reload was
-					// requested in the meantime.  If so, discard the symtabs we
-					// just created and do another update.
-					if (reload_requested)
-						goto again;
-
 					current_symtab = symtabs;
 					current_simple_symtab = simple_syms;
 					// We need to clear this event as soon as we're done updating
