@@ -1,5 +1,9 @@
 2004-03-16  Martin Baulig  <martin@ximian.com>
 
+	Released version 0.6 "Atlanta" of the Mono Debugger :-)
+
+2004-03-16  Martin Baulig  <martin@ximian.com>
+
 	* RELEASE-NOTES-0.6.txt: New file.
 
 	* configure.in: Check whether we have NPTL support.
