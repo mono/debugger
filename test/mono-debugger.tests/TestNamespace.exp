@@ -4,7 +4,7 @@
 load_lib mdb.exp
 
 set file [pwd]/TestNamespace.cs
-mdb_start "TestNamespace.exe" "Test.X.Main()"
+mdb_start "TestNamespace.exe"
 mdb_expect_frame 0 "Test.X.Main()" $file 21
 mdb_send "break Martin.Baulig.Hello.World"
 set breakpoint [mdb_expect_breakpoint]

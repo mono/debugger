@@ -2,10 +2,10 @@
 #
 set mono mono
 set mdb "../wrapper/mdb.exe"
-set timeout 10
-set verbose 1
+set timeout 20
+set verbose 2
 
-proc mdb_start {file main} {
+proc mdb_start {file args} {
     global mdb
     global mono
     global timeout
@@ -15,7 +15,7 @@ proc mdb_start {file main} {
 
     verbose "Spawning $mdb $file"
 
-    set res [spawn $mono $mdb --script $file];
+    set res [spawn $mono $mdb --script $file $args];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $mdb failed."
 	exit 1;
@@ -31,7 +31,7 @@ proc mdb_start {file main} {
 	}
     }
     expect {
-	-re "Process @(\[0-9\]+) stopped at \#0: 0x\[0-9A-Fa-f\]+ in $main.*\[\r\n\]+" {
+	-re "Process @(\[0-9\]+) stopped at (\[^\n\r\]+)\[\r\n\]+" {
 	    verbose "Stopped"
 	    set process $expect_out(1,string)
 	    pass "Target started"
@@ -64,7 +64,8 @@ proc mdb_expect_prompt { } {
 
 proc mdb_send {command} {
     send $command\n
-    expect -re "$command\[\n\r\]+$"
+    expect -exact "$command"
+    expect -re {[\n\r]+}
     return 0
 }
 

@@ -4,7 +4,7 @@
 load_lib mdb.exp
 
 set file [pwd]/TestManagedTypes.cs
-mdb_start "TestManagedTypes.exe" "X.Main()"
+mdb_start "TestManagedTypes.exe"
 mdb_expect_frame 0 "X.Main()" $file 218
 mdb_send "break 120"
 set breakpoint [mdb_expect_breakpoint]

@@ -6,12 +6,11 @@ load_lib mdb.exp
 set file [pwd]/TestAssembly.cs
 set module [pwd]/TestModule.cs
 
-mdb_start "TestAssembly.exe" "X.Main()"
-mdb_expect_frame 0 "X.Main()" $file 8
+mdb_start "TestAssembly.exe" "[pwd]/TestModule.dll"
+mdb_expect_frame 0 "X.Main(System.String\[\])" $file 8
 mdb_send "library [pwd]/TestModule.dll"
 mdb_expect "Loaded library [pwd]/TestModule.dll."
-# FIXME: Wait until the debugger reloaded the symtabs
-sleep 5
+mdb_expect_frame 0 "X.Main(System.String\[\])" $file 8
 mdb_send "break Module.Test"
 mdb_expect_breakpoint
 mdb_send "continue"
