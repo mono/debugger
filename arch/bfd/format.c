@@ -1,23 +1,23 @@
 /* Generic BFD support for file formats.
-   Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1999, 2000, 2001, 2002
+   Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1999, 2000, 2001, 2002, 2003
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
-This file is part of BFD, the Binary File Descriptor library.
+   This file is part of BFD, the Binary File Descriptor library.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 /*
 SECTION
@@ -52,7 +52,7 @@ FUNCTION
 	bfd_check_format
 
 SYNOPSIS
-	boolean bfd_check_format(bfd *abfd, bfd_format format);
+	bfd_boolean bfd_check_format (bfd *abfd, bfd_format format);
 
 DESCRIPTION
 	Verify if the file attached to the BFD @var{abfd} is compatible
@@ -67,7 +67,7 @@ DESCRIPTION
 	matches, it is used.  If not, exactly one target must recognize
 	the file, or an error results.
 
-	The function returns <<true>> on success, otherwise <<false>>
+	The function returns <<TRUE>> on success, otherwise <<FALSE>>
 	with one of the following error codes:
 
 	o <<bfd_error_invalid_operation>> -
@@ -85,7 +85,7 @@ DESCRIPTION
 	more than one backend recognised the file format.
 */
 
-boolean
+bfd_boolean
 bfd_check_format (abfd, format)
      bfd *abfd;
      bfd_format format;
@@ -98,10 +98,11 @@ FUNCTION
 	bfd_check_format_matches
 
 SYNOPSIS
-	boolean bfd_check_format_matches(bfd *abfd, bfd_format format, char ***matching);
+	bfd_boolean bfd_check_format_matches (bfd *abfd, bfd_format format,
+					      char ***matching);
 
 DESCRIPTION
-	Like <<bfd_check_format>>, except when it returns false with
+	Like <<bfd_check_format>>, except when it returns FALSE with
 	<<bfd_errno>> set to <<bfd_error_file_ambiguously_recognized>>.  In that
 	case, if @var{matching} is not NULL, it will be filled in with
 	a NULL-terminated list of the names of the formats that matched,
@@ -112,15 +113,16 @@ DESCRIPTION
 	should free it.
 */
 
-boolean
+bfd_boolean
 bfd_check_format_matches (abfd, format, matching)
      bfd *abfd;
      bfd_format format;
      char ***matching;
 {
   extern const bfd_target binary_vec;
-  const bfd_target * const *target, *save_targ, *right_targ, *ar_right_targ;
-  char **matching_vector = NULL;
+  const bfd_target * const *target;
+  const bfd_target **matching_vector = NULL;
+  const bfd_target *save_targ, *right_targ, *ar_right_targ;
   int match_count;
   int ar_match_index;
 
@@ -128,11 +130,11 @@ bfd_check_format_matches (abfd, format, matching)
       || (unsigned int) abfd->format >= (unsigned int) bfd_type_end)
     {
       bfd_set_error (bfd_error_invalid_operation);
-      return false;
+      return FALSE;
     }
 
   if (abfd->format != bfd_unknown)
-    return (boolean) (abfd->format == format);
+    return abfd->format == format;
 
   /* Since the target type was defaulted, check them
      all in the hope that one will be uniquely recognized.  */
@@ -145,10 +147,10 @@ bfd_check_format_matches (abfd, format, matching)
       bfd_size_type amt;
 
       *matching = NULL;
-      amt = sizeof (char *) * 2 * _bfd_target_vector_entries;
-      matching_vector = (char **) bfd_malloc (amt);
+      amt = sizeof (*matching_vector) * 2 * _bfd_target_vector_entries;
+      matching_vector = (const bfd_target **) bfd_malloc (amt);
       if (!matching_vector)
-	return false;
+	return FALSE;
     }
 
   right_targ = 0;
@@ -161,7 +163,11 @@ bfd_check_format_matches (abfd, format, matching)
   if (!abfd->target_defaulted)
     {
       if (bfd_seek (abfd, (file_ptr) 0, SEEK_SET) != 0)	/* rewind! */
-	return false;
+	{
+	  if (matching)
+	    free ((PTR) matching_vector);
+	  return FALSE;
+	}
 
       right_targ = BFD_SEND_FMT (abfd, _bfd_check_format, (abfd));
 
@@ -170,9 +176,9 @@ bfd_check_format_matches (abfd, format, matching)
 	  abfd->xvec = right_targ;	/* Set the target as returned.  */
 
 	  if (matching)
-	    free (matching_vector);
+	    free ((PTR) matching_vector);
 
-	  return true;			/* File position has moved, BTW.  */
+	  return TRUE;			/* File position has moved, BTW.  */
 	}
 
       /* For a long time the code has dropped through to check all
@@ -193,11 +199,11 @@ bfd_check_format_matches (abfd, format, matching)
 	  abfd->format = bfd_unknown;
 
 	  if (matching)
-	    free (matching_vector);
+	    free ((PTR) matching_vector);
 
 	  bfd_set_error (bfd_error_file_not_recognized);
 
-	  return false;
+	  return FALSE;
 	}
     }
 
@@ -209,10 +215,14 @@ bfd_check_format_matches (abfd, format, matching)
       if (*target == &binary_vec)
 	continue;
 
-      abfd->xvec = *target;	/* Change BFD's target temporarily */
+      abfd->xvec = *target;	/* Change BFD's target temporarily.  */
 
       if (bfd_seek (abfd, (file_ptr) 0, SEEK_SET) != 0)
-	return false;
+	{
+	  if (matching)
+	    free ((PTR) matching_vector);
+	  return FALSE;
+	}
 
       /* If _bfd_check_format neglects to set bfd_error, assume
 	 bfd_error_wrong_format.  We didn't used to even pay any
@@ -223,7 +233,8 @@ bfd_check_format_matches (abfd, format, matching)
       temp = BFD_SEND_FMT (abfd, _bfd_check_format, (abfd));
 
       if (temp)
-	{		/* This format checks out as ok!  */
+	{
+	  /* This format checks out as ok!  */
 	  right_targ = temp;
 
 	  /* If this is the default target, accept it, even if other
@@ -236,7 +247,7 @@ bfd_check_format_matches (abfd, format, matching)
 	    }
 
 	  if (matching)
-	    matching_vector[match_count] = temp->name;
+	    matching_vector[match_count] = temp;
 
 	  match_count++;
 
@@ -259,7 +270,7 @@ bfd_check_format_matches (abfd, format, matching)
 	  if (ar_right_targ != bfd_default_vector[0])
 	    ar_right_targ = *target;
 	  if (matching)
-	    matching_vector[ar_match_index] = (*target)->name;
+	    matching_vector[ar_match_index] = *target;
 	  ar_match_index++;
 	}
       else if (err != bfd_error_wrong_format)
@@ -268,9 +279,9 @@ bfd_check_format_matches (abfd, format, matching)
 	  abfd->format = bfd_unknown;
 
 	  if (matching)
-	    free (matching_vector);
+	    free ((PTR) matching_vector);
 
-	  return false;
+	  return FALSE;
 	}
     }
 
@@ -278,6 +289,7 @@ bfd_check_format_matches (abfd, format, matching)
     {
       /* Try partial matches.  */
       right_targ = ar_right_targ;
+
       if (right_targ == bfd_default_vector[0])
 	{
 	  match_count = 1;
@@ -285,11 +297,32 @@ bfd_check_format_matches (abfd, format, matching)
       else
 	{
 	  match_count = ar_match_index - _bfd_target_vector_entries;
+
 	  if (matching && match_count > 1)
+	    memcpy (matching_vector,
+		    matching_vector + _bfd_target_vector_entries,
+		    sizeof (*matching_vector) * match_count);
+	}
+    }
+
+  if (match_count > 1
+      && bfd_associated_vector != NULL
+      && matching)
+    {
+      const bfd_target * const *assoc = bfd_associated_vector;
+
+      while ((right_targ = *assoc++) != NULL)
+	{
+	  int i = match_count;
+
+	  while (--i >= 0)
+	    if (matching_vector[i] == right_targ)
+	      break;
+
+	  if (i >= 0)
 	    {
-	      memcpy (matching_vector,
-		      matching_vector + _bfd_target_vector_entries,
-		      sizeof (char *) * match_count);
+	      match_count = 1;
+	      break;
 	    }
 	}
     }
@@ -299,9 +332,9 @@ bfd_check_format_matches (abfd, format, matching)
       abfd->xvec = right_targ;		/* Change BFD's target permanently.  */
 
       if (matching)
-	free (matching_vector);
+	free ((PTR) matching_vector);
 
-      return true;			/* File position has moved, BTW.  */
+      return TRUE;			/* File position has moved, BTW.  */
     }
 
   abfd->xvec = save_targ;		/* Restore original target type.  */
@@ -312,7 +345,7 @@ bfd_check_format_matches (abfd, format, matching)
       bfd_set_error (bfd_error_file_not_recognized);
 
       if (matching)
-	free (matching_vector);
+	free ((PTR) matching_vector);
     }
   else
     {
@@ -320,12 +353,19 @@ bfd_check_format_matches (abfd, format, matching)
 
       if (matching)
 	{
-	  *matching = matching_vector;
+	  *matching = (char **) matching_vector;
 	  matching_vector[match_count] = NULL;
+	  /* Return target names.  This is a little nasty.  Maybe we
+	     should do another bfd_malloc?  */
+	  while (--match_count >= 0)
+	    {
+	      const char *name = matching_vector[match_count]->name;
+	      *(const char **) &matching_vector[match_count] = name;
+	    }
 	}
     }
 
-  return false;
+  return FALSE;
 }
 
 /*
@@ -333,7 +373,7 @@ FUNCTION
 	bfd_set_format
 
 SYNOPSIS
-	boolean bfd_set_format(bfd *abfd, bfd_format format);
+	bfd_boolean bfd_set_format (bfd *abfd, bfd_format format);
 
 DESCRIPTION
 	This function sets the file format of the BFD @var{abfd} to the
@@ -342,7 +382,7 @@ DESCRIPTION
 	is not open for writing, then an error occurs.
 */
 
-boolean
+bfd_boolean
 bfd_set_format (abfd, format)
      bfd *abfd;
      bfd_format format;
@@ -351,11 +391,11 @@ bfd_set_format (abfd, format)
       || (unsigned int) abfd->format >= (unsigned int) bfd_type_end)
     {
       bfd_set_error (bfd_error_invalid_operation);
-      return false;
+      return FALSE;
     }
 
   if (abfd->format != bfd_unknown)
-    return (boolean) (abfd->format == format);
+    return abfd->format == format;
 
   /* Presume the answer is yes.  */
   abfd->format = format;
@@ -363,10 +403,10 @@ bfd_set_format (abfd, format)
   if (!BFD_SEND_FMT (abfd, _bfd_set_format, (abfd)))
     {
       abfd->format = bfd_unknown;
-      return false;
+      return FALSE;
     }
 
-  return true;
+  return TRUE;
 }
 
 /*
@@ -374,7 +414,7 @@ FUNCTION
 	bfd_format_string
 
 SYNOPSIS
-	const char *bfd_format_string(bfd_format format);
+	const char *bfd_format_string (bfd_format format);
 
 DESCRIPTION
 	Return a pointer to a const string

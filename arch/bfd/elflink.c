@@ -1,5 +1,5 @@
 /* ELF linking support for BFD.
-   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
+   Copyright 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003
    Free Software Foundation, Inc.
 
 This file is part of BFD, the Binary File Descriptor library.
@@ -25,21 +25,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #define ARCH_SIZE 0
 #include "elf-bfd.h"
 
-boolean
+bfd_boolean
 _bfd_elf_create_got_section (abfd, info)
      bfd *abfd;
      struct bfd_link_info *info;
 {
   flagword flags;
-  register asection *s;
+  asection *s;
   struct elf_link_hash_entry *h;
   struct bfd_link_hash_entry *bh;
   struct elf_backend_data *bed = get_elf_backend_data (abfd);
   int ptralign;
 
   /* This function may be called more than once.  */
-  if (bfd_get_section_by_name (abfd, ".got") != NULL)
-    return true;
+  s = bfd_get_section_by_name (abfd, ".got");
+  if (s != NULL && (s->flags & SEC_LINKER_CREATED) != 0)
+    return TRUE;
 
   switch (bed->s->arch_size)
     {
@@ -53,7 +54,7 @@ _bfd_elf_create_got_section (abfd, info)
 
     default:
       bfd_set_error (bfd_error_bad_value);
-      return false;
+      return FALSE;
     }
 
   flags = (SEC_ALLOC | SEC_LOAD | SEC_HAS_CONTENTS | SEC_IN_MEMORY
@@ -63,7 +64,7 @@ _bfd_elf_create_got_section (abfd, info)
   if (s == NULL
       || !bfd_set_section_flags (abfd, s, flags)
       || !bfd_set_section_alignment (abfd, s, ptralign))
-    return false;
+    return FALSE;
 
   if (bed->want_got_plt)
     {
@@ -71,7 +72,7 @@ _bfd_elf_create_got_section (abfd, info)
       if (s == NULL
 	  || !bfd_set_section_flags (abfd, s, flags)
 	  || !bfd_set_section_alignment (abfd, s, ptralign))
-	return false;
+	return FALSE;
     }
 
   if (bed->want_got_sym)
@@ -83,16 +84,16 @@ _bfd_elf_create_got_section (abfd, info)
       bh = NULL;
       if (!(_bfd_generic_link_add_one_symbol
 	    (info, abfd, "_GLOBAL_OFFSET_TABLE_", BSF_GLOBAL, s,
-	     bed->got_symbol_offset, (const char *) NULL, false,
+	     bed->got_symbol_offset, (const char *) NULL, FALSE,
 	     bed->collect, &bh)))
-	return false;
+	return FALSE;
       h = (struct elf_link_hash_entry *) bh;
       h->elf_link_hash_flags |= ELF_LINK_HASH_DEF_REGULAR;
       h->type = STT_OBJECT;
 
       if (info->shared
 	  && ! _bfd_elf_link_record_dynamic_symbol (info, h))
-	return false;
+	return FALSE;
 
       elf_hash_table (info)->hgot = h;
     }
@@ -100,18 +101,18 @@ _bfd_elf_create_got_section (abfd, info)
   /* The first bit of the global offset table is the header.  */
   s->_raw_size += bed->got_header_size + bed->got_symbol_offset;
 
-  return true;
+  return TRUE;
 }
 
 /* Create dynamic sections when linking against a dynamic object.  */
 
-boolean
+bfd_boolean
 _bfd_elf_create_dynamic_sections (abfd, info)
      bfd *abfd;
      struct bfd_link_info *info;
 {
   flagword flags, pltflags;
-  register asection *s;
+  asection *s;
   struct elf_backend_data *bed = get_elf_backend_data (abfd);
   int ptralign;
 
@@ -127,7 +128,7 @@ _bfd_elf_create_dynamic_sections (abfd, info)
 
     default:
       bfd_set_error (bfd_error_bad_value);
-      return false;
+      return FALSE;
     }
 
   /* We need to create .plt, .rel[a].plt, .got, .got.plt, .dynbss, and
@@ -147,7 +148,7 @@ _bfd_elf_create_dynamic_sections (abfd, info)
   if (s == NULL
       || ! bfd_set_section_flags (abfd, s, pltflags)
       || ! bfd_set_section_alignment (abfd, s, bed->plt_alignment))
-    return false;
+    return FALSE;
 
   if (bed->want_plt_sym)
     {
@@ -158,16 +159,16 @@ _bfd_elf_create_dynamic_sections (abfd, info)
 
       if (! (_bfd_generic_link_add_one_symbol
 	     (info, abfd, "_PROCEDURE_LINKAGE_TABLE_", BSF_GLOBAL, s,
-	      (bfd_vma) 0, (const char *) NULL, false,
+	      (bfd_vma) 0, (const char *) NULL, FALSE,
 	      get_elf_backend_data (abfd)->collect, &bh)))
-	return false;
+	return FALSE;
       h = (struct elf_link_hash_entry *) bh;
       h->elf_link_hash_flags |= ELF_LINK_HASH_DEF_REGULAR;
       h->type = STT_OBJECT;
 
       if (info->shared
 	  && ! _bfd_elf_link_record_dynamic_symbol (info, h))
-	return false;
+	return FALSE;
     }
 
   s = bfd_make_section (abfd,
@@ -175,10 +176,10 @@ _bfd_elf_create_dynamic_sections (abfd, info)
   if (s == NULL
       || ! bfd_set_section_flags (abfd, s, flags | SEC_READONLY)
       || ! bfd_set_section_alignment (abfd, s, ptralign))
-    return false;
+    return FALSE;
 
   if (! _bfd_elf_create_got_section (abfd, info))
-    return false;
+    return FALSE;
 
   if (bed->want_dynbss)
     {
@@ -191,7 +192,7 @@ _bfd_elf_create_dynamic_sections (abfd, info)
       s = bfd_make_section (abfd, ".dynbss");
       if (s == NULL
 	  || ! bfd_set_section_flags (abfd, s, SEC_ALLOC))
-	return false;
+	return FALSE;
 
       /* The .rel[a].bss section holds copy relocs.  This section is not
      normally needed.  We need to create it here, though, so that the
@@ -212,11 +213,11 @@ _bfd_elf_create_dynamic_sections (abfd, info)
 	  if (s == NULL
 	      || ! bfd_set_section_flags (abfd, s, flags | SEC_READONLY)
 	      || ! bfd_set_section_alignment (abfd, s, ptralign))
-	    return false;
+	    return FALSE;
 	}
     }
 
-  return true;
+  return TRUE;
 }
 
 /* Record a new dynamic symbol.  We record the dynamic symbols as we
@@ -227,7 +228,7 @@ _bfd_elf_create_dynamic_sections (abfd, info)
    symbol should be in the dynamic symbol table, but only if there is
    one.  */
 
-boolean
+bfd_boolean
 _bfd_elf_link_record_dynamic_symbol (info, h)
      struct bfd_link_info *info;
      struct elf_link_hash_entry *h;
@@ -237,7 +238,7 @@ _bfd_elf_link_record_dynamic_symbol (info, h)
       struct elf_strtab_hash *dynstr;
       char *p, *alc;
       const char *name;
-      boolean copy;
+      bfd_boolean copy;
       bfd_size_type indx;
 
       /* XXX: The ABI draft says the linker must turn hidden and
@@ -252,7 +253,7 @@ _bfd_elf_link_record_dynamic_symbol (info, h)
 	      && h->root.type != bfd_link_hash_undefweak)
 	    {
 	      h->elf_link_hash_flags |= ELF_LINK_FORCED_LOCAL;
-	      return true;
+	      return TRUE;
 	    }
 
 	default:
@@ -268,17 +269,17 @@ _bfd_elf_link_record_dynamic_symbol (info, h)
 	  /* Create a strtab to hold the dynamic symbol names.  */
 	  elf_hash_table (info)->dynstr = dynstr = _bfd_elf_strtab_init ();
 	  if (dynstr == NULL)
-	    return false;
+	    return FALSE;
 	}
 
       /* We don't put any version information in the dynamic string
-         table.  */
+	 table.  */
       name = h->root.root.string;
       p = strchr (name, ELF_VER_CHR);
       if (p == NULL)
 	{
 	  alc = NULL;
-	  copy = false;
+	  copy = FALSE;
 	}
       else
 	{
@@ -286,11 +287,11 @@ _bfd_elf_link_record_dynamic_symbol (info, h)
 
 	  alc = bfd_malloc ((bfd_size_type) len);
 	  if (alc == NULL)
-	    return false;
+	    return FALSE;
 	  memcpy (alc, name, len - 1);
 	  alc[len - 1] = '\0';
 	  name = alc;
-	  copy = true;
+	  copy = TRUE;
 	}
 
       indx = _bfd_elf_strtab_add (dynstr, name, copy);
@@ -299,11 +300,11 @@ _bfd_elf_link_record_dynamic_symbol (info, h)
 	free (alc);
 
       if (indx == (bfd_size_type) -1)
-	return false;
+	return FALSE;
       h->dynstr_index = indx;
     }
 
-  return true;
+  return TRUE;
 }
 
 /* Record a new local dynamic symbol.  Returns 0 on failure, 1 on
@@ -376,7 +377,7 @@ elf_link_record_local_dynamic_symbol (info, input_bfd, input_indx)
 	return 0;
     }
 
-  dynstr_index = _bfd_elf_strtab_add (dynstr, name, false);
+  dynstr_index = _bfd_elf_strtab_add (dynstr, name, FALSE);
   if (dynstr_index == (unsigned long) -1)
     return 0;
   entry->isym.st_name = dynstr_index;
@@ -418,10 +419,10 @@ _bfd_elf_link_lookup_local_dynindx (info, input_bfd, input_indx)
    them are removed because they are marked as local.  This is called
    via elf_link_hash_traverse.  */
 
-static boolean elf_link_renumber_hash_table_dynsyms
+static bfd_boolean elf_link_renumber_hash_table_dynsyms
   PARAMS ((struct elf_link_hash_entry *, PTR));
 
-static boolean
+static bfd_boolean
 elf_link_renumber_hash_table_dynsyms (h, data)
      struct elf_link_hash_entry *h;
      PTR data;
@@ -434,7 +435,7 @@ elf_link_renumber_hash_table_dynsyms (h, data)
   if (h->dynindx != -1)
     h->dynindx = ++(*count);
 
-  return true;
+  return TRUE;
 }
 
 /* Assign dynsym indices.  In a shared library we generate a section
@@ -506,7 +507,7 @@ _bfd_elf_create_linker_section (abfd, info, which, defaults)
       *lsect = *defaults;
       elf_linker_section (dynobj, which) = lsect;
       lsect->which = which;
-      lsect->hole_written_p = false;
+      lsect->hole_written_p = FALSE;
 
       /* See if the sections already exist */
       lsect->section = s = bfd_get_section_by_name (dynobj, lsect->name);
@@ -525,18 +526,19 @@ _bfd_elf_create_linker_section (abfd, info, which, defaults)
 
       s->_raw_size = align_power (s->_raw_size, lsect->alignment);
 
-      /* Is there a hole we have to provide?  If so check whether the segment is
-	 too big already */
+      /* Is there a hole we have to provide?  If so check whether the
+	 segment is too big already */
       if (lsect->hole_size)
 	{
 	  lsect->hole_offset = s->_raw_size;
 	  s->_raw_size += lsect->hole_size;
 	  if (lsect->hole_offset > lsect->max_hole_offset)
 	    {
-	      (*_bfd_error_handler) (_("%s: Section %s is too large to add hole of %ld bytes"),
-				     bfd_get_filename (abfd),
-				     lsect->name,
-				     (long) lsect->hole_size);
+	      (*_bfd_error_handler)
+		(_("%s: Section %s is too large to add hole of %ld bytes"),
+		 bfd_get_filename (abfd),
+		 lsect->name,
+		 (long) lsect->hole_size);
 
 	      bfd_set_error (bfd_error_bad_value);
 	      return (elf_linker_section_t *)0;
@@ -559,7 +561,7 @@ _bfd_elf_create_linker_section (abfd, info, which, defaults)
 		   lsect->name);
 #endif
 	  bh = bfd_link_hash_lookup (info->hash, lsect->sym_name,
-				     false, false, false);
+				     FALSE, FALSE, FALSE);
 
 	  if ((bh == NULL || bh->type == bfd_link_hash_undefined)
 	      && !(_bfd_generic_link_add_one_symbol
@@ -567,7 +569,7 @@ _bfd_elf_create_linker_section (abfd, info, which, defaults)
 		    (lsect->hole_size
 		     ? s->_raw_size - lsect->hole_size + lsect->sym_offset
 		     : lsect->sym_offset),
-		    (const char *) NULL, false,
+		    (const char *) NULL, FALSE,
 		    get_elf_backend_data (abfd)->collect, &bh)))
 	    return (elf_linker_section_t *) 0;
 	  h = (struct elf_link_hash_entry *) bh;
@@ -620,14 +622,14 @@ _bfd_elf_find_pointer_linker_section (linker_pointers, addend, which)
 
 /* Make the .rela section corresponding to the generated linker section.  */
 
-boolean
+bfd_boolean
 _bfd_elf_make_linker_section_rela (dynobj, lsect, alignment)
      bfd *dynobj;
      elf_linker_section_t *lsect;
      int alignment;
 {
   if (lsect->rel_section)
-    return true;
+    return TRUE;
 
   lsect->rel_section = bfd_get_section_by_name (dynobj, lsect->rel_name);
   if (lsect->rel_section == NULL)
@@ -643,8 +645,8 @@ _bfd_elf_make_linker_section_rela (dynobj, lsect, alignment)
 				       | SEC_LINKER_CREATED
 				       | SEC_READONLY))
 	  || ! bfd_set_section_alignment (dynobj, lsect->rel_section, alignment))
-	return false;
+	return FALSE;
     }
 
-  return true;
+  return TRUE;
 }

@@ -1,6 +1,6 @@
 /* Object file "section" support for the BFD library.
    Copyright 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-   2000, 2001, 2002
+   2000, 2001, 2002, 2003
    Free Software Foundation, Inc.
    Written by Cygnus Support.
 
@@ -377,9 +377,36 @@ CODE_FRAGMENT
 .  {* A mark flag used by some linker backends for garbage collection.  *}
 .  unsigned int gc_mark : 1;
 .
-.  {* Used by the ELF code to mark sections which have been allocated
-.     to segments.  *}
+.  {* The following flags are used by the ELF linker. *}
+.
+.  {* Mark sections which have been allocated to segments.  *}
 .  unsigned int segment_mark : 1;
+.
+.  {* Type of sec_info information.  *}
+.  unsigned int sec_info_type:3;
+.#define ELF_INFO_TYPE_NONE      0
+.#define ELF_INFO_TYPE_STABS     1
+.#define ELF_INFO_TYPE_MERGE     2
+.#define ELF_INFO_TYPE_EH_FRAME  3
+.#define ELF_INFO_TYPE_JUST_SYMS 4
+.
+.  {* Nonzero if this section uses RELA relocations, rather than REL.  *}
+.  unsigned int use_rela_p:1;
+.
+.  {* Bits used by various backends.  *}
+.  unsigned int has_tls_reloc:1;
+.
+.  {* Nonzero if this section needs the relax finalize pass.  *}
+.  unsigned int need_finalize_relax:1;
+.
+.  {* Usused bits.  *}
+.  unsigned int flag12:1;
+.  unsigned int flag13:1;
+.  unsigned int flag14:1;
+.  unsigned int flag15:1;
+.  unsigned int flag16:4;
+.  unsigned int flag20:4;
+.  unsigned int flag24:8;
 .
 .  {* End of internal packed boolean fields.  *}
 .
@@ -590,6 +617,12 @@ static const asymbol global_syms[] =
     /* linker_mark, linker_has_input, gc_mark, segment_mark,         */	\
        0,           0,                1,       0,			\
 									\
+    /* sec_info_type, use_rela_p, has_tls_reloc, need_finalize_relax, flag12,     */ \
+       0,	      0,	  0,		 0,		      0,		\
+									\
+    /* flag13, flag14, flag15, flag16, flag20, flag24,               */ \
+       0,      0,      0,      0,      0,      0,			\
+									\
     /* vma, lma, _cooked_size, _raw_size,                            */	\
        0,   0,   0,            0,					\
 									\
@@ -761,7 +794,7 @@ bfd_get_section_by_name (abfd, name)
 {
   struct section_hash_entry *sh;
 
-  sh = section_hash_lookup (&abfd->section_htab, name, false, false);
+  sh = section_hash_lookup (&abfd->section_htab, name, FALSE, FALSE);
   if (sh != NULL)
     return &sh->section;
 
@@ -811,7 +844,7 @@ bfd_get_unique_section_name (abfd, templat, count)
 	abort ();
       sprintf (sname + len, ".%d", num++);
     }
-  while (section_hash_lookup (&abfd->section_htab, sname, false, false));
+  while (section_hash_lookup (&abfd->section_htab, sname, FALSE, FALSE));
 
   if (count != NULL)
     *count = num;
@@ -869,7 +902,7 @@ bfd_make_section_old_way (abfd, name)
   if (strcmp (name, BFD_IND_SECTION_NAME) == 0)
     return bfd_ind_section_ptr;
 
-  sh = section_hash_lookup (&abfd->section_htab, name, true, false);
+  sh = section_hash_lookup (&abfd->section_htab, name, TRUE, FALSE);
   if (sh == NULL)
     return NULL;
 
@@ -915,7 +948,7 @@ bfd_make_section_anyway (abfd, name)
       return NULL;
     }
 
-  sh = section_hash_lookup (&abfd->section_htab, name, true, false);
+  sh = section_hash_lookup (&abfd->section_htab, name, TRUE, FALSE);
   if (sh == NULL)
     return NULL;
 
@@ -969,7 +1002,7 @@ bfd_make_section (abfd, name)
       || strcmp (name, BFD_IND_SECTION_NAME) == 0)
     return NULL;
 
-  sh = section_hash_lookup (&abfd->section_htab, name, true, false);
+  sh = section_hash_lookup (&abfd->section_htab, name, TRUE, FALSE);
   if (sh == NULL)
     return NULL;
 
@@ -989,12 +1022,12 @@ FUNCTION
 	bfd_set_section_flags
 
 SYNOPSIS
-	boolean bfd_set_section_flags(bfd *abfd, asection *sec, flagword flags);
+	bfd_boolean bfd_set_section_flags (bfd *abfd, asection *sec, flagword flags);
 
 DESCRIPTION
 	Set the attributes of the section @var{sec} in the BFD
-	@var{abfd} to the value @var{flags}. Return <<true>> on success,
-	<<false>> on error. Possible error returns are:
+	@var{abfd} to the value @var{flags}. Return <<TRUE>> on success,
+	<<FALSE>> on error. Possible error returns are:
 
 	o <<bfd_error_invalid_operation>> -
 	The section cannot have one or more of the attributes
@@ -1004,7 +1037,7 @@ DESCRIPTION
 */
 
 /*ARGSUSED*/
-boolean
+bfd_boolean
 bfd_set_section_flags (abfd, section, flags)
      bfd *abfd ATTRIBUTE_UNUSED;
      sec_ptr section;
@@ -1019,12 +1052,12 @@ bfd_set_section_flags (abfd, section, flags)
   if ((flags & bfd_applicable_section_flags (abfd)) != flags)
     {
       bfd_set_error (bfd_error_invalid_operation);
-      return false;
+      return FALSE;
     }
 #endif
 
   section->flags = flags;
-  return true;
+  return TRUE;
 }
 
 /*
@@ -1076,11 +1109,11 @@ FUNCTION
 	bfd_set_section_size
 
 SYNOPSIS
-	boolean bfd_set_section_size(bfd *abfd, asection *sec, bfd_size_type val);
+	bfd_boolean bfd_set_section_size (bfd *abfd, asection *sec, bfd_size_type val);
 
 DESCRIPTION
 	Set @var{sec} to the size @var{val}. If the operation is
-	ok, then <<true>> is returned, else <<false>>.
+	ok, then <<TRUE>> is returned, else <<FALSE>>.
 
 	Possible error returns:
 	o <<bfd_error_invalid_operation>> -
@@ -1088,7 +1121,7 @@ DESCRIPTION
 
 */
 
-boolean
+bfd_boolean
 bfd_set_section_size (abfd, ptr, val)
      bfd *abfd;
      sec_ptr ptr;
@@ -1100,13 +1133,13 @@ bfd_set_section_size (abfd, ptr, val)
   if (abfd->output_has_begun)
     {
       bfd_set_error (bfd_error_invalid_operation);
-      return false;
+      return FALSE;
     }
 
   ptr->_cooked_size = val;
   ptr->_raw_size = val;
 
-  return true;
+  return TRUE;
 }
 
 /*
@@ -1114,9 +1147,9 @@ FUNCTION
 	bfd_set_section_contents
 
 SYNOPSIS
-	boolean bfd_set_section_contents (bfd *abfd, asection *section,
-					  PTR data, file_ptr offset,
-					  bfd_size_type count);
+	bfd_boolean bfd_set_section_contents (bfd *abfd, asection *section,
+					      PTR data, file_ptr offset,
+					      bfd_size_type count);
 
 DESCRIPTION
 	Sets the contents of the section @var{section} in BFD
@@ -1124,7 +1157,7 @@ DESCRIPTION
 	data is written to the output section starting at offset
 	@var{offset} for @var{count} octets.
 
-	Normally <<true>> is returned, else <<false>>. Possible error
+	Normally <<TRUE>> is returned, else <<FALSE>>. Possible error
 	returns are:
 	o <<bfd_error_no_contents>> -
 	The output section does not have the <<SEC_HAS_CONTENTS>>
@@ -1141,7 +1174,7 @@ DESCRIPTION
  ? bfd_get_section_size_after_reloc (sec) \
  : bfd_get_section_size_before_reloc (sec))
 
-boolean
+bfd_boolean
 bfd_set_section_contents (abfd, section, location, offset, count)
      bfd *abfd;
      sec_ptr section;
@@ -1154,7 +1187,7 @@ bfd_set_section_contents (abfd, section, location, offset, count)
   if (!(bfd_get_section_flags (abfd, section) & SEC_HAS_CONTENTS))
     {
       bfd_set_error (bfd_error_no_contents);
-      return (false);
+      return FALSE;
     }
 
   sz = bfd_get_section_size_now (abfd, section);
@@ -1164,7 +1197,7 @@ bfd_set_section_contents (abfd, section, location, offset, count)
       || count != (size_t) count)
     {
       bfd_set_error (bfd_error_bad_value);
-      return false;
+      return FALSE;
     }
 
   switch (abfd->direction)
@@ -1172,7 +1205,7 @@ bfd_set_section_contents (abfd, section, location, offset, count)
     case read_direction:
     case no_direction:
       bfd_set_error (bfd_error_invalid_operation);
-      return false;
+      return FALSE;
 
     case write_direction:
       break;
@@ -1181,7 +1214,7 @@ bfd_set_section_contents (abfd, section, location, offset, count)
       /* File is opened for update. `output_has_begun' some time ago when
 	   the file was created.  Do not recompute sections sizes or alignments
 	   in _bfd_set_section_content.  */
-      abfd->output_has_begun = true;
+      abfd->output_has_begun = TRUE;
       break;
     }
 
@@ -1193,11 +1226,11 @@ bfd_set_section_contents (abfd, section, location, offset, count)
   if (BFD_SEND (abfd, _bfd_set_section_contents,
 		(abfd, section, location, offset, count)))
     {
-      abfd->output_has_begun = true;
-      return true;
+      abfd->output_has_begun = TRUE;
+      return TRUE;
     }
 
-  return false;
+  return FALSE;
 }
 
 /*
@@ -1205,9 +1238,9 @@ FUNCTION
 	bfd_get_section_contents
 
 SYNOPSIS
-	boolean bfd_get_section_contents (bfd *abfd, asection *section,
-					  PTR location, file_ptr offset,
-					  bfd_size_type count);
+	bfd_boolean bfd_get_section_contents (bfd *abfd, asection *section,
+					      PTR location, file_ptr offset,
+					      bfd_size_type count);
 
 DESCRIPTION
 	Read data from @var{section} in BFD @var{abfd}
@@ -1218,11 +1251,11 @@ DESCRIPTION
 	If the contents of a constructor with the <<SEC_CONSTRUCTOR>>
 	flag set are requested or if the section does not have the
 	<<SEC_HAS_CONTENTS>> flag set, then the @var{location} is filled
-	with zeroes. If no errors occur, <<true>> is returned, else
-	<<false>>.
+	with zeroes. If no errors occur, <<TRUE>> is returned, else
+	<<FALSE>>.
 
 */
-boolean
+bfd_boolean
 bfd_get_section_contents (abfd, section, location, offset, count)
      bfd *abfd;
      sec_ptr section;
@@ -1235,10 +1268,10 @@ bfd_get_section_contents (abfd, section, location, offset, count)
   if (section->flags & SEC_CONSTRUCTOR)
     {
       memset (location, 0, (size_t) count);
-      return true;
+      return TRUE;
     }
 
-  /* Even if reloc_done is true, this function reads unrelocated
+  /* Even if reloc_done is TRUE, this function reads unrelocated
      contents, so we want the raw size.  */
   sz = section->_raw_size;
   if ((bfd_size_type) offset > sz
@@ -1247,23 +1280,23 @@ bfd_get_section_contents (abfd, section, location, offset, count)
       || count != (size_t) count)
     {
       bfd_set_error (bfd_error_bad_value);
-      return false;
+      return FALSE;
     }
 
   if (count == 0)
     /* Don't bother.  */
-    return true;
+    return TRUE;
 
   if ((section->flags & SEC_HAS_CONTENTS) == 0)
     {
       memset (location, 0, (size_t) count);
-      return true;
+      return TRUE;
     }
 
   if ((section->flags & SEC_IN_MEMORY) != 0)
     {
       memcpy (location, section->contents + offset, (size_t) count);
-      return true;
+      return TRUE;
     }
 
   return BFD_SEND (abfd, _bfd_get_section_contents,
@@ -1275,13 +1308,13 @@ FUNCTION
 	bfd_copy_private_section_data
 
 SYNOPSIS
-	boolean bfd_copy_private_section_data (bfd *ibfd, asection *isec,
-					       bfd *obfd, asection *osec);
+	bfd_boolean bfd_copy_private_section_data (bfd *ibfd, asection *isec,
+						   bfd *obfd, asection *osec);
 
 DESCRIPTION
 	Copy private section information from @var{isec} in the BFD
 	@var{ibfd} to the section @var{osec} in the BFD @var{obfd}.
-	Return <<true>> on success, <<false>> on error.  Possible error
+	Return <<TRUE>> on success, <<FALSE>> on error.  Possible error
 	returns are:
 
 	o <<bfd_error_no_memory>> -
@@ -1343,16 +1376,16 @@ FUNCTION
 	bfd_generic_discard_group
 
 SYNOPSIS
-	boolean bfd_generic_discard_group (bfd *abfd, asection *group);
+	bfd_boolean bfd_generic_discard_group (bfd *abfd, asection *group);
 
 DESCRIPTION
 	Remove all members of @var{group} from the output.
 */
 
-boolean
+bfd_boolean
 bfd_generic_discard_group (abfd, group)
      bfd *abfd ATTRIBUTE_UNUSED;
      asection *group ATTRIBUTE_UNUSED;
 {
-  return true;
+  return TRUE;
 }

@@ -122,6 +122,14 @@
 
 
     
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_littlearm_vec)
+
+{ "arm-*-nto*", NULL },{ "nto*arm*",
+&bfd_elf32_littlearm_vec },
+#endif
+
+
+    
 #if !defined (SELECT_VECS) || defined (HAVE_riscix_vec)
 
 { "arm-*-riscix*",
@@ -205,6 +213,14 @@
 
 { "armeb-*-elf", NULL },{ "arm*b-*-linux-gnu*",
 &bfd_elf32_bigarm_vec },
+#endif
+
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_littlearm_vec)
+
+{ "arm-*-kaos*", NULL },{ "strongarm-*-kaos*",
+&bfd_elf32_littlearm_vec },
 #endif
 
 
@@ -351,6 +367,16 @@
 { "c30-*-*coff*", NULL },{ "tic30-*-*coff*",
 &tic30_coff_vec },
 #endif
+
+    
+
+#if !defined (SELECT_VECS) || defined (HAVE_tic4x_coff1_vec)
+
+{ "c4x-*-*coff*", NULL },{ "tic4x-*-*coff*",
+&tic4x_coff1_vec },
+#endif
+
+
 
     
 
@@ -534,10 +560,25 @@
     
 #if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_i386_vec)
 
+{ "i[3456]86-*-kaos*",
+&bfd_elf32_i386_vec },
+#endif
+
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_i386_vec)
+
 { "i[3456]86-*-nto*",
 &bfd_elf32_i386_vec },
 #endif
 
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_i386_vec)
+
+{ "i[3456]86-*-aros*",
+&bfd_elf32_i386_vec },
+#endif
 
     
 #if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_i386_vec)
@@ -576,6 +617,15 @@
 { "i[3456]86-*-rtemself*", NULL },{ "i[3456]86-*-rtems*",
 &bfd_elf32_i386_vec },
 #endif
+
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_mach_o_le_vec)
+
+{ "i[3456]86-*-darwin*", NULL },{ "i[3456]86-*-macos10*", NULL },{ "i[3456]86-*-rhapsody*",
+&mach_o_le_vec },
+#endif
+
 
 
     
@@ -661,6 +711,7 @@
 { "i[3456]86-*-linux-gnu*",
 &bfd_elf32_i386_vec },
 #endif
+
 
 
     
@@ -858,6 +909,22 @@
 &bfd_elf32_i960_vec },
 #endif
 
+
+    
+
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_ip2k_vec)
+
+{ "ip2k-*-elf",
+&bfd_elf32_ip2k_vec },
+#endif
+
+    
+
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_iq2000_vec)
+
+{ "iq2000-*-elf",
+&bfd_elf32_iq2000_vec },
+#endif
 
     
 
@@ -1148,14 +1215,6 @@
     
 #if !defined (SELECT_VECS) || defined (HAVE_aout_mips_little_vec)
 
-{ "mips*-dec-bsd*",
-&aout_mips_little_vec },
-#endif
-
-
-    
-#if !defined (SELECT_VECS) || defined (HAVE_aout_mips_little_vec)
-
 { "mips*-dec-mach3*",
 &aout_mips_little_vec },
 #endif
@@ -1179,10 +1238,10 @@
 
     
 #ifdef BFD64
-#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_bigmips_vec)
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_nbigmips_vec)
 
 { "mips*-*-irix6*",
-&bfd_elf32_bigmips_vec },
+&bfd_elf32_nbigmips_vec },
 #endif
 
 
@@ -1217,15 +1276,6 @@
 { "mips*-*-mach3*",
 &aout_mips_little_vec },
 #endif
-
-
-    
-#if !defined (SELECT_VECS) || defined (HAVE_mipslpe_vec)
-
-{ "mips*-*-pe*",
-&mipslpe_vec },
-#endif
-
 
 
     
@@ -1286,18 +1336,18 @@
 
     
 #ifdef BFD64
-#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_tradlittlemips_vec)
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_ntradlittlemips_vec)
 
 { "mips64*el-*-linux*",
-&bfd_elf32_tradlittlemips_vec },
+&bfd_elf32_ntradlittlemips_vec },
 #endif
 
 
     
-#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_tradbigmips_vec)
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_ntradbigmips_vec)
 
 { "mips64*-*-linux*",
-&bfd_elf32_tradbigmips_vec },
+&bfd_elf32_ntradbigmips_vec },
 #endif
 
 
@@ -1310,12 +1360,14 @@
 #endif
 
 
+
     
 #if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_tradbigmips_vec)
 
 { "mips*-*-linux*",
 &bfd_elf32_tradbigmips_vec },
 #endif
+
 
 
     
@@ -1341,6 +1393,14 @@
 
 { "mn10300-*-*",
 &bfd_elf32_mn10300_vec },
+#endif
+
+    
+
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_msp430_vec)
+
+{ "msp430-*-*",
+&bfd_elf32_msp430_vec },
 #endif
 
     
@@ -1454,7 +1514,8 @@
     
 #if !defined (SELECT_VECS) || defined (HAVE_bfd_elf64_powerpc_vec)
 
-{ "powerpc64-*-elf*", NULL },{ "powerpc-*-elf64*", NULL },{ "powerpc64-*-linux*",
+{ "powerpc64-*-elf*", NULL },{ "powerpc-*-elf64*", NULL },{ "powerpc64-*-linux*", NULL },
+{ "powerpc64-*-*bsd*",
 &bfd_elf64_powerpc_vec },
 #endif
 
@@ -1480,6 +1541,24 @@
 
 
     
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_powerpc_vec)
+
+{ "powerpc-*-kaos*",
+&bfd_elf32_powerpc_vec },
+#endif
+
+
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_mach_o_be_vec)
+
+{ "powerpc-*-darwin*", NULL },{ "powerpc-*-macos10*", NULL },{ "powerpc-*-rhapsody*",
+&mach_o_be_vec },
+#endif
+
+
+
+    
 #if !defined (SELECT_VECS) || defined (HAVE_pmac_xcoff_vec)
 
 { "powerpc-*-macos*", NULL },{ "powerpc-*-mpw*",
@@ -1491,6 +1570,22 @@
 
 { "powerpc-*-netware*",
 &bfd_elf32_powerpc_vec },
+#endif
+
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_powerpc_vec)
+
+{ "powerpc-*-nto*",
+&bfd_elf32_powerpc_vec },
+#endif
+
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_powerpcle_vec)
+
+{ "powerpcle-*-nto*",
+&bfd_elf32_powerpcle_vec },
 #endif
 
 
@@ -1554,18 +1649,18 @@
 
 
     
-#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_shblin_vec)
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_sh64blin_vec)
 
 { "sh64eb-*-linux*",
-&bfd_elf32_shblin_vec },
+&bfd_elf32_sh64blin_vec },
 #endif
 
 
     
-#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_shlin_vec)
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_sh64lin_vec)
 
 { "sh64-*-linux*",
-&bfd_elf32_shlin_vec },
+&bfd_elf32_sh64lin_vec },
 #endif
 
 
@@ -1677,7 +1772,7 @@
 
 #if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_shl_vec)
 
-{ "shl*-*-elf*", NULL },{ "sh[1234]l*-*-elf*", NULL },{ "sh3el*-*-elf*",
+{ "shl*-*-elf*", NULL },{ "sh[1234]l*-*-elf*", NULL },{ "sh3el*-*-elf*", NULL },{ "shl*-*-kaos*",
 &bfd_elf32_shl_vec },
 #endif
 
@@ -1689,7 +1784,7 @@
     
 #if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_sh_vec)
 
-{ "sh-*-elf*", NULL },{ "sh[1234]*-elf*", NULL },{ "sh-*-rtemself*",
+{ "sh-*-elf*", NULL },{ "sh[1234]*-elf*", NULL },{ "sh-*-rtemself*", NULL },{ "sh-*-kaos*",
 &bfd_elf32_sh_vec },
 #endif
 
@@ -1697,6 +1792,15 @@
 #ifdef BFD64
 
 #endif
+
+    
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_sh_vec)
+
+{ "sh-*-nto*",
+&bfd_elf32_sh_vec },
+#endif
+
+
 
     
 #if !defined (SELECT_VECS) || defined (HAVE_shlpe_vec)
@@ -1991,6 +2095,15 @@
 { "xstormy16-*-elf",
 &bfd_elf32_xstormy16_vec },
 #endif
+
+    
+
+#if !defined (SELECT_VECS) || defined (HAVE_bfd_elf32_xtensa_le_vec)
+
+{ "xtensa-*-*",
+&bfd_elf32_xtensa_le_vec },
+#endif
+
 
     
 
