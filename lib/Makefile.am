@@ -52,7 +52,7 @@ INTERPRETER_DEPS = \
 	-r Mono.Debugger.dll	\
 	-r Mono.Debugger.Backend.dll
 
-GUIDIR=../frontends/gui
+GUIDIR = @top_srcdir@/frontends/gui
 RESOURCES = \
 	-resource:$(GUIDIR)/debugger.glade,debugger.glade	\
 	-resource:$(GUIDIR)/mono.png,mono.png			\
@@ -71,5 +71,5 @@ Debugger.exe: $(ALL_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
 Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
 	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SRCLIST) $(MCS_FLAGS)
 
-clean:
-	rm -f *.exe *.dll
+CLEANFILES = *.exe *.dll
+
