@@ -1,3 +1,7 @@
+2002-10-18  Martin Baulig  <martin@gnome.org>
+
+	* RELEASE-NOTES-0.1.0.txt: Added preliminary release notes.
+
 2002-10-17  Martin Baulig  <martin@gnome.org>
 
 	* backends/SingleSteppingEngine.cs: Don't change the state to
