@@ -15,8 +15,8 @@ namespace Mono.Debugger.GUI
 
 		bool has_frame;
 
-		public SourceView (IDebuggerBackend backend, Gtk.Container container, Gtk.TextView widget)
-			: base (backend, container, widget)
+		public SourceView (Gtk.Container container, Gtk.TextView widget)
+			: base (container, widget)
 		{
 			source_view = widget;
 
@@ -27,7 +27,12 @@ namespace Mono.Debugger.GUI
 			text_buffer.TagTable.Add (frame_tag);
 
 			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
+		}
 
+		public override void SetBackend (IDebuggerBackend backend)
+		{
+			base.SetBackend (backend);
+			
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
@@ -55,6 +60,7 @@ namespace Mono.Debugger.GUI
 
 			text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
 
+			Console.WriteLine ("METHOD CHANGED, method = " + (method == null ? "null" : "ok"));
 			if (method == null)
 				return;
 
@@ -62,6 +68,7 @@ namespace Mono.Debugger.GUI
 
 			ISourceBuffer buffer = current_method_source.SourceBuffer;
 			if (buffer == null) {
+				Console.WriteLine ("The buffer is empty");
 				current_method_source = null;
 				return;
 			}

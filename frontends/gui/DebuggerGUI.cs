@@ -24,7 +24,7 @@ namespace Mono.Debugger.GUI
 {
 	public class DebuggerGUI
 	{
-		static void usage ()
+		static void Usage ()
 		{
 			Console.WriteLine (
 				"Mono debugger, (C) 2002 Ximian, Inc.\n\n" +
@@ -47,36 +47,34 @@ namespace Mono.Debugger.GUI
 		//
 		static void Main (string[] args)
 		{
-			int idx = 0;
-			while ((idx < args.Length) && args [idx].StartsWith ("--")) {
-				string arg = args [idx++].Substring (2);
-				switch (arg) {
-				case "help":
-					usage ();
-					break;
+			ArrayList arguments = new ArrayList ();
 
-				default:
-					Console.WriteLine ("Unknown argument `{0}'.", arg);
-					Environment.Exit (1);
-					break;
-				}
+			foreach (string a in args){
+				if (a.StartsWith ("--")){
+					string name = a.Substring (2);
+					
+					switch (name) {
+					case "help":
+						Usage ();
+						break;
+						
+					default:
+						Console.WriteLine ("Unknown argument `{0}'.", name);
+						Environment.Exit (1);
+						break;
+					}
+				} else
+					arguments.Add (a);
 			}
 
-			int rest = args.Length - idx;
-
-			if (rest < 1)
-				usage ();
-
-			string[] new_args = new string [rest - 1];
-			Array.Copy (args, idx + 1, new_args, 0, rest - 1);
-
-			DebuggerGUI gui = new DebuggerGUI (args [idx], new_args);
+			DebuggerGUI gui = new DebuggerGUI ((string []) arguments.ToArray (typeof (string)));
 
 			gui.Run ();
 		}
 
 		Program program;
 		Glade.XML gxml;
+		App main_window;
 
 		Gtk.Entry command_entry;
 		CurrentInstructionEntry current_insn;
@@ -95,86 +93,45 @@ namespace Mono.Debugger.GUI
 		IDebuggerBackend backend;
 		Interpreter interpreter;
 
-		public DebuggerGUI (string application, string[] arguments)
+		public DebuggerGUI (string[] arguments)
 		{
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
 
-			NameValueCollection settings = ConfigurationSettings.AppSettings;
+			SetupGUI ();
+			
+			if (arguments.Length > 0)
+				LoadProgram (arguments);
+		}
 
-			string fname = "frontends/gui/mono-debugger.glade";
-			string root = "main_window";
-			string target = "target_window";
+		//
+		// Does the initial GUI Setup
+		//
+		void SetupGUI ()
+		{
+			gxml = new Glade.XML (null, "debugger.glade", null, null);
 
-			foreach (string key in settings.AllKeys) {
-				string value = settings [key];
+			main_window = (App) gxml ["debugger-toplevel"];
 
-				switch (key) {
-				case "gui-glade-file":
-					fname = value;
-					break;
-
-				case "gui-glade-root":
-					root = value;
-					break;
-
-				case "gui-glade-target":
-					target = value;
-					break;
-
-				default:
-					break;
-				}
-			}
-
-			gxml = new Glade.XML (fname, null, null);
-
-			Widget target_widget = gxml [target];
-			target_widget.Show ();
-
-			Widget main_window = gxml [root];
-
-			command_entry = (Gtk.Entry) gxml ["command_entry"];
-			target_output = (Gtk.TextView) gxml ["target_output"];
+			command_entry = (Gtk.Entry) gxml ["command-entry"];
+			target_output = (Gtk.TextView) gxml ["target-output"];
 
 			output_writer = new OutputWindow (target_output);
 
-			if (application == "native")
-				backend = new Mono.Debugger.Backends.Debugger (arguments);
-			else
-				backend = new Mono.Debugger.Backends.Debugger (application, arguments);
-
-			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
-			backend.TargetError += new TargetOutputHandler (TargetError);
-
-			target_status = new TargetStatusbar (backend, (Gtk.Statusbar) gxml ["target_status"]);
-			source_status = new SourceStatusbar (backend, (Gtk.Statusbar) gxml ["source_status"]);
-			line_debug_status = new LineDebugStatusbar (backend, (Gtk.Statusbar) gxml ["line_debug_status"]);
-			source_view = new SourceView
-				(backend, (Gtk.Container) main_window, (Gtk.TextView) gxml ["source_view"]);
-			disassembler_view = new DisassemblerView (
-				backend, (Gtk.Container) gxml ["disassembler_window"],
-				(Gtk.TextView) gxml ["disassembler_view"]);
+			target_status = new TargetStatusbar ((Gtk.Statusbar) gxml ["target-status"]);
+			line_debug_status = new LineDebugStatusbar ((Gtk.Statusbar) gxml ["line-debug-status"]);
 			register_display = new RegisterDisplay (
-				backend, (Gtk.Container) gxml ["register_dialog"],
-				(Gtk.Container) gxml ["register_view"]);
+				null, (Gtk.Container) gxml ["register-view"]);
 			backtrace_view = new BackTraceView (
-				backend, (Gtk.Container) gxml ["backtrace_dialog"],
-				(Gtk.Container) gxml ["backtrace_view"]);
+				null, (Gtk.Container) gxml ["backtrace-view"]);
 
-			current_insn = new CurrentInstructionEntry (backend, (Gtk.Entry) gxml ["current_insn"]);
+			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
 
-			if (((Gtk.CheckMenuItem) gxml ["menu_view_registers"]).Active)
-				register_display.Show ();
-			if (((Gtk.CheckMenuItem) gxml ["menu_view_backtrace"]).Active)
-				backtrace_view.Show ();
-
-			if (((Gtk.CheckMenuItem) gxml ["menu_view_source_code_window"]).Active)
-				source_view.Show ();
-			if (((Gtk.CheckMenuItem) gxml ["menu_view_disassembler_window"]).Active)
-				disassembler_view.Show ();
-
-			interpreter = new Interpreter (backend, output_writer, output_writer);
-
+			source_status = new SourceStatusbar ((Gtk.Statusbar) gxml ["source-status"]);
+			source_view = new SourceView
+				((Gtk.Container) main_window, (Gtk.TextView) gxml ["source-view"]);
+			disassembler_view = new DisassemblerView (
+				null, (Gtk.TextView) gxml ["disassembler-view"]);
+			
 			gxml.Autoconnect (this);
 
 			command_entry.ActivatesDefault = true;
@@ -182,52 +139,153 @@ namespace Mono.Debugger.GUI
 			command_entry.Sensitive = false;
 		}
 
-		void on_quit_activate (object sender, EventArgs args)
+		bool ProgramIsManaged (string name)
 		{
-			backend.Quit ();
+			//
+			// Should look for the file header
+			//
+			return (name.IndexOf (".exe") >= 0);
+		}
+
+		//
+		// This constructor is used by the startup code: it contains the command line arguments
+		//
+		void LoadProgram (string [] args)
+		{
+			string [] program_args = new string [args.Length-1];
+			if (args.Length > 1)
+				Array.Copy (args, 1, program_args, 0, args.Length-1);
+
+			LoadProgram (args [0], program_args);
+		}
+
+		//
+		// This constructor takes the name of the program, and the arguments as a vector
+		// for the program.
+		//
+		void LoadProgram (string program, string [] args)
+		{
+			if (ProgramIsManaged (program))
+				backend = new Mono.Debugger.Backends.Debugger (program, args);
+			else {
+				string [] unmanaged_args = new string [args.Length+1];
+				args.CopyTo (unmanaged_args, 1);
+				unmanaged_args [0] = program;
+				
+				backend = new Mono.Debugger.Backends.Debugger (unmanaged_args);
+			}
+
+			interpreter = new Interpreter (backend, output_writer, output_writer);
+			
+			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
+			backend.TargetError += new TargetOutputHandler (TargetError);
+
+			main_window.Title = "Debugging: " + program +
+				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
+
+			target_status.SetBackend (backend);
+			line_debug_status.SetBackend (backend);
+			register_display.SetBackend (backend);
+			backtrace_view.SetBackend (backend);
+			current_insn.SetBackend (backend);
+			disassembler_view.SetBackend (backend);
+			
+		}
+		
+		//
+		// Callbacks hooked from the Glade file.
+		//
+		ProgramToDebug program_to_debug;
+		void OnProgramToDebugActivate (object sender, EventArgs a)
+		{
+			string program = null, arg_string = null, working_dir = null;
+			
+			if (program_to_debug == null)
+				program_to_debug = new ProgramToDebug (gxml, "", null);
+
+			if (!program_to_debug.RunDialog (out program, out arg_string, out working_dir))
+				return;
+			
+			string [] argsv = arg_string.Split (new char [] { ' ' });
+
+			LoadProgram (program, argsv);
+		}
+		
+		void OnQuitActivate (object sender, EventArgs args)
+		{
+			if (backend != null)
+				backend.Quit ();
+			
 			Application.Quit ();
 		}
 
-		void on_menu_view_registers_activate (object sender, EventArgs args)
+		void OnCPUViewActivate (object sender, EventArgs args)
 		{
-			if (((Gtk.CheckMenuItem) sender).Active)
-				register_display.Show ();
-			else
-				register_display.Hide ();
+			Gtk.Notebook n;
+			
+			n = (Gtk.Notebook) gxml ["code-browser-notebook"];
+			n.Page = 0;
 		}
 
-		void on_menu_view_backtrace_activate (object sender, EventArgs args)
+		void OnRunProgramActivate (object sender, EventArgs args)
 		{
-			if (((Gtk.CheckMenuItem) sender).Active)
-				backtrace_view.Show ();
-			else
-				backtrace_view.Hide ();
+			if (backend == null)
+			if (backend.Inferior == null)
+				backend.Run ();
+			else {
+				Console.WriteLine ("Do not know how to continue");
+
+				//
+				// Maybe this works?
+				//
+				while (backend.State != TargetState.NO_TARGET)
+					backend.Finish ();
+			}
 		}
 
-		void on_menu_view_source_code_window_activate (object sender, EventArgs args)
+		void OnStopProgramActivate (object sender, EventArgs args)
 		{
-			if (((Gtk.CheckMenuItem) sender).Active)
-				source_view.Show ();
-			else
-				source_view.Hide ();
+			Console.WriteLine ("Do not know how to stop program");
 		}
 
-		void on_menu_view_disassembler_window_activate (object sender, EventArgs args)
+		void OnRestartProgramActivate (object sender, EventArgs args)
 		{
-			if (((Gtk.CheckMenuItem) sender).Active)
-				disassembler_view.Show ();
-			else
-				disassembler_view.Hide ();
+			Console.WriteLine ("Do not know how to stop program");	
 		}
 
-		void on_about_activate (object sender, EventArgs args)
+		void OnStepIntoActivate (object sender, EventArgs args)
 		{
-			Pixbuf pixbuf = new Pixbuf ("frontends/gui/mono.png");
+			backend.StepLine ();
+		}
+
+		void OnStepOverActivate (object sender, EventArgs args)
+		{
+			backend.NextLine ();
+		}
+
+		void OnStepOutActivate (object sender, EventArgs args)
+		{
+			backend.Finish ();
+		}
+
+		void OnInstructionStepIntoActivate (object sender, EventArgs args)
+		{
+			backend.StepInstruction ();
+		}
+
+		void OnInstructionStepOverActivate (object sender, EventArgs args)
+		{
+			backend.NextInstruction ();
+		}
+		
+		void OnAboutActivate (object sender, EventArgs args)
+		{
+			Pixbuf pixbuf = new Pixbuf (null, "mono.png");
 
 			About about = new About ("Mono Debugger", "0.1",
 						 "Copyright (C) 2002 Ximian, Inc.",
 						 "",
-						 new string [] { "Martin Baulig (martin@gnome.org)" },
+						 new string [] { "Martin Baulig (martin@gnome.org)", "Miguel de Icaza (miguel@ximian.com)" },
 						 new string [] { },
 						 "", pixbuf);
 			about.Run ();

@@ -15,7 +15,7 @@ namespace Mono.Debugger.GUI
 		[DllImport("glib-2.0")]
 		static extern bool g_main_context_iteration (IntPtr context, bool may_block);
 
-		public DebuggerWidget (IDebuggerBackend backend, Gtk.Container container, Gtk.Widget widget)
+		public DebuggerWidget (Gtk.Container container, Gtk.Widget widget)
 		{
 			this.widget = widget;
 			this.container = container;
@@ -35,6 +35,11 @@ namespace Mono.Debugger.GUI
 			container.Unmapped += new EventHandler (unmapped);
 		}
 
+		public virtual void SetBackend (IDebuggerBackend backend)
+		{
+			this.backend = backend;
+		}
+		
 		void mapped (object o, EventArgs args)
 		{
 			visible = true;
@@ -45,8 +50,8 @@ namespace Mono.Debugger.GUI
 			visible = false;
 		}
 
-		public DebuggerWidget (IDebuggerBackend backend, Gtk.Widget widget)
-			: this (backend, null, widget)
+		public DebuggerWidget (Gtk.Widget widget)
+			: this (null, widget)
 		{ }
 
 		public virtual Gtk.Widget Widget {

@@ -26,8 +26,13 @@ DEPS = \
 	-r System.Drawing	\
 	-r Mono.CSharp.Debugger
 
+GUIDIR=../frontends/gui
+RESOURCES = \
+	 -resource:$(GUIDIR)/debugger.glade,debugger.glade \
+	-resource:.$(GUIDIR)/mono.png,mono.png
+
 Debugger.exe: $(ALL_SOURCES)
-	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES)
+	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES)
 
 clean:
 	rm -f *.exe

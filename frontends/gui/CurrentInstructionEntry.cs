@@ -9,14 +9,19 @@ namespace Mono.Debugger.GUI
 	{
 		Gtk.Entry entry;
 
-		public CurrentInstructionEntry (IDebuggerBackend backend, Gtk.Entry widget)
-			: base (backend, widget)
+		public CurrentInstructionEntry (Gtk.Entry widget)
+			: base (widget)
 		{
 			entry = widget;
 			entry.Sensitive = false;
-			backend.StateChanged += new StateChangedHandler (StateChanged);
 		}
 
+		public override void SetBackend (IDebuggerBackend backend)
+		{
+			base.SetBackend (backend);
+			backend.StateChanged += new StateChangedHandler (StateChanged);
+		}
+		
 		public void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)

@@ -1,0 +1,26 @@
+2002-09-18  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/gui/DebuggerGUI.cs: Rework the bootstrap phase for the
+	program, now it is posisble to specify the program and arguments
+	from a dialog box, or to pass them on the command line.
+
+	Now it guesses the kind of program (managed/unmanaged) without
+	having to use the `native' prefix.
+
+	Added a few more event hooks to the UI.
+
+	* frontend/gui/Everything that depends on DebuggerWidget: It no
+	longer takes a backend argument.  The backend is now configured by
+	a SetBackend virtual method.  If you want to hook up to this, you
+	have to override the method, and extend it.
+
+	* frontend/gui/debugger.glade: New user interface similar to
+	the VisualStudio debugger.
+
+2002-09-17  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/gui/DebuggerGUI.cs: Use embeded debugger.glade
+	resource instead of loading from the configuration data.
+
+	* test/Makefile.in: Embed debugger.glade.
+

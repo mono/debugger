@@ -11,9 +11,8 @@ namespace Mono.Debugger.GUI
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
 
-		public BackTraceView (IDebuggerBackend backend, Gtk.Container window,
-				      Gtk.Container container)
-			: base (backend, window, container)
+		public BackTraceView (Gtk.Container window, Gtk.Container container)
+			: base (window, container)
 		{
 			store = new ListStore ((int)TypeFundamentals.TypeInt,
 					       (int)TypeFundamentals.TypeString,
@@ -54,11 +53,16 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
+		}
 
+		public override void SetBackend (IDebuggerBackend backend)
+		{
+			base.SetBackend (backend);
+			
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 		}
-
+		
 		void FramesInvalidEvent ()
 		{
 			if (!IsVisible)

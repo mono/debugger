@@ -12,14 +12,19 @@ namespace Mono.Debugger.GUI
 		protected Gtk.Statusbar status_bar;
 		protected uint status_id;
 
-		public TargetStatusbar (IDebuggerBackend backend, Gtk.Statusbar widget)
-			: base (backend, widget)
+		public TargetStatusbar (Gtk.Statusbar widget)
+			: base (widget)
 		{
 			status_bar = widget;
 			status_id = status_bar.GetContextId ("message");
-			backend.StateChanged += new StateChangedHandler (StateChanged);
 		}
 
+		public override void SetBackend (IDebuggerBackend backend)
+		{
+			base.SetBackend (backend);
+			backend.StateChanged += new StateChangedHandler (StateChanged);
+		}
+		
 		public void Message (string message)
 		{
 			if (!IsVisible)
