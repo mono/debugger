@@ -432,7 +432,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal MonoEventInfo (MonoClass klass, int index, R.EventInfo einfo, bool is_static,
 						TargetBinaryReader info, MonoSymbolFile file)
-				: base (klass, einfo, index, is_static)
+				: base (klass, einfo, index, is_static, file)
 			{
 				EventInfo = einfo;
 				HandlerType = file.Table.GetType (einfo.EventHandlerType, info.ReadInt32 ());
@@ -500,15 +500,17 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			public readonly MonoClass Klass;
 			public readonly R.MemberInfo MemberInfo;
+			public readonly MonoSymbolFile File;
 			public readonly int Index;
 			public readonly bool IsStatic;
 
-			public MonoStructMember (MonoClass klass, R.MemberInfo minfo, int index, bool is_static)
+			public MonoStructMember (MonoClass klass, R.MemberInfo minfo, int index, bool is_static, MonoSymbolFile file)
 			{
 				this.Klass = klass;
 				this.MemberInfo = minfo;
 				this.Index = index;
 				this.IsStatic = is_static;
+				this.File = file;
 			}
 
 			public abstract MonoType Type {
@@ -561,17 +563,29 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public readonly R.FieldInfo FieldInfo;
 
+			int typeinfo;
+
 			internal MonoFieldInfo (MonoClass klass, int index, R.FieldInfo finfo, bool is_static,
 						TargetBinaryReader info, MonoSymbolFile file)
-				: base (klass, finfo, index, is_static)
+				: base (klass, finfo, index, is_static, file)
 			{
 				FieldInfo = finfo;
 				Offset = info.ReadInt32 ();
-				type = file.Table.GetType (finfo.FieldType, info.ReadInt32 ());
+				typeinfo = info.ReadInt32 ();
+				type = File.Table.GetType (finfo.FieldType, typeinfo);
 			}
 
 			public override MonoType Type {
-				get { return type; }
+				get {
+					if (type is MonoClassPlaceholder) {
+						type = File.Table.GetType (FieldInfo.FieldType, typeinfo);
+						if (type is MonoClassPlaceholder) {
+							Console.WriteLine ("Can't resolve type for {0}", type);
+						}
+					}
+
+					return type;
+				}
 			}
 
 			int ITargetFieldInfo.Offset {
@@ -580,7 +594,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			protected override string MyToString ()
 			{
-				return String.Format ("{0:x}", Offset);
+				return String.Format ("({0:x})", Offset);
 			}
 		}
 
@@ -595,9 +609,6 @@ namespace Mono.Debugger.Languages.CSharp
 			try {
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					fields [index].Offset, fields [index].Type.IsByRef);
-
-				if (field_loc.Address.IsNull)
-					return null;
 
 				return fields [index].Type.GetObject (field_loc);
 			} catch (TargetException ex) {
@@ -715,13 +726,15 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly R.PropertyInfo PropertyInfo;
 			public readonly TargetAddress Getter, Setter;
 			public readonly MonoFunctionType GetterType, SetterType;
+			int typeinfo;
 
 			internal MonoPropertyInfo (MonoClass klass, int index, R.PropertyInfo pinfo, bool is_static,
 						   TargetBinaryReader info, MonoSymbolFile file)
-				: base (klass, pinfo, index, is_static)
+				: base (klass, pinfo, index, is_static, file)
 			{
 				PropertyInfo = pinfo;
-				type = file.Table.GetType (pinfo.PropertyType, info.ReadInt32 ());
+				typeinfo = info.ReadInt32 ();
+				type = file.Table.GetType (pinfo.PropertyType, typeinfo);
 				Getter = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
 				Setter = new TargetAddress (file.Table.AddressDomain, info.ReadAddress ());
 
@@ -736,7 +749,16 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public override MonoType Type {
-				get { return type; }
+				get {
+					if (type is MonoClassPlaceholder) {
+						type = File.Table.GetType (PropertyInfo.PropertyType, typeinfo);
+						if (type is MonoClassPlaceholder) {
+							Console.WriteLine ("Can't resolve type for {0}", type);
+						}
+					}
+
+					return type;
+				}
 			}
 
 			public bool CanRead {
@@ -997,7 +1019,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal MonoMethodInfo (MonoClass klass, int index, R.MethodBase minfo, bool is_static,
 						 TargetBinaryReader info, MonoSymbolFile file)
-				: base (klass, minfo, index, is_static)
+				: base (klass, minfo, index, is_static, file)
 			{
 				MethodInfo = minfo;
 				FunctionType = new MonoFunctionType (Klass, minfo, info, file);

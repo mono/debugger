@@ -1,5 +1,27 @@
 2005-02-03  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono-csharp/MonoClass.cs (MonoEventInfo..ctor): pass
+	the MonoSymbolField to the superclass's ctor.
+	(MonoMethodInfo..ctor): same.
+	(MonoPropertyInfo..ctor): same, and cache the typeinfo we use to
+	look up our type (so we can look it up again in the Type getter.)
+	(MonoFieldInfo..ctor): same.
+	(MonoFieldInfo.get_Type): if our type is a MonoClassPlaceholder,
+	attempt to resolve it again before passing it back to the caller.
+	(MonoPropertyInfo.get_Type): if our type is a
+	MonoClassPlaceholder, attempt to resolve it again before passing
+	it back to the caller.
+	(MonoStructMember): provide readonly access to the MonoSymbolFile
+	we loaded this member's types from.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolTable.GetType): only cache the type in the types
+	hashtable if it's not a placeholder.
+	(MonoSymbolTable.GetTypeFromClas): return a placeholder object if
+	there is no ClassEntry, not an OpaqueType.
+
+2005-02-03  Chris Toshok  <toshok@ximian.com>
+
 	* classes/MethodSource.cs: nuke unused comment.
 
 2005-02-01  Chris Toshok  <toshok@ximian.com>

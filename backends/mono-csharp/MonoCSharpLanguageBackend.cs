@@ -708,7 +708,7 @@ namespace Mono.Debugger.Languages.CSharp
 			byte[] data = GetTypeInfo (offset);
 			TargetBinaryReader info = new TargetBinaryReader (data, TargetInfo);
 			retval = MonoType.GetType (type, info, reader);
-			if (!types.Contains (type))
+			if (!(retval is MonoClassPlaceholder) && !types.Contains (type))
 				types.Add (type, retval);
 			return retval;
 		}
@@ -718,9 +718,7 @@ namespace Mono.Debugger.Languages.CSharp
 			ClassEntry entry = (ClassEntry) class_table [klass_address];
 
 			if ((entry == null) || (entry.Type == null)) {
-				Console.WriteLine ("Can't find class for type {0} at address {1:x}",
-						   type, klass_address);
-				return new MonoOpaqueType (type, 0);
+				return new MonoClassPlaceholder (type, 0);
 			}
 
 			return GetType (entry.Type, entry.TypeInfo);
