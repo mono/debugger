@@ -21,7 +21,7 @@ namespace Mono.Debugger
 		IOChannel channel;
 		string prompt;
 
-		public static GnuReadLine ()
+		static GnuReadLine ()
 		{
 			mono_debugger_readline_init ();
 		}
