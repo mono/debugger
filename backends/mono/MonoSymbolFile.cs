@@ -541,7 +541,7 @@ namespace Mono.Debugger.Languages.Mono
 			SourceMethod info;
 			C.MethodEntry method;
 			R.MethodBase rmethod;
-			MonoClass decl_type;
+			MonoClassType decl_type;
 			MonoType[] param_types;
 			MonoType[] local_types;
 			IVariable this_var;
@@ -635,7 +635,7 @@ namespace Mono.Debugger.Languages.Mono
 #endif
 				}
 
-				decl_type = (MonoClass) file.MonoLanguage.LookupMonoType (rmethod.DeclaringType);
+				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (rmethod.DeclaringType);
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
@@ -942,7 +942,7 @@ namespace Mono.Debugger.Languages.Mono
 			public static MethodRangeEntry Create (MonoSymbolFile file, ITargetMemoryReader reader,
 							       byte[] contents)
 			{
-				int domain = reader.ReadInteger ();
+				/*int domain =*/ reader.ReadInteger ();
 				int index = reader.ReadInteger ();
 				TargetAddress start = reader.ReadGlobalAddress ();
 				TargetAddress end = start + reader.ReadInteger ();

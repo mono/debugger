@@ -1,3 +1,15 @@
+2005-02-17  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoClassType.cs, backends/mono/MonoClass.cs:
+	essentially collapse these two into one class.  MonoClass was an
+	abstract base class with 2 methods (1 of which was a ctor), and
+	MonoClassType was the only subclass.
+
+	* backends/mono/MonoFunctionType.cs: track MonoClass ->
+	MonoClassType change.
+
+	* backends/mono/MonoClassInfo.cs: same.
+	
 2005-02-16  Chris Toshok  <toshok@ximian.com>
 
 	* backends/mono/MonoSymbolFile.cs: rename "MonoType LookupType

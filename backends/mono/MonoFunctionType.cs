@@ -7,14 +7,14 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
-		MonoClass klass;
+		MonoClassType klass;
 		R.MethodBase method_info;
 		MonoType return_type;
 		MonoType[] parameter_types;
 		bool has_return_type;
 		int index;
 
-		public MonoFunctionType (MonoSymbolFile file, MonoClass klass, R.MethodBase mbase, int index)
+		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass, R.MethodBase mbase, int index)
 			: base (file, TargetObjectKind.Function, mbase.ReflectedType)
 		{
 			this.klass = klass;

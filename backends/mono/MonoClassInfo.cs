@@ -4,14 +4,14 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoClassInfo : MonoTypeInfo
 	{
-		new public readonly MonoClass Type;
+		new public readonly MonoClassType Type;
 
 		int[] field_offsets;
 		TargetAddress[] methods;
 		MonoDebuggerInfo debugger_info;
 		bool initialized;
 
-		public MonoClassInfo (MonoClass type, TargetBinaryReader info)
+		public MonoClassInfo (MonoClassType type, TargetBinaryReader info)
 			: base (type, info)
 		{
 			this.Type = type;
@@ -52,7 +52,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoClass.MonoFieldInfo finfo = Type.Fields [index];
+				MonoClassType.MonoFieldInfo finfo = Type.Fields [index];
 				MonoTypeInfo ftype = finfo.Type.Resolve ();
 				if (ftype == null)
 					return null;
@@ -80,7 +80,7 @@ namespace Mono.Debugger.Languages.Mono
 					debugger_info.ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 
-				MonoClass.MonoFieldInfo finfo = Type.StaticFields [index];
+				MonoClassType.MonoFieldInfo finfo = Type.StaticFields [index];
 				MonoTypeInfo ftype = finfo.Type.Resolve ();
 				if (ftype == null)
 					return null;
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoClass.MonoMethodInfo minfo = Type.Methods [index];
+				MonoClassType.MonoMethodInfo minfo = Type.Methods [index];
 				MonoTypeInfo mtype = minfo.Type.Resolve ();
 				if (mtype == null)
 					return null;
@@ -127,7 +127,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoClass.MonoPropertyInfo pinfo = Type.Properties [index];
+				MonoClassType.MonoPropertyInfo pinfo = Type.Properties [index];
 				return pinfo.Get (location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
