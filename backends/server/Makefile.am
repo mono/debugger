@@ -12,6 +12,4 @@ libmonodebuggerserver_la_SOURCES = \
 
 libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
 
-INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@
-
 CLEANFILES = lib*.a lib*.dll
