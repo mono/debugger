@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #define ARCH_i386
 #define ARCH_i860
 #define ARCH_i960
+#define ARCH_ip2k
 #define ARCH_ia64
 #define ARCH_fr30
 #define ARCH_m32r
@@ -48,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #define ARCH_mmix
 #define ARCH_mn10200
 #define ARCH_mn10300
+#define ARCH_msp430
 #define ARCH_ns32k
 #define ARCH_openrisc
 #define ARCH_or32
@@ -59,14 +61,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #define ARCH_sh
 #define ARCH_sparc
 #define ARCH_tic30
+#define ARCH_tic4x
 #define ARCH_tic54x
 #define ARCH_tic80
 #define ARCH_v850
 #define ARCH_vax
 #define ARCH_w65
 #define ARCH_xstormy16
+#define ARCH_xtensa
 #define ARCH_z8k
 #define ARCH_frv
+#define ARCH_iq2000
 #define INCLUDE_SHMEDIA
 #endif
 
@@ -179,6 +184,11 @@ disassembler (abfd)
       disassemble = print_insn_ia64;
       break;
 #endif
+#ifdef ARCH_ip2k
+    case bfd_arch_ip2k:
+      disassemble = print_insn_ip2k;
+      break;
+#endif
 #ifdef ARCH_fr30
     case bfd_arch_fr30:
       disassemble = print_insn_fr30;
@@ -205,6 +215,11 @@ disassembler (abfd)
 #ifdef ARCH_m88k
     case bfd_arch_m88k:
       disassemble = print_insn_m88k;
+      break;
+#endif
+#ifdef ARCH_msp430
+    case bfd_arch_msp430:
+      disassemble = print_insn_msp430;
       break;
 #endif
 #ifdef ARCH_ns32k
@@ -299,6 +314,11 @@ disassembler (abfd)
       disassemble = print_insn_tic30;
       break;
 #endif
+#ifdef ARCH_tic4x
+    case bfd_arch_tic4x:
+      disassemble = print_insn_tic4x;
+      break;
+#endif
 #ifdef ARCH_tic54x
     case bfd_arch_tic54x:
       disassemble = print_insn_tic54x;
@@ -324,6 +344,11 @@ disassembler (abfd)
       disassemble = print_insn_xstormy16;
       break;
 #endif
+#ifdef ARCH_xtensa
+    case bfd_arch_xtensa:
+      disassemble = print_insn_xtensa;
+      break;
+#endif
 #ifdef ARCH_z8k
     case bfd_arch_z8k:
       if (bfd_get_mach(abfd) == bfd_mach_z8001)
@@ -342,6 +367,11 @@ disassembler (abfd)
       disassemble = print_insn_frv;
       break;
 #endif
+#ifdef ARCH_iq2000
+    case bfd_arch_iq2000:
+      disassemble = print_insn_iq2000;
+      break;
+#endif
     default:
       return 0;
     }
@@ -354,6 +384,9 @@ disassembler_usage (stream)
 {
 #ifdef ARCH_arm
   print_arm_disassembler_options (stream);
+#endif
+#ifdef ARCH_mips
+  print_mips_disassembler_options (stream);
 #endif
 #ifdef ARCH_powerpc
   print_ppc_disassembler_options (stream);
