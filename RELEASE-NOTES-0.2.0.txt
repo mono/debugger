@@ -1,0 +1,171 @@
+The Mono Debugger - 0.2.0 "Boston"
+==================================
+
+This is the first public release of the Mono Debugger :-)
+
+[We're still about a month far from the release.
+
+ The debugger entered a feature-freeze yesterday and is now in
+ bug-fixing mode, but it'll take some time to get the all the
+ outstanding problems fixed.
+
+ January 6th, 2003
+ Martin Baulig <martin@ximian.com>
+]
+
+About the Mono Debugger
+-----------------------
+
+The Mono Debugger is a graphical debugger for GNU/Linux which is
+written in C#.  It can debug both native and managed applications.
+
+Currently, the debugger only works on GNU/Linux system running a 2.2.x
+or 2.4.x kernel on the i386.
+
+Design Goals
+------------
+
+The debugger was designed to be modular and portable to other systems.
+However, when we started this project, we were already short on time
+so the backend is currently only implemented for GNU/Linux on the
+i386.
+
+Our main idea was to write a debugger for managed applications, but
+still being able to debug unmanaged applications such as the JIT if
+necessary.  However, due to the limited time we had on our hands,
+support for unmanaged applications is still a bit preliminary; it
+should be enough for a hacker to fix a bug, but it's way too
+uncomfortable for an ordinary user.
+
+Unlike other debugger GUI's, the debugger does not talk to an external
+debugger application such as gdb, but does everything itself.
+
+Thanks
+------
+
+First of all, I'd like to thank Ximian, Inc. which is a wonderful
+company to work for and Miguel de Icaza who helped me a lot this
+summer.  Without them, this project wouldn't have become possible.
+
+I really appreciated hacking on this and it was a lot of fun to see my
+"baby" grow and develop :-)
+
+However, university starts again very soon and I need a little rest
+before concentrating again on my studies, so I'll fly to New York and
+Boston on Saturday to have some holidays, see a football game of the
+New England Patriot's and meet the Ximian guys.
+
+Limitations
+-----------
+
+Ok, before promising too much, let's start with the limitations ;-)
+
+At the moment, the debugger only works on the i386 running GNU/Linux
+with a 2.2.x or 2.4.x kernel.  Older kernels may or may not work, I've
+never tested this.
+
+When debugging unmanaged applications, you cannot view any parameters
+or local variables.  This is because the code to read the type
+information from a DWARF 2 symbol file is not yet written.  At the
+moment, you need to use the HexEditor together with the method's
+disassembly and register viewer ......
+
+At the moment, you cannot modify parameters or local variables.  To do
+this right, we need to write an expression parser, but this takes some
+time to implement.
+
+Currently we cannot store the module list and breakpoints to disk
+because serialization support in Mono is not yet mature enough.
+
+The user interface still needs some loving.
+
+Features
+--------
+
+* Single Stepping Engine
+
+The single stepping engine is responsible for single-stepping,
+stopping and continuing the target and getting notifications when the
+target hit a breakpoint.
+
+At the moment, the single stepping engine (class/SingleSteppingEngine.cs) can
+
+  - step one machine instruction
+  - step one machine instruction while stepping over method calls
+  - step until the end of the current method
+  - step until leaving a range of source lines (this includes stepping
+    until reaching another source line)
+  - step one source line
+  - step one source line while stepping over method calls
+  - step one source line while stepping over method calls, but only if
+    the method is in a  user-configurable list of modules (shared libs, dlls)
+
+When debugging managed applications, the single stepping engine can also
+
+  - automatically trigger a JIT compilation of methods while single-stepping.
+
+    This is done completely trasparently for the user, so you don't
+    need to worry about JIT trampolines, not even when stepping one
+    machine instruction, they'll be invisible for you like system
+    calls.
+
+  - insert a breakpoint on a method which is not yet JITed.
+
+  - call a method in the target (but this is still very
+    preliminar; due to the lacking expression parser we
+    can't create the parameters yet).
+
+    However, this is already used to call a property's getter and
+    Object.ToString().
+
+* Breakpoints
+
+Breakpoints can be used in managed and unmanaged methods.  You can
+insert a breakpoint either for a method or for a source line.
+
+When inserting the breakpoint for a method, it'll be inserted on the
+instruction immediately following the method's prologue.  So when the
+breakpoint it hit, the method's parameters can already be accessed.
+
+Breakpoints may be inserted for not-yet-JITed methods, the debugger
+will automatically insert the breakpoint when the method is JITed.
+When inserting the breakpoints by source line, it'll also re-lookup
+its address each time the method is JITed.  This allows the JIT to
+create different code for the method each time it JITs it and
+breakpoints will still be working.
+
+The user interface may supply its own breakpoint handler class which
+may be used to implement conditional breakpoints; such a conditional
+breakpoint can also read parameters and local variables to decide
+whether to continue the target.
+
+* Modules
+
+Each shared library and each dll appears as a module to the debugger.
+The user may configure whether to enter a module's methods while
+single-stepping and load/unload the module's symbol tables.
+
+The module list persists across multiple invocations of the same
+target; later on we can even synchronize it to disk - as well as the
+user's breakpoint settings.
+
+* Parameters and local variables
+
+Type support for managed types is almost complete.  The debugger can
+already read all fundamental types, arrays, structs and classes.  It
+can call a property's getter method and invoke an object's ToString()
+method.
+
+* Disassembly and processor registers
+
+The debugger has a CPU view to see a disassembly of the current method
+and view/modify the processor registers.  There's also a hex editor to
+view/modify the target's memory.
+
+* Hex Editor
+
+The debugger has a hex editor to inspect or modify the target's memory.
+
+
+October 18th, 2002
+Martin Baulig <martin@gnome.org>
