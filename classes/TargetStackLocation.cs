@@ -43,6 +43,8 @@ namespace Mono.Debugger
 
 		void FrameChangedEvent (IStackFrame frame)
 		{
+			if (!is_valid)
+				return;
 			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress >= end_scope))
 				is_valid = false;
 		}

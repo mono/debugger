@@ -272,35 +272,41 @@ namespace Mono.Debugger.Backends
 			this.frame_handle = frame_handle;
 		}
 
-		ISourceLocation IStackFrame.SourceLocation {
+		public bool IsValid {
+			get {
+				return !disposed;
+			}
+		}
+
+		public ISourceLocation SourceLocation {
 			get {
 				check_disposed ();
 				return source;
 			}
 		}
 
-		TargetAddress IStackFrame.TargetAddress {
+		public TargetAddress TargetAddress {
 			get {
 				check_disposed ();
 				return address;
 			}
 		}
 
-		IMethod IStackFrame.Method {
+		public IMethod Method {
 			get {
 				check_disposed ();
 				return method;
 			}
 		}
 
-		object IStackFrame.FrameHandle {
+		public object FrameHandle {
 			get {
 				check_disposed ();
 				return frame_handle;
 			}
 		}
 
-		ITargetLocation IStackFrame.GetLocalVariableLocation (long offset)
+		public ITargetLocation GetLocalVariableLocation (long offset)
 		{
 			check_disposed ();
 
@@ -312,7 +318,7 @@ namespace Mono.Debugger.Backends
 							method.MethodEndAddress);
 		}
 
-		ITargetLocation IStackFrame.GetParameterLocation (long offset)
+		public ITargetLocation GetParameterLocation (long offset)
 		{
 			check_disposed ();
 
@@ -348,7 +354,7 @@ namespace Mono.Debugger.Backends
 		private void check_disposed ()
 		{
 			if (disposed)
-				throw new ObjectDisposedException ("Inferior");
+				throw new ObjectDisposedException ("StackFrame");
 		}
 
 		protected virtual void Dispose (bool disposing)
@@ -625,7 +631,6 @@ namespace Mono.Debugger.Backends
 
 		void target_state_changed (TargetState new_state, int arg)
 		{
-			frames_invalid ();
 			if (new_state == TargetState.STOPPED)
 				frame_changed ();
 
@@ -1001,6 +1006,12 @@ namespace Mono.Debugger.Backends
 
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, true);
 			TargetAddress address = frames [0].Address;
+
+			if ((current_frame != null) && current_frame.IsValid &&
+			    (current_frame.TargetAddress == address))
+				return;
+
+			frames_invalid ();
 
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
