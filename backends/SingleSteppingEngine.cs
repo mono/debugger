@@ -1999,7 +1999,7 @@ namespace Mono.Debugger.Backends
 			return (long) result.Data;
 		}
 
-		internal TargetAddress CallMethod (TargetAddress method, string string_argument)
+		public TargetAddress CallMethod (TargetAddress method, string string_argument)
 		{
 			CallMethodData data = new CallMethodData (method, 0, string_argument);
 			CommandResult result = send_sync_command (new CommandFunc (call_string_method), data);

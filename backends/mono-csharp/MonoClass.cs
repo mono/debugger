@@ -330,7 +330,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject GetStaticField (StackFrame frame, int index)
+		public ITargetObject GetStaticField (StackFrame frame, int index)
 		{
 			init_static_fields ();
 
@@ -489,7 +489,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return properties [index].Get (location);
 		}
 
-		internal ITargetObject GetStaticProperty (StackFrame frame, int index)
+		public ITargetObject GetStaticProperty (StackFrame frame, int index)
 		{
 			init_static_properties ();
 
@@ -639,7 +639,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
+		public ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
 		{
 			init_static_methods ();
 
