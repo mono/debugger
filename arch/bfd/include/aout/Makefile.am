@@ -1,1 +1,1 @@
-EXTRA_DIST = @srcdir@/*.h stab.def
+EXTRA_DIST = stab.def aout64.h ar.h ranlib.h stab_gnu.h

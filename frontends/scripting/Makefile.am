@@ -7,5 +7,6 @@ Parser.cs: Parser.jay
 
 MAINTAINERCLEANFILES = Parser.cs y.output
 
-EXTRA_DIST = Parser.cs Parser.jay skeleton @srcdir@/*.cs
-
+EXTRA_DIST = Parser.cs Parser.jay skeleton AssertCommand.cs Command.cs Expression.cs \
+	Generator.cs MyTextReader.cs Parser.cs ScriptingContext.cs Tokenizer.cs \
+	VariableExpression.cs

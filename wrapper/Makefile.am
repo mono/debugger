@@ -53,7 +53,7 @@ Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
-CLEANFILES = *.exe *.dll
+CLEANFILES = *.exe *.dll mdb
 
 EXTRA_DIST = \
 	mdb.in

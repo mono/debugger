@@ -1,1 +1,1 @@
-EXTRA_DIST = @srcdir@/*.cs
+EXTRA_DIST = PTrace.cs

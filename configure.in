@@ -106,6 +106,8 @@ else
 fi
 AC_MSG_RESULT($from_cvs)
 
+AM_CONDITIONAL(COMPILING_FROM_CVS, test x$from_cvs = xyes)
+
 PKG_PATH=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 	if test x$with_crosspkgdir = "x"; then
@@ -137,6 +139,9 @@ AC_SUBST(WRAPPER_CFLAGS)
 AC_SUBST(WRAPPER_LIBS)
 
 AC_SUBST(CFLAGS)
+
+mono_prefix="`$PKG_CONFIG --variable=prefix mono`"
+AC_SUBST(mono_prefix)
 
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)

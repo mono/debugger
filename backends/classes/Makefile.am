@@ -1,1 +1,1 @@
-EXTRA_DIST = @srcdir@/*.cs
+EXTRA_DIST = MonoVariableLocation.cs Semaphore.cs TargetReader.cs Utils.cs

@@ -1,1 +1,1 @@
-EXTRA_DIST = @srcdir@/*.h
+EXTRA_DIST = i386linux.h

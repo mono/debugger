@@ -1,12 +1,20 @@
-EXTRA_DIST = FAQ.txt breakpoints.txt debugger-status.txt sse-notes.txt \
-	     symbol-lookups.txt debugger.sources
+EXTRA_DIST = FAQ.txt breakpoints.txt debugger-status.txt \
+	     symbol-lookups.txt debugger.source
 
-sourcesdir = $(libdir)/monodoc/sources
+sourcesdir = @mono_prefix@/lib/monodoc/sources
 
 sources_DATA = debugger.tree debugger.zip debugger.source
 
-debugger.tree debugger.zip: api/*/*.xml
-	mono --debug $(libdir)/monodoc/assembler.exe --ecma $(srcdir)/api/ -o debugger
+debugger.tree debugger.zip: $(srcdir)/api/*/*.xml
+	mono --debug @mono_prefix@/lib/monodoc/assembler.exe --ecma $(srcdir)/api/ -o debugger
 
 update:
-	mono --debug $(libdir)/monodoc/updater.exe @prefix@/lib/Mono.Debugger.dll -o ./api -f -p
+	mono --debug @mono_prefix@/lib/monodoc/updater.exe @prefix@/lib/Mono.Debugger.dll -o ./api -f -p
+
+dist-hook:
+	find . -name '*.xml' > files
+	tar cTf files - | (cd $(distdir); tar xf -)
+	rm -f files
+
+CLEANFILES = debugger.tree debugger.zip files
+

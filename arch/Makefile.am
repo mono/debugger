@@ -20,4 +20,5 @@ INCLUDES = -I$(srcdir)/bfd -I$(srcdir)/bfd/include -I$(srcdir)/opcodes @BASE_DEP
 
 CLEANFILES = lib*.a lib*.dll
 
-EXTRA_DIST = @srcdir@/*.cs
+EXTRA_DIST = ArchitectureI386.cs BfdContainer.cs Bfd.cs BfdDisassembler.cs CoreFile.cs \
+	CoreFileElfI386.cs DwarfReader.cs

@@ -1,1 +1,1 @@
-EXTRA_DIST = @srcdir@/*.h
+EXTRA_DIST = ecoff.h external.h i386.h internal.h pe.h sym.h
