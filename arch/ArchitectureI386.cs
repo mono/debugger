@@ -199,11 +199,12 @@ namespace Mono.Debugger
 		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "ds",
 				       "es", "fs", "gs", "eip", "cs", "eflags", "esp", "ss" };
 
-		public string PrintRegister (int register, long value)
+		public string PrintRegister (Register register)
 		{
-			switch ((I386Register) register) {
+			switch ((I386Register) register.Index) {
 			case I386Register.EFLAGS: {
 				ArrayList flags = new ArrayList ();
+				long value = (long) register.Data;
 				if ((value & (1 << 0)) != 0)
 					flags.Add ("CF");
 				if ((value & (1 << 2)) != 0)
@@ -242,8 +243,35 @@ namespace Mono.Debugger
 			}
 
 			default:
-				return String.Format ("{0:x}", value);
+				return String.Format ("{0:x}", (long) register.Data);
 			}
+		}
+
+		string format (object data)
+		{
+			int bits = 8;
+			string saddr = ((long) data).ToString ("x");
+			for (int i = saddr.Length; i < bits; i++)
+				saddr = "0" + saddr;
+			return saddr;
+		}
+
+		public string PrintRegisters (StackFrame frame)
+		{
+			Register[] registers = frame.Registers;
+			return String.Format (
+				"EAX={0}  EBX={1}  ECX={2}  EDX={3}  ESI={4}  EDI={5}\n" +
+				"EBP={6}  ESP={7}  EIP={8}  EFLAGS={9}\n",
+				format (registers [(int) I386Register.EAX].Data),
+				format (registers [(int) I386Register.EBX].Data),
+				format (registers [(int) I386Register.ECX].Data),
+				format (registers [(int) I386Register.EDX].Data),
+				format (registers [(int) I386Register.ESI].Data),
+				format (registers [(int) I386Register.EDI].Data),
+				format (registers [(int) I386Register.EBP].Data),
+				format (registers [(int) I386Register.ESP].Data),
+				format (registers [(int) I386Register.EIP].Data),
+				PrintRegister (registers [(int) I386Register.EFLAGS]));
 		}
 
 		public int MaxPrologueSize {

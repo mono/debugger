@@ -142,9 +142,14 @@ namespace Mono.Debugger
 			}
 		}
 
-		public string PrintRegister (int register, long value)
+		public string PrintRegister (Register register)
 		{
-			return String.Format ("{0:x}", value);
+			return String.Format ("{0:x}", (long) register.Data);
+		}
+
+		public string PrintRegisters (StackFrame frame)
+		{
+			return null;
 		}
 
 		public int MaxPrologueSize {

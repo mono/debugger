@@ -26,7 +26,9 @@ namespace Mono.Debugger
 			get;
 		}
 
-		string PrintRegister (int register, long value);
+		string PrintRegister (Register register);
+
+		string PrintRegisters (StackFrame frame);
 
 		// <summary>
 		//   Returns whether the instruction at target address @address is a `ret'

@@ -591,11 +591,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = ResolveFrame (context);
 
-			string[] names = frame.RegisterNames;
-			int[] indices = frame.RegisterIndices;
-
-			foreach (Register register in frame.GetRegisters (indices))
-				context.Print ("%{0} = 0x{1:x}", names [register.Index], register.Data);
+			IArchitecture arch = ResolveProcess (context).Process.Architecture;
+			context.Print (arch.PrintRegisters (frame.Frame));
 		}
 	}
 
