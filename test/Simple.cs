@@ -4,6 +4,9 @@ class X
 {
 	static int Main ()
 	{
-		return 0;
+		int a = 5;
+		long b = 9;
+
+		return a / (int) b;
 	}
 }

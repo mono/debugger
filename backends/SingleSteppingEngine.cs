@@ -466,6 +466,8 @@ namespace Mono.Debugger.Backends
 				} else if (arg == 0) {
 					// Unknown breakpoint, always stop.
 				} else if (step_over_breakpoint (TargetAddress.Null, false)) {
+					Report.Debug (DebugFlags.EventLoop,
+						      "{0} now stepping over breakpoint", this);
 					return;
 				} else if (!child_breakpoint (arg)) {
 					// we hit any breakpoint, but its handler told us
@@ -2082,7 +2084,7 @@ namespace Mono.Debugger.Backends
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		public void AcquireThreadLock ()
+		public bool AcquireThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquiring thread lock", this);
@@ -2099,6 +2101,8 @@ namespace Mono.Debugger.Backends
 
 			if (!EndStackAddress.IsNull)
 				inferior.WriteAddress (EndStackAddress, addr);
+
+			return stop_event != null;
 		}
 
 		public void ReleaseThreadLock ()

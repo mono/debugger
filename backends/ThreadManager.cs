@@ -212,7 +212,8 @@ namespace Mono.Debugger
 			foreach (SingleSteppingEngine engine in thread_hash.Values) {
 				if (engine == caller)
 					continue;
-				engine.AcquireThreadLock ();
+				if (engine.AcquireThreadLock ())
+					wait_event.Set ();
 			}
 			Report.Debug (DebugFlags.Threads,
 				      "Done acquiring global thread lock: {0}",
@@ -641,16 +642,16 @@ namespace Mono.Debugger
 			int pid, status;
 			pid = mono_debugger_server_global_wait (out status);
 
+			Report.Debug (DebugFlags.Wait,
+				      "Wait thread received event: {0} {1:x}",
+				      pid, status);
+
 			//
 			// Note: `pid' is basically just an unique number which identifies the
 			//       SingleSteppingEngine of this event.
 			//
 
 			if (pid > 0) {
-				Report.Debug (DebugFlags.Wait,
-					      "Wait thread received event: {0} {1:x}",
-					      pid, status);
-
 				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
 				if (event_engine == null)
 					throw new InternalError ("Got event {0:x} for unknown pid {1}",
