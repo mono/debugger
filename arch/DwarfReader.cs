@@ -308,6 +308,12 @@ namespace Mono.Debugger.Architecture
 			{
 				return dwarf.get_symtab_at_offset (FileOffset);
 			}
+
+			public override string ToString ()
+			{
+				return String.Format ("RangeEntry ({0}:{1}:{2})",
+						      StartAddress, EndAddress, FileOffset);
+			}
 		}
 
 #if FALSE
@@ -1113,7 +1119,7 @@ namespace Mono.Debugger.Architecture
 			{
 				debug ("NEXT: {0:x} {1:x}", stm.st_address, next_method_address);
 
-				if (next_method_index > 1)
+				if (current_method != null)
 					method_hash.Add (current_method, new StatementMachine (stm));
 
 				current_method = next_method;
