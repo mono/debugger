@@ -1,8 +1,7 @@
 Makefile
+Makefile.in
 *.exe
-Debugger.exe.config
 *.dll
 a.out
-Interpreter.exe.config
 test
 register

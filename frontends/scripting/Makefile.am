@@ -5,5 +5,5 @@ Parser.cs: Parser.jay
 
 CLEANFILES = Parser.cs y.output
 
-EXTRA_DIST = Parser.jay skeleton *.cs
+EXTRA_DIST = Parser.jay skeleton @srcdir@/*.cs
 

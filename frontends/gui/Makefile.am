@@ -1,1 +1,1 @@
-EXTRA_DIST = *.cs *.png STRATEGY debugger.glade debugger.gladep
+EXTRA_DIST = @srcdir@/*.cs @srcdir@/*.png STRATEGY debugger.glade debugger.gladep

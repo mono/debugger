@@ -11,4 +11,4 @@ INCLUDES = @BASE_DEPENDENCIES_CFLAGS@
 
 CLEANFILES = lib*.a lib*.dll
 
-EXTRA_DIST = *.cs
+EXTRA_DIST = @srcdir@/*.cs
