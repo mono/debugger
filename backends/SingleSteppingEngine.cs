@@ -592,12 +592,6 @@ namespace Mono.Debugger.Backends
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
-				if (DaemonEventHandler != null) {
-					// The `DaemonEventHandler' may decide to discard
-					// this event in which case it returns true.
-					if (DaemonEventHandler (this, inferior, result))
-						return;
-				}
 				// Ok, inform the user that we stopped.
 				step_operation_finished ();
 				operation_completed (result);
@@ -892,7 +886,6 @@ namespace Mono.Debugger.Backends
 
 		int stepping_over_breakpoint;
 
-		internal DaemonEventHandler DaemonEventHandler;
 		internal bool IsDaemon;
 		internal TargetAddress EndStackAddress;
 
