@@ -1,5 +1,9 @@
 2004-04-14  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/AssertCommand.cs: Removed.
+
+2004-04-14  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Interpreter.cs (Interpreter): New abstract
 	base class.  Moved most of the functionality from ScriptingContext
 	here.	

@@ -57,36 +57,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class RepeatCommand : Command
-	{
-		Command command;
-
-		public RepeatCommand (Command command)
-		{
-			this.command = command;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			ProcessHandle process = context.CurrentProcess;
-
-			Console.WriteLine ("Go, baby, go ....");
-
-			int count = 0;
-			try {
-				while (process.IsAlive) {
-					Console.WriteLine (process.CurrentFrame);
-					command.Execute (context);
-					count++;
-				}
-				context.Print ("Executed command {0} times.", count);
-			} catch (Exception ex) {
-				context.Print ("Aborting after {0} iterations.", count);
-				throw;
-			}
-		}
-	}
-
 	[Command("PRINT", "Print the result of an expression")]
 	public class PrintCommand : Command
 	{
@@ -291,7 +261,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("PROCESS", "Select current process",
+	[Command("process", "Select current process",
 		 "Without argument, print the current process.\n\n" +
 		 "With a process argument, make that process the current process.\n" +
 		 "This is the process which is used if you do not explicitly specify\n" +
