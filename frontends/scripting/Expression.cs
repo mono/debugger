@@ -486,7 +486,11 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (location != null)
 				return new SourceExpression (location);
 
-			return DoResolveType (context);
+			expr = DoResolveType (context);
+			if (expr != null)
+				return expr;
+
+			throw new ScriptingException ("No such type of method: `{0}'", Name);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
