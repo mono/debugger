@@ -68,6 +68,8 @@ SYMFILE_READER_DEPS = \
 GUIDIR = @top_srcdir@/frontends/gui
 RESOURCES = \
 	-resource:$(GUIDIR)/debugger.glade,debugger.glade	\
+	-resource:$(GUIDIR)/step-into.png,step-into.png		\
+	-resource:$(GUIDIR)/step-over.png,step-over.png		\
 	-resource:$(GUIDIR)/mono.png,mono.png			\
 	-resource:$(GUIDIR)/stop.png,stop.png			\
 	-resource:$(GUIDIR)/line.png,line.png
