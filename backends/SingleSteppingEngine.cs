@@ -17,132 +17,675 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	public delegate bool BreakpointCheckHandler (StackFrame frame, int index, object user_data);
-	public delegate void BreakpointHitHandler (StackFrame frame, int index, object user_data);
-	public delegate bool DaemonEventHandler (TargetEventArgs args);
+// <summary>
+//   The single stepping engine is responsible for doing all the stepping
+//   operations.
+//
+//     sse                  - short for single stepping engine.
+//
+//     stepping operation   - an operation which has been invoked by the user such
+//                            as StepLine(), NextLine() etc.
+//
+//     target operation     - an operation which the sse invokes on the target
+//                            such as stepping one machine instruction or resuming
+//                            the target until a breakpoint is hit.
+//
+//     step frame           - an address range; the sse invokes target operations
+//                            until the target hit a breakpoint, received a signal
+//                            or stopped at an address outside this range.
+//
+//     temporary breakpoint - a breakpoint which is automatically removed the next
+//                            time the target stopped; it is used to step over
+//                            method calls.
+//
+//     source stepping op   - stepping operation based on the program's source code,
+//                            such as StepLine() or NextLine().
+//
+//     native stepping op   - stepping operation based on the machine code such as
+//                            StepInstruction() or NextInstruction().
+//
+//   The SingleSteppingEngine supports both synchronous and asynchronous
+//   operations; in synchronous mode, the engine waits until the child has stopped
+//   before returning.  In either case, the step commands return true on success
+//   and false an error.
+//
+//   Since the SingleSteppingEngine can be used from multiple threads at the same
+//   time, you can no longer safely use the `State' property to find out whether
+//   the target is stopped or not.  It is safe to call all the step commands from
+//   multiple threads, but for obvious reasons only one command can run at a
+//   time.  So if you attempt to issue a step command while the engine is still
+//   busy, the step command will return false to signal this error.
+// </summary>
+public class SingleSteppingEngine : ThreadManager
+{
+	internal SingleSteppingEngine (DebuggerBackend backend)
+		: base (backend)
+	{
+		this.SymbolTableManager = DebuggerBackend.SymbolTableManager;
+
+		thread_hash = Hashtable.Synchronized (new Hashtable ());
+
+		global_group = ThreadGroup.CreateThreadGroup ("global");
+		thread_lock_mutex = new Mutex ();
+		address_domain = new AddressDomain ("global");
+
+		engine_event = new AutoResetEvent (false);
+		start_event = new ManualResetEvent (false);
+		completed_event = new ManualResetEvent (false);
+		command_mutex = new Mutex ();
+
+		wait_event = new AutoResetEvent (false);
+		ready_event = new ManualResetEvent (false);
+	}
+
+	TheEngine the_engine;
+	protected readonly SymbolTableManager SymbolTableManager;
+
+	ProcessStart start;
+	Thread wait_thread;
+	AutoResetEvent wait_event;
+	Thread inferior_thread;
+	ManualResetEvent ready_event;
+	Hashtable thread_hash;
+
+	Mutex thread_lock_mutex;
+	AddressDomain address_domain;
+	ThreadGroup global_group;
+
+	ManualResetEvent start_event;
+	ManualResetEvent completed_event;
+	AutoResetEvent engine_event;
+	Mutex command_mutex;
+	bool result_sent = false;
+
+	void start_wait_thread ()
+	{
+		while (true)
+			wait_thread_main ();
+	}
+
+	[DllImport("monodebuggerserver")]
+	static extern int mono_debugger_server_wait (out long status);
+
+	void wait_thread_main ()
+	{
+		Report.Debug (DebugFlags.Wait, "Wait thread waiting");
+
+		while (!wait_event.WaitOne ())
+			;
+
+		Report.Debug (DebugFlags.Wait, "Wait thread woke up");
+
+		int pid;
+		long status;
+
+		pid = mono_debugger_server_wait (out status);
+		if (pid < 0)
+			throw new Exception ("OOOPS");
+
+		Report.Debug (DebugFlags.Wait,
+			      "Wait thread received event: {0} {1:x}", pid, status);
+
+		TheEngine event_engine = (TheEngine) thread_hash [pid];
+		if (event_engine == null)
+			throw new Exception ("FUCK");
+
+		lock (this) {
+			if (current_event_engine != null)
+				throw new Exception ();
+			current_event = status;
+			current_event_engine = event_engine;
+			engine_event.Set ();
+		}
+	}
+
+	void start_inferior ()
+	{
+		the_engine = new TheEngine (this, start);
+
+		Report.Debug (DebugFlags.Threads, "Engine started: {0}", the_engine.PID);
+
+		thread_hash.Add (the_engine.PID, the_engine);
+		wait_event.Set ();
+		ready_event.Set ();
+
+		while (true) {
+			engine_thread_main ();
+		}
+	}
+
+	bool engine_is_ready = false;
+	Exception start_error = null;
+
+	// <remarks>
+	//   These three variables are shared between the two threads, so you need to
+	//   lock (this) before accessing/modifying them.
+	// </remarks>
+	Command current_command = null;
+	CommandResult command_result = null;
+	long current_event = 0;
+	TheEngine current_event_engine = null;
+
+	void engine_error (Exception ex)
+	{
+		lock (this) {
+			start_error = ex;
+			start_event.Set ();
+		}
+	}
+
+	// <remarks>
+	//   This is only called on startup and blocks until the background thread
+	//   has actually been started and it's waiting for commands.
+	// </summary>
+	void wait_until_engine_is_ready ()
+	{
+		while (!start_event.WaitOne ())
+			;
+
+		if (start_error != null)
+			throw start_error;
+	}
+
+	public override Process StartApplication (ProcessStart start)
+	{
+		this.start = start;
+
+		wait_thread = new Thread (new ThreadStart (start_wait_thread));
+		wait_thread.Start ();
+
+		inferior_thread = new Thread (new ThreadStart (start_inferior));
+		inferior_thread.Start ();
+
+		ready_event.WaitOne ();
+		Wait ();
+
+		the_engine.ContinueUntilMain ();
+
+		return the_engine;
+	}
+
+	public override Process[] Threads {
+		get {
+			lock (this) {
+				Process[] procs = new Process [thread_hash.Count];
+				int i = 0;
+				foreach (TheEngine engine in thread_hash.Values)
+					procs [i] = engine;
+				return procs;
+			}
+		}
+	}
 
 	// <summary>
-	//   The single stepping engine is responsible for doing all the stepping
-	//   operations.
-	//
-	//     sse                  - short for single stepping engine.
-	//
-	//     stepping operation   - an operation which has been invoked by the user such
-	//                            as StepLine(), NextLine() etc.
-	//
-	//     target operation     - an operation which the sse invokes on the target
-	//                            such as stepping one machine instruction or resuming
-	//                            the target until a breakpoint is hit.
-	//
-	//     step frame           - an address range; the sse invokes target operations
-	//                            until the target hit a breakpoint, received a signal
-	//                            or stopped at an address outside this range.
-	//
-	//     temporary breakpoint - a breakpoint which is automatically removed the next
-	//                            time the target stopped; it is used to step over
-	//                            method calls.
-	//
-	//     source stepping op   - stepping operation based on the program's source code,
-	//                            such as StepLine() or NextLine().
-	//
-	//     native stepping op   - stepping operation based on the machine code such as
-	//                            StepInstruction() or NextInstruction().
-	//
-	//   The SingleSteppingEngine supports both synchronous and asynchronous
-	//   operations; in synchronous mode, the engine waits until the child has stopped
-	//   before returning.  In either case, the step commands return true on success
-	//   and false an error.
-	//
-	//   Since the SingleSteppingEngine can be used from multiple threads at the same
-	//   time, you can no longer safely use the `State' property to find out whether
-	//   the target is stopped or not.  It is safe to call all the step commands from
-	//   multiple threads, but for obvious reasons only one command can run at a
-	//   time.  So if you attempt to issue a step command while the engine is still
-	//   busy, the step command will return false to signal this error.
+	//   Stop all currently running threads without sending any notifications.
+	//   The threads are automatically resumed to their previos state when
+	//   ReleaseGlobalThreadLock() is called.
 	// </summary>
-	public class SingleSteppingEngine : IProcess, ITargetAccess, IDisassembler, IDisposable
+	internal override void AcquireGlobalThreadLock (Inferior inferior, Process caller)
 	{
-		internal SingleSteppingEngine (DebuggerBackend backend, Process process,
-					       Inferior inferior, bool native)
-		{
-			this.backend = backend;
-			this.process = process;
-			this.symtab_manager = backend.SymbolTableManager;
-			this.inferior = inferior;
-			this.native = native;
+	}
 
-			thread_manager = backend.ThreadManager;
-			breakpoint_manager = thread_manager.BreakpointManager;
+	internal override void ReleaseGlobalThreadLock (Inferior inferior, Process caller)
+	{
+	}
 
-			inferior.SingleSteppingEngine = this;
-			inferior.TargetExited += new TargetExitedHandler (child_exited);
+	internal override Inferior CreateInferior (ProcessStart start)
+	{
+		throw new NotSupportedException ();
+	}
 
-			step_event = new AutoResetEvent (false);
-			start_event = new ManualResetEvent (false);
-			completed_event = new ManualResetEvent (false);
-			restart_event = new AutoResetEvent (false);
-			stop_event = new AutoResetEvent (false);
-			command_mutex = new Mutex ();
+	protected override void DoInitialize (Inferior inferior)
+	{
+	}
+
+	protected override void AddThread (Inferior inferior, Process new_thread,
+					   int pid, bool is_daemon)
+	{
+		Report.Debug (DebugFlags.Threads, "Add thread: {0} {1}",
+			      new_thread, pid);
+	}
+
+	internal override bool HandleChildEvent (Inferior inferior,
+						 Inferior.ChildEvent cevent)
+	{
+		if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
+			int pid = (int) cevent.Argument;
+
+			Report.Debug (DebugFlags.Threads, "Thread created: {0}", pid);
+
+			Inferior new_inferior = inferior.CreateThread ();
+
+			TheEngine new_thread = new TheEngine (this, new_inferior, pid);
+
+			thread_hash.Add (pid, new_thread);
+
+			OnThreadCreatedEvent (new_thread);
+
+			Report.Debug (DebugFlags.Threads, "Engine created: {0}", new_thread);
+
+			return true;
 		}
 
-		// <summary>
-		//   Start the application and - if `synchronous' is true - wait until it
-		//   stopped the first time.  In either case, this function blocks until
-		//   the application has actually been launched.
-		// </summary>
-		public void Run ()
-		{
-			if (engine_thread != null)
-				throw new AlreadyHaveTargetException ();
+		return false;
+	}
 
-			engine_thread = new Thread (new ThreadStart (start_engine_thread));
-			engine_thread.Start ();
-
-			wait_until_engine_is_ready ();
-			wait_for_completion ();
+	// <summary>
+	//   Send the result of a command from the background thread back to the caller.
+	// </summary>
+	protected void SendResult (CommandResult result)
+	{
+		lock (this) {
+			command_result = result;
+			completed_event.Set ();
 		}
+	}
 
-		// <remarks>
-		//   This is only called on startup and blocks until the background thread
-		//   has actually been started and it's waiting for commands.
-		// </summary>
-		void wait_until_engine_is_ready ()
-		{
-			while (!start_event.WaitOne ())
+	protected void SetCompleted ()
+	{
+		result_sent = true;
+		completed_event.Set ();
+	}
+
+	protected void ResetCompleted ()
+	{
+		completed_event.Reset ();
+	}
+
+	// <summary>
+	//   Sends an asynchronous command to the background thread.  This is used
+	//   for all stepping commands, no matter whether the user requested a
+	//   synchronous or asynchronous operation since we can just block on the
+	//   `completed_event' in the synchronous case.
+	// </summary>
+	protected void SendAsyncCommand (TheEngine engine, Command command)
+	{
+		lock (this) {
+			engine.SendTargetEvent (new TargetEventArgs (TargetEventType.TargetRunning, 0));
+			current_command = command;
+			engine_event.Set ();
+			completed_event.Reset ();
+		}
+	}
+
+	// <summary>
+	//   This method does two things:
+	//   a) It acquires the `command_mutex' (and blocks until it gets it).
+	//   b) After that, it attempts to acquire the `completed_event' as well
+	//      and returns whether it was able to do so (without blocking).
+	//   The caller must
+	//   a) If this method returned true, release the `completed_event' before
+	//      releasing the `command_mutex'.
+	//   b) In any case release the `command_mutex'.
+	// </summary>
+	// <remarks>
+	//   This is called before actually sending a stepping command to the
+	//   background thread.  First, we need to acquire the `command_mutex' -
+	//   this ensures that no synchronous command is running and that no other
+	//   thread has queued an async operation.  Once we acquired the mutex, no
+	//   other thread can issue any commands, but there may still be an async
+	//   command running, so we also need to acquire the `completed_event'.
+	//
+	//   Note that acquiring the `command_mutex' only blocks if any other
+	//   thread is about to send a command to the background thread; it'll not
+	//   block if an asynchronous operation is still running.
+	//
+	//   The `command_mutex' is basically a `lock (this)', but the background
+	//   thread needs to `lock (this)' itself to write the result, so we
+	//   cannot use this here.
+	//
+	//   The `completed_event' is only unset if an async operation is
+	//   currently running.
+	// </remarks>
+	protected bool CheckCanRun ()
+	{
+		if (!command_mutex.WaitOne (0, false))
+			return false;
+		if (!completed_event.WaitOne (0, false)) {
+			command_mutex.ReleaseMutex ();
+			return false;
+		}
+		return true;
+	}
+
+	protected void ReleaseCommandMutex ()
+	{
+		command_mutex.ReleaseMutex ();
+	}
+
+	// <summary>
+	//   Sends a synchronous command to the background thread.  This is only
+	//   used for non-steping commands such as getting a backtrace.
+	// </summary>
+	protected CommandResult SendSyncCommand (CommandFunc func, object data)
+	{
+		if (Thread.CurrentThread == inferior_thread) {
+			try {
+				return func (data);
+			} catch (ThreadAbortException) {
 				;
-
-			if (start_error != null)
-				throw start_error;
-
-			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ((ITargetInfo) inferior);
-
-			symtab_manager.SymbolTableChangedEvent +=
-				new SymbolTableManager.SymbolTableHandler (update_symtabs);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
 		}
 
-		// <summary>
-		//   The `send_result' methods are used to send the result of a command
-		//   from the background thread back to the caller.
-		// </summary>
-		void send_result (CommandResult result)
-		{
+		if (!CheckCanRun ())
+			return new CommandResult (CommandResultType.UnknownError);
+
+		lock (this) {
+			current_command = new Command (func, data);
+			engine_event.Set ();
+			completed_event.Reset ();
+		}
+
+		completed_event.WaitOne ();
+
+		CommandResult result;
+		lock (this) {
+			result = command_result;
+			command_result = null;
+		}
+
+		command_mutex.ReleaseMutex ();
+		if (result != null)
+			return result;
+		else
+			return new CommandResult (CommandResultType.UnknownError);
+	}
+
+	protected void WaitForCompletion ()
+	{
+		completed_event.WaitOne ();
+	}
+
+	internal void Wait ()
+	{
+		command_mutex.WaitOne ();
+
+		WaitForCompletion ();
+
+		command_mutex.ReleaseMutex ();
+	}
+
+	// <summary>
+	//   The heart of the SingleSteppingEngine.  This runs in a background
+	//   thread and processes stepping commands and events.
+	// </summary>
+	void engine_thread_main ()
+	{
+		Report.Debug (DebugFlags.Wait, "SSE waiting");
+
+		// Wait until we get a command.
+		while (!engine_event.WaitOne ())
+			;
+
+		Report.Debug (DebugFlags.Wait, "SSE woke up");
+
+		TheEngine event_engine;
+		long status;
+		lock (this) {
+			status = current_event;
+			event_engine = current_event_engine;
+			current_event = 0;
+			current_event_engine = null;
+		}
+
+		if (event_engine != null) {
+			try {
+				event_engine.ProcessEvent (status);
+			} catch (ThreadAbortException) {
+				;
+			} catch (Exception e) {
+				Console.WriteLine ("EXCEPTION: {0} {1:x} {2}",
+						   engine_event, status, e);
+			}
+			wait_event.Set ();
+
+			if (!engine_is_ready) {
+				engine_is_ready = true;
+				start_event.Set ();
+			}
+
+			return;
+		}
+
+		Command command;
+		lock (this) {
+			command = current_command;
+			current_command = null;
+		}
+
+		if (command == null)
+			return;
+
+		// These are synchronous commands; ie. the caller blocks on us
+		// until we finished the command and sent the result.
+		if (command.Type == CommandType.Command) {
+			CommandResult result;
+			try {
+				result = command.CommandFunc (command.CommandFuncData);
+			} catch (ThreadAbortException) {
+				return;
+			} catch (Exception e) {
+				result = new CommandResult (CommandResultType.Exception, e);
+			}
+
 			lock (this) {
 				command_result = result;
 				completed_event.Set ();
 			}
+		} else {
+			try {
+				command.Process.ProcessCommand (command);
+			} catch (ThreadAbortException) {
+				return;
+			} catch (Exception e) {
+				Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
+			}
+		}
+	}
+
+	public override AddressDomain AddressDomain {
+		get { return address_domain; }
+	}
+
+	protected enum StepOperation {
+		None,
+		Native,
+		Run,
+		RunInBackground,
+		StepInstruction,
+		StepNativeInstruction,
+		NextInstruction,
+		StepLine,
+		NextLine,
+		StepFrame,
+		RuntimeInvoke
+	}
+
+	protected delegate CommandResult CommandFunc (object data);
+
+	protected enum CommandType {
+		StepOperation,
+		Command
+	}
+
+	protected class Command {
+		public TheEngine Process;
+		public CommandType Type;
+		public StepOperation Operation;
+		public StepFrame StepFrame;
+		public TargetAddress Until;
+		public CommandFunc CommandFunc;
+		public object CommandFuncData;
+
+		public Command (TheEngine process, StepOperation operation, StepFrame frame)
+		{
+			this.Process = process;
+			this.Type = CommandType.StepOperation;
+			this.Operation = operation;
+			this.StepFrame = frame;
+			this.Until = TargetAddress.Null;
+		}
+
+		public Command (TheEngine process, StepOperation operation, TargetAddress until)
+		{
+			this.Process = process;
+			this.Type = CommandType.StepOperation;
+			this.Operation = operation;
+			this.StepFrame = null;
+			this.Until = until;
+		}
+
+		public Command (TheEngine process, StepOperation operation)
+		{
+			this.Process = process;
+			this.Type = CommandType.StepOperation;
+			this.Operation = operation;
+			this.StepFrame = null;
+			this.Until = TargetAddress.Null;
+		}
+
+		public Command (TheEngine process, StepOperation operation, object data)
+		{
+			this.Process = process;
+			this.Type = CommandType.StepOperation;
+			this.Operation = operation;
+			this.StepFrame = null;
+			this.Until = TargetAddress.Null;
+			this.CommandFuncData = data;
+		}
+
+		public Command (CommandFunc func, object data)
+		{
+			this.Type = CommandType.Command;
+			this.CommandFunc = func;
+			this.CommandFuncData = data;
+		}
+	}
+
+	protected enum CommandResultType {
+		ChildEvent,
+		CommandOk,
+		UnknownError,
+		Exception
+	}
+
+	protected class CommandResult {
+		public readonly CommandResultType Type;
+		public readonly Inferior.ChildEventType EventType;
+		public readonly int Argument;
+		public readonly object Data;
+
+		public CommandResult (Inferior.ChildEventType type, int arg)
+		{
+			this.EventType = type;
+			this.Argument = arg;
+		}
+
+		public CommandResult (Inferior.ChildEventType type, object data)
+		{
+			this.EventType = type;
+			this.Argument = 0;
+			this.Data = data;
+		}
+
+		public CommandResult (CommandResultType type)
+			: this (type, null)
+		{ }
+
+		public CommandResult (CommandResultType type, object data)
+		{
+			this.Type = type;
+			this.Data = data;
+		}
+	}
+
+	protected class TheEngine : Process, ITargetAccess, IDisassembler
+	{
+		protected TheEngine (SingleSteppingEngine sse, Inferior inferior)
+			: base (inferior.ProcessStart)
+		{
+			this.sse = sse;
+			this.inferior = inferior;
+
+			pid = inferior.PID;
+
+			inferior.TargetOutput += new TargetOutputHandler (OnInferiorOutput);
+			inferior.DebuggerOutput += new DebuggerOutputHandler (OnDebuggerOutput);
+			inferior.DebuggerError += new DebuggerErrorHandler (OnDebuggerError);
+		}
+
+		public TheEngine (SingleSteppingEngine sse, ProcessStart start)
+			: this (sse, Inferior.CreateInferior (sse.DebuggerBackend, start))
+		{
+			inferior.Run (true);
+			pid = inferior.PID;
+
+			setup_engine ();
+		}
+
+		public TheEngine (SingleSteppingEngine sse, Inferior inferior, int pid)
+			: this (sse, inferior)
+		{
+			this.pid = pid;
+			inferior.Attach (pid);
+
+			setup_engine ();
+		}
+
+		void setup_engine ()
+		{
+			stop_event = new AutoResetEvent (false);
+			restart_event = new AutoResetEvent (false);
+
+			inferior.SingleSteppingEngine = sse;
+			inferior.TargetExited += new TargetExitedHandler (child_exited);
+
+			Report.Debug (DebugFlags.Threads, "New SSE: {0}", this);
+
+			arch = inferior.Architecture;
+			disassembler = inferior.Disassembler;
+
+			if (false) {
+				sse.DebuggerBackend.ReachedMain (this);
+				main_method_retaddr = inferior.GetReturnAddress ();
+			}
+
+			disassembler.SymbolTable = sse.SymbolTableManager.SimpleSymbolTable;
+			current_simple_symtab = sse.SymbolTableManager.SimpleSymbolTable;
+			current_symtab = sse.SymbolTableManager.SymbolTable;
+
+			native_language = new Mono.Debugger.Languages.Native.NativeLanguage ((ITargetInfo) inferior);
+
+			sse.SymbolTableManager.SymbolTableChangedEvent +=
+				new SymbolTableManager.SymbolTableHandler (update_symtabs);
+		}
+
+		public void ProcessEvent (long status)
+		{
+			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
+			Report.Debug (DebugFlags.EventLoop,
+				      "SSE {0} received event {1} ({2:x})",
+				      PID, cevent, status);
+			if (sse.HandleChildEvent (inferior, cevent)) {
+				inferior.Continue ();
+				return;
+			}
+			ProcessEvent (cevent, StepOperation.None);
 		}
 
 		void send_frame_event (StackFrame frame, int signal)
 		{
-			send_event (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
+			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
 		}
 
 		void send_frame_event (StackFrame frame, BreakpointHandle handle)
 		{
-			send_event (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
+			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
 		}
 
-		void send_event (TargetEventArgs args)
+		public void SendTargetEvent (TargetEventArgs args)
 		{
 			switch (args.Type) {
 			case TargetEventType.TargetRunning:
@@ -152,8 +695,7 @@ namespace Mono.Debugger.Backends
 			case TargetEventType.TargetSignaled:
 			case TargetEventType.TargetExited:
 				target_state = TargetState.EXITED;
-				if (TargetExitedEvent != null)
-					TargetExitedEvent ();
+				OnTargetExitedEvent ();
 				break;
 
 			default:
@@ -161,96 +703,18 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
-			if (TargetEvent != null)
-				TargetEvent (this, args);
-			result_sent = true;
-			completed_event.Set ();
+			OnTargetEvent (args);
+			sse.SetCompleted ();
 		}
 
-		void start_engine_thread ()
+		public void ContinueUntilMain ()
 		{
-			try {
-				process.RunInferior ();
-			} catch (TargetException e) {
-				engine_error (e);
-				return;
-			}
+			TargetAddress main = inferior.MainMethodAddress;
+			Report.Debug (DebugFlags.Threads, "Main address is {0}", main);
+			Continue (main, true);
+			ReachedMain (true);
 
-			arch = inferior.Architecture;
-			disassembler = inferior.Disassembler;
-
-			pid = inferior.PID;
-
-			backend.ReachedMain (process);
-			main_method_retaddr = inferior.GetReturnAddress ();
-
-			disassembler.SymbolTable = symtab_manager.SimpleSymbolTable;
-			current_simple_symtab = symtab_manager.SimpleSymbolTable;
-			current_symtab = symtab_manager.SymbolTable;
-
-			engine_ready ();
-			engine_is_ready = true;
-
-			engine_thread_main (null);
-		}
-
-		bool engine_is_ready = false;
-		Exception start_error = null;
-
-		void engine_error (Exception ex)
-		{
-			lock (this) {
-				start_error = ex;
-				start_event.Set ();
-			}
-		}
-
-		void engine_ready ()
-		{
-			lock (this) {
-				if (!result_sent) {
-					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-					send_frame_event (current_frame, 0);
-				}
-
-				start_event.Set ();
-			}
-		}
-
-		// <summary>
-		//   The heart of the SingleSteppingEngine.  This runs in a background
-		//   thread and processes stepping commands.
-		// </summary>
-		void engine_thread_main (Command command)
-		{
-			do {
-				try {
-					process_command (command);
-				} catch (ThreadAbortException) {
-					// We're exiting here.
-				} catch (Exception e) {
-					Console.WriteLine ("EXCEPTION: {0}", e);
-				}
-
-				// If we reach this point the first time, signal our
-				// caller that we're now ready and about to wait for commands.
-				if (!engine_is_ready) {
-					engine_ready ();
-					engine_is_ready = true;
-				}
-
-				if (inferior == null)
-					return;
-
-				// Wait until we get a command.
-				while (!step_event.WaitOne ())
-					;
-
-				lock (this) {
-					command = current_command;
-					current_command = null;
-				}
-			} while (true);
+			Report.Debug (DebugFlags.Threads, "Reached main");
 		}
 
 		Inferior.ChildEvent wait ()
@@ -268,19 +732,14 @@ namespace Mono.Debugger.Backends
 		//   where some sub-method already sent an error message back).  Normally
 		//   this method will return true to signal the main loop that it still
 		//   needs to send the result.
-		//   `must_continue' specifies what to do when we stopped unexpectedly because
-		//   of a signal or breakpoint and its handler told us to resume execution.
-		//   If false, our caller is doing a single-instruction step operation and thus
-		//   we can just report a successful completion.  Otherwise, resume the target.
 		// </summary>
 		// <remarks>
 		//   This method may only be used in the background thread.
 		// </remarks>
-		TargetEventArgs process_child_event (Inferior.ChildEvent child_event, bool must_continue)
+		TargetEventArgs process_child_event (Inferior.ChildEvent child_event)
 		{
-		again:
 			Inferior.ChildEventType message = child_event.Type;
-			int arg = child_event.Argument;
+			int arg = (int) child_event.Argument;
 
 			if (stop_requested) {
 				get_registers ();
@@ -289,7 +748,7 @@ namespace Mono.Debugger.Backends
 				// A stop was requested and we actually received the SIGSTOP.  Note that
 				// we may also have stopped for another reason before receiving the SIGSTOP.
 				if ((message == Inferior.ChildEventType.CHILD_STOPPED) && (arg == inferior.SIGSTOP))
-					goto done;
+					return null;
 				// Ignore the next SIGSTOP.
 				pending_sigstop++;
 			}
@@ -297,7 +756,7 @@ namespace Mono.Debugger.Backends
 			if ((message == Inferior.ChildEventType.CHILD_STOPPED) && (arg != 0)) {
 				if ((pending_sigstop > 0) && (arg == inferior.SIGSTOP)) {
 					--pending_sigstop;
-					goto done;
+					return null;
 				}
 			}
 
@@ -341,19 +800,21 @@ namespace Mono.Debugger.Backends
 				// `step_over_breakpoint' does everything for us and we can just continue
 				// execution.
 				if (step_over_breakpoint (false, out new_event)) {
-					int new_arg = new_event.Argument;
+					int new_arg = (int) new_event.Argument;
 					// If the child stopped normally, just continue its execution
 					// here; otherwise, we need to deal with the unexpected stop.
 					if ((new_event.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 					    ((new_arg != 0) && (new_arg != inferior.SIGSTOP))) {
+#if FIXME
 						child_event = new_event;
 						goto again;
+#endif
 					}
-					goto done;
+					return null;
 				} else if (!child_breakpoint (arg)) {
 					// we hit any breakpoint, but its handler told us
 					// to resume the target and continue.
-					goto done;
+					return null;
 				}
 			}
 
@@ -385,12 +846,6 @@ namespace Mono.Debugger.Backends
 				return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 			}
 
-		done:
-			if (must_continue) {
-				child_event = do_continue_internal (true);
-				goto again;
-			}
-
 			return null;
 		}
 
@@ -398,24 +853,10 @@ namespace Mono.Debugger.Backends
 		//   The heart of the SingleSteppingEngine's background thread - process a
 		//   command and send the result back to the caller.
 		// </summary>
-		void process_command (Command command)
+		public void ProcessCommand (Command command)
 		{
-			if (command == null)
-				return;
-
-			if (command.Type == CommandType.StepOperation)
-				goto step_operation;
-
-			// These are synchronous commands; ie. the caller blocks on us
-			// until we finished the command and sent the result.
-			send_result (command.CommandFunc (command.CommandFuncData));
-			return;
-
-		step_operation:
 			frames_invalid ();
 
-		again:
-			TargetEventArgs result;
 			// Process another stepping command.
 			switch (command.Operation) {
 			case StepOperation.Run:
@@ -423,45 +864,54 @@ namespace Mono.Debugger.Backends
 				TargetAddress until = command.Until;
 				if (!until.IsNull)
 					insert_temporary_breakpoint (until);
-				result = do_continue ();
+				do_continue ();
 				break;
 
 			case StepOperation.StepInstruction:
-				result = Step (get_simple_step_frame (StepMode.SingleInstruction));
+				Step (get_simple_step_frame (StepMode.SingleInstruction));
 				break;
 
 			case StepOperation.StepNativeInstruction:
-				result = do_step ();
+				do_step ();
 				break;
 
 			case StepOperation.NextInstruction:
-				result = do_next ();
+				do_next ();
 				break;
 
 			case StepOperation.StepLine:
 			case StepOperation.NextLine:
-				result = Step (command.StepFrame);
+				Step (command.StepFrame);
 				break;
 
 			case StepOperation.RuntimeInvoke:
-				result = do_runtime_invoke ((RuntimeInvokeData) command.CommandFuncData);
+				do_runtime_invoke ((RuntimeInvokeData) command.CommandFuncData);
 				break;
 
 			default:
-				result = Step (command.StepFrame);
+				Step (command.StepFrame);
 				break;
 			}
+		}
+
+		protected bool ProcessEvent (Inferior.ChildEvent cevent,
+					     StepOperation operation)
+		{
+			TargetEventArgs result = process_child_event (cevent);
 
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
-				if ((DaemonEvent != null) && DaemonEvent (result)) {
-					command = new Command (StepOperation.RunInBackground);
-					goto again;
+				if (OnDaemonEvent (result)) {
+					do_continue ();
+					return false;
 				}
-				send_event (result);
-				return;
+				SendTargetEvent (result);
+				return true;
 			}
+
+			if (!DoStep (false))
+				return false;
 
 			//
 			// Ok, the target stopped normally.  Now we need to compute the
@@ -474,16 +924,16 @@ namespace Mono.Debugger.Backends
 			// a signal).
 			if (!main_method_retaddr.IsNull && (frame == main_method_retaddr)) {
 				do_continue ();
-				return;
+				return false;
 			}
 
 			// `frame_changed' computes the new stack frame - and it may also
 			// send us a new step command.  This happens for instance, if we
 			// stopped within a method's prologue or epilogue code.
-			Command new_command = frame_changed (frame, 0, command.Operation);
+			Command new_command = frame_changed (frame, 0, operation);
 			if (new_command != null) {
-				command = new_command;
-				goto again;
+				Console.WriteLine ("NEW COMMAND: {0}", new_command);
+				return false;
 			}
 
 			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
@@ -527,34 +977,18 @@ namespace Mono.Debugger.Backends
 		}
 
 		// <summary>
-		//   This event is emitted each time a stepping operation is started or
-		//   completed.  Other than the Inferior's StateChangedEvent, it is only
-		//   emitted after the whole operation completed.
-		// </summary>
-		public event TargetEventHandler TargetEvent;
-
-		public event TargetExitedHandler TargetExitedEvent;
-
-		internal event DaemonEventHandler DaemonEvent;
-
-		// <summary>
 		//   The single-stepping engine's target state.  This will be
 		//   TargetState.RUNNING while the engine is stepping.
 		// </summary>
-		public TargetState State {
+		public override TargetState State {
 			get {
 				return target_state;
 			}
 		}
 
-		public int ID {
-			get { return process.ID; }
-		}
-
-		public int PID {
+		public override int PID {
 			get {
-				check_inferior ();
-				return inferior.PID;
+				return pid;
 			}
 		}
 
@@ -566,14 +1000,14 @@ namespace Mono.Debugger.Backends
 		//   unnecessarily compute this several times if more than one client
 		//   accesses this property.
 		// </summary>
-		public StackFrame CurrentFrame {
+		public override StackFrame CurrentFrame {
 			get {
 				check_inferior ();
 				return current_frame;
 			}
 		}
 
-		public TargetAddress CurrentFrameAddress {
+		public override TargetAddress CurrentFrameAddress {
 			get {
 				StackFrame frame = CurrentFrame;
 				return frame != null ? frame.TargetAddress : TargetAddress.Null;
@@ -589,33 +1023,33 @@ namespace Mono.Debugger.Backends
 		//   without doing any stepping operations in the meantime, you'll always
 		//   get the same backtrace.
 		// </summary>
-		public Backtrace GetBacktrace ()
+		public override Backtrace GetBacktrace ()
 		{
 			check_inferior ();
 
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			send_sync_command (new CommandFunc (get_backtrace), -1);
+			sse.SendSyncCommand (new CommandFunc (get_backtrace), -1);
 
 			return current_backtrace;
 		}
 
-		public Backtrace GetBacktrace (int max_frames)
+		public override Backtrace GetBacktrace (int max_frames)
 		{
 			check_inferior ();
 
 			if ((max_frames == -1) && (current_backtrace != null))
 				return current_backtrace;
 
-			send_sync_command (new CommandFunc (get_backtrace), max_frames);
+			sse.SendSyncCommand (new CommandFunc (get_backtrace), max_frames);
 
 			return current_backtrace;
 		}
 
 		CommandResult get_backtrace (object data)
 		{
-			backend.UpdateSymbolTable ();
+			sse.DebuggerBackend.UpdateSymbolTable ();
 
 			Inferior.StackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
 			StackFrame[] frames = new StackFrame [iframes.Length];
@@ -639,7 +1073,7 @@ namespace Mono.Debugger.Backends
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
-		public long GetRegister (int index)
+		public override long GetRegister (int index)
 		{
 			foreach (Register register in GetRegisters ()) {
 				if (register.Index == index)
@@ -649,14 +1083,14 @@ namespace Mono.Debugger.Backends
 			throw new NoSuchRegisterException ();
 		}
 
-		public Register[] GetRegisters ()
+		public override Register[] GetRegisters ()
 		{
 			check_inferior ();
 
 			if (registers != null)
 				return registers;
 
-			send_sync_command (new CommandFunc (get_registers), null);
+			sse.SendSyncCommand (new CommandFunc (get_registers), null);
 
 			return registers;
 		}
@@ -678,27 +1112,23 @@ namespace Mono.Debugger.Backends
 		CommandResult set_register (object data)
 		{
 			Register reg = (Register) data;
-			try {
-				inferior.SetRegister (reg.Index, (long) reg.Data);
-				registers = null;
-				return new CommandResult (CommandResultType.CommandOk);
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
-			}
+			inferior.SetRegister (reg.Index, (long) reg.Data);
+			registers = null;
+			return new CommandResult (CommandResultType.CommandOk);
 		}
 
-		public void SetRegister (int register, long value)
+		public override void SetRegister (int register, long value)
 		{
 			Register reg = new Register (register, value);
-			send_sync_command (new CommandFunc (set_register), reg);
+			sse.SendSyncCommand (new CommandFunc (set_register), reg);
 		}
 
-		public void SetRegisters (int[] registers, long[] values)
+		public override void SetRegisters (int[] registers, long[] values)
 		{
 			throw new NotImplementedException ();
 		}
 
-		public TargetMemoryArea[] GetMemoryMaps ()
+		public override TargetMemoryArea[] GetMemoryMaps ()
 		{
 			check_inferior ();
 			return inferior.GetMemoryMaps ();
@@ -725,29 +1155,19 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		SingleSteppingEngine sse;
 		Inferior inferior;
 		IArchitecture arch;
-		DebuggerBackend backend;
-		ThreadManager thread_manager;	
-		BreakpointManager breakpoint_manager;
-		Process process;
 		IDisassembler disassembler;
-		SymbolTableManager symtab_manager;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		ILanguage native_language;
-		Thread engine_thread;
-		ManualResetEvent start_event;
-		ManualResetEvent completed_event;
 		AutoResetEvent stop_event;
 		AutoResetEvent restart_event;
-		AutoResetEvent step_event;
-		Mutex command_mutex;
 		bool stop_requested = false;
-		bool result_sent = false;
-		bool native;
 		int pending_sigstop = 0;
-		int pid = -1;
+		bool native;
+		int pid;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
@@ -760,49 +1180,14 @@ namespace Mono.Debugger.Backends
 				throw new NoTargetException ();
 		}
 
-		public IArchitecture Architecture {
+		public override IArchitecture Architecture {
 			get { return arch; }
 		}
 
-		// <summary>
-		//   This method does two things:
-		//   a) It acquires the `command_mutex' (and blocks until it gets it).
-		//   b) After that, it attempts to acquire the `completed_event' as well
-		//      and returns whether it was able to do so (without blocking).
-		//   The caller must
-		//   a) If this method returned true, release the `completed_event' before
-		//      releasing the `command_mutex'.
-		//   b) In any case release the `command_mutex'.
-		// </summary>
-		// <remarks>
-		//   This is called before actually sending a stepping command to the
-		//   background thread.  First, we need to acquire the `command_mutex' -
-		//   this ensures that no synchronous command is running and that no other
-		//   thread has queued an async operation.  Once we acquired the mutex, no
-		//   other thread can issue any commands, but there may still be an async
-		//   command running, so we also need to acquire the `completed_event'.
-		//
-		//   Note that acquiring the `command_mutex' only blocks if any other
-		//   thread is about to send a command to the background thread; it'll not
-		//   block if an asynchronous operation is still running.
-		//
-		//   The `command_mutex' is basically a `lock (this)', but the background
-		//   thread needs to `lock (this)' itself to write the result, so we
-		//   cannot use this here.
-		//
-		//   The `completed_event' is only unset if an async operation is
-		//   currently running.
-		// </remarks>
 		bool check_can_run ()
 		{
 			check_inferior ();
-			if (!command_mutex.WaitOne (0, false))
-				return false;
-			if (!completed_event.WaitOne (0, false)) {
-				command_mutex.ReleaseMutex ();
-				return false;
-			}
-			return true;
+			return sse.CheckCanRun ();
 		}
 
 		bool start_native ()
@@ -830,120 +1215,6 @@ namespace Mono.Debugger.Backends
 		bool child_already_exited;
 		bool debugger_info_read;
 
-		private enum StepOperation {
-			None,
-			Native,
-			Run,
-			RunInBackground,
-			StepInstruction,
-			StepNativeInstruction,
-			NextInstruction,
-			StepLine,
-			NextLine,
-			StepFrame,
-			RuntimeInvoke
-		}
-
-		private delegate CommandResult CommandFunc (object data);
-
-		private enum CommandType {
-			StepOperation,
-			Command
-		}
-
-		private class Command {
-			public CommandType Type;
-			public StepOperation Operation;
-			public StepFrame StepFrame;
-			public TargetAddress Until;
-			public CommandFunc CommandFunc;
-			public object CommandFuncData;
-
-			public Command (StepOperation operation, StepFrame frame)
-			{
-				this.Type = CommandType.StepOperation;
-				this.Operation = operation;
-				this.StepFrame = frame;
-				this.Until = TargetAddress.Null;
-			}
-
-			public Command (StepOperation operation, TargetAddress until)
-			{
-				this.Type = CommandType.StepOperation;
-				this.Operation = operation;
-				this.StepFrame = null;
-				this.Until = until;
-			}
-
-			public Command (StepOperation operation)
-			{
-				this.Type = CommandType.StepOperation;
-				this.Operation = operation;
-				this.StepFrame = null;
-				this.Until = TargetAddress.Null;
-			}
-
-			public Command (StepOperation operation, object data)
-			{
-				this.Type = CommandType.StepOperation;
-				this.Operation = operation;
-				this.StepFrame = null;
-				this.Until = TargetAddress.Null;
-				this.CommandFuncData = data;
-			}
-
-			public Command (CommandFunc func, object data)
-			{
-				this.Type = CommandType.Command;
-				this.CommandFunc = func;
-				this.CommandFuncData = data;
-			}
-		}
-
-		private enum CommandResultType {
-			ChildEvent,
-			CommandOk,
-			UnknownError,
-			Exception
-		}
-
-		private class CommandResult {
-			public readonly CommandResultType Type;
-			public readonly Inferior.ChildEventType EventType;
-			public readonly int Argument;
-			public readonly object Data;
-
-			public CommandResult (Inferior.ChildEventType type, int arg)
-			{
-				this.EventType = type;
-				this.Argument = arg;
-			}
-
-			public CommandResult (Inferior.ChildEventType type, object data)
-			{
-				this.EventType = type;
-				this.Argument = 0;
-				this.Data = data;
-			}
-
-			public CommandResult (CommandResultType type)
-				: this (type, null)
-			{ }
-
-			public CommandResult (CommandResultType type, object data)
-			{
-				this.Type = type;
-				this.Data = data;
-			}
-		}
-
-		// <remarks>
-		//   These two variables are shared between the two threads, so you need to
-		//   lock (this) before accessing/modifying them.
-		// </remarks>
-		Command current_command = null;
-		CommandResult command_result = null;
-
 		// <summary>
 		//   A breakpoint has been hit; now the sse needs to find out what do do:
 		//   either ignore the breakpoint and continue or keep the target stopped
@@ -969,7 +1240,7 @@ namespace Mono.Debugger.Backends
 			if (index == 0)
 				return true;
 
-			BreakpointManager.Handle handle = breakpoint_manager.LookupBreakpoint (index);
+			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (index);
 			if (handle == null)
 				return true;
 
@@ -992,7 +1263,7 @@ namespace Mono.Debugger.Backends
 		bool step_over_breakpoint (bool current, out Inferior.ChildEvent new_event)
 		{
 			int index;
-			BreakpointManager.Handle handle = breakpoint_manager.LookupBreakpoint (
+			BreakpointManager.Handle handle = sse.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index);
 
 			if (handle == null) {
@@ -1005,14 +1276,14 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			thread_manager.AcquireGlobalThreadLock (inferior, process);
+			sse.AcquireGlobalThreadLock (inferior, this);
 			inferior.DisableBreakpoint (index);
 			inferior.Step ();
 			do {
 				new_event = inferior.Wait ();
 			} while (new_event == null);
 			inferior.EnableBreakpoint (index);
-			thread_manager.ReleaseGlobalThreadLock (inferior, process);
+			sse.ReleaseGlobalThreadLock (inferior, this);
 			return true;
 		}
 
@@ -1030,7 +1301,7 @@ namespace Mono.Debugger.Backends
 			// that method, we don't need to do a method lookup.
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
-				backend.UpdateSymbolTable ();
+				sse.DebuggerBackend.UpdateSymbolTable ();
 				current_method = Lookup (address);
 			}
 
@@ -1083,7 +1354,7 @@ namespace Mono.Debugger.Backends
 			// Only do a method lookup if we actually need it.
 			if ((current_method == null) ||
 			    (!MethodBase.IsInSameMethod (current_method, address))) {
-				backend.UpdateSymbolTable ();
+				sse.DebuggerBackend.UpdateSymbolTable ();
 				current_method = Lookup (address);
 			}
 
@@ -1127,7 +1398,7 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			if (method.IsWrapper && (address == method.StartAddress))
-				return new Command (StepOperation.Run, method.WrapperAddress);
+				return new Command (this, StepOperation.Run, method.WrapperAddress);
 
 			ILanguageBackend language = method.Module.LanguageBackend as ILanguageBackend;
 			if (source == null)
@@ -1146,7 +1417,7 @@ namespace Mono.Debugger.Backends
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
 				// next source line.
-				return new Command (StepOperation.Native, new StepFrame (
+				return new Command (this, StepOperation.Native, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
 					language, operation == StepOperation.StepLine ?
 					StepMode.StepFrame : StepMode.Finish));
@@ -1154,7 +1425,7 @@ namespace Mono.Debugger.Backends
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
 				// method's actual code).
-				return new Command (StepOperation.Native, new StepFrame (
+				return new Command (this, StepOperation.Native, new StepFrame (
 					method.StartAddress, method.MethodStartAddress,
 					null, StepMode.Finish));
 			}
@@ -1187,17 +1458,16 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Single-step one machine instruction.
 		// </summary>
-		TargetEventArgs do_step ()
+		void do_step ()
 		{
 			check_inferior ();
-			Inferior.ChildEvent child_event = do_continue_internal (false);
-			return process_child_event (child_event, false);
+			do_continue_internal (false);
 		}
 
 		// <summary>
 		//   Step over the next machine instruction.
 		// </summary>
-		TargetEventArgs do_next ()
+		void do_next ()
 		{
 			check_inferior ();
 			TargetAddress address = inferior.CurrentFrame;
@@ -1205,14 +1475,16 @@ namespace Mono.Debugger.Backends
 			// Check whether this is a call instruction.
 			int insn_size;
 			TargetAddress call = arch.GetCallTarget (inferior, address, out insn_size);
-			if (call.IsNull)
+			if (call.IsNull) {
 				// Step one instruction unless this is a call
-				return do_step ();
+				do_step ();
+				return;
+			}
 
 			// Insert a temporary breakpoint immediately behind it and continue.
 			address += insn_size;
 			insert_temporary_breakpoint (address);
-			return do_continue ();
+			do_continue ();
 		}
 
 		// <summary>
@@ -1221,178 +1493,186 @@ namespace Mono.Debugger.Backends
 		//   instruction before we can resume the target (see `must_continue' in
 		//   child_event() for more info).
 		// </summary>
-		TargetEventArgs do_continue ()
+		void do_continue ()
 		{
 			check_inferior ();
-			Inferior.ChildEvent child_event = do_continue_internal (true);
-			return process_child_event (child_event, true);
+			do_continue_internal (true);
 		}
 
-		Inferior.ChildEvent do_continue_internal (bool do_run)
+		void do_continue_internal (bool do_run)
 		{
 			check_inferior ();
 
 			Inferior.ChildEvent new_event;
 			if (step_over_breakpoint (true, out new_event)) {
-				int new_arg = new_event.Argument;
+				int new_arg = (int) new_event.Argument;
 				// If the child stopped normally, just continue its execution
 				// here; otherwise, we need to deal with the unexpected stop.
+#if FIXME
 				if ((new_event.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 				    ((new_arg != 0) && (new_arg != inferior.SIGSTOP)))
 					return new_event;
 				else if (!do_run)
 					return new_event;
+#endif
 			}
 
 			if (do_run)
 				inferior.Continue ();
 			else
 				inferior.Step ();
-
-			return wait ();
 		}
 
-		protected TargetEventArgs Step (StepFrame frame)
+		StepFrame current_operation;
+
+		protected bool Step (StepFrame frame)
 		{
 			check_inferior ();
+
+			current_operation = null;
 
 			/*
 			 * If no step frame is given, just step one machine instruction.
 			 */
-			if (frame == null)
-				return do_step ();
+			if (frame == null) {
+				do_step ();
+				return true;
+			}
 
 			/*
 			 * Step one instruction, but step over function calls.
 			 */
-			if (frame.Mode == StepMode.NextInstruction)
-				return do_next ();
+			if (frame.Mode == StepMode.NextInstruction) {
+				do_next ();
+				return true;
+			}
 
-			bool first = true;
-			TargetEventArgs result;
-			do {
-				TargetAddress current_frame = inferior.CurrentFrame;
+			current_operation = frame;
+			return DoStep (true);
+		}
 
-				if (first)
-					first = false;
-				else if (!is_in_step_frame (frame, current_frame))
-					return null;
+		protected bool DoStep (bool first)
+		{
+			StepFrame frame = current_operation;
+			if (frame == null)
+				return true;
+
+			TargetAddress current_frame = inferior.CurrentFrame;
+			if (!first && !is_in_step_frame (frame, current_frame)) {
+				current_operation = null;
+				return true;
+			}
+
+			/*
+			 * If this is not a call instruction, continue stepping until we leave
+			 * the specified step frame.
+			 */
+			int insn_size;
+			TargetAddress call = arch.GetCallTarget (inferior, current_frame, out insn_size);
+			if (call.IsNull) {
+				do_step ();
+				return false;
+			}
+
+			/*
+			 * If we have a source language, check for trampolines.
+			 * This will trigger a JIT compilation if neccessary.
+			 */
+			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
+				TargetAddress trampoline = frame.Language.GetTrampoline (inferior, call);
+				IMethod tmethod = null;
 
 				/*
-				 * If this is not a call instruction, continue stepping until we leave
-				 * the specified step frame.
+				 * If this is a trampoline, insert a breakpoint at the start of
+				 * the corresponding method and continue.
+				 *
+				 * We don't need to distinguish between StepMode.SingleInstruction
+				 * and StepMode.StepFrame here since we'd leave the step frame anyways
+				 * when entering the method.
 				 */
-				int insn_size;
-				TargetAddress call = arch.GetCallTarget (inferior, current_frame, out insn_size);
-				if (call.IsNull) {
-					result = do_step ();
-					if (result != null)
-						return result;
-					continue;
+				if (!trampoline.IsNull) {
+					if (current_symtab != null) {
+						sse.DebuggerBackend.UpdateSymbolTable ();
+						tmethod = Lookup (trampoline);
+					}
+					if ((tmethod == null) || !tmethod.Module.StepInto) {
+						do_next ();
+						return false;
+					}
+
+					insert_temporary_breakpoint (trampoline);
+					do_continue ();
+					current_operation = null;
+					return true;
 				}
 
-				/*
-				 * If we have a source language, check for trampolines.
-				 * This will trigger a JIT compilation if neccessary.
-				 */
-				if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-					TargetAddress trampoline = frame.Language.GetTrampoline (inferior, call);
-					IMethod tmethod = null;
-
+				if (frame.Mode != StepMode.SingleInstruction) {
 					/*
-					 * If this is a trampoline, insert a breakpoint at the start of
-					 * the corresponding method and continue.
-					 *
-					 * We don't need to distinguish between StepMode.SingleInstruction
-					 * and StepMode.StepFrame here since we'd leave the step frame anyways
-					 * when entering the method.
+					 * If this is an ordinary method, check whether we have
+					 * debugging info for it and don't step into it if not.
 					 */
-					if (!trampoline.IsNull) {
-						if (current_symtab != null) {
-							backend.UpdateSymbolTable ();
-							tmethod = Lookup (trampoline);
-						}
-						if ((tmethod == null) || !tmethod.Module.StepInto) {
-							result = do_next ();
-							if (result != null)
-								return result;
-							continue;
-						}
-
-						insert_temporary_breakpoint (trampoline);
-						return do_continue ();
-					}
-
-					if (frame.Mode != StepMode.SingleInstruction) {
-						/*
-						 * If this is an ordinary method, check whether we have
-						 * debugging info for it and don't step into it if not.
-						 */
-						tmethod = Lookup (call);
-						if ((tmethod == null) || !tmethod.Module.StepInto) {
-							result = do_next ();
-							if (result != null)
-								return result;
-							continue;
-						}
+					tmethod = Lookup (call);
+					if ((tmethod == null) || !tmethod.Module.StepInto) {
+						do_next ();
+						return false;
 					}
 				}
+			}
 
-				/*
-				 * When StepMode.SingleInstruction was requested, enter the method no matter
-				 * whether it's a system function or not.
-				 */
-				if (frame.Mode == StepMode.SingleInstruction)
-					return do_step ();
+			/*
+			 * When StepMode.SingleInstruction was requested, enter the method no matter
+			 * whether it's a system function or not.
+			 */
+			if (frame.Mode == StepMode.SingleInstruction) {
+				do_step ();
+				current_operation = null;
+				return true;
+			}
 
-				/*
-				 * In StepMode.Finish, always step over all methods.
-				 */
-				if (frame.Mode == StepMode.Finish) {
-					result = do_next ();
-					if (result != null)
-						return result;
-					continue;
+			/*
+			 * In StepMode.Finish, always step over all methods.
+			 */
+			if (frame.Mode == StepMode.Finish) {
+				do_next ();
+				return false;
+			}
+
+			/*
+			 * Try to find out whether this is a system function by doing a symbol lookup.
+			 * If it can't be found in the symbol tables, assume it's a system function
+			 * and step over it.
+			 */
+			IMethod method = Lookup (call);
+			if ((method == null) || !method.Module.StepInto) {
+				do_next ();
+				return false;
+			}
+
+			/*
+			 * If this is a PInvoke/icall wrapper, check whether we want to step into
+			 * the wrapped function.
+			 */
+			if (method.IsWrapper) {
+				TargetAddress wrapper = method.WrapperAddress;
+				IMethod wmethod = Lookup (wrapper);
+
+				if ((wmethod == null) || !wmethod.Module.StepInto) {
+					do_next ();
+					return false;
 				}
 
-				/*
-				 * Try to find out whether this is a system function by doing a symbol lookup.
-				 * If it can't be found in the symbol tables, assume it's a system function
-				 * and step over it.
-				 */
-				IMethod method = Lookup (call);
-				if ((method == null) || !method.Module.StepInto) {
-					result = do_next ();
-					if (result != null)
-						return result;
-					continue;
-				}
+				insert_temporary_breakpoint (wrapper);
+				do_continue ();
+				current_operation = null;
+				return true;
+			}
 
-				/*
-				 * If this is a PInvoke/icall wrapper, check whether we want to step into
-				 * the wrapped function.
-				 */
-				if (method.IsWrapper) {
-					TargetAddress wrapper = method.WrapperAddress;
-					IMethod wmethod = Lookup (wrapper);
-
-					if ((wmethod == null) || !wmethod.Module.StepInto) {
-						result = do_next ();
-						if (result != null)
-							return result;
-						continue;
-					}
-
-					insert_temporary_breakpoint (wrapper);
-					return do_continue ();
-				}
-
-
-				/*
-				 * Finally, step into the method.
-				 */
-				return do_step ();
-			} while (true);
+			/*
+			 * Finally, step into the method.
+			 */
+			do_step ();
+			current_operation = null;
+			return true;
 		}
 
 		// <summary>
@@ -1436,73 +1716,24 @@ namespace Mono.Debugger.Backends
 			return new StepFrame (language, mode);
 		}
 
-		// <summary>
-		//   Sends an asynchronous command to the background thread.  This is used
-		//   for all stepping commands, no matter whether the user requested a
-		//   synchronous or asynchronous operation since we can just block on the
-		//   `completed_event' in the synchronous case.
-		// </summary>
-		void send_async_command (Command command)
-		{
-			lock (this) {
-				send_event (new TargetEventArgs (TargetEventType.TargetRunning, 0));
-				current_command = command;
-				step_event.Set ();
-				completed_event.Reset ();
-			}
-		}
-
-		// <summary>
-		//   Sends a synchronous command to the background thread.  This is only
-		//   used for non-steping commands such as getting a backtrace.
-		// </summary>
-		CommandResult send_sync_command (CommandFunc func, object data)
-		{
-			if (Thread.CurrentThread == engine_thread)
-				return func (data);
-
-			if (!check_can_run ())
-				return new CommandResult (CommandResultType.UnknownError);
-
-			lock (this) {
-				current_command = new Command (func, data);
-				step_event.Set ();
-				completed_event.Reset ();
-			}
-
-			completed_event.WaitOne ();
-
-			CommandResult result;
-			lock (this) {
-				result = command_result;
-				command_result = null;
-			}
-
-			command_mutex.ReleaseMutex ();
-			if (result != null)
-				return result;
-			else
-				return new CommandResult (CommandResultType.UnknownError);
-		}
-
 		void start_step_operation (StepOperation operation, StepFrame frame)
 		{
-			send_async_command (new Command (operation, frame));
+			sse.SendAsyncCommand (this, new Command (this, operation, frame));
 		}
 
 		void start_step_operation (StepOperation operation, TargetAddress until)
 		{
-			send_async_command (new Command (operation, until));
+			sse.SendAsyncCommand (this, new Command (this, operation, until));
 		}
 
 		void start_step_operation (StepOperation operation)
 		{
-			send_async_command (new Command (operation));
+			sse.SendAsyncCommand (this, new Command (this, operation));
 		}
 
 		void start_step_operation (StepOperation operation, object data)
 		{
-			send_async_command (new Command (operation, data));
+			sse.SendAsyncCommand (this, new Command (this, operation, data));
 		}
 
 		void start_step_operation (StepMode mode)
@@ -1510,75 +1741,70 @@ namespace Mono.Debugger.Backends
 			start_step_operation (StepOperation.Native, get_simple_step_frame (mode));
 		}
 
-		void wait_for_completion ()
-		{
-			completed_event.WaitOne ();
-		}
-
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public bool StepInstruction (bool synchronous)
+		public override bool StepInstruction (bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
 
 			start_step_operation (StepOperation.StepInstruction);
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public bool StepNativeInstruction (bool synchronous)
+		public override bool StepNativeInstruction (bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
 
 			start_step_operation (StepOperation.StepNativeInstruction);
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public bool NextInstruction (bool synchronous)
+		public override bool NextInstruction (bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
 
 			start_step_operation (StepOperation.NextInstruction);
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public bool StepLine (bool synchronous)
+		public override bool StepLine (bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
 
 			start_step_operation (StepOperation.StepLine, get_step_frame ());
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public bool NextLine (bool synchronous)
+		public override bool NextLine (bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
@@ -1595,22 +1821,22 @@ namespace Mono.Debugger.Backends
 
 		done:
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public bool Finish (bool synchronous)
+		public override bool Finish (bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
 
 			StackFrame frame = CurrentFrame;
 			if (frame.Method == null) {
-				command_mutex.ReleaseMutex ();
+				sse.ReleaseCommandMutex ();
 				throw new NoMethodException ();
 			}
 
@@ -1618,30 +1844,12 @@ namespace Mono.Debugger.Backends
 				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
 
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
-		// <summary>
-		//   Continue until reaching @until, hitting a breakpoint or receiving a
-		//   signal.  This method just inserts a breakpoint at @until and resumes
-		//   the target.
-		// </summary>
-		public bool Continue (TargetAddress until, bool synchronous)
-		{
-			return Continue (until, false, synchronous);
-		}
-
-		// <summary>
-		//   Resume the target until a breakpoint is hit or it receives a signal.
-		// </summary>
-		public bool Continue (bool in_background, bool synchronous)
-		{
-			return Continue (TargetAddress.Null, in_background, synchronous);
-		}
-
-		public bool Continue (TargetAddress until, bool in_background, bool synchronous)
+		public override bool Continue (TargetAddress until, bool in_background, bool synchronous)
 		{
 			if (!check_can_run ())
 				return false;
@@ -1651,38 +1859,28 @@ namespace Mono.Debugger.Backends
 			else
 				start_step_operation (StepOperation.Run, until);
 			if (synchronous)
-				wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+				sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 			return true;
 		}
 
-		public void Stop ()
+		public override void Stop ()
 		{
 			// Try to get the command mutex; if we succeed, then no stepping operation
 			// is currently running.
 			bool stopped = check_can_run ();
 			if (stopped) {
-				command_mutex.ReleaseMutex ();
+				sse.ReleaseCommandMutex ();
 				return;
 			}
 
 			// Ok, there's an operation running.  Stop the inferior and wait until the
 			// currently running operation completed.
 			inferior.Stop ();
-			wait_for_completion ();
+			sse.WaitForCompletion ();
 		}
 
-		internal void Wait ()
-		{
-			check_inferior ();
-			command_mutex.WaitOne ();
-
-			wait_for_completion ();
-
-			command_mutex.ReleaseMutex ();
-		}
-
-		public void Kill ()
+		public override void Kill ()
 		{
 			Dispose ();
 		}
@@ -1695,7 +1893,7 @@ namespace Mono.Debugger.Backends
 			bool stopped = check_can_run ();
 			if (stopped) {
 				inferior.SetSignal (signal, send_it);
-				command_mutex.ReleaseMutex ();
+				sse.ReleaseCommandMutex ();
 				return;
 			}
 
@@ -1707,6 +1905,7 @@ namespace Mono.Debugger.Backends
 		{
 			if ((bool) data)
 				main_method_retaddr = inferior.GetReturnAddress ();
+			sse.DebuggerBackend.ReachedMain (this);
 			inferior.UpdateModules ();
 			frames_invalid ();
 			current_method = null;
@@ -1716,7 +1915,7 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedMain (bool set_return_address)
 		{
-			send_sync_command (new CommandFunc (reached_main_func), set_return_address);
+			sse.SendSyncCommand (new CommandFunc (reached_main_func), set_return_address);
 			send_frame_event (current_frame, 0);
 		}
 
@@ -1725,7 +1924,7 @@ namespace Mono.Debugger.Backends
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		internal Register[] AcquireThreadLock ()
+		public override Register[] AcquireThreadLock ()
 		{
 			// Try to get the command mutex; if we succeed, then no stepping operation
 			// is currently running.
@@ -1741,28 +1940,28 @@ namespace Mono.Debugger.Backends
 			return registers;
 		}
 
-		internal void ReleaseThreadLock ()
+		public override void ReleaseThreadLock ()
 		{
 			lock (this) {
 				if (stop_requested) {
 					stop_requested = false;
-					completed_event.Reset ();
+					sse.ResetCompleted ();
 					restart_event.Set ();
 				}
-				command_mutex.ReleaseMutex ();
+				sse.ReleaseCommandMutex ();
 			}
 		}
 
 		CommandResult insert_breakpoint (object data)
 		{
-			int index = breakpoint_manager.InsertBreakpoint (
+			int index = sse.BreakpointManager.InsertBreakpoint (
 				inferior, (BreakpointManager.Handle) data);
 			return new CommandResult (CommandResultType.CommandOk, index);
 		}
 
 		CommandResult remove_breakpoint (object data)
 		{
-			breakpoint_manager.RemoveBreakpoint (inferior, (int) data);
+			sse.BreakpointManager.RemoveBreakpoint (inferior, (int) data);
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
@@ -1775,17 +1974,18 @@ namespace Mono.Debugger.Backends
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (BreakpointHandle handle, TargetAddress address,
-					     BreakpointCheckHandler check_handler,
-					     BreakpointHitHandler hit_handler,
-					     bool needs_frame, object user_data)
+		public override int InsertBreakpoint (BreakpointHandle handle,
+						      TargetAddress address,
+						      BreakpointCheckHandler check_handler,
+						      BreakpointHitHandler hit_handler,
+						      bool needs_frame, object user_data)
 		{
 			check_inferior ();
 
 			BreakpointManager.Handle data = new BreakpointManager.Handle (
 				address, handle, check_handler, hit_handler, needs_frame, user_data);
 
-			CommandResult result = send_sync_command (new CommandFunc (insert_breakpoint), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (insert_breakpoint), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 
@@ -1796,18 +1996,18 @@ namespace Mono.Debugger.Backends
 		//   Remove breakpoint @index.  @index is the breakpoint number which has
 		//   been returned by InsertBreakpoint().
 		// </summary>
-		public void RemoveBreakpoint (int index)
+		public override void RemoveBreakpoint (int index)
 		{
 			check_disposed ();
 			if (inferior != null)
-				send_sync_command (new CommandFunc (remove_breakpoint), index);
+				sse.SendSyncCommand (new CommandFunc (remove_breakpoint), index);
 		}
 
 		//
 		// Disassembling.
 		//
 
-		public IDisassembler Disassembler {
+		public override IDisassembler Disassembler {
 			get { return this; }
 		}
 
@@ -1829,21 +2029,17 @@ namespace Mono.Debugger.Backends
 
 		CommandResult get_insn_size (object data)
 		{
-			try {
-				lock (disassembler) {
-					TargetAddress address = (TargetAddress) data;
-					int result = disassembler.GetInstructionSize (address);
-					return new CommandResult (CommandResultType.CommandOk, result);
-				}
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
+			lock (disassembler) {
+				TargetAddress address = (TargetAddress) data;
+				int result = disassembler.GetInstructionSize (address);
+				return new CommandResult (CommandResultType.CommandOk, result);
 			}
 		}
 
 		public int GetInstructionSize (TargetAddress address)
 		{
 			check_inferior ();
-			CommandResult result = send_sync_command (new CommandFunc (get_insn_size), address);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (get_insn_size), address);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (int) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
@@ -1866,15 +2062,11 @@ namespace Mono.Debugger.Backends
 
 		CommandResult disassemble_insn (object data)
 		{
-			try {
-				lock (disassembler) {
-					DisassembleData dis = (DisassembleData) data;
-					AssemblerLine result = disassembler.DisassembleInstruction (
-						dis.Method, dis.Address);
-					return new CommandResult (CommandResultType.CommandOk, result);
-				}
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
+			lock (disassembler) {
+				DisassembleData dis = (DisassembleData) data;
+				AssemblerLine result = disassembler.DisassembleInstruction (
+					dis.Method, dis.Address);
+				return new CommandResult (CommandResultType.CommandOk, result);
 			}
 		}
 
@@ -1882,35 +2074,27 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			DisassembleData data = new DisassembleData (method, address);
-			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (disassemble_insn), data);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (AssemblerLine) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else
 				return null;
-#if FIXME
-				throw new InternalError ("EXCEPTION: {0} {1}",
-							 result.Type, result.Data);
-#endif
 		}
 
 		CommandResult disassemble_method (object data)
 		{
-			try {
-				lock (disassembler) {
-					AssemblerMethod block = disassembler.DisassembleMethod ((IMethod) data);
-					return new CommandResult (CommandResultType.CommandOk, block);
-				}
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
+			lock (disassembler) {
+				AssemblerMethod block = disassembler.DisassembleMethod ((IMethod) data);
+				return new CommandResult (CommandResultType.CommandOk, block);
 			}
 		}
 
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
 			check_inferior ();
-			CommandResult result = send_sync_command (new CommandFunc (disassemble_method), method);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (disassemble_method), method);
 			if (result.Type == CommandResultType.CommandOk)
 				return (AssemblerMethod) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -1954,11 +2138,11 @@ namespace Mono.Debugger.Backends
 			return new CommandResult (CommandResultType.CommandOk, retval);
 		}
 
-		internal long CallMethod (TargetAddress method, long method_argument,
-					  string string_argument)
+		public override long CallMethod (TargetAddress method, long method_argument,
+						 string string_argument)
 		{
 			CallMethodData data = new CallMethodData (method, method_argument, string_argument);
-			CommandResult result = send_sync_command (new CommandFunc (call_string_method), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_string_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			return (long) result.Data;
@@ -1967,7 +2151,7 @@ namespace Mono.Debugger.Backends
 		public TargetAddress CallMethod (TargetAddress method, string string_argument)
 		{
 			CallMethodData data = new CallMethodData (method, 0, string_argument);
-			CommandResult result = send_sync_command (new CommandFunc (call_string_method), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_string_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			long retval = (long) result.Data;
@@ -1986,7 +2170,7 @@ namespace Mono.Debugger.Backends
 		internal long CallMethod (TargetAddress method, long arg1, long arg2)
 		{
 			CallMethodData data = new CallMethodData (method, arg1, arg2);
-			CommandResult result = send_sync_command (new CommandFunc (call_method), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			return (long) result.Data;
@@ -1995,7 +2179,7 @@ namespace Mono.Debugger.Backends
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
 		{
 			CallMethodData data = new CallMethodData (method, arg1.Address, arg2.Address);
-			CommandResult result = send_sync_command (new CommandFunc (call_method), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			long retval = (long) result.Data;
@@ -2033,7 +2217,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetEventArgs do_runtime_invoke (RuntimeInvokeData rdata)
+		void do_runtime_invoke (RuntimeInvokeData rdata)
 		{
 			check_inferior ();
 
@@ -2044,7 +2228,7 @@ namespace Mono.Debugger.Backends
 			inferior.RuntimeInvoke (
 				rdata.Language.RuntimeInvokeFunc, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects);
 
-			return do_continue ();
+			do_continue ();
 		}
 
 		CommandResult runtime_invoke_func (object data)
@@ -2085,8 +2269,8 @@ namespace Mono.Debugger.Backends
 			RuntimeInvokeData data = new RuntimeInvokeData (language, method_argument, object_argument, param_objects);
 
 			start_step_operation (StepOperation.RuntimeInvoke, data);
-			wait_for_completion ();
-			command_mutex.ReleaseMutex ();
+			sse.WaitForCompletion ();
+			sse.ReleaseCommandMutex ();
 
 			return true;
 		}
@@ -2096,7 +2280,7 @@ namespace Mono.Debugger.Backends
 							   out TargetAddress exc_object)
 		{
 			RuntimeInvokeData data = new RuntimeInvokeData (invoke_method, method_argument, object_argument, param_objects);
-			CommandResult result = send_sync_command (new CommandFunc (runtime_invoke_func), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (runtime_invoke_func), data);
 			if (result.Type == CommandResultType.CommandOk) {
 				RuntimeInvokeResult retval = (RuntimeInvokeResult) result.Data;
 				exc_object = retval.ExceptionObject;
@@ -2107,35 +2291,31 @@ namespace Mono.Debugger.Backends
 				throw new Exception ();
 		}
 
-		//
-		// IProcess
-		//
-
-		public bool HasTarget {
-			get { return (inferior != null) && (engine_thread != null); }
+		public override bool HasTarget {
+			get { return inferior != null; }
 		}
 
-		public bool CanRun {
+		public override bool CanRun {
 			get { return true; }
 		}
 
-		public bool CanStep {
+		public override bool CanStep {
 			get { return true; }
 		}
 
-		public bool IsStopped {
+		public override bool IsStopped {
 			get { return true; }
 		}
 
-		public ITargetAccess TargetAccess {
+		public override ITargetAccess TargetAccess {
 			get { return this; }
 		}
 
-		public ITargetMemoryAccess TargetMemoryAccess {
+		public override ITargetMemoryAccess TargetMemoryAccess {
 			get { return this; }
 		}
 
-		public ITargetMemoryInfo TargetMemoryInfo {
+		public override ITargetMemoryInfo TargetMemoryInfo {
 			get { return this; }
 		}
 
@@ -2184,18 +2364,14 @@ namespace Mono.Debugger.Backends
 		{
 			ReadMemoryData mdata = (ReadMemoryData) data;
 
-			try {
-				byte[] buffer = inferior.ReadBuffer (mdata.Address, mdata.Size);
-				return new CommandResult (CommandResultType.CommandOk, buffer);
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
-			}
+			byte[] buffer = inferior.ReadBuffer (mdata.Address, mdata.Size);
+			return new CommandResult (CommandResultType.CommandOk, buffer);
 		}
 
 		protected byte[] read_memory (TargetAddress address, int size)
 		{
 			ReadMemoryData data = new ReadMemoryData (address, size);
-			CommandResult result = send_sync_command (new CommandFunc (do_read_memory), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (do_read_memory), data);
 			if (result.Type == CommandResultType.CommandOk)
 				return (byte []) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2208,18 +2384,14 @@ namespace Mono.Debugger.Backends
 		{
 			ReadMemoryData mdata = (ReadMemoryData) data;
 
-			try {
-				string retval = inferior.ReadString (mdata.Address);
-				return new CommandResult (CommandResultType.CommandOk, retval);
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
-			}
+			string retval = inferior.ReadString (mdata.Address);
+			return new CommandResult (CommandResultType.CommandOk, retval);
 		}
 
 		string read_string (TargetAddress address)
 		{
 			ReadMemoryData data = new ReadMemoryData (address, 0);
-			CommandResult result = send_sync_command (new CommandFunc (do_read_string), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (do_read_string), data);
 			if (result.Type == CommandResultType.CommandOk)
 				return (string) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2250,18 +2422,14 @@ namespace Mono.Debugger.Backends
 		{
 			WriteMemoryData mdata = (WriteMemoryData) data;
 
-			try {
-				inferior.WriteBuffer (mdata.Address, mdata.Data);
-				return new CommandResult (CommandResultType.CommandOk);
-			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
-			}
+			inferior.WriteBuffer (mdata.Address, mdata.Data);
+			return new CommandResult (CommandResultType.CommandOk);
 		}
 
 		protected void write_memory (TargetAddress address, byte[] buffer)
 		{
 			WriteMemoryData data = new WriteMemoryData (address, buffer);
-			CommandResult result = send_sync_command (new CommandFunc (do_write_memory), data);
+			CommandResult result = sse.SendSyncCommand (new CommandFunc (do_write_memory), data);
 			if (result.Type == CommandResultType.CommandOk)
 				return;
 			else if (result.Type == CommandResultType.Exception)
@@ -2278,7 +2446,7 @@ namespace Mono.Debugger.Backends
 
 		AddressDomain ITargetMemoryInfo.GlobalAddressDomain {
 			get {
-				return thread_manager.AddressDomain;
+				return sse.AddressDomain;
 			}
 		}
 
@@ -2364,12 +2532,23 @@ namespace Mono.Debugger.Backends
 		}		
 
 		//
+		// IDisposable
+		//
+
+		protected override void DoDispose ()
+		{
+			if (inferior != null)
+				inferior.Kill ();
+			inferior = null;
+		}
+
+		//
 		// Stack frames.
 		//
 
 		protected class MyStackFrame : StackFrame
 		{
-			SingleSteppingEngine sse;
+			TheEngine sse;
 			Inferior.StackFrame frame;
 			MyBacktrace backtrace;
 			ILanguage language;
@@ -2377,7 +2556,7 @@ namespace Mono.Debugger.Backends
 			Register[] registers;
 			bool has_registers;
 
-			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
+			public MyStackFrame (TheEngine sse, TargetAddress address, int level,
 					     Inferior.StackFrame frame, MyBacktrace backtrace,
 					     SourceAddress source, IMethod method)
 				: base (address, level, source, method)
@@ -2388,7 +2567,7 @@ namespace Mono.Debugger.Backends
 				this.language = method.Module.Language;
 			}
 
-			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
+			public MyStackFrame (TheEngine sse, TargetAddress address, int level,
 					     Inferior.StackFrame frame, MyBacktrace backtrace)
 				: base (address, level, sse.SimpleLookup (address, false))
 			{
@@ -2467,12 +2646,12 @@ namespace Mono.Debugger.Backends
 
 		protected class MyBacktrace : Backtrace
 		{
-			public MyBacktrace (SingleSteppingEngine sse, StackFrame[] frames)
+			public MyBacktrace (TheEngine sse, StackFrame[] frames)
 				: base (sse, frames)
 			{
 			}
 
-			public MyBacktrace (SingleSteppingEngine sse)
+			public MyBacktrace (TheEngine sse)
 				: this (sse, null)
 			{ }
 
@@ -2481,52 +2660,18 @@ namespace Mono.Debugger.Backends
 				this.frames = frames;
 			}
 		}
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		private void check_disposed ()
-		{
-			if (disposed)
-				throw new ObjectDisposedException ("SingleSteppingEngine");
-		}
-
-		protected virtual void Dispose (bool disposing)
-		{
-			// Check to see if Dispose has already been called.
-			if (disposed)
-				return;
-
-			lock (this) {
-				if (disposed)
-					return;
-
-				disposed = true;
-			}
-
-			// If this is a call to Dispose, dispose all managed resources.
-			if (disposing) {
-				if (inferior != null)
-					inferior.Kill ();
-				if ((engine_thread != null) && !child_already_exited)
-					engine_thread.Abort ();
-				engine_thread = null;
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~SingleSteppingEngine ()
-		{
-			Dispose (false);
-		}
 	}
+
+	//
+	// IDisposable
+	//
+
+	protected override void DoDispose ()
+	{
+		TheEngine[] threads = new TheEngine [thread_hash.Count];
+		thread_hash.Values.CopyTo (threads, 0);
+		for (int i = 0; i < threads.Length; i++)
+			threads [i].Dispose ();
+	}
+}
 }
