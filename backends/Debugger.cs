@@ -164,7 +164,6 @@ namespace Mono.Debugger
 			if (csharp_language != null)
 				csharp_language.Process = process;
 			process.Inferior.UpdateModules ();
-			UpdateSymbolTable ();
 
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;
@@ -172,10 +171,8 @@ namespace Mono.Debugger
 			module_manager.Locked = false;
 
 			DaemonThreadHandler handler = null;
-			if (csharp_language != null) {
-				csharp_language.Initialize ();
+			if (csharp_language != null)
 				handler = new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
-			}
 
 			thread_manager.Initialize (process, handler);
 		}
