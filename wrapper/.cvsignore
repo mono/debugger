@@ -6,5 +6,6 @@ mono-debugger-jit-wrapper
 mono-debugger-mini-wrapper
 mdb
 *.dll
+*.mdb
 AssemblyInfo.cs
 Mono.Debugger.dll.config
