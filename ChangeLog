@@ -1,5 +1,13 @@
 2004-10-22  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (Operation): Added public
+	`SimpleStackFrame StartFrame' field; this is the stack frame where
+	the operation started.
+	(SingleSteppingOperation.ProcessCommand): Compute and set the
+	operation's `StartFrame'.
+
+2004-10-22  Martin Baulig  <martin@ximian.com>
+
 	* tests/: Updated the tests and made them work again.
 
 2004-10-22  Chris Toshok  <toshok@ximian.com>

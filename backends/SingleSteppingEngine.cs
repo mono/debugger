@@ -324,6 +324,11 @@ namespace Mono.Debugger.Backends
 		{
 			stop_requested = false;
 
+			if (operation.StepFrame != null)
+				operation.StartFrame = operation.StepFrame.StackFrame;
+			else
+				operation.StartFrame = get_simple_frame ();
+
 			// Process another stepping command.
 			switch (operation.Type) {
 			case OperationType.Run:
@@ -1296,12 +1301,9 @@ namespace Mono.Debugger.Backends
 
 		bool throw_exception (TargetAddress info, TargetAddress ip)
 		{
-			if ((current_operation.StepFrame != null) &&
-			    (current_operation.StepFrame.StackFrame != null)) {
-				if (ip == current_operation.StepFrame.StackFrame.Address) {
-					inferior.Continue ();
-					return false;
-				}
+			if (ip == current_operation.StartFrame.Address) {
+				inferior.Continue ();
+				return false;
 			}
 
 			TargetAddress stack = inferior.ReadAddress (info);
@@ -1407,13 +1409,21 @@ namespace Mono.Debugger.Backends
 			get { return current_method; }
 		}
 
+		SimpleStackFrame get_simple_frame ()
+		{
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+
+			registers = inferior.GetRegisters ();
+			return new SimpleStackFrame (iframe, registers, 0);
+		}
+
 		// <summary>
 		//   Compute the StackFrame for target address @address.
 		// </summary>
 		StackFrame get_frame ()
 		{
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-			TargetAddress address = iframe.Address;
+			SimpleStackFrame simple = get_simple_frame ();
+			TargetAddress address = simple.Address;
 
 			// If we have a current_method and the address is still inside
 			// that method, we don't need to do a method lookup.
@@ -1426,10 +1436,7 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
-			registers = inferior.GetRegisters ();
-			SimpleStackFrame simple = new SimpleStackFrame (iframe, registers, 0);
-			current_frame = StackFrame.CreateFrame (
-				process, simple, current_method);
+			current_frame = StackFrame.CreateFrame (process, simple, current_method);
 
 			return current_frame;
 		}
@@ -2410,6 +2417,8 @@ namespace Mono.Debugger.Backends
 
 		public StepMode StepMode;
 		public StepFrame StepFrame;
+
+		public SimpleStackFrame StartFrame;
 
 		public bool IsNative {
 			get { return Type == OperationType.StepNativeInstruction; }
