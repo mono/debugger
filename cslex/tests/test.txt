@@ -1,3 +1,0 @@
-test1;
-/* comment1 */
-test2;

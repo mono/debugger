@@ -214,12 +214,32 @@ namespace Mono.Debugger.Frontend
 			this.val = val;
 		}
 
+		public NumberExpression (uint val)
+		{
+			this.val = val;
+		}
+
 		public NumberExpression (long val)
 		{
 			this.val = val;
 		}
 
+		public NumberExpression (ulong val)
+		{
+			this.val = val;
+		}
+
 		public NumberExpression (float val)
+		{
+			this.val = val;
+		}
+
+		public NumberExpression (double val)
+		{
+			this.val = val;
+		}
+
+		public NumberExpression (decimal val)
 		{
 			this.val = val;
 		}
@@ -867,6 +887,130 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public class PropertyGroupExpression : Expression
+	{
+		ITargetStructType stype;
+		ITargetStructObject instance;
+		ILanguage language;
+		string name;
+		ArrayList props;
+
+		public PropertyGroupExpression (ITargetStructType stype, string name,
+						ITargetStructObject instance,
+						ILanguage language, ArrayList props)
+		{
+			this.stype = stype;
+			this.instance = instance;
+			this.language = language;
+			this.name = name;
+			this.props = props;
+			resolved = true;
+		}
+
+		public override string Name {
+			get { return stype.Name + "." + name; }
+		}
+
+		public bool IsStatic {
+			get { return instance == null; }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
+		}
+
+#if false
+		public ITargetFunctionObject EvaluateProperty (ScriptingContext context,
+							       StackFrame frame,
+							       bool getter,
+							       Expression[] arguments)
+		{
+			ITargetPropertyInfo prop = OverloadResolve (context, getter, arguments);
+
+			if (prop.IsStatic)
+				return stype.GetStaticProperty (frame, prop.Index);
+			else if (!IsStatic)
+				return instance.GetProperty (prop.Index);
+			else
+				throw new ScriptingException (
+					"Instance property {0} cannot be used in " +
+					"static context.", Name);
+		}
+#endif
+
+		protected ITargetPropertyInfo OverloadResolve (ScriptingContext context,
+							       bool getter,
+							       ITargetType[] types)
+		{
+			ArrayList candidates = new ArrayList ();
+
+			foreach (ITargetPropertyInfo prop in props) {
+				if ((types != null) &&
+				    (prop.Getter.ParameterTypes.Length != types.Length))
+					continue;
+
+				candidates.Add (prop);
+			}
+
+			if (candidates.Count == 1)
+				return (ITargetPropertyInfo) candidates [0];
+
+			if (candidates.Count == 0)
+				throw new ScriptingException (
+					"No overload of property `{0}' has {1} indices.",
+					Name, types.Length);
+
+			if (types == null)
+				throw new ScriptingException (
+					"Ambiguous property `{0}'; need to use " +
+					"full name", Name);
+
+			ITargetPropertyInfo match = OverloadResolve (
+				context, language, stype, types, candidates);
+
+			if (match == null)
+				throw new ScriptingException (
+					"Ambiguous property `{0}'; need to use " +
+					"full name", Name);
+
+			return match;
+		}
+
+		public static ITargetPropertyInfo OverloadResolve (ScriptingContext context,
+								   ILanguage language,
+								   ITargetStructType stype,
+								   ITargetType[] types,
+								   ArrayList candidates)
+		{
+			ITargetPropertyInfo match = null;
+			foreach (ITargetPropertyInfo prop in candidates) {
+
+				if (prop.Getter.ParameterTypes.Length != types.Length)
+					continue;
+
+				bool ok = true;
+				for (int i = 0; i < types.Length; i++) {
+					if (prop.Getter.ParameterTypes [i].TypeHandle != types [i].TypeHandle) {
+						ok = false;
+						break;
+					}
+				}
+
+				if (!ok)
+					continue;
+
+				// We need to find exactly one match
+				if (match != null)
+					return null;
+
+				match = prop;
+			}
+
+			return match;
+		}
+	}
+
 #if FIXME
 	// So you can extend this by just creating a subclass
 	// of BinaryOperator that implements DoEvaluate and
@@ -1443,15 +1587,23 @@ namespace Mono.Debugger.Frontend
 
 	public class ArrayAccessExpression : Expression
 	{
-		Expression expr, index;
+		Expression expr;
+		Expression[] indices;
 		string name;
 
-		public ArrayAccessExpression (Expression expr, Expression index)
+		public ArrayAccessExpression (Expression expr, Expression[] indices)
 		{
 			this.expr = expr;
-			this.index = index;
+			this.indices = indices;
 
-			name = String.Format ("{0}[{1}]", expr.Name, index);
+			StringBuilder sb = new StringBuilder("");
+			bool comma = false;
+			foreach (Expression index in indices) {
+			  if (comma) sb.Append(",");
+			  sb.Append (index.ToString());
+			  comma = true;
+			}
+			name = String.Format ("{0}[{1}]", expr.Name, sb.ToString());
 		}
 
 		public override string Name {
@@ -1462,55 +1614,114 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
+			int i;
 			expr = expr.Resolve (context);
 			if (expr == null)
 				return null;
 
-			index = index.Resolve (context);
-			if (index == null)
-				return null;
+			for (i = 0; i < indices.Length; i ++) {
+				indices[i] = indices[i].Resolve (context);
+				if (indices[i] == null)
+					return null;
+			}
 
 			resolved = true;
 			return this;
 		}
 
+		int GetIntIndex (Expression index, ScriptingContext context) {
+			try {
+				return (int) index.Evaluate (context);
+			}
+			catch (Exception e) {
+				throw new ScriptingException (
+					      "Cannot convert {0} to an integer for indexing: {1}",
+					      index, e);
+			}
+		}
+
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			int i;
-
 			ITargetObject obj = expr.EvaluateVariable (context);
 
-			try {
-				i = (int) this.index.Evaluate (context);
-			} catch (Exception e) {
-				throw new ScriptingException (
-					"Cannot convert {0} to an integer for indexing: {1}",
-					this.index, e);
+			// array[int]
+			ITargetArrayObject aobj = obj as ITargetArrayObject;
+			if (aobj != null) {
+				// single dimensional array only at present
+				i = GetIntIndex (this.indices[0], context);
+
+				if ((i < aobj.LowerBound) || (i >= aobj.UpperBound)) {
+					if (aobj.UpperBound == 0)
+						throw new ScriptingException (
+								       "Index {0} of array expression {1} out of bounds " +
+								       "(array is of zero length)", i, expr.Name);
+					else
+						throw new ScriptingException (
+								       "Index {0} of array expression {1} out of bounds " +
+								       "(must be between {2} and {3}).", i, expr.Name,
+								       aobj.LowerBound, aobj.UpperBound - 1);
+				}
+
+				return aobj [i];
 			}
 
-			ITargetArrayObject aobj = obj as ITargetArrayObject;
-			if (aobj == null) {
-				ITargetPointerObject pobj = obj as ITargetPointerObject;
-				if ((pobj != null) && pobj.Type.IsArray)
+			// pointer[int]
+			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			if (pobj != null) {
+				// single dimensional array only at present
+				i = GetIntIndex (this.indices[0], context);
+
+				if (pobj.Type.IsArray)
 					return pobj.GetArrayElement (i);
 
 				throw new ScriptingException (
-							      "Variable {0} is not an array type.", expr.Name);
+						       "Variable {0} is not an array type.", expr.Name);
 			}
 
-			if ((i < aobj.LowerBound) || (i >= aobj.UpperBound)) {
-				if (aobj.UpperBound == 0)
-					throw new ScriptingException (
-								      "Index {0} of array expression {1} out of bounds " +
-								      "(array is of zero length)", i, expr.Name);
-				else
-					throw new ScriptingException (
-								      "Index {0} of array expression {1} out of bounds " +
-								      "(must be between {2} and {3}).", i, expr.Name,
-								      aobj.LowerBound, aobj.UpperBound - 1);
-			}
+			// indexers
+			ITargetStructObject sobj = obj as ITargetStructObject;
+			if (sobj != null) {
+				StackFrame frame = context.CurrentFrame.Frame;
+				ITargetPropertyInfo prop_info;
+				ArrayList candidates = new ArrayList ();
 
-			return aobj [i];
+				candidates.AddRange (sobj.Type.Properties);
+
+				ITargetType[] indextypes = new ITargetType [indices.Length];
+				ITargetObject[] indexargs = new ITargetObject [indices.Length];
+				for (i = 0; i < indices.Length; i++) {
+					indextypes [i] = indices [i].EvaluateType (context);
+					if (indextypes [i] == null)
+						return null;
+					indexargs [i] = indices [i].EvaluateVariable (context);
+					if (indexargs [i] == null)
+						return null;
+				}
+
+				prop_info = PropertyGroupExpression.OverloadResolve (context, frame.Language, sobj.Type, indextypes,
+										     candidates);
+
+				if (prop_info == null) {
+				 	throw new ScriptingException ("Could not find matching indexer.");
+				}
+
+				ITargetTypeInfo getter_info = (ITargetTypeInfo) prop_info.Getter.Resolve ();
+				if (getter_info == null) {
+					return null;
+				}
+
+				ITargetFunctionObject func = getter_info.GetObject (sobj.Location) as ITargetFunctionObject;
+				if (func == null) {
+					return null;
+				}
+
+				return func.Invoke (indexargs, false);
+			}
+			
+			throw new ScriptingException (
+						      "{0} is neither an array/pointer type, nor is it " +
+						      "an object with a valid indexer.");
 		}
 
 		protected override ITargetType DoEvaluateType (ScriptingContext context)

@@ -1,3 +1,34 @@
+2005-03-23  Chris Toshok  <toshok@ximian.com>
+
+	* cslex/ remove.
+	
+	* Makefile.am (SUBDIRS): remove cslex
+
+	* frontend/Expression.cs (NumberExpression..ctor): add ctors for
+	uint, long, ulong, float, double, and decimal.
+	(PropertyGroupExpression): cut and paste job of
+	MethodGroupExpression, for use in finding overloaded properties -
+	i.e. indexers.
+	(ArrayAccessExpression): allow multiple index expressions, and
+	deal with indexers properly.
+
+	* frontend/CSharpExpressionParser.jay: add many, many tokens.
+	(constant): add more productions.
+	(expression): make the array (foo[...]) production take multiple
+	expressions, and pass them as an array to ArrayIndexExpression.
+
+	* frontend/Makefile.am (noinst_DATA): remove CSharpTokenizer_lex.cs 
+	(MAINTAINERCLEANFILES): same.
+	(EXTRA_DIST): same.
+
+	* frontend/CSharpTokenizer.lex: nuke this, cslex generated lexers
+	can't deal with unicode.  which sucks.  hard.
+	
+	* frontend/CSharpTokenizer.cs: ressurect this, and make lots of
+	improvements.  we can now deal with floats (courtesy of code
+	ripped off of monodevelop), and lots of operator tokens were
+	added.
+
 2005-03-13  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Makefile.am (MAINTAINERCLEANFILES): add

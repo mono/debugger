@@ -33,35 +33,51 @@ namespace Mono.Debugger.Frontend.CSharp
 		// do not remove.
 
 %token IDENTIFIER
-%token INTEGER
+%token INT
+%token UINT
 %token FLOAT
-%token NUMBER
+%token DOUBLE
+%token DECIMAL
+%token ULONG
+%token LONG
 %token STRING
 %token HASH
 %token AT
-%token PERCENT
 %token DOLLAR
 %token DOT
 %token DOTDOT
 %token NOT
 %token COMMA
+%token ASSIGN
 %token EQUAL
-%token EQUALEQUAL
 %token NOTEQUAL
 %token STAR
 %token PLUS
 %token MINUS
 %token DIV
+%token PERCENT
+%token STARASSIGN
+%token PLUSASSIGN
+%token MINUSASSIGN
+%token DIVASSIGN
+%token PERCENTASSIGN
 %token OPAREN
 %token CPAREN
 %token OBRACKET
 %token CBRACKET
+%token RIGHTSHIFT
+%token RIGHTSHIFTASSIGN
+%token LEFTSHIFT
+%token LEFTSHIFTASSIGN
 %token LT
 %token GT
 %token LE
 %token GE
 %token AND
 %token OR
+%token OROR
+%token ANDAND
+%token NOT
 %token COLON
 %token QUESTION
 %token AMPERSAND
@@ -91,7 +107,7 @@ parse_expression
 
 primary_expression
 	: expression
-	| expression EQUAL expression
+	| expression ASSIGN expression
 	  {
 		$$ = new AssignmentExpression ((Expression) $1, (Expression) $3);
 	  }
@@ -106,18 +122,35 @@ constant
 	  {
 		$$ = new BoolExpression (false);
 	  }
-	| NUMBER
+	| LONG
 	  {
 		$$ = new NumberExpression ((long) $1);
 	  }
-	| INTEGER
+	| ULONG
+	  {
+		$$ = new NumberExpression ((ulong) $1);
+	  }
+	| INT
 	  {
 		$$ = new NumberExpression ((int) $1);
+	  }
+	| UINT
+	  {
+		$$ = new NumberExpression ((uint) $1);
 	  }
 	| FLOAT
 	  {
 		$$ = new NumberExpression ((float) $1);
 	  }
+	| DOUBLE
+	  {
+		$$ = new NumberExpression ((double) $1);
+	  }
+	| DECIMAL
+	{
+		$$ = new NumberExpression ((decimal) $1);
+	}
+
 	| STRING
 	  {
 		$$ = new StringExpression ((string) $1);
@@ -154,15 +187,18 @@ expression
 	  {
 		$$ = new AddressOfExpression ((Expression) $2);
 	  }
-	| expression OBRACKET expression CBRACKET
+	| expression OBRACKET expression_list CBRACKET
 	  {
-		$$ = new ArrayAccessExpression ((Expression) $1, (Expression) $3);
+		Expression[] exps = new Expression [((ArrayList) $3).Count];
+		((ArrayList) $3).CopyTo (exps, 0);
+
+		$$ = new ArrayAccessExpression ((Expression) $1, exps);
 	  }
-	| expression OPAREN argument_list CPAREN
+	| expression OPAREN expression_list_0 CPAREN
 	  {
 		$$ = new InvocationExpression ((Expression) $1, ((Expression []) $3));
 	  }
-	| NEW variable_or_type_name OPAREN argument_list CPAREN
+	| NEW variable_or_type_name OPAREN expression_list_0 CPAREN
 	  {
 		$$ = new NewExpression ((Expression) $2, ((Expression []) $4));
 	  }
@@ -180,21 +216,21 @@ expression
 	  }
 	;
 
-argument_list
+expression_list_0
 	: /* empty */
 	  {
 		$$ = new Expression [0];
 	  }
-	| argument_list_0
+	| expression_list
 	  {
-		Expression[] args = new Expression [((ArrayList) $1).Count];
-		((ArrayList) $1).CopyTo (args, 0);
+		Expression[] exps = new Expression [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (exps, 0);
 
-		$$ = args;
+		$$ = exps;
 	  }
 	;
 
-argument_list_0
+expression_list
 	: expression
 	  {
 		ArrayList args = new ArrayList ();
@@ -202,7 +238,7 @@ argument_list_0
 
 		$$ = args;
 	  }
-	| argument_list_0 COMMA expression
+	| expression_list COMMA expression
 	  {
 		ArrayList args = (ArrayList) $1;
 		args.Add ($3);
@@ -238,8 +274,7 @@ public ExpressionParser (ScriptingContext context, string name)
 	this.reader = new MyTextReader ();
 	this.current_context = context;
 
-	lexer = new Tokenizer (reader);
-	lexer.Name = name;
+	lexer = new Tokenizer (context, reader, name);
 }
 
 public Expression Parse (string text)

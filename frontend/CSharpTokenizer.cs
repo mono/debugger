@@ -32,6 +32,23 @@ namespace Mono.Debugger.Frontend.CSharp
 		int putback_char;
 		Object val;
 
+		ScriptingContext context;
+		TextReader reader;
+		string ref_name;
+		int current_token;
+		int col = 1;
+
+		//
+		// Whether tokens have been seen on this line
+		//
+		bool tokens_seen = false;
+
+		//
+		// Details about the error encoutered by the tokenizer
+		//
+		string error_details;
+		
+
 		//
 		// Class initializer
 		// 
@@ -52,24 +69,11 @@ namespace Mono.Debugger.Frontend.CSharp
 			keywords.Add ("this", Token.THIS);
 			keywords.Add ("base", Token.BASE);
 			keywords.Add ("catch", Token.CATCH);
+			keywords.Add ("true", Token.TRUE);
+			keywords.Add ("false", Token.FALSE);
+			keywords.Add ("null", Token.FALSE);
 		}
 
-		ScriptingContext context;
-		TextReader reader;
-		string ref_name;
-		int current_token;
-		int col = 1;
-
-		//
-		// Whether tokens have been seen on this line
-		//
-		bool tokens_seen = false;
-
-		//
-		// Details about the error encoutered by the tokenizer
-		//
-		string error_details;
-		
 		public string error {
 			get {
 				return error_details;
@@ -99,10 +103,10 @@ namespace Mono.Debugger.Frontend.CSharp
 			int c;
 			int top = count != -1 ? count : 4;
 			
-			getChar ();
+			GetChar ();
 			error = false;
 			for (i = 0; i < top; i++){
-				c = getChar ();
+				c = GetChar ();
 				
 				if (c >= '0' && c <= '9')
 					c = (int) c - (int) '0';
@@ -117,7 +121,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				
 				total = (total * 16) + c;
 				if (count == -1){
-					int p = peekChar ();
+					int p = PeekChar ();
 					if (p == -1)
 						break;
 					if (!is_hex ((char)p))
@@ -133,7 +137,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			int d;
 			int v;
 
-			d = peekChar ();
+			d = PeekChar ();
 			if (c != '\\')
 				return c;
 			
@@ -179,11 +183,11 @@ namespace Mono.Debugger.Frontend.CSharp
 				context.Error ("Unrecognized escape sequence in " + (char)d);
 				return d;
 			}
-			getChar ();
+			GetChar ();
 			return v;
 		}
 
-		int getChar ()
+		int GetChar ()
 		{
 			if (putback_char != -1){
 				int x = putback_char;
@@ -194,7 +198,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			return reader.Read ();
 		}
 
-		int peekChar ()
+		int PeekChar ()
 		{
 			if (putback_char != -1)
 				return putback_char;
@@ -210,17 +214,7 @@ namespace Mono.Debugger.Frontend.CSharp
 
 		public bool advance ()
 		{
-			return peekChar () >= 0;
-		}
-
-		bool is_identifier_start_character (char c)
-		{
-			return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || Char.IsLetter (c);
-		}
-
-		bool is_identifier_part_character (char c)
-		{
-			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9') || Char.IsLetter (c);
+			return PeekChar () >= 0;
 		}
 
 		int GetKeyword (string name, bool tokens_seen)
@@ -240,70 +234,210 @@ namespace Mono.Debugger.Frontend.CSharp
 			return -1;
 		}
 
-		//
-		// Invoked if we know we have .digits or digits
-		//
-		int is_number (int c)
+#region "taken from MonoDevelop's Lexer.cs"
+		int ReadDigit(char ch)
 		{
-			number_builder.Length = 0;
+			++col;
 
-			if (c >= '0' && c <= '9'){
-				if (c == '0' && peekChar () == 'x' || peekChar () == 'X'){
-					getChar ();
-					hex_digits (-1);
-
-					string s = number_builder.ToString ();
-
-					val = (long) System.UInt64.Parse (s, NumberStyles.HexNumber);
-					return Token.NUMBER;
+			StringBuilder sb = new StringBuilder(ch.ToString());
+			StringBuilder prefix = new StringBuilder();
+			StringBuilder suffix = new StringBuilder();
+			
+			bool ishex      = false;
+			bool isunsigned = false;
+			bool islong     = false;
+			bool isfloat    = false;
+			bool isdouble   = false;
+			bool isdecimal  = false;
+			
+			if (ch == '0' && Char.ToUpper((char)PeekChar()) == 'X') {
+				const string hex = "0123456789ABCDEF";
+				GetChar(); // skip 'x'
+				++col;
+				while (hex.IndexOf(Char.ToUpper((char)PeekChar())) != -1) {
+					sb.Append(Char.ToUpper((char)GetChar()));
+					++col;
 				}
-				decimal_digits (c);
-
-				val = (int) System.UInt32.Parse (number_builder.ToString ());
-				return Token.INTEGER;
-			}
-
-			throw new Exception ("Is Number should never reach this point");
-		}
-
-		bool decimal_digits (int c)
-		{
-			int d;
-			bool seen_digits = false;
-			
-			if (c != -1)
-				number_builder.Append ((char) c);
-			
-			while ((d = peekChar ()) != -1){
-				if (d >= '0' && d <= '9'){
-					number_builder.Append ((char) d);
-					getChar ();
-					seen_digits = true;
-				} else
-					break;
+				ishex = true;
+				prefix.Append("0x");
+			} else {
+				while (Char.IsDigit((char)PeekChar())) {
+					sb.Append((char)GetChar());
+					++col;
+				}
 			}
 			
-			return seen_digits;
+			if (PeekChar() == '.') { // read floating point number
+				isdouble = true; // double is default
+				if (ishex) {
+					error_details = "No hexadecimal floating point values allowed";
+					return Token.ERROR;
+				}
+				sb.Append((char)GetChar());
+				++col;
+				
+				while (Char.IsDigit((char)PeekChar())) { // read decimal digits beyond the dot
+					sb.Append((char)GetChar());
+					++col;
+				}
+			}
+			
+			if (Char.ToUpper((char)PeekChar()) == 'E') { // read exponent
+				isdouble = true;
+				sb.Append((char)GetChar());
+				++col;
+				if (PeekChar() == '-' || PeekChar() == '+') {
+					sb.Append((char)GetChar());
+					++col;
+				}
+				while (Char.IsDigit((char)PeekChar())) { // read exponent value
+					sb.Append((char)GetChar());
+					++col;
+				}
+				isunsigned = true;
+			}
+			
+			if (Char.ToUpper((char)PeekChar()) == 'F') { // float value
+				suffix.Append(PeekChar());
+				GetChar();
+				++col;
+				isfloat = true;
+			} else if (Char.ToUpper((char)PeekChar()) == 'D') { // double type suffix (obsolete, double is default)
+				suffix.Append(PeekChar());
+				GetChar();
+				++col;
+				isdouble = true;
+			} else if (Char.ToUpper((char)PeekChar()) == 'M') { // decimal value
+				suffix.Append(PeekChar());
+				GetChar();
+				++col;
+				isdecimal = true;
+			} else if (!isdouble) {
+				if (Char.ToUpper((char)PeekChar()) == 'U') {
+					suffix.Append(PeekChar());
+					GetChar();
+					++col;
+					isunsigned = true;
+				}
+				
+				if (Char.ToUpper((char)PeekChar()) == 'L') {
+					suffix.Append(PeekChar());
+					GetChar();
+					++col;
+					islong = true;
+					if (!isunsigned && Char.ToUpper((char)PeekChar()) == 'U') {
+						suffix.Append(PeekChar());
+						GetChar();
+						++col;
+						isunsigned = true;
+					}
+				}
+			}
+			
+			string digit = sb.ToString();
+			//string stringValue = String.Concat(prefix.ToString(), digit, suffix.ToString());
+			if (isfloat) {
+				try {
+					NumberFormatInfo numberFormatInfo = new NumberFormatInfo();
+					numberFormatInfo.CurrencyDecimalSeparator = ".";
+					val = Single.Parse(digit, numberFormatInfo);
+					return Token.FLOAT;
+				} catch (Exception) {
+					error_details = String.Format("Can't parse float {0}", digit);
+
+					val = 0f;
+					return Token.FLOAT;
+				}
+			}
+			if (isdecimal) {
+				try {
+					NumberFormatInfo numberFormatInfo = new NumberFormatInfo();
+					numberFormatInfo.CurrencyDecimalSeparator = ".";
+					val = Decimal.Parse(digit, numberFormatInfo);
+					return Token.DECIMAL;
+				} catch (Exception) {
+					error_details = String.Format("Can't parse decimal {0}", digit);
+					val = 0m;
+					return Token.DECIMAL;
+				}
+			}
+			if (isdouble) {
+				try {
+					NumberFormatInfo numberFormatInfo = new NumberFormatInfo();
+					numberFormatInfo.CurrencyDecimalSeparator = ".";
+					val = Double.Parse(digit, numberFormatInfo);
+					return Token.DOUBLE;
+				} catch (Exception) {
+					error_details = String.Format("Can't parse double {0}", digit);
+					val = 0d;
+					return Token.DOUBLE;
+				}
+			}
+			
+			double d = 0;
+			// FIXME: http://bugzilla.ximian.com/show_bug.cgi?id=72221
+			if (!Double.TryParse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Integer, null, out d)) {
+				error_details = String.Format("Can't parse integral constant {0}", digit);
+				val = 0;
+				return Token.INT;
+			}
+			if (d < long.MinValue || d > long.MaxValue) {
+				islong = true;
+				isunsigned = true;	
+			}
+			else if (d < uint.MinValue || d > uint.MaxValue) {
+				islong = true;	
+			}
+			else if (d < int.MinValue || d > int.MaxValue) {
+				isunsigned = true;	
+			}
+			if (islong) {
+				if (isunsigned) {
+					try {
+						val = UInt64.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
+						return Token.ULONG;
+					} catch (Exception) {
+						error_details = String.Format("Can't parse unsigned long {0}", digit);
+						val = 0UL;
+						return Token.ULONG;
+					}
+				} else {
+					try {
+						val = Int64.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
+						return Token.LONG;
+					} catch (Exception) {
+						error_details = String.Format("Can't parse long {0}", digit);
+						val = 0L;
+						return Token.LONG;
+					}
+				}
+			} else {
+				if (isunsigned) {
+					try {
+						val = UInt32.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
+						return Token.UINT;
+					} catch (Exception) {
+						error_details = String.Format("Can't parse unsigned int {0}", digit);
+						val = 0U;
+						return Token.UINT;
+					}
+				} else {
+					try {
+					 	val = Int32.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
+						return Token.INT;
+					} catch (Exception) {
+						error_details = String.Format("Can't parse int {0}", digit);
+						val = 0;
+						return Token.INT;
+					}
+				}
+			}
 		}
+#endregion
 
 		bool is_hex (int e)
 		{
 			return (e >= '0' && e <= '9') || (e >= 'A' && e <= 'F') || (e >= 'a' && e <= 'f');
-		}
-		
-		void hex_digits (int c)
-		{
-			int d;
-
-			if (c != -1)
-				number_builder.Append ((char) c);
-			while ((d = peekChar ()) != -1){
-				if (is_hex (d)){
-					number_builder.Append ((char) d);
-					getChar ();
-				} else
-					break;
-			}
 		}
 
 		private int consume_identifier (int c, bool quoted) 
@@ -315,9 +449,9 @@ namespace Mono.Debugger.Frontend.CSharp
 
 			id_builder.Append ((char) c);
 					
-			while ((c = peekChar ()) != -1) {
-				if (is_identifier_part_character ((char) c)){
-					id_builder.Append ((char)getChar ());
+			while ((c = PeekChar ()) != -1) {
+				if (Char.IsLetterOrDigit ((char)c) || c == '_') {
+					id_builder.Append ((char)GetChar ());
 					col++;
 				} else 
 					break;
@@ -342,11 +476,11 @@ namespace Mono.Debugger.Frontend.CSharp
 			int c;
 			string_builder.Length = 0;
 								
-			while ((c = getChar ()) != -1){
+			while ((c = GetChar ()) != -1){
 				if (c == '"'){
-					if (quoted && peekChar () == '"'){
+					if (quoted && PeekChar () == '"'){
 						string_builder.Append ((char) c);
-						getChar ();
+						GetChar ();
 						continue;
 					} else {
 						val = string_builder.ToString ();
@@ -379,7 +513,7 @@ namespace Mono.Debugger.Frontend.CSharp
 
 			id_builder.Length = 0;
 								
-			while ((c = getChar ()) != -1){
+			while ((c = GetChar ()) != -1){
 				if (c == '\''){
 					val = id_builder.ToString ();
 					return Token.IDENTIFIER;
@@ -397,96 +531,187 @@ namespace Mono.Debugger.Frontend.CSharp
 			return Token.EOF;
 		}
 
-		private string consume_help ()
-		{
-			int c;
-			StringBuilder sb = new StringBuilder ();
-								
-			while ((c = getChar ()) != -1){
-				if (c == '\n') {
-					col = 0;
-					return sb.ToString ();
-				}
-
-				col++;
-				sb.Append ((char) c);
-			}
-
-			return sb.ToString ();
-		}
-
 		public int xtoken ()
 		{
 			int c;
 
 			val = null;
 			// optimization: eliminate col and implement #directive semantic correctly.
-			for (;(c = getChar ()) != -1; col++) {
-				if (is_identifier_start_character ((char)c))
-					return consume_identifier (c, false);
+			for (;(c = GetChar ()) != -1; col++) {
 
 				if (c == 0)
 					continue;
-				else if (c == '#')
-					return Token.HASH;
-				else if (c == '@')
-					return Token.AT;
-				else if (c == '%')
-					return Token.PERCENT;
-				else if (c == '$')
-					return Token.DOLLAR;
-				else if (c == '.')
-					if ((c = peekChar ()) == '.') {
-						getChar ();
-						return Token.DOTDOT;
-					}
-					else {
-						return Token.DOT;
-					}
-				else if (c == '!')
-					return Token.BANG;
-				else if (c == '=')
-					return Token.ASSIGN;
-				else if (c == '*')
-					return Token.STAR;
-				else if (c == '+')
-					return Token.PLUS;
-				else if (c == '-') // FIXME: negative numbers...
-					return Token.MINUS;
-				else if (c == '/')
-					return Token.DIV;
-				else if (c == '(')
-					return Token.OPEN_PARENS;
-				else if (c == ')')
-					return Token.CLOSE_PARENS;
-				else if (c == '[')
-					return Token.OPEN_BRACKET;
-				else if (c == ']')
-					return Token.CLOSE_BRACKET;
-				else if (c == ',')
-					return Token.COMMA;
-				else if (c == '<')
-					return Token.OP_LT;
-				else if (c == '>')
-					return Token.OP_GT;
-				else if (c == ':')
-					return Token.COLON;
-				else if (c == '&')
-					return Token.AMPERSAND;
 
-				if (c >= '0' && c <= '9') {
-					tokens_seen = true;
-					return is_number (c);
-				}
+				if (Char.IsLetter ((char)c) || c == '_')
+					return consume_identifier (c, false);
+
+				if (c == '\'')
+					return consume_quoted_identifier ();
 
 				if (c == '"')
 					return consume_string (false);
+
+				if (Char.IsDigit ((char)c)) {
+					tokens_seen = true;
+					return ReadDigit ((char)c);
+				}
+
+				if (c == '#')
+					return Token.HASH;
+				else if (c == '@')
+					return Token.AT;
+				else if (c == '$')
+					return Token.DOLLAR;
+				else if (c == '.') {
+					if (Char.IsDigit ((char)PeekChar())) {
+						putback(c);
+						col -=2;
+						return ReadDigit ('0');
+					}
+
+					if ((c = PeekChar ()) == '.') {
+						GetChar ();
+						return Token.DOTDOT;
+					}
+
+					return Token.DOT;
+				}
+				else if (c == '!') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.NOTEQUAL;
+					}
+
+					return Token.NOT;
+				}
+				else if (c == '=') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.EQUAL;
+					}
+
+					return Token.ASSIGN;
+				}
+				else if (c == '*') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.STARASSIGN;
+					}
+
+					return Token.STAR;
+				}
+				else if (c == '+') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.PLUSASSIGN;
+					}
+
+					return Token.PLUS;
+				}
+				else if (c == '-') { // FIXME: negative numbers...
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.MINUSASSIGN;
+					}
+					if ((c = PeekChar ()) == '>') {
+						GetChar ();
+						return Token.ARROW;
+					}
+
+					return Token.MINUS;
+				}
+				else if (c == '/') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.DIVASSIGN;
+					}
+
+					return Token.DIV;
+				}
+				else if (c == '%') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.PERCENTASSIGN;
+					}
+
+					return Token.PERCENT;
+				}
+				else if (c == '|') {
+					if ((c = PeekChar ()) == '|') {
+						GetChar ();
+						return Token.OROR;
+					}
+
+					return Token.OR;
+				}
+				else if (c == '&') {
+					if ((c = PeekChar ()) == '&') {
+						GetChar ();
+						return Token.ANDAND;
+					}
+
+					return Token.AMPERSAND;
+				}
+				else if (c == '(')
+					return Token.OPAREN;
+				else if (c == ')')
+					return Token.CPAREN;
+				else if (c == '[')
+					return Token.OBRACKET;
+				else if (c == ']')
+					return Token.CBRACKET;
+				else if (c == ',')
+					return Token.COMMA;
+				else if (c == '<') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.LE;
+					}
+
+					if ((c = PeekChar ()) == '<') {
+						GetChar ();
+
+						if (PeekChar () == '=') {
+							GetChar();
+							return Token.LEFTSHIFTASSIGN;
+						}
+						else
+							return Token.LEFTSHIFT;
+					}
+
+					return Token.LT;
+				}
+				else if (c == '>') {
+					if ((c = PeekChar ()) == '=') {
+						GetChar ();
+						return Token.GE;
+					}
+
+					if ((c = PeekChar ()) == '>') {
+						GetChar ();
+
+						if (PeekChar () == '=') {
+							GetChar();
+							return Token.RIGHTSHIFTASSIGN;
+						}
+						else
+							return Token.RIGHTSHIFT;
+					}
+
+					return Token.GT;
+				}
+				else if (c == ':')
+					return Token.COLON;
+				else if (c == '?')
+					return Token.QUESTION;
 
 				if (c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\r' || c == '\n'){
 					if (current_token == Token.HASH) {
 						error_details = "No whitespace allowed after `#'";
 						return Token.ERROR;
-					} else if (current_token == Token.AT) {
+					}
+					
+					if (current_token == Token.AT) {
 						error_details = "No whitespace allowed after `@'";
 						return Token.ERROR;
 					}
@@ -496,8 +721,6 @@ namespace Mono.Debugger.Frontend.CSharp
 					continue;
 				}
 
-				if (c == '\'')
-					return consume_quoted_identifier ();
 
 				error_details = "Unknown character `" + (char) c + "'";
 				return Token.ERROR;
@@ -544,7 +767,7 @@ namespace Mono.Debugger.Frontend.CSharp
 		//
 		// Returns a verbose representation of the current location
 		//
-		public string location {
+		public string Location {
 			get {
 				string det;
 
