@@ -1,3 +1,5 @@
 Makefile.in
 Makefile
 *.info
+debugger.tree
+debugger.zip

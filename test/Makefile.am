@@ -7,11 +7,8 @@ debugger = '$(MONO) ../lib/Interpreter.exe'
 
 test_FILES = TestManagedTypes.exe TestLexicalScopes.exe
 
-EXTRA_DIST = runtest.pl A.cs B.cs C.cs ContextMenu.cs CrashMe.cs D.cs E.cs \
-	F.cs Foo.cs GC.cs G.cs H.cs Hello.cs I.cs J.cs K.cs L.cs M.cs \
-	Monkey.cs MultiThread.cs N.cs Property.cs Simple.cs TestAppDomain.cs Test.cs \
-	TestInternCall.cs TestLexicalScopes.cs TestLine.cs TestManagedTypes.cs \
-	TestSourceView.cs
+EXTRA_DIST = runtest.pl GC.cs MultiThread.cs TestAppDomain.cs \
+	TestInternCall.cs TestLexicalScopes.cs TestManagedTypes.cs
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -o $@ $<
