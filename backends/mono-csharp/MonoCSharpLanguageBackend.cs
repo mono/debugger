@@ -1047,11 +1047,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected MonoMethod GetMonoMethod (int index)
 		{
+			ensure_sources ();
 			MonoMethod mono_method = (MonoMethod) method_hash [index];
 			if (mono_method != null)
 				return mono_method;
 
-			SourceMethod method = GetMethod_internal (index);
+			SourceMethod method = GetSourceMethod (index);
 			C.MethodEntry entry = File.GetMethod (index);
 
 			mono_method = new MonoMethod (this, method, entry);
@@ -1098,13 +1099,15 @@ namespace Mono.Debugger.Languages.CSharp
 			foreach (C.SourceFileEntry source in File.Sources) {
 				SourceFile info = new SourceFile (this, source.FileName);
 
-				foreach (C.MethodSourceEntry entry in source.Methods) {
-					SourceMethod method = GetMethod (entry.Index);
-					info.AddMethod (method);
-				}
-
 				sources.Add (info);
 				source_hash.Add (source, info);
+
+				foreach (C.MethodSourceEntry entry in source.Methods) {
+					SourceMethod method = CreateSourceMethod (
+						info, entry.Index);
+
+					info.AddMethod (method);
+				}
 			}
 		}
 
@@ -1153,18 +1156,15 @@ namespace Mono.Debugger.Languages.CSharp
 			return retval;
 		}
 
-		SourceMethod GetMethod_internal (int index)
+		SourceMethod GetSourceMethod (int index)
 		{
-			if (File == null)
-				return null;
-
 			ensure_sources ();
-			SourceMethod method = (SourceMethod) method_index_hash [index];
-			if (method != null)
-				return method;
+			return (SourceMethod) method_index_hash [index];
+		}
 
+		SourceMethod CreateSourceMethod (SourceFile info, int index)
+		{
 			C.MethodEntry entry = File.GetMethod (index);
-			SourceFile info = (SourceFile) source_hash [entry.SourceFile];
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
 			R.MethodBase mbase = entry.MethodBase;
@@ -1184,7 +1184,7 @@ namespace Mono.Debugger.Languages.CSharp
 			sb.Append (")");
 
 			string name = sb.ToString ();
-			method = new SourceMethod (
+			SourceMethod method = new SourceMethod (
 				this, info, source.Index, name, source.StartRow,
 				source.EndRow, true);
 
@@ -1194,7 +1194,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public SourceMethod GetMethod (int index)
 		{
-			return GetMethod_internal (index);
+			return GetSourceMethod (index);
 		}
 
 		public SourceMethod GetMethodByToken (int token)
@@ -1206,7 +1206,7 @@ namespace Mono.Debugger.Languages.CSharp
 			C.MethodEntry entry = File.GetMethodByToken (token);
 			if (entry == null)
 				return null;
-			return GetMethod_internal (entry.Index);
+			return GetSourceMethod (entry.Index);
 		}
 
 		internal ArrayList SymbolRanges {
