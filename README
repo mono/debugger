@@ -1,3 +1,74 @@
-I'm too lazy to write makefiles, the command line to compile this is
 
-mcs -o Interpreter.exe -r glib-sharp.dll -r pango-sharp.dll -r atk-sharp.dll -r gdk-sharp.dll -r gtk-sharp.dll -r gnome-sharp.dll -r glade-sharp.dll -r System.Drawing frontends/gui/SimpleViewer.cs backends/gdb/*.cs interfaces/*.cs classes/*.cs
+Directory layout:
+
+	* interfaces/
+
+		Public interfaces, they're used by the backends and the frontend.
+
+	* classes/
+
+		[Namespace: Mono.Debugger]
+
+		Public classes.
+
+	* arch/
+
+		Architecture dependent interface implementations.
+
+		Everything in this directory is private and may only be used from
+		code in backends/.
+
+	* backends/
+
+		All files in this directory itself belong to the public API for people
+		who're implementing backends.
+
+		The following directories are private.
+
+		* backends/classes/
+
+			Private support classes which are used by the public API.
+
+		* backends/ptrace/
+
+			The `ptrace' backend, uses the unmanaged server library in backends/server.
+
+	* backends/Debugger.cs
+
+		[Namespace: Mono.Debugger]
+
+		This single file belongs to the public API.
+
+	* backends/server/
+
+		This directory contains an unmanaged C interface.  It's part of the public API
+		for peopel who're implementing backends.
+
+	* frontends/
+
+		The frontends.
+
+		When writing frontends, you must not access anything in the Mono.Debugger.Backends
+		or Mono.Debugger.Architecture namespace directly.  This shouldn't work due to class
+		permissions, anyways.
+
+	* test/
+
+		Some test code.
+
+		The makefiles currently build two libraries and an executable:
+
+		- Mono.Debugger.dll contains the public API and public classes
+
+		- Mono.Debugger.Backends.dll contains the architecture and backend specific things.
+		  It exports the `DebuggerBackend' class which is part of the public API and an API
+		  for people who're writing other backends.  Everything else is hidden.
+
+		- Debugger.exe is the application itself, it links against these two dll's and
+		  Mono.CSharp.Debugger.dll which is in mcs/class/Mono.CSharp.Debugger (it must be
+		  distributed together with our class libs because it contains the symbol writer
+		  which is used by MCS).
+
+
+Last changed September 21th, 2002
+Martin Baulig <martin@gnome.org>

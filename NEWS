@@ -1,0 +1,9 @@
+September 21th, 2002 - Martin Baulig
+------------------------------------
+
+It's time to start writing news items :-)
+
+Did a larger restructuring of the interfaces and directory layout.
+Everything which is architecture or backend dependent is now hidden in its own library.
+
+

@@ -1,5 +1,17 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* README: Added information about the directory layout.
+
+	* NEWS: Started to maintain a NEWS file :-)
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
+	* backends/classes/: New directory.
+	* backends/classes/TargetReader.cs: Moved here.
+	* backends/classes/TargetStackLocation.cs: Moved here.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs (SymbolTableException):
 	This exception already exists in class/SymbolTableException.cs.
 

@@ -15,8 +15,6 @@ using System.Collections;
 using System.Collections.Specialized;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
-using Mono.Debugger.Languages;
 using Mono.Debugger.Frontends.CommandLine;
 using Mono.Debugger.GUI;
 

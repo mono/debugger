@@ -5,8 +5,6 @@ using System.Threading;
 using System.Reflection;
 using System.Globalization;
 using Mono.Debugger;
-using Mono.Debugger.Backends;
-using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
