@@ -158,7 +158,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 16;
+		public const int  DynamicVersion = 17;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -284,7 +284,7 @@ namespace Mono.Debugger.Languages.CSharp
 			throw new NotImplementedException ();
 #if FALSE
 			check_inferior ();
-			TypeEntry entry = (TypeEntry) types [klass_address];
+			ClassEntry entry = (ClassEntry) types [klass_address];
 
 			if (entry == null) {
 				Console.WriteLine ("Can't find class at address {0:x}", klass_address);
@@ -311,7 +311,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal void AddType (TypeEntry type)
+		internal void AddType (ClassEntry type)
 		{
 			lock (this) {
 				if (!types.Contains (type.KlassAddress.Address))
@@ -514,7 +514,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class TypeEntry
+	internal class ClassEntry
 	{
 		public readonly TargetAddress KlassAddress;
 		public readonly int Rank;
@@ -524,7 +524,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		static MethodInfo get_type;
 
-		static TypeEntry ()
+		static ClassEntry ()
 		{
 			Type type = typeof (Assembly);
 			get_type = type.GetMethod ("MonoDebugger_GetType");
@@ -533,7 +533,7 @@ namespace Mono.Debugger.Languages.CSharp
 					"Can't find Assembly.MonoDebugger_GetType");
 		}
 
-		private TypeEntry (MonoSymbolTableReader reader, ITargetMemoryReader memory)
+		private ClassEntry (MonoSymbolTableReader reader, ITargetMemoryReader memory)
 		{
 			KlassAddress = memory.ReadAddress ();
 			Rank = memory.BinaryReader.ReadInt32 ();
@@ -549,12 +549,12 @@ namespace Mono.Debugger.Languages.CSharp
 				MonoType.GetType (Type, memory.TargetMemoryAccess, TypeInfo, reader.Table);
 		}
 
-		public static void ReadTypes (MonoSymbolTableReader reader,
-					      ITargetMemoryReader memory, int count)
+		public static void ReadClasses (MonoSymbolTableReader reader,
+						ITargetMemoryReader memory, int count)
 		{
 			for (int i = 0; i < count; i++) {
 				try {
-					TypeEntry entry = new TypeEntry (reader, memory);
+					ClassEntry entry = new ClassEntry (reader, memory);
 					reader.Table.AddType (entry);
 				} catch (Exception e) {
 					Console.WriteLine ("Can't read type: {0}", e);
@@ -565,7 +565,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override string ToString ()
 		{
-			return String.Format ("TypeEntry [{0:x}:{1:x}:{2:x}]",
+			return String.Format ("ClassEntry [{0:x}:{1:x}:{2:x}]",
 					      KlassAddress, Token, TypeInfo);
 		}
 	}
@@ -597,7 +597,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		int generation;
 		int num_range_entries;
-		int num_type_entries;
+		int num_class_entries;
 
 		TargetBinaryReader reader;
 		TargetBinaryReader string_reader;
@@ -730,28 +730,28 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		// <summary>
-		//   Add all types which have been created in the meantime.
+		//   Add all classes which have been created in the meantime.
 		// </summary>
-		bool update_types (ITargetMemoryAccess memory, ref TargetAddress address)
+		bool update_classes (ITargetMemoryAccess memory, ref TargetAddress address)
 		{
-			TargetAddress type_table = memory.ReadAddress (address);
+			TargetAddress class_table = memory.ReadAddress (address);
 			address += address_size;
-			int type_entry_size = memory.ReadInteger (address);
+			int class_entry_size = memory.ReadInteger (address);
 			address += int_size;
-			int new_num_type_entries = memory.ReadInteger (address);
+			int new_num_class_entries = memory.ReadInteger (address);
 			address += int_size;
 
-			if (new_num_type_entries == num_type_entries)
+			if (new_num_class_entries == num_class_entries)
 				return false;
 
-			int count = new_num_type_entries - num_type_entries;
-			ITargetMemoryReader type_reader = memory.ReadMemory (
-				type_table + num_type_entries * type_entry_size,
-				count * type_entry_size);
+			int count = new_num_class_entries - num_class_entries;
+			ITargetMemoryReader class_reader = memory.ReadMemory (
+				class_table + num_class_entries * class_entry_size,
+				count * class_entry_size);
 
-			TypeEntry.ReadTypes (this, type_reader, count);
+			ClassEntry.ReadClasses (this, class_reader, count);
 
-			num_type_entries = new_num_type_entries;
+			num_class_entries = new_num_class_entries;
 			return true;
 		}
 
@@ -772,7 +772,7 @@ namespace Mono.Debugger.Languages.CSharp
 			bool updated = false;
 
 			updated |= update_ranges (memory, ref address);
-			updated |= update_types (memory, ref address);
+			updated |= update_classes (memory, ref address);
 
 			return true;
 		}
