@@ -144,7 +144,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public abstract class PointerExpression : VariableExpression
 	{
-		public abstract TargetLocation ResolveLocation (ScriptingContext context);
+		public new abstract TargetLocation ResolveLocation (ScriptingContext context);
 	}
 
 	public class RegisterExpression : PointerExpression
@@ -310,13 +310,24 @@ namespace Mono.Debugger.Frontends.Scripting
 			return null;
 		}
 
-		public static ITargetMethodInfo OverloadResolve (ScriptingContext context, ITargetStructType stype,
-								 Expression[] types, ArrayList candidates)
+		public static ITargetMethodInfo OverloadResolve (ScriptingContext context,
+								 ILanguage language,
+								 ITargetStructType stype,
+								 Expression[] types,
+								 ArrayList candidates)
 		{
 			// We do a very simple overload resolution here
 			ITargetType[] argtypes = new ITargetType [types.Length];
-			for (int i = 0; i < types.Length; i++)
-				argtypes [i] = types [i].ResolveType (context);
+			for (int i = 0; i < types.Length; i++) {
+				if (types [i] is NumberExpression)
+					argtypes [i] = language.IntegerType;
+				else if (types [i] is StringExpression)
+					argtypes [i] = language.StringType;
+				else
+					argtypes [i] = types [i].ResolveType (context);
+				if (argtypes [i] == null)
+					return null;
+			}
 
 			// Ok, no we need to find an exact match.
 			ITargetMethodInfo match = null;
@@ -380,7 +391,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (candidates.Count > 1) {
 				ITargetMethodInfo retval = null;
 				if (types != null)
-					retval = OverloadResolve (context, stype, types, candidates);
+					retval = OverloadResolve (
+						context, Frame.Language, stype, types,
+						candidates);
 				if (retval == null)
 					throw new ScriptingException ("Ambiguous method `{0}'; need to use full name", Name);
 				return retval;
@@ -448,6 +461,28 @@ namespace Mono.Debugger.Frontends.Scripting
 				else
 					throw new ScriptingException ("Instance method {0} cannot be used in static context.", Name);
 			}
+
+			if (IsStatic)
+				throw new ScriptingException ("Type {0} has no static method {1}.", Type.Name, Identifier);
+			else
+				throw new ScriptingException ("Type {0} has no method {1}.", Type.Name, Identifier);
+		}
+
+		protected override SourceLocation DoResolveLocation (ScriptingContext context,
+								     Expression[] types)
+		{
+			ITargetMemberInfo member = ResolveTypeBase (context, false);
+			if (member != null)
+				throw new ScriptingException ("Member {0} of type {1} is not a method.", Identifier, Type.Name);
+
+			ITargetMethodInfo method;
+			if (Identifier.IndexOf ('(') != -1)
+				method = FindMethod (context, Type, null);
+			else
+				method = FindMethod (context, Type, types);
+
+			if (method != null)
+				return new SourceLocation (method.Type.Source);
 
 			if (IsStatic)
 				throw new ScriptingException ("Type {0} has no static method {1}.", Type.Name, Identifier);
@@ -690,13 +725,19 @@ namespace Mono.Debugger.Frontends.Scripting
 			return method_expr.ResolveMethod (context, types);
 		}
 
+		protected override SourceLocation DoResolveLocation (ScriptingContext context,
+								     Expression[] types)
+		{
+			return method_expr.ResolveLocation (context, arguments);
+		}
+
 		public ITargetObject Invoke (ScriptingContext context, bool need_retval)
 		{
 			ResolveBase (context);
 
 			object[] args = new object [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)
-				args [i] = arguments [i].Resolve (context);
+				args [i] = arguments [i].ResolveVariable (context);
 
 			try {
 				ITargetObject retval = func.Invoke (args, !need_retval);

@@ -903,8 +903,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return false;
 
-			ITargetFunctionObject func = expr.ResolveMethod (context, null);
-			return false;
+			location = expr.ResolveLocation (context, null);
+			return location != null;
 		}
 
 		protected override bool DoResolve (ScriptingContext context)

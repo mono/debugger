@@ -578,6 +578,10 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return long_type; }
 		}
 
+		ITargetFundamentalType ILanguage.StringType {
+			get { return string_type; }
+		}
+
 		ITargetType ILanguage.PointerType {
 			get { return pointer_type; }
 		}
@@ -592,6 +596,57 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetType LookupType (StackFrame frame, string name)
 		{
+			switch (name) {
+			case "short":
+				name = "System.Int16";
+				break;
+			case "ushort":
+				name = "System.UInt16";
+				break;
+			case "int":
+				name = "System.Int32";
+				break;
+			case "uint":
+				name = "System.UInt32";
+				break;
+			case "long":
+				name = "System.Int64";
+				break;
+			case "ulong":
+				name = "System.UInt64";
+				break;
+			case "float":
+				name = "System.Single";
+				break;
+			case "double":
+				name = "System.Double";
+				break;
+			case "char":
+				name = "System.Char";
+				break;
+			case "byte":
+				name = "System.Byte";
+				break;
+			case "sbyte":
+				name = "System.SByte";
+				break;
+			case "object":
+				name = "System.Object";
+				break;
+			case "string":
+				name = "System.String";
+				break;
+			case "bool":
+				name = "System.Boolean";
+				break;
+			case "void":
+				name = "System.Void";
+				break;
+			case "decimal":
+				name = "System.Decimal";
+				break;
+			}
+
 			if (name.IndexOf ('[') >= 0)
 				return null;
 

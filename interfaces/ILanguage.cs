@@ -16,6 +16,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetFundamentalType StringType {
+			get;
+		}
+
 		ITargetType PointerType {
 			get;
 		}

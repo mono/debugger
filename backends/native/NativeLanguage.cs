@@ -28,6 +28,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return long_type; }
 		}
 
+		public ITargetFundamentalType StringType {
+			get { return null; }
+		}
+
 		public ITargetType PointerType {
 			get { return pointer_type; }
 		}
