@@ -55,7 +55,7 @@ namespace Mono.Debugger.GUI {
 
 			current_method_view = new SourceList (this);
 			notebook.InsertPage (current_method_view.Widget, current_method_view.TabWidget, -1);
-			current_method_view.Widget.ShowAll ();
+			// current_method_view.Widget.ShowAll ();
 
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
@@ -238,6 +238,7 @@ namespace Mono.Debugger.GUI {
 				sb.Append ("\n");
 			}
 
+			current_method_view.Widget.ShowAll ();
 			current_method_view.SetContents (filename, source.Name, sb.ToString ());
 			return current_method_view;
 		}
