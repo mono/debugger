@@ -1281,8 +1281,6 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
-
 			ITargetType type = expr.EvaluateType (context);
 
 			ITargetPointerType ptype = type as ITargetPointerType;
@@ -1322,8 +1320,6 @@ namespace Mono.Debugger.Frontend
 			if (obj is int)
 				obj = (long) (int) obj;
 			if (obj is long) {
-				ITargetType type = frame.Frame.Language.PointerType;
-
 				TargetAddress taddress = new TargetAddress (
 					frame.Frame.AddressDomain, (long) obj);
 
