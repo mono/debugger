@@ -1,5 +1,36 @@
 2005-02-14  Chris Toshok  <toshok@ximian.com>
 
+	* wrapper/Makefile.am (MDB_SRCLIST): remove Session.cs.
+
+	* backends/mono/MonoLanguageBackend.cs: remove unused using.
+	
+	* classes/ExceptionCatchPoint.cs, classes/SourceInfo,
+	classes/ProcessStart.cs, classes/SimpleBreakpoint.cs,
+	classes/ModuleManager.cs, classes/ThreadGroup.cs,
+	classes/Module.cs, classes/SourceLocation.cs,
+	classes/EventHandle.cs, classes/Breakpoint.cs,
+	classes/BreakpointHandle.cs, backends/Debugger.cs: remove
+	serialization stuff.
+
+	* arch/BfdContainer.cs: remove unused using.
+
+	* arch/Bfd.cs: remove serialization stuff.
+
+	* frontend/ScriptingContext.cs: remove unused usings.
+
+	* frontend/Interpreter.cs (Interpreter.SaveSession,
+	Interpreter.LoadSession, Interpreter.Restart): kill.
+
+	* frontend/Command.cs (SaveCommand, LoadCommand, RestartCommand):
+	kill.
+	
+	* frontend/Session.cs: nuke
+
+	* frontend/Main.cs (CommandLineInterpreter.SetupEngine): remove
+	registration of the load/save/restart commands.
+	
+2005-02-14  Chris Toshok  <toshok@ximian.com>
+
 	* arch/DwarfReader.cs: add documentation for many of the Debugging
 	Information Entries (DIEs), and add support for the Inheritance
 	DIE.

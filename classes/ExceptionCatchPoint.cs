@@ -1,11 +1,8 @@
 using System;
-using System.Runtime.Serialization;
-
 using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	[Serializable]
 	public class ExceptionCatchPoint : Breakpoint
 	{
 		public ExceptionCatchPoint (ILanguage language, ITargetType exception, ThreadGroup group)
@@ -56,21 +53,6 @@ namespace Mono.Debugger
 		{
 			if (BreakpointHitEvent != null)
 				BreakpointHitEvent (this, frame);
-		}
-
-		//
-		// ISerializable
-		//
-
-		public override void GetObjectData (SerializationInfo info,
-						    StreamingContext context)
-		{
-			base.GetObjectData (info, context);
-		}
-
-		protected ExceptionCatchPoint (SerializationInfo info, StreamingContext context)
-			: base (info, context)
-		{			
 		}
 	}
 }

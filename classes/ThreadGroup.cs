@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -9,8 +8,7 @@ namespace Mono.Debugger
 	//   This is used to share information about breakpoints and signal handlers
 	//   between different invocations of the same target.
 	// </summary>
-	[Serializable]
-	public class ThreadGroup : ISerializable
+	public class ThreadGroup
 	{
 		static Hashtable groups = Hashtable.Synchronized (new Hashtable ());
 		static ThreadGroup global_group, main_group;
@@ -110,49 +108,6 @@ namespace Mono.Debugger
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), name);
-		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			info.SetType (typeof (ThreadGroupProxy));
-			info.AddValue ("name", name);
-
-			int[] ids = new int [threads.Count];
-			threads.Keys.CopyTo (ids, 0);
-
-			info.AddValue ("threads", ids);
-		}
-
-		[Serializable]
-		protected class ThreadGroupProxy : ISerializable, IObjectReference
-		{
-			string name;
-			int[] threads;
-
-			public object GetRealObject (StreamingContext context)
-			{
-				ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
-				foreach (int thread in threads)
-					group.AddThread (thread);
-				return group;
-			}
-
-			void ISerializable.GetObjectData (SerializationInfo info,
-							  StreamingContext context)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			private ThreadGroupProxy (SerializationInfo info,
-						  StreamingContext context)
-			{
-				name = info.GetString ("name");
-				threads = (int []) info.GetValue ("threads", typeof (int []));
-			}
 		}
 	}
 }

@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
@@ -14,8 +13,7 @@ namespace Mono.Debugger
 
 	// <summary>
 	//   A module is either a shared library (containing unmanaged code) or a dll
-	//   (containing managed code).  Modules persist across different invocations of
-	//   the target and may also be serialized to disk to store the user's settings.
+	//   (containing managed code).
 	//
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.

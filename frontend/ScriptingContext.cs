@@ -8,9 +8,6 @@ using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
-
 using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend

@@ -739,45 +739,5 @@ namespace Mono.Debugger.Frontend
 
 			Print ("Loaded library {0}.", filename);
 		}
-
-		public void SaveSession (Stream stream)
-		{
-			Session session = new Session ();
-
-			session.Modules = DebuggerBackend.Modules;
-
-			ArrayList list = new ArrayList ();
-			foreach (BreakpointHandle handle in breakpoints.Values) {
-				if (handle.SourceLocation == null) {
-					Print ("Warning: Cannot save breakpoint {0}",
-					       handle.Breakpoint.Index);
-					continue;
-				}
-
-				list.Add (handle);
-			}
-
-			session.Breakpoints = new BreakpointHandle [list.Count];
-			list.CopyTo (session.Breakpoints, 0);
-
-			session.Save (this, stream);
-		}
-
-		public void LoadSession (Stream stream)
-		{
-			Session session = Session.Load (this, stream);
-			foreach (BreakpointHandle handle in session.Breakpoints)
-				breakpoints.Add (handle.Breakpoint.Index, handle);
-		}
-
-		public void Restart ()
-		{
-			using (MemoryStream stream = new MemoryStream ()) {
-				SaveSession (stream);
-				stream.Seek (0, SeekOrigin.Begin);
-				Kill ();
-				LoadSession (stream);
-			}
-		}
 	}
 }

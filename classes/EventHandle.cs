@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 
@@ -10,8 +9,7 @@ namespace Mono.Debugger
 		CatchException
 	}
 
-	[Serializable]
-	public class EventHandle : ISerializable, IDeserializationCallback
+	public class EventHandle
 	{
 		EventType type;
 		Breakpoint breakpoint;
@@ -75,37 +73,6 @@ namespace Mono.Debugger
 		public void RemoveEvent (Process process)
 		{
 			DisableEvent (process);
-		}
-
-		//
-		// ISerializable
-		//
-
-		private Process internal_process;
-
-		public virtual void GetObjectData (SerializationInfo info,
-						   StreamingContext context)
-		{
-			info.AddValue ("type", type);
-			info.AddValue ("breakpoint", breakpoint);
-			info.AddValue ("enabled", IsEnabled);
-		}
-
-		protected EventHandle (SerializationInfo info, StreamingContext context)
-		{
-			type = (EventType) info.GetValue ("type", typeof (EventType));
-			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
-			if (info.GetBoolean ("enabled"))
-				internal_process = (Process) context.Context;
-		}
-
-		void IDeserializationCallback.OnDeserialization (object sender)
-		{
-			if (internal_process == null)
-				return;
-
-			EnableEvent (internal_process);
-			internal_process = null;
 		}
 	}
 }

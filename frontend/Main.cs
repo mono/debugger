@@ -87,9 +87,6 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("dump", typeof (DumpCommand));
 			e.RegisterCommand ("help", typeof (HelpCommand));
 			e.RegisterCommand ("library", typeof (LibraryCommand));
-			e.RegisterCommand ("save", typeof (SaveCommand));
-			e.RegisterCommand ("load", typeof (LoadCommand));
-			e.RegisterCommand ("restart", typeof (RestartCommand));
 			e.RegisterCommand ("run", typeof (RunCommand));
 			e.RegisterAlias   ("r", typeof (RunCommand));
 			e.RegisterCommand ("about", typeof (AboutCommand));

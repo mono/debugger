@@ -3,21 +3,18 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
 	public delegate void ModulesChangedHandler ();
 	public delegate void BreakpointsChangedHandler ();
 
-	[Serializable]
-	public class ModuleManager : ISerializable, IDeserializationCallback
+	public class ModuleManager
 	{
 		Hashtable modules = new Hashtable ();
 
 		public ModuleManager ()
 		{
-			initialized = true;
 		}
 
 		public void AddModule (Module module)
@@ -96,42 +93,6 @@ namespace Mono.Debugger
 
 			if (BreakpointsChanged != null)
 				BreakpointsChanged ();
-		}
-
-		//
-		// IDeserializationCallback
-		//
-
-		ArrayList deserialized_modules = null;
-		bool initialized = false;
-
-		public void OnDeserialization (object sender)
-		{
-			if (initialized)
-				throw new InternalError ();
-			initialized = true;
-
-			foreach (Module module in deserialized_modules)
-				AddModule (module);
-
-			deserialized_modules = null;
-		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			ArrayList list = new ArrayList ();
-			foreach (Module module in modules.Values)
-				list.Add (module);
-			info.AddValue ("modules", list);
-		}
-
-		protected ModuleManager (SerializationInfo info, StreamingContext context)
-		{
-			deserialized_modules = (ArrayList) info.GetValue ("modules", typeof (ArrayList));
 		}
 	}
 }

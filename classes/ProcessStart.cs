@@ -4,7 +4,6 @@ using System.Configuration;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
-using System.Runtime.Serialization;
 using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger
@@ -50,7 +49,6 @@ namespace Mono.Debugger
 		public string MonoPrefix = null;
 	}
 
-	[Serializable]
 	public class ProcessStart
 	{
 		public string WorkingDirectory;
@@ -64,8 +62,8 @@ namespace Mono.Debugger
 		string[] argv;
 		string[] envp;
 		bool native;
-		[NonSerialized] Assembly application;
-		[NonSerialized] DebuggerOptions options;
+		Assembly application;
+		DebuggerOptions options;
 
 		public static string JitWrapper;
 		bool initialized = false;

@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
@@ -17,8 +16,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
-	[Serializable]
-	public class DebuggerBackend : IDisposable, ISerializable, IDeserializationCallback
+	public class DebuggerBackend : IDisposable
 	{
 		BfdContainer bfd_container;
 
@@ -237,34 +235,7 @@ namespace Mono.Debugger
 				bfd_container.AddFile (process, filename, true, false, false);
 		}
 
-		//
-		// IDeserializationCallback
-		//
-
 		bool initialized = false;
-
-		public void OnDeserialization (object sender)
-		{
-			Initialize ();
-
-			symtab_manager.SetModules (module_manager.Modules);
-		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			info.AddValue ("modules", module_manager);
-			info.AddValue ("start", start);
-		}
-
-		protected DebuggerBackend (SerializationInfo info, StreamingContext context)
-		{
-			module_manager = (ModuleManager) info.GetValue ("modules", typeof (ModuleManager));
-			start = (ProcessStart) info.GetValue ("start", typeof (ProcessStart));
-		}
 
 		//
 		// IDisposable

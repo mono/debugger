@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 
@@ -13,8 +12,7 @@ namespace Mono.Debugger
 	//   A single source file.  It is used to find a breakpoint's location by method
 	//   name or source file.
 	// </summary>
-	[Serializable]
-	public class SourceFile : ISerializable
+	public class SourceFile
 	{
 		public string Name {
 			get {
@@ -91,24 +89,6 @@ namespace Mono.Debugger
 		{
 			return String.Format ("SourceFile ({0}:{1})", ID, FileName);
 		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info,
-						   StreamingContext context)
-		{
-			info.AddValue ("filename", filename);
-			info.AddValue ("module", module);
-		}
-
-		protected SourceFile (SerializationInfo info, StreamingContext context)
-		{
-			filename = info.GetString ("filename");
-			module = (Module) info.GetValue ("module", typeof (Module));
-			id = ++next_id;
-		}
 	}
 
 	internal delegate void MethodLoadedHandler (ITargetAccess target, SourceMethod method,
@@ -118,7 +98,6 @@ namespace Mono.Debugger
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.
 	// </summary>
-	[Serializable]
 	public class SourceMethod
 	{
 		public long Handle {
@@ -211,7 +190,7 @@ namespace Mono.Debugger
 					      StartRow, EndRow, IsLoaded);
 		}
 
-		[NonSerialized] IMethod method;
+		IMethod method;
 		Module module;
 		SourceFile source;
 		string name;

@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -9,17 +8,11 @@ namespace Mono.Debugger
 	//   This is an abstract base class which is implemented by the user interface to
 	//   hold the user's settings for a breakpoint.
 	// </summary>
-	[Serializable]
-	public abstract class Breakpoint : ISerializable
+	public abstract class Breakpoint
 	{
 		// <summary>
 		//   An automatically generated unique index for this breakpoint.
 		// </summary>
-		// <remarks>
-		//   Do not restore this from a serialized memory stream, but increment
-		//   the protected static variable `NextBreakpointIndex' to get an unique
-		//   number.
-		// </remarks>
 		public int Index {
 			get {
 				return index;
@@ -134,27 +127,6 @@ namespace Mono.Debugger
 			this.needs_frame = needs_frame;
 			this.group = group;
 			this.name = name;
-		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info,
-						   StreamingContext context)
-		{
-			info.AddValue ("name", name);
-			info.AddValue ("needs_frame", needs_frame);
-			info.AddValue ("group", group);
-		}
-
-		protected Breakpoint (SerializationInfo info, StreamingContext context)
-		{			
-			this.index = ++NextBreakpointIndex;
-			this.needs_frame = info.GetBoolean ("needs_frame");
-			this.group = (ThreadGroup) info.GetValue (
-				"group", typeof (ThreadGroup));
-			this.name = info.GetString ("name");
 		}
 	}
 }

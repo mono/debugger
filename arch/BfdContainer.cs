@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 using Mono.Debugger;
 using Mono.Debugger.Backends;

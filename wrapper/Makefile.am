@@ -37,7 +37,6 @@ MDB_SRCLIST = \
 	@top_srcdir@/frontend/Main.cs			\
 	@top_srcdir@/frontend/MyTextReader.cs		\
 	@top_srcdir@/frontend/ScriptingContext.cs	\
-	@top_srcdir@/frontend/Session.cs		\
 	@top_srcdir@/frontend/Style.cs			\
 	@top_srcdir@/frontend/Tokenizer.cs		\
 	AssemblyInfo.cs
