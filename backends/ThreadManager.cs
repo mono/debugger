@@ -22,7 +22,6 @@ namespace Mono.Debugger
 		internal ThreadManager (DebuggerBackend backend)
 		{
 			this.backend = backend;
-			this.SymbolTableManager = backend.SymbolTableManager;
 
 			breakpoint_manager = new BreakpointManager ();
 
@@ -49,7 +48,6 @@ namespace Mono.Debugger
 		}
 
 		SingleSteppingEngine the_engine;
-		internal readonly SymbolTableManager SymbolTableManager;
 
 		ProcessStart start;
 		DebuggerBackend backend;

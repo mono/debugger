@@ -1,5 +1,10 @@
 2005-02-12  Chris Toshok  <toshok@ximian.com>
 
+	* backends/ThreadManager.cs: remove unused SymbolTableManager
+	property.
+
+2005-02-12  Chris Toshok  <toshok@ximian.com>
+
 	* backends/ILanguageBackend.cs (NotificationType): add AddModule
 	to reflect change to unmanaged code.
 
