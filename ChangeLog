@@ -1,5 +1,13 @@
 2005-02-10  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetTypeInfo.cs: New file.
+
+	* interfaces/ITargetType.cs (ITargetType): Moved `HasFixedSize',
+	`Size' and `GetObject' into ITargetTypeInfo.
+	(ITargetType.Resolve): New method; returns an ITargetTypeInfo.
+
+2005-02-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/: Renamed the `mono-csharp' directory to `mono'.
 	* backends/mono/*.cs: Completely reworked the unmanaged debugger
 	interface in the runtime.
