@@ -35,7 +35,8 @@ namespace Mono.Debugger
 		{
 			Normal,
 			CoreFile,
-			Daemon
+			Daemon,
+			ManagedWrapper
 		}
 
 		protected Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
@@ -57,10 +58,18 @@ namespace Mono.Debugger
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
+			if ((type == ProcessType.Normal) && (pid == -1) && !start.IsNative)
+				type = ProcessType.ManagedWrapper;
+
 			switch (type) {
 			case ProcessType.Daemon:
 				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
 				this.pid = pid;
+				break;
+
+			case ProcessType.ManagedWrapper:
+				runner = backend.ThreadManager.StartManagedApplication (this, inferior, start);
+				this.pid = runner.Inferior.PID;
 				break;
 
 			case ProcessType.Normal:
@@ -74,7 +83,7 @@ namespace Mono.Debugger
 
 				if (pid != -1) {
 					this.pid = pid;
-					sse.Attach (pid, false);
+					sse.Attach (pid, true);
 				}
 
 				iprocess = sse;
