@@ -1,238 +1,199 @@
 #include <server.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/poll.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <errno.h>
 
-static ServerCommandError
-write_command (ServerHandle *handle, ServerCommand command)
+GSource *
+mono_debugger_server_get_g_source (ServerHandle *handle)
 {
-	if (write (handle->fd, &command, sizeof (command)) != sizeof (command)) {
-		g_warning (G_STRLOC ": Can't write command: %s", g_strerror (errno));
-		return COMMAND_ERROR_IO;
-	}
+	if (!handle->inferior)
+		return NULL;
 
-	return COMMAND_ERROR_NONE;
+	return (* handle->info->get_g_source) (handle->inferior);
 }
 
-static ServerCommandError
-read_status (ServerHandle *handle)
+void
+mono_debugger_server_wait (ServerHandle *handle)
 {
-	ServerCommandError result;
+	if (!handle->inferior)
+		return;
 
-	if (!mono_debugger_util_read (handle->fd, &result, sizeof (result)))
-		return COMMAND_ERROR_IO;
-
-	return result;
-}
-
-gboolean
-mono_debugger_process_server_message (ServerHandle *handle)
-{
-	ServerStatusMessage message;
-	GError *error = NULL;
-	GIOStatus status;
-
-	status = g_io_channel_read_chars (handle->status_channel, (char *) &message,
-					  sizeof (message), NULL, &error);
-	if (status != G_IO_STATUS_NORMAL) {
-		g_warning (G_STRLOC ": Can't read status message: %s", error->message);
-		return FALSE;
-	}
-
-	if (message.type == MESSAGE_CHILD_CALLBACK) {
-		guint64 callback, argument;
-
-		status = g_io_channel_read_chars (handle->status_channel, (char *) &callback,
-						  sizeof (callback), NULL, &error);
-		if (status != G_IO_STATUS_NORMAL) {
-			g_warning (G_STRLOC ": Can't read callback argument: %s", error->message);
-			return FALSE;
-		}
-
-		status = g_io_channel_read_chars (handle->status_channel, (char *) &argument,
-						  sizeof (argument), NULL, &error);
-		if (status != G_IO_STATUS_NORMAL) {
-			g_warning (G_STRLOC ": Can't read callback argument: %s", error->message);
-			return FALSE;
-		}
-
-		handle->child_callback_cb (callback, argument);
-	} else
-		handle->child_message_cb (message.type, message.arg);
-
-	return TRUE;
-}
-
-ServerCommandError
-mono_debugger_server_send_command (ServerHandle *handle, ServerCommand command)
-{
-	ServerCommandError result;
-
-	result = write_command (handle, command);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	return read_status (handle);
+	(* handle->info->wait) (handle->inferior);
 }
 
 ServerCommandError
 mono_debugger_server_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer *data)
 {
-	ServerCommand command = SERVER_COMMAND_READ_DATA;
 	ServerCommandError result;
-	guint64 l_size = size;
 
-	result = write_command (handle, command);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	if (!mono_debugger_util_write (handle->fd, &start, sizeof (start)))
-		return COMMAND_ERROR_IO;
-
-	if (!mono_debugger_util_write (handle->fd, &l_size, sizeof (l_size)))
-		return COMMAND_ERROR_IO;
-
-	result = read_status (handle);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
 	*data = g_malloc (size);
-
-	if (!mono_debugger_util_read (handle->fd, *data, size))
-		return COMMAND_ERROR_IO;
-
-	return COMMAND_ERROR_NONE;
+	result = (* handle->info->read_data) (handle->inferior, start, size, *data);
+	if (result != COMMAND_ERROR_NONE) {
+		g_free (*data);
+		*data = NULL;
+	}
+	return result;
 }
 
 ServerCommandError
 mono_debugger_server_write_memory (ServerHandle *handle, gpointer data, guint64 start, guint32 size)
 {
-	ServerCommand command = SERVER_COMMAND_WRITE_DATA;
-	ServerCommandError result;
-	guint64 l_size = size;
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
-	result = write_command (handle, command);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
 
-	if (!mono_debugger_util_write (handle->fd, &start, sizeof (start)))
-		return COMMAND_ERROR_IO;
-
-	if (!mono_debugger_util_write (handle->fd, &l_size, sizeof (l_size)))
-		return COMMAND_ERROR_IO;
-
-	if (!mono_debugger_util_write (handle->fd, data, size))
-		return COMMAND_ERROR_IO;
-
-	return read_status (handle);
+	return (* handle->info->write_data) (handle->inferior, start, size, data);
 }
 
 ServerCommandError
 mono_debugger_server_get_target_info (ServerHandle *handle, guint32 *target_int_size,
 				      guint32 *target_long_size, guint32 *target_address_size)
 {
-	ServerCommand command = SERVER_COMMAND_GET_TARGET_INFO;
-	ServerCommandError result = mono_debugger_server_send_command (handle, command);
-	guint64 arg;
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	if (!mono_debugger_util_read (handle->fd, &arg, sizeof (arg)))
-		return COMMAND_ERROR_IO;
-	*target_int_size = arg;
-
-	if (!mono_debugger_util_read (handle->fd, &arg, sizeof (arg)))
-		return COMMAND_ERROR_IO;
-	*target_long_size = arg;
-
-	if (!mono_debugger_util_read (handle->fd, &arg, sizeof (arg)))
-		return COMMAND_ERROR_IO;
-	*target_address_size = arg;
-
-	return COMMAND_ERROR_NONE;
+	return (* handle->info->get_target_info) (
+		handle->inferior, target_int_size, target_long_size, target_address_size);
 }
-
 
 ServerCommandError
 mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 				  guint64 method_argument, guint64 callback_argument)
 {
-	ServerCommandError result;
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
-	result = write_command (handle, SERVER_COMMAND_CALL_METHOD);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	if (!mono_debugger_util_write (handle->fd, &method_address, sizeof (method_address)))
-		return COMMAND_ERROR_IO;
-
-	if (!mono_debugger_util_write (handle->fd, &method_argument, sizeof (method_argument)))
-		return COMMAND_ERROR_IO;
-
-	if (!mono_debugger_util_write (handle->fd, &callback_argument, sizeof (callback_argument)))
-		return COMMAND_ERROR_IO;
-
-	return read_status (handle);
+	return (* handle->info->call_method) (handle->inferior, method_address, method_argument,
+					      callback_argument);
 }
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *breakpoint)
 {
-	ServerCommandError result;
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
-	result = write_command (handle, SERVER_COMMAND_INSERT_BREAKPOINT);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	if (!mono_debugger_util_write (handle->fd, &address, sizeof (address)))
-		return COMMAND_ERROR_IO;
-
-	result = read_status (handle);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	if (!mono_debugger_util_read (handle->fd, breakpoint, sizeof (*breakpoint)))
-		return COMMAND_ERROR_IO;
-
-	return COMMAND_ERROR_NONE;
+	return (* handle->info->insert_breakpoint) (handle->inferior, address, breakpoint);
 }
 
 ServerCommandError
 mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 breakpoint)
 {
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->remove_breakpoint) (handle->inferior, breakpoint);
+}
+
+static gboolean initialized = FALSE;
+
+static void
+signal_handler (int dummy)
+{
+	/* Do nothing.  This is just to wake us up. */
+}
+
+ServerHandle *
+mono_debugger_server_initialize (void)
+{
+	ServerHandle *handle = g_new0 (ServerHandle, 1);
+
+	if (!initialized) {
+		sigset_t mask;
+
+		/* These signals have been blocked by our parent, so we need to unblock them here. */
+		sigemptyset (&mask);
+		sigaddset (&mask, SIGCHLD);
+		sigprocmask (SIG_UNBLOCK, &mask, NULL);
+
+		/* Install our signal handlers. */
+		signal (SIGCHLD, signal_handler);
+
+		initialized = TRUE;
+	}
+
+	handle->info = &i386_linux_ptrace_inferior;
+	return handle;
+}
+
+ServerCommandError
+mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
+			    gchar **argv, gchar **envp, gboolean search_path,
+			    ChildExitedFunc child_exited, ChildMessageFunc child_message,
+			    ChildCallbackFunc child_callback, gint *child_pid,
+			    gint *standard_input, gint *standard_output, gint *standard_error,
+			    GError **error)
+{
+	if (handle->inferior)
+		return COMMAND_ERROR_ALREADY_HAVE_INFERIOR;
+
+	handle->inferior = (* handle->info->spawn) (working_directory, argv, envp, search_path,
+						    child_exited, child_message, child_callback,
+						    child_pid, standard_input, standard_output,
+						    standard_error, error);
+	if (!handle->inferior)
+		return COMMAND_ERROR_FORK;
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
+mono_debugger_server_attach (ServerHandle *handle, int pid, ChildExitedFunc child_exited,
+			     ChildMessageFunc child_message, ChildCallbackFunc child_callback)
+{
+	if (handle->inferior)
+		return COMMAND_ERROR_ALREADY_HAVE_INFERIOR;
+
+	handle->inferior = (* handle->info->attach) (pid, child_exited, child_message,
+						     child_callback);
+	if (!handle->inferior)
+		return COMMAND_ERROR_FORK;
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
+mono_debugger_server_get_pc (ServerHandle *handle, guint64 *pc)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->get_pc) (handle->inferior, pc);
+}
+
+ServerCommandError
+mono_debugger_server_step (ServerHandle *handle)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->step) (handle->inferior);
+}
+
+ServerCommandError
+mono_debugger_server_continue (ServerHandle *handle)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->run) (handle->inferior);
+}
+
+ServerCommandError
+mono_debugger_server_detach (ServerHandle *handle)
+{
 	ServerCommandError result;
 
-	result = write_command (handle, SERVER_COMMAND_REMOVE_BREAKPOINT);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
 
-	if (!mono_debugger_util_write (handle->fd, &breakpoint, sizeof (breakpoint)))
-		return COMMAND_ERROR_IO;
-
-	return read_status (handle);
-}
-
-gboolean
-mono_debugger_server_read_uint64 (ServerHandle *handle, guint64 *arg)
-{
-	return mono_debugger_util_read (handle->fd, arg, sizeof (*arg));
-}
-
-gboolean
-mono_debugger_server_write_uint64 (ServerHandle *handle, guint64 arg)
-{
-	return mono_debugger_util_write (handle->fd, &arg, sizeof (arg));
-}
-
-gboolean
-mono_debugger_server_read_uint32 (ServerHandle *handle, guint32 *arg)
-{
-	return mono_debugger_util_read (handle->fd, arg, sizeof (*arg));
-}
-
-gboolean
-mono_debugger_server_write_uint32 (ServerHandle *handle, guint32 arg)
-{
-	return mono_debugger_util_write (handle->fd, &arg, sizeof (arg));
+	result = (* handle->info->detach) (handle->inferior);
+	handle->inferior = NULL;
+	return result;
 }

@@ -2,7 +2,9 @@
 #include <sys/ptrace.h>
 #include <asm/ptrace.h>
 #include <asm/user.h>
+#include <sys/wait.h>
 #include <signal.h>
+#include <unistd.h>
 #include <errno.h>
 
 /*
@@ -18,6 +20,9 @@ struct InferiorHandle
 {
 	int pid;
 	long call_address;
+	ChildExitedFunc child_exited_cb;
+	ChildMessageFunc child_message_cb;
+	ChildCallbackFunc child_callback_cb;
 	guint64 callback_argument;
 	struct user_regs_struct *saved_regs;
 	struct user_i387_struct *saved_fpregs;
@@ -33,12 +38,10 @@ typedef struct {
 	guint64 address;
 } BreakPointInfo;
 
-static void
-server_ptrace_traceme (int pid)
-{
-	if (ptrace (PTRACE_TRACEME, pid))
-		g_error (G_STRLOC ": Can't PTRACE_TRACEME: %s", g_strerror (errno));
-}
+typedef struct {
+	GSource source;
+	InferiorHandle *handle;
+} PTraceSource;
 
 static ServerCommandError
 get_registers (InferiorHandle *handle, struct user_regs_struct *regs)
@@ -101,18 +104,8 @@ set_fp_registers (InferiorHandle *handle, struct user_i387_struct *regs)
 }
 
 static InferiorHandle *
-server_ptrace_get_handle (int pid)
-{
-	InferiorHandle *handle;
-
-	handle = g_new0 (InferiorHandle, 1);
-	handle->pid = pid;
-
-	return handle;
-}
-
-static InferiorHandle *
-server_ptrace_attach (int pid)
+server_ptrace_attach (int pid, ChildExitedFunc child_exited, ChildMessageFunc child_message,
+		      ChildCallbackFunc child_callback)
 {
 	InferiorHandle *handle;
 
@@ -121,6 +114,9 @@ server_ptrace_attach (int pid)
 
 	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = pid;
+	handle->child_exited_cb = child_exited;
+	handle->child_message_cb = child_message;
+	handle->child_callback_cb = child_callback;
 
 	return handle;
 }
@@ -436,14 +432,165 @@ server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 *
 	return COMMAND_ERROR_NONE;	
 }
 
+static void
+child_setup_func (gpointer data)
+{
+	if (ptrace (PTRACE_TRACEME, getpid ()))
+		g_error (G_STRLOC ": Can't PTRACE_TRACEME: %s", g_strerror (errno));
+}
+
+static InferiorHandle *
+server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp, gboolean search_path,
+		     ChildExitedFunc child_exited, ChildMessageFunc child_message,
+		     ChildCallbackFunc child_callback, gint *child_pid, gint *standard_input,
+		     gint *standard_output, gint *standard_error, GError **error)
+{
+	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
+	InferiorHandle *handle;
+
+	if (search_path)
+		flags |= G_SPAWN_SEARCH_PATH;
+
+	if (!g_spawn_async (working_directory, argv, envp, flags, child_setup_func, NULL, child_pid, error))
+		return NULL;
+
+	handle = g_new0 (InferiorHandle, 1);
+	handle->pid = *child_pid;
+	handle->child_exited_cb = child_exited;
+	handle->child_message_cb = child_message;
+	handle->child_callback_cb = child_callback;
+
+	return handle;
+}
+
+static ServerCommandError
+server_ptrace_get_target_info (InferiorHandle *handle, guint32 *target_int_size,
+			       guint32 *target_long_size, guint32 *target_address_size)
+{
+	*target_int_size = sizeof (guint32);
+	*target_long_size = sizeof (guint64);
+	*target_address_size = sizeof (void *);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static void
+do_dispatch (InferiorHandle *handle, int status)
+{
+	if (WIFSTOPPED (status)) {
+		guint64 callback_arg, retval;
+		ChildStoppedAction action = server_ptrace_child_stopped
+			(handle, WSTOPSIG (status), &callback_arg, &retval);
+
+		switch (action) {
+		case STOP_ACTION_SEND_STOPPED:
+			handle->child_message_cb (MESSAGE_CHILD_STOPPED, WSTOPSIG (status));
+			break;
+
+		case STOP_ACTION_BREAKPOINT_HIT:
+			handle->child_message_cb (MESSAGE_CHILD_HIT_BREAKPOINT, (int) retval);
+			break;
+
+		case STOP_ACTION_CALLBACK:
+			handle->child_callback_cb (callback_arg, retval);
+			break;
+
+		default:
+			g_assert_not_reached ();
+		}
+	} else if (WIFEXITED (status))
+		handle->child_message_cb (MESSAGE_CHILD_EXITED, WEXITSTATUS (status));
+	else if (WIFSIGNALED (status))
+		handle->child_message_cb (MESSAGE_CHILD_SIGNALED, WTERMSIG (status));
+	else
+		g_warning (G_STRLOC ": Got unknown waitpid() result: %d", status);
+}
+
+static gboolean 
+source_check (GSource *source)
+{
+	InferiorHandle *handle = ((PTraceSource *) source)->handle;
+	int ret, status;
+
+	/* If the child stopped in the meantime. */
+	ret = waitpid (handle->pid, &status, WNOHANG | WUNTRACED);
+
+	if (ret < 0) {
+		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
+		return FALSE;
+	} else if (ret == 0)
+		return FALSE;
+
+	do_dispatch (handle, status);
+
+	return TRUE;
+}
+
+static gboolean 
+source_prepare (GSource *source, gint *timeout)
+{
+	*timeout = -1;
+
+	return source_check (source);
+}
+
+static gboolean
+source_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
+{
+	if (callback) {
+		g_warning ("Ooops, you must not set a callback on this source!");
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+GSourceFuncs mono_debugger_source_funcs =
+{
+	source_prepare,
+	source_check,
+	source_dispatch,
+	NULL
+};
+
+static GSource *
+server_ptrace_get_g_source (InferiorHandle *handle)
+{
+	GSource *source = g_source_new (&mono_debugger_source_funcs, sizeof (PTraceSource));
+	PTraceSource *psource = (PTraceSource *) source;
+
+	psource->handle = handle;
+
+	return source;
+}
+
+static void
+server_ptrace_wait (InferiorHandle *handle)
+{
+	int ret, status;
+
+	/* Wait until the child stops. */
+	ret = waitpid (handle->pid, &status, WUNTRACED);
+
+	if (ret < 0) {
+		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
+		return;
+	} else if (ret == 0)
+		return;
+
+	do_dispatch (handle, status);
+}
+
 /*
  * Method VTable for this backend.
  */
 InferiorInfo i386_linux_ptrace_inferior = {
-	server_ptrace_get_handle,
+	server_ptrace_spawn,
 	server_ptrace_attach,
-	server_ptrace_traceme,
 	server_ptrace_detach,
+	server_ptrace_get_g_source,
+	server_ptrace_wait,
+	server_ptrace_get_target_info,
 	server_ptrace_continue,
 	server_ptrace_step,
 	server_ptrace_get_pc,

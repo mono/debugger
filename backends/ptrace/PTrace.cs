@@ -89,13 +89,28 @@ namespace Mono.Debugger.Backends
 		public event ChildMessageHandler ChildMessage;
 
 		[DllImport("monodebuggerserver")]
-		static extern bool mono_debugger_spawn_async (string working_directory, string[] argv, string[] envp, bool search_path, ChildSetupHandler child_setup, out int child_pid, out IntPtr status_channel, out IntPtr server_handle, ChildExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int standard_input, out int standard_output, out int standard_error, out IntPtr errout);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, ChildExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_send_command (IntPtr handle, ServerCommand command);
+		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, ChildExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback);
 
 		[DllImport("monodebuggerserver")]
-		static extern bool mono_debugger_server_read_uint64 (IntPtr handle, out long arg);
+		static extern IntPtr mono_debugger_server_get_g_source (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_wait (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_get_pc (IntPtr handle, out long pc);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_step (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_continue (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_detach (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, out IntPtr data);
@@ -117,6 +132,12 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
+
+		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_server_initialize ();
+
+		[DllImport("glib-2.0")]
+		extern static uint g_source_attach (IntPtr source, IntPtr context);
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
@@ -141,23 +162,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void send_command (ServerCommand command)
-		{
-			CommandError result = mono_debugger_server_send_command (server_handle, command);
-
-			check_error (result);
-		}
-
-		long read_long ()
-		{
-			long retval;
-			if (!mono_debugger_server_read_uint64 (server_handle, out retval))
-				throw new TargetException (
-					"Can't read ulong argument from inferior");
-
-			return retval;
-		}
-
 		internal TargetAsyncResult call_method (ITargetLocation method, long method_argument,
 							TargetAsyncCallback callback, object user_data)
 		{
@@ -165,27 +169,34 @@ namespace Mono.Debugger.Backends
 			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
 			pending_callbacks.Add (number, async);
 
-			CommandError result = mono_debugger_server_call_method (
-				server_handle, method.Location, method_argument, number);
-			check_error (result);
+			check_error (mono_debugger_server_call_method (
+				server_handle, method.Location, method_argument, number));
 			change_target_state (TargetState.RUNNING);
 			return async;
+		}
+
+		public long CallMethod (ITargetLocation method, long method_argument)
+		{
+			TargetAsyncResult result = call_method (
+				method, method_argument, null, null);
+			mono_debugger_server_wait (server_handle);
+			if (!result.IsCompleted)
+				throw new TargetException ("Call not completed");
+			return (long) result.AsyncResult;
 		}
 
 		int insert_breakpoint (ITargetLocation address)
 		{
 			int retval;
-			CommandError result = mono_debugger_server_insert_breakpoint (
-				server_handle, address.Address, out retval);
-			check_error (result);
+			check_error (mono_debugger_server_insert_breakpoint (
+				server_handle, address.Address, out retval));
 			return retval;
 		}
 
 		void remove_breakpoint (int breakpoint)
 		{
-			CommandError result = mono_debugger_server_remove_breakpoint (
-				server_handle, breakpoint);
-			check_error (result);
+			check_error (mono_debugger_server_remove_breakpoint (
+				server_handle, breakpoint));
 		}
 
 		int temp_breakpoint_id = 0;
@@ -201,29 +212,21 @@ namespace Mono.Debugger.Backends
 			this.envp = envp;
 
 			int stdin_fd, stdout_fd, stderr_fd;
-			IntPtr status_channel, error;
-
-			string[] my_argv = new string [argv.Length + 5];
-			my_argv [0] = "mono-debugger-server";
-			my_argv [1] = OffsetTable.Magic.ToString ("x");
-			my_argv [2] = OffsetTable.Version.ToString ();
-			my_argv [3] = "0";
-			my_argv [4] = working_directory;
-			argv.CopyTo (my_argv, 5);
+			IntPtr error;
 
 			bfd_symtab = new BfdSymbolTable (argv [0]);
 
-			bool retval = mono_debugger_spawn_async (
-				working_directory, my_argv, envp, true, null, out child_pid,
-				out status_channel, out server_handle,
+			server_handle = mono_debugger_server_initialize ();
+			if (server_handle == IntPtr.Zero)
+				throw new TargetException ("Can't get server handle");
+
+			check_error (mono_debugger_server_spawn (
+				server_handle, working_directory, argv, envp, true,
 				new ChildExitedHandler (child_exited),
 				new ChildMessageHandler (child_message),
 				new ChildCallbackHandler (child_callback),
-				out stdin_fd, out stdout_fd,
-				out stderr_fd, out error);
-
-			if (!retval)
-				throw new Exception ();
+				out child_pid, out stdin_fd, out stdout_fd, out stderr_fd,
+				out error));
 
 			inferior_stdin = new IOOutputChannel (stdin_fd);
 			inferior_stdout = new IOInputChannel (stdout_fd);
@@ -236,32 +239,18 @@ namespace Mono.Debugger.Backends
 		{
 			this.envp = envp;
 
-			int stdin_fd, stdout_fd, stderr_fd;
-			IntPtr status_channel, error;
-
-			string[] my_argv = { "mono-debugger-server",
-					     OffsetTable.Magic.ToString ("x"),
-					     OffsetTable.Version.ToString (),
-					     pid.ToString ()
-			};
+			IntPtr error;
 
 			bfd_symtab = new BfdSymbolTable (argv [0]);
 
-			bool retval = mono_debugger_spawn_async (
-				working_directory, my_argv, envp, true, null, out child_pid,
-				out status_channel, out server_handle,
-				new ChildExitedHandler (child_exited),
+			server_handle = mono_debugger_server_initialize ();
+			if (server_handle == IntPtr.Zero)
+				throw new TargetException ("Can't get server handle");
+
+			check_error (mono_debugger_server_attach (
+				server_handle, pid, new ChildExitedHandler (child_exited),
 				new ChildMessageHandler (child_message),
-				new ChildCallbackHandler (child_callback),
-				out stdin_fd, out stdout_fd,
-				out stderr_fd, out error);
-
-			if (!retval)
-				throw new Exception ();
-
-			inferior_stdin = new IOOutputChannel (stdin_fd);
-			inferior_stdout = new IOInputChannel (stdout_fd);
-			inferior_stderr = new IOInputChannel (stderr_fd);
+				new ChildCallbackHandler (child_callback)));
 
 			setup_inferior ();
 		}
@@ -271,11 +260,16 @@ namespace Mono.Debugger.Backends
 			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
 			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
 
+			IntPtr g_source = mono_debugger_server_get_g_source (server_handle);
+			if (g_source == IntPtr.Zero)
+				handle_error (CommandError.UNKNOWN);
+
+			g_source_attach (g_source, IntPtr.Zero);
+
 			int target_int_size, target_long_size, target_address_size;
-			CommandError result = mono_debugger_server_get_target_info
+			check_error (mono_debugger_server_get_target_info
 				(server_handle, out target_int_size, out target_long_size,
-				 out target_address_size);
-			check_error (result);
+				 out target_address_size));
 
 			target_info = new TargetInfo (target_int_size, target_long_size,
 						      target_address_size);
@@ -347,7 +341,7 @@ namespace Mono.Debugger.Backends
 					debugger_info_read = true;
 					read_mono_debugger_info ();
 				} else if (current_step_frame != null) {
-					ITargetLocation frame = Frame ();
+					ITargetLocation frame = CurrentFrame;
 
 					if ((frame.Address >= current_step_frame.Start.Address) &&
 					    (frame.Address < current_step_frame.End.Address)) {
@@ -424,6 +418,7 @@ namespace Mono.Debugger.Backends
 			if (result != CommandError.NONE) {
 				g_free (data);
 				handle_error (result);
+				throw new Exception ("Internal error: this line will never be reached");
 			}
 			return data;
 		}
@@ -529,9 +524,8 @@ namespace Mono.Debugger.Backends
 			try {
 				data = Marshal.AllocHGlobal (size);
 				Marshal.Copy (buffer, 0, data, size);
-				CommandError result = mono_debugger_server_write_memory (
-					server_handle, data, location.Address, size);
-				check_error (result);
+				check_error (mono_debugger_server_write_memory (
+					server_handle, data, location.Address, size));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -544,9 +538,8 @@ namespace Mono.Debugger.Backends
 			try {
 				data = Marshal.AllocHGlobal (1);
 				Marshal.WriteByte (data, value);
-				CommandError result = mono_debugger_server_write_memory (
-					server_handle, data, location.Address, 1);
-				check_error (result);
+				check_error (mono_debugger_server_write_memory (
+					server_handle, data, location.Address, 1));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -559,12 +552,11 @@ namespace Mono.Debugger.Backends
 			try {
 				data = Marshal.AllocHGlobal (sizeof (int));
 				Marshal.WriteInt32 (data, value);
-				CommandError result = mono_debugger_server_write_memory (
-					server_handle, data, location.Address, sizeof (int));
-				if (data != IntPtr.Zero)
-					check_error (result);
+				check_error (mono_debugger_server_write_memory (
+					server_handle, data, location.Address, sizeof (int)));
 			} finally {
-				Marshal.FreeHGlobal (data);
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
 			}
 		}
 
@@ -574,9 +566,8 @@ namespace Mono.Debugger.Backends
 			try {
 				data = Marshal.AllocHGlobal (sizeof (long));
 				Marshal.WriteInt64 (data, value);
-				CommandError result = mono_debugger_server_write_memory (
-					server_handle, data, location.Address, sizeof (long));
-				check_error (result);
+				check_error (mono_debugger_server_write_memory (
+					server_handle, data, location.Address, sizeof (long)));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -626,7 +617,7 @@ namespace Mono.Debugger.Backends
 
 		public void Continue ()
 		{
-			send_command (ServerCommand.CONTINUE);
+			check_error (mono_debugger_server_continue (server_handle));
 			change_target_state (TargetState.RUNNING);
 		}
 
@@ -638,17 +629,17 @@ namespace Mono.Debugger.Backends
 
 		public void Detach ()
 		{
-			send_command (ServerCommand.DETACH);
+			check_error (mono_debugger_server_detach (server_handle));
 		}
 
 		public void Shutdown ()
 		{
-			send_command (ServerCommand.SHUTDOWN);
+			// send_command (ServerCommand.SHUTDOWN);
 		}
 
 		public void Kill ()
 		{
-			send_command (ServerCommand.KILL);
+			// send_command (ServerCommand.KILL);
 		}
 
 		public void Step ()
@@ -656,65 +647,65 @@ namespace Mono.Debugger.Backends
 			Step (null);
 		}
 
-		void compile_method_done (object user_data, object result)
-		{
-			ITargetLocation method;
-
-			switch (TargetAddressSize) {
-			case 4:
-				method = new TargetLocation ((int) ((long) result));
-				break;
-
-			case 8:
-				method = new TargetLocation ((long) result);
-				break;
-
-			default:
-				throw new TargetMemoryException (
-					"Unknown target address size " + TargetAddressSize);
-			}
-
-			Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
-
-			Continue (method);
-		}
-
 		public void Step (IStepFrame frame)
 		{
 			int insn_size;
-			ITargetLocation call = arch.GetCallTarget (Frame (), out insn_size);
+			ITargetLocation call = arch.GetCallTarget (CurrentFrame, out insn_size);
 			if (!call.IsNull) {
 				ITargetLocation trampoline = arch.GetTrampoline (call);
 
 				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
-						   call, insn_size, trampoline, frame, Frame ());
+						   call, insn_size, trampoline, frame, CurrentFrame);
 
-				call_method (mono_debugger_info.compile_method, trampoline.Address,
-					     new TargetAsyncCallback (compile_method_done), null);
-				return;
+				if ((trampoline != null) && !trampoline.IsNull) {
+					long result = CallMethod (
+						mono_debugger_info.compile_method, trampoline.Address);
+
+					ITargetLocation method;
+					switch (TargetAddressSize) {
+					case 4:
+						method = new TargetLocation ((int) result);
+						break;
+
+					case 8:
+						method = new TargetLocation (result);
+						break;
+
+					default:
+						throw new TargetMemoryException (
+							"Unknown target address size " + TargetAddressSize);
+					}
+
+
+					Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
+
+					Continue (method);
+					return;
+				}
 			}
 
 			current_step_frame = frame;
 
-			send_command (ServerCommand.STEP);
+			check_error (mono_debugger_server_step (server_handle));
 			change_target_state (TargetState.RUNNING);
 		}
 
 		public void Next ()
 		{
-			ITargetLocation location = Frame ();
+			ITargetLocation location = CurrentFrame;
 			location.Offset += bfd_disassembler.GetInstructionSize (location);
 
 			Continue (location);
 		}
 
-		public ITargetLocation Frame ()
-		{
-			try {
-				send_command (ServerCommand.GET_PC);
-				return new TargetLocation (read_long ());
-			} catch (TargetException e) {
-				throw new NoStackException ();
+		public ITargetLocation CurrentFrame {
+			get {
+				long pc;
+				CommandError result = mono_debugger_server_get_pc (server_handle, out pc);
+				if (result != CommandError.NONE)
+					throw new NoStackException ();
+
+				return new TargetLocation (pc);
 			}
 		}
 

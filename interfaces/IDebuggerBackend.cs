@@ -93,7 +93,9 @@ namespace Mono.Debugger
 		// <summary>
 		//   Get the current target location.
 		// </summary>
-		ITargetLocation Frame ();
+		ITargetLocation CurrentFrame {
+			get;
+		}
 
 		// <summary>
 		//   Single-step and enter into methods.
@@ -109,6 +111,8 @@ namespace Mono.Debugger
 		//   Single-step, but step over method invocations.
 		// </summary>
 		void Next ();
+
+		long CallMethod (ITargetLocation method, long method_argument);
 
 		// <summary>
 		//   Returns a disassembler for the current target.
@@ -167,7 +171,9 @@ namespace Mono.Debugger
 		// <summary>
 		//   Get the current stack frame.
 		// </summary>
-		IStackFrame Frame ();
+		IStackFrame CurrentFrame {
+			get;
+		}
 
 		// <summary>
 		//   Adds a breakpoint at the specified target location.

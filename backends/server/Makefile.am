@@ -1,24 +1,10 @@
 INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@
 
-bin_PROGRAMS = mono-debugger-server
-
-mono_debugger_server_SOURCES = \
-	server.c		\
-	i386-linux-ptrace.c	\
-	util.c			\
-	util.h			\
-	server.h		\
-	#
-
-mono_debugger_server_LDADD = @SERVER_DEPENDENCIES_LIBS@
-
 lib_LTLIBRARIES = libmonodebuggerserver.la
 
 libmonodebuggerserver_la_SOURCES = \
-	spawn.c			\
 	library.c		\
-	util.c			\
-	util.h			\
+	i386-linux-ptrace.c	\
 	server.h		\
 	#
 

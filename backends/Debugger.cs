@@ -365,7 +365,7 @@ namespace Mono.Debugger.Backends
 
 	internal class TargetAsyncResult
 	{
-		object user_data;
+		object user_data, result;
 		bool completed;
 		TargetAsyncCallback callback;
 
@@ -383,6 +383,14 @@ namespace Mono.Debugger.Backends
 			completed = true;
 			if (callback != null)
 				callback (user_data, result);
+
+			this.result = result;
+		}
+
+		public object AsyncResult {
+			get {
+				return result;
+			}
 		}
 
 		public bool IsCompleted {
@@ -533,29 +541,6 @@ namespace Mono.Debugger.Backends
 				TargetError (line);
 		}
 
-		void do_update_symbol_files (object user_data, object result)
-		{
-			updating_symfiles = false;
-
-			// Ooops, we received an old callback.
-			if ((int) user_data < symtab_generation)
-				return;
-
-			// Nothing to do.
-			if ((long) result == 0)
-				return;
-
-			DebuggerBusy = true;
-			try {
-				symtabs = do_update_symbol_files ();
-			} catch {
-				symtabs = null;
-			} finally {
-				DebuggerBusy = false;
-				frame_changed ();
-			}
-		}
-
 		ArrayList do_update_symbol_files ()
 		{
 			ArrayList symtabs = new ArrayList ();
@@ -592,10 +577,8 @@ namespace Mono.Debugger.Backends
 				int address_table_size = symtab_reader.ReadInteger ();
 				symtab_reader.ReadAddress ();
 
-				if ((raw_contents_size == 0) || (address_table_size == 0)) {
-					Console.WriteLine ("IGNORING SYMTAB");
+				if ((raw_contents_size == 0) || (address_table_size == 0))
 					continue;
-				}
 
 				ITargetMemoryReader reader = inferior.ReadMemory
 					(raw_contents, raw_contents_size);
@@ -625,15 +608,35 @@ namespace Mono.Debugger.Backends
 			if (updating_symfiles)
 				return;
 
-			updating_symfiles = true;
-
-			int generation = inferior.ReadInteger (
-				inferior.MonoDebuggerInfo.symbol_file_generation);
-			if (generation == symtab_generation)
+			try {
+				int generation = inferior.ReadInteger (
+					inferior.MonoDebuggerInfo.symbol_file_generation);
+				if (generation == symtab_generation)
+					return;
+			} catch {
 				return;
+			}
 
-			inferior.call_method (inferior.MonoDebuggerInfo.update_symbol_file_table, 0,
-					      new TargetAsyncCallback (do_update_symbol_files), generation);
+			try {
+				updating_symfiles = true;
+
+				int result = (int) inferior.CallMethod (
+					inferior.MonoDebuggerInfo.update_symbol_file_table, 0);
+
+				// Nothing to do.
+				if (result == 0)
+					return;
+
+				DebuggerBusy = true;
+
+				symtabs = do_update_symbol_files ();
+			} catch {
+				symtabs = null;
+			} finally {
+				DebuggerBusy = false;
+				frame_changed ();
+				updating_symfiles = false;
+			}
 		}
 
 		public void Run ()
@@ -659,7 +662,7 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
-			IStackFrame frame = Frame ();
+			IStackFrame frame = CurrentFrame;
 			if (frame.SourceLocation == null)
 				return null;
 
@@ -691,22 +694,23 @@ namespace Mono.Debugger.Backends
 			inferior.Continue (frame.End);
 		}
 
-		public IStackFrame Frame ()
-		{
-			if (inferior == null)
-				throw new NoTargetException ();
+		public IStackFrame CurrentFrame {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
 
-			ITargetLocation location = inferior.Frame ();
+				ITargetLocation location = inferior.CurrentFrame;
 
-			update_symbol_files ();
+				update_symbol_files ();
 
-			ISymbolHandle symbol_handle;
-			ISourceLocation source = LookupAddress (location, out symbol_handle);
+				ISymbolHandle symbol_handle;
+				ISourceLocation source = LookupAddress (location, out symbol_handle);
 
-			if (source != null)
-				return new StackFrame (inferior, location, source, symbol_handle);
-			else
-				return new StackFrame (inferior, location);
+				if (source != null)
+					return new StackFrame (inferior, location, source, symbol_handle);
+				else
+					return new StackFrame (inferior, location);
+			}
 		}
 
 		ISourceLocation LookupAddress (ITargetLocation address, out ISymbolHandle handle)
@@ -727,10 +731,8 @@ namespace Mono.Debugger.Backends
 
 		void frame_changed ()
 		{
-			IStackFrame frame = Frame ();
-
 			if (FrameChangedEvent != null)
-				FrameChangedEvent (frame);
+				FrameChangedEvent (CurrentFrame);
 		}
 
 		public ISourceFileFactory SourceFileFactory {
@@ -747,6 +749,9 @@ namespace Mono.Debugger.Backends
 		{
 			throw new NotImplementedException ();
 		}
+
+		[DllImport("glib-2.0")]
+		extern static IntPtr g_main_context_default ();
 
 		//
 		// IDisposable

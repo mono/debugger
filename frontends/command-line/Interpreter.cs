@@ -94,11 +94,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.Inferior.Continue ();
 				break;
 
-			case "f":
-			case "frame":
-				backend.Frame ();
-				break;
-
 			case "i":
 			case "stepi":
 				if (backend.Inferior == null)
