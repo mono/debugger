@@ -57,8 +57,10 @@ public class SourceFileFactory : ISourceFileFactory
 
 		FileInfo file_info = new FileInfo (name);
 
-		if (!file_info.Exists)
+		if (!file_info.Exists) {
+			Console.WriteLine ("Can't find source file: " + name);
 			return null;
+		}
 
 		ISourceFile retval = new SourceFile (file_info);
 		files.Add (name, retval);

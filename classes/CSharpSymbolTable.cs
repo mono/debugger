@@ -75,7 +75,8 @@ namespace Mono.Debugger
 					source_range = (int) (next_address - offset);
 					if (next_address == offset)
 						continue;
-				}
+				} else
+					source_range = (int) (method.Address.EndAddress - address);
 
 				return lne.Row;
 			}
