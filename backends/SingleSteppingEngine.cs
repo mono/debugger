@@ -1724,6 +1724,15 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
+			if ((current_method != null) && (current_method.HasMethodBounds) &&
+			    (call >= current_method.MethodStartAddress) &&
+			    (call < current_method.MethodEndAddress)) {
+				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
+				 * can't be a recursive call). */
+				do_step ();
+				return false;
+			}
+
 			/*
 			 * If we have a source language, check for trampolines.
 			 * This will trigger a JIT compilation if neccessary.
