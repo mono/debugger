@@ -1407,7 +1407,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class CatchCommand : FrameCommand
 	{
 		string group;
-		ProcessHandle process;
+		FrameHandle frame;
 		ThreadGroup tgroup;
 		ITargetClassType type;
 
@@ -1433,8 +1433,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			FrameHandle frame = ResolveFrame (context);
-			process = frame.Process;
+			frame = ResolveFrame (context);
 
 			ITargetType exception_type = frame.Language.ExceptionType;
 			if (exception_type == null)
@@ -1460,7 +1459,9 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Console.WriteLine ("INSERT CATCH: {0} {1} {2}", process, tgroup, type);
+			int index = context.Interpreter.InsertExceptionCatchPoint (
+				frame.Language, frame.Process, tgroup, type);
+			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 		}
 	}
 

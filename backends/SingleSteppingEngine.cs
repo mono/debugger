@@ -121,6 +121,8 @@ namespace Mono.Debugger.Backends
 
 			manager.SymbolTableManager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
+
+			exception_handlers = new Hashtable ();
 		}
 
 		// <summary>
@@ -274,6 +276,19 @@ namespace Mono.Debugger.Backends
 
 			case CommandType.WriteMemory:
 				do_write_memory ((TargetAddress) data, (byte []) data2);
+				break;
+
+			case CommandType.AddEventHandler: {
+				if ((EventType) data != EventType.CatchException)
+					throw new InternalError ();
+
+				int id = ++next_exception_handler_id;
+				exception_handlers.Add (id, (Breakpoint) data2);
+				return id;
+			}
+
+			case CommandType.RemoveEventHandler:
+				exception_handlers.Remove ((int) data);
 				break;
 
 			default:
@@ -536,7 +551,7 @@ namespace Mono.Debugger.Backends
 					manager.AddressDomain, cevent.Data2);
 
 				current_operation = new Operation (
-					OperationType.Exception, exc);
+					OperationType.UnhandledException, exc);
 
 				do_continue (ip);
 				return;
@@ -601,10 +616,17 @@ namespace Mono.Debugger.Backends
 						manager.Initialize (inferior);
 					Report.Debug (DebugFlags.SSE, "{0} initialize done",
 						      this);
-				} else if (current_operation.Type == OperationType.Exception) {
+				} else if (current_operation.Type == OperationType.UnhandledException) {
 					frame_changed (inferior.CurrentFrame, null);
 					result = new TargetEventArgs (
 						TargetEventType.UnhandledException,
+						current_operation.Until,
+						current_frame);
+					goto send_result;
+				} else if (current_operation.Type == OperationType.Exception) {
+					frame_changed (inferior.CurrentFrame, null);
+					result = new TargetEventArgs (
+						TargetEventType.Exception,
 						current_operation.Until,
 						current_frame);
 					goto send_result;
@@ -844,6 +866,7 @@ namespace Mono.Debugger.Backends
 		ProcessStart start;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
+		Hashtable exception_handlers;
 		bool engine_stopped;
 		DebuggerManualResetEvent operation_completed_event;
 		bool stop_requested;
@@ -851,6 +874,8 @@ namespace Mono.Debugger.Backends
 		bool native;
 		public readonly int PID;
 		public readonly int TID;
+
+		static int next_exception_handler_id = 0;
 
 		int stepping_over_breakpoint;
 
@@ -1224,11 +1249,11 @@ namespace Mono.Debugger.Backends
 			// so we should only do it when it's actually needed.
 			if (bpt.HandlerNeedsFrame)
 				frame = get_frame ();
-			if (!bpt.CheckBreakpointHit (frame, inferior))
+			if (!bpt.CheckBreakpointHit (inferior.CurrentFrame, frame, inferior))
 				return false;
 
 			frame_changed (inferior.CurrentFrame, current_operation);
-			bpt.BreakpointHit (frame);
+			bpt.BreakpointHit (current_frame);
 
 			return true;
 		}
@@ -1261,11 +1286,36 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool handle_exception (TargetAddress stack, TargetAddress ip)
+		bool handle_exception (TargetAddress info, TargetAddress ip)
 		{
+			TargetAddress stack = inferior.ReadAddress (info);
+			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
+
 			Report.Debug (DebugFlags.SSE,
-				      "{0} handling exception {1} at {2} while running {3}", this, stack, ip,
+				      "{0} handling exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
+
+			StackFrame frame = null;
+
+			foreach (Breakpoint bpt in exception_handlers.Values) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} invoking exception handler {1} for {0}", this, bpt, exc);
+
+				// Only compute the current stack frame if the handler actually
+				// needs it.  Note that this computation is an expensive operation
+				// so we should only do it when it's actually needed.
+				if ((frame == null) && bpt.HandlerNeedsFrame)
+					frame = get_frame ();
+				if (!bpt.CheckBreakpointHit (exc, frame, inferior))
+					return false;
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} stopped on exception {1} at {2}", this, exc, ip);
+
+				frame_changed (inferior.CurrentFrame, current_operation);
+				bpt.BreakpointHit (current_frame);
+				return true;
+			}
 
 			/*
 			 * We're dealing with a non-fatal exception here.
@@ -1299,13 +1349,13 @@ namespace Mono.Debugger.Backends
 
 			SimpleStackFrame oframe = current_operation.StepFrame.StackFrame;
 
-			if (stack < oframe.StackPointer)
-				return false;
-
 			Report.Debug (DebugFlags.SSE,
 				      "{0} handling exception: {1} {2} - {3} {4} - {5}", this,
 				      current_operation.StepFrame, oframe, stack, oframe.StackPointer,
 				      stack < oframe.StackPointer);
+
+			if (stack < oframe.StackPointer)
+				return false;
 
 			return true;
 		}
@@ -2371,6 +2421,7 @@ namespace Mono.Debugger.Backends
 		RuntimeInvoke,
 		CallMethod,
 		FinishNative,
+		UnhandledException,
 		Exception
 	}
 
@@ -2381,6 +2432,8 @@ namespace Mono.Debugger.Backends
 		SetRegisters,
 		InsertBreakpoint,
 		RemoveBreakpoint,
+		AddEventHandler,
+		RemoveEventHandler,
 		GetInstructionSize,
 		DisassembleInstruction,
 		DisassembleMethod,

@@ -13,6 +13,7 @@ namespace Mono.Debugger
 		TargetSignaled,
 		TargetExited,
 		FrameChanged,
+		Exception,
 		UnhandledException
 	}
 

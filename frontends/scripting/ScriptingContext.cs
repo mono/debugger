@@ -357,9 +357,10 @@ namespace Mono.Debugger.Frontends.Scripting
 					interpreter.Abort ();
 				break;
 
+			case TargetEventType.Exception:
 			case TargetEventType.UnhandledException:
-				interpreter.Print ("{0} caught unhandled exception{1}",
-						   Name, frame);
+				interpreter.Print ("{0} caught {2}exception{1}", Name, frame,
+						   args.Type == TargetEventType.Exception ? "" : "unhandled ");
 
 				TargetAddress exc = (TargetAddress) args.Data;
 				ITargetObject exc_object = null;

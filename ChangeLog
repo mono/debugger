@@ -43,6 +43,25 @@
 
 2004-10-21  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetEvent.cs (TargetEventType): Added `Exception'.
+
+	* classes/Breakpoint.cs (Breakpoint.CheckBreakpointHit): Added
+	`TargetAddress frame_address' argument.
+
+	* classes/ExceptionCatchPoint.cs: New public class, derives from
+	Breakpoint.
+
+	* classes/EventHandle.cs: New public class.
+
+	* backends/Process.cs
+	(Process.AddEventHandler): New public method.
+	(Process.RemoveEventHandler): New public method.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.handle_exception): Support exception catch points.	
+
+2004-10-21  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (CatchCommand): New command.
 
 2004-10-21  Martin Baulig  <martin@ximian.com>

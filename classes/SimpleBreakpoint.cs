@@ -29,12 +29,13 @@ namespace Mono.Debugger
 		BreakpointHitHandler hit_handler;
 		object user_data;
 
-		public override bool CheckBreakpointHit (StackFrame frame, ITargetAccess target)
+		public override bool CheckBreakpointHit (TargetAddress frame_address, StackFrame frame,
+							 ITargetAccess target)
 		{
 			if (check_handler != null)
 				return check_handler (frame, target, Index, user_data);
 
-			return base.CheckBreakpointHit (frame, target);
+			return base.CheckBreakpointHit (frame_address, frame, target);
 		}
 
 		public override void BreakpointHit (StackFrame frame)

@@ -55,6 +55,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		ProcessHandle current_process;
 		Hashtable procs;
 		Hashtable breakpoints;
+		Hashtable events;
 		Hashtable user_interfaces;
 		Style current_user_interface;
 
@@ -89,6 +90,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			procs = new Hashtable ();
 			breakpoints = new Hashtable ();
+			events = new Hashtable ();
 
 			user_interfaces = new Hashtable ();
 			user_interfaces.Add ("mono", new StyleMono (this));
@@ -507,6 +509,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			current_process = null;
 			procs = new Hashtable ();
 			breakpoints = new Hashtable ();
+			events = new Hashtable ();
 
 			context = new ScriptingContext (this, is_interactive, true);
 		}
@@ -607,6 +610,22 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException ("Could not insert breakpoint.");
 
 			breakpoints.Add (breakpoint.Index, handle);
+
+			return breakpoint.Index;
+		}
+
+		public int InsertExceptionCatchPoint (ILanguage language, ProcessHandle thread, ThreadGroup group,
+						      ITargetType exception)
+		{
+			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);
+
+			EventHandle handle = EventHandle.Create (
+				thread.Process, EventType.CatchException, breakpoint);
+
+			if (handle == null)
+				throw new ScriptingException ("Could not add catch point.");
+
+			events.Add (breakpoint.Index, handle);
 
 			return breakpoint.Index;
 		}

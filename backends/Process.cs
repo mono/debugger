@@ -460,6 +460,37 @@ namespace Mono.Debugger
 				engine.SendSyncCommand (CommandType.RemoveBreakpoint, index);
 		}
 
+		// <summary>
+		//   Add an event handler.
+		//
+		//   Returns a number which may be passed to RemoveEventHandler() to remove
+		//   the event handler.
+		// </summary>
+		public int AddEventHandler (EventType type, Breakpoint breakpoint)
+		{
+			check_engine ();
+
+			CommandResult result = engine.SendSyncCommand (
+				CommandType.AddEventHandler, type, breakpoint);
+			if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+
+			return (int) result.Data;
+		}
+
+		// <summary>
+		//   Remove event handler @index.  @index is the event handler number which has
+		//   been returned by AddEventHandler().
+		// </summary>
+		public void RemoveEventHandler (int index)
+		{
+			check_disposed ();
+			if (engine != null)
+				engine.SendSyncCommand (CommandType.RemoveEventHandler, index);
+		}
+
 		public ISimpleSymbolTable SimpleSymbolTable {
 			get {
 				check_engine ();
