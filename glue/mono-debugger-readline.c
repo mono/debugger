@@ -2,6 +2,7 @@
 #include <mono-debugger-readline.h>
 #include <signal.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 static gboolean in_readline = FALSE;
 

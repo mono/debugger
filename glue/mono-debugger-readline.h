@@ -5,6 +5,7 @@
 #include <stdio.h>
 #if USE_READLINE
 #include <readline/readline.h>
+#include <readline/history.h>
 #endif
 
 G_BEGIN_DECLS

@@ -31,7 +31,7 @@ watch_data_input_func (GIOChannel *channel, GIOCondition condition, gpointer dat
 		GIOStatus status;
 		gsize count;
 
-		status = g_io_channel_read_chars (channel, &tmp, sizeof (int), &count, NULL);
+		status = g_io_channel_read_chars (channel, (gchar *) &tmp, sizeof (int), &count, NULL);
 
 		if (status == G_IO_STATUS_NORMAL)
 			((IODataInputHandler) data) (tmp);
