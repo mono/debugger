@@ -132,16 +132,6 @@ namespace Mono.Debugger
 			return process;
 		}
 
-		internal void InitializeCoreFile (Process process, CoreFile core)
-		{
-			if (!process.ProcessStart.IsNative) {
-				csharp_language = new MonoCSharpLanguageBackend (this, process, core);
-				languages.Add (csharp_language);
-				symtab_manager.SetModules (module_manager.Modules);
-				core.UpdateModules ();
-			}
-		}
-
 		void modules_changed ()
 		{
 			check_disposed ();

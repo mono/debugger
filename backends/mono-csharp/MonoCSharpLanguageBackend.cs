@@ -1735,14 +1735,6 @@ namespace Mono.Debugger.Languages.CSharp
 			process.TargetExitedEvent += new TargetExitedHandler (child_exited);
 		}
 
-		public MonoCSharpLanguageBackend (DebuggerBackend backend, Process process, CoreFile core)
-			: this (backend, process)
-		{
-			read_mono_debugger_info (core, core.Bfd);
-
-			do_update_symbol_table (core, true);
-		}
-
 		public string Name {
 			get {
 				return "Mono";

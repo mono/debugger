@@ -6,7 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal abstract class CoreFile : Process, ITargetMemoryAccess
+	public abstract class CoreFile : ITargetMemoryAccess
 	{
 		protected Bfd bfd;
 		protected Bfd core_bfd;
@@ -24,7 +24,6 @@ namespace Mono.Debugger.Architecture
 
 		public CoreFile (DebuggerBackend backend, ProcessStart start,
 				 string application, string core_file)
-			: base (start)
 		{
 			this.backend = backend;
 			this.symtab_manager = backend.SymbolTableManager;
@@ -78,10 +77,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public Bfd Bfd {
-			get { return bfd; }
-		}
-
 		public ILanguage NativeLanguage {
 			get { return native_language; }
 		}
@@ -111,7 +106,7 @@ namespace Mono.Debugger.Architecture
 		bool has_current_frame = false;
 		StackFrame current_frame = null;
 
-		public override StackFrame CurrentFrame {
+		public StackFrame CurrentFrame {
 			get {
 				if (has_current_frame)
 					return current_frame;
@@ -144,12 +139,12 @@ namespace Mono.Debugger.Architecture
 		bool has_backtrace = false;
 		Backtrace backtrace = null;
 
-		public override Backtrace GetBacktrace ()
+		public Backtrace GetBacktrace ()
 		{
 			return GetBacktrace (-1);
 		}
 
-		public override Backtrace GetBacktrace (int max_frames)
+		public Backtrace GetBacktrace (int max_frames)
 		{
 			if (has_backtrace)
 				return backtrace;
@@ -173,7 +168,7 @@ namespace Mono.Debugger.Architecture
 			}
 
 			has_backtrace = true;
-			backtrace = new Backtrace (this, frames);
+			backtrace = new Backtrace (this, arch, frames);
 			return backtrace;
 		}
 
@@ -299,53 +294,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		//
-		// IProcess
-		//
-
-		public override int PID {
-			get { return -1; }
-		}
-
-		public override int TID {
-			get { return -1; }
-		}
-
-		public override bool HasTarget {
-			get { return true; }
-		}
-
-		public override bool IsStopped {
-			get { return true; }
-		}
-
-		public override bool CanStep {
-			get { return false; }
-		}
-
-		public override bool CanRun {
-			get { return false; }
-		}
-
-		public override ITargetMemoryInfo TargetMemoryInfo {
+		public ITargetMemoryInfo TargetMemoryInfo {
 			get { return this; }
 		}		
 
-		public override ITargetMemoryAccess TargetMemoryAccess {
+		public ITargetMemoryAccess TargetMemoryAccess {
 			get { return this; }
-		}
-
-		public override ITargetAccess TargetAccess {
-			get { return null; }
-		}
-
-		public override TargetState State {
-			get { return TargetState.CORE_FILE; }
-		}
-
-		public override void Kill ()
-		{
-			// Do nothing.
 		}
 
 		//
@@ -354,7 +308,7 @@ namespace Mono.Debugger.Architecture
 
 		protected abstract TargetAddress GetCurrentFrame ();
 
-		public override TargetAddress CurrentFrameAddress {
+		public TargetAddress CurrentFrameAddress {
 			get {
 				return GetCurrentFrame ();
 			}
@@ -365,36 +319,28 @@ namespace Mono.Debugger.Architecture
 			return bfd [name];
 		}
 
-		public override long GetRegister (int index)
+		public Register GetRegister (int index)
 		{
 			foreach (Register register in GetRegisters ()) {
 				if (register.Index == index)
-					return (long) register.Data;
+					return register;
 			}
 
 			throw new NoSuchRegisterException ();
 		}
 
-		public override long[] GetRegisters (int[] indices)
-		{
-			long[] retval = new long [indices.Length];
-			for (int i = 0; i < indices.Length; i++)
-				retval [i] = GetRegister (indices [i]);
-			return retval;
-		}
+		public abstract Register[] GetRegisters ();
 
-		public override abstract Register[] GetRegisters ();
+		protected abstract Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 
-		public abstract Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
-
-		public override IDisassembler Disassembler {
+		public IDisassembler Disassembler {
 			get {
 				check_disposed ();
 				return bfd_disassembler;
 			}
 		}
 
-		public override IArchitecture Architecture {
+		public IArchitecture Architecture {
 			get {
 				check_disposed ();
 				return arch;
@@ -407,7 +353,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public override TargetMemoryArea[] GetMemoryMaps ()
+		public TargetMemoryArea[] GetMemoryMaps ()
 		{
 			return core_bfd.GetMemoryMaps ();
 		}
@@ -511,114 +457,55 @@ namespace Mono.Debugger.Architecture
 			throw new NotImplementedException ();
 		}
 
-		public override bool StepInstruction (bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool StepNativeInstruction (bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool NextInstruction (bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool StepLine (bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool NextLine (bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool Continue (TargetAddress until, bool in_background,
-					       bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool Stop ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool Wait ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override bool Finish (bool synchronous)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override void SetRegister (int register, long value)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override void SetRegisters (int[] registers, long[] values)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override int InsertBreakpoint (BreakpointHandle handle,
-						      TargetAddress address,
-						      BreakpointCheckHandler check_handler,
-						      BreakpointHitHandler hit_handler,
-						      bool needs_frame, object user_data)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override void RemoveBreakpoint (int index)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override TargetAddress CallMethod (TargetAddress method, string arg)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override TargetAddress CallMethod (TargetAddress method,
-							  TargetAddress arg1,
-							  TargetAddress arg2)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override long CallMethod (TargetAddress method, long method_argument,
-						 string string_argument)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override Register[] AcquireThreadLock ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public override void ReleaseThreadLock ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
 		//
 		// IDisposable
 		//
 
-		protected override void DoDispose ()
+		private bool disposed = false;
+
+		protected void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("Process");
+		}
+
+		protected virtual void DoDispose ()
 		{
 			if (bfd_container != null)
 				bfd_container.CloseBfd (bfd);
 			if (core_bfd != null)
 				core_bfd.Dispose ();
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			if (disposed)
+				return;
+
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				DoDispose ();
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~CoreFile ()
+		{
+			Dispose (false);
 		}
 	}
 }

@@ -202,15 +202,7 @@ namespace Mono.Debugger
 
 		public abstract Register[] GetRegisters ();
 
-		public abstract long GetRegister (int index);
-
-		public virtual long[] GetRegisters (int[] indices)
-		{
-			long[] retval = new long [indices.Length];
-			for (int i = 0; i < indices.Length; i++)
-				retval [i] = GetRegister (indices [i]);
-			return retval;
-		}
+		public abstract Register GetRegister (int index);
 
 		public abstract void SetRegister (int register, long value);
 

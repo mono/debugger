@@ -1173,10 +1173,7 @@ public class SingleSteppingEngine : ThreadManager
 
 		protected void get_registers ()
 		{
-			long[] regs = inferior.GetRegisters (arch.AllRegisterIndices);
-			registers = new Register [regs.Length];
-			for (int i = 0; i < regs.Length; i++)
-				registers [i] = new Register (arch.AllRegisterIndices [i], regs [i]);
+			registers = inferior.GetRegisters ();
 		}
 
 		protected SingleSteppingEngine sse;
@@ -2363,11 +2360,11 @@ public class SingleSteppingEngine : ThreadManager
 			return CommandResult.Ok;
 		}
 
-		public override long GetRegister (int index)
+		public override Register GetRegister (int index)
 		{
 			foreach (Register register in GetRegisters ()) {
 				if (register.Index == index)
-					return (long) register.Data;
+					return register;
 			}
 
 			throw new NoSuchRegisterException ();
@@ -3140,7 +3137,7 @@ public class SingleSteppingEngine : ThreadManager
 		protected class MyBacktrace : Backtrace
 		{
 			public MyBacktrace (EngineProcess sse, StackFrame[] frames)
-				: base (sse, frames)
+				: base (sse, sse.Architecture, frames)
 			{
 			}
 

@@ -11,7 +11,7 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static bool bfd_glue_core_file_elfi386_get_registers (IntPtr data, int size, IntPtr regs);
 
-		long[] registers;
+		Register[] registers;
 
 		public CoreFileElfI386 (DebuggerBackend backend, ProcessStart start,
 					string application, string core_file)
@@ -20,7 +20,7 @@ namespace Mono.Debugger.Architecture
 			registers = get_registers ();
 		}
 
-		long[] get_registers ()
+		Register[] get_registers ()
 		{
 			IntPtr data = IntPtr.Zero, regs = IntPtr.Zero;
 
@@ -34,9 +34,9 @@ namespace Mono.Debugger.Architecture
 					return null;
 				int[] registers = new int [17];
 				Marshal.Copy (regs, registers, 0, 17);
-				long[] retval = new long [17];
+				Register[] retval = new Register [17];
 				for (int i = 0; i < 17; i++)
-					retval [i] = (uint) registers [i];
+					retval [i] = new Register (i, (uint) registers [i]);
 				return retval;
 			} finally {
 				if (data != IntPtr.Zero)
@@ -46,10 +46,10 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public override Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
+		protected override Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
 		{
-			uint ebp = (uint) GetRegister ((int) I386Register.EBP);
-			uint eip = (uint) GetRegister ((int) I386Register.EIP);
+			uint ebp = (uint) GetRegister ((int) I386Register.EBP).Data;
+			uint eip = (uint) GetRegister ((int) I386Register.EIP).Data;
 
 			ArrayList frames = new ArrayList ();
 

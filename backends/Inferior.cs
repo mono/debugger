@@ -932,13 +932,18 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public long GetRegister (int register)
+		public Register GetRegister (int register)
 		{
-			long[] retval = GetRegisters (new int[] { register });
+			Register[] retval = GetRegisters (new int[] { register });
 			return retval [0];
 		}
 
-		public long[] GetRegisters (int[] registers)
+		public Register[] GetRegisters ()
+		{
+			return GetRegisters (arch.AllRegisterIndices);
+		}
+
+		public Register[] GetRegisters (int[] registers)
 		{
 			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;
 			try {
@@ -952,7 +957,12 @@ namespace Mono.Debugger.Backends
 				check_error (result);
 				long[] retval = new long [registers.Length];
 				Marshal.Copy (buffer, retval, 0, registers.Length);
-				return retval;
+
+				Register[] regs = new Register [registers.Length];
+				for (int i = 0; i < registers.Length; i++)
+					regs [i] = new Register (registers [i], retval [i]);
+
+				return regs;
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -1053,7 +1063,7 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress GetStackPointer ()
 		{
-			long esp = GetRegister ((int) I386Register.ESP);
+			Register esp = GetRegister ((int) I386Register.ESP);
 
 			return new TargetAddress (address_domain, esp);
 		}

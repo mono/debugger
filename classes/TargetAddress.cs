@@ -39,6 +39,12 @@ namespace Mono.Debugger
 			this.address = (ulong) address;
 		}
 
+		public TargetAddress (AddressDomain domain, Register register)
+		{
+			this.domain = domain;
+			this.address = (ulong) (long) register.Data;
+		}
+
 		// <summary>
 		//   This is not what it looks like.
 		//   Never use this property unless you know exactly what you're doing.

@@ -112,9 +112,10 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 			}
 
-			long addr = target.GetRegister ((int) reg);
+			Register addr = target.GetRegister ((int) reg);
 
-			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr + disp);
+			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr);
+			vtable_addr += disp;
 
 			if (dereference_addr)
 				return target.ReadGlobalAddress (vtable_addr);
