@@ -1,5 +1,4 @@
 #include <mono-debugger-jit-wrapper.h>
-#include <mono/jit/debug.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
 #include <gc/gc.h>
@@ -105,7 +104,7 @@ mono_debugger_thread_manager_init (void)
 
 	gc_thread_vtable = &mono_debugger_thread_vtable;
 
-	notification_function = mono_debug_create_notification_function (
+	notification_function = mono_debugger_create_notification_function (
 		(gpointer) &MONO_DEBUGGER__thread_manager_notification);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);

@@ -5,15 +5,15 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoObjectType : MonoType, ITargetPointerType
 	{
-		internal readonly MonoSymbolFileTable Table;
+		internal readonly MonoSymbolTable Table;
 
-		public MonoObjectType (Type type, int size, MonoSymbolFileTable table)
+		public MonoObjectType (Type type, int size, MonoSymbolTable table)
 			: base (TargetObjectKind.Pointer, type, size, true)
 		{
 			this.Table = table;
 		}
 
-		public MonoObjectType (MonoType type, MonoSymbolFileTable table)
+		public MonoObjectType (MonoType type, MonoSymbolTable table)
 			: this ((Type) type.TypeHandle, type.Size, table)
 		{ }
 

@@ -1,6 +1,6 @@
-break "TestManagedTypes.cs" 54
-break "TestManagedTypes.cs" 65
-break "TestManagedTypes.cs" 74
+break "TestManagedTypes.cs":54
+break "TestManagedTypes.cs":65
+break "TestManagedTypes.cs":74
 continue
 assert line 54
 assert accessible $a

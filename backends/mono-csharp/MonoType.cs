@@ -37,7 +37,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public static MonoType GetType (Type type, int offset, MonoSymbolFileTable table)
+		public static MonoType GetType (Type type, int offset, MonoSymbolTable table)
 		{
 			byte[] data = table.GetTypeInfo (offset);
 			TargetBinaryReader info = new TargetBinaryReader (data, table.TargetInfo);
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		private static MonoType GetType (Type type, TargetBinaryReader info,
-						 MonoSymbolFileTable table)
+						 MonoSymbolTable table)
 		{
 			if (type == typeof (void))
 				return new MonoOpaqueType (type, 0);

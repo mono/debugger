@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly MonoClassType ParentType;
 
 		public MonoClassType (Type type, int size, TargetBinaryReader info,
-				      MonoSymbolFileTable table)
+				      MonoSymbolTable table)
 			: base (TargetObjectKind.Class, type, size, info, table)
 		{
 			int parent_type_info = info.ReadInt32 ();

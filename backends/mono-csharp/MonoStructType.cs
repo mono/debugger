@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoPropertyInfo[] properties;
 		MonoMethodInfo[] methods;
 		TargetBinaryReader info;
-		internal readonly MonoSymbolFileTable Table;
+		internal readonly MonoSymbolTable Table;
 		int num_fields, num_properties, num_methods;
 		int field_info_size, property_info_size, method_info_size;
 		long offset;
@@ -21,12 +21,12 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly TargetAddress invoke_method;
 
 		public MonoStructType (Type type, int size, TargetBinaryReader info,
-				       MonoSymbolFileTable table)
+				       MonoSymbolTable table)
 			: this (TargetObjectKind.Struct, type, size, info, table)
 		{ }
 
 		protected MonoStructType (TargetObjectKind kind, Type type, int size,
-					  TargetBinaryReader info, MonoSymbolFileTable table)
+					  TargetBinaryReader info, MonoSymbolTable table)
 			: base (kind, type, size, true)
 		{
 			is_byref = info.ReadByte () != 0;
@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.offset = info.Position;
 			this.Table = table;
 			info.Position += field_info_size + property_info_size + method_info_size;
-			invoke_method = table.Language.MonoDebuggerInfo.runtime_invoke;
+			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
 		// <remarks>
@@ -83,7 +83,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly int Index;
 
 			internal MonoFieldInfo (MonoStructType type, int index, FieldInfo finfo,
-						TargetBinaryReader info, MonoSymbolFileTable table)
+						TargetBinaryReader info, MonoSymbolTable table)
 			{
 				Index = index;
 				FieldInfo = finfo;
@@ -225,7 +225,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly MonoStructType StructType;
 
 			internal MonoPropertyInfo (MonoStructType type, int index, PropertyInfo pinfo,
-						   TargetBinaryReader info, MonoSymbolFileTable table)
+						   TargetBinaryReader info, MonoSymbolTable table)
 			{
 				StructType = type;
 				Index = index;
@@ -327,7 +327,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly MonoType[] Parameters;
 
 			internal MonoMethodInfo (MonoStructType type, int index, MethodInfo minfo,
-						 TargetBinaryReader info, MonoSymbolFileTable table)
+						 TargetBinaryReader info, MonoSymbolTable table)
 			{
 				StructType = type;
 				Index = index;

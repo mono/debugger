@@ -1,7 +1,7 @@
 #ifndef __MONO_DEBUGGER_JIT_WRAPPER_H
 #define __MONO_DEBUGGER_JIT_WRAPPER_H 1
 
-#include <mono/jit/debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 G_BEGIN_DECLS
 
@@ -19,10 +19,9 @@ struct _MonoDebuggerInfo {
 	guint32 total_size;
 	guint8 **generic_trampoline_code;
 	guint8 **breakpoint_trampoline_code;
-	guint32 *symbol_file_generation;
-	guint32 *symbol_file_modified;
 	gconstpointer notification_address;
-	MonoDebuggerSymbolFileTable **symbol_file_table;
+	MonoDebuggerSymbolTable **symbol_table;
+	guint32 symbol_table_size;
 	gpointer (*compile_method) (MonoMethod *method);
 	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
 	guint64 (*remove_breakpoint) (guint64 breakpoint);

@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoArrayType subarray_type;
 
 		public MonoArrayType (Type type, int size, TargetBinaryReader info, bool is_multi,
-				      MonoSymbolFileTable table)
+				      MonoSymbolTable table)
 			: base (TargetObjectKind.Array, type, size, false)
 		{
 			LengthOffset = info.ReadByte ();

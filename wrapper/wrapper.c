@@ -1,9 +1,8 @@
 #include <mono-debugger-jit-wrapper.h>
-#include <mono/jit/jit.h>
-#include <mono/jit/debug.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/mono-debug.h>
 #include <gc/gc.h>
 #include <unistd.h>
 #include <locale.h>
@@ -45,10 +44,9 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
 	&mono_breakpoint_trampoline_code,
-	&mono_debugger_symbol_file_table_generation,
-	&mono_debugger_symbol_file_table_modified,
 	&debugger_notification_address,
-	&mono_debugger_symbol_file_table,
+	&mono_debugger_symbol_table,
+	sizeof (MonoDebuggerSymbolTable),
 	&debugger_compile_method,
 	&debugger_insert_breakpoint,
 	&debugger_remove_breakpoint,
@@ -70,14 +68,16 @@ mono_debugger_wait (void)
 static void
 mono_debugger_signal (gboolean modified)
 {
+#if 0
 	if (modified)
 		mono_debugger_symbol_file_table_modified = TRUE;
-	mono_debug_lock ();
+#endif
+	mono_debugger_lock ();
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
 		IO_LAYER (ReleaseSemaphore) (debugger_thread_cond, 1, NULL);
 	}
-	mono_debug_unlock ();
+	mono_debugger_unlock ();
 }
 
 static guint64
@@ -89,13 +89,13 @@ debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argumen
 	if (!desc)
 		return 0;
 
-	return mono_insert_breakpoint_full (desc, TRUE);
+	return mono_debugger_insert_breakpoint_full (desc, TRUE);
 }
 
 static guint64
 debugger_remove_breakpoint (guint64 breakpoint)
 {
-	return mono_remove_breakpoint (breakpoint);
+	return mono_debugger_remove_breakpoint (breakpoint);
 }
 
 static gpointer
@@ -103,10 +103,10 @@ debugger_compile_method (MonoMethod *method)
 {
 	gpointer retval;
 
-	mono_debug_lock ();
+	mono_debugger_lock ();
 	retval = mono_compile_method (method);
 	mono_debugger_signal (FALSE);
-	mono_debug_unlock ();
+	mono_debugger_unlock ();
 	return retval;
 }
 
@@ -120,10 +120,10 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 		break;
 
 	case MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE:
-		mono_debug_lock ();
+		mono_debugger_lock ();
 		must_send_finished = TRUE;
 		mono_debugger_signal (TRUE);
-		mono_debug_unlock ();
+		mono_debugger_unlock ();
 
 		mono_debugger_wait ();
 		break;
@@ -152,9 +152,9 @@ initialize_debugger_support (void)
 
 	debugger_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
-	debugger_notification_function = mono_debug_create_notification_function
+	debugger_notification_function = mono_debugger_create_notification_function
 		(&debugger_notification_address);
-	command_notification_function = mono_debug_create_notification_function
+	command_notification_function = mono_debugger_create_notification_function
 		(&MONO_DEBUGGER__command_notification);
 }
 
@@ -178,12 +178,10 @@ debugger_thread_handler (gpointer user_data)
 	DebuggerThreadArgs *debugger_args = (DebuggerThreadArgs *) user_data;
 	MonoAssembly *assembly;
 	MonoImage *image;
-	int last_generation = 0;
 
 	MONO_DEBUGGER__debugger_thread = getpid ();
 
-	mono_debug_format = MONO_DEBUG_FORMAT_MONO;
-	mono_debug_init (mono_debug_format, TRUE, debugger_args->file, NULL);
+	mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
 
 	assembly = mono_domain_assembly_open (debugger_args->domain, debugger_args->file);
 	if (!assembly){
@@ -210,19 +208,13 @@ debugger_thread_handler (gpointer user_data)
 	 * This mutex is locked by the parent thread until the debugger actually
 	 * attached to us, so we don't need a SIGSTOP here anymore.
 	 */
-	mono_debug_lock ();
+	mono_debugger_lock ();
 
 	while (TRUE) {
 		/* Wait for an event. */
-		mono_debug_unlock ();
+		mono_debugger_unlock ();
 		mono_debugger_wait_cond (debugger_thread_cond);
-		mono_debug_lock ();
-
-		/* Reload the symbol file table if necessary. */
-		if (mono_debugger_symbol_file_table_generation > last_generation) {
-			mono_debug_update_symbol_file_table ();
-			last_generation = mono_debugger_symbol_file_table_generation;
-		}
+		mono_debugger_lock ();
 
 		/*
 		 * Send notification - we'll stop on a breakpoint instruction at a special
@@ -233,7 +225,7 @@ debugger_thread_handler (gpointer user_data)
 		debugger_notification_function ();
 
 		/* Clear modified and signalled flag. */
-		mono_debugger_symbol_file_table_modified = FALSE;
+		// mono_debugger_symbol_file_table_modified = FALSE;
 		debugger_signalled = FALSE;
 
 		if (must_send_finished) {
@@ -341,7 +333,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 */
 	must_send_finished = TRUE;
 	mono_debugger_signal (TRUE);
-	mono_debug_unlock ();
+	mono_debugger_unlock ();
 
 	mono_debugger_wait ();
 
