@@ -166,10 +166,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			TargetAddress exc_object;
 
-			// Can't automatically box valuetypes yet.
-			if (!IsByRef)
-				throw new LocationInvalidException ();
-
 			IInferior inferior = this_location.Inferior;
 			if (inferior == null)
 				throw new LocationInvalidException ();
@@ -432,6 +428,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public string PrintObject (MonoTargetLocation location)
 		{
+			// Can't automatically box valuetypes yet.
+			if (!(this is MonoClassType))
+				throw new LocationInvalidException ();
+
 			MonoMethodInfo method = ObjectToString as MonoMethodInfo;
 			if (method == null)
 				throw new InternalError ();
