@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 
 void
 crashing_here (int *ptr)
 {
 	// *ptr = 4;
+	raise (SIGSTOP);
 }
 
 void

@@ -112,12 +112,13 @@ set_fp_registers (InferiorHandle *handle, struct user_i387_struct *regs)
 }
 
 static void
-setup_inferior (InferiorHandle *handle)
+setup_inferior (InferiorHandle *handle, gboolean do_wait)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
 	int ret, status;
 
-	ret = waitpid (handle->pid, &status, WUNTRACED);
+	if (do_wait)
+		ret = waitpid (handle->pid, &status, WUNTRACED);
 
 	handle->mem_fd = open64 (filename, O_RDONLY);
 
@@ -143,7 +144,7 @@ server_ptrace_attach (int pid)
 	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = pid;
 
-	setup_inferior (handle);
+	setup_inferior (handle, FALSE);
 
 	return handle;
 }
@@ -737,7 +738,7 @@ server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp,
 	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = *child_pid;
 
-	setup_inferior (handle);
+	setup_inferior (handle, TRUE);
 
 	return handle;
 }

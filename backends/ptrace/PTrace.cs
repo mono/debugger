@@ -389,7 +389,6 @@ namespace Mono.Debugger.Backends
 			check_error (mono_debugger_server_attach (server_handle, pid));
 
 			setup_inferior (start, error_handler);
-
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
@@ -434,8 +433,10 @@ namespace Mono.Debugger.Backends
 					"Can't read symbol file {0}", start.TargetApplication), e);
 			}
 
-			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
-			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
+			if (inferior_stdout != null) {
+				inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
+				inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
+			}
 
 			int target_int_size, target_long_size, target_address_size;
 			check_error (mono_debugger_server_get_target_info

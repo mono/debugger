@@ -94,7 +94,18 @@ namespace Mono.Debugger.Backends
 			if (engine_thread != null)
 				throw new AlreadyHaveTargetException ();
 
-			engine_thread = new Thread (new ThreadStart (engine_thread_main));
+			engine_thread = new Thread (new ThreadStart (start_engine_thread));
+			engine_thread.Start ();
+		}
+
+		public void Attach (int pid)
+		{
+			if (engine_thread != null)
+				throw new AlreadyHaveTargetException ();
+
+			this.pid = pid;
+
+			engine_thread = new Thread (new ThreadStart (start_engine_thread_attach));
 			engine_thread.Start ();
 		}
 
@@ -106,7 +117,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void engine_thread_main ()
+		void start_engine_thread ()
 		{
 			inferior.Run ();
 
@@ -118,8 +129,26 @@ namespace Mono.Debugger.Backends
 			TargetAddress main = TargetAddress.Null;
 			if (native)
 				main = inferior.MainMethodAddress;
-			Command command = new Command (StepOperation.Run, main);
+			engine_thread_main (new Command (StepOperation.Run, main));
+		}
 
+		void start_engine_thread_attach ()
+		{
+			inferior.Attach (pid);
+
+			arch = inferior.Architecture;
+			disassembler = inferior.Disassembler;
+
+			initialized = true;
+
+			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+			send_result (ChildEventType.CHILD_STOPPED, 0);
+
+			engine_thread_main (null);
+		}
+
+		void engine_thread_main (Command command)
+		{
 			do {
 				try {
 					process_command (command);
@@ -211,6 +240,9 @@ namespace Mono.Debugger.Backends
 		{
 			bool ok;
 
+			if (command == null)
+				return;
+
 		again:
 			switch (command.Operation) {
 			case StepOperation.Run:
@@ -252,7 +284,7 @@ namespace Mono.Debugger.Backends
 			// After returning from `main', resume the target and keep
 			// running until it exits (or hit a breakpoint or receives
 			// a signal).
-			if (frame == main_method_retaddr) {
+			if (!main_method_retaddr.IsNull && (frame == main_method_retaddr)) {
 				ok = do_continue (false);
 				return;
 			}
@@ -385,6 +417,7 @@ namespace Mono.Debugger.Backends
 		AutoResetEvent step_event;
 		ThreadNotify thread_notify;
 		bool native;
+		int pid = -1;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;

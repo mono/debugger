@@ -102,15 +102,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class StartExpression : Expression
 	{
 		string[] args;
+		int pid;
 
 		public StartExpression (string[] args)
 		{
 			this.args = args;
+			this.pid = -1;
+		}
+
+		public StartExpression (string[] args, int pid)
+		{
+			this.args = args;
+			this.pid = pid;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.Start (args);
+			return context.Start (args, pid);
 		}
 	}
 

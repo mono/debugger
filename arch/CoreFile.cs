@@ -403,6 +403,11 @@ namespace Mono.Debugger.Architecture
 			throw new CannotExecuteCoreFileException ();
 		}
 
+		public void Attach (int pid)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
 		public ChildEvent Wait ()
 		{
 			throw new CannotExecuteCoreFileException ();

@@ -142,6 +142,10 @@ expression
 	  {
 		$$ = new FrameExpression ((ProcessExpression) $2, (int) $3);
 	  }
+	| START INTEGER program_arguments
+	  {
+		$$ = new StartExpression ((string []) $3, (int) $2);
+	  }
 	| START program_arguments
 	  {
 		$$ = new StartExpression ((string []) $2);

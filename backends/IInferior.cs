@@ -70,6 +70,7 @@ namespace Mono.Debugger.Backends
 		///   by used in the thread which called this function !
 		/// </remarks>
 		void Run ();
+		void Attach (int pid);
 
 		/// <summary>
 		///   Continue the target.

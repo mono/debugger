@@ -17,9 +17,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Process process;
 
 		static int next_id = 0;
-		int id;
+		int pid, id;
 
-		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
+		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
+				      int pid)
 		{
 			this.context = context;
 			this.backend = backend;
@@ -35,7 +36,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			running = true;
-			process.SingleSteppingEngine.Run ();
+			if (pid > 0)
+				process.SingleSteppingEngine.Attach (pid);
+			else
+				process.SingleSteppingEngine.Run ();
 			wait_until_stopped ();
 		}
 
@@ -309,7 +313,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public ProcessHandle Start (string[] args)
+		public ProcessHandle Start (string[] args, int pid)
 		{
 			if (args.Length == 0)
 				throw new ScriptingException ("No program specified.");
@@ -332,7 +336,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				process = backend.Run (start);
 			}
 
-			current_process = new ProcessHandle (this, backend, process);
+			current_process = new ProcessHandle (this, backend, process, pid);
 			procs.Add (current_process);
 
 			return current_process;
