@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using Mono.GetOptions;
 
 namespace Mono.Debugger
@@ -45,118 +44,92 @@ namespace Mono.Debugger
 	}
 
 	[Serializable]
-	public abstract class ProcessStart
+	public class ProcessStart
 	{
-		public static string JitWrapper			= "mono-debugger-mini-wrapper";
+		public string WorkingDirectory;
+		public string[] Arguments;
+		public string[] Environment;
+		public bool IsNative;
+		public bool LoadNativeSymbolTable;
 
 		string cwd;
-		protected string base_dir;
+		string base_dir;
 		string[] argv;
 		string[] envp;
-		DebuggerOptions options;
-		protected bool native;
-		protected bool load_native_symtab;
+		bool native;
+		[NonSerialized] Assembly application;
+		[NonSerialized] DebuggerOptions options;
 
+		public static string JitWrapper;
 		bool initialized = false;
 
 		static ProcessStart ()
 		{
 			Assembly debugger_ass = Assembly.GetExecutingAssembly ();
 			string libdir = Path.GetDirectoryName (debugger_ass.Location);
-
 			JitWrapper = Path.Combine (libdir, "mono-debugger-mini-wrapper");
 		}
 
-		protected ProcessStart (DebuggerOptions options, string[] argv)
-			: this (options)
-		{
-			this.argv = argv;
-		}
+		public ProcessStart ()
+		{ }
 
-		protected ProcessStart (DebuggerOptions options)
+		public ProcessStart (DebuggerOptions options, string[] argv)
 		{
 			this.options = options;
-			this.cwd = options.WorkingDirectory;
-			this.load_native_symtab = options.LoadNativeSymbolTable;
+
+			if ((argv == null) || (argv.Length == 0))
+				throw new ArgumentException ();
+
+			this.Arguments = argv;
+			this.WorkingDirectory = options.WorkingDirectory;
+
+			try {
+				application = Assembly.LoadFrom (argv [0]);
+			} catch {
+				application = null;
+			}
+
+			if (application != null) {
+				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
+				IsNative = false;
+
+				string[] start_argv = {
+					options.JitWrapper, options.JitOptimizations
+				};
+
+				this.argv = new string [argv.Length + start_argv.Length];
+				start_argv.CopyTo (this.argv, 0);
+				argv.CopyTo (this.argv, start_argv.Length);
+			} else {
+				LoadNativeSymbolTable = true;
+				IsNative = true;
+
+				this.argv = argv;
+			}
 		}
 
 		public DebuggerOptions Options {
-			get {
-				return options;
-			}
-		}
-
-		public string WorkingDirectory {
-			get {
-				return cwd;
-			}
-		}
-
-		public string BaseDirectory {
-			get {
-				if (!initialized)
-					DoSetup ();
-
-				return base_dir;
-			}
+			get { return options; }
 		}
 
 		public string[] CommandLineArguments {
-			get {
-				if (!initialized)
-					DoSetup ();
-
-				return argv;
-			}
-		}
-
-		public string[] Environment {
-			get {
-				if (!initialized)
-					DoSetup ();
-
-				return envp;
-			}
+			get { return argv; }
 		}
 
 		public string TargetApplication {
-			get {
-				if (!initialized)
-					DoSetup ();
-
-				return argv [0];
-			}
+			get { return argv [0]; }
 		}
 
-		public bool IsNative {
-			get {
-				if (!initialized)
-					DoSetup ();
-
-				return native;
-			}
+		public string BaseDirectory {
+			get { return base_dir; }
 		}
 
-		public bool LoadNativeSymtab {
-			get {
-				if (!initialized)
-					DoSetup ();
-
-				return load_native_symtab;
-			}
-		}
-
-		public virtual string CommandLine {
-			get { return String.Join (" ", argv); }
-		}
-
-		protected virtual void SetupEnvironment (params string[] add_envp)
+		protected virtual void SetupEnvironment ()
 		{
 			ArrayList list = new ArrayList ();
-			if (envp != null)
-				list.AddRange (envp);
-			if (add_envp != null)
-				list.AddRange (add_envp);
+			if (Environment != null)
+				list.AddRange (Environment);
+			list.Add ("LD_BIND_NOW=yes");
 
 			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
 
@@ -174,8 +147,7 @@ namespace Mono.Debugger
 
 		protected virtual void SetupWorkingDirectory ()
 		{
-			if (cwd == null)
-				cwd = ".";
+			cwd = (WorkingDirectory != null) ? WorkingDirectory : ".";
 		}
 
 		protected virtual void SetupBaseDirectory ()
@@ -208,12 +180,10 @@ namespace Mono.Debugger
 
 		protected virtual void DoSetup ()
 		{
-			SetupEnvironment ("LD_BIND_NOW=yes");
-			argv = SetupArguments ();
+			SetupEnvironment ();
+			SetupArguments ();
 			SetupWorkingDirectory ();
 			SetupBaseDirectory ();
-			load_native_symtab = true;
-			native = true;
 			initialized = true;
 		}
 
@@ -224,74 +194,24 @@ namespace Mono.Debugger
 			if (args.Length == 0)
 				return null;
 
-			Assembly application;
-			try {
-				application = Assembly.LoadFrom (args [0]);
-			} catch {
-				application = null;
-			}
+			return new ProcessStart (options, args);
+		}
 
-			if (application != null)
-				return new ManagedProcessStart (options, args);
+		protected string print_argv (string[] argv)
+		{
+			if (argv == null)
+				return "null";
 			else
-				return new NativeProcessStart (options, args);
+				return String.Join (":", argv);
 		}
-	}
 
-	[Serializable]
-	public class NativeProcessStart : ProcessStart
-	{
-		public NativeProcessStart (DebuggerOptions options, string[] argv)
-			: base (options, argv)
+		public override string ToString ()
 		{
-		}
-	}
-
-	[Serializable]
-	public class ManagedProcessStart : NativeProcessStart
-	{
-		string[] old_argv;
-		string jit_wrapper, opt_flags;
-
-		public ManagedProcessStart (DebuggerOptions options, string[] argv)
-			: base (options, argv)
-		{
-			this.jit_wrapper = options.JitWrapper;
-			this.opt_flags = options.JitOptimizations;
-		}
-
-		protected override void DoSetup ()
-		{
-			base.DoSetup ();
-			if (Options.LoadNativeSymbolTable) {
-				load_native_symtab = true;
-				native = true;
-			} else {
-				load_native_symtab = false;
-				native = false;
-			}
-		}
-
-		protected override void SetupBaseDirectory ()
-		{
-			if (base_dir == null)
-				base_dir = GetFullPath (Path.GetDirectoryName (old_argv [0]));
-		}
-
-		public override string CommandLine {
-			get { return String.Join (" ", old_argv); }
-		}
-
-		protected override string[] SetupArguments ()
-		{
-			old_argv = base.SetupArguments ();
-
-			string[] start_argv = { jit_wrapper, opt_flags };
-
-			string[] new_argv = new string [old_argv.Length + start_argv.Length];
-			start_argv.CopyTo (new_argv, 0);
-			old_argv.CopyTo (new_argv, start_argv.Length);
-			return new_argv;
+			return String.Format ("{0} ({1},{2},{3},{4},{5})",
+					      GetType (), WorkingDirectory,
+					      print_argv (Arguments),
+					      print_argv (Environment),
+					      IsNative, LoadNativeSymbolTable);
 		}
 	}
 }

@@ -213,7 +213,7 @@ namespace Mono.Debugger.Backends
 		{
 			this.backend = backend;
 			this.start = start;
-			this.native = !(start is ManagedProcessStart);
+			this.native = start.IsNative;
 			this.bfd_container = backend.BfdContainer;
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
@@ -447,8 +447,9 @@ namespace Mono.Debugger.Backends
 						      target_addr_size, is_bigendian != 0);
 
 			try {
-				bfd = bfd_container.AddFile (this, start.TargetApplication,
-							     start.LoadNativeSymtab, true);
+				bfd = bfd_container.AddFile (
+					this, start.TargetApplication,
+					start.LoadNativeSymbolTable, true);
 			} catch (Exception e) {
 				if (error_handler != null)
 					error_handler (this, String.Format (
