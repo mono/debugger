@@ -6,12 +6,6 @@ This is a list of GUI issues which need to be fixed for the next release.
 * The ProgramToDebug dialog needs some loving; for instance, there is no way to specify
   environment variables.
 
-* "Insert breakpoint" from the context menu computes the wrong coordinates and thus
-  inserts the breakpoint somewhere, but not where the user actually klicked.
-  This is bug #40869.
-
-  [FIXME: The issue is fixed in my local tree, need to close bug #40869!]
-
 * There seems to be a reference-counting bug somewhere in gtk#: if you display the "About"
   dialog several times, you get a crash.  I did some debugging, but I was unable to find it.
   This is now known as bug #41091.
