@@ -141,6 +141,10 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			expression = ParseExpression (context);
+			if (expression == null)
+				return false;
+
+			expression = expression.Resolve (context);
 			return expression != null;
 		}
 
@@ -165,6 +169,10 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			expression = ParseExpression (context);
+			if (expression == null)
+				return false;
+
+			expression = expression.Resolve (context);
 			return expression != null;
 		}
 
@@ -177,7 +185,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
 			Expression type_expr = new TypeOfExpression (expression);
-			ITargetType type = type_expr.ResolveType (new_context);
+			ITargetType type = type_expr.EvaluateType (new_context);
 			new_context.Print (type);
 		}
 	}
@@ -207,12 +215,12 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			PointerExpression pexp = expression as PointerExpression;
 			if (pexp != null) {
-				TargetLocation location = pexp.ResolveLocation (context);
+				TargetLocation location = pexp.EvaluateAddress (context);
 
 				taddress = location.Address;
 				taccess = location.TargetAccess;
 			} else {
-				ITargetObject obj = expression.ResolveVariable (context);
+				ITargetObject obj = expression.EvaluateVariable (context);
 
 				if (!obj.Location.HasAddress)
 					throw new ScriptingException (
@@ -883,7 +891,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return false;
 
-			location = expr.ResolveLocation (context, null);
+			location = expr.EvaluateLocation (context, null);
 			return location != null;
 		}
 

@@ -221,6 +221,16 @@ namespace Mono.Debugger.Frontends.Scripting
 			return var.GetObject (frame);
 		}
 
+		public ILanguage Language {
+			get {
+				if (frame.Language == null)
+					throw new ScriptingException (
+						"Stack frame has no source language.");
+
+				return frame.Language;
+			}
+		}
+
 		public override string ToString ()
 		{
 			return frame.ToString ();

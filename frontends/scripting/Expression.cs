@@ -15,52 +15,71 @@ namespace Mono.Debugger.Frontends.Scripting
 			get;
 		}
 
-		protected virtual bool DoResolveBase (ScriptingContext context)
+		protected bool resolved;
+
+		protected virtual ITargetType DoEvaluateType (ScriptingContext context)
 		{
-			return true;
+			return EvaluateVariable (context).Type;
 		}
 
-		protected void ResolveBase (ScriptingContext context)
+		public ITargetType EvaluateType (ScriptingContext context)
 		{
-			bool ok;
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
+
 			try {
-				ok = DoResolveBase (context);
-			} catch {
-				ok = false;
+				ITargetType type = DoEvaluateType (context);
+				if (type == null)
+					throw new ScriptingException (
+						"Cannot get type of expression `{0}'", Name);
+
+				return type;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException (
+					"Location of variable `{0}' is invalid: {1}",
+					Name, ex.Message);
 			}
-			if (!ok)
-				throw new ScriptingException (
-					"Can't resolve expression `{0}'.", Name);
 		}
 
-		protected virtual ITargetType DoResolveType (ScriptingContext context)
+		protected virtual object DoEvaluate (ScriptingContext context)
+		{
+			return DoEvaluateVariable (context);
+		}
+
+		public object Evaluate (ScriptingContext context)
+		{
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
+
+			object result = DoEvaluate (context);
+			if (result == null)
+				throw new ScriptingException (
+					"Cannot evaluate expression `{0}'", Name);
+
+			return result;
+		}
+
+		protected virtual ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			return null;
 		}
 
-		public ITargetType ResolveType (ScriptingContext context)
+		public ITargetObject EvaluateVariable (ScriptingContext context)
 		{
-			ResolveBase (context);
-
-			ITargetType type = DoResolveType (context);
-			if (type == null)
-				throw new ScriptingException (
-					"Can't get type of expression `{0}'.", Name);
-
-			return type;
-		}
-
-		protected virtual ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			return null;
-		}
-
-		public ITargetObject ResolveVariable (ScriptingContext context)
-		{
-			ResolveBase (context);
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
 
 			try {
-				ITargetObject retval = DoResolveVariable (context);
+				ITargetObject retval = DoEvaluateVariable (context);
 				if (retval == null)
 					throw new ScriptingException (
 						"Expression `{0}' is not a variable", Name);
@@ -73,20 +92,26 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		protected virtual ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
+		protected virtual ITargetFunctionObject DoEvaluateMethod (ScriptingContext ctx,
+									  Expression[] args)
 		{
 			return null;
 		}
 
-		public ITargetFunctionObject ResolveMethod (ScriptingContext context, Expression[] args)
+		public ITargetFunctionObject EvaluateMethod (ScriptingContext context,
+							     Expression[] args)
 		{
-			ResolveBase (context);
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
 
 			try {
-				ITargetFunctionObject retval = DoResolveMethod (context, args);
+				ITargetFunctionObject retval = DoEvaluateMethod (context, args);
 				if (retval == null)
 					throw new ScriptingException (
-						"Expression does not resolve to a method: `{0}'", Name);
+						"Expression `{0}' is not a method", Name);
 
 				return retval;
 			} catch (LocationInvalidException ex) {
@@ -96,22 +121,26 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		protected virtual SourceLocation DoResolveLocation (ScriptingContext context,
-								    Expression[] types)
+		protected virtual SourceLocation DoEvaluateLocation (ScriptingContext context,
+								     Expression[] types)
 		{
 			return null;
 		}
 
-		public SourceLocation ResolveLocation (ScriptingContext context,
-						       Expression [] types)
+		public SourceLocation EvaluateLocation (ScriptingContext context,
+							Expression [] types)
 		{
-			ResolveBase (context);
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
 
 			try {
-				SourceLocation location = DoResolveLocation (context, types);
+				SourceLocation location = DoEvaluateLocation (context, types);
 				if (location == null)
 					throw new ScriptingException (
-						"Expression does not resolve to a method: `{0}'", Name);
+						"Expression `{0}' is not a method", Name);
 
 				return location;
 			} catch (LocationInvalidException ex) {
@@ -128,13 +157,18 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void Assign (ScriptingContext context, ITargetObject obj)
 		{
-			ResolveBase (context);
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
 
 			bool ok;
 			try {
 				ok = DoAssign (context, obj);
-			} catch (Exception e) {
-				Console.WriteLine ("ASSIGN: {0} {1}", e, obj);
+			} catch (ScriptingException) {
+				ok = false;
+			} catch (TargetException) {
 				ok = false;
 			}
 
@@ -143,17 +177,33 @@ namespace Mono.Debugger.Frontends.Scripting
 					"Expression `{0}' is not an lvalue", Name);
 		}
 
-		protected abstract object DoResolve (ScriptingContext context);
-
-		public object Resolve (ScriptingContext context)
+		protected virtual Expression DoResolveType (ScriptingContext context)
 		{
-			object retval = DoResolve (context);
+			return null;
+		}
 
-			if (retval == null)
-				throw new ScriptingException (
-					"Can't resolve command: {0}", this);
+		public Expression ResolveType (ScriptingContext context)
+		{
+			try {
+				return DoResolveType (context);
+			} catch (ScriptingException) {
+				return null;
+			} catch (TargetException) {
+				return null;
+			}
+		}
 
-			return retval;
+		protected abstract Expression DoResolve (ScriptingContext context);
+
+		public Expression Resolve (ScriptingContext context)
+		{
+			try {
+				return DoResolve (context);
+			} catch (ScriptingException) {
+				return null;
+			} catch (TargetException) {
+				return null;
+			}
 		}
 
 		public override string ToString ()
@@ -180,12 +230,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return val.ToString (); }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return ResolveVariable (context).Type;
+			return this;
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
@@ -195,7 +245,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			return frame.Language.CreateInstance (frame, val);
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override object DoEvaluate (ScriptingContext context)
 		{
 			return val;
 		}
@@ -214,12 +264,17 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return val; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return ResolveVariable (context).Type;
+			return this;
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override object DoEvaluate (ScriptingContext context)
+		{
+			return val;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
@@ -227,11 +282,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				return null;
 
 			return frame.Language.CreateInstance (frame, val);
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			return val;
 		}
 	}
 
@@ -248,14 +298,24 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return type.Name; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolveType (ScriptingContext context)
+		{
+			return this;
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
+		}
+
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
 			return type;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override object DoEvaluate (ScriptingContext context)
 		{
-			return ResolveType (context);
+			return type;
 		}
 	}
 
@@ -272,12 +332,17 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return var.Name; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
+		}
+
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
 			return var.Type;
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			return context.CurrentFrame.GetVariable (var);
 		}
@@ -295,11 +360,6 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			var.SetObject (context.CurrentFrame.Frame, obj);
 			return true;
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			return ResolveVariable (context);
 		}
 	}
 
@@ -337,7 +397,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					frame.Frame, method.DeclaringType, name);
 		}
 
-		Expression ResolveSimpleName (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 			IVariable var = frame.GetVariableInfo (name, false);
@@ -348,89 +408,17 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr != null)
 				return expr;
 
-			if (frame.Frame.Language == null)
-				return null;
+			return null;
+		}
 
-			ITargetType type = frame.Frame.Language.LookupType (frame.Frame, name);
+		protected override Expression DoResolveType (ScriptingContext context)
+		{
+			FrameHandle frame = context.CurrentFrame;
+			ITargetType type = frame.Language.LookupType (frame.Frame, name);
 			if (type != null)
 				return new TypeExpression (type);
 
 			return null;
-		}
-
-		protected override ITargetType DoResolveType (ScriptingContext context)
-		{
-			Expression expr = ResolveSimpleName (context);
-			if (expr == null)
-				throw new ScriptingException ("No such type `{0}'", name);
-
-			return expr.ResolveType (context);
-		}
-
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			Expression expr = ResolveSimpleName (context);
-			if (expr == null)
-				throw new ScriptingException ("No such variable `{0}'", name);
-
-			return expr.ResolveVariable (context);
-		}
-
-		Expression LookupMethod (ScriptingContext context, FrameHandle frame)
-		{
-			IMethod method = frame.Frame.Method;
-			if ((method == null) || (method.DeclaringType == null))
-				return null;
-
-			if (method.HasThis) {
-				ITargetObject instance = frame.GetVariable (method.This);
-
-				return new StructAccessExpression (
-					frame.Frame, (ITargetStructObject) instance, name);
-			} else
-				return new StructAccessExpression (
-					frame.Frame, method.DeclaringType, name);
-		}
-
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
-		{
-			FrameHandle frame = context.CurrentFrame;
-			Expression expr = LookupMethod (context, frame);
-			if (expr == null)
-				throw new ScriptingException ("No such method `{0}'", name);
-
-			return expr.ResolveMethod (context, args);
-		}
-
-		protected override SourceLocation DoResolveLocation (ScriptingContext context,
-								     Expression[] types)
-		{
-			FrameHandle frame = context.CurrentFrame;
-			Expression expr = LookupMethod (context, frame);
-			if (expr == null)
-				throw new ScriptingException ("No such method `{0}'", name);
-
-			return expr.ResolveLocation (context, types);
-		}
-
-		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
-		{
-			Expression expr = ResolveSimpleName (context);
-			if (expr == null)
-				throw new ScriptingException ("No such variable `{0}'", name);
-
-			expr.Assign (context, obj);
-			return true;
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			Expression expr = ResolveSimpleName (context);
-			if (expr == null)
-				throw new ScriptingException (
-					"No such variable or type `{0}'", name);
-
-			return expr.Resolve (context);
 		}
 	}
 
@@ -449,86 +437,53 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return left.Name + "." + name; }
 		}
 
-		Expression ResolveMemberAccess (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 
-			object resolved;
-			try {
-				resolved = left.Resolve (context);
-			} catch {
-				if (frame.Language == null)
-					return null;
-				ITargetType ntype = frame.Language.LookupType (frame, Name);
-				if (ntype == null)
-					return null;
-				return new TypeExpression (ntype);
-			}
-
-			if (resolved is ITargetObject) {
-				ITargetStructObject sobj = resolved as ITargetStructObject;
-				if (sobj == null)
+			Expression ltype = left.ResolveType (context);
+			if (ltype != null) {
+				ITargetStructType stype = ltype.EvaluateType (context)
+					as ITargetStructType;
+				if (stype == null)
 					throw new ScriptingException (
-						"{0} is not a struct of class", left);
+						"`{0}' is not a struct or class", ltype.Name);
 
-				return new StructAccessExpression (frame, sobj, name);
+				return new StructAccessExpression (frame, stype, name);
 			}
 
-			ITargetType type = (ITargetType) resolved;
-			if (frame.Language != null) {
-				string nested = type.Name + "+" + name;
-				ITargetType ntype = frame.Language.LookupType (frame, nested);
-				if (ntype != null)
-					return new TypeExpression (ntype);
-			}
-
-			ITargetStructType stype = resolved as ITargetStructType;
-			if (stype == null)
+			Expression lexpr = left.Resolve (context);
+			if (lexpr == null)
 				throw new ScriptingException (
-					"{0} is not a struct of class", left);
+					"No such variable or type: `{0}'", left.Name);
 
-			return new StructAccessExpression (frame, stype, name);
+			ITargetStructObject sobj = lexpr.EvaluateVariable (context)
+				as ITargetStructObject;
+			if (sobj == null)
+				throw new ScriptingException (
+					"`{0}' is not a struct or class", left.Name);
+
+			return new StructAccessExpression (frame, sobj, name);
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override Expression DoResolveType (ScriptingContext context)
 		{
-			Expression expr = ResolveMemberAccess (context);
+			StackFrame frame = context.CurrentFrame.Frame;
 
-			return expr.ResolveVariable (context);
-		}
+			ITargetType the_type;
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
-		{
-			Expression expr = ResolveMemberAccess (context);
+			Expression ltype = left.ResolveType (context);
+			if (ltype == null)
+				the_type = frame.Language.LookupType (frame, Name);
+			else {
+				string nested = ltype.Name + "+" + name;
+				the_type = frame.Language.LookupType (frame, nested);
+			}
 
-			return expr.ResolveType (context);
-		}
+			if (the_type == null)
+				return null;
 
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
-		{
-			Expression expr = ResolveMemberAccess (context);
-
-			return expr.ResolveMethod (context, args);
-		}
-
-		protected override SourceLocation DoResolveLocation (ScriptingContext context,
-								     Expression[] types)
-		{
-			Expression expr = ResolveMemberAccess (context);
-
-			return expr.ResolveLocation (context, types);
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			Expression expr = ResolveMemberAccess (context);
-
-			return expr.Resolve (context);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1}:{2})", GetType(), left, name);
+			return new TypeExpression (the_type);
 		}
 	}
 
@@ -575,7 +530,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			throw new ScriptingException ("Unknown binary operator kind: {0}", kind);
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			object lobj, robj;
 
@@ -599,7 +554,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.number = number;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return context.Interpreter.GetBreakpoint (number);
 		}
@@ -619,7 +574,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.args = args;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return args;
 		}
@@ -651,7 +606,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.name = name;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			ThreadGroup group = ThreadGroup.ThreadGroupByName (name);
 			if (group == null)
@@ -680,7 +635,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			return '(' + expr.ToString() + ')';
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return expr.Resolve (context);
 		}
@@ -695,7 +650,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.var_expr = var_expr;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
 			if (obj == null)
@@ -715,7 +670,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.var_expr = var_expr;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
 			if (obj == null)
@@ -735,7 +690,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.var_expr = var_expr;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
 			if (obj == null)
@@ -814,7 +769,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			return null;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			if (history_id > 0)
 				return context.GetMethodSearchResult (history_id);
@@ -858,7 +813,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.sources = sources;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return context.Interpreter.GetSources (sources);
 		}
@@ -894,7 +849,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.operations = operations;
 		}
 
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return operations;
 		}

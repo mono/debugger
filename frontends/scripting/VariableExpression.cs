@@ -22,43 +22,20 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return String.Format ("typeof ({0})", expr.Name); }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolveType (ScriptingContext context)
 		{
 			return expr.ResolveType (context);
 		}
 		
-		protected override object DoResolve (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return ResolveType (context);
+			return expr.Resolve (context);
 		}
 	}
 
-	[Expression("variable_expression", "Variable expression")]
-	public abstract class VariableExpression : Expression
+	public abstract class PointerExpression : Expression
 	{
-		protected override object DoResolve (ScriptingContext context)
-		{
-			try {
-				ITargetObject obj = ResolveVariable (context);
-				if (!obj.IsValid)
-					throw new ScriptingException ("Variable `{0}' is out of scope.", Name);
-
-				return obj;
-			} catch (LocationInvalidException ex) {
-				throw new ScriptingException ("Location of variable `{0}' is invalid: {1}",
-							      Name, ex);
-			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1})", GetType (), Name);
-		}
-	}
-
-	public abstract class PointerExpression : VariableExpression
-	{
-		public new abstract TargetLocation ResolveLocation (ScriptingContext context);
+		public abstract TargetLocation EvaluateAddress (ScriptingContext context);
 	}
 
 	public class RegisterExpression : PointerExpression
@@ -77,23 +54,27 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return '%' + name; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
+		}
+
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
 			return frame.GetRegisterType (register);
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
 			return context.CurrentFrame.GetRegister (register, offset);
 		}
 
-		public override TargetLocation ResolveLocation (ScriptingContext context)
+		public override TargetLocation EvaluateAddress (ScriptingContext context)
 		{
-			ResolveBase (context);
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
 			return frame.GetRegisterLocation (register, offset, true);
@@ -119,7 +100,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class StructAccessExpression : VariableExpression
+	public class StructAccessExpression : Expression
 	{
 		string name;
 
@@ -153,6 +134,11 @@ namespace Mono.Debugger.Frontends.Scripting
 			get {
 				return Identifier;
 			}
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
 		}
 
 		protected ITargetObject GetField (ITargetStructObject sobj, ITargetFieldInfo field)
@@ -240,7 +226,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			// We do a very simple overload resolution here
 			ITargetType[] argtypes = new ITargetType [types.Length];
 			for (int i = 0; i < types.Length; i++)
-				argtypes [i] = types [i].ResolveType (context);
+				argtypes [i] = types [i].EvaluateType (context);
 
 			// Ok, no we need to find an exact match.
 			ITargetMethodInfo match = null;
@@ -325,7 +311,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			return null;
 		}
 
-		protected ITargetMemberInfo ResolveTypeBase (ScriptingContext context, bool report_error)
+		protected ITargetMemberInfo FindMember (ScriptingContext context, bool report_error)
 		{
 			ITargetMemberInfo member = FindMember (Type, IsStatic, Identifier);
 			if ((member != null) || !report_error)
@@ -337,14 +323,9 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException ("Type {0} has no member {1}.", Type.Name, Identifier);
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			return ResolveTypeBase (context, true).Type;
-		}
-
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			ITargetMemberInfo member = ResolveTypeBase (context, true);
+			ITargetMemberInfo member = FindMember (context, true);
 
 			if (member.IsStatic)
 				return GetStaticMember (Type, Frame, member);
@@ -354,9 +335,9 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
 		}
 
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] types)
+		protected override ITargetFunctionObject DoEvaluateMethod (ScriptingContext context, Expression[] types)
 		{
-			ITargetMemberInfo member = ResolveTypeBase (context, false);
+			ITargetMemberInfo member = FindMember (context, false);
 			if (member != null)
 				throw new ScriptingException ("Member {0} of type {1} is not a method.", Identifier, Type.Name);
 
@@ -381,10 +362,10 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException ("Type {0} has no method {1}.", Type.Name, Identifier);
 		}
 
-		protected override SourceLocation DoResolveLocation (ScriptingContext context,
-								     Expression[] types)
+		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
+								      Expression[] types)
 		{
-			ITargetMemberInfo member = ResolveTypeBase (context, false);
+			ITargetMemberInfo member = FindMember (context, false);
 			if (member != null)
 				throw new ScriptingException ("Member {0} of type {1} is not a method.", Identifier, Type.Name);
 
@@ -406,51 +387,61 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public class PointerDereferenceExpression : PointerExpression
 	{
+		Expression original_expr;
 		Expression expr;
 
 		public PointerDereferenceExpression (Expression expr)
 		{
-			this.expr = expr;
+			this.original_expr = expr;
 		}
 
 		public override string Name {
 			get {
-				return '*' + expr.Name;
+				return '*' + original_expr.Name;
 			}
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			ITargetPointerObject pobj = expr.ResolveVariable (context) as ITargetPointerObject;
+			expr = original_expr.Resolve (context);
+			if (expr == null)
+				return null;
+
+			return this;
+		}
+
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
+		{
+			FrameHandle frame = context.CurrentFrame;
+
+			ITargetPointerType ptype = expr.EvaluateType (context)
+				as ITargetPointerType;
+			if (ptype == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a pointer.",
+					original_expr.Name);
+
+			return ptype;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			ITargetPointerObject pobj = expr.EvaluateVariable (context)
+				as ITargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException (
-					"Variable `{0}' is not a pointer type.", expr.Name);
+					"Expression `{0}' is not a pointer type.",
+					original_expr.Name);
 
 			if (!pobj.HasDereferencedObject)
 				throw new ScriptingException (
-					"Cannot dereference `{0}'.", expr.Name);
+					"Cannot dereference `{0}'.", original_expr.Name);
 
 			return pobj.DereferencedObject;
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		public override TargetLocation EvaluateAddress (ScriptingContext context)
 		{
-			ITargetPointerObject pobj = expr.ResolveVariable (context) as ITargetPointerObject;
-			if (pobj == null)
-				throw new ScriptingException (
-					"Variable `{0}` is not a pointer type.", expr.Name);
-
-			ITargetType type = pobj.CurrentType;
-			if (type == null)
-				throw new ScriptingException (
-					"Cannot get current type of `{0}'.", expr.Name);
-
-			return type;
-		}
-
-		public override TargetLocation ResolveLocation (ScriptingContext context)
-		{
-			ResolveBase (context);
 			FrameHandle frame = context.CurrentFrame;
 
 			object obj = expr.Resolve (context);
@@ -468,72 +459,60 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException (
-					"Variable `{0}' is not a pointer type.", expr.Name);
+					"Expression `{0}' is not a pointer type.",
+					original_expr.Name);
 
 			return pobj.Location;
 		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			FrameHandle frame = context.CurrentFrame;
-
-			object obj = expr.Resolve (context);
-			if (obj is int)
-				obj = (long) (int) obj;
-			if (obj is long) {
-				ITargetType type = frame.Frame.Language.PointerType;
-
-				TargetAddress taddress = new TargetAddress (
-					frame.Frame.AddressDomain, (long) obj);
-
-				TargetLocation location = new AbsoluteTargetLocation (
-					frame.Frame, taddress);
-
-				return type.GetObject (location);
-			}
-
-			ITargetPointerObject pobj = obj as ITargetPointerObject;
-			if (pobj == null)
-				throw new ScriptingException (
-					"Variable `{0}` is not a pointer type.", expr.Name);
-
-			if (!pobj.HasDereferencedObject)
-				throw new ScriptingException (
-					"Cannot dereference `{0}'.", expr.Name);
-
-			return pobj.DereferencedObject;
-		}
 	}
 
-	public class ArrayAccessExpression : VariableExpression
+	public class ArrayAccessExpression : Expression
 	{
 		Expression expr, index;
+		string name;
 
 		public ArrayAccessExpression (Expression expr, Expression index)
 		{
 			this.expr = expr;
 			this.index = index;
+
+			name = String.Format ("{0}[{1}]", expr.Name, index);
 		}
 
 		public override string Name {
 			get {
-				return String.Format ("{0}[{1}]", expr.Name, index);
+				return name;
 			}
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			expr = expr.Resolve (context);
+			if (expr == null)
+				return null;
+
+			index = index.Resolve (context);
+			if (index == null)
+				return null;
+
+			return this;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			int i;
 
-			ITargetArrayObject obj = expr.ResolveVariable (context) as ITargetArrayObject;
+			ITargetArrayObject obj = expr.EvaluateVariable (context)
+				as ITargetArrayObject;
 			if (obj == null)
 				throw new ScriptingException (
 					"Variable {0} is not an array type.", expr.Name);
 			try {
-				i = (int) this.index.Resolve (context);
+				i = (int) this.index.Evaluate (context);
 			} catch (Exception e) {
 				throw new ScriptingException (
-					"Cannot convert {0} to an integer for indexing: {1}", this.index, e);
+					"Cannot convert {0} to an integer for indexing: {1}",
+					this.index, e);
 			}
 
 			if ((i < obj.LowerBound) || (i >= obj.UpperBound))
@@ -545,35 +524,48 @@ namespace Mono.Debugger.Frontends.Scripting
 			return obj [i];
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
-			ITargetArrayType type = expr.ResolveType (context) as ITargetArrayType;
+			ITargetArrayType type = expr.EvaluateType (context)
+				as ITargetArrayType;
 			if (type == null)
-				throw new ScriptingException ("Variable {0} is not an array type.",
-							      expr.Name);
+				throw new ScriptingException (
+					"Variable {0} is not an array type.", expr.Name);
 
 			return type.ElementType;
 		}
 	}
 
-	public class ParentClassExpression : VariableExpression
+	public class ParentClassExpression : Expression
 	{
 		Expression expr;
+		string name;
 
 		public ParentClassExpression (Expression expr)
 		{
 			this.expr = expr;
+			this.name = String.Format ("parent ({0})", expr.Name);
 		}
 
 		public override string Name {
 			get {
-				return String.Format ("parent ({0})", expr.Name);
+				return name;
 			}
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			ITargetClassObject obj = expr.ResolveVariable (context) as ITargetClassObject;
+			expr = expr.Resolve (context);
+			if (expr == null)
+				return null;
+
+			return this;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			ITargetClassObject obj = expr.EvaluateVariable (context)
+				as ITargetClassObject;
 			if (obj == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
@@ -586,7 +578,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			return obj.Parent;
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
 			ITargetClassType type = expr.ResolveType (context) as ITargetClassType;
 			if (type == null)
@@ -601,57 +593,67 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class InvocationExpression : VariableExpression
+	public class InvocationExpression : Expression
 	{
 		Expression method_expr;
 		Expression[] arguments;
+		string name;
 
 		public InvocationExpression (Expression method_expr, Expression[] arguments)
 		{
 			this.method_expr = method_expr;
 			this.arguments = arguments;
+
+			name = String.Format ("{0} ()", method_expr.Name);
 		}
 
 		public override string Name {
-			get { return String.Format ("{0} ()", method_expr.Name); }
+			get { return name; }
 		}
 
 		ITargetFunctionObject func;
 
-		protected override bool DoResolveBase (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			func = method_expr.ResolveMethod (context, arguments);
-			return func != null;
+			method_expr = method_expr.Resolve (context);
+			if (method_expr == null)
+				return null;
+
+			for (int i = 0; i < arguments.Length; i++) {
+				arguments [i] = arguments [i].Resolve (context);
+				if (arguments [i] == null)
+					return null;
+			}
+
+			return this;
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
 			return func.Type;
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			return Invoke (context, false);
 		}
 
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] types)
+		protected override ITargetFunctionObject DoEvaluateMethod (ScriptingContext context, Expression[] types)
 		{
-			return method_expr.ResolveMethod (context, types);
+			return method_expr.EvaluateMethod (context, types);
 		}
 
-		protected override SourceLocation DoResolveLocation (ScriptingContext context,
-								     Expression[] types)
+		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
+								      Expression[] types)
 		{
-			return method_expr.ResolveLocation (context, arguments);
+			return method_expr.EvaluateLocation (context, arguments);
 		}
 
 		public ITargetObject Invoke (ScriptingContext context, bool debug)
 		{
-			ResolveBase (context);
-
 			ITargetObject[] args = new ITargetObject [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)
-				args [i] = arguments [i].ResolveVariable (context);
+				args [i] = arguments [i].EvaluateVariable (context);
 
 			try {
 				ITargetObject retval = func.Invoke (args, debug);
@@ -667,27 +669,45 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class NewExpression : VariableExpression
+	public class NewExpression : Expression
 	{
 		Expression type_expr;
 		Expression[] arguments;
+		string name;
 
 		public NewExpression (Expression type_expr, Expression[] arguments)
 		{
 			this.type_expr = type_expr;
 			this.arguments = arguments;
+
+			name = String.Format ("new {0} ()", type_expr.Name);
 		}
 
 		public override string Name {
-			get { return String.Format ("new {0} ()", type_expr.Name); }
+			get { return name; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return type_expr.ResolveType (context);
+			type_expr = type_expr.ResolveType (context);
+			if (type_expr == null)
+				return null;
+
+			for (int i = 0; i < arguments.Length; i++) {
+				arguments [i] = arguments [i].Resolve (context);
+				if (arguments [i] == null)
+					return null;
+			}
+
+			return this;
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
+		{
+			return type_expr.EvaluateType (context);
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			return Invoke (context, false);
 		}
@@ -696,7 +716,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = context.CurrentFrame;
 
-			ITargetStructType stype = type_expr.ResolveType (context) as ITargetStructType;
+			ITargetStructType stype = type_expr.EvaluateType (context)
+				as ITargetStructType;
 			if (stype == null)
 				throw new ScriptingException (
 					"Type `{0}' is not a struct or class.",
@@ -727,7 +748,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			ITargetObject[] args = new ITargetObject [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)
-				args [i] = arguments [i].ResolveVariable (context);
+				args [i] = arguments [i].EvaluateVariable (context);
 
 			try {
 				return ctor.Type.InvokeStatic (frame.Frame, args, debug);
@@ -743,23 +764,39 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class AssignmentExpression : VariableExpression
+	public class AssignmentExpression : Expression
 	{
 		Expression left, right;
+		string name;
 
 		public AssignmentExpression (Expression left, Expression right)
 		{
 			this.left = left;
 			this.right = right;
+
+			name = left.Name + "=" + right.Name;
 		}
 
 		public override string Name {
-			get { return left.Name + "=" + right.Name; }
+			get { return name; }
 		}
 
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		protected override Expression DoResolve (ScriptingContext context)
 		{
-			ITargetObject obj = right.ResolveVariable (context);
+			left = left.Resolve (context);
+			if (left == null)
+				return null;
+
+			right = right.Resolve (context);
+			if (right == null)
+				return null;
+
+			return this;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			ITargetObject obj = right.EvaluateVariable (context);
 			left.Assign (context, obj);
 			return obj;
 		}
