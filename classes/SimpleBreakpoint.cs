@@ -11,7 +11,6 @@ namespace Mono.Debugger
 
 		public override bool BreakpointHit (StackFrame frame)
 		{
-			Console.WriteLine ("BREAKPOINT HIT: {0} {1}", this, frame);
 			OnBreakpointHit ();
 			return true;
 		}

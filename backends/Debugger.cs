@@ -247,14 +247,10 @@ namespace Mono.Debugger
 				return -1;
 			}
 
-			Console.WriteLine ("METHOD: {0} {1} {2}", method, method.SourceInfo,
-					   method.SourceInfo.Module);
-
 			Module module = method.SourceInfo.Module;
 
 			int index = module.AddBreakpoint (breakpoint, group, method);
 			breakpoint_module_map [index] = module;
-			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;
 		}
 
@@ -271,14 +267,10 @@ namespace Mono.Debugger
 				return -1;
 			}
 
-			Console.WriteLine ("METHOD: {0} {1} {2}", method, method.SourceInfo,
-					   method.SourceInfo.Module);
-
 			Module module = method.SourceInfo.Module;
 
 			int index = module.AddBreakpoint (breakpoint, group, method, line);
 			breakpoint_module_map [index] = module;
-			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;
 		}
 

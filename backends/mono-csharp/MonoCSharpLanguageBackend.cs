@@ -1762,10 +1762,6 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!breakpoints.Contains (breakpoint_id))
 					return false;
 
-				Console.WriteLine ("TRAMPOLINE BREAKPOINT: {0} {1} {2} {3} {4}",
-						   code, method, breakpoint_id, retaddr,
-						   breakpoints.Contains (breakpoint_id));
-
 				BreakpointHandle handle = (BreakpointHandle) breakpoints [breakpoint_id];
 				handle.Handler (code, handle.UserData);
 				breakpoints.Remove (breakpoint_id);
