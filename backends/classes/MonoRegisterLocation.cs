@@ -42,7 +42,7 @@ namespace Mono.Debugger.Backends
 
 			// We can read at most Inferior.TargetIntegerSize from a register
 			// (a word on the target).
-			if (Offset + size > memory.TargetIntegerSize)
+			if ((Offset < 0) || (Offset + size > memory.TargetIntegerSize))
 				throw new ArgumentException ();
 
 			// Using ITargetMemoryReader for this is just an ugly hack, but I
