@@ -1,5 +1,10 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/ISymbolTable.cs (ISymbolTableCollection): Removed this interface.
+	* classes/SymbolTableCollection.cs: This is the only implementation.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IDebuggerBackend.cs: Removed.
 	* interfaces/IStackFrame.cs: Removed.
 	* interfaces/IInferior.cs: Moved to ../backends/.

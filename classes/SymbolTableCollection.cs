@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public class SymbolTableCollection : ISymbolTableCollection
+	public class SymbolTableCollection : ISymbolTable, ICollection
 	{
 		ArrayList symtabs = new ArrayList ();
 		ArrayList ranges = new ArrayList ();

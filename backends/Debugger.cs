@@ -257,7 +257,7 @@ namespace Mono.Debugger
 		public readonly string Environment_Path	= "/usr/bin";
 
 		ISourceFileFactory source_factory;
-		ISymbolTableCollection symtabs;
+		SymbolTableCollection symtabs;
 
 		IInferior inferior;
 		ILanguageBackend language;

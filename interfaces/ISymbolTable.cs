@@ -85,9 +85,4 @@ namespace Mono.Debugger
 
 		event SymbolTableChangedHandler SymbolTableChanged;
 	}
-
-	public interface ISymbolTableCollection : ISymbolTable, ICollection
-	{
-		void AddSymbolTable (ISymbolTable symtab);
-	}
 }
