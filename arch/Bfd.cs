@@ -83,6 +83,12 @@ namespace Mono.Debugger.Architecture
 				else
 					return 0;
 			}
+
+			public override string ToString ()
+			{
+				return String.Format ("SymbolEntry ({0:x}:{1})",
+						      Address, Name);
+			}
 		}
 
 		internal class Section
@@ -864,7 +870,7 @@ namespace Mono.Debugger.Architecture
 		private class BfdSymbolTable : ISimpleSymbolTable
 		{
 			Bfd bfd;
-			ArrayList list;
+			SymbolEntry[] list;
 			TargetAddress start, end;
 
 			public BfdSymbolTable (Bfd bfd)
@@ -880,20 +886,32 @@ namespace Mono.Debugger.Architecture
 					return null;
 
 				if (list == null) {
-					list = bfd.GetSimpleSymbols ();
-					list.Sort ();
+					ArrayList the_list = bfd.GetSimpleSymbols ();
+					the_list.Sort ();
+
+					list = new SymbolEntry [the_list.Count];
+					the_list.CopyTo (list);
 				}
 
-				for (int i = list.Count - 1; i >= 0; i--) {
-					SymbolEntry entry = (SymbolEntry) list [i];
+				for (int i = list.Length - 1; i >= 0; i--) {
+					SymbolEntry entry = list [i];
 
 					if (address.Address < entry.Address)
 						continue;
 
 					long offset = address.Address - entry.Address;
-					if (offset == 0)
+					if (offset == 0) {
+						while (i > 0) {
+							SymbolEntry n_entry = list [--i];
+
+							if (n_entry.Address == entry.Address) 
+								entry = n_entry;
+							else
+								break;
+						}
+
 						return entry.Name;
-					else if (exact_match)
+					} else if (exact_match)
 						return null;
 					else
 						return String.Format ("{0}+0x{1:x}", entry.Name, offset);
