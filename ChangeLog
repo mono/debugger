@@ -1,5 +1,7 @@
 2002-12-31  Martin Baulig  <martin@ximian.com>
 
+	This is the end of the Year 2002.
+
 	* frontends/scripting/Parser.jay: Implemented the `$a.Test'
 	expression to access a struct/class field.
 
