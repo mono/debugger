@@ -840,15 +840,17 @@ namespace Mono.Debugger.Languages.CSharp
 			return true;
 		}
 
-		Hashtable method_hash;
+		Hashtable method_hash = new Hashtable ();
 
 		protected MonoMethod GetMethod (int index)
 		{
-			MethodEntry method = file.GetMethod (index);
+			MonoMethod mono_method = (MonoMethod) method_hash [index];
+			if (mono_method != null)
+				return mono_method;
 
-			MonoMethod mono_method = new MonoMethod (this, method);
-			if (method_hash == null)
-				method_hash = new Hashtable ();
+			MethodEntry entry = file.GetMethod (index);
+
+			mono_method = new MonoMethod (this, entry);
 			method_hash.Add (index, mono_method);
 			return mono_method;
 		}
@@ -1059,8 +1061,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			void breakpoint_hit (TargetAddress address, object user_data)
 			{
-				Console.WriteLine ("BREAKPOINT HIT!");
-
 				if (load_handlers == null)
 					return;
 
@@ -1521,6 +1521,9 @@ namespace Mono.Debugger.Languages.CSharp
 				symtab_generation = table.Generation;
 
 				table.Update (memory);
+			} catch (ThreadAbortException) {
+				table = null;
+				return;
 			} catch (Exception e) {
 				Console.WriteLine ("Can't update symbol table: {0}", e);
 				table = null;
