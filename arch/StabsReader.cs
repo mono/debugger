@@ -27,6 +27,7 @@ namespace Mono.Debugger.Architecture
 			N_RSYM	= 0x40,
 			N_SLINE	= 0x44,
 			N_SO	= 0x64,
+			N_LSYM	= 0x80,
 			N_PSYM	= 0xa0
 		}
 
@@ -38,8 +39,13 @@ namespace Mono.Debugger.Architecture
 			this.factory = factory;
 			this.filename = bfd.FileName;
 
-			stabs_reader = create_reader ("LC_SYMTAB.stabs");
-			stabstr_reader = create_reader ("LC_SYMTAB.stabstr");
+			if (bfd.Target == "mach-o-be") {
+				stabs_reader = create_reader ("LC_SYMTAB.stabs");
+				stabstr_reader = create_reader ("LC_SYMTAB.stabstr");
+			} else {
+				stabs_reader = create_reader (".stab");
+				stabstr_reader = create_reader (".stabstr");
+			}
 
 			TargetBinaryReader reader = StabTableReader;
 			TargetBinaryReader string_reader = StringTableReader;
@@ -61,6 +67,16 @@ namespace Mono.Debugger.Architecture
 			for (int i = 0; i < files.Count; i++) {
 				ranges [i] = new FileRangeEntry ((FileEntry) files [i]);
 			}
+		}
+
+		public static bool IsSupported (Bfd bfd)
+		{
+			if (bfd.Target == "elf32-i386")
+				return bfd.HasSection (".stab");
+			else if (bfd.Target == "mach-o-be")
+				return bfd.HasSection ("LC_SYMTAB.stabs");
+			else
+				return false;
 		}
 
 		public TargetAddress EntryPoint {
@@ -145,6 +161,10 @@ namespace Mono.Debugger.Architecture
 				n_value = reader.ReadAddress ();
 			}
 
+			public bool HasName {
+				get { return (n_str != null) && (n_str != ""); }
+			}
+
 			public static byte PeekType (TargetBinaryReader reader)
 			{
 				return reader.PeekByte (reader.Position + 4);
@@ -152,8 +172,9 @@ namespace Mono.Debugger.Architecture
 
 			public override string ToString ()
 			{
-				return String.Format ("Entry ({0:x}:{1:x}:{2:x}:{3:x}:{4})",
-						      n_type, n_other, n_ndesc, n_value, n_str);
+				return String.Format ("Entry ({0}:{1:x}:{2:x}:{3:x}:{4})",
+						      (StabType) n_type, n_other, n_ndesc,
+						      n_value, n_str);
 			}
 		}
 
@@ -195,20 +216,28 @@ namespace Mono.Debugger.Architecture
 				while (reader.Position < reader.Size) {
 					entry = new Entry (reader, str_reader);
 
+				again:
 					if (entry.n_type == (byte) StabType.N_SO) {
 						end = stabs.bfd.GetAddress (entry.n_value);
 						break;
 					} else if (entry.n_type == (byte) StabType.N_SLINE) {
+						LineNumberEntry lne = new LineNumberEntry (
+							entry.n_ndesc, entry.n_value);
+						lines.Add (lne);
 						has_lines = true;
-						lines.Add (new LineNumberEntry (
-								   entry.n_ndesc, entry.n_value));
 					} else if (entry.n_type == (byte) StabType.N_FUN) {
 						MethodEntry mentry = new MethodEntry (
 							this, reader, str_reader,
 							ref entry, ref lines);
 						methods.Add (mentry);
+						if (mentry.Lines.Length > 0)
+							has_lines = true;
+						goto again;
 					}
 				}
+
+				if (end.IsNull)
+					end = stabs.bfd.EndAddress;
 
 				if (has_lines)
 					SourceBuffer = stabs.factory.FindFile (name);
@@ -315,7 +344,7 @@ namespace Mono.Debugger.Architecture
 			public readonly int StartLine, EndLine;
 			public readonly LineNumberEntry[] Lines;
 			public readonly MethodRange Range;
-			ArrayList parameters;
+			ArrayList parameters, locals;
 
 			static string GetName (string name)
 			{
@@ -340,15 +369,23 @@ namespace Mono.Debugger.Architecture
 
 				Bfd bfd = file.StabsReader.bfd;
 
-				this.Lines = new LineNumberEntry [lines.Count];
-				lines.CopyTo (Lines, 0);
-
 				while (reader.Position < reader.Size) {
 					entry = new Entry (reader, str_reader);
 
 					if (entry.n_type == (byte) StabType.N_FUN) {
 						end_offset = entry.n_value;
+
+						if (!entry.HasName) {
+							entry = new Entry (reader, str_reader);
+							end_offset += start_offset;
+						}
+
 						break;
+					} else if (entry.n_type == (byte) StabType.N_SLINE) {
+						long value = entry.n_value + start_offset;
+						LineNumberEntry lne = new LineNumberEntry (
+							entry.n_ndesc, value);
+						lines.Add (lne);
 					} else if (entry.n_type == (byte) StabType.N_PSYM) {
 						byte next_type = Entry.PeekType (reader);
 						MyVariable var;
@@ -362,11 +399,31 @@ namespace Mono.Debugger.Architecture
 						if (parameters == null)
 							parameters = new ArrayList ();
 						parameters.Add (var);
+					} else if (entry.n_type == (byte) StabType.N_LSYM) {
+						byte next_type = Entry.PeekType (reader);
+						MyVariable var;
+						if (next_type == (byte) StabType.N_RSYM) {
+							Entry next_entry = new Entry (
+								reader, str_reader);
+							var = new MyVariable (
+								ref entry, ref next_entry);
+						} else
+							var = new MyVariable (ref entry);
+						if (locals == null)
+							locals = new ArrayList ();
+						locals.Add (var);
 					}
 				}
 
+				this.Lines = new LineNumberEntry [lines.Count];
+				lines.CopyTo (Lines, 0);
+
 				TargetAddress start = bfd.GetAddress (start_offset);
-				TargetAddress end = bfd.GetAddress (start_offset + end_offset);
+				TargetAddress end;
+				if (end_offset > 0)
+					end = bfd.GetAddress (end_offset);
+				else
+					end = bfd.EndAddress;
 
 				SetAddresses (start, end);
 
@@ -378,7 +435,10 @@ namespace Mono.Debugger.Architecture
 					TargetAddress mend = bfd.GetAddress (last.Offset);
 
 					SetMethodBounds (mstart, mend);
-				}
+
+					EndLine = last.Line;
+				} else
+					EndLine = StartLine;
 
 				this.Range = new MethodRange (file.StabsReader, start, end);
 				SetSource (new MethodSourceEntry (this));
@@ -421,7 +481,14 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public override IVariable[] Locals {
-				get { return new IVariable [0]; }
+				get {
+					if (locals == null)
+						return new IVariable [0];
+
+					IVariable[] result = new IVariable [locals.Count];
+					locals.CopyTo (result);
+					return result;
+				}
 			}
 
 			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
@@ -462,6 +529,7 @@ namespace Mono.Debugger.Architecture
 				this.register = -1;
 
 				Console.WriteLine (this);
+				Console.WriteLine ("VARIABLE: |{0}|", entry.n_str);
 			}
 
 			public MyVariable (ref Entry entry, ref Entry next_entry)
@@ -483,7 +551,7 @@ namespace Mono.Debugger.Architecture
 			public bool IsAlive (TargetAddress address)
 			{
 				// FIXME
-				return false;
+				return true;
 			}
 
 			public bool CheckValid (StackFrame frame)

@@ -34,6 +34,9 @@ namespace Mono.Debugger
 			this.row = row;
 			this.source_offset = offset;
 			this.source_range = range;
+
+			if ((source != null) && (row == 0))
+				throw new InvalidOperationException ();
 		}
 
 		public SourceLocation Location {

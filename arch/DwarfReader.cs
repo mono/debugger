@@ -98,6 +98,14 @@ namespace Mono.Debugger.Architecture
 			source_list.CopyTo (sources, 0);
 		}
 
+		public static bool IsSupported (Bfd bfd)
+		{
+			if (bfd.Target == "elf32-i386")
+				return bfd.HasSection (".debug_info");
+			else
+				return false;
+		}
+
 		public ITargetInfo TargetInfo {
 			get {
 				return target_info;

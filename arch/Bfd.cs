@@ -35,7 +35,7 @@ namespace Mono.Debugger.Architecture
 		bool dwarf_loaded;
 		bool stabs_loaded;
 		bool has_debugging_info;
-		string filename;
+		string filename, target;
 		bool is_coredump;
 		bool initialized;
 		bool has_shlib_info;
@@ -226,7 +226,7 @@ namespace Mono.Debugger.Architecture
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
 
-			string target = bfd_glue_get_target_name (bfd);
+			target = bfd_glue_get_target_name (bfd);
 			if (target == "elf32-i386") {
 				arch = new ArchitectureI386 ();
 
@@ -247,8 +247,11 @@ namespace Mono.Debugger.Architecture
 
 				read_bfd_symbols ();
 
-				has_debugging_info = GetSectionByName (
-					".debug_info", false) != null;
+				if (StabsReader.IsSupported (this)) {
+					has_debugging_info = true;
+					use_stabs = true;
+				} else if (DwarfReader.IsSupported (this))
+					has_debugging_info = true;
 
 				InternalSection plt_section = GetSectionByName (".plt", false);
 				InternalSection got_section = GetSectionByName (".got", false);
@@ -277,8 +280,7 @@ namespace Mono.Debugger.Architecture
 				end_address = new TargetAddress (
 					info.GlobalAddressDomain, bss.vma);
 
-				has_debugging_info = GetSectionByName (
-					".stab", false) != null;
+				has_debugging_info = StabsReader.IsSupported (this);
 			} else
 				throw new SymbolTableException (
 					"Symbol file {0} has unknown target architecture {1}",
@@ -292,8 +294,12 @@ namespace Mono.Debugger.Architecture
 					entry_point = stabs.EntryPoint;
 				} else
 					entry_point = SimpleLookup ("_main");
-			} else
+			} else {
+				if (use_stabs)
+					load_stabs ();
+
 				entry_point = SimpleLookup ("main");
+			}
 
 			backend.ModuleManager.AddModule (this);
 
@@ -531,6 +537,12 @@ namespace Mono.Debugger.Architecture
 		public string FileName {
 			get {
 				return filename;
+			}
+		}
+
+		public string Target {
+			get {
+				return target;
 			}
 		}
 
@@ -813,6 +825,11 @@ namespace Mono.Debugger.Architecture
 			} finally {
 				g_free (data);
 			}
+		}
+
+		public bool HasSection (string name)
+		{
+			return GetSectionByName (name, false) != null;
 		}
 
 		InternalSection GetSectionByName (string name, bool throw_exc)
