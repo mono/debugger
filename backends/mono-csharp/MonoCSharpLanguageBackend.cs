@@ -158,11 +158,12 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 17;
+		public const int  DynamicVersion = 18;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
 		internal int Generation;
+		internal TargetAddress GlobalSymbolFile;
 		internal MonoSymbolTableReader[] SymbolFiles;
 		public readonly MonoCSharpLanguageBackend Language;
 		public readonly DebuggerBackend Backend;
@@ -170,6 +171,14 @@ namespace Mono.Debugger.Languages.CSharp
 		Hashtable types;
 		Hashtable type_cache;
 		protected Hashtable modules;
+
+		int address_size;
+		int long_size;
+		int int_size;
+
+		int last_num_type_tables;
+		int last_type_table_offset;
+		ArrayList type_table;
 
 		void child_exited ()
 		{
@@ -179,12 +188,18 @@ namespace Mono.Debugger.Languages.CSharp
 			type_cache = new Hashtable ();
 		}
 
-		public MonoSymbolFileTable (DebuggerBackend backend, MonoCSharpLanguageBackend language)
+		public MonoSymbolFileTable (DebuggerBackend backend, MonoCSharpLanguageBackend language,
+					    ITargetInfo target_info)
 		{
 			this.Language = language;
 			this.Backend = backend;
 
+			address_size = target_info.TargetAddressSize;
+			long_size = target_info.TargetLongIntegerSize;
+			int_size = target_info.TargetIntegerSize;
+
 			modules = new Hashtable ();
+			type_table = new ArrayList ();
 		}
 
 		// <summary>
@@ -195,7 +210,7 @@ namespace Mono.Debugger.Languages.CSharp
 			lock (this) {
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE: {0}", address);
 
-				ITargetMemoryReader header = inferior.ReadMemory (address, 24);
+				ITargetMemoryReader header = inferior.ReadMemory (address, 28);
 
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE HEADER: {0}", header);
 
@@ -218,6 +233,8 @@ namespace Mono.Debugger.Languages.CSharp
 				int count = header.ReadInteger ();
 				Generation = header.ReadInteger ();
 
+				GlobalSymbolFile = header.ReadAddress ();
+
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE HEADER: {0} {1} {2}",
 					      TotalSize, count, Generation);
 
@@ -226,7 +243,7 @@ namespace Mono.Debugger.Languages.CSharp
 					return;
 				}
 
-				ITargetMemoryReader reader = inferior.ReadMemory (address + 24, TotalSize - 24);
+				ITargetMemoryReader reader = inferior.ReadMemory (address + 28, TotalSize - 28);
 
 				Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE READER: {0}", reader);
 
@@ -323,6 +340,9 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			lock (this) {
 				bool updated = false;
+
+				updated |= update_types (memory);
+
 				for (int i = 0; i < SymbolFiles.Length; i++) {
 					if (!SymbolFiles [i].Module.LoadSymbols)
 						continue;
@@ -345,6 +365,122 @@ namespace Mono.Debugger.Languages.CSharp
 
 				return true;
 			}
+		}
+
+		private struct TypeEntry {
+			public readonly int Offset;
+			public readonly int Size;
+			public readonly byte[] Data;
+
+			public TypeEntry (ITargetMemoryAccess memory, TargetAddress address,
+					  int offset, int size)
+			{
+				this.Offset = offset;
+				this.Size = size;
+				this.Data = memory.ReadBuffer (address + offset, size);
+			}
+
+			public TypeEntry (int offset, int size, byte[] data)
+			{
+				this.Offset = offset;
+				this.Size = size;
+				this.Data = data;
+			}
+		}
+
+		bool update_types (ITargetMemoryAccess memory)
+		{
+			TargetAddress address = GlobalSymbolFile;
+			int num_type_tables = memory.ReadInteger (address);
+			address += int_size;
+			int chunk_size = memory.ReadInteger (address);
+			address += int_size;
+			TargetAddress type_tables = memory.ReadAddress (address);
+			address += address_size;
+
+			if (num_type_tables != last_num_type_tables) {
+				int old_offset = 0;
+				int old_count = num_type_tables;
+				int old_size = old_count * chunk_size;
+				byte[] old_data = new byte [old_size];
+
+				for (int i = 0; i < num_type_tables; i++) {
+					TargetAddress old_table = memory.ReadAddress (type_tables);
+					type_tables += address_size;
+
+					byte[] temp_data = memory.ReadBuffer (old_table, chunk_size);
+					temp_data.CopyTo (old_data, old_offset);
+					old_offset += chunk_size;
+				}
+
+				last_num_type_tables = num_type_tables;
+				last_type_table_offset = old_size;
+
+				type_table = new ArrayList ();
+				type_table.Add (new TypeEntry (0, old_size, old_data));
+			}
+
+			TargetAddress type_table_address = memory.ReadAddress (address);
+			address += address_size;
+			int total_size = memory.ReadInteger (address);
+			address += int_size;
+			int offset = memory.ReadInteger (address);
+			address += int_size;
+			int start = memory.ReadInteger (address);
+			address += int_size;
+
+			int size = offset - last_type_table_offset;
+			int read_offset = last_type_table_offset - start;
+
+			if (size == 0)
+				return false;
+
+			byte[] data = memory.ReadBuffer (type_table_address + read_offset, size);
+			type_table.Add (new TypeEntry (last_type_table_offset, size, data));
+
+			last_type_table_offset = offset;
+
+			return false;
+		}
+
+		void merge_type_entries ()
+		{
+			int count = type_table.Count;
+			TypeEntry last = (TypeEntry) type_table [count - 1];
+
+			int total_size = last.Offset + last.Size;
+
+			byte[] data = new byte [total_size];
+			int offset = 0;
+			for (int i = 0; i < count; i++) {
+				TypeEntry entry = (TypeEntry) type_table [i];
+
+				entry.Data.CopyTo (data, offset);
+				offset += entry.Size;
+			}
+
+			type_table = new ArrayList ();
+			type_table.Add (new TypeEntry (0, total_size, data));
+		}
+
+		public byte[] GetTypeInfo (int offset)
+		{
+			int count = type_table.Count;
+			for (int i = 0; i < count; i++) {
+				TypeEntry entry = (TypeEntry) type_table [i];
+
+				if (offset >= entry.Offset + entry.Size)
+					continue;
+
+				offset -= entry.Offset;
+				int size = BitConverter.ToInt32 (entry.Data, offset);
+
+				byte[] retval = new byte [size];
+				Array.Copy (entry.Data, offset, retval, 0, size);
+				return retval;
+			}
+
+			throw new InternalError ("Can't find type entry at offset {0}.", offset);
 		}
 
 		private class MonoModule : NativeModule
@@ -519,7 +655,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress KlassAddress;
 		public readonly int Rank;
 		public readonly int Token;
-		public readonly TargetAddress TypeInfo;
+		public readonly int TypeInfo;
 		public readonly Type Type;
 
 		static MethodInfo get_type;
@@ -538,15 +674,19 @@ namespace Mono.Debugger.Languages.CSharp
 			KlassAddress = memory.ReadAddress ();
 			Rank = memory.BinaryReader.ReadInt32 ();
 			Token = memory.BinaryReader.ReadInt32 ();
-			TypeInfo = memory.ReadAddress ();
+			TypeInfo = memory.BinaryReader.ReadInt32 ();
 
 			object[] args = new object[] { (int) Token };
 			Type = (Type) get_type.Invoke (reader.Assembly, args);
 
+			reader.Table.GetTypeInfo (TypeInfo);
+
+#if FALSE
 			if (Type == null)
 				Type = typeof (void);
 			else if (Type == typeof (object))
 				MonoType.GetType (Type, memory.TargetMemoryAccess, TypeInfo, reader.Table);
+#endif
 		}
 
 		public static void ReadClasses (MonoSymbolTableReader reader,
@@ -591,6 +731,7 @@ namespace Mono.Debugger.Languages.CSharp
 		ArrayList ranges;
 
 		TargetAddress dynamic_address;
+		TargetAddress global_symfile;
 		int address_size;
 		int long_size;
 		int int_size;
@@ -652,6 +793,8 @@ namespace Mono.Debugger.Languages.CSharp
 			TargetAddress symbol_file_addr = memory.ReadAddress (address);
 			address += address_size;
 			SymbolFile = memory.ReadString (symbol_file_addr);
+			global_symfile = memory.ReadAddress (address);
+			address += address_size;
 			TargetAddress raw_contents = memory.ReadAddress (address);
 			address += address_size;
 			int raw_contents_size = memory.ReadInteger (address);
@@ -1499,7 +1642,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 
 				if (table == null)
-					table = new MonoSymbolFileTable (backend, this);
+					table = new MonoSymbolFileTable (backend, this, inferior);
 
 				table.Reload (inferior, address);
 
