@@ -691,7 +691,7 @@ public class SingleSteppingEngine : ThreadManager
 				inferior.Continue ();
 				return;
 			}
-			ProcessEvent (cevent, StepOperation.None);
+			ProcessEvent (cevent);
 		}
 
 		void send_frame_event (StackFrame frame, int signal)
@@ -886,10 +886,6 @@ public class SingleSteppingEngine : ThreadManager
 				do_continue ();
 				break;
 
-			case StepOperation.StepInstruction:
-				Step (get_simple_step_frame (StepMode.SingleInstruction));
-				break;
-
 			case StepOperation.StepNativeInstruction:
 				do_step ();
 				break;
@@ -898,23 +894,17 @@ public class SingleSteppingEngine : ThreadManager
 				do_next ();
 				break;
 
-			case StepOperation.StepLine:
-			case StepOperation.NextLine:
-				Step (command.StepFrame);
-				break;
-
 			case StepOperation.RuntimeInvoke:
 				do_runtime_invoke ((RuntimeInvokeData) command.CommandFuncData);
 				break;
 
 			default:
-				Step (command.StepFrame);
+				Step (command.Operation, command.StepFrame);
 				break;
 			}
 		}
 
-		protected bool ProcessEvent (Inferior.ChildEvent cevent,
-					     StepOperation operation)
+		protected bool ProcessEvent (Inferior.ChildEvent cevent)
 		{
 			TargetEventArgs result = process_child_event (cevent);
 
@@ -949,11 +939,13 @@ public class SingleSteppingEngine : ThreadManager
 			// `frame_changed' computes the new stack frame - and it may also
 			// send us a new step command.  This happens for instance, if we
 			// stopped within a method's prologue or epilogue code.
-			Command new_command = frame_changed (frame, 0, operation);
+			Command new_command = frame_changed (frame, 0, current_operation);
 			if (new_command != null) {
 				Console.WriteLine ("NEW COMMAND: {0}", new_command);
 				return false;
 			}
+
+			step_operation_finished ();
 
 			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
 			goto send_result;
@@ -1267,7 +1259,7 @@ public class SingleSteppingEngine : ThreadManager
 			    !handle.CheckHandler (frame, index, handle.UserData))
 				return false;
 
-			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+			frame_changed (inferior.CurrentFrame, 0, current_operation);
 			send_frame_event (current_frame, handle.BreakpointHandle);
 
 			return true;
@@ -1539,13 +1531,15 @@ public class SingleSteppingEngine : ThreadManager
 				inferior.Step ();
 		}
 
-		StepFrame current_operation;
+		StepFrame current_operation_frame;
+		StepOperation current_operation;
 
-		protected bool Step (StepFrame frame)
+		protected bool Step (StepOperation operation, StepFrame frame)
 		{
 			check_inferior ();
 
-			current_operation = null;
+			current_operation = StepOperation.None;
+			current_operation_frame = null;
 
 			/*
 			 * If no step frame is given, just step one machine instruction.
@@ -1563,21 +1557,30 @@ public class SingleSteppingEngine : ThreadManager
 				return true;
 			}
 
-			current_operation = frame;
-			return DoStep (true);
+			current_operation = operation;
+			current_operation_frame = frame;
+			if (DoStep (true)) {
+				step_operation_finished ();
+				return true;
+			}
+			return false;
+		}
+
+		void step_operation_finished ()
+		{
+			current_operation = StepOperation.None;
+			current_operation_frame = null;
 		}
 
 		protected bool DoStep (bool first)
 		{
-			StepFrame frame = current_operation;
+			StepFrame frame = current_operation_frame;
 			if (frame == null)
 				return true;
 
 			TargetAddress current_frame = inferior.CurrentFrame;
-			if (!first && !is_in_step_frame (frame, current_frame)) {
-				current_operation = null;
+			if (!first && !is_in_step_frame (frame, current_frame))
 				return true;
-			}
 
 			/*
 			 * If this is not a call instruction, continue stepping until we leave
@@ -1618,7 +1621,6 @@ public class SingleSteppingEngine : ThreadManager
 
 					insert_temporary_breakpoint (trampoline);
 					do_continue ();
-					current_operation = null;
 					return true;
 				}
 
@@ -1641,7 +1643,6 @@ public class SingleSteppingEngine : ThreadManager
 			 */
 			if (frame.Mode == StepMode.SingleInstruction) {
 				do_step ();
-				current_operation = null;
 				return true;
 			}
 
@@ -1679,7 +1680,6 @@ public class SingleSteppingEngine : ThreadManager
 
 				insert_temporary_breakpoint (wrapper);
 				do_continue ();
-				current_operation = null;
 				return true;
 			}
 
@@ -1687,7 +1687,6 @@ public class SingleSteppingEngine : ThreadManager
 			 * Finally, step into the method.
 			 */
 			do_step ();
-			current_operation = null;
 			return true;
 		}
 
@@ -1774,7 +1773,7 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override bool StepInstruction (bool wait)
 		{
-			return start_step_operation (StepOperation.StepInstruction, wait);
+			return start_step_operation (StepMode.SingleInstruction, wait);
 		}
 
 		// <summary>
