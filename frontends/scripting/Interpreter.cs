@@ -65,7 +65,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		bool is_script;
 		int exit_code = 0;
 
-		ManualResetEvent start_event;
+		AutoResetEvent start_event;
 
 		internal static readonly string DirectorySeparatorStr;
 
@@ -87,7 +87,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.is_script = options.IsScript;
 
 			procs = new Hashtable ();
-
 			breakpoints = new Hashtable ();
 
 			user_interfaces = new Hashtable ();
@@ -96,7 +95,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			user_interfaces.Add ("martin", new StyleMartin (this));
 			current_user_interface = (Style) user_interfaces ["mono"];
 
-			start_event = new ManualResetEvent (false);
+			start_event = new AutoResetEvent (false);
 
 			context = new ScriptingContext (this, is_interactive, true);
 
@@ -112,11 +111,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			} catch (TargetException e) {
 				Error (e);
 			}
-
-			if (is_synchronous)
-				start_event.WaitOne ();
-
-			context.CurrentProcess = current_process;
 		}
 
 		public DebuggerBackend Initialize ()
@@ -316,9 +310,8 @@ namespace Mono.Debugger.Frontends.Scripting
 			Process process = backend.ThreadManager.WaitForApplication ();
 			current_process = (ProcessHandle) procs [process.ID];
 
-			if (is_synchronous)
-				start_event.WaitOne ();
-
+			start_event.WaitOne ();
+			context.CurrentProcess = current_process;
 			return process;
 		}
 
@@ -330,17 +323,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.start = start;
 			Initialize ();
 
-			Process process;
 			try {
-				process = Run ();
+				return Run ();
 			} catch (TargetException e) {
 				throw new ScriptingException (
 					"Cannot start target: {0}", e.Message);
 			}
-
-			start_event.WaitOne ();
-			context.CurrentProcess = current_process;
-			return process;
 		}
 
 		void thread_created (ThreadManager manager, Process process)
@@ -652,8 +640,18 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void Kill ()
 		{
-			if (backend != null)
+			if (backend != null) {
 				backend.ThreadManager.Kill ();
+				backend.Dispose ();
+				backend = null;
+			}
+
+			current_process = null;
+			context.CurrentProcess = null;
+			context.CurrentFrame = null;
+
+			procs = new Hashtable ();
+			breakpoints = new Hashtable ();
 		}
 
 		public void LoadLibrary (Process process, string filename)
