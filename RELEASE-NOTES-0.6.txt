@@ -1,0 +1,202 @@
+The Mono Debugger - 0.6 "Atlanta"
+=================================
+
+I haven't done a debugger release for a very long time and a lot of
+things have changed since the last release.  This release contains an
+almost completely redesigned SingleSteppingEngine and a lot of
+stability improvements.
+
+Please read the file README.build before building the debugger, it
+contains some important information.
+
+About the Mono Debugger
+-----------------------
+
+The Mono Debugger is a graphical debugger which is written in C#.  It
+can debug both native and managed applications and it has a graphical
+and a text-mode user interface.
+
+You can debug any single-threaded and multi-threaded managed
+applications (unmanaged multi-threaded applications are also
+supported, but a few restrictions apply in this case).
+
+Design Goals
+------------
+
+The debugger was designed to be modular and portable to other systems.
+However, when we started this project, we were already short on time
+so the backend is currently only implemented on the i386 architecture
+running either a Linux or BSD kernel.
+
+Our main idea was to write a debugger for managed applications, but
+still being able to debug unmanaged applications such as the JIT if
+necessary.  However, due to the limited time we had on our hands,
+support for unmanaged applications is still a bit preliminary; it
+should be enough for a hacker to fix a bug, but it's way too
+uncomfortable for an ordinary user.
+
+Unlike other debugger GUI's, the debugger does not talk to an external
+debugger application such as gdb, but does everything itself.
+
+Thanks
+------
+
+First of all, I'd like to thank Ximian, Inc. which is a wonderful
+company to work for and Miguel de Icaza who helped me a lot this
+summer.  Without them, this project wouldn't have become possible.
+
+I really appreciated hacking on this and it is a lot of fun to see my
+"baby" grow and develop :-)
+
+Limitations
+-----------
+
+Ok, before promising too much, let's start with the limitations ;-)
+
+At the moment, the debugger only works on the i386 architecture.
+Despite its modular design, it's probably a huge task to port it to
+another hardware architecture.
+
+When we started the project, I originally wrote the backend just for
+Linux 2.2.x, but while doing the FreeBSD port I realized how easy it
+was to do this - so the debugger can probably be ported to all flavors
+of BSD with very little effort.
+
+The only limitation is that the operating system must support
+kernel-level threads and you must use them in glib and the runtime.
+This is explained a bit more detailed in README.FreeBSD.
+
+When debugging unmanaged applications, you can only view parameters
+and local variables with "fundamental" types (integer, char etc.).
+This restriction will go away soon, I just had no time to finish that
+code yet.
+
+At the moment, you cannot modify parameters or local variables.  To do
+this right, we need to write an expression parser, but this takes some
+time to implement.
+
+The user interface still needs some loving.
+
+Features
+--------
+
+* Single Stepping Engine
+
+The single stepping engine is responsible for single-stepping,
+stopping and continuing the target and getting notifications when the
+target hit a breakpoint.
+
+At the moment, the single stepping engine (class/SingleSteppingEngine.cs) can
+
+  - step one machine instruction
+  - step one machine instruction while stepping over method calls
+  - step until the end of the current method
+  - step until leaving a range of source lines (this includes stepping
+    until reaching another source line)
+  - step one source line
+  - step one source line while stepping over method calls
+  - step one source line while stepping over method calls, but only if
+    the method is in a  user-configurable list of modules (shared libs, dlls)
+
+When debugging managed applications, the single stepping engine can also
+
+  - automatically trigger a JIT compilation of methods while single-stepping.
+
+    This is done completely trasparently for the user, so you don't
+    need to worry about JIT trampolines, not even when stepping one
+    machine instruction, they'll be invisible for you like system
+    calls.
+
+  - insert a breakpoint on a method which is not yet JITed.
+
+  - call a method in the target (but this is still very
+    preliminar; due to the lacking expression parser we
+    can't create the parameters yet).
+
+    However, this is already used to call a property's getter and
+    Object.ToString().
+
+The single stepping engine supports debugging multi-threaded
+applications; a stepping operation in one thread does not affect any
+of the other threads.  This means for instance that it is safe to
+insert a breakpoint on a method which is called by another thread.
+
+* Breakpoints
+
+Breakpoints can be used in managed and unmanaged methods.  You can
+insert a breakpoint either for a method or for a source line.
+
+When inserting the breakpoint for a method, it'll be inserted on the
+instruction immediately following the method's prologue.  So when the
+breakpoint it hit, the method's parameters can already be accessed.
+
+Breakpoints may be inserted for not-yet-JITed methods, the debugger
+will automatically insert the breakpoint when the method is JITed.
+When inserting the breakpoints by source line, it'll also re-lookup
+its address each time the method is JITed.  This allows the JIT to
+create different code for the method each time it JITs it and
+breakpoints will still be working.
+
+The user interface may supply its own breakpoint handler class which
+may be used to implement conditional breakpoints; such a conditional
+breakpoint can also read parameters and local variables to decide
+whether to continue the target.
+
+Breakpoints can be inserted on a per-thread level, this means that a
+breakpoint will only "break" on the "correct" thread.  This is very
+important when debugging system functions such as corlib.
+
+* Modules
+
+Each shared library and each dll appears as a module to the debugger.
+The user may configure whether to enter a module's methods while
+single-stepping and load/unload the module's symbol tables.
+
+The module list persists across multiple invocations of the same
+target; later on we can even synchronize it to disk - as well as the
+user's breakpoint settings.
+
+* Parameters and local variables
+
+Type support for managed types is almost complete.  The debugger can
+already read all fundamental types, arrays, structs and classes.  It
+can call a property's getter method and invoke an object's ToString()
+method.
+
+* Disassembly and processor registers
+
+The debugger has a CPU view to see a disassembly of the current method
+and view/modify the processor registers.  There's also a hex editor to
+view/modify the target's memory.
+
+* Hex Editor
+
+The debugger has a hex editor to inspect or modify the target's memory.
+
+* Command line interface
+
+In addition to the graphical user interface, the debugger also has a
+textual command line interface (which is also available in the GUI).
+
+The command line interface has a few very cool features which the
+GUI does not have:
+
+- when debugging multi-threaded applications, you can debug all
+  threads, not just the main thread.  This includes single-stepping,
+  getting stack frames and backtraces etc. for any of the other
+  threads.
+
+- all commands are synchronous, especially the stepping commands;
+  the debugger waits until the target has stopped again.
+
+- you can access variables from any stack frame, not just from the
+  current one.
+
+- there's a (still very simple) expression evaluator which allows
+  you to inspect local variables and parameters.
+
+- it can be used as regression test suite.
+
+
+March 16th, 2004
+Martin Baulig <martin@ximian.com>

@@ -1,3 +1,9 @@
+2004-03-16  Martin Baulig  <martin@ximian.com>
+
+	* RELEASE-NOTES-0.6.txt: New file.
+
+	* configure.in: Check whether we have NPTL support.
+
 2004-03-05  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Parser.jay: Added "repeat" command.
