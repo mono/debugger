@@ -70,7 +70,7 @@ typedef struct {
 						       gint               *standard_input,
 						       gint               *standard_output,
 						       gint               *standard_error,
-						       GError            **error);
+						       gchar             **error);
 
 	ServerCommandError    (* attach)              (InferiorHandle     *handle,
 						       int                 pid);
@@ -295,7 +295,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 					   gint               *standard_input,
 					   gint               *standard_output,
 					   gint               *standard_error,
-					   GError            **error);
+					   gchar             **error);
 
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,

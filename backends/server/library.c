@@ -181,7 +181,7 @@ ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    gchar **argv, gchar **envp, gboolean search_path,
 			    gint *child_pid, gint redirect_fds, gint *standard_input,
-			    gint *standard_output, gint *standard_error, GError **error)
+			    gint *standard_output, gint *standard_error, gchar **error)
 {
 	ServerCommandError result;
 

@@ -70,8 +70,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (is_terminal)
 				readline = new GnuReadLine (context.Prompt + " ");
 
-			if (context.HasBackend)
+			if (!context.HasBackend)
+				return;
+
+			try {
 				context.Run ();
+			} catch (TargetException e) {
+				Console.WriteLine ("Cannot start target: {0}", e.Message);
+			}
 		}
 
 		public void Run ()

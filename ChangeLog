@@ -1,5 +1,16 @@
 2003-04-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c (mono_debugger_server_spawn): Return
+	the error message as string, not as GError.
+
+	* backends/ptrace/PTrace.cs (Run): Include the actual error
+	message from the target in the CannotStartTargetException.
+
+	* backends/SingleSteppingEngine.cs: Catch the exception we get if
+	we cannot start / attach to the target and pass it to the caller.
+
+2003-04-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoVariable.cs: Use correct scope info for
 	parameters.
 

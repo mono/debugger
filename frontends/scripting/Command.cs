@@ -112,7 +112,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string[] args = (string []) program_args_expr.Resolve (context);
 			context.Start (args, null);
-			context.Run ();
+			try {
+				context.Run ();
+			} catch (TargetException e) {
+				throw new ScriptingException (e.Message);
+			}
 		}
 	}
 

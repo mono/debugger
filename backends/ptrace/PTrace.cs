@@ -421,10 +421,16 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			check_error (mono_debugger_server_spawn (
+			CommandError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
 				start.Environment, true, out child_pid, redirect_fds ? 1 : 0,
-				out stdin_fd, out stdout_fd, out stderr_fd, out error));
+				out stdin_fd, out stdout_fd, out stderr_fd, out error);
+			if (result != CommandError.None) {
+				string message = Marshal.PtrToStringAuto (error);
+				g_free (error);
+
+				throw new CannotStartTargetException (message);
+			}
 
 			if (redirect_fds) {
 				inferior_stdin = new IOOutputChannel (stdin_fd, false, false);

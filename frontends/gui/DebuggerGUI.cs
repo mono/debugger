@@ -311,11 +311,17 @@ namespace Mono.Debugger.GUI
 			
 		void StartProgram ()
 		{
-			backend = context.DebuggerBackend;
-			backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
-				main_process_started);
+			if (backend == null) {
+				backend = context.DebuggerBackend;
+				backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
+					main_process_started);
+			}
 
-			context.Run ();
+			try {
+				context.Run ();
+			} catch (TargetException e) {
+				Report.Error ("Cannot start target: {0}", e.Message);
+			}
 
 			//
 			// FIXME: chdir here to working_dir

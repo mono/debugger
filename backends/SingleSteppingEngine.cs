@@ -176,6 +176,9 @@ namespace Mono.Debugger.Backends
 			while (!start_event.WaitOne ())
 				;
 
+			if (start_error != null)
+				throw start_error;
+
 			ready_event_handler ();
 
 			symtab_manager.SymbolTableChangedEvent +=
@@ -207,7 +210,12 @@ namespace Mono.Debugger.Backends
 
 		void start_engine_thread ()
 		{
-			inferior.Run (redirect_fds);
+			try {
+				inferior.Run (redirect_fds);
+			} catch (TargetException e) {
+				engine_error (e);
+				return;
+			}
 
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
@@ -227,7 +235,12 @@ namespace Mono.Debugger.Backends
 
 		void start_engine_thread_attach ()
 		{
-			inferior.Attach (pid);
+			try {
+				inferior.Attach (pid);
+			} catch (TargetException e) {
+				engine_error (e);
+				return;
+			}
 
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
@@ -245,6 +258,15 @@ namespace Mono.Debugger.Backends
 		}
 
 		bool engine_is_ready = false;
+		Exception start_error = null;
+
+		void engine_error (Exception ex)
+		{
+			lock (this) {
+				start_error = ex;
+				start_event.Set ();
+			}
+		}
 
 		void engine_ready ()
 		{

@@ -193,9 +193,10 @@ child_setup_func (gpointer data)
 static ServerCommandError
 server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gchar **argv, gchar **envp,
 		     gboolean search_path, gint *child_pid, gint redirect_fds, gint *standard_input,
-		     gint *standard_output, gint *standard_error, GError **error)
+		     gint *standard_output, gint *standard_error, gchar **error)
 {
 	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
+	GError *gerror = NULL;
 	int ret;
 
 	if (search_path)
@@ -205,13 +206,18 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 	if (redirect_fds)
 		ret = g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func,
 						NULL, child_pid, standard_input, standard_output,
-						standard_error, error);
+						standard_error, &gerror);
 	else
 		ret = g_spawn_async (working_directory, argv, envp, flags, child_setup_func,
-				     NULL, child_pid, error);
+				     NULL, child_pid, &gerror);
 
-	if (!ret)
+	if (!ret) {
+		if (error && gerror) {
+			*error = g_strdup (gerror->message);
+			g_error_free (gerror);
+		}
 		return COMMAND_ERROR_FORK;
+	}
 #else
 #warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)'"
 

@@ -809,6 +809,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			backend = new DebuggerBackend ();
 			start = ProcessStart.Create (null, args, null, opt_flags);
+
 			return start;
 		}
 
