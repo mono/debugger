@@ -1146,7 +1146,8 @@ namespace Mono.Debugger.Backends
 			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index);
 
-			if ((bpt == null) || (!current && bpt.Breaks (process.ID)))
+			if ((index == 0) ||
+			    (!current && (bpt != null) && bpt.Breaks (process.ID)))
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
