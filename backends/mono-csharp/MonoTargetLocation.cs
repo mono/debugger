@@ -33,6 +33,9 @@ namespace Mono.Debugger.Languages.CSharp
 			this.frame = frame;
 			this.is_valid = true;
 
+			if (frame.SourceLocation != null)
+				this.start_scope += frame.SourceLocation.SourceRange;
+
 			frame.FrameInvalid += new StackFrameInvalidHandler (SetInvalid);
 			iframe = frame.Handle as IInferiorStackFrame;
 			if (iframe == null)

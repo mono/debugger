@@ -190,11 +190,18 @@ namespace Mono.Debugger.GUI
 
 		void add_variable (IVariable variable)
 		{
+			if (!variable.IsValid (current_frame))
+				return;
+
 			TreeIter iter;
 			store.Append (out iter);
 
-			ITargetObject obj = variable.GetObject (current_frame);
-			add_object (obj, variable.Name, iter);
+			try {
+				ITargetObject obj = variable.GetObject (current_frame);
+				add_object (obj, variable.Name, iter);
+			} catch (Exception e) {
+				Console.WriteLine ("CAN'T ADD VARIABLE: {0} {1}", variable, e);
+			}
 		}
 
 		Hashtable iters = null;
@@ -203,6 +210,8 @@ namespace Mono.Debugger.GUI
 		{
 			if (!IsVisible)
 				return;
+
+			Console.WriteLine ("UPDATE DISPLAY: {0}", current_frame);
 			
 			store.Clear ();
 			iters = new Hashtable ();
@@ -211,13 +220,15 @@ namespace Mono.Debugger.GUI
 				return;
 
 			try {
-				IVariable[] vars = current_frame.Method.Parameters;
-				if (vars.Length == 0)
-					return;
-
-				foreach (IVariable var in vars)
+				IVariable[] param_vars = current_frame.Method.Parameters;
+				foreach (IVariable var in param_vars)
 					add_variable (var);
-			} catch {
+
+				IVariable[] local_vars = current_frame.Method.Locals;
+				foreach (IVariable var in local_vars)
+					add_variable (var);
+			} catch (Exception e) {
+				Console.WriteLine ("CAN'T GET VARIABLES: {0}", e);
 				store.Clear ();
 				iters = new Hashtable ();
 			}

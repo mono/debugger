@@ -68,20 +68,38 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public ITargetObject GetObject (StackFrame frame)
+		MonoTargetLocation GetLocation (StackFrame frame)
 		{
-			MonoTargetLocation location;
 			if (info.Mode == VariableInfo.AddressMode.Register) {
 				if (frame.Level != 0)
-					throw new LocationInvalidException ();
-				location = new MonoRegisterLocation (
-					backend, frame, type.IsByRef, info.Index, info.Offset,
-					start_scope, end_scope);
+					return null;
+				else
+					return new MonoRegisterLocation (
+						backend, frame, type.IsByRef, info.Index, info.Offset,
+						start_scope, end_scope);
 			} else if (info.Mode == VariableInfo.AddressMode.Stack)
-				location = new MonoStackLocation (
+				return new MonoStackLocation (
 					backend, frame, type.IsByRef, is_local, info.Offset, 0,
 					start_scope, end_scope);
 			else
+				return null;
+		}
+
+		public bool IsValid (StackFrame frame)
+		{
+			MonoTargetLocation location = GetLocation (frame);
+
+			if ((location == null) || !location.IsValid)
+				return false;
+
+			return true;
+		}
+
+		public ITargetObject GetObject (StackFrame frame)
+		{
+			MonoTargetLocation location = GetLocation (frame);
+
+			if ((location == null) || !location.IsValid)
 				throw new LocationInvalidException ();
 
 			return type.GetObject (location);

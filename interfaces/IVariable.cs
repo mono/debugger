@@ -15,6 +15,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		bool IsValid (StackFrame frame);
+
 		// <summary>
 		//   Retrieve an instance of this variable from the stack-frame @frame.
 		//   May only be called if Type.HasObject is true.
