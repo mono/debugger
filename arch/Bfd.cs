@@ -391,6 +391,10 @@ namespace Mono.Debugger.Architecture
 				string name;
 				try {
 					name = inferior.ReadString (l_name);
+					// glibc 2.3.x uses the empty string for the virtual
+					// "linux-gate.so.1".
+					if ((name != null) && (name == ""))
+						name = null;
 				} catch {
 					name = null;
 				}
