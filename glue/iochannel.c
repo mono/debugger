@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <fcntl.h>
 #include <stdio.h>
 
 static gboolean
