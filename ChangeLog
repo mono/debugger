@@ -1,5 +1,14 @@
 2004-10-05  Chris Toshok  <toshok@ximian.com>
 
+	* arch/DwarfFrameReader.cs: stub out the 'P' augmentation (much as
+	the 'L' aug is presently stubbed out.)  This code appears
+	incomplete, but this at least gets us a functioning "where"
+	command when debugging mono-find-provides.exe (libicu has P augs).
+	Also, fix the unknown augmentation error to include the particular
+	aug, not the entire aug string.
+
+2004-10-05  Chris Toshok  <toshok@ximian.com>
+
 	* frontends/scripting/Expression.cs: correct message for zero
 	length array accesses.
 

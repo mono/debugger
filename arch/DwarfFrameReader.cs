@@ -483,10 +483,13 @@ namespace Mono.Debugger.Architecture
 						encoding = reader.ReadByte ();
 						continue;
 					}
+					else if (augmentation [pos] == 'P') {
+						continue;
+					}
 
 					throw new DwarfException (
 						reader.Bfd, "Unknown augmentation `{0}' in CIE",
-						augmentation);
+						augmentation[pos]);
 				}
 
 				columns = new Column [return_register + 2];
