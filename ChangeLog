@@ -1,5 +1,10 @@
 2003-03-09  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/: Added "File / Open" menu item to open a source
+	view.  Not yet implemented, though.
+
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
 	* test/TestSourceView.cs: Small test app for the Gtk.SourceView.
 
 2003-03-09  Martin Baulig  <martin@ximian.com>

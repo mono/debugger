@@ -373,6 +373,20 @@ namespace Mono.Debugger.GUI
 		//
 		// Callbacks hooked from the Glade file.
 		//
+		void OnFileOpenActivate (object sender, EventArgs args)
+		{
+			Gtk.FileSelection fs = new Gtk.FileSelection ("Open File");
+			fs.ShowFileops = false;
+
+			int v = fs.Run ();
+			fs.Hide ();
+
+			if (v != -5)
+				return;
+
+			Console.WriteLine ("OK: {0}", fs.Filename);
+		}
+
 		ProgramToDebug program_to_debug;
 		void OnProgramToDebugActivate (object sender, EventArgs a)
 		{

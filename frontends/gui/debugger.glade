@@ -40,6 +40,14 @@
 		    <widget class="GtkMenu" id="file1_menu">
 
 		      <child>
+			<widget class="GtkImageMenuItem" id="file_open">
+			  <property name="visible">True</property>
+			  <property name="stock_item">GNOMEUIINFO_MENU_OPEN_ITEM</property>
+			  <signal name="activate" handler="OnFileOpenActivate" last_modification_time="Sun, 09 Mar 2003 19:26:37 GMT"/>
+			</widget>
+		      </child>
+
+		      <child>
 			<widget class="GtkMenuItem" id="program-to-debug-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Program to Debug</property>
@@ -388,6 +396,8 @@
 		  <property name="show_border">True</property>
 		  <property name="tab_pos">GTK_POS_TOP</property>
 		  <property name="scrollable">True</property>
+		  <property name="tab_hborder">2</property>
+		  <property name="tab_vborder">2</property>
 		  <property name="enable_popup">True</property>
 
 		  <child>
@@ -479,6 +489,8 @@
 			  <property name="show_border">False</property>
 			  <property name="tab_pos">GTK_POS_TOP</property>
 			  <property name="scrollable">False</property>
+			  <property name="tab_hborder">2</property>
+			  <property name="tab_vborder">2</property>
 			  <property name="enable_popup">False</property>
 
 			  <child>
@@ -1660,6 +1672,8 @@
 		      <property name="show_border">True</property>
 		      <property name="tab_pos">GTK_POS_BOTTOM</property>
 		      <property name="scrollable">True</property>
+		      <property name="tab_hborder">2</property>
+		      <property name="tab_vborder">2</property>
 		      <property name="enable_popup">False</property>
 
 		      <child>
@@ -1901,6 +1915,8 @@
 		      <property name="show_border">True</property>
 		      <property name="tab_pos">GTK_POS_BOTTOM</property>
 		      <property name="scrollable">False</property>
+		      <property name="tab_hborder">2</property>
+		      <property name="tab_vborder">2</property>
 		      <property name="enable_popup">False</property>
 
 		      <child>
