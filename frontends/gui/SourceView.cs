@@ -23,7 +23,6 @@ namespace Mono.Debugger.GUI {
 		}
 
 		protected SourceManager manager;
-		protected DebuggerBackend backend;
 		protected Process process;
 
 		Gtk.Widget widget;
@@ -40,7 +39,6 @@ namespace Mono.Debugger.GUI {
 		public SourceView (SourceManager manager)
 		{
 			this.manager = manager;
-			this.backend = manager.DebuggerBackend;
 
 			text_buffer = new Gtk.SourceBuffer (new Gtk.TextTagTable ());
 			source_view = new Gtk.SourceView (text_buffer);

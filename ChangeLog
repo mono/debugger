@@ -1,5 +1,9 @@
 2003-03-25  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/SourceList.cs (InsertBreakpoint): Implemented.
+
+2003-03-25  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/debugger.glade: Splitted locals and params display.
 
 	* frontends/gui/VariableDisplay.cs: Started to fix this.

@@ -86,39 +86,45 @@ namespace Mono.Debugger.GUI {
 				CloseEvent (this, null);
 		}
 
+		void InsertBreakpointAtXY (int x, int y)
+		{
+			int buffer_x, buffer_y;
+
+			source_view.WindowToBufferCoords (
+				TextWindowType.Left, x, y, out buffer_x, out buffer_y);
+
+			Gtk.TextIter iter;
+			int line_top;
+			source_view.GetLineAtY (out iter, buffer_y, out line_top);
+			int line = iter.Line + 1;
+
+			if (breakpoints [line] != null){
+				int key = (int) breakpoints [line];
+
+				manager.DebuggerBackend.RemoveBreakpoint (key);
+				text_buffer.LineRemoveMarker (line, "stop");
+				breakpoints [line] = null;
+			} else {
+				SourceLocation location = manager.FindLocation (filename, line);
+				if (location == null){
+					Console.WriteLine ("Info: The manager was unable to find debugging info for `{0}' `{1}'", filename, line);
+					return;
+				}
+
+				Breakpoint bp = new SimpleBreakpoint (location.Name);
+				int id = manager.DebuggerBackend.InsertBreakpoint (bp, location);
+
+				text_buffer.LineAddMarker (line, "stop");
+				breakpoints [line] = id;
+			}
+		}
+
 		void button_pressed (object obj, ButtonPressEventArgs args)
 		{
 			Gdk.EventButton ev = args.Event;
 
-			if (ev.window.Equals (source_view.GetWindow (TextWindowType.Left))){
-				int buffer_x, buffer_y;
-
-				source_view.WindowToBufferCoords (TextWindowType.Left, (int) ev.x, (int) ev.y, out buffer_x, out buffer_y);
-				Gtk.TextIter iter;
-				int line_top;
-				source_view.GetLineAtY (out iter, buffer_y, out line_top);
-				int line = iter.Line + 1;
-
-				if (breakpoints [line] != null){
-					int key = (int) breakpoints [line];
-
-					backend.RemoveBreakpoint (key);
-					text_buffer.LineRemoveMarker (line, "stop");
-					breakpoints [line] = null;
-				} else {
-					SourceLocation location = manager.FindLocation (filename, line);
-					if (location == null){
-						Console.WriteLine ("Info: The manager was unable to find debugging info for `{0}' `{1}'", filename, line);
-						return;
-					}
-
-					Breakpoint bp = new SimpleBreakpoint (location.Name);
-					int id = backend.InsertBreakpoint (bp, location);
-
-					text_buffer.LineAddMarker (line, "stop");
-					breakpoints [line] = id;
-				}
-			} 
+			if (ev.window.Equals (source_view.GetWindow (TextWindowType.Left)))
+				InsertBreakpointAtXY ((int) ev.x, (int) ev.y);
 		}
 
 		protected override SourceAddress GetSourceAddress (StackFrame frame)
@@ -134,7 +140,9 @@ namespace Mono.Debugger.GUI {
 
 		public override void InsertBreakpoint ()
 		{
-			Console.WriteLine ("INFO: Implement me, insert a breakpoint here");
+			// FIXME: This is getting the wrong location !
+			Gdk.EventButton bevent = (Gdk.EventButton) Gtk.Application.CurrentEvent;
+			InsertBreakpointAtXY ((int) bevent.x, (int) bevent.y);
 		}
 	}
 }
