@@ -1,3 +1,10 @@
+2003-05-08  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/CSharpMethod.cs: Suppress duplicate line
+	numbers.
+
+	* classes/MethodSource.cs: Re-enable the ObjectCache.
+
 2003-05-04  Martin Baulig  <martin@ximian.com>
 
 	* wrapper/mini-main.c: Always use MONO_OPT_SHARED.

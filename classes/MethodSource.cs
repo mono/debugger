@@ -121,7 +121,6 @@ namespace Mono.Debugger
 
 		public TargetAddress Lookup (int line)
 		{
-			ReadSource ();
 			if ((Addresses == null) || (line < StartRow) || (line > EndRow))
 				return TargetAddress.Null;
 
@@ -137,7 +136,6 @@ namespace Mono.Debugger
 
 		public SourceAddress Lookup (TargetAddress address)
 		{
-			ReadSource ();
 			if (address.IsNull || (address < start) || (address >= end))
 				return null;
 

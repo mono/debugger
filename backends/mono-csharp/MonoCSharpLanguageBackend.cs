@@ -149,7 +149,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			int lexical_block_table_offset = reader.ReadInt32 ();
 
-			Report.Debug (DebugFlags.METHOD_ADDRESS,
+			Report.Debug (DebugFlags.MethodAddress,
 				      "METHOD ADDRESS: {0} {1} {2} {3} {4} {5} {6} {7}",
 				      StartAddress, EndAddress, MethodStartAddress, MethodEndAddress,
 				      WrapperAddress, variables_offset, type_table_offset, num_line_numbers);
@@ -303,7 +303,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int chunk_size = header.ReadInteger ();
 			TargetAddress type_tables = header.ReadAddress ();
 
-			Report.Debug (DebugFlags.JIT_SYMTAB, "TYPE TABLES: {0} {1} {2} {3}",
+			Report.Debug (DebugFlags.JitSymtab, "TYPE TABLES: {0} {1} {2} {3}",
 				      last_num_type_tables, num_type_tables, chunk_size, type_tables);
 
 			if (num_type_tables != last_num_type_tables) {
@@ -336,7 +336,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int size = offset - last_type_table_offset;
 			int read_offset = last_type_table_offset - start;
 
-			Report.Debug (DebugFlags.JIT_SYMTAB, "TYPE TABLE: {0} {1} {2} {3} - {4} {5}",
+			Report.Debug (DebugFlags.JitSymtab, "TYPE TABLE: {0} {1} {2} {3} - {4} {5}",
 				      type_table_address, type_table_total_size, offset, start,
 				      read_offset, size);
 
@@ -671,7 +671,7 @@ namespace Mono.Debugger.Languages.CSharp
 			RuntimeInvoke = reader.ReadAddress ();
 			EventData = reader.ReadAddress ();
 			EventArg = reader.ReadAddress ();
-			Report.Debug (DebugFlags.JIT_SYMTAB, this);
+			Report.Debug (DebugFlags.JitSymtab, this);
 		}
 
 		public override string ToString ()
@@ -786,7 +786,7 @@ namespace Mono.Debugger.Languages.CSharp
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
 
-			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL TABLE READER: {0}", ImageFile);
+			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
 
 			dynamic_address = address;
 
@@ -815,7 +815,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int new_num_range_entries = memory.ReadInteger (address);
 			address += int_size;
 
-			Report.Debug (DebugFlags.JIT_SYMTAB, "RANGES: {0} {1} {2}", this,
+			Report.Debug (DebugFlags.JitSymtab, "RANGES: {0} {1} {2}", this,
 				      num_range_entries, new_num_range_entries);
 
 			if (new_num_range_entries == num_range_entries)
@@ -1368,7 +1368,7 @@ namespace Mono.Debugger.Languages.CSharp
 					MethodRangeEntry entry = new MethodRangeEntry (
 						reader, index, contents, start, end);
 
-					Report.Debug (DebugFlags.JIT_SYMTAB,
+					Report.Debug (DebugFlags.JitSymtab,
 						      "RANGE ENTRY: {0} {1} {2} {3} {4} {5} {6}",
 						      reader, start, end, index, dynamic_address,
 						      dynamic_size, entry);
