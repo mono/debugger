@@ -35,13 +35,13 @@ namespace Mono.Debugger.GUI {
 			return sw;
 		}
 		
-		public SourceList (SourceManager manager, string filename, string contents)
+		public SourceList (SourceManager manager, string name, string filename, string contents)
 			: base (manager)
 		{
 			Console.WriteLine ("Filename: " + filename);
 			this.filename = filename;
 
-			tab = new ClosableNotebookTab (filename);
+			tab = new ClosableNotebookTab (name);
 
 			source_view.ButtonPressEvent += new ButtonPressEventHandler (button_pressed);
 

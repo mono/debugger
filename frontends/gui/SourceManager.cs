@@ -6,6 +6,7 @@
 //
 
 using System;
+using System.IO;
 using System.Text;
 using System.Collections;
 using GLib;
@@ -75,19 +76,19 @@ namespace Mono.Debugger.GUI {
 				ProcessCreatedEvent (this, process);
 		}
 
-		SourceList CreateSourceView (string filename, string[] contents)
+		SourceList CreateSourceView (string name, string filename, string[] contents)
 		{
 			StringBuilder sb = new StringBuilder ();
 			for (int i = 0; i < contents.Length; i++) {
 				sb.Append (contents [i]);
 				sb.Append ("\n");
 			}
-			return CreateSourceView (filename, sb.ToString ());
+			return CreateSourceView (name, filename, sb.ToString ());
 		}
 
-		SourceList CreateSourceView (string filename, string contents)
+		SourceList CreateSourceView (string name, string filename, string contents)
 		{
-			return new SourceList (this, filename, contents);
+			return new SourceList (this, name, filename, contents);
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -221,8 +222,10 @@ namespace Mono.Debugger.GUI {
 			string[] contents = GetSource (source);
 			if (contents == null)
 				return disassembler_view;
+
+			string filename = source.IsDynamic ? null : source.SourceFile.FileName;
 			
-			view = CreateSourceView (source.Name, contents);
+			view = CreateSourceView (source.Name, filename, contents);
 			view.Widget.ShowAll ();
 					
 			sources [source_key] = view;
@@ -286,7 +289,8 @@ namespace Mono.Debugger.GUI {
 				return null;
 			}
 
-			SourceList view = CreateSourceView (filename, contents);
+			string name = Path.GetFileName (filename);
+			SourceList view = CreateSourceView (name, filename, contents);
 			view.Widget.ShowAll ();
 
 			sources [filename] = view;
