@@ -468,7 +468,7 @@ namespace Mono.Debugger.Architecture
 					continue;
 				}
 
-				if (name == null)
+				if ((name == null) || l_addr.IsNull)
 					continue;
 
 				Bfd bfd = container [name];
