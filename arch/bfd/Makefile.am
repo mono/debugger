@@ -60,4 +60,4 @@ pepigen.c : peXXigen.c
 	mv -f pepigen.new pepigen.c
 
 
-EXTRA_DIST = @srcdir@/*.h
+EXTRA_DIST = @srcdir@/*.h coff-i386.c peXXigen.c
