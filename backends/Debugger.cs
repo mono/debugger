@@ -549,6 +549,8 @@ namespace Mono.Debugger.Backends
 			inferior = null;
 			initialized = false;
 			symtabs_read = false;
+			if (FramesInvalidEvent != null)
+				FramesInvalidEvent ();
 		}
 
 		void inferior_output (string line)

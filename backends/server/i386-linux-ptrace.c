@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -144,6 +145,19 @@ server_ptrace_attach (int pid, ChildExitedFunc child_exited, ChildMessageFunc ch
 	setup_inferior (handle);
 
 	return handle;
+}
+
+static void
+server_ptrace_finalize (InferiorHandle *handle)
+{
+	if (handle->pid)
+		ptrace (PTRACE_KILL, handle->pid, NULL, NULL);
+
+	g_free (handle->saved_regs);
+	g_free (handle->saved_fpregs);
+	g_ptr_array_free (handle->breakpoints, TRUE);
+	g_hash_table_destroy (handle->breakpoint_hash);
+	g_free (handle);
 }
 
 static ServerCommandError
@@ -516,11 +530,13 @@ do_dispatch (InferiorHandle *handle, int status)
 		default:
 			g_assert_not_reached ();
 		}
-	} else if (WIFEXITED (status))
+	} else if (WIFEXITED (status)) {
 		handle->child_message_cb (MESSAGE_CHILD_EXITED, WEXITSTATUS (status));
-	else if (WIFSIGNALED (status))
+		handle->child_exited_cb ();
+	} else if (WIFSIGNALED (status)) {
 		handle->child_message_cb (MESSAGE_CHILD_SIGNALED, WTERMSIG (status));
-	else
+		handle->child_exited_cb ();
+	} else
 		g_warning (G_STRLOC ": Got unknown waitpid() result: %d", status);
 }
 
@@ -620,6 +636,7 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,
+	server_ptrace_finalize,
 	server_ptrace_get_g_source,
 	server_ptrace_wait,
 	server_ptrace_get_target_info,

@@ -1843,7 +1843,6 @@ namespace Mono.Debugger.Architecture
 				// dispose all managed resources.
 				if (disposing) {
 					// Do stuff here
-					bfd.Dispose ();
 				}
 				
 				// Release unmanaged resources

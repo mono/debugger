@@ -196,3 +196,11 @@ mono_debugger_server_detach (ServerHandle *handle)
 	handle->inferior = NULL;
 	return result;
 }
+
+void
+mono_debugger_server_finalize (ServerHandle *handle)
+{
+	if (handle->inferior)
+		(* handle->info->finalize) (handle->inferior);
+	g_free (handle);
+}

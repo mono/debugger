@@ -51,7 +51,7 @@ namespace Mono.Debugger.Backends
 
 	internal class Inferior : IInferior, IDisposable
 	{
-		IntPtr server_handle;
+		IntPtr server_handle, g_source;
 		IOOutputChannel inferior_stdin;
 		IOInputChannel inferior_stdout;
 		IOInputChannel inferior_stderr;
@@ -117,6 +117,9 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_detach (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_finalize (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
@@ -142,6 +145,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("glib-2.0")]
 		extern static uint g_source_attach (IntPtr source, IntPtr context);
+
+		[DllImport("glib-2.0")]
+		extern static void g_source_destroy (IntPtr source);
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
@@ -271,7 +277,7 @@ namespace Mono.Debugger.Backends
 			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
 			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
 
-			IntPtr g_source = mono_debugger_server_get_g_source (server_handle);
+			g_source = mono_debugger_server_get_g_source (server_handle);
 			if (g_source == IntPtr.Zero)
 				handle_error (CommandError.UNKNOWN);
 
@@ -339,6 +345,7 @@ namespace Mono.Debugger.Backends
 		void child_exited ()
 		{
 			child_pid = 0;
+			Dispose ();
 			if (ChildExited != null)
 				ChildExited ();
 		}
@@ -846,9 +853,13 @@ namespace Mono.Debugger.Backends
 				this.disposed = true;
 
 				lock (this) {
-					if (child_pid != 0) {
-						mono_debugger_glue_kill_process (child_pid, false);
-						child_pid = 0;
+					if (g_source != IntPtr.Zero) {
+						g_source_destroy (g_source);
+						g_source = IntPtr.Zero;
+					}
+					if (server_handle != IntPtr.Zero) {
+						mono_debugger_server_finalize (server_handle);
+						server_handle = IntPtr.Zero;
 					}
 				}
 			}

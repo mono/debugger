@@ -76,6 +76,8 @@ typedef struct {
 
 	ServerCommandError    (* detach)              (InferiorHandle     *handle);
 
+	void                  (* finalize)            (InferiorHandle     *handle);
+
 	/* These two are private, will provide docu soon. */
 	GSource *             (* get_g_source)        (InferiorHandle     *handle);
 	void                  (* wait)                (InferiorHandle     *handle);
@@ -171,7 +173,6 @@ extern InferiorInfo i386_linux_ptrace_inferior;
  */
 
 typedef struct {
-	GIOChannel *status_channel;
 	ChildMessageFunc child_message_cb;
 	ChildCallbackFunc child_callback_cb;
 	InferiorHandle *inferior;
@@ -206,6 +207,9 @@ mono_debugger_server_attach               (ServerHandle       *handle,
 
 GSource *
 mono_debugger_server_get_g_source         (ServerHandle       *handle);
+
+void
+mono_debugger_sever_finalize              (ServerHandle       *handle);
 
 void
 mono_debugger_server_wait                 (ServerHandle       *handle);
