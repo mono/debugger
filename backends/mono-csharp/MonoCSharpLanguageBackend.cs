@@ -870,7 +870,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1})", GetType (), ImageFile);
+			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",
+					      GetType (), ImageFile, IsLoaded,
+					      SymbolsLoaded, StepInto, LoadSymbols);
 		}
 
 		// <remarks>

@@ -36,13 +36,14 @@ namespace Mono.Debugger
 		public TargetAddress (AddressDomain domain, long address)
 		{
 			this.domain = domain;
+			// FIXME: hack
+			address &= 0x00000000ffffffffL;
 			this.address = (ulong) address;
 		}
 
 		public TargetAddress (AddressDomain domain, Register register)
+			: this (domain, (long) register.Data)
 		{
-			this.domain = domain;
-			this.address = (ulong) (long) register.Data;
 		}
 
 		// <summary>

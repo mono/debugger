@@ -1440,7 +1440,7 @@ namespace Mono.Debugger.Backends
 					manager.DebuggerBackend.UpdateSymbolTable ();
 					method = Lookup (trampoline);
 				}
-				if ((method == null) || !method.Module.StepInto) {
+				if (!method_has_source (method)) {
 					do_next ();
 					return false;
 				}
@@ -1484,10 +1484,10 @@ namespace Mono.Debugger.Backends
 
 		bool method_has_source (IMethod method)
 		{
-			if ((current_operation == null) || !current_operation.IsSourceOperation)
-				return true;
+			if (method == null)
+				return false;
 
-			if ((method == null) || !method.HasSource || !method.Module.StepInto)
+			if (!method.HasSource || !method.Module.StepInto)
 				return false;
 
 			MethodSource source = method.Source;
@@ -1495,7 +1495,20 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			SourceFileFactory factory = manager.DebuggerBackend.SourceFileFactory;
-			return factory.Exists (source.SourceFile.FileName);
+			if (!factory.Exists (source.SourceFile.FileName))
+				return false;
+
+			SourceAddress addr = source.Lookup (method.MethodStartAddress);
+			if (addr == null) {
+				Console.WriteLine ("OOOOPS - No source for method: " +
+						   "{0} {1} {2} - {3} {4}",
+						   method, source, source.SourceFile.FileName,
+						   source.StartRow, source.EndRow);
+				source.DumpLineNumbers ();
+				return false;
+			}
+
+			return true;
 		}
 
 		// <summary>
@@ -1594,7 +1607,7 @@ namespace Mono.Debugger.Backends
 			 * and step over it.
 			 */
 			IMethod method = Lookup (call);
-			if ((method == null) || !method.Module.StepInto) {
+			if (!method_has_source (method)) {
 				do_next ();
 				return false;
 			}
@@ -1607,7 +1620,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress wrapper = method.WrapperAddress;
 				IMethod wmethod = Lookup (wrapper);
 
-				if ((wmethod == null) || !wmethod.Module.StepInto) {
+				if (!method_has_source (wmethod)) {
 					do_next ();
 					return false;
 				}

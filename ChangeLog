@@ -1,5 +1,14 @@
 2004-03-05  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs: Use method_has_source()
+	everywhere and made it actually work.
+
+	* classes/TargetAddress.cs: Committed an ugly hack to the .ctor;
+	since we're currently only running on the i386, we can just throw
+	the upper 32 bits away to work around some marshalling issues.
+
+2004-03-05  Martin Baulig  <martin@ximian.com>
+
 	* wrapper.c (compile_method): Return a guint64.
 
 2004-03-05  Martin Baulig  <martin@ximian.com>
