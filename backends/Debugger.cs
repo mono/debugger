@@ -451,6 +451,10 @@ namespace Mono.Debugger
 			module_manager.Locked = true;
 			inferior.UpdateModules ();
 			UpdateSymbolTable ();
+
+			foreach (Module module in Modules)
+				module.BackendLoaded = true;
+
 			module_manager.Locked = false;
 		}
 

@@ -14,6 +14,7 @@ namespace Mono.Debugger
 		string name;
 		bool load_symbols;
 		bool step_into;
+		bool backend_loaded;
 		Hashtable breakpoints;
 		static int next_breakpoint_id = 0;
 
@@ -77,6 +78,22 @@ namespace Mono.Debugger
 			}
 		}
 
+		public bool BackendLoaded {
+			get {
+				return backend_loaded;
+			}
+
+			set {
+				if (backend_loaded == value)
+					return;
+				backend_loaded = value;
+				if (backend_loaded) {
+					if (IsLoaded)
+						OnModuleLoadedEvent ();
+				}
+			}
+		}
+
 		protected abstract void SymbolsChanged (bool loaded);
 
 		public virtual void UnLoad ()
@@ -106,6 +123,9 @@ namespace Mono.Debugger
 
 		protected virtual void OnModuleLoadedEvent ()
 		{
+			if (!backend_loaded)
+				return;
+
 			if (ModuleLoadedEvent != null)
 				ModuleLoadedEvent (this);
 
@@ -122,6 +142,7 @@ namespace Mono.Debugger
 
 			sources = null;
 			symtab = null;
+			backend_loaded = false;
 
 			if (ModuleUnLoadedEvent != null)
 				ModuleUnLoadedEvent (this);
