@@ -105,6 +105,10 @@ proc mdb_expect_breakpoint {} {
 	    set index $expect_out(1,string)
 	    pass "Inserted breakpoint $index"
 	}
+	-re {^([^\n\r]+)[\n\r]+} {
+	    set line $expect_out(1,string)
+	    fail "Received `$line' when trying to insert a breakpoint"
+	}
 	timeout {
 	    perror "(timeout) Mono Debugger is not inserting breakpoint."
 	    return -1
