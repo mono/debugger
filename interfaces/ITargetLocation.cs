@@ -9,7 +9,7 @@ namespace Mono.Debugger
 	//   one of the ISourceLanguage derivatives.
 	//   backend.
 	// </summary>
-	public interface ITargetLocation
+	public interface ITargetLocation : ICloneable
 	{
 		// <summary>
 		//   Address of this location in the target's address space.
@@ -18,6 +18,12 @@ namespace Mono.Debugger
 			get;
 		}
 
-		void AddOffset (int offset);
+		int Offset {
+			get; set;
+		}
+
+		bool IsNull {
+			get;
+		}
 	}
 }

@@ -6,15 +6,39 @@ namespace Mono.Debugger
 	public class TargetLocation : ITargetLocation
 	{
 		long addr;
+		int offset;
 
-		public TargetLocation (long addr)
+		internal TargetLocation (long addr)
+			: this (addr, 0)
+		{ }
+
+		internal TargetLocation (long addr, int offset)
 		{
 			this.addr = addr;
+			this.offset = offset;
 		}
+
+		public static ITargetLocation Null = new TargetLocation (0);
 
 		public long Location {
 			get {
 				return addr;
+			}
+		}
+
+		public int Offset {
+			get {
+				return offset;
+			}
+
+			set {
+				offset = value;
+			}
+		}
+
+		public bool IsNull {
+			get {
+				return addr == 0;
 			}
 		}
 
@@ -27,24 +51,17 @@ namespace Mono.Debugger
 				builder.Append (addr.ToString ("x"));
 			} else
 				builder.Append ("<unknown>");
+			if (offset > 0) {
+				builder.Append ("+0x");
+				builder.Append (offset.ToString ("x"));
+			}
 
 			return builder.ToString ();
 		}
 
-		public void AddOffset (int offset)
+		public object Clone ()
 		{
-			this++;
-		}
-
-		public static TargetLocation operator ++ (TargetLocation location)
-		{
-			location.addr++;
-			return location;
-		}
-
-		public static TargetLocation operator + (TargetLocation location, int offset)
-		{
-			return new TargetLocation (location.addr + offset);
+			return new TargetLocation (addr, offset);
 		}
 	}
 }

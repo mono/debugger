@@ -77,5 +77,23 @@ namespace Mono.Debugger
 		string ReadString (ITargetLocation location);
 
 		ITargetMemoryReader ReadMemory (ITargetLocation location, int size);
+
+		byte[] ReadBuffer (ITargetLocation location, long offset, int size);
+
+		Stream GetMemoryStream (ITargetLocation location);
+
+		bool CanWrite {
+			get;
+		}
+
+		void WriteBuffer (ITargetLocation location, byte[] buffer, long offset, int size);
+
+		void WriteByte (ITargetLocation location, byte value);
+
+		void WriteInteger (ITargetLocation location, int value);
+
+		void WriteLongInteger (ITargetLocation location, long value);
+
+		void WriteAddress (ITargetLocation location, ITargetLocation address);
 	}
 }

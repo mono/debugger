@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Architecture;
 using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
@@ -122,6 +123,122 @@ namespace Mono.Debugger.Backends
 			else
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
+		}
+	}
+
+	internal class TargetMemoryStream : Stream
+	{
+		ITargetLocation location;
+		ITargetInfo target_info;
+		ITargetMemoryAccess memory;
+		long position = 0;
+
+		internal TargetMemoryStream (ITargetMemoryAccess memory, ITargetLocation location,
+					     ITargetInfo target_info)
+		{
+			this.memory = memory;
+			this.location = location;
+			this.target_info = target_info;
+		}
+
+		public override bool CanRead {
+			get {
+				return true;
+			}
+		}
+
+		public override bool CanSeek {
+			get {
+				return true;
+			}
+		}
+
+		public override bool CanWrite {
+			get {
+				return memory.CanWrite;
+			}
+		}
+
+		public override long Length {
+			get {
+				throw new NotSupportedException ();
+			}
+		}
+
+		public override long Position {
+			get {
+				return position;
+			}
+
+			set {
+				position = value;
+			}
+		}
+
+		public override void SetLength (long value)
+		{
+			throw new NotSupportedException ();
+		}
+
+		public override long Seek (long offset, SeekOrigin origin)
+		{
+                        long ref_point;
+
+                        switch (origin) {
+			case SeekOrigin.Begin:
+				ref_point = 0;
+				break;
+			case SeekOrigin.Current:
+				ref_point = position;
+				break;
+			case SeekOrigin.End:
+				throw new NotSupportedException ();
+			default:
+				throw new ArgumentException();
+                        }
+
+			// FIXME: The stream would actually allow being seeked before its start.
+			//        However, I don't know how our callers would deal with a negative
+			//        Position.
+			if (ref_point + offset < 0)
+                                throw new IOException ("Attempted to seek before start of stream");
+
+                        position = ref_point + offset;
+
+                        return position;
+                }
+
+		public override void Flush ()
+		{
+		}
+
+		public override int Read (byte[] buffer, int offset, int count)
+		{
+			try {
+				byte[] retval = memory.ReadBuffer (location, position, count);
+				retval.CopyTo (buffer, offset);
+			} catch (Exception e) {
+				throw new IOException ("Cannot read target memory", e);
+			}
+
+			position += count;
+			return count;
+		}
+
+		public override void Write (byte[] buffer, int offset, int count)
+		{
+			try {
+				if (offset != 0) {
+					byte[] temp = new byte [count];
+					Array.Copy (buffer, offset, temp, 0, count);
+					memory.WriteBuffer (location, temp, position, count);
+				} else
+					memory.WriteBuffer (location, buffer, position, count);
+			} catch (Exception e) {
+				throw new IOException ("Cannot read target memory", e);
+			}
+
+			position += count;
 		}
 	}
 
@@ -346,7 +463,20 @@ namespace Mono.Debugger.Backends
 
 			update_symbol_files ();
 
-			return inferior.Frame ();
+			ITargetLocation frame = inferior.Frame ();
+			if (frame.IsNull)
+				return frame;
+
+			IDisassembler dis = inferior.Disassembler;
+			if (dis != null) {
+				ITargetLocation location = (ITargetLocation) frame.Clone ();
+
+				string insn = dis.DisassembleInstruction (ref location);
+
+				Console.WriteLine ("DISASSEMBLE: {0}", insn);
+			}
+
+			return frame;
 		}
 
 		public void Step ()
@@ -364,6 +494,15 @@ namespace Mono.Debugger.Backends
 				throw new NoTargetException ();
 
 			throw new NotSupportedException ();
+		}
+
+		public IDisassembler Disassembler {
+			get {
+				if (inferior == null)
+					throw new NoTargetException ();
+
+				return inferior.Disassembler;
+			}
 		}
 
 		public event TargetOutputHandler TargetOutput;

@@ -75,6 +75,13 @@ namespace Mono.Debugger
 		void Next ();
 
 		// <summary>
+		//   Returns a disassembler for the current target.
+		// </summary>
+		IDisassembler Disassembler {
+			get;
+		}
+
+		// <summary>
 		//   This event is called when the target we're currently debugging has sent any
 		//   output to stdout.
 		// </summary>

@@ -60,6 +60,7 @@ namespace Mono.Debugger.Backends
 		string[] envp;
 
 		BfdSymbolTable bfd_symtab;
+		BfdDisassembler bfd_disassembler;
 
 		bool attached;
 
@@ -113,12 +114,17 @@ namespace Mono.Debugger.Backends
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
+		void check_error (CommandError error)
+		{
+			if (error == CommandError.NONE)
+				return;
+
+			handle_error (error);
+		}
+
 		void handle_error (CommandError error)
 		{
 			switch (error) {
-			case CommandError.NONE:
-				return;
-
 			case CommandError.NOT_STOPPED:
 				throw new TargetNotStoppedException ();
 
@@ -132,7 +138,7 @@ namespace Mono.Debugger.Backends
 		{
 			CommandError result = mono_debugger_server_send_command (server_handle, command);
 
-			handle_error (result);
+			check_error (result);
 		}
 
 		long read_long ()
@@ -154,7 +160,7 @@ namespace Mono.Debugger.Backends
 
 			CommandError result = mono_debugger_server_call_method (
 				server_handle, method.Location, method_argument, number);
-			handle_error (result);
+			check_error (result);
 			return async;
 		}
 
@@ -239,10 +245,12 @@ namespace Mono.Debugger.Backends
 			CommandError result = mono_debugger_server_get_target_info
 				(server_handle, out target_int_size, out target_long_size,
 				 out target_address_size);
-			handle_error (result);
+			check_error (result);
 
 			target_info = new TargetInfo (target_int_size, target_long_size,
 						      target_address_size);
+
+			bfd_disassembler = bfd_symtab.GetDisassembler (this);
 		}
 
 		void read_mono_debugger_info ()
@@ -327,40 +335,62 @@ namespace Mono.Debugger.Backends
 		// ITargetMemoryAccess
 		//
 
-		public byte ReadByte (ITargetLocation location)
+		IntPtr read_buffer (ITargetLocation location, long offset, int size)
 		{
 			IntPtr data;
 			CommandError result = mono_debugger_server_read_memory (
-				server_handle, location.Location, 1, out data);
-			handle_error (result);
+				server_handle, location.Location + location.Offset + offset, size, out data);
+			if (result != CommandError.NONE) {
+				g_free (data);
+				handle_error (result);
+			}
+			return data;
+		}
 
-			byte retval = Marshal.ReadByte (data);
-			g_free (data);
-			return retval;
+		public byte[] ReadBuffer (ITargetLocation location, long offset, int size)
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = read_buffer (location, offset, size);
+				byte[] retval = new byte [size];
+				Marshal.Copy (data, retval, 0, size);
+				return retval;
+			} finally {
+				g_free (data);
+			}
+		}
+
+		public byte ReadByte (ITargetLocation location)
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = read_buffer (location, 0, 1);
+				return Marshal.ReadByte (data);
+			} finally {
+				g_free (data);
+			}
 		}
 
 		public int ReadInteger (ITargetLocation location)
 		{
-			IntPtr data;
-			CommandError result = mono_debugger_server_read_memory (
-				server_handle, location.Location, sizeof (int), out data);
-			handle_error (result);
-
-			int retval = Marshal.ReadInt32 (data);
-			g_free (data);
-			return retval;
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = read_buffer (location, 0, sizeof (int));
+				return Marshal.ReadInt32 (data);
+			} finally {
+				g_free (data);
+			}
 		}
 
 		public long ReadLongInteger (ITargetLocation location)
 		{
-			IntPtr data;
-			CommandError result = mono_debugger_server_read_memory (
-				server_handle, location.Location, sizeof (long), out data);
-			handle_error (result);
-
-			long retval = Marshal.ReadInt64 (data);
-			g_free (data);
-			return retval;
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = read_buffer (location, 0, sizeof (long));
+				return Marshal.ReadInt64 (data);
+			} finally {
+				g_free (data);
+			}
 		}
 
 		public ITargetLocation ReadAddress (ITargetLocation location)
@@ -382,29 +412,59 @@ namespace Mono.Debugger.Backends
 		{
 			StringBuilder sb = new StringBuilder ();
 
+			ITargetLocation my_location = (ITargetLocation) location.Clone ();
+
 			while (true) {
-				byte b = ReadByte (location);
+				byte b = ReadByte (my_location);
 
 				if (b == 0)
 					return sb.ToString ();
 
 				sb.Append ((char) b);
-				location.AddOffset (1);
+				my_location.Offset++;
 			}
 		}
 
 		public ITargetMemoryReader ReadMemory (ITargetLocation location, int size)
 		{
-			IntPtr data;
-			CommandError result = mono_debugger_server_read_memory (
-				server_handle, location.Location, size, out data);
-			handle_error (result);
-
-			byte[] retval = new byte [size];
-			Marshal.Copy (data, retval, 0, size);
-			g_free (data);
-
+			byte [] retval = ReadBuffer (location, 0, size);
 			return new TargetReader (retval, target_info);
+		}
+
+		public Stream GetMemoryStream (ITargetLocation location)
+		{
+			return new TargetMemoryStream (this, location, target_info);
+		}
+
+		public bool CanWrite {
+			get {
+				return false;
+			}
+		}
+
+		public void WriteBuffer (ITargetLocation location, byte[] buffer, long offset, int size)
+		{
+			throw new NotSupportedException ();
+		}
+
+		public void WriteByte (ITargetLocation location, byte value)
+		{
+			throw new NotSupportedException ();
+		}
+
+		public void WriteInteger (ITargetLocation location, int value)
+		{
+			throw new NotSupportedException ();
+		}
+
+		public void WriteLongInteger (ITargetLocation location, long value)
+		{
+			throw new NotSupportedException ();
+		}
+
+		public void WriteAddress (ITargetLocation location, ITargetLocation address)
+		{
+			throw new NotSupportedException ();
 		}
 
 		//
@@ -470,7 +530,13 @@ namespace Mono.Debugger.Backends
 				return new TargetLocation (read_long ());
 			} catch {
 				Console.WriteLine ("Can't get current frame!");
-				return new TargetLocation (0);
+				return TargetLocation.Null;
+			}
+		}
+
+		public IDisassembler Disassembler {
+			get {
+				return bfd_disassembler;
 			}
 		}
 
@@ -487,6 +553,10 @@ namespace Mono.Debugger.Backends
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
+					if (bfd_symtab != null)
+						bfd_symtab.Dispose ();
+					if (bfd_disassembler != null)
+						bfd_disassembler.Dispose ();
 					// Do stuff here
 				}
 				

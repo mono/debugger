@@ -23,6 +23,12 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libbfd")]
 		extern static bool bfd_close (IntPtr bfd);
 
+		[DllImport("libopcodes")]
+		extern static IntPtr disassembler (IntPtr bfd);
+
+		[DllImport("libmonodebuggerbfdglue")]
+		extern static IntPtr bfd_glue_init_disassembler (IntPtr bfd);
+
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static bool bfd_glue_check_format_object (IntPtr bfd);
 
@@ -65,6 +71,15 @@ namespace Mono.Debugger.Architecture
 			}
 
 			g_free (symtab);
+		}
+
+		public BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
+		{
+			IntPtr dis = disassembler (bfd);
+
+			IntPtr info = bfd_glue_init_disassembler (bfd);
+
+			return new BfdDisassembler (memory, dis, info);
 		}
 
 		public ITargetLocation this [string name] {

@@ -161,6 +161,12 @@ namespace Mono.Debugger.Backends
 			throw new NotSupportedException ();
 		}
 
+		public IDisassembler Disassembler {
+			get {
+				throw new NotSupportedException ();
+			}
+		}
+
 		void IDebuggerBackend.Frame ()
 		{
 			current_frame = null;
@@ -335,16 +341,27 @@ namespace Mono.Debugger.Backends
 		{
 			public readonly string SymbolName;
 			public readonly GDB GDB;
+			int offset;
 
 			public TargetSymbol (GDB gdb, string symbol)
+				: this (gdb, symbol, 0)
+			{ }
+
+			public TargetSymbol (GDB gdb, string symbol, int offset)
 			{
 				this.SymbolName = symbol;
 				this.GDB = gdb;
+				this.offset = offset;
 			}
 
-			void ITargetLocation.AddOffset (int offset)
-			{
-				throw new NotImplementedException ();
+			int ITargetLocation.Offset {
+				get {
+					return offset;
+				}
+
+				set {
+					offset = value;
+				}
 			}
 
 			long ITargetLocation.Location {
@@ -360,6 +377,17 @@ namespace Mono.Debugger.Backends
 
 					return -1;
 				}
+			}
+
+			bool ITargetLocation.IsNull {
+				get {
+					return true;
+				}
+			}
+
+			object ICloneable.Clone ()
+			{
+				return new TargetSymbol (GDB, SymbolName, offset);
 			}
 		}
 
