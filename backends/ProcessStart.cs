@@ -217,9 +217,9 @@ namespace Mono.Debugger
 			string main_name = main.DeclaringType + ":" + main.Name;
 
 			string[] start_argv = {
-				Path_Mono, "--break", main_name, "--debug=mono",
-				"--noinline", "--debug-args", "internal_mono_debugger",
-				old_argv [0] };
+				Path_Mono, "--break", main_name, "--debug=internal_mono_debugger",
+				"--noinline", old_argv [0]
+			};
 
 			string[] new_argv = new string [old_argv.Length + start_argv.Length];
 			start_argv.CopyTo (new_argv, 0);

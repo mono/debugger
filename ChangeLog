@@ -1,3 +1,8 @@
+2003-01-05  Martin Baulig  <martin@ximian.com>
+
+	* backends/ProcessStart.cs: The way how the debugger starts the
+	JIT has changed; make sure to update your JIT as well.
+
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/ScriptingContext.cs: Support non-interactive
