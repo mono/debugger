@@ -1,3 +1,14 @@
+January 14th, 2003 - Martin Baulig
+----------------------------------
+
+The Debugger is now working on FreeBSD 4.7.
+
+It wasn't actually that much work to port it, just cleaning up the APIs a bit and then a
+few adjustments - a simple one afternoon job.
+
+You can debug native applications or read core files; managed applications and
+multi-threaded apps don't work yet.
+
 January 5th, 2003 - Martin Baulig
 ---------------------------------
 

@@ -1,5 +1,9 @@
 2003-01-14  Martin Baulig  <martin@ximian.com>
 
+	* NEWS: The Debugger is now working on FreeBSD 4.7 :-)
+
+2003-01-14  Martin Baulig  <martin@ximian.com>
+
 	* backends/IInferior.cs (StopSignal): Removed.
 
 	* backends/ptrace/PTrace.cs (SIGSTOP, SIGINT, SIGCHLD, SIGPROF):
