@@ -47,10 +47,10 @@ namespace Mono.Debugger.Architecture
 			get { return dwarf != null; }
 		}
 
-		public override SourceInfo[] Sources {
+		public override SourceFile[] Sources {
 			get {
 				if (dwarf == null)
-					return new SourceInfo [0];
+					return new SourceFile [0];
 
 				return dwarf.GetSources ();
 			}
@@ -73,10 +73,10 @@ namespace Mono.Debugger.Architecture
 			return bfd [name];
 		}
 
-		public override SourceMethodInfo FindMethod (string name)
+		public override SourceMethod FindMethod (string name)
 		{
-			foreach (SourceInfo source in Sources) {
-				SourceMethodInfo method = source.FindMethod (name);
+			foreach (SourceFile source in Sources) {
+				SourceMethod method = source.FindMethod (name);
 
 				if (method != null)
 					return method;

@@ -593,7 +593,7 @@ namespace Mono.Debugger.Languages.CSharp
 				get { return symbols_loaded; }
 			}
 
-			public override SourceInfo[] Sources {
+			public override SourceFile[] Sources {
 				get { return reader.GetSources (); }
 			}
 
@@ -620,7 +620,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			public override SourceMethodInfo FindMethod (string name)
+			public override SourceMethod FindMethod (string name)
 			{
 				return reader.FindMethod (name);
 			}
@@ -955,28 +955,28 @@ namespace Mono.Debugger.Languages.CSharp
 				return;
 
 			foreach (SourceFileEntry source in File.Sources) {
-				MonoSourceInfo info = new MonoSourceInfo (this, source);
+				MonoSourceFile info = new MonoSourceFile (this, source);
 
 				sources.Add (info);
 				source_hash.Add (source, info);
 			}
 		}
 
-		public SourceInfo[] GetSources ()
+		public SourceFile[] GetSources ()
 		{
 			ensure_sources ();
-			SourceInfo[] retval = new SourceInfo [sources.Count];
+			SourceFile[] retval = new SourceFile [sources.Count];
 			sources.CopyTo (retval, 0);
 			return retval;
 		}
 
-		public SourceMethodInfo[] MethodLookup (string name)
+		public SourceMethod[] MethodLookup (string name)
 		{
 			if (File == null)
 				return null;
 
 			int[] methods = File.MethodLookup (name);
-			SourceMethodInfo[] retval = new SourceMethodInfo [methods.Length];
+			SourceMethod[] retval = new SourceMethod [methods.Length];
 
 			for (int i = 0; i < methods.Length; i++)
 				retval [i] = GetMethod (methods [i]);
@@ -995,7 +995,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return method;
 
 			MethodEntry entry = File.GetMethod (index);
-			MonoSourceInfo info = (MonoSourceInfo) source_hash [entry.SourceFile];
+			MonoSourceFile info = (MonoSourceFile) source_hash [entry.SourceFile];
 			MethodSourceEntry source = File.GetMethodSource (index);
 
 			string name = entry.FullName;
@@ -1005,18 +1005,18 @@ namespace Mono.Debugger.Languages.CSharp
 			return method;
 		}
 
-		public SourceMethodInfo GetMethod (int index)
+		public SourceMethod GetMethod (int index)
 		{
 			return GetMethod_internal (index);
 		}
 
-		public SourceMethodInfo FindMethod (string name)
+		public SourceMethod FindMethod (string name)
 		{
 			if (File == null)
 				return null;
 
 			ensure_sources ();
-			SourceMethodInfo method = (SourceMethodInfo) method_name_hash [name];
+			SourceMethod method = (SourceMethod) method_name_hash [name];
 			if (method != null)
 				return method;
 
@@ -1039,13 +1039,13 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		private class MonoSourceInfo : SourceInfo
+		private class MonoSourceFile : SourceFile
 		{
 			MonoSymbolTableReader reader;
 			SourceFileEntry source;
 			ArrayList methods;
 
-			public MonoSourceInfo (MonoSymbolTableReader reader, SourceFileEntry source)
+			public MonoSourceFile (MonoSymbolTableReader reader, SourceFileEntry source)
 				: base (reader.Module, source.FileName)
 			{
 				this.reader = reader;
@@ -1057,7 +1057,7 @@ namespace Mono.Debugger.Languages.CSharp
 				ArrayList list = new ArrayList ();
 
 				foreach (MethodSourceEntry entry in source.Methods) {
-					SourceMethodInfo method = reader.GetMethod (entry.Index);
+					SourceMethod method = reader.GetMethod (entry.Index);
 					list.Add (method);
 				}
 
@@ -1065,7 +1065,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		private class MonoSourceMethod : SourceMethodInfo
+		private class MonoSourceMethod : SourceMethod
 		{
 			MonoSymbolTableReader reader;
 			Hashtable load_handlers;
@@ -1075,7 +1075,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoMethod method;
 			MethodSourceEntry source;
 
-			public MonoSourceMethod (SourceInfo info, MonoSymbolTableReader reader,
+			public MonoSourceMethod (SourceFile info, MonoSymbolTableReader reader,
 						 MethodSourceEntry source, MethodEntry entry, string name)
 				: base (info, name, source.StartRow, source.EndRow, true)
 			{
@@ -1225,7 +1225,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected class MonoMethod : MethodBase
 		{
 			MonoSymbolTableReader reader;
-			SourceMethodInfo info;
+			SourceMethod info;
 			MethodEntry method;
 			System.Reflection.MethodBase rmethod;
 			MonoType class_type;
@@ -1237,7 +1237,7 @@ namespace Mono.Debugger.Languages.CSharp
 			bool is_loaded;
 			MethodAddress address;
 
-			public MonoMethod (MonoSymbolTableReader reader, SourceMethodInfo info, MethodEntry method)
+			public MonoMethod (MonoSymbolTableReader reader, SourceMethod info, MethodEntry method)
 				: base (info.Name, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
@@ -1246,7 +1246,7 @@ namespace Mono.Debugger.Languages.CSharp
 				this.rmethod = method.MethodBase;
 			}
 
-			public MonoMethod (MonoSymbolTableReader reader, SourceMethodInfo info, MethodEntry method,
+			public MonoMethod (MonoSymbolTableReader reader, SourceMethod info, MethodEntry method,
 					   ITargetMemoryReader dynamic_reader)
 				: this (reader, info, method)
 			{

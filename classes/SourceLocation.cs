@@ -6,18 +6,18 @@ namespace Mono.Debugger
 	[Serializable]
 	public class SourceLocation : ISerializable
 	{
-		SourceMethodInfo method;
+		SourceMethod method;
 		int line;
 
 		public Module Module {
-			get { return method.SourceInfo.Module; }
+			get { return method.SourceFile.Module; }
 		}
 
-		public SourceInfo SourceInfo {
-			get { return method.SourceInfo; }
+		public SourceFile SourceFile {
+			get { return method.SourceFile; }
 		}
 
-		public SourceMethodInfo Method {
+		public SourceMethod Method {
 			get { return method; }
 		}
 
@@ -34,11 +34,11 @@ namespace Mono.Debugger
 			}
 		}
 
-		public SourceLocation (SourceMethodInfo method)
+		public SourceLocation (SourceMethod method)
 			: this (method, -1)
 		{ }
 
-		public SourceLocation (SourceMethodInfo method, int line)
+		public SourceLocation (SourceMethod method, int line)
 		{
 			this.method = method;
 			this.line = line;
@@ -84,7 +84,7 @@ namespace Mono.Debugger
 
 		protected SourceLocation (SerializationInfo info, StreamingContext context)
 		{
-			method = (SourceMethodInfo) info.GetValue ("method", typeof (SourceMethodInfo));
+			method = (SourceMethod) info.GetValue ("method", typeof (SourceMethod));
 			line = info.GetInt32 ("line");
 		}
 	}

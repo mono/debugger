@@ -11,7 +11,7 @@ namespace Mono.Debugger
 	//   A single source file.  It is used to find a breakpoint's location by method
 	//   name or source file.
 	// </summary>
-	public abstract class SourceInfo
+	public abstract class SourceFile
 	{
 		// <summary>
 		//   The file's full pathname.
@@ -56,7 +56,7 @@ namespace Mono.Debugger
 					return null;
 
 				Hashtable method_hash = new Hashtable ();
-				foreach (SourceMethodInfo method in methods) {
+				foreach (SourceMethod method in methods) {
 					if (!method_hash.Contains (method.Name))
 						method_hash.Add (method.Name, method);
 				}
@@ -66,38 +66,38 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Returns a list of SourceMethodInfo's which is sorted by source lines.
+		//   Returns a list of SourceMethod's which is sorted by source lines.
 		//   It is used when inserting a breakpoint by source line to find the
 		//   method this line is contained in.
 		// </summary>
-		public SourceMethodInfo[] Methods {
+		public SourceMethod[] Methods {
 			get {
 				SourceData data = ensure_methods ();
 				if (data == null)
-					return new SourceMethodInfo [0];
+					return new SourceMethod [0];
 
-				SourceMethodInfo[] retval = new SourceMethodInfo [data.Methods.Count];
+				SourceMethod[] retval = new SourceMethod [data.Methods.Count];
 				data.Methods.CopyTo (retval, 0);
 				return retval;
 			}
 		}
 
-		public SourceMethodInfo FindMethod (string name)
+		public SourceMethod FindMethod (string name)
 		{
 			SourceData data = ensure_methods ();
 			if (data == null)
 				return null;
 
-			return (SourceMethodInfo) data.MethodHash [name];
+			return (SourceMethod) data.MethodHash [name];
 		}
 
-		public SourceMethodInfo FindMethod (int line)
+		public SourceMethod FindMethod (int line)
 		{
 			SourceData data = ensure_methods ();
 			if (data == null)
 				return null;
 
-			foreach (SourceMethodInfo method in data.Methods) {
+			foreach (SourceMethod method in data.Methods) {
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return method;
 			}
@@ -105,7 +105,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		protected SourceInfo (Module module, string filename)
+		protected SourceFile (Module module, string filename)
 		{
 			this.id = ++next_id;
 			this.module = module;
@@ -119,13 +119,13 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("SourceInfo ({0}:{1})", ID, FileName);
+			return String.Format ("SourceFile ({0}:{1})", ID, FileName);
 		}
 
 		// <remarks>
 		//   This is cached in a weak reference; `Methods' is a list of
-		//   SourceMethodInfo's, sorted by their start lines and `MethodHash' maps
-		//   the method's full name to a SourceMethodInfo.
+		//   SourceMethod's, sorted by their start lines and `MethodHash' maps
+		//   the method's full name to a SourceMethod.
 		// </remarks>
 		private class SourceData
 		{
@@ -140,15 +140,15 @@ namespace Mono.Debugger
 		}
 	}
 
-	public delegate void MethodLoadedHandler (SourceMethodInfo method, object user_data);
+	public delegate void MethodLoadedHandler (SourceMethod method, object user_data);
 
 	// <summary>
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.
 	// </summary>
-	public abstract class SourceMethodInfo
+	public abstract class SourceMethod
 	{
-		public SourceInfo SourceInfo {
+		public SourceFile SourceFile {
 			get {
 				return source;
 			}
@@ -226,17 +226,17 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("Method ({0}:{1}:{2}:{3}:{4})", Name, SourceInfo,
+			return String.Format ("Method ({0}:{1}:{2}:{3}:{4})", Name, SourceFile,
 					      StartRow, EndRow, IsLoaded);
 		}
 
-		SourceInfo source;
+		SourceFile source;
 		string name;
 		int start_row, end_row;
 		bool is_dynamic;
 
-		protected SourceMethodInfo (SourceInfo source, string name, int start, int end,
-					    bool is_dynamic)
+		protected SourceMethod (SourceFile source, string name, int start, int end,
+					bool is_dynamic)
 		{
 			this.source = source;
 			this.name = name;

@@ -554,7 +554,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ThreadGroup group = (ThreadGroup) thread_group_expr.Resolve (context);
 
-			SourceMethodInfo method = source_expr.ResolveMethod (context);
+			SourceMethod method = source_expr.ResolveMethod (context);
 			if (method == null)
 				return;
 
@@ -1386,15 +1386,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.line = -1;
 		}
 
-		public SourceMethodInfo ResolveMethod (ScriptingContext context)
+		public SourceMethod ResolveMethod (ScriptingContext context)
 		{
 			object result = Resolve (context);
 			if (result == null)
 				throw new ScriptingException ("No such method.");
 
-			SourceMethodInfo method = result as SourceMethodInfo;
+			SourceMethod method = result as SourceMethod;
 			if (method == null) {
-				context.AddMethodSearchResult ((SourceMethodInfo []) result);
+				context.AddMethodSearchResult ((SourceMethod []) result);
 				return null;
 			}
 
@@ -1434,7 +1434,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return context.FindMethod (source.SourceBuffer.Name, line);
 			}
 
-			SourceMethodInfo[] result = source.MethodLookup (name);
+			SourceMethod[] result = source.MethodLookup (name);
 
 			if (result.Length == 0)
 				throw new ScriptingException ("No method matches your query.");
@@ -1456,7 +1456,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			SourceMethodInfo method = source_expr.ResolveMethod (context);
+			SourceMethod method = source_expr.ResolveMethod (context);
 			if (method == null)
 				return;
 

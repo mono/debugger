@@ -13,7 +13,7 @@ namespace Mono.Debugger
 
 	public interface ISourceLookup
 	{
-		SourceMethodInfo Lookup (string method_name);
+		SourceMethod Lookup (string method_name);
 	}
 
 	public interface ISymbolContainer

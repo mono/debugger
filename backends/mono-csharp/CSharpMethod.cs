@@ -64,7 +64,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return lines;
 		}
 
-		public override SourceMethodInfo[] MethodLookup (string query)
+		public override SourceMethod[] MethodLookup (string query)
 		{
 			string class_name = method.MethodBase.ReflectedType.FullName;
 			string full_name = String.Concat (class_name, ".", query);

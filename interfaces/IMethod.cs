@@ -37,7 +37,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   Do a method lookup and return all methods matching @query.
 		// </summary>
-		SourceMethodInfo[] MethodLookup (string query);
+		SourceMethod[] MethodLookup (string query);
 	}
 
 	public interface IMethod

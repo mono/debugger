@@ -147,9 +147,9 @@ namespace Mono.Debugger
 			return new SourceBuffer (name, sb.ToString ());
 		}
 
-		public override SourceMethodInfo[] MethodLookup (string query)
+		public override SourceMethod[] MethodLookup (string query)
 		{
-			return new SourceMethodInfo [0];
+			return new SourceMethod [0];
 		}
 	}
 }

@@ -118,7 +118,7 @@ namespace Mono.Debugger.Architecture
 			return block.SymbolTable;
 		}
 
-		public SourceInfo[] GetSources ()
+		public SourceFile[] GetSources ()
 		{
 			Hashtable source_hash = new Hashtable ();
 
@@ -130,24 +130,24 @@ namespace Mono.Debugger.Architecture
 				if ((buffer == null) || buffer.HasContents)
 					continue;
 
-				DwarfSourceInfo source = (DwarfSourceInfo) source_hash [buffer.Name];
+				DwarfSourceFile source = (DwarfSourceFile) source_hash [buffer.Name];
 				if (source == null) {
-					source = new DwarfSourceInfo (this, buffer.Name);
+					source = new DwarfSourceFile (this, buffer.Name);
 					source_hash.Add (buffer.Name, source);
 				}
-				source.AddMethod (new DwarfSourceMethodInfo (source, method));
+				source.AddMethod (new DwarfSourceMethod (source, method));
 			}
 
-			SourceInfo[] retval = new SourceInfo [source_hash.Values.Count];
+			SourceFile[] retval = new SourceFile [source_hash.Values.Count];
 			source_hash.Values.CopyTo (retval, 0);
 			return retval;
 		}
 
-		private class DwarfSourceMethodInfo : SourceMethodInfo
+		private class DwarfSourceMethod : SourceMethod
 		{
 			IMethod method;
 
-			public DwarfSourceMethodInfo (SourceInfo source, IMethod method)
+			public DwarfSourceMethod (SourceFile source, IMethod method)
 				: base (source, method.Name, method.Source.StartRow, method.Source.EndRow,
 					false)
 			{
@@ -181,19 +181,19 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		private class DwarfSourceInfo : SourceInfo
+		private class DwarfSourceFile : SourceFile
 		{
 			DwarfReader dwarf;
 			ArrayList methods;
 
-			public DwarfSourceInfo (DwarfReader dwarf, string filename)
+			public DwarfSourceFile (DwarfReader dwarf, string filename)
 				: base (dwarf.module, filename)
 			{
 				this.dwarf = dwarf;
 				this.methods = new ArrayList ();
 			}
 
-			public void AddMethod (DwarfSourceMethodInfo method)
+			public void AddMethod (DwarfSourceMethod method)
 			{
 				methods.Add (method);
 			}
@@ -739,9 +739,9 @@ namespace Mono.Debugger.Architecture
 					return new SourceBuffer (file);
 				}
 
-				public override SourceMethodInfo[] MethodLookup (string query)
+				public override SourceMethod[] MethodLookup (string query)
 				{
-					return new SourceMethodInfo [0];
+					return new SourceMethod [0];
 				}
 			}
 		}

@@ -199,7 +199,7 @@ namespace Mono.Debugger
 				process.Kill ();
 		}
 
-		void method_loaded (SourceMethodInfo method, object user_data)
+		void method_loaded (SourceMethod method, object user_data)
 		{
 			Console.WriteLine ("METHOD LOADED: {0}", method);
 		}

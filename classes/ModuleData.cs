@@ -31,7 +31,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract SourceInfo[] Sources {
+		public abstract SourceFile[] Sources {
 			get;
 		}
 
@@ -41,7 +41,7 @@ namespace Mono.Debugger
 
 		protected internal abstract void ReadModuleData ();
 
-		public abstract SourceMethodInfo FindMethod (string name);
+		public abstract SourceMethod FindMethod (string name);
 
 		public abstract TargetAddress SimpleLookup (string name);
 

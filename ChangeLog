@@ -1,5 +1,10 @@
 2003-02-24  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceInfo.cs: Renamed `SourceInfo' into `SourceFile'
+	and `SourceMethodInfo' into `SourceMethod'.
+
+2003-02-24  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceFileFactory.cs (SourceFileFactory.FindFile):
 	Return an ISourceBuffer.
 	(SourceFile): Removed.

@@ -1195,7 +1195,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			Print ("Sources for module {0}:", module.Name);
 
-			foreach (SourceInfo source in module.Sources)
+			foreach (SourceFile source in module.Sources)
 				Print ("  {0}", source);
 		}
 
@@ -1289,14 +1289,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return index;
 		}
 
-		public SourceMethodInfo FindMethod (string file, int line)
+		public SourceMethod FindMethod (string file, int line)
 		{
 			if (modules == null)
 				throw new ScriptingException ("No modules.");
 
 			string full_file = GetFullPath (file);
 			foreach (Module module in modules) {
-				SourceMethodInfo method = module.FindMethod (full_file, line);
+				SourceMethod method = module.FindMethod (full_file, line);
 				
 				if (method != null)
 					return method;
@@ -1305,13 +1305,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			throw new ScriptingException ("No method contains the specified file/line.");
 		}
 
-		public SourceMethodInfo FindMethod (string name)
+		public SourceMethod FindMethod (string name)
 		{
 			if (modules == null)
 				throw new ScriptingException ("No modules.");
 
 			foreach (Module module in modules) {
-				SourceMethodInfo method = module.FindMethod (name);
+				SourceMethod method = module.FindMethod (name);
 				
 				if (method != null)
 					return method;
@@ -1320,21 +1320,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			throw new ScriptingException ("No such method.");
 		}
 
-		public void AddMethodSearchResult (SourceMethodInfo[] methods)
+		public void AddMethodSearchResult (SourceMethod[] methods)
 		{
 			Print ("More than one method matches your query:");
-			foreach (SourceMethodInfo method in methods) {
+			foreach (SourceMethod method in methods) {
 				Print ("{0,4}  {1}", method_search_results.Count + 1, method.Name);
 				method_search_results.Add (method);
 			}
 		}
 
-		public SourceMethodInfo GetMethodSearchResult (int index)
+		public SourceMethod GetMethodSearchResult (int index)
 		{
 			if ((index < 1) || (index > method_search_results.Count))
 				throw new ScriptingException ("No such history item.");
 
-			return (SourceMethodInfo) method_search_results [index - 1];
+			return (SourceMethod) method_search_results [index - 1];
 		}
 	}
 }

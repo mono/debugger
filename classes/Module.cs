@@ -353,7 +353,7 @@ namespace Mono.Debugger
 		// <remarks>
 		//   This is called from the SymbolTableManager's background thread when
 		//   the module is changed.  It creates a hash table which maps a method
-		//   name to a SourceMethodInfo and a list of SourceMethodInfo's which is
+		//   name to a SourceMethod and a list of SourceMethod's which is
 		//   sorted by the method's start line.
 		// </remarks>
 		protected internal void ReadModuleData ()
@@ -373,7 +373,7 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if @SymbolsLoaded was false.
 		// </summary>
-		public SourceInfo[] Sources {
+		public SourceFile[] Sources {
 			get {
 				lock (this) {
 					if ((module_data == null) || !module_data.SymbolsLoaded)
@@ -388,7 +388,7 @@ namespace Mono.Debugger
 		//   Find method @name, which must be a full method name including the
 		//   signature (System.DateTime.GetUtcOffset(System.DateTime)).
 		// </summary>
-		public virtual SourceMethodInfo FindMethod (string name)
+		public virtual SourceMethod FindMethod (string name)
 		{
 			if (!SymbolsLoaded)
 				return null;
@@ -402,12 +402,12 @@ namespace Mono.Debugger
 		//   Find the method containing line @line in @source_file, which must be
 		//   the file's full pathname.
 		// </summary>
-		public virtual SourceMethodInfo FindMethod (string source_file, int line)
+		public virtual SourceMethod FindMethod (string source_file, int line)
 		{
 			if (!SymbolsLoaded)
 				return null;
 
-			foreach (SourceInfo source in Sources) {
+			foreach (SourceFile source in Sources) {
 				if (source.FileName != source_file)
 					continue;
 

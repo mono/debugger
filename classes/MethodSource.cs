@@ -129,7 +129,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public abstract SourceMethodInfo[] MethodLookup (string query);
+		public abstract SourceMethod[] MethodLookup (string query);
 
 		public void DumpLineNumbers ()
 		{
