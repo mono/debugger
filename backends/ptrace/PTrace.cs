@@ -31,14 +31,11 @@ namespace Mono.Debugger.Backends
 		MemoryAccess
 	}
 
-	internal delegate void ChildSetupHandler ();
+	internal delegate void ChildOutputHandler (string output);
 
 	internal class PTraceInferior : IInferior, IDisposable
 	{
 		IntPtr server_handle;
-		IOOutputChannel inferior_stdin;
-		IOInputChannel inferior_stdout;
-		IOInputChannel inferior_stderr;
 
 		ProcessStart start;
 
@@ -84,7 +81,7 @@ namespace Mono.Debugger.Backends
 		internal event ChildEventHandler ChildEvent;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, out int child_pid, int redirect_fds, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid);
@@ -418,24 +415,19 @@ namespace Mono.Debugger.Backends
 
 			initialized = true;
 
-			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
 			CommandError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
-				start.Environment, true, out child_pid, redirect_fds ? 1 : 0,
-				out stdin_fd, out stdout_fd, out stderr_fd, out error);
+				start.Environment, out child_pid,
+				new ChildOutputHandler (inferior_stdout_handler),
+				new ChildOutputHandler (inferior_stderr_handler),
+				out error);
 			if (result != CommandError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
 
 				throw new CannotStartTargetException (message);
-			}
-
-			if (redirect_fds) {
-				inferior_stdin = new IOOutputChannel (stdin_fd, false, false);
-				inferior_stdout = new IOInputChannel (stdout_fd, true, false);
-				inferior_stderr = new IOInputChannel (stderr_fd, true, false);
 			}
 
 			setup_inferior (start, error_handler);
@@ -497,11 +489,6 @@ namespace Mono.Debugger.Backends
 					"Can't read symbol file {0}", start.TargetApplication), e);
 			}
 
-			if (inferior_stdout != null) {
-				inferior_stdout.ReadLineEvent += new ReadLineHandler (inferior_output);
-				inferior_stderr.ReadLineEvent += new ReadLineHandler (inferior_errors);
-			}
-
 			int target_int_size, target_long_size, target_address_size;
 			check_error (mono_debugger_server_get_target_info
 				(server_handle, out target_int_size, out target_long_size,
@@ -544,13 +531,13 @@ namespace Mono.Debugger.Backends
 				TargetExited ();
 		}
 
-		void inferior_output (string line)
+		void inferior_stdout_handler (string line)
 		{
 			if (TargetOutput != null)
 				TargetOutput (false, line);
 		}
 
-		void inferior_errors (string line)
+		void inferior_stderr_handler (string line)
 		{
 			if (TargetOutput != null)
 				TargetOutput (true, line);

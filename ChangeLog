@@ -1,3 +1,16 @@
+2003-04-21  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-ptrace.c (server_ptrace_spawn): Use two
+	socketpairs for the target's stdout/stderr and set them to O_ASYNC
+	to receive a SIGIO when output becomes available.
+
+	* backends/server/i386-linux-ptrace.c (do_wait): Use sigwait() to
+	wait for events from the target; handle I/O.
+
+	* backends/server/library.c (mono_debugger_server_initialize):
+	Block the signals in all threads, just unblock them in sigwait()
+	which is called from do_wait().
+
 2003-04-17  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs

@@ -6,6 +6,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <stdio.h>
 
 void
 mono_debugger_server_wait (ServerHandle *handle, ServerStatusMessageType *type, guint64 *arg,
@@ -139,16 +140,12 @@ mono_debugger_server_disable_breakpoint (ServerHandle *handle, guint32 breakpoin
 
 static gboolean initialized = FALSE;
 
-static void
-signal_handler (int dummy)
-{
-	/* Do nothing.  This is just to wake us up. */
-}
-
 #if defined(__linux__) || defined(__FreeBSD__)
 extern InferiorInfo i386_ptrace_inferior;
 #include "i386-ptrace.c"
 #endif
+
+sigset_t mono_debugger_signal_mask;
 
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
@@ -156,15 +153,12 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
 
 	if (!initialized) {
-		sigset_t mask;
-
-		/* These signals have been blocked by our parent, so we need to unblock them here. */
-		sigemptyset (&mask);
-		sigaddset (&mask, SIGCHLD);
-		sigprocmask (SIG_UNBLOCK, &mask, NULL);
-
-		/* Install our signal handlers. */
-		signal (SIGCHLD, signal_handler);
+		/* These signals are only unblocked by sigwait(). */
+		sigemptyset (&mono_debugger_signal_mask);
+		sigaddset (&mono_debugger_signal_mask, SIGCHLD);
+		sigaddset (&mono_debugger_signal_mask, SIGINT);
+		sigaddset (&mono_debugger_signal_mask, SIGIO);
+		sigprocmask (SIG_BLOCK, &mono_debugger_signal_mask, NULL);
 
 		initialized = TRUE;
 	}
@@ -179,18 +173,17 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 
 ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
-			    gchar **argv, gchar **envp, gboolean search_path,
-			    gint *child_pid, gint redirect_fds, gint *standard_input,
-			    gint *standard_output, gint *standard_error, gchar **error)
+			    gchar **argv, gchar **envp, gint *child_pid,
+			    ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
+			    gchar **error)
 {
 	ServerCommandError result;
 
 	if (handle->has_inferior)
 		return COMMAND_ERROR_ALREADY_HAVE_INFERIOR;
 
-	result = (* handle->info->spawn) (handle->inferior, working_directory, argv, envp, search_path,
-					  child_pid, redirect_fds, standard_input, standard_output,
-					  standard_error, error);
+	result = (* handle->info->spawn) (handle->inferior, working_directory, argv, envp,
+					  child_pid, stdout_handler, stderr_handler, error);
 	if (result == COMMAND_ERROR_NONE)
 		handle->has_inferior = TRUE;
 

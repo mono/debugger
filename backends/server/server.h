@@ -2,6 +2,7 @@
 #define __MONO_DEBUGGER_SERVER_H__
 
 #include <breakpoints.h>
+#include <signal.h>
 #include <glib.h>
 
 G_BEGIN_DECLS
@@ -43,8 +44,7 @@ typedef struct {
 typedef struct InferiorHandle InferiorHandle;
 
 /* C# delegates. */
-typedef void (*ChildSetupFunc) (void);
-typedef void (*ChildExitedFunc) (void);
+typedef void (*ChildOutputFunc) (const char *output);
 
 /*
  * Server functions.
@@ -64,12 +64,9 @@ typedef struct {
 						       const gchar        *working_directory,
 						       gchar             **argv,
 						       gchar             **envp,
-						       gboolean            search_path,
 						       gint               *child_pid,
-						       gint                redirect_fds,
-						       gint               *standard_input,
-						       gint               *standard_output,
-						       gint               *standard_error,
+						       ChildOutputFunc     stdout_handler,
+						       ChildOutputFunc     stderr_handler,
 						       gchar             **error);
 
 	ServerCommandError    (* attach)              (InferiorHandle     *handle,
@@ -288,12 +285,9 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 					   const gchar        *working_directory,
 					   gchar             **argv,
 					   gchar             **envp,
-					   gboolean            search_path,
 					   gint               *child_pid,
-					   gint                redirect_fds,
-					   gint               *standard_input,
-					   gint               *standard_output,
-					   gint               *standard_error,
+					   ChildOutputFunc     stdout_handler,
+					   ChildOutputFunc     stderr_handler,
 					   gchar             **error);
 
 ServerCommandError
@@ -437,6 +431,7 @@ int mono_debugger_server_get_thread_restart_signal    (void);
 int mono_debugger_server_get_thread_debug_signal      (void);
 int mono_debugger_server_get_mono_thread_debug_signal (void);
 
+extern sigset_t mono_debugger_signal_mask;
 
 G_END_DECLS
 

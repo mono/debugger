@@ -101,16 +101,12 @@ server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 static int
 do_wait (InferiorHandle *handle)
 {
-	int ret, status = 0;
-	sigset_t mask, oldmask;
-
-	sigemptyset (&mask);
-	sigaddset (&mask, SIGCHLD);
-	sigaddset (&mask, SIGINT);
-
-	sigprocmask (SIG_BLOCK, &mask, &oldmask);
+	int ret, status = 0, signo = 0;
 
  again:
+	if (!handle->is_thread)
+		check_io (handle);
+	/* Check whether the target changed its state in the meantime. */
 	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
 	if (ret < 0) {
 		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
@@ -120,11 +116,20 @@ do_wait (InferiorHandle *handle)
 		goto out;
 	}
 
-	sigsuspend (&oldmask);
+	/*
+	 * Wait until the target changed its state (in this case, we receive a SIGCHLD), I/O is
+	 * possible or another event occured.
+	 *
+	 * Each time I/O is possible, emit the corresponding events.  Note that we must read the
+	 * target's stdout/stderr as soon as it becomes available since otherwise the target may
+	 * block in __libc_write().
+	 */
+	GC_start_blocking ();
+	sigwait (&mono_debugger_signal_mask, &signo);
+	GC_end_blocking ();
 	goto again;
 
  out:
-	sigprocmask (SIG_SETMASK, &oldmask, NULL);
 	return status;
 }
 
@@ -132,11 +137,6 @@ static void
 setup_inferior (InferiorHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
-	sigset_t mask;
-
-	sigemptyset (&mask);
-	sigaddset (&mask, SIGINT);
-	pthread_sigmask (SIG_BLOCK, &mask, NULL);
 
 	do_wait (handle);
 
@@ -152,3 +152,5 @@ setup_inferior (InferiorHandle *handle)
 	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get fp registers");
 }
+
+

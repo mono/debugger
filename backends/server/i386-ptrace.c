@@ -4,6 +4,7 @@
 #include <i386-arch.h>
 #include <sys/stat.h>
 #include <sys/ptrace.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
@@ -36,6 +37,8 @@ struct InferiorHandle
 #ifdef __linux__
 	int mem_fd;
 #endif
+	int output_fd [2], error_fd [2];
+	ChildOutputFunc stdout_handler, stderr_handler;
 	int is_thread;
 	int last_signal;
 	long call_address;
@@ -188,51 +191,86 @@ child_setup_func (gpointer data)
 {
 	if (ptrace (PT_TRACE_ME, getpid (), NULL, 0))
 		g_error (G_STRLOC ": Can't PT_TRACEME: %s", g_strerror (errno));
+	sigprocmask (SIG_UNBLOCK, &mono_debugger_signal_mask, NULL);
+}
+
+static void
+set_socket_flags (int fd, long flags)
+{
+	long arg;
+
+	arg = fcntl (fd, F_GETFL);
+	fcntl (fd, F_SETFL, arg | flags);
+
+	fcntl (fd, F_SETOWN, getpid ());
 }
 
 static ServerCommandError
 server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gchar **argv, gchar **envp,
-		     gboolean search_path, gint *child_pid, gint redirect_fds, gint *standard_input,
-		     gint *standard_output, gint *standard_error, gchar **error)
+		     gint *child_pid, ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
+		     gchar **error)
 {
-	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
-	GError *gerror = NULL;
-	int ret;
-
-	if (search_path)
-		flags |= G_SPAWN_SEARCH_PATH;
-
-#ifdef __linux__
-	if (redirect_fds)
-		ret = g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func,
-						NULL, child_pid, standard_input, standard_output,
-						standard_error, &gerror);
-	else
-		ret = g_spawn_async (working_directory, argv, envp, flags, child_setup_func,
-				     NULL, child_pid, &gerror);
-
-	if (!ret) {
-		if (error && gerror) {
-			*error = g_strdup (gerror->message);
-			g_error_free (gerror);
-		}
-		return COMMAND_ERROR_FORK;
-	}
-#else
-#warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)'"
+	int fd[2], open_max, ret, len, i;
 
 	*error = NULL;
-	*standard_input = 0;
-	*standard_output = 0;
-	*standard_error = 0;
+
+	pipe (fd);
+
+	/*
+	 * Create two pairs of connected sockets to read the target's stdout and stderr.
+	 * We set these sockets to O_ASYNC to receive a SIGIO when output becomes available.
+	 *
+	 * NOTE: Another way of implementing this is just using a pipe and monitoring it from
+	 *       the glib main loop, but I don't want to require having a running glib main
+	 *       loop.
+	 */
+	socketpair (AF_LOCAL, SOCK_STREAM, 0, handle->output_fd);
+	socketpair (AF_LOCAL, SOCK_STREAM, 0, handle->error_fd);
+
+	handle->stdout_handler = stdout_handler;
+	handle->stderr_handler = stderr_handler;
+
+	set_socket_flags (handle->output_fd [0], O_ASYNC | O_NONBLOCK);
+	set_socket_flags (handle->error_fd [0], O_ASYNC | O_NONBLOCK);
 
 	*child_pid = fork ();
 	if (*child_pid == 0) {
+		gchar *error_message;
+
+		close (0); close (1); close (2);
+		dup2 (handle->output_fd [0], 0);
+		dup2 (handle->output_fd [1], 1);
+		dup2 (handle->error_fd [1], 2);
+
+		open_max = sysconf (_SC_OPEN_MAX);
+		for (i = 3; i < open_max; i++)
+			fcntl (i, F_SETFD, FD_CLOEXEC);
+
 		child_setup_func (NULL);
-		exect (argv [0], argv, envp);
-		g_assert_not_reached ();
+		execve (argv [0], argv, envp);
+
+		error_message = g_strdup_printf ("Cannot exec `%s': %s", argv [0], g_strerror (errno));
+		len = strlen (error_message) + 1;
+		write (fd [1], &len, sizeof (len));
+		write (fd [1], error_message, len);
+		_exit (1);
 	}
-#endif
+
+	close (fd [1]);
+	ret = read (fd [0], &len, sizeof (len));
+
+	if (ret != 0) {
+		g_assert (ret == 4);
+
+		*error = g_malloc0 (len);
+		read (fd [0], *error, len);
+		close (fd [0]);
+		close (handle->output_fd [0]);
+		close (handle->output_fd [1]);
+		close (handle->error_fd [0]);
+		close (handle->error_fd [1]);
+		return COMMAND_ERROR_FORK;
+	}
 
 	handle->pid = *child_pid;
 	setup_inferior (handle);
@@ -256,6 +294,41 @@ server_ptrace_attach (InferiorHandle *handle, int pid)
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+process_output (InferiorHandle *handle, int fd, ChildOutputFunc func)
+{
+	char buffer [BUFSIZ + 1];
+	int count;
+
+	count = read (fd, buffer, BUFSIZ);
+	if (count < 0)
+		return;
+
+	buffer [count] = 0;
+	func (buffer);
+}
+
+static void
+check_io (InferiorHandle *handle)
+{
+	struct pollfd fds [2];
+	int ret;
+
+	fds [0].fd = handle->output_fd [0];
+	fds [0].events = POLLIN;
+	fds [0].revents = 0;
+	fds [1].fd = handle->error_fd [0];
+	fds [1].events = POLLIN;
+	fds [1].revents = 0;
+
+	ret = poll (fds, 2, 0);
+
+	if (fds [0].revents == POLLIN)
+		process_output (handle, handle->output_fd [0], handle->stdout_handler);
+	if (fds [1].revents == POLLIN)
+		process_output (handle, handle->error_fd [0], handle->stderr_handler);
+}
+
 static ServerCommandError
 server_ptrace_stop (InferiorHandle *handle)
 {
@@ -273,6 +346,9 @@ server_ptrace_set_signal (InferiorHandle *handle, guint32 sig, guint32 send_it)
 		handle->last_signal = sig;
 	return COMMAND_ERROR_NONE;
 }
+
+extern void GC_start_blocking (void);
+extern void GC_end_blocking (void);
 
 #include "i386-arch.c"
 
