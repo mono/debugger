@@ -6,7 +6,7 @@ using System.Collections;
 using System.Globalization;
 using Mono.Debugger;
 
-namespace Mono.Debugger.Frontends.Scripting
+namespace Mono.Debugger.Frontend
 {
 	public class SyntaxError : Exception
 	{

@@ -1,3 +1,14 @@
+2004-12-08  Chris Toshok  <toshok@ximian.com>
+
+	* configure.in (AC_OUTPUT): remove the frontends/* subdirs.  we
+	just build frontend/ now.
+
+	* wrapper/Makefile.am (MDB_SRCLIST): track change in location of
+	all frontend files.
+
+        * frontends/*: move all files into frontend/ directory, and
+	collapse the three (yes, three) namespaces down into 1.
+	
 2004-12-08  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Add -D_GNU_SOURCE to `glue_cflags' and

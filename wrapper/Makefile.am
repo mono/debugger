@@ -21,24 +21,24 @@ bin_SCRIPTS = mdb
 
 one_SCRIPTS = mdb.exe 
 
-MCS_FLAGS = -g
+MCS_FLAGS = -g -define:DEBUG
 
 noinst_SCRIPTS = Mono.Debugger.dll
 
 MDB_SRCLIST = \
-	@top_srcdir@/frontends/command-line/DebuggerTextWriter.cs	\
-	@top_srcdir@/frontends/command-line/GnuReadLine.cs		\
-	@top_srcdir@/frontends/command-line/Main.cs			\
-	@top_srcdir@/frontends/command-line/CL.cs			\
-	@top_srcdir@/frontends/command-line/ExpressionParser.cs		\
-	@top_srcdir@/frontends/command-line/Tokenizer.cs		\
-	@top_srcdir@/frontends/scripting/Command.cs			\
-	@top_srcdir@/frontends/scripting/Expression.cs			\
-	@top_srcdir@/frontends/scripting/Interpreter.cs			\
-	@top_srcdir@/frontends/scripting/MyTextReader.cs		\
-	@top_srcdir@/frontends/scripting/ScriptingContext.cs		\
-	@top_srcdir@/frontends/scripting/Session.cs			\
-	@top_srcdir@/frontends/scripting/Style.cs			\
+	@top_srcdir@/frontend/DebuggerTextWriter.cs	\
+	@top_srcdir@/frontend/GnuReadLine.cs		\
+	@top_srcdir@/frontend/Main.cs			\
+	@top_srcdir@/frontend/CL.cs			\
+	@top_srcdir@/frontend/ExpressionParser.cs	\
+	@top_srcdir@/frontend/Tokenizer.cs		\
+	@top_srcdir@/frontend/Command.cs		\
+	@top_srcdir@/frontend/Expression.cs		\
+	@top_srcdir@/frontend/Interpreter.cs		\
+	@top_srcdir@/frontend/MyTextReader.cs		\
+	@top_srcdir@/frontend/ScriptingContext.cs	\
+	@top_srcdir@/frontend/Session.cs		\
+	@top_srcdir@/frontend/Style.cs			\
 	AssemblyInfo.cs
 
 LIBRARY_SRCLIST = \

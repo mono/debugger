@@ -225,9 +225,7 @@ backends/server/Makefile
 backends/ptrace/Makefile
 backends/mono-csharp/Makefile
 backends/native/Makefile
-frontends/Makefile
-frontends/scripting/Makefile
-frontends/command-line/Makefile
+frontend/Makefile
 arch/Makefile
 arch/libiberty/Makefile
 arch/opcodes/Makefile

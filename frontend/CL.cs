@@ -7,9 +7,8 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Reflection;
-using Mono.Debugger.Frontends.Scripting;
 
-namespace CL
+namespace Mono.Debugger.Frontend
 {
 	public class CommandError : Exception
 	{
@@ -37,7 +36,7 @@ namespace CL
 
 	public interface IDocumentableCommand {
 		/* the class of this command (breakpoint, running, threads, etc) */
-		CL.CommandFamily Family {get; }
+		CommandFamily Family {get; }
 
 		/* a short blurb */
 		string Description {get; }
@@ -99,7 +98,7 @@ namespace CL
 				throw new Exception (
 					"Some clown tried to register an abstract class");
 
-			CL.IDocumentableCommand c = Activator.CreateInstance (t) as CL.IDocumentableCommand;
+			IDocumentableCommand c = Activator.CreateInstance (t) as IDocumentableCommand;
 			if (c != null) {
 				ArrayList cmds;
 

@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
-namespace Mono.Debugger.Frontends.Scripting
+namespace Mono.Debugger.Frontend
 {
 	[Serializable]
 	public class Session

@@ -7,9 +7,9 @@ using System.Globalization;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Frontends.Scripting
+namespace Mono.Debugger.Frontend
 {
-	public class DebuggerEngine : CL.Engine
+	public class DebuggerEngine : Engine
 	{
 		public readonly Interpreter Interpreter;
 
@@ -23,7 +23,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public abstract class DebuggerCommand : CL.Command
+	public abstract class DebuggerCommand : Command
 	{
 		protected bool Repeating;
 
@@ -32,7 +32,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		public override string Execute (CL.Engine e)
+		public override string Execute (Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			return "";
 		}
 
-		public override string Repeat (CL.Engine e)
+		public override string Repeat (Engine e)
 		{
 			Repeating = true;
 			return Execute (e);
@@ -229,7 +229,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						 Expression expression, Format format);
 	}
 
-	public class PrintExpressionCommand : PrintCommand, CL.IDocumentableCommand
+	public class PrintExpressionCommand : PrintCommand, IDocumentableCommand
 	{
 		protected override void Execute (ScriptingContext context,
 						 Expression expression, Format format)
@@ -268,12 +268,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Data; } }
+		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Print the result of an expression"; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class PrintTypeCommand : PrintCommand, CL.IDocumentableCommand
+	public class PrintTypeCommand : PrintCommand, IDocumentableCommand
 	{
 		protected override void Execute (ScriptingContext context,
 						 Expression expression, Format format)
@@ -303,12 +303,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Data; } }
+		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Print the type of an expression."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class CallCommand : FrameCommand, CL.IDocumentableCommand
+	public class CallCommand : FrameCommand, IDocumentableCommand
 	{
 		InvocationExpression invocation;
 
@@ -342,12 +342,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Invoke a function in the program being debugged."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class StyleCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class StyleCommand : DebuggerCommand, IDocumentableCommand
 	{
 		Style style;
 
@@ -368,12 +368,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Support; } }
+		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Set or display the current output style."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class ExamineCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class ExamineCommand : DebuggerCommand, IDocumentableCommand
 	{
 		TargetAddress start;
 		ITargetAccess target;
@@ -421,12 +421,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Data; } }
+		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Examine memory."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class PrintFrameCommand : ProcessCommand, CL.IDocumentableCommand
+	public class PrintFrameCommand : ProcessCommand, IDocumentableCommand
 	{
 		int index = -1;
 
@@ -461,12 +461,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Stack; } }
+		public CommandFamily Family { get { return CommandFamily.Stack; } }
 		public string Description { get { return "Select and print a stack frame."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class DisassembleCommand : FrameCommand, CL.IDocumentableCommand
+	public class DisassembleCommand : FrameCommand, IDocumentableCommand
 	{
 		bool do_method;
 		int count = -1;
@@ -556,12 +556,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Support; } }
+		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Disassemble current instruction or method."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class FileCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class FileCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool NeedsProcess {
 			get { return false; }
@@ -591,12 +591,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Specify a program to debug."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class SelectProcessCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class SelectProcessCommand : DebuggerCommand, IDocumentableCommand
 	{
 		int index = -1;
 
@@ -628,7 +628,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Threads; } }
+		public CommandFamily Family { get { return CommandFamily.Threads; } }
 		public string Description { get { return "Print or select current process"; } }
 		public string Documentation { get { return 
 						"Without argument, print the current process.\n\n" +
@@ -637,7 +637,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						"a process (see `help process_expression' for details).\n"; } }
 	}
 
-	public class BackgroundProcessCommand : ProcessCommand, CL.IDocumentableCommand
+	public class BackgroundProcessCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -646,7 +646,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Threads; } }
+		public CommandFamily Family { get { return CommandFamily.Threads; } }
 		public string Description { get { return "Run process in background"; } }
 		public string Documentation { get { return
 						"Resumes execution of the selected process, but does not wait for it.\n\n" +
@@ -656,7 +656,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						"still stops if it hits a breakpoint.\n"; } }
 	}
 
-	public class StopProcessCommand : ProcessCommand, CL.IDocumentableCommand
+	public class StopProcessCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -665,12 +665,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Threads; } }
+		public CommandFamily Family { get { return CommandFamily.Threads; } }
 		public string Description { get { return "Stop execution of a process"; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class ContinueCommand : ProcessCommand, CL.IDocumentableCommand
+	public class ContinueCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -680,12 +680,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Continue program being debugged."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class StepCommand : ProcessCommand, CL.IDocumentableCommand
+	public class StepCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -695,12 +695,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Step program untli it reaches a different source line, proceeding into function calls."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class NextCommand : ProcessCommand, CL.IDocumentableCommand
+	public class NextCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -710,12 +710,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Step program until it reaches a different source line, skipping over function calls."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class StepInstructionCommand : ProcessCommand, CL.IDocumentableCommand
+	public class StepInstructionCommand : ProcessCommand, IDocumentableCommand
 	{
 		bool native;
 
@@ -735,12 +735,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Step program 1 instruction, but do not enter trampolines."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class NextInstructionCommand : ProcessCommand, CL.IDocumentableCommand
+	public class NextInstructionCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -750,12 +750,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Next instruction"; } }
 		public string Documentation { get { return "Steps one machine instruction, but steps over method calls."; } }
 	}
 
-	public class FinishCommand : ProcessCommand, CL.IDocumentableCommand
+	public class FinishCommand : ProcessCommand, IDocumentableCommand
 	{
 		bool native;
 
@@ -775,12 +775,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Execute until selected stack frame returns."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class BacktraceCommand : ProcessCommand, CL.IDocumentableCommand
+	public class BacktraceCommand : ProcessCommand, IDocumentableCommand
 	{
 		int max_frames = -1;
 
@@ -804,12 +804,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Stack; } }
+		public CommandFamily Family { get { return CommandFamily.Stack; } }
 		public string Description { get { return "Print backtrace of all stack frames."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class UpCommand : ProcessCommand, CL.IDocumentableCommand
+	public class UpCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -820,12 +820,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Stack; } }
+		public CommandFamily Family { get { return CommandFamily.Stack; } }
 		public string Description { get { return "Select and print stack frame that called this one."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class DownCommand : ProcessCommand, CL.IDocumentableCommand
+	public class DownCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -836,12 +836,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Stack; } }
+		public CommandFamily Family { get { return CommandFamily.Stack; } }
 		public string Description { get { return "Select and print stack frame called by this one."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class RunCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class RunCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool NeedsProcess {
 			get { return false; }
@@ -904,12 +904,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Start debugged program."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class KillCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class KillCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -917,12 +917,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Kill the program being debugged."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class QuitCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class QuitCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool NeedsProcess {
 			get { return false; }
@@ -949,12 +949,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Support; } }
+		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Exit mdb."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class ShowCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class ShowCommand : DebuggerCommand, IDocumentableCommand
 	{
 		DebuggerCommand subcommand;
 
@@ -1020,7 +1020,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Support; } }
+		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Show things."; } }
 		public string Documentation { get { return "valid args are:\n" +
 						"processes registers " +
@@ -1185,7 +1185,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class ThreadGroupCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class ThreadGroupCommand : DebuggerCommand, IDocumentableCommand
 	{
 		DebuggerCommand subcommand;
 
@@ -1228,7 +1228,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Threads; } }
+		public CommandFamily Family { get { return CommandFamily.Threads; } }
 		public string Description { get { return "Manage thread groups."; } }
 		public string Documentation { get { return "valid args are: create add remove delete"; } }
 	}
@@ -1315,7 +1315,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class BreakpointEnableCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class BreakpointEnableCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected BreakpointHandle handle;
 
@@ -1339,12 +1339,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public virtual CL.CommandFamily Family { get { return CL.CommandFamily.Breakpoints; } }
+		public virtual CommandFamily Family { get { return CommandFamily.Breakpoints; } }
 		public virtual string Description { get { return "Enable breakpoint."; } }
 		public virtual string Documentation { get { return ""; } }
 	}
 
-	public class BreakpointDisableCommand : BreakpointEnableCommand, CL.IDocumentableCommand
+	public class BreakpointDisableCommand : BreakpointEnableCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -1352,12 +1352,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public override CL.CommandFamily Family { get { return CL.CommandFamily.Breakpoints; } }
+		public override CommandFamily Family { get { return CommandFamily.Breakpoints; } }
 		public override string Description { get { return "Disable breakpoint."; } }
 		public override string Documentation { get { return ""; } }
 	}
 
-	public class BreakpointDeleteCommand : BreakpointEnableCommand, CL.IDocumentableCommand
+	public class BreakpointDeleteCommand : BreakpointEnableCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -1365,7 +1365,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public override CL.CommandFamily Family { get { return CL.CommandFamily.Breakpoints; } }
+		public override CommandFamily Family { get { return CommandFamily.Breakpoints; } }
 		public override string Description { get { return "Delete breakpoint."; } }
 		public override string Documentation { get { return ""; } }
 	}
@@ -1498,7 +1498,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class ListCommand : SourceCommand, CL.IDocumentableCommand
+	public class ListCommand : SourceCommand, IDocumentableCommand
 	{
 		int lines = 10;
 		bool reverse = false;
@@ -1531,7 +1531,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Files; } }
+		public CommandFamily Family { get { return CommandFamily.Files; } }
 		public string Description {
 			get { return "List source code."; }
 		}
@@ -1546,7 +1546,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class BreakCommand : SourceCommand, CL.IDocumentableCommand
+	public class BreakCommand : SourceCommand, IDocumentableCommand
 	{
 		string group;
 		int process_id = -1;
@@ -1593,12 +1593,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Breakpoints; } }
+		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
 		public string Description { get { return "Insert breakpoint."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class CatchCommand : FrameCommand, CL.IDocumentableCommand
+	public class CatchCommand : FrameCommand, IDocumentableCommand
 	{
 		string group;
 		FrameHandle frame;
@@ -1659,7 +1659,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Catchpoints; } }
+		public CommandFamily Family { get { return CommandFamily.Catchpoints; } }
 		public string Description { get { return "Stop execution when an exception is raised."; } }
 		public string Documentation { get { return
 						"Argument should be a subclass of the target\n" +
@@ -1669,7 +1669,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						"in that particular stack frame"; } }
 	}
 
-	public class DumpCommand : FrameCommand, CL.IDocumentableCommand
+	public class DumpCommand : FrameCommand, IDocumentableCommand
 	{
 		Expression expression;
 		string mode = "object";
@@ -1706,12 +1706,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Internal; } }
+		public CommandFamily Family { get { return CommandFamily.Internal; } }
 		public string Description { get { return "Dump detailed information about an expression."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class LibraryCommand : FrameCommand, CL.IDocumentableCommand
+	public class LibraryCommand : FrameCommand, IDocumentableCommand
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -1730,12 +1730,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Files; } }
+		public CommandFamily Family { get { return CommandFamily.Files; } }
 		public string Description { get { return "Load a library."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class SaveCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class SaveCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -1754,12 +1754,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Obscure; } }
+		public CommandFamily Family { get { return CommandFamily.Obscure; } }
 		public string Description { get { return "Save a debugger session."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class LoadCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class LoadCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool NeedsProcess {
 			get { return false; }
@@ -1782,12 +1782,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Obscure; } }
+		public CommandFamily Family { get { return CommandFamily.Obscure; } }
 		public string Description { get { return "Load a debugger session."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class RestartCommand : DebuggerCommand, CL.IDocumentableCommand
+	public class RestartCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -1795,20 +1795,20 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Running; } }
+		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Restart the program being debugged."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class HelpCommand : CL.Command, CL.IDocumentableCommand
+	public class HelpCommand : Command, IDocumentableCommand
 	{
-		public override string Execute (CL.Engine e)
+		public override string Execute (Engine e)
 		{
 			if (Args == null || Args.Count == 0) {
 				Console.WriteLine ("List of families of commands:\n");
 				Console.WriteLine ("aliases -- Aliases of other commands");
 
-				foreach (CL.CommandFamily family in Enum.GetValues(typeof (CL.CommandFamily)))
+				foreach (CommandFamily family in Enum.GetValues(typeof (CommandFamily)))
 					Console.WriteLine ("{0} -- {1}", family.ToString().ToLower(), e.CommandFamilyBlurbs[(int)family]);
 
 				Console.WriteLine ("\n" + 
@@ -1820,7 +1820,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				int family_index = -1;
 				int i;
 
-				string[] family_names = Enum.GetNames (typeof (CL.CommandFamily));
+				string[] family_names = Enum.GetNames (typeof (CommandFamily));
 				for (i = 0; i < family_names.Length; i ++) {
 					if (family_names[i].ToLower() == args[0]) {
 						family_index = i;
@@ -1835,7 +1835,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					Console.WriteLine ("List of commands:\n");
 					foreach (string cmd_name in cmds) {
 						Type cmd_type = (Type) e.Commands[cmd_name];
-						CL.IDocumentableCommand c = (CL.IDocumentableCommand) Activator.CreateInstance (cmd_type);
+						IDocumentableCommand c = (IDocumentableCommand) Activator.CreateInstance (cmd_type);
 						Console.WriteLine ("{0} -- {1}", cmd_name, c.Description);
 					}
 
@@ -1845,8 +1845,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				else if (e.Commands[args[0]] != null) {
 					/* we're printing out a command */
 					Type cmd_type = (Type) e.Commands[args[0]];
-					if (cmd_type.GetInterface ("CL.IDocumentableCommand") != null) {
-						CL.IDocumentableCommand c = (CL.IDocumentableCommand) Activator.CreateInstance (cmd_type);
+					if (cmd_type.GetInterface ("IDocumentableCommand") != null) {
+						IDocumentableCommand c = (IDocumentableCommand) Activator.CreateInstance (cmd_type);
 
 						Console.WriteLine (c.Description);
 						if (c.Documentation != null && c.Documentation != String.Empty)
@@ -1859,8 +1859,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				else if (args[0] == "aliases") {
 					foreach (string cmd_name in e.Aliases.Keys) {
 						Type cmd_type = (Type) e.Aliases[cmd_name];
-						if (cmd_type.GetInterface ("CL.IDocumentableCommand") != null) {
-							CL.IDocumentableCommand c = (CL.IDocumentableCommand) Activator.CreateInstance (cmd_type);
+						if (cmd_type.GetInterface ("IDocumentableCommand") != null) {
+							IDocumentableCommand c = (IDocumentableCommand) Activator.CreateInstance (cmd_type);
 
 							Console.WriteLine ("{0} -- {1}", cmd_name, c.Description);
 						}
@@ -1874,14 +1874,14 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Support; } }
+		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Print list of commands."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class AboutCommand : CL.Command, CL.IDocumentableCommand
+	public class AboutCommand : Command, IDocumentableCommand
 	{
-		public override string Execute (CL.Engine e)
+		public override string Execute (Engine e)
 		{
 			Console.WriteLine ("Mono Debugger (C) 2003, 2004 Novell, Inc.\n" +
 					   "Written by Martin Baulig (martin@ximian.com)\n" +
@@ -1890,12 +1890,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Support; } }
+		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Print copyright/authour info."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class LookupCommand : FrameCommand, CL.IDocumentableCommand
+	public class LookupCommand : FrameCommand, IDocumentableCommand
 	{
 		Expression expression;
 		PointerExpression pexpr;
@@ -1954,12 +1954,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		// IDocumentableCommand
-		public CL.CommandFamily Family { get { return CL.CommandFamily.Internal; } }
+		public CommandFamily Family { get { return CommandFamily.Internal; } }
 		public string Description { get { return "Print the method containing the address."; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public class UnwindCommand : ProcessCommand, CL.IDocumentableCommand
+	public class UnwindCommand : ProcessCommand, IDocumentableCommand
 	{
 		Expression expression;
 		PointerExpression pexpr;
@@ -2008,7 +2008,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		  // IDocumentableCommand
-		  public CL.CommandFamily Family { get { return CL.CommandFamily.Internal; } }
+		  public CommandFamily Family { get { return CommandFamily.Internal; } }
 		  public string Description { get { return "Unwind the stack to a given address."; } }
 		  public string Documentation { get { return ""; } }
 	}

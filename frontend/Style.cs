@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Frontends.Scripting
+namespace Mono.Debugger.Frontend
 {
 	/// <summary>
 	///   This interface controls how things are being displayed to the

@@ -1,9 +1,7 @@
 using System;
 using Mono.Debugger;
-using Mono.Debugger.Frontends.Scripting;
-using CL;
 
-namespace Mono.Debugger.Frontends.CommandLine
+namespace Mono.Debugger.Frontend
 {
 	public class CommandLineInterpreter : Interpreter
 	{

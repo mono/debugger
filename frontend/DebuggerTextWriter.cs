@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace Mono.Debugger.Frontends.Scripting
+namespace Mono.Debugger.Frontend
 {
 	internal abstract class DebuggerTextWriter
 	{

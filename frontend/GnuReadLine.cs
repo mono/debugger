@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger.Frontends.CommandLine
+namespace Mono.Debugger.Frontend
 {
 	internal class GnuReadLine
 	{

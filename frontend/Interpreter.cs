@@ -12,7 +12,7 @@ using Mono.Debugger.Languages;
 
 using Mono.GetOptions;
 
-namespace Mono.Debugger.Frontends.Scripting
+namespace Mono.Debugger.Frontend
 {
 	[AttributeUsage (AttributeTargets.Class)]
 	public class ShortDescriptionAttribute : Attribute

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Frontend
 {
 	internal class MyTextReader : TextReader
 	{
