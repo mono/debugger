@@ -1,3 +1,10 @@
+2004-11-17  Chris Toshok  <toshok@ximian.com>
+
+	* test/regress.exp: add the current state of the "run the compiler
+	compiling itself inside the debugger" regression test.  it has
+	some hardcoded paths, and assumes you'll run it from the mcs/mcs
+	dir, but it should work.
+
 2004-11-15  Chris Toshok  <toshok@ximian.com>
 
 	* frontends/command-line/Main.cs: remove some unused using

@@ -567,7 +567,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((Args == null) || (Args.Count != 1)) {
+			if ((Args == null) || (Args.Count < 1)) {
 				context.Error ("Filename and arguments expected");
 				return false;
 			}
@@ -851,9 +851,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class RunCommand : DebuggerCommand, CL.IDocumentableCommand
 	{
 		protected override bool NeedsProcess {
-			get {
-				return false;
-			}
+			get { return false; }
 		}
 
 		protected override void DoExecute (ScriptingContext context)
