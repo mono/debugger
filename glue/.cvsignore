@@ -1,7 +1,0 @@
-.libs
-.deps
-Makefile.in
-Makefile
-*.la
-*.lo
-*.dll
