@@ -322,33 +322,44 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-#if FIXME
 	public class StartCommand : DebuggerCommand
 	{
-		ProgramArgumentsExpression program_args_expr;
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
 
-		public StartCommand (ProgramArgumentsExpression program_args_expr)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.program_args_expr = program_args_expr;
+			if ((Args == null) || (Args.Count != 1)) {
+				context.Error ("Filename and arguments expected");
+				return false;
+			}
+
+			if (context.Interpreter.HasBackend) {
+				context.Error ("Already have a target.");
+				return false;
+			}
+
+			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			if (!context.IsSynchronous)
-				throw new ScriptingException ("This command cannot be used in the GUI.");
+			string [] args = (string []) Args.ToArray (typeof (string));
 
-			string[] args = (string []) program_args_expr.Resolve (context);
-			DebuggerOptions options = new DebuggerOptions ();
-			context.Interpreter.Start (options, args);
-			context.Interpreter.Initialize ();
 			try {
+				DebuggerOptions options = new DebuggerOptions ();
+				options.ProcessArgs (args);
+
+				context.Interpreter.Start (options);
+				context.Interpreter.Initialize ();
 				context.Interpreter.Run ();
 			} catch (TargetException e) {
+				context.Interpreter.Kill ();
 				throw new ScriptingException (e.Message);
 			}
 		}
 	}
-#endif
 
 	[ShortDescription("Print or select current process")]
 	[Help("Without argument, print the current process.\n\n" +
