@@ -503,8 +503,21 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
 								      Expression[] types)
 		{
-			ITargetMethodInfo method = OverloadResolve (context, types);
-			return new SourceLocation (method.Type.Source);
+			try {
+				ITargetMethodInfo method = OverloadResolve (context, types);
+				return new SourceLocation (method.Type.Source);
+			} catch {
+				ArrayList list = new ArrayList ();
+				foreach (ITargetMethodInfo method in methods) {
+					if (method.Type.Source == null)
+						continue;
+					list.Add (method.Type.Source);
+				}
+				SourceMethod[] sources = new SourceMethod [list.Count];
+				list.CopyTo (sources, 0);
+				context.AddMethodSearchResult (sources);
+				throw new ScriptingException ("");
+			}
 		}
 
 		public ITargetFunctionObject EvaluateMethod (ScriptingContext context,
