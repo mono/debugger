@@ -6,7 +6,7 @@ namespace Mono.Debugger
 	public class SimpleBreakpoint : Breakpoint
 	{
 		public SimpleBreakpoint (string name)
-			: base (name, true)
+			: base (name, true, true)
 		{ }
 
 		public override bool BreakpointHit (StackFrame frame)
