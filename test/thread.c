@@ -41,6 +41,7 @@ main (void)
 	printf ("Hello World!\n");
 	fflush (stdout);
 	pthread_create (&thread, NULL, thread_func, NULL);
+	asm ("int $03");
 	common_function (0, 10);
 
 	return 0;

@@ -37,6 +37,7 @@ namespace Mono.Debugger
 		const int Signal_SIGINT			= 2;
 
 		const int PThread_Signal_Debug		= 34;
+		const int PThread_Signal_Abort		= 33;
 		const int PThread_Signal_Restart	= 32;
 
 		internal ThreadManager (DebuggerBackend backend, BfdContainer bfdc)
@@ -84,6 +85,10 @@ namespace Mono.Debugger
 
 		internal BreakpointManager BreakpointManager {
 			get { return breakpoint_manager; }
+		}
+
+		public Process MainProcess {
+			get { return main_process; }
 		}
 
 		public event ThreadEventHandler InitializedEvent;
@@ -135,6 +140,30 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		bool daemon_thread_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
+		{
+			switch (signal) {
+			case 0:
+				return false;
+
+			case PThread_Signal_Restart:
+			case PThread_Signal_Abort:
+				return true;
+
+			case PThread_Signal_Debug:
+				reload_threads (runner.Inferior);
+				runner.Inferior.SetSignal (PThread_Signal_Restart, false);
+				return true;
+
+			case Signal_SIGINT:
+				runner.Inferior.SetSignal (0, false);
+				return true;
+
+			default:
+				return false;
+			}
+		}
+
 		void reload_threads (ITargetMemoryAccess memory)
 		{
 			int size = memory.TargetIntegerSize * 2 + memory.TargetAddressSize * 2;
@@ -157,14 +186,17 @@ namespace Mono.Debugger
 				if (thread_hash.Contains (pid))
 					continue;
 
-				Process new_process = main_process.CreateThread (pid);
-				thread_hash.Add (pid, new_process);
-
-				if (index == 1) {
-					new_process.Inferior.SetSignal (PThread_Signal_Restart, false);
-					new_process.SingleSteppingEngine.Continue (true, false);
-				} else
+				Process new_process;
+				if (index == 1)
+					new_process = main_process.CreateDaemonThread (
+						pid, PThread_Signal_Restart,
+						new DaemonThreadHandler (daemon_thread_handler));
+				else {
+					new_process = main_process.CreateThread (pid);
 					new_process.Inferior.SetSignal (PThread_Signal_Restart, true);
+				}
+
+				thread_hash.Add (pid, new_process);
 
 				OnThreadCreatedEvent (new_process);
 			}

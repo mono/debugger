@@ -25,18 +25,21 @@ namespace Mono.Debugger
 		ThreadGroup thread_group;
 
 		SingleSteppingEngine sse;
+		DaemonThreadRunner runner;
 		CoreFile core;
 		IInferior inferior;
-		int id;
+		int pid, id;
 
 		static int next_id = 0;
 
-		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
+		protected Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
+				   bool create_sse)
 		{
 			this.backend = backend;
 			this.start = start;
 			this.bfd_container = bfd_container;
 			this.id = ++next_id;
+			this.pid = pid;
 
 			thread_group = new ThreadGroup (this);
 
@@ -50,6 +53,9 @@ namespace Mono.Debugger
 			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
+			if (!create_sse)
+				return;
+
 			sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
@@ -57,6 +63,27 @@ namespace Mono.Debugger
 			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+		}
+
+		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
+			: this (backend, start, bfd_container, true)
+		{ }
+
+		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
+				  int pid)
+			: this (backend, start, bfd_container, true)
+		{
+			if (pid != -1)
+				sse.Attach (pid, false);
+			else
+				pid = inferior.PID;
+		}
+
+		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
+				  DaemonThreadHandler handler, int pid, int signal)
+			: this (backend, start, bfd_container, false)
+		{
+			runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
 		}
 
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
@@ -136,6 +163,8 @@ namespace Mono.Debugger
 			get {
 				if (sse != null)
 					return sse.State;
+				else if (runner != null)
+					return TargetState.DAEMON;
 				else if (inferior != null)
 					return inferior.State;
 				else
@@ -383,9 +412,12 @@ namespace Mono.Debugger
 
 		public Process CreateThread (int pid)
 		{
-			Process new_process = new Process (backend, start, bfd_container);
-			new_process.SingleSteppingEngine.Attach (pid, false);
-			return new_process;
+			return new Process (backend, start, bfd_container, pid);
+		}
+
+		public Process CreateDaemonThread (int pid, int signal, DaemonThreadHandler handler)
+		{
+			return new Process (backend, start, bfd_container, handler, pid, signal);
 		}
 
 		public ProcessStart ProcessStart {
@@ -435,6 +467,8 @@ namespace Mono.Debugger
 				if (disposing) {
 					if (sse != null)
 						sse.Dispose ();
+					if (runner != null)
+						runner.Dispose ();
 					if (inferior != null)
 						inferior.Dispose ();
 				}

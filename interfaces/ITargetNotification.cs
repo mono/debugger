@@ -39,6 +39,11 @@ namespace Mono.Debugger
 		EXITED,
 
 		// <summary>
+		//   Undebuggable daemon thread.
+		// </summary>
+		DAEMON,
+
+		// <summary>
 		//   This is a core file.
 		// </summary>
 		CORE_FILE,

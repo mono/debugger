@@ -1,5 +1,15 @@
 2002-12-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/DaemonThreadRunner.cs: New public class.
+
+	* backends/ThreadManager.cs: Use the DaemonThreadRunner for the
+	pthread library's manager thread.
+
+	* interfaces/ITargetNotification.cs (TargetState): Added `DAEMON'
+	for undebuggable daemon threads.
+
+2002-12-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs: Only create the `csharp_language' if we're
 	actually debugging a managed application.
 

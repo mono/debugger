@@ -350,7 +350,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (process == null)
 					return TargetState.NO_TARGET;
 				else
-					return process.SingleSteppingEngine.State;
+					return process.State;
 			}
 		}
 
@@ -464,7 +464,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			foreach (Process process in backend.ThreadManager.Threads) {
 				ProcessHandle handle = new ProcessHandle (this, backend, process);
 				procs.Add (handle);
-				if (current_process == null)
+
+				if (process == backend.ThreadManager.MainProcess)
 					current_process = handle;
 			}
 
