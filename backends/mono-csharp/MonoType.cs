@@ -123,6 +123,12 @@ namespace Mono.Debugger.Languages.CSharp
 			return address;
 		}
 
+		public virtual string Name {
+			get {
+				return type.Name;
+			}
+		}
+
 		public object TypeHandle {
 			get {
 				return type;

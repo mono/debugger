@@ -7,6 +7,10 @@ namespace Mono.Debugger
 	// </summary>
 	public interface ITargetType
 	{
+		string Name {
+			get;
+		}
+
 		object TypeHandle {
 			get;
 		}
