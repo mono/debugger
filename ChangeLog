@@ -1,3 +1,8 @@
+2003-01-16  Martin Baulig  <martin@ximian.com>
+
+	* backends/ThreadManager.cs: Use the new thread manager in
+	mono/io-layer when debugging managed applications.
+
 2003-01-15  Peter Williams  <peterw@ximian.com>
 
 	* frontends/scripting/Parser.jay: Change it so that expressions

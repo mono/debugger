@@ -36,9 +36,13 @@ namespace Mono.Debugger
 		TargetAddress last_thread_event = TargetAddress.Null;
 		bool initialized = false;
 
+		TargetAddress mono_thread_info = TargetAddress.Null;
+
 		const int PThread_Signal_Debug		= 34;
-		const int PThread_Signal_Abort		= 33;
-		const int PThread_Signal_Restart	= 32;
+		const int PThread_Signal_Abort		= 30;
+		const int PThread_Signal_Restart	= 31;
+
+		const int Mono_Thread_Signal		= 29;
 
 		internal ThreadManager (DebuggerBackend backend, BfdContainer bfdc)
 		{
@@ -58,11 +62,29 @@ namespace Mono.Debugger
 			this.main_process = process;
 			thread_hash.Add (process.PID, process);
 
+			TargetAddress mdebug = bfdc.LookupSymbol ("mono_debugger_threads_debug");
+			mono_thread_info = bfdc.LookupSymbol ("mono_debugger_thread_info");
+
+			Console.WriteLine ("MONO THREADS: {0} {1} {2}", mdebug, mono_thread_info,
+					   process.PID);
+
+			if (!mdebug.IsNull && !mono_thread_info.IsNull) {
+				inferior.WriteInteger (mdebug, Mono_Thread_Signal);
+
+				initialized = true;
+
+				OnInitializedEvent (main_process);
+
+				return true;
+			}
+
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
 
 			thread_handles = bfdc.LookupSymbol ("__pthread_handles");
 			thread_handles_num = bfdc.LookupSymbol ("__pthread_handles_num");
 			last_thread_event = bfdc.LookupSymbol ("__pthread_last_event");
+
+			Console.WriteLine ("THREADS: {0}", tdebug);
 
 			if (tdebug.IsNull || thread_handles.IsNull ||
 			    thread_handles_num.IsNull || last_thread_event.IsNull) {
@@ -147,6 +169,15 @@ namespace Mono.Debugger
 				return true;
 			}
 
+			if (signal == Mono_Thread_Signal) {
+				inferior.SetSignal (0,false);
+				action = false;
+
+				reload_mono_threads (inferior);
+
+				return true;
+			}
+
 			if (signal != PThread_Signal_Debug) {
 				action = true;
 				return false;
@@ -198,6 +229,43 @@ namespace Mono.Debugger
 				OnThreadCreatedEvent (new_process);
 			}
 		}
+
+		void reload_mono_threads (ITargetMemoryAccess memory)
+		{
+			TargetAddress thread_info = memory.ReadAddress (mono_thread_info);
+
+			int count = memory.ReadInteger (thread_info);
+			thread_info += memory.TargetIntegerSize;
+
+			int background_pid = memory.ReadInteger (thread_info);
+			thread_info += memory.TargetIntegerSize;
+
+			if ((background_pid != 0) && (debugger_process == null)) {
+				Console.WriteLine ("CREATING DAEMON PROCESS: {0} {1}",
+						   background_pid, csharp_handler);
+
+				debugger_process = main_process.CreateDaemonThread (
+					background_pid, 0, csharp_handler);
+
+				thread_hash.Add (background_pid, debugger_process);
+				OnThreadCreatedEvent (debugger_process);
+			}
+
+			for (int i = 0; i < count; i++) {
+				int pid = memory.ReadInteger (thread_info);
+				thread_info += memory.TargetIntegerSize;
+
+				if ((pid == 0) || thread_hash.Contains (pid))
+					continue;
+
+				Console.WriteLine ("CREATING PROCESS: {0} {1}", i, pid);
+
+				Process new_process = main_process.CreateThread (pid);
+				thread_hash.Add (pid, new_process);
+				OnThreadCreatedEvent (new_process);
+			}
+		}
+
 
 		// <summary>
 		//   Stop all currently running threads without sending any notifications.
