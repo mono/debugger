@@ -87,7 +87,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public class Handle
+		internal class Handle
 		{
 			public readonly TargetAddress Address;
 			public readonly BreakpointHandle BreakpointHandle;

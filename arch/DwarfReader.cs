@@ -438,7 +438,7 @@ namespace Mono.Debugger.Architecture
 			Console.WriteLine (String.Format (message, args));
 		}
 
-		public class DwarfBinaryReader : TargetBinaryReader
+		internal class DwarfBinaryReader : TargetBinaryReader
 		{
 			DwarfReader dwarf;
 			bool is64bit;

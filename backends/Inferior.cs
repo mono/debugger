@@ -151,7 +151,7 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
-		public enum ChildEventType {
+		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
 			CHILD_EXITED,
@@ -163,9 +163,9 @@ namespace Mono.Debugger.Backends
 			CHILD_CREATED_THREAD
 		}
 
-		public delegate void ChildEventHandler (ChildEventType message, int arg);
+		internal delegate void ChildEventHandler (ChildEventType message, int arg);
 
-		public sealed class ChildEvent
+		internal sealed class ChildEvent
 		{
 			public readonly ChildEventType Type;
 			public readonly long Argument;

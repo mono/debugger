@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int BeginLiveness;
 		public readonly int EndLiveness;
 
-		public enum AddressMode : long
+		internal enum AddressMode : long
 		{
 			Register	= 0,
 			RegOffset	= 0x10000000,

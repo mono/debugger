@@ -83,7 +83,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public class Section
+		internal class Section
 		{
 			public readonly Bfd bfd;
 			public readonly long vma;
@@ -511,7 +511,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public Section this [long address] {
+		internal Section this [long address] {
 			get {
 				read_sections ();
 				foreach (Section section in sections) {
@@ -530,7 +530,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public Section[] Sections {
+		internal Section[] Sections {
 			get {
 				read_sections ();
 				return sections;

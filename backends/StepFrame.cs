@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Mono.Debugger.Backends
 {
-	public enum StepMode
+	internal enum StepMode
 	{
 		// <summary>
 		//   Step a single machine instruction.
@@ -28,7 +28,7 @@ namespace Mono.Debugger.Backends
 		Finish
 	}
 
-	public sealed class StepFrame
+	internal sealed class StepFrame
 	{
 		TargetAddress start, end;
 		ILanguageBackend language;
