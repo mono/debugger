@@ -721,25 +721,9 @@ opt_line
 	;
 
 source_expression
-	: frame_expression
+	: variable_expression opt_line
 	  {
-		$$ = new SourceExpression ((FrameExpression) $1, null, -1);
-	  }
-	| frame_expression IDENTIFIER opt_line
-	  {
-		$$ = new SourceExpression ((FrameExpression) $1, (string) $2, (int) $3);
-	  }
-	| frame_expression INTEGER
-	  {
-		$$ = new SourceExpression ((FrameExpression) $1, (int) $2);
-	  }
-	| STRING
-	  {
-		$$ = new SourceExpression ((string) $1);
-	  }
-	| STRING COLON INTEGER
-	  {
-		$$ = new SourceExpression ((string) $1, (int) $3);
+		$$ = new SourceExpression ((VariableExpression) $1, (int) $2);
 	  }
 	| BANG INTEGER
 	  {

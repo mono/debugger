@@ -1,5 +1,14 @@
 2004-01-15  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Expression.cs (SourceExpression): The .ctor
+	now just takes a VariableExpression and line number.  We try to
+	resolve the expr as a method and then use the new
+	ITargetFunctionType.Source to get its source.
+	(VariableExpression): Added virtual `DoResolveBase' which is
+	always called before any of the other `DoResolve*' methods.
+
+2004-01-15  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFunctionType.cs (Source): New property.
 
 2004-01-15  Martin Baulig  <martin@ximian.com>

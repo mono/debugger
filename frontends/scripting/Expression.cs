@@ -362,40 +362,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 		    "Specifies an entry from the search history.\n\n")]
 	public class SourceExpression : Expression
 	{
-		FrameExpression frame_expr;
-		int line, history_id;
-		string file_name, name;
+		VariableExpression expr;
+		int history_id;
+		int line;
 
-		public SourceExpression (FrameExpression frame_expr, string name, int line)
+		public SourceExpression (VariableExpression expr, int line)
 		{
 			this.history_id = -1;
-			this.frame_expr = frame_expr;
-			this.name = name;
-			this.line = line;
-		}
-
-		public SourceExpression (FrameExpression frame_expr, int line)
-		{
-			this.history_id = -1;
-			this.frame_expr = frame_expr;
+			this.expr = expr;
 			this.line = line;
 		}
 
 		public SourceExpression (int history_id)
 		{
 			this.history_id = history_id;
-		}
-
-		public SourceExpression (string file_name, int line)
-		{
-			this.file_name = file_name;
-			this.line = line;
-		}
-
-		public SourceExpression (string file_name)
-		{
-			this.file_name = file_name;
-			this.line = -1;
+			this.expr = null;
 		}
 
 		public SourceLocation ResolveLocation (ScriptingContext context)
@@ -417,44 +398,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (history_id > 0)
 				return context.GetMethodSearchResult (history_id);
 
-			if (file_name != null) {
-				if (line == -1)
-					return context.FindLocation (file_name);
-				else
-					return context.FindLocation (file_name, line);
-			}
+			ITargetFunctionObject obj = expr.ResolveMethod (context, null);
 
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
-
-			IMethod method = frame.Frame.Method;
-			if ((method == null) || !method.HasSource)
-				throw new ScriptingException ("No current method.");
-
-			IMethodSource source = method.Source;
-			if (name == null) {
-				if (source.IsDynamic || (frame.Frame.SourceAddress == null))
-					throw new ScriptingException ("Current method has no source code.");
-
-				if (line == -1)
-					return frame.Frame.SourceAddress.Location;
-				else
-					return context.FindLocation (source.SourceFile.FileName, line);
-			}
-
-			SourceMethod[] result = source.MethodLookup (name);
-
-			if (result.Length == 0)
-				throw new ScriptingException ("No method matches your query.");
-			else if (result.Length > 1)
-				return result;
+			SourceMethod source = obj.Type.Source;
+			if (source == null)
+				throw new ScriptingException ("Method `{0}' has no source code.",
+							      expr.Name);
 
 			if (line == -1)
-				return new SourceLocation (result [0]);
+				return new SourceLocation (source);
 
-			if ((line < result [0].StartRow) || (line > result [0].EndRow))
-				throw new ScriptingException ("Requested line number outside of method.");
+			if ((line < source.StartRow) || (line > source.EndRow))
+				throw new ScriptingException ("Requested line number {0} outside of method (line {1} until {2}).", line, source.StartRow, source.EndRow);
 
-			return new SourceLocation (result [0], line);
+			return new SourceLocation (source, line);
 		}
 	}
 

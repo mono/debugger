@@ -12,15 +12,40 @@ namespace Mono.Debugger.Frontends.CommandLine
 	[Expression("type_expression", "Type expression")]
 	public abstract class TypeExpression : Expression
 	{
+		ITargetType type;
+
 		public abstract string Name {
 			get;
 		}
 
+		protected ITargetType Type {
+			get { return type; }
+		}
+
+		protected virtual bool DoResolveBase (ScriptingContext context)
+		{
+			return true;
+		}
+
 		protected abstract ITargetType DoResolveType (ScriptingContext context);
+
+		protected void ResolveBase (ScriptingContext context)
+		{
+			bool ok;
+			try {
+				ok = DoResolveBase (context);
+			} catch {
+				ok = false;
+			}
+			if (!ok)
+				throw new ScriptingException ("Can't resolve expression `{0}.", Name);
+		}
 
 		public ITargetType ResolveType (ScriptingContext context)
 		{
-			ITargetType type = DoResolveType (context);
+			ResolveBase (context);
+
+			type = DoResolveType (context);
 			if (type == null)
 				throw new ScriptingException ("Can't get type `{0}'.", Name);
 
@@ -87,6 +112,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public ITargetObject ResolveVariable (ScriptingContext context)
 		{
+			ResolveBase (context);
+
 			try {
 				ITargetObject retval = DoResolveVariable (context);
 				if (retval == null)
@@ -99,17 +126,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		protected virtual ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
+		protected virtual ITargetFunctionObject DoResolveMethod (ScriptingContext context, TypeExpression[] args)
 		{
-			throw new ScriptingException ("Variable is not a method: `{0}'", Name);
+			return null;
 		}
 
 		public ITargetFunctionObject ResolveMethod (ScriptingContext context, Expression[] args)
 		{
+			ResolveBase (context);
+
+			TypeExpression[] types = null;
+			if (args != null) {
+				types = new TypeExpression [args.Length];
+				for (int i = 0; i < args.Length; i++) {
+					types [i] = args [i] as TypeExpression;
+					if (types [i] == null)
+						throw new ScriptingException (
+							"Argument {0} is not a type or variable: `{1}'.",
+							i, args [i]);
+				}
+			}
+
 			try {
-				ITargetFunctionObject retval = DoResolveMethod (context, args);
+				ITargetFunctionObject retval = DoResolveMethod (context, types);
 				if (retval == null)
-					throw new ScriptingException ("Can't resolve variable: `{0}'", Name);
+					throw new ScriptingException ("Expression does not resolve to a method: `{0}'", Name);
 
 				return retval;
 			} catch (LocationInvalidException ex) {
@@ -132,7 +173,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public virtual void Assign (ScriptingContext context, object obj)
+		public void Assign (ScriptingContext context, object obj)
+		{
+			ResolveBase (context);
+
+			bool ok;
+			try {
+				ok = DoAssign (context, obj);
+			} catch {
+				ok = false;
+			}
+
+			if (!ok)
+				throw new ScriptingException ("Cannot modify variables of type `{0}.", Name);
+		}
+
+		protected virtual bool DoAssign (ScriptingContext context, object obj)
 		{
 			ITargetObject target_object = ResolveVariable (context);
 
@@ -162,6 +218,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			} catch (InvalidOperationException) {
 				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
 			}
+
+			return true;
 		}
 
 		public override string ToString ()
@@ -183,21 +241,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return '!' + identifier; }
 		}
 
+		VariableExpression expr;
+
+		protected override bool DoResolveBase (ScriptingContext context)
+		{
+			expr = context [identifier];
+			return expr != null;
+		}
+
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			VariableExpression expr = context [identifier];
-			if (expr == null)
-				return null;
-
 			return expr.ResolveVariable (context);
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			VariableExpression expr = context [identifier];
-			if (expr == null)
-				return null;
-
 			return expr.ResolveType (context);
 		}
 	}
@@ -237,17 +295,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return '$' + identifier; }
 		}
 
+		FrameHandle frame;
+
+		protected override bool DoResolveBase (ScriptingContext context)
+		{
+			frame = (FrameHandle) frame_expr.Resolve (context);
+			return frame != null;
+		}
+
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
-
 			return frame.GetVariable (identifier);
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
-
 			return frame.GetVariableType (identifier);
 		}
 
@@ -276,37 +338,37 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return '%' + name; }
 		}
 
-		protected override ITargetType DoResolveType (ScriptingContext context)
+		protected override bool DoResolveBase (ScriptingContext context)
 		{
 			frame = (FrameHandle) frame_expr.Resolve (context);
+			return frame != null;
+		}
 
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
 			register = frame.FindRegister (name);
 			return frame.GetRegisterType (register);
 		}
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			DoResolveType (context);
-
 			return frame.GetRegister (register, offset);
 		}
 
 		public TargetLocation ResolveLocation (ScriptingContext context)
 		{
-			DoResolveType (context);
-
+			ResolveBase (context);
 			return frame.GetRegisterLocation (register, offset, true);
 		}
 
-		public override void Assign (ScriptingContext context, object obj)
+		protected override bool DoAssign (ScriptingContext context, object obj)
 		{
 			if (offset != 0)
 				throw new ScriptingException ("Cannot assign a register expression which has an offset.");
 
-			frame = (FrameHandle) frame_expr.Resolve (context);
 			long value = Convert.ToInt64 (obj);
-
 			frame.SetRegister (register, value);
+			return true;
 		}
 
 		public override string ToString ()
@@ -325,7 +387,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public readonly string Identifier;
 		public readonly bool IsStatic;
 
-		ITargetStructType Type;
+		new ITargetStructType Type;
 		ITargetStructObject Instance;
 		StackFrame Frame;
 
@@ -429,25 +491,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 
 		public static ITargetMethodInfo OverloadResolve (ScriptingContext context, ITargetStructType stype,
-								 Expression[] args, ArrayList candidates)
+								 TypeExpression[] types, ArrayList candidates)
 		{
 			// We do a very simple overload resolution here
-			VariableExpression[] vargs = new VariableExpression [args.Length];
-			ITargetType[] argtypes = new ITargetType [args.Length];
-			for (int i = 0; i < args.Length; i++) {
-				// First of all, all arguments must be VariableExpressions
-				vargs [i] = args [i] as VariableExpression;
-				if (vargs [i] == null)
-					return null;
-
-				argtypes [i] = vargs [i].ResolveType (context);
-			}
+			ITargetType[] argtypes = new ITargetType [types.Length];
+			for (int i = 0; i < types.Length; i++)
+				argtypes [i] = types [i].ResolveType (context);
 
 			// Ok, no we need to find an exact match.
 			ITargetMethodInfo match = null;
 			foreach (ITargetMethodInfo method in candidates) {
 				bool ok = true;
-				for (int i = 0; i < args.Length; i++) {
+				for (int i = 0; i < types.Length; i++) {
 					if (method.Type.ParameterTypes [i].TypeHandle != argtypes [i].TypeHandle) {
 						ok = false;
 						break;
@@ -467,7 +522,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return match;
 		}
 
-		protected ITargetMethodInfo FindMethod (ScriptingContext context, ITargetStructType stype, Expression[] args)
+		protected ITargetMethodInfo FindMethod (ScriptingContext context, ITargetStructType stype, TypeExpression[] types)
 		{
 		again:
 			bool found_match = false;
@@ -478,7 +533,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					if (method.Name != Identifier)
 						continue;
 
-					if ((args != null) && (method.Type.ParameterTypes.Length != args.Length)) {
+					if ((types != null) && (method.Type.ParameterTypes.Length != types.Length)) {
 						found_match = true;
 						continue;
 					}
@@ -491,7 +546,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (method.Name != Identifier)
 					continue;
 
-				if ((args != null) && (method.Type.ParameterTypes.Length != args.Length)) {
+				if ((types != null) && (method.Type.ParameterTypes.Length != types.Length)) {
 					found_match = true;
 					continue;
 				}
@@ -504,8 +559,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (candidates.Count > 1) {
 				ITargetMethodInfo retval = null;
-				if (args != null)
-					retval = OverloadResolve (context, stype, args, candidates);
+				if (types != null)
+					retval = OverloadResolve (context, stype, types, candidates);
 				if (retval == null)
 					throw new ScriptingException ("Ambiguous method `{0}'; need to use full name", Name);
 				return retval;
@@ -517,9 +572,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				goto again;
 			}
 
-			if (found_match && (args != null))
+			if (found_match && (types != null))
 				throw new ScriptingException ("No overload of method `{0}' has {1} arguments.",
-							      Name, args.Length);
+							      Name, types.Length);
 
 			return null;
 		}
@@ -569,7 +624,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
 		}
 
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, TypeExpression[] types)
 		{
 			ITargetMemberInfo member = ResolveTypeBase (context, false);
 			if (member != null)
@@ -590,7 +645,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (Identifier.IndexOf ('(') != -1)
 				method = FindMethod (context, Type, null);
 			else
-				method = FindMethod (context, Type, args);
+				method = FindMethod (context, Type, types);
 
 			if (method != null) {
 				if (method.IsStatic)
@@ -801,10 +856,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return String.Format ("{0} ()", method_expr.Name); }
 		}
 
+		ITargetFunctionObject func;
+
+		protected override bool DoResolveBase (ScriptingContext context)
+		{
+			func = method_expr.ResolveMethod (context, arguments);
+			return func != null;
+		}
+
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ITargetFunctionObject func = method_expr.ResolveMethod (context, arguments);
-
 			return func.Type;
 		}
 
@@ -813,9 +874,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return Invoke (context, true);
 		}
 
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, TypeExpression[] types)
+		{
+			return method_expr.ResolveMethod (context, types);
+		}
+
 		public ITargetObject Invoke (ScriptingContext context, bool need_retval)
 		{
-			ITargetFunctionObject func = method_expr.ResolveMethod (context, arguments);
+			ResolveBase (context);
 
 			object[] args = new object [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)
@@ -879,13 +945,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ArrayList candidates = new ArrayList ();
 			candidates.AddRange (stype.Constructors);
 
+			TypeExpression[] types = null;
+			if (arguments != null) {
+				types = new TypeExpression [arguments.Length];
+				for (int i = 0; i < arguments.Length; i++) {
+					types [i] = arguments [i] as TypeExpression;
+					if (types [i] == null)
+						throw new ScriptingException (
+							"Argument {0} is not a type or variable: `{1}'.",
+							i, arguments [i]);
+				}
+			}
+
 			ITargetMethodInfo method;
 			if (candidates.Count == 0)
 				throw new ScriptingException ("Type `{0}' has no public constructor.", type_name);
 			else if (candidates.Count == 1)
 				method = (ITargetMethodInfo) candidates [0];
 			else
-				method = StructAccessExpression.OverloadResolve (context, stype, arguments, candidates);
+				method = StructAccessExpression.OverloadResolve (context, stype, types, candidates);
 
 			if (method == null)
 				throw new ScriptingException ("Type `{0}' has no constructor which is applicable for your " +
