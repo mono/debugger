@@ -38,6 +38,8 @@ void mono_debugger_thread_manager_main (void);
 void mono_debugger_thread_manager_add_thread (guint32 thread, int pid, gpointer func);
 void mono_debugger_thread_manager_start_resume (guint32 thread);
 void mono_debugger_thread_manager_end_resume (guint32 thread);
+void mono_debugger_thread_manager_acquire_global_thread_lock (void);
+void mono_debugger_thread_manager_release_global_thread_lock (void);
 void mono_debugger_init_icalls (void);
 
 volatile void MONO_DEBUGGER__main (void);

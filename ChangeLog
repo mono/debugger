@@ -1,5 +1,19 @@
 2003-03-30  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/thread-manager.c
+	(mono_debugger_thread_manager_acquire_global_thread_lock): New
+	function.  Calls ThreadManager.AcquireGlobalThreadLock() via a
+	callback function.
+	(mono_debugger_thread_manager_release_global_thread_lock): Release
+	the lock again.
+
+	* wrapper/icall.c
+	(Mono.Debugger.Callbacks.ThreadManager::AcquireGlobalThreadLock):
+	New interncalls; this is just to test the thread lock until we
+	hooked it into boehm.
+
+2003-03-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs (mono_thread_manager): Fixed a bug to
 	make this actually work; don't insert a breakpoint, but pass the
 	stop address to SingleSteppingEngine.Continue() and then wait

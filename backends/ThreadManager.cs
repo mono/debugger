@@ -341,6 +341,14 @@ namespace Mono.Debugger
 				last_sse.Wait ();
 				OnThreadCreatedEvent (last_process);
 				return true;
+			} else if (pid == -2) {
+				Process caller = (Process) thread_hash [thread];
+				AcquireGlobalThreadLock (caller);
+				return true;
+			} else if (pid == -3) {
+				Process caller = (Process) thread_hash [thread];
+				ReleaseGlobalThreadLock (caller);
+				return true;
 			}
 
 			last_process = runner.Process.CreateThread (pid);

@@ -293,6 +293,8 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 
 	initialize_debugger_support ();
 
+	mono_debugger_init_icalls ();
+
 	debugger_args.domain = domain;
 	debugger_args.file = file;
 

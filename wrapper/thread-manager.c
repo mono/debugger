@@ -120,3 +120,31 @@ mono_debugger_thread_manager_end_resume (guint32 thread)
 
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_start_mutex);
 }
+
+void
+mono_debugger_thread_manager_acquire_global_thread_lock (void)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	g_message (G_STRLOC);
+
+	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
+
+	signal_thread_manager (getpid (), -2, NULL);
+
+	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
+}
+
+void
+mono_debugger_thread_manager_release_global_thread_lock (void)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	g_message (G_STRLOC);
+
+	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
+
+	signal_thread_manager (getpid (), -3, NULL);
+
+	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
+}
