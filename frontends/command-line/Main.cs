@@ -108,6 +108,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public static void Main (string[] args)
 		{
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (args);
+
+			Console.WriteLine ("Mono debugger");
 			interpreter.Run ();
 			interpreter.Exit ();
 		}
