@@ -28,6 +28,7 @@ namespace Mono.Debugger.Backends
 		public BreakpointManager ()
 		{
 			lock_mutex = new DebuggerMutex ("bpm_mutex");
+			lock_mutex.DebugFlags = DebugFlags.BreakpointManager;
 			breakpoints = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_new (
 				new BreakpointManagerMutexHandler (lock_func),

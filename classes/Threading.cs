@@ -7,6 +7,7 @@ namespace Mono.Debugger
 	public abstract class DebuggerWaitHandle
 	{
 		public readonly string Name;
+		public DebugFlags DebugFlags = DebugFlags.Mutex;
 		protected WaitHandle handle;
 
 		[DllImport("monodebuggerserver")]
@@ -26,14 +27,14 @@ namespace Mono.Debugger
 
 		public bool TryLock ()
 		{
-			Report.Debug (DebugFlags.Mutex, "{0} trying to lock {1}",
+			Report.Debug (DebugFlags, "{0} trying to lock {1}",
 				      CurrentThread, Name);
 			bool success = handle.WaitOne (0, false);
 			if (success)
-				Report.Debug (DebugFlags.Mutex, "{0} locked {1}",
+				Report.Debug (DebugFlags, "{0} locked {1}",
 					      CurrentThread, Name);
 			else
-				Report.Debug (DebugFlags.Mutex, "{0} could not lock {1}",
+				Report.Debug (DebugFlags, "{0} could not lock {1}",
 					      CurrentThread, Name);
 			return success;
 		}
@@ -51,20 +52,20 @@ namespace Mono.Debugger
 
 		public void Lock ()
 		{
-			Report.Debug (DebugFlags.Mutex, "{0} locking {1}",
+			Report.Debug (DebugFlags, "{0} locking {1}",
 				      CurrentThread, Name);
 			while (!handle.WaitOne ()) {
-				Report.Debug (DebugFlags.Mutex,
+				Report.Debug (DebugFlags,
 					      "{0} still trying to lock {1}",
 					      CurrentThread, Name);
 			}
-			Report.Debug (DebugFlags.Mutex, "{0} locked {1}",
+			Report.Debug (DebugFlags, "{0} locked {1}",
 				      CurrentThread, Name);
 		}
 
 		public void Unlock ()
 		{
-			Report.Debug (DebugFlags.Mutex, "{0} unlocking {1}",
+			Report.Debug (DebugFlags, "{0} unlocking {1}",
 				      CurrentThread, Name);
 			mutex.ReleaseMutex ();
 		}
@@ -78,20 +79,20 @@ namespace Mono.Debugger
 
 		public void Wait ()
 		{
-			Report.Debug (DebugFlags.Mutex, "{0} waiting for {1}",
+			Report.Debug (DebugFlags, "{0} waiting for {1}",
 				      CurrentThread, Name);
 			while (!handle.WaitOne ()) {
-				Report.Debug (DebugFlags.Mutex,
+				Report.Debug (DebugFlags,
 					      "{0} still waiting for {1}",
 					      CurrentThread, Name);
 			}
-			Report.Debug (DebugFlags.Mutex, "{0} done waiting for {1}",
+			Report.Debug (DebugFlags, "{0} done waiting for {1}",
 				      CurrentThread, Name);
 		}
 
 		public void Set ()
 		{
-			Report.Debug (DebugFlags.Mutex, "{0} signalling {1}",
+			Report.Debug (DebugFlags, "{0} signalling {1}",
 				      CurrentThread, Name);
 			DoSet ();
 		}
@@ -111,7 +112,7 @@ namespace Mono.Debugger
 
 		public void Reset ()
 		{
-			Report.Debug (DebugFlags.Mutex, "{0} resetting {1}",
+			Report.Debug (DebugFlags, "{0} resetting {1}",
 				      CurrentThread, Name);
 			the_event.Reset ();
 		}

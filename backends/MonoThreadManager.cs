@@ -204,6 +204,19 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument == inferior.MonoThreadAbortSignal)) {
+				Console.WriteLine ("THREAD ABORT: {0}", inferior.PID);
+
+				inferior.SetSignal (inferior.SIGKILL, true);
+				return false;
+
+				cevent = new Inferior.ChildEvent (
+					Inferior.ChildEventType.CHILD_EXITED,
+					0, 0, 0);
+				return false;
+			}
+
 			return false;
 		}
 

@@ -6,6 +6,7 @@ namespace Mono.Debugger
 {
 	[Flags]
 	public enum DebugFlags {
+		None			= 0,
 		JitSymtab		= 1,
 		MethodAddress		= 2,
 		Threads			= 4,
@@ -14,7 +15,8 @@ namespace Mono.Debugger
 		Wait			= 32,
 		SSE			= 64,
 		Notification		= 128,
-		Mutex			= 256
+		Mutex			= 256,
+		BreakpointManager	= 512
 	}
 
 	public class Report
