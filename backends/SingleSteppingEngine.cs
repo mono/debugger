@@ -124,6 +124,7 @@ public class SingleSteppingEngine : ThreadManager
 	// </remarks>
 	Command current_command = null;
 	CommandResult command_result = null;
+	TheEngine command_engine = null;
 
 	void engine_error (Exception ex)
 	{
@@ -290,11 +291,15 @@ public class SingleSteppingEngine : ThreadManager
 		}
 	}
 
-	protected void SetCompleted ()
+	protected void SetCompleted (TheEngine engine)
 	{
-		Report.Debug (DebugFlags.EventLoop, "Setting completed flag");
-		result_sent = true;
-		completed_event.Set ();
+		lock (this) {
+			if ((command_engine != null) && (engine != command_engine))
+				return;
+			result_sent = true;
+			command_engine = null;
+			completed_event.Set ();
+		}
 	}
 
 	protected void ResetCompleted ()
@@ -409,6 +414,7 @@ public class SingleSteppingEngine : ThreadManager
 		lock (this) {
 			result = command_result;
 			command_result = null;
+			current_command = null;
 		}
 
 		command_mutex.ReleaseMutex ();
@@ -482,6 +488,11 @@ public class SingleSteppingEngine : ThreadManager
 		lock (this) {
 			command = current_command;
 			current_command = null;
+
+			if (command == null)
+				return;
+
+			command_engine = command.Process;
 		}
 
 		if (command == null)
@@ -504,6 +515,7 @@ public class SingleSteppingEngine : ThreadManager
 
 			lock (this) {
 				command_result = result;
+				current_command = null;
 				completed_event.Set ();
 			}
 		} else {
@@ -755,13 +767,13 @@ public class SingleSteppingEngine : ThreadManager
 		void send_frame_event (StackFrame frame, int signal)
 		{
 			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
-			sse.SetCompleted ();
+			sse.SetCompleted (this);
 		}
 
 		void send_frame_event (StackFrame frame, BreakpointHandle handle)
 		{
 			SendTargetEvent (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, handle, frame));
-			sse.SetCompleted ();
+			sse.SetCompleted (this);
 		}
 
 		public void SendTargetEvent (TargetEventArgs args)
@@ -1014,7 +1026,7 @@ public class SingleSteppingEngine : ThreadManager
 						return false;
 				}
 				SendTargetEvent (result);
-				sse.SetCompleted ();
+				sse.SetCompleted (this);
 				return true;
 			}
 
@@ -1489,6 +1501,10 @@ public class SingleSteppingEngine : ThreadManager
 			current_operation = null;
 			frames_invalid ();
 
+			Report.Debug (DebugFlags.SSE,
+				      "SSE {0} starting step operation {0}",
+				      this, operation);
+
 			if (operation.StepFrame == null) {
 				do_step ();
 				return true;
@@ -1496,6 +1512,8 @@ public class SingleSteppingEngine : ThreadManager
 
 			current_operation = operation;
 			if (DoStep (true)) {
+				Report.Debug (DebugFlags.SSE,
+					      "SSE {0} finished step operation", this);
 				step_operation_finished ();
 				return true;
 			}
@@ -1550,7 +1568,10 @@ public class SingleSteppingEngine : ThreadManager
 				return true;
 
 			TargetAddress current_frame = inferior.CurrentFrame;
-			if (!first && !is_in_step_frame (frame, current_frame))
+			bool in_frame = is_in_step_frame (frame, current_frame);
+			Report.Debug (DebugFlags.SSE, "SSE {0} stepping at {0} in {1} {2}",
+				      current_frame, frame, in_frame);
+			if (!first && !in_frame)
 				return true;
 
 			/*
@@ -1802,7 +1823,7 @@ public class SingleSteppingEngine : ThreadManager
 				rdata.ExceptionObject = TargetAddress.Null;
 
 			frame_changed (inferior.CurrentFrame, 0, null);
-			sse.SetCompleted ();
+			sse.SetCompleted (this);
 			return true;
 		}
 
@@ -1816,7 +1837,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			cb.Data.Result = data1;
 
-			sse.SetCompleted ();
+			sse.SetCompleted (this);
 			return true;
 		}
 
