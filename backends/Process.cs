@@ -587,21 +587,21 @@ namespace Mono.Debugger
 		// ITargetInfo
 		//
 
-		public int TargetAddressSize {
+		int ITargetInfo.TargetAddressSize {
 			get {
 				check_engine ();
 				return engine.TargetAddressSize;
 			}
 		}
 
-		public int TargetIntegerSize {
+		int ITargetInfo.TargetIntegerSize {
 			get {
 				check_engine ();
 				return engine.TargetIntegerSize;
 			}
 		}
 
-		public int TargetLongIntegerSize {
+		int ITargetInfo.TargetLongIntegerSize {
 			get {
 				check_engine ();
 				return engine.TargetLongIntegerSize;
@@ -671,25 +671,29 @@ namespace Mono.Debugger
 
 		int ITargetMemoryAccess.ReadInteger (TargetAddress address)
 		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			check_engine ();
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
 			return reader.ReadInteger ();
 		}
 
 		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
 		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			check_engine ();
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
 			return reader.ReadLongInteger ();
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
 		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			check_engine ();
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
 			return reader.ReadAddress ();
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadGlobalAddress (TargetAddress address)
 		{
-			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			check_engine ();
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
 			return reader.ReadGlobalAddress ();
 		}
 
@@ -739,7 +743,8 @@ namespace Mono.Debugger
 
 		void ITargetAccess.WriteAddress (TargetAddress address, TargetAddress value)
 		{
-			TargetBinaryWriter writer = new TargetBinaryWriter (TargetAddressSize, this);
+			check_engine ();
+			TargetBinaryWriter writer = new TargetBinaryWriter (engine.TargetAddressSize, this);
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
 		}

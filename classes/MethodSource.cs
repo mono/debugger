@@ -180,7 +180,7 @@ namespace Mono.Debugger
 			Console.WriteLine ("--------");
 		}
 
-		public class MethodSourceData
+		protected class MethodSourceData
 		{
 			public readonly int StartRow;
 			public readonly int EndRow;
