@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.CSharp
 		bool is_valuetype;
 		int num_fields, num_static_fields, num_properties, num_static_properties, num_methods, num_static_methods;
 		int num_ctors, field_info_size, static_field_info_size, property_info_size, static_property_info_size;
-		int method_info_size, static_method_info_size, ctor_info_size;
+		int method_info_size, static_method_info_size, ctor_info_size, parent;
 		long offset;
 
 		public readonly Type Type;
@@ -24,7 +24,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress KlassAddress;
 		public readonly MonoClass Parent;
 
-		// protected readonly TargetAddress StartRuntimeInvoke;
 		protected readonly TargetAddress ClassGetStaticFieldData;
 
 		public MonoClass (TargetObjectKind kind, Type type, int size, bool is_classinfo,
@@ -64,12 +63,15 @@ namespace Mono.Debugger.Languages.CSharp
 			static_method_info_size = info.ReadInt32 ();
 			num_ctors = info.ReadInt32 ();
 			ctor_info_size = info.ReadInt32 ();
+			parent = info.ReadInt32 ();
 			this.info = info;
 			this.offset = info.Position;
 			this.Type = type;
 			this.InstanceSize = size;
-			// StartRuntimeInvoke = table.Language.MonoDebuggerInfo.StartRuntimeInvoke;
 			ClassGetStaticFieldData = file.Table.Language.MonoDebuggerInfo.ClassGetStaticFieldData;
+
+			if (parent != 0)
+				Parent = (MonoClass) file.Table.GetType (Type.BaseType, parent);
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -99,11 +101,13 @@ namespace Mono.Debugger.Languages.CSharp
 			static_method_info_size = old_class.static_method_info_size;
 			num_ctors = old_class.num_ctors;
 			ctor_info_size = old_class.ctor_info_size;
+			parent = old_class.parent;
 			info = old_class.info;
 			offset = old_class.offset;
 			this.Type = type;
 			this.InstanceSize = size;
 			this.File = old_class.File;
+			this.Parent = old_class.Parent;
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -113,11 +117,12 @@ namespace Mono.Debugger.Languages.CSharp
 				EffectiveType = Type;
 		}
 
-		public static MonoClass GetClass (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
+		public static MonoClass GetClass (Type type, int size, TargetBinaryReader info,
+						  MonoSymbolFile file)
 		{
 			bool is_valuetype = info.ReadByte () != 0;
 			TargetObjectKind kind = is_valuetype ? TargetObjectKind.Struct : TargetObjectKind.Class;
-			return new MonoClass (kind, type, size, true, info, table, true);
+			return new MonoClass (kind, type, size, true, info, file, true);
 		}
 
 		public override bool IsByRef {

@@ -209,8 +209,11 @@ namespace Mono.Debugger.Frontends.Scripting
 				ITargetStructType stype = (ITargetStructType) type;
 				StringBuilder sb = new StringBuilder ();
 				ITargetClassType ctype = type as ITargetClassType;
-				if (ctype != null) {
+				if (type.Kind == TargetObjectKind.Struct)
+					sb.Append ("struct ");
+				else
 					sb.Append ("class ");
+				if (ctype != null) {
 					if (ctype.Name != null) {
 						sb.Append (ctype.Name);
 						sb.Append (" ");
@@ -220,7 +223,6 @@ namespace Mono.Debugger.Frontends.Scripting
 						sb.Append (ctype.ParentType.Name);
 					}
 				} else {
-					sb.Append ("struct ");
 					if (stype.Name != null) {
 						sb.Append (stype.Name);
 						sb.Append (" ");
