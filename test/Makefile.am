@@ -2,7 +2,10 @@ MCS_FLAGS=-g
 
 noinst_SCRIPTS = $(test_FILES)
 
-test_FILES = TestManagedTypes.exe TestLexicalScopes.cs
+runtest = $(srcdir)/runtest.pl
+debugger = '$(MONO) ../lib/Interpreter.exe'
+
+test_FILES = TestManagedTypes.exe TestLexicalScopes.exe
 
 EXTRA_DIST = @srcdir@/*.cs
 
@@ -14,7 +17,7 @@ CLEANFILES = *.exe *.dbg a.out
 test: $(test_FILES)
 	for test in $(test_FILES) ; do \
 		echo -n "Running $$test ... " ; \
-		if $(MONO) ./$$test > /dev/null; then \
+		if $(runtest) $(debugger) ./$$test > /dev/null; then \
 			echo OK; \
 		else \
 			echo FAILED; exit 1; \
