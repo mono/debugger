@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = cygnus
 
-INCDIR = $(srcdir)/../include
+INCDIR = $(srcdir)/include
 CSEARCH = -I. -I$(srcdir) -I$(INCDIR)
 MKDEP = gcc -MM
 
@@ -589,7 +589,7 @@ stamp-ofiles: Makefile
 	  esac ; \
 	done ; \
 	echo $$f > tofiles
-	$(SHELL) $(srcdir)/../move-if-change tofiles ofiles
+	$(SHELL) $(srcdir)/move-if-change tofiles ofiles
 	touch stamp-ofiles
 
 ofiles: stamp-ofiles ; @true
@@ -612,7 +612,7 @@ stamp-lib: libbfd.la
 	if [ -f $$libtooldir/libbfd.a ]; then \
 	  cp $$libtooldir/libbfd.a libbfd.tmp; \
 	  $(RANLIB) libbfd.tmp; \
-	  $(SHELL) $(srcdir)/../move-if-change libbfd.tmp libbfd.a; \
+	  $(SHELL) $(srcdir)/move-if-change libbfd.tmp libbfd.a; \
 	else true; fi
 	touch stamp-lib
 
@@ -733,17 +733,17 @@ dep.sed: dep-in.sed config.status
 dep: DEP
 	sed -e '/^..DO NOT DELETE THIS LINE/,$$d' < Makefile > tmp-Makefile
 	cat DEP >> tmp-Makefile
-	$(SHELL) $(srcdir)/../move-if-change tmp-Makefile Makefile
+	$(SHELL) $(srcdir)/move-if-change tmp-Makefile Makefile
 
 dep-in: DEP
 	sed -e '/^..DO NOT DELETE THIS LINE/,$$d' < $(srcdir)/Makefile.in > tmp-Makefile.in
 	cat DEP >> tmp-Makefile.in
-	$(SHELL) $(srcdir)/../move-if-change tmp-Makefile.in $(srcdir)/Makefile.in
+	$(SHELL) $(srcdir)/move-if-change tmp-Makefile.in $(srcdir)/Makefile.in
 
 dep-am: DEP
 	sed -e '/^..DO NOT DELETE THIS LINE/,$$d' < $(srcdir)/Makefile.am > tmp-Makefile.am
 	cat DEP >> tmp-Makefile.am
-	$(SHELL) $(srcdir)/../move-if-change tmp-Makefile.am $(srcdir)/Makefile.am
+	$(SHELL) $(srcdir)/move-if-change tmp-Makefile.am $(srcdir)/Makefile.am
 
 host-aout.lo: Makefile
 
@@ -759,7 +759,7 @@ $(BFD_H): stmp-bfd-h ; @true
 stmp-bfd-h: bfd-in3.h
 	rm -f bfd-tmp.h
 	cp bfd-in3.h bfd-tmp.h
-	$(SHELL) $(srcdir)/../move-if-change bfd-tmp.h $(BFD_H)
+	$(SHELL) $(srcdir)/move-if-change bfd-tmp.h $(BFD_H)
 	rm -f bfd-tmp.h
 	touch stmp-bfd-h
 
