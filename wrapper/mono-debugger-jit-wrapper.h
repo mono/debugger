@@ -18,7 +18,6 @@ struct _MonoDebuggerInfo {
 	guint32 version;
 	guint32 total_size;
 	guint8 **generic_trampoline_code;
-	guint8 **breakpoint_trampoline_code;
 	gconstpointer notification_address;
 	MonoDebuggerSymbolTable **symbol_table;
 	guint32 symbol_table_size;
@@ -26,6 +25,8 @@ struct _MonoDebuggerInfo {
 	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
 	guint64 (*remove_breakpoint) (guint64 breakpoint);
 	MonoInvokeFunc runtime_invoke;
+	gpointer *event_data;
+	guint32 *event_arg;
 };
 
 /*

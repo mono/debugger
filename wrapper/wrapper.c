@@ -27,6 +27,9 @@ volatile int MONO_DEBUGGER__debugger_thread = 0;
 volatile int MONO_DEBUGGER__command_thread = 0;
 volatile gpointer MONO_DEBUGGER__command_notification = NULL;
 
+static volatile gpointer debugger_event_data;
+static volatile guint32 debugger_event_arg;
+
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
 static gpointer debugger_compile_method (MonoMethod *method);
@@ -43,14 +46,15 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_SYMBOL_FILE_DYNAMIC_VERSION,
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
-	&mono_breakpoint_trampoline_code,
 	&debugger_notification_address,
 	&mono_debugger_symbol_table,
 	sizeof (MonoDebuggerSymbolTable),
 	&debugger_compile_method,
 	&debugger_insert_breakpoint,
 	&debugger_remove_breakpoint,
-	&mono_runtime_invoke
+	&mono_runtime_invoke,
+	&debugger_event_data,
+	&debugger_event_arg
 };
 
 void
@@ -85,7 +89,7 @@ debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argumen
 	if (!desc)
 		return 0;
 
-	return mono_debugger_insert_breakpoint_full (desc, TRUE);
+	return mono_debugger_insert_breakpoint_full (desc);
 }
 
 static guint64
@@ -107,7 +111,7 @@ debugger_compile_method (MonoMethod *method)
 }
 
 static void
-debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
+debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 {
 	switch (event) {
 	case MONO_DEBUGGER_EVENT_TYPE_ADDED:
@@ -115,9 +119,11 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, gpointer data2)
 		mono_debugger_signal ();
 		break;
 
-	case MONO_DEBUGGER_EVENT_BREAKPOINT_TRAMPOLINE:
+	case MONO_DEBUGGER_EVENT_BREAKPOINT:
 		mono_debugger_lock ();
 		must_send_finished = TRUE;
+		debugger_event_data = data;
+		debugger_event_arg = arg;
 		mono_debugger_signal ();
 		mono_debugger_unlock ();
 
@@ -221,6 +227,8 @@ debugger_thread_handler (gpointer user_data)
 		debugger_notification_function ();
 
 		debugger_signalled = FALSE;
+		debugger_event_data = NULL;
+		debugger_event_arg = 0;
 
 		if (must_send_finished) {
 			IO_LAYER (ReleaseSemaphore) (debugger_finished_cond, 1, NULL);
