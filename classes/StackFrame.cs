@@ -42,7 +42,7 @@ namespace Mono.Debugger
 		{
 			this.address = address;
 			this.level = level;
-			this.name = name;
+			this.name = name != "" ? name : null;
 		}
 
 		public int Level {
