@@ -62,16 +62,13 @@ namespace Mono.Debugger
 				return false;
 
 			StackFrame new_frame = UnwindStack (target, arch, symtab);
-			Console.WriteLine ("TRY UNWIND: {0}", new_frame);
 			if (new_frame == null) {
 				finished = true;
 				return false;
 			}
 
-			if (!until.IsNull && (new_frame.TargetAddress == until)) {
-				Console.WriteLine ("REACHED UNTIL");
+			if (!until.IsNull && (new_frame.TargetAddress == until))
 				return false;
-			}
 
 			frames.Add (new_frame);
 			last_frame = new_frame;
