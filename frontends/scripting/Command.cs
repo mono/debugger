@@ -111,7 +111,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("This command cannot be used in the GUI.");
 
 			string[] args = (string []) program_args_expr.Resolve (context);
-			context.Start (args);
+			context.Start (args, null);
 			context.Run ();
 		}
 	}

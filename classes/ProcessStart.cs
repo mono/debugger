@@ -205,7 +205,8 @@ namespace Mono.Debugger
 			initialized = true;
 		}
 
-		public static ProcessStart Create (string cwd, string[] argv, string[] envp)
+		public static ProcessStart Create (string cwd, string[] argv, string[] envp,
+						   string opt_flags)
 		{
 			Assembly application;
 			try {
@@ -215,12 +216,13 @@ namespace Mono.Debugger
 			}
 
 			if (application != null)
-				return new ManagedProcessStart (cwd, argv, envp, application);
+				return new ManagedProcessStart (cwd, argv, envp, application, opt_flags);
 			else
 				return new ProcessStart (cwd, argv, envp);
 		}
 
-		public static ProcessStart Create (string cwd, string[] argv, string[] envp, string core_file)
+		public static ProcessStart LoadCoreFile (string cwd, string[] argv, string[] envp,
+							 string core_file)
 		{
 			Assembly application;
 			try {
@@ -248,15 +250,18 @@ namespace Mono.Debugger
 	{
 		Assembly application;
 		string[] old_argv;
+		string opt_flags;
 
-		public ManagedProcessStart (string cwd, string[] argv, string[] envp, Assembly application)
+		public ManagedProcessStart (string cwd, string[] argv, string[] envp, Assembly application,
+					    string opt_flags)
 			: base (cwd, argv, envp)
 		{
 			this.application = application;
+			this.opt_flags = opt_flags != null ? opt_flags : JitOptimizations;
 		}
 
 		public ManagedProcessStart (string cwd, string[] argv, string[] envp, Assembly application,
-					    string core_file)
+					    string opt_flags, string core_file)
 			: base (cwd, argv, envp, core_file)
 		{
 			this.application = application;
@@ -286,7 +291,9 @@ namespace Mono.Debugger
 			MethodInfo main = application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
 
-			string[] start_argv = { Path_Mono, JitOptimizations };
+			string[] start_argv = { Path_Mono, opt_flags };
+
+			Console.WriteLine ("OPTIMIZE: {0}", opt_flags);
 
 			string[] new_argv = new string [old_argv.Length + start_argv.Length];
 			start_argv.CopyTo (new_argv, 0);

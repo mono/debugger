@@ -125,7 +125,7 @@ namespace Mono.Debugger
 					return null;
 
 				backend = new DebuggerBackend ();
-				start = ProcessStart.Create (null, args, null);
+				start = ProcessStart.Create (null, args, null, null);
 				return null;
 
 			default:
@@ -134,7 +134,7 @@ namespace Mono.Debugger
 						"to debug.";
 
 				backend = new DebuggerBackend ();
-				start = ProcessStart.Create (null, args, null);
+				start = ProcessStart.Create (null, args, null, null);
 				return null;
 			}
 		}

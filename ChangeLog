@@ -1,5 +1,11 @@
 2003-04-07  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/ProgramToDebug.cs: Added a Gtk.Entry to specify the
+	JIT optimizations.  See `mini --help' for a list of optimization
+	options  [FIXME: we should add a real GUI element for this].
+
+2003-04-07  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Require mono and mini for the moment.
 
 	* wrapper/Makefile.am: Build a `mono-debugger-jit-wrapper' for the

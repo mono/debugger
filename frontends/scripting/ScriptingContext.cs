@@ -802,13 +802,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public ProcessStart Start (string[] args)
+		public ProcessStart Start (string[] args,  string opt_flags)
 		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
 
 			backend = new DebuggerBackend ();
-			start = ProcessStart.Create (null, args, null);
+			start = ProcessStart.Create (null, args, null, opt_flags);
 			return start;
 		}
 
