@@ -291,17 +291,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		ProcessExpression process_expr;
 		string identifier;
+		int line;
 
 		public BreakCommand (ProcessExpression process_expr, string identifier)
 		{
 			this.process_expr = process_expr;
 			this.identifier = identifier;
+			this.line = -1;
+		}
+
+		public BreakCommand (ProcessExpression process_expr, string identifier, int line)
+		{
+			this.process_expr = process_expr;
+			this.identifier = identifier;
+			this.line = line;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			process.InsertBreakpoint (identifier);
+			if (line != -1)
+				process.InsertBreakpoint (identifier, line);
+			else
+				process.InsertBreakpoint (identifier);
 		}
 	}
 }

@@ -141,9 +141,13 @@ command
 	  {
 		$$ = new ShowRegistersCommand ((ProcessExpression) $3);
 	  }
-	| BREAK opt_process IDENTIFIER
+	| BREAK opt_process function_name
 	  {
 		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3);
+	  }
+	| BREAK opt_process STRING INTEGER
+	  {
+		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3, (int) $4);
 	  }
 	| expression
 	  {
@@ -228,6 +232,17 @@ opt_frame_number
 	| HASH INTEGER
 	{
 		$$ = $2;
+	}
+	;
+
+function_name
+	: IDENTIFIER
+	{
+		$$ = (string) $1;
+	}
+	| STRING
+	{
+		$$ = (string) $1;
 	}
 	;
 

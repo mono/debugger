@@ -159,7 +159,7 @@ namespace Mono.Debugger
 		{
 			module_manager.Locked = true;
 			if (!process.ProcessStart.IsNative)
-				csharp_language.Inferior = process.Inferior;
+				csharp_language.Process = process;
 			process.Inferior.UpdateModules ();
 			UpdateSymbolTable ();
 

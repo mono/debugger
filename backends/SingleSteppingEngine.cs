@@ -76,9 +76,6 @@ namespace Mono.Debugger.Backends
 			inferior.SingleSteppingEngine = this;
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
-			symtab_manager.SymbolTableChangedEvent +=
-				new SymbolTableManager.SymbolTableHandler (update_symtabs);
-
 			step_event = new AutoResetEvent (false);
 			start_event = new ManualResetEvent (false);
 			completed_event = new ManualResetEvent (false);
@@ -175,6 +172,9 @@ namespace Mono.Debugger.Backends
 				;
 
 			ready_event_handler ();
+
+			symtab_manager.SymbolTableChangedEvent +=
+				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 		}
 
 		// <summary>
@@ -1645,6 +1645,42 @@ namespace Mono.Debugger.Backends
 				this.NeedsFrame = needs_frame;
 				this.UserData = user_data;
 			}
+		}
+
+		//
+		// Calling methods.
+		//
+
+		private struct CallMethodData
+		{
+			public readonly TargetAddress Method;
+			public readonly long Argument;
+			public readonly string StringArgument;
+
+			public CallMethodData (TargetAddress method, long arg, string string_arg)
+			{
+				this.Method = method;
+				this.Argument = arg;
+				this.StringArgument = string_arg;
+			}
+		}
+
+		CommandResult call_string_method (object data)
+		{
+			CallMethodData cdata = (CallMethodData) data;
+			long retval = inferior.CallStringMethod (cdata.Method, cdata.Argument,
+								 cdata.StringArgument);
+			return new CommandResult (CommandResultType.CommandOk, retval);
+		}
+
+		internal long CallMethod (TargetAddress method, long method_argument,
+					  string string_argument)
+		{
+			CallMethodData data = new CallMethodData (method, method_argument, string_argument);
+			CommandResult result = send_sync_command (new CommandFunc (call_string_method), data);
+			if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+			return (long) result.Data;
 		}
 
 		//

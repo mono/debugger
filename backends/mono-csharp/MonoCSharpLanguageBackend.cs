@@ -1422,7 +1422,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoCSharpLanguageBackend : ILanguageBackend
 	{
+		Process process;
 		IInferior inferior;
+		SingleSteppingEngine sse;
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
@@ -1441,15 +1443,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public IInferior Inferior {
+		public Process Process {
 			get {
-				return inferior;
+				return process;
 			}
 
 			set {
-				inferior = value;
-				if (inferior != null)
-					init_inferior ();
+				process = value;
+				if (process != null)
+					init_process ();
 				else
 					child_exited ();
 			}
@@ -1461,16 +1463,19 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		void init_inferior ()
+		void init_process ()
 		{
+			inferior = process.Inferior;
+			sse = process.SingleSteppingEngine;
 			breakpoints = new Hashtable ();
-			inferior.TargetExited += new TargetExitedHandler (child_exited);
+			process.TargetExited += new TargetExitedHandler (child_exited);
 			if (table != null)
 				table.Inferior = inferior;
 		}
 
 		void child_exited ()
 		{
+			process = null;
 			inferior = null;
 			info = null;
 			symtab_generation = 0;
@@ -1480,7 +1485,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void check_inferior ()
 		{
-			if (inferior == null)
+			if ((inferior == null) || (sse == null))
 				throw new NoTargetException ();
 		}
 
@@ -1604,7 +1609,7 @@ namespace Mono.Debugger.Languages.CSharp
 					       object user_data)
 		{
 			check_inferior ();
-			long retval = inferior.CallStringMethod (info.insert_breakpoint, 0, method_name);
+			long retval = sse.CallMethod (info.insert_breakpoint, 0, method_name);
 			int index = (int) retval;
 
 			if (index <= 0)

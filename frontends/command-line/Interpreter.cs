@@ -44,5 +44,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			return !parser.Quit;
 		}
+
+		public ScriptingContext Context {
+			get { return context; }
+		}
 	}
 }

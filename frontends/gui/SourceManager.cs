@@ -257,7 +257,7 @@ namespace Mono.Debugger.GUI {
 
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
-		
+
 		public override void SetProcess (Process process)
 		{
 			base.SetProcess (process);

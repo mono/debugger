@@ -287,6 +287,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, method);
 		}
 
+		public int InsertBreakpoint (string file, int line)
+		{
+			string full_file = context.GetFullPath (file);
+			Console.WriteLine ("FILE: {0}", full_file);
+			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
+			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, full_file, line);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("Process @{0}: {1} {2}", id, State, process);
@@ -318,7 +326,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 		DebuggerBackend backend;
 		DebuggerTextWriter command_output;
 		DebuggerTextWriter inferior_output;
+		ProcessStart start;
 		bool is_synchronous;
+		internal static readonly string DirectorySeparatorStr;
+
+		static ScriptingContext ()
+		{
+			// FIXME: Why isn't this public in System.IO.Path ?
+			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
+		}
 
 		public ScriptingContext (DebuggerBackend backend, DebuggerTextWriter command_output,
 					 DebuggerTextWriter inferior_output, bool is_synchronous)
@@ -339,6 +355,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+		}
+
+		public ProcessStart ProcessStart {
+			get { return start; }
+			set { start = value; }
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -410,7 +431,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (args.Length == 0)
 				throw new ScriptingException ("No program specified.");
 
-			ProcessStart start;
 			Process process;
 
 			if (args [0] == "core") {
@@ -430,6 +450,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 			procs.Add (current_process);
 
 			return current_process;
+		}
+
+		public string GetFullPath (string filename)
+		{
+			Console.WriteLine ("#0: {0} {1} {2}", filename, start, Path.IsPathRooted (filename));
+
+			if (start == null)
+				return Path.GetFullPath (filename);
+
+			if (Path.IsPathRooted (filename))
+				return filename;
+
+			return String.Concat (start.BaseDirectory, DirectorySeparatorStr, filename);
 		}
 
 		void thread_created (ThreadManager manager, Process process)

@@ -23,6 +23,7 @@ namespace Mono.Debugger
 		public readonly string Environment_Path	= "/usr/bin";
 
 		string cwd;
+		string base_dir;
 		string[] argv;
 		string[] envp;
 		bool native;
@@ -62,6 +63,15 @@ namespace Mono.Debugger
 					DoSetup ();
 
 				return cwd;
+			}
+		}
+
+		public string BaseDirectory {
+			get {
+				if (!initialized)
+					DoSetup ();
+
+				return base_dir;
 			}
 		}
 
@@ -128,6 +138,20 @@ namespace Mono.Debugger
 				cwd = ".";
 		}
 
+		protected virtual void SetupBaseDirectory ()
+		{
+			if (base_dir == null)
+				base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
+		}
+
+		protected string GetFullPath (string path)
+		{
+			if (path.StartsWith ("./"))
+				return Path.GetFullPath (path.Substring (2));
+			else
+				return Path.GetFullPath (path);
+		}
+
 		protected virtual string[] SetupArguments ()
 		{
 			if ((argv == null) || (argv.Length < 1))
@@ -138,8 +162,9 @@ namespace Mono.Debugger
 		protected virtual void DoSetup ()
 		{
 			SetupEnvironment ("PATH=" + Environment_Path, "LD_BIND_NOW=yes");
-			SetupWorkingDirectory ();
 			argv = SetupArguments ();
+			SetupWorkingDirectory ();
+			SetupBaseDirectory ();
 			load_native_symtab = true;
 			native = true;
 			initialized = true;
@@ -164,6 +189,7 @@ namespace Mono.Debugger
 	public class ManagedProcessStart : ProcessStart
 	{
 		Assembly application;
+		string[] old_argv;
 
 		public ManagedProcessStart (string cwd, string[] argv, string[] envp, Assembly application)
 			: base (cwd, argv, envp)
@@ -178,9 +204,15 @@ namespace Mono.Debugger
 			native = false;
 		}
 
+		protected override void SetupBaseDirectory ()
+		{
+			if (base_dir == null)
+				base_dir = GetFullPath (Path.GetDirectoryName (old_argv [0]));
+		}
+
 		protected override string[] SetupArguments ()
 		{
-			string[] old_argv = base.SetupArguments ();
+			old_argv = base.SetupArguments ();
 
 			MethodInfo main = application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;

@@ -77,6 +77,7 @@ namespace Mono.Debugger.GUI
 		}
 
 		Program program;
+		ProcessStart start;
 		Glade.XML gxml;
 		App main_window;
 
@@ -124,6 +125,7 @@ namespace Mono.Debugger.GUI
 				LoadProgram (arguments);
 
 			interpreter = new Interpreter (backend, command_writer, output_writer);
+			interpreter.Context.ProcessStart = start;
 		}
 
 		internal ThreadNotify ThreadNotify {
@@ -266,7 +268,6 @@ namespace Mono.Debugger.GUI
 		//
 		void LoadProgram (string [] args)
 		{
-			ProcessStart start;
 			if (args [0] == "core") {
 				string [] temp_args = new string [args.Length-1];
 				if (args.Length > 1)
