@@ -31,8 +31,9 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   If @IsDynamic is true, this is the dynamically generated source code of
-		//   this method.
+		//   The source code of this method.  The buffer is cached in an ObjectCache,
+		//   so you should use this property to get the file contents rather than
+		//   reading the source file yourself.
 		// </summary>
 		ISourceBuffer SourceBuffer {
 			get;

@@ -26,6 +26,7 @@ namespace Mono.Debugger
 		BfdContainer bfd_container;
 
 		ArrayList languages;
+		SourceFileFactory source_factory;
 		MonoCSharpLanguageBackend csharp_language;
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
@@ -47,6 +48,8 @@ namespace Mono.Debugger
 			if (initialized)
 				throw new InternalError ();
 			initialized = true;
+
+			source_factory = new SourceFileFactory ();
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
@@ -81,6 +84,12 @@ namespace Mono.Debugger
 		public ProcessStart ProcessStart {
 			get {
 				return start;
+			}
+		}
+
+		public SourceFileFactory SourceFileFactory {
+			get {
+				return source_factory;
 			}
 		}
 

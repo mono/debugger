@@ -91,7 +91,8 @@ namespace Mono.Debugger.Architecture
 				return;
 
 			try {
-				dwarf = new DwarfReader (bfd, module, bfd.SymbolTable);
+				dwarf = new DwarfReader (
+					bfd, module, bfd.SymbolTable, backend.SourceFileFactory);
 			} catch (Exception e) {
 				// Silently ignore.
 			}

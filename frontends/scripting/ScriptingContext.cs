@@ -132,10 +132,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			IMethodSource source = method.Source;
-			if (source.IsDynamic)
-				current_buffer = source.SourceBuffer;
-			else
-				current_buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
+			current_buffer = source.SourceBuffer;
 
 			if (current_buffer == null)
 				return;
@@ -403,24 +400,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			IMethod method = frame.Method;
-			if ((method == null) || !method.HasSource)
+			if ((method == null) || !method.HasSource || (method.Source == null))
 				return;
 
 			IMethodSource source = method.Source;
-			if (source == null)
+			if (source.SourceBuffer == null)
 				return;
 
-			string contents;
-			ISourceBuffer buffer;
-			if (source.IsDynamic)
-				buffer = source.SourceBuffer;
-			else
-				buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
-
-			if (buffer == null)
-				return;
-
-			string line = buffer.Contents [location.Row - 1];
+			string line = source.SourceBuffer.Contents [location.Row - 1];
 			context.Print (String.Format ("{0,4} {1}", location.Row, line));
 		}
 
@@ -720,7 +707,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		MyOptions options;
 
 		ArrayList method_search_results;
-		SourceFileFactory source_factory;
 		Hashtable scripting_variables;
 		Module[] modules;
 
@@ -745,18 +731,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
-
-			source_factory = new SourceFileFactory ();
 		}
 
 		protected void Initialize ()
 		{
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
-		}
-
-		public SourceFileFactory SourceFactory {
-			get { return source_factory; }
 		}
 
 		public ProcessStart ProcessStart {
@@ -1383,7 +1363,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				start = last_line;
 			} else {
 				string filename = location.SourceFile.FileName;
-				ISourceBuffer buffer = source_factory.FindFile (filename);
+				ISourceBuffer buffer = backend.SourceFileFactory.FindFile (filename);
 				if (buffer == null)
 					throw new ScriptingException (
 						"Cannot find source file `{0}'", filename);

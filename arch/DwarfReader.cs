@@ -29,6 +29,7 @@ namespace Mono.Debugger.Architecture
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
 		TargetInfo target_info;
+		SourceFileFactory factory;
 
 		SourceFile[] sources;
 
@@ -43,11 +44,13 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (Bfd bfd, Module module, ISymbolTable simple_symtab)
+		public DwarfReader (Bfd bfd, Module module, ISymbolTable simple_symtab,
+				    SourceFileFactory factory)
 		{
 			this.bfd = bfd;
 			this.module = module;
 			this.filename = bfd.FileName;
+			this.factory = factory;
 
 			debug_info_reader = create_reader (".debug_info");
 
@@ -1842,6 +1845,7 @@ namespace Mono.Debugger.Architecture
 				DwarfSourceMethod source;
 				int start_row, end_row;
 				ArrayList addresses;
+				ISourceBuffer buffer;
 
 				public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
 					: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
@@ -1884,6 +1888,10 @@ namespace Mono.Debugger.Architecture
 					get { return source; }
 				}
 
+				public ISourceBuffer SourceBuffer {
+					get { return buffer; }
+				}
+
 				void read_source ()
 				{
 					start_row = end_row = 0;
@@ -1903,6 +1911,8 @@ namespace Mono.Debugger.Architecture
 
 					source = new DwarfSourceMethod (subprog.SourceFile, this);
 					subprog.DieCompileUnit.AddMethod (source);
+
+					buffer = subprog.dwarf.factory.FindFile (subprog.SourceFile.FileName);
 				}
 			}
 
@@ -1920,7 +1930,7 @@ namespace Mono.Debugger.Architecture
 				{
 					return new MethodSourceData (
 						method.StartRow, method.EndRow, method.Addresses,
-						method.SourceMethod);
+						method.SourceMethod, method.SourceBuffer);
 				}
 
 				public override SourceMethod[] MethodLookup (string query)

@@ -13,6 +13,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MethodEntry method;
 		SourceMethod source_method;
 		IMethod imethod;
+		SourceFileFactory factory;
 
 		public CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
 				     SourceMethod source_method, MethodEntry method,
@@ -26,6 +27,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.line_numbers = line_numbers;
 			this.start_row = method.StartRow;
 			this.end_row = method.EndRow;
+			this.factory = reader.Table.Backend.SourceFileFactory;
 		}
 
 		protected override MethodSourceData ReadSource ()
@@ -39,7 +41,8 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			lines.Sort ();
-			return new MethodSourceData (start_row, end_row, lines, source_method);
+			ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
+			return new MethodSourceData (start_row, end_row, lines, source_method, buffer);
 		}
 
 		public override SourceMethod[] MethodLookup (string query)

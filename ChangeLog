@@ -1,3 +1,14 @@
+2003-03-01  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceFileFactory.cs: Cache the file contents in an
+	ObjectCache.
+
+	* backends/Debugger.cs (SourceFileFactory): New public property.
+
+	* interfaces/IMethod.cs (IMethodSource.SourceBuffer): Always
+	return the method contents here, also when the method belongs to
+	an actual source file.	
+
 2003-02-27  Martin Baulig  <martin@ximian.com>
 
 	* frontends/gui/SourceManager.cs (GetSourceView): Use the

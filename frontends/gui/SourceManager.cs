@@ -18,7 +18,6 @@ namespace Mono.Debugger.GUI {
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
 		DisassemblerView disassembler_view;
-		SourceFileFactory factory;
 		bool initialized;
 
 		//
@@ -40,8 +39,6 @@ namespace Mono.Debugger.GUI {
 			disassembler_view = new DisassemblerView (this, register_display);
 			disassembler_container.Add (disassembler_view.Widget);
 			disassembler_view.Widget.ShowAll ();
-
-			factory = new SourceFileFactory ();
 
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
@@ -189,16 +186,12 @@ namespace Mono.Debugger.GUI {
 
 		string[] GetSource (IMethodSource source)
 		{
-			if (source.IsDynamic)
-				return source.SourceBuffer.Contents;
-
-			ISourceBuffer buffer = factory.FindFile (source.SourceFile.FileName);
-			if (buffer == null) {
+			if (source.SourceBuffer == null) {
 				Console.WriteLine ("Can't find source file {0}.", source.Name);
 				return null;
 			}
 
-			return buffer.Contents;
+			return source.SourceBuffer.Contents;
 		}
 
 		object GetSourceKey (IMethodSource source)

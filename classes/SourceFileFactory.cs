@@ -12,7 +12,20 @@ public class SourceFileFactory
 	public ISourceBuffer FindFile (string name)
 	{
 		if (files.Contains (name))
-			return (ISourceBuffer) files [name];
+			return (ISourceBuffer) ((ObjectCache) files [name]).Data;
+
+		ObjectCache cache = (ObjectCache) files [name];
+		if (cache == null) {
+			cache = new ObjectCache (new ObjectCacheFunc (read_file), name, 10);
+			files.Add (name, cache);
+		}
+
+		return (ISourceBuffer) cache.Data;
+	}
+
+	object read_file (object user_data)
+	{
+		string name = (string) user_data;
 
 		FileInfo file_info = new FileInfo (name);
 
@@ -33,8 +46,6 @@ public class SourceFileFactory
 			return null;
 		}
 
-		SourceBuffer retval = new SourceBuffer (name, contents);
-		files.Add (name, retval);
-		return retval;
+		return new SourceBuffer (name, contents);
 	}
 }
