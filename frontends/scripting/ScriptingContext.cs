@@ -508,15 +508,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			throw new ScriptingException ("No variable of parameter with that name.");
 		}
 
-		public void ShowVariableType (int frame_number, string identifier)
-		{
-			StackFrame frame = GetFrame (frame_number);
-
-			IVariable var = GetVariableInfo (frame, identifier);
-
-			context.ShowVariableType (var.Type, identifier);
-		}
-
 		public ITargetObject GetVariable (int frame_number, string identifier)
 		{
 			StackFrame frame = GetFrame (frame_number);
@@ -526,6 +517,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable out of scope.");
 
 			return var.GetObject (frame);
+		}
+
+		public ITargetType GetVariableType (int frame_number, string identifier)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			IVariable var = GetVariableInfo (frame, identifier);
+			if (!var.IsValid (frame))
+				throw new ScriptingException ("Variable out of scope.");
+
+			return var.Type;
 		}
 
 		public void Disassemble (int frame_number)

@@ -367,22 +367,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ShowVariableTypeCommand : Command
 	{
-		ProcessExpression process_expr;
-		string identifier;
-		int number;
+		VariableExpression var_expr;
 
-		public ShowVariableTypeCommand (ProcessExpression process_expr, int number, string id)
+		public ShowVariableTypeCommand (VariableExpression var_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
-			this.identifier = id;
+			this.var_expr = var_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ITargetType type = var_expr.ResolveType (context);
 
-			process.ShowVariableType (number, identifier);
+			context.ShowVariableType (type, var_expr.Name);
 		}
 	}
 
@@ -498,11 +494,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public ITargetObject ResolveVariable (ScriptingContext context)
 		{
 			ITargetObject retval = DoResolveVariable (context);
-
 			if (retval == null)
 				throw new ScriptingException ("Can't resolve variable: {0}", this);
 
 			return retval;
+		}
+
+		protected abstract ITargetType DoResolveType (ScriptingContext context);
+
+		public ITargetType ResolveType (ScriptingContext context)
+		{
+			ITargetType type = DoResolveType (context);
+			if (type == null)
+				throw new ScriptingException ("Can't get type of variable {0}.", this);
+
+			return type;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
@@ -537,6 +543,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			return expr.ResolveVariable (context);
 		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			VariableExpression expr = context [identifier];
+			if (expr == null)
+				return null;
+
+			return expr.ResolveType (context);
+		}
 	}
 
 	public class VariableReferenceExpression : VariableExpression
@@ -562,6 +577,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			return process.GetVariable (number, identifier);
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			return process.GetVariableType (number, identifier);
 		}
 
 		public override string ToString ()
@@ -600,17 +622,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			object variable = var_expr.Resolve (context);
-			if (variable == null)
-				return null;
-
-			ITargetStructObject sobj = variable as ITargetStructObject;
+			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
 			if (sobj == null)
 				throw new ScriptingException ("Variable {0} is not a struct or class type.",
 							      var_expr.Name);
 
 			ITargetFieldInfo field = get_field (sobj.Type);
 			return sobj.GetField (field.Index);
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			ITargetStructType tstruct = var_expr.ResolveType (context) as ITargetStructType;
+			if (tstruct == null)
+				throw new ScriptingException ("Variable {0} is not a struct or class type.",
+							      var_expr.Name);
+
+			ITargetFieldInfo field = get_field (tstruct);
+			return field.Type;
 		}
 	}
 
@@ -631,11 +660,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			object variable = var_expr.Resolve (context);
-			if (variable == null)
-				return null;
-
-			ITargetPointerObject pobj = variable as ITargetPointerObject;
+			ITargetPointerObject pobj = var_expr.ResolveVariable (context) as ITargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException ("Variable {0} is not a pointer type.",
 							      var_expr.Name);
@@ -644,6 +669,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Cannot dereference {0}.", var_expr.Name);
 
 			return pobj.DereferencedObject;
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			ITargetPointerObject pobj = var_expr.ResolveVariable (context) as ITargetPointerObject;
+			if (pobj == null)
+				throw new ScriptingException ("Variable {0} is not a pointer type.",
+							      var_expr.Name);
+
+			ITargetType type = pobj.CurrentType;
+			if (type == null)
+				throw new ScriptingException ("Cannot get current type of {0}.", var_expr.Name);
+
+			return type;
 		}
 	}
 }

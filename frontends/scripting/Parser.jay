@@ -161,9 +161,9 @@ command
 	  {
 		$$ = new ShowLocalsCommand ((ProcessExpression) $3, (int) $4);
 	  }
-	| SHOW TYPE opt_process opt_frame_number DOLLAR IDENTIFIER
+	| SHOW TYPE variable_expression
 	  {
-		$$ = new ShowVariableTypeCommand ((ProcessExpression) $3, (int) $4, (string) $6);
+		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
 	  }
 	| BREAK opt_process function_name
 	  {

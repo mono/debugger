@@ -1,5 +1,14 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (VariableExpression): Added
+	`ResolveType' which returns an ITargetType (without accessing the
+	ITargetObject if possible).
+
+	* frontends/scripting/Parser.jay: The `show type' command now
+	accepts an arbitrary `variable_expression'.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFundamentalObject.cs: New interface.
 
 	* interfaces/ITargetFundamentalType.cs: New interface.
