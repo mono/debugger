@@ -1,11 +1,4 @@
-lib_LTLIBRARIES = libmonodebuggerglue.la libmonodebuggerreadline.la
-
-libmonodebuggerglue_la_SOURCES = \
-	iochannel.c		\
-	mono-debugger-glue.h	\
-	#
-
-libmonodebuggerglue_la_LIBADD = @BASE_DEPENDENCIES_LIBS@
+lib_LTLIBRARIES = libmonodebuggerreadline.la
 
 libmonodebuggerreadline_la_SOURCES = \
 	mono-debugger-readline.c	\
