@@ -6,8 +6,13 @@
 #include <orbit/poa/orbit-adaptor.h>
 #include <pthread.h>
 
+#if defined(__POWERPC__)
+extern InferiorVTable powerpc_darwin_inferior;
+InferiorVTable *global_vtable = &powerpc_darwin_inferior;
+#else
 extern InferiorVTable i386_ptrace_inferior;
 InferiorVTable *global_vtable = &i386_ptrace_inferior;
+#endif
 
 typedef struct
 {
