@@ -1,3 +1,9 @@
+2002-12-08  Radek Doulik  <rodo@ximian.com>
+
+	* glue/mono-debugger-readline.h: include stdio.h - fixes
+	compilation on rh8, where readline .h file doesn't include it and
+	FILE is then there undefined
+
 2002-12-01  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/: Added new scripting interface.

@@ -2,6 +2,7 @@
 #define __MONO_DEBUGGER_READLINE_H__
 
 #include <glib.h>
+#include <stdio.h>
 #include <readline/readline.h>
 
 G_BEGIN_DECLS
