@@ -3,3 +3,5 @@
 test-widget
 Makefile
 Makefile.in
+.libs
+*.la

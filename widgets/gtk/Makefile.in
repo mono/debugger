@@ -1,0 +1,14 @@
+MCS=mcs
+
+all: gtksourceview-sharp.dll
+
+gtksourceview-sharp.dll: generated/*.cs
+	$(MCS) --unsafe --target library -L $(GTKSHARP_PREFIX)/lib -r glib-sharp.dll -r gtk-sharp.dll -o gtksourceview-sharp.dll --recurse '*.cs'
+
+clean:
+	rm -f *.dll
+	rm -rf generated
+
+install: all
+	cp gtksourceview-sharp.dll $(DESTDIR)@prefix@/lib
+

@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<metadata>
+
+<!-- renames -->
+<rule>
+  <class name="GtkSourceBuffer">
+    <method>CanRedo</method>
+  </class>
+  <data>
+    <attribute target="method">
+      <name>name</name>
+      <value>EmitCanRedo</value>
+    </attribute>
+  </data>
+</rule>
+<rule>
+  <class name="GtkSourceBuffer">
+    <method>CanUndo</method>
+  </class>
+  <data>
+    <attribute target="method">
+      <name>name</name>
+      <value>EmitCanUndo</value>
+    </attribute>
+  </data>
+</rule>
+<rule>
+  <class name="GtkUndoManager">
+    <method>CanRedo</method>
+  </class>
+  <data>
+    <attribute target="method">
+      <name>name</name>
+      <value>EmitCanRedo</value>
+    </attribute>
+  </data>
+</rule>
+<rule>
+  <class name="GtkUndoManager">
+    <method>CanUndo</method>
+  </class>
+  <data>
+    <attribute target="method">
+      <name>name</name>
+      <value>EmitCanUndo</value>
+    </attribute>
+  </data>
+</rule>
+
+</metadata>
