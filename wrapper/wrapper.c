@@ -64,7 +64,7 @@ debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argumen
 {
 	MonoMethodDesc *desc;
 
-	desc = mono_method_desc_new (string_argument, FALSE);
+	desc = mono_method_desc_new (string_argument, TRUE);
 	if (!desc)
 		return 0;
 
