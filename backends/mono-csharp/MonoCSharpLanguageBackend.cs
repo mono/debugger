@@ -2459,7 +2459,7 @@ namespace Mono.Debugger.Languages.CSharp
 			// Console.WriteLine ("TRAMPOLINE: {0} {1:x} {2} {3} {4}", trampoline, token, klass, image, reader);
 
 			if ((reader == null) || ((token & 0xff000000) != 0x06000000))
-				throw new InternalError ();
+				return null;
 
 			try {
 				return reader.GetMethodByToken (token);
