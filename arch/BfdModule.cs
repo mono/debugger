@@ -74,11 +74,17 @@ namespace Mono.Debugger.Architecture
 
 		protected override SourceInfo[] GetSources ()
 		{
+			if (Bfd == null)
+				return new SourceInfo [0];
+
 			return Bfd.GetSources ();
 		}
 
 		protected override ISymbolTable GetSymbolTable ()
 		{
+			if (Bfd == null)
+				return null;
+
 			return Bfd.SymbolTable;
 		}
 
