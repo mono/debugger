@@ -289,6 +289,7 @@ namespace Mono.Debugger.Backends
 			if (child_event == null)
 				goto again;
 
+		again_with_event:
 			ChildEventType message = child_event.Type;
 			int arg = child_event.Argument;
 
@@ -345,16 +346,34 @@ namespace Mono.Debugger.Backends
 						// happen in the `correct' thread since the
 						// `temp_breakpoint_id' is only set in this
 						// SingleSteppingEngine and not in any other thread's.
-						Console.WriteLine ("HIT TEMP BREAKPOINT: {0} {1}",
-								   pid, arg);
 						message = ChildEventType.CHILD_STOPPED;
 						arg = 0;
-					} else if (!child_breakpoint (arg)) {
-						// we hit any breakpoint, but its handler told us
-						// to resume the target and continue.
-						do_continue_nowait (true);
-						goto again;
 					}
+				}
+			}
+
+			if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
+				ChildEvent new_event;
+				// Ok, the next thing we need to check is whether this is actually "our"
+				// breakpoint or whether it belongs to another thread.  In this case,
+				// `thread_breakpoint' does everything for us and we can just continue
+				// execution.
+				if (!thread_breakpoint (out new_event)) {
+					int new_arg = new_event.Argument;
+					// If the child stopped normally, just continue its execution
+					// here; otherwise, we need to deal with the unexpected stop.
+					if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
+					    ((new_arg != 0) && (new_arg != inferior.StopSignal))) {
+						child_event = new_event;
+						goto again_with_event;
+					}
+					do_continue_nowait (true);
+					goto again;
+				} else if (!child_breakpoint (arg)) {
+					// we hit any breakpoint, but its handler told us
+					// to resume the target and continue.
+					do_continue_nowait (true);
+					goto again;
 				}
 			}
 
@@ -374,10 +393,6 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
-				if (!child_breakpoint (arg)) {
-					do_continue_nowait (true);
-					goto again;
-				}
 				return true;
 
 			default:
@@ -864,13 +879,6 @@ namespace Mono.Debugger.Backends
 			if (breakpoint == 0)
 				return backend.BreakpointHit (inferior.CurrentFrame);
 
-			// Ok, the next thing we need to check is whether this is actually "our"
-			// breakpoint or whether it belongs to another thread.  In this case,
-			// `thread_breakpoint' does everything for us and we can just continue
-			// execution.
-			if (!thread_breakpoint (inferior.CurrentFrame))
-				return false;
-
 			if (!breakpoints.Contains (breakpoint))
 				return true;
 
@@ -884,14 +892,16 @@ namespace Mono.Debugger.Backends
 			return handle.Handler (frame, breakpoint, handle.UserData);
 		}
 
-		bool thread_breakpoint (TargetAddress address)
+		bool thread_breakpoint (out ChildEvent new_event)
 		{
 			int owner;
-			int id = breakpoint_manager.LookupBreakpoint (address, out owner);
-			Console.WriteLine ("LOOKUP: {0} {1} {2} {3}", address, id, owner, pid);
+			int id = breakpoint_manager.LookupBreakpoint (inferior.CurrentFrame, out owner);
+			Console.WriteLine ("LOOKUP: {0} {1} {2} {3}", inferior.CurrentFrame, id, owner, pid);
+
+			new_event = null;
 
 			if (id == 0) {
-				Console.WriteLine ("UNKNOWN BREAKPOINT: {0} {1}", pid, address);
+				Console.WriteLine ("UNKNOWN BREAKPOINT: {0} {1}", pid, inferior.CurrentFrame);
 				return true;
 			}
 
@@ -904,8 +914,10 @@ namespace Mono.Debugger.Backends
 			Console.WriteLine ("DISABLED BREAKPOINT");
 			inferior.Step ();
 			Console.WriteLine ("STEPPED ONE INSTRUCTION");
-			ChildEvent child_event = inferior.Wait ();
-			Console.WriteLine ("DONE WAITING: {0} {1}", child_event.Type, child_event.Argument);
+			do {
+				new_event = inferior.Wait ();
+			} while (new_event == null);
+			Console.WriteLine ("DONE WAITING: {0} {1}", new_event.Type, new_event.Argument);
 			inferior.EnableBreakpoint (id);
 			Console.WriteLine ("REENABLED BREAKPOINT");
 			thread_manager.ReleaseGlobalThreadLock (process);
