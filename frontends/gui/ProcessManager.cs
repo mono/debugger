@@ -58,9 +58,9 @@ namespace Mono.Debugger.GUI
 			notify_id = thread_notify.RegisterListener (new ReadyEventHandler (reload_event));
 		}
 
-		protected override void SetProcess (Process process)
+		protected override void SetBackend (DebuggerBackend backend)
 		{
-			base.SetProcess (process);
+			base.SetBackend (backend);
 
 			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (manager_initialized);
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);

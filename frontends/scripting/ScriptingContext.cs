@@ -846,6 +846,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public Process Start (string[] args)
 		{
+			ParseArguments (args);
+			return Run ();
+		}
+
+		public DebuggerBackend ParseArguments (string[] args)
+		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
 			if (args.Length == 0)
@@ -869,15 +875,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return LoadSession (options.RemainingArguments [0]);
 
 			default:
-				return StartApplication (options.RemainingArguments, -1);
+				return StartApplication (options.RemainingArguments);
 			}
 		}
 
-		protected Process LoadCoreFile (string[] args)
+		protected DebuggerBackend LoadCoreFile (string[] args)
 		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
 			backend = new DebuggerBackend ();
 			Initialize ();
 
@@ -886,37 +889,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Array.Copy (args, 1, temp_args, 0, args.Length-1);
 			args = temp_args;
 
-			start = ProcessStart.Create (null, args, null);
-			Process process = backend.ReadCoreFile (start, core_file);
-			current_process = new ProcessHandle (this, backend, process, core_file);
-
-			add_process (current_process);
-
-			return process;
+			start = ProcessStart.Create (null, args, null, core_file);
+			return backend;
 		}
 
-		protected Process StartApplication (string[] args, int pid)
+		protected DebuggerBackend StartApplication (string[] args)
 		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
 			backend = new DebuggerBackend ();
 			Initialize ();
 
 			start = ProcessStart.Create (null, args, null);
-			Process process = backend.Run (start);
-			current_process = new ProcessHandle (this, backend, process, pid);
-
-			add_process (current_process);
-
-			return process;
+			return backend;
 		}
 
-		public Process LoadSession (string filename)
+		protected DebuggerBackend LoadSession (string filename)
 		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
 			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
 			BinaryFormatter formatter = new BinaryFormatter (null, context);
 
@@ -926,7 +913,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			Initialize ();
 
-			Process process = backend.Run (backend.ProcessStart);
+			start = backend.ProcessStart;
+			return backend;
+		}
+
+		public Process Run ()
+		{
+			if (current_process != null)
+				throw new ScriptingException ("Process already started.");
+
+			Process process = backend.Run (start);
 			current_process = new ProcessHandle (this, backend, process, -1);
 
 			add_process (current_process);

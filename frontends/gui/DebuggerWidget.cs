@@ -45,6 +45,7 @@ namespace Mono.Debugger.GUI
 			} catch {}
 
 			gui.ProgramLoadedEvent += new ProgramLoadedHandler (program_loaded);
+			gui.ProcessCreatedEvent += new ProcessCreatedHandler (process_created);
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -55,15 +56,24 @@ namespace Mono.Debugger.GUI
 			get { return process; }
 		}
 
-		void program_loaded (object sender, Process process)
+		void program_loaded (object sender, DebuggerBackend backend)
+		{
+			SetBackend (backend);
+		}
+
+		void process_created (object sender, Process process)
 		{
 			SetProcess (process);
+		}
+
+		protected virtual void SetBackend (DebuggerBackend backend)
+		{
+			this.backend = backend;
 		}
 
 		protected virtual void SetProcess (Process process)
 		{
 			this.process = process;
-			this.backend = process.DebuggerBackend;
 
 			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);

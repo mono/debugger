@@ -95,6 +95,9 @@ namespace Mono.Debugger.GUI
 				return;
 			}
 
+			if (memory_maps == null)
+				return;
+
 			foreach (TargetMemoryArea area in memory_maps)
 				add_area (area);
 		}

@@ -118,9 +118,9 @@ namespace Mono.Debugger.GUI
 			force_writable_button.Toggled += new EventHandler (force_writable_toggled);
 		}
 
-		protected override void SetProcess (Process process)
+		protected override void SetBackend (DebuggerBackend backend)
 		{
-			base.SetProcess (process);
+			base.SetBackend (backend);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}

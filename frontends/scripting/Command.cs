@@ -1287,19 +1287,4 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Save (filename);
 		}
 	}
-
-	public class LoadCommand : Command
-	{
-		string filename;
-
-		public LoadCommand (string filename)
-		{
-			this.filename = filename;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.LoadSession (filename);
-		}
-	}
 }

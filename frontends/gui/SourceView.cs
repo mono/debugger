@@ -77,12 +77,12 @@ namespace Mono.Debugger.GUI {
 			manager.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
 			manager.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
 			manager.TargetExitedEvent += new TargetExitedHandler (target_exited_event);
-			manager.ProgramLoadedEvent += new ProgramLoadedHandler (program_loaded);
+			manager.ProcessCreatedEvent += new ProcessCreatedHandler (process_created);
 
 			process = manager.Process;
 		}
 
-		void program_loaded (object sender, Process process)
+		void process_created (object sender, Process process)
 		{
 			SetProcess (process);
 		}

@@ -27,6 +27,7 @@ namespace Mono.Debugger
 		string base_dir;
 		string[] argv;
 		string[] envp;
+		string core_file;
 		bool native;
 		bool load_native_symtab;
 
@@ -60,6 +61,12 @@ namespace Mono.Debugger
 					break;
 				}
 			}
+		}
+
+		public ProcessStart (string cwd, string[] argv, string[] envp, string core_file)
+			: this (cwd, argv, envp)
+		{
+			this.core_file = core_file;
 		}
 
 		public string WorkingDirectory {
@@ -123,6 +130,14 @@ namespace Mono.Debugger
 
 				return load_native_symtab;
 			}
+		}
+
+		public bool IsCoreFile {
+			get { return core_file != null; }
+		}
+
+		public string CoreFile {
+			get { return core_file; }
 		}
 
 		protected virtual void SetupEnvironment (params string[] add_envp)
@@ -198,6 +213,21 @@ namespace Mono.Debugger
 				return new ProcessStart (cwd, argv, envp);
 		}
 
+		public static ProcessStart Create (string cwd, string[] argv, string[] envp, string core_file)
+		{
+			Assembly application;
+			try {
+				application = Assembly.LoadFrom (argv [0]);
+			} catch (Exception e) {
+				application = null;
+			}
+
+			if (application != null)
+				return new ManagedProcessStart (cwd, argv, envp, application, core_file);
+			else
+				return new ProcessStart (cwd, argv, envp, core_file);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1},{2},{3},{4},{5},{6},{7})", GetType (),
@@ -214,6 +244,13 @@ namespace Mono.Debugger
 
 		public ManagedProcessStart (string cwd, string[] argv, string[] envp, Assembly application)
 			: base (cwd, argv, envp)
+		{
+			this.application = application;
+		}
+
+		public ManagedProcessStart (string cwd, string[] argv, string[] envp, Assembly application,
+					    string core_file)
+			: base (cwd, argv, envp, core_file)
 		{
 			this.application = application;
 		}

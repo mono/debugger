@@ -1,5 +1,20 @@
 2003-02-01  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/ScriptingContext.cs (Start): Splitted into
+	ParseArguments() and Run().
+
+	* backends/ProcessStart.cs (IsCoreFile, CoreFile): New properties.
+
+	* frontends/gui/DebuggerGUI.cs (ProgramLoadedEvent): This is now
+	emitted when the DebuggerBackend is created.
+	(ProcessCreatedEvent): New public event which is emitted when the
+	main process has been created.
+
+	* frontends/gui/DebuggerWidget.cs (SetBackend): New protected
+	virtual function; this is called before the main process is started.
+
+2003-02-01  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerGUI.cs (ProgramLoadedEvent): New public
 	event.
 

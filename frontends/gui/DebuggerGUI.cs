@@ -20,7 +20,8 @@ using Mono.Debugger.GUI;
 
 namespace Mono.Debugger.GUI
 {
-	public delegate void ProgramLoadedHandler (object sender, Process process);
+	public delegate void ProgramLoadedHandler (object sender, DebuggerBackend backend);
+	public delegate void ProcessCreatedHandler (object sender, Process process);
 
 	public class DebuggerGUI
 	{
@@ -149,11 +150,18 @@ namespace Mono.Debugger.GUI
 		}
 
 		public event ProgramLoadedHandler ProgramLoadedEvent;
+		public event ProcessCreatedHandler ProcessCreatedEvent;
 
-		protected void OnProgramLoadedEvent (Process process)
+		protected void OnProgramLoadedEvent (DebuggerBackend backend)
 		{
 			if (ProgramLoadedEvent != null)
-				ProgramLoadedEvent (this, process);
+				ProgramLoadedEvent (this, backend);
+		}
+
+		protected void OnProcessCreatedEvent (Process process)
+		{
+			if (ProcessCreatedEvent != null)
+				ProcessCreatedEvent (this, process);
 		}
 
 		//
@@ -299,10 +307,14 @@ namespace Mono.Debugger.GUI
 				i++;
 			}
 
-			process = context.Start (args);
+			backend = context.ParseArguments (args);
 			start = context.ProcessStart;
+			OnProgramLoadedEvent (backend);
 
-			SetProcess (process);
+			backend.ThreadManager.MainThreadCreatedEvent += new ThreadEventHandler (
+				main_process_started);
+
+			context.Run ();
 
 			//
 			// FIXME: chdir here to working_dir
@@ -314,19 +326,14 @@ namespace Mono.Debugger.GUI
 
 		void main_process_started (ThreadManager manager, Process process)
 		{
-			SetProcess (process);
-		}
-
-		void SetProcess (Process process)
-		{
-			backend = process.DebuggerBackend;
+			this.process = process;
 
 			process.TargetOutput += new TargetOutputHandler (TargetOutput);
 			process.TargetError += new TargetOutputHandler (TargetError);
 			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
 			process.DebuggerError += new DebuggerErrorHandler (DebuggerError);
 
-			OnProgramLoadedEvent (process);
+			OnProcessCreatedEvent (process);
 
 			source_manager.StateChangedEvent += new StateChangedHandler (UpdateGUIState);
 

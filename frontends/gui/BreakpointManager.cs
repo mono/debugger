@@ -54,9 +54,9 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		protected override void SetProcess (Process process)
+		protected override void SetBackend (DebuggerBackend backend)
 		{
-			base.SetProcess (process);
+			base.SetBackend (backend);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (breakpoints_changed);
 			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (breakpoints_changed);
