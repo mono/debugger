@@ -1,3 +1,8 @@
+2003-02-01  Martin Baulig  <martin@ximian.com>
+
+	* frontends/command-line/Interpreter.cs: The ScriptingContext is
+	now created by the caller and passed to the .ctor as argument.
+
 2003-01-26  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/: Use Mono.GetOptions.
