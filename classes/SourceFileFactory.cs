@@ -5,7 +5,7 @@ using System.Collections;
 using Mono.Debugger;
 using Mono.CSharp.Debugger;
 
-public class SourceFile : ISourceFile
+public class SourceFile : Mono.Debugger.ISourceFile
 {
 	FileInfo file_info;
 	string contents;

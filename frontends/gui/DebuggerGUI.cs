@@ -143,16 +143,54 @@ namespace Mono.Debugger.GUI
 			command_entry.ActivatesDefault = true;
 			command_entry.Activated += new EventHandler (DoOneCommand);
 			command_entry.Sensitive = false;
+
+			//
+			// The items that we sensitize
+			//
+			StateRegister (
+				new string [] {
+					"run-button", "run-program-menu"},
+				TargetState.EXITED, TargetState.NO_TARGET);
+			StateRegister (
+				new string [] {
+					"step-over-button", "step-into-button",
+					"step-into-menu", "step-over-menu",
+					"instruction-step-into-menu",
+					"instruction-step-over-menu" },
+				TargetState.STOPPED);
+			StateRegister (
+				new string [] {
+					"stop-button", "stop-program-menu"
+				}, TargetState.RUNNING);
+
+			StateSensitivityUpdate (TargetState.NO_TARGET);
 		}
 
-		bool ProgramIsManaged (string name)
+		ArrayList all_state_widgets = new ArrayList ();
+		ArrayList [] state_widgets_map = new ArrayList [(int)TargetState.LAST];
+		
+		void StateRegister (string [] widget_names, params TargetState [] states)
 		{
-			//
-			// Should look for the file header
-			//
-			return (name.IndexOf (".exe") >= 0);
-		}
+			foreach (string wname in widget_names){
+				Widget w = gxml [wname];
 
+				foreach (TargetState s in states){
+					if (state_widgets_map [(int)s] == null)
+						state_widgets_map [(int)s] = new ArrayList ();
+					
+					state_widgets_map [(int)s].Add (w);
+				}
+				if (!all_state_widgets.Contains (w))
+					all_state_widgets.Add (w);
+			}
+		}
+		
+		void StateSensitivityUpdate (TargetState state)
+		{
+			foreach (Widget w in all_state_widgets)
+				w.Sensitive = state_widgets_map [(int)state].Contains (w);
+		}
+			
 		//
 		// This constructor is used by the startup code: it contains the command line arguments
 		//
@@ -196,6 +234,21 @@ namespace Mono.Debugger.GUI
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
 			source_view.SetBackend (backend);
+
+			backend.StateChanged += new StateChangedHandler (BackendStateChanged);
+		}
+
+		void UpdateGUIState (TargetState state)
+		{
+			StateSensitivityUpdate (state);
+		}
+		
+		//
+		// Callbacks from the backend
+		//
+		void BackendStateChanged (TargetState state, int arg)
+		{
+			UpdateGUIState (state);
 		}
 		
 		//

@@ -95,7 +95,7 @@
 		    <widget class="GtkMenu" id="debug1_menu">
 
 		      <child>
-			<widget class="GtkMenuItem" id="run_program1">
+			<widget class="GtkMenuItem" id="run-program-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Run Program</property>
 			  <property name="use_underline">True</property>
@@ -105,7 +105,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="stop_program1">
+			<widget class="GtkMenuItem" id="stop-program-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Stop Program</property>
 			  <property name="use_underline">True</property>
@@ -115,7 +115,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="restart1">
+			<widget class="GtkMenuItem" id="restart-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">R_estart</property>
 			  <property name="use_underline">True</property>
@@ -131,7 +131,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="step_into1">
+			<widget class="GtkMenuItem" id="step-into-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Step _Into</property>
 			  <property name="use_underline">True</property>
@@ -141,7 +141,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="step_over1">
+			<widget class="GtkMenuItem" id="step-over-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Step _Over</property>
 			  <property name="use_underline">True</property>
@@ -151,7 +151,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="step_out1">
+			<widget class="GtkMenuItem" id="step-out-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Step Ou_t</property>
 			  <property name="use_underline">True</property>
@@ -167,7 +167,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="instruction_step_into1">
+			<widget class="GtkMenuItem" id="instruction-step-into-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">I_nstruction Step Into</property>
 			  <property name="use_underline">True</property>
@@ -177,7 +177,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="instruction_step_over1">
+			<widget class="GtkMenuItem" id="instruction-step-over-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">In_struction Step Over</property>
 			  <property name="use_underline">True</property>

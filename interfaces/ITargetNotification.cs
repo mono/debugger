@@ -40,7 +40,9 @@ namespace Mono.Debugger
 		// <summary>
 		//   This is a core file.
 		// </summary>
-		CORE_FILE
+		CORE_FILE,
+
+		LAST = CORE_FILE
 	}
 
 	public interface ITargetNotification
