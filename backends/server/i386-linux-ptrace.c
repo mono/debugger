@@ -24,6 +24,7 @@ struct InferiorHandle
 {
 	int pid;
 	int mem_fd;
+	int last_signal;
 	long call_address;
 	ChildExitedFunc child_exited_cb;
 	ChildMessageFunc child_message_cb;
@@ -170,7 +171,7 @@ static ServerCommandError
 server_ptrace_continue (InferiorHandle *handle)
 {
 	errno = 0;
-	if (ptrace (PTRACE_CONT, handle->pid, NULL, NULL)) {
+	if (ptrace (PTRACE_CONT, handle->pid, NULL, GUINT_TO_POINTER (handle->last_signal))) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
@@ -184,6 +185,9 @@ server_ptrace_continue (InferiorHandle *handle)
 static ServerCommandError
 server_ptrace_step (InferiorHandle *handle)
 {
+	if (handle->last_signal)
+		return server_ptrace_continue (handle);
+
 	errno = 0;
 	if (ptrace (PTRACE_SINGLESTEP, handle->pid, NULL, NULL)) {
 		if (errno == ESRCH)
@@ -531,8 +535,10 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 	if (!handle->call_address || handle->call_address != regs.eip) {
 		int code;
 
-		if (stopsig != SIGTRAP)
+		if (stopsig != SIGTRAP) {
+			handle->last_signal = stopsig;
 			return STOP_ACTION_SEND_STOPPED;
+		}
 
 		if (server_ptrace_peek_word (handle, (guint32) (regs.eip - 1), &code) != COMMAND_ERROR_NONE)
 			return STOP_ACTION_SEND_STOPPED;
@@ -1191,6 +1197,13 @@ server_ptrace_stop (InferiorHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static ServerCommandError
+server_ptrace_set_signal (InferiorHandle *handle, guint32 sig)
+{
+	handle->last_signal = sig;
+	return COMMAND_ERROR_NONE;
+}
+
 /*
  * Method VTable for this backend.
  */
@@ -1222,5 +1235,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_set_registers,
 	server_ptrace_get_backtrace,
 	server_ptrace_get_ret_address,
-	server_ptrace_stop
+	server_ptrace_stop,
+	server_ptrace_set_signal
 };

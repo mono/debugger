@@ -143,6 +143,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.Finish ();
 				break;
 
+			case "clear-signal":
+				backend.ClearSignal ();
+				break;
+
 			case "stop":
 				backend.Stop ();
 				break;

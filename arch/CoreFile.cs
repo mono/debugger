@@ -434,6 +434,11 @@ namespace Mono.Debugger.Architecture
 			throw new CannotExecuteCoreFileException ();
 		}
 
+		public void SetSignal (int signal)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
 		public void Stop ()
 		{
 			throw new CannotExecuteCoreFileException ();

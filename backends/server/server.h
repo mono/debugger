@@ -254,6 +254,13 @@ typedef struct {
 	 */
 	ServerCommandError    (* stop)                (InferiorHandle   *handle);
 
+	/*
+	 * Send signal `sig' to the target the next time it is continued.
+	 */
+	ServerCommandError    (* set_signal)          (InferiorHandle   *handle,
+						       guint32           sig);
+
+
 } InferiorInfo;
 
 extern InferiorInfo i386_linux_ptrace_inferior;
@@ -412,6 +419,10 @@ mono_debugger_server_get_ret_address     (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_stop                (ServerHandle       *handle);
+
+ServerCommandError
+mono_debugger_server_set_signal          (ServerHandle       *handle,
+					  guint32             sig);
 
 G_END_DECLS
 

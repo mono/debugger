@@ -81,6 +81,12 @@ namespace Mono.Debugger.Backends
 		/// </summary>
 		void Stop ();
 
+		/// <summary>
+		///   Sets the signal to be sent to the target the next time
+		///   it is resumed.
+		/// </summary>
+		void SetSignal (int signal);
+
 		/// <remarks>
 		///   The following two methods are more or less private.
 		/// </remarks>

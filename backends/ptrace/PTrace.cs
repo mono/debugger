@@ -167,6 +167,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_stop (IntPtr handle);
 
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_set_signal (IntPtr handle, int signal);
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -868,6 +871,12 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 			check_error (mono_debugger_server_stop (server_handle));
+		}
+
+		public void SetSignal (int signal)
+		{
+			check_disposed ();
+			check_error (mono_debugger_server_set_signal (server_handle, signal));
 		}
 
 		public void Detach ()

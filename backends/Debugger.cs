@@ -526,6 +526,12 @@ namespace Mono.Debugger
 			inferior.Stop ();
 		}
 
+		public void ClearSignal ()
+		{
+			check_inferior ();
+			inferior.SetSignal (0);
+		}
+
 		public void Finish ()
 		{
 			check_can_run ();

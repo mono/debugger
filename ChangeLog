@@ -1,5 +1,14 @@
 2002-10-11  Martin Baulig  <martin@gnome.org>
 
+	* backends/server/i386-linux-ptrace.c: If the target received a
+	signal, remember it and pass it to the target the next time it is
+	resumed.  Also added a function to modify/clear the signal.
+
+	* backends/Debugger.cs (DebuggerBackend.ClearSignal): New method
+	to clear the signal.
+
+2002-10-11  Martin Baulig  <martin@gnome.org>
+
 	* arch/CoreFile.cs (CoreFile.GetMemoryMaps): New method to get a
 	TargetMemoryArea[] for the core file's sections.
 
