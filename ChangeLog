@@ -1,5 +1,9 @@
 2004-07-06  Martin Baulig  <martin@ximian.com>
 
+	* arch/DwarfReader.cs: Added support for bitfields.
+
+2004-07-06  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
 	(MonoSymbolTable): Derive from Module; we put all icall wrappers
 	into their own "<Mono Runtime>" module.

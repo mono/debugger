@@ -703,6 +703,8 @@ namespace Mono.Debugger.Architecture
 			location	        = 0x02,
 			name			= 0x03,
 			byte_size		= 0x0b,
+			bit_offset		= 0x0c,
+			bit_size		= 0x0d,
 			stmt_list		= 0x10,
 			low_pc			= 0x11,
 			high_pc			= 0x12,
@@ -2782,9 +2784,18 @@ namespace Mono.Debugger.Architecture
 					if (mtype == null)
 						mtype = NativeType.VoidType;
 
-					NativeFieldInfo field = new NativeFieldInfo (
-						mtype, member.Name, list.Count,
-						member.DataOffset);
+					NativeFieldInfo field;
+					if (member.IsBitfield) {
+						int offset = member.DataOffset * 8 +
+							member.BitOffset;
+
+						field = new NativeFieldInfo (
+							mtype, member.Name, list.Count,
+							offset, member.BitSize);
+					} else
+						field = new NativeFieldInfo (
+							mtype, member.Name, list.Count,
+							member.DataOffset);
 					list.Add (field);
 				}
 
@@ -3007,6 +3018,14 @@ namespace Mono.Debugger.Architecture
 					location = (byte []) attribute.Data;
 					break;
 
+				case DwarfAttribute.bit_offset:
+					bit_offset = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.bit_size:
+					bit_size = (int) (long) attribute.Data;
+					break;
+
 				default:
 					base.ProcessAttribute (attribute);
 					break;
@@ -3018,6 +3037,7 @@ namespace Mono.Debugger.Architecture
 			DieType type_die;
 			NativeType type;
 			ITargetInfo target_info;
+			int bit_offset, bit_size;
 			int offset;
 
 			public bool Resolve ()
@@ -3029,6 +3049,18 @@ namespace Mono.Debugger.Architecture
 				resolved = true;
 				ok = type != null;
 				return ok;
+			}
+
+			public bool IsBitfield {
+				get { return bit_size != 0; }
+			}
+
+			public int BitOffset {
+				get { return bit_offset; }
+			}
+
+			public int BitSize {
+				get { return bit_size; }
 			}
 
 			bool read_location (TargetBinaryReader locreader)
