@@ -22,7 +22,7 @@ namespace Mono.Debugger
 
 	public class DebuggerBackend : ITargetNotification, ISymbolLookup, IDisposable
 	{
-		public readonly string Path_Mono	= "/home/martin/MONO-LINUX/bin/mono";
+		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
 
 		SymbolTableCollection symtabs;
