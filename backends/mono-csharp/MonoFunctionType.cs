@@ -13,6 +13,7 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress method;
 		MonoType return_type;
 		MonoType[] parameter_types;
+		TargetAddress invoke_method;
 
 		public MonoFunctionType (MonoStructType struct_type, MethodInfo minfo,
 					 TargetBinaryReader info, MonoSymbolTable table)
@@ -40,6 +41,8 @@ namespace Mono.Debugger.Languages.CSharp
 				parameter_types [i] = struct_type.GetType (
 					parameters [i].ParameterType, param_info, table);
 			}
+
+			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}
 
 		public override bool IsByRef {
@@ -51,6 +54,12 @@ namespace Mono.Debugger.Languages.CSharp
 		public MonoType ReturnType {
 			get {
 				return return_type;
+			}
+		}
+
+		public bool HasReturnValue {
+			get {
+				return method_info.ReturnType != typeof (void);
 			}
 		}
 
@@ -80,15 +89,27 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal ITargetObject Invoke (TargetLocation location, ITargetObject[] args)
 		{
-			if (args.Length != 0)
-				throw new NotSupportedException ();
+			TargetAddress exc_object;
+			TargetAddress this_object = location.Address;
 
-			return struct_type.Invoke (method, location);
+			TargetAddress retval = location.TargetAccess.CallInvokeMethod (
+				invoke_method, method, this_object, new TargetAddress [0], out exc_object);
+
+			if (retval.IsNull)
+				return null;
+
+			TargetLocation retval_loc = new RelativeTargetLocation (location, retval);
+
+			MonoObjectObject retval_obj = new MonoObjectObject (ObjectType, retval_loc);
+			if ((retval_obj == null) || !retval_obj.HasDereferencedObject || (return_type == ObjectType))
+				return retval_obj;
+
+			return retval_obj.DereferencedObject;
 		}
 
 		public override MonoObject GetObject (TargetLocation location)
 		{
-			throw new NotImplementedException ();
+			return new MonoFunctionObject (this, location);
 		}
 	}
 }

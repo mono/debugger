@@ -24,14 +24,14 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.GetProperty (location, index);
 		}
 
+		public ITargetFunctionObject GetMethod (int index)
+		{
+			return type.GetMethod (location, index);
+		}
+
 		public string PrintObject ()
 		{
 			return type.PrintObject (location);
-		}
-
-		public ITargetObject InvokeMethod (int index, params ITargetObject[] arguments)
-		{
-			return type.InvokeMethod (location, index, arguments);
 		}
 
 		public new ITargetStructType Type {

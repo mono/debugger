@@ -239,7 +239,7 @@ namespace Mono.Debugger.Architecture
 				this.language = core.NativeLanguage;
 			}
 
-			public override ITargetMemoryAccess TargetMemoryAccess {
+			public override ITargetAccess TargetAccess {
 				get {
 					return core;
 				}
@@ -379,6 +379,13 @@ namespace Mono.Debugger.Architecture
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
 			return core_bfd.GetMemoryMaps ();
+		}
+
+		TargetAddress ITargetAccess.CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
+							      TargetAddress object_argument, TargetAddress[] param_objects,
+							      out TargetAddress exc_object)
+		{
+			throw new InvalidOperationException ();
 		}
 
 		//

@@ -118,7 +118,7 @@ namespace Mono.Debugger
 
 		public virtual ITargetMemoryReader ReadMemory (int size)
 		{
-			return TargetMemoryAccess.ReadMemory (Address, size);
+			return TargetAccess.ReadMemory (Address, size);
 		}
 
 		// <summary>
@@ -131,12 +131,12 @@ namespace Mono.Debugger
 
 		public virtual void WriteBuffer (byte[] data)
 		{
-			TargetMemoryAccess.WriteBuffer (Address, data);
+			TargetAccess.WriteBuffer (Address, data);
 		}
 
-		public ITargetMemoryAccess TargetMemoryAccess {
+		public ITargetAccess TargetAccess {
 			get {
-				return frame.TargetMemoryAccess;
+				return frame.TargetAccess;
 			}
 		}
 
@@ -163,7 +163,7 @@ namespace Mono.Debugger
 			if (!dereference)
 				return new_location;
 
-			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
+			TargetAddress address = TargetAccess.ReadAddress (new_location.Address);
 			return new RelativeTargetLocation (this,  address);
 		}
 

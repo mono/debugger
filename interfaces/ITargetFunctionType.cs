@@ -4,6 +4,10 @@ namespace Mono.Debugger
 {
 	public interface ITargetFunctionType : ITargetType
 	{
+		bool HasReturnValue {
+			get;
+		}
+
 		ITargetType ReturnType {
 			get;
 		}

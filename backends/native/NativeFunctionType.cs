@@ -21,6 +21,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public bool HasReturnValue {
+			get {
+				return return_type != VoidType;
+			}
+		}
+
 		public NativeType ReturnType {
 			get {
 				return return_type;

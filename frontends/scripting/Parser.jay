@@ -451,6 +451,10 @@ variable_expression
 	  {
 		$$ = new ScriptingVariableReference ((string) $2);
 	  }
+	| BANG BANG
+	  {
+		$$ = new LastObjectExpression ();
+	  }
 	| frame_expression DOLLAR IDENTIFIER
 	  {
 		$$ = new VariableReferenceExpression ((FrameExpression) $1, (string) $3);
@@ -474,6 +478,10 @@ variable_expression
 	| variable_expression OPEN_BRACKET expression CLOSE_BRACKET
 	  {
 		$$ = new ArrayAccessExpression ((VariableExpression) $1, (Expression) $3);
+	  }
+	| variable_expression OPEN_PARENS CLOSE_PARENS
+	  {
+		$$ = new InvocationExpression ((VariableExpression) $1);
 	  }
 	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
 	  {

@@ -35,13 +35,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			object retval = expression.Resolve (context);
-
-			if (retval is long)
-				context.Print (String.Format ("0x{0:x}", (long) retval));
-			else if (retval is ITargetObject)
-				context.Print (((ITargetObject) retval).Print ());
-			else
-				context.Print (retval);
+			context.PrintObject (retval);
 		}
 	}
 
@@ -99,12 +93,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ITargetObject obj = expression.ResolveVariable (context);
+			ITargetFunctionObject obj = expression.ResolveMethod (context);
 
-			if (obj.Type.Kind != TargetObjectKind.Function)
-				throw new ScriptingException ("Expression is not a function.");
-
-			((ITargetFunctionObject) obj).Invoke ();
+			obj.Invoke ();
 		}
 	}
 

@@ -129,5 +129,9 @@ namespace Mono.Debugger
 	public interface ITargetAccess : ITargetMemoryAccess
 	{
 		long GetRegister (int register);
+
+		TargetAddress CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
+						TargetAddress object_argument, TargetAddress[] param_objects,
+						out TargetAddress exc_object);
 	}
 }

@@ -613,6 +613,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
+		ITargetObject last_object;
 		Module[] modules;
 
 		static ScriptingContext ()
@@ -729,6 +730,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Print (object obj)
 		{
 			Print ("{0}", obj);
+		}
+
+		public void PrintObject (object obj)
+		{
+			if (obj is long)
+				Print (String.Format ("0x{0:x}", (long) obj));
+			else if (obj is ITargetObject) {
+				LastObject = (ITargetObject) obj;
+				Print (LastObject.Print ());
+			} else
+				Print (obj);
 		}
 
 		public void PrintInstruction (AssemblerLine line)
@@ -863,6 +875,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 					scripting_variables [identifier] = value;
 				else
 					scripting_variables.Add (identifier, value);
+			}
+		}
+
+		public ITargetObject LastObject {
+			get {
+				return last_object;
+			}
+
+			set {
+				last_object = value;
 			}
 		}
 

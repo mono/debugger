@@ -2006,6 +2006,63 @@ namespace Mono.Debugger.Backends
 			return (long) result.Data;
 		}
 
+		private struct CallInvokeMethodData
+		{
+			public readonly TargetAddress InvokeMethod;
+			public readonly TargetAddress MethodArgument;
+			public readonly TargetAddress ObjectArgument;
+			public readonly TargetAddress[] ParamObjects;
+
+			public CallInvokeMethodData (TargetAddress invoke_method, TargetAddress method_argument,
+						     TargetAddress object_argument, TargetAddress[] param_objects)
+			{
+				this.InvokeMethod = invoke_method;
+				this.MethodArgument = method_argument;
+				this.ObjectArgument = object_argument;
+				this.ParamObjects = param_objects;
+			}
+		}
+
+		private struct CallInvokeMethodResult
+		{
+			public readonly TargetAddress ReturnObject;
+			public readonly TargetAddress ExceptionObject;
+
+			public CallInvokeMethodResult (TargetAddress return_object, TargetAddress exc_object)
+			{
+				this.ReturnObject = return_object;
+				this.ExceptionObject = exc_object;
+			}
+		}
+
+		CommandResult call_invoke_method (object data)
+		{
+			CallInvokeMethodData cdata = (CallInvokeMethodData) data;
+			TargetAddress exc_object;
+			TargetAddress retval = inferior.CallInvokeMethod (
+				cdata.InvokeMethod, cdata.MethodArgument, cdata.ObjectArgument, cdata.ParamObjects,
+				out exc_object);
+			CallInvokeMethodResult result = new CallInvokeMethodResult (retval, exc_object);
+			return new CommandResult (CommandResultType.CommandOk, result);
+		}
+
+		TargetAddress ITargetAccess.CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
+							      TargetAddress object_argument, TargetAddress[] param_objects,
+							      out TargetAddress exc_object)
+		{
+			CallInvokeMethodData data = new CallInvokeMethodData (
+				invoke_method, method_argument, object_argument, param_objects);
+			CommandResult result = send_sync_command (new CommandFunc (call_invoke_method), data);
+			if (result.Type == CommandResultType.CommandOk) {
+				CallInvokeMethodResult retval = (CallInvokeMethodResult) result.Data;
+				exc_object = retval.ExceptionObject;
+				return retval.ReturnObject;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new Exception ();
+		}
+
 		//
 		// IProcess
 		//
@@ -2295,7 +2352,7 @@ namespace Mono.Debugger.Backends
 				this.language = sse.NativeLanguage;
 			}
 
-			public override ITargetMemoryAccess TargetMemoryAccess {
+			public override ITargetAccess TargetAccess {
 				get { return sse; }
 			}
 

@@ -36,9 +36,9 @@ namespace Mono.Debugger.Backends
 			if (contents == 0)
 				throw new LocationInvalidException ();
 
-			TargetAddress address = new TargetAddress (TargetMemoryAccess.AddressDomain, contents + regoffset);
+			TargetAddress address = new TargetAddress (TargetAccess.AddressDomain, contents + regoffset);
 			if (is_byref)
-				address = TargetMemoryAccess.ReadAddress (address);
+				address = TargetAccess.ReadAddress (address);
 
 			return address;
 		}
@@ -51,7 +51,7 @@ namespace Mono.Debugger.Backends
 			// If this is a valuetype, the register hold the whole data.
 			long contents = frame.GetRegister (register);
 
-			ITargetMemoryAccess memory = TargetMemoryAccess;
+			ITargetAccess memory = TargetAccess;
 
 			// We can read at most Inferior.TargetIntegerSize from a register
 			// (a word on the target).

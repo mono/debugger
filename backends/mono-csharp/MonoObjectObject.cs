@@ -27,8 +27,8 @@ namespace Mono.Debugger.Languages.CSharp
 				// dereferencing it once gives us the vtable, dereferencing it
 				// twice the class.
 				TargetAddress address;
-				address = location.TargetMemoryAccess.ReadAddress (location.Address);
-				address = location.TargetMemoryAccess.ReadAddress (address);
+				address = location.TargetAccess.ReadAddress (location.Address);
+				address = location.TargetAccess.ReadAddress (address);
 				return type.Table.GetTypeFromClass (address.Address);
 			} catch {
 				return null;

@@ -1,3 +1,28 @@
+2003-07-12  Martin Baulig  <martin@ximian.com>
+
+	Started to added support for calling methods in the target.
+
+	* classes/TargetLocation.cs (TargetMemoryAccess): Renamed to
+	TargetAccess and changed type to ITargetAccess.
+	* classes/StackFrame.cs: Likewise.
+
+	* classes/RelativeTargetLocation.cs: Made this public.
+
+	* interfaces/ITargetFunctionType.cs (HasReturnValue): New
+	property.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetAccess.CallInvokeMethod): New method.
+
+	* interfaces/ITargetStructObject.cs
+	(ITargetStructObject.GetMethod): New method.
+	(ITargetStructObject.InvokeMethod): Removed.
+
+	* frontends/scripting/Parser.jay: Added `!!' expression which is
+	the last VariableExpression which was printed, ie. you can say
+	`print !!' to see the last expression again.
+	Added '$foo.method ()' syntax to invoke that method.
+
 2003-07-11  Martin Baulig  <martin@ximian.com>
 
 	Added support to modify variables of fundamental types.

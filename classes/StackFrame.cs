@@ -78,7 +78,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract ITargetMemoryAccess TargetMemoryAccess {
+		public abstract ITargetAccess TargetAccess {
 			get;
 		}
 

@@ -166,56 +166,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject Invoke (TargetAddress method, TargetLocation this_location)
-		{
-			throw new NotImplementedException ();
-#if FIXME
-			TargetAddress exc_object;
-
-			IInferior inferior = this_location.Inferior;
-			if (inferior == null)
-				throw new LocationInvalidException ();
-
-			TargetAddress this_object = this_location.Address;
-
-			TargetAddress retval = inferior.CallInvokeMethod (
-				invoke_method, method, this_object, new TargetAddress [0], out exc_object);
-
-			if (!exc_object.IsNull) {
-				TargetAddress exc_class = inferior.ReadAddress (exc_object);
-				exc_class = inferior.ReadAddress (exc_class);
-
-				ITargetClassObject exc = null;
-
-				try {
-					MonoType exc_type = Table.GetTypeFromClass (exc_class.Address);
-
-					TargetLocation exc_loc = new MonoRelativeTargetLocation (
-						this_location, exc_object);
-
-					exc = new MonoClassObject ((MonoClassType) exc_type, exc_loc);
-				} catch {
-					throw new LocationInvalidException ();
-				}
-
-				throw new TargetInvocationException (exc);
-			}
-
-			TargetLocation retval_loc = new MonoRelativeTargetLocation (
-				this_location, retval);
-
-			MonoObjectObject retval_obj = new MonoObjectObject (ObjectType, retval_loc);
-			try {
-				ITargetObject obj = retval_obj.Object as ITargetObject;
-				if (obj != null)
-					return obj;
-			} catch {
-				// Do nothing.
-			}
-			return retval_obj;
-#endif
-		}
-
 		protected class MonoPropertyInfo : ITargetFieldInfo
 		{
 			public readonly MonoType Type;
@@ -263,7 +213,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal ITargetObject Get (TargetLocation location)
 			{
-				return StructType.Invoke (Getter, location);
+				throw new NotImplementedException ();
 			}
 
 			public override string ToString ()
@@ -357,12 +307,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject InvokeMethod (TargetLocation location, int index,
-						     ITargetObject[] arguments)
+		internal ITargetFunctionObject GetMethod (TargetLocation location, int index)
 		{
 			init_methods ();
 
-			return methods [index].FunctionType.Invoke (location, arguments);
+			try {
+				return (ITargetFunctionObject) methods [index].FunctionType.GetObject (location);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
 		}
 
 		public override bool IsByRef {

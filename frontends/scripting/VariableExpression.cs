@@ -31,6 +31,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		protected virtual ITargetFunctionObject DoResolveMethod (ScriptingContext context)
+		{
+			throw new ScriptingException ("Variable is not a method: `{0}'", Name);
+		}
+
+		public ITargetFunctionObject ResolveMethod (ScriptingContext context)
+		{
+			try {
+				ITargetFunctionObject retval = DoResolveMethod (context);
+				if (retval == null)
+					throw new ScriptingException ("Can't resolve variable: `{0}'", Name);
+
+				return retval;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException ("Location of variable {0} is invalid: {1}",
+							      Name, ex.Message);
+			}
+		}
+
 		protected abstract ITargetType DoResolveType (ScriptingContext context);
 
 		public ITargetType ResolveType (ScriptingContext context)
@@ -110,6 +129,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return null;
 
 			return expr.ResolveType (context);
+		}
+	}
+
+	public class LastObjectExpression : VariableExpression
+	{
+		public override string Name {
+			get { return "!!"; }
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			return context.LastObject;
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			if (context.LastObject == null)
+				return null;
+
+			return context.LastObject.Type;
 		}
 	}
 
@@ -224,6 +263,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 						      identifier);
 		}
 
+		ITargetMethodInfo get_method (ITargetStructType tstruct)
+		{
+			foreach (ITargetMethodInfo method in tstruct.Methods)
+				if (method.Name == identifier)
+					return method;
+
+			throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
+						      identifier);
+		}
+
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
 			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
@@ -233,6 +282,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			ITargetFieldInfo field = get_field (sobj.Type);
 			return sobj.GetField (field.Index);
+		}
+
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context)
+		{
+			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
+			if (sobj == null)
+				throw new ScriptingException ("Variable {0} is not a struct or class type.",
+							      var_expr.Name);
+
+			ITargetMethodInfo method = get_method (sobj.Type);
+			return sobj.GetMethod (method.Index);
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
@@ -422,6 +482,38 @@ namespace Mono.Debugger.Frontends.CommandLine
 			location = new AbsoluteTargetLocation (frame.Frame, taddress);
 
 			return type.GetObject (location);
+		}
+	}
+
+	public class InvocationExpression : VariableExpression
+	{
+		VariableExpression method_expr;
+
+		public InvocationExpression (VariableExpression method_expr)
+		{
+			this.method_expr = method_expr;
+		}
+
+		public override string Name {
+			get { return String.Format ("{0} ()", method_expr.Name); }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			ITargetFunctionObject func = method_expr.ResolveMethod (context);
+
+			return func.Type;
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			ITargetFunctionObject func = method_expr.ResolveMethod (context);
+
+			ITargetObject retval = func.Invoke ();
+			if (!func.Type.HasReturnValue)
+				throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
+
+			return retval;
 		}
 	}
 }
