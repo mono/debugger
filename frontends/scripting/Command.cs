@@ -49,7 +49,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			object retval = expression.Resolve (context);
-			context.Print (retval);
+
+			if (retval is long)
+				context.Print (String.Format ("0x{0:x}", (long) retval));
+			else
+				context.Print (retval);
 		}
 	}
 
@@ -311,6 +315,33 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), number);
+		}
+	}
+
+	public class RegisterExpression : Expression
+	{
+		int number;
+		ProcessExpression process_expr;
+		string register;
+
+		public RegisterExpression (ProcessExpression process_expr, int number, string register)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+			this.register = register;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			return process.GetRegister (number, register);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1},{2},{3})", GetType (), process_expr, number,
+					      register);
 		}
 	}
 }

@@ -413,6 +413,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.HASH;
 				else if (c == '@')
 					return Token.AT;
+				else if (c == '%')
+					return Token.PERCENT;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

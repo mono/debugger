@@ -13,10 +13,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ProcessHandle
 	{
 		DebuggerBackend backend;
-		ScriptingContext context;
+		ScriptingContext context;	
+		IArchitecture arch;
 		Process process;
 
 		int id, pid;
+		Hashtable registers;
 
 		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
 		{
@@ -24,6 +26,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.backend = backend;
 			this.process = process;
 			this.id = process.ID;
+
+			registers = new Hashtable ();
+			arch = process.Architecture;
+
+			for (int i = 0; i < arch.RegisterNames.Length; i++) {
+				string register = arch.RegisterNames [i];
+
+				registers.Add (register, arch.AllRegisterIndices [i]);
+			}				
 
 			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
@@ -106,6 +117,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_buffer = null;
 		}
 
+		void target_exited ()
+		{
+			frames_invalid ();
+			method_invalid ();
+			process = null;
+		}
+
 		void state_changed (TargetState state, int arg)
 		{
 			string frame = "";
@@ -118,6 +136,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					context.Print ("Process @{0} terminated normally.", id);
 				else
 					context.Print ("Process @{0} exited with exit code {1}.", id, arg);
+				target_exited ();
 				break;
 
 			case TargetState.STOPPED:
@@ -309,6 +328,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("No such frame: {0}", number);
 
 			return current_backtrace [number];
+		}
+
+		public long GetRegister (int frame_number, string name)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			if (frame != current_frame)
+				throw new ScriptingException ("Printing registers from other stack frames " +
+							      "is not yet implemented.");
+
+			if (!registers.Contains (name))
+				throw new ScriptingException ("No such register: %{0}", name);
+
+			int register = (int) registers [name];
+			return process.GetRegister (register);
 		}
 
 		public TargetState State {

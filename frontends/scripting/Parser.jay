@@ -55,6 +55,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token STRING
 %token HASH
 %token AT
+%token PERCENT
 
 %token PROCESSES
 %token REGISTERS
@@ -184,6 +185,10 @@ expression
 	: AT INTEGER
 	{
 		$$ = new ProcessExpression ((int) $2);
+	}
+	| opt_process opt_frame_number PERCENT IDENTIFIER
+	{
+		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
 	}
 	;
 
