@@ -33,7 +33,7 @@ namespace Mono.Debugger
 
 		void FrameInvalidEvent ()
 		{
-			is_valid = false;
+			SetInvalid ();
 		}
 
 		protected override object GetHandle ()

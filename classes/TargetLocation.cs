@@ -76,6 +76,15 @@ namespace Mono.Debugger
 				}
 			}
 		}
+
+		protected void SetInvalid ()
+		{
+			is_valid = false;
+			if (LocationInvalid != null)
+				LocationInvalid ();
+		}
+
+		public event LocationInvalidHandler LocationInvalid;
 		
 		public abstract object Clone ();
 	}

@@ -8,16 +8,30 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected MonoType type;
 		protected ITargetLocation location;
+		bool is_valid;
 
 		public MonoObject (MonoType type, ITargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
+			is_valid = true;
+		}
+
+		public ITargetLocation Location {
+			get {
+				return location;
+			}
 		}
 
 		public ITargetType Type {
 			get {
 				return type;
+			}
+		}
+
+		public bool IsValid {
+			get {
+				return is_valid && location.IsValid;
 			}
 		}
 
@@ -43,6 +57,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 					return GetObject (reader, address);
 				} catch {
+					is_valid = false;
 					throw new LocationInvalidException ();
 				}
 			}
@@ -56,6 +71,7 @@ namespace Mono.Debugger.Languages.CSharp
 				try {
 					return memory.ReadBuffer (address, type.Size);
 				} catch {
+					is_valid = false;
 					throw new LocationInvalidException ();
 				}
 			}
@@ -80,6 +96,7 @@ namespace Mono.Debugger.Languages.CSharp
 					ITargetMemoryReader reader = memory.ReadMemory (address, type.Size);
 					return GetDynamicSize (reader, address, out dynamic_address);
 				} catch {
+					is_valid = false;
 					throw new LocationInvalidException ();
 				}
 			}
@@ -96,6 +113,7 @@ namespace Mono.Debugger.Languages.CSharp
 			try {
 				return GetDynamicContents (memory, address, max_size).Contents;
 			} catch {
+					is_valid = false;
 				throw new LocationInvalidException ();
 			}
 		}
@@ -114,6 +132,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				return memory.ReadMemory (dynamic_address, (int) size);
 			} catch {
+					is_valid = false;
 				throw new LocationInvalidException ();
 			}
 		}

@@ -14,6 +14,7 @@ namespace Mono.Debugger
 		{
 			this.relative_to = relative_to;
 			this.address = address;
+			relative_to.LocationInvalid += new LocationInvalidHandler (SetInvalid);
 		}
 
 		protected override object GetHandle ()

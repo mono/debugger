@@ -2,6 +2,8 @@ using System;
 
 namespace Mono.Debugger
 {
+	public delegate void LocationInvalidHandler ();
+
 	// <summary>
 	//   This interface denotes an address in the target's address
 	//   space in a target independent way.  It is the only way to share
@@ -33,5 +35,7 @@ namespace Mono.Debugger
 		object Handle {
 			get;
 		}
+
+		event LocationInvalidHandler LocationInvalid;
 	}
 }

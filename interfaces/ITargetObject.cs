@@ -2,6 +2,8 @@ using System;
 
 namespace Mono.Debugger
 {
+	public delegate void ObjectInvalidHandler ();
+
 	public interface ITargetObject
 	{
 		// <summary>
@@ -16,6 +18,21 @@ namespace Mono.Debugger
 		//   @Object property.
 		// </summary>
 		bool HasObject {
+			get;
+		}
+
+		// <summary>
+		//   The object's location.
+		// </summary>
+		ITargetLocation Location {
+			get;
+		}
+
+		// <summary>
+		//   If false, then the object can not be accessed because its location is
+		//   invalid or the object is corrupted.
+		// </summary>
+		bool IsValid {
 			get;
 		}
 
