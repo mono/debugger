@@ -1144,7 +1144,7 @@ namespace Mono.Debugger.Backends
 						SourceLocation source, StepOperation operation)
 		{
 			if (method.IsWrapper && (address > method.StartAddress))
-				return new Command (StepOperation.Native, new StepFrame (
+				return new Command (StepOperation.StepLine, new StepFrame (
 					method.StartAddress, method.EndAddress,
 					null, StepMode.Finish));
 
