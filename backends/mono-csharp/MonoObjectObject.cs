@@ -27,7 +27,7 @@ namespace Mono.Debugger.Languages.CSharp
 				TargetAddress address;
 				address = location.TargetAccess.ReadAddress (location.Address);
 				address = location.TargetAccess.ReadAddress (address);
-				return type.File.Table.GetTypeFromClass (address.Address);
+				return type.File.Table.GetTypeFromClass (type.Type, address.Address);
 			} catch {
 				return null;
 			}

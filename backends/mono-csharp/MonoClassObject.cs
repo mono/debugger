@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.CSharp
 			TargetAddress vtable = target.ReadAddress (location.Address);
 			TargetAddress klass = target.ReadAddress (vtable);
 
-			MonoType ctype = type.File.Table.GetTypeFromClass (klass.Address);
+			MonoType ctype = type.File.Table.GetTypeFromClass (type.Type, klass.Address);
 			return ((MonoClass) ctype).GetClassObject (location);
 		}
 

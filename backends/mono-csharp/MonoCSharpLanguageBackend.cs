@@ -701,13 +701,14 @@ namespace Mono.Debugger.Languages.CSharp
 			return retval;
 		}
 
-		public MonoType GetTypeFromClass (long klass_address)
+		public MonoType GetTypeFromClass (Type type, long klass_address)
 		{
 			ClassEntry entry = (ClassEntry) class_table [klass_address];
 
 			if (entry == null) {
-				Console.WriteLine ("Can't find class at address {0:x}", klass_address);
-				throw new InternalError ();
+				Console.WriteLine ("Can't find class for type {0} at address {1:x}",
+						   type, klass_address);
+				return new MonoOpaqueType (type, 0);
 			}
 
 			return GetType (entry.Type, entry.TypeInfo);

@@ -98,7 +98,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return new MonoOpaqueType (type, size);
 
 			case TypeKind.Reference:
-				return table.Table.GetTypeFromClass (size);
+				return table.Table.GetTypeFromClass (type, size);
 
 			default:
 				throw new InternalError ("KIND: {0}", kind);
