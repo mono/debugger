@@ -651,10 +651,82 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			e.Completer.FilenameCompleter (text, start, end);
+                }
+
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Specify a program to debug."; } }
 		public string Documentation { get { return ""; } } 
+	}
+
+	public class PwdCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Argument != "") {
+				context.Error ("This command doesn't take any arguments");
+				return false;
+			}
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			Console.WriteLine ("Working directory: {0}.",
+					   context.Interpreter.Options.WorkingDirectory);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Print working directory.  This is used for your program as well."; } }
+		public string Documentation { get { return ""; } } 
+	}
+
+	public class CdCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args == null) {
+				context.Error ("Argument required (new working directory).");
+				return false;
+			}
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			try {
+				Environment.CurrentDirectory = Argument;
+
+				context.Interpreter.Options.WorkingDirectory = Argument;
+				Console.WriteLine ("Working directory {0}.",
+						   context.Interpreter.Options.WorkingDirectory);
+			}
+			catch {
+				Console.WriteLine ("{0}: No such file or directory.", Argument);
+			}
+		}
+
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			e.Completer.FilenameCompleter (text, start, end);
+                }
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Set working directory to DIR for debugger and program being debugged."; } }
+		public string Documentation { get { return "The change does not take effect for the program being debugged\nuntil the next time it is started."; } } 
 	}
 
 	public class SelectProcessCommand : DebuggerCommand, IDocumentableCommand

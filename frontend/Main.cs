@@ -37,6 +37,8 @@ namespace Mono.Debugger.Frontend
 		{
 			DebuggerEngine e = new DebuggerEngine (this);
 
+			e.RegisterCommand ("pwd", typeof (PwdCommand));
+			e.RegisterCommand ("cd", typeof (CdCommand));
 			e.RegisterCommand ("print", typeof (PrintExpressionCommand));
 			e.RegisterAlias   ("p", typeof (PrintExpressionCommand));
 			e.RegisterCommand ("ptype", typeof (PrintTypeCommand));

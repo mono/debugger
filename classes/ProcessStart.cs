@@ -26,7 +26,7 @@ namespace Mono.Debugger
 		public string JitOptimizations = "";
 
 		/* The inferior process's working directory */
-		public string WorkingDirectory = ".";
+		public string WorkingDirectory = Environment.CurrentDirectory;
 
 		/* Whether or not we load native symbol tables */
 		public bool LoadNativeSymbolTable = false;
