@@ -115,11 +115,11 @@ namespace Mono.Debugger.Backends
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			disassembler.SymbolTable = manager.SymbolTableManager.SimpleSymbolTable;
-			current_simple_symtab = manager.SymbolTableManager.SimpleSymbolTable;
-			current_symtab = manager.SymbolTableManager.SymbolTable;
+			disassembler.SymbolTable = manager.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
+			current_simple_symtab = manager.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
+			current_symtab = manager.DebuggerBackend.SymbolTableManager.SymbolTable;
 
-			manager.SymbolTableManager.SymbolTableChangedEvent +=
+			manager.DebuggerBackend.SymbolTableManager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 
 			exception_handlers = new Hashtable ();

@@ -1,5 +1,11 @@
 2005-02-12  Chris Toshok  <toshok@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.setup_engine): use manager.DebuggerBackend
+	to get at the symboltablemanager.
+
+2005-02-12  Chris Toshok  <toshok@ximian.com>
+
 	* backends/Inferior.cs (Inferior.Run): store off the delegates so
 	they aren't gc'ed before passing them to
 	mono_dbeugger_server_spawn.
