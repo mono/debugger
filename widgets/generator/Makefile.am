@@ -17,5 +17,5 @@ generated-stamp: $(APIS)
 clean:
 	rm -f generated-stamp
 
-EXTRA_DISt = gtk-api.xml
+EXTRA_DIST = $(APIS)
 
