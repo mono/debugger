@@ -52,9 +52,24 @@ if test "x$PKG_CONFIG" = "xno"; then
 	AC_MSG_ERROR([You need to install pkg-config])
 fi
 
+AC_PATH_PROG(GAPI_CODEGEN, gapi_codegen.exe, no)
+if test "x$GAPI_CODEGEN" != "xno"; then
+	gtksharp_path=`dirname $GAPI_CODEGEN`
+	GTKSHARP_PREFIX=`dirname $gtksharp_path`
+	have_gtk=yes
+else
+	AC_MSG_WARN([Cannot find gtk#, the GUI won't be build!])
+	have_gtk=no
+fi
+AC_SUBST(GTKSHARP_PREFIX)
+AM_CONDITIONAL(HAVE_GTK, test x$have_gtk = xyes)
+
 AC_MSG_CHECKING([if building the GUI is requested])
 AC_ARG_ENABLE(gui, [  --disable-gui            don't build the GUI], build_gui=$enableval, build_gui=yes)
 AC_MSG_RESULT($build_gui)
+if test x$have_gtk=xno; then
+	build_gui=no
+fi
 if test "x$build_gui" = "xyes"; then
 	BUILD_GTK_CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0 libgnome-2.0`
 	BUILD_GTK_LIBS=`$PKG_CONFIG --libs gtk+-2.0 libgnome-2.0`
@@ -171,15 +186,6 @@ else
 	READLINE_DEPLIBS=	
 fi
 AC_SUBST(READLINE_DEPLIBS)
-
-dnl
-dnl Quick hack
-dnl
-monopath=`which mono`
-monopathbin=`dirname $monopath`
-GTKSHARP_PREFIX=`dirname $monopathbin`
-
-AC_SUBST(GTKSHARP_PREFIX)
 
 AC_OUTPUT([
 Makefile
