@@ -27,7 +27,7 @@ namespace Mono.Debugger
 		// </summary>
 		public string FileName {
 			get {
-				return filename;
+				return Path.GetFullPath (filename);
 			}
 		}
 

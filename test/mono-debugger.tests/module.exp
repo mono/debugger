@@ -6,7 +6,7 @@ source $srcdir/mdb.exp
 set file $srcdir/module.c
 set foo $srcdir/foo.c
 
-mdb_start "module"
+mdb_start "module" [pwd]/libfoo.so
 mdb_expect_frame 0 "main" $file 11
 mdb_send "library [pwd]/libfoo.so"
 mdb_expect "Loaded library [pwd]/libfoo.so."

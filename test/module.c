@@ -3,13 +3,19 @@
 #include <dlfcn.h>
 
 int
-main (void)
+main (int argc, const char *argv [])
 {
 	void *handle;
 	void (*ptr) (char *, int);
 
-	handle = dlopen ("/home/martin/monocvs/debugger/test/libfoo.so", RTLD_NOW | RTLD_GLOBAL);
-	fprintf (stderr, "LOAD: %p\n", handle);
+	if (argc != 2) {
+		fprintf (stderr, "USAGE: %s filename\n", argv [0]);
+		exit (1);
+	}
+
+	handle = dlopen (argv [1], RTLD_NOW | RTLD_GLOBAL);
+	fprintf (stderr, "LOAD: %s - %p\n", argv [1], handle);
+	fflush (stderr);
 	if (!handle) {
 		fprintf (stderr, "ERROR: %s\n", dlerror ());
 		exit (0);
