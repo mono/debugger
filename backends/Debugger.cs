@@ -313,16 +313,18 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				if (symtab_manager != null)
+				if (thread_manager != null) {
+					thread_manager.Dispose ();
+					thread_manager = null;
+				}
+				if (symtab_manager != null) {
 					symtab_manager.Dispose ();
-				symtab_manager = null;
-				if (process != null)
-					process.Dispose ();
-				process = null;
-				thread_manager.Dispose ();
-				thread_manager = null;
-				bfd_container.Dispose ();
-				bfd_container = null;
+					symtab_manager = null;
+				}
+				if (bfd_container != null) {
+					bfd_container.Dispose ();
+					bfd_container = null;
+				}
 			}
 		}
 

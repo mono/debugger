@@ -143,6 +143,7 @@ namespace Mono.Debugger.Architecture
 					if (bfd_hash != null) {
 						foreach (Bfd bfd in bfd_hash.Values)
 							bfd.Dispose ();
+						bfd_hash = null;
 					}
 				}
 				

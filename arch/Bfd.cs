@@ -839,6 +839,7 @@ namespace Mono.Debugger.Architecture
 
 				lock (this) {
 					bfd_close (bfd);
+					bfd = IntPtr.Zero;
 				}
 			}
 		}

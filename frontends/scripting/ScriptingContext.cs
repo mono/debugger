@@ -672,6 +672,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return backend;
 		}
 
+		public void Exit ()
+		{
+			if (backend != null)
+				backend.Dispose ();
+		}
+
 		public ProcessStart ProcessStart {
 			get { return start; }
 		}

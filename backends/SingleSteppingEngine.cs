@@ -97,10 +97,11 @@ public class SingleSteppingEngine : ThreadManager
 	AutoResetEvent engine_event;
 	Mutex command_mutex;
 	bool result_sent = false;
+	bool abort_requested;
 
 	void start_wait_thread ()
 	{
-		while (true)
+		while (!abort_requested)
 			wait_thread_main ();
 	}
 
@@ -115,6 +116,11 @@ public class SingleSteppingEngine : ThreadManager
 			;
 
 		Report.Debug (DebugFlags.Wait, "Wait thread woke up");
+
+		if (abort_requested) {
+			Report.Debug (DebugFlags.Wait, "Abort requested");
+			return;
+		}
 
 		int pid;
 		long status;
@@ -151,7 +157,7 @@ public class SingleSteppingEngine : ThreadManager
 
 		OnThreadCreatedEvent (the_engine);
 
-		while (true) {
+		while (!abort_requested) {
 			engine_thread_main ();
 		}
 	}
@@ -481,6 +487,11 @@ public class SingleSteppingEngine : ThreadManager
 
 		Report.Debug (DebugFlags.Wait, "SSE woke up");
 
+		if (abort_requested) {
+			Report.Debug (DebugFlags.Wait, "Abort requested");
+			return;
+		}
+
 		TheEngine event_engine;
 		long status;
 		lock (this) {
@@ -524,6 +535,7 @@ public class SingleSteppingEngine : ThreadManager
 			try {
 				result = command.CommandFunc (command.CommandFuncData);
 			} catch (ThreadAbortException) {
+				;
 				return;
 			} catch (Exception e) {
 				result = new CommandResult (e);
@@ -537,6 +549,7 @@ public class SingleSteppingEngine : ThreadManager
 			try {
 				command.Process.ProcessCommand (command);
 			} catch (ThreadAbortException) {
+				;
 				return;
 			} catch (Exception e) {
 				Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
@@ -2739,6 +2752,17 @@ public class SingleSteppingEngine : ThreadManager
 
 	protected override void DoDispose ()
 	{
+		if (inferior_thread != null) {
+			lock (this) {
+				abort_requested = true;
+				engine_event.Set ();
+			}
+			inferior_thread.Join ();
+		}
+
+		if (wait_thread != null)
+			wait_thread.Abort ();
+
 		TheEngine[] threads = new TheEngine [thread_hash.Count];
 		thread_hash.Values.CopyTo (threads, 0);
 		for (int i = 0; i < threads.Length; i++)

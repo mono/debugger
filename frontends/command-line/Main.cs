@@ -107,6 +107,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Exit ()
 		{
+			context.Exit ();
 			Environment.Exit (context.ExitCode);
 		}
 
