@@ -95,6 +95,7 @@ namespace Mono.Debugger.GUI
 		Interpreter interpreter;
 
 		SourceManager source_manager;
+		string working_dir = ".";
 
 		public DebuggerGUI (string[] arguments)
 		{
@@ -164,17 +165,16 @@ namespace Mono.Debugger.GUI
 			command_entry.Activated += new EventHandler (DoOneCommand);
 			command_entry.Sensitive = false;
 
-			// FIXME: This is commented out because MCS miscompiles it.
-#if FALSE
 			//
 			// The items that we sensitize
 			//
 			StateRegister (
 				new string [] {
-					"run-button", "run-program-menu"},
+					"run-button", "run-program-menu",
+					"program-to-debug-menu"
+				},
 				TargetState.EXITED, TargetState.NO_TARGET);
 
-			//
 			// I considered adding "register-notebook", but it looks
 			// ugly.
 			
@@ -192,7 +192,6 @@ namespace Mono.Debugger.GUI
 				new string [] {
 					"stop-button", "stop-program-menu"
 				}, TargetState.RUNNING);
-#endif
 
 			StateSensitivityUpdate (TargetState.NO_TARGET);
 
@@ -256,6 +255,10 @@ namespace Mono.Debugger.GUI
 		{
 			backend.CommandLineArguments = args;
 			backend.TargetApplication = program;
+			//
+			
+			// FIXME: chdir here to working_dir
+			//
 
 			main_window.Title = "Debugging: " + program +
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
@@ -294,12 +297,13 @@ namespace Mono.Debugger.GUI
 		ProgramToDebug program_to_debug;
 		void OnProgramToDebugActivate (object sender, EventArgs a)
 		{
-			string program = null, arg_string = null, working_dir = null;
+			string program = backend.TargetApplication;
+			string arg_string = String.Join (" ", backend.CommandLineArguments);
 			
 			if (program_to_debug == null)
 				program_to_debug = new ProgramToDebug (gxml, "", null);
 
-			if (!program_to_debug.RunDialog (out program, out arg_string, out working_dir))
+			if (!program_to_debug.RunDialog (ref program, ref arg_string, ref working_dir))
 				return;
 			
 			string [] argsv = arg_string.Split (new char [] { ' ' });
@@ -352,27 +356,34 @@ namespace Mono.Debugger.GUI
 
 		void OnStepIntoActivate (object sender, EventArgs args)
 		{
-			backend.StepLine ();
+			if (backend.State == TargetState.STOPPED){
+				Console.WriteLine ("State: " + backend.State);
+				backend.StepLine ();
+			}
 		}
 
 		void OnStepOverActivate (object sender, EventArgs args)
 		{
-			backend.NextLine ();
+			if (backend.State == TargetState.STOPPED)
+				backend.NextLine ();
 		}
 
 		void OnStepOutActivate (object sender, EventArgs args)
 		{
-			backend.Finish ();
+			if (backend.State == TargetState.STOPPED)
+				backend.Finish ();
 		}
 
 		void OnInstructionStepIntoActivate (object sender, EventArgs args)
 		{
-			backend.StepInstruction ();
+			if (backend.State == TargetState.STOPPED)
+				backend.StepInstruction ();
 		}
 
 		void OnInstructionStepOverActivate (object sender, EventArgs args)
 		{
-			backend.NextInstruction ();
+			if (backend.State == TargetState.STOPPED)
+				backend.NextInstruction ();
 		}
 		
 		void OnAboutActivate (object sender, EventArgs args)

@@ -40,7 +40,7 @@
 		    <widget class="GtkMenu" id="file1_menu">
 
 		      <child>
-			<widget class="GtkMenuItem" id="program_to_debug1">
+			<widget class="GtkMenuItem" id="program-to-debug-menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Program to Debug</property>
 			  <property name="use_underline">True</property>
@@ -2132,13 +2132,14 @@
 
       <child internal-child="action_area">
 	<widget class="GtkHButtonBox" id="dialog-action_area1">
+	  <property name="border_width">5</property>
 	  <property name="visible">True</property>
 	  <property name="layout_style">GTK_BUTTONBOX_END</property>
+	  <property name="spacing">10</property>
 
 	  <child>
 	    <widget class="GtkButton" id="button1">
 	      <property name="visible">True</property>
-	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
@@ -2356,6 +2357,7 @@
 	<widget class="GtkHButtonBox" id="dialog-action_area2">
 	  <property name="visible">True</property>
 	  <property name="layout_style">GTK_BUTTONBOX_END</property>
+	  <property name="spacing">0</property>
 
 	  <child>
 	    <widget class="GtkButton" id="hexeditor-close">
