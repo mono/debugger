@@ -27,11 +27,13 @@ namespace Mono.Debugger
 
 		public void Signal (int id)
 		{
+			check_disposed ();
 			output_channel.WriteInteger (id);
 		}
 
 		void read_data_handler (int data)
 		{
+			check_disposed ();
 			if (data >= listeners.Count)
 				return;
 
