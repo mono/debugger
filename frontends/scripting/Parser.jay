@@ -653,5 +653,3 @@ public bool Parse (string text)
 
 /* end end end */
 }
-
-}
