@@ -17,7 +17,7 @@ proc mdb_start {file args} {
 
     verbose "Spawning $mdb $file"
 
-    set res [spawn $mono $mdb --script $file $args];
+    set res [spawn ./start-mdb.sh --script $file $args];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $mdb failed."
 	exit 1;
@@ -32,6 +32,8 @@ proc mdb_start {file args} {
 	    exit 1
 	}
     }
+    mdb_expect_prompt
+    mdb_send "run"
     mdb_expect_started
 }
 

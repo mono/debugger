@@ -11,7 +11,7 @@ set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_stopped  0 "Martin.Baulig.Hello.World()" $file 12
 mdb_send "print Foo.Print ()"
-mdb_expect "\"Boston\""
+mdb_expect "(System.String) \"Boston\""
 mdb_send "print Foo.Boston"
-mdb_expect "\"Boston\""
+mdb_expect "(System.String) \"Boston\""
 mdb_send "quit"
