@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoClassType (Type type, int size, TargetBinaryReader info,
 				      MonoSymbolFileTable table)
-			: base (type, size, info, table)
+			: base (TargetObjectKind.Class, type, size, info, table)
 		{
 			int parent_type_info = info.ReadInt32 ();
 			if ((parent_type_info != 0) && (type.BaseType != null)) {

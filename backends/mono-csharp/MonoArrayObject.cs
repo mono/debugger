@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly MonoArrayBounds[] bounds;
 
 		public MonoArrayObject (MonoArrayType type, MonoTargetLocation location)
-			: base (TargetObjectKind.Array, type, location)
+			: base (type, location)
 		{
 			this.type = type;
 			this.dimension = 0;
@@ -52,7 +52,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public MonoArrayObject (MonoArrayObject array, MonoTargetLocation location, int index)
-			: base (TargetObjectKind.Array, array.type.SubArrayType, location)
+			: base (array.type.SubArrayType, location)
 		{
 			this.type = array.type.SubArrayType;
 			this.rank = array.rank;

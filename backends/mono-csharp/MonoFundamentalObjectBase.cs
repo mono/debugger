@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
 	{
 		public MonoFundamentalObjectBase (MonoType type, MonoTargetLocation location)
-			: base (TargetObjectKind.Fundamental, type, location)
+			: base (type, location)
 		{ }
 
 		public bool HasObject {

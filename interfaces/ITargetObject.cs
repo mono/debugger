@@ -6,10 +6,6 @@ namespace Mono.Debugger
 
 	public interface ITargetObject
 	{
-		TargetObjectKind Kind {
-			get;
-		}
-
 		// <summary>
 		//   The type of this object.
 		// </summary>

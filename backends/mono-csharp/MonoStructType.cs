@@ -22,7 +22,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoStructType (Type type, int size, TargetBinaryReader info,
 				       MonoSymbolFileTable table)
-			: base (type, size, true)
+			: this (TargetObjectKind.Struct, type, size, info, table)
+		{ }
+
+		protected MonoStructType (TargetObjectKind kind, Type type, int size,
+					  TargetBinaryReader info, MonoSymbolFileTable table)
+			: base (kind, type, size, true)
 		{
 			is_byref = info.ReadByte () != 0;
 			num_fields = info.ReadInt32 ();

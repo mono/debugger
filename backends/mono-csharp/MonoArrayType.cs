@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoArrayType (Type type, int size, TargetBinaryReader info, bool is_multi,
 				      MonoSymbolFileTable table)
-			: base (type, size, false)
+			: base (TargetObjectKind.Array, type, size, false)
 		{
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		private MonoArrayType (MonoArrayType type)
-			: base (get_subarray_type (type.type), type.Size, false)
+			: base (TargetObjectKind.Array, get_subarray_type (type.type), type.Size, false)
 		{
 			Rank = type.Rank;
 			Dimension = type.Dimension + 1;

@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly MonoSymbolFileTable Table;
 
 		public MonoObjectType (Type type, int size, MonoSymbolFileTable table)
-			: base (type, size, true)
+			: base (TargetObjectKind.Pointer, type, size, true)
 		{
 			this.Table = table;
 		}

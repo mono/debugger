@@ -9,12 +9,7 @@ namespace Mono.Debugger.Languages.CSharp
 		new MonoStructType type;
 
 		public MonoStructObject (MonoStructType type, MonoTargetLocation location)
-			: this (TargetObjectKind.Struct, type, location)
-		{ }
-
-		protected MonoStructObject (TargetObjectKind kind, MonoStructType type,
-					    MonoTargetLocation location)
-			: base (kind, type, location)
+			: base (type, location)
 		{
 			this.type = type;
 		}

@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.CSharp
 		new MonoOpaqueType type;
 
 		public MonoOpaqueObject (MonoOpaqueType type, MonoTargetLocation location)
-			: base (TargetObjectKind.Unknown, type, location)
+			: base (type, location)
 		{
 			this.type = type;
 		}

@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoEnumType (Type type, int size, TargetBinaryReader info,
 				     MonoSymbolFileTable table)
-			: base (type, size, true)
+			: base (TargetObjectKind.Fundamental, type, size, true)
 		{
 			int element_type_info = info.ReadInt32 ();
 			element_type = GetType (type.GetElementType (), element_type_info, table);

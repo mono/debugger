@@ -9,22 +9,31 @@ namespace Mono.Debugger.Languages.CSharp
 		protected static MonoClassType ObjectClass;
 		protected static ITargetMethodInfo[] ObjectClassMethods;
 		protected static ITargetMethodInfo ObjectToString;
+		protected readonly TargetObjectKind kind;
 
 		bool has_fixed_size;
 		int size;
 
-		protected MonoType (Type type, int size)
+		protected MonoType (TargetObjectKind kind, Type type, int size)
 		{
 			this.type = type;
 			this.size = size;
+			this.kind = kind;
 			this.has_fixed_size = true;
 		}
 
-		protected MonoType (Type type, int size, bool has_fixed_size)
+		protected MonoType (TargetObjectKind kind, Type type, int size, bool has_fixed_size)
 		{
 			this.type = type;
 			this.size = size;
+			this.kind = kind;
 			this.has_fixed_size = has_fixed_size;
+		}
+
+		public TargetObjectKind Kind {
+			get {
+				return kind;
+			}
 		}
 
 		public static MonoType GetType (Type type, int offset, MonoSymbolFileTable table)

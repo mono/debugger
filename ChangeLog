@@ -1,5 +1,11 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetObject.cs (Kind): Moved to ITargetType.
+
+	* interfaces/ITargetType.cs (Kind): Moved this property here.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added "length ($a)",
 	"upper ($a)" and "lower ($a)" where $a is an array.
 

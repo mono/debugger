@@ -11,6 +11,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		TargetObjectKind Kind {
+			get;
+		}
+
 		object TypeHandle {
 			get;
 		}

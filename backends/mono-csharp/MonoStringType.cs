@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly int DataOffset;
 
 		public MonoStringType (Type type, int size, TargetBinaryReader info)
-			: base (type, size, false)
+			: base (TargetObjectKind.Fundamental, type, size, false)
 		{
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();

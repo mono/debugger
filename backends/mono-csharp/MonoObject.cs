@@ -8,20 +8,13 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected MonoType type;
 		protected MonoTargetLocation location;
-		protected readonly TargetObjectKind kind;
 		bool is_valid;
 
-		public MonoObject (TargetObjectKind kind, MonoType type, MonoTargetLocation location)
+		public MonoObject (MonoType type, MonoTargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
 			is_valid = true;
-		}
-
-		public TargetObjectKind Kind {
-			get {
-				return kind;
-			}
 		}
 
 		public ITargetType Type {

@@ -5,7 +5,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
 	{
 		public MonoFundamentalType (Type type, int size)
-			: base (type, size)
+			: base (TargetObjectKind.Fundamental, type, size)
 		{ }
 
 		public static bool Supports (Type type)
