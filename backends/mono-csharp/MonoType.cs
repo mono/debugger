@@ -5,7 +5,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal abstract class MonoType : ITargetType
 	{
 		protected Type type;
-		protected ITargetMemoryReader info;
+		// protected ITargetMemoryReader info;
 
 		bool has_fixed_size;
 		int size;
@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			this.type = type;
 			this.size = size;
-			this.info = info;
+			// this.info = info;
 			this.has_fixed_size = has_fixed_size;
 		}
 

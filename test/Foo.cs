@@ -34,6 +34,16 @@ class X
 		Console.WriteLine (y.a);
 	}
 
+	static void ArrayTest (long[] b)
+	{
+		Console.WriteLine (b [1]);
+	}
+
+	static void MultiArrayTest (int[,] a)
+	{
+		Console.WriteLine (a [2,3]);
+	}
+
 	static void Main ()
 	{
 		Foo foo = new Foo (5, 29);
@@ -42,5 +52,11 @@ class X
 
 		Y y = new Y ();
 		ClassTest (y);
+
+		long[] b = { 59, 8, -19 };
+		ArrayTest (b);
+
+		int[,] a = { {  5,  6,  7 }, {  8,  2,  4}, {  6,  1,  9 }, {  10,  50,  200 } };
+		MultiArrayTest (a);
 	}
 }

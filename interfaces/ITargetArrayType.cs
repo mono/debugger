@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	public interface ITargetArrayType
+	public interface ITargetArrayType : ITargetType
 	{
 		// <summary>
 		//   The array's element type.  For multi-dimensional arrays,

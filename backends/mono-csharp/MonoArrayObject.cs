@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoArrayObject : MonoObject, ITargetArray
+	internal class MonoArrayObject : MonoObject, ITargetArrayObject
 	{
 		protected new MonoArrayType type;
 
@@ -49,23 +49,14 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public MonoArrayObject (MonoArrayObject array, ITargetLocation location, int index)
-			: base (array.type, location)
+			: base (array.type.SubArrayType, location)
 		{
-			this.type = array.type;
+			this.type = array.type.SubArrayType;
 			this.rank = array.rank;
 			this.length = array.length;
 			this.dimension = array.dimension + 1;
 			this.base_index = index;
 			this.bounds = array.bounds;
-		}
-
-		public ITargetType ElementType {
-			get {
-				if (dimension + 1 >= rank)
-					return type.ElementType;
-
-				return type;
-			}
 		}
 
 		public int LowerBound {

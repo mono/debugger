@@ -241,7 +241,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return true;
 		}
 
-		void print_array (ITargetArray array, int dimension)
+		void print_array (ITargetArrayObject array, int dimension)
 		{
 			Console.WriteLine ("ARRAY DIMENSION {0}", dimension);
 			Console.WriteLine ("DYNAMIC CONTENTS: [{0}]",
@@ -286,7 +286,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (obj.HasObject)
 				Console.WriteLine ("OBJECT CONTENTS: |{0}|", obj.Object);
 
-			ITargetArray array = obj as ITargetArray;
+			ITargetArrayObject array = obj as ITargetArrayObject;
 			if (array != null) {
 				print_array (array, 0);
 				return;

@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace Mono.Debugger.Languages.CSharp
 {
@@ -17,6 +18,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoArrayType : MonoType, ITargetArrayType
 	{
 		internal readonly int Rank;
+		internal readonly int Dimension;
 		internal readonly int LengthOffset;
 		internal readonly int LengthSize;
 		internal readonly int DataOffset;
@@ -26,7 +28,8 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly int BoundsLowerSize;
 		internal readonly int BoundsLengthOffset;
 		internal readonly int BoundsLengthSize;
-		MonoType element_type;
+		protected readonly MonoType element_type;
+		MonoArrayType subarray_type;
 
 		public MonoArrayType (Type type, int size, ITargetMemoryReader info, bool is_multi)
 			: base (type, size, false, info)
@@ -48,6 +51,42 @@ namespace Mono.Debugger.Languages.CSharp
 			TargetAddress element_type_info = info.ReadAddress ();
 			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,
 						element_type_info);
+			setup ();
+		}
+
+		static Type get_subarray_type (Type type)
+		{
+			Type elt_type = type.GetElementType ();
+			StringBuilder sb = new StringBuilder (elt_type.FullName);
+			sb.Append ("[");
+			for (int i = 2; i < type.GetArrayRank (); i++)
+				sb.Append (",");
+			sb.Append ("]");
+			return Type.GetType (sb.ToString ());
+		}
+
+		private MonoArrayType (MonoArrayType type)
+			: base (get_subarray_type (type.type), type.Size, false, null)
+		{
+			Rank = type.Rank;
+			Dimension = type.Dimension + 1;
+			LengthOffset = type.LengthOffset;
+			LengthSize = type.LengthSize;
+			DataOffset = type.DataOffset;
+			BoundsOffset = type.BoundsOffset;
+			BoundsSize = type.BoundsSize;
+			BoundsLowerOffset = type.BoundsLowerOffset;
+			BoundsLowerSize = type.BoundsLowerSize;
+			BoundsLengthOffset = type.BoundsLengthOffset;
+			BoundsLengthSize = type.BoundsLengthSize;
+			element_type = type.element_type;
+			setup ();
+		}
+
+		void setup ()
+		{
+			if (Dimension + 1 < Rank)
+				subarray_type = new MonoArrayType (this);
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)
@@ -69,20 +108,38 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override bool HasObject {
 			get {
+				if (Dimension + 1 < Rank)
+					return true;
+
 				return element_type.HasObject &&
 					(element_type.IsByRef || element_type.HasFixedSize);
 			}
 		}
 
+		bool ITargetType.HasObject {
+			get {
+				return HasObject;
+			}
+		}
+
 		internal MonoType ElementType {
 			get {
-				return element_type;
+				if (Dimension + 1 >= Rank)
+					return element_type;
+
+				return subarray_type;
+			}
+		}
+
+		internal MonoArrayType SubArrayType {
+			get {
+				return subarray_type;
 			}
 		}
 
 		ITargetType ITargetArrayType.ElementType {
 			get {
-				return element_type;
+				return ElementType;
 			}
 		}
 
