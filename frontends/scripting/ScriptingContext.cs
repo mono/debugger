@@ -151,15 +151,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 
 			case TargetState.STOPPED:
-				if (!context.IsInteractive)
-					break;
-
 				if (arg != 0)
 					context.Print ("Process @{0} received signal {1}{2}.", id, arg, frame);
+				else if (!context.IsInteractive)
+					break;
 				else
 					context.Print ("Process @{0} stopped{1}.", id, frame);
 
 				print_source ();
+
+				if (!context.IsInteractive)
+					context.Abort ();
 
 				break;
 			}
@@ -681,13 +683,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public void Abort ()
+		{
+			Print ("Caught fatal error while running non-interactively; exiting!");
+			Environment.Exit (-1);
+		}
+
 		public void Error (string message)
 		{
 			command_output.WriteLine (true, message);
-			if (!IsInteractive) {
-				Print ("Caught fatal error while running non-interactively; exiting!");
-				Environment.Exit (-1);
-			}
+			if (IsInteractive)
+				Abort ();
 		}
 
 		public void Error (string format, params object[] args)
