@@ -51,13 +51,13 @@ LIBRARY_SRCLIST = \
 	AssemblyInfo.cs
 
 LIBRARY_DEPS = \
-	-r Mono.GetOptions	\
-	-r Mono.CSharp.Debugger
+	-r:Mono.GetOptions	\
+	-r:Mono.CSharp.Debugger
 
 MDB_DEPS = \
-	-r Mono.GetOptions	\
-	-r Mono.CSharp.Debugger	\
-	-r ./Mono.Debugger.dll
+	-r:Mono.GetOptions	\
+	-r:Mono.CSharp.Debugger	\
+	-r:./Mono.Debugger.dll
 
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:@top_srcdir@/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
