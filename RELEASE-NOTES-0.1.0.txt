@@ -1,13 +1,22 @@
 The Mono Debugger - 0.1.0 "Indian Summer"
 =========================================
 
-[I don't have enough time to do the release myself, so I'm just
- writing these release notes.
-
- This message will be removed in the final release.
-]
-
 This is the first public release of the Mono Debugger :-)
+
+[This release never really happened.
+ The debugger was almost stable before I left to my vacations, but not
+ stable and mature enough for a release and I didn't have enough time
+ to do it either.  After returning, I started a big rewrite of some of
+ the very core parts of the debugger so it became unstable again for
+ about a month.
+
+ So let's just call the version which was in CVS on October 18th the
+ 0.1.0 "Indian Summer" release and keep in mind that this was never an
+ official release.
+
+ January 5th, 2003
+ Martin Baulig <martin@ximian.com>
+]
 
 About the Mono Debugger
 -----------------------
