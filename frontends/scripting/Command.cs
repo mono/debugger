@@ -9,8 +9,47 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontends.Scripting
 {
-	public abstract class Command
+	public abstract class DebuggerCommand : CL.Command
 	{
+		private ScriptingContext context;
+
+		public override bool Resolve (CL.Engine e, object obj)
+		{
+			this.context = (ScriptingContext) obj;
+
+			return Resolve (context);
+		}
+
+		public override string Execute ()
+		{
+			try {
+				Execute (context);
+			} catch (ScriptingException ex) {
+				throw new CL.CommandError (ex.Message);
+			} catch (Exception ex) {
+				throw new CL.CommandError (
+					"Caught exception while executing command {0}: {1}",
+					this, ex);
+			}
+			return "";
+		}
+
+		protected Expression ParseExpression (ScriptingContext context)
+		{
+			if (Argument == "") {
+				context.Error ("Argument expected");
+				return null;
+			}
+
+			ExpressionParser parser = new ExpressionParser (context, ToString ());
+
+			Expression expr = parser.Parse (Argument);
+			if (expr == null)
+				context.Error ("Cannot parse arguments");
+
+			return expr;
+		}
+
 		protected abstract void DoExecute (ScriptingContext context);
 
 		protected virtual bool DoResolveBase (ScriptingContext context)
@@ -18,9 +57,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			return true;
 		}
 
-		protected virtual bool DoResolve (ScriptingContext context, object[] args)
+
+		protected virtual bool DoResolve (ScriptingContext context)
 		{
-			if (args != null) {
+			if (Argument != "") {
 				context.Error ("This command doesn't take any arguments");
 				return false;
 			}
@@ -28,10 +68,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			return DoResolveBase (context);
 		}
 
-		public bool Resolve (ScriptingContext context, object[] arguments)
+		public bool Resolve (ScriptingContext context)
 		{
 			try {
-				return DoResolve (context, arguments);
+				return DoResolve (context);
 			} catch (ScriptingException ex) {
 				context.Error (ex);
 				return false;
@@ -48,7 +88,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public abstract class ProcessCommand : Command
+	public abstract class ProcessCommand : DebuggerCommand
 	{
 		int process;
 
@@ -90,20 +130,10 @@ namespace Mono.Debugger.Frontends.Scripting
 	{
 		Expression expression;
 
-		protected override bool DoResolve (ScriptingContext context, object[] args)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((args == null) || (args.Length != 1)) {
-				context.Error ("`print' takes exactly one argument");
-				return false;
-			}
-
-			expression = args [0] as Expression;
-			if (expression == null) {
-				context.Print ("Argument is not an expression");
-				return false;
-			}
-
-			return true;
+			expression = ParseExpression (context);
+			return expression != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
@@ -124,20 +154,10 @@ namespace Mono.Debugger.Frontends.Scripting
 	{
 		Expression expression;
 
-		protected override bool DoResolve (ScriptingContext context, object[] args)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((args == null) || (args.Length != 1)) {
-				context.Error ("`ptype' takes exactly one argument");
-				return false;
-			}
-
-			expression = args [0] as Expression;
-			if (expression == null) {
-				context.Print ("Argument is not an expression");
-				return false;
-			}
-
-			return true;
+			expression = ParseExpression (context);
+			return expression != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
@@ -155,7 +175,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("examine", "Examine memory.")]
-	public class ExamineCommand : Command
+	public class ExamineCommand : DebuggerCommand
 	{
 		Expression expression;
 		int size = 16;
@@ -165,20 +185,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			set { size = value; }
 		}
 
-		protected override bool DoResolve (ScriptingContext context, object[] args)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((args == null) || (args.Length != 1)) {
-				context.Error ("`examine' takes exactly one argument");
-				return false;
-			}
-
-			expression = args [0] as Expression;
-			if (expression == null) {
-				context.Print ("Argument is not an expression");
-				return false;
-			}
-
-			return true;
+			expression = ParseExpression (context);
+			return expression != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
@@ -210,7 +220,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("CALL", "Call a function in the target")]
-	public class CallMethodCommand : Command
+	public class CallMethodCommand : DebuggerCommand
 	{
 		VariableExpression expression;
 		Expression[] arguments;
@@ -262,7 +272,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 #if FIXME
-	public class StartCommand : Command
+	public class StartCommand : DebuggerCommand
 	{
 		ProgramArgumentsExpression program_args_expr;
 
@@ -450,7 +460,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("kill", "Kill the target")]
-	public class KillCommand : Command
+	public class KillCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -459,7 +469,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("show processes", "Show processes")]
-	public class ShowProcessesCommand : Command
+	public class ShowProcessesCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -517,7 +527,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("show modules", "Show modules")]
-	public class ShowModulesCommand : Command
+	public class ShowModulesCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -527,7 +537,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 #if FIXME
 	[Command("SHOW SOURCES", "Show source files")]
-	public class ShowSourcesCommand : Command
+	public class ShowSourcesCommand : DebuggerCommand
 	{
 		ModuleListExpression module_list_expr;
 
@@ -546,7 +556,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("SHOW METHODS", "Show methods")]
-	public class ShowMethodsCommand : Command
+	public class ShowMethodsCommand : DebuggerCommand
 	{
 		SourceListExpression source_list_expr;
 
@@ -565,7 +575,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("show breakpoints", "Show breakpoints")]
-	public class ShowBreakpointsCommand : Command
+	public class ShowBreakpointsCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -574,7 +584,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("show threadgroups", "Show thread groups")]
-	public class ShowThreadGroupsCommand : Command
+	public class ShowThreadGroupsCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -583,7 +593,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("THREADGROUP CREATE", "Create a new thread group")]
-	public class ThreadGroupCreateCommand : Command
+	public class ThreadGroupCreateCommand : DebuggerCommand
 	{
 		string name;
 
@@ -599,7 +609,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("THREADGROUP ADD", "Add threads to a thread group")]
-	public class ThreadGroupAddCommand : Command
+	public class ThreadGroupAddCommand : DebuggerCommand
 	{
 		string name;
 		ProcessListExpression process_list_expr;
@@ -619,7 +629,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("THREADGROUP REMOVE", "Remove threads from a thread group")]
-	public class ThreadGroupRemoveCommand : Command
+	public class ThreadGroupRemoveCommand : DebuggerCommand
 	{
 		string name;
 		ProcessListExpression process_list_expr;
@@ -639,7 +649,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("BREAKPOINT ENABLE", "Enable breakpoint")]
-	public class BreakpointEnableCommand : Command
+	public class BreakpointEnableCommand : DebuggerCommand
 	{
 		ProcessExpression process_expr;
 		BreakpointNumberExpression breakpoint_number_expr;
@@ -659,7 +669,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("BREAKPOINT DISABLE", "Disable breakpoint")]
-	public class BreakpointDisableCommand : Command
+	public class BreakpointDisableCommand : DebuggerCommand
 	{
 		ProcessExpression process_expr;
 		BreakpointNumberExpression breakpoint_number_expr;
@@ -679,7 +689,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("BREAKPOINT DELETE", "Delete breakpoint")]
-	public class BreakpointDeleteCommand : Command
+	public class BreakpointDeleteCommand : DebuggerCommand
 	{
 		ProcessExpression process_expr;
 		BreakpointNumberExpression breakpoint_number_expr;
@@ -704,7 +714,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		 "Use `show modules' to get a list of modules.\n" +
 		 "Use `help module_operations' to get help about module operations.\n\n" +
 		 "Example:  module 1,2 !ignore step\n")]
-	public class ModuleOperationCommand : Command
+	public class ModuleOperationCommand : DebuggerCommand
 	{
 		ModuleListExpression module_list_expr;
 		ModuleOperationListExpression op_list_expr;
@@ -726,7 +736,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("BREAK", "Insert breakpoint")]
-	public class BreakCommand : Command
+	public class BreakCommand : DebuggerCommand
 	{
 		ThreadGroupExpression thread_group_expr;
 		SourceExpression source_expr;
@@ -752,7 +762,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class ScriptingVariableAssignCommand : Command
+	public class ScriptingVariableAssignCommand : DebuggerCommand
 	{
 		string identifier;
 		VariableExpression expr;
@@ -770,7 +780,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[Command("LIST", "List source code")]
-	public class ListCommand : Command
+	public class ListCommand : DebuggerCommand
 	{
 		SourceExpression source_expr;
 
@@ -794,7 +804,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class VariableAssignCommand : Command
+	public class VariableAssignCommand : DebuggerCommand
 	{
 		VariableExpression var_expr;
 		Expression expr;

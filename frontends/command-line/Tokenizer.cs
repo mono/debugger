@@ -5,16 +5,23 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using Mono.Debugger;
-using Debugger = Mono.Debugger.Frontends.Scripting;
-using Token = Debugger.Token;
 
-namespace Mono.Debugger.Frontends.CommandLine
+namespace Mono.Debugger.Frontends.Scripting
 {
-	public class Tokenizer : Debugger.yyParser.yyInput
+	public class SyntaxError : Exception
+	{
+		public SyntaxError (string message)
+			: base ("syntax error: " + message)
+		{ }
+	}
+
+	public class Tokenizer : yyParser.yyInput
 	{
 		//
 		// Class variables
 		// 
+		static Hashtable keywords;
+		static Hashtable short_keywords;
 		static System.Text.StringBuilder id_builder;
 		static System.Text.StringBuilder string_builder;
 		static System.Text.StringBuilder number_builder;
@@ -30,23 +37,30 @@ namespace Mono.Debugger.Frontends.CommandLine
 		// 
 		static Tokenizer ()
 		{
+			InitTokens ();
 			id_builder = new System.Text.StringBuilder ();
 			string_builder = new System.Text.StringBuilder ();
 			number_builder = new System.Text.StringBuilder ();
 		}
 
-		Parser parser;
-		InputProvider input;
-		string current_line;
-		int current_token = -1;
-		int pos = -1, col = 1;
+		static void InitTokens ()
+		{
+			keywords = new Hashtable ();
+			short_keywords = new Hashtable ();
+		}
+
+		ScriptingContext context;
+		TextReader reader;
+		string ref_name;
+		int current_token;
+		int col = 1;
+		bool do_advance = true;
 
 		//
 		// Whether tokens have been seen on this line
 		//
 		bool tokens_seen = false;
-		bool first_token = false;
-		bool parsing_expression = false;
+		bool dollar_seen = false;
 
 		//
 		// Details about the error encoutered by the tokenizer
@@ -59,30 +73,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public bool ParsingExpression {
-			get { return parsing_expression; }
-			set {
-				if (value) {
-					parsing_expression = true;
-					first_token = true;
-				} else {
-					parsing_expression = false;
-					advance ();
-				}
-			}
-		}
-
-		public Tokenizer (Parser parser, InputProvider input)
+		public Tokenizer (ScriptingContext context, TextReader reader, string name)
 		{
-			this.parser = parser;
-			this.input = input;
+			this.context = context;
+			this.reader = reader;
+			this.ref_name = name;
 		}
 
 		public void restart ()
 		{
+			do_advance = true;
 			tokens_seen = false;
-			current_token = -1;
-			pos = -1;
+			dollar_seen = false;
 			col = 1;
 		}
 
@@ -173,61 +175,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 					goto default;
 				return v;
 			default:
-				throw new SyntaxError (
-					"Unrecognized escape sequence in " + (char)d);
+				context.Error ("Unrecognized escape sequence in " + (char)d);
+				return d;
 			}
 			getChar ();
 			return v;
 		}
 
-		int nextChar ()
-		{
-		again:
-			if (pos < 0) {
-				if (tokens_seen)
-					current_line = input.ReadMoreInput ();
-				else
-					current_line = input.ReadInput ();
-				if (current_line == null)
-					return -1;
-				pos = 0;
-			}
-
-			if (pos == current_line.Length)
-				return '\n';
-			else if (pos > current_line.Length) {
-				pos = -1;
-				goto again;
-			} else if ((pos == current_line.Length - 1) &&
-				   (current_line [pos] == '\\')) {
-				tokens_seen = true;
-				pos = -1;
-				return '\n';
-			}
-
-			return current_line [pos];
-		}
-
 		int getChar ()
 		{
-			int x;
 			if (putback_char != -1){
-				x = putback_char;
+				int x = putback_char;
 				putback_char = -1;
 
 				return x;
 			}
-			x = nextChar ();
-			if (x >= 0)
-				pos++;
-			return x;
+			return reader.Read ();
 		}
 
 		int peekChar ()
 		{
 			if (putback_char != -1)
 				return putback_char;
-			return nextChar ();
+			return reader.Peek ();
 		}
 
 		void putback (int c)
@@ -237,30 +207,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			putback_char = c;
 		}
 
-		public void dont_advance ()
-		{
-			first_token = true;
-		}
-
 		public bool advance ()
 		{
-			if (first_token) {
-				first_token = false;
-				return true;
-			}
-
-			int c = peekChar ();
-			if (c < 0) {
-				current_token = Token.EOF;
-				return false;
-			}
-
-			current_token = -1;
-
-			if (parsing_expression && ((char) c == '\n'))
-				return false;				
-
-			return true;
+			return do_advance;
 		}
 
 		bool is_identifier_start_character (char c)
@@ -271,6 +220,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		bool is_identifier_part_character (char c)
 		{
 			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9') || Char.IsLetter (c);
+		}
+
+		int GetKeyword (string name, bool tokens_seen)
+		{
+			if (dollar_seen)
+				return -1;
+
+			object o = keywords [name];
+
+			if (o != null)
+				return (int) o;
+
+			if (tokens_seen)
+				return -1;
+
+			o = short_keywords [name];
+			if (o != null)
+				return (int) o;
+
+			return -1;
 		}
 
 		//
@@ -339,8 +308,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		private int consume_identifier (int c) 
+		private int consume_identifier (int c, bool quoted) 
 		{
+			bool old_tokens_seen = tokens_seen;
+			tokens_seen = true;
+
 			id_builder.Length = 0;
 
 			id_builder.Append ((char) c);
@@ -354,12 +326,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			string ids = id_builder.ToString ();
+			int keyword = GetKeyword (ids, old_tokens_seen);
 
-			val = ids;
-			if (ids.Length > 512)
-				throw new SyntaxError (
-					"Identifier too long (limit is 512 chars)");
-			return Token.IDENTIFIER;
+			if (keyword == -1 || quoted){
+				val = ids;
+				if (ids.Length > 512){
+					context.Error ("Identifier too long (limit is 512 chars)");
+				}
+				return Token.IDENTIFIER;
+			}
+
+			return keyword;
 		}
 
 		private int consume_string (bool quoted) 
@@ -381,7 +358,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				if (c == '\n'){
 					if (!quoted)
-						throw new SyntaxError ("Newline in constant");
+						context.Error ("Newline in constant");
 					col = 0;
 				} else
 					col++;
@@ -394,7 +371,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				string_builder.Append ((char) c);
 			}
 
-			throw new SyntaxError ("Unterminated string literal");
+			context.Error ("Unterminated string literal");
+			return Token.EOF;
 		}
 
 		private int consume_quoted_identifier ()
@@ -417,7 +395,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				id_builder.Append ((char) c);
 			}
 
-			throw new SyntaxError ("Unterminated quoted identifier");
+			context.Error ("Unterminated quoted identifier");
+			return Token.EOF;
 		}
 
 		private string consume_help ()
@@ -438,16 +417,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return sb.ToString ();
 		}
 
-		int xtoken ()
+		public int xtoken ()
 		{
 			int c;
 
 			val = null;
 			// optimization: eliminate col and implement #directive semantic correctly.
-
 			for (;(c = getChar ()) != -1; col++) {
 				if (is_identifier_start_character ((char)c))
-					return consume_identifier (c);
+					return consume_identifier (c, false);
 
 				if (c == 0)
 					continue;
@@ -459,12 +437,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.AT;
 				else if (c == '%')
 					return Token.PERCENT;
+				else if (c == '$') {
+					dollar_seen = true;
+					return Token.DOLLAR;
+				}
 				else if (c == '.')
 					return Token.DOT;
 				else if (c == '!')
 					return Token.BANG;
-				else if (c == '=')
+				else if (c == '=') {
+					dollar_seen = false;
 					return Token.ASSIGN;
+				}
 				else if (c == '*')
 					return Token.STAR;
 				else if (c == '+')
@@ -490,9 +474,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				else if (c == ':')
 					return Token.COLON;
 
-				if (c >= '0' && c <= '9')
+				if (c >= '0' && c <= '9') {
+					tokens_seen = true;
 					return is_number (c);
-			
+				}
+
 				if (c == '"')
 					return consume_string (false);
 
@@ -517,16 +503,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return Token.ERROR;
 			}
 
+			do_advance = false;
 			return Token.EOF;
 		}
 
 		public int token ()
 		{
-			if (current_token == -1)
-				current_token = xtoken ();
-			tokens_seen = true;
-			if (parsing_expression && (current_token == Token.EOL))
-				return Token.EOF;
+			current_token = xtoken ();
 			return current_token;
 		}
 
@@ -559,10 +542,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return hash;
 		}
 
-		public int Location {
-			get { return pos; }
-		}
-
 		//
 		// Returns a verbose representation of the current location
 		//
@@ -582,7 +561,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (current_token_name == null)
 					current_token_name = current_token.ToString ();
 
-				return String.Format ("Token: {0} {1}",
+				return String.Format ("{0}, Token: {1} {2}", ref_name,
 						      current_token_name, det);
 			}
 		}

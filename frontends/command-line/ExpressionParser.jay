@@ -4,15 +4,17 @@ using System.IO;
 using System.Collections;
 using System;
 
-using CL = Mono.Debugger.Frontends.CommandLine;
+using Mono.Debugger.Frontends.CommandLine;
 
 namespace Mono.Debugger.Frontends.Scripting
 {
 	internal class ExpressionParser
 	{
-		CL.Parser parser;
+		ScriptingContext current_context;
+		MyTextReader reader;
+		bool do_quit = false;
 
-		protected bool yacc_verbose_flag = true;
+		protected bool yacc_verbose_flag = false;
 
 		public bool yacc_verbose {
 			set {
@@ -24,14 +26,19 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		CL.Tokenizer lexer;
+		public bool Quit {
+			get {
+				return do_quit;
+			}
+		}
 
-		public CL.Tokenizer Lexer {
+		Tokenizer lexer;
+
+		public Tokenizer Lexer {
 			get {
 				return lexer;
 			}
-		}		   
-
+		}
 %}
 
 %token QUIT
@@ -124,24 +131,30 @@ variable_or_type_name
 
 %%
 
-public ExpressionParser (CL.Parser parser, CL.Tokenizer lexer)
+public ExpressionParser (ScriptingContext context, string name)
 {
-	this.parser = parser;
-	this.lexer = lexer;
+	this.reader = new MyTextReader ();
+	this.current_context = context;
+
+	lexer = new Tokenizer (context, reader, name);
 }
 
-public object Parse ()
+public Expression Parse (string text)
 {
 	try {
+		reader.Text = text;
+		lexer.restart ();
 		if (yacc_verbose_flag)
-			return yyparse (lexer, new yydebug.yyDebugSimple ());
+			return (Expression) yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
-			return yyparse (lexer);
+			return (Expression) yyparse (lexer);
 	} catch (Exception e){
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//
-		throw new CL.ParserError (e.ToString ());
+		current_context.Error (lexer.location + "  : Parsing error ");
+		current_context.Error (e.ToString ());
+		return null;
 	}
 }
 

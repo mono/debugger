@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Mono.Debugger;
 using Mono.Debugger.Frontends.Scripting;
+using CL;
 
 //
 // General Information about an assembly is controlled through the following 
@@ -46,11 +47,11 @@ using Mono.Debugger.Frontends.Scripting;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
-	public class CommandLineInterpreter : Interpreter, InputProvider
+	public class CommandLineInterpreter : Interpreter
 	{
 		GnuReadLine readline = null;
 		Engine engine;
-		Parser parser;
+		LineParser parser;
 		string default_prompt, prompt;
 		int line = 0;
 
@@ -61,11 +62,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 			: base (command_out, inferior_out, is_synchronous, is_interactive,
 				args)
 		{
-			engine = new Engine ();
-			parser = new Parser (engine, GlobalContext, this);
+			engine = SetupEngine ();
+			parser = new LineParser (engine);
+
+			if (is_interactive) {
+				prompt = default_prompt = "$ ";
+				readline = new GnuReadLine ();
+			}
+		}
+
+		Engine SetupEngine ()
+		{
+			Engine e = new Engine (GlobalContext);
 
 			Type command_type = typeof (Command);
-			Type expression_type = typeof (Expression);
 
 			foreach (Type type in command_type.Assembly.GetTypes ()) {
 				if (!type.IsSubclassOf (command_type) || type.IsAbstract)
@@ -80,37 +90,39 @@ namespace Mono.Debugger.Frontends.CommandLine
 				}
 
 				CommandAttribute attr = (CommandAttribute) attrs [0];
-				Engine.RegisterCommand (Engine.Root, attr.Name, type);
+				e.Register (attr.Name, type);
 			}
 
-			if (is_interactive) {
-				prompt = default_prompt = "$ ";
-				readline = new GnuReadLine ();
+			return e;
+		}
+
+		public void MainLoop ()
+		{
+			string s;
+			bool is_complete = true;
+
+			parser.Reset ();
+			while ((s = ReadInput (is_complete)) != null) {
+				parser.Append (s);
+				if (parser.IsComplete ()){
+					parser.Execute ();
+					parser.Reset ();
+					is_complete = true;
+				} else
+					is_complete = false;
 			}
 		}
 
-		public Parser Parser {
-			get { return parser; }
-		}
-
-		public string ReadInput ()
+		public string ReadInput (bool is_complete)
 		{
 			++line;
 			if (readline != null) {
+				string prompty = is_complete ? "(mdb) " : "... ";
 				string result = readline.ReadLine (prompt);
 				if ((result != null) && (result != ""))
 					readline.AddHistory (result);
 				return result;
 			} else
-				return Console.ReadLine ();
-		}
-
-		public string ReadMoreInput ()
-		{
-			++line;
-			if (readline != null)
-				return readline.ReadLine (".. ");
-			else
 				return Console.ReadLine ();
 		}
 
@@ -140,7 +152,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			Console.WriteLine ("Mono debugger");
 			try {
-				interpreter.Parser.Run ();
+				interpreter.MainLoop ();
 			} catch (Exception ex) {
 				Console.WriteLine ("EX: {0}", ex);
 			} finally {
