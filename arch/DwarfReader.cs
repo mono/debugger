@@ -2173,38 +2173,22 @@ namespace Mono.Debugger.Architecture
 				return reference.Type;
 			}
 
-			protected NativeType GetReference (string name, long offset)
-			{
-				DieType reference = comp_unit.GetType (offset);
-				if (reference == null)
-					return null;
-
-				return reference.ResolveTypeDef (name);
-			}
-
 			protected NativeType Resolve ()
 			{
-				if (resolved)
-					return type;
-
-				if (name == null)
-					name = DoResolveName ();
-				type = DoResolve (name);
-				resolved = true;
+				if (!resolved) {
+					type = DoResolve ();
+					if (name == null) {
+						if (type != null)
+							name = type.Name;
+						else
+							name = "void";
+					}
+					resolved = true;
+				}
 				return type;
 			}
 
-			protected NativeType ResolveTypeDef (string name)
-			{
-				return DoResolve (name);
-			}
-
-			protected virtual string DoResolveName ()
-			{
-				throw new InvalidOperationException ();
-			}
-
-			protected abstract NativeType DoResolve (string name);
+			protected abstract NativeType DoResolve ();
 
 			public bool HasType {
 				get {
@@ -2224,8 +2208,16 @@ namespace Mono.Debugger.Architecture
 
 			public string Name {
 				get {
-					return Type.Name;
+					return name;
 				}
+			}
+
+			internal void SetName (string name)
+			{
+				if (resolved)
+					throw new InvalidOperationException ();
+
+				this.name = name;
 			}
 
 			public override string ToString ()
@@ -2266,10 +2258,12 @@ namespace Mono.Debugger.Architecture
 			protected override NativeType DoResolve (string name)
 			{
 				type = GetMonoType ((DwarfBaseTypeEncoding) encoding, byte_size);
-				if (type != null)
-					return new NativeFundamentalType (name, type, byte_size);
-				else
-					return new NativeOpaqueType (name, byte_size);
+				if (type != null) {
+					if (Name == null)
+						SetName (type.Name);
+					return new NativeFundamentalType (Name, type, byte_size);
+				} else
+					return new NativeOpaqueType (Name, byte_size);
 			}
 
 			protected Type GetMonoType (DwarfBaseTypeEncoding encoding, int byte_size)
@@ -2360,7 +2354,10 @@ namespace Mono.Debugger.Architecture
 				if (ref_type.TypeHandle == typeof (char))
 					return new NativeStringType (byte_size);
 
-				return new NativePointerType (name, ref_type, byte_size);
+				if (Name == null)
+					SetName (String.Format ("{0} *", ref_type.Name));
+
+				return new NativePointerType (Name, ref_type, byte_size);
 			}
 		}
 
@@ -2462,6 +2459,93 @@ namespace Mono.Debugger.Architecture
 				field_list.CopyTo (fields, 0);
 
 				return new NativeStructType (name, byte_size, fields);
+			}
+		}
+
+		protected class DieTypedef : DieType
+		{
+			long type_offset;
+
+			public DieTypedef (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					   long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override NativeType DoResolve ()
+			{
+				if (Name == null)
+					throw new InvalidOperationException ();
+
+				DieType reference = comp_unit.GetType (type_offset);
+				if (reference == null)
+					return null;
+
+				reference.SetName (Name);
+				if (!reference.HasType)
+					return null;
+
+				return reference.Type;
+			}
+		}
+
+		protected class DieStructureType : DieType
+		{
+			int byte_size;
+
+			public DieStructureType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+						 long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.byte_size:
+					byte_size = (int) (long) attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override NativeType DoResolve ()
+			{
+				if (Name == null)
+					throw new InternalError ();
+
+				ArrayList field_list = new ArrayList ();
+
+				if (abbrev.HasChildren) {
+					foreach (Die child in Children) {
+						DieMember member = child as DieMember;
+						if ((member == null) || !member.Resolve ())
+							continue;
+
+						NativeFieldInfo field = new NativeFieldInfo (
+							member.Type, member.Name, field_list.Count, member.DataOffset);
+						field_list.Add (field);
+					}
+				}
+
+				NativeFieldInfo[] fields = new NativeFieldInfo [field_list.Count];
+				field_list.CopyTo (fields, 0);
+
+				return new NativeStructType (Name, byte_size, fields);
 			}
 		}
 

@@ -22,7 +22,10 @@ namespace Mono.Debugger.Languages.Native
 
 		ITargetType ITargetPointerObject.CurrentType {
 			get {
-				throw new InvalidOperationException ();
+				if (!type.HasStaticType)
+					throw new InvalidOperationException ();
+
+				return type.StaticType;
 			}
 		}
 
