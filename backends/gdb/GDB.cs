@@ -108,6 +108,7 @@ namespace Mono.Debugger.Backends
 
 			gdb_output.ReadLine += new ReadLineHandler (check_gdb_output);
 			gdb_errors.ReadLine += new ReadLineHandler (check_gdb_errors);
+			gdb_output.Hangup += new HangupHandler (gdb_hangup);
 
 			while (!gdb_event)
 				MainIteration ();
@@ -719,7 +720,8 @@ namespace Mono.Debugger.Backends
 
 			if (current_frame != null) {
 				start_address = current_frame.TargetLocation.Location;
-				step_range = current_frame.SourceLocation.SourceRange;
+				if (current_frame.SourceLocation != null)
+					step_range = current_frame.SourceLocation.SourceRange;
 				symbol_handle = current_frame.SymbolHandle;
 			}
 
@@ -1140,6 +1142,11 @@ namespace Mono.Debugger.Backends
 
 			new_frame_address = 0;
 			send_gdb_command (command);
+		}
+
+		void gdb_hangup ()
+		{
+			throw new TargetException ("GDB exited!");
 		}
 
 		void check_gdb_output (string line, bool is_stderr)

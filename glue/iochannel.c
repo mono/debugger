@@ -21,6 +21,17 @@ watch_input_func (GIOChannel *channel, GIOCondition condition, gpointer data)
 	return TRUE;
 }
 
+static gboolean
+watch_hangup_func (GIOChannel *channel, GIOCondition condition, gpointer data)
+{
+	if (condition == G_IO_HUP) {
+		((MonoDebuggerGlueHangupHandler) data) ();
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 unsigned
 mono_debugger_glue_add_watch_input (GIOChannel *channel, MonoDebuggerGlueReadHandler cb)
 {
@@ -28,6 +39,12 @@ mono_debugger_glue_add_watch_input (GIOChannel *channel, MonoDebuggerGlueReadHan
 	g_io_channel_set_flags (channel, flags | G_IO_FLAG_NONBLOCK, NULL);
 
 	return g_io_add_watch (channel, G_IO_IN, watch_input_func, cb);
+}
+
+unsigned
+mono_debugger_glue_add_watch_hangup (GIOChannel *channel, MonoDebuggerGlueHangupHandler cb)
+{
+	return g_io_add_watch (channel, G_IO_HUP, watch_hangup_func, cb);
 }
 
 void

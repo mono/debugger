@@ -17,12 +17,25 @@ namespace GLib {
 		[DllImport("glib-2.0")]
 		static extern IntPtr g_io_channel_unix_new (int fd);
 
+		[DllImport("monodebuggerglue")]
+		static extern uint mono_debugger_glue_add_watch_hangup (IntPtr channel, HangupHandler cb);
+
+		public event HangupHandler Hangup;
+
+		void hangup ()
+		{
+			if (Hangup != null)
+				Hangup ();
+		}
+
 		internal IOChannel (int fd)
 		{
 			_channel = g_io_channel_unix_new (fd);
+			mono_debugger_glue_add_watch_hangup (_channel, new HangupHandler (hangup));
 		}
 	}
 
+	public delegate void HangupHandler ();
 	public delegate void ReadLineHandler (string line);
 
 	public class IOInputChannel : IOChannel

@@ -6,8 +6,10 @@
 G_BEGIN_DECLS
 
 typedef void (*MonoDebuggerGlueReadHandler) (const char *input);
+typedef void (*MonoDebuggerGlueHangupHandler) (void);
 
 extern unsigned mono_debugger_glue_add_watch_input (GIOChannel *channel, MonoDebuggerGlueReadHandler cb);
+extern unsigned mono_debugger_glue_add_watch_hangup (GIOChannel *channel, MonoDebuggerGlueHangupHandler cb);
 extern void mono_debugger_glue_add_watch_output (GIOChannel *channel);
 extern void mono_debugger_glue_kill_process (int pid, int force);
 extern void mono_debugger_glue_write_line (GIOChannel *channel, const char *line);
