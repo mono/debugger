@@ -56,7 +56,7 @@ namespace Mono.Debugger.GUI
 			base.SetProcess (process);
 
 			arch = process.Architecture;
-			if (arch is ArchitectureI386)
+			if (arch != null)
 				SetupI386 ();
 		}
 

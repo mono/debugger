@@ -37,8 +37,9 @@ namespace Mono.Debugger.GUI {
 			this.notebook = notebook;
 			this.source_status = source_status;
 
-			disassembler_view = new DisassemblerView (
-				this, disassembler_container, register_display);
+			disassembler_view = new DisassemblerView (this, register_display);
+			disassembler_container.Add (disassembler_view.Widget);
+			disassembler_view.Widget.ShowAll ();
 
 			factory = new SourceFileFactory ();
 
@@ -108,7 +109,7 @@ namespace Mono.Debugger.GUI {
 				SourceList view = (SourceList) de.Value;
 
 				if (view.TabWidget == o){
-					Widget view_widget = view.ToplevelWidget;
+					Widget view_widget = view.Widget;
 					Widget v;
 					int i = 0;
 
@@ -220,10 +221,11 @@ namespace Mono.Debugger.GUI {
 				return disassembler_view;
 			
 			view = CreateSourceView (filename, contents);
+			view.Widget.ShowAll ();
 					
 			sources [filename] = view;
-			notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);
-			notebook.SetMenuLabelText (view.ToplevelWidget, filename);
+			notebook.InsertPage (view.Widget, view.TabWidget, -1);
+			notebook.SetMenuLabelText (view.Widget, filename);
 			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
 
 			return view;
@@ -237,7 +239,7 @@ namespace Mono.Debugger.GUI {
 			current_source.Active = true;
 
 			if (!initialized || (notebook.Page != 0)) {
-				int idx = GetPageIdx (current_source.ToplevelWidget);
+				int idx = GetPageIdx (current_source.Widget);
 				if (idx != -1)
 					notebook.Page = idx;
 			}

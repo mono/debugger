@@ -27,15 +27,16 @@ namespace Mono.Debugger.GUI {
 
 		Hashtable breakpoints = new Hashtable ();
 
-		static Gtk.Container create_container ()
+		protected override Gtk.Widget CreateWidget (Gtk.SourceView source_view)
 		{
 			Gtk.ScrolledWindow sw = new ScrolledWindow (null, null);
 			sw.SetPolicy (PolicyType.Automatic, PolicyType.Automatic);
+			sw.Add (source_view);
 			return sw;
 		}
 		
 		public SourceList (SourceManager manager, string filename, string contents)
-			: base (manager, create_container ())
+			: base (manager)
 		{
 			Console.WriteLine ("Filename: " + filename);
 			this.filename = filename;

@@ -10,9 +10,13 @@ namespace Mono.Debugger.GUI
 	{
 		RegisterDisplay register_display;
 
-		public DisassemblerView (SourceManager manager, Gtk.Container container,
-					 RegisterDisplay register_display)
-			: base (manager, container)
+		protected override Gtk.Widget CreateWidget (Gtk.SourceView source_view)
+		{
+			return source_view;
+		}
+
+		public DisassemblerView (SourceManager manager, RegisterDisplay register_display)
+			: base (manager)
 		{
 			this.register_display = register_display;
 

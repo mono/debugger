@@ -26,20 +26,21 @@ namespace Mono.Debugger.GUI {
 		protected DebuggerBackend backend;
 		protected Process process;
 
-		protected Gtk.Container container;
+		Gtk.Widget widget;
 		protected Gtk.SourceView source_view;
 		protected TextTag frame_tag, breakpoint_tag;
 		protected Gtk.SourceBuffer text_buffer;
 		
 		bool active;
+		bool visible;
+		bool first = true;
 
 		Hashtable breakpoints = new Hashtable ();
 		
-		public SourceView (SourceManager manager, Gtk.Container container)
+		public SourceView (SourceManager manager)
 		{
 			this.manager = manager;
 			this.backend = manager.DebuggerBackend;
-			this.container = container;
 
 			text_buffer = new Gtk.SourceBuffer (new Gtk.TextTagTable ());
 			source_view = new Gtk.SourceView (text_buffer);
@@ -66,10 +67,11 @@ namespace Mono.Debugger.GUI {
 			//
 			source_view.AddPixbuf ("stop", stop, false);
 			source_view.AddPixbuf ("line", line, false);
-			
-			container.Add (source_view);
-			container.ShowAll ();
 
+			widget = CreateWidget (source_view);
+			widget.Mapped += new EventHandler (mapped_event);
+			widget.Unmapped += new EventHandler (unmapped_event);
+			
 			//
 			// Hook up events
 			//
@@ -81,6 +83,8 @@ namespace Mono.Debugger.GUI {
 
 			process = manager.Process;
 		}
+
+		protected abstract Gtk.Widget CreateWidget (Gtk.SourceView source_view);
 
 		void process_created (object sender, Process process)
 		{
@@ -127,7 +131,25 @@ namespace Mono.Debugger.GUI {
 				last_line = -1;
 			}
 
-			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+			if (visible)
+				text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+		}
+
+		void mapped_event (object o, EventArgs args)
+		{
+			visible = true;
+
+			StackFrame frame = current_frame;
+			if (frame != null) {
+				current_frame = null;
+				frame_changed_event (frame);
+			} else
+				ClearLine ();
+		}
+
+		void unmapped_event (object o, EventArgs args)
+		{
+			visible = false;
 		}
 
 		void target_exited_event ()
@@ -160,6 +182,9 @@ namespace Mono.Debugger.GUI {
 
 			current_frame = frame;
 
+			if (!visible)
+				return;
+
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 
 			SourceLocation source = GetSourceLocation (frame);
@@ -181,11 +206,25 @@ namespace Mono.Debugger.GUI {
 			Gtk.TextMark frame_mark = text_buffer.GetMark ("frame");
 			text_buffer.MoveMark (frame_mark, start_iter);
 			source_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
+
+			if (first) {
+				// FIXME: the ScrollToMark() above doesn't work if the GUI isn't
+				//        already realized.
+				GLib.Idle.Add (new GLib.IdleHandler (first_scroll_handler));
+				first = false;
+			}
+		}
+
+		bool first_scroll_handler ()
+		{
+			Gtk.TextMark frame_mark = text_buffer.GetMark ("frame");
+			source_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
+			return false;
 		}
 		
-		public Widget ToplevelWidget {
+		public Widget Widget {
 			get {
-				return container;
+				return widget;
 			}
 		}
 	}
