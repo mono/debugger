@@ -133,7 +133,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} [{1}:{2}:{3}:{4}]", GetType (), TypeHandle,
+			return String.Format ("{0} [{1}:{2}:{3}:{4}]", GetType (), Name,
 					      IsByRef, HasFixedSize, Size);
 		}
 	}

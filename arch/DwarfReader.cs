@@ -2114,7 +2114,7 @@ namespace Mono.Debugger.Architecture
 
 			public override string ToString ()
 			{
-				return String.Format ("{0} ({1}:{2})", GetType (), Name, Type);
+				return String.Format ("NativeVariable [{0}:{1}]", Name, Type);
 			}
 		}
 
