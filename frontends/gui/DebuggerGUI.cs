@@ -327,6 +327,12 @@ namespace Mono.Debugger.GUI
 				backend.Continue ();
 		}
 
+		void OnContinueIgnoreSignalActivate (object sender, EventArgs args)
+		{
+			backend.ClearSignal ();
+			OnRunProgramActivate (sender, args);
+		}
+
 		void OnStopProgramActivate (object sender, EventArgs args)
 		{
 			backend.Stop ();
