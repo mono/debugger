@@ -94,6 +94,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			user_interfaces.Add ("mono", new StyleMono (this));
 			user_interfaces.Add ("native", new StyleNative (this));
 			user_interfaces.Add ("martin", new StyleMartin (this));
+			user_interfaces.Add ("emacs", new StyleEmacs (this));
 			current_user_interface = (Style) user_interfaces ["mono"];
 
 			start_event = new AutoResetEvent (false);
@@ -104,15 +105,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				start = ProcessStart.Create (options);
 				if (start != null)
 					Initialize ();
-			} catch (TargetException e) {
-				Error (e);
-			}
-
-			if (!HasBackend)
-				return;
-
-			try {
-				Run ();
 			} catch (TargetException e) {
 				Error (e);
 			}

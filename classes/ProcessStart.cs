@@ -24,7 +24,7 @@ namespace Mono.Debugger
 		[Option("JIT Optimizations", "jit-optimizations")]
 		public string JitOptimizations = "";
 
-		[Option("Working directory", "working-directory")]
+		[Option("Working directory", "cd", "working-directory")]
 		public string WorkingDirectory = ".";
 
 		[Option("Load native symtabs", "native-symtabs")]
@@ -35,6 +35,9 @@ namespace Mono.Debugger
 
 		[Option("Debugging flags", "debug-flags")]
 		public int DebugFlags = 0;
+
+		[Option("Running in Emacs", 'f', "fullname")]
+		public bool InEmacs = false;
 
 		[Option("Override Mono prefix", "mono-prefix")]
 		public string MonoPrefix = null;

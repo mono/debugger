@@ -1,3 +1,26 @@
+2004-10-20  Chris Toshok  <toshok@ximian.com>
+
+	* classes/ProcessStart.cs (DebuggerOptions): add -f/-fullname,
+	which the emacs gud stuff passes on the command line, and also
+	change the WorkingDirectory option to -cd/-working-directory.
+
+	* frontends/scripting/Style.cs (StyleEmacs):
+	(StyleNative.TargetStopped): make this virtual so that StyleEmacs
+	can override it.
+
+	* frontends/scripting/Interpreter.cs (Interpreter.ctor): add emacs
+	style, and don't call Run() here, we do it in response to the user
+	typing "run".
+
+	* frontends/scripting/Command.cs (RunCommand): new command.
+	(HelpCommand.Execute): add "run" blurb.
+
+	* frontends/command-line/Main.cs
+	(CommandLineInterpreter.ctor): if we're running in emacs -- if
+	options.InEmacs == true -- default the style to "emacs".
+	(CommandLineInterpreter.SetupEngine): register the RunCommand on
+	"run" and "r".
+
 2004-10-20  Martin Baulig  <martin@ximian.com>
 
 	* backends/StepFrame.cs

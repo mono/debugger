@@ -34,6 +34,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				prompt = options.Prompt;
 				if (!options.IsScript)
 					readline = new GnuReadLine ();
+				if (options.InEmacs)
+					Style = GetStyle("emacs");
 			}
 		}
 
@@ -89,6 +91,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("save", typeof (SaveCommand));
 			e.Register ("load", typeof (LoadCommand));
 			e.Register ("restart", typeof (RestartCommand));
+			e.Register ("run", typeof (RunCommand));
+			e.Register ("r", typeof (RunCommand));
 			e.Register ("about", typeof (AboutCommand));
 			e.Register ("start", typeof (StartCommand));
 			e.Register ("lookup", typeof (LookupCommand));

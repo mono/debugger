@@ -70,6 +70,30 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class StyleEmacs : StyleMono
+	{
+		public StyleEmacs (Interpreter interpreter)
+			: base (interpreter)
+		{ }
+
+		public override string Name {
+			get {
+				return "emacs";
+			}
+		}
+
+		public override void TargetStopped (ScriptingContext context, FrameHandle frame,
+						    AssemblerLine current_insn)
+		{
+			if (frame == null)
+				return;
+
+			StackFrame stack_frame = frame.Frame;
+			if (stack_frame != null && stack_frame.SourceAddress != null)
+				Console.WriteLine ("\x1A\x1A{0}:{1}:beg:{2}", stack_frame.SourceAddress.Name, "55" /* XXX */, "0x80594d8" /* XXX */);
+		}
+	}
+
 	public class StyleNative : StyleBase, Style
 	{
 		public StyleNative (Interpreter interpreter)
@@ -103,7 +127,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				frame.Disassemble (context);
 		}
 
-		public void TargetStopped (ScriptingContext context, FrameHandle frame,
+		public virtual void TargetStopped (ScriptingContext context, FrameHandle frame,
 					   AssemblerLine current_insn)
 		{
 			if (frame != null) {
