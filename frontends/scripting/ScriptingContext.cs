@@ -1,4 +1,5 @@
 using System;
+using Math = System.Math;
 using System.Text;
 using System.IO;
 using System.Reflection;
@@ -857,8 +858,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (ITargetFieldInfo property in tstruct.Properties)
 					Print ("  It has a property `{0}' of type {1}", property.Name,
 					       property.Type.Name);
-				foreach (ITargetMethodInfo method in tstruct.Methods)
-					Print ("  It has a method: {0}", method.FullName);
+				foreach (ITargetMethodInfo method in tstruct.Methods) {
+					if (method.Type.HasReturnValue)
+						Print ("  It has a method: {0} {1}", method.Type.ReturnType.Name, method.FullName);
+					else
+						Print ("  It has a method: void {0}", method.FullName);
+				}
 				return;
 			}
 

@@ -57,7 +57,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_compile_method,
 	&debugger_insert_breakpoint,
 	&debugger_remove_breakpoint,
-	&mono_runtime_invoke,
+	&mono_debugger_runtime_invoke,
 	&debugger_event_data,
 	&debugger_event_arg,
 	MONO_DEBUGGER__heap,

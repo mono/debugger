@@ -31,15 +31,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		protected virtual ITargetFunctionObject DoResolveMethod (ScriptingContext context)
+		protected virtual ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
 		{
 			throw new ScriptingException ("Variable is not a method: `{0}'", Name);
 		}
 
-		public ITargetFunctionObject ResolveMethod (ScriptingContext context)
+		public ITargetFunctionObject ResolveMethod (ScriptingContext context, Expression[] args)
 		{
 			try {
-				ITargetFunctionObject retval = DoResolveMethod (context);
+				ITargetFunctionObject retval = DoResolveMethod (context, args);
 				if (retval == null)
 					throw new ScriptingException ("Can't resolve variable: `{0}'", Name);
 
@@ -279,12 +279,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 						      identifier);
 		}
 
-		ITargetFunctionObject get_method (ITargetStructObject sobj)
+		ITargetFunctionObject get_exact_method (ITargetStructObject sobj)
 		{
 		again:
 			ITargetFunctionObject match = null;
 			foreach (ITargetMethodInfo method in sobj.Type.Methods) {
-				if (method.Name != identifier)
+				if (method.FullName != identifier)
 					continue;
 
 				if (match != null)
@@ -307,6 +307,91 @@ namespace Mono.Debugger.Frontends.CommandLine
 						      identifier);
 		}
 
+		ITargetFunctionObject overload_resolve (ScriptingContext context, ITargetStructObject sobj,
+							Expression[] args, ArrayList candidates)
+		{
+			// We do a very simple overload resolution here
+			VariableExpression[] vargs = new VariableExpression [args.Length];
+			ITargetType[] argtypes = new ITargetType [args.Length];
+			for (int i = 0; i < args.Length; i++) {
+				// First of all, all arguments must be VariableExpressions
+				vargs [i] = args [i] as VariableExpression;
+				if (vargs [i] == null)
+					return null;
+
+				argtypes [i] = vargs [i].ResolveType (context);
+			}
+
+			// Ok, no we need to find an exact match.
+			ITargetMethodInfo match = null;
+			foreach (ITargetMethodInfo method in candidates) {
+				bool ok = true;
+				for (int i = 0; i < args.Length; i++) {
+					if (method.Type.ParameterTypes [i].TypeHandle != argtypes [i].TypeHandle) {
+						ok = false;
+						break;
+					}
+				}
+
+				if (!ok)
+					continue;
+
+				// We need to find exactly one match
+				if (match != null)
+					return null;
+
+				match = method;
+			}
+
+			if (match != null)
+				return sobj.GetMethod (match.Index);
+			else
+				return null;
+		}
+
+		ITargetFunctionObject get_method (ScriptingContext context, ITargetStructObject sobj, Expression[] args)
+		{
+		again:
+			bool found_match = false;
+			ArrayList candidates = new ArrayList ();
+			foreach (ITargetMethodInfo method in sobj.Type.Methods) {
+				if (method.Name != identifier)
+					continue;
+
+				if (method.Type.ParameterTypes.Length != args.Length) {
+					found_match = true;
+					continue;
+				}
+
+				candidates.Add (method);
+			}
+
+			if (candidates.Count == 1)
+				return sobj.GetMethod (((ITargetMethodInfo) candidates [0]).Index);
+
+			if (candidates.Count > 1) {
+				ITargetFunctionObject retval = overload_resolve (context, sobj, args, candidates);
+				if (retval == null)
+					throw new ScriptingException (
+						"Ambiguous method `{0}.{1}'; need to use full name", var_expr.Name, identifier);
+
+				return retval;
+			}
+
+			ITargetClassObject cobj = sobj as ITargetClassObject;
+			if ((cobj != null) && cobj.Type.HasParent) {
+				sobj = cobj.Parent;
+				goto again;
+			}
+
+			if (found_match)
+				throw new ScriptingException ("No overload of method `{0}.{1}' has {2} arguments.",
+							      var_expr.Name, identifier, args.Length);
+			else
+				throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
+							      identifier);
+		}
+
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
 			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
@@ -317,14 +402,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return get_field (sobj);
 		}
 
-		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context)
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context, Expression[] args)
 		{
 			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
 			if (sobj == null)
 				throw new ScriptingException ("Variable {0} is not a struct or class type.",
 							      var_expr.Name);
 
-			return get_method (sobj);
+			if (identifier.IndexOf ('(') != -1)
+				return get_exact_method (sobj);
+			else
+				return get_method (context, sobj, args);
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
@@ -533,7 +621,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ITargetFunctionObject func = method_expr.ResolveMethod (context);
+			ITargetFunctionObject func = method_expr.ResolveMethod (context, arguments);
 
 			return func.Type;
 		}
@@ -545,7 +633,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public ITargetObject Invoke (ScriptingContext context, bool need_retval)
 		{
-			ITargetFunctionObject func = method_expr.ResolveMethod (context);
+			ITargetFunctionObject func = method_expr.ResolveMethod (context, arguments);
 
 			object[] args = new object [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)

@@ -69,7 +69,7 @@ namespace Mono.Debugger.Architecture
 				throw new DwarfException (this, String.Format (
 					"Unknown address size: {0}", address_size));
 
-			target_info = reader.TargetInfo = new TargetInfo (address_size);
+			reader.TargetInfo = target_info = new TargetInfo (address_size);
 
 			debug_abbrev_reader = create_reader (".debug_abbrev");
 			debug_line_reader = create_reader (".debug_line");

@@ -130,7 +130,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public virtual string Name {
 			get {
-				return type.Name;
+				return type.FullName;
 			}
 		}
 

@@ -31,12 +31,13 @@ namespace Mono.Debugger.Languages.CSharp
 			parameter_types = new MonoType [num_params];
 
 			ParameterInfo[] parameters = minfo.GetParameters ();
-			if (parameters.Length != num_params)
+			if (parameters.Length != num_params) {
 				throw new InternalError (
 					"MethodInfo.GetParameters() returns {0} parameters " +
 					"for method {1}, but the JIT has {2}",
 					parameters.Length, minfo.ReflectedType.Name + "." +
 					minfo.Name, num_params);
+			}
 			for (int i = 0; i < num_params; i++) {
 				int param_info = info.ReadInt32 ();
 				parameter_types [i] = GetType (parameters [i].ParameterType, param_info, table);
@@ -149,12 +150,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return null;
 
 			TargetLocation retval_loc = new RelativeTargetLocation (location, retval);
-
-			MonoObjectObject retval_obj = new MonoObjectObject (ObjectType, retval_loc);
-			if ((retval_obj == null) || !retval_obj.HasDereferencedObject || (return_type == ObjectType))
-				return retval_obj;
-
-			return retval_obj.DereferencedObject;
+			return return_type.GetObject (retval_loc);
 		}
 
 		public override MonoObject GetObject (TargetLocation location)

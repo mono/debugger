@@ -466,6 +466,30 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return Token.EOF;
 		}
 
+		private int consume_quoted_identifier ()
+		{
+			int c;
+
+			id_builder.Length = 0;
+								
+			while ((c = getChar ()) != -1){
+				if (c == '\''){
+					val = id_builder.ToString ();
+					return Token.IDENTIFIER;
+				}
+
+				if (c == '\n')
+					col = 0;
+				else
+					col++;
+
+				id_builder.Append ((char) c);
+			}
+
+			context.Error ("Unterminated quoted identifier");
+			return Token.EOF;
+		}
+
 		private string consume_help ()
 		{
 			int c;
@@ -562,6 +586,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 						col = (((col + 8) / 8) * 8) - 1;
 					continue;
 				}
+
+				if (c == '\'')
+					return consume_quoted_identifier ();
 
 				error_details = "Unknown character `" + (char) c + "'";
 				return Token.ERROR;

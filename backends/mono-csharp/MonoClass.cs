@@ -332,8 +332,7 @@ namespace Mono.Debugger.Languages.CSharp
 						sb.Append (pinfo.ParameterType);
 					}
 
-					return String.Format ("{0} {1}({2})", MethodInfo.ReturnType,
-							      MethodInfo.Name, sb.ToString ());
+					return String.Format ("{0}({1})", MethodInfo.Name, sb.ToString ());
 				}
 			}
 
@@ -358,6 +357,12 @@ namespace Mono.Debugger.Languages.CSharp
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} [{1}:{2}:{3}:{4}]", GetType (), Type,
+					      InstanceSize, KlassAddress, Parent);
 		}
 	}
 }
