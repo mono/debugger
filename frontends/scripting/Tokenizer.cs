@@ -146,6 +146,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		// Whether tokens have been seen on this line
 		//
 		bool tokens_seen = false;
+		bool dollar_seen = false;
 
 		//
 		// Details about the error encoutered by the tokenizer
@@ -169,6 +170,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			do_advance = true;
 			tokens_seen = false;
+			dollar_seen = false;
 			col = 1;
 		}
 
@@ -310,7 +312,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		int GetKeyword (string name, bool tokens_seen)
 		{
-			if (current_token == Token.DOLLAR)
+			if (dollar_seen)
 				return -1;
 
 			object o = keywords [name];
@@ -504,8 +506,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.AT;
 				else if (c == '%')
 					return Token.PERCENT;
-				else if (c == '$')
+				else if (c == '$') {
+					dollar_seen = true;
 					return Token.DOLLAR;
+				}
 				else if (c == '.')
 					return Token.DOT;
 				else if (c == '!')

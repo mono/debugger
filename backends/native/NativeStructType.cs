@@ -97,8 +97,11 @@ namespace Mono.Debugger.Languages.Native
 	{
 		NativeFieldInfo[] fields;
 
-		public NativeStructType (string name, int size, NativeFieldInfo[] fields)
+		internal NativeStructType (string name, int size)
 			: base (name, TargetObjectKind.Struct, size)
+		{ }
+
+		internal void SetFields (NativeFieldInfo[] fields)
 		{
 			this.fields = fields;
 		}

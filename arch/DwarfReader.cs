@@ -1336,7 +1336,7 @@ namespace Mono.Debugger.Architecture
 				if (!abbrev.HasChildren)
 					return null;
 
-				ArrayList children = new ArrayList ();
+				children = new ArrayList ();
 
 				while (reader.PeekByte () != 0)
 					children.Add (CreateDie (reader, comp_unit));
@@ -2461,10 +2461,16 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			NativeStructType type;
+
 			protected override NativeType DoResolve ()
 			{
+				if (type != null)
+					return type;
 				if (Name == null)
 					throw new InternalError ();
+
+				type = new NativeStructType (Name, byte_size);
 
 				ArrayList field_list = new ArrayList ();
 
@@ -2483,7 +2489,8 @@ namespace Mono.Debugger.Architecture
 				NativeFieldInfo[] fields = new NativeFieldInfo [field_list.Count];
 				field_list.CopyTo (fields, 0);
 
-				return new NativeStructType (Name, byte_size, fields);
+				type.SetFields (fields);
+				return type;
 			}
 		}
 
@@ -2545,8 +2552,6 @@ namespace Mono.Debugger.Architecture
 				if (abbrev.HasChildren) {
 					foreach (Die child in Children) {
 						DieFormalParameter formal = child as DieFormalParameter;
-						Console.WriteLine ("FUNC CHILD: {0} {1} {2}", child, formal,
-								   child.GetType ());
 						if (formal == null)
 							return null;
 
@@ -2556,8 +2561,6 @@ namespace Mono.Debugger.Architecture
 
 				NativeType[] param_types = new NativeType [0];
 				NativeFunctionType func_type = new NativeFunctionType ("test", return_type, param_types);
-
-				Console.WriteLine ("FUNC TYPE: {0}", func_type);
 
 				return func_type;
 			}
