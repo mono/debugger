@@ -1,5 +1,12 @@
 2003-08-11  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Use a colon instead of a dot to
+	separate a type name and its static member.  This deambiguates the
+	grammar and also allows things like
+	'print System.DateTime:MinValue.Ticks'.
+
+2003-08-11  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/ScriptingContext.cs
 	(ScriptingContext.Print): Don't call String.Format() on already
 	formatted strings; this'll cause problems if the string contains

@@ -591,6 +591,8 @@ namespace Mono.Debugger.Languages.CSharp
 		private ITargetType LookupType (ITargetAccess target, Type type, string name)
 		{
 			int offset = (int) target.CallMethod (Language.MonoDebuggerInfo.LookupType, name).Address;
+			if (offset == 0)
+				return null;
 			return GetType (type, offset);
 		}
 

@@ -503,7 +503,7 @@ variable_expression
 	  {
 		$$ = new StructAccessExpression ((FrameExpression) $1, (TypeExpression) $2, (string) $4);
 	  }
-	| frame_prefix type_name DOT IDENTIFIER
+	| frame_prefix type_name COLON IDENTIFIER
 	  {
 		TypeExpression type = new TypeNameExpression ((FrameExpression) $1, (string) $2);
 		$$ = new StructAccessExpression ((FrameExpression) $1, type, (string) $4);
