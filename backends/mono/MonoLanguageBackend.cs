@@ -255,6 +255,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void AddClass (TargetAddress klass_address, MonoType type)
 		{
+		  Console.WriteLine ("AddClass {0}", type);
 			class_hash.Add (klass_address, type);
 		}
 
@@ -523,6 +524,10 @@ namespace Mono.Debugger.Languages.Mono
 #endregion
 
 #region ILanguage implementation
+		public string SourceLanguage (StackFrame frame)
+		{
+			return "";
+		}
 
 		public ITargetType LookupType (StackFrame frame, string name)
 		{

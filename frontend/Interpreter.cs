@@ -14,21 +14,6 @@ using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	[AttributeUsage (AttributeTargets.Class)]
-	public class ShortDescriptionAttribute : Attribute
-	{
-		string text;
-
-		public ShortDescriptionAttribute (string text)
-		{
-			this.text = text;
-		}
-
-		public string Text {
-			get { return text; }
-		}
-	}
-
 	public abstract class Interpreter
 	{
 		DebuggerBackend backend;
@@ -42,8 +27,13 @@ namespace Mono.Debugger.Frontend
 		Hashtable procs;
 		Hashtable breakpoints;
 		Hashtable events;
-		Hashtable user_interfaces;
-		Style current_user_interface;
+
+		Hashtable styles;
+		Style current_style;
+
+		Hashtable parsers_by_name;
+		Hashtable parser_names_by_language;
+		string current_parser_name;
 
 		DebuggerTextWriter command_output;
 		DebuggerTextWriter inferior_output;
@@ -77,12 +67,24 @@ namespace Mono.Debugger.Frontend
 			breakpoints = new Hashtable ();
 			events = new Hashtable ();
 
-			user_interfaces = new Hashtable ();
-			user_interfaces.Add ("mono", new StyleMono (this));
-			user_interfaces.Add ("native", new StyleNative (this));
-			user_interfaces.Add ("martin", new StyleMartin (this));
-			user_interfaces.Add ("emacs", new StyleEmacs (this));
-			current_user_interface = (Style) user_interfaces ["mono"];
+			styles = new Hashtable ();
+			styles.Add ("mono", new StyleMono (this));
+			styles.Add ("native", new StyleNative (this));
+			styles.Add ("martin", new StyleMartin (this));
+			styles.Add ("emacs", new StyleEmacs (this));
+			current_style = (Style) styles ["mono"];
+
+			parsers_by_name = new Hashtable ();
+			parsers_by_name.Add ("c#", typeof (CSharp.ExpressionParser));
+
+			// XXX we should really get these from the
+			// actual Name property of a language
+			// instance..
+			parser_names_by_language = new Hashtable ();
+			parser_names_by_language.Add ("Mono", "c#");
+			parser_names_by_language.Add ("native", "c#");
+
+			current_parser_name = "auto";
 
 			start_event = new AutoResetEvent (false);
 
@@ -122,21 +124,82 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public Style Style {
-			get { return current_user_interface; }
+			get { return current_style; }
 			set {
-				current_user_interface = value;
-				current_user_interface.Reset ();
+				current_style = value;
+				current_style.Reset ();
 			}
 		}
 
 		public Style GetStyle (string name)
 		{
-			Style style = (Style) user_interfaces [name];
+			Style style = (Style) styles [name];
 			if (style == null)
 				throw new ScriptingException (
 					"No such user interface: `{0}'", name);
 
 			return style;
+		}
+
+		public string[] GetStyleNames ()
+		{
+			string[] names = new string[styles.Keys.Count];
+			styles.Keys.CopyTo (names, 0);
+
+			return names;
+		}
+
+		public string CurrentLang {
+			get { return current_parser_name; }
+			set {
+				if (value == "auto" || parsers_by_name [value] != null) {
+					current_parser_name = value;
+				}
+				else {
+					throw new ScriptingException ("No such language: `{0}'", value);
+				}
+			}
+		}
+
+		public string CurrentLangPretty {
+			get {
+				if (current_parser_name == "auto") {
+					try {
+						string l = (string)parser_names_by_language [context.CurrentFrame.Frame.Language.Name];
+						return String.Format ("auto, currently set to {0}", l);
+					}
+					catch { }
+				}
+
+				return current_parser_name;
+			}
+		}
+
+		public IExpressionParser GetExpressionParser (ScriptingContext context, string name)
+		{
+			Type parser_type;
+
+			if (current_parser_name == "auto") {
+				/* determine the language parser by the current stack frame */
+				parser_type = (Type)parsers_by_name [parser_names_by_language [context.CurrentFrame.Frame.Language.Name]];
+			}
+			else {
+				/* use the user specified language */
+				parser_type = (Type)parsers_by_name [current_parser_name];
+			}
+
+			if (parser_type != null) {
+				IExpressionParser parser;
+				object[] args = new object[2];
+				args[0] = context;
+				args[1] = name;
+				parser = (IExpressionParser)Activator.CreateInstance (parser_type, args);
+
+				return parser;
+			}
+			else {
+				return new CSharp.ExpressionParser (context, name);
+			}
 		}
 
 		public DebuggerBackend DebuggerBackend {

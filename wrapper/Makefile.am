@@ -25,20 +25,24 @@ MCS_FLAGS = -g -define:DEBUG
 
 noinst_SCRIPTS = Mono.Debugger.dll
 
+LANGUAGE_SPECIFIC_FILES = \
+	@top_srcdir@/frontend/CSharpExpressionParser.cs	\
+	@top_srcdir@/frontend/CSharpTokenizer.cs
+
 MDB_SRCLIST = \
 	@top_srcdir@/frontend/CL.cs			\
 	@top_srcdir@/frontend/Command.cs		\
 	@top_srcdir@/frontend/Completer.cs		\
 	@top_srcdir@/frontend/DebuggerTextWriter.cs	\
 	@top_srcdir@/frontend/Expression.cs		\
-	@top_srcdir@/frontend/ExpressionParser.cs	\
 	@top_srcdir@/frontend/GnuReadLine.cs		\
+	@top_srcdir@/frontend/IExpressionParser.cs	\
 	@top_srcdir@/frontend/Interpreter.cs		\
 	@top_srcdir@/frontend/Main.cs			\
 	@top_srcdir@/frontend/MyTextReader.cs		\
 	@top_srcdir@/frontend/ScriptingContext.cs	\
 	@top_srcdir@/frontend/Style.cs			\
-	@top_srcdir@/frontend/Tokenizer.cs		\
+	$(LANGUAGE_SPECIFIC_FILES)			\
 	AssemblyInfo.cs
 
 LIBRARY_SRCLIST = \

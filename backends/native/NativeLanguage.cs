@@ -45,6 +45,11 @@ namespace Mono.Debugger.Languages.Native
 			get { return null; }
 		}
 
+		public string SourceLanguage (StackFrame frame)
+		{
+			return "";
+		}
+
 		public ITargetType LookupType (StackFrame frame, string name)
 		{
 			return bfd_container.LookupType (frame, name);

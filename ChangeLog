@@ -1,3 +1,54 @@
+2005-02-20  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Makefile.am: track Tokenizer/ExpressionParser ->
+	CSharpTokenizer/CSharpExpressionParser change.
+
+	* wrapper/Makefile.am: same.
+
+	* backends/native/NativeLanguage.cs: add implementation of
+	ILanguage.SourceLanguage.
+
+	* backends/mono/MonoLanguage.cs: same.
+	
+	* interfaces/ILanguage.cs: add "string SourceLanguage (StackFrame
+	frame)".
+
+	* frontend/Command.cs (Debugger.DoParseExpression): use
+	context.Interpreter.GetExpressionParser to get our parser.
+	(StyleCommand): nuke.
+	(NestedCommand): new class that takes care of registering
+	subcommands (for show, set, and threadgroup), and moves all the
+	subcommand handling to one place.
+	(SetCommand): new command for setting things.
+	(SetCommand+SetLangCommand, SetCommand+SetStyleCommand): new
+	private classes for the subcommands.
+	(ShowCommand+*): move all the Show*Command subcommands to be
+	private nested classes of ShowCommand, and change ShowCommand to
+	inherit from NestedCommand.
+	(ThreadGroup+*): same
+
+	* frontend/Tokenizer.cs: rename to CSharpTokenizer.cs
+
+	* frontend/ExpressionParser.jay: rename to CSharpExpressionParser.jay
+	
+	* frontend/CL.cs (Engine.Engine): re-indent.
+
+	* frontend/Main.cs (CommandLineInterpreter.SetupEngine): remove
+	the style command, add the set command, and add "info" as an alias
+	for "show".
+
+	* frontend/IExpressionParser.cs: interface that's used to
+	communicate with any of the expression parsers.
+
+	* frontend/Interpreter.cs: nuke ShortDescriptionAttribute since
+	nothing uses it.
+	(Interpreter.GetStyleNames): new function, so we can start
+	thinking about autocompleting them.
+	(Interpreter.CurrentLang, Interpreter.CurrentLangPretty,
+	Interpreter.GetExpressionParser): the beginnings of new code to
+	help implement the "set lang"/"show lang" commands, to help with
+	mixed language debugging.
+
 2005-02-17  Chris Toshok  <toshok@ximian.com>
 
 	* backends/mono/MonoClassType.cs, backends/mono/MonoClass.cs:

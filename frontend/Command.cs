@@ -135,7 +135,7 @@ namespace Mono.Debugger.Frontend
 
 		protected Expression DoParseExpression (ScriptingContext context, string arg)
 		{
-			ExpressionParser parser = new ExpressionParser (context, ToString ());
+			IExpressionParser parser = context.Interpreter.GetExpressionParser (context, ToString());
 
 			Expression expr = parser.Parse (arg);
 			if (expr == null){
@@ -405,32 +405,6 @@ namespace Mono.Debugger.Frontend
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Invoke a function in the program being debugged."; } }
-		public string Documentation { get { return ""; } } 
-	}
-
-	public class StyleCommand : DebuggerCommand, IDocumentableCommand
-	{
-		Style style;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if (Argument != "")
-				style = context.Interpreter.GetStyle (Argument);
-			return true;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			if (style != null)
-				context.Interpreter.Style = style;
-			else
-				context.Print ("Current style interface: {0}",
-					       context.Interpreter.Style.Name);
-		}
-
-		// IDocumentableCommand
-		public CommandFamily Family { get { return CommandFamily.Support; } }
-		public string Description { get { return "Set or display the current output style."; } }
 		public string Documentation { get { return ""; } } 
 	}
 
@@ -1087,57 +1061,48 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class ShowCommand : DebuggerCommand, IDocumentableCommand
+	public class NestedCommand : DebuggerCommand
 	{
-		DebuggerCommand subcommand;
+		protected DebuggerCommand subcommand;
+		protected Hashtable subcommand_type_hash;
+
+		public NestedCommand ()
+		{
+			subcommand_type_hash = new Hashtable();
+		}
+
+		protected void RegisterSubcommand (string name, Type t)
+		{
+			subcommand_type_hash.Add (name, t);
+		}
+
+		protected string GetCommandList ()
+		{
+			StringBuilder sb = new StringBuilder ("");
+
+			foreach (string k in subcommand_type_hash.Keys) {
+				sb.Append (" ");
+				sb.Append (k);
+			}
+
+			return sb.ToString();
+		}
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if ((Args == null) || (Args.Count < 1)) {
-				context.Print ("Need an argument: processes registers " +
-					       "locals parameters breakpoints modules " +
-					       "sources methods");
+				context.Print ("Need an argument:{0}", GetCommandList());
 				return false;
 			}
 
-			switch ((string) Args [0]) {
-			case "processes":
-			case "procs":
-				subcommand = new ShowProcessesCommand ();
-				break;
-			case "registers":
-			case "regs":
-				subcommand = new ShowRegistersCommand ();
-				break;
-			case "locals":
-				subcommand = new ShowLocalsCommand ();
-				break;
-			case "parameters":
-			case "params":
-				subcommand = new ShowParametersCommand ();
-				break;
-			case "breakpoints":
-				subcommand = new ShowBreakpointsCommand ();
-				break;
-			case "modules":
-				subcommand = new ShowModulesCommand ();
-				break;
-			case "threadgroups":
-				subcommand = new ShowThreadGroupsCommand ();
-				break;
-			case "methods":
-				subcommand = new ShowMethodsCommand ();
-				break;
-			case "sources":
-				subcommand = new ShowSourcesCommand ();
-				break;
-			case "frame":
-				subcommand = new ShowFrameCommand ();
-				break;
-			default:
+			Type subcommand_type = (Type)subcommand_type_hash[(string) Args[0]];
+
+			if (subcommand_type == null) {
 				context.Error ("Syntax error");
 				return false;
 			}
+
+			subcommand = (DebuggerCommand) Activator.CreateInstance (subcommand_type);
 
 			ArrayList new_args = new ArrayList ();
 			for (int i = 1; i < Args.Count; i++)
@@ -1154,324 +1119,427 @@ namespace Mono.Debugger.Frontend
 
                 public override void Complete (Engine e, string text, int start, int end)
 		{
-			string[] haystack = { "processes",
-					      "registers",
-					      "locals",
-					      "parameters",
-					      "breakpoints",
-					      "modules",
-					      "threadgroups",
-					      "methods",
-					      "sources",
-					      "frame" };
+			// this doesn't quite work yet.  in the end it
+			// should allow completion of subcommand arguments,
+			// but for now it just offers completion of the
+			// subcommand.
 
-			e.Completer.StringsCompleter (haystack, text, start, end);
+			if (Args != null && Args.Count > 0) {
+				/* the user tabbed after the space in the
+				 * arguments.  the first arg is meant to
+				 * identify the subcommand, and the next
+				 * args are the subcommand arguments.  so
+				 * push this off to the subcommand's
+				 * completer. */
+				Type subcommand_type = (Type)subcommand_type_hash[(string) Args[0]];
+				if (subcommand_type == null) {
+					e.Completer.NoopCompleter (text, start, end);
+				}
+				else {
+					/* copied from above */
+					subcommand = (DebuggerCommand) Activator.CreateInstance (subcommand_type);
+					ArrayList new_args = new ArrayList ();
+					for (int i = 1; i < Args.Count; i++)
+						new_args.Add (Args [i]);
+					subcommand.Args = new_args;
+
+					subcommand.Complete (e, text, start, end);
+				}
+
+				return;
+			}
+
+			if (subcommand_type_hash.Count == 0) {
+				e.Completer.NoopCompleter (text, start, end);
+			}
+			else {
+				string[] haystack = new string[subcommand_type_hash.Count];
+				subcommand_type_hash.Keys.CopyTo (haystack, 0);
+				e.Completer.StringsCompleter (haystack, text, start, end);
+			}
                 }
+	}
+
+
+	public class SetCommand : NestedCommand, IDocumentableCommand
+	{
+#region set subcommands
+		private class SetLangCommand : DebuggerCommand
+		{
+			protected string lang;
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count != 1)) {
+					context.Print ("Invalid argument: Need the name of the language");
+					return false;
+				}
+
+				lang = (string) Args [0];
+				return true;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				if (lang != null)
+					context.Interpreter.CurrentLang = lang;
+			}
+		}
+
+		private class SetStyleCommand : DebuggerCommand
+		{
+			Style style;
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if (Argument == "") {
+					context.Print ("Invalid argument: Need the name of the style");
+					return false;
+				}
+
+				style = context.Interpreter.GetStyle (Argument);
+				return true;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.Style = style;
+				context.Print ("Current style interface: {0}",
+					       context.Interpreter.Style.Name);
+			}
+
+			public override void Complete (Engine e, string text, int start, int end)
+			{
+				DebuggerEngine engine = (DebuggerEngine) e;
+			  
+				e.Completer.StringsCompleter (engine.Interpreter.GetStyleNames(), text, start, end);
+			}
+		}
+#endregion
+
+		public SetCommand ()
+		{
+			RegisterSubcommand ("lang", typeof (SetLangCommand));
+			RegisterSubcommand ("style", typeof (SetStyleCommand));
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Support; } }
+		public string Description { get { return "Set things."; } }
+		public string Documentation { get { return String.Format ("valid args are:{0}\n", GetCommandList()); } }
+	}
+
+	public class ShowCommand : NestedCommand, IDocumentableCommand
+	{
+#region show subcommands
+		private class ShowProcessesCommand : DebuggerCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				int current_id = -1;
+				if (context.Interpreter.HasTarget)
+					current_id = context.CurrentProcess.ID;
+
+				bool printed_something = false;
+				foreach (ProcessHandle proc in context.Interpreter.Processes) {
+					string prefix = proc.ID == current_id ? "(*)" : "   ";
+					context.Print ("{0} {1}", prefix, proc);
+					printed_something = true;
+				}
+
+				if (!printed_something)
+					context.Print ("No target.");
+			}
+		}
+
+		private class ShowRegistersCommand : FrameCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				FrameHandle frame = ResolveFrame (context);
+
+				IArchitecture arch = ResolveProcess (context).Process.Architecture;
+				context.Print (arch.PrintRegisters (frame.Frame));
+			}
+		}
+
+		private class ShowParametersCommand : FrameCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				FrameHandle frame = ResolveFrame (context);
+
+				frame.ShowParameters (context);
+			}
+		}
+
+		private class ShowLocalsCommand : FrameCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				FrameHandle frame = ResolveFrame (context);
+
+				frame.ShowLocals (context);
+			}
+		}
+
+		private class ShowModulesCommand : DebuggerCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.ShowModules ();
+			}
+		}
+
+		private class ShowSourcesCommand : DebuggerCommand
+		{
+			protected string name;
+			protected Module[] modules;
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count < 1)) {
+					context.Print ("Invalid arguments: Need one or more module " +
+						       "ids to operate on");
+					return false;
+				}
+
+				int[] ids = new int [Args.Count];
+				for (int i = 0; i < Args.Count; i++) {
+					try {
+						ids [i] = (int) UInt32.Parse ((string) Args [i]);
+					} catch {
+						context.Print ("Invalid argument {0}: expected " +
+							       "module id", i);
+						return false;
+					}
+				}
+
+				modules = context.Interpreter.GetModules (ids);
+				return modules != null;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				foreach (Module module in modules)
+					context.Interpreter.ShowSources (module);
+			}
+		}
+
+		private class ShowMethodsCommand : DebuggerCommand
+		{
+			protected string name;
+			protected SourceFile[] sources;
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count < 1)) {
+					context.Print ("Invalid arguments: Need one or more source " +
+						       "file ids to operate on");
+					return false;
+				}
+
+				int[] ids = new int [Args.Count];
+				for (int i = 0; i < Args.Count; i++) {
+					try {
+						ids [i] = (int) UInt32.Parse ((string) Args [i]);
+					} catch {
+						context.Print ("Invalid argument {0}: expected " +
+							       "source file id", i);
+						return false;
+					}
+				}
+
+				sources = context.Interpreter.GetSources (ids);
+				return sources != null;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				foreach (SourceFile source in sources)
+					context.PrintMethods (source);
+			}
+		}
+
+		private class ShowBreakpointsCommand : DebuggerCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.ShowBreakpoints ();
+			}
+		}
+
+		private class ShowThreadGroupsCommand : DebuggerCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.ShowThreadGroups ();
+			}
+		}
+
+		private class ShowFrameCommand : FrameCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				StackFrame frame = ResolveFrame (context).Frame;
+
+				context.Print ("Stack level {0}, stack pointer at {1}, " +
+					       "frame pointer at {2}.", frame.Level,
+					       frame.StackPointer, frame.FrameAddress);
+			}
+		}
+
+		private class ShowLangCommand : FrameCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				StackFrame frame = ResolveFrame (context).Frame;
+
+				// if lang == auto, we should print out what it currently is, ala gdb's
+				// The current source language is "auto; currently c".
+				context.Print ("The current source language is \"{0}\". The ILanguage is \"{1}\"",
+					       context.Interpreter.CurrentLangPretty, frame.Language.SourceLanguage(frame));
+			}
+		}
+
+		private class ShowStyleCommand : DebuggerCommand
+		{
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				return true;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Print ("Current style interface: {0}",
+					       context.Interpreter.Style.Name);
+			}
+		}
+#endregion
+
+		public ShowCommand ()
+		{
+			RegisterSubcommand ("processes", typeof (ShowProcessesCommand));
+			//			RegisterSubcommand ("procs", typeof (ShowProcessesCommand));
+			RegisterSubcommand ("registers", typeof (ShowRegistersCommand));
+			//			RegisterSubcommand ("regs", typeof (ShowRegistersCommand));
+			RegisterSubcommand ("locals", typeof (ShowLocalsCommand));
+			RegisterSubcommand ("parameters", typeof (ShowParametersCommand));
+			//			RegisterSubcommand ("params", typeof (ShowParamsCommand));
+			RegisterSubcommand ("breakpoints", typeof (ShowBreakpointsCommand));
+			RegisterSubcommand ("modules", typeof (ShowModulesCommand));
+			RegisterSubcommand ("threadgroups", typeof (ShowThreadGroupsCommand));
+			RegisterSubcommand ("methods", typeof (ShowMethodsCommand));
+			RegisterSubcommand ("sources", typeof (ShowSourcesCommand));
+			RegisterSubcommand ("frame", typeof (ShowFrameCommand));
+			RegisterSubcommand ("lang", typeof (ShowLangCommand));
+			RegisterSubcommand ("style", typeof (ShowStyleCommand));
+		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Show things."; } }
-		public string Documentation { get { return "valid args are:\n" +
-						"processes registers " +
-						"locals parameters breakpoints modules " +
-						"sources methods"; } }
+		public string Documentation { get { return String.Format ("valid args are:{0}\n", GetCommandList()); } }
 	}
 
-	public class ShowProcessesCommand : DebuggerCommand
+	public class ThreadGroupCommand : NestedCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+#region threadgroup subcommands
+		private class ThreadGroupCreateCommand : DebuggerCommand
 		{
-			int current_id = -1;
-			if (context.Interpreter.HasTarget)
-				current_id = context.CurrentProcess.ID;
-
-			bool printed_something = false;
-			foreach (ProcessHandle proc in context.Interpreter.Processes) {
-				string prefix = proc.ID == current_id ? "(*)" : "   ";
-				context.Print ("{0} {1}", prefix, proc);
-				printed_something = true;
-			}
-
-			if (!printed_something)
-				context.Print ("No target.");
-		}
-	}
-
-	public class ShowRegistersCommand : FrameCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			FrameHandle frame = ResolveFrame (context);
-
-			IArchitecture arch = ResolveProcess (context).Process.Architecture;
-			context.Print (arch.PrintRegisters (frame.Frame));
-		}
-	}
-
-	public class ShowParametersCommand : FrameCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			FrameHandle frame = ResolveFrame (context);
-
-			frame.ShowParameters (context);
-		}
-	}
-
-	public class ShowLocalsCommand : FrameCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			FrameHandle frame = ResolveFrame (context);
-
-			frame.ShowLocals (context);
-		}
-	}
-
-	public class ShowModulesCommand : DebuggerCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.ShowModules ();
-		}
-	}
-
-	public class ShowSourcesCommand : DebuggerCommand
-	{
-		protected string name;
-		protected Module[] modules;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if ((Args == null) || (Args.Count < 1)) {
-				context.Print ("Invalid arguments: Need one or more module " +
-					       "ids to operate on");
-				return false;
-			}
-
-			int[] ids = new int [Args.Count];
-			for (int i = 0; i < Args.Count; i++) {
-				try {
-					ids [i] = (int) UInt32.Parse ((string) Args [i]);
-				} catch {
-					context.Print ("Invalid argument {0}: expected " +
-						       "module id", i);
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count != 1)) {
+					context.Print ("Need exactly one argument: the name of " +
+						       "the new thread group");
 					return false;
 				}
+
+				return true;
 			}
 
-			modules = context.Interpreter.GetModules (ids);
-			return modules != null;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			foreach (Module module in modules)
-				context.Interpreter.ShowSources (module);
-		}
-	}
-
-	public class ShowMethodsCommand : DebuggerCommand
-	{
-		protected string name;
-		protected SourceFile[] sources;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if ((Args == null) || (Args.Count < 1)) {
-				context.Print ("Invalid arguments: Need one or more source " +
-					       "file ids to operate on");
-				return false;
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.CreateThreadGroup (Argument);
 			}
+		}
 
-			int[] ids = new int [Args.Count];
-			for (int i = 0; i < Args.Count; i++) {
-				try {
-					ids [i] = (int) UInt32.Parse ((string) Args [i]);
-				} catch {
-					context.Print ("Invalid argument {0}: expected " +
-						       "source file id", i);
+		private class ThreadGroupDeleteCommand : DebuggerCommand
+		{
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count != 1)) {
+					context.Print ("Need exactly one argument: the name of " +
+						       "the thread group to delete");
 					return false;
 				}
+
+				return true;
 			}
 
-			sources = context.Interpreter.GetSources (ids);
-			return sources != null;
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.DeleteThreadGroup (Argument);
+			}
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		private class ThreadGroupAddCommand : DebuggerCommand
 		{
-			foreach (SourceFile source in sources)
-				context.PrintMethods (source);
-		}
-	}
+			protected string name;
+			protected ProcessHandle[] threads;
 
-	public class ShowBreakpointsCommand : DebuggerCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.ShowBreakpoints ();
-		}
-	}
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count < 2)) {
+					context.Print ("Invalid arguments: Need the name of the " +
+						       "thread group to operate on and one ore more " +
+						       "processes");
+					return false;
+				}
 
-	public class ShowThreadGroupsCommand : DebuggerCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.ShowThreadGroups ();
-		}
-	}
+				name = (string) Args [0];
+				int[] ids = new int [Args.Count - 1];
+				for (int i = 0; i < Args.Count - 1; i++) {
+					try {
+						ids [i] = (int) UInt32.Parse ((string) Args [i+1]);
+					} catch {
+						context.Print ("Invalid argument {0}: expected " +
+							       "process id", i+1);
+						return false;
+					}
+				}
 
-	public class ShowFrameCommand : FrameCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			StackFrame frame = ResolveFrame (context).Frame;
-
-			context.Print ("Stack level {0}, stack pointer at {1}, " +
-				       "frame pointer at {2}.", frame.Level,
-				       frame.StackPointer, frame.FrameAddress);
-		}
-	}
-
-	public class ThreadGroupCommand : DebuggerCommand, IDocumentableCommand
-	{
-		DebuggerCommand subcommand;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if ((Args == null) || (Args.Count < 1)) {
-				context.Print ("Need an argument: create add remove delete");
-				return false;
+				threads = context.Interpreter.GetProcesses (ids);
+				return threads != null;
 			}
 
-			switch ((string) Args [0]) {
-			case "create":
-				subcommand = new ThreadGroupCreateCommand ();
-				break;
-			case "delete":
-				subcommand = new ThreadGroupDeleteCommand ();
-				break;
-			case "add":
-				subcommand = new ThreadGroupAddCommand ();
-				break;
-			case "remove":
-				subcommand = new ThreadGroupRemoveCommand ();
-				break;
-			default:
-				context.Error ("Syntax error");
-				return false;
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.AddToThreadGroup (name, threads);
 			}
-
-			ArrayList new_args = new ArrayList ();
-			for (int i = 1; i < Args.Count; i++)
-				new_args.Add (Args [i]);
-
-			subcommand.Args = new_args;
-			return subcommand.Resolve (context);
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		private class ThreadGroupRemoveCommand : ThreadGroupAddCommand
 		{
-			subcommand.Execute (context);
+			protected override void DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.AddToThreadGroup (name, threads);
+			}
 		}
+#endregion
 
-                public override void Complete (Engine e, string text, int start, int end)
+		public ThreadGroupCommand ()
 		{
-			string[] haystack = { "create",
-					      "delete",
-					      "add",
-					      "remove" };
-
-			e.Completer.StringsCompleter (haystack, text, start, end);
-                }
+			RegisterSubcommand ("create", typeof (ThreadGroupCreateCommand));
+			RegisterSubcommand ("delete", typeof (ThreadGroupDeleteCommand));
+			RegisterSubcommand ("add", typeof (ThreadGroupAddCommand));
+			RegisterSubcommand ("remove", typeof (ThreadGroupRemoveCommand));
+		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Threads; } }
 		public string Description { get { return "Manage thread groups."; } }
-		public string Documentation { get { return "valid args are: create add remove delete"; } }
-	}
-
-	public class ThreadGroupCreateCommand : DebuggerCommand
-	{
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if ((Args == null) || (Args.Count != 1)) {
-				context.Print ("Need exactly one argument: the name of " +
-					       "the new thread group");
-				return false;
-			}
-
-			return true;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.CreateThreadGroup (Argument);
-		}
-	}
-
-	public class ThreadGroupDeleteCommand : DebuggerCommand
-	{
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if ((Args == null) || (Args.Count != 1)) {
-				context.Print ("Need exactly one argument: the name of " +
-					       "the thread group to delete");
-				return false;
-			}
-
-			return true;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.DeleteThreadGroup (Argument);
-		}
-	}
-
-	public class ThreadGroupAddCommand : DebuggerCommand
-	{
-		protected string name;
-		protected ProcessHandle[] threads;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if ((Args == null) || (Args.Count < 2)) {
-				context.Print ("Invalid arguments: Need the name of the " +
-					       "thread group to operate on and one ore more " +
-					       "processes");
-				return false;
-			}
-
-			name = (string) Args [0];
-			int[] ids = new int [Args.Count - 1];
-			for (int i = 0; i < Args.Count - 1; i++) {
-				try {
-					ids [i] = (int) UInt32.Parse ((string) Args [i+1]);
-				} catch {
-					context.Print ("Invalid argument {0}: expected " +
-						       "process id", i+1);
-					return false;
-				}
-			}
-
-			threads = context.Interpreter.GetProcesses (ids);
-			return threads != null;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.AddToThreadGroup (name, threads);
-		}
-	}
-
-	public class ThreadGroupRemoveCommand : ThreadGroupAddCommand
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Interpreter.AddToThreadGroup (name, threads);
-		}
+		public string Documentation { get { return String.Format ("valid args are:{0}", GetCommandList()); } }
 	}
 
 	public class BreakpointEnableCommand : DebuggerCommand, IDocumentableCommand
@@ -1528,35 +1596,6 @@ namespace Mono.Debugger.Frontend
 		public override string Description { get { return "Delete breakpoint."; } }
 		public override string Documentation { get { return ""; } }
 	}
-
-#if FIXME
-	[ShortDescription("MODULE", "Change module parameters",
-		 "The module parameters control how the debugger should behave while single-stepping\n" +
-		 "wrt methods from this method.\n\n" +
-		 "Use `show modules' to get a list of modules.\n" +
-		 "Use `help module_operations' to get help about module operations.\n\n" +
-		 "Example:  module 1,2 !ignore step\n")]
-	public class ModuleOperationCommand : DebuggerCommand
-	{
-		ModuleListExpression module_list_expr;
-		ModuleOperationListExpression op_list_expr;
-
-		public ModuleOperationCommand (ModuleListExpression module_list_expr,
-					       ModuleOperationListExpression op_list_expr)
-		{
-			this.module_list_expr = module_list_expr;
-			this.op_list_expr = op_list_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			Module[] modules = (Module []) module_list_expr.Resolve (context);
-			ModuleOperation[] operations = (ModuleOperation []) op_list_expr.Resolve (context);
-
-			context.Interpreter.ModuleOperations (modules, operations);
-		}
-	}
-#endif
 
 	public abstract class SourceCommand : DebuggerCommand
 	{

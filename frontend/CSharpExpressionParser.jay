@@ -4,17 +4,17 @@ using System.IO;
 using System.Collections;
 using System;
 
-namespace Mono.Debugger.Frontend
+namespace Mono.Debugger.Frontend.CSharp
 {
-	internal class ExpressionParser
+	internal class ExpressionParser : IExpressionParser
 	{
 		ScriptingContext current_context;
 		MyTextReader reader;
-		bool do_quit = false;
+		Tokenizer lexer;
 
 		protected bool yacc_verbose_flag = false;
 
-		public bool yacc_verbose {
+		public bool Verbose {
 			set {
 				yacc_verbose_flag = value;
 			}
@@ -24,19 +24,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public bool Quit {
-			get {
-				return do_quit;
-			}
-		}
-
-		Tokenizer lexer;
-
-		public Tokenizer Lexer {
-			get {
-				return lexer;
-			}
-		}
 %}
 
 %token QUIT

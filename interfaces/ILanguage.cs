@@ -28,6 +28,8 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		string SourceLanguage (StackFrame frame);
+
 		ITargetType LookupType (StackFrame frame, string name);
 
 		bool CanCreateInstance (Type type);
