@@ -113,7 +113,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 6;
+		public const int  DynamicVersion = 7;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		public readonly int TotalSize;

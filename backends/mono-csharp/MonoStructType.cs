@@ -5,15 +5,39 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoStructType : MonoType, ITargetStructType
 	{
-		protected readonly MonoFieldInfo[] fields;
+		MonoFieldInfo[] fields;
+		ITargetMemoryReader info;
+		MonoSymbolFileTable table;
+		int num_fields;
+		int field_info_size;
+		long offset;
 		bool is_byref;
 
 		public MonoStructType (Type type, int size, ITargetMemoryReader info,
 				       MonoSymbolFileTable table)
 			: base (type, size, true)
 		{
+			Console.WriteLine ("STRUCT TYPE: {0}", type);
 			is_byref = info.ReadByte () != 0;
-			int num_fields = info.BinaryReader.ReadInt32 ();
+			num_fields = info.BinaryReader.ReadInt32 ();
+			field_info_size = info.BinaryReader.ReadInt32 ();
+			this.info = info;
+			this.offset = info.Offset;
+			this.table = table;
+			info.Offset += field_info_size;
+		}
+
+		// <remarks>
+		//   We can't do this in the .ctor since a field may be of the current
+		//   classes type, but the .ctor is called before the current class is
+		//   inserted into the type table hash.
+		// </remarks>
+		void init_fields ()
+		{
+			if (fields != null)
+				return;
+
+			info.Offset = offset;
 			fields = new MonoFieldInfo [num_fields];
 
 			FieldInfo[] mono_fields = type.GetFields (
@@ -30,6 +54,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetFieldInfo[] Fields {
 			get {
+				init_fields ();
 				return fields;
 			}
 		}
@@ -85,6 +110,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal ITargetObject GetField (ITargetLocation location, int index)
 		{
+			init_fields ();
+
 			ITargetMemoryAccess memory;
 			TargetAddress address = GetAddress (location, out memory);
 
