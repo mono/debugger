@@ -348,11 +348,11 @@ public class SingleSteppingEngine : ThreadManager
 	//   calling this and you must make sure you aren't currently running any
 	//   async operations.
 	// </remarks>
-	protected CommandResult SendSyncCommand (CommandFunc func, object data)
+	protected CommandResult SendSyncCommand (Command command)
 	{
 		if (Thread.CurrentThread == inferior_thread) {
 			try {
-				return func (data);
+				return command.Process.ProcessCommand (command);
 			} catch (ThreadAbortException) {
 				;
 			} catch (Exception e) {
@@ -364,7 +364,7 @@ public class SingleSteppingEngine : ThreadManager
 			return CommandResult.Busy;
 
 		lock (this) {
-			current_command = new Command (func, data);
+			current_command = command;
 			mono_debugger_server_abort_wait ();
 			completed_event.Reset ();
 			sync_command_running = true;
@@ -383,7 +383,7 @@ public class SingleSteppingEngine : ThreadManager
 		if (result != null)
 			return result;
 		else
-			return new CommandResult (CommandResultType.UnknownError);
+			return new CommandResult (CommandResultType.UnknownError, null);
 	}
 
 	// <summary>
@@ -497,10 +497,10 @@ public class SingleSteppingEngine : ThreadManager
 
 		// These are synchronous commands; ie. the caller blocks on us
 		// until we finished the command and sent the result.
-		if (command.Type == CommandType.Command) {
+		if (command.Type != CommandType.Operation) {
 			CommandResult result;
 			try {
-				result = command.CommandFunc (command.CommandFuncData);
+				result = command.Process.ProcessCommand (command);
 			} catch (ThreadAbortException) {
 				;
 				return;
@@ -609,19 +609,25 @@ public class SingleSteppingEngine : ThreadManager
 		CallMethod
 	}
 
-	protected delegate CommandResult CommandFunc (object data);
-
 	protected enum CommandType {
 		Operation,
-		Command
+		GetBacktrace,
+		SetRegister,
+		InsertBreakpoint,
+		RemoveBreakpoint,
+		GetInstructionSize,
+		DisassembleInstruction,
+		DisassembleMethod,
+		ReadMemory,
+		ReadString,
+		WriteMemory
 	}
 
 	protected class Command {
 		public TheEngine Process;
 		public CommandType Type;
 		public Operation Operation;
-		public CommandFunc CommandFunc;
-		public object CommandFuncData;
+		public object Data1, Data2;
 
 		public Command (TheEngine process, Operation operation)
 		{
@@ -630,18 +636,18 @@ public class SingleSteppingEngine : ThreadManager
 			this.Operation = operation;
 		}
 
-		public Command (CommandFunc func, object data)
+		public Command (TheEngine process, CommandType type, object data, object data2)
 		{
-			this.Type = CommandType.Command;
-			this.CommandFunc = func;
-			this.CommandFuncData = data;
+			this.Process = process;
+			this.Type = type;
+			this.Data1 = data;
+			this.Data2 = data2;
 		}
 
 		public override string ToString ()
 		{
 			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
-					      Process, Type, Operation,
-					      CommandFunc, CommandFuncData);
+					      Process, Type, Operation, Data1, Data2);
 		}
 	}
 
@@ -655,9 +661,9 @@ public class SingleSteppingEngine : ThreadManager
 	}
 
 	protected class CommandResult {
-		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk);
-		public readonly static CommandResult Busy = new CommandResult (CommandResultType.NotStopped);
-		public readonly static CommandResult Interrupted = new CommandResult (CommandResultType.Interrupted);
+		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk, null);
+		public readonly static CommandResult Busy = new CommandResult (CommandResultType.NotStopped, null);
+		public readonly static CommandResult Interrupted = new CommandResult (CommandResultType.Interrupted, null);
 
 		public readonly CommandResultType Type;
 		public readonly Inferior.ChildEventType EventType;
@@ -677,10 +683,6 @@ public class SingleSteppingEngine : ThreadManager
 			this.Data = data;
 		}
 
-		public CommandResult (CommandResultType type)
-			: this (type, null)
-		{ }
-
 		public CommandResult (CommandResultType type, object data)
 		{
 			this.Type = type;
@@ -688,8 +690,16 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		public CommandResult (Exception e)
-			: this (CommandResultType.Exception, e)
-		{ }
+		{
+			this.Type = CommandResultType.Exception;
+			this.Data = e;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("CommandResult ({0}:{1}:{2}:{3})",
+					      Type, EventType, Argument, Data);
+		}
 	}
 
 	// <summary>
@@ -710,6 +720,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			this.sse = sse;
 			this.inferior = inferior;
+			this.target = (EngineProcess) this;
 
 			pid = inferior.PID;
 
@@ -720,7 +731,7 @@ public class SingleSteppingEngine : ThreadManager
 			inferior.DebuggerError += new DebuggerErrorHandler (OnDebuggerError);
 		}
 
-		public TheEngine (SingleSteppingEngine sse, ProcessStart start)
+		protected TheEngine (SingleSteppingEngine sse, ProcessStart start)
 			: this (sse, Inferior.CreateInferior (sse, start))
 		{
 			inferior.Run (true);
@@ -731,7 +742,7 @@ public class SingleSteppingEngine : ThreadManager
 			setup_engine ();
 		}
 
-		public TheEngine (SingleSteppingEngine sse, Inferior inferior, int pid)
+		protected TheEngine (SingleSteppingEngine sse, Inferior inferior, int pid)
 			: this (sse, inferior)
 		{
 			this.pid = pid;
@@ -945,6 +956,60 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		// <summary>
+		//   Process a synchronous command.
+		// </summary>
+		public CommandResult ProcessCommand (Command command)
+		{
+			object result = do_process_command (command.Type, command.Data1, command.Data2);
+
+			return new CommandResult (CommandResultType.CommandOk, result);
+		}
+
+		object do_process_command (CommandType type, object data, object data2)
+		{
+			switch (type) {
+			case CommandType.GetBacktrace:
+				get_backtrace ((int) data);
+				break;
+
+			case CommandType.SetRegister:
+				set_register ((Register) data);
+				break;
+
+			case CommandType.InsertBreakpoint:
+				return insert_breakpoint ((BreakpointManager.Handle) data);
+
+			case CommandType.RemoveBreakpoint:
+				remove_breakpoint ((int) data);
+				break;
+
+			case CommandType.GetInstructionSize:
+				return get_insn_size ((TargetAddress) data);
+
+			case CommandType.DisassembleInstruction:
+				return disassemble_insn ((IMethod) data, (TargetAddress) data2);
+
+			case CommandType.DisassembleMethod:
+				return disassemble_method ((IMethod) data);
+
+			case CommandType.ReadMemory:
+				return do_read_memory ((TargetAddress) data, (int) data2);
+
+			case CommandType.ReadString:
+				return do_read_string ((TargetAddress) data);
+
+			case CommandType.WriteMemory:
+				do_write_memory ((TargetAddress) data, (byte []) data2);
+				break;
+
+			default:
+				throw new InternalError ();
+			}
+
+			return null;
+		}
+
+		// <summary>
 		//   Start a new stepping operation.
 		//
 		//   All stepping operations are done asynchronously.
@@ -1151,8 +1216,6 @@ public class SingleSteppingEngine : ThreadManager
 			disassembler.SymbolTable = simple_symtab;
 			current_simple_symtab = simple_symtab;
 			current_symtab = symbol_table;
-
-			// send_sync_command (new CommandFunc (reload_symtab), null);
 		}
 
 		public IMethod Lookup (TargetAddress address)
@@ -1171,15 +1234,93 @@ public class SingleSteppingEngine : ThreadManager
 			return current_simple_symtab.SimpleLookup (address, exact_match);
 		}
 
-		protected void get_registers ()
+		void get_registers ()
 		{
 			registers = inferior.GetRegisters ();
+		}
+
+		void get_backtrace (int max_frames)
+		{
+			sse.DebuggerBackend.UpdateSymbolTable ();
+
+			Inferior.StackFrame[] iframes = inferior.GetBacktrace (max_frames, main_method_retaddr);
+			StackFrame[] frames = new StackFrame [iframes.Length];
+			MyBacktrace backtrace = new MyBacktrace (target, arch);
+
+			for (int i = 0; i < iframes.Length; i++) {
+				TargetAddress address = iframes [i].Address;
+
+				IMethod method = Lookup (address);
+				if ((method != null) && method.HasSource) {
+					SourceAddress source = method.Source.Lookup (address);
+					frames [i] = CreateFrame (
+						address, i, iframes [i], backtrace, source, method);
+				} else
+					frames [i] = CreateFrame (
+						address, i, iframes [i], backtrace, null, null);
+			}
+
+			backtrace.SetFrames (frames);
+			current_backtrace = backtrace;
+		}
+
+		void set_register (Register reg)
+		{
+			inferior.SetRegister (reg.Index, (long) reg.Data);
+			registers = inferior.GetRegisters ();
+		}
+
+		int insert_breakpoint (BreakpointManager.Handle handle)
+		{
+			return sse.BreakpointManager.InsertBreakpoint (inferior, handle);
+		}
+
+		void remove_breakpoint (int index)
+		{
+			sse.BreakpointManager.RemoveBreakpoint (inferior, index);
+		}
+
+		int get_insn_size (TargetAddress address)
+		{
+			lock (disassembler) {
+				return disassembler.GetInstructionSize (address);
+			}
+		}
+
+		AssemblerLine disassemble_insn (IMethod method, TargetAddress address)
+		{
+			lock (disassembler) {
+				return disassembler.DisassembleInstruction (method, address);
+			}
+		}
+
+		AssemblerMethod disassemble_method (IMethod method)
+		{
+			lock (disassembler) {
+				return disassembler.DisassembleMethod (method);
+			}
+		}
+
+		byte[] do_read_memory (TargetAddress address, int size)
+		{
+			return inferior.ReadBuffer (address, size);
+		}
+
+		string do_read_string (TargetAddress address)
+		{
+			return inferior.ReadString (address);
+		}
+
+		void do_write_memory (TargetAddress address, byte[] data)
+		{
+			inferior.WriteBuffer (address, data);
 		}
 
 		protected SingleSteppingEngine sse;
 		protected Inferior inferior;
 		protected IArchitecture arch;
 		protected IDisassembler disassembler;
+		ITargetAccess target;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;
 		ILanguage native_language;
@@ -1298,7 +1439,7 @@ public class SingleSteppingEngine : ThreadManager
 		// <summary>
 		//   Sends a synchronous command to the engine.
 		// </summary>
-		protected CommandResult SendSyncCommand (CommandFunc func, object data)
+		protected CommandResult SendSyncCommand (Command command)
 		{
 			lock (this) {
 				// Check whether we're curring performing an async
@@ -1311,12 +1452,23 @@ public class SingleSteppingEngine : ThreadManager
 
 				Report.Debug (DebugFlags.Wait,
 					      "SSE {0} sending sync command", this);
-				CommandResult result = sse.SendSyncCommand (func, data);
+				CommandResult result = sse.SendSyncCommand (command);
 				Report.Debug (DebugFlags.Wait,
 					      "SSE {0} finished sync command", this);
 
 				return result;
 			}
+		}
+
+		protected CommandResult SendSyncCommand (CommandType type, object data1,
+							 object data2)
+		{
+			return SendSyncCommand (new Command (this, type, data1, data2));
+		}
+
+		protected CommandResult SendSyncCommand (CommandType type, object data)
+		{
+			return SendSyncCommand (new Command (this, type, data, null));
 		}
 
 		// <summary>
@@ -2151,6 +2303,23 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		//
+		// Backtrace.
+		//
+
+		protected class MyBacktrace : Backtrace
+		{
+			public MyBacktrace (ITargetAccess target, IArchitecture arch)
+				: base (target, arch, null)
+			{
+			}
+
+			public void SetFrames (StackFrame[] frames)
+			{
+				this.frames = frames;
+			}
+		}
+
+		//
 		// IDisposable
 		//
 
@@ -2317,7 +2486,7 @@ public class SingleSteppingEngine : ThreadManager
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			SendSyncCommand (new CommandFunc (get_backtrace), -1);
+			SendSyncCommand (CommandType.GetBacktrace, -1);
 
 			return current_backtrace;
 		}
@@ -2329,35 +2498,9 @@ public class SingleSteppingEngine : ThreadManager
 			if ((max_frames == -1) && (current_backtrace != null))
 				return current_backtrace;
 
-			SendSyncCommand (new CommandFunc (get_backtrace), max_frames);
+			SendSyncCommand (CommandType.GetBacktrace, max_frames);
 
 			return current_backtrace;
-		}
-
-		CommandResult get_backtrace (object data)
-		{
-			sse.DebuggerBackend.UpdateSymbolTable ();
-
-			Inferior.StackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
-			StackFrame[] frames = new StackFrame [iframes.Length];
-			MyBacktrace backtrace = new MyBacktrace (this);
-
-			for (int i = 0; i < iframes.Length; i++) {
-				TargetAddress address = iframes [i].Address;
-
-				IMethod method = Lookup (address);
-				if ((method != null) && method.HasSource) {
-					SourceAddress source = method.Source.Lookup (address);
-					frames [i] = new MyStackFrame (
-						this, address, i, iframes [i], backtrace, source, method);
-				} else
-					frames [i] = new MyStackFrame (
-						this, address, i, iframes [i], backtrace);
-			}
-
-			backtrace.SetFrames (frames);
-			current_backtrace = backtrace;
-			return CommandResult.Ok;
 		}
 
 		public override Register GetRegister (int index)
@@ -2374,32 +2517,13 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			check_inferior ();
 
-			if (registers != null)
-				return registers;
-
-			SendSyncCommand (new CommandFunc (get_registers), null);
-
 			return registers;
-		}
-
-		CommandResult get_registers (object data)
-		{
-			get_registers ();
-			return CommandResult.Ok;
-		}
-
-		CommandResult set_register (object data)
-		{
-			Register reg = (Register) data;
-			inferior.SetRegister (reg.Index, (long) reg.Data);
-			registers = null;
-			return CommandResult.Ok;
 		}
 
 		public override void SetRegister (int register, long value)
 		{
 			Register reg = new Register (register, value);
-			SendSyncCommand (new CommandFunc (set_register), reg);
+			SendSyncCommand (CommandType.SetRegister, reg);
 		}
 
 		public override void SetRegisters (int[] registers, long[] values)
@@ -2536,19 +2660,6 @@ public class SingleSteppingEngine : ThreadManager
 			Dispose ();
 		}
 
-		CommandResult insert_breakpoint (object data)
-		{
-			int index = sse.BreakpointManager.InsertBreakpoint (
-				inferior, (BreakpointManager.Handle) data);
-			return new CommandResult (CommandResultType.CommandOk, index);
-		}
-
-		CommandResult remove_breakpoint (object data)
-		{
-			sse.BreakpointManager.RemoveBreakpoint (inferior, (int) data);
-			return CommandResult.Ok;
-		}
-
 		// <summary>
 		//   Insert a breakpoint at address @address.  Each time this breakpoint
 		//   is hit, @handler will be called and @user_data will be passed to it
@@ -2569,7 +2680,8 @@ public class SingleSteppingEngine : ThreadManager
 			BreakpointManager.Handle data = new BreakpointManager.Handle (
 				address, handle, check_handler, hit_handler, needs_frame, user_data);
 
-			CommandResult result = SendSyncCommand (new CommandFunc (insert_breakpoint), data);
+			CommandResult result = SendSyncCommand (
+				CommandType.InsertBreakpoint, data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 
@@ -2584,7 +2696,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			check_disposed ();
 			if (inferior != null)
-				SendSyncCommand (new CommandFunc (remove_breakpoint), index);
+				SendSyncCommand (CommandType.RemoveBreakpoint, index);
 		}
 
 		//
@@ -2611,19 +2723,10 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		}
 
-		CommandResult get_insn_size (object data)
-		{
-			lock (disassembler) {
-				TargetAddress address = (TargetAddress) data;
-				int result = disassembler.GetInstructionSize (address);
-				return new CommandResult (CommandResultType.CommandOk, result);
-			}
-		}
-
 		public int GetInstructionSize (TargetAddress address)
 		{
 			check_inferior ();
-			CommandResult result = SendSyncCommand (new CommandFunc (get_insn_size), address);
+			CommandResult result = SendSyncCommand (CommandType.GetInstructionSize, address);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (int) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
@@ -2632,33 +2735,10 @@ public class SingleSteppingEngine : ThreadManager
 				throw new InternalError ();
 		}
 
-		private struct DisassembleData
-		{
-			public readonly IMethod Method;
-			public readonly TargetAddress Address;
-
-			public DisassembleData (IMethod method, TargetAddress address)
-			{
-				this.Method = method;
-				this.Address = address;
-			}
-		}
-
-		CommandResult disassemble_insn (object data)
-		{
-			lock (disassembler) {
-				DisassembleData dis = (DisassembleData) data;
-				AssemblerLine result = disassembler.DisassembleInstruction (
-					dis.Method, dis.Address);
-				return new CommandResult (CommandResultType.CommandOk, result);
-			}
-		}
-
 		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
 		{
 			check_inferior ();
-			DisassembleData data = new DisassembleData (method, address);
-			CommandResult result = SendSyncCommand (new CommandFunc (disassemble_insn), data);
+			CommandResult result = SendSyncCommand (CommandType.DisassembleInstruction, method, address);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (AssemblerLine) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
@@ -2667,18 +2747,10 @@ public class SingleSteppingEngine : ThreadManager
 				return null;
 		}
 
-		CommandResult disassemble_method (object data)
-		{
-			lock (disassembler) {
-				AssemblerMethod block = disassembler.DisassembleMethod ((IMethod) data);
-				return new CommandResult (CommandResultType.CommandOk, block);
-			}
-		}
-
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
 			check_inferior ();
-			CommandResult result = SendSyncCommand (new CommandFunc (disassemble_method), method);
+			CommandResult result = SendSyncCommand (CommandType.DisassembleMethod, method);
 			if (result.Type == CommandResultType.CommandOk)
 				return (AssemblerMethod) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2813,30 +2885,9 @@ public class SingleSteppingEngine : ThreadManager
 		// ITargetMemoryAccess
 		//
 
-		private struct ReadMemoryData
-		{
-			public TargetAddress Address;
-			public int Size;
-
-			public ReadMemoryData (TargetAddress address, int size)
-			{
-				this.Address = address;
-				this.Size = size;
-			}
-		}
-
-		CommandResult do_read_memory (object data)
-		{
-			ReadMemoryData mdata = (ReadMemoryData) data;
-
-			byte[] buffer = inferior.ReadBuffer (mdata.Address, mdata.Size);
-			return new CommandResult (CommandResultType.CommandOk, buffer);
-		}
-
 		protected byte[] read_memory (TargetAddress address, int size)
 		{
-			ReadMemoryData data = new ReadMemoryData (address, size);
-			CommandResult result = SendSyncCommand (new CommandFunc (do_read_memory), data);
+			CommandResult result = SendSyncCommand (CommandType.ReadMemory, address, size);
 			if (result.Type == CommandResultType.CommandOk)
 				return (byte []) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2845,18 +2896,9 @@ public class SingleSteppingEngine : ThreadManager
 				throw new InternalError ();
 		}
 
-		CommandResult do_read_string (object data)
-		{
-			ReadMemoryData mdata = (ReadMemoryData) data;
-
-			string retval = inferior.ReadString (mdata.Address);
-			return new CommandResult (CommandResultType.CommandOk, retval);
-		}
-
 		string read_string (TargetAddress address)
 		{
-			ReadMemoryData data = new ReadMemoryData (address, 0);
-			CommandResult result = SendSyncCommand (new CommandFunc (do_read_string), data);
+			CommandResult result = SendSyncCommand (CommandType.ReadString, address);
 			if (result.Type == CommandResultType.CommandOk)
 				return (string) result.Data;
 			else if (result.Type == CommandResultType.Exception)
@@ -2871,30 +2913,9 @@ public class SingleSteppingEngine : ThreadManager
 			return new TargetReader (buffer, inferior);
 		}
 
-		private struct WriteMemoryData
-		{
-			public TargetAddress Address;
-			public byte[] Data;
-
-			public WriteMemoryData (TargetAddress address, byte[] data)
-			{
-				this.Address = address;
-				this.Data = data;
-			}
-		}
-
-		CommandResult do_write_memory (object data)
-		{
-			WriteMemoryData mdata = (WriteMemoryData) data;
-
-			inferior.WriteBuffer (mdata.Address, mdata.Data);
-			return CommandResult.Ok;
-		}
-
 		protected void write_memory (TargetAddress address, byte[] buffer)
 		{
-			WriteMemoryData data = new WriteMemoryData (address, buffer);
-			CommandResult result = SendSyncCommand (new CommandFunc (do_write_memory), data);
+			CommandResult result = SendSyncCommand (CommandType.WriteMemory, address, buffer);
 			if (result.Type == CommandResultType.CommandOk)
 				return;
 			else if (result.Type == CommandResultType.Exception)
@@ -3127,27 +3148,6 @@ public class SingleSteppingEngine : ThreadManager
 
 				return sse.RuntimeInvoke (lbackend, method_arg,
 							  object_arg, param, out exc_obj);
-			}
-		}
-
-		//
-		// Backtrace.
-		//
-
-		protected class MyBacktrace : Backtrace
-		{
-			public MyBacktrace (EngineProcess sse, StackFrame[] frames)
-				: base (sse, sse.Architecture, frames)
-			{
-			}
-
-			public MyBacktrace (EngineProcess sse)
-				: this (sse, null)
-			{ }
-
-			public void SetFrames (StackFrame[] frames)
-			{
-				this.frames = frames;
 			}
 		}
 	}

@@ -77,6 +77,7 @@ namespace Mono.Debugger.Architecture
 
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
 
+#if FIXME
 			if (current_method != null) {
 				SourceMethod method = current_method.GetTrampoline (maddress);
 
@@ -85,6 +86,7 @@ namespace Mono.Debugger.Architecture
 					return;
 				}
 			}
+#endif
 
 			string name = symbol_table.SimpleLookup (maddress, false);
 

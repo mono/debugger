@@ -505,7 +505,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public enum DwarfTag {
+		protected enum DwarfTag {
 			array_type		= 0x01,
 			class_type		= 0x02,
 			enumeration_type	= 0x04,
@@ -527,7 +527,7 @@ namespace Mono.Debugger.Architecture
 			variable		= 0x34
 		}
 
-		public enum DwarfAttribute {
+		protected enum DwarfAttribute {
 			location	        = 0x02,
 			name			= 0x03,
 			byte_size		= 0x0b,
@@ -554,7 +554,7 @@ namespace Mono.Debugger.Architecture
 			vtable_elem_location	= 0x4d
 		}
 
-		public enum DwarfBaseTypeEncoding {
+		protected enum DwarfBaseTypeEncoding {
 			address			= 0x01,
 			boolean			= 0x02,
 			complex_float		= 0x03,
@@ -566,7 +566,7 @@ namespace Mono.Debugger.Architecture
 			imaginary_float		= 0x09
 		}
 
-		public enum DwarfForm {
+		protected enum DwarfForm {
 			addr			= 0x01,
 			block2			= 0x03,
 			block4			= 0x04,
