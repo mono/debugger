@@ -78,7 +78,8 @@ namespace Mono.Debugger
 		{
 			the_engine = new SingleSteppingEngine (this, start);
 
-			Report.Debug (DebugFlags.Threads, "Engine started: {0}", the_engine.PID);
+			Report.Debug (DebugFlags.Threads, "Thread manager started: {0}",
+				      the_engine.PID);
 
 			thread_hash.Add (the_engine.PID, the_engine);
 
@@ -180,7 +181,8 @@ namespace Mono.Debugger
 		internal void AcquireGlobalThreadLock (SingleSteppingEngine caller)
 		{
 			thread_lock_mutex.WaitOne ();
-			Report.Debug (DebugFlags.Threads, "Acquiring global thread lock: {0} {1}",
+			Report.Debug (DebugFlags.Threads,
+				      "Acquiring global thread lock: {0} {1}",
 				      caller, thread_lock_level);
 			if (thread_lock_level++ > 0)
 				return;
@@ -190,16 +192,19 @@ namespace Mono.Debugger
 				Register[] regs = engine.AcquireThreadLock ();
 				long esp = (long) regs [(int) I386Register.ESP].Data;
 				TargetAddress addr = new TargetAddress (engine.AddressDomain, esp);
-				Report.Debug (DebugFlags.Threads, "Got thread lock on {0}: {1}",
+				Report.Debug (DebugFlags.Threads,
+					      "Got thread lock on {0}: {1}",
 					      engine, addr);
 			}
-			Report.Debug (DebugFlags.Threads, "Done acquiring global thread lock: {0}",
+			Report.Debug (DebugFlags.Threads,
+				      "Done acquiring global thread lock: {0}",
 				      caller);
 		}
 
 		internal void ReleaseGlobalThreadLock (SingleSteppingEngine caller)
 		{
-			Report.Debug (DebugFlags.Threads, "Releasing global thread lock: {0} {1}",
+			Report.Debug (DebugFlags.Threads,
+				      "Releasing global thread lock: {0} {1}",
 				      caller, thread_lock_level);
 			if (--thread_lock_level > 0) {
 				thread_lock_mutex.ReleaseMutex ();
@@ -212,7 +217,8 @@ namespace Mono.Debugger
 				engine.ReleaseThreadLock ();
 			}
 			thread_lock_mutex.ReleaseMutex ();
-			Report.Debug (DebugFlags.Threads, "Released global thread lock: {0}", caller);
+			Report.Debug (DebugFlags.Threads,
+				      "Released global thread lock: {0}", caller);
 		}
 
 		void thread_created (Inferior inferior, int pid)
@@ -231,7 +237,8 @@ namespace Mono.Debugger
 
 				main_method = mono_manager.Initialize (the_engine, inferior);
 
-				Report.Debug (DebugFlags.Threads, "Managed main address is {0}",
+				Report.Debug (DebugFlags.Threads,
+					      "Managed main address is {0}",
 					      main_method);
 
 				new_thread.Start (main_method, true);
@@ -498,7 +505,8 @@ namespace Mono.Debugger
 			// We caught a SIGINT.
 			//
 			if (mono_debugger_server_get_pending_sigint () > 0) {
-				Report.Debug (DebugFlags.EventLoop, "ThreadManager received SIGINT: {0} {1}",
+				Report.Debug (DebugFlags.EventLoop,
+					      "ThreadManager received SIGINT: {0} {1}",
 					      command_engine, sync_command_running);
 
 				lock (this) {
@@ -533,7 +541,8 @@ namespace Mono.Debugger
 			if (command == null)
 				return;
 
-			Report.Debug (DebugFlags.EventLoop, "ThreadManager received command: {0}", command);
+			Report.Debug (DebugFlags.EventLoop,
+				      "ThreadManager received command: {0}", command);
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.
@@ -595,7 +604,8 @@ namespace Mono.Debugger
 
 			if (pid > 0) {
 				Report.Debug (DebugFlags.Wait,
-					      "ThreadManager received event: {0} {1:x}", pid, status);
+					      "ThreadManager received event: {0} {1:x}",
+					      pid, status);
 
 				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
 				if (event_engine == null)

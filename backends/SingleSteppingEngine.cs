@@ -141,7 +141,7 @@ namespace Mono.Debugger.Backends
 		{
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
 			Report.Debug (DebugFlags.EventLoop,
-				      "SSE {0} received event {1} ({2:x})",
+				      "{0} received event {1} ({2:x})",
 				      this, cevent, status);
 			if (manager.HandleChildEvent (inferior, cevent))
 				return;
@@ -185,7 +185,7 @@ namespace Mono.Debugger.Backends
 
 		void send_target_event (TargetEventArgs args)
 		{
-			Report.Debug (DebugFlags.EventLoop, "SSE {0} sending target event {1}",
+			Report.Debug (DebugFlags.EventLoop, "{0} sending target event {1}",
 				      this, args);
 
 			switch (args.Type) {
@@ -385,7 +385,7 @@ namespace Mono.Debugger.Backends
 				bool ret;
 				if (handle_callback (cevent, out ret)) {
 					Report.Debug (DebugFlags.EventLoop,
-						      "SSE {0} completed callback: {1}",
+						      "{0} completed callback: {1}",
 						      this, ret);
 					if (!ret)
 						return;
@@ -858,14 +858,14 @@ namespace Mono.Debugger.Backends
 				// running.
 				if (!manager.AcquireCommandMutex (this)) {
 					Report.Debug (DebugFlags.Wait,
-						      "SSE {0} cannot get command mutex", this);
+						      "{0} cannot get command mutex", this);
 					return false;
 				}
 				// Check whether we're curring performing an async
 				// stepping operation.
 				if (!engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
-						      "SSE {0} not stopped", this);
+						      "{0} not stopped", this);
 					manager.ReleaseCommandMutex ();
 					return false;
 				}
@@ -875,7 +875,7 @@ namespace Mono.Debugger.Backends
 				operation_completed_event.WaitOne ();
 				engine_stopped = false;
 				Report.Debug (DebugFlags.Wait,
-					      "SSE {0} got command mutex", this);
+					      "{0} got command mutex", this);
 				return true;
 			}
 		}
@@ -888,7 +888,7 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				Report.Debug (DebugFlags.Wait,
-					      "SSE {0} aborted operation", this);
+					      "{0} aborted operation", this);
 				engine_stopped = true;
 				manager.ReleaseCommandMutex ();
 			}
@@ -904,16 +904,16 @@ namespace Mono.Debugger.Backends
 				// stepping operation.
 				if (!engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
-						      "SSE {0} not stopped", this);
+						      "{0} not stopped", this);
 					return CommandResult.Busy;
 				}
 
 				Report.Debug (DebugFlags.Wait,
-					      "SSE {0} sending sync command {1}",
+					      "{0} sending sync command {1}",
 					      this, command);
 				CommandResult result = manager.SendSyncCommand (command);
 				Report.Debug (DebugFlags.Wait,
-					      "SSE {0} finished sync command {1}",
+					      "{0} finished sync command {1}",
 					      this, command);
 
 				return result;
@@ -946,12 +946,12 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (wait) {
-				Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
+				Report.Debug (DebugFlags.Wait, "{0} waiting", this);
 				operation_completed_event.WaitOne ();
-				Report.Debug (DebugFlags.Wait, "SSE {0} done waiting", this);
+				Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 			}
 			Report.Debug (DebugFlags.Wait,
-				      "SSE {0} released command mutex", this);
+				      "{0} released command mutex", this);
 			manager.ReleaseCommandMutex ();
 		}
 
@@ -965,11 +965,11 @@ namespace Mono.Debugger.Backends
 				manager.SendAsyncCommand (command);
 			}
 
-			Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
+			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
 			operation_completed_event.WaitOne ();
-			Report.Debug (DebugFlags.Wait, "SSE {0} done waiting", this);
+			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 			Report.Debug (DebugFlags.Wait,
-				      "SSE {0} released command mutex", this);
+				      "{0} released command mutex", this);
 			manager.ReleaseCommandMutex ();
 		}
 
@@ -991,14 +991,14 @@ namespace Mono.Debugger.Backends
 				// running.
 				if (!manager.AcquireCommandMutex (this)) {
 					Report.Debug (DebugFlags.Wait,
-						      "SSE {0} cannot get command mutex", this);
+						      "{0} cannot get command mutex", this);
 					return false;
 				}
 				// Check whether we're curring performing an async
 				// stepping operation.
 				if (engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
-						      "SSE {0} already stopped", this);
+						      "{0} already stopped", this);
 					manager.ReleaseCommandMutex ();
 					return true;
 				}
@@ -1020,9 +1020,9 @@ namespace Mono.Debugger.Backends
 
 			// Ok, we got the `command_mutex'.
 			// Now we can wait for the operation to finish.
-			Report.Debug (DebugFlags.Wait, "SSE {0} waiting", this);
+			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
 			operation_completed_event.WaitOne ();
-			Report.Debug (DebugFlags.Wait, "SSE {0} stopped", this);
+			Report.Debug (DebugFlags.Wait, "{0} stopped", this);
 			manager.ReleaseCommandMutex ();
 			return true;
 		}
@@ -1030,7 +1030,7 @@ namespace Mono.Debugger.Backends
 		public void Interrupt ()
 		{
 			lock (this) {
-				Report.Debug (DebugFlags.Wait, "SSE {0} interrupt: {0}",
+				Report.Debug (DebugFlags.Wait, "{0} interrupt: {0}",
 					      this, engine_stopped);
 
 				if (engine_stopped)
@@ -1134,7 +1134,7 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
-				      "SSE {0} stepping over breakpoint {0}",
+				      "{0} stepping over breakpoint {0}",
 				      this, index);
 
 			manager.AcquireGlobalThreadLock (this);
@@ -1147,7 +1147,7 @@ namespace Mono.Debugger.Backends
 			long status = wait_result;
 
 			Report.Debug (DebugFlags.SSE,
-				      "SSE {0} got event {1:x} - reenabling breakpoint {2}",
+				      "{0} got event {1:x} - reenabling breakpoint {2}",
 				      this, status, index);
 
 			inferior.EnableBreakpoint (index);
@@ -1404,7 +1404,7 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 
 			Report.Debug (DebugFlags.SSE,
-				      "SSE {0} starting step operation {0}",
+				      "{0} starting step operation {0}",
 				      this, operation);
 
 			if (operation.StepFrame == null) {
@@ -1415,7 +1415,7 @@ namespace Mono.Debugger.Backends
 			current_operation = operation;
 			if (DoStep (true)) {
 				Report.Debug (DebugFlags.SSE,
-					      "SSE {0} finished step operation", this);
+					      "{0} finished step operation", this);
 				step_operation_finished ();
 				return true;
 			}
@@ -1475,8 +1475,8 @@ namespace Mono.Debugger.Backends
 
 			TargetAddress current_frame = inferior.CurrentFrame;
 			bool in_frame = is_in_step_frame (frame, current_frame);
-			Report.Debug (DebugFlags.SSE, "SSE {0} stepping at {0} in {1} {2}",
-				      current_frame, frame, in_frame);
+			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} {3}",
+				      this, current_frame, frame, in_frame);
 			if (!first && !in_frame)
 				return true;
 
@@ -1796,6 +1796,11 @@ namespace Mono.Debugger.Backends
 			{
 				this.frames = frames;
 			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("SSE ({0})", process.ID);
 		}
 
 		//
