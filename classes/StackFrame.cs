@@ -210,9 +210,6 @@ namespace Mono.Debugger
 
 		protected virtual void Dispose (bool disposing)
 		{
-			Console.WriteLine ("DISPOSE: {0} {1}", this, disposing);
-			if (address.Address == 0x401ce59b)
-				throw new Exception ("FUCK");
 			if (!this.disposed) {
 				if (disposing) {
 					if (FrameInvalidEvent != null)

@@ -26,6 +26,7 @@ namespace Mono.Debugger.Architecture
 		ObjectCache debug_pubnames_reader;
 		ObjectCache debug_str_reader;
 
+		Hashtable method_source_hash;
 		Hashtable compile_unit_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
@@ -78,6 +79,7 @@ namespace Mono.Debugger.Architecture
 			debug_str_reader = create_reader (".debug_str");
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
+			method_source_hash = Hashtable.Synchronized (new Hashtable ());
 
 			aranges = ArrayList.Synchronized (read_aranges ());
 
@@ -135,6 +137,21 @@ namespace Mono.Debugger.Architecture
 		IMethod ISymbolFile.GetMethod (long handle)
 		{
 			return null;
+		}
+
+		protected SourceMethod GetSourceMethod (DieSubprogram subprog,
+							int start_row, int end_row)
+		{
+			SourceMethod source;
+			source = (SourceMethod) method_source_hash [subprog.Offset];
+			if (source != null)
+				return source;
+
+			source = new SourceMethod (
+				this, subprog.SourceFile, subprog.Offset, subprog.Name,
+				start_row, end_row, false);
+			method_source_hash.Add (subprog.Offset, source);
+			return source;
 		}
 
 		protected class CompileUnitBlock
@@ -1599,11 +1616,6 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public void AddMethod (SourceMethod method)
-			{
-				file.AddMethod (method);
-			}
-
 			protected class CompileUnitSymbolTable : SymbolTable
 			{
 				DieCompileUnit comp_unit_die;
@@ -1914,10 +1926,8 @@ namespace Mono.Debugger.Architecture
 						SetMethodBounds (start.Address, end.Address);
 					}
 
-					source = new SourceMethod (
-						subprog.dwarf, subprog.SourceFile, 0,
-						Name, StartRow, EndRow, false);
-					subprog.DieCompileUnit.AddMethod (source);
+					source = subprog.dwarf.GetSourceMethod (
+						subprog, StartRow, EndRow);
 
 					buffer = subprog.dwarf.factory.FindFile (subprog.SourceFile.FileName);
 				}

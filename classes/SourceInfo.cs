@@ -45,7 +45,6 @@ namespace Mono.Debugger
 		public void AddMethod (SourceMethod method)
 		{
 			methods.Add (method);
-			method_hash.Add (method.Name, method);
 		}
 
 		// <summary>
@@ -63,7 +62,12 @@ namespace Mono.Debugger
 
 		public SourceMethod FindMethod (string name)
 		{
-			return (SourceMethod) method_hash [name];
+			foreach (SourceMethod method in methods) {
+				if (method.Name == name)
+					return method;
+			}
+
+			return null;
 		}
 
 		public SourceLocation FindLine (int line)
@@ -82,14 +86,12 @@ namespace Mono.Debugger
 			this.module = module;
 			this.filename = filename;
 			this.methods = new ArrayList ();
-			this.method_hash = new Hashtable ();
 		}
 
 		string filename;
 		Module module;
 		int id;
 		ArrayList methods;
-		Hashtable method_hash;
 		static int next_id = 0;
 
 		public override string ToString ()
@@ -216,6 +218,8 @@ namespace Mono.Debugger
 			this.start_row = start;
 			this.end_row = end;
 			this.is_dynamic = is_dynamic;
+
+			source.AddMethod (this);
 		}
 	}
 }

@@ -1102,12 +1102,8 @@ namespace Mono.Debugger.Languages.CSharp
 				sources.Add (info);
 				source_hash.Add (source, info);
 
-				foreach (C.MethodSourceEntry entry in source.Methods) {
-					SourceMethod method = CreateSourceMethod (
-						info, entry.Index);
-
-					info.AddMethod (method);
-				}
+				foreach (C.MethodSourceEntry entry in source.Methods)
+					CreateSourceMethod (info, entry.Index);
 			}
 		}
 
