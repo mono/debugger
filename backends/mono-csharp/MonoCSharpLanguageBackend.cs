@@ -1167,32 +1167,12 @@ namespace Mono.Debugger.Languages.CSharp
 			bool is_loaded;
 			MethodAddress address;
 
-			static MethodInfo get_method;
-			static MethodInfo get_local_type_from_sig;
-
-			static MonoMethod ()
-			{
-				Type type = typeof (Assembly);
-				get_method = type.GetMethod ("MonoDebugger_GetMethod");
-				if (get_method == null)
-					throw new InternalError (
-						"Can't find Assembly.MonoDebugger_GetMethod");
-				get_local_type_from_sig = type.GetMethod ("MonoDebugger_GetLocalTypeFromSignature");
-				if (get_local_type_from_sig == null)
-					throw new InternalError (
-						"Can't find Assembly.MonoDebugger_GetLocalTypeFromSignature");
-
-			}
-
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method)
 				: base (method.FullName, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
 				this.method = method;
-
-				object[] args = new object[] { (int) method.Token };
-				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
-					reader.Assembly, args);
+				this.rmethod = method.MethodBase;
 			}
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
@@ -1248,11 +1228,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				local_types = new MonoType [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
-					LocalVariableEntry local = method.Locals [i];
-
-					object[] args = new object[] { local.Signature };
-					Type type = (Type) get_local_type_from_sig.Invoke (
-						reader.Assembly, args);
+					Type type = method.LocalTypes [i];
 
 					local_types [i] = reader.Table.GetType (
 						type, address.LocalVariableInfo [i].Size,
