@@ -1,5 +1,12 @@
+DEPENDENCIES
+------------
 
-Directory layout:
+	* editline
+
+	    http://freshmeat.net/projects/editline/
+
+DIRECTORY LAYOUT
+-----------------
 
 	* interfaces/
 
@@ -68,7 +75,3 @@ Directory layout:
 		  Mono.CSharp.Debugger.dll which is in mcs/class/Mono.CSharp.Debugger (it must be
 		  distributed together with our class libs because it contains the symbol writer
 		  which is used by MCS).
-
-
-Last changed September 21th, 2002
-Martin Baulig <martin@gnome.org>
