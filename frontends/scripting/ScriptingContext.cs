@@ -133,6 +133,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string contents;
 			current_buffer = method.Source.SourceBuffer;
+			if (current_buffer == null)
+				return;
 			if (current_buffer.HasContents)
 				contents = current_buffer.Contents;
 			else {
