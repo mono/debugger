@@ -1,3 +1,17 @@
+2004-09-20  Chris Toshok  <toshok@ximian.com>
+
+	* arch/DwarfReader.cs (TargetVariable.ctor): Add a ctor that takes
+	an offset instead of a TargetLocation.
+	(TargetVariable.GetAddress): in the case where the offset ctor is
+	used, use that offset directly when creating a
+	MonoVariableLocation.
+	(DieMethodVariable.ProcessAttribute): the DWARF spec says location
+	attributes can be blocks of constants.  handle the constant cases
+	here (does this need to be augmented with the other block cases as
+	well?)
+	(DieMethodVariable.DoResolve): handle both the block and constant
+	cases here.
+
 2004-09-21  Martin Baulig  <martin@ximian.com>
 
 	* classes/ProcessStart.cs (ProcessStart..ctor): If we're debugging

@@ -2371,12 +2371,20 @@ namespace Mono.Debugger.Architecture
 			string name;
 			NativeType type;
 			TargetBinaryReader location;
+			int offset;
 
 			public TargetVariable (string name, NativeType type, TargetBinaryReader location)
 			{
 				this.name = name;
 				this.type = type;
 				this.location = location;
+			}
+
+			public TargetVariable (string name, NativeType type, int offset)
+			{
+				this.name = name;
+				this.type = type;
+				this.offset = offset;
 			}
 
 			public string Name {
@@ -2403,19 +2411,28 @@ namespace Mono.Debugger.Architecture
 
 			protected TargetLocation GetAddress (StackFrame frame)
 			{
-				location.Position = 0;
-				switch (location.ReadByte ()) {
-				case 0x91: // DW_OP_fbreg
-					int offset = location.ReadSLeb128 ();
+				int off;
 
-					if (!location.IsEof)
+				if (location != null) {
+					location.Position = 0;
+					switch (location.ReadByte ()) {
+					case 0x91: // DW_OP_fbreg
+						off = location.ReadSLeb128 ();
+
+						if (!location.IsEof)
+							return null;
+
+						break;
+					default:
 						return null;
-
-					return new MonoVariableLocation (frame, true, (int) I386Register.EBP,
-									 offset, type.IsByRef, 0);
+					}
+				}
+				else {
+					off = offset;
 				}
 
-				return null;
+				return new MonoVariableLocation (frame, true, (int) I386Register.EBP,
+								 off, type.IsByRef, 0);
 			}
 
 			public ITargetObject GetObject (StackFrame frame)
@@ -2972,23 +2989,37 @@ namespace Mono.Debugger.Architecture
 			{
 				switch (attribute.DwarfAttribute) {
 				case DwarfAttribute.location:
-					location = (byte []) attribute.Data;
+					switch (attribute.DwarfForm) {
+					case DwarfForm.block1:
+						location_block = (byte []) attribute.Data;
+						use_constant = false;
+						break;
+					case DwarfForm.data1:
+					case DwarfForm.data2:
+					case DwarfForm.data4:
+					case DwarfForm.data8:
+						location_constant = (long) attribute.Data;
+						use_constant = true;
+						break;
+					}
 					break;
-
 				default:
 					base.ProcessAttribute (attribute);
 					break;
 				}
 			}
 
-			byte[] location;
+
+			byte[] location_block;
+			long location_constant;
+			bool use_constant;
 			TargetVariable variable;
 			ITargetInfo target_info;
 			bool resolved;
 
 			protected bool DoResolve ()
 			{
-				if ((TypeOffset == 0) || (location == null) || (Name == null))
+				if ((TypeOffset == 0) || (!use_constant && location_block == null) || (Name == null))
 					return false;
 
 				DieType reference = comp_unit.GetType (TypeOffset);
@@ -2996,9 +3027,14 @@ namespace Mono.Debugger.Architecture
 					return false;
 
 				NativeType type = reference.ResolveType ();
-				TargetBinaryReader locreader = new TargetBinaryReader (
-					location, target_info);
-				variable = new TargetVariable (Name, type, locreader);
+				if (!use_constant) {
+					TargetBinaryReader locreader = new TargetBinaryReader (
+						       location_block, target_info);
+					variable = new TargetVariable (Name, type, locreader);
+				}
+				else {
+					variable = new TargetVariable (Name, type, (int)location_constant);
+				}
 				return true;
 			}
 
