@@ -185,6 +185,8 @@ namespace Mono.Debugger
 				return (Backtrace) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
+			else if (result.Type == CommandResultType.NotStopped)
+				throw new TargetNotStoppedException ();
 			else
 				throw new InternalError ();
 		}

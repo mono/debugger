@@ -41,15 +41,15 @@ namespace Mono.Debugger
 			if (hit_handler != null)
 				hit_handler (frame, Index, user_data);
 			else
-				OnBreakpointHit ();
+				OnBreakpointHit (frame);
 		}
 
 		public event BreakpointEventHandler BreakpointHitEvent;
 
-		protected virtual void OnBreakpointHit ()
+		protected virtual void OnBreakpointHit (StackFrame frame)
 		{
 			if (BreakpointHitEvent != null)
-				BreakpointHitEvent (this);
+				BreakpointHitEvent (this, frame);
 		}
 	}
 }

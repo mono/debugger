@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
-	public delegate void BreakpointEventHandler (Breakpoint breakpoint);
+	public delegate void BreakpointEventHandler (Breakpoint breakpoint, StackFrame frame);
 
 	// <summary>
 	//   This is an abstract base class which is implemented by the user interface to
