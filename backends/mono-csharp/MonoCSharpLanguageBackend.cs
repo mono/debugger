@@ -705,7 +705,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			ClassEntry entry = (ClassEntry) class_table [klass_address];
 
-			if (entry == null) {
+			if ((entry == null) || (entry.Type == null)) {
 				Console.WriteLine ("Can't find class for type {0} at address {1:x}",
 						   type, klass_address);
 				return new MonoOpaqueType (type, 0);
@@ -1306,9 +1306,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int Rank;
 		public readonly int Token;
 		public readonly int TypeInfo;
-		// public readonly int TypeReference;
-		// public readonly TargetAddress ReferenceAddress;
-		// public readonly TargetAddress BuiltinInfo;
 		public readonly Type Type;
 
 		internal ClassEntry (MonoSymbolFile file, ITargetMemoryReader reader)
@@ -1317,9 +1314,6 @@ namespace Mono.Debugger.Languages.CSharp
 			Rank = reader.BinaryReader.ReadInt32 ();
 			Token = reader.BinaryReader.ReadInt32 ();
 			TypeInfo = reader.BinaryReader.ReadInt32 ();
-			// TypeReference = reader.BinaryReader.ReadInt32 ();
-			// ReferenceAddress = reader.ReadAddress ();
-			// BuiltinInfo = reader.ReadAddress ();
 
 			if (Token != 0)
 				Type = C.MonoDebuggerSupport.GetType (file.Assembly, Token);
