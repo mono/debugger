@@ -247,6 +247,11 @@ arch/Makefile
 arch/libiberty/Makefile
 arch/opcodes/Makefile
 arch/bfd/Makefile
+arch/bfd/hosts/Makefile
+arch/bfd/include/Makefile
+arch/bfd/include/aout/Makefile
+arch/bfd/include/coff/Makefile
+arch/bfd/include/elf/Makefile
 test/Makefile
 doc/Makefile
 ])

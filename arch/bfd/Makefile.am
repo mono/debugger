@@ -1,5 +1,7 @@
 ## Process this file with automake to generate Makefile.in
 
+SUBDIRS = include hosts
+
 INCDIR = $(srcdir)/include
 CSEARCH = -I. -I$(srcdir) -I$(INCDIR)
 
@@ -58,3 +60,4 @@ pepigen.c : peXXigen.c
 	mv -f pepigen.new pepigen.c
 
 
+EXTRA_DIST = @srcdir@/*.h
