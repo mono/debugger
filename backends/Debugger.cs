@@ -51,14 +51,14 @@ namespace Mono.Debugger
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
 
-			thread_manager = new NativeThreadManager (this, bfd_container, true);
-
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent +=
 				new SymbolTableManager.ModuleHandler (modules_reloaded);
 
 			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
+
+			thread_manager = new SingleSteppingEngine (this);
 		}
 
 		public ModuleManager ModuleManager {
@@ -88,6 +88,12 @@ namespace Mono.Debugger
 		public SourceFileFactory SourceFileFactory {
 			get {
 				return source_factory;
+			}
+		}
+
+		internal BfdContainer BfdContainer {
+			get {
+				return bfd_container;
 			}
 		}
 
