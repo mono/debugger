@@ -1,5 +1,9 @@
 2003-01-05  Martin Baulig  <martin@ximian.com>
 
+	* test/D.cs: Renamed to TestManagedTypes.cs.
+
+2003-01-05  Martin Baulig  <martin@ximian.com>
+
 	* lib/Debugger.exe.config.in: Moved here from ../test.
 	* lib/Interpreter.exe.config.in: Moved here from ../test.
 
