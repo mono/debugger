@@ -138,19 +138,26 @@ mono_debugger_server_global_wait (guint64 *status_ret)
 
 	g_static_mutex_lock (&wait_mutex);
 	ret = do_wait (-1, &status);
-	g_static_mutex_unlock (&wait_mutex);
 	if (ret <= 0)
-		return ret;
+		goto out;
+
+#if DEBUG_WAIT
+	g_message (G_STRLOC ": global wait finished: %d - %x - %d",
+		   ret, status, stop_requested);
+#endif
 
 	g_static_mutex_lock (&wait_mutex_2);
 	if (ret == stop_requested) {
 		stop_status = status;
 		g_static_mutex_unlock (&wait_mutex_2);
+		g_static_mutex_unlock (&wait_mutex);
 		return 0;
 	}
 	g_static_mutex_unlock (&wait_mutex_2);
 
 	*status_ret = status;
+ out:
+	g_static_mutex_unlock (&wait_mutex);
 	return ret;
 }
 
@@ -190,9 +197,15 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	 * Try to get the thread's registers.  If we suceed, then it's already stopped
 	 * and still alive.
 	 */
+#if DEBUG_WAIT
+	g_message (G_STRLOC ": stop and wait %d", handle->inferior->pid);
+#endif
 	g_static_mutex_lock (&wait_mutex_2);
 	result = mono_debugger_server_stop (handle);
 	if (result != COMMAND_ERROR_NONE) {
+#if DEBUG_WAIT
+		g_message (G_STRLOC ": %d - cannot stop %d", handle->inferior->pid, result);
+#endif
 		g_static_mutex_unlock (&wait_mutex_2);
 		return result;
 	}
@@ -200,7 +213,14 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	stop_requested = handle->inferior->pid;
 	g_static_mutex_unlock (&wait_mutex_2);
 
+#if DEBUG_WAIT
+	g_message (G_STRLOC ": %d - sent SIGSTOP", handle->inferior->pid);
+#endif
+
 	g_static_mutex_lock (&wait_mutex);
+#if DEBUG_WAIT
+	g_message (G_STRLOC ": %d - got stop status %x", handle->inferior->pid, stop_status);
+#endif
 	if (stop_status) {
 		*status = stop_status;
 		stop_requested = stop_status = 0;
@@ -211,7 +231,14 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	stop_requested = stop_status = 0;
 
 	do {
+#if DEBUG_WAIT
+		g_message (G_STRLOC ": %d - waiting", handle->inferior->pid);
+#endif
 		ret = do_wait (handle->inferior->pid, status);
+#if DEBUG_WAIT
+		g_message (G_STRLOC ": %d - done waiting %d, %x",
+			   handle->inferior->pid, ret, status);
+#endif
 	} while (ret == 0);
 	g_static_mutex_unlock (&wait_mutex);
 
