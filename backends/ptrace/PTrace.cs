@@ -169,9 +169,9 @@ namespace Mono.Debugger.Backends
 			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
 			pending_callbacks.Add (number, async);
 
+			change_target_state (TargetState.RUNNING);
 			check_error (mono_debugger_server_call_method (
 				server_handle, method.Location, method_argument, number));
-			change_target_state (TargetState.RUNNING);
 			return async;
 		}
 
@@ -617,8 +617,8 @@ namespace Mono.Debugger.Backends
 
 		public void Continue ()
 		{
-			check_error (mono_debugger_server_continue (server_handle));
 			change_target_state (TargetState.RUNNING);
+			check_error (mono_debugger_server_continue (server_handle));
 		}
 
 		public void Continue (ITargetLocation location)
@@ -686,8 +686,8 @@ namespace Mono.Debugger.Backends
 
 			current_step_frame = frame;
 
-			check_error (mono_debugger_server_step (server_handle));
 			change_target_state (TargetState.RUNNING);
+			check_error (mono_debugger_server_step (server_handle));
 		}
 
 		public void Next ()

@@ -1,5 +1,7 @@
 using Gtk;
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.GUI {
 
@@ -13,14 +15,16 @@ namespace Mono.Debugger.GUI {
 		Gtk.TextView output_area;
 		Gtk.TextBuffer output_buffer;
 
-		public OutputWindow ()
+		[DllImport("glib-2.0")]
+		static extern bool g_main_context_iteration (IntPtr context, bool may_block);
+
+		public OutputWindow (Gtk.TextView output_area)
 		{
-			output_area = new Gtk.TextView ();
+			this.output_area = output_area;
+			this.output_area.Editable = false;
+			this.output_area.WrapMode = Gtk.WrapMode.None;
 
-			output_area.Editable = false;
-			output_area.WrapMode = Gtk.WrapMode.None;
-
-			output_buffer = output_area.Buffer;
+			output_buffer = this.output_area.Buffer;
 		}
 
 		// <summary>
@@ -49,6 +53,8 @@ namespace Mono.Debugger.GUI {
 		{
 			output_buffer.Insert (output_buffer.EndIter, output, output.Length);
 			output_area.ScrollToMark (output_buffer.InsertMark, 0.4, true, 0.0, 1.0);
+			while (g_main_context_iteration (IntPtr.Zero, false))
+				;
 		}
 	}
 }

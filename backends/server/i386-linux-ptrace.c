@@ -41,6 +41,7 @@ typedef struct {
 typedef struct {
 	GSource source;
 	InferiorHandle *handle;
+	int status;
 } PTraceSource;
 
 static ServerCommandError
@@ -509,8 +510,12 @@ do_dispatch (InferiorHandle *handle, int status)
 static gboolean 
 source_check (GSource *source)
 {
-	InferiorHandle *handle = ((PTraceSource *) source)->handle;
+	PTraceSource *psource = (PTraceSource *) source;
+	InferiorHandle *handle = psource->handle;
 	int ret, status;
+
+	if (psource->status)
+		return TRUE;
 
 	/* If the child stopped in the meantime. */
 	ret = waitpid (handle->pid, &status, WNOHANG | WUNTRACED);
@@ -521,7 +526,9 @@ source_check (GSource *source)
 	} else if (ret == 0)
 		return FALSE;
 
-	do_dispatch (handle, status);
+	psource->status = status;
+
+	// do_dispatch (handle, status);
 
 	return TRUE;
 }
@@ -529,7 +536,11 @@ source_check (GSource *source)
 static gboolean 
 source_prepare (GSource *source, gint *timeout)
 {
+	PTraceSource *psource = (PTraceSource *) source;
+
 	*timeout = -1;
+
+	psource->status = 0;
 
 	return source_check (source);
 }
@@ -537,10 +548,14 @@ source_prepare (GSource *source, gint *timeout)
 static gboolean
 source_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
 {
+	PTraceSource *psource = (PTraceSource *) source;
+
 	if (callback) {
 		g_warning ("Ooops, you must not set a callback on this source!");
 		return FALSE;
 	}
+
+	do_dispatch (psource->handle, psource->status);
 
 	return TRUE;
 }

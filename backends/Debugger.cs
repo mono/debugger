@@ -274,7 +274,6 @@ namespace Mono.Debugger.Backends
 		public readonly ITargetLocation TargetLocation = null;
 		public readonly ISymbolHandle SymbolHandle = null;
 		public readonly IInferior Inferior;
-		public readonly string Instruction;
 
 		public StackFrame (IInferior inferior, ITargetLocation location,
 				   ISourceLocation source, ISymbolHandle handle)
@@ -288,16 +287,6 @@ namespace Mono.Debugger.Backends
 		{
 			Inferior = inferior;
 			TargetLocation = location;
-
-			if (Inferior.Disassembler != null) {
-				ITargetLocation loc = (ITargetLocation) location.Clone ();
-
-				try {
-					Instruction = Inferior.Disassembler.DisassembleInstruction (ref loc);
-				} catch (TargetException e) {
-					// Catch any target exceptions.
-				}
-			}
 		}
 
 		ISourceLocation IStackFrame.SourceLocation {
@@ -321,13 +310,6 @@ namespace Mono.Debugger.Backends
 				builder.Append (" at ");
 			}
 			builder.Append (TargetLocation);
-
-			bool print_insn = true;
-			if (print_insn && (Instruction != null)) {
-				builder.Append (" (");
-				builder.Append (Instruction);
-				builder.Append (")");
-			}
 
 			return builder.ToString ();
 		}
@@ -543,6 +525,8 @@ namespace Mono.Debugger.Backends
 
 		ArrayList do_update_symbol_files ()
 		{
+			inferior_output ("Updating symbol files.");
+
 			ArrayList symtabs = new ArrayList ();
 
 			int header_size = 3 * inferior.TargetIntegerSize;
@@ -595,6 +579,8 @@ namespace Mono.Debugger.Backends
 
 				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
 			}
+
+			inferior_output ("Done updating symbol files.");
 
 			return symtabs;
 		}
