@@ -74,6 +74,9 @@ namespace Mono.Debugger
 		[Option("Full path name of the JIT wrapper", "jit-wrapper")]
 		public string JitWrapper = null;
 
+		[Option("JIT Optimizations", "jit-optimizations")]
+		public string JitOptimizations = null;
+
 		[Option("Display version and licensing information", 'V', "version")]
 		public override WhatToDoNext DoAbout()
 		{

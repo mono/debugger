@@ -1,5 +1,15 @@
 2003-03-23  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/DebuggerOptions.cs (--jit-optimizations):
+	New command line argument to specify the optimization flags for
+	the new JIT.  This is the same than the --optimize argument of the
+	new JIT.
+
+	* wrapper/main.c (main): The second command line argument now
+	contains the optimization flags.
+
+2003-03-23  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs (SetupEnvironment): Pass all environment
 	variables to the target.
 

@@ -686,6 +686,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (options.JitWrapper != null)
 				ProcessStart.Path_Mono = options.JitWrapper;
+			if (options.JitOptimizations != null)
+				ProcessStart.JitOptimizations = options.JitOptimizations;
 		}
 
 		public ProcessStart ProcessStart {

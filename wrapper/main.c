@@ -12,8 +12,8 @@ main (int argc, char **argv, char **envp)
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
-	g_assert (argc >= 2);
-	file = argv [1];
+	g_assert (argc >= 3);
+	file = argv [2];
 
 	g_set_prgname (file);
 
