@@ -1,5 +1,4 @@
-step
-break "D.cs" 54
+break "TestManagedTypes.cs" 54
 continue
 assert line 54
 assert accessable $a

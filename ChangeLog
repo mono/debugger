@@ -1,5 +1,9 @@
 2003-01-05  Martin Baulig  <martin@ximian.com>
 
+	* test/test.in: Added `test' target to run all the tests.
+
+2003-01-05  Martin Baulig  <martin@ximian.com>
+
 	* test/D.cs: Renamed to TestManagedTypes.cs.
 
 2003-01-05  Martin Baulig  <martin@ximian.com>

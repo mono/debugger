@@ -1,12 +1,30 @@
 MCS=mcs
+MCS_FLAGS=-g
+MONO=mono
 DESTDIR=
 
 all: linux
 
-linux: 
+TESTS	= TestManagedTypes.exe
+
+linux: $(TESTS)
+
+%.exe:%.cs
+	$(MCS) $(MCS_FLAGS) $<
 
 clean:
-	rm -f *.exe
+	rm -f *.exe *.dbg a.out
+
+test:
+	for test in $(TESTS) ; do \
+		echo -n "Running $$test ... " ; \
+		if $(MONO) ./$$test > /dev/null; then \
+			echo OK; \
+		else \
+			echo FAILED; exit 1; \
+		fi \
+	done
+	@echo "All tests passed."
 
 install: all
 
