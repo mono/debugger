@@ -9,7 +9,7 @@ namespace Mono.Debugger
 	public abstract class SymbolRangeEntry : ISymbolRange, IComparable
 	{
 		TargetAddress start, end;
-		WeakReference weak_lookup;
+		ObjectCache symbol_lookup;
 
 		public SymbolRangeEntry (TargetAddress start, TargetAddress end)
 		{
@@ -31,25 +31,19 @@ namespace Mono.Debugger
 
 		protected abstract ISymbolLookup GetSymbolLookup ();
 
+		object get_symbol_lookup (object user_data)
+		{
+			return GetSymbolLookup ();
+		}
+
 		public ISymbolLookup SymbolLookup {
 			get {
-				ISymbolLookup lookup = null;
-				if (weak_lookup != null) {
-					try {
-						lookup = (ISymbolLookup) weak_lookup.Target;
-					} catch {
-						weak_lookup = null;
-					}
-				}
+				if (symbol_lookup == null)
+					symbol_lookup = new ObjectCache
+						(new ObjectCacheFunc (get_symbol_lookup), null,
+						 new TimeSpan (0,1,0));
 
-				if (lookup != null)
-					return lookup;
-
-				lookup = GetSymbolLookup ();
-				if (lookup == null)
-					return null;
-				weak_lookup = new WeakReference (lookup);
-				return lookup;
+				return (ISymbolLookup) symbol_lookup.Data;
 			}
 		}
 
@@ -72,7 +66,7 @@ namespace Mono.Debugger
 		protected readonly TargetAddress start_address;
 		protected readonly TargetAddress end_address;
 
-		WeakReference method_table;
+		ObjectCache method_table;
 
 		protected SymbolTable (TargetAddress start_address, TargetAddress end_address)
 		{
@@ -111,26 +105,22 @@ namespace Mono.Debugger
 
 		static int count = 0;
 
-		ArrayList ensure_methods ()
+		object get_methods (object user_data)
 		{
-			ArrayList methods = null;
-			if (method_table != null) {
-				try {
-					methods = (ArrayList) method_table.Target;
-				} catch {
-					method_table = null;
-				}
-			}
-
-			if (methods != null)
-				return methods;
-
-			methods = GetMethods ();
+			ArrayList methods = GetMethods ();
 			if (methods == null)
 				return null;
 			methods.Sort ();
-			method_table = new WeakReference (methods);
 			return methods;
+		}
+
+		ArrayList ensure_methods ()
+		{
+			if (method_table == null)
+				method_table = new ObjectCache
+					(new ObjectCacheFunc (get_methods), null, new TimeSpan (0,1,0));
+
+			return (ArrayList) method_table.Data;
 		}
 
 		public bool IsContinuous {

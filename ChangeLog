@@ -1,5 +1,14 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* class/ObjectCache.cs: New public class.  Keeps a hard reference
+	to an object and transforms the hard reference into a weak
+	reference after a timeout.
+
+	* class/DwarfReader.cs, SymbolTable.cs, MethodBase.cs, MethodSource.cs:
+	Use the new ObjectCache.
+
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
 	* class/TargetException (TargetException): Made this abstract.
 
 	* class/InternalError.cs: New exception class.

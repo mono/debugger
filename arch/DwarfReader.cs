@@ -17,11 +17,11 @@ namespace Mono.Debugger.Architecture
 		bool is64bit;
 		byte address_size;
 
-		WeakReference weak_info_reader;
-		WeakReference weak_abbrev_reader;
-		WeakReference weak_line_reader;
-		WeakReference weak_aranges_reader;
-		WeakReference weak_str_reader;
+		ObjectCache debug_info_reader;
+		ObjectCache debug_abbrev_reader;
+		ObjectCache debug_line_reader;
+		ObjectCache debug_aranges_reader;
+		ObjectCache debug_str_reader;
 
 		Hashtable compile_unit_hash;
 		ISourceFileFactory factory;
@@ -45,7 +45,13 @@ namespace Mono.Debugger.Architecture
 			this.filename = bfd.FileName;
 			this.factory = factory;
 
-			DwarfBinaryReader reader = DebugInfoReader;
+			debug_info_reader = create_reader (".debug_info");
+			debug_abbrev_reader = create_reader (".debug_abbrev");
+			debug_line_reader = create_reader (".debug_line");
+			debug_aranges_reader = create_reader (".debug_aranges");
+			debug_str_reader = create_reader (".debug_str");
+
+			DwarfBinaryReader reader = (DwarfBinaryReader) debug_info_reader.Data;
 
 			long length = reader.ReadInitialLength (out is64bit);
 			long stop = reader.Position + length;
@@ -254,50 +260,59 @@ namespace Mono.Debugger.Architecture
 			return ranges;
 		}
 
-		DwarfBinaryReader get_reader (string section, ref WeakReference weak)
+		private struct CreateReaderData
 		{
-			DwarfBinaryReader reader = null;
-			if (weak != null) {
-				try {
-					reader = (DwarfBinaryReader) weak.Target;
-				} catch {
-					weak = null;
-				}
+			public readonly DwarfReader reader;
+			public readonly string section_name;
+
+			public CreateReaderData (DwarfReader reader, string section_name)
+			{
+				this.reader = reader;
+				this.section_name = section_name;
 			}
-			if (reader != null)
-				return reader;
-			reader = DwarfBinaryReader.GetBinaryReader (this, section);
-			weak = new WeakReference (reader);
-			return reader;
+		}
+
+		object create_reader_func (object user_data)
+		{
+			CreateReaderData data = (CreateReaderData) user_data;
+
+			return DwarfBinaryReader.GetBinaryReader (data.reader, data.section_name);
+		}
+
+		ObjectCache create_reader (string section_name)
+		{
+			CreateReaderData data = new CreateReaderData (this, section_name);
+			return new ObjectCache (new ObjectCacheFunc (create_reader_func), data,
+						new TimeSpan (0,5,0));
 		}
 
 		public DwarfBinaryReader DebugInfoReader {
 			get {
-				return get_reader (".debug_info", ref weak_info_reader);
+				return (DwarfBinaryReader) debug_info_reader.Data;
 			}
 		}
 
 		public DwarfBinaryReader DebugAbbrevReader {
 			get {
-				return get_reader (".debug_abbrev", ref weak_abbrev_reader);
+				return (DwarfBinaryReader) debug_abbrev_reader.Data;
 			}
 		}
 
 		public DwarfBinaryReader DebugLineReader {
 			get {
-				return get_reader (".debug_line", ref weak_line_reader);
+				return (DwarfBinaryReader) debug_line_reader.Data;
 			}
 		}
 
 		public DwarfBinaryReader DebugArangesReader {
 			get {
-				return get_reader (".debug_aranges", ref weak_aranges_reader);
+				return (DwarfBinaryReader) debug_aranges_reader.Data;
 			}
 		}
 
 		public DwarfBinaryReader DebugStrReader {
 			get {
-				return get_reader (".debug_str", ref weak_str_reader);
+				return (DwarfBinaryReader) debug_str_reader.Data;
 			}
 		}
 
@@ -339,7 +354,7 @@ namespace Mono.Debugger.Architecture
 
 				is64bit = dwarf.Is64Bit;
 
-				// debug ("Creating new `{0}' reader.", section_name);
+				debug ("Creating new `{0}' reader.", section_name);
 			}
 
 			public static DwarfBinaryReader GetBinaryReader (DwarfReader dwarf, string section_name)
@@ -411,7 +426,7 @@ namespace Mono.Debugger.Architecture
 
 			~DwarfBinaryReader ()
 			{
-				// debug ("Finalizing `{0}' reader.", section_name);
+				debug ("Finalizing `{0}' reader.", section_name);
 			}
 		}
 
@@ -1312,7 +1327,7 @@ namespace Mono.Debugger.Architecture
 				return total_size;
 			}
 
-			WeakReference weak_children;
+			ObjectCache children_cache;
 
 			protected virtual ArrayList ReadChildren (DwarfBinaryReader reader)
 			{
@@ -1328,32 +1343,29 @@ namespace Mono.Debugger.Architecture
 				return children;
 			}
 
+			object read_children (object user_data)
+			{
+				DwarfBinaryReader reader = dwarf.DebugInfoReader;
+
+				long old_pos = reader.Position;
+				reader.Position = ChildrenOffset;
+				ArrayList children = ReadChildren (reader);
+				reader.Position = old_pos;
+
+				return children;
+			}
+
 			public ArrayList Children {
 				get {
 					if (!abbrev.HasChildren)
 						return null;
 
-					ArrayList children = null;
-					if (weak_children != null) {
-						try {
-							children = (ArrayList) weak_children.Target;
-						} catch {
-							weak_children = null;
-						}
-					}
+					if (children_cache == null)
+						children_cache = new ObjectCache
+							(new ObjectCacheFunc (read_children), null,
+							 new TimeSpan (0,1,0));
 
-					if (children != null)
-						return children;
-
-					DwarfBinaryReader reader = dwarf.DebugInfoReader;
-
-					long old_pos = reader.Position;
-					reader.Position = ChildrenOffset;
-					children = ReadChildren (reader);
-					reader.Position = old_pos;
-					weak_children = new WeakReference (children);
-
-					return children;
+					return (ArrayList) children_cache.Data;
 				}
 			}
 

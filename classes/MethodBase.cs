@@ -30,7 +30,7 @@ namespace Mono.Debugger
 	public abstract class MethodBase : IMethod, IMethodSource, ISymbolLookup, IComparable
 	{
 		ArrayList addresses;
-		WeakReference weak_source;
+		ObjectCache source;
 		int start_row, end_row;
 		TargetAddress start, end;
 		bool is_loaded;
@@ -70,24 +70,18 @@ namespace Mono.Debugger
 			this.is_loaded = true;
 		}
 
+		object read_source (object user_data)
+		{
+			return ReadSource (out start_row, out end_row, out addresses);
+		}
+
 		protected ISourceBuffer ReadSource ()
 		{
-			ISourceBuffer source = null;
-			if (weak_source != null) {
-				try {
-					source = (ISourceBuffer) weak_source.Target;
-				} catch {
-					weak_source = null;
-				}
-			}
+			if (source == null)
+				source = new ObjectCache (new ObjectCacheFunc (read_source), null,
+							  new TimeSpan (0,1,0));
 
-			if (source != null)
-				return source;
-
-			source = ReadSource (out start_row, out end_row, out addresses);
-			if (source != null)
-				weak_source = new WeakReference (source);
-			return source;
+			return (ISourceBuffer) source.Data;
 		}
 
 		protected abstract ISourceBuffer ReadSource (out int start_row, out int end_row,
