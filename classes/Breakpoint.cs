@@ -74,7 +74,7 @@ namespace Mono.Debugger
 
 		public bool Breaks (int id)
 		{
-			if (group == null)
+			if ((group == null) || group.IsGlobal)
 				return true;
 
 			foreach (int thread in group.Threads) {

@@ -88,6 +88,10 @@ namespace Mono.Debugger
 			get { return (name == "main") || (name == "global"); }
 		}
 
+		public bool IsGlobal {
+			get { return name == "global"; }
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), name);

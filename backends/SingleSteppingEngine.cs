@@ -1070,7 +1070,6 @@ namespace Mono.Debugger.Backends
 
 		void child_exited ()
 		{
-			Console.WriteLine ("CHILD EXITED: {0}", this);
 			inferior.Dispose ();
 			inferior = null;
 			frames_invalid ();
