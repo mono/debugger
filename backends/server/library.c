@@ -13,7 +13,10 @@
 #include <errno.h>
 #include <stdio.h>
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__POWERPC__)
+extern InferiorVTable powerpc_darwin_inferior;
+InferiorVTable *global_vtable = &powerpc_darwin_inferior;
+#else
 extern InferiorVTable i386_ptrace_inferior;
 static InferiorVTable *global_vtable = &i386_ptrace_inferior;
 #endif
@@ -367,6 +370,7 @@ mono_debugger_server_static_init (void)
 	sa.sa_flags = 0;
 	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
 
+#if !defined(__POWERPC__)
 	thread_abort_sig = mono_thread_get_abort_signal ();
 	if (thread_abort_sig > 0) {
 		/* catch SIGINT */
@@ -375,6 +379,7 @@ mono_debugger_server_static_init (void)
 		sa.sa_flags = 0;
 		g_assert (sigaction (thread_abort_sig, &sa, NULL) != -1);
 	}
+#endif
 
 	initialized = TRUE;
 }
