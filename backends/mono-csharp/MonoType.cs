@@ -67,18 +67,16 @@ namespace Mono.Debugger.Languages.CSharp
 			if (frame == null)
 				throw new LocationInvalidException ();
 
-			int offset = 0;
 			ITargetMemoryAccess memory = frame.TargetMemoryAccess;
 			if (IsByRef) {
+				address += index * memory.TargetAddressSize;
 				address = memory.ReadAddress (address);
-				offset = index * memory.TargetAddressSize;
 			} else if (HasFixedSize)
-				offset = index * Size;
+				address += index * Size;
 			else if (index > 0)
 				throw new InvalidOperationException ();
 
-			ITargetLocation new_location = new RelativeTargetLocation (
-				location, address + offset);
+			ITargetLocation new_location = new RelativeTargetLocation (location, address);
 
 			return GetObject (memory, new_location);
 

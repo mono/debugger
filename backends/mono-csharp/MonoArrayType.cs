@@ -50,7 +50,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override bool HasObject {
 			get {
-				return element_type.HasObject && element_type.HasFixedSize;
+				return element_type.HasObject &&
+					(element_type.IsByRef || element_type.HasFixedSize);
 			}
 		}
 
