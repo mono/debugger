@@ -202,6 +202,8 @@ namespace Mono.Debugger
 
 		public event TargetOutputHandler TargetOutput;
 		public event TargetOutputHandler TargetError;
+		public event TargetOutputHandler DebuggerOutput;
+		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
 
@@ -255,6 +257,18 @@ namespace Mono.Debugger
 				TargetError (line);
 		}
 
+		void debugger_output (string line)
+		{
+			if (DebuggerOutput != null)
+				DebuggerOutput (line);
+		}
+
+		void debugger_error (object sender, string message, Exception e)
+		{
+			if (DebuggerError != null)
+				DebuggerError (this, message, e);
+		}
+
 		public void Run ()
 		{
 			check_disposed ();
@@ -276,11 +290,11 @@ namespace Mono.Debugger
 				throw new CannotStartTargetException ("You must specify a program to debug.");
 
 			if (!native) {
-				Assembly application = null;
+				Assembly application;
 				try {
 					application = Assembly.LoadFrom (target_application);
 				} catch (Exception e) {
-					Console.WriteLine ("EXCEPTION: {0}", e);
+					application = null;
 					if (core_file != null)
 						return;
 				}
@@ -348,10 +362,13 @@ namespace Mono.Debugger
 			if (native)
 				load_native_symtab = true;
 			inferior = new PTraceInferior (working_directory, argv, envp, native,
-						       load_native_symtab, bfd_container);
+						       load_native_symtab, bfd_container,
+						       new DebuggerErrorHandler (debugger_error));
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
+			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			sse = new SingleSteppingEngine (this, inferior, native);
 			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);

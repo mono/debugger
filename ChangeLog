@@ -1,5 +1,17 @@
 2002-10-02  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/ITargetNotification.cs
+	(ITargetNotification.DebuggerOutput): New event to emit diagnostic
+	messages and errors.
+	(ITargetNotification.DebuggerError): New event to emit non-fatal
+	exceptions.
+
+	* backends/Debugger.cs: Improved error handling a bit, we emit a
+	`DebuggerError' event if we could not load the symbol table
+	instead of throwing an exception.
+
+2002-10-02  Martin Baulig  <martin@gnome.org>
+
 	* backends/IInferior.cs (IInferior.SetRegister, SetRegisters):
 	New methods to set registers.
 

@@ -22,7 +22,7 @@ namespace Mono.Debugger.Architecture
 		public CoreFile (string application, string core_file, BfdContainer bfd_container)
 		{
 			bfd = bfd_container.AddFile (this, application, false);
-			core_bfd = new Bfd (this, core_file, true, false, null);
+			core_bfd = new Bfd (this, core_file, true, null);
 
 			Console.WriteLine ("CORE DUMP FROM: {0}", core_bfd.CrashProgram);
 
@@ -164,6 +164,8 @@ namespace Mono.Debugger.Architecture
 
 		public event TargetOutputHandler TargetOutput;
 		public event TargetOutputHandler TargetError;
+		public event TargetOutputHandler DebuggerOutput;
+		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
 		public event ChildEventHandler ChildEvent;

@@ -119,8 +119,7 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (IInferior inferior, string filename, bool core_file, bool read_dwarf_symtab,
-			    BfdModule module)
+		public Bfd (IInferior inferior, string filename, bool core_file, BfdModule module)
 		{
 			this.inferior = inferior;
 			this.filename = filename;
@@ -159,17 +158,19 @@ namespace Mono.Debugger.Architecture
 			}
 
 			g_free (symtab);
-
-			if (read_dwarf_symtab)
-				read_dwarf ();
 		}
 
-		void read_dwarf ()
+		public void ReadDwarf ()
 		{
+			if (dwarf != null)
+				return;
+
 			try {
 				dwarf = new DwarfReader (inferior, this);
 			} catch (Exception e) {
-				Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
+				throw new SymbolTableException (
+					"Symbol file {0} doesn't contain any DWARF 2 debugging info.",
+					filename);
 			}
 		}
 

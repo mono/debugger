@@ -166,6 +166,11 @@ namespace Mono.Debugger.GUI
 				}, TargetState.RUNNING);
 
 			StateSensitivityUpdate (TargetState.NO_TARGET);
+
+			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
+			backend.TargetError += new TargetOutputHandler (TargetError);
+			backend.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
+			backend.DebuggerError += new DebuggerErrorHandler (DebuggerError);
 		}
 
 		ArrayList all_state_widgets = new ArrayList ();
@@ -222,9 +227,6 @@ namespace Mono.Debugger.GUI
 		{
 			backend.CommandLineArguments = args;
 			backend.TargetApplication = program;
-
-			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
-			backend.TargetError += new TargetOutputHandler (TargetError);
 
 			main_window.Title = "Debugging: " + program +
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
@@ -354,6 +356,16 @@ namespace Mono.Debugger.GUI
 		void TargetError (string output)
 		{
 			AddOutput (output);
+		}
+
+		void DebuggerOutput (string output)
+		{
+			AddOutput (output);
+		}
+
+		void DebuggerError (object sender, string message, Exception e)
+		{
+			AddOutput (String.Format ("Debugger error: {0}\n{1}", message, e));
 		}
 
 		void AddOutput (string output)

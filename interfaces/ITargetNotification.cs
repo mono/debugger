@@ -4,7 +4,8 @@ using System.IO;
 namespace Mono.Debugger
 {
 	public delegate void TargetExitedHandler ();
-	public delegate void TargetOutputHandler (string otuput);
+	public delegate void TargetOutputHandler (string output);
+	public delegate void DebuggerErrorHandler (object sender, string message, Exception e);
 	public delegate void StateChangedHandler (TargetState new_state, int arg);
 
 	/// <summary>
@@ -65,6 +66,13 @@ namespace Mono.Debugger
 		//   error messages to stderr.
 		// </summary>
 		event TargetOutputHandler TargetError;
+
+		// <summary>
+		//   This event is emitted by the debugger to write diagnostic messages and errors.
+		// </summary>
+		event TargetOutputHandler DebuggerOutput;
+
+		event DebuggerErrorHandler DebuggerError;
 
 		// <summary>
 		//   This event is emitted when the state of the target we're currently debugging

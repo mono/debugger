@@ -34,7 +34,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public Bfd AddFile (IInferior inferior, string filename, bool load_native_symtab)
+		public Bfd AddFile (IInferior inferior, string filename, bool step_into)
 		{
 			bool new_module = false;
 
@@ -46,13 +46,13 @@ namespace Mono.Debugger.Architecture
 			if (module == null) {
 				module = new BfdModule (filename, backend);
 				module.LoadSymbols = true;
-				module.StepInto = load_native_symtab;
+				module.StepInto = step_into;
 				module.Inferior = inferior;
 				module_hash.Add (filename, module);
  				new_module = true;
 			}
 
-			Bfd bfd = new Bfd (inferior, filename, false, load_native_symtab, module);
+			Bfd bfd = new Bfd (inferior, filename, false, module);
  			module.Bfd = bfd;
 			bfd_hash.Add (filename, bfd);
 

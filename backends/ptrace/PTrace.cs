@@ -381,7 +381,8 @@ namespace Mono.Debugger.Backends
 		}
 
 		public PTraceInferior (string working_directory, string[] argv, string[] envp,
-				       bool native, bool load_native_symtab, BfdContainer bfd_container)
+				       bool native, bool load_native_symtab, BfdContainer bfd_container,
+				       DebuggerErrorHandler error_handler)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
@@ -392,7 +393,14 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
+			try {
+				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
+				if (load_native_symtab)
+					bfd.ReadDwarf ();
+			} catch (Exception e) {
+				error_handler (this, String.Format (
+					"Can't read symbol file {0}", argv [0]), e);
+			}
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -414,12 +422,19 @@ namespace Mono.Debugger.Backends
 		}
 
 		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
-				       BfdContainer bfd_container)
+				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
 		{
 			this.envp = envp;
 			this.bfd_container = bfd_container;
 
-			bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
+			try {
+				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
+				if (load_native_symtab)
+					bfd.ReadDwarf ();
+			} catch (Exception e) {
+				error_handler (this, String.Format (
+					"Can't read symbol file {0}", argv [0]), e);
+			}
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -547,6 +562,12 @@ namespace Mono.Debugger.Backends
 		{
 			if (TargetError != null)
 				TargetError (line);
+		}
+
+		void debugger_output (string line)
+		{
+			if (DebuggerOutput != null)
+				DebuggerOutput (line);
 		}
 
 		//
@@ -769,6 +790,8 @@ namespace Mono.Debugger.Backends
 
 		public event TargetOutputHandler TargetOutput;
 		public event TargetOutputHandler TargetError;
+		public event TargetOutputHandler DebuggerOutput;
+		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 
 		TargetState target_state = TargetState.NO_TARGET;
