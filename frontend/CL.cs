@@ -15,8 +15,11 @@ namespace Mono.Debugger.Frontend
 		public readonly ArrayList[] CommandsByFamily;
 		public readonly Hashtable Commands = new Hashtable ();
 		public readonly Hashtable Aliases = new Hashtable ();
+		public readonly Completer Completer;
 
 		public Engine () {
+
+		  Completer = new Completer (this);
 
 		  CommandsByFamily = new ArrayList[Enum.GetValues(typeof (CommandFamily)).Length];
 		  CommandFamilyBlurbs = new string [Enum.GetValues(typeof (CommandFamily)).Length];

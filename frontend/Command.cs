@@ -77,6 +77,11 @@ namespace Mono.Debugger.Frontend
 		{
 			return Execute (e);
 		}
+
+		/* override this to provide command specific completion */
+                public virtual void Complete (Engine e, string text, int start, int end) {
+                        GnuReadLine.Instance().SetCompletionMatches (null);
+                }
 	}
 
 
@@ -1929,6 +1934,12 @@ namespace Mono.Debugger.Frontend
 			}
 			return null;
 		}
+
+                public override void Complete (Engine e, string text, int start, int end) {
+			/* arguments to the "help" command are commands
+			 * themselves, so complete against them. */
+			e.Completer.CommandCompleter (text, start, end);
+                }
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Support; } }

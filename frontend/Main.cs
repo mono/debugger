@@ -23,8 +23,11 @@ namespace Mono.Debugger.Frontend
 
 			if (is_interactive) {
 				prompt = options.Prompt;
-				if (!options.IsScript)
+				if (!options.IsScript) {
 					readline = GnuReadLine.Instance ();
+					/* XXX disabled until I can figure out why it's causing crashes */
+					//readline.EnableCompletion (new CompletionDelegate (engine.Completer.CompletionHandler));
+				}
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
 			}

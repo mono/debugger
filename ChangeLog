@@ -1,5 +1,23 @@
 2004-12-09  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/CL.cs (Engine..ctor): create our Completer.
+
+	* frontend/Completer.cs: new file/class.  provides the completion
+	delegate for GnuReadLine that does completion against commands at
+	the start of the line, then defers to command specific completion
+	(if possible) for the rest.
+
+	* frontend/Main.cs (CommandLineInterpreter..ctor): add the call to
+	enable completion, but comment it out for now, until I can figure
+	out why it's crashing.
+
+	* frontend/Command.cs (Command.Complete): base class impl, just
+	call SetCompletionMatches(null).
+	(HelpCommand.Complete): override the default behavior so we
+	complete against command names.
+
+2004-12-09  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Command.cs: Move class CommandError, enum Command
 	Family, interface IDocumentableCommand, and class Command from
 	CL.cs here.
