@@ -35,6 +35,9 @@ namespace Mono.Debugger
 		[Option("Running in a script", "script")]
 		public bool IsScript = false;
 
+		[Option("Debugging flags", "debug-flags")]
+		public int DebugFlags = 0;
+
 		[Option("Display version and licensing information", 'V', "version")]
 		public override WhatToDoNext DoAbout()
 		{

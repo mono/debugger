@@ -66,6 +66,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			engine = SetupEngine ();
 			parser = new LineParser (engine);
 
+			Report.CurrentDebugFlags = options.DebugFlags;
+
 			if (is_interactive) {
 				prompt = options.Prompt;
 				if (!options.IsScript)

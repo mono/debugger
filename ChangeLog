@@ -1,3 +1,11 @@
+2004-06-16  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs: Added --debug-flags command line
+	options to set Report.CurrentDebugFlags.
+
+	* wrapper/Makefile.am: Reference the newly built Mono.Debugger.dll
+	and not the one from the gac.
+
 2004-06-12  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.9 "Seven Mile Bridge" of the Mono Debugger :-)
