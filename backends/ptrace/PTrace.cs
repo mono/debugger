@@ -1146,6 +1146,14 @@ namespace Mono.Debugger.Backends
 
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
+			// We cannot use System.IO to read this file because it is not
+			// seekable.  Actually, the file is seekable, but it contains
+			// "holes" and each line starts on a new 4096 bytes block.
+			// So if you just read the first line from the file, the current
+			// file position will be rounded up to the next 4096 bytes
+			// boundary - it'll be different from what System.IO thinks is
+			// the current file position and System.IO will try to "fix" this
+			// by seeking back.
 			string mapfile = String.Format ("/proc/{0}/maps", child_pid);
 			string contents = FileUtils.GetFileContents (mapfile);
 
