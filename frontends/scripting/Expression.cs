@@ -163,15 +163,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						"Some clown tried to evaluate the " +
 						"unresolved expression `{0}'", Name));
 
-			bool ok;
-			try {
-				ok = DoAssign (context, obj);
-			} catch (ScriptingException) {
-				ok = false;
-			} catch (TargetException) {
-				ok = false;
-			}
-
+			bool ok = DoAssign (context, obj);
 			if (!ok)
 				throw new ScriptingException (
 					"Expression `{0}' is not an lvalue", Name);
@@ -183,6 +175,16 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		public Expression ResolveType (ScriptingContext context)
+		{
+			Expression expr = DoResolveType (context);
+			if (expr == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a type.", Name);
+
+			return expr;
+		}
+
+		public Expression TryResolveType (ScriptingContext context)
 		{
 			try {
 				return DoResolveType (context);
@@ -196,6 +198,16 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected abstract Expression DoResolve (ScriptingContext context);
 
 		public Expression Resolve (ScriptingContext context)
+		{
+			Expression expr = DoResolve (context);
+			if (expr == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a variable or value.", Name);
+
+			return expr;
+		}
+
+		public Expression TryResolve (ScriptingContext context)
 		{
 			try {
 				return DoResolve (context);
@@ -232,6 +244,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
+			resolved = true;
 			return this;
 		}
 
@@ -266,6 +279,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
+			resolved = true;
 			return this;
 		}
 
@@ -300,11 +314,13 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
+			resolved = true;
 			return this;
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
+			resolved = true;
 			return this;
 		}
 
@@ -326,6 +342,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		public VariableAccessExpression (IVariable var)
 		{
 			this.var = var;
+			resolved = true;
 		}
 
 		public override string Name {
@@ -334,6 +351,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
+			resolved = true;
 			return this;
 		}
 
@@ -356,7 +374,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException (
 					"Type mismatch: cannot assign expression of type " +
 					"`{0}' to variable `{1}', which is of type `{2}'.",
-					obj.Type.Name, Name, var.Type);
+					obj.Type.Name, Name, var.Type.Name);
 
 			var.SetObject (context.CurrentFrame.Frame, obj);
 			return true;
@@ -441,7 +459,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 
-			Expression ltype = left.ResolveType (context);
+			Expression ltype = left.TryResolveType (context);
 			if (ltype != null) {
 				ITargetStructType stype = ltype.EvaluateType (context)
 					as ITargetStructType;
@@ -452,7 +470,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				return new StructAccessExpression (frame, stype, name);
 			}
 
-			Expression lexpr = left.Resolve (context);
+			Expression lexpr = left.TryResolve (context);
 			if (lexpr == null)
 				throw new ScriptingException (
 					"No such variable or type: `{0}'", left.Name);
@@ -472,7 +490,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			ITargetType the_type;
 
-			Expression ltype = left.ResolveType (context);
+			Expression ltype = left.TryResolveType (context);
 			if (ltype == null)
 				the_type = frame.Language.LookupType (frame, Name);
 			else {

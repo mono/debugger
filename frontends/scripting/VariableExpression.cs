@@ -48,6 +48,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			this.name = register;
 			this.offset = offset;
+			resolved = true;
 		}
 
 		public override string Name {
@@ -118,6 +119,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.Type = type;
 			this.Identifier = identifier;
 			this.IsStatic = true;
+			resolved = true;
 		}
 
 		public StructAccessExpression (StackFrame frame, ITargetStructObject instance,
@@ -128,6 +130,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.Instance = instance;
 			this.Identifier = identifier;
 			this.IsStatic = false;
+			resolved = true;
 		}
 
 		public override string Name {
@@ -387,23 +390,24 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public class PointerDereferenceExpression : PointerExpression
 	{
-		Expression original_expr;
 		Expression expr;
+		string name;
 
 		public PointerDereferenceExpression (Expression expr)
 		{
-			this.original_expr = expr;
+			this.expr = expr;
+			name = '*' + expr.Name;
 		}
 
 		public override string Name {
 			get {
-				return '*' + original_expr.Name;
+				return name;
 			}
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			expr = original_expr.Resolve (context);
+			expr = expr.Resolve (context);
 			if (expr == null)
 				return null;
 
@@ -418,8 +422,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				as ITargetPointerType;
 			if (ptype == null)
 				throw new ScriptingException (
-					"Expression `{0}' is not a pointer.",
-					original_expr.Name);
+					"Expression `{0}' is not a pointer.", expr.Name);
 
 			return ptype;
 		}
@@ -430,12 +433,11 @@ namespace Mono.Debugger.Frontends.Scripting
 				as ITargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException (
-					"Expression `{0}' is not a pointer type.",
-					original_expr.Name);
+					"Expression `{0}' is not a pointer type.", expr.Name);
 
 			if (!pobj.HasDereferencedObject)
 				throw new ScriptingException (
-					"Cannot dereference `{0}'.", original_expr.Name);
+					"Cannot dereference `{0}'.", expr.Name);
 
 			return pobj.DereferencedObject;
 		}
@@ -459,8 +461,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException (
-					"Expression `{0}' is not a pointer type.",
-					original_expr.Name);
+					"Expression `{0}' is not a pointer type.", expr.Name);
 
 			return pobj.Location;
 		}
@@ -495,6 +496,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (index == null)
 				return null;
 
+			resolved = true;
 			return this;
 		}
 
@@ -559,6 +561,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return null;
 
+			resolved = true;
 			return this;
 		}
 
@@ -625,6 +628,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					return null;
 			}
 
+			resolved = true;
 			return this;
 		}
 
@@ -699,6 +703,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					return null;
 			}
 
+			resolved = true;
 			return this;
 		}
 
@@ -791,6 +796,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (right == null)
 				return null;
 
+			resolved = true;
 			return this;
 		}
 

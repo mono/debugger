@@ -156,7 +156,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (Frame > 0)
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
-			object retval = expression.Resolve (new_context);
+			object retval = expression.Evaluate (new_context);
 			new_context.PrintObject (retval);
 		}
 	}
@@ -184,8 +184,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (Frame > 0)
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
-			Expression type_expr = new TypeOfExpression (expression);
-			ITargetType type = type_expr.EvaluateType (new_context);
+			ITargetType type = expression.EvaluateType (new_context);
 			new_context.Print (type);
 		}
 	}
@@ -888,6 +887,10 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected bool DoResolveExpression (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
+			if (expr == null)
+				return false;
+
+			expr = expr.Resolve (context);
 			if (expr == null)
 				return false;
 
