@@ -3,10 +3,13 @@ DESTDIR=
 
 all: linux
 
-linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe
+linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe Interpreter.exe
 
 ALL_SOURCES = \
 	@top_srcdir@/frontends/gui/*.cs			\
+	@top_srcdir@/frontends/command-line/Interpreter.cs
+
+INTERPRETER_SOURCES = \
 	@top_srcdir@/frontends/command-line/*.cs
 
 LIBRARY_SOURCES = \
@@ -41,7 +44,12 @@ DEPS = \
 	-r Mono.CSharp.Debugger	\
 	-r Mono.Debugger.dll	\
 	-r Mono.Debugger.Backend.dll	\
-	-r gtksourceview-sharp.dll
+	-r ../widgets/gtk/gtksourceview-sharp.dll
+
+INTERPRETER_DEPS = \
+	-r Mono.CSharp.Debugger	\
+	-r Mono.Debugger.dll	\
+	-r Mono.Debugger.Backend.dll
 
 GUIDIR=../frontends/gui
 RESOURCES = \
@@ -58,6 +66,9 @@ Mono.Debugger.Backend.dll: $(BACKEND_SOURCES) Mono.Debugger.dll
 
 Debugger.exe: $(ALL_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
 	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES) $(MCS_FLAGS)
+
+Interpreter.exe: $(INTERPRETER_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
+	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SOURCES) $(MCS_FLAGS)
 
 clean:
 	rm -f *.exe

@@ -17,6 +17,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		TextWriter stdout, stderr;
 		string last_command;
 		string[] last_args;
+		bool print_current_insn = false;
+
+		StackFrame current_frame = null;
+		StackFrame[] current_backtrace = null;
+		int current_frame_idx = -1;
 
 		// <summary>
 		//   Create a new command interpreter for the debugger backend @backend.
@@ -27,6 +32,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.backend = backend;
 			this.stdout = stdout;
 			this.stderr = stderr;
+
+			backend.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+			backend.FrameChangedEvent += new StackFrameHandler (frame_changed);
+		}
+
+		void frames_invalid ()
+		{
+			current_frame_idx = -1;
+			current_frame = null;
+			current_backtrace = null;
+		}
+
+		void frame_changed (StackFrame frame)
+		{
+			frames_invalid ();
+		}
+
+		public event StackFrameHandler FrameChangedEvent;
+		public event StackFrameInvalidHandler FramesInvalidEvent;
+
+
+		public bool CanRepeatLastCommand {
+			get {
+				return last_command != null;
+			}
 		}
 
 		public void ShowHelp ()
@@ -49,13 +79,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 			stderr.WriteLine ("  locals           Displays local variables");
 			stderr.WriteLine ("  break LOC        Inserts breakpoint");
 			stderr.WriteLine ("  modules          Displays modules loaded");
+			stderr.WriteLine ("  f, frame [idx]   Print current stack frame / frame idx");
+			stderr.WriteLine ("  bt, backtrace    Print backtrace");
+			stderr.WriteLine ("  up               Go one frame up");
+			stderr.WriteLine ("  down             Go one frame down");
+		}
+
+		public bool ProcessCommand (string line)
+		{
+			return ProcessCommand (line, true);
 		}
 
 		// <summary>
 		//   Process one command and return true if we should continue processing
 		//   commands, ie. until the "quit" command has been issued.
 		// </summary>
-		public bool ProcessCommand (string line)
+		public bool ProcessCommand (string line, bool handle_exc)
 		{
 			if (line == "") {
 				if (last_command == null)
@@ -77,6 +116,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			last_command = null;
 			last_args = new string [0];
+
+			if (!handle_exc)
+				return ProcessCommand (tmp_args [0], args);
 
 			try {
 				return ProcessCommand (tmp_args [0], args);
@@ -145,7 +187,101 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "f":
 			case "frame":
-				Console.WriteLine (backend.CurrentFrame);
+				if (check_stopped ()) {
+					if (current_frame == null)
+						current_frame = backend.CurrentFrame;
+
+					if (args.Length > 1) {
+						stderr.WriteLine ("Command requires either one single " +
+								  "argument or no argument at all.");
+						break;
+					}
+
+					if (args.Length == 1) {
+						try {
+							current_frame_idx = (int) UInt32.Parse (args [0]);
+						} catch {
+							stderr.WriteLine ("Synax error.");
+							break;
+						}
+
+						if (!check_frame (current_frame_idx)) {
+							current_frame_idx = -1;
+							break;
+						}
+
+						current_frame = current_backtrace [current_frame_idx];
+					}
+
+					PrintFrame (current_frame, current_frame_idx, true);
+				}
+				break;
+
+			case "backtrace":
+			case "bt":
+				if (check_stopped ())
+					PrintBacktrace ();
+				break;
+
+			case "down":
+				if (!check_stopped ())
+					break;
+
+				if (current_frame_idx == -1)
+					current_frame_idx = 0;
+
+				if (check_frame (current_frame_idx - 1)) {
+					current_frame = current_backtrace [--current_frame_idx];
+					PrintFrame (current_frame, current_frame_idx, true);
+					last_command = command;
+				}
+				break;
+
+			case "up":
+				if (!check_stopped ())
+					break;
+
+				if (current_frame_idx == -1)
+					current_frame_idx = 0;
+
+				if (check_frame (current_frame_idx + 1)) {
+					current_frame = current_backtrace [++current_frame_idx];
+					PrintFrame (current_frame, current_frame_idx, true);
+					last_command = command;
+				}
+				break;
+
+			case "regs":
+				if (!check_stopped ())
+					break;
+
+				if (current_frame_idx > 0) {
+					stderr.WriteLine ("Can't print registers of this frame.");
+					break;
+				}
+
+				PrintRegisters ();
+				break;
+
+			case "reg":
+				if (!check_stopped ())
+					break;
+
+				if (current_frame_idx > 0) {
+					stderr.WriteLine ("Can't print registers of this frame.");
+					break;
+				}
+
+				if (args.Length != 1) {
+					stderr.WriteLine ("Command requires an argument.");
+					break;
+				}
+				if (!args [0].StartsWith ("%")) {
+					stderr.WriteLine ("Syntax error.");
+					break;
+				}
+
+				PrintRegister (args [0].Substring (1));
 				break;
 
 			case "lnt":
@@ -267,6 +403,144 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			return true;
+		}
+
+		bool check_stopped ()
+		{
+			switch (backend.State) {
+			case TargetState.STOPPED:
+			case TargetState.CORE_FILE:
+				return true;
+
+			case TargetState.RUNNING:
+				stderr.WriteLine ("Target is running.");
+				return false;
+
+			case TargetState.BUSY:
+				stderr.WriteLine ("Debugger is busy.");
+				return false;
+
+			default:
+				stderr.WriteLine ("No target.");
+				return false;
+			}
+		}
+
+		bool check_frame (int idx)
+		{
+			if (current_backtrace == null)
+				current_backtrace = backend.GetBacktrace ();
+			if (current_backtrace == null) {
+				stderr.WriteLine ("No backtrace.");
+				return false;
+			}
+
+			if ((idx < 0) || (idx >= current_backtrace.Length)) {
+				stderr.WriteLine ("No such frame.");
+				return false;
+			}
+
+			return true;
+		}
+
+		public bool PrintCurrentInsn {
+			get { return print_current_insn; }
+			set { print_current_insn = value; }
+		}
+
+		public void PrintFrame (StackFrame frame, int index, bool print_insn)
+		{
+			if (index == -1)
+				stdout.Write ("Stopped ");
+			else
+				stdout.Write ("#{0} ", index);
+
+			IMethod method = frame.Method;
+			if (method != null) {
+				if (index != -1)
+					stdout.Write ("at {0} ", frame.TargetAddress);
+
+				stdout.Write ("in {0}", method.Name);
+				if (method.IsLoaded) {
+					long offset = frame.TargetAddress - method.StartAddress;
+					if (offset > 0)
+						stdout.Write ("+0x{0:x}", offset);
+					else if (offset < 0)
+						stdout.Write ("-0x{0:x}", -offset);
+				}
+			} else
+				stdout.Write ("at {0}", frame.TargetAddress);
+
+			if (frame.SourceLocation != null)
+				stdout.Write (" at {0}", frame.SourceLocation.Name);
+			stdout.WriteLine ();
+
+			if (!print_current_insn || !print_insn)
+				return;
+
+			IDisassembler dis = backend.Disassembler;
+			if (dis != null) {
+				TargetAddress address = backend.CurrentFrameAddress;
+				stdout.WriteLine ("{0:11x}\t{1}", address,
+						  dis.DisassembleInstruction (ref address));
+			}
+		}
+
+		public void PrintBacktrace ()
+		{
+			if (current_backtrace == null)
+				current_backtrace = backend.GetBacktrace ();
+
+			if (current_backtrace == null) {
+				stderr.WriteLine ("No backtrace.");
+				return;
+			}
+
+			for (int i = 0; i < current_backtrace.Length; i++)
+				PrintFrame (current_backtrace [i], i, false);
+		}
+
+		public void PrintRegisters ()
+		{
+			IArchitecture arch = backend.Architecture;
+			if (arch == null)
+				return;
+
+			foreach (int idx in arch.RegisterIndices)
+				PrintRegister (idx);
+		}
+
+		public void PrintRegister (string name)
+		{
+			IArchitecture arch = backend.Architecture;
+			if (arch == null)
+				return;
+
+			foreach (int idx in arch.RegisterIndices) {
+				if (name == arch.RegisterNames [idx]) {
+					PrintRegister (idx);
+					return;
+				}
+			}
+
+			stderr.WriteLine ("No such register.");
+		}
+
+		public void PrintRegister (int idx)
+		{
+			IArchitecture arch = backend.Architecture;
+			if (arch == null)
+				return;
+
+			if (idx >= arch.RegisterNames.Length) {
+				stderr.WriteLine ("No such register.");
+				return;
+			}
+
+			long value = backend.GetRegister (idx);
+
+			stdout.WriteLine ("%{0} = 0x{1}", arch.RegisterNames [idx],
+					  TargetAddress.FormatAddress (value));
 		}
 
 		bool verbose = false;
