@@ -8,114 +8,81 @@ namespace Mono.Debugger
 {
 	public class Backtrace : IDisposable
 	{
-		protected StackFrame[] frames;
+		protected StackFrame last_frame;
 		protected ITargetMemoryAccess target;
 		protected IArchitecture arch;
+		protected TargetAddress until;
+		protected int max_frames;
+		protected bool finished;
+
+		ArrayList frames;
 
 		public Backtrace (ITargetMemoryAccess target, IArchitecture arch,
-				  StackFrame[] frames)
+				  StackFrame first_frame)
+			: this (target, arch, first_frame, TargetAddress.Null, -1)
+		{ }
+
+		public Backtrace (ITargetMemoryAccess target, IArchitecture arch,
+				  StackFrame first_frame, TargetAddress until,
+				  int max_frames)
 		{
 			this.target = target;
-			this.frames = frames;
 			this.arch = arch;
+			this.last_frame = first_frame;
+			this.until = until;
+			this.max_frames = max_frames;
+
+			frames = new ArrayList ();
+			frames.Add (first_frame);
 		}
 
 		public StackFrame[] Frames {
-			get { return frames; }
-		}
-
-		public int Length {
 			get {
-				if (frames != null)
-					return frames.Length;
-				else
-					return 0;
-			}
-		}
-
-		public StackFrame this [int index] {
-			get {
-				if (frames == null)
-					throw new ArgumentException ();
-				else
-					return frames [index];
+				StackFrame[] retval = new StackFrame [frames.Count];
+				frames.CopyTo (retval, 0);
+				return retval;
 			}
 		}
 
 		public event ObjectInvalidHandler BacktraceInvalidEvent;
 
-		protected struct UnwindInfo {
-			public readonly object Data;
-			public readonly Register[] Registers;
-
-			public UnwindInfo (object data, Register[] registers)
-			{
-				this.Data = data;
-				this.Registers = registers;
+		public void GetBacktrace (ITargetAccess target, IArchitecture arch,
+					  ISymbolTable symtab)
+		{
+			while (TryUnwind (target, arch, symtab)) {
+				if (frames.Count > max_frames)
+					break;
 			}
 		}
 
-		ArrayList unwind_info = null;
-
-		protected UnwindInfo StartUnwindStack ()
+		public bool TryUnwind (ITargetAccess target, IArchitecture arch,
+				       ISymbolTable symtab)
 		{
-			if (unwind_info == null)
-				unwind_info = new ArrayList ();
-			if (unwind_info.Count > 0)
-				return (UnwindInfo) unwind_info [0];
+			if (finished)
+				return false;
 
-			Register[] registers = target.GetRegisters ();
-			object data = arch.UnwindStack (registers);
-
-			UnwindInfo info = new UnwindInfo (data, registers);
-			unwind_info.Add (info);
-			return info;
-		}
-
-		protected UnwindInfo GetUnwindInfo (int level)
-		{
-			UnwindInfo start = StartUnwindStack ();
-			if (level == 0)
-				return start;
-			else if (level < unwind_info.Count)
-				return (UnwindInfo) unwind_info [level];
-
-			level--;
-			UnwindInfo last = GetUnwindInfo (level);
-			StackFrame frame = frames [level];
-
-			IMethod method = frame.Method;
-			if ((method == null) || !method.IsLoaded || (last.Data == null)) {
-				UnwindInfo new_info = new UnwindInfo (null, null);
-				unwind_info.Add (new_info);
-				return new_info;
+			StackFrame new_frame = UnwindStack (target, arch, symtab);
+			if (new_frame == null) {
+				finished = true;
+				return false;
 			}
 
-			int prologue_size;
-			if (method.HasMethodBounds)
-				prologue_size = (int) (method.MethodStartAddress - method.StartAddress);
-			else
-				prologue_size = (int) (method.EndAddress - method.StartAddress);
-			int offset = (int) (frame.TargetAddress - method.StartAddress);
-			prologue_size = Math.Min (prologue_size, offset);
-			prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
+			if (!until.IsNull && (new_frame.TargetAddress == until))
+				return false;
 
-			byte[] prologue = target.ReadBuffer (
-				method.StartAddress, prologue_size);
-
-			object new_data;
-			Register[] regs = arch.UnwindStack (
-				prologue, target, last.Data, out new_data);
-
-			UnwindInfo info = new UnwindInfo (new_data, regs);
-			unwind_info.Add (info);
-			return info;
+			frames.Add (new_frame);
+			last_frame = new_frame;
+			return true;
 		}
 
-		public Register[] UnwindStack (int level)
+		protected StackFrame UnwindStack (ITargetAccess target, IArchitecture arch,
+						  ISymbolTable symtab)
 		{
-			UnwindInfo info = GetUnwindInfo (level);
-			return info.Registers;
+			IMethod method = last_frame.Method;
+			if (method != null)
+				return method.UnwindStack (target, arch, symtab, last_frame);
+
+			return null;
 		}
 
 		//

@@ -916,7 +916,7 @@ namespace Mono.Debugger.Backends
 
 				Register[] regs = new Register [count];
 				for (int i = 0; i < count; i++)
-					regs [i] = new Register (i, retval [i]);
+					regs [i] = new Register (i, true, retval [i]);
 
 				return regs;
 			} finally {
@@ -963,6 +963,14 @@ namespace Mono.Debugger.Backends
 				this.address = new TargetAddress (info.GlobalAddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);
 				this.frame = new TargetAddress (info.AddressDomain, frame.FrameAddress);
+			}
+
+			internal StackFrame (TargetAddress address, TargetAddress stack,
+					     TargetAddress frame)
+			{
+				this.address = address;
+				this.stack = stack;
+				this.frame = frame;
 			}
 
 			public TargetAddress Address {

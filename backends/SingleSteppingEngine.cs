@@ -679,21 +679,15 @@ namespace Mono.Debugger.Backends
 		{
 			manager.DebuggerBackend.UpdateSymbolTable ();
 
-			Inferior.StackFrame[] iframes = inferior.GetBacktrace (max_frames, main_method_retaddr);
-			StackFrame[] frames = new StackFrame [iframes.Length];
-			MyBacktrace backtrace = new MyBacktrace (process, arch);
+			if (current_frame == null)
+				throw new TargetException (TargetError.NoStack);
 
-			for (int i = 0; i < iframes.Length; i++) {
-				TargetAddress address = iframes [i].Address;
+			current_backtrace = new Backtrace (
+				process, arch, current_frame, main_method_retaddr, max_frames);
 
-				IMethod method = Lookup (address);
-				frames [i] = process.CreateFrame (
-					iframes [i], null, i, method);
-			}
+			current_backtrace.GetBacktrace (inferior, arch, current_symtab);
 
-			backtrace.SetFrames (frames);
-			current_backtrace = backtrace;
-			return backtrace;
+			return current_backtrace;
 		}
 
 		void set_register (Register reg)
@@ -1249,8 +1243,8 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 
 			registers = inferior.GetRegisters ();
-			current_frame = process.CreateFrame (
-				iframe, registers, 0, current_method);
+			current_frame = StackFrame.CreateFrame (
+				process, iframe, registers, 0, current_method);
 
 			return current_frame;
 		}
@@ -1310,11 +1304,11 @@ namespace Mono.Debugger.Backends
 					return new_operation;
 				}
 
-				current_frame = process.CreateFrame (
-					iframe, registers, 0, current_method, source);
+				current_frame = StackFrame.CreateFrame (
+					process, iframe, registers, 0, current_method, source);
 			} else
-				current_frame = process.CreateFrame (
-					iframe, registers, 0, null);
+				current_frame = StackFrame.CreateFrame (
+					process, iframe, registers, 0, null);
 
 			return null;
 		}
@@ -2059,23 +2053,6 @@ namespace Mono.Debugger.Backends
 				ProcessEvent (cevent);
 			} else {
 				do_continue ();
-			}
-		}
-
-		//
-		// Backtrace.
-		//
-
-		protected class MyBacktrace : Backtrace
-		{
-			public MyBacktrace (ITargetAccess target, IArchitecture arch)
-				: base (target, arch, null)
-			{
-			}
-
-			public void SetFrames (StackFrame[] frames)
-			{
-				this.frames = frames;
 			}
 		}
 

@@ -1920,7 +1920,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			int offset;
 			mutex.Lock ();
-			offset = (int) frame.CallMethod (info.LookupType, name).Address;
+			offset = (int) frame.Process.CallMethod (info.LookupType, name).Address;
 			mutex.Unlock ();
 			return offset;
 		}

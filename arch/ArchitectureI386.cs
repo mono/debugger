@@ -290,48 +290,11 @@ namespace Mono.Debugger
 			get { return 50; }
 		}
 
-		public object UnwindStack (Register[] registers)
-		{
-			long[] retval = new long [7];
-
-			foreach (Register register in registers) {
-				switch (register.Index) {
-				case (int) I386Register.EBP:
-					retval [0] = (long) register.Data;
-					break;
-				case (int) I386Register.EAX:
-					retval [1] = (long) register.Data;
-					break;
-				case (int) I386Register.EBX:
-					retval [2] = (long) register.Data;
-					break;
-				case (int) I386Register.ECX:
-					retval [3] = (long) register.Data;
-					break;
-				case (int) I386Register.EDX:
-					retval [4] = (long) register.Data;
-					break;
-				case (int) I386Register.ESI:
-					retval [5] = (long) register.Data;
-					break;
-				case (int) I386Register.EDI:
-					retval [6] = (long) register.Data;
-					break;
-				}
-			}
-
-			return retval;
-		}
-
-		public Register[] UnwindStack (byte[] code, ITargetMemoryAccess memory, object last_data,
-					       out object new_data)
+		public StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+					       ISymbolTable symtab, byte[] code)
 		{
 			int pos = 0;
 			int length = code.Length;
-
-			long[] regs = (long []) last_data;
-
-			new_data = null;
 			if (length == 0)
 				return null;
 
@@ -347,9 +310,26 @@ namespace Mono.Debugger
 				return null;
 			pos += 2;
 
-			TargetAddress ebp = new TargetAddress (memory.AddressDomain, regs [0]);
-			regs [0] = (long) (uint) memory.ReadInteger (ebp);
-			ebp -= memory.TargetAddressSize;
+			Register[] old_regs = frame.Registers;
+			Register[] regs = new Register [CountRegisters];
+			for (int i = 0; i < CountRegisters; i++)
+				regs [i] = new Register (i, false, 0);
+
+			TargetAddress ebp = new TargetAddress (
+				memory.AddressDomain, old_regs [(int) I386Register.EBP]);
+
+			int addr_size = memory.TargetAddressSize;
+			TargetAddress new_ebp = memory.ReadAddress (ebp);
+			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp.Address);
+
+			TargetAddress new_eip = memory.ReadGlobalAddress (ebp + addr_size);
+			regs [(int) I386Register.EIP].SetValue (
+				ebp + addr_size, new_eip.Address);
+
+			TargetAddress new_esp = ebp + 2 * addr_size;
+			regs [(int) I386Register.ESP].SetValue (ebp, new_esp.Address);
+
+			ebp -= addr_size;
 
 			while (pos < length) {
 				byte opcode = code [pos++];
@@ -357,42 +337,43 @@ namespace Mono.Debugger
 				if ((opcode < 0x50) || (opcode > 0x57))
 					break;
 
+				long value;
 				switch (opcode) {
 				case 0x50: /* eax */
-					regs [1] = (long) (uint) memory.ReadInteger (ebp);
+					value = (long) (uint) memory.ReadInteger (ebp);
+					regs [(int) I386Register.EAX].SetValue (ebp, value);
 					break;
 				case 0x51: /* ecx */
-					regs [3] = (long) (uint) memory.ReadInteger (ebp);
+					value = (long) (uint) memory.ReadInteger (ebp);
+					regs [(int) I386Register.ECX].SetValue (ebp, value);
 					break;
 				case 0x52: /* edx */
-					regs [4] = (long) (uint) memory.ReadInteger (ebp);
+					value = (long) (uint) memory.ReadInteger (ebp);
+					regs [(int) I386Register.EDX].SetValue (ebp, value);
 					break;
 				case 0x53: /* ebx */
-					regs [2] = (long) (uint) memory.ReadInteger (ebp);
+					value = (long) (uint) memory.ReadInteger (ebp);
+					regs [(int) I386Register.EBX].SetValue (ebp, value);
 					break;
 				case 0x56: /* esi */
-					regs [5] = (long) (uint) memory.ReadInteger (ebp);
+					value = (long) (uint) memory.ReadInteger (ebp);
+					regs [(int) I386Register.ESI].SetValue (ebp, value);
 					break;
 				case 0x57: /* edi */
-					regs [6] = (long) (uint) memory.ReadInteger (ebp);
+					value = (long) (uint) memory.ReadInteger (ebp);
+					regs [(int) I386Register.EDI].SetValue (ebp, value);
 					break;
 				}
 
-				ebp -= memory.TargetIntegerSize;
+				ebp -= addr_size;
 			}
 
-			new_data = regs;
+			Inferior.StackFrame iframe = new Inferior.StackFrame (
+				new_eip, new_esp, new_ebp);
 
-			Register[] retval = new Register [7];
-			retval [0] = new Register ((int) I386Register.EBP, regs [0]);
-			retval [1] = new Register ((int) I386Register.EAX, regs [1]);
-			retval [2] = new Register ((int) I386Register.EBX, regs [2]);
-			retval [3] = new Register ((int) I386Register.ECX, regs [3]);
-			retval [4] = new Register ((int) I386Register.EDX, regs [4]);
-			retval [5] = new Register ((int) I386Register.ESI, regs [5]);
-			retval [6] = new Register ((int) I386Register.EDI, regs [6]);
-
-			return retval;
+			IMethod new_method = symtab.Lookup (new_eip);
+			return StackFrame.CreateFrame (
+				frame.Process, iframe, regs, frame.Level + 1, new_method);
 		}
 	}
 }

@@ -133,12 +133,13 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			if (debug) {
-				frame.RuntimeInvoke (method, this_object, arg_ptr);
+				frame.Process.RuntimeInvoke (
+					frame, method, this_object, arg_ptr);
 				return null;
 			}
 
-			TargetAddress retval = frame.RuntimeInvoke (
-				method, this_object, arg_ptr, out exc_object);
+			TargetAddress retval = frame.Process.RuntimeInvoke (
+				frame, method, this_object, arg_ptr, out exc_object);
 
 			if (retval.IsNull) {
 				if (exc_object.IsNull)

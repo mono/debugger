@@ -63,9 +63,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		object UnwindStack (Register[] registers);
-
-		Register[] UnwindStack (byte[] code, ITargetMemoryAccess memory, object last_data,
-					out object new_data);
+		StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+					ISymbolTable symtab, byte[] code);
 	}
 }

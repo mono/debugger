@@ -234,7 +234,7 @@ namespace Mono.Debugger
 
 		public void SetRegister (int register, long value)
 		{
-			Register reg = new Register (register, value);
+			Register reg = new Register (register, true, value);
 			engine.SendSyncCommand (CommandType.SetRegister, reg);
 		}
 
@@ -555,23 +555,41 @@ namespace Mono.Debugger
 			return new TargetAddress (engine.AddressDomain, retval);
 		}
 
-		internal bool RuntimeInvoke (ILanguageBackend language,
-					     TargetAddress method_argument,
-					     TargetAddress object_argument,
-					     TargetAddress[] param_objects)
+		public bool RuntimeInvoke (StackFrame frame,
+					   TargetAddress method_argument,
+					   TargetAddress object_argument,
+					   TargetAddress[] param_objects)
 		{
+			IMethod method = frame.Method;
+			if (method == null)
+				throw new InvalidOperationException ();
+
+			ILanguageBackend language = method.Module.LanguageBackend
+				as ILanguageBackend;
+			if (language == null)
+				throw new InvalidOperationException ();
+
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				language, method_argument, object_argument, param_objects);
 			data.Debug = true;
 			return start_step_operation (new Operation (data), true);
 		}
 
-		internal TargetAddress RuntimeInvoke (ILanguageBackend language,
-						      TargetAddress method_argument,
-						      TargetAddress object_argument,
-						      TargetAddress[] param_objects,
-						      out TargetAddress exc_object)
+		public TargetAddress RuntimeInvoke (StackFrame frame,
+						    TargetAddress method_argument,
+						    TargetAddress object_argument,
+						    TargetAddress[] param_objects,
+						    out TargetAddress exc_object)
 		{
+			IMethod method = frame.Method;
+			if (method == null)
+				throw new InvalidOperationException ();
+
+			ILanguageBackend language = method.Module.LanguageBackend
+				as ILanguageBackend;
+			if (language == null)
+				throw new InvalidOperationException ();
+
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				language, method_argument, object_argument, param_objects);
 
@@ -784,29 +802,6 @@ namespace Mono.Debugger
 			write_memory (address, writer.Contents);
 		}
 
-
-		//
-		// Stack frames.
-		//
-
-		internal StackFrame CreateFrame (Inferior.StackFrame frame, Register[] regs,
-						 int level, IMethod method)
-		{
-			if ((method != null) && method.HasSource) {
-				SourceAddress source = method.Source.Lookup (frame.Address);
-				return new MyStackFrame (
-					this, frame, regs, level, source, method);
-			} else
-				return new MyStackFrame (this, frame, regs, level);
-		}
-
-		internal StackFrame CreateFrame (Inferior.StackFrame frame, Register[] regs,
-						 int level, IMethod method,
-						 SourceAddress source)
-		{
-			return new MyStackFrame (this, frame, regs, level, source, method);
-		}
-
 		//
 		// IDisposable
 		//
@@ -856,99 +851,6 @@ namespace Mono.Debugger
 		~Process ()
 		{
 			Dispose (false);
-		}
-
-		protected class MyStackFrame : StackFrame
-		{
-			Process process;
-			ILanguage language;
-			ILanguageBackend lbackend;
-
-			Register[] registers;
-			bool has_registers;
-
-			internal MyStackFrame (Process process, Inferior.StackFrame frame,
-					       Register[] registers, int level,
-					       SourceAddress source, IMethod method)
-				: base (frame.Address, frame.StackPointer, frame.FrameAddress,
-					registers, level, source, method)
-			{
-				this.process = process;
-				this.language = method.Module.Language;
-				this.lbackend = method.Module.LanguageBackend as ILanguageBackend;
-			}
-
-			internal MyStackFrame (Process process, Inferior.StackFrame frame,
-					       Register[] registers, int level)
-				: base (frame.Address, frame.StackPointer, frame.FrameAddress,
-					registers, level,
-					process.SimpleLookup (frame.Address, false))
-			{
-				this.process = process;
-				this.language = process.NativeLanguage;
-			}
-
-			public override ITargetAccess TargetAccess {
-				get { return process; }
-			}
-
-			public override TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset)
-			{
-				return new MonoVariableLocation (this, dereference, index, reg_offset, false, offset);
-			}
-
-			public override void SetRegister (int index, long value)
-			{
-				if (Level > 0)
-					throw new NotImplementedException ();
-
-				process.SetRegister (index, value);
-
-				has_registers = false;
-				registers = null;
-			}
-
-			public override ILanguage Language {
-				get {
-					return language;
-				}
-			}
-
-			public override TargetAddress CallMethod (TargetAddress method,
-								  TargetAddress arg1,
-								  TargetAddress arg2)
-			{
-				return process.CallMethod (method, arg1, arg2);
-			}
-
-			public override TargetAddress CallMethod (TargetAddress method,
-								  string arg)
-			{
-				return process.CallMethod (method, arg);
-			}
-
-			public override bool RuntimeInvoke (TargetAddress method_argument,
-							    TargetAddress object_argument,
-							    TargetAddress[] param_objects)
-			{
-				if (lbackend == null)
-					throw new InvalidOperationException ();
-
-				return process.RuntimeInvoke (lbackend, method_argument,
-							      object_argument, param_objects);
-			}
-
-			public override TargetAddress RuntimeInvoke (TargetAddress method_arg,
-								     TargetAddress object_arg,
-								     TargetAddress[] param,
-								     out TargetAddress exc_obj)
-			{
-				if (lbackend == null)
-					throw new InvalidOperationException ();
-
-				return process.RuntimeInvoke (lbackend, method_arg,
-							      object_arg, param, out exc_obj);
-			}
 		}
 	}
 }

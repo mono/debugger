@@ -4,6 +4,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger.Languages;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
@@ -12,44 +13,89 @@ namespace Mono.Debugger
 	public struct Register
 	{
 		public readonly int Index;
-		public readonly object Data;
+		TargetAddress addr_on_stack;
+		bool valid;
+		object data;
 
-		public Register (int index, object data)
+		public Register (int index, bool valid, object data)
 		{
 			this.Index = index;
-			this.Data = data;
+			this.valid = valid;
+			this.data = data;
+			this.addr_on_stack = TargetAddress.Null;
+		}
+
+		public object Data {
+			get {
+				if (!valid)
+					throw new InvalidOperationException ();
+
+				return data;
+			}
+		}
+
+		public void SetValue (TargetAddress address, long value)
+		{
+			this.valid = true;
+			this.addr_on_stack = address;
+			this.data = value;
+		}
+
+		public bool Valid {
+			get {
+				return valid;
+			}
 		}
 	}
 
-	public abstract class StackFrame : IDisposable
+	public sealed class StackFrame : IDisposable
 	{
 		IMethod method;
+		Process process;
 		TargetAddress address, stack, frame;
 		SourceAddress source;
 		AddressDomain address_domain;
+		ILanguage language;
+		// ILanguageBackend lbackend;
+		bool has_registers;
 		Register[] registers;
 		string name;
 		int level;
 
-		public StackFrame (TargetAddress address, TargetAddress stack,
-				   TargetAddress frame, Register[] registers,
-				   int level, SourceAddress source, IMethod method)
-			: this (address, stack, frame, registers, level, method.Name)
+		public StackFrame (Process process, TargetAddress address, TargetAddress stack,
+				   TargetAddress frame, Register[] registers, int level,
+				   IMethod method, SourceAddress source)
 		{
-			this.source = source;
-			this.method = method;
-		}
-
-		public StackFrame (TargetAddress address, TargetAddress stack,
-				   TargetAddress frame, Register[] registers,
-				   int level, string name)
-		{
+			this.process = process;
 			this.address = address;
 			this.stack = stack;
 			this.frame = frame;
 			this.registers = registers;
 			this.level = level;
-			this.name = name != "" ? name : null;
+			this.method = method;
+			this.source = source;
+			this.name = method != null ? method.Name : null;
+		}
+
+		internal static StackFrame CreateFrame (Process process,
+							Inferior.StackFrame frame,
+							Register[] regs, int level,
+							IMethod method)
+		{
+			SourceAddress source = null;
+			if ((method != null) && method.HasSource)
+				source = method.Source.Lookup (frame.Address);
+			return CreateFrame (process, frame, regs, level, method, source);
+		}
+
+		internal static StackFrame CreateFrame (Process process,
+							Inferior.StackFrame frame,
+							Register[] regs, int level,
+							IMethod method, SourceAddress source)
+		{
+			return new StackFrame (process, frame.Address, frame.StackPointer,
+					       frame.FrameAddress, regs, level, method,
+					       source);
 		}
 
 		public int Level {
@@ -92,7 +138,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public virtual AddressDomain AddressDomain {
+		public AddressDomain AddressDomain {
 			get {
 				if (address_domain == null)
 					address_domain = new AddressDomain ("frame");
@@ -101,8 +147,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract ITargetAccess TargetAccess {
-			get;
+		public Process Process {
+			get {
+				check_disposed ();
+				return process;
+			}
+		}
+
+		public ITargetAccess TargetAccess {
+			get {
+				check_disposed ();
+				return process;
+			}
 		}
 
 		public Register[] Registers {
@@ -112,19 +168,28 @@ namespace Mono.Debugger
 			}
 		}
 
-		public virtual long GetRegister (int index)
+		public long GetRegister (int index)
 		{
-			foreach (Register register in Registers) {
-				if (register.Index == index)
-					return (long) register.Data;
-			}
-
-			throw new TargetException (TargetError.NoSuchRegister);
+			return (long) Registers [index].Data;
 		}
 
-		public abstract TargetLocation GetRegisterLocation (int index, long reg_offset, bool dereference, long offset);
+		public TargetLocation GetRegisterLocation (int index, long reg_offset,
+							   bool dereference, long offset)
+		{
+			return new MonoVariableLocation (
+				this, dereference, index, reg_offset, false, offset);
+		}
 
-		public abstract void SetRegister (int index, long value);
+		public void SetRegister (int index, long value)
+		{
+			if (Level > 0)
+				throw new NotImplementedException ();
+
+			process.SetRegister (index, value);
+
+			has_registers = false;
+			registers = null;
+		}
 
 		public IMethod Method {
 			get {
@@ -156,23 +221,11 @@ namespace Mono.Debugger
 
 		public event ObjectInvalidHandler FrameInvalidEvent;
 
-		public abstract TargetAddress CallMethod (TargetAddress method, string arg);
-
-		public abstract TargetAddress CallMethod (TargetAddress method,
-							  TargetAddress arg1,
-							  TargetAddress arg2);
-
-		public abstract bool RuntimeInvoke (TargetAddress method_argument,
-						    TargetAddress object_argument,
-						    TargetAddress[] param_objects);
-
-		public abstract TargetAddress RuntimeInvoke (TargetAddress method_argument,
-							     TargetAddress object_argument,
-							     TargetAddress[] param_objects,
-							     out TargetAddress exc_object);
-
-		public abstract ILanguage Language {
-			get;
+		public ILanguage Language {
+			get {
+				check_disposed ();
+				return language;
+			}
 		}
 
 		public override string ToString ()
@@ -215,7 +268,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected virtual void Dispose (bool disposing)
+		protected void Dispose (bool disposing)
 		{
 			if (!this.disposed) {
 				if (disposing) {

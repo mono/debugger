@@ -422,7 +422,7 @@ namespace Mono.Debugger.Languages.CSharp
 			index -= first_static_field;
 
 			try {
-				TargetAddress data_address = frame.CallMethod (
+				TargetAddress data_address = frame.Process.CallMethod (
 					ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 

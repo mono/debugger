@@ -1,5 +1,29 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs (Process.RuntimeInvoke): Take a `StackFrame'
+	argument instead of an `ILanguageBackend' one; make them public.
+	(Process.MyStackFrame): Killed this class.
+
+	* backends/Backtrace.cs (Backtrace..ctor): Only take the first
+	frame as argument.
+	(Backtrace.GetBacktrace): New public method; unwind the stack to
+	actually get the backtrace.
+
+	* classes/StackFrame.cs (Register.Valid): New public property.
+	(Register.SetValue): New public method.
+	(StackFrame): Make this class sealed, not abstract.
+	(StackFrame.Process): New public property.
+	(StackFrame.CallMethod, StackFrame.RuntimeInvoke): Removed, use
+	the methods in Process.
+
+	* interfaces/IArchitecture.cs (IArchitecture.UnwindStack):
+	Replaced the two overloaded versions which one single one which
+	takes a stack frame and returns a stack frame.
+
+	* interfaces/IMethod.cs (IMethod.UnwindStack): New method.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IArchitecture
 	(IArchitecture.CountRegisters): New property.
 

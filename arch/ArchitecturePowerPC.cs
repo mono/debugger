@@ -164,13 +164,8 @@ namespace Mono.Debugger
 			get { return 50; }
 		}
 
-		public object UnwindStack (Register[] registers)
-		{
-			throw new NotImplementedException ();
-		}
-
-		public Register[] UnwindStack (byte[] code, ITargetMemoryAccess memory,
-					       object last_data, out object new_data)
+		public StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+					       ISymbolTable symtab, byte[] code)
 		{
 			throw new NotImplementedException ();
 		}

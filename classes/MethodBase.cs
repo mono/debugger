@@ -1,4 +1,5 @@
 using System;
+using Math = System.Math;
 using System.Text;
 using System.Collections;
 
@@ -91,6 +92,26 @@ namespace Mono.Debugger
 		protected void SetWrapperAddress (TargetAddress wrapper_addr)
 		{
 			this.wrapper_addr = wrapper_addr;
+		}
+
+		public virtual StackFrame UnwindStack (ITargetAccess target, IArchitecture arch,
+						       ISymbolTable symtab, StackFrame frame)
+		{
+			if (!IsLoaded)
+				return null;
+
+			int prologue_size;
+			if (HasMethodBounds)
+				prologue_size = (int) (MethodStartAddress - StartAddress);
+			else
+				prologue_size = (int) (EndAddress - StartAddress);
+			int offset = (int) (frame.TargetAddress - StartAddress);
+			prologue_size = Math.Min (prologue_size, offset);
+			prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
+
+			byte[] prologue = target.ReadBuffer (StartAddress, prologue_size);
+
+			return arch.UnwindStack (frame, target, symtab, prologue);
 		}
 
 		//
