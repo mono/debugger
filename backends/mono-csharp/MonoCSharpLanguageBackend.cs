@@ -337,8 +337,8 @@ namespace Mono.Debugger.Languages.CSharp
 			if (module == null) {
 				module = Backend.ModuleManager.CreateModule (name);
 				module_hash.Add (name, module);
-				symfile.Module = module;
 			}
+			symfile.Module = module;
 			if (!module.IsLoaded) {
 				MonoModule mono_module = new MonoModule (module, name, symfile);
 				module.ModuleData = mono_module;
@@ -762,21 +762,18 @@ namespace Mono.Debugger.Languages.CSharp
 			Token = memory.BinaryReader.ReadInt32 ();
 			TypeInfo = memory.BinaryReader.ReadInt32 ();
 
-			object[] args = new object[] { (int) Token };
-			Type = (Type) get_type.Invoke (reader.Assembly, args);
+			if (Token != 0) {
+				object[] args = new object[] { (int) Token };
+				Type = (Type) get_type.Invoke (reader.Assembly, args);
+			}
 		}
 
 		public static void ReadClasses (MonoSymbolTableReader reader,
 						ITargetMemoryReader memory, int count)
 		{
 			for (int i = 0; i < count; i++) {
-				try {
-					ClassEntry entry = new ClassEntry (reader, memory);
-					reader.Table.AddType (entry);
-				} catch (Exception e) {
-					Console.WriteLine ("Can't read type: {0}", e);
-					// Do nothing.
-				}
+				ClassEntry entry = new ClassEntry (reader, memory);
+				reader.Table.AddType (entry);
 			}
 		}
 
