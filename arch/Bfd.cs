@@ -604,13 +604,16 @@ namespace Mono.Debugger.Architecture
 
 		void load_dwarf ()
 		{
-			if (dwarf_loaded)
+			if (dwarf_loaded || !has_debugging_info)
 				return;
 
 			try {
 				dwarf = new DwarfReader (this, this, backend.SourceFileFactory);
-			} catch {
-				// Silently ignore.
+			} catch (Exception ex) {
+				Console.WriteLine ("Cannot read DWARF debugging info from " +
+						   "symbol file `{0}': {1}", FileName, ex);
+				has_debugging_info = false;
+				return;
 			}
 
 			dwarf_loaded = true;
@@ -623,7 +626,7 @@ namespace Mono.Debugger.Architecture
 
 		void unload_dwarf ()
 		{
-			if (!dwarf_loaded)
+			if (!dwarf_loaded || !has_debugging_info)
 				return;
 
 			dwarf_loaded = false;
@@ -641,8 +644,9 @@ namespace Mono.Debugger.Architecture
 			try {
 				stabs = new StabsReader (this, this, backend.SourceFileFactory);
 			} catch (Exception ex) {
-				Console.WriteLine ("CANNOT READ STABS: {0}", ex);
-				// Silently ignore.
+				Console.WriteLine ("Cannot read STABS debugging info from " +
+						   "symbol file `{0}': {1}", FileName, ex);
+				has_debugging_info = false;
 			}
 
 			stabs_loaded = true;
