@@ -1,5 +1,19 @@
 2002-09-20  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IInferior.cs (IInferiorStackFrame.Inferior): New property.
+
+	* interfaces/ITargetLocation.cs (ITargetLocation.ReValidate): Removed.
+	(ITargetLocation.Handle): New property.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryReader.Size): New property.
+	(ITargetMemoryReader.Contents): New property.
+	(ITargetMemoryAccess.GetMemoryStream): Removed.
+
+	* backends/mono-csharp/MonoVariable.cs: We can now read a parameter as a blob.
+	
+2002-09-20  Martin Baulig  <martin@gnome.org>
+
 	Started to add support for variables.
 
 	* interfaces/ITargetType.cs: New public interface.

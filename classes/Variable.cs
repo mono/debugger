@@ -29,6 +29,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract ITargetMemoryReader MemoryReader {
+			get;
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1},{2})", GetType (), Name, Type);

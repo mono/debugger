@@ -26,9 +26,11 @@ namespace Mono.Debugger
 			get;
 		}
 
-		bool ReValidate ();
-
 		bool IsValid {
+			get;
+		}
+
+		object Handle {
 			get;
 		}
 	}

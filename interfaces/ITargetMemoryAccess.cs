@@ -37,6 +37,20 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Total size of this memory stream.
+		// </summary>
+		long Size {
+			get;
+		}
+
+		// <summary>
+		//   The full contents of this memory stream.
+		// </summary>
+		byte[] Contents {
+			get;
+		}
+
+		// <summary>
 		//   Get the underlying TargetBinaryReader.
 		// </summary>
 		TargetBinaryReader BinaryReader {
@@ -79,8 +93,6 @@ namespace Mono.Debugger
 		ITargetMemoryReader ReadMemory (TargetAddress address, int size);
 
 		byte[] ReadBuffer (TargetAddress address, int size);
-
-		Stream GetMemoryStream (TargetAddress address);
 
 		bool CanWrite {
 			get;

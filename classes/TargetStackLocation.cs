@@ -15,14 +15,19 @@ namespace Mono.Debugger
 		public TargetStackLocation (IDebuggerBackend backend, IStackFrame frame,
 					    bool is_local, long offset, TargetAddress start_scope,
 					    TargetAddress end_scope)
+			: this (backend, is_local, offset, start_scope, end_scope)
+		{
+			set_frame (frame);
+		}
+
+		public TargetStackLocation (IDebuggerBackend backend, bool is_local, long offset,
+					    TargetAddress start_scope, TargetAddress end_scope)
 			: base (offset)
 		{
 			this.backend = backend;
 			this.is_local = is_local;
 			this.start_scope = start_scope;
 			this.end_scope = end_scope;
-
-			set_frame (frame);
 
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
@@ -50,7 +55,12 @@ namespace Mono.Debugger
 				is_valid = false;
 		}
 
-		public override TargetAddress GetAddress ()
+		protected override object GetHandle ()
+		{
+			return frame;
+		}
+
+		protected override TargetAddress GetAddress ()
 		{
 			if (is_local)
 				return new TargetAddress (frame, iframe.LocalsAddress.Address + Offset);
@@ -58,7 +68,7 @@ namespace Mono.Debugger
 				return new TargetAddress (frame, iframe.ParamsAddress.Address + Offset);
 		}
 
-		public override bool ReValidate ()
+		protected override bool ReValidate ()
 		{
 			if (!backend.HasTarget)
 				return false;

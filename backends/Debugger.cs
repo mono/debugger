@@ -79,6 +79,18 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public long Size {
+			get {
+				return data.Length;
+			}
+		}
+
+		public byte[] Contents {
+			get {
+				return data;
+			}
+		}
+
 		public TargetBinaryReader BinaryReader {
 			get {
 				return reader;
@@ -128,121 +140,19 @@ namespace Mono.Debugger.Backends
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
 		}
-	}
 
-	internal class TargetMemoryStream : Stream
-	{
-		TargetAddress address;
-		ITargetInfo target_info;
-		ITargetMemoryAccess memory;
-		long position;
-
-		internal TargetMemoryStream (ITargetMemoryAccess memory, TargetAddress address,
-					     ITargetInfo target_info)
+		public override string ToString ()
 		{
-			this.memory = memory;
-			this.address = address;
-			this.target_info = target_info;
-		}
+			StringBuilder sb = new StringBuilder ();
 
-		public override bool CanRead {
-			get {
-				return true;
+			sb.Append (String.Format ("MemoryReader (["));
+			for (int i = 0; i < data.Length; i++) {
+				if (i > 0)
+					sb.Append (" ");
+				sb.Append (String.Format ("{0:x}", data [i]));
 			}
-		}
-
-		public override bool CanSeek {
-			get {
-				return true;
-			}
-		}
-
-		public override bool CanWrite {
-			get {
-				return memory.CanWrite;
-			}
-		}
-
-		public override long Length {
-			get {
-				throw new NotSupportedException ();
-			}
-		}
-
-		public override long Position {
-			get {
-				return position;
-			}
-
-			set {
-				position = value;
-			}
-		}
-
-		public override void SetLength (long value)
-		{
-			throw new NotSupportedException ();
-		}
-
-		public override long Seek (long offset, SeekOrigin origin)
-		{
-                        int ref_point;
-
-                        switch (origin) {
-			case SeekOrigin.Begin:
-				ref_point = 0;
-				break;
-			case SeekOrigin.Current:
-				ref_point = (int) position;
-				break;
-			case SeekOrigin.End:
-				throw new NotSupportedException ();
-			default:
-				throw new ArgumentException();
-                        }
-
-			// FIXME: The stream would actually allow being seeked before its start.
-			//        However, I don't know how our callers would deal with a negative
-			//        Position.
-			if (ref_point + offset < 0)
-                                throw new IOException ("Attempted to seek before start of stream");
-
-                        position = ref_point + offset;
-
-                        return position;
-                }
-
-		public override void Flush ()
-		{
-		}
-
-		public override int Read (byte[] buffer, int offset, int count)
-		{
-			try {
-				byte[] retval = memory.ReadBuffer (address + position, count);
-				retval.CopyTo (buffer, offset);
-			} catch (Exception e) {
-				throw new IOException ("Cannot read target memory", e);
-			}
-
-			position += count;
-			return count;
-		}
-
-		public override void Write (byte[] buffer, int offset, int count)
-		{
-			try {
-				if (offset != 0) {
-					byte[] temp = new byte [count];
-					Array.Copy (buffer, offset, temp, 0, count);
-					memory.WriteBuffer (address + position, temp, count);
-				} else
-					memory.WriteBuffer (address + position, buffer, count);
-			} catch (Exception e) {
-				throw new IOException ("Cannot read target memory", e);
-			}
-
-			position += count;
+			sb.Append ("])");
+			return sb.ToString ();
 		}
 	}
 
@@ -782,7 +692,7 @@ namespace Mono.Debugger.Backends
 			symtabs.AddSymbolTable (inferior.SymbolTable);
 
 			if (!native) {
-				language = new MonoCSharpLanguageBackend (inferior);
+				language = new MonoCSharpLanguageBackend (this, inferior);
 				symtabs.AddSymbolTable (language.SymbolTable);
 				inferior.ApplicationSymbolTable = language.SymbolTable;
 			}
@@ -796,7 +706,7 @@ namespace Mono.Debugger.Backends
 			symtabs.AddSymbolTable (inferior.SymbolTable);
 
 			if (!native) {
-				language = new MonoCSharpLanguageBackend (inferior);
+				language = new MonoCSharpLanguageBackend (this, inferior);
 				symtabs.AddSymbolTable (language.SymbolTable);
 				inferior.ApplicationSymbolTable = language.SymbolTable;
 				symtabs.UpdateSymbolTable ();

@@ -61,6 +61,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected string ImageFile;
 		protected OffsetTable offset_table;
 		protected ILanguageBackend language;
+		protected IDebuggerBackend backend;
 		protected IInferior inferior;
 		ArrayList ranges;
 
@@ -83,10 +84,11 @@ namespace Mono.Debugger.Languages.CSharp
 		ITargetMemoryReader range_reader;
 		ITargetMemoryReader string_reader;
 
-		internal MonoSymbolTableReader (IInferior inferior,
+		internal MonoSymbolTableReader (IDebuggerBackend backend, IInferior inferior,
 						ITargetMemoryReader symtab_reader,
 						ILanguageBackend language)
 		{
+			this.backend = backend;
 			this.inferior = inferior;
 			this.language = language;
 
@@ -186,6 +188,7 @@ namespace Mono.Debugger.Languages.CSharp
 			Reflection.MethodBase rmethod;
 			MonoType[] param_types;
 			IVariable[] parameters;
+			bool has_variables;
 
 			static MethodInfo get_method;
 
@@ -216,6 +219,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (Reflection.MethodBase) get_method.Invoke (reader.assembly, args);
+			}
+
+			void get_variables ()
+			{
+				if (has_variables)
+					return;
 
 				ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
@@ -225,8 +234,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 				parameters = new IVariable [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
-					parameters [i] = new MonoVariable (param_info [i].Name,
-									   param_types [i]);
+					parameters [i] = new MonoVariable (
+						reader.backend, param_info [i].Name, param_types [i],
+						false, this, method.Parameters [i]);
+
+				has_variables = true;
 			}
 
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -259,6 +271,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override IVariable[] Parameters {
 				get {
+					get_variables ();
 					return parameters;
 				}
 			}
@@ -309,6 +322,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoCSharpLanguageBackend : SymbolTable, ILanguageBackend
 	{
 		IInferior inferior;
+		IDebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
 		ArrayList symtabs;
@@ -316,8 +330,9 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress trampoline_address;
 		IArchitecture arch;
 
-		public MonoCSharpLanguageBackend (IInferior inferior)
+		public MonoCSharpLanguageBackend (IDebuggerBackend backend, IInferior inferior)
 		{
+			this.backend = backend;
 			this.inferior = inferior;
 		}
 
@@ -436,7 +451,8 @@ namespace Mono.Debugger.Languages.CSharp
 			for (int i = 0; i < count; i++) {
 				MonoSymbolTableReader reader;
 				try {
-					reader = new MonoSymbolTableReader (inferior, symtab_reader, this);
+					reader = new MonoSymbolTableReader (
+						backend, inferior, symtab_reader, this);
 					ranges.AddRange (reader.SymbolRanges);
 					symtabs.Add (reader);
 				} catch (SymbolTableEmptyException) {

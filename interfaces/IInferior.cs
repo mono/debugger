@@ -65,6 +65,10 @@ namespace Mono.Debugger.Backends
 
 	public interface IInferiorStackFrame
 	{
+		IInferior Inferior {
+			get;
+		}
+
 		TargetAddress Address {
 			get;
 		}

@@ -591,12 +591,6 @@ namespace Mono.Debugger.Backends
 			return new TargetReader (retval, this);
 		}
 
-		public Stream GetMemoryStream (TargetAddress address)
-		{
-			check_disposed ();
-			return new TargetMemoryStream (this, address, target_info);
-		}
-
 		public bool CanWrite {
 			get {
 				return false;
@@ -1009,6 +1003,12 @@ namespace Mono.Debugger.Backends
 			{
 				this.inferior = inferior;
 				this.frame = frame;
+			}
+
+			public IInferior Inferior {
+				get {
+					return inferior;
+				}
 			}
 
 			public TargetAddress Address {

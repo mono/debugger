@@ -194,6 +194,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				IVariable[] vars = backend.CurrentMethod.Parameters;
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("PARAM: {0}", var);
+					if (var.Location.IsValid)
+						Console.WriteLine ("VAR: {0}", var.MemoryReader);
 				}
 				break;
 			}

@@ -5,6 +5,10 @@ namespace Mono.Debugger
 {
 	public class LocationInvalidException : TargetException
 	{
+		public LocationInvalidException ()
+			: base ("Location is invalid.")
+		{ }
+
 		public LocationInvalidException (ITargetLocation location)
 			: base ("Location is invalid.")
 		{ }
@@ -45,9 +49,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract TargetAddress GetAddress ();
+		protected abstract TargetAddress GetAddress ();
+		protected abstract object GetHandle ();
 
-		public abstract bool ReValidate ();
+		protected abstract bool ReValidate ();
 
 		public long Offset {
 			get {
@@ -55,6 +60,20 @@ namespace Mono.Debugger
 			}
 		}
 
+		public object Handle {
+			get {
+				if (!IsValid)
+					throw new LocationInvalidException (this);
+
+				try {
+					return GetHandle ();
+				} catch {
+					is_valid = false;
+					throw new LocationInvalidException (this);
+				}
+			}
+		}
+		
 		public abstract object Clone ();
 	}
 }
