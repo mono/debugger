@@ -103,6 +103,35 @@ namespace Mono.Debugger.Frontend
 			GnuReadLine.SetCompletionMatches (match_strings);
 		}
 
+		public void StringsCompleter (string[] haystack, string text, int start, int end)
+		{
+			ArrayList matches = new ArrayList();
+
+			foreach (string s in haystack) {
+				if (s.ToLower().StartsWith (text))
+					matches.Add (s.ToLower());
+			}
+
+			string[] match_strings = null;
+
+			if (matches.Count > 0) {
+				if (matches.Count > 1) {
+					/* always add the prefix at
+					 * the beginning when we have
+					 * > 1 matches, so that
+					 * readline will display the
+					 * matches. */
+					matches.Insert (0, ComputeMCP (matches, text));
+				}
+
+				match_strings = new string [matches.Count + 1];
+				matches.CopyTo (match_strings);
+				match_strings [matches.Count] = null;
+			}
+
+			GnuReadLine.SetCompletionMatches (match_strings);
+		}
+
 		public void ArgumentCompleter (Type t, string text, int start, int end)
 		{
 			ArrayList matched_args = new ArrayList();

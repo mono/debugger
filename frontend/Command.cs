@@ -1074,11 +1074,27 @@ namespace Mono.Debugger.Frontend
 			subcommand.Args = new_args;
 			return subcommand.Resolve (context);
 		}
-
+	  
 		protected override void DoExecute (ScriptingContext context)
 		{
 			subcommand.Execute (context);
 		}
+
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			string[] haystack = { "processes",
+					      "registers",
+					      "locals",
+					      "parameters",
+					      "breakpoints",
+					      "modules",
+					      "threadgroups",
+					      "methods",
+					      "sources",
+					      "frame" };
+
+			e.Completer.StringsCompleter (haystack, text, start, end);
+                }
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Support; } }
@@ -1287,6 +1303,16 @@ namespace Mono.Debugger.Frontend
 		{
 			subcommand.Execute (context);
 		}
+
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			string[] haystack = { "create",
+					      "delete",
+					      "add",
+					      "remove" };
+
+			e.Completer.StringsCompleter (haystack, text, start, end);
+                }
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Threads; } }
