@@ -46,7 +46,7 @@ namespace Mono.Debugger.Architecture
 			if (bfd_hash.Contains (filename))
 				return (Bfd) bfd_hash [filename];
 
-			Bfd bfd = new Bfd (this, memory, filename, false, base_address);
+			Bfd bfd = new Bfd (this, memory, memory, filename, false, base_address);
 			bfd.StepInto = step_into;
 			bfd.CoreFileBfd = core_bfd;
 

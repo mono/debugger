@@ -600,6 +600,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		bool ITargetInfo.IsBigEndian {
+			get {
+				check_engine ();
+				return engine.IsBigEndian;
+			}
+		}
+
 		//
 		// ITargetMemoryAccess
 		//

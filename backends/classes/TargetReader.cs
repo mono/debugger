@@ -11,17 +11,19 @@ namespace Mono.Debugger.Backends
 		int target_int_size;
 		int target_long_size;
 		int target_address_size;
+		bool is_bigendian;
 
 		internal TargetInfo (int target_address_size)
-			: this (4, 8, target_address_size)
+			: this (4, 8, target_address_size, false)
 		{ }
 
 		internal TargetInfo (int target_int_size, int target_long_size,
-				     int target_address_size)
+				     int target_address_size, bool is_bigendian)
 		{
 			this.target_int_size = target_int_size;
 			this.target_long_size = target_long_size;
 			this.target_address_size = target_address_size;
+			this.is_bigendian = is_bigendian;
 		}
 
 		int ITargetInfo.TargetIntegerSize {
@@ -39,6 +41,12 @@ namespace Mono.Debugger.Backends
 		int ITargetInfo.TargetAddressSize {
 			get {
 				return target_address_size;
+			}
+		}
+
+		bool ITargetInfo.IsBigEndian {
+			get {
+				return is_bigendian;
 			}
 		}
 	}
@@ -99,6 +107,12 @@ namespace Mono.Debugger.Backends
 		public int TargetAddressSize {
 			get {
 				return info.TargetAddressSize;
+			}
+		}
+
+		public bool IsBigEndian {
+			get {
+				return info.IsBigEndian;
 			}
 		}
 

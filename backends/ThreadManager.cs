@@ -77,7 +77,7 @@ namespace Mono.Debugger
 		static extern int mono_debugger_server_static_init ();
 
 		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_global_wait (out long status);
+		static extern int mono_debugger_server_global_wait (out int status);
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_pending_sigint ();
@@ -111,7 +111,7 @@ namespace Mono.Debugger
 		CommandResult command_result = null;
 		SingleSteppingEngine command_engine = null;
 		SingleSteppingEngine current_event = null;
-		long current_event_status = 0;
+		int current_event_status = 0;
 
 		void engine_error (Exception ex)
 		{
@@ -490,7 +490,7 @@ namespace Mono.Debugger
 
 			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
 
-			long status;
+			int status;
 			SingleSteppingEngine event_engine;
 
 			lock (this) {
@@ -612,8 +612,7 @@ namespace Mono.Debugger
 			// Wait until we got an event from the target or a command from the user.
 			//
 
-			int pid;
-			long status;
+			int pid, status;
 			pid = mono_debugger_server_global_wait (out status);
 
 			//

@@ -28,7 +28,6 @@ namespace Mono.Debugger.Backends
 		protected readonly ProcessStart start;
 
 		protected readonly BfdContainer bfd_container;
-		protected readonly IArchitecture arch;
 		protected readonly SymbolTableCollection symtab_collection;
 		protected readonly DebuggerBackend backend;
 		protected readonly DebuggerErrorHandler error_handler;
@@ -40,6 +39,7 @@ namespace Mono.Debugger.Backends
 		bool initialized;
 
 		ITargetInfo target_info;
+		IArchitecture arch;
 
 		public bool HasTarget {
 			get {
@@ -217,8 +217,6 @@ namespace Mono.Debugger.Backends
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
 			this.global_address_domain = global_address_domain;
-
-			arch = new ArchitectureI386 ();
 
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
@@ -433,7 +431,7 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public abstract ChildEvent ProcessEvent (long status);
+		public abstract ChildEvent ProcessEvent (int status);
 
 		protected virtual void SetupInferior ()
 		{
@@ -444,7 +442,8 @@ namespace Mono.Debugger.Backends
 				(out target_int_size, out target_long_size,
 				 out target_address_size));
 
-			target_info = new TargetInfo (target_int_size, target_long_size, target_address_size);
+			target_info = new TargetInfo (target_int_size, target_long_size,
+						      target_address_size, true);
 
 			try {
 				bfd = bfd_container.AddFile (this, start.TargetApplication,
@@ -458,6 +457,8 @@ namespace Mono.Debugger.Backends
 							   start.TargetApplication, e);
 				return;
 			}
+
+			arch = bfd.Architecture;
 
 			bfd_disassembler = bfd.GetDisassembler (this);
 		}
@@ -482,7 +483,7 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress MainMethodAddress {
 			get {
-				return bfd ["main"];
+				return bfd.EntryPoint;
 			}
 		}
 
@@ -531,6 +532,12 @@ namespace Mono.Debugger.Backends
 		public int TargetAddressSize {
 			get {
 				return target_info.TargetAddressSize;
+			}
+		}
+
+		public bool IsBigEndian {
+			get {
+				return target_info.IsBigEndian;
 			}
 		}
 

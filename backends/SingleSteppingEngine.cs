@@ -136,7 +136,7 @@ namespace Mono.Debugger.Backends
 		//   That's done in inferior.ProcessEvent() - which must always be called
 		//   from the engine's thread.
 		// </remarks>
-		public void ProcessEvent (long status)
+		public void ProcessEvent (int status)
 		{
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
 			Report.Debug (DebugFlags.EventLoop,
@@ -513,6 +513,7 @@ namespace Mono.Debugger.Backends
 				step_operation_finished ();
 				operation_completed (result);
 				if (is_main && !reached_main) {
+					arch = inferior.Architecture;
 					reached_main = true;
 					main_method_retaddr = inferior.GetReturnAddress ();
 					manager.ReachedMain ();
@@ -721,6 +722,13 @@ namespace Mono.Debugger.Backends
 			get {
 				check_inferior ();
 				return inferior.TargetLongIntegerSize;
+			}
+		}
+
+		public bool IsBigEndian {
+			get {
+				check_inferior ();
+				return inferior.IsBigEndian;
 			}
 		}
 
@@ -1059,19 +1067,6 @@ namespace Mono.Debugger.Backends
 			get { return arch; }
 		}
 
-
-		bool start_native ()
-		{
-			if (!native)
-				return false;
-
-			TargetAddress main = inferior.MainMethodAddress;
-			if (main.IsNull)
-				return false;
-
-			insert_temporary_breakpoint (main);
-			return true;
-		}
 
 		void child_exited ()
 		{

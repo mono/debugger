@@ -37,7 +37,7 @@ namespace Mono.Debugger.Architecture
 			core_file = Path.GetFullPath (core_file);
 			application = Path.GetFullPath (application);
 
-			core_bfd = new Bfd (bfd_container, this, core_file, true, TargetAddress.Null);
+			core_bfd = new Bfd (bfd_container, this, this, core_file, true, TargetAddress.Null);
 			bfd = bfd_container.AddFile (this, application, true, TargetAddress.Null, core_bfd);
 
 			core_bfd.MainBfd = bfd;
@@ -382,6 +382,13 @@ namespace Mono.Debugger.Architecture
 			get {
 				// FIXME
 				return 8;
+			}
+		}
+
+		public bool IsBigEndian {
+			get {
+				// FIXME
+				return false;
 			}
 		}
 
