@@ -1,5 +1,10 @@
 2004-11-12  Chris Toshok  <toshok@ximian.com>
 
+	* wrapper/wrapper.c (main_thread_handler): fix build.
+	(mono_debugger_main): same.
+
+2004-11-12  Chris Toshok  <toshok@ximian.com>
+
 	* jay/: Add our own copy of jay from the mcs source.
 	
 	* configure.in (AC_OUTPUT): add jay/Makefile.

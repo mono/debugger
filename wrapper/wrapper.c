@@ -252,7 +252,7 @@ main_thread_handler (gpointer user_data)
 	/*
 	 * Wait until everything is ready.
 	 */
-	IO_LAYER (WaitForSingleObject) (main_ready_cond, INFINITE);
+	IO_LAYER (WaitForSingleObject) (main_ready_cond, INFINITE, FALSE);
 
 	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
 	/*
@@ -306,7 +306,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	main_args.argv = argv + 2;
 
 	mono_thread_create (domain, main_thread_handler, &main_args);
-	IO_LAYER (WaitForSingleObject) (main_started_cond, INFINITE);
+	IO_LAYER (WaitForSingleObject) (main_started_cond, INFINITE, FALSE);
 
 	/*
 	 * Initialize the thread manager.
