@@ -69,8 +69,12 @@ AC_SUBST(CFLAGS)
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)
 
+AC_PATH_PROG(MONO, mono, mono)
+AC_PATH_PROG(GDB, gdb, gdb)
+
 AC_OUTPUT([
 Makefile
 glue/Makefile
 test/Makefile
+test/Debugger.exe.config
 ])

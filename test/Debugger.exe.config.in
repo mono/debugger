@@ -1,0 +1,6 @@
+<configuration>
+  <appSettings>
+    <add key="gdb-path" value="@GDB@" />
+    <add key="mono-path" value="@MONO@" />
+  </appSettings>
+</configuration>

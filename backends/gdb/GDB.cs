@@ -3,11 +3,13 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Configuration;
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger;
@@ -18,8 +20,8 @@ namespace Mono.Debugger.Backends
 {
 	public class GDB : IDebuggerBackend, ILanguageCSharp, IDisposable
 	{
-		public const string Path_GDB	= "/usr/bin/gdb";
-		public const string Path_Mono	= "/home/martin/MONO-LINUX/bin/mono";
+		public static string Path_GDB	= "/usr/bin/gdb";
+		public static string Path_Mono	= "mono";
 
 		Spawn process;
 		IOOutputChannel gdb_input;
@@ -59,6 +61,25 @@ namespace Mono.Debugger.Backends
 		public GDB (string gdb_path, string mono_path, string application,
 			    string[] arguments, ISourceFileFactory source_factory)
 		{
+			NameValueCollection settings = ConfigurationSettings.AppSettings;
+
+			foreach (string key in settings.AllKeys) {
+				string value = settings [key];
+
+				switch (key) {
+				case "mono-path":
+					Path_Mono = value;
+					break;
+
+				case "gdb-path":
+					Path_GDB = value;
+					break;
+
+				default:
+					break;
+				}
+			}
+
 			this.source_file_factory = source_factory;
 			this.application = Assembly.LoadFrom (application);
 
