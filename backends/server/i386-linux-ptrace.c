@@ -187,8 +187,7 @@ setup_inferior (InferiorHandle *handle, gboolean do_wait)
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
 	int ret, status;
 
-	if (do_wait)
-		ret = waitpid (handle->pid, &status, WUNTRACED);
+	ret = waitpid (handle->pid, &status, WUNTRACED | __WALL | __WCLONE);
 
 	handle->mem_fd = open64 (filename, O_RDONLY);
 
@@ -214,7 +213,7 @@ server_ptrace_attach (int pid)
 	handle = g_new0 (InferiorHandle, 1);
 	handle->pid = pid;
 
-	setup_inferior (handle, FALSE);
+	setup_inferior (handle, TRUE);
 
 	return handle;
 }
@@ -960,7 +959,7 @@ server_ptrace_wait (InferiorHandle *handle, ServerStatusMessageType *type, guint
 	sigprocmask (SIG_BLOCK, &mask, &oldmask);
 
  again:
-	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG);
+	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
 	if (ret < 0) {
 		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
 		goto out;
