@@ -434,4 +434,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
 		}
 	}
+
+	public class ModuleOperationListExpression : Expression
+	{
+		ModuleOperation[] operations;
+
+		public ModuleOperationListExpression (ModuleOperation[] operations)
+		{
+			this.operations = operations;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return operations;
+		}
+
+		public override string ToString ()
+		{
+			string[] temp = new string [operations.Length];
+			for (int i = 0; i < operations.Length;i ++)
+				temp [i] = operations [i].ToString ();
+			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
+		}
+	}
 }

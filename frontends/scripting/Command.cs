@@ -591,18 +591,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ModuleOperationCommand : Command
 	{
 		ModuleListExpression module_list_expr;
-		ModuleOperation[] operations;
+		ModuleOperationListExpression op_list_expr;
 
 		public ModuleOperationCommand (ModuleListExpression module_list_expr,
-					       ModuleOperation[] operations)
+					       ModuleOperationListExpression op_list_expr)
 		{
 			this.module_list_expr = module_list_expr;
-			this.operations = operations;
+			this.op_list_expr = op_list_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			Module[] modules = (Module []) module_list_expr.Resolve (context);
+			ModuleOperation[] operations = (ModuleOperation []) op_list_expr.Resolve (context);
 
 			context.ModuleOperations (modules, operations);
 		}

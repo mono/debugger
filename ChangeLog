@@ -1,6 +1,11 @@
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Expression.cs
+	(ModuleOperationListExpression): New expression.
+
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/Expression.cs
 	(ModuleListExpression, SourceListExpression, ProcessListExpression):
 	New expressions.
 

@@ -298,11 +298,9 @@ command
 	  {
 		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
 	  }
-	| MODULE module_list_expression module_operations
+	| MODULE module_list_expression module_operation_list_expression
 	  {
-		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $3).Count];
-		((ArrayList) $3).CopyTo (operations, 0);
-		$$ = new ModuleOperationCommand ((ModuleListExpression) $2, operations);
+		$$ = new ModuleOperationCommand ((ModuleListExpression) $2, (ModuleOperationListExpression) $3);
 	  }
 	| assert_command
 	  {
@@ -635,6 +633,16 @@ module_operation
 	| SHOW BREAKPOINTS
 	  {
 		$$ = ModuleOperation.ShowBreakpoints;
+	  }
+	;
+
+module_operation_list_expression
+	: module_operations
+	  {
+		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (operations, 0);
+
+		$$ = new ModuleOperationListExpression (operations);
 	  }
 	;
 
