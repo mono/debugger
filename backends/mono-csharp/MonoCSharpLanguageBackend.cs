@@ -160,6 +160,8 @@ namespace Mono.Debugger.Languages.CSharp
 				reader.Position = line_number_offset;
 				for (int i = 0; i < num_line_numbers; i++)
 					LineNumbers [i] = new JitLineNumberEntry (reader);
+				MethodStartAddress = StartAddress + LineNumbers [0].Address;
+				MethodEndAddress = StartAddress + LineNumbers [num_line_numbers-1].Address;
 			}
 
 			reader.Position = variables_offset;

@@ -1,5 +1,10 @@
 2003-04-17  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MethodAddress.ctor): Use the first and last source line as
+	MethodStartAddress and MethodEndAddress, not the prolog/epilog
+	data from the JIT.
+
 	* backends/SingleSteppingEngine.cs (get_step_frame): Return a
 	StepMode.SingleInstruction frame if we don't have source code, not
 	just null.  This is required to handle JIT trampolines correctly
