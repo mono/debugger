@@ -307,7 +307,7 @@ namespace Mono.Debugger.Backends
 			TargetState old_state = change_target_state (TargetState.RUNNING);
 			try {
 				if (size > 0) {
-					data = Marshal.AllocHGlobal (size);
+					data = Marshal.AllocHGlobal (size * 8);
 					Marshal.Copy (param_addresses, 0, data, size);
 				}
 
