@@ -41,7 +41,15 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetFunctionType Getter {
+			get;
+		}
+
 		bool CanWrite {
+			get;
+		}
+
+		ITargetFunctionType Setter {
 			get;
 		}
 	}

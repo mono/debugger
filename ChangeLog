@@ -1,3 +1,17 @@
+2004-10-20  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetStructType.cs
+	(ITargetPropertyInfo): Added `Getter' and `Setter' properties.
+
+	* frontends/scripting/Expression.cs
+	(LocationType): New public enum.
+	(Expression.EvaluateLocation): Added `LocationType type' argument.
+	(Expression.DoEvaluateLocation): Likewise.
+	(SourceExpression): Added `-set' and `-get' arguments to specify a
+	property's getter/setter.
+
+	* frontends/scripting/Command.cs (AboutCommand): Added Chris Toshok :-)
+
 2004-10-20  Chris Toshok  <toshok@ximian.com>
 
 	* classes/ProcessStart.cs (DebuggerOptions): add -f/-fullname,

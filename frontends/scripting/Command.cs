@@ -1230,11 +1230,23 @@ namespace Mono.Debugger.Frontends.Scripting
 	public abstract class SourceCommand : DebuggerCommand
 	{
 		int method_id = -1;
+		bool is_getter = false;
+		bool is_setter = false;
 		protected SourceLocation location;
 
 		public int ID {
 			get { return method_id; }
 			set { method_id = value; }
+		}
+
+		public bool Get {
+			get { return is_getter; }
+			set { is_getter = value; }
+		}
+
+		public bool Set {
+			get { return is_setter; }
+			set { is_setter = value; }
 		}
 
 		protected bool DoResolveExpression (ScriptingContext context)
@@ -1247,7 +1259,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return false;
 
-			location = expr.EvaluateLocation (context, null);
+			if (is_getter)
+				location = expr.EvaluateLocation (context, LocationType.PropertyGetter, null);
+			else if (is_setter)
+				location = expr.EvaluateLocation (context, LocationType.PropertySetter, null);
+			else
+				location = expr.EvaluateLocation (context, LocationType.Method, null);
 			return location != null;
 		}
 
@@ -1511,7 +1528,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		public override string Execute (CL.Engine e)
 		{
 			Console.WriteLine ("Mono Debugger (C) 2003, 2004 Novell, Inc.\n" +
-					   "Written by Martin Baulig (martin@ximian.com)\n");
+					   "Written by Martin Baulig (martin@ximian.com)\n" +
+					   "        and Chris Toshok (toshok@ximian.com)\n");
 			return null;
 		}
 	}

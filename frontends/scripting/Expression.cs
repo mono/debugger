@@ -9,6 +9,13 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontends.Scripting
 {
+	public enum LocationType
+	{
+		Method,
+		PropertyGetter,
+		PropertySetter
+	}
+
 	public abstract class Expression
 	{
 		public abstract string Name {
@@ -94,12 +101,12 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected virtual SourceLocation DoEvaluateLocation (ScriptingContext context,
-								     Expression[] types)
+								     LocationType type, Expression[] types)
 		{
 			return null;
 		}
 
-		public SourceLocation EvaluateLocation (ScriptingContext context,
+		public SourceLocation EvaluateLocation (ScriptingContext context, LocationType type,
 							Expression [] types)
 		{
 			if (!resolved)
@@ -109,7 +116,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						"unresolved expression `{0}'", Name));
 
 			try {
-				SourceLocation location = DoEvaluateLocation (context, types);
+				SourceLocation location = DoEvaluateLocation (context, type, types);
 				if (location == null)
 					throw new ScriptingException (
 						"Expression `{0}' is not a method", Name);
@@ -478,7 +485,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      Expression[] types)
+								      LocationType type, Expression[] types)
 		{
 			if (types != null)
 				return null;
@@ -714,7 +721,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      Expression[] types)
+								      LocationType type, Expression[] types)
 		{
 			try {
 				ITargetMethodInfo method = OverloadResolve (context, types);
@@ -1158,6 +1165,42 @@ namespace Mono.Debugger.Frontends.Scripting
 			else
 				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
 		}
+
+		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
+								      LocationType type, Expression[] types)
+		{
+			ITargetMemberInfo member = FindMember (context, true);
+			if (member == null)
+				return null;
+
+			switch (type) {
+			case LocationType.PropertyGetter:
+			case LocationType.PropertySetter:
+				ITargetPropertyInfo property = member as ITargetPropertyInfo;
+				if (property == null)
+					return null;
+
+				ITargetFunctionType func;
+				if (type == LocationType.PropertyGetter) {
+					if (!property.CanRead)
+						throw new ScriptingException (
+							"Property {0} doesn't have a getter.", Name);
+					func = property.Getter;
+				} else {
+					if (!property.CanWrite)
+						throw new ScriptingException (
+							"Property {0} doesn't have a setter.", Name);
+					func = property.Setter;
+				}
+
+				return new SourceLocation (func.Source);
+
+			default:
+				return null;
+			}
+
+			return null;
+		}
 	}
 
 	public class PointerDereferenceExpression : PointerExpression
@@ -1544,7 +1587,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      Expression[] types)
+								      LocationType type, Expression[] types)
 		{
 			Expression[] argtypes = new Expression [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++) {
@@ -1553,7 +1596,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					return null;
 			}
 
-			return method_expr.EvaluateLocation (context, argtypes);
+			return method_expr.EvaluateLocation (context, type, argtypes);
 		}
 
 		public ITargetObject Invoke (ScriptingContext context, bool debug)

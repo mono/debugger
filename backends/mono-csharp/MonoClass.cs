@@ -564,9 +564,27 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
+			ITargetFunctionType ITargetPropertyInfo.Getter {
+				get {
+					if (!CanRead)
+						throw new InvalidOperationException ();
+
+					return GetterType;
+				}
+			}
+
 			public bool CanWrite {
 				get {
 					return PropertyInfo.CanWrite;
+				}
+			}
+
+			ITargetFunctionType ITargetPropertyInfo.Setter {
+				get {
+					if (!CanWrite)
+						throw new InvalidOperationException ();
+
+					return SetterType;
 				}
 			}
 
