@@ -142,6 +142,7 @@ namespace Mono.Debugger
 			argv = SetupArguments ();
 			load_native_symtab = true;
 			native = true;
+			initialized = true;
 		}
 
 		public static ProcessStart Create (string cwd, string[] argv, string[] envp)
