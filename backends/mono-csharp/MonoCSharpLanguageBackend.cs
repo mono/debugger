@@ -1623,7 +1623,7 @@ namespace Mono.Debugger.Languages.CSharp
 			notification_address = memory.ReadGlobalAddress (info.notification_code);
 		}
 
-		public void do_update_symbol_table (ITargetMemoryAccess memory, bool force_update)
+		void do_update_symbol_table (ITargetMemoryAccess memory, bool force_update)
 		{
 			backend.ModuleManager.Lock ();
 			try {
