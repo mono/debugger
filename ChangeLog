@@ -1,5 +1,14 @@
 2004-06-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/BreakpointManager.cs: Don't allow multiple breakpoints
+	on the same method.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoMethod.RegisterLoadHandler): Don't allow multiple load
+	handlers on the same method.
+
+2004-06-16  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/: Don't #include <mono/metadata/verify.h>.
 
 2004-06-16  Martin Baulig  <martin@ximian.com>

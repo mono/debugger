@@ -1524,20 +1524,21 @@ namespace Mono.Debugger.Languages.CSharp
 								MethodLoadedHandler handler,
 								object user_data)
 			{
+				string full_name = String.Format (
+					"{0}:{1}", rmethod.ReflectedType.FullName,
+					rmethod.Name);
+
+				if (load_handlers != null)
+					throw new AlreadyHaveBreakpointException (full_name);
+
 				HandlerData data = new HandlerData (this, handler, user_data);
 
-				if (load_handlers == null) {
-					load_handlers = new Hashtable ();
+				load_handlers = new Hashtable ();
 
-					string full_name = String.Format (
-						"{0}:{1}", rmethod.ReflectedType.FullName,
-						rmethod.Name);
-
-					reader.Table.Language.InsertBreakpoint (
-						process, full_name,
-						new BreakpointHandler (breakpoint_hit),
-						null);
-				}
+				reader.Table.Language.InsertBreakpoint (
+					process, full_name,
+					new BreakpointHandler (breakpoint_hit),
+					null);
 
 				load_handlers.Add (data, true);
 				return data;

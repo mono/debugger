@@ -63,6 +63,19 @@ namespace Mono.Debugger
 		{ }
 	}
 
+	public class AlreadyHaveBreakpointException : TargetException
+	{
+		public AlreadyHaveBreakpointException (TargetAddress address, int index)
+			: base (String.Format ("Already have breakpoint {0} at address {1}.",
+					       index, address))
+		{ }
+
+		public AlreadyHaveBreakpointException (string method)
+			: base (String.Format ("Already have a breakpoint on method {0}.",
+					       method))
+		{ }
+	}
+
 	public class NoSuchRegisterException : TargetException
 	{
 		public NoSuchRegisterException ()

@@ -810,6 +810,11 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 		goto out;
 	}
 
+	if (--breakpoint->info.refcount > 0) {
+		result = COMMAND_ERROR_NONE;
+		goto out;
+	}
+
 	result = do_disable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE)
 		goto out;

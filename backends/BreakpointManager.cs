@@ -74,7 +74,13 @@ namespace Mono.Debugger.Backends
 					     TargetAddress address)
 		{
 			lock (this) {
-				int index = inferior.InsertBreakpoint (address);
+				int index;
+				Breakpoint old = LookupBreakpoint (address, out index);
+				if (old != null)
+					throw new AlreadyHaveBreakpointException (
+						address, old.Index);
+
+				index = inferior.InsertBreakpoint (address);
 				breakpoints.Add (index, breakpoint);
 				return index;
 			}

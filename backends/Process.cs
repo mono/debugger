@@ -422,7 +422,9 @@ namespace Mono.Debugger
 
 			CommandResult result = engine.SendSyncCommand (
 				CommandType.InsertBreakpoint, breakpoint, address);
-			if (result.Type != CommandResultType.CommandOk)
+			if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 
 			return (int) result.Data;
