@@ -7,8 +7,15 @@ using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
+	// <summary>
+	//   A single source file.  It is used to find a breakpoint's location by method
+	//   name or source file.
+	// </summary>
 	public abstract class SourceInfo
 	{
+		// <summary>
+		//   The file's full pathname.
+		// </summary>
 		public string FileName {
 			get {
 				return filename;
@@ -53,6 +60,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		// <summary>
+		//   Returns a list of SourceMethodInfo's which is sorted by source lines.
+		//   It is used when inserting a breakpoint by source line to find the
+		//   method this line is contained in.
+		// </summary>
 		public SourceMethodInfo[] Methods {
 			get {
 				SourceData data = ensure_methods ();
@@ -102,6 +114,11 @@ namespace Mono.Debugger
 			return String.Format ("SourceInfo ({0})", FileName);
 		}
 
+		// <remarks>
+		//   This is cached in a weak reference; `Methods' is a list of
+		//   SourceMethodInfo's, sorted by their start lines and `MethodHash' maps
+		//   the method's full name to a SourceMethodInfo.
+		// </remarks>
 		private class SourceData
 		{
 			public readonly ArrayList Methods;
@@ -117,6 +134,10 @@ namespace Mono.Debugger
 
 	public delegate void MethodLoadedHandler (SourceMethodInfo method, object user_data);
 
+	// <summary>
+	//   This is a handle to a method which persists across different invocations of
+	//   the same target and which doesn't consume too much memory.
+	// </summary>
 	public abstract class SourceMethodInfo
 	{
 		public SourceInfo SourceInfo {
@@ -143,14 +164,32 @@ namespace Mono.Debugger
 			}
 		}
 
+		// <summary>
+		//   Whether this method is current loaded in memory.  For managed
+		//   methods, this returns whether the method has already been JITed.
+		// </summary>
 		public abstract bool IsLoaded {
 			get;
 		}
 
+		// <summary>
+		//   May only be used while the method is loaded and return's the IMethod.
+		//
+		//   Throws:
+		//     InvalidOperationException - IsLoaded is false.
+		// </summary>
 		public abstract IMethod Method {
 			get;
 		}
 
+		// <summary>
+		//   If true, you may use RegisterLoadHandler() to register a delegate to
+		//   be invoked when the method is loaded.
+		// </summary>
+		// <remarks>
+		//   If both IsLoaded and IsDynamic are false, then the method isn't
+		//   currently loaded, but there's also no way of getting a notification.
+		// </remarks>
 		public bool IsDynamic {
 			get {
 				return is_dynamic;
@@ -163,6 +202,16 @@ namespace Mono.Debugger
 		//   Registers a delegate to be invoked when the method is loaded.
 		//   This is an expensive operation and must not be used in a GUI to get
 		//   a notification when the `IsLoaded' field changed.
+		//
+		//   This is an expensive operation, registering too many load handlers
+		//   may slow that target down, so do not use this in the user interface
+		//   to get any notifications when a method is loaded or something like
+		//   this.  It's just intended to insert breakpoints.
+		//
+		//   To unregister the delegate, dispose the returned IDisposable.
+		//
+		//   Throws:
+		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
 		public abstract IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
 								 object user_data);
