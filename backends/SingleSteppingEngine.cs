@@ -67,6 +67,7 @@ namespace Mono.Debugger.Backends
 
 			step_event = new AutoResetEvent (false);
 			start_event = new ManualResetEvent (false);
+			completed_event = new ManualResetEvent (false);
 			thread_notify = new ThreadNotify (new ReadyEventHandler (ready_event_handler));
 		}
 
@@ -119,6 +120,12 @@ namespace Mono.Debugger.Backends
 			wait_until_engine_is_ready ();
 		}
 
+		public WaitHandle WaitHandle {
+			get {
+				return completed_event;
+			}
+		}
+
 		void wait_until_engine_is_ready ()
 		{
 			while (!start_event.WaitOne ())
@@ -133,6 +140,7 @@ namespace Mono.Debugger.Backends
 				command_result = new CommandResult (message, arg);
 				thread_notify.Signal ();
 				result_sent = true;
+				completed_event.Set ();
 			}
 		}
 
@@ -461,6 +469,7 @@ namespace Mono.Debugger.Backends
 		ISymbolTable current_symtab;
 		Thread engine_thread;
 		ManualResetEvent start_event;
+		ManualResetEvent completed_event;
 		AutoResetEvent step_event;
 		ThreadNotify thread_notify;
 		bool result_sent = false;
@@ -1058,6 +1067,7 @@ namespace Mono.Debugger.Backends
 				change_target_state (TargetState.RUNNING, 0);
 				current_command = new Command (operation, frame);
 				step_event.Set ();
+				completed_event.Reset ();
 			}
 		}
 
@@ -1067,6 +1077,7 @@ namespace Mono.Debugger.Backends
 				change_target_state (TargetState.RUNNING, 0);
 				current_command = new Command (operation, until);
 				step_event.Set ();
+				completed_event.Reset ();
 			}
 		}
 
@@ -1076,6 +1087,7 @@ namespace Mono.Debugger.Backends
 				change_target_state (TargetState.RUNNING, 0);
 				current_command = new Command (operation);
 				step_event.Set ();
+				completed_event.Reset ();
 			}
 		}
 

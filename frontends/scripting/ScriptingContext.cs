@@ -39,7 +39,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				      int pid)
 			: this (context, backend, process)
 		{
-			running = true;
 			if (pid > 0)
 				process.SingleSteppingEngine.Attach (pid);
 			else
@@ -50,7 +49,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		int current_frame_idx = -1;
 		StackFrame current_frame = null;
 		StackFrame[] current_backtrace = null;
-		bool running = false;
 
 		void frame_changed (StackFrame frame)
 		{
@@ -87,13 +85,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 					context.Print ("Process @{0} terminated normally.", id);
 				else
 					context.Print ("Process @{0} exited with exit code {1}.", id, arg);
-				running = false;
 				break;
 
 			case TargetState.STOPPED:
 				if (arg != 0)
 					context.Print ("Process @{0} received signal {1}.", id, arg);
-				running = false;
 				break;
 			}
 		}
@@ -130,8 +126,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			else if (!process.IsStopped)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
 
-			running = true;
-
 			switch (which) {
 			case WhichStepCommand.Continue:
 				process.Continue ();
@@ -160,11 +154,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void wait_until_stopped ()
 		{
-			while (g_main_context_iteration (IntPtr.Zero, false))
+			while (!process.SingleSteppingEngine.WaitHandle.WaitOne ())
 				;
-
-			while (running)
-				g_main_context_iteration (IntPtr.Zero, true);
 
 			while (g_main_context_iteration (IntPtr.Zero, false))
 				;
