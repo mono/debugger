@@ -964,8 +964,10 @@ namespace Mono.Debugger.Architecture
 				reader.Position++;
 
 				next_method_index = 1;
-				next_method = (ISymbolContainer) methods [0];
-				next_method_address = next_method.StartAddress;
+				if (methods.Count > 0) {
+					next_method = (ISymbolContainer) methods [0];
+					next_method_address = next_method.StartAddress;
+				}
 
 				method_hash = new Hashtable ();
 
@@ -1465,15 +1467,17 @@ namespace Mono.Debugger.Architecture
 
 				children = new ArrayList ();
 
-				foreach (Die child in Children) {
-					DieSubprogram subprog = child as DieSubprogram;
-					if ((subprog == null) || !subprog.IsContinuous)
-						continue;
+				if (abbrev.HasChildren) {
+					foreach (Die child in Children) {
+						DieSubprogram subprog = child as DieSubprogram;
+						if ((subprog == null) || !subprog.IsContinuous)
+							continue;
 
-					children.Add (subprog);
+						children.Add (subprog);
+					}
+
+					children.Sort ();
 				}
-
-				children.Sort ();
 
 				if (has_lines) {
 					engine = new LineNumberEngine (dwarf, line_offset, comp_dir, children);
@@ -1981,7 +1985,7 @@ namespace Mono.Debugger.Architecture
 		protected class CompilationUnit
 		{
 			DwarfReader dwarf;
-			long start_offset, unit_length, abbrev_offset;
+			long real_start_offset, start_offset, unit_length, abbrev_offset;
 			int version, address_size;
 			DieCompileUnit comp_unit_die;
 			Hashtable abbrevs;
@@ -1991,6 +1995,7 @@ namespace Mono.Debugger.Architecture
 			{
 				this.dwarf = dwarf;
 
+				real_start_offset = reader.Position;
 				unit_length = reader.ReadInitialLength ();
 				start_offset = reader.Position;
 				version = reader.ReadInt16 ();
@@ -2053,7 +2058,7 @@ namespace Mono.Debugger.Architecture
 
 			public DieType GetType (long offset)
 			{
-				return (DieType) types [offset];
+				return (DieType) types [real_start_offset + offset];
 			}
 
 			public override string ToString ()
