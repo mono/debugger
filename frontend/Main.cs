@@ -147,6 +147,20 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		static string GetValue (ref string[] args, ref int i, string ms_val)
+		{
+			if (ms_val == "")
+				return null;
+
+			if (ms_val != null)
+				return ms_val;
+
+			if (i >= args.Length)
+				return null;
+
+			return args[++i];
+		}
+
 		static bool ParseOption (DebuggerOptions debug_options,
 					 string option,
 					 ref string [] args,
@@ -154,19 +168,18 @@ namespace Mono.Debugger.Frontend
 					 ref bool args_follow_exe)
 		{
 			int idx = option.IndexOf (':');
-			string arg, value;
+			string arg, value, ms_value = null;
 
 			if (idx == -1){
 				arg = option;
-				value = "";
 			} else {
 				arg = option.Substring (0, idx);
-				value = option.Substring (idx + 1);
+				ms_value = option.Substring (idx + 1);
 			}
 
 			switch (arg) {
 			case "-args":
-				if (value != "") {
+				if (ms_value != null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -175,7 +188,8 @@ namespace Mono.Debugger.Frontend
 
 			case "-working-directory":
 			case "-cd":
-				if (value == "") {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -183,7 +197,8 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-debug-flags":
-				if (value == "") {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -191,7 +206,8 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-jit-optimizations":
-				if (value == "") {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -200,16 +216,16 @@ namespace Mono.Debugger.Frontend
 
 			case "-fullname":
 			case "-f":
-				if (value != "") { 
+				if (ms_value != null) {
 					Usage ();
 					Environment.Exit (1);
 				}
-
 				debug_options.InEmacs = true;
 				return true;
 
 			case "-mono-prefix":
-				if (value == "") {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -217,7 +233,8 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-prompt":
-				if (value == "") {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -225,7 +242,8 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-script":
-				if (value != "") {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value != null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -234,7 +252,7 @@ namespace Mono.Debugger.Frontend
 
 			case "-version":
 			case "-V":
-				if (value != "") {
+				if (ms_value != null) {
 					Usage ();
 					Environment.Exit (1);
 				}
@@ -243,11 +261,19 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-usage":
+				if (ms_value != null) {
+					Usage ();
+					Environment.Exit (1);
+				}
 				Usage();
 				Environment.Exit (1);
 				return true;
 
 			case "-run":
+				if (ms_value != null) {
+					Usage ();
+					Environment.Exit (1);
+				}
 				debug_options.StartTarget = true;
 				return true;
 			}
