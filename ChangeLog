@@ -1,5 +1,13 @@
 2004-07-06  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetPointerType.cs
+	(ITargetPointerType.IsArray): New property.
+
+	* interfaces/ITargetPointerObject.cs
+	(ITargetPointerObject.GetArrayElement): New method.
+
+2004-07-06  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Added support for bitfields.
 
 2004-07-06  Martin Baulig  <martin@ximian.com>

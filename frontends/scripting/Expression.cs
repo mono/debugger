@@ -1341,11 +1341,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			int i;
 
-			ITargetArrayObject obj = expr.EvaluateVariable (context)
-				as ITargetArrayObject;
-			if (obj == null)
-				throw new ScriptingException (
-					"Variable {0} is not an array type.", expr.Name);
+			ITargetObject obj = expr.EvaluateVariable (context);
+
 			try {
 				i = (int) this.index.Evaluate (context);
 			} catch (Exception e) {
@@ -1354,13 +1351,23 @@ namespace Mono.Debugger.Frontends.Scripting
 					this.index, e);
 			}
 
-			if ((i < obj.LowerBound) || (i >= obj.UpperBound))
+			ITargetArrayObject aobj = obj as ITargetArrayObject;
+			if (aobj == null) {
+				ITargetPointerObject pobj = obj as ITargetPointerObject;
+				if ((pobj != null) && pobj.Type.IsArray)
+					return pobj.GetArrayElement (i);
+			}
+
+			throw new ScriptingException (
+				"Variable {0} is not an array type.", expr.Name);
+
+			if ((i < aobj.LowerBound) || (i >= aobj.UpperBound))
 				throw new ScriptingException (
 					"Index {0} of array expression {1} out of bounds " +
 					"(must be between {2} and {3}).", i, expr.Name,
-					obj.LowerBound, obj.UpperBound - 1);
+					aobj.LowerBound, aobj.UpperBound - 1);
 
-			return obj [i];
+			return aobj [i];
 		}
 
 		protected override ITargetType DoEvaluateType (ScriptingContext context)

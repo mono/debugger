@@ -69,6 +69,18 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ITargetObject GetArrayElement (int index)
+		{
+			if (!type.IsArray)
+				throw new InvalidOperationException ();
+
+			int size = type.Size;
+			TargetLocation new_location = location.GetLocationAtOffset (
+				index * size, type.StaticType.IsByRef);
+
+			return type.StaticType.GetObject (new_location);
+		}
+
 		public override string Print ()
 		{
 			if (HasAddress)

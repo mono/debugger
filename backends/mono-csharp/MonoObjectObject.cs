@@ -92,6 +92,11 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return location.Address; }
 		}
 
+		public ITargetObject GetArrayElement (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public override string Print ()
 		{
 			if (HasAddress)

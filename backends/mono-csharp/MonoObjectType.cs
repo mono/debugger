@@ -26,6 +26,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public bool IsArray {
+			get {
+				return false;
+			}
+		}
+
 		public ITargetType StaticType {
 			get {
 				throw new InvalidOperationException ();

@@ -22,5 +22,9 @@ namespace Mono.Debugger.Languages
 		ITargetType StaticType {
 			get;
 		}
+
+		bool IsArray {
+			get;
+		}
 	}
 }

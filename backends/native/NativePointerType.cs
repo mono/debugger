@@ -34,12 +34,24 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetType StaticType {
+		public bool IsArray {
+			get {
+				return true;
+			}
+		}
+
+		public NativeType StaticType {
 			get {
 				if (target_type == null)
 					throw new InvalidOperationException ();
 
 				return target_type;
+			}
+		}
+
+		ITargetType ITargetPointerType.StaticType {
+			get {
+				return StaticType;
 			}
 		}
 

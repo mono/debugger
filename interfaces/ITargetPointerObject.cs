@@ -41,5 +41,7 @@ namespace Mono.Debugger.Languages
 		TargetAddress Address {
 			get;
 		}
+
+		ITargetObject GetArrayElement (int index);
 	}
 }

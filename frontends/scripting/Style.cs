@@ -300,8 +300,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			try {
 				return DoFormatObject (obj);
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0}", ex);
+			} catch {
 				return "<cannot display object>";
 			}
 		}
@@ -362,9 +361,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetObject obj = null;
 			try {
 				obj = variable.GetObject (frame);
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0} {1} {2}",
-						   frame, variable, ex);
+			} catch {
 			}
 
 			string contents;
@@ -373,9 +370,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					contents = FormatObject (obj);
 				else
 					contents = "<cannot display object>";
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0} {1} {2}", frame,
-						   variable, ex);
+			} catch {
 				contents = "<cannot display object>";
 			}
 				
@@ -441,9 +436,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ITargetObject obj = null;
 			try {
 				obj = variable.GetObject (frame);
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0} {1} {2}",
-						   frame, variable, ex);
+			} catch {
 			}
 
 			string contents;

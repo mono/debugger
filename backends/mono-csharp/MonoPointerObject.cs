@@ -68,6 +68,11 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public ITargetObject GetArrayElement (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public override string Print ()
 		{
 			return String.Format ("{0}", Address);
