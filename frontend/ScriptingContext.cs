@@ -130,8 +130,9 @@ namespace Mono.Debugger.Frontend
 		public ITargetObject GetRegister (int index, long offset)
 		{
 			ITargetType type = GetRegisterType (index);
+			ITargetTypeInfo tinfo = type.Resolve ();
 			TargetLocation location = GetRegisterLocation (index, offset, false);
-			return type.GetObject (location);
+			return tinfo.GetObject (location);
 		}
 
 		public void SetRegister (int index, long value)
@@ -946,25 +947,25 @@ namespace Mono.Debugger.Frontend
 					      dynamic, DumpType (obj.Type));
 		}
 
-		public string DumpType (ITargetType type)
+		public string DumpType (ITargetTypeInfo type)
 		{
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (type.Name);
+			sb.Append (type.Type.Name);
 			sb.Append (":");
 			sb.Append (type.HasFixedSize);
 			sb.Append (":");
 			sb.Append (type.Size);
 			sb.Append (":");
-			sb.Append (type.Kind);
+			sb.Append (type.Type.Kind);
 			sb.Append (" ");
 
-			switch (type.Kind) {
+			switch (type.Type.Kind) {
 			case TargetObjectKind.Fundamental:
-				sb.Append (((ITargetFundamentalType) type).Type);
+				sb.Append (((ITargetFundamentalType) type.Type).Type);
 				break;
 
 			case TargetObjectKind.Pointer: {
-				ITargetPointerType ptype = (ITargetPointerType) type;
+				ITargetPointerType ptype = (ITargetPointerType) type.Type;
 				sb.Append (ptype.IsTypesafe);
 				sb.Append (":");
 				sb.Append (ptype.HasStaticType);
@@ -976,11 +977,11 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case TargetObjectKind.Array:
-				sb.Append (((ITargetArrayType) type).ElementType.Name);
+				sb.Append (((ITargetArrayType) type.Type).ElementType.Name);
 				break;
 
 			case TargetObjectKind.Alias: {
-				ITargetTypeAlias alias = (ITargetTypeAlias) type;
+				ITargetTypeAlias alias = (ITargetTypeAlias) type.Type;
 				sb.Append (alias.TargetName);
 				if (alias.TargetType != null) {
 					sb.Append (":");
