@@ -8,30 +8,15 @@ for the debugger and you need to manually compile a shared one.  Note that addin
 for -liberty (that's where that symbol is defined) to configure.in is wrong and will not
 work !
 
-There are two ways of compiling binutils:
+On GNU/Linux, the shared libbfd.so includes all the files from libiberty so you won't have
+any problems there.
 
-a) You create a non-shared libbfd.  This seems to be the default on FreeBSD and probably
-   some other systems and it creates static libiberty.a, libbfd.a and libopcodes.a.
+To get a working binutils on FreeBSD, you need to patch the bfd/configure a bit to do the
+same.  The problem is that even if you use --enable-shared, it doesn't create a shared
+libiberty.so, so we can't use this.
 
-   If you use --enable-shared, you also get a shared libbfd.so, but that doesn't matter -
-   it's still unusable for the debugger.  It is a shared library which is intended to be
-   linked into an application - and that application must also statically link against
-   -liberty.
-
-   If you do this, you'll get an application which has -liberty (which is small)
-   statically linked in and dynamically links against -lbfd (which is big).
-
-   This doesn't work for the debugger since it must dlopen() the library and thus needs a
-   shared -liberty as well.
-
-b) You create a shared libbfd.  To do this, you need to give configure the (unfortunately
-   undocumented) --enable-commonbfdlib argument.
-
-   This'll create a shared libbfd.so and libopcodes.so - and the libbfd.so has all the
-   object files from -liberty linked in.
-
-   Such a libbfd.so doesn't depend on any non-shared libraries and thus it can be
-   dlopen()ed - that's what the debugger needs.
+There is a FreeBSD port and precompiled binaries at
+http://primates.ximian.com/~martin/debugger/freebsd/.
 
 threading issues:
 =================
@@ -52,4 +37,31 @@ Make sure not to use the `-pthread' ld argument anywhere; link against -llthread
 
 There seems to be a problem with boehm which makes it just crash for me, so I compiled my
 runtime with --with-gc=none.
+
+Binaries:
+=========
+
+There are binaries and a FreeBSD port available at
+
+	http://primates.ximian.com/~martin/debugger/freebsd/
+
+* Mono 0.18.1 Test Release:
+
+	http://primates.ximian.com/~martin/debugger/mono-0.18.1.tar.gz
+
+* FreeBSD Ports:
+
+	http://primates.ximian.com/~martin/debugger/freebsd/freebsd-ports.tar.gz
+
+* Binaries:
+
+	http://primates.ximian.com/~martin/debugger/freebsd/mono-0.18.1_1.tgz
+	http://primates.ximian.com/~martin/debugger/freebsd/binutils-2.13.tgz
+
+
+---
+January 19th, 2003
+Martin Baulig <martin@ximian.com>
+$Id: README.FreeBSD,v 1.4 2003/01/19 18:30:02 martin Exp $
+
 
