@@ -1,2 +1,2 @@
 EXTRA_DIST = TestManagedTypes.exp TestNamespace.exp TestAssembly.exp \
-	module.exp
+	TestInvocation.exp module.exp

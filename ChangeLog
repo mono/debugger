@@ -1,3 +1,9 @@
+2004-06-03  Martin Baulig  <martin@ximian.com>
+
+	* test/TestInvocation.cs: New file.
+
+	* test/mono-debugger.tests/TestInvocation.exp: New test.
+
 2004-06-02  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.8 "Wrightsville Beach" of the Mono Debugger :-)

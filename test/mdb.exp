@@ -181,7 +181,7 @@ proc mdb_expect_breakpoint {} {
     return index
 }
 
-proc mdb_expect {text} {
+proc mdb_expect_line {text} {
     expect {
 	-re {^([^\n\r]+)[\n\r]+} {
 	    set line $expect_out(1,string)
@@ -195,6 +195,10 @@ proc mdb_expect {text} {
 	    return -1
 	}
     }
+}
+
+proc mdb_expect {text} {
+    mdb_expect_line $text
     mdb_expect_prompt
 }
 

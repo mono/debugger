@@ -1,0 +1,37 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set file $srcdir/TestInvocation.cs
+mdb_start "TestInvocation.exe"
+mdb_expect_frame 0 "X.Main()" $file 39
+mdb_send "break 31"
+set breakpoint [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_stopped 0 "X.Test(System.Int32,System.String)" $file 31
+mdb_send "print a"
+mdb_expect "5"
+mdb_send "print Hello (4)"
+mdb_expect_line "Hello: 4"
+mdb_expect "16"
+#mdb_send "print Hello (a)"
+#mdb_expect_line "Hello: 5"
+#mdb_expect "20"
+mdb_send "print Foo (4)"
+mdb_expect_line "Foo: 4"
+mdb_expect "8"
+mdb_send "print Foo (\"Hello World\")"
+mdb_expect_line "Foo with a string: Hello World"
+mdb_expect "\"Returned Hello World\""
+mdb_send "print Foo (b)"
+mdb_expect_line "Foo with a string: Hello World"
+mdb_expect "\"Returned Hello World\""
+mdb_send "print StaticHello (4)"
+mdb_expect_line "Static Hello: 4"
+mdb_expect "32"
+mdb_send "print StaticHello (Hello (4))"
+mdb_expect_line "Hello: 4"
+mdb_expect_line "Static Hello: 16"
+mdb_expect "128"
+mdb_send "quit"
