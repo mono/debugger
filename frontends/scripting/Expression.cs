@@ -338,7 +338,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Expression("source_expression", "Source file expression")]
+	[Expression("source_expression", "Source file expression",
+		    "Specifies a location in the source code.\n\n" +
+		    "Syntax:  [<frame_expression>] IDENTIFIER [':' INTEGER]\n\n" +
+		    "This is used when debugging managed application.  It is used to search\n" +
+		    "a method in the current class.\n\n" +
+		    "Searches for a method with the requested name in the current class.\n" +
+		    "If more than one method is found, all of them are printed and added to\n" +
+		    "the history.  If just one single method is found, the optional line\n" +
+		    "number specifies a specific line in that method.\n\n" +
+		    "Examples:  Test\n" +
+		    "           Test : 45\n\n" +
+		    "Syntax:  STRING\n\n" +
+		    "A fully qualified method name.\n\n" +
+		    "Examples:  \"X.Foo()\"\n" +
+		    "           \"unmanaged_function\"\n\n" +
+		    "Syntax:  STRING ':' INTEGER\n\n" +
+		    "File name and line number.\n\n" +
+		    "Example:   \"Foo.cs\" : 45\n\n" +
+		    "Syntax:  ! INTEGER\n\n" +
+		    "Specifies an entry from the search history.\n\n")]
 	public class SourceExpression : Expression
 	{
 		FrameExpression frame_expr;

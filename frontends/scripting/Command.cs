@@ -115,7 +115,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("PROCESS", "Select current process")]
+	[Command("PROCESS", "Select current process",
+		 "Without argument, print the current process.\n\n" +
+		 "With a process argument, make that process the current process.\n" +
+		 "This is the process which is used if you do not explicitly specify\n" +
+		 "a process (see `help process_expression' for details).\n")]
 	public class SelectProcessCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -132,7 +136,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("BACKGROUND", "Run process in background")]
+	[Command("BACKGROUND", "Run process in background",
+		 "Resumes execution of the selected process, but does not wait for it.\n\n" +
+		 "The difference to `continue' is that `continue' waits until the process\n" +
+		 "stops again (for instance, because it hit a breakpoint or received a signal)\n" +
+		 "while this command just lets the process running.  Note that the process\n" +
+		 "still stops if it hits a breakpoint.\n")]
 	public class BackgroundProcessCommand : Command
 	{
 		ProcessExpression process_expr;
