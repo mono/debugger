@@ -1,5 +1,12 @@
 2003-03-21  Martin Baulig  <martin@ximian.com>
 
+	* classes/Module.cs (HasDebuggingInfo): New public property.
+
+	* frontends/scripting/ScriptingContext.cs (ShowModules): Ignore
+	modules without debugging info.
+
+2003-03-21  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs (StepNativeInstruction):
 	New public method.  Steps one machine instruction and always
 	enters all method calls, including trampolines.

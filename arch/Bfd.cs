@@ -598,6 +598,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public bool HasDebuggingInfo {
+			get {
+				return GetSectionByName (".debug_info", false) != null;
+			}
+		}
+
 		//
 		// ISymbolContainer
 		//

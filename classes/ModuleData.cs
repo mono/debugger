@@ -39,6 +39,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract bool HasDebuggingInfo {
+			get;
+		}
+
 		protected internal abstract void ReadModuleData ();
 
 		public abstract SourceMethod FindMethod (string name);

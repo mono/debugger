@@ -14,6 +14,7 @@ namespace Mono.Debugger.Architecture
 	{
 		Bfd bfd;
 		bool dwarf_loaded;
+		bool has_debugging_info;
 		DwarfReader dwarf;
 		Module module;
 		bool is_library;
@@ -32,6 +33,8 @@ namespace Mono.Debugger.Architecture
 				end = bfd.EndAddress;
 				is_library = true;
 			}
+
+			has_debugging_info = bfd.HasDebuggingInfo;
 
 			module.ModuleData = this;
 
@@ -85,6 +88,10 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
+		public override bool HasDebuggingInfo {
+			get { return has_debugging_info; }
+		}
+
 		void load_dwarf ()
 		{
 			if (dwarf_loaded)
@@ -99,8 +106,10 @@ namespace Mono.Debugger.Architecture
 
 			dwarf_loaded = true;
 
-			if (dwarf != null)
+			if (dwarf != null) {
+				has_debugging_info = true;
 				OnSymbolsLoadedEvent ();
+			}
 		}
 
 		void unload_dwarf ()

@@ -584,6 +584,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			Module module;
 			bool symbols_loaded;
+			bool has_debugging_info;
 			MonoSymbolTableReader reader;
 
 			public MonoModule (Module module, string name, MonoSymbolTableReader reader)
@@ -593,6 +594,8 @@ namespace Mono.Debugger.Languages.CSharp
 				this.reader = reader;
 
 				module.ModuleData = this;
+
+				has_debugging_info = reader.File != null;
 
 				module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
 				symbols_loaded = module.LoadSymbols;
@@ -617,6 +620,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override SourceFile[] Sources {
 				get { return reader.GetSources (); }
+			}
+
+			public override bool HasDebuggingInfo {
+				get { return has_debugging_info; }
 			}
 
 			protected override void ReadModuleData ()

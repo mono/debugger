@@ -187,6 +187,22 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Returns whether this module has debugging info.
+		//   Note that this property is initialized when trying to read the debugging
+		//   info for the first time.
+		// </summary>
+		public bool HasDebuggingInfo {
+			get {
+				lock (this) {
+					if (module_data == null)
+						return false;
+
+					return module_data.HasDebuggingInfo;
+				}
+			}
+		}
+
+		// <summary>
 		//   This event is emitted when the module is loaded.
 		// </summary>
 		public event ModuleEventHandler ModuleLoadedEvent;
