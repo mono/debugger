@@ -3,3 +3,4 @@ Makefile
 Debugger.exe.config
 *.dll
 a.out
+Interpreter.exe.config

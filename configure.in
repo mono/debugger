@@ -109,4 +109,5 @@ frontends/scripting/Makefile
 arch/Makefile
 test/Makefile
 test/Debugger.exe.config
+test/Interpreter.exe.config
 ])
