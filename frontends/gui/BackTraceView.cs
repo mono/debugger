@@ -22,7 +22,7 @@ namespace Mono.Debugger.GUI
 			tree = new TreeView (store);
 
 			tree.HeadersVisible = true;
-
+			tree.RulesHint = true;
 			TreeViewColumn IdCol = new TreeViewColumn ();
 			CellRenderer IdRenderer = new CellRendererText ();
 			IdCol.Title = "#ID";
@@ -59,7 +59,7 @@ namespace Mono.Debugger.GUI
 		{
 			base.SetBackend (backend);
 			
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
+ backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 		

@@ -28,7 +28,8 @@ namespace Mono.Debugger.GUI
 			tree = new TreeView (store);
 
 			tree.HeadersVisible = true;
-
+			tree.RulesHint = true;
+			
 			TreeViewColumn IdCol = new TreeViewColumn ();
 			CellRenderer IdRenderer = new CellRendererText ();
 			IdCol.Title = "ID";

@@ -28,7 +28,7 @@ namespace Mono.Debugger.GUI
 					       (int)TypeFundamentals.TypeString);
 
 			tree = new TreeView (store);
-
+			tree.RulesHint = true;
 			tree.HeadersVisible = true;
 
 			TreeViewColumn NameCol = new TreeViewColumn ();
