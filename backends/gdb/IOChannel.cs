@@ -126,5 +126,47 @@ namespace GLib {
 			}
 		}
 	}
-}
 
+	public delegate bool GSourceFunc ();
+
+	public class IdleHandler : IDisposable
+	{
+		uint tag;
+
+		public IdleHandler (GSourceFunc source_func)
+		{
+			tag = g_idle_add (source_func, IntPtr.Zero);
+		}
+
+		[DllImport("glib-2.0")]
+		static extern uint g_idle_add (GSourceFunc func, IntPtr data);
+
+		[DllImport("glib-2.0")]
+		static extern void g_source_remove (uint tag);
+
+		private bool disposed = false;
+
+		protected virtual void Dispose (bool disposing)
+		{
+			if (!disposed) {
+				if (disposing) {
+					g_source_remove (tag);
+				}
+				
+				disposed = true;
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~IdleHandler ()
+		{
+			Dispose (false);
+		}
+	}
+}

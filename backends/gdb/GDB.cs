@@ -26,9 +26,6 @@ namespace Mono.Debugger.Backends
 		IOInputChannel gdb_output;
 		IOInputChannel gdb_errors;
 
-		Thread gdb_output_thread;
-		Thread gdb_error_thread;
-
 		Hashtable symbols;
 		Hashtable breakpoints;
 
@@ -37,10 +34,11 @@ namespace Mono.Debugger.Backends
 		ISourceFileFactory source_file_factory;
 
 		bool gdb_event = false;
+		bool main_iteration_running = false;
+
+		IdleHandler idle_handler = null;
 
 		IArchitecture arch;
-
-		bool continue_stepping = false;
 
 		ArrayList symtabs;
 
@@ -89,7 +87,7 @@ namespace Mono.Debugger.Backends
 			target_integer_size = ReadInteger ("print sizeof (long)");
 			target_long_integer_size = ReadInteger ("print sizeof (long long)");
 
-			send_gdb_command ("set prompt");
+			gdb_input.WriteLine ("set prompt");
 		}
 
 		//
@@ -131,7 +129,8 @@ namespace Mono.Debugger.Backends
 
 		public void Frame ()
 		{
-			gdb_input.WriteLine ("frame");
+			current_frame = null;
+			send_gdb_command ("frame");
 		}
 
 		public void Step ()
@@ -436,17 +435,15 @@ namespace Mono.Debugger.Backends
 		enum StepMode {
 			RUN,
 			STEP_ONE,
-			STEP_LINE,
-			STEP_LINE_2
+			STEP_LINE
 		}
 
-		long step_start = 0;
-		int step_range = 0;
 		StepMode step_mode = StepMode.STEP_ONE;
 
 		WaitForOutput wait_for = WaitForOutput.UNKNOWN;
 
 		StackFrame current_frame = null;
+		StackFrame new_frame = null;
 		string source_file = null;
 
 		byte last_byte_value;
@@ -458,11 +455,14 @@ namespace Mono.Debugger.Backends
 
 		void UpdateSymbolFiles ()
 		{
-			long address = ReadAddress ("call /a mono_debugger_internal_get_symbol_files ()");
+			symtabs = new ArrayList ();
+
+			long original = ReadAddress ("call /a mono_debugger_internal_get_symbol_files ()");
+			long address = original;
 			long version = ReadInteger (address);
 
 			long start, offset, size;
-			address += target_address_size;
+			address += 2 * target_address_size;
 
 			while (true) {
 				start = ReadAddress (address);
@@ -485,6 +485,22 @@ namespace Mono.Debugger.Backends
 
 				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
 			}
+
+			send_gdb_command ("call mono_debugger_internal_free_symbol_files (" + original + ")");
+		}
+
+		public bool IdleHandler ()
+		{
+			if (main_iteration_running)
+				return true;
+
+			if (new_frame != current_frame) {
+				frame_changed ();
+				current_frame = new_frame;
+			}
+
+			idle_handler = null;
+			return false;
 		}
 
 		public byte ReadByte (long address)
@@ -595,20 +611,33 @@ namespace Mono.Debugger.Backends
 			return new BinaryReader (stream);
 		}
 
-		void frame_changed (StackFrame frame)
+		void frame_changed ()
 		{
+		again:
 			bool send_event = false;
 
+			uint modified = ReadInteger ("print/u mono_debugger_internal_symbol_files_changed");
+
+			if (modified != 0)
+				UpdateSymbolFiles ();
+
 			foreach (ISymbolTable symtab in symtabs) {
-				ISourceLocation source = symtab.Lookup (frame.TargetLocation);
+				ISourceLocation source = symtab.Lookup (new_frame.TargetLocation);
 
 				if (source != null) {
-					current_frame.SourceLocation = source;
+					new_frame.SourceLocation = source;
 					break;
 				}
 			}
 
-			long address = current_frame.TargetLocation.Address;
+			int step_range = 0;
+			long start_address = 0;
+			if (current_frame != null) {
+				start_address = current_frame.TargetLocation.Address;
+				step_range = current_frame.SourceLocation.SourceRange;
+			}
+
+			long address = new_frame.TargetLocation.Address;
 
 			switch (step_mode) {
 			case StepMode.RUN:
@@ -616,28 +645,21 @@ namespace Mono.Debugger.Backends
 				send_event = true;
 				break;
 
-			case StepMode.STEP_LINE_2:				
 			case StepMode.STEP_LINE:
-				Console.WriteLine ("CHECK: " + address + " " + step_start + " " +
-						   step_range + " " + (step_start + step_range - address));
-
-				if ((address < step_start) || (address >= step_start + step_range)) {
+				if ((address < start_address) || (address >= start_address + step_range)) {
 					send_event = true;
 					break;
 				}
 
-				Console.WriteLine ("CONTINE!");
-
-				continue_stepping = true;
-
-				break;
+				start_target ("stepi", StepMode.STEP_LINE);
+				goto again;
 
 			default:
 				break;
 			}
 
 			if (send_event && (current_frame_event != null))
-				current_frame_event (frame);
+				current_frame_event (new_frame);
 		}
 
 		void HandleAnnotation (string annotation, string[] args)
@@ -674,16 +696,16 @@ namespace Mono.Debugger.Backends
 
 			case "frame-begin":
 				wait_for = WaitForOutput.FRAME;
-				current_frame = new StackFrame ();
+				new_frame = new StackFrame ();
+				break;
+
+			case "frame-end":
+				if (idle_handler == null)
+					idle_handler = new IdleHandler (new GSourceFunc (IdleHandler));
 				break;
 
 			case "frame-address":
 				wait_for = WaitForOutput.FRAME_ADDRESS;
-				break;
-
-			case "frame-end":
-				if (current_frame != null)
-					frame_changed (current_frame);
 				break;
 
 			case "frames-invalid":
@@ -829,11 +851,11 @@ namespace Mono.Debugger.Backends
 
 			case WaitForOutput.FRAME_ADDRESS:
 				wait_for = WaitForOutput.FRAME;
-				if (current_frame == null)
+				if (new_frame == null)
 					break;
 
 				try {
-					current_frame.TargetLocation.Address = Int64.Parse (
+					new_frame.TargetLocation.Address = Int64.Parse (
 						line.Substring (2), NumberStyles.HexNumber);
 					return true;
 				} catch {
@@ -936,19 +958,7 @@ namespace Mono.Debugger.Backends
 		{
 			step_mode = mode;
 
-			if (mode != StepMode.STEP_LINE_2) {
-				step_start = 0;
-				step_range = 0;
-
-				if (current_frame != null) {
-					step_start = current_frame.TargetLocation.Address;
-					if (current_frame.SourceLocation != null)
-						step_range = current_frame.SourceLocation.SourceRange;
-				}
-			}
-
-			if (((mode == StepMode.STEP_LINE) || (mode == StepMode.STEP_LINE_2)) &&
-			    (current_frame != null)) {
+			if ((mode == StepMode.STEP_LINE) && (current_frame != null)) {
 				long address = current_frame.TargetLocation.Address;
 				long call_target = arch.GetCallTarget (this, address);
 
@@ -959,7 +969,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			current_frame = null;
+			new_frame = null;
 			send_gdb_command (command);
 		}
 
@@ -990,17 +1000,21 @@ namespace Mono.Debugger.Backends
 
 		void check_gdb_output (string line)
 		{
+			// Console.WriteLine ("OUTPUT: {0}", line);
 			check_gdb_output (line, false);
 		}
 
 		void check_gdb_errors (string line)
 		{
+			// Console.WriteLine ("ERROR: {0}", line);
 			check_gdb_output (line, true);
 		}
 
 		void MainIteration ()
 		{
+			main_iteration_running = true;
 			g_main_context_iteration (IntPtr.Zero, true);
+			main_iteration_running = false;
 		}
 
 		[DllImport("glib-2.0")]
@@ -1021,9 +1035,6 @@ namespace Mono.Debugger.Backends
 				if (disposing) {
 					// Do stuff here
 					Quit ();
-
-					gdb_output_thread.Abort ();
-					gdb_error_thread.Abort ();
 				}
 				
 				// Release unmanaged resources

@@ -47,17 +47,12 @@ namespace Mono.Debugger
 			for (int idx = 0; idx < count; idx++) {
 				LineNumberEntry lne = method.LineNumbers [idx];
 
-				Console.WriteLine ("CHECK LINE: {0} {1}", address, lne);
-
 				if ((address > 1) && (lne.Address < address))
 					continue;
 
 				if (idx+1 < count) {
 					long next_address = method.LineNumbers [idx+1].Address;
 					source_range = (int) (next_address - address);
-					Console.WriteLine ("SOURCE RANGE: " + source_range + " " +
-							   address + " " + next_address + " " +
-							   lne.Address + " " + method.LineNumbers [idx+1]);
 					if (next_address == lne.Address)
 						continue;
 				}

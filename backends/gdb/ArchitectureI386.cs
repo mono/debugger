@@ -13,7 +13,6 @@ namespace Mono.Debugger
 
 			if (opcode == 0xe8) {
 				int target = backend.ReadSignedInteger (address + 1);
-				Console.WriteLine ("CALL: {0:x}", address + target);
 				return address + target;
 			}
 
