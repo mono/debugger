@@ -1,5 +1,12 @@
 2005-01-21  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs (SourceCommand.DoResolveExpression): don't
+	require that people use -instance for SourceCommand's (like break,
+	list, etc.) in order for instance methods to be included in the
+	search.  It should jfw.
+
+2005-01-21  Chris Toshok  <toshok@ximian.com>
+
 	* doc/Makefile.am (update): track proper location of
 	Mono.Debugger.dll.
 

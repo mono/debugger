@@ -1463,7 +1463,6 @@ namespace Mono.Debugger.Frontend
 	public abstract class SourceCommand : DebuggerCommand
 	{
 		int method_id = -1;
-		bool is_instance = false;
 		LocationType type = LocationType.Method;
 		protected SourceLocation location;
 
@@ -1492,11 +1491,6 @@ namespace Mono.Debugger.Frontend
 			set { type = LocationType.EventRemove; }
 		}
 
-		public bool Instance {
-			get { return is_instance; }
-			set { is_instance = value; }
-		}
-
 		protected bool DoResolveExpression (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
@@ -1505,7 +1499,7 @@ namespace Mono.Debugger.Frontend
 
 			MemberAccessExpression mexpr = expr as MemberAccessExpression;
 			if (mexpr != null)
-				expr = mexpr.ResolveMemberAccess (context, is_instance);
+				expr = mexpr.ResolveMemberAccess (context, true);
 			else
 				expr = expr.Resolve (context);
 			if (expr == null)
