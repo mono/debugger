@@ -16,6 +16,8 @@ namespace Mono.Debugger.Languages.CSharp
 		int num_fields, num_static_fields, num_properties, num_static_properties, num_methods, num_static_methods;
 		int num_ctors, field_info_size, static_field_info_size, property_info_size, static_property_info_size;
 		int method_info_size, static_method_info_size, ctor_info_size, parent;
+		int first_field, first_static_field, first_property, first_static_property;
+		int first_method, first_static_method;
 		long offset;
 
 		public readonly Type Type;
@@ -163,6 +165,60 @@ namespace Mono.Debugger.Languages.CSharp
 			return new MonoClassObject (this, location);
 		}
 
+		public int CountFields {
+			get {
+				if (Parent != null)
+					return Parent.CountFields + num_fields;
+				else
+					return num_fields;
+			}
+		}
+
+		public int CountStaticFields {
+			get {
+				if (Parent != null)
+					return Parent.CountStaticFields + num_static_fields;
+				else
+					return num_static_fields;
+			}
+		}
+
+		public int CountProperties {
+			get {
+				if (Parent != null)
+					return Parent.CountProperties + num_properties;
+				else
+					return num_properties;
+			}
+		}
+
+		public int CountStaticProperties {
+			get {
+				if (Parent != null)
+					return Parent.CountStaticProperties + num_static_properties;
+				else
+					return num_static_properties;
+			}
+		}
+
+		public int CountMethods {
+			get {
+				if (Parent != null)
+					return Parent.CountMethods + num_methods;
+				else
+					return num_methods;
+			}
+		}
+
+		public int CountStaticMethods {
+			get {
+				if (Parent != null)
+					return Parent.CountStaticMethods + num_static_methods;
+				else
+					return num_static_methods;
+			}
+		}
+
 		// <remarks>
 		//   We can't do this in the .ctor since a field may be of the current
 		//   classes type, but the .ctor is called before the current class is
@@ -184,8 +240,13 @@ namespace Mono.Debugger.Languages.CSharp
 					"Type.GetFields() returns {0} fields, but the JIT has {1}",
 					mono_fields.Length, num_fields);
 
+			if (Parent != null)
+				first_field = Parent.CountFields;
+
 			for (int i = 0; i < num_fields; i++)
-				fields [i] = new MonoFieldInfo (this, i, mono_fields [i], false, info, File);
+				fields [i] = new MonoFieldInfo (
+					this, first_field + i, mono_fields [i],
+					false, info, File);
 		}
 
 		ITargetFieldInfo[] ITargetStructType.Fields {
@@ -218,8 +279,13 @@ namespace Mono.Debugger.Languages.CSharp
 					"Type.GetFields() returns {0} fields, but the JIT has {1}",
 					mono_static_fields.Length, num_static_fields);
 
+			if (Parent != null)
+				first_static_field = Parent.CountStaticFields;
+
 			for (int i = 0; i < num_static_fields; i++)
-				static_fields [i] = new MonoFieldInfo (this, i, mono_static_fields [i], true, info, File);
+				static_fields [i] = new MonoFieldInfo (
+					this, first_static_field + i, mono_static_fields [i],
+					true, info, File);
 		}
 
 		ITargetFieldInfo[] ITargetStructType.StaticFields {
@@ -327,6 +393,10 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			init_fields ();
 
+			if (index < first_field)
+				return Parent.GetField (location, index);
+			index -= first_field;
+
 			try {
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					fields [index].Offset, fields [index].Type.IsByRef);
@@ -340,6 +410,10 @@ namespace Mono.Debugger.Languages.CSharp
 		public ITargetObject GetStaticField (StackFrame frame, int index)
 		{
 			init_static_fields ();
+
+			if (index < first_static_field)
+				return Parent.GetStaticField (frame, index);
+			index -= first_static_field;
 
 			try {
 				TargetAddress data_address = frame.CallMethod (
@@ -369,8 +443,13 @@ namespace Mono.Debugger.Languages.CSharp
 					"Type.GetProperties() returns {0} properties, but the JIT has {1}",
 					mono_properties.Length, num_properties);
 
+			if (Parent != null)
+				first_property = Parent.CountProperties;
+
 			for (int i = 0; i < num_properties; i++)
-				properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], false, info, File);
+				properties [i] = new MonoPropertyInfo (
+					this, first_property + i, mono_properties [i],
+					false, info, File);
 		}
 
 		ITargetPropertyInfo[] ITargetStructType.Properties {
@@ -405,8 +484,13 @@ namespace Mono.Debugger.Languages.CSharp
 					"Type.GetProperties() returns {0} properties, but the JIT has {1}",
 					mono_properties.Length, num_static_properties);
 
+			if (Parent != null)
+				first_static_property = Parent.CountStaticProperties;
+
 			for (int i = 0; i < num_static_properties; i++)
-				static_properties [i] = new MonoPropertyInfo (this, i, mono_properties [i], true, info, File);
+				static_properties [i] = new MonoPropertyInfo (
+					this, first_static_property + i, mono_properties [i],
+					true, info, File);
 		}
 
 		ITargetPropertyInfo[] ITargetStructType.StaticProperties {
@@ -494,14 +578,20 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			init_properties ();
 
-			return properties [index].Get (location);
+			if (index < first_property)
+				return Parent.GetProperty (location, index);
+
+			return properties [index - first_property].Get (location);
 		}
 
 		public ITargetObject GetStaticProperty (StackFrame frame, int index)
 		{
 			init_static_properties ();
 
-			return static_properties [index].Get (frame);
+			if (index < first_static_property)
+				return Parent.GetStaticProperty (frame, index);
+
+			return static_properties [index - first_static_property].Get (frame);
 		}
 
 		void init_methods ()
@@ -529,9 +619,13 @@ namespace Mono.Debugger.Languages.CSharp
 					"Type.GetMethods() returns {0} methods, but the JIT has {1}",
 					list.Count, num_methods);
 
+			if (Parent != null)
+				first_method = Parent.CountMethods;
+
 			for (int i = 0; i < num_methods; i++)
 				methods [i] = new MonoMethodInfo (
-					this, i, (R.MethodInfo) list [i], false, info, File);
+					this, first_method + i, (R.MethodInfo) list [i],
+					false, info, File);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.Methods {
@@ -573,9 +667,13 @@ namespace Mono.Debugger.Languages.CSharp
 					"Type.GetMethods() returns {0} methods, but the JIT has {1}",
 					list.Count, num_static_methods);
 
+			if (Parent != null)
+				first_static_method = Parent.CountStaticMethods;
+
 			for (int i = 0; i < num_static_methods; i++)
 				static_methods [i] = new MonoMethodInfo (
-					this, i, (R.MethodInfo) list [i], true, info, File);
+					this, first_static_method + i,
+					(R.MethodInfo) list [i], true, info, File);
 		}
 
 		ITargetMethodInfo[] ITargetStructType.StaticMethods {
@@ -681,8 +779,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			init_methods ();
 
+			if (index < first_method)
+				return Parent.GetMethod (location, index);
+
 			try {
-				return (ITargetFunctionObject) methods [index].FunctionType.GetObject (location);
+				return (ITargetFunctionObject) methods [index - first_method].FunctionType.GetObject (location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -692,8 +793,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			init_static_methods ();
 
+			if (index < first_static_method)
+				return Parent.GetStaticMethod (frame, index);
+
 			try {
-				return static_methods [index].FunctionType.GetStaticObject (frame);
+				return static_methods [index - first_static_method].FunctionType.GetStaticObject (frame);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
