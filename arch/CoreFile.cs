@@ -277,8 +277,17 @@ namespace Mono.Debugger.Architecture
 				return core.Disassembler.DisassembleMethod (Method);
 			}
 
-			public override bool RuntimeInvoke (TargetAddress method_argument, TargetAddress object_argument,
+			public override bool RuntimeInvoke (TargetAddress method_argument,
+							    TargetAddress object_argument,
 							    TargetAddress[] param_objects)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override TargetAddress RuntimeInvoke (TargetAddress method_arg,
+								     TargetAddress object_arg,
+								     TargetAddress[] param,
+								     out TargetAddress exc_obj)
 			{
 				throw new InvalidOperationException ();
 			}
@@ -395,13 +404,6 @@ namespace Mono.Debugger.Architecture
 		public override TargetMemoryArea[] GetMemoryMaps ()
 		{
 			return core_bfd.GetMemoryMaps ();
-		}
-
-		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
-							   TargetAddress object_argument, TargetAddress[] param_objects,
-							   out TargetAddress exc_object)
-		{
-			throw new InvalidOperationException ();
 		}
 
 		TargetAddress ITargetAccess.CallMethod (TargetAddress method, string argument)

@@ -622,6 +622,17 @@ public class SingleSteppingEngine : ThreadManager
 					(Type == OperationType.Initialize);
 			}
 		}
+
+		public override string ToString ()
+		{
+			if (StepFrame != null)
+				return String.Format ("Operation ({0}:{1}:{2}:{3})",
+						      Type, Until, StepMode, StepFrame);
+			else if (!Until.IsNull)
+				return String.Format ("Operation ({0}:{1})", Type, Until);
+			else
+				return String.Format ("Operation ({0})", Type);
+		}
 	}
 
 	protected enum OperationType {
@@ -1039,6 +1050,8 @@ public class SingleSteppingEngine : ThreadManager
 			}
 
 			TargetEventArgs result = process_child_event (cevent);
+			Report.Debug (DebugFlags.EventLoop, "SSE {0} got result: {1} {2}",
+				      this, result, current_operation);
 
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
@@ -1055,7 +1068,6 @@ public class SingleSteppingEngine : ThreadManager
 				if (current_operation.Type == OperationType.Initialize) {
 					if (is_main)
 						sse.Initialize (inferior);
-					step_operation_finished ();
 				} else if (!DoStep (false))
 					return false;
 			}
@@ -1079,7 +1091,6 @@ public class SingleSteppingEngine : ThreadManager
 			// stopped within a method's prologue or epilogue code.
 			Operation new_operation = frame_changed (frame, 0, current_operation);
 			if (new_operation != null) {
-				Console.WriteLine ("NEW OPERATION: {0}", new_operation);
 				ProcessCommand (new_operation);
 				return false;
 			}
@@ -1362,8 +1373,11 @@ public class SingleSteppingEngine : ThreadManager
 				// currently running.
 				Operation new_operation = check_method_operation (
 					address, current_method, source, operation);
-				if (new_operation != null)
+				if (new_operation != null) {
+					Report.Debug (DebugFlags.EventLoop,
+						      "New operation: {0}", new_operation);
 					return new_operation;
+				}
 
 				current_frame = CreateFrame (
 					address, 0, frames [0], null, source, current_method);
@@ -1721,9 +1735,9 @@ public class SingleSteppingEngine : ThreadManager
 				return false;
 			}
 
-			ret = current_callback.Func (
-				current_callback, cevent.Data1, cevent.Data2);
+			Callback cb = current_callback;
 			current_callback = null;
+			ret = cb.Func (cb, cevent.Data1, cevent.Data2);
 			return true;
 		}
 
@@ -1797,7 +1811,9 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			TargetAddress invoke = new TargetAddress (sse.AddressDomain, data1);
 
-			insert_temporary_breakpoint (invoke);
+			Report.Debug (DebugFlags.EventLoop, "Runtime invoke: {0}", invoke);
+
+			// insert_temporary_breakpoint (invoke);
 
 			do_callback (new Callback (
 				new CallMethodData ((RuntimeInvokeData) cb.Data.Data),
@@ -1810,6 +1826,10 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			RuntimeInvokeData rdata = (RuntimeInvokeData) cb.Data.Data;
 
+			Report.Debug (DebugFlags.EventLoop,
+				      "Runtime invoke done: {0:x} {1:x}",
+				      data1, data2);
+
 			rdata.InvokeOk = true;
 			rdata.ReturnObject = new TargetAddress (inferior.AddressDomain, data1);
 			if (data2 != 0)
@@ -1817,6 +1837,8 @@ public class SingleSteppingEngine : ThreadManager
 			else
 				rdata.ExceptionObject = TargetAddress.Null;
 
+			frame_changed (inferior.CurrentFrame, 0, null);
+			sse.SetCompleted ();
 			return true;
 		}
 
@@ -1828,10 +1850,9 @@ public class SingleSteppingEngine : ThreadManager
 
 		bool callback_call_method (Callback cb, long data1, long data2)
 		{
-			Console.WriteLine ("METHOD CALLED: {0} {1}", data1, data2);
-
 			cb.Data.Result = data1;
 
+			sse.SetCompleted ();
 			return true;
 		}
 
@@ -1893,14 +1914,12 @@ public class SingleSteppingEngine : ThreadManager
 		public CallMethodData (RuntimeInvokeData rdata)
 		{
 			this.Type = CallMethodType.RuntimeInvoke;
-			this.Method = rdata.InvokeMethod;
 			this.Data = rdata;
 		}
 	}
 
 	protected sealed class RuntimeInvokeData
 	{
-		public readonly TargetAddress InvokeMethod;
 		public readonly ILanguageBackend Language;
 		public readonly TargetAddress MethodArgument;
 		public readonly TargetAddress ObjectArgument;
@@ -1910,21 +1929,12 @@ public class SingleSteppingEngine : ThreadManager
 		public TargetAddress ReturnObject;
 		public TargetAddress ExceptionObject;
 
-		public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
-					  TargetAddress object_argument, TargetAddress[] param_objects)
+		public RuntimeInvokeData (ILanguageBackend language,
+					  TargetAddress method_argument,
+					  TargetAddress object_argument,
+					  TargetAddress[] param_objects)
 		{
 			this.Language = language;
-			this.InvokeMethod = TargetAddress.Null;
-			this.MethodArgument = method_argument;
-			this.ObjectArgument = object_argument;
-			this.ParamObjects = param_objects;
-		}
-
-		public RuntimeInvokeData (TargetAddress invoke_method, TargetAddress method_argument,
-					  TargetAddress object_argument, TargetAddress[] param_objects)
-		{
-			this.Language = null;
-			this.InvokeMethod = invoke_method;
 			this.MethodArgument = method_argument;
 			this.ObjectArgument = object_argument;
 			this.ParamObjects = param_objects;
@@ -2491,29 +2501,24 @@ public class SingleSteppingEngine : ThreadManager
 			return new TargetAddress (inferior.AddressDomain, retval);
 		}
 
-		protected bool RuntimeInvoke (StackFrame frame, TargetAddress method_argument,
+		protected bool RuntimeInvoke (ILanguageBackend language,
+					      TargetAddress method_argument,
 					      TargetAddress object_argument,
 					      TargetAddress[] param_objects)
 		{
-			if ((frame == null) || (frame.Method == null))
-				throw new ArgumentException ();
-			ILanguageBackend language = frame.Method.Module.LanguageBackend as ILanguageBackend;
-			if (language == null)
-				throw new ArgumentException ();
-
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				language, method_argument, object_argument, param_objects);
 			return start_step_operation (new Operation (data), true);
 		}
 
-		public TargetAddress RuntimeInvoke (TargetAddress invoke_method,
-						    TargetAddress method_argument,
-						    TargetAddress object_argument,
-						    TargetAddress[] param_objects,
-						    out TargetAddress exc_object)
+		protected TargetAddress RuntimeInvoke (ILanguageBackend language,
+						       TargetAddress method_argument,
+						       TargetAddress object_argument,
+						       TargetAddress[] param_objects,
+						       out TargetAddress exc_object)
 		{
 			RuntimeInvokeData data = new RuntimeInvokeData (
-				invoke_method, method_argument, object_argument, param_objects);
+				language, method_argument, object_argument, param_objects);
 
 			call_method (data);
 			if (!data.InvokeOk)
@@ -2786,6 +2791,7 @@ public class SingleSteppingEngine : ThreadManager
 			Inferior.StackFrame frame;
 			Backtrace backtrace;
 			ILanguage language;
+			ILanguageBackend lbackend;
 
 			Register[] registers;
 			bool has_registers;
@@ -2799,6 +2805,7 @@ public class SingleSteppingEngine : ThreadManager
 				this.frame = frame;
 				this.backtrace = backtrace;
 				this.language = method.Module.Language;
+				this.lbackend = method.Module.LanguageBackend as ILanguageBackend;
 			}
 
 			public MyStackFrame (EngineProcess sse, TargetAddress address, int level,
@@ -2867,10 +2874,27 @@ public class SingleSteppingEngine : ThreadManager
 				return sse.DisassembleMethod (Method);
 			}
 
-			public override bool RuntimeInvoke (TargetAddress method_argument, TargetAddress object_argument,
+			public override bool RuntimeInvoke (TargetAddress method_argument,
+							    TargetAddress object_argument,
 							    TargetAddress[] param_objects)
 			{
-				return sse.RuntimeInvoke (this, method_argument, object_argument, param_objects);
+				if (lbackend == null)
+					throw new InvalidOperationException ();
+
+				return sse.RuntimeInvoke (lbackend, method_argument,
+							  object_argument, param_objects);
+			}
+
+			public override TargetAddress RuntimeInvoke (TargetAddress method_arg,
+								     TargetAddress object_arg,
+								     TargetAddress[] param,
+								     out TargetAddress exc_obj)
+			{
+				if (lbackend == null)
+					throw new InvalidOperationException ();
+
+				return sse.RuntimeInvoke (lbackend, method_arg,
+							  object_arg, param, out exc_obj);
 			}
 		}
 

@@ -160,8 +160,8 @@ namespace Mono.Debugger.Languages.CSharp
 				return null;
 			}
 
-			TargetAddress retval = frame.TargetAccess.RuntimeInvoke (
-				runtime_invoke, method, this_object, arg_ptr, out exc_object);
+			TargetAddress retval = frame.RuntimeInvoke (
+				method, this_object, arg_ptr, out exc_object);
 
 			if (retval.IsNull) {
 				if (exc_object.IsNull)

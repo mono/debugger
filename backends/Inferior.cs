@@ -346,13 +346,6 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
-		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_address, TargetAddress method_argument,
-							   TargetAddress object_argument, TargetAddress[] param_objects,
-							   out TargetAddress exc_object)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public int InsertBreakpoint (TargetAddress address)
 		{
 			int retval;

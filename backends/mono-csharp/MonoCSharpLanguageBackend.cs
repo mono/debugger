@@ -1718,6 +1718,7 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress notification_address;
 		bool initialized;
 		ManualResetEvent reload_event;
+		Mutex mutex;
 		protected MonoSymbolTable table;
 		Heap heap;
 
@@ -1728,6 +1729,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			breakpoints = new Hashtable ();
 			reload_event = new ManualResetEvent (false);
+
+			mutex = new Mutex ();
 
 			process.TargetExitedEvent += new TargetExitedHandler (child_exited);
 		}
@@ -1950,11 +1953,11 @@ namespace Mono.Debugger.Languages.CSharp
 		internal int LookupType (ITargetAccess target, string name)
 		{
 			int offset;
-			lock (this) {
-				reload_event.Reset ();
-				offset = (int) target.CallMethod (info.LookupType, name).Address;
-			}
+			mutex.WaitOne ();
+			reload_event.Reset ();
+			offset = (int) target.CallMethod (info.LookupType, name).Address;
 			reload_event.WaitOne ();
+			mutex.ReleaseMutex ();
 			return offset;
 		}
 
