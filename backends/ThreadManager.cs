@@ -424,6 +424,8 @@ namespace Mono.Debugger
 
 		internal void RequestWait ()
 		{
+			if (current_event != null)
+				throw new InvalidOperationException ();
 			wait_event.Set ();
 		}
 
@@ -517,6 +519,9 @@ namespace Mono.Debugger
 			lock (this) {
 				event_engine = current_event;
 				status = current_event_status;
+
+				current_event = null;
+				current_event_status = 0;
 			}
 
 			if (event_engine != null) {
@@ -529,8 +534,6 @@ namespace Mono.Debugger
 				}
 
 				lock (this) {
-					current_event = null;
-					current_event_status = 0;
 					wait_event.Set ();
 				}
 
