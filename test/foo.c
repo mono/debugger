@@ -4,6 +4,7 @@
 void
 hello (const char *message, int a, long b)
 {
+	char *test;
 	printf ("Hello World: %s - %d - %ld!", message, a, b);
 }
 

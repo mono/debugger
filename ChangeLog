@@ -1,3 +1,9 @@
+2003-02-27  Martin Baulig  <martin@ximian.com>
+
+	* backends/native/NativeStringObject.cs (ReadString): Quote
+	non-printable characters in the returned string, read at most
+	MaximumDynamicSize chars.
+
 2003-02-26  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs (check_method_operation):
