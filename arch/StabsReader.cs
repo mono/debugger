@@ -394,8 +394,11 @@ namespace Mono.Debugger.Architecture
 						   mname, mbits, moffs, type,
 						   def.Substring (pos));
 
+				int doffs = moffs >> 3;
+				int boffs = moffs % 8;
+
 				NativeFieldInfo field = new NativeFieldInfo (
-					type, mname, members.Count, moffs, mbits);
+					type, mname, members.Count, doffs, boffs, mbits);
 				members.Add (field);
 			}
 

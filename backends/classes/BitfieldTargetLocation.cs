@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
@@ -32,12 +33,27 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
+		private string Print (bool[] data)
+		{
+			StringBuilder sb = new StringBuilder ("[");
+			for (int i = 0; i < data.Length; i++) {
+				if ((i > 0) && ((i % 8) == 0))
+					sb.Append (" ");
+				sb.Append (data [i] ? "1" : "0");
+			}
+			return sb.ToString ();
+		}
+
 		public override ITargetMemoryReader ReadMemory (int size)
 		{
 			byte[] data = relative_to.ReadBuffer (size);
 
-			bool[] bit_data = new bool [8 * data.Length];
-			bool[] target_bits = new bool [8 * data.Length];
+			int total_size = 8 * data.Length;
+			bool[] bit_data = new bool [total_size];
+			bool[] target_bits = new bool [total_size];
+
+			// FIXME
+			bool is_bigendian = false;
 
 			int bit_pos = 0;
 			for (int i = 0; i < data.Length; i++) {
@@ -47,8 +63,8 @@ namespace Mono.Debugger.Languages
 			}
 
 			bit_pos = 0;
-			if (bit_offset + bit_size > target_bits.Length)
-				bit_size = target_bits.Length - bit_offset;
+			if (!is_bigendian)
+				bit_offset = total_size - bit_offset - bit_size;
 
 			for (int i = bit_offset; i < bit_offset + bit_size; i++)
 				target_bits [bit_pos++] = bit_data [i];

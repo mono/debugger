@@ -58,6 +58,7 @@ namespace Mono.Debugger.Languages.Native
 	{
 		int offset;
 		int bit_offset, bit_size;
+		bool is_bitfield;
 
 		public NativeFieldInfo (NativeType type, string name, int index, int offset)
 			: base (type, name, index, false)
@@ -65,13 +66,13 @@ namespace Mono.Debugger.Languages.Native
 			this.offset = offset;
 		}
 
-		public NativeFieldInfo (NativeType type, string name, int index,
-					int global_bit_offset, int bit_size)
-			: base (type, name, index, false)
+		public NativeFieldInfo (NativeType type, string name, int index, int offset,
+					int bit_offset, int bit_size)
+			: this (type, name, index, offset)
 		{
-			this.offset = global_bit_offset >> 3;
-			this.bit_offset = global_bit_offset % 8;
+			this.bit_offset = bit_offset;
 			this.bit_size = bit_size;
+			this.is_bitfield = true;
 		}
 
 		public int Offset {
@@ -94,7 +95,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public bool IsBitfield {
 			get {
-				return ((bit_offset % 8) != 0) || ((bit_size % 8) != 0);
+				return is_bitfield;
 			}
 		}
 	}

@@ -705,6 +705,7 @@ namespace Mono.Debugger.Architecture
 			structure_type		= 0x13,
 			subroutine_type		= 0x15,
 			typedef			= 0x16,
+			union_type		= 0x17,
 			comp_dir		= 0x1b,
 			inheritance		= 0x1c,
 			subrange_type		= 0x21,
@@ -1652,6 +1653,9 @@ namespace Mono.Debugger.Architecture
 					return new DiePointerType (reader, comp_unit, offset, abbrev);
 
 				case DwarfTag.structure_type:
+					return new DieStructureType (reader, comp_unit, offset, abbrev);
+
+				case DwarfTag.union_type:
 					return new DieStructureType (reader, comp_unit, offset, abbrev);
 
 				case DwarfTag.typedef:
@@ -2805,14 +2809,12 @@ namespace Mono.Debugger.Architecture
 						mtype = NativeType.VoidType;
 
 					NativeFieldInfo field;
-					if (member.IsBitfield) {
-						int offset = member.DataOffset * 8 +
-							member.BitOffset;
-
+					if (member.IsBitfield)
 						field = new NativeFieldInfo (
 							mtype, member.Name, list.Count,
-							offset, member.BitSize);
-					} else
+							member.DataOffset, member.BitOffset,
+							member.BitSize);
+					else
 						field = new NativeFieldInfo (
 							mtype, member.Name, list.Count,
 							member.DataOffset);
