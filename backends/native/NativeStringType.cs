@@ -3,25 +3,17 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeStringType : NativeType, ITargetFundamentalType
+	internal class NativeStringType : NativeFundamentalType
 	{
 		static int max_string_length = 100;
 
 		public NativeStringType (int size)
-			: base ("char *", TargetObjectKind.Fundamental, size)
-		{
-			this.type_handle = typeof (string);
-		}
+			: base ("char *", typeof (string), size)
+		{ }
 
 		public override bool IsByRef {
 			get {
 				return true;
-			}
-		}
-
-		public Type Type {
-			get {
-				return typeof (string);
 			}
 		}
 

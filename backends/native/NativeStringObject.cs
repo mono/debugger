@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeStringObject : NativeObject, ITargetFundamentalObject
+	internal class NativeStringObject : NativeFundamentalObject
 	{
 		public NativeStringObject (NativeType type, TargetLocation location)
 			: base (type, location)
@@ -16,32 +16,13 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
-							out TargetLocation dynamic_location)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public static int ChunkSize {
 			get {
 				return 16;
 			}
 		}
 
-		public bool HasObject {
-			get {
-				return true;
-			}
-		}
-
-		public object Object {
-			get {
-				return GetObject ();
-			}
-		}
-
-		internal object GetObject ()
+		protected override object GetObject ()
 		{
 			try {
 				return ReadString (location.GetLocationAtOffset (0, true));

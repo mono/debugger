@@ -2116,7 +2116,7 @@ namespace Mono.Debugger.Architecture
 					if (!location.IsEof)
 						return null;
 
-					return new MonoVariableLocation (frame, false, (int) I386Register.EBP,
+					return new MonoVariableLocation (frame, true, (int) I386Register.EBP,
 									 offset, false, 0);
 				}
 

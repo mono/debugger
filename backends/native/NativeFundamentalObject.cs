@@ -28,7 +28,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		internal object GetObject ()
+		protected virtual object GetObject ()
 		{
 			try {
 				ITargetMemoryReader reader;
@@ -87,6 +87,11 @@ namespace Mono.Debugger.Languages.Native
 				throw new InvalidOperationException ();
 			}
 
+		}
+
+		public override string Print ()
+		{
+			return GetObject ().ToString ();
 		}
 	}
 }
