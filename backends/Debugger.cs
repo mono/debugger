@@ -619,6 +619,18 @@ namespace Mono.Debugger
 			return inferior.GetRegisters (registers);
 		}
 
+		public void SetRegister (int register, long value)
+		{
+			check_stopped ();
+			inferior.SetRegister (register, value);
+		}
+
+		public void SetRegisters (int[] registers, long[] values)
+		{
+			check_stopped ();
+			inferior.SetRegisters (registers, values);
+		}
+
 		public IDisassembler Disassembler {
 			get {
 				check_inferior ();

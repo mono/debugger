@@ -225,6 +225,15 @@ typedef struct {
 						       guint64          *values);
 
 	/*
+	 * Set processor registers.
+	 *
+	 */
+	ServerCommandError    (* set_registers)       (InferiorHandle   *handle,
+						       guint32           count,
+						       guint32          *registers,
+						       guint64          *values);
+
+	/*
 	 * Get backtrace.  This tries to return a partial backtrace if possible, so check the `count'
 	 * and `frames' values even on an error.
 	 */
@@ -380,6 +389,12 @@ mono_debugger_server_disable_breakpoints (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_get_registers       (ServerHandle        *handle,
+					  guint32              count,
+					  guint32             *registers,
+					  guint64             *values);
+
+ServerCommandError
+mono_debugger_server_set_registers       (ServerHandle        *handle,
 					  guint32              count,
 					  guint32             *registers,
 					  guint64             *values);

@@ -1,5 +1,13 @@
 2002-10-02  Martin Baulig  <martin@gnome.org>
 
+	* backends/IInferior.cs (IInferior.SetRegister, SetRegisters):
+	New methods to set registers.
+
+	* backends/Debugger.cs (DebuggerBackend.SetRegister, SetRegisters):
+	New methods to set registers.
+
+2002-10-02  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/ITargetStructType.cs (ITargetStructType.Methods):
 	New property to get the methods.
 	(ITargetMethodInfo): New interface to represent a method.

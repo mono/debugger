@@ -95,6 +95,9 @@ namespace Mono.Debugger.Backends
 		long[] GetRegisters (int[] registers);
 		TargetAddress GetReturnAddress ();
 
+		void SetRegister (int register, long value);
+		void SetRegisters (int[] registers, long[] values);
+
 		IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 
 		int InsertBreakpoint (TargetAddress address);

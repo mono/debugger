@@ -369,6 +369,16 @@ namespace Mono.Debugger.Architecture
 			throw new CannotExecuteCoreFileException ();
 		}
 
+		public void SetRegister (int register, long value)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public void SetRegisters (int[] registers, long[] values)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
 		//
 		// IDisposable
 		//

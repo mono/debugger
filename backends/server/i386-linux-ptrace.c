@@ -986,6 +986,78 @@ server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *reg
 }
 
 static ServerCommandError
+server_ptrace_set_registers (InferiorHandle *handle, guint32 count, guint32 *registers, guint64 *values)
+{
+	ServerCommandError result;
+	struct user_regs_struct regs;
+	int i;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	for (i = 0; i < count; i++) {
+		switch (registers [i]) {
+		case EBX:
+			regs.ebx = values [i];
+			break;
+		case ECX:
+			regs.ecx = values [i];
+			break;
+		case EDX:
+			regs.edx = values [i];
+			break;
+		case ESI:
+			regs.esi = values [i];
+			break;
+		case EDI:
+			regs.edi = values [i];
+			break;
+		case EBP:
+			regs.ebp = values [i];
+			break;
+		case EAX:
+			regs.eax = values [i];
+			break;
+		case DS:
+			regs.ds = values [i];
+			break;
+		case ES:
+			regs.es = values [i];
+			break;
+		case FS:
+			regs.fs = values [i];
+			break;
+		case GS:
+			regs.gs = values [i];
+			break;
+		case ORIG_EAX:
+			regs.orig_eax = values [i];
+			break;
+		case EIP:
+			regs.eip = values [i];
+			break;
+		case CS:
+			regs.cs = values [i];
+			break;
+		case EFL:
+			regs.eflags = values [i];
+			break;
+		case UESP:
+			regs.esp = values [i];
+			break;
+		case SS:
+			regs.ss = values [i];
+			break;
+		default:
+			return COMMAND_ERROR_UNKNOWN_REGISTER;
+		}
+	}
+
+	return set_registers (handle, &regs);
+}
+
+static ServerCommandError
 server_ptrace_get_frame (InferiorHandle *handle, guint32 eip, guint32 esp, guint32 ebp,
 			 guint32 *retaddr, guint32 *frame)
 {
@@ -1147,6 +1219,7 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_disable_all_breakpoints,
 	server_ptrace_get_breakpoints,
 	server_ptrace_get_registers,
+	server_ptrace_set_registers,
 	server_ptrace_get_backtrace,
 	server_ptrace_get_ret_address,
 	server_ptrace_stop

@@ -155,6 +155,9 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_set_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
@@ -926,6 +929,32 @@ namespace Mono.Debugger.Backends
 				long[] retval = new long [registers.Length];
 				Marshal.Copy (buffer, retval, 0, registers.Length);
 				return retval;
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+				if (buffer != IntPtr.Zero)
+					Marshal.FreeHGlobal (buffer);
+			}
+		}
+
+		public void SetRegister (int register, long value)
+		{
+			SetRegisters (new int[] { register }, new long[] { value });
+		}
+
+		public void SetRegisters (int[] registers, long[] values)
+		{
+			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;
+			try {
+				int size = registers.Length * 4;
+				int buffer_size = registers.Length * 8;
+				data = Marshal.AllocHGlobal (size);
+				Marshal.Copy (registers, 0, data, registers.Length);
+				buffer = Marshal.AllocHGlobal (buffer_size);
+				Marshal.Copy (values, 0, buffer, registers.Length);
+				CommandError result = mono_debugger_server_set_registers (
+					server_handle, registers.Length, data, buffer);
+				check_error (result);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);

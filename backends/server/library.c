@@ -287,6 +287,16 @@ mono_debugger_server_get_registers (ServerHandle *handle, guint32 count, guint32
 }
 
 ServerCommandError
+mono_debugger_server_set_registers (ServerHandle *handle, guint32 count, guint32 *registers,
+				    guint64 *values)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->set_registers) (handle->inferior, count, registers, values);
+}
+
+ServerCommandError
 mono_debugger_server_get_backtrace (ServerHandle *handle, gint32 max_frames, guint64 stop_address,
 				    guint32 *count, StackFrame **frames)
 {
