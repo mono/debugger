@@ -76,6 +76,7 @@ namespace Mono.Debugger.Backends
 
 		public int PID {
 			get {
+				check_disposed ();
 				return child_pid;
 			}
 		}
@@ -83,6 +84,7 @@ namespace Mono.Debugger.Backends
 		MonoDebuggerInfo mono_debugger_info = null;
 		public MonoDebuggerInfo MonoDebuggerInfo {
 			get {
+				check_disposed ();
 				return mono_debugger_info;
 			}
 		}
@@ -167,6 +169,7 @@ namespace Mono.Debugger.Backends
 		internal TargetAsyncResult call_method (ITargetLocation method, long method_argument,
 							TargetAsyncCallback callback, object user_data)
 		{
+			check_disposed ();
 			long number = ++last_callback_id;
 			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
 			pending_callbacks.Add (number, async);
@@ -183,6 +186,7 @@ namespace Mono.Debugger.Backends
 
 		public long CallMethod (ITargetLocation method, long method_argument)
 		{
+			check_disposed ();
 			TargetAsyncResult result = call_method (
 				method, method_argument, null, null);
 			mono_debugger_server_wait (server_handle);
@@ -461,6 +465,7 @@ namespace Mono.Debugger.Backends
 
 		public byte[] ReadBuffer (ITargetLocation location, int size)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = read_buffer (location, size);
@@ -474,6 +479,7 @@ namespace Mono.Debugger.Backends
 
 		public byte ReadByte (ITargetLocation location)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = read_buffer (location, 1);
@@ -485,6 +491,7 @@ namespace Mono.Debugger.Backends
 
 		public int ReadInteger (ITargetLocation location)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = read_buffer (location, 4);
@@ -496,6 +503,7 @@ namespace Mono.Debugger.Backends
 
 		public long ReadLongInteger (ITargetLocation location)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = read_buffer (location, 8);
@@ -507,6 +515,7 @@ namespace Mono.Debugger.Backends
 
 		public ITargetLocation ReadAddress (ITargetLocation location)
 		{
+			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
 				return new TargetLocation (ITargetMemoryAccess.ReadInteger (location));
@@ -522,6 +531,7 @@ namespace Mono.Debugger.Backends
 
 		public string ReadString (ITargetLocation location)
 		{
+			check_disposed ();
 			StringBuilder sb = new StringBuilder ();
 
 			ITargetLocation my_location = (ITargetLocation) location.Clone ();
@@ -539,12 +549,14 @@ namespace Mono.Debugger.Backends
 
 		public ITargetMemoryReader ReadMemory (ITargetLocation location, int size)
 		{
+			check_disposed ();
 			byte [] retval = ReadBuffer (location, size);
 			return new TargetReader (retval, target_info);
 		}
 
 		public Stream GetMemoryStream (ITargetLocation location)
 		{
+			check_disposed ();
 			return new TargetMemoryStream (this, location, target_info);
 		}
 
@@ -556,6 +568,7 @@ namespace Mono.Debugger.Backends
 
 		public void WriteBuffer (ITargetLocation location, byte[] buffer, int size)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = Marshal.AllocHGlobal (size);
@@ -570,6 +583,7 @@ namespace Mono.Debugger.Backends
 
 		public void WriteByte (ITargetLocation location, byte value)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = Marshal.AllocHGlobal (1);
@@ -584,6 +598,7 @@ namespace Mono.Debugger.Backends
 
 		public void WriteInteger (ITargetLocation location, int value)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = Marshal.AllocHGlobal (4);
@@ -598,6 +613,7 @@ namespace Mono.Debugger.Backends
 
 		public void WriteLongInteger (ITargetLocation location, long value)
 		{
+			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = Marshal.AllocHGlobal (8);
@@ -612,6 +628,7 @@ namespace Mono.Debugger.Backends
 
 		public void WriteAddress (ITargetLocation location, ITargetLocation address)
 		{
+			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
 				WriteInteger (location, (int) address.Address);
@@ -636,6 +653,7 @@ namespace Mono.Debugger.Backends
 		TargetState target_state = TargetState.NO_TARGET;
 		public TargetState State {
 			get {
+				check_disposed ();
 				return target_state;
 			}
 		}
@@ -656,6 +674,7 @@ namespace Mono.Debugger.Backends
 
 		public void Continue ()
 		{
+			check_disposed ();
 			TargetState old_state = change_target_state (TargetState.RUNNING);
 			try {
 				check_error (mono_debugger_server_continue (server_handle));
@@ -666,6 +685,7 @@ namespace Mono.Debugger.Backends
 
 		public void Continue (ITargetLocation location)
 		{
+			check_disposed ();
 			ITargetLocation current = CurrentFrame;
 
 			inferior_output (String.Format ("Requested to run from {0:x} until {1:x}.",
@@ -685,6 +705,7 @@ namespace Mono.Debugger.Backends
 
 		public void Detach ()
 		{
+			check_disposed ();
 			check_error (mono_debugger_server_detach (server_handle));
 		}
 
@@ -700,11 +721,13 @@ namespace Mono.Debugger.Backends
 
 		public void Step ()
 		{
+			check_disposed ();
 			Step (null);
 		}
 
 		public void Step (IStepFrame frame)
 		{
+			check_disposed ();
 			int insn_size;
 			ITargetLocation call = arch.GetCallTarget (CurrentFrame, out insn_size);
 			if (!native && !call.IsNull) {
@@ -759,6 +782,7 @@ namespace Mono.Debugger.Backends
 
 		public void Next ()
 		{
+			check_disposed ();
 			ITargetLocation location = CurrentFrame;
 			location.Offset += bfd_disassembler.GetInstructionSize (location);
 
@@ -769,6 +793,7 @@ namespace Mono.Debugger.Backends
 		public ITargetLocation CurrentFrame {
 			get {
 				long pc;
+				check_disposed ();
 				CommandError result = mono_debugger_server_get_pc (server_handle, out pc);
 				if (result != CommandError.NONE)
 					throw new NoStackException ();
@@ -779,12 +804,14 @@ namespace Mono.Debugger.Backends
 
 		public IDisassembler Disassembler {
 			get {
+				check_disposed ();
 				return bfd_disassembler;
 			}
 		}
 
 		public ISymbolTableCollection SymbolTables {
 			get {
+				check_disposed ();
 				return native_symtabs;
 			}
 		}
@@ -792,6 +819,12 @@ namespace Mono.Debugger.Backends
 		//
 		// IDisposable
 		//
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("Inferior");
+		}
 
 		private bool disposed = false;
 
