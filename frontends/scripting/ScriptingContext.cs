@@ -441,16 +441,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			StackFrame frame = GetFrame (frame_number);
 
 			IVariable var = GetVariableInfo (frame, identifier);
-
-			context.ShowVariableType (var.Type, identifier);
-
 			if (!var.IsValid (frame))
 				throw new ScriptingException ("Variable out of scope.");
 
-			ITargetObject obj = var.GetObject (frame);
-			context.Print (obj);
-
-			return null;
+			return var.GetObject (frame);
 		}
 
 		public override string ToString ()

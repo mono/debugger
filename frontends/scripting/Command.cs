@@ -52,7 +52,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (retval is long)
 				context.Print (String.Format ("0x{0:x}", (long) retval));
-			else
+			else if (retval is ITargetObject) {
+				ITargetObject tobj = (ITargetObject) retval;
+				if (tobj.HasObject)
+					context.Print (tobj.Object);
+				else
+					context.Print (tobj);
+			} else
 				context.Print (retval);
 		}
 	}
@@ -417,6 +423,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.identifier = identifier;
 		}
 
+		public string Name {
+			get { return identifier; }
+		}
+
 		protected override object DoResolve (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
@@ -428,6 +438,48 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			return String.Format ("{0} ({1},{2},{3})", GetType (), process_expr, number,
 					      identifier);
+		}
+	}
+
+	public class StructAccessExpression : Expression
+	{
+		VariableExpression var_expr;
+		string identifier;
+
+		public StructAccessExpression (VariableExpression var_expr, string identifier)
+		{
+			this.var_expr = var_expr;
+			this.identifier = identifier;
+		}
+
+		ITargetFieldInfo get_field (ITargetStructType tstruct)
+		{
+			foreach (ITargetFieldInfo field in tstruct.Fields)
+				if (field.Name == identifier)
+					return field;
+
+			throw new ScriptingException ("Variable {0} has no field {1}.", var_expr.Name,
+						      identifier);
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			object variable = var_expr.Resolve (context);
+			if (variable == null)
+				return null;
+
+			ITargetStructObject sobj = variable as ITargetStructObject;
+			if (sobj == null)
+				throw new ScriptingException ("Variable {0} is not a struct or class type.",
+							      var_expr.Name);
+
+			ITargetFieldInfo field = get_field (sobj.Type);
+			return sobj.GetField (field.Index);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1},{2})", GetType (), var_expr, identifier);
 		}
 	}
 }

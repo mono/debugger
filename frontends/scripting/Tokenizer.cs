@@ -435,6 +435,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.PERCENT;
 				else if (c == '$')
 					return Token.DOLLAR;
+				else if (c == '.')
+					return Token.DOT;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

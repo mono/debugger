@@ -1,5 +1,10 @@
 2002-12-31  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay: Implemented the `$a.Test'
+	expression to access a struct/class field.
+
+2002-12-31  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs: Made this class abstract.
 	(Handle): Removed this property.
 	(LocalsAddress, ParamsAddress): New abstract properties.

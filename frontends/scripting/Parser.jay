@@ -57,6 +57,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token AT
 %token PERCENT
 %token DOLLAR
+%token DOT
 
 %token PROCESSES
 %token REGISTERS
@@ -206,9 +207,17 @@ expression
 	{
 		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
 	}
-	| opt_process opt_frame_number DOLLAR IDENTIFIER
+	| variable_expression
+	;
+
+variable_expression
+	: opt_process opt_frame_number DOLLAR IDENTIFIER
 	{
 		$$ = new VariableExpression ((ProcessExpression) $1, (int) $2, (string) $4);
+	}
+	| variable_expression DOT IDENTIFIER
+	{
+		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
 	}
 	;
 
