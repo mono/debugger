@@ -1,6 +1,5 @@
 #include <mono-debugger-jit-wrapper.h>
 #include <mono/io-layer/io-layer.h>
-#include <mono/metadata/verify.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-debug.h>
 #define IN_MONO_DEBUGGER

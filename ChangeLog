@@ -1,5 +1,9 @@
 2004-06-16  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/: Don't #include <mono/metadata/verify.h>.
+
+2004-06-16  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs: Added --debug-flags command line
 	options to set Report.CurrentDebugFlags.
 
