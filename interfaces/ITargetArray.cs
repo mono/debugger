@@ -4,7 +4,12 @@ namespace Mono.Debugger
 {
 	public interface ITargetArray : ITargetObject
 	{
-		int Count {
+		// <summary>
+		//   The array's element type.  For multi-dimensional arrays,
+		//   this'll return the array type itself unless this is the
+		//   last dimension.
+		// </summary>
+		ITargetType ElementType {
 			get;
 		}
 

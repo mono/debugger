@@ -34,12 +34,12 @@ namespace Mono.Debugger.Languages.CSharp
 			this.rank = bounds.Length;
 		}
 
-		public int Count {
+		public ITargetType ElementType {
 			get {
-				if (rank == 0)
-					return length;
+				if (dimension + 1 >= rank)
+					return element_type;
 
-				return bounds [dimension].Length;
+				return type;
 			}
 		}
 
