@@ -1341,12 +1341,14 @@ namespace Mono.Debugger.Backends
 				current_frame = StackFrame.CreateFrame (
 					process, simple, current_method, source);
 			} else {
-				Operation new_operation = check_method_operation (
-					address, current_method, null, operation);
-				if (new_operation != null) {
-					Report.Debug (DebugFlags.EventLoop,
-						      "New operation: {0}", new_operation);
-					return new_operation;
+				if (current_method != null) {
+					Operation new_operation = check_method_operation (
+						address, current_method, null, operation);
+					if (new_operation != null) {
+						Report.Debug (DebugFlags.EventLoop,
+							      "New operation: {0}", new_operation);
+						return new_operation;
+					}
 				}
 
 				SimpleStackFrame simple = new SimpleStackFrame (

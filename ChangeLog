@@ -1,5 +1,12 @@
 2004-09-20  Chris Toshok  <toshok@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.frame_changed): in the else block of the if,
+	current_method might be null, so take that into account before
+	calling check_method_operation.
+
+2004-09-20  Chris Toshok  <toshok@ximian.com>
+
 	* arch/DwarfReader.cs (TargetVariable.ctor): Add a ctor that takes
 	an offset instead of a TargetLocation.
 	(TargetVariable.GetAddress): in the case where the offset ctor is
