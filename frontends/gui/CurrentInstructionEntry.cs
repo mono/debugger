@@ -8,6 +8,7 @@ namespace Mono.Debugger.GUI
 	public class CurrentInstructionEntry : DebuggerWidget
 	{
 		Gtk.Entry entry;
+		string current_insn = null;
 
 		public CurrentInstructionEntry (Gtk.Entry widget)
 			: base (widget)
@@ -21,30 +22,36 @@ namespace Mono.Debugger.GUI
 			base.SetBackend (backend, process);
 			process.StateChanged += new StateChangedHandler (StateChanged);
 			process.FrameChangedEvent += new StackFrameHandler (FrameChanged);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalid);
 		}
 
-		protected void Update (TargetAddress frame)
+		protected void Update ()
 		{
-			if (!process.HasTarget || (process.Disassembler == null)) {
-				widget.Sensitive = false;
-				return;
-			}
-
-			try {
-				IDisassembler dis = process.Disassembler;
-				TargetAddress old_frame = frame;
-				string insn = dis.DisassembleInstruction (ref frame);
-				entry.Text = String.Format ("0x{0:x}   {1}", old_frame.Address, insn);
-				widget.Sensitive = true;
-			} catch (Exception e) {
-				Console.WriteLine (e);
-				widget.Sensitive = false;
-			}
+			entry.Text = current_insn;
+			widget.Sensitive = current_insn != null;
 		}
 
+		// <remarks>
+		//   This method is called from the SingleSteppingEngine's background thread,
+		//   so we must not use gtk# here.
+		// </remarks>
 		void FrameChanged (StackFrame frame)
 		{
-			Update (frame.TargetAddress);
+			try {
+				IDisassembler dis = process.Disassembler;
+				TargetAddress old_addr = frame.TargetAddress;
+				TargetAddress addr = old_addr;
+				string insn = dis.DisassembleInstruction (ref addr);
+				current_insn = String.Format ("0x{0:x}   {1}", old_addr.Address, insn);
+			} catch (Exception e) {
+				Console.WriteLine (e);
+				current_insn = null;
+			}
+		}
+
+		void FramesInvalid ()
+		{
+			current_insn = null;
 		}
 		
 		public void StateChanged (TargetState new_state, int arg)
@@ -54,14 +61,13 @@ namespace Mono.Debugger.GUI
 
 			switch (new_state) {
 			case TargetState.STOPPED:
-				Update (process.CurrentFrameAddress);
+				Update ();
 				break;
 
 			default:
 				widget.Sensitive = false;
 				break;
 			}
-			MainIteration ();
 		}
 	}
 }

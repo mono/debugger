@@ -58,6 +58,9 @@ namespace Mono.Debugger.GUI
 			base.SetBackend (backend, process);
 
 			process.StateChanged += new StateChangedHandler (state_changed);
+			arch = process.Architecture;
+			if (arch is ArchitectureI386)
+				SetupI386 ();
 		}
 
 		void state_changed (TargetState new_state, int arg)
@@ -65,18 +68,15 @@ namespace Mono.Debugger.GUI
 			switch (new_state) {
 			case TargetState.STOPPED:
 			case TargetState.CORE_FILE:
-				arch = process.Architecture;
-				
-				if (arch is ArchitectureI386){
-					SetupI386 ();
+				if (regs != null)
 					notebook.Page = 1;
-				} else
+				else
 					notebook.Page = 0;
+				UpdateDisplay ();
 				break;
 
 			default:
 				notebook.Page = 0;
-				arch = null;
 				break;
 			}
 		}
@@ -228,39 +228,37 @@ namespace Mono.Debugger.GUI
 			
 			if ((current_frame == null) || (arch == null))
 				return;
-			
-			try {
-				regs = process.GetRegisters (arch.AllRegisterIndices);
 
-				for (int i = 0; i < (int) I386Register.COUNT; i++){
-					if (i386_registers [i] == null)
-						continue;
-					SetText (i386_registers [i], i);
-				}
-
-				long f = regs [(int)I386Register.EFL];
-				i386_cf.Active =  ((f & (1 << 0)) != 0);
-				i386_pf.Active =  ((f & (1 << 2)) != 0);
-				i386_af.Active =  ((f & (1 << 4)) != 0);
-				i386_zf.Active =  ((f & (1 << 6)) != 0);
-				i386_sf.Active =  ((f & (1 << 7)) != 0);
-				i386_tf.Active =  ((f & (1 << 8)) != 0);
-				i386_if.Active =  ((f & (1 << 9)) != 0);
-				i386_df.Active =  ((f & (1 << 10)) != 0);
-				i386_of.Active =  ((f & (1 << 11)) != 0);
-				i386_nt.Active =  ((f & (1 << 14)) != 0);
-				i386_rf.Active =  ((f & (1 << 16)) != 0);
-				i386_vm.Active =  ((f & (1 << 17)) != 0);
-				i386_ac.Active =  ((f & (1 << 18)) != 0);
-				i386_vif.Active = ((f & (1 << 19)) != 0);
-				i386_id.Active =  ((f & (1 << 21)) != 0);
-				i386_vip.Active = ((f & (1 << 20)) != 0);
-
+			if (regs == null) {
 				last_regs = regs;
-			} catch {
-				Console.WriteLine ("ERROR: Register loading threw an exception here");
-				last_regs = null;
+				return;
 			}
+			
+			for (int i = 0; i < (int) I386Register.COUNT; i++){
+				if (i386_registers [i] == null)
+					continue;
+				SetText (i386_registers [i], i);
+			}
+
+			long f = regs [(int)I386Register.EFL];
+			i386_cf.Active =  ((f & (1 << 0)) != 0);
+			i386_pf.Active =  ((f & (1 << 2)) != 0);
+			i386_af.Active =  ((f & (1 << 4)) != 0);
+			i386_zf.Active =  ((f & (1 << 6)) != 0);
+			i386_sf.Active =  ((f & (1 << 7)) != 0);
+			i386_tf.Active =  ((f & (1 << 8)) != 0);
+			i386_if.Active =  ((f & (1 << 9)) != 0);
+			i386_df.Active =  ((f & (1 << 10)) != 0);
+			i386_of.Active =  ((f & (1 << 11)) != 0);
+			i386_nt.Active =  ((f & (1 << 14)) != 0);
+			i386_rf.Active =  ((f & (1 << 16)) != 0);
+			i386_vm.Active =  ((f & (1 << 17)) != 0);
+			i386_ac.Active =  ((f & (1 << 18)) != 0);
+			i386_vif.Active = ((f & (1 << 19)) != 0);
+			i386_id.Active =  ((f & (1 << 21)) != 0);
+			i386_vip.Active = ((f & (1 << 20)) != 0);
+
+			last_regs = regs;
 		}
 		
 		void I386_FrameChangedEvent (StackFrame frame)
@@ -270,7 +268,12 @@ namespace Mono.Debugger.GUI
 			if (!process.HasTarget)
 				return;
 
-			UpdateDisplay ();
+			try {
+				regs = process.GetRegisters (arch.AllRegisterIndices);
+			} catch (Exception e) {
+				Console.WriteLine ("ERROR: Register loading threw an exception here: {0}", e);
+				regs = null;
+			}
 		}
 
 		void I386_FramesInvalidEvent ()

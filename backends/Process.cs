@@ -316,13 +316,13 @@ namespace Mono.Debugger
 
 		public long GetRegister (int register)
 		{
-			check_stopped ();
+			check_inferior ();
 			return inferior.GetRegister (register);
 		}
 
 		public long[] GetRegisters (int[] registers)
 		{
-			check_stopped ();
+			check_inferior ();
 			return inferior.GetRegisters (registers);
 		}
 

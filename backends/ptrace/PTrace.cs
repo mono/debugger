@@ -360,6 +360,7 @@ namespace Mono.Debugger.Backends
 			this.native = !(start is ManagedProcessStart);
 			this.bfd_container = bfd_container;
 			this.error_handler = error_handler;
+			this.arch = new ArchitectureI386 (this);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -458,7 +459,6 @@ namespace Mono.Debugger.Backends
 						      target_address_size);
 
 			bfd_disassembler = bfd.GetDisassembler (this);
-			arch = new ArchitectureI386 (this);
 
 			if (start.LoadNativeSymtab) {
 				try {

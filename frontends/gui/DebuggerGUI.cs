@@ -255,6 +255,7 @@ namespace Mono.Debugger.GUI
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
+				SetProcess (backend, process);
 				process.SingleSteppingEngine.Run (true);
 			}
 
@@ -267,19 +268,23 @@ namespace Mono.Debugger.GUI
 
 #if FALSE
 			source_status.SetBackend (backend, process);
-			register_display.SetBackend (backend, process);
 			variable_display.SetBackend (backend, process);
 			backtrace_view.SetBackend (backend, process);
 			module_display.SetBackend (backend, process);
 			hex_editor.SetBackend (backend, process);
 			memory_maps_display.SetBackend (backend, process);
 			breakpoint_manager.SetBackend (backend, process);
-			current_insn.SetBackend (backend, process);
 			disassembler_view.SetBackend (backend, process);
 			source_manager.SetBackend (backend, process);
 #endif
 			
 			process.StateChanged += new StateChangedHandler (BackendStateChanged);
+		}
+
+		void SetProcess (DebuggerBackend backend, Process process)
+		{
+			current_insn.SetBackend (backend, process);
+			register_display.SetBackend (backend, process);
 		}
 
 		void UpdateGUIState (TargetState state)

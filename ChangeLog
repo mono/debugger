@@ -1,5 +1,10 @@
 2002-12-15  Martin Baulig  <martin@ximian.com>
 
+	* frondends/gui/RegisterDisplay.cs: Make this working again.
+	* frontends/gui/CurrentInstructionEntry.cs: Likewise.
+
+2002-12-15  Martin Baulig  <martin@ximian.com>
+
 	* frondends/command-line/Interpreter.cs: Use the new command line
 	interface here.
 
