@@ -42,7 +42,12 @@ namespace Mono.Debugger.Languages.CSharp
 							    SourceFileFactory factory)
 		{
 			if (method.SourceFile != null) {
-				ISourceBuffer buffer = factory.FindFile (method.SourceFile);
+				ISourceBuffer buffer;
+
+				if (factory != null)
+					buffer = factory.FindFile (method.SourceFile);
+				else
+					buffer = new SourceBuffer (method.SourceFile);
 
 				if (buffer != null)
 					return new CSharpMethod (imethod, buffer, method, line_numbers);

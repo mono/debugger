@@ -600,7 +600,7 @@ namespace Mono.Debugger.Languages.CSharp
 			{
 				this.reader = reader;
 				this.method = method;
-				this.factory = new SourceFileFactory ();
+				this.factory = reader.backend.SourceFileFactory;
 
 				address = new MethodAddress (method, dynamic_reader);
 

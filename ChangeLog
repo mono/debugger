@@ -1,3 +1,10 @@
+2002-09-26  Martin Baulig  <martin@gnome.org>
+
+	* interfaces/ISourceBuffer.cs (ISourceBuffer.HasContents): New property.
+
+	* backends/Debugger.cs: Make the source factory optional and
+	create an ISourceBuffer without contents if we don't have it.
+
 2002-09-23  Martin Baulig  <martin@gnome.org>
 
 	* interfaces/ITargetArray.cs: New interface.

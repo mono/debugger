@@ -492,7 +492,10 @@ namespace Mono.Debugger.Architecture
 					SetMethodBounds (start.Address, end.Address);
 				}
 
-				return factory.FindFile (file);
+				if (factory != null)
+					return factory.FindFile (file);
+				else
+					return new SourceBuffer (file);
 			}
 		}
 

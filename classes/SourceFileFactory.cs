@@ -40,6 +40,12 @@ public class SourceFile : ISourceBuffer
 		}
 	}
 
+	public bool HasContents {
+		get {
+			return true;
+		}
+	}
+
 	public string Contents {
 		get {
 			return contents;

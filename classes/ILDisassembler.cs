@@ -25,6 +25,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public bool HasContents {
+			get {
+				return true;
+			}
+		}
+
 		public string Contents {
 			get {
 				return standard_output;
