@@ -101,8 +101,6 @@ namespace Mono.Debugger.GUI
 			source_factory = new SourceFileFactory ();
 			backend = new Debugger (source_factory);
 
-			interpreter = new Interpreter (backend, output_writer, output_writer);
-
 			SetupGUI ();
 
 			if (arguments.Length > 0)
@@ -139,6 +137,8 @@ namespace Mono.Debugger.GUI
 				null, (Gtk.TextView) gxml ["disassembler-view"]);
 			
 			gxml.Autoconnect (this);
+
+			interpreter = new Interpreter (backend, output_writer, output_writer);
 
 			command_entry.ActivatesDefault = true;
 			command_entry.Activated += new EventHandler (DoOneCommand);

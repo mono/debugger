@@ -184,6 +184,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public abstract IVariable[] Parameters {
+			get;
+		}
+
 		//
 		// IMethodSource
 		//

@@ -932,6 +932,8 @@ namespace Mono.Debugger.Backends
 		public IMethod CurrentMethod {
 			get {
 				check_stopped ();
+				if (current_method == null)
+					throw new NoMethodException ();
 				return current_method;
 			}
 		}

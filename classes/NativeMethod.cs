@@ -28,6 +28,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public override IVariable[] Parameters {
+			get {
+				throw new NotSupportedException ();
+			}
+		}
+
 		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
 							     out ArrayList addresses)
 		{

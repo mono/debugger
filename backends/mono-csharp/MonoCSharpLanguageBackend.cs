@@ -184,6 +184,8 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodEntry method;
 			ISourceFileFactory factory;
 			Reflection.MethodBase rmethod;
+			MonoType[] param_types;
+			IVariable[] parameters;
 
 			static MethodInfo get_method;
 
@@ -214,6 +216,17 @@ namespace Mono.Debugger.Languages.CSharp
 
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (Reflection.MethodBase) get_method.Invoke (reader.assembly, args);
+
+				ParameterInfo[] param_info = rmethod.GetParameters ();
+				param_types = new MonoType [param_info.Length];
+				for (int i = 0; i < param_info.Length; i++)
+					param_types [i] = new MonoType (param_info [i].ParameterType,
+									method.Parameters [i].Size);
+
+				parameters = new IVariable [param_info.Length];
+				for (int i = 0; i < param_info.Length; i++)
+					parameters [i] = new MonoVariable (param_info [i].Name,
+									   param_types [i]);
 			}
 
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -241,6 +254,12 @@ namespace Mono.Debugger.Languages.CSharp
 			public override object MethodHandle {
 				get {
 					return rmethod;
+				}
+			}
+
+			public override IVariable[] Parameters {
+				get {
+					return parameters;
 				}
 			}
 		}

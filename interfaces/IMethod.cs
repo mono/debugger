@@ -104,5 +104,12 @@ namespace Mono.Debugger
 		IMethodSource Source {
 			get;
 		}
+
+		// <summary>
+		//   The method's parameters.
+		// </summary>
+		IVariable[] Parameters {
+			get;
+		}
 	}
 }

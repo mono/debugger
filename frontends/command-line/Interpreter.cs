@@ -190,6 +190,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.GetBacktrace ();
 				break;
 
+			case "params": {
+				IVariable[] vars = backend.CurrentMethod.Parameters;
+				foreach (IVariable var in vars) {
+					Console.WriteLine ("PARAM: {0}", var);
+				}
+				break;
+			}
+
 			case "b":
 			case "break-method": {
 				if (args.Length != 2) {
