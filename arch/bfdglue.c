@@ -20,6 +20,12 @@ bfd_glue_openr (const char *filename, const char *target)
 	return bfd_openr (g_strdup (filename), NULL);
 }
 
+const char *
+bfd_glue_get_target_name (bfd *abfd)
+{
+	return abfd->xvec->name;
+}
+
 gboolean
 bfd_glue_check_format_object (bfd *abfd)
 {
@@ -37,8 +43,10 @@ bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 {
 	int storage_needed = bfd_get_symtab_upper_bound (abfd);
 
-	if (storage_needed <= 0)
+	if (storage_needed <= 0) {
+		*symbol_table = NULL;
 		return storage_needed;
+	}
 
 	*symbol_table = g_malloc0 (storage_needed);
 
@@ -80,8 +88,10 @@ bfd_glue_get_dynamic_symbols (bfd *abfd, asymbol ***symbol_table)
 {
 	int storage_needed = bfd_get_dynamic_symtab_upper_bound (abfd);
 
-	if (storage_needed <= 0)
+	if (storage_needed <= 0) {
+		*symbol_table = NULL;
 		return storage_needed;
+	}
 
 	*symbol_table = g_malloc0 (storage_needed);
 

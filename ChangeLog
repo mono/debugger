@@ -1,5 +1,9 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* arch/bfdglue.c (bfd_glue_get_target_name): New function.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs (Options.LoadNativeSymbolTable): Added
 	`--native-symtabs' command line option.
 

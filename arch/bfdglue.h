@@ -7,6 +7,9 @@
 
 G_BEGIN_DECLS
 
+extern const char *
+bfd_glue_get_target_name (bfd *abfd);
+
 extern gboolean
 bfd_glue_check_format_object (bfd *abfd);
 
