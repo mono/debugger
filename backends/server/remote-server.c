@@ -201,8 +201,8 @@ static gpointer
 debugger_thread (gpointer data)
 {
 	CORBA_Environment ev;
-	const char *argv[2] = { "remoting-client", NULL };
-	int argc = 0;
+	const char *argv[6] = { "remoting-client", "--ORBIIOPIPv4=1", "--ORBIIOPUNIX=0", "--ORBIIOPIPName=127.0.0.1", "--ORBIIOPIPSock=40860", NULL };
+	int argc = 5;
 
 	CORBA_exception_init (&ev);
 	orb = CORBA_ORB_init (&argc, argv, "orbit-local-mt-orb", &ev);
@@ -246,24 +246,28 @@ static gpointer
 wait_thread (gpointer data)
 {
 	for (;;) {
-		guint32 ret;
+		guint32 ret, status_ret;
 		guint64 status;
 
 		g_cond_wait (cond, &mutex);
 
-		ret = global_vtable->global_wait (&status);
+		if (!global_vtable || !global_vtable->global_wait)
+			continue;
+
+		ret = htonl (global_vtable->global_wait (&status));
+		status_ret = htonl (status);
 
 		g_assert (send (the_socket, &ret, 4, 0) == 4);
-		g_assert (send (the_socket, &status, 8, 0) == 8);
+		g_assert (send (the_socket, &status, 4, 0) == 4);
 	}
 }
 
 static void
 write_string (const gchar *string)
 {
-	guint32 len = strlen (string);
+	guint32 len = htonl (strlen (string));
 	g_assert (send (the_socket, &len, 4, 0) == 4);
-	g_assert (send (the_socket, string, len, 0) == len);
+	g_assert (send (the_socket, string, strlen (string), 0) == strlen (string));
 }
 
 int
@@ -271,7 +275,7 @@ main (int argc, char **argv)
 {
 	struct sockaddr_in name, addr;
 	socklen_t socklen = sizeof (addr);
-	int sock;
+	int ret, sock;
 
 	g_thread_init (NULL);
 
@@ -290,6 +294,12 @@ main (int argc, char **argv)
      
 	sock = socket (PF_INET, SOCK_STREAM, 0);
 	g_assert (sock >= 0);
+
+	{
+		static const int oneval = 1;
+
+		setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &oneval, sizeof (oneval));
+	}
 
 	name.sin_family = AF_INET;
 	name.sin_port = htons (40857);
@@ -317,6 +327,8 @@ main (int argc, char **argv)
 			g_warning (G_STRLOC ": Cannot recv: %s", g_strerror (errno));
 			exit (1);
 		}
+
+		command = ntohl (command);
 
 		switch (command) {
 		case 1:

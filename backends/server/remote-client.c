@@ -624,8 +624,14 @@ remote_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 	sinfo->sigint = SIGINT;
 	sinfo->sigchld = SIGCHLD;
 	sinfo->sigprof = SIGPROF;
+
+#if defined(__POWERPC__)
+	sinfo->sigpwr = 0;
+	sinfo->sigxcpu = 0;
+#else
 	sinfo->sigpwr = SIGPWR;
 	sinfo->sigxcpu = SIGXCPU;
+#endif
 
 #if 0
 	sinfo->thread_abort = 34;
