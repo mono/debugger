@@ -85,11 +85,24 @@ namespace Mono.Debugger
 
 	public abstract class DebuggerEvent : DebuggerWaitHandle
 	{
-		protected WaitHandle handle;
-
 		protected DebuggerEvent (string name)
 			: base (name)
 		{ }
+
+		public abstract void Set ();
+
+		public abstract void Wait ();
+	}
+
+	public class DebuggerManualResetEvent : DebuggerEvent
+	{
+		ManualResetEvent handle;
+
+		public DebuggerManualResetEvent (string name, bool initially_locked)
+			: base (name)
+		{
+			handle = new ManualResetEvent (initially_locked);
+		}
 
 		public override bool TryLock ()
 		{
@@ -102,7 +115,7 @@ namespace Mono.Debugger
 			return success;
 		}
 
-		public void Wait ()
+		public override void Wait ()
 		{
 			Debug ("{0} waiting for {1}", CurrentThread, Name);
 			while (!handle.WaitOne ()) {
@@ -111,50 +124,63 @@ namespace Mono.Debugger
 			Debug ("{0} done waiting for {1}", CurrentThread, Name);
 		}
 
-		public void Set ()
+		public override void Set ()
 		{
 			Debug ("{0} signalling {1}", CurrentThread, Name);
-			DoSet ();
-		}
-
-		protected abstract void DoSet ();
-	}
-
-	public class DebuggerManualResetEvent : DebuggerEvent
-	{
-		ManualResetEvent the_event;
-
-		public DebuggerManualResetEvent (string name, bool initially_locked)
-			: base (name)
-		{
-			handle = the_event = new ManualResetEvent (initially_locked);
+			handle.Set ();
 		}
 
 		public void Reset ()
 		{
 			Debug ("{0} resetting {1}", CurrentThread, Name);
-			the_event.Reset ();
-		}
-
-		protected override void DoSet ()
-		{
-			the_event.Set ();
+			handle.Reset ();
 		}
 	}
 
 	public class DebuggerAutoResetEvent : DebuggerEvent
 	{
-		AutoResetEvent the_event;
+		IntPtr handle;
+
+		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_event_new ();
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_event_wait (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern bool mono_debugger_event_trywait (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_event_signal (IntPtr handle);
 
 		public DebuggerAutoResetEvent (string name, bool initially_locked)
 			: base (name)
 		{
-			handle = the_event = new AutoResetEvent (initially_locked);
+			handle = mono_debugger_event_new ();
 		}
 
-		protected override void DoSet ()
+		public override bool TryLock ()
 		{
-			the_event.Set ();
+			Debug ("{0} trying to lock {1}", CurrentThread, Name);
+			bool success = mono_debugger_event_trywait (handle);
+			if (success)
+				Debug ("{0} locked {1}", CurrentThread, Name);
+			else
+				Debug ("{0} could not lock {1}", CurrentThread, Name);
+			return success;
+		}
+
+		public override void Wait ()
+		{
+			Debug ("{0} waiting for {1}", CurrentThread, Name);
+			mono_debugger_event_wait (handle);
+			Debug ("{0} done waiting for {1}", CurrentThread, Name);
+		}
+
+		public override void Set ()
+		{
+			Debug ("{0} signalling {1}", CurrentThread, Name);
+			mono_debugger_event_signal (handle);
 		}
 	}
 }

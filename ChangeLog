@@ -1,5 +1,16 @@
 2004-07-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/mutex.c (DebuggerEvent): New typedef.
+	(mono_debugger_event_new): New function.
+	(mono_debugger_event_wait): New function.
+	(mono_debugger_event_trywait): New function.
+	(mono_debugger_event_signal): New function.
+
+	* classes/Threading.cs (DebuggerAutoResetEvent): Use the new
+	unmanged event functions from mutex.c.
+
+2004-07-02  Martin Baulig  <martin@ximian.com>
+
 	* classes/Report.cs: There's now MDB_DEBUG_FLAGS environment
 	variable which sets the default debugging flags and a
 	MDB_DEBUG_OUTPUT one which redirects the debugging output into a

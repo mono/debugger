@@ -6,7 +6,7 @@ MCS_FLAGS=-g
 
 noinst_SCRIPTS = \
 	TestManagedTypes.exe TestAssembly.exe TestNamespace.exe TestModule.dll \
-	TestInvocation.exe TestInheritance.exe Simple.exe
+	MultiThread.exe TestInvocation.exe TestInheritance.exe Simple.exe
 
 noinst_PROGRAMS = testnativetypes module libfoo.so
 
