@@ -34,42 +34,43 @@ AC_SUBST(WARN_CFLAGS)
 AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-linux*)
-		server_sources="i386-linux-ptrace.c i386-linux-ptrace.h"
-		bfd_trad_core=yes
+		server_sources='i386-ptrace.$(OBJEXT)'
 		glue_cflags=
 		server_cflags=
-		windows=false
+		server_only=no
+		bfd_target=i386linux
 		;;
-	*-*-freebsd*)
-		server_sources="i386-freebsd-ptrace.c i386-freebsd-ptrace.h"
-		bfd_trad_core=yes
-		glue_cflags=
+	powerpc-apple-darwin*)
+		server_sources='i386-darwin.$(OBJEXT)'
+		glue_flags=
 		server_cflags=
-		windows=false
-		;;
-	*-*-cygwin*)
-		server_sources="i386-win32.c i386-win32.h"
-		bfd_trad_core=no
-		glue_cflags="-mno-cygwin"
-		server_cflags="-I/usr/include/w32api -mno-cygwin"
-		windows=true
-		AC_DEFINE(PLATFORM_WIN32,1, [Whether we're on Windows.])
+		server_only=yes
+		bfd_target=powerpc
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
 		;;
 esac
 AC_MSG_RESULT(ok)
+
+AC_ARG_WITH(bfd-target,
+[  --with-bfd-target       Manually override the BFD target],
+	if test x$with_bfd_target != "x"; then
+	   bfd_target=$with_bfd_target
+	fi
+)
+
+AM_CONDITIONAL(BFD_TARGET_POWERPC, test x$bfd_target = xpowerpc)
+
 AC_SUBST(server_sources)
 AC_SUBST(glue_cflags)
 AC_SUBST(server_cflags)
-AM_CONDITIONAL(bfd_trad_core, test x$bfd_trad_core = xyes)
-AM_CONDITIONAL(WINDOWS, test x$windows = xyes)
 
-old_LIBS=$LIBS
-LIBS="$LIBS -lpthread"
-AC_MSG_CHECKING(for NPTL support)
-AC_RUN_IFELSE([
+if test x$server_only != xyes; then
+   old_LIBS=$LIBS
+   LIBS="$LIBS -lpthread"
+   AC_MSG_CHECKING(for NPTL support)
+   AC_RUN_IFELSE([
 #include <stdio.h>
 #include <errno.h>
 #include <wait.h>
@@ -130,15 +131,16 @@ main (void)
 
 	exit (!ok);
 }], nptl=yes, nptl=no)
-AC_MSG_RESULT($nptl)
-LIBS=$old_LIBS
+   AC_MSG_RESULT($nptl)
+   LIBS=$old_LIBS
 
-if test x$nptl != xyes; then
-   AC_ERROR([
+   if test x$nptl != xyes; then
+      AC_ERROR([
 ***
 *** Your kernel/glibc has no NPTL support !
 *** Please read README.build
 ***])
+   fi
 fi
 
 dnl may require a specific autoconf version
@@ -217,62 +219,64 @@ PKG_CHECK_MODULES(SERVER_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION $marti
 AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
-MONO_REQUIRED_VERSION=0.25
-PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
-AC_SUBST(WRAPPER_CFLAGS)
-AC_SUBST(WRAPPER_LIBS)
+if test x$server_only != xyes ; then
+   MONO_REQUIRED_VERSION=0.25
+   PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
+   AC_SUBST(WRAPPER_CFLAGS)
+   AC_SUBST(WRAPPER_LIBS)
+fi
 
 AC_SUBST(CFLAGS)
 
-mono_prefix="`$PKG_CONFIG --variable=prefix mono`"
-monodoc_prefix="`$PKG_CONFIG --variable=prefix monodoc`"
-AC_SUBST(mono_prefix)
-AC_SUBST(monodoc_prefix)
+if test x$server_only != xyes; then
+   mono_prefix="`$PKG_CONFIG --variable=prefix mono`"
+   monodoc_prefix="`$PKG_CONFIG --variable=prefix monodoc`"
+   AC_SUBST(mono_prefix)
+   AC_SUBST(monodoc_prefix)
+
+   AC_PATH_PROG(MONO, mono)
+   AC_PATH_PROG(MCS, mcs)
+   if test "x$MONO" = "x" ; then
+      AC_MSG_ERROR([Can't find "mono" in your PATH])
+   fi
+   if test "x$MCS" = "x" ; then
+      AC_MSG_ERROR([Can't find "mcs" in your PATH])
+   fi
+fi
 
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)
-
-AC_PATH_PROG(MONO, mono)
-AC_PATH_PROG(MCS, mcs)
-if test "x$MONO" = "x" ; then
-  AC_MSG_ERROR([Can't find "mono" in your PATH])
-fi
-if test "x$MCS" = "x" ; then
-  AC_MSG_ERROR([Can't find "mcs" in your PATH])
-fi
 AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
 
+if test x$server_only != xyes ; then
+   dnl
+   dnl See if readline needs -ltermcap
+   dnl
+   AC_MSG_CHECKING([if using the readline library is requested])
+   AC_ARG_ENABLE(readline, [  --disable-readline       don't use GNU readline], use_readline=$enableval, use_readline=yes)
+   AC_MSG_RESULT($use_readline)
+   if test "x$use_readline" = "xyes"; then
+      AC_DEFINE(USE_READLINE,1,[Whether to use GNU readline])
 
-dnl
-dnl See if readline needs -ltermcap
-dnl
+      old_LIBS=$LIBS
+      LIBS="-lreadline"
 
-AC_MSG_CHECKING([if using the readline library is requested])
-AC_ARG_ENABLE(readline, [  --disable-readline       don't use GNU readline], use_readline=$enableval, use_readline=yes)
-AC_MSG_RESULT($use_readline)
-if test "x$use_readline" = "xyes"; then
-	AC_DEFINE(USE_READLINE,1,[Whether to use GNU readline])
-
-	old_LIBS=$LIBS
-	LIBS="-lreadline"
-
-	AC_TRY_LINK(,,[
-	READLINE_DEPLIBS="-lreadline"
-	],[
+      AC_TRY_LINK(,,[READLINE_DEPLIBS="-lreadline"],[
 		LIBS="$LIBS -ltermcap"
 		AC_TRY_LINK(,,[
 			READLINE_DEPLIBS="-lreadline -ltermcap"
 		],[
 			AC_MSG_ERROR([Cannot figure out how to link with the readline library; see config.log for more information])
 		])
-	])
+      ])
 
-	LIBS=$old_LIBS
-else
-	READLINE_DEPLIBS=	
+      LIBS=$old_LIBS
+   else
+      READLINE_DEPLIBS=	
+   fi
+   AC_SUBST(READLINE_DEPLIBS)
 fi
-AC_SUBST(READLINE_DEPLIBS)
 
 dnl
 dnl BFD checks
@@ -309,6 +313,7 @@ arch/bfd/include/Makefile
 arch/bfd/include/aout/Makefile
 arch/bfd/include/coff/Makefile
 arch/bfd/include/elf/Makefile
+arch/bfd/include/opcode/Makefile
 test/Makefile
 doc/Makefile
 ])

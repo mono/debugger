@@ -10,7 +10,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
-#include <semaphore.h>
 
 CORBA_ORB orb;
 PortableServer_POA rootpoa;
@@ -240,7 +239,8 @@ debugger_thread (gpointer data)
 	return NULL;
 }
 
-static sem_t wait_sem;
+static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+static GCond *cond;
 
 static gpointer
 wait_thread (gpointer data)
@@ -249,7 +249,7 @@ wait_thread (gpointer data)
 		guint32 ret;
 		guint64 status;
 
-		sem_wait (&wait_sem);
+		g_cond_wait (cond, &mutex);
 
 		ret = global_vtable->global_wait (&status);
 
@@ -275,7 +275,7 @@ main (int argc, char **argv)
 
 	g_thread_init (NULL);
 
-	sem_init (&wait_sem, FALSE, 0);
+	cond = g_cond_new ();
 
 	g_thread_create (debugger_thread, NULL, TRUE, NULL);
 	g_thread_create (wait_thread, NULL, TRUE, NULL);
@@ -320,7 +320,7 @@ main (int argc, char **argv)
 
 		switch (command) {
 		case 1:
-			sem_post (&wait_sem);
+			g_cond_signal (cond);
 			break;
 
 		case 2:

@@ -17,10 +17,12 @@ main (void)
 	asymbol **symtab = NULL;
 	void *dis;
 	int storage_needed;
+	BfdGlueSection *sections;
+	int count_sections;
 
 	bfd_init ();
 
-	abfd = bfd_openr ("testbfd.o", NULL);
+	abfd = bfd_openr ("test", NULL);
 	if (!abfd) {
 		bfd_perror (NULL);
 		return 1;
@@ -40,9 +42,12 @@ main (void)
 
 	storage_needed = bfd_glue_get_symbols (abfd, &symtab);
 
+	bfd_glue_get_sections (abfd, &sections, &count_sections);
+
 	dis = disassembler (abfd);
 
-	printf ("BFD: %p - %d - %p - %p\n", abfd, storage_needed, symtab, dis);
+	printf ("BFD: %p - %d - %p - %p - %p,%d\n", abfd, storage_needed, symtab,
+		dis, sections, count_sections);
 
 	return 0;
 }

@@ -26,16 +26,6 @@ martin_hack_srclist =
 martin_hack_progs =
 endif
 
-libmonodebuggerserver_la_SOURCES = \
-	i386-arch.h		\
-	i386-ptrace.c		\
-	i386-ptrace.h		\
-	server.h		\
-	library.c		\
-	$(martin_hack_srclist)	\
-	breakpoints.c		\
-	breakpoints.h
-
 noinst_PROGRAMS = \
 	$(martin_hack_progs)
 
@@ -44,9 +34,18 @@ remote_server_SOURCES = \
 	debugger-srv.c		\
 	Debugger-skels.c
 
-remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
+libmonodebuggerserver_la_SOURCES = \
+	server.h		\
+	library.c		\
+	$(martin_hack_srclist)	\
+	breakpoints.c		\
+	breakpoints.h
 
-libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
+remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la @server_sources@
+remote_server_DEPENDENCIES = @server_sources@
+
+libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@ @server_sources@
 libmonodebuggerserver_la_LDFLAGS = -no-undefined -module -export-dynamic -shared
+libmonodebuggerserver_la_DEPENDENCIES = @server_sources@
 
 CLEANFILES = lib*.a lib*.dll

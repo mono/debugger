@@ -34,12 +34,14 @@ struct InferiorHandle {
 static int
 setup_corba (void)
 {
-	const char *argv[2] = { "remoting-server", NULL };
+	const char *argv[3] = {
+		"remoting-client", "--ORBIIOPIPv4=1", NULL };
+        int argc = 2;
 	CORBA_Environment ev;
 	struct sockaddr_in name;
 	struct hostent *hostinfo;
 	gchar *remote_var, *port_pos;
-	int len, port = 0, argc = 0;
+	int len, port = 0;
 	gchar *ior;
 
 	the_socket = socket (PF_INET, SOCK_STREAM, 0);
@@ -77,6 +79,8 @@ setup_corba (void)
 		g_warning (G_STRLOC ": recv failed: %s", g_strerror (errno));
 		return -1;
 	}
+
+	len = ntohl (len);
 
 	ior = g_malloc0 (len + 1);
 	if (recv (the_socket, ior, len, 0) != len) {
@@ -567,7 +571,7 @@ remote_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 static guint32
 remote_server_global_wait (guint64 *status)
 {
-	guint32 result, command = 1;
+	guint32 result, status_ret, command = htonl (1);
 
 	if (send (the_socket, &command, 4, 0) != 4) {
 		g_warning (G_STRLOC ": Send failed: %s", g_strerror (errno));
@@ -579,18 +583,20 @@ remote_server_global_wait (guint64 *status)
 		return -1;
 	}
 
-	if (recv (the_socket, status, 8, 0) != 8) {
+	if (recv (the_socket, &status_ret, 4, 0) != 4) {
 		g_warning (G_STRLOC ": Recv failed: %s", g_strerror (errno));
 		return -1;
 	}
 
-	return result;
+	*status = ntohl (status_ret);
+
+	return ntohl (result);
 }
 
 static void
 remote_server_global_stop (void)
 {
-	guint32 result, command = 2;
+	guint32 result, command = htonl (2);
 
 	if (send (the_socket, &command, 4, 0) != 4) {
 		g_warning (G_STRLOC ": Send failed: %s", g_strerror (errno));
