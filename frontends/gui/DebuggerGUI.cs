@@ -175,6 +175,24 @@ namespace Mono.Debugger.GUI
 		{
 			Report.Error (message);
 		}
+
+		//
+		// Sets an image in a Button created by Glade.  Notice that glade will
+		// insert an empty box inside it.
+		//
+		void SetButtonImage (string name)
+		{
+			Button b = (Button) gxml [name + "-button"];
+
+			Pixbuf image = new Pixbuf (null, name + ".png");
+
+			foreach (Widget w in b.Children){
+				b.Remove (w);
+			}
+			
+			b.Child = new Gtk.Image (image);
+			b.ShowAll ();
+		}
 		
 		//
 		// Does the initial GUI Setup
@@ -220,6 +238,9 @@ namespace Mono.Debugger.GUI
 							    (Gtk.Container) gxml ["disassembler-view"],
 							    source_status, register_display);
 
+			SetButtonImage ("step-over");
+			SetButtonImage ("step-into");
+			
 			gxml.Autoconnect (this);
 
 			command_entry.ActivatesDefault = true;

@@ -334,8 +334,8 @@
 		<widget class="button" id="step-over-button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Save File</property>
-		  <property name="label">gtk-go-forward</property>
-		  <property name="use_stock">True</property>
+		  <property name="label" translatable="yes"></property>
+		  <property name="use_underline">True</property>
 		  <accessibility>
 		    <atkproperty name="AtkObject::accessible_name" translatable="yes">Step Over</atkproperty>
 		    <atkproperty name="AtkObject::accessible_description" translatable="yes">Step Over</atkproperty>
@@ -347,8 +347,8 @@
 	      <child>
 		<widget class="button" id="step-into-button">
 		  <property name="visible">True</property>
-		  <property name="label">gtk-goto-last</property>
-		  <property name="use_stock">True</property>
+		  <property name="label" translatable="yes">step-into-button</property>
+		  <property name="use_underline">True</property>
 		  <accessibility>
 		    <atkproperty name="AtkObject::accessible_name" translatable="yes">Step Into</atkproperty>
 		    <atkproperty name="AtkObject::accessible_description" translatable="yes">Step Into</atkproperty>
@@ -388,8 +388,6 @@
 		  <property name="show_border">True</property>
 		  <property name="tab_pos">GTK_POS_TOP</property>
 		  <property name="scrollable">True</property>
-		  <property name="tab_hborder">2</property>
-		  <property name="tab_vborder">2</property>
 		  <property name="enable_popup">True</property>
 
 		  <child>
@@ -481,8 +479,6 @@
 			  <property name="show_border">False</property>
 			  <property name="tab_pos">GTK_POS_TOP</property>
 			  <property name="scrollable">False</property>
-			  <property name="tab_hborder">2</property>
-			  <property name="tab_vborder">2</property>
 			  <property name="enable_popup">False</property>
 
 			  <child>
@@ -1664,8 +1660,6 @@
 		      <property name="show_border">True</property>
 		      <property name="tab_pos">GTK_POS_BOTTOM</property>
 		      <property name="scrollable">True</property>
-		      <property name="tab_hborder">2</property>
-		      <property name="tab_vborder">2</property>
 		      <property name="enable_popup">False</property>
 
 		      <child>
@@ -1907,8 +1901,6 @@
 		      <property name="show_border">True</property>
 		      <property name="tab_pos">GTK_POS_BOTTOM</property>
 		      <property name="scrollable">False</property>
-		      <property name="tab_hborder">2</property>
-		      <property name="tab_vborder">2</property>
 		      <property name="enable_popup">False</property>
 
 		      <child>
