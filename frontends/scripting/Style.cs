@@ -138,7 +138,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected string FormatMember (string prefix, ITargetMemberInfo member,
 					       bool is_static, Hashtable hash)
 		{
-			string tname = FormatType (prefix + "   ", member.Type, hash);
+			string tname = member.Type.Name;
 			if (is_static)
 				return String.Format (
 					"{0}   static {1} {2}", prefix, tname, member.Name);
