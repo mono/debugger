@@ -28,7 +28,7 @@ namespace Mono.Debugger
 		SymbolTableCollection symtabs;
 
 		IInferior inferior;
-		ILanguageBackend language;
+		ArrayList languages;
 
 		string[] argv;
 		string[] envp;
@@ -73,6 +73,7 @@ namespace Mono.Debugger
 			}
 
 			this.native = native;
+			this.languages = new ArrayList ();
 		}
 
 		public string CurrentWorkingDirectory {
@@ -239,7 +240,7 @@ namespace Mono.Debugger
 		{
 			inferior.Dispose ();
 			inferior = null;
-			language = null;
+			languages = new ArrayList ();
 			symtabs = null;
 			current_method = null;
 			frames_invalid ();
@@ -360,10 +361,11 @@ namespace Mono.Debugger
 			if (native)
 				return;
 
-			language = new MonoCSharpLanguageBackend (this, inferior);
+			ILanguageBackend language = new MonoCSharpLanguageBackend (this, inferior);
 			symtabs.AddSymbolTable (language.SymbolTable);
 			inferior.ApplicationSymbolTable = language.SymbolTable;
 			language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			languages.Add (language);
 		}
 
 		void modules_changed ()
@@ -380,10 +382,11 @@ namespace Mono.Debugger
 			symtabs.AddSymbolTable (inferior.SymbolTable);
 
 			if (!native) {
-				language = new MonoCSharpLanguageBackend (this, inferior);
+				ILanguageBackend language = new MonoCSharpLanguageBackend (this, inferior);
 				symtabs.AddSymbolTable (language.SymbolTable);
 				inferior.ApplicationSymbolTable = language.SymbolTable;
 				symtabs.UpdateSymbolTable ();
+				languages.Add (language);
 			}
 
 			frame_changed ();
@@ -525,9 +528,12 @@ namespace Mono.Debugger
 
 		public void TestBreakpoint (string name)
 		{
-			MonoCSharpLanguageBackend csharp = language as MonoCSharpLanguageBackend;
+			if (current_method == null)
+				return;
+
+			MonoCSharpLanguageBackend csharp = current_method.Language as MonoCSharpLanguageBackend;
 			if (csharp == null)
-				throw new InternalError ();
+				return;
 
 			Console.WriteLine ("TEST: {0}", name);
 
@@ -629,7 +635,7 @@ namespace Mono.Debugger
 				ArrayList modules = new ArrayList ();
 				if (inferior != null)
 					modules.AddRange (inferior.Modules);
-				if (language != null)
+				foreach (ILanguageBackend language in languages)
 					modules.AddRange (language.Modules);
 				IModule[] retval = new IModule [modules.Count];
 				modules.CopyTo (retval, 0);
@@ -659,8 +665,10 @@ namespace Mono.Debugger
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, true);
 			TargetAddress address = frames [0].Address;
 
-			if ((language != null) && !language.BreakpointHit (address))
-				return false;
+			foreach (ILanguageBackend language in languages) {
+				if (!language.BreakpointHit (address))
+					return false;
+			}
 
 			if ((current_step_frame != null) &&
 			    ((address >= current_step_frame.Start) &&
@@ -690,8 +698,9 @@ namespace Mono.Debugger
 
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
+				ILanguageBackend language = current_method.Language;
 
-				if (old_step_line || old_next_line) {
+				if ((old_step_line || old_next_line) && (language != null)) {
 					if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
 						must_send_update = true;
 
