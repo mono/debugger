@@ -443,11 +443,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			for (int i = 0; i < modules.Length; i++) {
 				Module module = modules [i];
 
-#if FIXME
-				if (!module.HasDebuggingInfo)
-					continue;
-#endif
-
 				Print ("{0,4} {1}{2}{3}{4}{5}", i, module.Name,
 				       module.IsLoaded ? " loaded" : "",
 				       module.SymbolsLoaded ? " symbols" : "",
