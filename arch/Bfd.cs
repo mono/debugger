@@ -25,7 +25,6 @@ namespace Mono.Debugger.Architecture
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		int dynlink_breakpoint_id = -1;
 		Hashtable symbols;
-		Hashtable simple_symbols;
 		Hashtable section_hash;
 		BfdSymbolTable simple_symtab;
 		Module module;
@@ -57,6 +56,30 @@ namespace Mono.Debugger.Architecture
 			{
 				return String.Format ("Section [{0}:{1:x}:{2:x}:{3:x}:{4:x}]",
 						      index, flags, vma, size, section);
+			}
+		}
+
+		protected struct SymbolEntry : IComparable
+		{
+			public readonly long Address;
+			public readonly string Name;
+
+			public SymbolEntry (long address, string name)
+			{
+				this.Address = address;
+				this.Name = name;
+			}
+
+			public int CompareTo (object obj)
+			{
+				SymbolEntry entry = (SymbolEntry) obj;
+
+				if (entry.Address < Address)
+					return 1;
+				else if (entry.Address > Address)
+					return -1;
+				else
+					return 0;
 			}
 		}
 
@@ -131,6 +154,9 @@ namespace Mono.Debugger.Architecture
 		extern static int bfd_glue_get_symbols (IntPtr bfd, out IntPtr symtab);
 
 		[DllImport("libmonodebuggerbfdglue")]
+		extern static int bfd_glue_get_dynamic_symbols (IntPtr bfd, out IntPtr symtab);
+
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, long offset, out IntPtr data, out int size);
 
 		[DllImport("libmonodebuggerbfdglue")]
@@ -198,7 +224,8 @@ namespace Mono.Debugger.Architecture
 			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
 
 			symbols = new Hashtable ();
-			simple_symbols = new Hashtable ();
+
+			bool is_main_module = base_address.IsNull;
 
 			for (int i = 0; i < num_symbols; i++) {
 				string name;
@@ -210,15 +237,15 @@ namespace Mono.Debugger.Architecture
 					continue;
 
 				long relocated = base_address.Address + address;
-				if ((is_function != 0) || name.StartsWith ("MONO_DEBUGGER__"))
+				if (is_function != 0)
 					symbols.Add (name, relocated);
-				if (!simple_symbols.Contains (relocated))
-					simple_symbols.Add (relocated, name);
+				else if (is_main_module && name.StartsWith ("MONO_DEBUGGER__"))
+					symbols.Add (name, relocated);
 			}
 
 			g_free (symtab);
 
-			simple_symtab = new BfdSymbolTable (this, simple_symbols);
+			simple_symtab = new BfdSymbolTable (this);
 
 			bfd_module = new BfdModule (backend, module, this);
 
@@ -235,6 +262,48 @@ namespace Mono.Debugger.Architecture
 
 				has_got = true;
 			}
+		}
+
+		protected ArrayList GetSimpleSymbols ()
+		{
+			IntPtr symtab;
+			ArrayList list = new ArrayList ();
+
+			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
+
+			for (int i = 0; i < num_symbols; i++) {
+				string name;
+				long address;
+				int is_function;
+
+				name = bfd_glue_get_symbol (bfd, symtab, i, out is_function, out address);
+				if (name == null)
+					continue;
+
+				long relocated = base_address.Address + address;
+				list.Add (new SymbolEntry (relocated, name));
+			}
+
+			g_free (symtab);
+
+			num_symbols = bfd_glue_get_dynamic_symbols (bfd, out symtab);
+
+			for (int i = 0; i < num_symbols; i++) {
+				string name;
+				long address;
+				int is_function;
+
+				name = bfd_glue_get_symbol (bfd, symtab, i, out is_function, out address);
+				if (name == null)
+					continue;
+
+				long relocated = base_address.Address + address;
+				list.Add (new SymbolEntry (relocated, name));
+			}
+
+			g_free (symtab);
+
+			return list;
 		}
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
@@ -689,45 +758,14 @@ namespace Mono.Debugger.Architecture
 		private class BfdSymbolTable : ISimpleSymbolTable
 		{
 			Bfd bfd;
-			Hashtable hash;
 			ArrayList list;
 			TargetAddress start, end;
 
-			private struct Entry : IComparable
-			{
-				public long Address;
-				public string Name;
-
-				public Entry (long address, string name)
-				{
-					this.Address = address;
-					this.Name = name;
-				}
-
-				public int CompareTo (object obj)
-				{
-					Entry entry = (Entry) obj;
-
-					if (entry.Address < Address)
-						return 1;
-					else if (entry.Address > Address)
-						return -1;
-					else
-						return 0;
-				}
-			}
-
-			public BfdSymbolTable (Bfd bfd, Hashtable hash)
+			public BfdSymbolTable (Bfd bfd)
 			{
 				this.bfd = bfd;
-				this.hash = hash;
 				this.start = bfd.StartAddress;
 				this.end = bfd.EndAddress;
-
-				list = new ArrayList ();
-				foreach (long key in hash.Keys)
-					list.Add (new Entry (key, (string) hash [key]));
-				list.Sort ();
 			}
 
 			public string SimpleLookup (TargetAddress address, bool exact_match)
@@ -735,11 +773,13 @@ namespace Mono.Debugger.Architecture
 				if ((address < start) || (address >= end))
 					return null;
 
-				if (exact_match)
-					return (string) hash [address.Address];
+				if (list == null) {
+					list = bfd.GetSimpleSymbols ();
+					list.Sort ();
+				}
 
 				for (int i = list.Count - 1; i >= 0; i--) {
-					Entry entry = (Entry) list [i];
+					SymbolEntry entry = (SymbolEntry) list [i];
 
 					if (address.Address < entry.Address)
 						continue;
@@ -747,11 +787,16 @@ namespace Mono.Debugger.Architecture
 					long offset = address.Address - entry.Address;
 					if (offset == 0)
 						return entry.Name;
+					else if (exact_match)
+						return null;
 					else
 						return String.Format ("{0}+0x{1:x}", entry.Name, offset);
 				}
 
-				return String.Format ("<{0}:0x{1:x}>", bfd.FileName, address-start);
+				if (exact_match)
+					return null;
+				else
+					return String.Format ("<{0}:0x{1:x}>", bfd.FileName, address-start);
 			}
 		}
 

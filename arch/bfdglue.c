@@ -40,30 +40,52 @@ bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 const char *
 bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_function, guint64 *address)
 {
-	asymbol *symbol = symbol_table [idx];
+	asymbol *symbol;
+	int flags;
+
+	symbol = symbol_table [idx];
+	flags = symbol->flags & ~BSF_DYNAMIC;
 
 	if (!symbol->section->index)
 		return NULL;
 
-	if (symbol->flags == (BSF_OBJECT | BSF_GLOBAL)) {
+#if 0
+	if (!strcmp (symbol->name, "__pthread_threads_debug") ||
+	    !strcmp (symbol->name, "__pthread_handles") ||
+	    !strcmp (symbol->name, "__pthread_handles_num") ||
+	    !strcmp (symbol->name, "__pthread_last_event") ||
+	    !strncmp (symbol->name, "MONO_DEBUGGER__", 15)) {
+		*is_function = 1;
+		*address = symbol->section->vma + symbol->value;
+		return symbol->name;
+	}
+#endif
+	if (flags == (BSF_OBJECT | BSF_GLOBAL)) {
 		*is_function = 0;
 		*address = symbol->section->vma + symbol->value;
-	} else if (symbol->flags == BSF_FUNCTION) {
+	} else if (flags == BSF_FUNCTION) {
 		*is_function = 1;
 		*address = symbol->value;
-	} else if (symbol->flags == (BSF_FUNCTION | BSF_GLOBAL)) {
-		*is_function = 1;
-		*address = symbol->section->vma + symbol->value;
-	} else if (!strcmp (symbol->name, "__pthread_threads_debug") ||
-		   !strcmp (symbol->name, "__pthread_handles") ||
-		   !strcmp (symbol->name, "__pthread_handles_num") ||
-		   !strcmp (symbol->name, "__pthread_last_event")) {
+	} else if (flags == (BSF_FUNCTION | BSF_GLOBAL)) {
 		*is_function = 1;
 		*address = symbol->section->vma + symbol->value;
 	} else
 		return NULL;
 
 	return symbol->name;
+}
+
+int
+bfd_glue_get_dynamic_symbols (bfd *abfd, asymbol ***symbol_table)
+{
+	int storage_needed = bfd_get_dynamic_symtab_upper_bound (abfd);
+
+	if (storage_needed <= 0)
+		return storage_needed;
+
+	*symbol_table = g_malloc0 (storage_needed);
+
+	return bfd_canonicalize_dynamic_symtab (abfd, *symbol_table);
 }
 
 struct disassemble_info *

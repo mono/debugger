@@ -1,5 +1,11 @@
 2003-03-28  Martin Baulig  <martin@ximian.com>
 
+	* arch/Bfd.cs: Read the dynamic symbol table and make it available
+	via the ISimpleSymbolTable.  This finally gives us function names
+	from shared libraries in backtraces.
+
+2003-03-28  Martin Baulig  <martin@ximian.com>
+
 	Use a special ISimpleSymbolTable to lookup function names in
 	backtraces.  This simple symbol table may also be available if
 	there's no debugging info for a module.
