@@ -1,5 +1,10 @@
 2003-04-16  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/Parser.jay: Added `run' command to restart an
+	application after it exited.
+
+2003-04-16  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs: Moved to ../backends/.
 
 	* backends/ProcessStart.cs (ProcessStart): Make this abstract.

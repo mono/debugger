@@ -81,6 +81,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("threadgroup", Token.THREADGROUP);
 			keywords.Add ("search", Token.SEARCH);
 			keywords.Add ("list", Token.LIST);
+			keywords.Add ("run", Token.RUN);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);

@@ -126,6 +126,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token THREADGROUP
 %token SEARCH
 %token LIST
+%token RUN
 
 %token NATIVE
 %token SELECT
@@ -208,6 +209,10 @@ generated_command
 	| KILL
 	  {
 		$$ = new KillCommand ();
+	  }
+	| RUN
+	  {
+		$$ = new RunCommand ();
 	  }
 	| SHOW PROCESSES
 	  {

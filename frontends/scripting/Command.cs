@@ -122,6 +122,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("RUN", "Restart current program",
+		 "After the program being debugged exited, run it a second time.\n\n")]
+	public class RunCommand : Command
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			if (!context.IsSynchronous)
+				throw new ScriptingException ("This command cannot be used in the GUI.");
+
+			context.Initialize ();
+			try {
+				context.Run ();
+			} catch (TargetException e) {
+				throw new ScriptingException (e.Message);
+			}
+		}
+	}
+
 	[Command("PROCESS", "Select current process",
 		 "Without argument, print the current process.\n\n" +
 		 "With a process argument, make that process the current process.\n" +
