@@ -382,9 +382,9 @@ namespace Mono.Debugger.Backends
 				out child_pid, out stdin_fd, out stdout_fd, out stderr_fd,
 				out error));
 
-			inferior_stdin = new IOOutputChannel (stdin_fd);
-			inferior_stdout = new IOInputChannel (stdout_fd);
-			inferior_stderr = new IOInputChannel (stderr_fd);
+			inferior_stdin = new IOOutputChannel (stdin_fd, false, false);
+			inferior_stdout = new IOInputChannel (stdout_fd, false, false);
+			inferior_stderr = new IOInputChannel (stderr_fd, false, false);
 
 			setup_inferior (start, error_handler);
 			change_target_state (TargetState.STOPPED, 0);
@@ -445,8 +445,8 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (inferior_stdout != null) {
-				inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
-				inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
+				inferior_stdout.ReadLineEvent += new ReadLineHandler (inferior_output);
+				inferior_stderr.ReadLineEvent += new ReadLineHandler (inferior_errors);
 			}
 
 			int target_int_size, target_long_size, target_address_size;
