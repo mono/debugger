@@ -1452,13 +1452,19 @@ namespace Mono.Debugger.Backends
 			current_operation = null;
 		}
 
-		bool do_trampoline (StepFrame frame, TargetAddress trampoline)
+		bool do_trampoline (StepFrame frame, TargetAddress trampoline, bool is_start)
 		{
 			TargetAddress compile = frame.Language.CompileMethodFunc;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} found trampoline {1} (compile is {2})",
-				      this, trampoline, compile);
+				      "{0} found trampoline {1}/{3} (compile is {2})",
+				      this, trampoline, compile, is_start);
+
+			if (is_start) {
+				current_operation = new Operation (OperationType.FinishNative);
+				do_continue (trampoline);
+				return false;
+			}
 
 			if (compile.IsNull) {
 				IMethod method = null;
@@ -1592,8 +1598,9 @@ namespace Mono.Debugger.Backends
 			 * This will trigger a JIT compilation if neccessary.
 			 */
 			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
+				bool is_start;
 				TargetAddress trampoline = frame.Language.GetTrampolineAddress (
-					inferior, call);
+					inferior, call, out is_start);
 				IMethod tmethod = null;
 
 				/*
@@ -1605,7 +1612,7 @@ namespace Mono.Debugger.Backends
 				 * when entering the method.
 				 */
 				if (!trampoline.IsNull)
-					return do_trampoline (frame, trampoline);
+					return do_trampoline (frame, trampoline, is_start);
 
 				if (frame.Mode != StepMode.SingleInstruction) {
 					/*
@@ -1721,6 +1728,14 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetAddress stack = inferior.GetStackPointer ();
+			if (current_operation.Until.IsNull) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} starting finish native until {1}",
+					      this, stack);
+				current_operation = new Operation (
+					OperationType.FinishNative, stack);
+			}
+
 			TargetAddress until = current_operation.Until;
 
 			Report.Debug (DebugFlags.SSE, "{0} finish native: stack = {1}, " +

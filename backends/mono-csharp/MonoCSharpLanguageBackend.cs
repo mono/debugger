@@ -1848,8 +1848,11 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
-								     TargetAddress address)
+								     TargetAddress address,
+								     out bool is_start)
 		{
+			is_start = false;
+
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 

@@ -973,9 +973,10 @@ namespace Mono.Debugger.Architecture
 		}
 
 		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
-								     TargetAddress address)
+								     TargetAddress address,
+								     out bool is_start)
 		{
-			return GetTrampoline (memory, address);
+			return GetTrampoline (memory, address, out is_start);
 		}
 
 		SourceMethod ILanguageBackend.GetTrampoline (ITargetMemoryAccess memory,
@@ -989,28 +990,32 @@ namespace Mono.Debugger.Architecture
 		{ }
 
 		public TargetAddress GetTrampoline (ITargetMemoryAccess memory,
-						    TargetAddress address)
+						    TargetAddress address, out bool is_start)
 		{
-			if (!has_got || (address < plt_start) || (address > plt_end))
+			if (!has_got || (address < plt_start) || (address > plt_end)) {
+				is_start = false;
 				return TargetAddress.Null;
+			}
 
 			ITargetMemoryReader reader = memory.ReadMemory (address, 10);
 
 			byte opcode = reader.ReadByte ();
 			byte opcode2 = reader.ReadByte ();
-			if ((opcode != 0xff) || (opcode2 != 0x25))
+			if ((opcode != 0xff) || (opcode2 != 0x25)) {
+				is_start = false;
 				return TargetAddress.Null;
+			}
 
 			TargetAddress jmp_target = reader.ReadAddress ();
 			TargetAddress method = memory.ReadGlobalAddress (jmp_target);
 
-			if (method != address + 6)
+			if (method != address + 6) {
+				is_start = false;
 				return method;
+			}
 
-			// FIXME: This is not yet implemented; we need to use LD_BIND_NOW=yes for
-			//        the moment.
-
-			return TargetAddress.Null;
+			is_start = true;
+			return memory.ReadGlobalAddress (got_start + 8);
 		}
 
 		internal override IDisposable RegisterLoadHandler (Process process,
