@@ -89,6 +89,7 @@ namespace Mono.Debugger.GUI
 		Gtk.ToggleButton i386_sf, i386_tf, i386_if, i386_df;
 		Gtk.ToggleButton i386_of, i386_nt, i386_rf, i386_vm;
 		Gtk.ToggleButton i386_ac, i386_vif, i386_id, i386_vip;
+		bool i386_initialized = false;
 
 		void i386_register_modified (object sender, EventArgs e)
 		{
@@ -194,7 +195,11 @@ namespace Mono.Debugger.GUI
 		{
 			I386BindWidgets ();
 			I386SetupModifiableWidgets ();
-			
+
+			if (i386_initialized)
+				return;
+
+			i386_initialized = true;
 			backend.FrameChangedEvent += new StackFrameHandler (I386_FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (I386_FramesInvalidEvent);
 		}
