@@ -1,0 +1,1 @@
+mcs -o Interpreter.exe -r glib-sharp.dll -r pango-sharp.dll -r atk-sharp.dll -r gdk-sharp.dll -r gtk-sharp.dll -r gnome-sharp.dll -r glade-sharp.dll -r System.Drawing frontends/gui/SimpleViewer.cs backends/gdb/*.cs interfaces/*.cs classes/*.cs
