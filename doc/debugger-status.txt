@@ -11,19 +11,8 @@ Current status as of 01/06/03:
   into the release.  The main focus is now to make the debugger stable and mature enough
   to be usable by a large number of people.
 
-* I've ask Luis to create a bugzilla product for the debugger, once this is created you
-  should file all bugs there.
-
 * I'm really happy with the command line interface; it already seems to be very stable and
   reliable.  It also has a lot of features which aren't implemented in the GUI yet.
-
-* In the 0.1.0 release, the debugger was able to restart an application and to keep your
-  breakpoint settings etc.  This is a really cool and nice feature, but it's currently
-  broken and hasn't been integrated with the new framework.
-
-  Getting this right is a major task and you cannot really do it without having a working
-  serialization support in our class libs, so I decided to punt this for the 0.2.0 release
-  and put it back later.
 
 * The command line interface has a command to insert a breakpoint on a method, but for
   managed methods, this must be the full method name including the full signature (such as
