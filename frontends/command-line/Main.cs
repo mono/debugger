@@ -10,41 +10,6 @@ using Mono.Debugger;
 using Mono.Debugger.Frontends.Scripting;
 using CL;
 
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("Interpreter")]
-[assembly: AssemblyDescription("Mono Debugger - Command Line Interpreter")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("")]
-[assembly: AssemblyCopyright("(C) 2003 Ximian, Inc.")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]		
-
-[assembly: Mono.About("Distributed under the GPL")]
-
-[assembly: Mono.UsageComplement("application args")]
-
-[assembly: Mono.Author("Martin Baulig")]
-[assembly: Mono.Author("Miguel de Icaza")]
-
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("0.2.*")]
-
-
 namespace Mono.Debugger.Frontends.CommandLine
 {
 	public class CommandLineInterpreter : Interpreter

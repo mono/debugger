@@ -1,5 +1,17 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs (DebuggerOptions.JitWrapper): Removed.
+	(ProcessStart.SetupEnvironment): If we're debugging ourselves, set
+	MONO_GAC_PREFIX to our current prefix.
+
+	* frontends/command-line/Main.cs: Removed all the `AssemblyInfo'
+	attributes.
+
+	* wrapper/Makefile.am: Also include our generated AssemblyInfo.cs
+	in mdb.exe.	
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* arch/Makefile.am: Don't install libmonodebuggerbfdglue.la, link
 	it into libmonodebuggerserver.la instead.
 

@@ -1,12 +1,27 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-[assembly:AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyTitle("Mono Debugger")]
+[assembly: AssemblyDescription("Mono Debugger")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("(C) 2003-2004 Novell, Inc.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]		
+
+[assembly: Mono.About("Distributed under the GPL")]
+
+[assembly: Mono.Author("Martin Baulig")]
+[assembly: Mono.Author("Miguel de Icaza")]
+
+[assembly: AssemblyVersion("1.0.0.0")]
 
 namespace Mono.Debugger
 {
 	public class AssemblyInfo
 	{
+		public static string prefix = "@prefix@";
 		public static string libdir = "@libdir@";
 	}
 }

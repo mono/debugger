@@ -37,7 +37,8 @@ MDB_SRCLIST = \
 	@top_srcdir@/frontends/scripting/MyTextReader.cs		\
 	@top_srcdir@/frontends/scripting/ScriptingContext.cs		\
 	@top_srcdir@/frontends/scripting/Session.cs			\
-	@top_srcdir@/frontends/scripting/Style.cs
+	@top_srcdir@/frontends/scripting/Style.cs			\
+	AssemblyInfo.cs
 
 LIBRARY_SRCLIST = \
 	@top_srcdir@/interfaces/*.cs			\
@@ -66,7 +67,9 @@ mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
-	sed -e 's^\@libdir\@^$(libdir)^g' < $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
+	sed -e 's^\@libdir\@^$(libdir)^g' \
+		-e 's^\@prefix\@^$(prefix)^g' \
+		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 
 noinst_DATA = Mono.Debugger.dll.config
