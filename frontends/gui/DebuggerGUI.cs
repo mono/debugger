@@ -98,6 +98,7 @@ namespace Mono.Debugger.GUI
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
 
 			backend = new DebuggerBackend ();
+			backend.DebuggerError += new DebuggerErrorHandler (ErrorHandler);
 
 			SetupGUI ();
 
@@ -105,6 +106,14 @@ namespace Mono.Debugger.GUI
 				LoadProgram (arguments);
 		}
 
+		//
+		// Called back when the debugger finds an error
+		//
+		void ErrorHandler (object sender, string message, Exception e)
+		{
+			Report.Error (message);
+		}
+		
 		//
 		// Does the initial GUI Setup
 		//

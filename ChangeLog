@@ -1,3 +1,8 @@
+2002-10-03  Miguel de Icaza  <miguel@ximian.com>
+
+	* frontends/gui/DebuggerGUI.cs: Hook up the signal and show an
+	error message.
+
 2002-10-02  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/SourceManager.cs: Add code to switch to a newly
