@@ -1,3 +1,15 @@
+2004-10-21  Martin Baulig  <martin@ximian.com>
+
+	* backends/ILanguageBackend.cs
+	(NotificationType): Added `ThrowException'.
+
+	* backends/Inferior.cs
+	(Inferior.ChildEventType): Added `THROW_EXCEPTION'.
+
+	* backends/SingleSteppingEngine.cs: We're now getting a
+	NotificationType.ThrowException from the runtime each time an
+	exception is being thrown.  Use that for exception catchpoints.
+
 2004-10-21  Chris Toshok  <toshok@ximian.com>
 
 	* frontends/scripting/Interpreter.cs

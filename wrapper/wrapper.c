@@ -174,6 +174,10 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 	case MONO_DEBUGGER_EVENT_EXCEPTION:
 		mono_debugger_notification_function (NOTIFICATION_HANDLE_EXCEPTION, data, arg);
 		break;
+
+	case MONO_DEBUGGER_EVENT_THROW_EXCEPTION:
+		mono_debugger_notification_function (NOTIFICATION_THROW_EXCEPTION, data, arg);
+		break;
 	}
 }
 

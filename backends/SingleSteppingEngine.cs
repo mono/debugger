@@ -429,13 +429,22 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			if (message == Inferior.ChildEventType.HANDLE_EXCEPTION) {
+			TargetEventArgs result = null;
+
+			if ((message == Inferior.ChildEventType.THROW_EXCEPTION) ||
+			    (message == Inferior.ChildEventType.HANDLE_EXCEPTION)) {
 				TargetAddress stack = new TargetAddress (
 					inferior.AddressDomain, cevent.Data1);
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
-				if (handle_exception (stack, ip)) {
+				bool stop_on_exc;
+				if (message == Inferior.ChildEventType.THROW_EXCEPTION)
+					stop_on_exc = throw_exception (stack, ip);
+				else
+					stop_on_exc = handle_exception (stack, ip);
+
+				if (stop_on_exc) {
 					current_operation = new Operation (OperationType.Exception, null);
 
 					do_continue (ip);
@@ -450,8 +459,6 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 			}
-
-			TargetEventArgs result = null;
 
 			// To step over a method call, the sse inserts a temporary
 			// breakpoint immediately after the call instruction and then
@@ -521,6 +528,7 @@ namespace Mono.Debugger.Backends
 
 				if (!stop_requested &&
 				    ((message != Inferior.ChildEventType.UNHANDLED_EXCEPTION) &&
+				     (message != Inferior.ChildEventType.THROW_EXCEPTION) &&
 				     (message != Inferior.ChildEventType.HANDLE_EXCEPTION))) {
 					inferior.Continue (); // do_continue ();
 					return;
@@ -1286,13 +1294,21 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool handle_exception (TargetAddress info, TargetAddress ip)
+		bool throw_exception (TargetAddress info, TargetAddress ip)
 		{
+			if ((current_operation.StepFrame != null) &&
+			    (current_operation.StepFrame.StackFrame != null)) {
+				if (ip == current_operation.StepFrame.StackFrame.Address) {
+					inferior.Continue ();
+					return false;
+				}
+			}
+
 			TargetAddress stack = inferior.ReadAddress (info);
 			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} handling exception {1} at {2} while running {3}", this, exc, ip,
+				      "{0} throwing exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
 
 			StackFrame frame = null;
@@ -1312,10 +1328,24 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.SSE,
 					      "{0} stopped on exception {1} at {2}", this, exc, ip);
 
-				frame_changed (inferior.CurrentFrame, current_operation);
-				bpt.BreakpointHit (current_frame);
+				// frame_changed (inferior.CurrentFrame, current_operation);
+				// bpt.BreakpointHit (current_frame);
+
+				inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
 				return true;
 			}
+
+			return false;
+		}
+
+		bool handle_exception (TargetAddress info, TargetAddress ip)
+		{
+			TargetAddress stack = inferior.ReadAddress (info);
+			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} handling exception {1} at {2} while running {3}", this, exc, ip,
+				      current_operation);
 
 			/*
 			 * We're dealing with a non-fatal exception here.

@@ -15,6 +15,7 @@ namespace Mono.Debugger.Backends
 		UnhandledException,
 		ThreadCreated,
 		ThreadAbort,
+		ThrowException,
 		HandleException
 	}
 
