@@ -1301,7 +1301,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			this.target = target;
 			this.expr = expr;
-			this.name = String.Format ("({0}) {1}", target, expr);
+			this.name = String.Format ("(({0}) {1})", target.Name, expr.Name);
 		}
 
 		public override string Name {

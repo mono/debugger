@@ -51,9 +51,9 @@ public class C : B
 		Console.WriteLine (f);
 	}
 
-	public virtual void Virtual ()
+	public virtual int Virtual ()
 	{
-		Console.WriteLine ("In C");
+		return 1;
 	}
 }
 
@@ -67,9 +67,9 @@ public class D : C
 		this.e = e;
 	}
 
-	public override void Virtual ()
+	public override int Virtual ()
 	{
-		Console.WriteLine ("In D");
+		return 2;
 	}
 }
 
