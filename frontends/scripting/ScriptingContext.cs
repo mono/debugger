@@ -875,6 +875,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected Process LoadCoreFile (string[] args)
 		{
+			if (backend != null)
+				throw new ScriptingException ("Already have a target.");
+
 			backend = new DebuggerBackend ();
 			Initialize ();
 
@@ -894,6 +897,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected Process StartApplication (string[] args, int pid)
 		{
+			if (backend != null)
+				throw new ScriptingException ("Already have a target.");
+
 			backend = new DebuggerBackend ();
 			Initialize ();
 
