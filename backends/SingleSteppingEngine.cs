@@ -2197,14 +2197,6 @@ namespace Mono.Debugger.Backends
 				get { return sse; }
 			}
 
-			public override TargetAddress LocalsAddress {
-				get { return frame.LocalsAddress; }
-			}
-
-			public override TargetAddress ParamsAddress {
-				get { return frame.ParamsAddress; }
-			}
-
 			public override Register[] Registers {
 				get {
 					if (has_registers)
