@@ -277,13 +277,6 @@ namespace Mono.Debugger.GUI
 				}, TargetState.RUNNING);
 
 			StateSensitivityUpdate (TargetState.NO_TARGET);
-
-#if FALSE
-			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
-			backend.TargetError += new TargetOutputHandler (TargetError);
-			backend.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
-			backend.DebuggerError += new DebuggerErrorHandler (DebuggerError);
-#endif
 		}
 
 		ArrayList all_state_widgets = new ArrayList ();
@@ -335,8 +328,6 @@ namespace Mono.Debugger.GUI
 		{
 			this.process = process;
 
-			process.TargetOutput += new TargetOutputHandler (TargetOutput);
-			process.TargetError += new TargetOutputHandler (TargetError);
 			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
 			process.DebuggerError += new DebuggerErrorHandler (DebuggerError);
 
@@ -472,16 +463,6 @@ namespace Mono.Debugger.GUI
 			hex_editor.Show ();
 		}
 
-		void TargetOutput (string output)
-		{
-			AddOutput (output);
-		}
-
-		void TargetError (string output)
-		{
-			AddOutput (output);
-		}
-
 		void DebuggerOutput (string output)
 		{
 			AddOutput (output);
@@ -494,8 +475,7 @@ namespace Mono.Debugger.GUI
 
 		void AddOutput (string output)
 		{
-			Console.WriteLine (output);
-			// output_writer.WriteLine (output);
+			output_writer.WriteLine (true, output);
 		}
 
 		void DoOneCommand (object sender, EventArgs event_args)

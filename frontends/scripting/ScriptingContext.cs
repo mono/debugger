@@ -258,8 +258,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			process.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
 			process.StateChanged += new StateChangedHandler (state_changed);
-			process.TargetOutput += new TargetOutputHandler (inferior_output);
-			process.TargetError += new TargetOutputHandler (inferior_error);
 			process.TargetExited += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
@@ -405,16 +403,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				break;
 			}
-		}
-
-		void inferior_output (string line)
-		{
-			context.PrintInferior (false, line);
-		}
-
-		void inferior_error (string line)
-		{
-			context.PrintInferior (true, line);
 		}
 
 		void debugger_output (string line)
@@ -682,6 +670,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected void Initialize ()
 		{
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+			backend.ThreadManager.TargetOutput += new TargetOutputHandler (target_output);
+			backend.ThreadManager.TargetError += new TargetOutputHandler (target_error_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 
 			if (options.JitWrapper != null)
@@ -722,6 +712,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 				procs.CopyTo (retval, 0);
 				return retval;
 			}
+		}
+
+		void target_output (string line)
+		{
+			PrintInferior (false, line);
+		}
+
+		void target_error_output (string line)
+		{
+			PrintInferior (true, line);
 		}
 
 		public void Abort ()

@@ -41,6 +41,7 @@ namespace Mono.Debugger.Backends
 			this.inferior = inferior;
 			this.daemon_thread_handler = daemon_thread_handler;
 			this.start = start;
+			this.redirect_fds = true;
 
 			thread_manager = backend.ThreadManager;
 
@@ -67,6 +68,7 @@ namespace Mono.Debugger.Backends
 		Thread daemon_thread;
 		DaemonThreadHandler daemon_thread_handler;
 		ProcessStart start;
+		bool redirect_fds;
 		int signal;
 		int pid;
 
@@ -108,7 +110,7 @@ namespace Mono.Debugger.Backends
 
 		void daemon_thread_start_wrapper ()
 		{
-			inferior.Run (false);
+			inferior.Run (redirect_fds);
 			inferior.Continue ();
 			daemon_thread_main ();
 		}

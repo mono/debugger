@@ -116,6 +116,9 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 
+		public event TargetOutputHandler TargetOutput;
+		public event TargetOutputHandler TargetError;
+
 		protected virtual void OnInitializedEvent (Process new_process)
 		{
 			if (InitializedEvent != null)
@@ -451,8 +454,34 @@ namespace Mono.Debugger
 			DaemonThreadRunner runner = new DaemonThreadRunner (
 				backend, process, inferior, handler, start);
 
+			process.TargetOutput += new TargetOutputHandler (inferior_output);
+			process.TargetError += new TargetOutputHandler (inferior_errors);
+
 			main_started_event.WaitOne ();
 			return runner;
+		}
+
+		internal Process StartApplication (DebuggerBackend backend, ProcessStart start,
+						   BfdContainer bfd_container)
+		{
+			Process process = Process.StartApplication (backend, start, bfd_container);
+
+			process.TargetOutput += new TargetOutputHandler (inferior_output);
+			process.TargetError += new TargetOutputHandler (inferior_errors);
+
+			return process;
+		}
+
+		void inferior_output (string line)
+		{
+			if (TargetOutput != null)
+				TargetOutput (line);
+		}
+
+		void inferior_errors (string line)
+		{
+			if (TargetError != null)
+				TargetError (line);
 		}
 
 		// <summary>

@@ -13,6 +13,7 @@ void
 hello (const char *message, int a)
 {
 	printf ("%s - %d\n", message, getpid ());
+	fflush (stdout);
 	crashing_here (NULL);
 }
 

@@ -121,7 +121,7 @@ namespace Mono.Debugger
 
 			module_manager.Lock ();
 
-			process = Process.StartApplication (this, start, bfd_container);
+			process = thread_manager.StartApplication (this, start, bfd_container);
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 
 			main_group.AddThread (process);
