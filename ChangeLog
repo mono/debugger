@@ -1,3 +1,7 @@
+2003-04-06  Martin Baulig  <martin@ximian.com>
+
+	* RELEASE-NOTES-0.3.txt: New file.
+
 2003-04-05  Martin Baulig  <martin@ximian.com>
 
 	* wrapper/thread-manager.c: Reflect latest libgc API changes.
