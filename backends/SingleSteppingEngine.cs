@@ -215,12 +215,15 @@ namespace Mono.Debugger.Backends
 			process.SendTargetEvent (args);
 		}
 
-		public void Start (TargetAddress func, bool is_main)
+		internal void Start (TargetAddress func, bool is_main)
 		{
-			if (!func.IsNull) {
-				insert_temporary_breakpoint (func);
+			if (is_main) {
+				if (!func.IsNull)
+					insert_temporary_breakpoint (func);
 				current_operation = new Operation (OperationType.Initialize);
 				this.is_main = is_main;
+			} else {
+				current_operation = new Operation (OperationType.RunInBackground);
 			}
 			do_continue ();
 		}

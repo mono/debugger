@@ -1,5 +1,10 @@
 2004-06-23  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (SingleSteppingEngine.Start):
+	Make this method internal and make new threads run in the background.
+
+2004-06-23  Martin Baulig  <martin@ximian.com>
+
 	* classes/Threading.cs: New public class.  Contains wrappers
 	around Mutex, ManualResetEvent and AutoResetEvent which have some
 	debugging support.
