@@ -1,1 +1,1 @@
-mcs -o Interpreter.exe -r glib-sharp.dll -r pango-sharp.dll -r atk-sharp.dll -r gdk-sharp.dll -r gtk-sharp.dll -r gnome-sharp.dll -r glade-sharp.dll -r System.Drawing frontends/gui/*.cs frontends/command-line/*.cs backends/gdb/*.cs interfaces/*.cs classes/*.cs
+mcs -o Interpreter.exe -r glib-sharp.dll -r pango-sharp.dll -r atk-sharp.dll -r gdk-sharp.dll -r gtk-sharp.dll -r gnome-sharp.dll -r glade-sharp.dll -r System.Drawing -r Mono.CSharp.Debugger frontends/gui/*.cs frontends/command-line/*.cs backends/gdb/*.cs interfaces/*.cs classes/*.cs

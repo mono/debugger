@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Collections;
 
 using Mono.Debugger.Languages;
+using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
@@ -38,6 +39,10 @@ namespace Mono.Debugger.Backends
 
 		int last_breakpoint_id;
 
+		readonly uint target_address_size;
+		readonly uint target_integer_size;
+		readonly uint target_long_integer_size;
+
 		public GDB (string application, string[] arguments)
 			: this (Path_GDB, Path_Mono, application, arguments)
 		{ }
@@ -50,7 +55,7 @@ namespace Mono.Debugger.Backends
 			string main_name = main.DeclaringType + ":" + main.Name;
 
 			string args = "-n -nw -q -x mono-debugger.gdbinit --annotate=2 --async " +
-				"--args " + mono_path + " --break " + main_name +  " --debug=dwarf " +
+				"--args " + mono_path + " --break " + main_name +  " --debug=mono " +
 				"--noinline --precompile @" + application + " " + application + " " +
 				String.Join (" ", arguments);
 
@@ -61,16 +66,15 @@ namespace Mono.Debugger.Backends
 			start_info.RedirectStandardError = true;
 			start_info.UseShellExecute = false;
 
+			gdb_event = new ManualResetEvent (false);
+			gdb_mutex = new Mutex (false);
+
 			process = Process.Start (start_info);
 			gdb_pipe = process.StandardInput;
 			gdb_pipe.AutoFlush = true;
 
-			gdb_event = new ManualResetEvent (false);
-
 			gdb_output = process.StandardOutput.BaseStream;
 			gdb_errors = process.StandardError.BaseStream;
-
-			gdb_mutex = new Mutex (false);
 
 			gdb_output_thread = new Thread (new ThreadStart (check_gdb_output));
 			gdb_output_thread.Start ();
@@ -80,12 +84,20 @@ namespace Mono.Debugger.Backends
 
 			Timeout.Add (100, new TimeoutHandler (IdleLoop));
 
-			send_gdb_command ("run");
-			send_gdb_command ("call mono_debug_make_symbols ()");
-			send_gdb_command ("add-symbol-file " + application + ".o");
+			// Wait until gdb is started.
+			gdb_event.WaitOne ();
+			IdleLoop ();
+
+			target_address_size = ReadInteger ("print sizeof (void*)");
+			target_integer_size = ReadInteger ("print sizeof (long)");
+			target_long_integer_size = ReadInteger ("print sizeof (long long)");
 
 			symbols = new Hashtable ();
 			breakpoints = new Hashtable ();
+
+			send_gdb_command ("run");
+
+			UpdateSymbolFiles ();
 		}
 
 		//
@@ -222,6 +234,24 @@ namespace Mono.Debugger.Backends
 
 			set {
 				source_file_factory = value;
+			}
+		}
+
+		uint IDebuggerBackend.TargetAddressSize {
+			get {
+				return target_address_size;
+			}
+		}
+
+		uint IDebuggerBackend.TargetIntegerSize {
+			get {
+				return target_integer_size;
+			}
+		}
+
+		uint IDebuggerBackend.TargetLongIntegerSize {
+			get {
+				return target_long_integer_size;
 			}
 		}
 
@@ -429,13 +459,149 @@ namespace Mono.Debugger.Backends
 			FRAME,
 			FRAME_ADDRESS,
 			SOURCE_FILE,
-			SOURCE_LINE
+			SOURCE_LINE,
+			BYTE_VALUE,
+			BYTE_VALUE_2,
+			INTEGER_VALUE,
+			INTEGER_VALUE_2,
+			HEX_VALUE,
+			HEX_VALUE_2,
+			LONG_VALUE,
+			LONG_VALUE_2,
+			STRING_VALUE,
+			STRING_VALUE_2
 		}
 
 		WaitForOutput wait_for = WaitForOutput.UNKNOWN;
 
 		StackFrame current_frame = null;
 		string source_file = null;
+
+		byte last_byte_value;
+		uint last_int_value;
+		long last_long_value;
+		string last_string_value;
+		bool last_value_ok;
+
+		void UpdateSymbolFiles ()
+		{
+			long address = ReadAddress ("call /a mono_debugger_internal_get_symbol_files ()");
+			long version = ReadInteger (address);
+
+			long start, offset, size;
+			address += target_address_size;
+
+			while (true) {
+				start = ReadAddress (address);
+				address += target_address_size;
+
+				if (start == 0)
+					break;
+
+				offset = ReadAddress (address);
+				address += target_address_size;
+
+				size = ReadAddress (address);
+				address += target_address_size;
+
+				string tmpfile;
+				BinaryReader reader = GetTargetMemoryReader (start, size, out tmpfile);
+				new MonoSymbolTableReader (reader);
+				reader.Close ();
+				File.Delete (tmpfile);
+			}
+		}
+
+		public byte ReadByte (long address)
+		{
+			return ReadByte ("print/u *(char*)" + address);
+		}
+
+		byte ReadByte (string address)
+		{
+			last_value_ok = false;
+			wait_for = WaitForOutput.BYTE_VALUE;
+			send_gdb_command (address);
+			if (!last_value_ok)
+				throw new TargetException ("Can't read target memory at address " + address);
+
+			return last_byte_value;
+		}
+
+		public uint ReadInteger (long address)
+		{
+			return ReadInteger ("print/u *(long*)" + address);
+		}
+
+		uint ReadInteger (string address)
+		{
+			last_value_ok = false;
+			wait_for = WaitForOutput.INTEGER_VALUE;
+			send_gdb_command (address);
+			if (!last_value_ok)
+				throw new TargetException ("Can't read target memory at address " + address);
+
+			return last_int_value;
+		}
+
+		public long ReadAddress (long address)
+		{
+			return ReadAddress ("print/a *(void**)" + address);
+		}
+
+		long ReadAddress (string address)
+		{
+			last_value_ok = false;
+			wait_for = WaitForOutput.HEX_VALUE;
+			send_gdb_command (address);
+			if (!last_value_ok)
+				throw new TargetException ("Can't read target memory at address " + address);
+
+			return last_long_value;
+		}
+
+		public long ReadLongInteger (long address)
+		{
+			return ReadLongInteger ("print/u *(long long*)" + address);
+		}
+
+		long ReadLongInteger (string address)
+		{
+			last_value_ok = false;
+			wait_for = WaitForOutput.LONG_VALUE;
+			send_gdb_command (address);
+			if (!last_value_ok)
+				throw new TargetException ("Can't read target memory at address " + address);
+
+			return last_long_value;
+		}
+
+		public string ReadString (long address)
+		{
+			return ReadString ("print/s *" + address);
+		}
+
+		string ReadString (string address)
+		{
+			last_value_ok = false;
+			wait_for = WaitForOutput.STRING_VALUE;
+			send_gdb_command (address);
+			if (!last_value_ok)
+				throw new TargetException ("Can't read target memory at address " + address);
+
+			return last_string_value;
+		}
+
+		BinaryReader GetTargetMemoryReader (long address, long size, out string tmpfile)
+		{
+			tmpfile = Path.GetTempFileName ();
+
+			send_gdb_command ("dump binary memory " + tmpfile + " " + address + " " +
+					  (address + size));
+
+			FileStream stream = new FileStream (tmpfile, FileMode.Open);
+			return new BinaryReader (stream);
+		}
 
 		void HandleAnnotation (string annotation, string[] args)
 		{
@@ -510,6 +676,19 @@ namespace Mono.Debugger.Backends
 			case "frames-invalid":
 				if (frames_invalid_event != null)
 					frames_invalid_event ();
+				break;
+
+			case "value-history-value":
+				if (wait_for == WaitForOutput.INTEGER_VALUE)
+					wait_for = WaitForOutput.INTEGER_VALUE_2;
+				else if (wait_for == WaitForOutput.HEX_VALUE)
+					wait_for = WaitForOutput.HEX_VALUE_2;
+				else if (wait_for == WaitForOutput.LONG_VALUE)
+					wait_for = WaitForOutput.LONG_VALUE_2;
+				else if (wait_for == WaitForOutput.STRING_VALUE)
+					wait_for = WaitForOutput.STRING_VALUE_2;
+				else if (wait_for == WaitForOutput.BYTE_VALUE)
+					wait_for = WaitForOutput.BYTE_VALUE_2;
 				break;
 
 			default:
@@ -666,6 +845,62 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case WaitForOutput.FRAME:
+			case WaitForOutput.INTEGER_VALUE:
+			case WaitForOutput.HEX_VALUE:
+			case WaitForOutput.LONG_VALUE:
+			case WaitForOutput.STRING_VALUE:
+			case WaitForOutput.BYTE_VALUE:
+				return true;
+
+			case WaitForOutput.INTEGER_VALUE_2:
+				wait_for = WaitForOutput.UNKNOWN;
+				try {
+					last_int_value = UInt32.Parse (line);
+					last_value_ok = true;
+					return true;
+				} catch {
+					// FIXME: report error
+				}
+				return true;
+
+			case WaitForOutput.BYTE_VALUE_2:
+				wait_for = WaitForOutput.UNKNOWN;
+				try {
+					last_byte_value = Byte.Parse (line);
+					last_value_ok = true;
+					return true;
+				} catch {
+					// FIXME: report error
+				}
+				return true;
+
+			case WaitForOutput.HEX_VALUE_2:
+				wait_for = WaitForOutput.UNKNOWN;
+				try {
+					last_long_value = Int64.Parse (
+						line.Substring (2), NumberStyles.HexNumber);
+					last_value_ok = true;
+					return true;
+				} catch {
+					// FIXME: report error
+				}
+				return true;
+
+			case WaitForOutput.LONG_VALUE_2:
+				wait_for = WaitForOutput.UNKNOWN;
+				try {
+					last_long_value = Int64.Parse (line);
+					last_value_ok = true;
+					return true;
+				} catch {
+					// FIXME: report error
+				}
+				return true;
+
+			case WaitForOutput.STRING_VALUE_2:
+				wait_for = WaitForOutput.UNKNOWN;
+				last_string_value = line;
+				last_value_ok = true;
 				return true;
 
 			default:
@@ -682,11 +917,13 @@ namespace Mono.Debugger.Backends
 
 		void send_gdb_command (string command)
 		{
-			Console.WriteLine ("SENDING `{0}'", command);
+			// Console.WriteLine ("SENDING `{0}'", command);
 			gdb_event.Reset ();
 			gdb_pipe.WriteLine (command);
 			gdb_event.WaitOne ();
-			Console.WriteLine ("DONE");
+			// Console.WriteLine ("DONE");
+			IdleLoop ();
+			// Console.WriteLine ("IDLE-LOOP DONE");
 		}
 
 		string read_one_line (Stream stream)
