@@ -57,11 +57,23 @@ namespace Mono.Debugger
 			get;
 		}
 
+		ITargetFieldInfo[] StaticFields {
+			get;
+		}
+
 		ITargetFieldInfo[] Properties {
 			get;
 		}
 
+		ITargetFieldInfo[] StaticProperties {
+			get;
+		}
+
 		ITargetMethodInfo[] Methods {
+			get;
+		}
+
+		ITargetMethodInfo[] StaticMethods {
 			get;
 		}
 	}

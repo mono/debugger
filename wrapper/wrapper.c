@@ -39,6 +39,7 @@ static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar 
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
 static gpointer debugger_compile_method (MonoMethod *method);
 static guint64 debugger_create_string (guint64 dummy_argument, const gchar *string_argument);
+static guint64 debugger_class_get_static_field_data (guint64 klass);
 
 static gpointer debugger_notification_address;
 static void (*debugger_notification_function) (void);
@@ -60,6 +61,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_remove_breakpoint,
 	&mono_debugger_runtime_invoke,
 	&debugger_create_string,
+	&debugger_class_get_static_field_data,
 	&debugger_event_data,
 	&debugger_event_arg,
 	MONO_DEBUGGER__heap,
@@ -123,6 +125,13 @@ static guint64
 debugger_create_string (guint64 dummy_argument, const gchar *string_argument)
 {
 	return GPOINTER_TO_UINT (mono_string_new_wrapper (string_argument));
+}
+
+static guint64
+debugger_class_get_static_field_data (guint64 klass)
+{
+	MonoVTable *vtable = mono_class_vtable (mono_domain_get (), GINT_TO_POINTER (klass));
+	return GPOINTER_TO_UINT (vtable->data);
 }
 
 static void

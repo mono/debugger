@@ -2018,6 +2018,18 @@ namespace Mono.Debugger.Backends
 			return (long) result.Data;
 		}
 
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress argument)
+		{
+			CallMethodData data = new CallMethodData (method, argument.Address, null);
+			CommandResult result = send_sync_command (new CommandFunc (call_method), data);
+			if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+			long retval = (long) result.Data;
+			if (inferior.TargetAddressSize == 4)
+				retval &= 0xffffffffL;
+			return new TargetAddress (inferior.AddressDomain, retval);
+		}
+
 		private struct CallInvokeMethodData
 		{
 			public readonly TargetAddress InvokeMethod;

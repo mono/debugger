@@ -27,6 +27,7 @@ struct _MonoDebuggerInfo {
 	guint64 (*remove_breakpoint) (guint64 breakpoint);
 	MonoInvokeFunc runtime_invoke;
 	guint64 (*create_string) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*class_get_static_field_data) (guint64 klass);
 	gpointer *event_data;
 	guint32 *event_arg;
 	gpointer heap;

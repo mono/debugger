@@ -8,14 +8,15 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoClass : MonoType, ITargetClassType
 	{
-		MonoFieldInfo[] fields;
-		MonoPropertyInfo[] properties;
-		MonoMethodInfo[] methods;
+		MonoFieldInfo[] fields, static_fields;
+		MonoPropertyInfo[] properties, static_properties;
+		MonoMethodInfo[] methods, static_methods;
 		TargetBinaryReader info;
 		internal readonly MonoSymbolTable Table;
 		bool is_valuetype;
-		int num_fields, num_properties, num_methods;
-		int field_info_size, property_info_size, method_info_size;
+		int num_fields, num_static_fields, num_properties, num_static_properties, num_methods, num_static_methods;
+		int field_info_size, static_field_info_size, property_info_size, static_property_info_size;
+		int method_info_size, static_method_info_size;
 		long offset;
 
 		public readonly Type Type;
@@ -25,6 +26,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly MonoClass Parent;
 
 		protected readonly TargetAddress RuntimeInvoke;
+		protected readonly TargetAddress ClassGetStaticFieldData;
 
 		public MonoClass (TargetObjectKind kind, Type type, int size, bool is_classinfo,
 				  TargetBinaryReader info, MonoSymbolTable table, bool has_fixed_size)
@@ -50,16 +52,23 @@ namespace Mono.Debugger.Languages.CSharp
 			KlassAddress = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
 			num_fields = info.ReadInt32 ();
 			field_info_size = info.ReadInt32 ();
+			num_static_fields = info.ReadInt32 ();
+			static_field_info_size = info.ReadInt32 ();
 			num_properties = info.ReadInt32 ();
 			property_info_size = info.ReadInt32 ();
+			num_static_properties = info.ReadInt32 ();
+			static_property_info_size = info.ReadInt32 ();
 			num_methods = info.ReadInt32 ();
 			method_info_size = info.ReadInt32 ();
+			num_static_methods = info.ReadInt32 ();
+			static_method_info_size = info.ReadInt32 ();
 			this.info = info;
 			this.offset = info.Position;
 			this.Type = type;
 			this.InstanceSize = size;
 			this.Table = table;
 			RuntimeInvoke = table.Language.MonoDebuggerInfo.RuntimeInvoke;
+			ClassGetStaticFieldData = table.Language.MonoDebuggerInfo.ClassGetStaticFieldData;
 
 			if (Type.IsEnum)
 				EffectiveType = typeof (System.Enum);
@@ -77,10 +86,16 @@ namespace Mono.Debugger.Languages.CSharp
 			KlassAddress = old_class.KlassAddress;
 			num_fields = old_class.num_fields;
 			field_info_size = old_class.field_info_size;
+			num_static_fields = old_class.num_static_fields;
+			static_field_info_size = old_class.static_field_info_size;
 			num_properties = old_class.num_properties;
 			property_info_size = old_class.property_info_size;
+			num_static_properties = old_class.num_static_properties;
+			static_property_info_size = old_class.static_property_info_size;
 			num_methods = old_class.num_methods;
 			method_info_size = old_class.method_info_size;
+			num_static_methods = old_class.num_static_methods;
+			static_method_info_size = old_class.static_method_info_size;
 			info = old_class.info;
 			offset = old_class.offset;
 			this.Type = type;
@@ -179,6 +194,40 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		void init_static_fields ()
+		{
+			if (static_fields != null)
+				return;
+
+			info.Position = offset + field_info_size + property_info_size + method_info_size;
+
+			static_fields = new MonoFieldInfo [num_static_fields];
+
+			FieldInfo[] mono_static_fields = EffectiveType.GetFields (
+				BindingFlags.DeclaredOnly | BindingFlags.Static |
+				BindingFlags.Public | BindingFlags.NonPublic);
+			if (mono_static_fields.Length != num_static_fields)
+				throw new InternalError (
+					"Type.GetFields() returns {0} fields, but the JIT has {1}",
+					mono_static_fields.Length, num_static_fields);
+
+			for (int i = 0; i < num_static_fields; i++)
+				static_fields [i] = new MonoFieldInfo (this, i, mono_static_fields [i], info, Table);
+		}
+
+		ITargetFieldInfo[] ITargetStructType.StaticFields {
+			get {
+				return StaticFields;
+			}
+		}
+
+		protected MonoFieldInfo[] StaticFields {
+			get {
+				init_static_fields ();
+				return static_fields;
+			}
+		}
+
 		protected class MonoFieldInfo : ITargetFieldInfo
 		{
 			public readonly MonoType Type;
@@ -241,6 +290,20 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		internal ITargetObject GetStaticField (TargetLocation location, int index)
+		{
+			init_static_fields ();
+
+			try {
+				TargetAddress data_address = location.TargetAccess.CallMethod (ClassGetStaticFieldData, KlassAddress);
+				TargetLocation field_loc = new RelativeTargetLocation (location, data_address);
+
+				return static_fields [index].Type.GetObject (field_loc);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}
+
 		void init_properties ()
 		{
 			if (properties != null)
@@ -273,6 +336,43 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				init_properties ();
 				return properties;
+			}
+		}
+
+		void init_static_properties ()
+		{
+			if (static_properties != null)
+				return;
+
+			info.Position = offset + field_info_size + property_info_size + method_info_size +
+				static_field_info_size;
+
+			static_properties = new MonoPropertyInfo [num_static_properties];
+
+			PropertyInfo[] mono_properties = EffectiveType.GetProperties (
+				BindingFlags.DeclaredOnly | BindingFlags.Static |
+				BindingFlags.Public | BindingFlags.NonPublic);
+
+			if (mono_properties.Length != num_static_properties)
+				throw new InternalError (
+					"Type.GetProperties() returns {0} properties, but the JIT has {1}",
+					mono_properties.Length, num_static_properties);
+
+			for (int i = 0; i < num_static_properties; i++)
+				static_properties [i] = new MonoPropertyInfo (
+					this, i, mono_properties [i], info, Table);
+		}
+
+		ITargetFieldInfo[] ITargetStructType.StaticProperties {
+			get {
+				return StaticProperties;
+			}
+		}
+
+		protected MonoPropertyInfo[] StaticProperties {
+			get {
+				init_static_properties ();
+				return static_properties;
 			}
 		}
 
@@ -352,6 +452,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return properties [index].Get (location);
 		}
 
+		internal ITargetObject GetStaticProperty (TargetLocation location, int index)
+		{
+			init_static_properties ();
+
+			return static_properties [index].Get (location);
+		}
+
 		void init_methods ()
 		{
 			if (methods != null)
@@ -392,6 +499,50 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				init_methods ();
 				return methods;
+			}
+		}
+
+		void init_static_methods ()
+		{
+			if (static_methods != null)
+				return;
+
+			info.Position = offset + field_info_size + property_info_size + method_info_size +
+				static_field_info_size + static_property_info_size;
+			static_methods = new MonoMethodInfo [num_static_methods];
+
+			MethodInfo[] mono_methods = EffectiveType.GetMethods (
+				BindingFlags.DeclaredOnly | BindingFlags.Static |
+				BindingFlags.Public);
+
+			ArrayList list = new ArrayList ();
+			for (int i = 0; i < mono_methods.Length; i++) {
+				if (mono_methods [i].IsSpecialName)
+					continue;
+
+				list.Add (mono_methods [i]);
+			}
+
+			if (list.Count != num_static_methods)
+				throw new InternalError (
+					"Type.GetMethods() returns {0} methods, but the JIT has {1}",
+					list.Count, num_static_methods);
+
+			for (int i = 0; i < num_static_methods; i++)
+				static_methods [i] = new MonoMethodInfo (
+					this, i, (MethodInfo) list [i], info, Table);
+		}
+
+		ITargetMethodInfo[] ITargetStructType.StaticMethods {
+			get {
+				return StaticMethods;
+			}
+		}
+
+		protected MonoMethodInfo[] StaticMethods {
+			get {
+				init_static_methods ();
+				return static_methods;
 			}
 		}
 
@@ -457,6 +608,17 @@ namespace Mono.Debugger.Languages.CSharp
 
 			try {
 				return (ITargetFunctionObject) methods [index].FunctionType.GetObject (location);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}
+
+		internal ITargetFunctionObject GetStaticMethod (TargetLocation location, int index)
+		{
+			init_static_methods ();
+
+			try {
+				return (ITargetFunctionObject) static_methods [index].FunctionType.GetObject (location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

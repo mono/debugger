@@ -295,7 +295,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 35;
+		public const int  DynamicVersion = 36;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -829,6 +829,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress CreateString;
+		public readonly TargetAddress ClassGetStaticFieldData;
 		public readonly TargetAddress EventData;
 		public readonly TargetAddress EventArg;
 		public readonly TargetAddress Heap;
@@ -847,6 +848,7 @@ namespace Mono.Debugger.Languages.CSharp
 			RemoveBreakpoint = reader.ReadAddress ();
 			RuntimeInvoke = reader.ReadAddress ();
 			CreateString = reader.ReadAddress ();
+			ClassGetStaticFieldData = reader.ReadAddress ();
 			EventData = reader.ReadAddress ();
 			EventArg = reader.ReadAddress ();
 			Heap = reader.ReadAddress ();
@@ -859,7 +861,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return String.Format (
 				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x})",
 				GenericTrampolineCode, NotificationCode,
-				SymbolTable, SymbolTableSize,  CompileMethod,
+				SymbolTable, SymbolTableSize, CompileMethod,
 				InsertBreakpoint, RemoveBreakpoint, RuntimeInvoke);
 		}
 	}

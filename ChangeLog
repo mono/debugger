@@ -1,5 +1,20 @@
 2003-08-06  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-cshap/MonoClass.cs: Added support for static
+	fields, properties and methods.
+
+	* interfaces/ITargetMemoryAccess.cs (ITargetAccess.CallMethod):
+	Added new overloaded version of this method.
+
+	* interfaces/ITargetStructType.cs (ITargetStructType): Added
+	StaticFields, StaticProperties and StaticMethods arguments.
+
+	* interfaces/ITargetStructObject.cs (ITargetStructObject): Added
+	GetStaticField(), GetStaticProperty() and GetStaticMethod()
+	methods.  [FIXME: This needs to be moved to ITargetStructType].
+
+2003-08-06  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoStringType.cs: We don't get the vtable
 	from the JIT anymore; instead we call mono_string_new_wrapper()
 	via a special wrapper method to make this work for multiple

@@ -25,12 +25,27 @@ namespace Mono.Debugger.Languages.Native
 			return type.GetField (location, index);
 		}
 
+		public ITargetObject GetStaticField (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetObject GetProperty (int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
+		public ITargetObject GetStaticProperty (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetFunctionObject GetMethod (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		public ITargetFunctionObject GetStaticMethod (int index)
 		{
 			throw new InvalidOperationException ();
 		}

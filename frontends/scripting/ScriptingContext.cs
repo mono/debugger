@@ -853,6 +853,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (ITargetFieldInfo field in tstruct.Fields)
 					Print ("  It has a field `{0}' of type {1}", field.Name,
 					       field.Type.Name);
+				foreach (ITargetFieldInfo field in tstruct.StaticFields)
+					Print ("  It has a static field `{0}' of type {1}", field.Name,
+					       field.Type.Name);
 				foreach (ITargetFieldInfo property in tstruct.Properties)
 					Print ("  It has a property `{0}' of type {1}", property.Name,
 					       property.Type.Name);

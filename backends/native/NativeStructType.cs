@@ -124,13 +124,31 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ITargetFieldInfo[] StaticFields {
+			get {
+				return new ITargetFieldInfo [0];
+			}
+		}
+
 		public ITargetFieldInfo[] Properties {
 			get {
 				return new ITargetFieldInfo [0];
 			}
 		}
 
+		public ITargetFieldInfo[] StaticProperties {
+			get {
+				return new ITargetFieldInfo [0];
+			}
+		}
+
 		public ITargetMethodInfo[] Methods {
+			get {
+				return new ITargetMethodInfo [0];
+			}
+		}
+
+		public ITargetMethodInfo[] StaticMethods {
 			get {
 				return new ITargetMethodInfo [0];
 			}
