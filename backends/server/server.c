@@ -11,11 +11,26 @@ static int command_available = 0;
 static int shutdown = 0;
 
 static void
+write_result (int fd, ServerCommandError result)
+{
+	if (write (fd, &result, sizeof (result)) != sizeof (result))
+		g_error (G_STRLOC ": Can't send command status: %s", g_strerror (errno));
+}
+
+static void
+write_arg (int fd, guint64 arg)
+{
+	if (write (fd, &arg, sizeof (arg)) != sizeof (arg))
+		g_error (G_STRLOC ": Can't send command argument: %s", g_strerror (errno));
+}
+
+static void
 command_func (InferiorHandle *handle, int fd)
 {
 	ServerCommand command;
 	ServerCommandError result;
-	guint64 arg;
+	guint64 arg, arg2;
+	gpointer data;
 
 	if (read (fd, &command, sizeof (command)) != sizeof (command))
 		g_error (G_STRLOC ": Can't read command: %s", g_strerror (errno));
@@ -23,11 +38,12 @@ command_func (InferiorHandle *handle, int fd)
 	switch (command) {
 	case SERVER_COMMAND_GET_PC:
 		result = server_get_program_counter (handle, &arg);
-		break;
+		if (result != COMMAND_ERROR_NONE)
+			break;
 
-	case SERVER_COMMAND_CONTINUE:
-		result = server_ptrace_continue (handle);
-		break;
+		write_result (fd, result);
+		write_arg (fd, arg);
+		return;
 
 	case SERVER_COMMAND_DETACH:
 		result = server_ptrace_detach (handle);
@@ -43,13 +59,44 @@ command_func (InferiorHandle *handle, int fd)
 		result = COMMAND_ERROR_NONE;
 		break;
 
+	case SERVER_COMMAND_CONTINUE:
+		result = server_ptrace_continue (handle);
+		break;
+
+	case SERVER_COMMAND_STEP:
+		result = server_ptrace_step (handle);
+		break;
+
+	case SERVER_COMMAND_READ_DATA:
+		if (read (fd, &arg, sizeof (arg)) != sizeof (arg))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		if (read (fd, &arg2, sizeof (arg2)) != sizeof (arg2))
+			g_error (G_STRLOC ": Can't read command: %s", g_strerror (errno));
+		data = g_malloc (arg2);
+		result = server_ptrace_read_data (handle, arg, arg2, data);
+		if (result != COMMAND_ERROR_NONE) {
+			g_free (data);
+			break;
+		}
+		write_result (fd, COMMAND_ERROR_NONE);
+		if (write (fd, data, arg2) != arg2)
+			g_error (G_STRLOC ": Can't send command argument: %s", g_strerror (errno));
+		g_free (data);
+		return;
+
+	case SERVER_COMMAND_GET_TARGET_INFO:
+		write_result (fd, COMMAND_ERROR_NONE);
+		write_arg (fd, sizeof (gint32));
+		write_arg (fd, sizeof (gint64));
+		write_arg (fd, sizeof (void *));
+		return;
+
 	default:
 		result = COMMAND_ERROR_INVALID_COMMAND;
 		break;
 	}
 
-	if (write (fd, &result, sizeof (result)) != sizeof (result))
-		g_error (G_STRLOC ": Can't send command status: %s", g_strerror (errno));
+	write_result (fd, result);
 }
 
 static void
@@ -150,12 +197,14 @@ main (int argc, char **argv, char **envp)
 		attached = TRUE;
 	}
 
-	/* Set up the mask of signals to temporarily block. */
+	/* Get the current signal mask and remove the ones we want to wait for. */
 	sigemptyset (&mask);
-	sigaddset (&mask, SIGUSR1);
-	sigaddset (&mask, SIGCHLD);
-	sigaddset (&mask, SIGTERM);
+	sigprocmask (SIG_BLOCK, NULL, &mask);
+	sigdelset (&mask, SIGUSR1);
+	sigdelset (&mask, SIGCHLD);
+	sigdelset (&mask, SIGTERM);
 
+	/* Install our signal handlers. */
 	signal (SIGUSR1, command_signal_handler);
 	signal (SIGCHLD, signal_handler);
 	signal (SIGTERM, sigterm_handler);
@@ -186,14 +235,11 @@ main (int argc, char **argv, char **envp)
 		}
 
 		/* Wait for a signal to arrive. */
-		sigprocmask (SIG_BLOCK, &mask, &oldmask);
-		sigsuspend (&oldmask);
-		sigprocmask (SIG_UNBLOCK, &mask, NULL);
+		command_available = FALSE;
+		sigsuspend (&mask);
 
-		if (command_available) {
-			command_available = FALSE;
+		if (command_available)
 			command_func (handle, command_fd);
-		}
 	}
 
 	/* If we attached to a running process, detach from it, otherwise kill it. */

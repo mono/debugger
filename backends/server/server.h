@@ -10,10 +10,13 @@ G_BEGIN_DECLS
 
 typedef enum {
 	SERVER_COMMAND_GET_PC = 1,
-	SERVER_COMMAND_CONTINUE,
 	SERVER_COMMAND_DETACH,
 	SERVER_COMMAND_SHUTDOWN,
-	SERVER_COMMAND_KILL
+	SERVER_COMMAND_KILL,
+	SERVER_COMMAND_CONTINUE,
+	SERVER_COMMAND_STEP,
+	SERVER_COMMAND_READ_DATA,
+	SERVER_COMMAND_GET_TARGET_INFO
 } ServerCommand;
 
 typedef enum {
@@ -82,11 +85,20 @@ extern ServerCommandError
 server_ptrace_continue               (InferiorHandle          *handle);
 
 extern ServerCommandError
+server_ptrace_step                   (InferiorHandle          *handle);
+
+extern ServerCommandError
 server_ptrace_detach                 (InferiorHandle          *handle);
 
 extern ServerCommandError
 server_get_program_counter           (InferiorHandle          *handle,
 				      guint64                 *pc);
+
+extern ServerCommandError
+server_ptrace_read_data              (InferiorHandle          *handle,
+				      guint64                  start,
+				      guint32                  size,
+				      gpointer                 buffer);
 
 /*
  * Library functions.
@@ -98,6 +110,26 @@ mono_debugger_process_server_message (ServerHandle            *handle);
 extern ServerCommandError
 mono_debugger_server_send_command    (ServerHandle            *handle,
 				      ServerCommand            command);
+
+extern ServerCommandError
+mono_debugger_server_read_memory     (ServerHandle            *handle,
+				      guint64                  start,
+				      guint32                  size,
+				      gpointer                *data);
+
+extern ServerCommandError
+mono_debugger_server_get_target_info (ServerHandle            *handle,
+				      guint32                 *target_int_size,
+				      guint32                 *target_long_size,
+				      guint32                 *target_address_size);
+
+extern gboolean
+mono_debugger_server_read_uint64     (ServerHandle            *handle,
+				      guint64                 *arg);
+
+extern gboolean
+mono_debugger_server_write_uint64    (ServerHandle            *handle,
+				      guint64                  arg);
 
 G_END_DECLS
 

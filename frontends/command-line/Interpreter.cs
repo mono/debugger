@@ -59,6 +59,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			try {
 				return ProcessCommand (tmp_args [0], args);
 			} catch (TargetException e) {
+				Console.WriteLine (e);
 				stderr.WriteLine (e);
 				return true;
 			}

@@ -1,2 +1,2 @@
-SUBDIRS = glue backends test
+SUBDIRS = glue arch backends test
 

@@ -369,6 +369,7 @@ do_exec (gint                 child_err_report_fd,
          gboolean             search_path,
 	 SpawnChildSetupFunc  child_setup_cb)
 {
+  sigset_t mask;
   gint open_max;
   gint i;
       
@@ -432,6 +433,15 @@ do_exec (gint                 child_err_report_fd,
     {
       (* child_setup_cb) ();
     }
+
+  /* Since we're sending SIGUSR1's to the server, we must block it here
+   * to avoid a race condition where the server gets the signal before it
+   * can install its handler. */
+
+  sigemptyset (&mask);
+  sigaddset (&mask, SIGUSR1);
+  sigaddset (&mask, SIGCHLD);
+  sigprocmask (SIG_BLOCK, &mask, NULL);
 
   g_execute (argv[0], argv, envp, search_path);
 

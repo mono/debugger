@@ -11,6 +11,7 @@ ALL_SOURCES = \
 	@top_srcdir@/backends/gdb/*.cs			\
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/*.cs			\
+	@top_srcdir@/arch/*.cs				\
 	@top_srcdir@/interfaces/*.cs			\
 	@top_srcdir@/classes/*.cs
 

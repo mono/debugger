@@ -84,6 +84,7 @@ Makefile
 glue/Makefile
 backends/Makefile
 backends/server/Makefile
+arch/Makefile
 test/Makefile
 test/Debugger.exe.config
 ])

@@ -1,5 +1,7 @@
 using GLib;
 using System;
+using System.IO;
+using System.Text;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
@@ -13,6 +15,147 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
+	internal class TargetInfo : ITargetInfo
+	{
+		int target_int_size;
+		int target_long_size;
+		int target_address_size;
+
+		internal TargetInfo (int target_int_size, int target_long_size,
+				     int target_address_size)
+		{
+			this.target_int_size = target_int_size;
+			this.target_long_size = target_long_size;
+			this.target_address_size = target_address_size;
+		}
+
+		int ITargetInfo.TargetIntegerSize {
+			get {
+				return target_int_size;
+			}
+		}
+
+		int ITargetInfo.TargetLongIntegerSize {
+			get {
+				return target_long_size;
+			}
+		}
+
+		int ITargetInfo.TargetAddressSize {
+			get {
+				return target_address_size;
+			}
+		}
+	}
+
+	internal class TargetReader : ITargetMemoryReader
+	{
+		byte[] data;
+		BinaryReader reader;
+		int offset;
+		ITargetInfo target_info;
+
+		internal TargetReader (byte[] data, ITargetInfo target_info)
+		{
+			this.reader = new BinaryReader (new MemoryStream (data));
+			this.target_info = target_info;
+			this.data = data;
+			this.offset = 0;
+		}
+
+		public long Offset {
+			get {
+				return reader.BaseStream.Position;
+			}
+
+			set {
+				reader.BaseStream.Position = value;
+			}
+		}
+
+		public int TargetIntegerSize {
+			get {
+				return target_info.TargetIntegerSize;
+			}
+		}
+
+		public int TargetLongIntegerSize {
+			get {
+				return target_info.TargetLongIntegerSize;
+			}
+		}
+
+		public int TargetAddressSize {
+			get {
+				return target_info.TargetAddressSize;
+			}
+		}
+
+		public byte ReadByte ()
+		{
+			return reader.ReadByte ();
+		}
+
+		public int ReadInteger ()
+		{
+			return reader.ReadInt32 ();
+		}
+
+		public long ReadLongInteger ()
+		{
+			return reader.ReadInt64 ();
+		}
+
+		public ITargetLocation ReadAddress ()
+		{
+			if (TargetAddressSize == 4)
+				return new TargetLocation (reader.ReadInt32 ());
+			else if (TargetAddressSize == 8)
+				return new TargetLocation (reader.ReadInt64 ());
+			else
+				throw new TargetMemoryException (
+					"Unknown target address size " + TargetAddressSize);
+		}
+	}
+
+	internal class StackFrame : IStackFrame
+	{
+		public readonly ISourceLocation SourceLocation = null;
+		public readonly ITargetLocation TargetLocation = null;
+		public readonly ISymbolHandle SymbolHandle = null;
+
+		public StackFrame (ITargetLocation location)
+		{
+			TargetLocation = location;
+		}
+
+		ISourceLocation IStackFrame.SourceLocation {
+			get {
+				return SourceLocation;
+			}
+		}
+
+		ITargetLocation IStackFrame.TargetLocation {
+			get {
+				return TargetLocation;
+			}
+		}
+
+		public override string ToString ()
+		{
+			StringBuilder builder = new StringBuilder ();
+
+			if (SourceLocation != null)
+				builder.Append (SourceLocation);
+			else
+				builder.Append ("<unknown>");
+			builder.Append (" at ");
+			builder.Append (TargetLocation);
+
+			return builder.ToString ();
+		}
+	}
+
 	public class Debugger : IDebuggerBackend, IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
@@ -30,6 +173,11 @@ namespace Mono.Debugger.Backends
 		string[] argv;
 		string[] envp;
 		string working_directory;
+
+		bool initialized;
+		bool symtabs_read;
+
+		MonoDebuggerInfo mono_debugger_info;
 
 		public Debugger (string application, string[] arguments)
 			: this (application, arguments, new SourceFileFactory ())
@@ -89,6 +237,9 @@ namespace Mono.Debugger.Backends
 
 			target_state = new_state;
 
+			if (new_state == TargetState.STOPPED)
+				IDebuggerBackend.Frame ();
+
 			if (StateChanged != null)
 				StateChanged (target_state);
 		}
@@ -125,19 +276,24 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
-			throw new NotSupportedException ();
+			return inferior.Frame ();
 		}
 
 		public void Step ()
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
+
+			inferior.Step ();
+			change_target_state (TargetState.RUNNING);
 		}
 		
 		public void Next ()
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
+
+			throw new NotSupportedException ();
 		}
 
 		public event TargetOutputHandler TargetOutput;
@@ -155,6 +311,9 @@ namespace Mono.Debugger.Backends
 		{
 			inferior.Dispose ();
 			inferior = null;
+			initialized = false;
+			symtabs_read = false;
+			mono_debugger_info = null;
 		}
 
 		void inferior_output (string line)
@@ -173,6 +332,14 @@ namespace Mono.Debugger.Backends
 		{
 			switch (message) {
 			case ChildMessage.CHILD_STOPPED:
+				if (!initialized) {
+					Continue ();
+					initialized = true;
+					break;
+				} else if (!symtabs_read) {
+					symtabs_read = true;
+					mono_debugger_info = inferior.MonoDebuggerInfo;
+				}
 				change_target_state (TargetState.STOPPED);
 				break;
 
@@ -208,7 +375,10 @@ namespace Mono.Debugger.Backends
 
 		void IDebuggerBackend.Frame ()
 		{
-			IInferior.Frame ();
+			ITargetLocation location = IInferior.Frame ();
+
+			if (CurrentFrameEvent != null)
+				CurrentFrameEvent (new StackFrame (location));
 		}
 
 		public ISourceFileFactory SourceFileFactory {
