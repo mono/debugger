@@ -669,6 +669,7 @@ namespace Mono.Debugger.Backends
 			inferior = null;
 			language = null;
 			symtabs = null;
+			current_method = null;
 			frames_invalid ();
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
