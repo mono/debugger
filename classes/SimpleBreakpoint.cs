@@ -20,6 +20,10 @@ namespace Mono.Debugger
 			: base (name, group, true)
 		{ }
 
+		public SimpleBreakpoint (string name)
+			: base (name, null)
+		{ }
+
 		BreakpointCheckHandler check_handler;
 		BreakpointHitHandler hit_handler;
 		object user_data;
