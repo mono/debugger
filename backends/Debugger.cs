@@ -164,7 +164,7 @@ namespace Mono.Debugger
 				ModulesChangedEvent ();
 		}
 
-		internal void ReachedMain (Process process)
+		internal void ReachedMain ()
 		{
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;

@@ -17,6 +17,100 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
+	internal class MonoThreadManager
+	{
+		DebuggerBackend backend;
+		ThreadManager thread_manager;
+		TargetAddress info;
+
+		public static MonoThreadManager Initialize (ThreadManager thread_manager,
+							    Inferior inferior)
+		{
+			TargetAddress info = inferior.SimpleLookup ("MONO_DEBUGGER__manager");
+			if (info.IsNull)
+				return null;
+
+			return new MonoThreadManager (thread_manager, info);
+		}
+
+		protected MonoThreadManager (ThreadManager thread_manager, TargetAddress info)
+		{
+			this.info = info;
+			this.thread_manager = thread_manager;
+			this.backend = thread_manager.DebuggerBackend;
+
+			threads = new ArrayList ();
+		}
+
+		TargetAddress main_function;
+		TargetAddress main_thread;
+
+		public TargetAddress Initialize (Process process, Inferior inferior)
+		{
+			int size = inferior.ReadInteger (info);
+			ITargetMemoryReader reader = inferior.ReadMemory (info, size);
+			reader.ReadInteger ();
+
+			reader.ReadAddress ();
+			main_function = reader.ReadGlobalAddress ();
+			main_thread = reader.ReadGlobalAddress ();
+
+			new DaemonThreadRunner (process, inferior,
+						new DaemonThreadHandler (main_handler));
+
+			return main_function;
+		}
+
+		ArrayList threads;
+		Process command_process;
+		Process debugger_process;
+		Process main_process;
+		DaemonThreadHandler debugger_handler;
+
+		internal bool ThreadCreated (Process process, Inferior inferior)
+		{
+			threads.Add (process);
+
+			if (threads.Count == 2) {
+				command_process = process;
+				Report.Debug (DebugFlags.Threads,
+					      "Created managed command process: {0}",
+					      process);
+				process.DaemonEvent += new DaemonEventHandler (command_handler);
+				return false;
+			} else if (threads.Count == 3) {
+				debugger_process = process;
+				Report.Debug (DebugFlags.Threads,
+					      "Created managed debugger process: {0}",
+					      process);
+				debugger_handler = backend.CreateDebuggerHandler (command_process);
+				new DaemonThreadRunner (process, inferior, debugger_handler);
+				return false;
+			} else if (threads.Count == 4) {
+				Report.Debug (DebugFlags.Threads,
+					      "Created managed main process: {0}",
+					      process);
+				main_process = process;
+				return true;
+			} else
+				return false;
+		}
+
+		bool command_handler (TargetEventArgs args)
+		{
+			Console.WriteLine ("COMMAND HANDLER: {0}", args);
+
+			return true;
+		}
+
+		bool main_handler (DaemonThreadRunner runner, TargetAddress address, int signal)
+		{
+			Console.WriteLine ("MAIN HANDLER: {0} {1}", address, signal);
+
+			return true;
+		}
+	}
+
 #if FIXME
 	internal class MonoThreadManager : ThreadManager
 	{

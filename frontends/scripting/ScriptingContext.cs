@@ -302,6 +302,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					current_frame.Print (context);
 				}
 			}
+
 			initialize ();
 		}
 
@@ -847,9 +848,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle handle = new ProcessHandle (this, manager.DebuggerBackend, process);
 			add_process (handle);
-
-			if (!process.IsDaemon)
-				handle.Background ();
 		}
 
 		public void ShowVariableType (ITargetType type, string name)

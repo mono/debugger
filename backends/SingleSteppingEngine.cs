@@ -128,7 +128,8 @@ public class SingleSteppingEngine : ThreadManager
 
 		TheEngine event_engine = (TheEngine) thread_hash [pid];
 		if (event_engine == null)
-			throw new InternalError ();
+			throw new InternalError ("Got event {0:x} for unknown pid {1}",
+						 status, pid);
 
 		lock (this) {
 			if (current_event_engine != null)
@@ -147,7 +148,8 @@ public class SingleSteppingEngine : ThreadManager
 
 		thread_hash.Add (the_engine.PID, the_engine);
 		wait_event.Set ();
-		ready_event.Set ();
+
+		OnThreadCreatedEvent (the_engine);
 
 		while (true) {
 			engine_thread_main ();
@@ -200,9 +202,25 @@ public class SingleSteppingEngine : ThreadManager
 		ready_event.WaitOne ();
 		Wait ();
 
-		the_engine.ContinueUntilMain ();
+		OnInitializedEvent (main_process);
+		OnMainThreadCreatedEvent (main_process);
+		return main_process;
+	}
 
-		return the_engine;
+	bool initialized;
+	MonoThreadManager mono_manager;
+	TargetAddress main_method = TargetAddress.Null;
+
+	protected override void DoInitialize (Inferior inferior)
+	{
+		TargetAddress frame = inferior.CurrentFrame;
+		if (frame != main_method)
+			throw new InternalError ("Target stopped unexpectedly at {0}, " +
+						 "but main is at {1}", frame, main_method);
+
+		backend.ReachedMain ();
+
+		ready_event.Set ();
 	}
 
 	public override Process[] Threads {
@@ -235,10 +253,6 @@ public class SingleSteppingEngine : ThreadManager
 		throw new NotSupportedException ();
 	}
 
-	protected override void DoInitialize (Inferior inferior)
-	{
-	}
-
 	protected override void AddThread (Inferior inferior, Process new_thread,
 					   int pid, bool is_daemon)
 	{
@@ -249,6 +263,25 @@ public class SingleSteppingEngine : ThreadManager
 	internal override bool HandleChildEvent (Inferior inferior,
 						 Inferior.ChildEvent cevent)
 	{
+		if (!initialized) {
+			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
+			    (cevent.Argument != 0))
+				throw new InternalError (
+					"Received unexpected initial child event {0}", cevent);
+
+			mono_manager = MonoThreadManager.Initialize (this, inferior);
+
+			main_process = the_engine;
+			if (mono_manager == null)
+				main_method = inferior.MainMethodAddress;
+			else
+				main_method = TargetAddress.Null;
+			the_engine.Initialize (main_method);
+
+			initialized = true;
+			return true;
+		}
+
 		if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
 			int pid = (int) cevent.Argument;
 
@@ -260,11 +293,19 @@ public class SingleSteppingEngine : ThreadManager
 
 			thread_hash.Add (pid, new_thread);
 
-			OnThreadCreatedEvent (new_thread);
+			if ((mono_manager != null) &&
+			    (mono_manager.ThreadCreated (new_thread, new_inferior))) {
+				main_process = new_thread;
 
-			Report.Debug (DebugFlags.Threads, "Engine created: {0}", new_thread);
+				main_method = mono_manager.Initialize (the_engine, inferior);
+
+				new_thread.Initialize (main_method);
+			} else
+				OnThreadCreatedEvent (new_thread);
 
 			new_inferior.Continue ();
+
+			inferior.Continue ();
 
 			return true;
 		}
@@ -278,6 +319,7 @@ public class SingleSteppingEngine : ThreadManager
 	protected void SendResult (CommandResult result)
 	{
 		lock (this) {
+			Report.Debug (DebugFlags.EventLoop, "Sending result {0}", result);
 			command_result = result;
 			completed_event.Set ();
 		}
@@ -285,12 +327,14 @@ public class SingleSteppingEngine : ThreadManager
 
 	protected void SetCompleted ()
 	{
+		Report.Debug (DebugFlags.EventLoop, "Setting completed flag");
 		result_sent = true;
 		completed_event.Set ();
 	}
 
 	protected void ResetCompleted ()
 	{
+		Report.Debug (DebugFlags.EventLoop, "Clearing completed flag");
 		completed_event.Reset ();
 	}
 
@@ -449,8 +493,7 @@ public class SingleSteppingEngine : ThreadManager
 			} catch (ThreadAbortException) {
 				;
 			} catch (Exception e) {
-				Console.WriteLine ("EXCEPTION: {0} {1:x} {2}",
-						   engine_event, status, e);
+				Console.WriteLine ("EXCEPTION: {0}", e);
 			}
 			wait_event.Set ();
 
@@ -458,8 +501,6 @@ public class SingleSteppingEngine : ThreadManager
 				engine_is_ready = true;
 				start_event.Set ();
 			}
-
-			return;
 		}
 
 		Command command;
@@ -470,6 +511,8 @@ public class SingleSteppingEngine : ThreadManager
 
 		if (command == null)
 			return;
+
+		Report.Debug (DebugFlags.EventLoop, "SSE received command: {0}", command);
 
 		// These are synchronous commands; ie. the caller blocks on us
 		// until we finished the command and sent the result.
@@ -504,6 +547,7 @@ public class SingleSteppingEngine : ThreadManager
 
 	protected enum StepOperation {
 		None,
+		Initialize,
 		Native,
 		Run,
 		RunInBackground,
@@ -574,6 +618,13 @@ public class SingleSteppingEngine : ThreadManager
 			this.Type = CommandType.Command;
 			this.CommandFunc = func;
 			this.CommandFuncData = data;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Command ({0}:{1}:{2}:{3}:{4}:{5}:{6})",
+					      Process, Type, Operation, StepFrame, Until,
+					      CommandFunc, CommandFuncData);
 		}
 	}
 
@@ -667,7 +718,7 @@ public class SingleSteppingEngine : ThreadManager
 			disassembler = inferior.Disassembler;
 
 			if (false) {
-				sse.DebuggerBackend.ReachedMain (this);
+				sse.DebuggerBackend.ReachedMain ();
 				main_method_retaddr = inferior.GetReturnAddress ();
 			}
 
@@ -686,11 +737,9 @@ public class SingleSteppingEngine : ThreadManager
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
 			Report.Debug (DebugFlags.EventLoop,
 				      "SSE {0} received event {1} ({2:x})",
-				      PID, cevent, status);
-			if (sse.HandleChildEvent (inferior, cevent)) {
-				inferior.Continue ();
+				      this, cevent, status);
+			if (sse.HandleChildEvent (inferior, cevent))
 				return;
-			}
 			ProcessEvent (cevent);
 		}
 
@@ -726,14 +775,13 @@ public class SingleSteppingEngine : ThreadManager
 			sse.SetCompleted ();
 		}
 
-		public void ContinueUntilMain ()
+		public void Initialize (TargetAddress main)
 		{
-			TargetAddress main = inferior.MainMethodAddress;
-			Report.Debug (DebugFlags.Threads, "Main address is {0}", main);
-			Continue (main, true);
-			ReachedMain (true);
-
-			Report.Debug (DebugFlags.Threads, "Reached main");
+			if (!main.IsNull) {
+				insert_temporary_breakpoint (main);
+				current_operation = StepOperation.Initialize;
+			}
+			do_continue ();
 		}
 
 		Inferior.ChildEvent wait ()
@@ -912,7 +960,7 @@ public class SingleSteppingEngine : ThreadManager
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
 				if (OnDaemonEvent (result)) {
-					do_continue ();
+					is_daemon = true;
 					return false;
 				}
 				SendTargetEvent (result);
@@ -921,6 +969,12 @@ public class SingleSteppingEngine : ThreadManager
 
 			if (!DoStep (false))
 				return false;
+
+			if (current_operation == StepOperation.Initialize) {
+				sse.Initialize (inferior);
+				main_method_retaddr = inferior.GetReturnAddress ();
+				step_operation_finished ();
+			}
 
 			//
 			// Ok, the target stopped normally.  Now we need to compute the
@@ -942,7 +996,7 @@ public class SingleSteppingEngine : ThreadManager
 			Command new_command = frame_changed (frame, 0, current_operation);
 			if (new_command != null) {
 				Console.WriteLine ("NEW COMMAND: {0}", new_command);
-				return false;
+				// return false;
 			}
 
 			step_operation_finished ();
@@ -1000,6 +1054,12 @@ public class SingleSteppingEngine : ThreadManager
 		public override int PID {
 			get {
 				return pid;
+			}
+		}
+
+		internal Inferior TheInferior {
+			get {
+				return inferior;
 			}
 		}
 
@@ -1417,7 +1477,8 @@ public class SingleSteppingEngine : ThreadManager
 			    (operation != StepOperation.NextLine) &&
 			    (operation != StepOperation.Run) &&
 			    (operation != StepOperation.RunInBackground) &&
-			    (operation != StepOperation.RuntimeInvoke))
+			    (operation != StepOperation.RuntimeInvoke) &&
+			    (operation != StepOperation.Initialize))
 				return null;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
@@ -1906,7 +1967,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			if ((bool) data)
 				main_method_retaddr = inferior.GetReturnAddress ();
-			sse.DebuggerBackend.ReachedMain (this);
+			sse.DebuggerBackend.ReachedMain ();
 			inferior.UpdateModules ();
 			frames_invalid ();
 			current_method = null;
@@ -2298,7 +2359,7 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		public override bool IsStopped {
-			get { return true; }
+			get { return State == TargetState.STOPPED; }
 		}
 
 		public override ITargetAccess TargetAccess {

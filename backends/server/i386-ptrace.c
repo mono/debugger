@@ -195,10 +195,14 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
-			if (WSTOPSIG (status) == SIGTRAP)
+			if (WSTOPSIG (status) == SIGTRAP) {
+				handle->inferior->last_signal = 0;
 				*arg = 0;
-			else {
-				handle->inferior->last_signal = WSTOPSIG (status);
+			} else {
+				if (WSTOPSIG (status) == SIGSTOP)
+					handle->inferior->last_signal = 0;
+				else
+					handle->inferior->last_signal = WSTOPSIG (status);
 				*arg = WSTOPSIG (status);
 			}
 			return MESSAGE_CHILD_STOPPED;
@@ -374,6 +378,8 @@ check_io (InferiorHandle *inferior)
 ServerCommandError
 mono_debugger_server_stop (ServerHandle *handle)
 {
+	g_message (G_STRLOC ": Sending SIGSTOP to %d", handle->inferior->pid);
+
 	kill (handle->inferior->pid, SIGSTOP);
 
 	return COMMAND_ERROR_NONE;

@@ -21,16 +21,8 @@ static sem_t debugger_finished_cond;
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
 
-MonoMethod *MONO_DEBUGGER__main_method = NULL;
-gpointer MONO_DEBUGGER__main_function = NULL;
-MonoDebuggerThread *MONO_DEBUGGER__main_thread = NULL;
-int MONO_DEBUGGER__main_pid = 0;
-int MONO_DEBUGGER__debugger_thread = 0;
-int MONO_DEBUGGER__command_thread = 0;
-gpointer MONO_DEBUGGER__command_notification = NULL;
-
 #define HEAP_SIZE 1048576
-static char MONO_DEBUGGER__heap [HEAP_SIZE];
+static char mono_debugger_heap [HEAP_SIZE];
 
 static gpointer debugger_event_data;
 static guint32 debugger_event_arg;
@@ -66,8 +58,13 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_lookup_type,
 	&debugger_event_data,
 	&debugger_event_arg,
-	MONO_DEBUGGER__heap,
+	mono_debugger_heap,
 	HEAP_SIZE
+};
+
+MonoDebuggerManager MONO_DEBUGGER__manager = {
+	sizeof (MonoDebuggerManager),
+	NULL, NULL, NULL, NULL, NULL, 0, NULL, 0
 };
 
 void
@@ -195,7 +192,7 @@ initialize_debugger_support (void)
 	debugger_notification_function = mono_debugger_create_notification_function
 		(&debugger_notification_address);
 	command_notification_function = mono_debugger_create_notification_function
-		(&MONO_DEBUGGER__command_notification);
+		(&MONO_DEBUGGER__manager.command_notification);
 }
 
 typedef struct 
@@ -219,8 +216,6 @@ debugger_thread_handler (gpointer user_data)
 	MonoAssembly *assembly;
 	MonoImage *image;
 
-	MONO_DEBUGGER__debugger_thread = getpid ();
-
 	mono_debug_init (debugger_args->domain, MONO_DEBUG_FORMAT_DEBUGGER);
 
 	assembly = mono_domain_assembly_open (debugger_args->domain, debugger_args->file);
@@ -236,8 +231,8 @@ debugger_thread_handler (gpointer user_data)
 	 */
 
 	image = assembly->image;
-	MONO_DEBUGGER__main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
-	MONO_DEBUGGER__main_function = mono_compile_method ((gpointer) MONO_DEBUGGER__main_method);
+	MONO_DEBUGGER__manager.main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+	MONO_DEBUGGER__manager.main_function = mono_compile_method ((gpointer) MONO_DEBUGGER__manager.main_method);
 
 	/*
 	 * Signal the main thread that we're ready.
@@ -283,13 +278,11 @@ main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args = (MainThreadArgs *) user_data;
 	int retval;
 
-	MONO_DEBUGGER__main_pid = getpid ();
+	MONO_DEBUGGER__manager.main_thread = g_new0 (MonoDebuggerThread, 1);
+	MONO_DEBUGGER__manager.main_thread->pid = getpid ();
+	MONO_DEBUGGER__manager.main_thread->start_stack = &main_args;
 
-	MONO_DEBUGGER__main_thread = g_new0 (MonoDebuggerThread, 1);
-	MONO_DEBUGGER__main_thread->pid = getpid ();
-	MONO_DEBUGGER__main_thread->start_stack = &main_args;
-
-	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__main_thread);
+	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__manager.main_thread);
 
 	sem_post (&main_started_cond);
 
@@ -306,7 +299,6 @@ main_thread_handler (gpointer user_data)
 static guint32
 command_thread_handler (gpointer user_data)
 {
-	MONO_DEBUGGER__command_thread = getpid ();
 	sem_post (&command_started_cond);
 
 	/*
@@ -332,12 +324,19 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 
 	mono_debugger_init_icalls ();
 
-	debugger_args.domain = domain;
-	debugger_args.file = file;
+	/*
+	 * Create the command thread and wait until it's ready.
+	 */
+
+	mono_thread_create (domain, command_thread_handler, NULL);
+	mono_debugger_wait_cond (&command_started_cond);
 
 	/*
 	 * Start the debugger thread and wait until it's ready.
 	 */
+	debugger_args.domain = domain;
+	debugger_args.file = file;
+
 	mono_thread_create (domain, debugger_thread_handler, &debugger_args);
 	mono_debugger_wait_cond (&debugger_started_cond);
 
@@ -346,19 +345,12 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 */
 
 	main_args.domain = domain;
-	main_args.method = MONO_DEBUGGER__main_method;
+	main_args.method = MONO_DEBUGGER__manager.main_method;
 	main_args.argc = argc - 2;
 	main_args.argv = argv + 2;
 
 	mono_thread_create (domain, main_thread_handler, &main_args);
 	mono_debugger_wait_cond (&main_started_cond);
-
-	/*
-	 * Create the command thread and wait until it's ready.
-	 */
-
-	mono_thread_create (domain, command_thread_handler, NULL);
-	mono_debugger_wait_cond (&command_started_cond);
 
 	/*
 	 * Initialize the thread manager.

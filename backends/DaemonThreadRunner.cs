@@ -15,12 +15,12 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class DaemonThreadRunner : IDisposable
 	{
-		public DaemonThreadRunner (Process process, Inferior inferior, int pid,
-					   SingleSteppingEngine sse, DaemonThreadHandler handler)
+		public DaemonThreadRunner (Process process, Inferior inferior,
+					   DaemonThreadHandler handler)
 		{
 			this.process = process;
 			this.inferior = inferior;
-			this.pid = pid;
+			this.pid = inferior.PID;
 			this.daemon_thread_handler = handler;
 
 			process.DaemonEvent += new DaemonEventHandler (daemon_event);
@@ -62,12 +62,15 @@ namespace Mono.Debugger.Backends
 				else
 					Console.WriteLine ("Daemon thread {0} unexpectedly died with " +
 							   "fatal signal {1}.", pid, signal);
-			} else if ((args.Type == TargetEventType.TargetHitBreakpoint) && (args.Data == null))
+			} else if ((args.Type == TargetEventType.TargetHitBreakpoint) && (args.Data == null)) {
+				inferior.Continue ();
 				return true;
-			else if (!daemon_stopped (inferior.CurrentFrame))
+			} else if (!daemon_stopped (inferior.CurrentFrame))
 				Console.WriteLine ("Daemon thread {0} stopped unexpectedly at {1}.", pid, inferior.CurrentFrame);
-			else
+			else {
+				inferior.Continue ();
 				return true;
+			}
 
 #if FIXME
 			if (is_main_thread)

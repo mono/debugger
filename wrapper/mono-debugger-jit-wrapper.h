@@ -8,6 +8,7 @@ G_BEGIN_DECLS
 
 typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
 typedef struct _MonoDebuggerThread		MonoDebuggerThread;
+typedef struct _MonoDebuggerManager             MonoDebuggerManager;
 
 /*
  * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
@@ -46,6 +47,18 @@ struct _MonoDebuggerThread {
 	gpointer start_stack;
 };
 
+struct _MonoDebuggerManager {
+	guint32 size;
+	MonoMethod *main_method;
+	gpointer main_function;
+	MonoDebuggerThread *main_thread;
+	gpointer command_notification;
+	gpointer thread_manager_notification;
+	guint32 thread_manager_last_pid;
+	gpointer thread_manager_last_func;
+	guint32 thread_manager_last_thread;
+};
+
 enum {
 	THREAD_MANAGER_CREATE_THREAD = 1,
 	THREAD_MANAGER_RESUME_THREAD,
@@ -68,20 +81,9 @@ void mono_debugger_thread_manager_acquire_global_thread_lock (void);
 void mono_debugger_thread_manager_release_global_thread_lock (void);
 void mono_debugger_init_icalls (void);
 
-void MONO_DEBUGGER__main (void);
+void MONO_DEBUGGER__start_main (void);
 
 extern void (*mono_debugger_thread_manager_notification_function) (gpointer func);
-extern gpointer MONO_DEBUGGER__thread_manager_notification;
-extern gpointer MONO_DEBUGGER__command_notification;
-extern int MONO_DEBUGGER__main_pid;
-extern MonoDebuggerThread *MONO_DEBUGGER__main_thread;
-extern int MONO_DEBUGGER__debugger_thread;
-extern int MONO_DEBUGGER__command_thread;
-extern int MONO_DEBUGGER__thread_manager_last_pid;
-extern MonoMethod *MONO_DEBUGGER__main_method;
-extern gpointer MONO_DEBUGGER__main_function;
-extern gpointer MONO_DEBUGGER__thread_manager_last_func;
-extern guint32 MONO_DEBUGGER__thread_manager_last_thread;
 
 G_END_DECLS
 

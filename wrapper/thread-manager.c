@@ -86,12 +86,6 @@ GCThreadFunctions mono_debugger_thread_vtable = {
 	debugger_gc_start_world
 };
 
-void G_GNUC_UNUSED
-MONO_DEBUGGER__thread_manager_initialized (void)
-{
-	// The debugger sets a breakpoint here, so don't remove this function.
-}
-
 void
 mono_debugger_thread_manager_init (void)
 {
@@ -112,8 +106,6 @@ mono_debugger_thread_manager_init (void)
 		(gpointer) &MONO_DEBUGGER__thread_manager_notification);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
-
-	notification_function (0, NULL);
 }
 
 static void

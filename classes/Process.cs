@@ -20,7 +20,7 @@ namespace Mono.Debugger
 	{
 		ProcessStart start;
 
-		bool is_daemon;
+		protected bool is_daemon;
 		int id;
 
 		static int next_id = 0;
