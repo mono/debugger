@@ -163,24 +163,28 @@ namespace Mono.Debugger
 
 		internal void ReachedMain (Process process, IInferior inferior)
 		{
-			if (!process.ProcessStart.IsNative) {
-				csharp_language = new MonoCSharpLanguageBackend (this, process);
-				languages.Add (csharp_language);
-			}
 			inferior.UpdateModules ();
 
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;
 
-			DaemonThreadHandler handler = null;
-			if (csharp_language != null)
-				handler = new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
-
-			thread_manager.Initialize (process, inferior, handler);
+			thread_manager.Initialize (process, inferior);
 		}
 
-		internal void ReachedManagedMain ()
+		internal Process CreateDebuggerProcess (Process manager, int pid)
 		{
+			csharp_language = new MonoCSharpLanguageBackend (this, manager);
+			languages.Add (csharp_language);
+
+			return manager.CreateDaemonThread (
+				pid, 0, new DaemonThreadHandler (csharp_language.DaemonThreadHandler));
+		}
+
+		internal void ReachedManagedMain (Process process)
+		{
+			foreach (Module module in Modules)
+				module.BackendLoaded = true;
+
 			module_manager.UnLock ();
 		}
 
