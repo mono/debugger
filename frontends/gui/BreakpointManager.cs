@@ -67,8 +67,6 @@ namespace Mono.Debugger.GUI
 
 		void breakpoints_changed ()
 		{
-			// Console.WriteLine ("BREAKPOINTS CHANGED");
-			return;
 			if (!IsVisible)
 				return;
 
