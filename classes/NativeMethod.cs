@@ -4,43 +4,15 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public struct LineEntry : IComparable {
-		public readonly long Address;
-		public readonly int Line;
-
-		public LineEntry (long address, int line)
-		{
-			this.Address = address;;
-			this.Line = line;
-		}
-
-		public int CompareTo (object obj)
-		{
-			LineEntry entry = (LineEntry) obj;
-
-			if (entry.Address < Address)
-				return 1;
-			else if (entry.Address > Address)
-				return -1;
-			else
-				return 0;
-		}
-	}
-
-	public class NativeMethod : IMethodSource, IMethod
+	public class NativeMethod : MethodBase, IMethodSource, IMethod
 	{
 		IDisassembler disassembler;
-		ITargetLocation start, end;
-		ArrayList addresses;
-		WeakReference weak_source;
-		int start_row, end_row;
-		string image_file;
-		string name;
 
 		public NativeMethod (IDisassembler dis, IMethod method)
-			: this (dis, method.Name, method.ImageFile,
-				method.StartAddress, method.EndAddress)
-		{ }
+			: base (method)
+		{
+			this.disassembler = dis;
+		}
 
 		public NativeMethod (IDisassembler dis, string name, string image_file,
 				     ITargetLocation start, ITargetLocation end)
@@ -51,35 +23,11 @@ namespace Mono.Debugger
 
 		public NativeMethod (string name, string image_file,
 				     ITargetLocation start, ITargetLocation end)
-		{
-			this.name = name;
-			this.image_file = image_file;
-			this.start = start;
-			this.end = end;
-		}
+			: base (name, image_file, start, end)
+		{ }
 
-		ISourceBuffer ReadSource ()
-		{
-			ISourceBuffer source = null;
-			if (weak_source != null) {
-				try {
-					source = (ISourceBuffer) weak_source.Target;
-				} catch {
-					weak_source = null;
-				}
-			}
-
-			if (source != null)
-				return source;
-
-			source = ReadSource (out start_row, out end_row, out addresses);
-			if (source != null)
-				weak_source = new WeakReference (source);
-			return source;
-		}
-
-		protected virtual ISourceBuffer ReadSource (out int start_row, out int end_row,
-							    out ArrayList addresses)
+		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
+							     out ArrayList addresses)
 		{
 			start_row = end_row = 0;
 			addresses = null;
@@ -89,7 +37,7 @@ namespace Mono.Debugger
 
 			Console.WriteLine ("READ SOURCE: {0}", this);
 
-			ITargetLocation current = (ITargetLocation) start.Clone ();
+			ITargetLocation current = StartAddress;
 
 			addresses = new ArrayList ();
 
@@ -126,92 +74,10 @@ namespace Mono.Debugger
 		// IMethod
 		//
 
-		public string Name {
-			get {
-				return name;
-			}
-		}
-
-		public string ImageFile {
-			get {
-				return image_file;
-			}
-		}
-
-		public object MethodHandle {
+		public override object MethodHandle {
 			get {
 				return this;
 			}
-		}
-
-		public IMethodSource Source {
-			get {
-				return this;
-			}
-		}
-
-		public ISourceBuffer SourceBuffer {
-			get {
-				return ReadSource ();
-			}
-		}
-
-		public int StartRow {
-			get {
-				return start_row + 1;
-			}
-		}
-
-		public int EndRow {
-			get {
-				return end_row;
-			}
-		}
-
-		public bool IsInSameMethod (ITargetLocation target)
-		{
-			if ((target.Address < start.Address) || (target.Address >= end.Address))
-				return false;
-
-			return true;
-		}
-
-		public ISourceLocation Lookup (ITargetLocation target)
-		{
-			if (!IsInSameMethod (target))
-				return null;
-
-			ISourceBuffer source = ReadSource ();
-			if (source == null)
-				return null;
-
-			for (int i = addresses.Count-1; i >= 0; i--) {
-				LineEntry entry = (LineEntry) addresses [i];
-
-				if (entry.Address > target.Address)
-					continue;
-
-				return new SourceLocation (source, entry.Line);
-			}
-
-			return null;
-		}
-
-		public ITargetLocation StartAddress {
-			get {
-				return (ITargetLocation) start.Clone ();
-			}
-		}
-
-		public ITargetLocation EndAddress {
-			get {
-				return (ITargetLocation) end.Clone ();
-			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("NativeMethod({0},{1},{2})", name, start, end);
 		}
 	}
 }
