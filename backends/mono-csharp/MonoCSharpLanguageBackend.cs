@@ -57,6 +57,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MethodEntry[] Methods;
 		protected string ImageFile;
 		protected OffsetTable offset_table;
+		protected ILanguageBackend language;
 		ArrayList ranges;
 
 		int is_dynamic;
@@ -75,8 +76,11 @@ namespace Mono.Debugger.Languages.CSharp
 		ITargetMemoryReader range_reader;
 
 		internal MonoSymbolTableReader (ITargetMemoryAccess memory,
-						ITargetMemoryReader symtab_reader)
+						ITargetMemoryReader symtab_reader,
+						ILanguageBackend language)
 		{
+			this.language = language;
+
 			if (symtab_reader.ReadLongInteger () != OffsetTable.Magic)
 				throw new SymbolTableException ();
 
@@ -185,6 +189,12 @@ namespace Mono.Debugger.Languages.CSharp
 					this, method, factory, out start_row, out end_row, out addresses);
 			}
 
+			public override ILanguageBackend Language {
+				get {
+					return reader.language;
+				}
+			}
+
 			public override object MethodHandle {
 				get {
 					return method.Token;
@@ -231,7 +241,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class MonoSymbolTableCollection : SymbolTable, ILanguageBackend
+	internal class MonoCSharpLanguageBackend : SymbolTable, ILanguageBackend
 	{
 		IInferior inferior;
 		ITargetMemoryAccess memory;
@@ -239,11 +249,19 @@ namespace Mono.Debugger.Languages.CSharp
 		int symtab_generation;
 		ArrayList symtabs;
 		ArrayList ranges;
+		ITargetLocation trampoline_address;
+		IArchitecture arch;
 
-		public MonoSymbolTableCollection (IInferior inferior)
+		public MonoCSharpLanguageBackend (IInferior inferior)
 		{
 			this.inferior = inferior;
 			this.memory = inferior;
+		}
+
+		public ISymbolTable SymbolTable {
+			get {
+				return this;
+			}
 		}
 
 		public override bool HasRanges {
@@ -294,7 +312,8 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryReader table = memory.ReadMemory (symbol_info, size);
 			info = new MonoDebuggerInfo (table);
 
-			// arch.GenericTrampolineCode = inferior.ReadAddress (mono_debugger_info.trampoline_code);
+			trampoline_address = inferior.ReadAddress (info.trampoline_code);
+			arch = inferior.Architecture;
 		}
 
 		bool updating_symfiles;
@@ -353,7 +372,7 @@ namespace Mono.Debugger.Languages.CSharp
 			for (int i = 0; i < count; i++) {
 				MonoSymbolTableReader reader;
 				try {
-					reader = new MonoSymbolTableReader (memory, symtab_reader);
+					reader = new MonoSymbolTableReader (memory, symtab_reader, this);
 					ranges.AddRange (reader.SymbolRanges);
 					symtabs.Add (reader);
 				} catch (SymbolTableEmptyException) {
@@ -366,6 +385,47 @@ namespace Mono.Debugger.Languages.CSharp
 			ranges.Sort ();
 
 			Console.WriteLine ("Done updating symbol files.");
+		}
+
+		public ITargetLocation GenericTrampolineCode {
+			get {
+				return trampoline_address;
+			}
+		}
+
+		public ITargetLocation GetTrampoline (ITargetLocation address)
+		{
+			if (trampoline_address == null)
+				return null;
+
+			ITargetLocation trampoline = arch.GetTrampoline (address, trampoline_address);
+
+			Console.WriteLine ("CALL: {0:x} {1:x} => {2:x}",
+					   address, trampoline_address, trampoline);
+
+			if ((trampoline == null) || trampoline.IsNull)
+				return null;
+
+			long result = inferior.CallMethod (info.compile_method, trampoline.Address);
+
+			ITargetLocation method;
+			switch (inferior.TargetAddressSize) {
+			case 4:
+				method = new TargetLocation ((int) result);
+				break;
+
+			case 8:
+				method = new TargetLocation (result);
+				break;
+				
+			default:
+				throw new TargetMemoryException (
+					"Unknown target address size " + inferior.TargetAddressSize);
+			}
+
+			Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
+
+			return method;
 		}
 	}
 }

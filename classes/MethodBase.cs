@@ -109,6 +109,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public abstract ILanguageBackend Language {
+			get;
+		}
+
 		public abstract object MethodHandle {
 			get;
 		}

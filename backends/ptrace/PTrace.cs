@@ -327,7 +327,7 @@ namespace Mono.Debugger.Backends
 
 		void child_callback (long callback, long data)
 		{
-			child_message (ChildMessageType.CHILD_STOPPED, 0);
+			change_target_state (TargetState.STOPPED);
 
 			if (!pending_callbacks.Contains (callback))
 				return;
@@ -711,40 +711,17 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			int insn_size;
 			ITargetLocation call = arch.GetCallTarget (CurrentFrame, out insn_size);
-			if (!native && !call.IsNull) {
-#if FALSE
-				ITargetLocation trampoline = arch.GetTrampoline (call);
+			if (!native && !call.IsNull && (frame.Language != null)) {
+				ITargetLocation trampoline = frame.Language.GetTrampoline (call);
 
 				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
 						   call, insn_size, trampoline, frame, CurrentFrame);
 
 				if ((trampoline != null) && !trampoline.IsNull) {
-					long result = CallMethod (
-						mono_debugger_info.compile_method, trampoline.Address);
-
-					ITargetLocation method;
-					switch (TargetAddressSize) {
-					case 4:
-						method = new TargetLocation ((int) result);
-						break;
-
-					case 8:
-						method = new TargetLocation (result);
-						break;
-
-					default:
-						throw new TargetMemoryException (
-							"Unknown target address size " + TargetAddressSize);
-					}
-
-
-					Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
-
-					insert_temporary_breakpoint (method);
+					insert_temporary_breakpoint (trampoline);
 					Continue ();
 					return;
 				}
-#endif
 			} else if (!call.IsNull) {
 				IMethod method = native_symtabs.Lookup (call);
 				if (method == null) {
@@ -796,6 +773,13 @@ namespace Mono.Debugger.Backends
 			get {
 				check_disposed ();
 				return native_symtabs;
+			}
+		}
+
+		public IArchitecture Architecture {
+			get {
+				check_disposed ();
+				return arch;
 			}
 		}
 

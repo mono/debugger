@@ -16,6 +16,12 @@ namespace Mono.Debugger
 			this.method = method;
 		}
 
+		public override ILanguageBackend Language {
+			get {
+				return null;
+			}
+		}
+
 		public override object MethodHandle {
 			get {
 				return this;

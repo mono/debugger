@@ -44,6 +44,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		ILanguageBackend Language {
+			get;
+		}
+
 		// <summary>
 		//   StartAddress and EndAddress are only valid if this is true.
 		// </summary>

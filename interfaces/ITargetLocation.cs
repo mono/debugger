@@ -11,6 +11,10 @@ namespace Mono.Debugger
 		ITargetLocation End {
 			get;
 		}
+
+		ILanguageBackend Language {
+			get;
+		}
 	}
 
 	// <summary>

@@ -126,6 +126,13 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Gets the IArchitecture for the current target.
+		// </summary>
+		IArchitecture Architecture {
+			get;
+		}
+
+		// <summary>
 		//   The symbol table from native executables and shared libraries.
 		// </summary>
 		ISymbolTableCollection SymbolTables {

@@ -9,21 +9,10 @@ namespace Mono.Debugger
 	internal class ArchitectureI386 : IArchitecture
 	{
 		IInferior inferior;
-		ITargetLocation trampoline_address;
 
 		public ArchitectureI386 (IInferior inferior)
 		{
 			this.inferior = inferior;
-		}
-
-		public ITargetLocation GenericTrampolineCode {
-			get {
-				return trampoline_address;
-			}
-
-			set {
-				trampoline_address = value;
-			}
 		}
 
 		public ITargetLocation GetCallTarget (ITargetLocation location, out int insn_size)
@@ -100,7 +89,8 @@ namespace Mono.Debugger
 			return TargetLocation.Null;
 		}
 
-		public ITargetLocation GetTrampoline (ITargetLocation location)
+		public ITargetLocation GetTrampoline (ITargetLocation location,
+						      ITargetLocation trampoline_address)
 		{
 			if (trampoline_address == null)
 				return null;

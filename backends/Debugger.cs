@@ -298,11 +298,13 @@ namespace Mono.Debugger.Backends
 	internal class StepFrame : IStepFrame
 	{
 		ITargetLocation start, end;
+		ILanguageBackend language;
 
-		internal StepFrame (ITargetLocation start, ITargetLocation end)
+		internal StepFrame (ITargetLocation start, ITargetLocation end, ILanguageBackend language)
 		{
 			this.start = start;
 			this.end = end;
+			this.language = language;
 		}
 
 		public ITargetLocation Start {
@@ -314,6 +316,12 @@ namespace Mono.Debugger.Backends
 		public ITargetLocation End {
 			get {
 				return end;
+			}
+		}
+
+		public ILanguageBackend Language {
+			get {
+				return language;
 			}
 		}
 
@@ -549,7 +557,7 @@ namespace Mono.Debugger.Backends
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
 
 			if (!native)
-				language = new MonoSymbolTableCollection (inferior);
+				language = new MonoCSharpLanguageBackend (inferior);
 		}
 
 		public void Quit ()
@@ -574,7 +582,8 @@ namespace Mono.Debugger.Backends
 			ITargetLocation end = (ITargetLocation) start.Clone ();
 			end.Offset += range;
 
-			return new StepFrame (start, end);
+			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
+			return new StepFrame (start, end, language);
 		}
 
 		public void StepLine ()
@@ -629,7 +638,7 @@ namespace Mono.Debugger.Backends
 			if (language == null)
 				return null;
 
-			return language.Lookup (address);
+			return language.SymbolTable.Lookup (address);
 		}
 
 		void frame_changed ()
