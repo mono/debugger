@@ -103,7 +103,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument);
+		static extern CommandError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument, bool debug);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
@@ -160,7 +160,8 @@ namespace Mono.Debugger.Backends
 			CHILD_HIT_BREAKPOINT,
 			CHILD_MEMORY_CHANGED,
 			CHILD_CREATED_THREAD,
-			CHILD_NOTIFICATION
+			CHILD_NOTIFICATION,
+			UNHANDLED_EXCEPTION
 		}
 
 		internal delegate void ChildEventHandler (ChildEventType message, int arg);
@@ -314,7 +315,7 @@ namespace Mono.Debugger.Backends
 
 		public void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
 					   TargetAddress object_argument, TargetAddress[] param_objects,
-					   long callback_arg)
+					   long callback_arg, bool debug)
 		{
 			check_disposed ();
 
@@ -332,7 +333,8 @@ namespace Mono.Debugger.Backends
 
 				check_error (mono_debugger_server_call_method_invoke (
 					server_handle, invoke_method.Address, method_argument.Address,
-					object_argument.Address, size, data, callback_arg));
+					object_argument.Address, size, data, callback_arg,
+					debug));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);

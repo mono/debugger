@@ -486,7 +486,8 @@ namespace Mono.Debugger.Backends
 					      "{0} hit temporary breakpoint at {1}",
 					      this, inferior.CurrentFrame);
 
-				if (!stop_requested) {
+				if (!stop_requested &&
+				    (message != Inferior.ChildEventType.UNHANDLED_EXCEPTION)) {
 					inferior.Continue (); // do_continue ();
 					return;
 				}
@@ -502,10 +503,25 @@ namespace Mono.Debugger.Backends
 				if (stop_requested || (arg != 0)) {
 					stop_requested = false;
 					frame_changed (inferior.CurrentFrame, null);
-					result = new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
+					result = new TargetEventArgs (
+						TargetEventType.TargetStopped, arg,
+						current_frame);
 				}
 
 				break;
+
+			case Inferior.ChildEventType.UNHANDLED_EXCEPTION: {
+				TargetAddress exc = new TargetAddress (
+					manager.AddressDomain, cevent.Data1);
+				TargetAddress ip = new TargetAddress (
+					manager.AddressDomain, cevent.Data2);
+
+				// FIXME: Do something with `exc'.
+
+				step_operation_finished ();
+				do_continue (ip);
+				return;
+			}
 
 			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
 				break;
@@ -522,7 +538,7 @@ namespace Mono.Debugger.Backends
 
 			case Inferior.ChildEventType.CHILD_CALLBACK:
 				frame_changed (inferior.CurrentFrame, null);
-				result = new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
+				result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
 				break;
 			}
 
@@ -1872,7 +1888,7 @@ namespace Mono.Debugger.Backends
 					inferior.RuntimeInvoke (
 						rdata.Language.RuntimeInvokeFunc,
 						rdata.MethodArgument, rdata.ObjectArgument,
-						rdata.ParamObjects, ID);
+						rdata.ParamObjects, ID, rdata.Debug);
 					break;
 
 				default:

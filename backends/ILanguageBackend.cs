@@ -11,7 +11,8 @@ namespace Mono.Debugger.Backends
 		AcquireGlobalThreadLock,
 		ReleaseGlobalThreadLock,
 		WrapperMain,
-		MainExited
+		MainExited,
+		UnhandledException
 	}
 
 	internal interface ILanguageBackend

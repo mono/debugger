@@ -132,6 +132,10 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 	case MONO_DEBUGGER_EVENT_BREAKPOINT:
 		mono_debugger_notification_function (NOTIFICATION_JIT_BREAKPOINT, data, arg);
 		break;
+
+	case MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION:
+		mono_debugger_notification_function (NOTIFICATION_UNHANDLED_EXCEPTION, data, arg);
+		break;
 	}
 }
 

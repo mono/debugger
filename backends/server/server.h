@@ -212,7 +212,8 @@ struct InferiorVTable {
 						       guint64           object_argument,
 						       guint32           num_params,
 						       guint64          *param_data,
-						       guint64           callback_argument);
+						       guint64           callback_argument,
+						       gboolean          debug);
 
 	/*
 	 * Insert a breakpoint at address `address' in the target's address space.
@@ -423,7 +424,8 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   guint64             object_argument,
 					   guint32             num_params,
 					   guint64            *param_data,
-					   guint64             callback_argument);
+					   guint64             callback_argument,
+					   gboolean            debug);
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,

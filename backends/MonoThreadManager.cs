@@ -189,6 +189,12 @@ namespace Mono.Debugger.Backends
 						0, 0, 0);
 					return false;
 
+				case NotificationType.UnhandledException:
+					cevent = new Inferior.ChildEvent (
+						Inferior.ChildEventType.UNHANDLED_EXCEPTION,
+						0, cevent.Data1, cevent.Data2);
+					return false;
+
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.GlobalAddressDomain, cevent.Data1);

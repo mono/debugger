@@ -216,7 +216,7 @@ static ServerCommandError
 server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 				  guint64 method_argument, guint64 object_argument,
 				  guint32 num_params, guint64 *param_data,
-				  guint64 callback_argument)
+				  guint64 callback_argument, gboolean debug)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
@@ -253,7 +253,11 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 
 	call_disp = (int) invoke_method - new_esp;
 
-	*((guint32 *) (code+1)) = new_esp + static_size + (num_params + 1) * 4;
+	if (debug) {
+		*code = 0x68;
+		*((guint32 *) (code+1)) = 0;
+	} else
+		*((guint32 *) (code+1)) = new_esp + static_size + (num_params + 1) * 4;
 	*((guint32 *) (code+6)) = new_esp + static_size;
 	*((guint32 *) (code+11)) = object_argument;
 	*((guint32 *) (code+16)) = method_argument;

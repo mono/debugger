@@ -1,5 +1,18 @@
 2004-06-21  Martin Baulig  <martin@ximian.com>
 
+	* backends/ILanguageBackend.cs
+	(NotificationType.UnhandledException): New notification.
+
+	* backends/Inferior.cs (Inferior.RuntimeInvoke): Added
+	`bool debug' argument; if true we don't pass an exception pointer
+	to mono_runtime_invoke() so it'll actually throw exceptions.
+
+	* backends/SingleSteppingEngine.cs: If we caught an unhandled
+	exception, continue until mono_handle_exception() restored the
+	stack for us and then stop.
+
+2004-06-21  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs: If we caught a SIGINT, call
 	Interrupt() on all non-deamon SSE's.
 

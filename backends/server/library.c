@@ -198,14 +198,14 @@ ServerCommandError
 mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 					 guint64 method_argument, guint64 object_argument,
 					 guint32 num_params, guint64 *param_data,
-					 guint64 callback_argument)
+					 guint64 callback_argument, gboolean debug)
 {
 	if (!global_vtable->call_method_invoke)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->call_method_invoke) (
 		handle, invoke_method, method_argument, object_argument, num_params,
-		param_data, callback_argument);
+		param_data, callback_argument, debug);
 }
 
 ServerCommandError
