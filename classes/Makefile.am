@@ -5,4 +5,4 @@ EXTRA_DIST = AbsoluteTargetLocation.cs AddressDomain.cs AssemblerMethod.cs Backt
 	SourceInfo.cs SourceLocation.cs StackFrame.cs SymbolTableCollection.cs SymbolTable.cs SymbolTableException.cs \
 	SymbolTableManager.cs TargetAddress.cs TargetBinaryReader.cs TargetBinaryWriter.cs TargetEvent.cs \
 	TargetException.cs TargetInvocationException.cs TargetLocation.cs TargetMemoryArea.cs TargetMemoryException.cs \
-	ThreadGroup.cs
+	ThreadGroup.cs ISymbolFile.cs
