@@ -49,6 +49,9 @@ typedef struct {
 	guint64 section;
 } BfdGlueSection;
 
+extern bfd *
+bfd_glue_openr (const char *filename, const char *target);
+
 extern void
 bfd_glue_setup_disassembler (struct disassemble_info *info, BfdGlueReadMemoryHandler read_memory_cb,
 			     BfdGlueOutputHandler output_cb, BfdGluePrintAddressHandler print_address_cb);

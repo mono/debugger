@@ -126,8 +126,8 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libbfd")]
 		extern static void bfd_init ();
 
-		[DllImport("libbfd")]
-		extern static IntPtr bfd_openr (string filename, string target);
+		[DllImport("libmonodebuggerbfdglue")]
+		extern static IntPtr bfd_glue_openr (string filename, string target);
 
 		[DllImport("libbfd")]
 		extern static bool bfd_close (IntPtr bfd);
@@ -190,7 +190,7 @@ namespace Mono.Debugger.Architecture
 			this.base_address = base_address;
 			this.backend = container.DebuggerBackend;
 
-			bfd = bfd_openr (filename, null);
+			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
 

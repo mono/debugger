@@ -12,6 +12,12 @@
 #include <sys/procfs.h>
 #endif
 
+bfd *
+bfd_glue_openr (const char *filename, const char *target)
+{
+	return bfd_openr (g_strdup (filename), g_strdup (target));
+}
+
 gboolean
 bfd_glue_check_format_object (bfd *abfd)
 {
