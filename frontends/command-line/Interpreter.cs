@@ -445,7 +445,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 						   module.LoadSymbols, module.StepInto,
 						   library);
 
-				if (!module.SymbolsLoaded)
+				if (module.Sources == null)
 					continue;
 
 				foreach (SourceInfo source in module.Sources) {
