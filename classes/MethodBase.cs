@@ -1,5 +1,4 @@
 using System;
-using Math = System.Math;
 using System.Text;
 using System.Collections;
 
@@ -114,8 +113,8 @@ namespace Mono.Debugger
 			else
 				prologue_size = (int) (EndAddress - StartAddress);
 			int offset = (int) (frame.Address - StartAddress);
-			prologue_size = Math.Min (prologue_size, offset);
-			prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
+			prologue_size = System.Math.Min (prologue_size, offset);
+			prologue_size = System.Math.Min (prologue_size, arch.MaxPrologueSize);
 
 			byte[] prologue = memory.ReadBuffer (StartAddress, prologue_size);
 
