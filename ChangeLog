@@ -1,5 +1,9 @@
 2002-12-24  Martin Baulig  <martin@ximian.com>
 
+	This is my last commit for today, so merry x-mas !
+
+2002-12-24  Martin Baulig  <martin@ximian.com>
+
 	The Monday Night Hack of week #52 - the BreakpointManager is done.
 
 	* backends/BreakpointManager.cs: New file.  This is just a wrapper
