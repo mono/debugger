@@ -1653,10 +1653,10 @@ namespace Mono.Debugger.Architecture
 					return new DiePointerType (reader, comp_unit, offset, abbrev);
 
 				case DwarfTag.structure_type:
-					return new DieStructureType (reader, comp_unit, offset, abbrev);
+					return new DieStructureType (reader, comp_unit, offset, abbrev, false);
 
 				case DwarfTag.union_type:
-					return new DieStructureType (reader, comp_unit, offset, abbrev);
+					return new DieStructureType (reader, comp_unit, offset, abbrev, true);
 
 				case DwarfTag.typedef:
 					return new DieTypedef (reader, comp_unit, offset, abbrev);
@@ -2763,11 +2763,15 @@ namespace Mono.Debugger.Architecture
 		protected class DieStructureType : DieType
 		{
 			int byte_size;
+			public readonly bool IsUnion;
 
-			public DieStructureType (DwarfBinaryReader reader, CompilationUnit comp_unit,
-						 long offset, AbbrevEntry abbrev)
+			public DieStructureType (DwarfBinaryReader reader,
+						 CompilationUnit comp_unit, long offset,
+						 AbbrevEntry abbrev, bool is_union)
 				: base (reader, comp_unit, offset, abbrev)
-			{ }
+			{
+				this.IsUnion = is_union;
+			}
 
 			protected override void ProcessAttribute (Attribute attribute)
 			{
@@ -2801,7 +2805,7 @@ namespace Mono.Debugger.Architecture
 
 				foreach (Die child in Children) {
 					DieMember member = child as DieMember;
-					if ((member == null) || !member.Resolve ())
+					if ((member == null) || !member.Resolve (this))
 						continue;
 
 					NativeType mtype = member.Type;
@@ -3062,12 +3066,12 @@ namespace Mono.Debugger.Architecture
 			int bit_offset, bit_size;
 			int offset;
 
-			public bool Resolve ()
+			public bool Resolve (DieStructureType die_struct)
 			{
 				if (resolved)
 					return ok;
 
-				type = ResolveType ();
+				type = ResolveType (die_struct);
 				resolved = true;
 				ok = type != null;
 				return ok;
@@ -3085,8 +3089,11 @@ namespace Mono.Debugger.Architecture
 				get { return bit_size; }
 			}
 
-			bool read_location (TargetBinaryReader locreader)
+			bool read_location ()
 			{
+				TargetBinaryReader locreader = new TargetBinaryReader (
+					location, target_info);
+
 				switch (locreader.ReadByte ()) {
 				case 0x23: // DW_OP_plus_uconstant
 					offset = locreader.ReadLeb128 ();
@@ -3097,21 +3104,19 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected NativeType ResolveType ()
+			protected NativeType ResolveType (DieStructureType die_struct)
 			{
-				if ((TypeOffset == 0) || (location == null) || (Name == null))
+				if ((TypeOffset == 0) || (Name == null))
+					return null;
+
+				if ((location == null) && !die_struct.IsUnion)
 					return null;
 
 				type_die = comp_unit.GetType (TypeOffset);
 				if (type_die == null)
 					return null;
 
-				if (type_die == null)
-					return null;
-
-				TargetBinaryReader locreader = new TargetBinaryReader (
-					location, target_info);
-				if (!read_location (locreader))
+				if ((location != null) && !read_location ())
 					return null;
 
 				type = type_die.ResolveType ();
@@ -3120,14 +3125,18 @@ namespace Mono.Debugger.Architecture
 
 			public NativeType Type {
 				get {
-					Resolve ();
+					if (!resolved)
+						throw new InvalidOperationException ();
+
 					return type;
 				}
 			}
 
 			public int DataOffset {
 				get {
-					Resolve ();
+					if (!resolved)
+						throw new InvalidOperationException ();
+
 					return offset;
 				}
 			}
