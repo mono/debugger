@@ -1,3 +1,9 @@
+January 17th, 2003 - Martin Baulig
+----------------------------------
+
+We have a new thread manager in mono/io-layer which is now used when debugging managed
+applications.  This thread manager is portable and works on all flavors of Unix.
+
 January 14th, 2003 - Martin Baulig
 ----------------------------------
 
