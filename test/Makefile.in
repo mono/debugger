@@ -7,6 +7,7 @@ linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe Interpreter.exe
 
 ALL_SOURCES = \
 	@top_srcdir@/frontends/gui/*.cs			\
+	@top_srcdir@/frontends/scripting/*.cs		\
 	@top_srcdir@/frontends/command-line/Interpreter.cs
 
 INTERPRETER_SOURCES = \

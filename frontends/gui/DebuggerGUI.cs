@@ -115,6 +115,8 @@ namespace Mono.Debugger.GUI
 
 			if (arguments.Length > 0)
 				LoadProgram (arguments);
+
+			interpreter = new Interpreter (backend, output_writer, output_writer);
 		}
 
 		//
@@ -165,8 +167,6 @@ namespace Mono.Debugger.GUI
 				null, (Gtk.TextView) gxml ["disassembler-view"]);
 			
 			gxml.Autoconnect (this);
-
-			interpreter = new Interpreter (backend, output_writer, output_writer);
 
 			command_entry.ActivatesDefault = true;
 			command_entry.Activated += new EventHandler (DoOneCommand);
@@ -255,7 +255,7 @@ namespace Mono.Debugger.GUI
 			} else {
 				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
-				process.SingleSteppingEngine.Run (false);
+				process.SingleSteppingEngine.Run (true);
 			}
 
 			//
@@ -265,6 +265,7 @@ namespace Mono.Debugger.GUI
 			main_window.Title = "Debugging: " + program +
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
 
+#if FALSE
 			source_status.SetBackend (backend, process);
 			register_display.SetBackend (backend, process);
 			variable_display.SetBackend (backend, process);
@@ -276,6 +277,7 @@ namespace Mono.Debugger.GUI
 			current_insn.SetBackend (backend, process);
 			disassembler_view.SetBackend (backend, process);
 			source_manager.SetBackend (backend, process);
+#endif
 			
 			process.StateChanged += new StateChangedHandler (BackendStateChanged);
 		}
@@ -467,6 +469,9 @@ namespace Mono.Debugger.GUI
 		{
 			string line = command_entry.Text;
 			command_entry.Text = "";
+
+			if (interpreter == null)
+				return;
 
 			if (!interpreter.ProcessCommand (line)) {
 				backend.Quit ();

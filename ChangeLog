@@ -1,5 +1,10 @@
 2002-12-15  Martin Baulig  <martin@ximian.com>
 
+	* frondends/command-line/Interpreter.cs: Use the new command line
+	interface here.
+
+2002-12-15  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs: Added a global thread lock mechanism.
 
 2002-12-14  Martin Baulig  <martin@ximian.com>

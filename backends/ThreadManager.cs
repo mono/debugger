@@ -49,6 +49,9 @@ namespace Mono.Debugger
 
 		public bool Initialize (Process process)
 		{
+			main_process = process;
+			thread_hash.Add (process.Inferior.PID, process);
+
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
 
 			thread_handles = bfdc.LookupSymbol ("__pthread_handles");
@@ -58,9 +61,6 @@ namespace Mono.Debugger
 			if (tdebug.IsNull || thread_handles.IsNull ||
 			    thread_handles_num.IsNull || last_thread_event.IsNull)
 				return false;
-
-			main_process = process;
-			thread_hash.Add (process.Inferior.PID, process);
 
 			process.Inferior.WriteInteger (tdebug, 1);
 			initialized = true;
@@ -85,6 +85,14 @@ namespace Mono.Debugger
 		{
 			if (ThreadCreatedEvent != null)
 				ThreadCreatedEvent (this, new_process);
+		}
+
+		public Process[] Threads {
+			get {
+				Process[] procs = new Process [thread_hash.Values.Count];
+				thread_hash.Values.CopyTo (procs, 0);
+				return procs;
+			}
 		}
 
 		public bool SignalHandler (Process process, int signal, out bool action)

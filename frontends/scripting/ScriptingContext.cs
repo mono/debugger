@@ -294,13 +294,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ArrayList procs;
 
 		DebuggerBackend backend;
+		TextWriter stdout;
+		TextWriter stderr;
 
-		public ScriptingContext ()
+		public ScriptingContext (DebuggerBackend backend, TextWriter stdout, TextWriter stderr)
 		{
+			this.backend = backend;
+			this.stdout = stdout;
+			this.stderr = stderr;
+
 			procs = new ArrayList ();
 			current_process = null;
 
-			backend = new DebuggerBackend ();
+			foreach (Process process in backend.ThreadManager.Threads) {
+				ProcessHandle handle = new ProcessHandle (this, backend, process);
+				procs.Add (handle);
+				if (current_process == null)
+					current_process = handle;
+			}
+
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
 		}
 
@@ -316,17 +328,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			string message = String.Format (format, args);
 
-			Console.WriteLine ("ERROR: {0}", message);
+			stderr.WriteLine ("ERROR: {0}", message);
 		}
 
 		public void Error (ScriptingException ex)
 		{
-			Console.WriteLine (ex.Message);
+			stderr.WriteLine (ex.Message);
 		}
 
 		public void Print (string format, params object[] args)
 		{
-			Console.WriteLine (format, args);
+			stdout.WriteLine (format, args);
 		}
 
 		public void Print (object obj)
@@ -382,6 +394,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void thread_created (ThreadManager manager, Process process)
 		{
+			Console.WriteLine ("THREAD CREATED!");
+
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			procs.Add (handle);
 		}
