@@ -72,8 +72,10 @@ namespace Mono.Debugger.GUI {
 					breakpoints [line] = null;
 				} else {
 					SourceLocation location = manager.FindLocation (filename, line);
-					if (location == null)
+					if (location == null){
+						Console.WriteLine ("Info: The manager was unable to find debugging info for `{0}' `{1}'", filename, line);
 						return;
+					}
 
 					Breakpoint bp = new SimpleBreakpoint (location.Name);
 					int id = backend.InsertBreakpoint (bp, location);
