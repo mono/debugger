@@ -1,3 +1,7 @@
+2003-03-28  Martin Baulig  <martin@ximian.com>
+
+	* wrapper/main.c: Call mono_config_parse() and mono_set_rootdir().
+
 2003-03-25  Martin Baulig  <martin@ximian.com>
 
 	* frontends/gui/SourceList.cs (InsertBreakpoint): Implemented.

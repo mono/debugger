@@ -16,6 +16,8 @@ main (int argc, char **argv, char **envp)
 	file = argv [2];
 
 	g_set_prgname (file);
+	mono_config_parse (NULL);
+	mono_set_rootdir ();
 
 	domain = mono_jit_init (file);
 
