@@ -170,7 +170,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 21;
+		public const int  DynamicVersion = 22;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -684,12 +684,10 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly Assembly Assembly;
 		internal readonly MonoSymbolFileTable Table;
 		internal readonly string ImageFile;
-		internal readonly string SymbolFile;
 		internal Module Module;
 		internal ThreadManager ThreadManager;
 		internal AddressDomain GlobalAddressDomain;
 		internal ITargetInfo TargetInfo;
-		protected OffsetTable offset_table;
 		protected MonoCSharpLanguageBackend language;
 		protected DebuggerBackend backend;
 		protected Hashtable range_hash;
@@ -706,8 +704,7 @@ namespace Mono.Debugger.Languages.CSharp
 		int num_range_entries;
 		int num_class_entries;
 
-		TargetBinaryReader reader;
-		TargetBinaryReader string_reader;
+		MonoSymbolFile file;
 
 		internal MonoSymbolTableReader (MonoSymbolFileTable table, DebuggerBackend backend,
 						ITargetInfo target_info, ITargetMemoryAccess memory,
@@ -728,19 +725,6 @@ namespace Mono.Debugger.Languages.CSharp
 			ranges = new ArrayList ();
 			range_hash = new Hashtable ();
 
-			long magic = memory.ReadLongInteger (address);
-			if (magic != OffsetTable.Magic)
-				throw new SymbolTableException (
-					"Symbol file has unknown magic {0:x}.", magic);
-			address += long_size;
-
-			int version = memory.ReadInteger (address);
-			if (version != OffsetTable.Version)
-				throw new SymbolTableException (
-					"Symbol file has version {0}, but expected {1}.",
-					version, OffsetTable.Version);
-			address += int_size;
-
 			long dynamic_magic = memory.ReadLongInteger (address);
 			if (dynamic_magic != MonoSymbolFileTable.DynamicMagic)
 				throw new SymbolTableException (
@@ -752,62 +736,26 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new SymbolTableException (
 					"Dynamic section has version {0}, but expected {1}.",
 					dynamic_version, MonoSymbolFileTable.DynamicVersion);
-			address += 2 * int_size;
+			address += int_size;
 
 			TargetAddress image_file_addr = memory.ReadAddress (address);
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
-			TargetAddress symbol_file_addr = memory.ReadAddress (address);
-			address += address_size;
-			SymbolFile = memory.ReadString (symbol_file_addr);
 			global_symfile = memory.ReadAddress (address);
 			address += address_size;
-			TargetAddress raw_contents = memory.ReadAddress (address);
-			address += address_size;
-			int raw_contents_size = memory.ReadInteger (address);
-			address += int_size;
-			TargetAddress string_table_address = memory.ReadAddress (address);
-			address += address_size;
-			int string_table_size = memory.ReadInteger (address);
-			address += int_size;
 
 			dynamic_address = address;
 
 			Assembly = Assembly.LoadFrom (ImageFile);
 
-			if (raw_contents_size == 0)
-				throw new SymbolTableException ("Symbol table is empty.");
-
-			// This is a mmap()ed area and thus not written to the core file,
-			// so we need to suck the whole file in.
-			using (FileStream stream = File.OpenRead (SymbolFile)) {
-				byte[] contents = new byte [raw_contents_size];
-				stream.Read (contents, 0, raw_contents_size);
-				reader = new TargetBinaryReader (contents, TargetInfo);
-			}
-
-			byte[] string_table = memory.ReadBuffer (string_table_address, string_table_size);
-			string_reader = new TargetBinaryReader (string_table, TargetInfo);
-
-			//
-			// Read the offset table.
-			//
-			try {
-				magic = reader.ReadInt64 ();
-				version = reader.ReadInt32 ();
-				if ((magic != OffsetTable.Magic) || (version != OffsetTable.Version))
-					throw new SymbolTableException ();
-				offset_table = new OffsetTable (reader);
-			} catch {
-				throw new SymbolTableException ();
-			}
+			file = MonoSymbolFile.ReadSymbolFile (Assembly);
 
 			symtab = new MonoCSharpSymbolTable (this);
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2})", GetType (), ImageFile, SymbolFile);
+			return String.Format ("{0} ({1})", GetType (), ImageFile);
 		}
 
 		// <remarks>
@@ -832,7 +780,7 @@ namespace Mono.Debugger.Languages.CSharp
 				count * range_entry_size);
 
 			ArrayList new_ranges = MethodRangeEntry.ReadRanges (
-				this, memory, range_reader, count, offset_table);
+				this, memory, range_reader, count);
 
 			ranges.AddRange (new_ranges);
 			num_range_entries = new_num_range_entries;
@@ -887,67 +835,22 @@ namespace Mono.Debugger.Languages.CSharp
 			return true;
 		}
 
-		internal int CheckMethodOffset (long offset)
-		{
-			if (offset < offset_table.method_table_offset)
-				throw new SymbolTableException ();
-
-			offset -= offset_table.method_table_offset;
-			if ((offset % MethodEntry.Size) != 0)
-				throw new SymbolTableException ();
-
-			long index = (offset / MethodEntry.Size);
-			if (index > offset_table.method_count)
-				throw new SymbolTableException ();
-
-			return (int) index;
-		}
-
-		internal int GetMethodOffset (int index)
-		{
-			return offset_table.method_table_offset + index * MethodEntry.Size;
-		}
-
 		Hashtable method_hash;
 
-		protected MonoMethod GetMethod (long offset)
+		protected MonoMethod GetMethod (int index)
 		{
-			int index = CheckMethodOffset (offset);
-			reader.Position = offset;
-			MethodEntry method = new MethodEntry (reader);
-			string_reader.Position = index * int_size;
-			string_reader.Position = string_reader.ReadInt32 ();
+			MethodEntry method = file.GetMethod (index);
 
-			int length = string_reader.ReadInt32 ();
-			byte[] buffer = string_reader.ReadBuffer (length);
-			string name = Encoding.UTF8.GetString (buffer);
-
-			MonoMethod mono_method = new MonoMethod (this, method, name);
+			MonoMethod mono_method = new MonoMethod (this, method);
 			if (method_hash == null)
 				method_hash = new Hashtable ();
-			method_hash.Add (offset, mono_method);
+			method_hash.Add (index, mono_method);
 			return mono_method;
 		}
 
-		protected MonoMethod GetMethod (long offset, byte[] contents)
+		protected MonoMethod GetMethod (int index, byte[] contents)
 		{
-			MonoMethod method = null;
-			if (method_hash != null)
-				method = (MonoMethod) method_hash [offset];
-
-			if (method == null) {
-				int index = CheckMethodOffset (offset);
-				reader.Position = offset;
-				MethodEntry entry = new MethodEntry (reader);
-				string_reader.Position = index * int_size;
-				string_reader.Position = string_reader.ReadInt32 ();
-
-				int length = string_reader.ReadInt32 ();
-				byte[] buffer = string_reader.ReadBuffer (length);
-				string name = Encoding.UTF8.GetString (buffer);
-
-				method = new MonoMethod (this, entry, name);
-			}
+			MonoMethod method = GetMethod (index);
 
 			if (!method.IsLoaded) {
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
@@ -967,35 +870,9 @@ namespace Mono.Debugger.Languages.CSharp
 			sources = new ArrayList ();
 			method_name_hash = new Hashtable ();
 
-			reader.Position = offset_table.source_file_table_offset;
-			for (int i = 0; i < offset_table.source_file_count; i++) {
-				int offset = (int) reader.Position;
-
-				SourceFileEntry source = new SourceFileEntry (reader);
+			for (int i = 0; i < file.SourceCount; i++) {
+				SourceFileEntry source = file.GetSourceFile (i);
 				MonoSourceInfo info = new MonoSourceInfo (this, source);
-
-				ArrayList methods = new ArrayList ();
-				foreach (MethodSourceEntry entry in source.Methods) {
-					string_reader.Position = entry.Index * int_size;
-					string_reader.Position = string_reader.ReadInt32 ();
-
-					int length = string_reader.ReadInt32 ();
-					byte[] buffer = string_reader.ReadBuffer (length);
-					string name = Encoding.UTF8.GetString (buffer);
-
-					if (method_name_hash.Contains (name)) {
-						Console.WriteLine (
-							"Already have a method with this name: {1}", name);
-						continue;
-					}
-
-					MonoMethodSourceEntry method = new MonoMethodSourceEntry (
-						this, entry, info, name);
-
-					method_name_hash.Add (name, method);
-					methods.Add (method);
-				}
-				info.methods = methods;
 
 				sources.Add (info);
 			}
@@ -1081,7 +958,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public ArrayList methods;
 
 			public MonoSourceInfo (MonoSymbolTableReader reader, SourceFileEntry source)
-				: base (reader.Module, source.SourceFile)
+				: base (reader.Module, source.FileName)
 			{
 				this.reader = reader;
 				this.source = source;
@@ -1103,7 +980,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			MonoSymbolTableReader reader;
 			Hashtable load_handlers;
-			int offset;
+			int index;
 			string full_name;
 			MonoMethod method;
 			MethodSourceEntry entry;
@@ -1113,7 +990,7 @@ namespace Mono.Debugger.Languages.CSharp
 				: base (source, name, entry.StartRow, entry.EndRow, true)
 			{
 				this.reader = reader;
-				this.offset = reader.GetMethodOffset (entry.Index);
+				this.index = entry.Index;
 				this.entry = entry;
 
 				source.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
@@ -1128,7 +1005,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public override bool IsLoaded {
 				get {
 					return (method != null) &&
-						((reader != null) && reader.range_hash.Contains (offset));
+						((reader != null) && reader.range_hash.Contains (index));
 				}
 			}
 
@@ -1137,7 +1014,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if ((method != null) && method.IsLoaded)
 					return;
 
-				MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [offset];
+				MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [index];
 				method = entry.GetMethod ();
 			}
 
@@ -1185,7 +1062,7 @@ namespace Mono.Debugger.Languages.CSharp
 					load_handlers = new Hashtable ();
 
 					if (method == null)
-						method = reader.GetMethod (offset);
+						method = reader.GetMethod (index);
 					MethodInfo minfo = (MethodInfo) method.MethodHandle;
 
 					string full_name = String.Format (
@@ -1281,8 +1158,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			}
 
-			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method, string name)
-				: base (name, reader.ImageFile, reader.Module)
+			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method)
+				: base (method.FullName, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
 				this.method = method;
@@ -1293,8 +1170,8 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
-					   string name, ITargetMemoryReader dynamic_reader)
-				: this (reader, method, name)
+					   ITargetMemoryReader dynamic_reader)
+				: this (reader, method)
 			{
 				Load (dynamic_reader.BinaryReader, reader.GlobalAddressDomain);
 			}
@@ -1399,42 +1276,39 @@ namespace Mono.Debugger.Languages.CSharp
 		private class MethodRangeEntry : SymbolRangeEntry
 		{
 			MonoSymbolTableReader reader;
-			int file_offset;
+			int index;
 			byte[] contents;
 
-			private MethodRangeEntry (MonoSymbolTableReader reader, int file_offset,
+			private MethodRangeEntry (MonoSymbolTableReader reader, int index,
 						  byte[] contents, TargetAddress start_address,
 						  TargetAddress end_address)
 				: base (start_address, end_address)
 			{
 				this.reader = reader;
-				this.file_offset = file_offset;
+				this.index = index;
 				this.contents = contents;
 			}
 
 			public static ArrayList ReadRanges (MonoSymbolTableReader reader,
 							    ITargetMemoryAccess target,
-							    ITargetMemoryReader memory, int count,
-							    OffsetTable offset_table)
+							    ITargetMemoryReader memory, int count)
 			{
 				ArrayList list = new ArrayList ();
 
 				for (int i = 0; i < count; i++) {
 					TargetAddress start = memory.ReadGlobalAddress ();
 					TargetAddress end = memory.ReadGlobalAddress ();
-					int offset = memory.ReadInteger ();
+					int index = memory.ReadInteger ();
 					TargetAddress dynamic_address = memory.ReadAddress ();
 					int dynamic_size = memory.ReadInteger ();
 
 					byte[] contents = target.ReadBuffer (dynamic_address, dynamic_size);
 
-					reader.CheckMethodOffset (offset);
-
 					MethodRangeEntry entry = new MethodRangeEntry (
-						reader, offset, contents, start, end);
+						reader, index, contents, start, end);
 
 					list.Add (entry);
-					reader.range_hash.Add (offset, entry);
+					reader.range_hash.Add (index, entry);
 				}
 
 				return list;
@@ -1442,18 +1316,18 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal MonoMethod GetMethod ()
 			{
-				return reader.GetMethod (file_offset, contents);
+				return reader.GetMethod (index, contents);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
-				return reader.GetMethod (file_offset, contents);
+				return reader.GetMethod (index, contents);
 			}
 
 			public override string ToString ()
 			{
 				return String.Format ("RangeEntry [{0:x}:{1:x}:{2:x}]",
-						      StartAddress, EndAddress, file_offset);
+						      StartAddress, EndAddress, index);
 			}
 		}
 
