@@ -1662,23 +1662,11 @@ namespace Mono.Debugger.Backends
 				 */
 				if (!trampoline.IsNull)
 					return do_trampoline (frame, trampoline, is_start);
-
-				if (frame.Mode != StepMode.SingleInstruction) {
-					/*
-					 * If this is an ordinary method, check whether we have
-					 * debugging info for it and don't step into it if not.
-					 */
-					tmethod = Lookup (call);
-					if (!method_has_source (tmethod)) {
-						do_next ();
-						return false;
-					}
-				}
 			}
 
 			/*
-			 * When StepMode.SingleInstruction was requested, enter the method no matter
-			 * whether it's a system function or not.
+			 * When StepMode.SingleInstruction was requested, enter the method
+			 * no matter whether it's a system function or not.
 			 */
 			if (frame.Mode == StepMode.SingleInstruction) {
 				do_step ();
@@ -1699,16 +1687,12 @@ namespace Mono.Debugger.Backends
 			 * and step over it.
 			 */
 			IMethod method = Lookup (call);
-			if (!method_has_source (method)) {
-				do_next ();
-				return false;
-			}
 
 			/*
 			 * If this is a PInvoke/icall wrapper, check whether we want to step into
 			 * the wrapped function.
 			 */
-			if (method.IsWrapper) {
+			if ((method != null) && method.IsWrapper) {
 				TargetAddress wrapper = method.WrapperAddress;
 				IMethod wmethod = Lookup (wrapper);
 
@@ -1718,6 +1702,11 @@ namespace Mono.Debugger.Backends
 				}
 
 				do_continue (wrapper);
+				return false;
+			}
+
+			if (!method_has_source (method)) {
+				do_next ();
 				return false;
 			}
 
