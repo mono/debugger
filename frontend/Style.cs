@@ -13,10 +13,15 @@ namespace Mono.Debugger.Frontend
 {
 	public class StructFormatter
 	{
+		public string head;
 		public const int DefaultWidth = 80;
 		public readonly int Width = DefaultWidth;
 
 		ArrayList items = new ArrayList ();
+
+		public StructFormatter (string header) {
+			head = header;
+		}
 
 		public void Add (string item)
 		{
@@ -52,9 +57,9 @@ namespace Mono.Debugger.Frontend
 
 			string text = sb.ToString ();
 			if (multi_line)
-				return "{\n " + text + "\n}";
+				return head + "{\n " + text + "\n}";
 			else
-				return "{" + text + " }";
+				return head + "{" + text + " }";
 		}
 	}
 
@@ -85,9 +90,9 @@ namespace Mono.Debugger.Frontend
 
 		void ShowVariableType (ITargetType type, string name);
 
-		void PrintVariable (IVariable variable, StackFrame frame);
+		void PrintVariable (IVariable variable, FrameHandle frame);
 
-		string FormatObject (object obj);
+		string FormatObject (FrameHandle frame, object obj);
 
 		string FormatType (ITargetType type);
 	}
@@ -192,20 +197,29 @@ namespace Mono.Debugger.Frontend
 			TargetStopped (context, frame, insn);
 		}
 
-		public string FormatObject (object obj)
+		public string FormatObject (FrameHandle frame, object obj)
 		{
-			if (obj is long)
+			if (obj is long) {
 				return String.Format ("0x{0:x}", (long) obj);
-			else if (obj is string)
+			}
+			else if (obj is string) {
 				return '"' + (string) obj + '"';
-			else if (obj is ITargetType)
+			}
+			else if (obj is ITargetStructType) {
+				ITargetStructType stype = (ITargetStructType) obj;
+				return FormatStructType (frame, stype);
+			}
+			else if (obj is ITargetType) {
 				return ((ITargetType) obj).Name;
+			}
 			else if (obj is ITargetObject) {
 				ITargetObject tobj = (ITargetObject) obj;
 				return String.Format ("({0}) {1}", tobj.Type.Name,
 						      FormatObject (tobj, false));
-			} else
+			}
+			else {
 				return obj.ToString ();
+			}
 		}
 
 		protected string FormatMember (string prefix, ITargetMemberInfo member,
@@ -393,6 +407,40 @@ namespace Mono.Debugger.Frontend
 			return retval;
 		}
 
+		public string FormatStructType (FrameHandle frame, ITargetStructType stype)
+		{
+			string header = "";
+			switch (stype.Kind) {
+			case TargetObjectKind.Class:
+				header = "class " + stype.Name + " ";
+				break;
+			case TargetObjectKind.Struct:
+				header = "struct " + stype.Name + " ";
+				break;
+			}
+
+			switch (stype.Kind) {
+			case TargetObjectKind.Class:
+			case TargetObjectKind.Struct:
+				bool first = true;
+				StructFormatter formatter = new StructFormatter (header);
+				ITargetFieldInfo[] fields = stype.StaticFields;
+				foreach (ITargetFieldInfo field in fields) {
+					ITargetObject fobj = stype.GetStaticField (frame.Frame, field.Index);
+					string item;
+					if (fobj == null)
+						item = field.Name + " = null";
+					else
+						item = field.Name + " = " + FormatObject (fobj, false);
+					formatter.Add (item);
+				}
+				return formatter.Format ();
+
+			default:
+				return stype.Name;
+			}       
+		}       
+
 		public string FormatObject (ITargetObject obj, bool recursed)
 		{
 			try {
@@ -448,7 +496,7 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
 				ITargetStructObject sobj = (ITargetStructObject) obj;
-				StructFormatter formatter = new StructFormatter ();
+				StructFormatter formatter = new StructFormatter ("");
 				ITargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (ITargetFieldInfo field in fields) {
 					ITargetObject fobj = sobj.GetField (field.Index);
@@ -467,11 +515,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void PrintVariable (IVariable variable, StackFrame frame)
+		public void PrintVariable (IVariable variable, FrameHandle frame)
 		{
 			ITargetObject obj = null;
 			try {
-				obj = variable.GetObject (frame);
+				obj = variable.GetObject (frame.Frame);
 			} catch {
 			}
 
@@ -542,17 +590,17 @@ namespace Mono.Debugger.Frontend
 			frame.PrintSource (context);
 		}
 
-		public void PrintVariable (IVariable variable, StackFrame frame)
+		public void PrintVariable (IVariable variable, FrameHandle frame)
 		{
 			ITargetObject obj = null;
 			try {
-				obj = variable.GetObject (frame);
+				obj = variable.GetObject (frame.Frame);
 			} catch {
 			}
 
 			string contents;
 			if (obj != null)
-				contents = FormatObject (obj);
+				contents = FormatObject (frame, obj);
 			else
 				contents = "<cannot display object>";
 				
@@ -560,7 +608,7 @@ namespace Mono.Debugger.Frontend
 			       contents);
 		}
 
-		public string FormatObject (object obj)
+		public string FormatObject (FrameHandle handle, object obj)
 		{
 			if (obj is long)
 				return String.Format ("0x{0:x}", (long) obj);

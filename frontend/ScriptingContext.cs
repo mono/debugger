@@ -146,7 +146,7 @@ namespace Mono.Debugger.Frontend
 
 			IVariable[] param_vars = frame.Method.Parameters;
 			foreach (IVariable var in param_vars)
-				context.Interpreter.Style.PrintVariable (var, frame);
+				context.Interpreter.Style.PrintVariable (var, this);
 		}
 
 		public void ShowLocals (ScriptingContext context)
@@ -156,7 +156,7 @@ namespace Mono.Debugger.Frontend
 
 			IVariable[] local_vars = frame.Locals;
 			foreach (IVariable var in local_vars)
-				context.Interpreter.Style.PrintVariable (var, frame);
+				context.Interpreter.Style.PrintVariable (var, this);
 		}
 
 		public IVariable GetVariableInfo (string identifier, bool report_errors)
@@ -779,7 +779,7 @@ namespace Mono.Debugger.Frontend
 		{
 			string formatted;
 			try {
-				formatted = interpreter.Style.FormatObject (obj);
+				formatted = interpreter.Style.FormatObject (CurrentFrame, obj);
 			} catch {
 				formatted = "<cannot display object>";
 			}

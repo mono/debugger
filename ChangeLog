@@ -1,3 +1,20 @@
+2005-01-25  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Style.cs (Style): PrintVariable takes a FrameHandle now
+	instead of StackFrame, and FormatObject also takes a FrameHandle
+	arg.
+	(StyleNative.FormatObject): If the object we're printing is a
+	struct type, print out its static fields by calling
+	NativeStyle.FormatStructType.
+	(StyleNative.FormatStructType): print out the type's static
+	fields (and their values).
+	
+	* frontend/ScriptingContext.cs (FrameHandle.ShowParameters,
+	FrameHandle.ShowLocals): Style.PrintVariable takes a FrameHandle
+	now, not a StackFrame.
+	(ScriptingContext.PrintObject): pass the CurrentFrame in to this
+	call so we can access static fields.
+
 2005-01-25  Martin Baulig  <martin@ximian.com>
 
 	* backends/native/NativePointerObject.cs
