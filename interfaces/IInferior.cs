@@ -120,7 +120,7 @@ namespace Mono.Debugger
 
 		long[] GetRegisters (int[] registers);
 
-		TargetAddress[] GetBacktrace ();
+		TargetAddress[] GetBacktrace (int max_frames, bool full_backtrace);
 
 		// <summary>
 		//   Returns a disassembler for the current target.

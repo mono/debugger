@@ -62,7 +62,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		IStackFrame[] GetBacktrace ();
+		IStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
 
 		// <summary>
 		//   Adds a breakpoint at the specified target location.

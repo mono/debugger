@@ -628,14 +628,14 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IStackFrame[] GetBacktrace ()
+		public IStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
 		{
 			if (inferior == null)
 				throw new NoTargetException ();
 
 			symtabs.UpdateSymbolTable ();
 
-			TargetAddress[] frames = inferior.GetBacktrace ();
+			TargetAddress[] frames = inferior.GetBacktrace (max_frames, full_backtrace);
 			IStackFrame[] retval = new IStackFrame [frames.Length];
 
 			for (int i = 0; i < frames.Length; i++) {

@@ -10,7 +10,6 @@ namespace Mono.Debugger.GUI
 		protected Gtk.TextView source_view;
 		protected Gtk.TextBuffer text_buffer;
 		protected Gtk.TextTag frame_tag;
-		protected Gtk.TextMark frame_mark;
 		protected ISourceBuffer current_buffer = null;
 
 		bool has_frame;
@@ -26,7 +25,7 @@ namespace Mono.Debugger.GUI
 			text_buffer = source_view.Buffer;
 			text_buffer.TagTable.Add (frame_tag);
 
-			frame_mark = text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
+			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
 
 			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
@@ -70,6 +69,8 @@ namespace Mono.Debugger.GUI
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 			text_buffer.ApplyTag (frame_tag, start_iter, end_iter);
+
+			Gtk.TextMark frame_mark = text_buffer.GetMark ("frame");
 
 			text_buffer.MoveMark (frame_mark, start_iter);
 

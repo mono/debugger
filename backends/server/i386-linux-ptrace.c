@@ -216,6 +216,19 @@ server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 }
 
 static ServerCommandError
+server_ptrace_peek_word (InferiorHandle *handle, guint64 start, int *retval)
+{
+	errno = 0;
+	*retval = ptrace (PTRACE_PEEKDATA, handle->pid, start, NULL);
+	if (errno) {
+		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
 server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
 	guint8 *ptr = buffer;
@@ -702,12 +715,80 @@ server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *reg
 }
 
 static ServerCommandError
-server_ptrace_get_backtrace (InferiorHandle *handle, guint32 *count, guint64 **data)
+server_ptrace_get_frame (InferiorHandle *handle, guint32 eip, guint32 esp, guint32 ebp,
+			 guint32 *retaddr, guint32 *frame)
+{
+	ServerCommandError result;
+	guint32 value;
+
+	result = server_ptrace_peek_word (handle, eip, &value);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if ((value == 0xec8b5590) || (value == 0xec8b55cc) ||
+	    ((value & 0xffffff) == 0xec8b55) || ((value & 0xffffff) == 0xe58955)) {
+		result = server_ptrace_peek_word (handle, esp, &value);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		*retaddr = value;
+		*frame = ebp;
+		return COMMAND_ERROR_NONE;
+	}
+
+	result = server_ptrace_peek_word (handle, eip - 1, &value);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if (((value & 0xffffff) == 0xec8b55) || ((value & 0xffffff) == 0xe58955)) {
+		result = server_ptrace_peek_word (handle, esp + 4, &value);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		*retaddr = value;
+		*frame = ebp;
+		return COMMAND_ERROR_NONE;
+	}
+
+	result = server_ptrace_peek_word (handle, ebp, frame);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_peek_word (handle, ebp + 4, retaddr);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_get_ret_address (InferiorHandle *handle, guint64 *retval)
+{
+	ServerCommandError result;
+	struct user_regs_struct regs;
+	guint32 retaddr, frame;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_get_frame (handle, regs.eip, regs.esp, regs.ebp, &retaddr, &frame);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	*retval = retaddr;
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 stop_address,
+			     guint32 *count, guint64 **data)
 {
 	GArray *frames = g_array_new (FALSE, FALSE, 4);
 	ServerCommandError result;
 	struct user_regs_struct regs;
-	int frame, i;
+	guint32 address, frame;
+	int i;
 
 	result = get_registers (handle, &regs);
 	if (result != COMMAND_ERROR_NONE)
@@ -715,27 +796,27 @@ server_ptrace_get_backtrace (InferiorHandle *handle, guint32 *count, guint64 **d
 
 	g_array_append_val (frames, regs.eip);
 
-	frame = regs.ebp;
+	result = server_ptrace_get_frame (handle, regs.eip, regs.esp, regs.ebp,
+					  &address, &frame);
+	if (result != COMMAND_ERROR_NONE)
+		goto out;
+
 	while (frame != 0) {
-		int address;
+		if ((max_frames >= 0) && (frames->len >= max_frames))
+			break;
 
-		errno = 0;
-		address = ptrace (PTRACE_PEEKDATA, handle->pid, frame + 4, NULL);
-		if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			result = COMMAND_ERROR_UNKNOWN;
+		if (address == stop_address)
 			goto out;
-		}
-
-		errno = 0;
-		frame = ptrace (PTRACE_PEEKDATA, handle->pid, frame);
-		if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
-			result = COMMAND_ERROR_UNKNOWN;
-			goto out;
-		}
 
 		g_array_append_val (frames, address);
+
+		result = server_ptrace_peek_word (handle, frame + 4, &address);
+		if (result != COMMAND_ERROR_NONE)
+			goto out;
+
+		result = server_ptrace_peek_word (handle, frame, &frame);
+		if (result != COMMAND_ERROR_NONE)
+			goto out;
 	}
 
 	goto out;
@@ -770,5 +851,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_remove_breakpoint,
 	server_ptrace_get_breakpoints,
 	server_ptrace_get_registers,
-	server_ptrace_get_backtrace
+	server_ptrace_get_backtrace,
+	server_ptrace_get_ret_address
 };

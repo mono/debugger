@@ -177,8 +177,16 @@ typedef struct {
 	 * and `frames' values even on an error.
 	 */
 	ServerCommandError    (* get_backtrace)       (InferiorHandle   *handle,
+						       gint32            max_frames,
+						       guint64           stop_address,
 						       guint32          *count,
 						       guint64         **frames);
+
+	/*
+	 * This is only allowed on the first instruction of a method.
+	 */
+	ServerCommandError    (* get_ret_address)     (InferiorHandle   *handle,
+						       guint64          *retval);
 } InferiorInfo;
 
 extern InferiorInfo i386_linux_ptrace_inferior;
@@ -286,8 +294,14 @@ mono_debugger_server_get_registers       (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_get_backtrace       (ServerHandle        *handle,
+					  gint32               max_frames,
+					  guint64              stop_address,
 					  guint32             *count,
 					  guint64            **frames);
+
+ServerCommandError
+mono_debugger_server_get_ret_address     (ServerHandle        *handle,
+					  guint64             *retval);
 
 G_END_DECLS
 

@@ -72,6 +72,9 @@ namespace Mono.Debugger.Backends
 		Hashtable pending_callbacks = new Hashtable ();
 		long last_callback_id = 0;
 
+		TargetAddress main_method_address = TargetAddress.Null;
+		TargetAddress main_method_retaddr = TargetAddress.Null;
+
 		IStepFrame current_step_frame = null;
 
 		public int PID {
@@ -133,7 +136,10 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_get_backtrace (IntPtr handle, out int count, out IntPtr data);
+		static extern CommandError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_get_ret_address (IntPtr handle, out long retval);
 
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
@@ -315,11 +321,11 @@ namespace Mono.Debugger.Backends
 			if (!native)
 				return false;
 
-			TargetAddress symbol_info = bfd ["main"];
-			if (symbol_info.IsNull)
+			main_method_address = bfd ["main"];
+			if (main_method_address.IsNull)
 				return false;
 
-			insert_temporary_breakpoint (symbol_info);
+			insert_temporary_breakpoint (main_method_address);
 			return true;
 		}
 
@@ -345,6 +351,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		bool initialized;
+		bool reached_main;
 		bool debugger_info_read;
 		void child_message (ChildMessageType message, int arg)
 		{
@@ -364,6 +371,10 @@ namespace Mono.Debugger.Backends
 
 			switch (message) {
 			case ChildMessageType.CHILD_STOPPED:
+				if (initialized && !reached_main) {
+					reached_main = true;
+					main_method_retaddr = GetReturnAddress ();
+				}
 				if (!initialized) {
 					initialized = true;
 					if (!native || start_native ()) {
@@ -719,11 +730,8 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			int insn_size;
 			TargetAddress call = arch.GetCallTarget (CurrentFrame, out insn_size);
-			if (!native && !call.IsNull && (frame.Language != null)) {
+			if (!native && !call.IsNull && (frame != null) && (frame.Language != null)) {
 				TargetAddress trampoline = frame.Language.GetTrampoline (call);
-
-				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
-						   call, insn_size, trampoline, frame, CurrentFrame);
 
 				if (!trampoline.IsNull) {
 					insert_temporary_breakpoint (trampoline);
@@ -791,6 +799,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public long GetRegister (int register)
+		{
+			long[] retval = GetRegisters (new int[] { register });
+			return retval [0];
+		}
+
 		public long[] GetRegisters (int[] registers)
 		{
 			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;
@@ -814,13 +828,17 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public TargetAddress[] GetBacktrace ()
+		public TargetAddress[] GetBacktrace (int max_frames, bool full_backtrace)
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
 				int count;
+
+				long stop = 0;
+				if (!full_backtrace && !main_method_retaddr.IsNull)
+					stop = main_method_retaddr.Address;
 				CommandError result = mono_debugger_server_get_backtrace (
-					server_handle, out count, out data);
+					server_handle, max_frames, stop, out count, out data);
 				check_error (result);
 
 				long[] frames = new long [count];
@@ -833,6 +851,16 @@ namespace Mono.Debugger.Backends
 			} finally {
 				g_free (data);
 			}
+		}
+
+		public TargetAddress GetReturnAddress ()
+		{
+			long address;
+			CommandError result = mono_debugger_server_get_ret_address (
+					server_handle, out address);
+			check_error (result);
+
+			return new TargetAddress (this, address);
 		}
 
 		//

@@ -84,7 +84,7 @@ namespace Mono.Debugger.GUI
 				return;
 
 			try {
-				IStackFrame[] frames = backend.GetBacktrace ();
+				IStackFrame[] frames = backend.GetBacktrace (-1, false);
 				for (int i = 0; i < frames.Length; i++)
 					add_frame (i, frames [i]);
 			} catch {
