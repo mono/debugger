@@ -91,7 +91,8 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
-		public readonly int ThisTypeInfoOffset;
+		public readonly bool HasThis;
+		public readonly int ClassTypeInfoOffset;
 		public readonly int[] ParamTypeInfoOffsets;
 		public readonly int[] LocalTypeInfoOffsets;
 
@@ -113,6 +114,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodEndAddress = ReadAddress (reader, domain);
 			WrapperAddress = ReadAddress (reader, domain);
 
+			HasThis = reader.ReadInt32 () != 0;
 			int variables_offset = reader.ReadInt32 ();
 			int type_table_offset = reader.ReadInt32 ();
 
@@ -133,7 +135,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			reader.Position = variables_offset;
-			if (entry.ThisTypeIndex != 0)
+			if (HasThis)
 				ThisVariableInfo = new VariableInfo (reader);
 
 			ParamVariableInfo = new VariableInfo [entry.NumParameters];
@@ -145,8 +147,7 @@ namespace Mono.Debugger.Languages.CSharp
 				LocalVariableInfo [i] = new VariableInfo (reader);
 
 			reader.Position = type_table_offset;
-			if (entry.ThisTypeIndex != 0)
-				ThisTypeInfoOffset = reader.ReadInt32 ();
+			ClassTypeInfoOffset = reader.ReadInt32 ();
 
 			ParamTypeInfoOffsets = new int [entry.NumParameters];
 			for (int i = 0; i < entry.NumParameters; i++)
@@ -170,7 +171,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 23;
+		public const int  DynamicVersion = 24;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -1157,7 +1158,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 			MethodEntry method;
 			System.Reflection.MethodBase rmethod;
-			MonoType this_type;
+			MonoType class_type;
 			MonoType[] param_types;
 			MonoType[] local_types;
 			IVariable[] parameters;
@@ -1228,9 +1229,8 @@ namespace Mono.Debugger.Languages.CSharp
 				if (has_variables || !is_loaded)
 					return;
 
-				if (address.ThisTypeInfoOffset != 0)
-					this_type = reader.Table.GetType (
-						rmethod.ReflectedType, 0, address.ThisTypeInfoOffset);
+				class_type = reader.Table.GetType (
+					rmethod.ReflectedType, 0, address.ClassTypeInfoOffset);
 
 				ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
