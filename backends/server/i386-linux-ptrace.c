@@ -182,6 +182,7 @@ server_ptrace_finalize (InferiorHandle *handle)
 	if (handle->pid) {
 		ptrace (PTRACE_KILL, handle->pid, NULL, NULL);
 		ptrace (PTRACE_DETACH, handle->pid, NULL, NULL);
+		kill (handle->pid, SIGKILL);
 	}
 
 	g_free (handle->saved_regs);
