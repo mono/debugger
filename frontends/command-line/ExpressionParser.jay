@@ -101,7 +101,7 @@ expression
 	  }
 	| STAR expression
 	  {
-		$$ = new VariableDereferenceExpression ((Expression) $2);
+		$$ = new PointerExpression ((Expression) $2);
 	  }
 	| expression OPEN_BRACKET expression CLOSE_BRACKET
 	  {

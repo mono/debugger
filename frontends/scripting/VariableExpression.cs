@@ -450,11 +450,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class VariableDereferenceExpression : VariableExpression
+	public class PointerExpression : VariableExpression
 	{
 		Expression expr;
 
-		public VariableDereferenceExpression (Expression expr)
+		public PointerExpression (Expression expr)
 		{
 			this.expr = expr;
 		}
@@ -492,6 +492,37 @@ namespace Mono.Debugger.Frontends.CommandLine
 					"Cannot get current type of `{0}'.", expr.Name);
 
 			return type;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			FrameHandle frame = context.CurrentFrame;
+
+			object obj = expr.Resolve (context);
+			if (obj is int)
+				obj = (long) (int) obj;
+			if (obj is long) {
+				ITargetType type = frame.Frame.Language.PointerType;
+
+				TargetAddress taddress = new TargetAddress (
+					frame.Frame.AddressDomain, (long) obj);
+
+				TargetLocation location = new AbsoluteTargetLocation (
+					frame.Frame, taddress);
+
+				return type.GetObject (location);
+			}
+
+			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			if (pobj == null)
+				throw new ScriptingException (
+					"Variable `{0}` is not a pointer type.", expr.Name);
+
+			if (!pobj.HasDereferencedObject)
+				throw new ScriptingException (
+					"Cannot dereference `{0}'.", expr.Name);
+
+			return pobj.DereferencedObject;
 		}
 	}
 
@@ -587,45 +618,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 							      var_expr.Name);
 
 			return type.ParentType;
-		}
-	}
-
-	public class PointerExpression : VariableExpression
-	{
-		FrameExpression frame_expr;
-		FrameHandle frame;
-		TargetLocation location;
-		long address;
-
-		public PointerExpression (FrameExpression frame_expr, long address)
-		{
-			this.frame_expr = frame_expr;
-			this.address = address;
-		}
-
-		public override string Name {
-			get { return String.Format ("%0x{0:x}", address); }
-		}
-
-		protected override ITargetType DoResolveType (ScriptingContext context)
-		{
-			frame = (FrameHandle) frame_expr.Resolve (context);
-			if (frame == null)
-				return null;
-
-			return frame.Frame.Language.PointerType;
-		}
-
-		protected override ITargetObject DoResolveVariable (ScriptingContext context)
-		{
-			ITargetType type = DoResolveType (context);
-			if (type == null)
-				return null;
-
-			TargetAddress taddress = new TargetAddress (frame.Frame.AddressDomain, address);
-			location = new AbsoluteTargetLocation (frame.Frame, taddress);
-
-			return type.GetObject (location);
 		}
 	}
 

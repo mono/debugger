@@ -33,7 +33,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			: base (message)
 		{ }
 
-		public ParserError (string message, params string[] args)
+		public ParserError (string message, params object[] args)
 			: this (String.Format (message, args))
 		{ }
 	}
@@ -318,7 +318,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (!current_command.Resolve (context, args))
 				throw new ParserError ("Cannot resolve command");
 
-			current_command.Execute (context);
+			try {
+				current_command.Execute (context);
+			} catch (TargetException ex) {
+				throw new ParserError (
+					"Cannot execute command: {0}", ex.Message);
+			}
 		}
 
 		protected int ParseInteger ()
