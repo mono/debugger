@@ -615,6 +615,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public void Kill ()
+		{
+			process.Kill ();
+			process.Dispose ();
+			target_exited ();
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("Process @{0}: {1} {2} {3}", id, State, process.PID, process);
@@ -1035,6 +1042,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		void process_exited (ProcessHandle process)
 		{
 			procs.Remove (process);
+			if (process == current_process)
+				current_process = null;
 		}
 
 		void add_process (ProcessHandle process)

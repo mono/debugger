@@ -263,6 +263,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class KillProcessCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public KillProcessCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			process.Kill ();
+		}
+	}
+
 	public class ShowProcessesCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)

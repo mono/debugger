@@ -116,6 +116,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token BREAKPOINT
 %token SAVE
 %token LOAD
+%token KILL
 
 %token SELECT
 %token BACKGROUND
@@ -183,6 +184,10 @@ command
 	| DOWN opt_process
 	  {
 		$$ = new DownCommand ((ProcessExpression) $2);
+	  }
+	| KILL opt_process
+	  {
+		$$ = new KillProcessCommand ((ProcessExpression) $2);
 	  }
 	| SHOW PROCESSES
 	  {

@@ -78,6 +78,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("breakpoint", Token.BREAKPOINT);
 			keywords.Add ("save", Token.SAVE);
 			keywords.Add ("load", Token.LOAD);
+			keywords.Add ("kill", Token.KILL);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);

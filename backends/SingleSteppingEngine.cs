@@ -575,6 +575,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public int PID {
+			get {
+				check_inferior ();
+				return inferior.PID;
+			}
+		}
+
 		// <summary>
 		//   The current stack frame.  May only be used when the engine is stopped
 		//   (State == TargetState.STOPPED).  The single stepping engine
@@ -1617,13 +1624,13 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			Console.WriteLine ("KILL: {0} {1}", inferior, engine_thread);
-
 			if (inferior == null)
 				return;
 
-			if (engine_thread != null)
+			if (engine_thread != null) {
 				engine_thread.Abort ();
+				engine_thread = null;
+			}
 		}
 
 		public void SetSignal (int signal, bool send_it)
@@ -2228,6 +2235,10 @@ namespace Mono.Debugger.Backends
 					if (thread_notify != null) {
 						thread_notify.Dispose ();
 						thread_notify = null;
+					}
+					if (inferior != null) {
+						inferior.Dispose ();
+						inferior = null;
 					}
 				}
 

@@ -187,6 +187,8 @@ namespace Mono.Debugger
 
 		void target_state_changed (TargetState new_state, int arg)
 		{
+			if ((pid == 0) && (sse != null))
+				pid = sse.PID;
 			if (StateChanged != null)
 				StateChanged (new_state, arg);
 		}
