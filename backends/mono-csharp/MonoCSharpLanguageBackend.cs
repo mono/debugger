@@ -161,24 +161,6 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	public class SymbolTableException : Exception
-	{
-		public SymbolTableException ()
-			: base ("Invalid mono symbol table")
-		{ }
-
-		public SymbolTableException (string message, params object args)
-			: base (String.Format (message, args))
-		{ }
-	}
-
-	public class SymbolTableEmptyException : SymbolTableException
-	{
-		public SymbolTableEmptyException ()
-			: base ("Empty symbol table")
-		{ }
-	}
-
 	internal class MonoDebuggerInfo
 	{
 		public readonly TargetAddress trampoline_code;
@@ -299,7 +281,7 @@ namespace Mono.Debugger.Languages.CSharp
 			assembly = Assembly.LoadFrom (ImageFile);
 
 			if (raw_contents_size == 0)
-				throw new SymbolTableEmptyException ();
+				throw new SymbolTableException ("Symbol table is empty.");
 
 			if (inferior.State == TargetState.CORE_FILE) {
 				// This is a mmap()ed area and thus not written to the core file,
