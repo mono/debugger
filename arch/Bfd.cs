@@ -1011,12 +1011,22 @@ namespace Mono.Debugger.Architecture
 
 			byte opcode = reader.ReadByte ();
 			byte opcode2 = reader.ReadByte ();
-			if ((opcode != 0xff) || (opcode2 != 0x25)) {
+
+			TargetAddress jmp_target;
+			if ((opcode == 0xff) && (opcode2 == 0x25)) {
+				jmp_target = reader.ReadAddress ();
+			} else if ((opcode == 0xff) && (opcode2 == 0xa3)) {
+				int offset = reader.BinaryReader.ReadInt32 ();
+				Registers regs = memory.GetRegisters ();
+				long ebx = regs [(int) I386Register.EBX].Value;
+
+				jmp_target = new TargetAddress (
+					memory.AddressDomain, ebx + offset);
+			} else {
 				is_start = false;
 				return TargetAddress.Null;
 			}
 
-			TargetAddress jmp_target = reader.ReadAddress ();
 			TargetAddress method = memory.ReadGlobalAddress (jmp_target);
 
 			if (method != address + 6) {
