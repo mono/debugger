@@ -75,7 +75,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Run ()
 		{
-			string last_line = null;
+			string last_line = "";
 
 			while (!parser.Quit) {
 				string line;
@@ -83,7 +83,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 					line = readline.ReadLine ();
 				else
 					line = Console.ReadLine ();
-				if (line == null || line == "")
+				if (line == null)
+					break;
+				else if (line == "")
 					line = last_line;
 
 				line = line.TrimStart (' ', '\t');
