@@ -232,7 +232,8 @@ server_ptrace_detach (InferiorHandle *handle)
 static ServerCommandError
 server_ptrace_kill (InferiorHandle *handle)
 {
-	kill (handle->pid, SIGKILL);
+	if (handle->pid)
+		kill (handle->pid, SIGKILL);
 	return COMMAND_ERROR_NONE;
 }
 
