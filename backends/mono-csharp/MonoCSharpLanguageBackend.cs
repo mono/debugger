@@ -1396,7 +1396,6 @@ namespace Mono.Debugger.Languages.CSharp
 		int symtab_generation;
 		TargetAddress trampoline_address;
 		TargetAddress notification_address;
-		IArchitecture arch;
 		bool initialized;
 		protected MonoSymbolFileTable table;
 
@@ -1443,7 +1442,6 @@ namespace Mono.Debugger.Languages.CSharp
 			process = null;
 			info = null;
 			symtab_generation = 0;
-			arch = null;
 			trampoline_address = TargetAddress.Null;
 		}
 
@@ -1487,7 +1485,6 @@ namespace Mono.Debugger.Languages.CSharp
 			info = new MonoDebuggerInfo (table);
 
 			trampoline_address = inferior.ReadGlobalAddress (info.generic_trampoline_code);
-			arch = inferior.Architecture;
 
 			notification_address = inferior.ReadGlobalAddress (info.notification_code);
 			Console.WriteLine ("NOTIFICATION ADDRESS: {0} {1}", info.notification_code,
@@ -1594,6 +1591,7 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			Process process = (Process) iprocess;
 			IInferior inferior = process.Inferior;
+			IArchitecture arch = process.Architecture;
 
 			ThreadManager thread_manager = process.DebuggerBackend.ThreadManager;
 
@@ -1627,7 +1625,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool BreakpointHit (IProcess iprocess, TargetAddress address)
 		{
-			IInferior inferior = ((Process) iprocess).Inferior;
+			Process process = (Process) iprocess;
+			IInferior inferior = process.Inferior;
+			IArchitecture arch = process.Architecture;
 
 			if ((info == null) || (inferior == null))
 				return true;
