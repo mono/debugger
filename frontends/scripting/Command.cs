@@ -37,7 +37,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			DebuggerEngine engine = (DebuggerEngine) e;
 
 			if (NeedsProcess && (engine.Context.CurrentProcess == null)) {
-				engine.Context.Error ("No process to debug", this, null);
+				engine.Context.Error ("No program to debug.", this, null);
 				return null;
 			}
 			

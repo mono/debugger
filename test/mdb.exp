@@ -30,6 +30,12 @@ proc mdb_start {file args} {
 	    exit 1
 	}
     }
+    mdb_expect_started
+}
+
+proc mdb_expect_started { } {
+    global process
+
     expect {
 	-re "Process @(\[0-9\]+) stopped at (\[^\n\r\]+)\[\r\n\]+" {
 	    verbose "Stopped"
