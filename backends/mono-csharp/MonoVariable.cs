@@ -10,11 +10,13 @@ namespace Mono.Debugger.Languages.CSharp
 		string name;
 		MonoType type;
 		DebuggerBackend backend;
+		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
 		bool is_local;
 
 		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
-				     bool is_local, IMethod method, VariableInfo info)
+				     bool is_local, IMethod method, VariableInfo info,
+				     int start_scope, int end_scope)
 		{
 			this.backend = backend;
 			this.name = name;
@@ -22,14 +24,22 @@ namespace Mono.Debugger.Languages.CSharp
 			this.is_local = is_local;
 			this.info = info;
 
-			if (info.BeginScope != 0)
-				start_scope = method.StartAddress + info.BeginScope;
+			if (start_scope != 0)
+				this.start_scope = method.StartAddress + start_scope;
 			else
-				start_scope = method.MethodStartAddress;
-			if (info.EndScope != 0)
-				end_scope = method.StartAddress + info.EndScope;
+				this.start_scope = method.MethodStartAddress;
+			if (end_scope != 0)
+				this.end_scope = method.StartAddress + end_scope;
 			else
-				end_scope = method.MethodEndAddress;
+				this.end_scope = method.MethodEndAddress;
+			if (info.BeginLiveness != 0)
+				this.start_liveness = method.StartAddress + info.BeginLiveness;
+			else
+				this.start_liveness = method.MethodStartAddress;
+			if (info.EndLiveness != 0)
+				this.end_liveness = method.StartAddress + info.EndLiveness;
+			else
+				this.end_liveness = method.MethodEndAddress;
 		}
 
 		public DebuggerBackend Backend {
@@ -56,15 +66,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public TargetAddress StartScope {
+		public TargetAddress StartLiveness {
 			get {
-				return start_scope;
+				return start_liveness;
 			}
 		}
 
-		public TargetAddress EndScope {
+		public TargetAddress EndLiveness {
 			get {
-				return end_scope;
+				return end_liveness;
 			}
 		}
 
@@ -76,17 +86,20 @@ namespace Mono.Debugger.Languages.CSharp
 				else
 					return new MonoRegisterLocation (
 						frame, type.IsByRef, info.Index, info.Offset,
-						start_scope, end_scope);
+						start_liveness, end_liveness);
 			} else if (info.Mode == VariableInfo.AddressMode.Stack)
 				return new MonoStackLocation (
 					frame, type.IsByRef, is_local, info.Offset, 0,
-					start_scope, end_scope);
+					start_liveness, end_liveness);
 			else
 				return null;
 		}
 
 		public bool IsValid (StackFrame frame)
 		{
+			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress > end_scope))
+				return false;
+
 			MonoTargetLocation location = GetLocation (frame);
 
 			if ((location == null) || !location.IsValid)
@@ -108,7 +121,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public override string ToString ()
 		{
 			return String.Format ("MonoVariable [{0}:{1}:{2}:{3}]",
-					      Name, Type, StartScope, EndScope);
+					      Name, Type, StartLiveness, EndLiveness);
 		}
 	}
 }

@@ -1,3 +1,12 @@
+2003-03-14  Martin Baulig  <martin@ximian.com>
+
+	* classes/StackFrame.cs (Locals): New public property.  Returns
+	just the locals which are actually accessible at the current
+	location.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Actually use
+	the scope information from the symbol file.
+
 2003-03-13  Martin Baulig  <martin@ximian.com>
 
 	* test/TestLexicalScopes.cs: New tests.  The debugger should only

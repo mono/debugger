@@ -19,8 +19,8 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int Offset;
 		public readonly int Size;
 		public readonly AddressMode Mode;
-		public readonly int BeginScope;
-		public readonly int EndScope;
+		public readonly int BeginLiveness;
+		public readonly int EndLiveness;
 
 		public enum AddressMode : long
 		{
@@ -49,8 +49,8 @@ namespace Mono.Debugger.Languages.CSharp
 			Index = reader.ReadInt32 ();
 			Offset = reader.ReadInt32 ();
 			Size = reader.ReadInt32 ();
-			BeginScope = reader.ReadInt32 ();
-			EndScope = reader.ReadInt32 ();
+			BeginLiveness = reader.ReadInt32 ();
+			EndLiveness = reader.ReadInt32 ();
 
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
@@ -62,7 +62,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public override string ToString ()
 		{
 			return String.Format ("[VariableInfo {0}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}]",
-					      Mode, Index, Offset, Size, BeginScope, EndScope);
+					      Mode, Index, Offset, Size, BeginLiveness, EndLiveness);
 		}
 	}
 
@@ -1325,7 +1325,7 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < param_info.Length; i++)
 					parameters [i] = new MonoVariable (
 						reader.backend, param_info [i].Name, param_types [i],
-						false, this, address.ParamVariableInfo [i]);
+						false, this, address.ParamVariableInfo [i], 0, 0);
 
 				local_types = new MonoType [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
@@ -1340,8 +1340,8 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < method.NumLocals; i++) {
 					LocalVariableEntry local = method.Locals [i];
 
-					int start_scope = -1;
-					int end_scope = -1;
+					int start_scope = 0;
+					int end_scope = 0;
 
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
@@ -1352,7 +1352,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 					locals [i] = new MonoVariable (
 						reader.backend, local.Name, local_types [i],
-						true, this, address.LocalVariableInfo [i]);
+						true, this, address.LocalVariableInfo [i],
+						start_scope, end_scope);
 				}
 
 				has_variables = true;

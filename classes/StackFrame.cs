@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Collections;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -115,6 +116,20 @@ namespace Mono.Debugger
 			get {
 				check_disposed ();
 				return name;
+			}
+		}
+
+		public IVariable[] Locals {
+			get {
+				check_disposed ();
+				ArrayList list = new ArrayList ();
+				foreach (IVariable local in Method.Locals) {
+					if (local.IsValid (this))
+						list.Add (local);
+				}
+				IVariable[] retval = new IVariable [list.Count];
+				list.CopyTo (retval, 0);
+				return retval;
 			}
 		}
 

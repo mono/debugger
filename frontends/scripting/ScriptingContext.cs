@@ -155,7 +155,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (frame.Method == null)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			IVariable[] local_vars = frame.Method.Locals;
+			IVariable[] local_vars = frame.Locals;
 			foreach (IVariable var in local_vars)
 				PrintVariable (context, false, var);
 		}
@@ -170,7 +170,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (frame.Method == null)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			IVariable[] local_vars = frame.Method.Locals;
+			IVariable[] local_vars = frame.Locals;
 			foreach (IVariable var in local_vars) {
 				if (var.Name == identifier)
 					return var;
