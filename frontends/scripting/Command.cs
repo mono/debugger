@@ -239,7 +239,21 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			expression = ParseExpression (context);
+			if (Argument == "") {
+				if (context.LastExamineAddress.IsNull)
+					throw new ScriptingException (
+						"Don't have a last examine command " +
+						"which I could continue.");
+				expression = new PointerDereferenceExpression (
+					new NumberExpression (
+						context.LastExamineAddress.Address));
+			} else
+				expression = ParseExpression (context);
+
+			if (expression == null)
+				return false;
+
+			expression = expression.Resolve (context);
 			return expression != null;
 		}
 
@@ -250,24 +264,18 @@ namespace Mono.Debugger.Frontends.Scripting
 			byte[] data;
 
 			PointerExpression pexp = expression as PointerExpression;
-			if (pexp != null) {
-				TargetLocation location = pexp.EvaluateAddress (context);
+			if (pexp == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a pointer.", expression.Name);
 
-				taddress = location.Address;
-				taccess = location.TargetAccess;
-			} else {
-				ITargetObject obj = expression.EvaluateVariable (context);
+			TargetLocation location = pexp.EvaluateAddress (context);
 
-				if (!obj.Location.HasAddress)
-					throw new ScriptingException (
-						"Expression doesn't have an address.");
-
-				taddress = obj.Location.Address;
-				taccess = obj.Location.TargetAccess;
-			}
+			taddress = location.Address;
+			taccess = location.TargetAccess;
 
 			data = taccess.ReadBuffer (taddress, size);
 			context.Print (TargetBinaryReader.HexDump (taddress, data));
+			context.LastExamineAddress = taddress + size;
 		}
 	}
 

@@ -106,6 +106,13 @@ namespace Mono.Debugger.Languages.CSharp
 				return BitConverter.GetBytes (Convert.ToDouble (obj));
 
 			default:
+				if (type == typeof (IntPtr)) {
+					IntPtr ptr = (IntPtr) obj;
+					if (IntPtr.Size == 4)
+						return BitConverter.GetBytes (ptr.ToInt32 ());
+					else
+						return BitConverter.GetBytes (ptr.ToInt64 ());
+				}
 				throw new ArgumentException ();
 			}
 		}

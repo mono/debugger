@@ -76,7 +76,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new InvalidOperationException (
 					String.Format (
 						"Some clown tried to evaluate the " +
-						"unresolved expression `{0}'", Name));
+						"unresolved expression `{0}' ({1})", Name,
+						GetType ()));
 
 			try {
 				ITargetObject retval = DoEvaluateVariable (context);
@@ -209,8 +210,22 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.val = val;
 		}
 
+		public long Value {
+			get {
+				if (val is int)
+					return (long) (int) val;
+				else
+					return (long) val;
+			}
+		}
+
 		public override string Name {
-			get { return val.ToString (); }
+			get {
+				if (val is long)
+					return String.Format ("0x{0:x}", (long) val);
+				else
+					return val.ToString ();
+			}
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
@@ -1042,6 +1057,13 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = context.CurrentFrame;
 
+			NumberExpression nexpr = expr as NumberExpression;
+			if (nexpr != null) {
+				TargetAddress addr = new TargetAddress (
+					context.AddressDomain, nexpr.Value);
+				return new AbsoluteTargetLocation (frame.Frame, addr);
+			}
+
 			object obj = expr.Resolve (context);
 			if (obj is int)
 				obj = (long) (int) obj;
@@ -1060,6 +1082,70 @@ namespace Mono.Debugger.Frontends.Scripting
 					"Expression `{0}' is not a pointer type.", expr.Name);
 
 			return pobj.Location;
+		}
+	}
+
+	public class AddressOfExpression : PointerExpression
+	{
+		Expression expr;
+		string name;
+
+		public AddressOfExpression (Expression expr)
+		{
+			this.expr = expr;
+			name = '&' + expr.Name;
+		}
+
+		public override string Name {
+			get {
+				return name;
+			}
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			expr = expr.Resolve (context);
+			if (expr == null)
+				return null;
+
+			resolved = true;
+			return this;
+		}
+
+		protected override ITargetType DoEvaluateType (ScriptingContext context)
+		{
+			FrameHandle frame = context.CurrentFrame;
+
+			ITargetPointerType ptype = expr.EvaluateType (context)
+				as ITargetPointerType;
+			if (ptype != null)
+				return ptype;
+
+			return frame.Language.PointerType;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			FrameHandle frame = context.CurrentFrame;
+
+			TargetLocation location = EvaluateAddress (context);
+			long address = location.Address.Address;
+			IntPtr ptr;
+			if (IntPtr.Size == 4)
+				ptr = new IntPtr ((int) address);
+			else
+				ptr = new IntPtr (address);
+
+			return frame.Language.CreateInstance (frame.Frame, ptr);
+		}
+
+		public override TargetLocation EvaluateAddress (ScriptingContext context)
+		{
+			ITargetObject obj = expr.EvaluateVariable (context);
+			if (!obj.Location.HasAddress)
+				throw new ScriptingException (
+					"Cannot take address of expression `{0}'", expr.Name);
+			return obj.Location;
 		}
 	}
 

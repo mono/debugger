@@ -1,3 +1,16 @@
+2004-06-08  Martin Baulig  <martin@ximian.com>
+
+	* frontends/command-line/ExpressionParser.jay: Added
+	`&expr' syntax to take the address of an expression.
+
+	* frontends/scripting/Expression.cs
+	(PointerDereferenceExpression): Allow NumberExpression's as target
+	to make `*0x12345678' and `*305419896' work.
+
+	* frontends/scripting/Command.cs (ExamineCommand): Allow repeating
+	this command by typing it again without arguments.  Require a
+	pointer expression as argument.
+
 2004-06-03  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/ScriptingContext.cs

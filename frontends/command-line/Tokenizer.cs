@@ -463,6 +463,8 @@ namespace Mono.Debugger.Frontends.Scripting
 					return Token.OP_GT;
 				else if (c == ':')
 					return Token.COLON;
+				else if (c == '&')
+					return Token.AMPERSAND;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

@@ -70,6 +70,7 @@ namespace Mono.Debugger.Frontends.Scripting
 %token OP_LT
 %token OP_GT
 %token COLON
+%token AMPERSAND
 
 %token PARENT
 %token LENGTH
@@ -118,6 +119,10 @@ expression
 	| STAR expression
 	  {
 		$$ = new PointerDereferenceExpression ((Expression) $2);
+	  }
+	| AMPERSAND expression
+	  {
+		$$ = new AddressOfExpression ((Expression) $2);
 	  }
 	| expression OPEN_BRACKET expression CLOSE_BRACKET
 	  {

@@ -678,6 +678,8 @@ namespace Mono.Debugger.Languages.CSharp
 				return builtin.CharType;
 			else if (type == typeof (string))
 				return builtin.StringType;
+			else if (type == typeof (IntPtr))
+				return builtin.IntType;
 
 			return null;
 		}
