@@ -168,7 +168,7 @@ namespace Mono.Debugger
 			if (csharp_language != null)
 				handler = new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
 
-			thread_manager.Initialize (process, handler);
+			thread_manager.Initialize (process, inferior, handler);
 		}
 
 		internal void ReachedManagedMain ()
@@ -304,10 +304,10 @@ namespace Mono.Debugger
 			return true;
 		}
 
-		public bool SignalHandler (Process process, int signal)
+		public bool SignalHandler (Process process, IInferior inferior, int signal)
 		{
 			bool action;
-			if (thread_manager.SignalHandler (process, signal, out action))
+			if (thread_manager.SignalHandler (inferior, signal, out action))
 				return action;
 
 			return true;

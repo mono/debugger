@@ -56,7 +56,7 @@ namespace Mono.Debugger
 			address_domain = new AddressDomain ("global");
 		}
 
-		public bool Initialize (Process process, DaemonThreadHandler csharp_handler)
+		public bool Initialize (Process process, IInferior inferior, DaemonThreadHandler csharp_handler)
 		{
 			this.csharp_handler = csharp_handler;
 			this.main_process = process;
@@ -74,7 +74,7 @@ namespace Mono.Debugger
 				return false;
 			}
 
-			process.TargetAccess.WriteInteger (tdebug, 1);
+			inferior.WriteInteger (tdebug, 1);
 			initialized = true;
 
 			OnInitializedEvent (main_process);
@@ -126,7 +126,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool SignalHandler (Process process, int signal, out bool action)
+		public bool SignalHandler (IInferior inferior, int signal, out bool action)
 		{
 			if (signal == PThread_Signal_Restart) {
 				action = false;
@@ -139,13 +139,13 @@ namespace Mono.Debugger
 			}
 
 			if (signal == Signal_SIGCHLD) {
-				process.SetSignal (0, false);
+				inferior.SetSignal (0, false);
 				action = false;
 				return true;
 			}
 
 			if (signal == Signal_SIGINT) {
-				process.SetSignal (0, false);
+				inferior.SetSignal (0, false);
 				action = true;
 				return true;
 			}
@@ -155,9 +155,9 @@ namespace Mono.Debugger
 				return false;
 			}
 
-			reload_threads (process.TargetAccess);
+			reload_threads (inferior);
 
-			process.SetSignal (PThread_Signal_Restart, false);
+			inferior.SetSignal (PThread_Signal_Restart, false);
 			action = false;
 			return true;
 		}

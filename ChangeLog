@@ -1,3 +1,8 @@
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
+	* classes/Backtrace.cs: Don't make this abstract; move the stack
+	unwind stuff from the SingleSteppingEngine here.
+
 2003-01-03  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/IProcess.cs: Don't implement ITargetNotification.

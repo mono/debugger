@@ -152,7 +152,7 @@ namespace Mono.Debugger.Architecture
 			}
 
 			has_backtrace = true;
-			backtrace = new MyBacktrace (this, frames);
+			backtrace = new Backtrace (this, frames);
 			return backtrace;
 		}
 
@@ -238,23 +238,8 @@ namespace Mono.Debugger.Architecture
 
 			public override Register[] Registers {
 				get {
-					throw new NotImplementedException ();
+					return core.GetRegisters ();
 				}
-			}
-		}
-
-		//
-		// Backtrace.
-		//
-
-		protected class MyBacktrace : Backtrace
-		{
-			CoreFile core;
-
-			public MyBacktrace (CoreFile core, StackFrame[] frames)
-				: base (frames)
-			{
-				this.core = core;
 			}
 		}
 

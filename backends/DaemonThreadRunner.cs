@@ -67,7 +67,7 @@ namespace Mono.Debugger.Backends
 		protected bool daemon_received_signal (TargetAddress address, int signal)
 		{
 			bool action;
-			if (thread_manager.SignalHandler (process, signal, out action))
+			if (thread_manager.SignalHandler (inferior, signal, out action))
 				return true;
 			else if (daemon_thread_handler == null)
 				return false;
