@@ -79,8 +79,8 @@ namespace Mono.Debugger
 
 			if (tdebug.IsNull || thread_handles.IsNull ||
 			    thread_handles_num.IsNull || last_thread_event.IsNull) {
-				Console.WriteLine ("No thread support.");
 				OnInitializedEvent (main_process);
+				OnMainThreadCreatedEvent (main_process);
 				return false;
 			}
 
@@ -88,6 +88,7 @@ namespace Mono.Debugger
 			initialized = true;
 
 			OnInitializedEvent (main_process);
+			OnMainThreadCreatedEvent (main_process);
 
 			return true;
 		}
@@ -307,6 +308,7 @@ namespace Mono.Debugger
 
 				backend.ReachedManagedMain (main_process);
 				main_process.SingleSteppingEngine.Continue (main_function, true);
+				OnMainThreadCreatedEvent (main_process);
 				main_process.SingleSteppingEngine.ReachedMain ();
 
 				reached_main = true;
@@ -352,7 +354,6 @@ namespace Mono.Debugger
 				backend, process, inferior, handler, start);
 
 			main_started_event.WaitOne ();
-			OnMainThreadCreatedEvent (main_process);
 			return runner;
 		}
 
