@@ -138,10 +138,15 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public IMethodSource DisassembleMethod (IMethod method)
+		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
-			IMethod native_method = new NativeMethod (this, method);
-			return native_method.Source;
+			return new AssemblerMethod (
+				method.StartAddress, method.EndAddress, method.Name, this);
+		}
+
+		public AssemblerMethod DisassembleInstruction (TargetAddress address)
+		{
+			return new AssemblerMethod (address, this);
 		}
 
 		//

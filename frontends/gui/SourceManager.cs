@@ -157,7 +157,7 @@ namespace Mono.Debugger.GUI {
 
 		void MethodInvalid ()
 		{
-			if (current_source != null)
+			if ((current_source != null) && (current_source != disassembler_view))
 				current_source.Active = false;
 			current_source = null;
 

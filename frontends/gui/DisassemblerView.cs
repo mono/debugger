@@ -20,7 +20,7 @@ namespace Mono.Debugger.GUI
 		}
 
 		IMethod current_method = null;
-		IMethodSource current_method_source = null;
+		AssemblerMethod current_method_source = null;
 
 		protected override void SetActive ()
 		{
@@ -42,13 +42,12 @@ namespace Mono.Debugger.GUI
 			current_method_source = null;
 			current_method = null;
 
-			if ((frame.Method == null) || !frame.Method.IsLoaded) {
-				text_buffer.Text = "";
-				return;
+			if ((frame.Method == null) || !frame.Method.IsLoaded)
+				current_method_source = frame.DisassembleInstruction (frame.TargetAddress);
+			else {
+				current_method = frame.Method;
+				current_method_source = frame.DisassembleMethod ();
 			}
-
-			current_method = frame.Method;
-			current_method_source = frame.DisassembleMethod ();
 
 			if (current_method_source == null)
 				text_buffer.Text = "";
@@ -58,12 +57,12 @@ namespace Mono.Debugger.GUI
 
 		void MethodInvalid ()
 		{
-			text_buffer.Text = "";
+			// text_buffer.Text = "";
 		}
 
 		protected override SourceLocation GetSourceLocation (StackFrame frame)
 		{
-			if (frame.Method != current_method)
+			if ((frame.Method != current_method) || (frame.Method == null))
 				MethodChanged (frame);
 
 			if (current_method_source == null)

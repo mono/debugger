@@ -1755,22 +1755,45 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ();
 		}
 
-		CommandResult disassemble_method (object data)
+		CommandResult disassemble_insn_2 (object data)
 		{
 			try {
-				IMethodSource source = disassembler.DisassembleMethod ((IMethod) data);
-				return new CommandResult (CommandResultType.CommandOk, source);
+				TargetAddress address = (TargetAddress) data;
+				AssemblerMethod result = disassembler.DisassembleInstruction (address);
+				return new CommandResult (CommandResultType.CommandOk, result);
 			} catch (Exception e) {
 				return new CommandResult (CommandResultType.Exception, e);
 			}
 		}
 
-		public IMethodSource DisassembleMethod (IMethod method)
+		public AssemblerMethod DisassembleInstruction (TargetAddress address)
+		{
+			check_inferior ();
+			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn_2), address);
+			if (result.Type == CommandResultType.CommandOk) {
+				return (AssemblerMethod) result.Data;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		CommandResult disassemble_method (object data)
+		{
+			try {
+				AssemblerMethod block = disassembler.DisassembleMethod ((IMethod) data);
+				return new CommandResult (CommandResultType.CommandOk, block);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
 			check_inferior ();
 			CommandResult result = send_sync_command (new CommandFunc (disassemble_method), method);
 			if (result.Type == CommandResultType.CommandOk)
-				return (IMethodSource) result.Data;
+				return (AssemblerMethod) result.Data;
 			else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else
@@ -2097,7 +2120,12 @@ namespace Mono.Debugger.Backends
 				return sse.DisassembleInstruction (ref address);
 			}
 
-			public override IMethodSource DisassembleMethod ()
+			protected override AssemblerMethod DoDisassembleInstruction (TargetAddress address)
+			{
+				return sse.DisassembleInstruction (address);
+			}
+
+			public override AssemblerMethod DisassembleMethod ()
 			{
 				if (Method == null)
 					throw new NoMethodException ();

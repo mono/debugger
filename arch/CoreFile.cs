@@ -252,7 +252,12 @@ namespace Mono.Debugger.Architecture
 				return core.Disassembler.DisassembleInstruction (ref address);
 			}
 
-			public override IMethodSource DisassembleMethod ()
+			protected override AssemblerMethod DoDisassembleInstruction (TargetAddress address)
+			{
+				return core.Disassembler.DisassembleInstruction (address);
+			}
+
+			public override AssemblerMethod DisassembleMethod ()
 			{
 				if (Method == null)
 					throw new NoMethodException ();

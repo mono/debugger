@@ -131,7 +131,6 @@ namespace Mono.Debugger.GUI {
 		
 		void method_invalid_event ()
 		{
-			Active = false;
 			ClearLine ();
 		}
 

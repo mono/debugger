@@ -1,5 +1,20 @@
 2003-01-12  Martin Baulig  <martin@ximian.com>
 
+	* classes/NativeMethod.cs: Renamed to AssemblerMethod.
+
+	* classes/AssemblerMethod.cs: New public class.  This derives from
+	MethodSource, but we don't need an IMethod any longer.  The API is
+	also a bit improved, you can for instance get an array of
+	AssemberLines to access individual lines.
+
+	* interfaces/IDisassembler.cs: Return an AssemblerMethod, not an
+	IMethodSource.
+
+	* frontends/gui/DisassemblerView.cs: If we don't have a method,
+	just display the current instruction.
+
+2003-01-12  Martin Baulig  <martin@ximian.com>
+
 	* widgets/sources/debuggerwidgets/: New directory.
 
 	* widgets/sources/debuggerwidgets/debuggerentry.[ch]: New widget.

@@ -17,7 +17,9 @@ namespace Mono.Debugger
 		// <summary>
 		//   Disassemble one method.
 		// </summary>
-		IMethodSource DisassembleMethod (IMethod method);
+		AssemblerMethod DisassembleMethod (IMethod method);
+
+		AssemblerMethod DisassembleInstruction (TargetAddress address);
 
 		// <summary>
 		//   The symbol table the disassembler uses to display symbols.

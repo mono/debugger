@@ -114,12 +114,34 @@ namespace Mono.Debugger
 		public string DisassembleInstruction (ref TargetAddress address)
 		{
 			check_disposed ();
+
+			if ((method == null) || !method.IsLoaded)
+				return DoDisassembleInstruction (ref address);
+
+			if ((address < method.StartAddress) || (address >= method.EndAddress))
+				throw new ArgumentException ();
+
 			return DoDisassembleInstruction (ref address);
 		}
 
 		protected abstract string DoDisassembleInstruction (ref TargetAddress address);
 
-		public abstract IMethodSource DisassembleMethod ();
+		public AssemblerMethod DisassembleInstruction (TargetAddress address)
+		{
+			check_disposed ();
+
+			if ((method == null) || !method.IsLoaded)
+				return DoDisassembleInstruction (address);
+
+			if ((address < method.StartAddress) || (address >= method.EndAddress))
+				throw new ArgumentException ();
+
+			return DoDisassembleInstruction (address);
+		}
+
+		protected abstract AssemblerMethod DoDisassembleInstruction (TargetAddress address);
+
+		public abstract AssemblerMethod DisassembleMethod ();
 
 		public override string ToString ()
 		{
