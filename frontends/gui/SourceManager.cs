@@ -301,5 +301,13 @@ namespace Mono.Debugger.GUI
 
 			return view;
                 }
+
+		public void GotoLine (int line)
+		{
+			if (current_source != null)
+				current_source.GotoLine (line);
+			else if (disassembler_view != null)
+				disassembler_view.GotoLine (line);
+		}
 	}
 }

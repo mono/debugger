@@ -185,7 +185,7 @@ namespace Mono.Debugger.GUI
 			return null;
 		}
 
-		public override void InsertBreakpoint ()
+		public override void InsertBreakpoint (int line)
 		{
 			Console.WriteLine ("INFO: Implement me, insert a breakpoint here");
 		}

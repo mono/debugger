@@ -1,5 +1,9 @@
 2003-06-08  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/SourceView.cs: Made the context menu actually work.
+
+2003-06-08  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/GotoLineDialog.cs: New dialog for "Edit / Goto Line".
 
 2003-05-08  Martin Baulig  <martin@ximian.com>

@@ -14,14 +14,6 @@ using Pango;
 namespace Mono.Debugger.GUI {
 
 	public class SourceList : SourceView {
-		static Gdk.Pixbuf line, stop;
-
-		static SourceList ()
-		{
-			stop = new Gdk.Pixbuf (null, "stop.png");
-			line = new Gdk.Pixbuf (null, "line.png");
-		}
-
 		Label tab_label;
 		Widget tab_widget;
 		string filename;
@@ -86,18 +78,8 @@ namespace Mono.Debugger.GUI {
 				CloseEvent (this, null);
 		}
 
-		void InsertBreakpointAtXY (int x, int y)
+		public override void InsertBreakpoint (int line)
 		{
-			int buffer_x, buffer_y;
-
-			source_view.WindowToBufferCoords (
-				TextWindowType.Left, x, y, out buffer_x, out buffer_y);
-
-			Gtk.TextIter iter;
-			int line_top;
-			source_view.GetLineAtY (out iter, buffer_y, out line_top);
-			int line = iter.Line + 1;
-
 			if (breakpoints [line] != null){
 				int key = (int) breakpoints [line];
 
@@ -107,7 +89,9 @@ namespace Mono.Debugger.GUI {
 			} else {
 				SourceLocation location = manager.FindLocation (filename, line);
 				if (location == null){
-					Console.WriteLine ("Info: The manager was unable to find debugging info for `{0}' `{1}'", filename, line);
+					Report.Warning ("Cannot insert a breakpoint on {0}, line {1} " +
+							"because there is no debugging information " +
+							"available for this line.", filename, line);
 					return;
 				}
 
@@ -124,7 +108,7 @@ namespace Mono.Debugger.GUI {
 			Gdk.EventButton ev = args.Event;
 
 			if (ev.window.Equals (source_view.GetWindow (TextWindowType.Left)))
-				InsertBreakpointAtXY ((int) ev.x, (int) ev.y);
+				InsertBreakpoint (GetLineXY ((int) ev.x, (int) ev.y));
 		}
 
 		protected override SourceAddress GetSourceAddress (StackFrame frame)
@@ -136,13 +120,6 @@ namespace Mono.Debugger.GUI {
 			get {
 				return tab_widget;
 			}
-		}
-
-		public override void InsertBreakpoint ()
-		{
-			// FIXME: This is getting the wrong location !
-			Gdk.EventButton bevent = (Gdk.EventButton) Gtk.Application.CurrentEvent;
-			InsertBreakpointAtXY ((int) bevent.x, (int) bevent.y);
 		}
 	}
 }

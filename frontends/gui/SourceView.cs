@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using Gtk;
 using GtkSharp;
+using Mono.Debugger.GUISharp;
 using Pango;
 
 namespace Mono.Debugger.GUI {
@@ -26,7 +27,7 @@ namespace Mono.Debugger.GUI {
 		protected Process process;
 
 		Gtk.Widget widget;
-		protected Gtk.SourceView source_view;
+		protected DebuggerSourceView source_view;
 		protected TextTag frame_tag, breakpoint_tag;
 		protected Gtk.SourceBuffer text_buffer;
 		
@@ -41,8 +42,9 @@ namespace Mono.Debugger.GUI {
 			this.manager = manager;
 
 			text_buffer = new Gtk.SourceBuffer (new Gtk.TextTagTable ());
-			source_view = new Gtk.SourceView (text_buffer);
-			source_view.PopulatePopup += new PopulatePopupHandler (PopulateViewPopup);
+			source_view = new DebuggerSourceView (text_buffer);
+			source_view.DebuggerPopulatePopup += new DebuggerPopulatePopupHandler (PopulateViewPopup);
+
 			source_view.Editable = false;
 
 			//FontDescription font = FontDescription.FromString ("Monospace 14");
@@ -90,15 +92,41 @@ namespace Mono.Debugger.GUI {
 			menu.Prepend (item);
 		}
 
+		protected int GetPopupLine ()
+		{
+			return GetLineXY (last_popup_x, last_popup_y);
+		}
+
+		int last_popup_x, last_popup_y;
+
+		protected int GetLineXY (int x, int y)
+		{
+			int buffer_x, buffer_y;
+			source_view.WindowToBufferCoords (
+				TextWindowType.Left, x, y, out buffer_x, out buffer_y);
+
+			Gtk.TextIter iter;
+			int line_top;
+			source_view.GetLineAtY (out iter, buffer_y, out line_top);
+			return iter.Line + 1;
+		}
+
 		void BreakpointCB (object o, EventArgs a)
 		{
-			InsertBreakpoint ();
+			int line = GetPopupLine ();
+
+			Console.WriteLine ("BREAKPOINT #2: {0}", line);
+
+			InsertBreakpoint (line);
 		}
 		
-		public abstract void InsertBreakpoint ();
+		public abstract void InsertBreakpoint (int line);
 		
-		void PopulateViewPopup (object o, PopulatePopupArgs args)
+		void PopulateViewPopup (object o, DebuggerPopulatePopupArgs args)
 		{
+			last_popup_x = args.X;
+			last_popup_y = args.Y;
+
 			args.Menu.Prepend (new SeparatorMenuItem ());
 			PopulateViewPopup (args.Menu);
 		}
@@ -150,7 +178,7 @@ namespace Mono.Debugger.GUI {
 
 		protected void ClearLine ()
 		{
-			if (last_line != -1){
+			if (last_line != -1) {
 				text_buffer.LineRemoveMarker (last_line, "line");
 				last_line = -1;
 			}
@@ -195,7 +223,7 @@ namespace Mono.Debugger.GUI {
 		}
 
 		StackFrame current_frame = null;
-		int last_line = 0;
+		int last_line = -1;
 
 		protected abstract SourceAddress GetSourceAddress (StackFrame frame);
 
@@ -209,7 +237,7 @@ namespace Mono.Debugger.GUI {
 			if (!visible)
 				return;
 
-			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+			ClearLine ();
 
 			SourceAddress source = GetSourceAddress (frame);
 			if (source == null)
@@ -221,9 +249,6 @@ namespace Mono.Debugger.GUI {
 
 			text_buffer.ApplyTag (frame_tag, start_iter, end_iter);
 
-			if (last_line != -1)
-				text_buffer.LineRemoveMarker (last_line, "line");
-			
 			text_buffer.LineAddMarker (source.Row, "line");
 			last_line = source.Row;
 			
@@ -258,6 +283,14 @@ namespace Mono.Debugger.GUI {
 			get {
 				return widget;
 			}
+		}
+
+		public void GotoLine (int line)
+		{
+			Gtk.TextIter iter;
+			text_buffer.GetIterAtLineOffset (out iter, line - 1, 0);
+			source_view.ScrollToIter (iter, 0.0, true, 0.0, 0.5);
+			text_buffer.PlaceCursor (iter);
 		}
 	}
 }
