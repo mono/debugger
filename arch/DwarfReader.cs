@@ -74,13 +74,9 @@ namespace Mono.Debugger.Architecture
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 
-			Console.WriteLine ("Reading aranges table ....");
-
 			aranges = ArrayList.Synchronized (read_aranges ());
 
 			symtab = new DwarfSymbolTable (this, aranges, simple_symtab);
-
-			Console.WriteLine ("Done reading aranges table");
 		}
 
 		public TargetInfo TargetInfo {

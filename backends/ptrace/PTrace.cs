@@ -478,8 +478,6 @@ namespace Mono.Debugger.Backends
 			try {
 				bfd = bfd_container.AddFile (this, start.TargetApplication,
 							     start.LoadNativeSymtab);
-				if (start.LoadNativeSymtab)
-					bfd.ReadSymbols ();
 			} catch (Exception e) {
 				error_handler (this, String.Format (
 					"Can't read symbol file {0}", start.TargetApplication), e);
@@ -499,28 +497,11 @@ namespace Mono.Debugger.Backends
 						      target_address_size);
 
 			bfd_disassembler = bfd.GetDisassembler (this);
-
-			if (start.LoadNativeSymtab) {
-				try {
-					ISymbolTable bfd_symtab = bfd.SymbolTable;
-				} catch (Exception e) {
-					Console.WriteLine ("Can't get native symbol table: {0}", e);
-				}
-			}
-
-			update_symtabs ();
 		}
 
 		public void UpdateModules ()
 		{
 			bfd.UpdateSharedLibraryInfo ();
-		}
-
-		void update_symtabs ()
-		{
-			symtab_collection = new SymbolTableCollection ();
-
-			bfd_disassembler.SymbolTable = symtab_collection;
 		}
 
 		public Bfd Bfd {
@@ -537,7 +518,7 @@ namespace Mono.Debugger.Backends
 				if (native)
 					return bfd ["main"];
 				else
-					return bfd ["mono_debugger_main"];
+					return bfd ["MONO_DEBUGGER__main"];
 			}
 		}
 

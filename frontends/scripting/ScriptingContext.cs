@@ -617,7 +617,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Ignore,
 		UnIgnore,
 		Step,
-		DontStep
+		DontStep,
+		ShowBreakpoints
 	}
 
 	public enum WhichStepCommand
@@ -876,6 +877,63 @@ namespace Mono.Debugger.Frontends.CommandLine
 			modules = backend.Modules;
 		}
 
+		public void ShowBreakpoints (Module module)
+		{
+			Breakpoint[] breakpoints = module.Breakpoints;
+			if (breakpoints.Length == 0)
+				return;
+
+			Print ("Breakpoints for module {0}:", module.Name);
+			for (int i = 0; i < breakpoints.Length; i++) {
+				Breakpoint breakpoint = breakpoints [i];
+
+				Print ("{0}", breakpoint);
+			}
+		}
+
+		public void ShowBreakpoints ()
+		{
+			if (modules == null) {
+				Print ("No modules.");
+				return;
+			}
+
+			foreach (Module module in modules)
+				ShowBreakpoints (module);
+		}
+
+		public Breakpoint FindBreakpoint (int index, out Module out_module)
+		{
+			if (modules == null)
+				goto error;
+
+			foreach (Module module in modules) {
+				foreach (Breakpoint breakpoint in module.Breakpoints) {
+					if (breakpoint.Index == index) {
+						out_module = module;
+						return breakpoint;
+					}
+				}
+			}
+
+		error:
+			out_module = null;
+			throw new ScriptingException ("No such breakpoint.");
+		}
+
+		public Breakpoint FindBreakpoint (int index)
+		{
+			Module module;
+			return FindBreakpoint (index, out module);
+		}
+
+		public void DeleteBreakpoint (int index)
+		{
+			Module module;
+			FindBreakpoint (index, out module);
+			module.RemoveBreakpoint (index);
+		}
+
 		public void ShowModules ()
 		{
 			if (modules == null) {
@@ -910,6 +968,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				case ModuleOperation.DontStep:
 					module.StepInto = false;
 					break;
+				case ModuleOperation.ShowBreakpoints:
+					ShowBreakpoints (module);
+					break;
 				default:
 					throw new InternalError ();
 				}
@@ -923,6 +984,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 			}
 
+			backend.ModuleManager.Lock ();
+
 			foreach (int index in module_indices) {
 				if ((index < 0) || (index > modules.Length)) {
 					Error ("No such module {0}.", index);
@@ -931,6 +994,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 				module_operation (modules [index], operations);
 			}
+
+			backend.ModuleManager.UnLock ();
+			backend.SymbolTableManager.Wait ();
 		}
 
 		public void ModuleOperations (ModuleOperation[] operations)

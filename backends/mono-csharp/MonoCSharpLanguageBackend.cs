@@ -256,29 +256,52 @@ namespace Mono.Debugger.Languages.CSharp
 						this, Backend, memory, memory, reader.ReadAddress (),
 						Language);
 
+				Hashtable symfile_hash = new Hashtable ();
+				Hashtable references = new Hashtable ();
+
 				foreach (MonoSymbolTableReader symfile in SymbolFiles) {
-					AssemblyName name = symfile.Assembly.GetName (true);
-					MonoModule module = (MonoModule) modules [name.Name];
-					if (module == null) {
-						module = new MonoModule (this, name);
-						modules.Add (name.Name, module);
+					string name = symfile.Assembly.GetName (true).Name;
+					load_symfile (symfile, name);
+					symfile_hash.Add (name, symfile);
+
+					if (references.Contains (name))
+						references [name] = true;
+					else
+						references.Add (name, true);
+
+					AssemblyName[] refs = symfile.Assembly.GetReferencedAssemblies ();
+					foreach (AssemblyName ref_name in refs) {
+						if (references.Contains (ref_name.Name))
+							continue;
+						references.Add (ref_name.Name, false);
 					}
-					symfile.Module = module;
-					module.MonoSymbolTableReader = symfile;
 				}
 
-				foreach (MonoSymbolTableReader symfile in SymbolFiles) {
-					MonoModule module = (MonoModule) symfile.Module;
+				foreach (string name in references.Keys) {
+					if ((bool) references [name])
+						continue;
 
-					module.Assembly = symfile.Assembly;
-					module.MonoSymbolTableReader = symfile;
-					module.FileName = symfile.ImageFile;
-					module.Load ();
+					MonoSymbolTableReader new_symfile =
+						(MonoSymbolTableReader) symfile_hash [name];
+					if (new_symfile == null)
+						throw new InternalError (
+							"Reference to unknown module {0}", name);
+					load_symfile (new_symfile, name);
+					references [name] = false;
 				}
-
-				foreach (MonoSymbolTableReader symfile in SymbolFiles)
-					((MonoModule) symfile.Module).ReadReferences ();
 			}
+		}
+
+		void load_symfile (MonoSymbolTableReader symfile, string name)
+		{
+			Module module = (Module) modules [name];
+			if (module == null) {
+				module = Backend.ModuleManager.CreateModule (name);
+				modules.Add (name, module);
+				symfile.Module = module;
+			}
+			if (!module.IsLoaded)
+				module.ModuleData = new MonoModule (module, name, symfile);
 		}
 
 		public MonoType GetType (Type type, int type_size, int offset)
@@ -487,126 +510,64 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private class MonoModule : NativeModule
 		{
-			public string FileName;
-
-			Assembly assembly;
-			MonoSymbolFileTable table;
+			Module module;
+			bool symbols_loaded;
 			MonoSymbolTableReader reader;
 
-			public MonoModule (MonoSymbolFileTable table, AssemblyName name)
-				: base (name.Name, table.Backend)
+			public MonoModule (Module module, string name, MonoSymbolTableReader reader)
+				: base (reader.Table.Backend, module, name)
 			{
-				this.table = table;
+				this.module = module;
+				this.reader = reader;
 
-				table.Backend.ModuleManager.AddModule (this);
+				module.ModuleData = this;
+
+				module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
+				symbols_loaded = module.LoadSymbols;
+				module_changed (module);
 			}
 
 			public override object Language {
-				get {
-					return table.Language;
-				}
-			}
-
-			public override string FullName {
-				get {
-					if (FileName != null)
-						return FileName;
-					else
-						return Name;
-				}
+				get { return reader.Table.Language; }
 			}
 
 			public MonoSymbolTableReader MonoSymbolTableReader {
-				get {
-					return reader;
-				}
-
-				set {
-					reader = value;
-					if (reader != null)
-						OnSymbolsLoadedEvent ();
-					else
-						OnSymbolsUnLoadedEvent ();
-				}
+				get { return reader; }
 			}
 
 			public Assembly Assembly {
-				get {
-					return assembly;
-				}
-
-				set {
-					assembly = value;
-				}
+				get { return reader.Assembly; }
 			}
 
 			public override bool SymbolsLoaded {
-				get {
-					return LoadSymbols && (reader != null) && (table != null);
-				}
+				get { return symbols_loaded; }
 			}
 
-			public override void UnLoad ()
-			{
-				reader = null;
-				Assembly = null;
-				base.UnLoad ();
-			}
-
-			protected override void SymbolsChanged (bool loaded)
-			{
-				// table.Update ();
-
-				if (loaded)
-					OnSymbolsLoadedEvent ();
-				else
-					OnSymbolsUnLoadedEvent ();
-			}
-
-			protected override SourceInfo[] GetSources ()
-			{
-				if (!SymbolsLoaded)
-					return null;
-
-				return reader.GetSources ();
-			}
-
-			public void ReadReferences ()
-			{
-				if ((table.modules == null) || (Assembly == null))
-					return;
-
-				AssemblyName[] references = Assembly.GetReferencedAssemblies ();
-				foreach (AssemblyName name in references) {
-					if (table.modules.Contains (name.Name))
-						continue;
-
-					MonoModule module = new MonoModule (table, name);
-					table.modules.Add (name.Name, module);
-				}
+			public override SourceInfo[] Sources {
+				get { return reader.GetSources (); }
 			}
 
 			protected override void ReadModuleData ()
+			{ }
+
+			public override ISymbolTable SymbolTable {
+				get { return reader.SymbolTable; }
+			}
+
+			public override TargetAddress SimpleLookup (string name)
 			{
-				lock (this) {
-					base.ReadModuleData ();
+				return TargetAddress.Null;
+			}
+
+			void module_changed (Module module)
+			{
+				if (module.LoadSymbols && !symbols_loaded) {
+					symbols_loaded = true;
+					OnSymbolsLoadedEvent ();
+				} else if (!module.LoadSymbols && symbols_loaded) {
+					symbols_loaded = false;
+					OnSymbolsUnLoadedEvent ();
 				}
-			}
-
-			public override SourceMethodInfo FindMethod (string name)
-			{
-				if (!SymbolsLoaded)
-					return null;
-
-				return reader.FindMethod (name);
-			}
-
-			protected override ISymbolTable GetSymbolTable ()
-			{
-				if (!SymbolsLoaded)
-					return null;
-
-				return reader.SymbolTable;
 			}
 		}
 	}

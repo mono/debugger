@@ -17,16 +17,16 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public abstract class Module : ISerializable
+	public class Module : ISerializable
 	{
 		string name;
 		bool load_symbols;
 		bool step_into;
 		bool backend_loaded;
+		ModuleData module_data;
 		Hashtable breakpoints;
-		static int next_breakpoint_id = 0;
 
-		protected Module (string name)
+		internal Module (string name)
 		{
 			this.name = name;
 
@@ -35,8 +35,33 @@ namespace Mono.Debugger
 			step_into = true;
 		}
 
-		public abstract object Language {
-			get;
+		public ModuleData ModuleData {
+			get {
+				return module_data;
+			}
+
+			set {
+				lock (this) {
+					module_data = value;
+					if (module_data != null) {
+						set_module_data (module_data);
+						OnModuleLoadedEvent ();
+					} else {
+						OnModuleUnLoadedEvent ();
+					}
+				}
+			}
+		}
+
+		public object Language {
+			get {
+				lock (this) {
+					if (module_data == null)
+						throw new InvalidOperationException ();
+
+					return module_data.Language;
+				}
+			}
 		}
 
 		// <summary>
@@ -55,22 +80,36 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if IsLoaded was false.
 		// </summary>
-		public abstract string FullName {
-			get;
+		public string FullName {
+			get {
+				lock (this) {
+					if (module_data == null)
+						throw new InvalidOperationException ();
+
+					return module_data.FullName;
+				}
+			}
 		}
 
 		// <summary>
 		//   Whether the module is currently loaded in memory.
 		// </summary>
-		public abstract bool IsLoaded {
-			get;
+		public bool IsLoaded {
+			get { return module_data != null; }
 		}
 
 		// <summary>
 		//   Whether the module's symbol tables are currently loaded.
 		// </summary>
-		public abstract bool SymbolsLoaded {
-			get;
+		public bool SymbolsLoaded {
+			get {
+				lock (this) {
+					if (module_data == null)
+						return false;
+
+					return module_data.SymbolsLoaded;
+				}
+			}
 		}
 
 		// <summary>
@@ -95,7 +134,6 @@ namespace Mono.Debugger
 					return;
 
 				load_symbols = value;
-				SymbolsChanged (load_symbols);
 				OnModuleChangedEvent ();
 			}
 		}
@@ -147,15 +185,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected abstract void SymbolsChanged (bool loaded);
-
-
-		// <summary>
-		//   This is called by the DebuggerBackend when the target has exited.
-		// </summary>
-		public virtual void UnLoad ()
-		{ }
-
 		// <summary>
 		//   This event is emitted when the module is loaded.
 		// </summary>
@@ -188,21 +217,6 @@ namespace Mono.Debugger
 		// </summary>
 		public event ModuleEventHandler BreakpointsChangedEvent;
 
-		bool is_loaded = false;
-		protected virtual void CheckLoaded ()
-		{
-			bool new_is_loaded = IsLoaded;
-
-			if (new_is_loaded != is_loaded) {
-				is_loaded = new_is_loaded;
-
-				if (is_loaded)
-					OnModuleLoadedEvent ();
-				else
-					OnModuleUnLoadedEvent ();
-			}
-		}
-
 		protected virtual void OnModuleLoadedEvent ()
 		{
 			if (!backend_loaded)
@@ -211,19 +225,11 @@ namespace Mono.Debugger
 			if (ModuleLoadedEvent != null)
 				ModuleLoadedEvent (this);
 
-			foreach (BreakpointHandle handle in breakpoints.Values)
-				handle.Enable ();
-
 			OnModuleChangedEvent ();
 		}
 
 		protected virtual void OnModuleUnLoadedEvent ()
 		{
-			foreach (BreakpointHandle handle in breakpoints.Values)
-				handle.Disable ();
-
-			sources = null;
-			symtab = null;
 			backend_loaded = false;
 
 			if (ModuleUnLoadedEvent != null)
@@ -234,26 +240,14 @@ namespace Mono.Debugger
 
 		protected virtual void OnSymbolsLoadedEvent ()
 		{
-			if (!LoadSymbols)
-				return;
-
-			symtab = GetSymbolTable ();
-
 			if (SymbolsLoadedEvent != null)
 				SymbolsLoadedEvent (this);
-
-			OnModuleChangedEvent ();
 		}
 
 		protected virtual void OnSymbolsUnLoadedEvent ()
 		{
-			sources = null;
-			symtab = null;
-
 			if (SymbolsUnLoadedEvent != null)
 				SymbolsUnLoadedEvent (this);
-
-			OnModuleChangedEvent ();
 		}
 
 		protected virtual void OnModuleChangedEvent ()
@@ -268,35 +262,21 @@ namespace Mono.Debugger
 				BreakpointsChangedEvent (this);
 		}
 
-		// <remarks>
-		//   This may be used in a derived class to get a notification when a new
-		//   breakpoint is inserted.
-		// </remarks>
-		protected abstract void AddBreakpoint (BreakpointHandle handle);
+		void symbols_loaded (ModuleData data)
+		{
+			OnSymbolsLoadedEvent ();
+		}
 
-		// <remarks>
-		//   This may be used in a derived class to get a notification when a
-		//   breakpoint is removed.
-		// </remarks>
-		protected abstract void RemoveBreakpoint (BreakpointHandle handle);
+		void symbols_unloaded (ModuleData data)
+		{
+			OnSymbolsUnLoadedEvent ();
+		}
 
-		// <summary>
-		//   This must be implemented to actually enable the breakpoint.  It is
-		//   called after the method has been loaded - so we know the method's
-		//   address and can actually insert a breakpoint instruction.
-		//   The implementation may return any arbitrary data which will be passed
-		//   as the @data argument to DisableBreakpoint() when disabling the breakpoint.
-		// </summary>
-		protected abstract object EnableBreakpoint (BreakpointHandle handle,
-							    ThreadGroup group, TargetAddress address);
-
-		// <summary>
-		//   This must be implemented to actually disable the breakpoint.  It is
-		//   called which the method is still being loaded and the target is still
-		//   alive.  The @data argument is whatever EnableBreakpoint() returned.
-		// </summary>
-		protected abstract void DisableBreakpoint (BreakpointHandle handle,
-							   ThreadGroup group, object data);
+		void set_module_data (ModuleData data)
+		{
+			data.SymbolsLoadedEvent += new ModuleDataEventHandler (symbols_loaded);
+			data.SymbolsUnLoadedEvent += new ModuleDataEventHandler (symbols_unloaded);
+		}
 
 		// <summary>
 		//   Registers the breakpoint @breakpoint with this module.  The
@@ -308,7 +288,8 @@ namespace Mono.Debugger
 		public int AddBreakpoint (Breakpoint breakpoint, ThreadGroup group,
 					  SourceMethodInfo method)
 		{
-			return AddBreakpoint (breakpoint, group, method, 0);
+			return AddBreakpoint (new BreakpointHandleMethod (
+				breakpoint, this, group, method));
 		}
 
 		// <summary>
@@ -322,9 +303,13 @@ namespace Mono.Debugger
 		public int AddBreakpoint (Breakpoint breakpoint, ThreadGroup group,
 					  SourceMethodInfo method, int line)
 		{
-			int index = ++next_breakpoint_id;
-			BreakpointHandle handle = new BreakpointHandle (
-				this, breakpoint, group, method, line, index);
+			return AddBreakpoint (new BreakpointHandleMethod (
+				breakpoint, this, group, method, line));
+		}
+
+		protected int AddBreakpoint (BreakpointHandle handle)
+		{
+			int index = handle.Breakpoint.Index;
 			breakpoints.Add (index, handle);
 			OnBreakpointsChangedEvent ();
 			return index;
@@ -339,7 +324,7 @@ namespace Mono.Debugger
 				return;
 
 			BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
-			handle.Dispose ();
+			handle.DisableBreakpoint ();
 			breakpoints.Remove (index);
 			OnBreakpointsChangedEvent ();
 		}
@@ -358,29 +343,21 @@ namespace Mono.Debugger
 			}
 		}
 
-		SourceInfo[] sources = null;
-		ISymbolTable symtab = null;
-
 		// <remarks>
 		//   This is called from the SymbolTableManager's background thread when
 		//   the module is changed.  It creates a hash table which maps a method
 		//   name to a SourceMethodInfo and a list of SourceMethodInfo's which is
 		//   sorted by the method's start line.
 		// </remarks>
-		protected internal virtual void ReadModuleData ()
+		protected internal void ReadModuleData ()
 		{
 			lock (this) {
-				if (!LoadSymbols)
+				if (module_data == null)
 					return;
 
-				if (sources != null)
-					return;
-
-				sources = GetSources ();
+				module_data.ReadModuleData ();
 			}
 		}
-
-		protected abstract SourceInfo[] GetSources ();
 
 		// <summary>
 		//   Returns a list of all source files in this method.
@@ -391,10 +368,12 @@ namespace Mono.Debugger
 		// </summary>
 		public SourceInfo[] Sources {
 			get {
-				if (sources != null)
-					return sources;
+				lock (this) {
+					if ((module_data == null) || !module_data.SymbolsLoaded)
+						throw new InvalidOperationException ();
 
-				return new SourceInfo [0];
+					return module_data.Sources;
+				}
 			}
 		}
 
@@ -438,6 +417,16 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public TargetAddress SimpleLookup (string name)
+		{
+			lock (this) {
+				if (module_data == null)
+					return TargetAddress.Null;
+
+				return module_data.SimpleLookup (name);
+			}
+		}
+
 		// <summary>
 		//   Returns the module's ISymbolTable which can be used to find a method
 		//   by its address.  May only be used while @SymbolsLoaded is true.
@@ -447,244 +436,20 @@ namespace Mono.Debugger
 		// </summary>
 		public ISymbolTable SymbolTable {
 			get {
-				if (!SymbolsLoaded)
-					throw new InvalidOperationException ();
+				lock (this) {
+					if ((module_data == null) || !module_data.SymbolsLoaded)
+						throw new InvalidOperationException ();
 
-				if (symtab != null)
-					return symtab;
-
-				symtab = GetSymbolTable ();
-				return symtab;
+					return module_data.SymbolTable;
+				}
 			}
 		}
-
-		protected abstract ISymbolTable GetSymbolTable ();
 
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",
 					      GetType (), Name, IsLoaded, SymbolsLoaded, StepInto,
 					      LoadSymbols);
-		}
-
-		// <summary>
-		//   This is an internal handle to a breakpoint.  It holds the target
-		//   specific data for the breakpoint.
-		// </summary>
-		protected sealed class BreakpointHandle : IDisposable {
-			public readonly int Index;
-			public readonly int Line;
-			public readonly Module Module;
-			public readonly Breakpoint Breakpoint;
-			public readonly string MethodName;
-			public readonly ThreadGroup ThreadGroup;
-			public SourceMethodInfo Method;
-
-			public BreakpointHandle (Module module, Breakpoint breakpoint,
-						 ThreadGroup group, SourceMethodInfo method,
-						 int line, int index)
-			{
-				this.Module = module;
-				this.Breakpoint = breakpoint;
-				this.ThreadGroup = group;
-				this.Index = index;
-				this.Line = line;
-				this.Method = method;
-				this.MethodName = method.Name;
-
-				this.Breakpoint.BreakpointChangedEvent += new BreakpointEventHandler (
-					breakpoint_changed);
-
-				Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
-				Module.ModuleLoadedEvent += new ModuleEventHandler (module_loaded);
-
-				Module.AddBreakpoint (this);
-				Enable ();
-			}
-
-			// <remarks>
-			//   When the module is unloaded, clear the method.
-			// </remarks>
-			void module_unloaded (Module module)
-			{
-				Method = null;
-			}
-
-			// <summary>
-			//   When the module is loaded, search breakpoint's method.
-			// </summary>
-			void module_loaded (Module module)
-			{
-				Method = Module.FindMethod (MethodName);
-			}
-
-			// <summary>
-			//   The method has just been loaded, lookup the breakpoint
-			//   address and actually insert it.
-			// </summary>
-			void method_loaded (SourceMethodInfo method, object user_data)
-			{
-				load_handler = null;
-
-				TargetAddress address = get_address ();
-				if (address.IsNull)
-					return;
-
-				handle = Module.EnableBreakpoint (this, ThreadGroup, address);
-				enabled = handle != null;
-			}
-
-			TargetAddress get_address ()
-			{
-				TargetAddress address;
-				if (Line != 0)
-					address = Method.Lookup (Line);
-				else
-					address = Method.Method.StartAddress;
-
-				if (address.IsNull)
-					Console.WriteLine ("WARNING: Cannot insert breakpoint {0}!",
-							   Breakpoint);
-
-				return address;
-			}
-
-			// <summary>
-			//   This is called via the Breakpoint.BreakpointChangedEvent to
-			//   actually enable the breakpoint.
-			// </summary>
-			public void Enable ()
-			{
-				// `enabled' specifies whether the breakpoint is actually
-				// inserted (ie. there's actually a breakpoint instruction
-				// in the target).
-				if (enabled || !Module.IsLoaded || !Breakpoint.Enabled) {
-					Module.OnBreakpointsChangedEvent ();
-					return;
-				}
-
-				if (Method.IsLoaded) {
-					// The method is already loaded into memory, just
-					// lookup the address and insert the breakpoint.
-					TargetAddress address = get_address ();
-					if (!address.IsNull)
-						handle = Module.EnableBreakpoint (this, ThreadGroup, address);
-					if (handle != null)
-						enabled = true;
-				} else if (Method.IsDynamic) {
-					// A dynamic method is a method which may emit a
-					// callback when it's loaded.  We register this
-					// callback here and do the actual insertion when
-					// the method is loaded.
-					load_handler = Method.RegisterLoadHandler (
-						new MethodLoadedHandler (method_loaded), null);
-					if (load_handler != null)
-						enabled = true;
-				}
-
-				// This is just to inform the GUI that Breakpoint.Enabled
-				// has changed.
-				Module.OnBreakpointsChangedEvent ();
-			}
-
-			// <summary>
-			//   This is called via the Breakpoint.BreakpointChangedEvent to
-			//   actually disable the breakpoint.
-			// </summary>
-			public void Disable ()
-			{
-				if (!enabled) {
-					Module.OnBreakpointsChangedEvent ();
-					return;
-				}
-
-				if (load_handler != null) {
-					// We registered a load handler for this
-					// breakpoint, but the user requested to disable
-					// the breakpoint before the method was ever loaded.
-					load_handler.Dispose ();
-					load_handler = null;
-				} else {
-					// The method is actually loaded in memory, so
-					// remove the breakpoint instruction in the target.
-					Module.DisableBreakpoint (this, ThreadGroup, handle);
-					handle = null;
-				}
-
-				enabled = false;
-
-				// This is just to inform the GUI that Breakpoint.Enabled
-				// has changed.
-				Module.OnBreakpointsChangedEvent ();
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("Breakpoint ({0}:{1}:{2}:{3})",
-						      Index, Breakpoint, Method, enabled);
-			}
-
-			IDisposable load_handler;
-			object handle;
-			bool enabled;
-
-			// <summary>
-			//   This is called via the Breakpoint.BreakpointChangedEvent to
-			//   actually enable/disable the breakpoint.
-			// </summary>
-			void breakpoint_changed (Breakpoint breakpoint)
-			{
-				if (Breakpoint.Enabled)
-					Enable ();
-				else
-					Disable ();
-			}
-
-			//
-			// IDisposable
-			//
-
-			private bool disposed = false;
-
-			private void check_disposed ()
-			{
-				if (disposed)
-					throw new ObjectDisposedException ("BreakpointHandle");
-			}
-
-			// <summary>
-			//   This instance may hold an actual breakpoint instruction in
-			//   the target, so we must make sure it's removed when we're
-			//   being Disposed.
-			// </summary>
-			protected virtual void Dispose (bool disposing)
-		{
-				if (!this.disposed) {
-					if (disposing) {
-						if (enabled)
-							Module.DisableBreakpoint (this, ThreadGroup, handle);
-						Module.RemoveBreakpoint (this);
-					}
-
-					this.disposed = true;
-
-					lock (this) {
-						// Nothing to do yet.
-					}
-				}
-			}
-
-			public void Dispose ()
-			{
-				Dispose (true);
-				// Take yourself off the Finalization queue
-				GC.SuppressFinalize (this);
-			}
-
-			~BreakpointHandle ()
-			{
-				Dispose (false);
-			}
 		}
 
 		//

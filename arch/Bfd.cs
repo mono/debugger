@@ -25,10 +25,11 @@ namespace Mono.Debugger.Architecture
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		int dynlink_breakpoint_id = -1;
 		Hashtable symbols;
+		Hashtable simple_symbols;
 		Hashtable section_hash;
-		DwarfReader dwarf;
 		BfdSymbolTable simple_symtab;
-		BfdModule module;
+		Module module;
+		BfdModule bfd_module;
 		string filename;
 		bool is_coredump;
 		bool initialized;
@@ -138,7 +139,7 @@ namespace Mono.Debugger.Architecture
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static string bfd_glue_get_symbol (IntPtr bfd, IntPtr symtab, int index,
-							  int only_functions, out long address);
+							  out int is_function, out long address);
 
 		static Bfd ()
 		{
@@ -146,7 +147,7 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public Bfd (BfdContainer container, ITargetMemoryAccess memory, string filename,
-			    bool core_file, BfdModule module, TargetAddress base_address)
+			    bool core_file, Module module, TargetAddress base_address)
 		{
 			this.container = container;
 			this.memory = memory;
@@ -173,23 +174,6 @@ namespace Mono.Debugger.Architecture
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
 
-			IntPtr symtab;
-			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
-
-			symbols = new Hashtable ();
-
-			for (int i = 0; i < num_symbols; i++) {
-				long address;
-				string name =  bfd_glue_get_symbol (bfd, symtab, i, 0, out address);
-				if (name == null)
-					continue;
-
-				long relocated = base_address.Address + address;
-				symbols.Add (name, relocated);
-			}
-
-			g_free (symtab);
-
 			InternalSection text = GetSectionByName (".text");
 			InternalSection bss = GetSectionByName (".bss");
 
@@ -202,6 +186,34 @@ namespace Mono.Debugger.Architecture
 				start_address = new TargetAddress (memory.GlobalAddressDomain, text.vma);
 				end_address = new TargetAddress (memory.GlobalAddressDomain, bss.vma);
 			}
+
+			IntPtr symtab;
+			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
+
+			symbols = new Hashtable ();
+			simple_symbols = new Hashtable ();
+
+			for (int i = 0; i < num_symbols; i++) {
+				string name;
+				long address;
+				int is_function;
+
+				name = bfd_glue_get_symbol (bfd, symtab, i, out is_function, out address);
+				if (name == null)
+					continue;
+
+				long relocated = base_address.Address + address;
+				if ((is_function != 0) || name.StartsWith ("MONO_DEBUGGER__"))
+					symbols.Add (name, relocated);
+				if (!simple_symbols.Contains (relocated))
+					simple_symbols.Add (relocated, name);
+			}
+
+			g_free (symtab);
+
+			simple_symtab = new BfdSymbolTable (this, simple_symbols);
+
+			bfd_module = new BfdModule (backend, module, this);
 		}
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
@@ -352,38 +364,6 @@ namespace Mono.Debugger.Architecture
 					memory.GlobalAddressDomain, BaseAddress.Address + address);
 		}
 
-		public void ReadSymbols ()
-		{
-			if (dwarf != null)
-				return;
-
-			IntPtr symtab;
-			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
-
-			Hashtable hash = new Hashtable ();
-
-			for (int i = 0; i < num_symbols; i++) {
-				long address;
-				string name =  bfd_glue_get_symbol (bfd, symtab, i, 1, out address);
-				if (name == null)
-					continue;
-
-				long relocated = base_address.Address + address;
-				if (!hash.Contains (relocated))
-					hash.Add (relocated, name);
-			}
-
-			g_free (symtab);
-
-			simple_symtab = new BfdSymbolTable (this, hash);
-
-			try {
-				dwarf = new DwarfReader (this, module, simple_symtab);
-			} catch (Exception e) {
-				// Silently ignore.
-			}
-		}
-
 		public string FileName {
 			get {
 				return filename;
@@ -407,10 +387,7 @@ namespace Mono.Debugger.Architecture
 
 		public ISymbolTable SymbolTable {
 			get {
-				if (dwarf == null)
-					return simple_symtab;
-				else
-					return dwarf.SymbolTable;
+				return simple_symtab;
 			}
 		}
 
@@ -594,14 +571,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public SourceInfo[] GetSources ()
-		{
-			if (dwarf == null)
-				return null;
-
-			return dwarf.GetSources ();
-		}
-
 		//
 		// ISymbolContainer
 		//
@@ -731,9 +700,8 @@ namespace Mono.Debugger.Architecture
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (module != null)
-						module.BfdDisposed ();
-					dwarf = null;
+					if (bfd_module != null)
+						bfd_module.Dispose ();
 				}
 				
 				// Release unmanaged resources

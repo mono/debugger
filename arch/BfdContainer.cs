@@ -50,9 +50,9 @@ namespace Mono.Debugger.Architecture
 			if (bfd_hash.Contains (filename))
 				return (Bfd) bfd_hash [filename];
 
-			BfdModule module = (BfdModule) module_hash [filename];
+			Module module = (Module) module_hash [filename];
 			if (module == null) {
-				module = new BfdModule (filename, backend, !base_address.IsNull);
+				module = backend.ModuleManager.CreateModule (filename);
 				module.LoadSymbols = step_into;
 				module.StepInto = step_into;
 				module_hash.Add (filename, module);
@@ -61,13 +61,7 @@ namespace Mono.Debugger.Architecture
 
 			Bfd bfd = new Bfd (this, memory, filename, false, module, base_address);
 			bfd.CoreFileBfd = core_bfd;
- 			module.Bfd = bfd;
 
-			if (module.StepInto) {
-				bfd.ReadSymbols ();
-			}
-
-			module.Load ();
 			bfd_hash.Add (filename, bfd);
 
 			return bfd;
@@ -75,11 +69,11 @@ namespace Mono.Debugger.Architecture
 
 		public TargetAddress LookupSymbol (string name)
 		{
-			foreach (BfdModule module in module_hash.Values) {
-				if (module.Bfd == null)
+			foreach (Module module in module_hash.Values) {
+				if (!module.IsLoaded)
 					continue;
 
-				TargetAddress symbol = module.Bfd [name];
+				TargetAddress symbol = module.SimpleLookup (name);
 				if (!symbol.IsNull)
 					return symbol;
 			}
@@ -102,10 +96,8 @@ namespace Mono.Debugger.Architecture
 				bfd.Dispose ();
 			bfd_hash = new Hashtable ();
 
-			foreach (BfdModule module in module_hash.Values) {
-				module.Bfd = null;
-				module.UnLoad ();
-			}
+			foreach (Module module in module_hash.Values)
+				module.ModuleData = null;
 		}
 
 		//

@@ -75,6 +75,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("lower", Token.LOWER);
 			keywords.Add ("upper", Token.UPPER);
 			keywords.Add ("assert", Token.ASSERT);
+			keywords.Add ("breakpoint", Token.BREAKPOINT);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);
@@ -82,11 +83,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("contents", Token.CONTENTS);
 			keywords.Add ("line", Token.LINE);
 			keywords.Add ("modules", Token.MODULES);
+			keywords.Add ("breakpoints", Token.BREAKPOINTS);
 
 			keywords.Add ("module", Token.MODULE);
 			keywords.Add ("ignore", Token.IGNORE);
 			keywords.Add ("unignore", Token.UNIGNORE);
 			keywords.Add ("all", Token.ALL);
+			keywords.Add ("enable", Token.ENABLE);
+			keywords.Add ("disable", Token.DISABLE);
+			keywords.Add ("delete", Token.DELETE);
 
 			keywords.Add ("unknown", Token.UNKNOWN);
 			keywords.Add ("fundamental", Token.FUNDAMENTAL);

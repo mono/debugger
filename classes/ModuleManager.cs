@@ -14,12 +14,19 @@ namespace Mono.Debugger
 	{
 		ArrayList modules = new ArrayList ();
 
-		public void AddModule (Module module)
+		public Module CreateModule (string name)
 		{
+			Module module = new Module (name);
+
 			modules.Add (module);
 
-			module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
+			module.SymbolsLoadedEvent += new ModuleEventHandler (module_changed);
+			module.SymbolsUnLoadedEvent += new ModuleEventHandler (module_changed);
 			module.BreakpointsChangedEvent += new ModuleEventHandler (breakpoints_changed);
+
+			module_changed (module);
+
+			return module;
 		}
 
 		public event ModulesChangedHandler ModulesChanged;
@@ -61,7 +68,7 @@ namespace Mono.Debugger
 		{
 			Lock ();
 			foreach (Module module in modules)
-				module.UnLoad ();
+				module.ModuleData = null;
 			UnLock ();
 		}
 

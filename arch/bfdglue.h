@@ -17,7 +17,7 @@ extern int
 bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table);
 
 extern const char *
-bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int only_functions, guint64 *address);
+bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_function, guint64 *address);
 
 extern struct disassemble_info *
 bfd_glue_init_disassembler (bfd *abfd);

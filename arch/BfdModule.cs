@@ -10,102 +10,104 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal sealed class BfdModule : NativeModule, ISymbolContainer
+	internal sealed class BfdModule : NativeModule, ISymbolContainer, IDisposable
 	{
 		Bfd bfd;
-		string filename;
+		bool dwarf_loaded;
+		DwarfReader dwarf;
+		Module module;
 		bool is_library;
 		TargetAddress start, end;
+		DebuggerBackend backend;
 
-		public BfdModule (string filename, DebuggerBackend backend, bool is_library)
-			: base (filename, backend)
+		public BfdModule (DebuggerBackend backend, Module module, Bfd bfd)
+			: base (backend, module, bfd.FileName)
 		{
-			this.filename = filename;
-			this.is_library = is_library;
+			this.backend = backend;
+			this.module = module;
+			this.bfd = bfd;
 
-			backend.ModuleManager.AddModule (this);
+			if (bfd.IsContinuous) {
+				start = bfd.StartAddress;
+				end = bfd.EndAddress;
+				is_library = true;
+			}
+
+			module.ModuleData = this;
+
+			module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
+			module_changed (module);
 		}
 
 		public override object Language {
-			get {
-				return null;
-			}
-		}
-
-		public override string FullName {
-			get {
-				return filename;
-			}
-		}
-
-		public Bfd Bfd {
-			get {
-				return bfd;
-			}
-
-			set {
-				if (bfd == value)
-					return;
-
-				bfd = value;
-				if (bfd != null) {
-					if (bfd.IsContinuous) {
-						start = bfd.StartAddress;
-						end = bfd.EndAddress;
-						is_library = true;
-						CheckLoaded ();
-					}
-					OnSymbolsLoadedEvent ();
-				} else
-					OnSymbolsUnLoadedEvent ();
-			}
-		}
-
-		internal void BfdDisposed ()
-		{
-			bfd = null;
-		}
-
-		public override void UnLoad ()
-		{
-			Bfd = null;
-			base.UnLoad ();
-		}
-
-		public override bool IsLoaded {
-			get {
-				return base.IsLoaded && (!is_library || !start.IsNull);
-			}
+			get { return null; }
 		}
 
 		public override bool SymbolsLoaded {
+			get { return dwarf != null; }
+		}
+
+		public override SourceInfo[] Sources {
 			get {
-				return (Bfd != null) && (Bfd.SymbolTable != null);
+				if (dwarf == null)
+					return null;
+
+				return dwarf.GetSources ();
 			}
 		}
 
-		protected override void SymbolsChanged (bool loaded)
+		public override ISymbolTable SymbolTable {
+			get {
+				if (dwarf != null)
+					return dwarf.SymbolTable;
+				else
+					return bfd.SymbolTable;
+			}
+		}
+
+		protected override void ReadModuleData ()
+		{ }
+
+		public override TargetAddress SimpleLookup (string name)
 		{
-			if (loaded)
+			return bfd [name];
+		}
+
+		void load_dwarf ()
+		{
+			if (dwarf_loaded)
+				return;
+
+			try {
+				dwarf = new DwarfReader (bfd, module, bfd.SymbolTable);
+			} catch (Exception e) {
+				// Silently ignore.
+			}
+
+			dwarf_loaded = true;
+
+			if (dwarf != null)
 				OnSymbolsLoadedEvent ();
-			else
+		}
+
+		void unload_dwarf ()
+		{
+			if (!dwarf_loaded)
+				return;
+
+			dwarf_loaded = false;
+			if (dwarf != null) {
+				dwarf = null;
 				OnSymbolsUnLoadedEvent ();
+			}
 		}
 
-		protected override SourceInfo[] GetSources ()
+		void module_changed (Module module)
 		{
-			if (Bfd == null)
-				return null;
-
-			return Bfd.GetSources ();
-		}
-
-		protected override ISymbolTable GetSymbolTable ()
-		{
-			if (Bfd == null)
-				return null;
-
-			return Bfd.SymbolTable;
+			if (module.LoadSymbols)
+				load_dwarf ();
+			else
+				unload_dwarf ();
 		}
 
 		//
@@ -120,7 +122,7 @@ namespace Mono.Debugger.Architecture
 
 		public TargetAddress StartAddress {
 			get {
-				if (!IsContinuous || !IsLoaded)
+				if (!IsContinuous)
 					throw new InvalidOperationException ();
 
 				return start;
@@ -129,7 +131,7 @@ namespace Mono.Debugger.Architecture
 
 		public TargetAddress EndAddress {
 			get {
-				if (!IsContinuous || !IsLoaded)
+				if (!IsContinuous)
 					throw new InvalidOperationException ();
 
 				return end;
@@ -137,16 +139,36 @@ namespace Mono.Debugger.Architecture
 		}
 
 		//
-		// ISerializable
+		// IDisposable
 		//
 
-		public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		private bool disposed = false;
+
+		protected virtual void Dispose (bool disposing)
 		{
-			base.GetObjectData (info, context);
+			// Check to see if Dispose has already been called.
+			if (!this.disposed) {
+				// If this is a call to Dispose, dispose all managed resources.
+				if (disposing) {
+					module.ModuleData = null;
+					dwarf = null;
+				}
+				
+				// Release unmanaged resources
+				this.disposed = true;
+			}
 		}
 
-		private BfdModule (SerializationInfo info, StreamingContext context)
-			: base (info, context)
-		{ }
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~BfdModule ()
+		{
+			Dispose (false);
+		}
 	}
 }

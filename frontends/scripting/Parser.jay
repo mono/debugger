@@ -93,6 +93,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token CLASS
 %token POINTER
 %token MODULES
+%token BREAKPOINTS
 
 %token FRAME
 %token START
@@ -112,6 +113,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token DISASSEMBLE
 %token SET
 %token ASSERT
+%token BREAKPOINT
 
 %token SELECT
 %token BACKGROUND
@@ -121,6 +123,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token IGNORE
 %token UNIGNORE
 %token ALL
+%token ENABLE
+%token DISABLE
+%token DELETE
 
 %start command_loop
 %%
@@ -197,6 +202,10 @@ command
 	  {
 		$$ = new ShowModulesCommand ();
 	  }
+	| SHOW BREAKPOINTS
+	  {
+		$$ = new ShowBreakpointsCommand ();
+	  }
 	| SHOW TYPE variable_expression
 	  {
 		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
@@ -208,6 +217,18 @@ command
 	| BREAK opt_process STRING INTEGER
 	  {
 		$$ = new BreakCommand ((ProcessExpression) $2, (string) $3, (int) $4);
+	  }
+	| BREAKPOINT INTEGER ENABLE
+	  {
+		$$ = new BreakpointEnableCommand ((int) $2);
+	  }
+	| BREAKPOINT INTEGER DISABLE
+	  {
+		$$ = new BreakpointDisableCommand ((int) $2);
+	  }
+	| BREAKPOINT INTEGER DELETE
+	  {
+		$$ = new BreakpointDeleteCommand ((int) $2);
 	  }
 	| PRINT expression
 	  {
@@ -486,6 +507,10 @@ module_operation
 	| BANG STEP
 	  {
 		$$ = ModuleOperation.DontStep;
+	  }
+	| SHOW BREAKPOINTS
+	  {
+		$$ = ModuleOperation.ShowBreakpoints;
 	  }
 	;
 

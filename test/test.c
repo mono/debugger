@@ -13,7 +13,6 @@ void
 hello (const char *message, int a)
 {
 	printf ("%s - %d\n", message, getpid ());
-	sleep (5);
 	crashing_here (NULL);
 }
 

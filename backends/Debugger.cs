@@ -94,9 +94,9 @@ namespace Mono.Debugger
 		public event ModulesChangedHandler ModulesChangedEvent;
 		public event BreakpointsChangedHandler BreakpointsChangedEvent;
 
-		void child_exited ()
+		void process_exited (Process process)
 		{
-			process = null;
+			this.process = null;
 			if (TargetExited != null)
 				TargetExited ();
 		}
@@ -115,6 +115,7 @@ namespace Mono.Debugger
 			module_manager.Lock ();
 
 			process = new Process (this, start, bfd_container);
+			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 			main_group.AddThread (process);
 			return process;
 		}

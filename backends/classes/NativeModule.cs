@@ -9,41 +9,15 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	internal abstract class NativeModule : Module
+	internal abstract class NativeModule : ModuleData
 	{
 		DebuggerBackend backend;
-		bool is_loaded;
 
-		public NativeModule (string name, DebuggerBackend backend)
-			: base (name)
+		public NativeModule (DebuggerBackend backend, Module module, string name)
+			: base (module, name)
 		{
 			this.backend = backend;
 		}
-
-		public override bool IsLoaded {
-			get {
-				return is_loaded;
-			}
-		}
-
-		public override void UnLoad ()
-		{
-			is_loaded = false;
-			CheckLoaded ();
-			base.UnLoad ();
-		}
-
-		public void Load ()
-		{
-			is_loaded = true;
-			CheckLoaded ();
-		}
-
-		protected override void AddBreakpoint (BreakpointHandle handle)
-		{ }
-
-		protected override void RemoveBreakpoint (BreakpointHandle handle)
-		{ }
 
 		bool check_breakpoint_hit (StackFrame frame, int index, object user_data)
 		{
@@ -62,9 +36,6 @@ namespace Mono.Debugger.Backends
 		protected override object EnableBreakpoint (BreakpointHandle handle,
 							    ThreadGroup group, TargetAddress address)
 		{
-			if (!IsLoaded)
-				return null;
-
 			Hashtable hash = new Hashtable ();
 			foreach (IProcess thread in group.Threads) {
 				Process process = thread as Process;
@@ -84,9 +55,6 @@ namespace Mono.Debugger.Backends
 		protected override void DisableBreakpoint (BreakpointHandle handle,
 							   ThreadGroup group, object data)
 		{
-			if (!IsLoaded)
-				return;
-
 			Hashtable hash = (Hashtable) data;
 
 			foreach (IProcess thread in group.Threads) {
@@ -101,18 +69,5 @@ namespace Mono.Debugger.Backends
 				hash.Remove (id);
 			}
 		}
-
-		//
-		// ISerializable
-		//
-
-		public override void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData (info, context);
-		}
-
-		private NativeModule (SerializationInfo info, StreamingContext context)
-			: base (info, context)
-		{ }
 	}
 }

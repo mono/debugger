@@ -38,23 +38,25 @@ bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 }
 
 const char *
-bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int only_functions, guint64 *address)
+bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_function, guint64 *address)
 {
 	asymbol *symbol = symbol_table [idx];
 
-	if (!only_functions && (symbol->flags == (BSF_OBJECT | BSF_GLOBAL)))
+	if (symbol->flags == (BSF_OBJECT | BSF_GLOBAL)) {
+		*is_function = 0;
 		*address = symbol->section->vma + symbol->value;
-	else if (symbol->flags == BSF_FUNCTION)
+	} else if (symbol->flags == BSF_FUNCTION) {
+		*is_function = 1;
 		*address = symbol->value;
-	else if (symbol->flags == (BSF_FUNCTION | BSF_GLOBAL)) {
+	} else if (symbol->flags == (BSF_FUNCTION | BSF_GLOBAL)) {
+		*is_function = 1;
 		*address = symbol->section->vma + symbol->value;
-		return symbol->name;
 	} else if (!strcmp (symbol->name, "__pthread_threads_debug") ||
 		   !strcmp (symbol->name, "__pthread_handles") ||
 		   !strcmp (symbol->name, "__pthread_handles_num") ||
 		   !strcmp (symbol->name, "__pthread_last_event")) {
+		*is_function = 1;
 		*address = symbol->section->vma + symbol->value;
-		return symbol->name;
 	} else
 		return NULL;
 

@@ -1,5 +1,18 @@
 2003-01-24  Martin Baulig  <martin@ximian.com>
 
+	* classes/ModuleData.cs: Split out all the dynamic stuff from
+	`Module'; this is now also the base class for `NativeModule'.
+
+	* classes/BreakpointHandle.cs: This was formerly a nested class in
+	`Module' and is now public.
+
+	* classes/SymbolTableManager.cs: Don't use an AsyncQueue here.
+
+	* arch/BfdModule.cs: The DwarfReader is now constructed here; we
+	can also load/unload it.
+
+2003-01-24  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/: Prefix all symbols which are accessed from the
 	debugger with `MONO_DEBUGGER__' and mark them as volatile.
 

@@ -366,6 +366,61 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowBreakpointsCommand : Command
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.ShowBreakpoints ();
+		}
+	}
+
+	public class BreakpointEnableCommand : Command
+	{
+		int index;
+
+		public BreakpointEnableCommand (int index)
+		{
+			this.index = index;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			Breakpoint breakpoint = context.FindBreakpoint (index);
+			breakpoint.Enabled = true;
+		}
+	}
+
+	public class BreakpointDisableCommand : Command
+	{
+		int index;
+
+		public BreakpointDisableCommand (int index)
+		{
+			this.index = index;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			Breakpoint breakpoint = context.FindBreakpoint (index);
+			breakpoint.Enabled = false;
+		}
+	}
+
+	public class BreakpointDeleteCommand : Command
+	{
+		int index;
+
+		public BreakpointDeleteCommand (int index)
+		{
+			this.index = index;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.DeleteBreakpoint (index);
+		}
+	}
+
 	public class ModuleOperationCommand : Command
 	{
 		int[] modules;
@@ -414,10 +469,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			int index;
 			if (line != -1)
-				process.InsertBreakpoint (identifier, line);
+				index = process.InsertBreakpoint (identifier, line);
 			else
-				process.InsertBreakpoint (identifier);
+				index = process.InsertBreakpoint (identifier);
+			context.Print ("Inserted breakpoint {0}.", index);
 		}
 	}
 

@@ -14,17 +14,17 @@ namespace Mono.Debugger
 		ManualResetEvent symtab_reload_event;
 		ManualResetEvent symtabs_loaded_event;
 		ManualResetEvent modules_loaded_event;
+		ManualResetEvent update_completed_event;
 		bool symtab_update_in_progress;
 		bool module_update_in_progress;
 		bool reload_requested;
-		AsyncQueue async_queue;
 
 		public SymbolTableManager ()
 		{
-			async_queue = new AsyncQueue (new AsyncQueueHandler (async_handler));
 			symtab_reload_event = new ManualResetEvent (false);
 			symtabs_loaded_event = new ManualResetEvent (true);
 			modules_loaded_event = new ManualResetEvent (true);
+			update_completed_event = new ManualResetEvent (true);
 			symtab_thread = new Thread (new ThreadStart (symtab_thread_start));
 			symtab_thread.Start ();
 		}
@@ -41,6 +41,7 @@ namespace Mono.Debugger
 				symtab_reload_event.Set ();
 				symtabs_loaded_event.Reset ();
 				modules_loaded_event.Reset ();
+				update_completed_event.Reset ();
 				symtab_update_in_progress = true;
 				module_update_in_progress = true;
 				reload_requested = true;
@@ -92,6 +93,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public void Wait ()
+		{
+			if (symtab_thread != null)
+				update_completed_event.WaitOne ();
+		}
+
 		// <summary>
 		//   This event is emitted each time the modules have changed.
 		//   The modules won't change while this handler is running.
@@ -128,14 +135,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		void async_handler (string message)
-		{
-			if (message == "M")
-				OnModulesChanged ();
-			else
-				OnSymbolTableChanged ();
-		}
-
 		//
 		// The following fields are shared between the two threads !
 		//
@@ -154,6 +153,7 @@ namespace Mono.Debugger
 			} catch (ThreadAbortException) {
 				symtabs_loaded_event.Set ();
 				modules_loaded_event.Set ();
+				update_completed_event.Set ();
 				symtab_update_in_progress = false;
 				module_update_in_progress = false;
 				symtab_thread = null;
@@ -179,9 +179,10 @@ namespace Mono.Debugger
 					// Nothing to do, clear the events and continue.
 					symtabs_loaded_event.Set ();
 					modules_loaded_event.Set ();
+					update_completed_event.Set ();
 					symtab_update_in_progress = false;
 					module_update_in_progress = false;
-					goto again;
+					continue;
 				}
 
 				// Updating the symbol tables doesn't take that long and they're also
@@ -213,7 +214,7 @@ namespace Mono.Debugger
 					// the `SymbolTable' accessor.
 					symtabs_loaded_event.Set ();
 					symtab_update_in_progress = false;
-					async_queue.Write ("S");
+					OnSymbolTableChanged ();
 				}
 
 				// Ok, we're now done updating the symbol tables so we can update the
@@ -235,7 +236,8 @@ namespace Mono.Debugger
 					my_new_modules.CopyTo (current_modules, 0);
 					modules_loaded_event.Set ();
 					module_update_in_progress = false;
-					async_queue.Write ("M");
+					OnModulesChanged ();
+					update_completed_event.Set ();
 				}
 			}
 		}
@@ -259,7 +261,6 @@ namespace Mono.Debugger
 					if (symtab_thread != null) {
 						symtab_thread.Abort ();
 						symtab_thread = null;
-						async_queue.Dispose ();
 					}
 				}
 				
