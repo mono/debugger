@@ -10,7 +10,7 @@ RUNTIME=mono
 all: generated-stamp
 
 generated-stamp: $(APIS)
-	$(RUNTIME) @GTKSHARP_PREFIX@/gapi_codegen.exe --generate $(APIS) --include $(API_INCLUDES) && touch generated-stamp
+	$(RUNTIME) @GTKSHARP_PREFIX@/bin/gapi_codegen.exe --generate $(APIS) --include $(API_INCLUDES) && touch generated-stamp
 
 clean:
 	rm -f generated-stamp
