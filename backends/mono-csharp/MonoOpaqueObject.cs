@@ -38,6 +38,16 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		bool ITargetPointerObject.HasDereferencedObject {
+			get { return false; }
+		}
+
+		ITargetObject ITargetPointerObject.DereferencedObject {
+			get {
+				throw new InvalidOperationException ();
+			}
+		}
+
 		public byte[] GetDereferencedContents (int size)
 		{
 			try {

@@ -1,5 +1,10 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetPointerObject.cs
+	(HasDereferencedObject, DereferencedObject): New properties.
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added the dereferencing
 	expression "print *$a" where $a is a pointer or a Mono `object'.
 

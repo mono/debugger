@@ -17,6 +17,20 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   If true, this pointer can be dereferenced to an ITargetObject.
+		// </summary>
+		bool HasDereferencedObject {
+			get;
+		}
+
+		// <summary>
+		//   If HasDereferencedObject is true, return the dereferenced object.
+		// </summary>
+		ITargetObject DereferencedObject {
+			get;
+		}
+
+		// <summary>
 		//   Dereference the pointer and read @size bytes from the location it
 		//   points to.  Only allowed for non-typesafe pointers.
 		// </summary>

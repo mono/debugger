@@ -603,10 +603,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable {0} is not a pointer type.",
 							      var_expr.Name);
 
-			if (!pobj.HasObject)
+			if (!pobj.HasDereferencedObject)
 				throw new ScriptingException ("Cannot dereference {0}.", var_expr.Name);
 
-			return pobj.Object;
+			return pobj.DereferencedObject;
 		}
 	}
 }
