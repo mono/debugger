@@ -1,5 +1,13 @@
 2004-06-20  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceInfo.cs (SourceInfo.FindMethod): Removed.
+
+	* clases/Module.cs (Module.FindMethod): Call
+	ISymbolFile.FindMethod() directly rather than looping over all the
+	source files.
+
+2004-06-20  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Read the .debug_pubnames section and use it
 	for name based lookups.
 

@@ -194,13 +194,7 @@ namespace Mono.Debugger
 			if (!SymbolsLoaded)
 				return null;
 
-			foreach (SourceFile source in SymbolFile.Sources) {
-				SourceMethod method = source.FindMethod (name);
-				if (method != null)
-					return method;
-			}
-
-			return null;
+			return SymbolFile.FindMethod (name);
 		}
 
 		// <summary>
