@@ -276,7 +276,7 @@
       <method name="AddPixbuf" cname="gtk_source_view_add_pixbuf">
         <return-type type="gboolean"/>
         <parameters>
-          <parameter type="gchar*" name="key"/>
+          <parameter type="const-gchar*" name="key"/>
           <parameter type="GdkPixbuf*" name="pixbuf"/>
           <parameter type="gboolean" name="overwrite"/>
         </parameters>

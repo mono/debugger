@@ -2,12 +2,12 @@ MCS=mcs
 
 assdir = $(libdir)
 
-ass_SCRIPTS = debugger-widgets.dll
+ass_SCRIPTS = mono.debugger.gui-sharp.dll
 
-all: debugger-widgets.dll
+all: mono.debugger.gui-sharp.dll
 
-debugger-widgets.dll: @srcdir@/generated/*.cs
-	$(MCS) --unsafe --target library -L $(GTKSHARP_PREFIX)/lib -r glib-sharp.dll -r gtk-sharp.dll -r gdk-sharp.dll -o debugger-widgets.dll --recurse '@srcdir@/*.cs'
+mono.debugger.gui-sharp.dll: @srcdir@/generated/*.cs
+	$(MCS) --unsafe --target library -L $(GTKSHARP_PREFIX)/lib -r glib-sharp.dll -r gtk-sharp.dll -r gdk-sharp.dll -r gtksourceview-sharp -o mono.debugger.gui-sharp.dll --recurse '@srcdir@/*.cs'
 
 clean:
 	rm -f *.dll
@@ -16,6 +16,6 @@ maintainerclean:
 	rm -rf generated
 
 install: all
-	cp debugger-widgets.dll $(DESTDIR)@prefix@/lib
+	cp mono.debugger.gui-sharp.dll $(DESTDIR)@prefix@/lib
 
 EXTRA_DIST = @srcdir@/generated/*.cs

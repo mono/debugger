@@ -27,7 +27,7 @@ struct _DebuggerEntryClass
         void (* next_line)                     (DebuggerEntry  *entry);
 };
 
-GType          debugger_entry_get_type         ();
+GType          debugger_entry_get_type         (void);
 DebuggerEntry* debugger_entry_new              (void);
 
 G_END_DECLS

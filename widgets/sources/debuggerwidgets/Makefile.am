@@ -2,6 +2,7 @@ INCLUDES = \
 	-DG_LOG_DOMAIN=\"DebuggerWidgets\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/src \
+	-I$(top_srcdir)/widgets/sources/gtksourceview \
 	@BUILD_GTK_CFLAGS@
 
 # libs
@@ -18,10 +19,13 @@ libdebuggerwidgets_la_SOURCES = \
 	debuggerentry.h			\
 	debuggerterminal.c		\
 	debuggerterminal.h		\
+	debuggersourceview.c		\
+	debuggersourceview.h		\
 	debuggerwidgets-marshal.c	\
 	debuggerwidgets-marshal.h
 
-libdebuggerwidgets_la_LIBADD = @BUILD_GTK_LIBS@
+libdebuggerwidgets_la_LIBADD = @BUILD_GTK_LIBS@ \
+	$(top_builddir)/widgets/sources/gtksourceview/libgtksourceview.la
 
 debuggerwidgets-marshal.h: debuggerwidgets-marshal.list
 	glib-genmarshal \

@@ -1,5 +1,15 @@
 2003-06-08  Martin Baulig  <martin@ximian.com>
 
+	* sources/debuggerwidgets/debuggersourceview.[ch]: New widget.
+	Derives from GtkSourceView, but has a `debugger_populate_popup'
+	signal which contains the coordinates where the menu popped up.
+
+	* mono.debugger.gui/Makefile.am: Renamed debugger-widgets.dll ->
+	mono.debugger.gui-sharp.dll.  This is required since gtk-sharp's
+	signal emission code expects this name.
+
+2003-06-08  Martin Baulig  <martin@ximian.com>
+
 	* sources/gtksourceview/gtksourceview.c
 	(gtk_source_view_add_pixbuf): g_strdup() the `key' since it's
 	automatically freed by Mono's P/Invoke marshaller.

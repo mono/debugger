@@ -25,6 +25,28 @@
       </method>
       <constructor cname="debugger_entry_new"/>
     </object>
+    <object name="DebuggerSourceView" cname="DebuggerSourceView" parent="GtkSourceView">
+      <field cname="last_popup_x" type="guint"/>
+      <field cname="last_popup_y" type="guint"/>
+      <signal name="DebuggerPopulatePopup" cname="debugger_populate_popup" when="LAST">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="DebuggerSourceView*" name="source_view"/>
+          <parameter type="GtkMenu*" name="menu"/>
+          <parameter type="gint" name="x"/>
+          <parameter type="gint" name="y"/>
+        </parameters>
+      </signal>
+      <method name="GetType" cname="debugger_source_view_get_type" shared="true">
+        <return-type type="GType"/>
+      </method>
+      <constructor cname="debugger_source_view_new"/>
+      <constructor cname="debugger_source_view_new_with_buffer">
+        <parameters>
+          <parameter type="GtkSourceBuffer*" name="buffer"/>
+        </parameters>
+      </constructor>
+    </object>
     <object name="DebuggerTerminal" cname="DebuggerTerminal" parent="GtkWidget">
       <method name="Feed" cname="debugger_terminal_feed">
         <return-type type="void"/>
