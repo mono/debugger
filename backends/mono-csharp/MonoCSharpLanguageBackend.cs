@@ -296,7 +296,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 39;
+		public const int  DynamicVersion = 40;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -804,6 +804,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
 		public readonly TargetAddress LookupType;
+		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress Heap;
 		public readonly int HeapSize;
 
@@ -821,6 +822,7 @@ namespace Mono.Debugger.Languages.CSharp
 			CreateString = reader.ReadAddress ();
 			ClassGetStaticFieldData = reader.ReadAddress ();
 			LookupType = reader.ReadAddress ();
+			LookupAssembly = reader.ReadAddress ();
 			Heap = reader.ReadAddress ();
 			HeapSize = reader.ReadInteger ();
 			Report.Debug (DebugFlags.JitSymtab, this);
