@@ -124,11 +124,12 @@ namespace Mono.Debugger.Backends
 		//   stopped the first time.  In either case, this function blocks until
 		//   the application has actually been launched.
 		// </summary>
-		public void Run (bool synchronous)
+		public void Run (bool redirect_fds, bool synchronous)
 		{
 			if (engine_thread != null)
 				throw new AlreadyHaveTargetException ();
 
+			this.redirect_fds = redirect_fds;
 			engine_thread = new Thread (new ThreadStart (start_engine_thread));
 			engine_thread.Start ();
 
@@ -201,7 +202,7 @@ namespace Mono.Debugger.Backends
 
 		void start_engine_thread ()
 		{
-			inferior.Run ();
+			inferior.Run (redirect_fds);
 
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
@@ -716,6 +717,7 @@ namespace Mono.Debugger.Backends
 		bool result_sent = false;
 		bool native;
 		int pending_sigstop = 0;
+		bool redirect_fds;
 		int pid = -1;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;

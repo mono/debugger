@@ -974,16 +974,24 @@ child_setup_func (gpointer data)
 
 static ServerCommandError
 server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gchar **argv, gchar **envp,
-		     gboolean search_path, gint *child_pid, gint *standard_input, gint *standard_output,
-		     gint *standard_error, GError **error)
+		     gboolean search_path, gint *child_pid, gint redirect_fds, gint *standard_input,
+		     gint *standard_output, gint *standard_error, GError **error)
 {
 	GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
+	int ret;
 
 	if (search_path)
 		flags |= G_SPAWN_SEARCH_PATH;
 
-	if (!g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func, NULL,
-				       child_pid, standard_input, standard_output, standard_error, error))
+	if (redirect_fds)
+		ret = g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func,
+						NULL, child_pid, standard_input, standard_output,
+						standard_error, error);
+	else
+		ret = g_spawn_async (working_directory, argv, envp, flags, child_setup_func,
+				     NULL, child_pid, error);
+
+	if (!ret)
 		return COMMAND_ERROR_FORK;
 
 	handle->pid = *child_pid;

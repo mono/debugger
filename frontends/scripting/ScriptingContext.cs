@@ -45,7 +45,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (pid > 0)
 				process.SingleSteppingEngine.Attach (pid, true);
 			else
-				process.SingleSteppingEngine.Run (true);
+				process.SingleSteppingEngine.Run (false, true);
 			initialize ();
 			process_events ();
 		}

@@ -66,7 +66,7 @@ namespace Mono.Debugger.Backends
 		///   Some of the other methods and properties of this interface may only
 		///   by used in the thread which called this function !
 		/// </remarks>
-		void Run ();
+		void Run (bool redirect_fds);
 		void Attach (int pid);
 
 		/// <summary>

@@ -1,3 +1,9 @@
+2003-01-05  Martin Baulig  <martin@ximian.com>
+
+	* backends/IInferior.cs (Run): Added `bool redirect_fds' argument;
+	if false, we don't redirect stdout and stderr.  This is used in
+	the command line interpreter.
+
 2003-01-04  Peter Williams  <peterw@ximian.com>
 
 	* configure.in (READLINE_DEPLIBS): Check to see if libreadline

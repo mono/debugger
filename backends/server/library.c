@@ -171,8 +171,8 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    gchar **argv, gchar **envp, gboolean search_path,
-			    gint *child_pid, gint *standard_input, gint *standard_output,
-			    gint *standard_error, GError **error)
+			    gint *child_pid, gint redirect_fds, gint *standard_input,
+			    gint *standard_output, gint *standard_error, GError **error)
 {
 	ServerCommandError result;
 
@@ -180,7 +180,8 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		return COMMAND_ERROR_ALREADY_HAVE_INFERIOR;
 
 	result = (* handle->info->spawn) (handle->inferior, working_directory, argv, envp, search_path,
-					  child_pid, standard_input, standard_output, standard_error, error);
+					  child_pid, redirect_fds, standard_input, standard_output,
+					  standard_error, error);
 	if (result == COMMAND_ERROR_NONE)
 		handle->has_inferior = TRUE;
 

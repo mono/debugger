@@ -85,7 +85,7 @@ namespace Mono.Debugger.Backends
 		internal event ChildEventHandler ChildEvent;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, out int child_pid, int redirect_fds, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid);
@@ -360,7 +360,7 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 		}
 
-		public void Run ()
+		public void Run (bool redirect_fds)
 		{
 			if (initialized)
 				throw new AlreadyHaveTargetException ();
@@ -372,13 +372,14 @@ namespace Mono.Debugger.Backends
 
 			check_error (mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
-				start.Environment, true,
-				out child_pid, out stdin_fd, out stdout_fd, out stderr_fd,
-				out error));
+				start.Environment, true, out child_pid, redirect_fds ? 1 : 0,
+				out stdin_fd, out stdout_fd, out stderr_fd, out error));
 
-			inferior_stdin = new IOOutputChannel (stdin_fd, false, false);
-			inferior_stdout = new IOInputChannel (stdout_fd, true, false);
-			inferior_stderr = new IOInputChannel (stderr_fd, true, false);
+			if (redirect_fds) {
+				inferior_stdin = new IOOutputChannel (stdin_fd, false, false);
+				inferior_stdout = new IOInputChannel (stdout_fd, true, false);
+				inferior_stderr = new IOInputChannel (stderr_fd, true, false);
+			}
 
 			setup_inferior (start, error_handler);
 			change_target_state (TargetState.STOPPED, 0);

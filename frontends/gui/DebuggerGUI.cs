@@ -295,7 +295,7 @@ namespace Mono.Debugger.GUI
 				start = ProcessStart.Create (null, args, env);
 				process = backend.Run (start);
 				SetProcess (process);
-				process.SingleSteppingEngine.Run (true);
+				process.SingleSteppingEngine.Run (true, true);
 			}
 
 			//
