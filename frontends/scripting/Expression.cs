@@ -141,7 +141,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.GetProcess (number);
+			return context.Interpreter.GetProcess (number);
 		}
 
 		public override string ToString ()
@@ -195,7 +195,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.GetBreakpoint (number);
+			return context.Interpreter.GetBreakpoint (number);
 		}
 
 		public override string ToString ()
@@ -415,9 +415,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (identifier != null) {
 				if (line != -1)
-					return context.FindLocation (identifier, line);
+					return context.Interpreter.FindLocation (
+						identifier, line);
 				else
-					return context.FindMethod (identifier);
+					return context.Interpreter.FindMethod (identifier);
 			}
 
 			ITargetFunctionObject obj = expr.ResolveMethod (context, null);
@@ -453,7 +454,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.GetModules (modules);
+			return context.Interpreter.GetModules (modules);
 		}
 
 		public override string ToString ()
@@ -481,7 +482,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.GetSources (sources);
+			return context.Interpreter.GetSources (sources);
 		}
 
 		public override string ToString ()
@@ -509,7 +510,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.GetProcesses (processes);
+			return context.Interpreter.GetProcesses (processes);
 		}
 
 		public override string ToString ()

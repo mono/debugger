@@ -263,10 +263,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string[] args = (string []) program_args_expr.Resolve (context);
 			DebuggerOptions options = new DebuggerOptions ();
-			context.Start (options, args);
-			context.Initialize ();
+			context.Interpreter.Start (options, args);
+			context.Interpreter.Initialize ();
 			try {
-				context.Run ();
+				context.Interpreter.Run ();
 			} catch (TargetException e) {
 				throw new ScriptingException (e.Message);
 			}
@@ -282,9 +282,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (!context.IsSynchronous)
 				throw new ScriptingException ("This command cannot be used in the GUI.");
 
-			context.Initialize ();
+			context.Interpreter.Initialize ();
 			try {
-				context.Run ();
+				context.Interpreter.Run ();
 			} catch (TargetException e) {
 				throw new ScriptingException (e.Message);
 			}
@@ -541,7 +541,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Kill ();
+			context.Interpreter.Kill ();
 		}
 	}
 
@@ -551,11 +551,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			int current_id = -1;
-			if (context.HasTarget)
+			if (context.Interpreter.HasTarget)
 				current_id = context.CurrentProcess.ID;
 
 			bool printed_something = false;
-			foreach (ProcessHandle proc in context.Processes) {
+			foreach (ProcessHandle proc in context.Interpreter.Processes) {
 				string prefix = proc.ID == current_id ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, proc);
 				printed_something = true;
@@ -638,7 +638,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetType type = var_expr.ResolveType (context);
 
-			context.ShowVariableType (type, var_expr.Name);
+			context.Interpreter.ShowVariableType (type, var_expr.Name);
 		}
 	}
 
@@ -647,7 +647,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ShowModules ();
+			context.Interpreter.ShowModules ();
 		}
 	}
 
@@ -666,7 +666,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Module[] modules = (Module []) module_list_expr.Resolve (context);
 
 			foreach (Module module in modules)
-				context.ShowSources (module);
+				context.Interpreter.ShowSources (module);
 		}
 	}
 
@@ -685,7 +685,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			SourceFile[] sources = (SourceFile []) source_list_expr.Resolve (context);
 
 			foreach (SourceFile source in sources)
-				context.ShowMethods (source);
+				context.Interpreter.ShowMethods (source);
 		}
 	}
 
@@ -694,7 +694,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ShowBreakpoints ();
+			context.Interpreter.ShowBreakpoints ();
 		}
 	}
 
@@ -703,7 +703,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ShowThreadGroups ();
+			context.Interpreter.ShowThreadGroups ();
 		}
 	}
 
@@ -719,7 +719,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.CreateThreadGroup (name);
+			context.Interpreter.CreateThreadGroup (name);
 		}
 	}
 
@@ -739,7 +739,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle[] threads = (ProcessHandle []) process_list_expr.Resolve (context);
 
-			context.AddToThreadGroup (name, threads);
+			context.Interpreter.AddToThreadGroup (name, threads);
 		}
 	}
 
@@ -759,7 +759,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle[] threads = (ProcessHandle []) process_list_expr.Resolve (context);
 
-			context.RemoveFromThreadGroup (name, threads);
+			context.Interpreter.RemoveFromThreadGroup (name, threads);
 		}
 	}
 
@@ -819,7 +819,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
-			context.DeleteBreakpoint (process, handle);
+			context.Interpreter.DeleteBreakpoint (process, handle);
 		}
 	}
 
@@ -846,7 +846,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			Module[] modules = (Module []) module_list_expr.Resolve (context);
 			ModuleOperation[] operations = (ModuleOperation []) op_list_expr.Resolve (context);
 
-			context.ModuleOperations (modules, operations);
+			context.Interpreter.ModuleOperations (modules, operations);
 		}
 	}
 
@@ -871,7 +871,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (location == null)
 				return;
 
-			int index = context.InsertBreakpoint (
+			int index = context.Interpreter.InsertBreakpoint (
 				context.CurrentProcess, group, location);
 			context.Print ("Inserted breakpoint {0}.", index);
 		}
@@ -891,21 +891,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			context [identifier] = expr;
-		}
-	}
-
-	public class SaveCommand : Command
-	{
-		string filename;
-
-		public SaveCommand (string filename)
-		{
-			this.filename = filename;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Save (filename);
 		}
 	}
 

@@ -257,17 +257,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ProcessHandle
 	{
-		ScriptingContext context;	
+		Interpreter interpreter;
 		Process process;
 		string name;
-
 		int id;
+
 		Hashtable registers;
 
-		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process)
+		public ProcessHandle (Interpreter interpreter, Process process)
 		{
-			this.context = context;
+			this.interpreter = interpreter;
 			this.process = process;
+			this.name = process.Name;
 			this.id = process.ID;
 
 			if (!process.IsDaemon)
@@ -275,33 +276,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
-
-			if (process.IsDaemon)
-				name = String.Format ("Daemon process @{0}", id);
-			else
-				name = String.Format ("Process @{0}", id);
 		}
 
-		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
-				      int pid)
-			: this (context, backend, process)
+		public ProcessHandle (Interpreter interpreter, Process process, int pid)
+			: this (interpreter, process)
 		{
 			if (process.HasTarget) {
 				if (!process.IsDaemon) {
 					StackFrame frame = process.CurrentFrame;
 					current_frame = new FrameHandle (this, frame);
-					context.Print ("{0} stopped at {1}.", Name, frame);
-					current_frame.Print (context);
+					interpreter.Print ("{0} stopped at {1}.", Name, frame);
+					current_frame.Print (interpreter.GlobalContext);
 				}
 			}
 
-			initialize ();
-		}
-
-		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
-				      string core_file)
-			: this (context, backend, process)
-		{
 			initialize ();
 		}
 
@@ -358,33 +346,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 			switch (args.Type) {
 			case TargetEventType.TargetStopped:
 				if ((int) args.Data != 0)
-					context.Print ("{0} received signal {1}{2}.", Name, (int) args.Data, frame);
-				else if (!context.IsInteractive)
+					interpreter.Print ("{0} received signal {1}{2}.", Name, (int) args.Data, frame);
+				else if (!interpreter.IsInteractive)
 					break;
 				else
-					context.Print ("{0} stopped{1}.", Name, frame);
+					interpreter.Print ("{0} stopped{1}.", Name, frame);
 
 				if (current_insn != null)
-					context.PrintInstruction (current_insn);
+					interpreter.GlobalContext.PrintInstruction (current_insn);
 
 				if (current_frame != null)
-					current_frame.PrintSource (context);
+					current_frame.PrintSource (interpreter.GlobalContext);
 
-				if (!context.IsInteractive)
-					context.Abort ();
+				if (!interpreter.IsInteractive)
+					interpreter.Abort ();
 				break;
 
 			case TargetEventType.TargetExited:
 				if ((int) args.Data == 0)
-					context.Print ("{0} terminated normally.", Name);
+					interpreter.Print ("{0} terminated normally.", Name);
 				else
-					context.Print ("{0} exited with exit code {1}.", id, (int) args.Data);
+					interpreter.Print ("{0} exited with exit code {1}.",
+							   id, (int) args.Data);
 				target_exited ();
 				break;
 
 			case TargetEventType.TargetSignaled:
-				context.Print ("{0} died with fatal signal {1}.",
-					       id, (int) args.Data);
+				interpreter.Print ("{0} died with fatal signal {1}.",
+						   id, (int) args.Data);
 				target_exited ();
 				break;
 			}
@@ -392,12 +381,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void debugger_output (string line)
 		{
-			context.Print ("DEBUGGER OUTPUT: {0}", line);
+			interpreter.Print ("DEBUGGER OUTPUT: {0}", line);
 		}
 
 		void debugger_error (object sender, string message, Exception e)
 		{
-			context.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
+			interpreter.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
 		}
 
 		public void Step (WhichStepCommand which)
@@ -410,25 +399,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 			bool ok;
 			switch (which) {
 			case WhichStepCommand.Continue:
-				ok = process.Continue (context.IsSynchronous);
+				ok = process.Continue (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Step:
-				ok = process.StepLine (context.IsSynchronous);
+				ok = process.StepLine (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Next:
-				ok = process.NextLine (context.IsSynchronous);
+				ok = process.NextLine (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.StepInstruction:
-				ok = process.StepInstruction (context.IsSynchronous);
+				ok = process.StepInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.StepNativeInstruction:
-				ok = process.StepNativeInstruction (context.IsSynchronous);
+				ok = process.StepNativeInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.NextInstruction:
-				ok = process.NextInstruction (context.IsSynchronous);
+				ok = process.NextInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Finish:
-				ok = process.Finish (context.IsSynchronous);
+				ok = process.Finish (interpreter.IsSynchronous);
 				break;
 			default:
 				throw new Exception ();
@@ -609,147 +598,71 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ScriptingContext
 	{
 		ProcessHandle current_process;
-		Hashtable procs;
-
-		DebuggerBackend backend;
-		DebuggerTextWriter command_output;
-		DebuggerTextWriter inferior_output;
-		ProcessStart start;
-		string prompt = "$";
-		bool is_synchronous;
-		bool is_interactive;
-		int exit_code = 0;
-		internal static readonly string DirectorySeparatorStr;
+		Interpreter interpreter;
 
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
-		Hashtable breakpoints;
 		ITargetObject last_object;
-		Module[] modules;
 
-		static ScriptingContext ()
-		{
-			// FIXME: Why isn't this public in System.IO.Path ?
-			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
-		}
+		bool is_interactive;
+		bool is_synchronous;
 
-		internal ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
-					   bool is_synchronous, bool is_interactive, string[] args)
+		internal ScriptingContext (Interpreter interpreter, bool is_interactive,
+					   bool is_synchronous)
 		{
-			this.command_output = command_out;
-			this.inferior_output = inferior_out;
-			this.is_synchronous = is_synchronous;
+			this.interpreter = interpreter;
 			this.is_interactive = is_interactive;
-
-			procs = new Hashtable ();
-			current_process = null;
-
-			breakpoints = new Hashtable ();
+			this.is_synchronous = is_synchronous;
 
 			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
-
-			start = ProcessStart.Create (null, args);
-			if (start != null)
-				Initialize ();
 		}
 
-		public DebuggerBackend Initialize ()
-		{
-			if (backend != null)
-				return backend;
-			if (start == null)
-				throw new ScriptingException ("No program loaded.");
-
-			backend = new DebuggerBackend ();
-			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
-			backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
-			return backend;
-		}
-
-		public void Exit ()
-		{
-			if (backend != null)
-				backend.Dispose ();
-		}
-
-		public ProcessStart ProcessStart {
-			get { return start; }
-		}
-
-		public DebuggerBackend DebuggerBackend {
-			get {
-				if (backend != null)
-					return backend;
-
-				throw new ScriptingException ("No backend loaded.");
-			}
-		}
-
-		public bool IsSynchronous {
-			get { return is_synchronous; }
+		public Interpreter Interpreter {
+			get { return interpreter; }
 		}
 
 		public bool IsInteractive {
 			get { return is_interactive; }
 		}
 
-		public int ExitCode {
-			get { return exit_code; }
-			set { exit_code = value; }
+		public bool IsSynchronous {
+			get { return is_synchronous; }
 		}
 
-		public ProcessHandle[] Processes {
-			get {
-				ProcessHandle[] retval = new ProcessHandle [procs.Count];
-				procs.Values.CopyTo (retval, 0);
-				return retval;
-			}
-		}
-
-		void target_output (bool is_stderr, string line)
-		{
-			PrintInferior (is_stderr, line);
-		}
-
-		public void Abort ()
-		{
-			Print ("Caught fatal error while running non-interactively; exiting!");
-			Environment.Exit (-1);
+		public ProcessHandle CurrentProcess {
+			get { return current_process; }
+			set { current_process = value; }
 		}
 
 		public void Error (string message)
 		{
-			command_output.WriteLine (true, message);
-			if (!IsInteractive)
-				Abort ();
+			interpreter.Error (message);
 		}
 
 		public void Error (string format, params object[] args)
 		{
-			Error (String.Format (format, args));
+			interpreter.Error (String.Format (format, args));
 		}
 
 		public void Error (ScriptingException ex)
 		{
-			Error (ex.Message);
+			interpreter.Error (ex.Message);
 		}
 
 		public void Print (string message)
 		{
-			command_output.WriteLine (false, message);
+			interpreter.Print (message);
 		}
 
 		public void Print (string format, params object[] args)
 		{
-			Print (String.Format (format, args));
+			interpreter.Print (String.Format (format, args));
 		}
 
 		public void Print (object obj)
 		{
-			Print (obj.ToString ());
+			interpreter.Print (obj);
 		}
 
 		public void PrintObject (object obj)
@@ -761,10 +674,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (obj is long)
 				return String.Format ("0x{0:x}", (long) obj);
-			else if (obj is ITargetObject) {
-				LastObject = (ITargetObject) obj;
-				return LastObject.Print ();
-			} else
+			else if (obj is ITargetObject)
+				return ((ITargetObject) obj).Print ();
+			else
 				return obj.ToString ();
 		}
 
@@ -773,131 +685,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (line.Label != null)
 				Print ("{0}:", line.Label);
 			Print ("{0:11x}\t{1}", line.Address, line.Text);
-		}
-
-		public void PrintInferior (bool is_stderr, string line)
-		{
-			inferior_output.Write (is_stderr, line);
-		}
-
-		public ProcessHandle CurrentProcess {
-			get {
-				if (current_process == null)
-					throw new ScriptingException ("No target.");
-
-				return current_process;
-			}
-
-			set {
-				current_process = value;
-			}
-		}
-
-		public bool HasBackend {
-			get {
-				return backend != null;
-			}
-		}
-
-		public bool HasTarget {
-			get {
-				return current_process != null;
-			}
-		}
-
-		public string Prompt {
-			get {
-				return prompt;
-			}
-		}
-
-		public ProcessStart Start (DebuggerOptions options, string[] args)
-		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
-			start = ProcessStart.Create (options, args);
-
-			return start;
-		}
-
-		public Process Run ()
-		{
-			if (current_process != null)
-				throw new ScriptingException ("Process already started.");
-			if (backend == null)
-				throw new ScriptingException ("No program loaded.");
-
-			backend.Run (start);
-			Process process = backend.ThreadManager.WaitForApplication ();
-			current_process = (ProcessHandle) procs [process];
-
-			return process;
-		}
-
-		public string GetFullPath (string filename)
-		{
-			if (start == null)
-				return Path.GetFullPath (filename);
-
-			if (Path.IsPathRooted (filename))
-				return filename;
-
-			return String.Concat (start.BaseDirectory, DirectorySeparatorStr, filename);
-		}
-
-		void thread_created (ThreadManager manager, Process process)
-		{
-			ProcessHandle handle = new ProcessHandle (this, manager.DebuggerBackend, process);
-			add_process (handle);
-		}
-
-		public void ShowVariableType (ITargetType type, string name)
-		{
-			ITargetArrayType array = type as ITargetArrayType;
-			if (array != null)
-				Print ("{0} is an array of {1}", name, array.ElementType);
-
-			ITargetClassType tclass = type as ITargetClassType;
-			ITargetStructType tstruct = type as ITargetStructType;
-			if (tclass != null) {
-				if (tclass.HasParent)
-					Print ("{0} is a class of type {1} which inherits from {2}",
-					       name, tclass.Name, tclass.ParentType);
-				else
-					Print ("{0} is a class of type {1}", name, tclass.Name);
-			} else if (tstruct != null)
-				Print ("{0} is a value type of type {1}", name, tstruct.Name);
-
-			if (tstruct != null) {
-				foreach (ITargetFieldInfo field in tstruct.Fields)
-					Print ("  It has a field `{0}' of type {1}", field.Name,
-					       field.Type.Name);
-				foreach (ITargetFieldInfo field in tstruct.StaticFields)
-					Print ("  It has a static field `{0}' of type {1}", field.Name,
-					       field.Type.Name);
-				foreach (ITargetFieldInfo property in tstruct.Properties)
-					Print ("  It has a property `{0}' of type {1}", property.Name,
-					       property.Type.Name);
-				foreach (ITargetMethodInfo method in tstruct.Methods) {
-					if (method.Type.HasReturnValue)
-						Print ("  It has a method: {0} {1}", method.Type.ReturnType.Name, method.FullName);
-					else
-						Print ("  It has a method: void {0}", method.FullName);
-				}
-				foreach (ITargetMethodInfo method in tstruct.StaticMethods) {
-					if (method.Type.HasReturnValue)
-						Print ("  It has a static method: {0} {1}", method.Type.ReturnType.Name, method.FullName);
-					else
-						Print ("  It has a static method: void {0}", method.FullName);
-				}
-				foreach (ITargetMethodInfo method in tstruct.Constructors) {
-					Print ("  It has a constructor: {0}", method.FullName);
-				}
-				return;
-			}
-
-			Print ("{0} is a {1}", name, type);
 		}
 
 		public VariableExpression this [string identifier] {
@@ -923,305 +710,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		void modules_changed ()
-		{
-			modules = backend.Modules;
-		}
-
-		public void ShowBreakpoints ()
-		{
-			Print ("Breakpoints:");
-			foreach (BreakpointHandle handle in breakpoints.Values) {
-				Print ("{0} ({1}): {3} {2}", handle.Breakpoint.Index,
-				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint,
-				       handle.IsEnabled ? "*" : " ");
-			}
-		}
-
-		public BreakpointHandle GetBreakpoint (int index)
-		{
-			BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
-			if (handle == null)
-				throw new ScriptingException ("No such breakpoint.");
-
-			return handle;
-		}
-
-		public void DeleteBreakpoint (ProcessHandle process, BreakpointHandle handle)
-		{
-			handle.RemoveBreakpoint (process.Process);
-			breakpoints.Remove (handle);
-		}
-
-		public Module[] GetModules (int[] indices)
-		{
-			if (modules == null)
-				throw new ScriptingException ("No modules.");
-
-			backend.ModuleManager.Lock ();
-
-			int pos = 0;
-			Module[] retval = new Module [indices.Length];
-
-			foreach (int index in indices) {
-				if ((index < 0) || (index > modules.Length))
-					throw new ScriptingException ("No such module {0}.", index);
-
-				retval [pos++] = modules [index];
-			}
-
-			backend.ModuleManager.UnLock ();
-
-			return retval;
-		}
-
-		public SourceFile[] GetSources (int[] indices)
-		{
-			if (modules == null)
-				throw new ScriptingException ("No modules.");
-
-			Hashtable source_hash = new Hashtable ();
-
-			backend.ModuleManager.Lock ();
-
-			foreach (Module module in modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				foreach (SourceFile source in module.Sources)
-					source_hash.Add (source.ID, source);
-			}
-
-			int pos = 0;
-			SourceFile[] retval = new SourceFile [indices.Length];
-
-			foreach (int index in indices) {
-				SourceFile source = (SourceFile) source_hash [index];
-				if (source == null)
-					throw new ScriptingException ("No such source file: {0}", index);
-
-				retval [pos++] = source;
-			}
-
-			backend.ModuleManager.UnLock ();
-
-			return retval;
-		}
-
-		public void ShowModules ()
-		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
-			}
-
-			for (int i = 0; i < modules.Length; i++) {
-				Module module = modules [i];
-
-				if (!module.HasDebuggingInfo)
-					continue;
-
-				Print ("{0,4} {1}{2}{3}{4}{5}", i, module.Name,
-				       module.IsLoaded ? " loaded" : "",
-				       module.SymbolsLoaded ? " symbols" : "",
-				       module.StepInto ? " step" : "",
-				       module.LoadSymbols ? "" :  " ignore");
-			}
-		}
-
-		void module_operation (Module module, ModuleOperation[] operations)
-		{
-			foreach (ModuleOperation operation in operations) {
-				switch (operation) {
-				case ModuleOperation.Ignore:
-					module.LoadSymbols = false;
-					break;
-				case ModuleOperation.UnIgnore:
-					module.LoadSymbols = true;
-					break;
-				case ModuleOperation.Step:
-					module.StepInto = true;
-					break;
-				case ModuleOperation.DontStep:
-					module.StepInto = false;
-					break;
-				default:
-					throw new InternalError ();
-				}
-			}
-		}
-
-		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
-		{
-			backend.ModuleManager.Lock ();
-
-			foreach (Module module in modules)
-				module_operation (module, operations);
-
-			backend.ModuleManager.UnLock ();
-			backend.SymbolTableManager.Wait ();
-		}
-
-		public void ShowSources (Module module)
-		{
-			if (!module.SymbolsLoaded)
-				return;
-
-			Print ("Sources for module {0}:", module.Name);
-
-			foreach (SourceFile source in module.Sources)
-				Print ("  {0}", source);
-		}
-
-		public void ShowMethods (SourceFile source)
-		{
-			Print ("Methods from {0}:", source);
-			foreach (SourceMethod method in source.Methods)
-				Print ("  {0}", method);
-		}
-
-		void process_exited (ProcessHandle process)
-		{
-			procs.Remove (process);
-			if (process == current_process)
-				current_process = null;
-		}
-
-		void add_process (ProcessHandle process)
-		{
-			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-			procs.Add (process.Process, process);
-		}
-
-		void target_exited ()
-		{
-			if (backend != null)
-				backend.Dispose ();
-			backend = null;
-		}
-
-		public void Save (string filename)
-		{
-			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
-			BinaryFormatter formatter = new BinaryFormatter (null, context);
-
-			using (FileStream stream = new FileStream (filename, FileMode.Create)) {
-				formatter.Serialize (stream, backend);
-			}
-		}
-
-		public ProcessHandle GetProcess (int number)
-		{
-			if (number == -1)
-				return CurrentProcess;
-
-			foreach (ProcessHandle proc in Processes)
-				if (proc.ID == number)
-					return proc;
-
-			throw new ScriptingException ("No such process: {0}", number);
-		}
-
-		public ProcessHandle[] GetProcesses (int[] indices)
-		{
-			ProcessHandle[] retval = new ProcessHandle [indices.Length];
-
-			for (int i = 0; i < indices.Length; i++)
-				retval [i] = GetProcess (indices [i]);
-
-			return retval;
-		}
-
-		public void ShowThreadGroups ()
-		{
-			foreach (ThreadGroup group in ThreadGroup.ThreadGroups) {
-				StringBuilder ids = new StringBuilder ();
-				foreach (int thread in group.Threads) {
-					ids.Append (" @");
-					ids.Append (thread);
-				}
-				Print ("{0}:{1}", group.Name, ids.ToString ());
-			}
-		}
-
-		public void CreateThreadGroup (string name)
-		{
-			if (ThreadGroup.ThreadGroupExists (name))
-				throw new ScriptingException ("A thread group with that name already exists.");
-
-			ThreadGroup.CreateThreadGroup (name);
-		}
-
-		public ThreadGroup GetThreadGroup (string name, bool writable)
-		{
-			if (!ThreadGroup.ThreadGroupExists (name))
-				throw new ScriptingException ("No such thread group.");
-
-			ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
-
-			if (writable && group.IsSystem)
-				throw new ScriptingException ("Cannot modify system-created thread group.");
-
-			return group;
-		}
-
-		public void AddToThreadGroup (string name, ProcessHandle[] threads)
-		{
-			ThreadGroup group = GetThreadGroup (name, true);
-
-			foreach (ProcessHandle process in threads)
-				group.AddThread (process.Process.ID);
-		}
-
-		public void RemoveFromThreadGroup (string name, ProcessHandle[] threads)
-		{
-			ThreadGroup group = GetThreadGroup (name, true);
-	
-			foreach (ProcessHandle process in threads)
-				group.RemoveThread (process.Process.ID);
-		}
-
-		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
-					     SourceLocation location)
-		{
-			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
-
-			BreakpointHandle handle = location.InsertBreakpoint (
-				thread.Process, breakpoint);
-			if (handle == null)
-				throw new ScriptingException ("Could not insert breakpoint.");
-
-			breakpoints.Add (breakpoint.Index, handle);
-
-			return breakpoint.Index;
-		}
-
-		public SourceLocation FindLocation (string file, int line)
-		{
-			string path = GetFullPath (file);
-			SourceLocation location = backend.FindLocation (path, line);
-
-			if (location != null)
-				return location;
-			else
-				throw new ScriptingException ("No method contains the specified file/line.");
-		}
-
-		public SourceLocation FindMethod (string name)
-		{
-			SourceLocation location = backend.FindMethod (name);
-
-			if (location != null)
-				return location;
-			else
-				throw new ScriptingException ("No such method.");
-		}
-
 		public void AddMethodSearchResult (SourceMethod[] methods)
 		{
-			Print ("More than one method matches your query:");
+			interpreter.Print ("More than one method matches your query:");
 			foreach (SourceMethod method in methods) {
-				Print ("{0,4}  {1}", method_search_results.Count + 1, method.Name);
+				interpreter.Print ("{0,4}  {1}", method_search_results.Count + 1, method.Name);
 				method_search_results.Add (method);
 			}
 		}
@@ -1247,7 +740,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				start = last_line;
 			} else {
 				string filename = location.SourceFile.FileName;
-				ISourceBuffer buffer = backend.SourceFileFactory.FindFile (filename);
+				ISourceBuffer buffer = interpreter.FindFile (filename);
 				if (buffer == null)
 					throw new ScriptingException (
 						"Cannot find source file `{0}'", filename);
@@ -1259,13 +752,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			last_line = Math.Min (start + 5, current_source_code.Length);
 
 			for (int line = start; line < last_line; line++)
-				Print (String.Format ("{0,4} {1}", line, current_source_code [line]));
-		}
-
-		public void Kill ()
-		{
-			if (backend != null)
-				backend.ThreadManager.Kill ();
+				interpreter.Print (String.Format ("{0,4} {1}", line, current_source_code [line]));
 		}
 	}
 }

@@ -1,5 +1,14 @@
 2004-04-14  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Interpreter.cs (Interpreter): New abstract
+	base class.  Moved most of the functionality from ScriptingContext
+	here.	
+
+	* frontends/scripting/ScriptingContext.cs (ScriptingContext): This
+	is now a real "context".
+
+2004-04-14  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Engine.cs (Engine): New public class.
 
 	* frontends/scripting/Generator.cs: Renamed to Engine.cs

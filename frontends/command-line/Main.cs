@@ -45,40 +45,32 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
-	public class CommandLineInterpreter : InputProvider
+	public class CommandLineInterpreter : Interpreter, InputProvider
 	{
 		GnuReadLine readline = null;
-		ScriptingContext context;
-		DebuggerTextWriter writer;
 		Engine engine;
 		Parser parser;
 		string default_prompt, prompt;
 		int line = 0;
 
-		public CommandLineInterpreter (string[] args)
+		internal CommandLineInterpreter (DebuggerTextWriter command_out,
+						 DebuggerTextWriter inferior_out,
+						 bool is_synchronous, bool is_interactive,
+						 string[] args)
+			: base (command_out, inferior_out, is_synchronous, is_interactive,
+				args)
 		{
-			bool is_terminal = GnuReadLine.IsTerminal (0);
-
-			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (
-				writer, writer, true, is_terminal, args);
-
-			engine = new Engine (context);
+			engine = new Engine (GlobalContext);
 			parser = new Parser (engine, this);
 
-			if (is_terminal) {
-				prompt = default_prompt = context.Prompt + " ";
+			if (is_interactive) {
+				prompt = default_prompt = "$ ";
 				readline = new GnuReadLine ();
 			}
+		}
 
-			if (!context.HasBackend)
-				return;
-
-			try {
-				context.Run ();
-			} catch (TargetException e) {
-				Console.WriteLine ("Cannot start target: {0}", e.Message);
-			}
+		public Parser Parser {
+			get { return parser; }
 		}
 
 		public string ReadInput ()
@@ -114,24 +106,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public void Run ()
-		{
-			parser.Run ();
-		}
-
-		public void Exit ()
-		{
-			context.Exit ();
-			Environment.Exit (context.ExitCode);
-		}
-
 		public static void Main (string[] args)
 		{
-			CommandLineInterpreter interpreter = new CommandLineInterpreter (args);
+			ConsoleTextWriter writer = new ConsoleTextWriter ();
+
+			bool is_terminal = GnuReadLine.IsTerminal (0);
+
+			CommandLineInterpreter interpreter = new CommandLineInterpreter (
+				writer, writer, true, is_terminal, args);
 
 			Console.WriteLine ("Mono debugger");
 			try {
-				interpreter.Run ();
+				interpreter.Parser.Run ();
 			} catch (Exception ex) {
 				Console.WriteLine ("EX: {0}", ex);
 			} finally {
