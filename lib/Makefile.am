@@ -1,5 +1,10 @@
-noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ \
-		 Interpreter.exe SymbolFileReader.exe
+bin_SCRIPTS = Interpreter.exe @GUI_TARGETS@ mdb mono-debug 
+
+assdir = $(libdir)
+
+ass_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll 
+
+noinst_SCRIPTS = SymbolFileReader.exe
 
 EXTRA_SCRIPTS = Debugger.exe
 
@@ -98,3 +103,10 @@ config_DATA = Debugger.exe.config Interpreter.exe.config
 
 CLEANFILES = *.exe *.dll
 
+mdb: mdb.in
+	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
+	&& mv mdb.tmp mdb 
+
+mono-debug: mono-debug.in
+	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mono-debug.in > mono-debug.tmp \
+	&& mv mono-debug.tmp mono-debug 
