@@ -607,8 +607,6 @@ namespace Mono.Debugger.Languages.CSharp
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
-				Console.WriteLine ("TEST: {0} {1}", this, address);
-
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
 					reader.assembly, args);

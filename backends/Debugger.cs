@@ -40,6 +40,9 @@ namespace Mono.Debugger
 		StackFrame[] current_backtrace;
 		IMethod current_method;
 
+		bool step_line;
+		bool next_line;
+		bool must_send_update;
 		bool native;
 
 		public DebuggerBackend (SourceFileFactory source_factory)
@@ -170,8 +173,22 @@ namespace Mono.Debugger
 
 		void target_state_changed (TargetState new_state, int arg)
 		{
-			if (new_state == TargetState.STOPPED)
-				frame_changed ();
+			if (new_state == TargetState.STOPPED) {
+				if (busy) {
+					busy = false;
+					return;
+				}
+					
+				if (!frame_changed ())
+					return;
+			}
+
+			if (new_state == TargetState.BUSY) {
+				busy = true;
+				return;
+			}
+
+			busy = false;
 
 			if (StateChanged != null)
 				StateChanged (new_state, arg);
@@ -327,7 +344,6 @@ namespace Mono.Debugger
 
 		void load_core (string core_file, string[] argv)
 		{
-			Console.WriteLine ("CORE: {0} {1}", argv [0], core_file);
 			inferior = new CoreFileElfI386 (argv [0], core_file, source_factory);
 
 			symtabs = new SymbolTableCollection ();
@@ -416,6 +432,7 @@ namespace Mono.Debugger
 		public void StepLine ()
 		{
 			check_can_run ();
+			step_line = true;
 			inferior.Step (get_step_frame ());
 		}
 
@@ -428,6 +445,7 @@ namespace Mono.Debugger
 				return;
 			}
 
+			next_line = true;
 			inferior.Step (new StepFrame (
 				frame.Start, frame.End, null, StepMode.Finish));
 		}
@@ -555,16 +573,34 @@ namespace Mono.Debugger
 			return symtabs.Lookup (address);
 		}
 
-		void frame_changed ()
+		static bool in_frame_changed = false;
+
+		bool frame_changed ()
+		{
+			if (in_frame_changed)
+				throw new InternalError ();
+
+			in_frame_changed = true;
+			bool retval = do_frame_changed ();
+			in_frame_changed = false;
+			return retval;
+		}
+
+		bool do_frame_changed ()
 		{
 			IMethod old_method = current_method;
+			bool old_step_line = step_line;
+			bool old_next_line = next_line;
+
+			step_line = false;
+			next_line = false;
 
 			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, true);
 			TargetAddress address = frames [0].Address;
 
-			if ((current_frame != null) && current_frame.IsValid &&
+			if (!must_send_update && (current_frame != null) && current_frame.IsValid &&
 			    (current_frame.TargetAddress == address))
-				return;
+				return true;
 
 			frames_invalid ();
 
@@ -579,13 +615,25 @@ namespace Mono.Debugger
 
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
+
+				if ((old_step_line || old_next_line) &&
+				    (source.SourceOffset > 0) && (source.SourceRange > 0)) {
+					must_send_update = true;
+
+					inferior.Step (new StepFrame (
+						address - source.SourceOffset,
+						address + source.SourceRange, language,
+						old_next_line ? StepMode.Finish : StepMode.StepFrame));
+					return false;
+				}
+
 				current_frame = new StackFrame (
 					inferior, address, frames [0], source, current_method);
 			} else
 				current_frame = new StackFrame (
 					inferior, address, frames [0]);
 
-			if (current_method != old_method) {
+			if (must_send_update || (current_method != old_method)) {
 				if (current_method != null) {
 					if (MethodChangedEvent != null)
 						MethodChangedEvent (current_method);
@@ -595,8 +643,12 @@ namespace Mono.Debugger
 				}
 			}
 
+			must_send_update = false;
+
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (current_frame);
+
+			return true;
 		}
 
 		public SourceFileFactory SourceFileFactory {

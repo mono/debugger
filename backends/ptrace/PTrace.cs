@@ -204,7 +204,7 @@ namespace Mono.Debugger.Backends
 			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
 			pending_callbacks.Add (number, async);
 
-			TargetState old_state = change_target_state (TargetState.RUNNING);
+			TargetState old_state = change_target_state (TargetState.BUSY);
 			try {
 				check_error (mono_debugger_server_call_method (
 					server_handle, method.Address, method_argument, number));
