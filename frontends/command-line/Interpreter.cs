@@ -153,36 +153,36 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case "c":
 			case "continue":
-				backend.Continue ();
+				backend.CurrentProcess.Continue ();
 				last_command = command;
 				break;
 
 			case "i":
 			case "stepi":
-				backend.StepInstruction ();
+				backend.CurrentProcess.StepInstruction ();
 				last_command = command;
 				break;
 
 			case "t":
 			case "nexti":
-				backend.NextInstruction ();
+				backend.CurrentProcess.NextInstruction ();
 				last_command = command;
 				break;
 
 			case "s":
 			case "step":
-				backend.StepLine ();
+				backend.CurrentProcess.StepLine ();
 				last_command = command;
 				break;
 
 			case "n":
 			case "next":
-				backend.NextLine ();
+				backend.CurrentProcess.NextLine ();
 				last_command = command;
 				break;
 
 			case "finish":
-				backend.Finish ();
+				backend.CurrentProcess.Finish ();
 				break;
 
 			case "f":
@@ -290,11 +290,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 
 			case "clear-signal":
-				backend.ClearSignal ();
+				backend.CurrentProcess.ClearSignal ();
 				break;
 
 			case "stop":
-				backend.Stop ();
+				backend.CurrentProcess.Stop ();
 				break;
 
 			case "sleep":

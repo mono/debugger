@@ -14,6 +14,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		DebuggerBackend backend;
 		ScriptingContext context;
+		Process process;
 
 		static int next_id = 0;
 		int id;
@@ -99,10 +100,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Step (WhichStepCommand which)
 		{
 			if (which == WhichStepCommand.Run) {
-				if (SSE != null)
+				if (process != null)
 					throw new ScriptingException ("Process @{0} already running.", id);
-			} else if (SSE == null)
-				throw new ScriptingException ("Process @{0} not running.", id);
+			} else {
+				if (process == null)
+					throw new ScriptingException ("Process @{0} not running.", id);
+				else if (!process.CanRun)
+					throw new ScriptingException ("Process @{0} cannot be executed.", id);
+				else if (!process.IsStopped)
+					throw new ScriptingException ("Process @{0} is not stopped.", id);
+			}
 
 			running = true;
 
@@ -111,19 +118,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Run ();
 				break;
 			case WhichStepCommand.Continue:
-				SSE.Continue ();
+				process.Continue ();
 				break;
 			case WhichStepCommand.Step:
-				SSE.StepLine ();
+				process.StepLine ();
 				break;
 			case WhichStepCommand.Next:
-				SSE.NextLine ();
+				process.NextLine ();
 				break;
 			case WhichStepCommand.StepInstruction:
-				SSE.StepInstruction ();
+				process.StepInstruction ();
 				break;
 			case WhichStepCommand.NextInstruction:
-				SSE.NextInstruction ();
+				process.NextInstruction ();
 				break;
 			default:
 				throw new Exception ();
@@ -198,12 +205,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Run ()
 		{
 			backend.Run ();
-		}
-
-		public SingleSteppingEngine SSE {
-			get {
-				return backend.SingleSteppingEngine;
-			}
+			process = backend.CurrentProcess;
 		}
 
 		public override string ToString ()

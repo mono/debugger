@@ -365,56 +365,56 @@ namespace Mono.Debugger.GUI
 			if (!backend.HasTarget)
 				backend.Run ();
 			else
-				backend.Continue ();
+				backend.CurrentProcess.Continue ();
 		}
 
 		void OnContinueIgnoreSignalActivate (object sender, EventArgs args)
 		{
-			backend.ClearSignal ();
+			backend.CurrentProcess.ClearSignal ();
 			OnRunProgramActivate (sender, args);
 		}
 
 		void OnStopProgramActivate (object sender, EventArgs args)
 		{
-			backend.Stop ();
+			backend.CurrentProcess.Stop ();
 		}
 
 		void OnRestartProgramActivate (object sender, EventArgs args)
 		{
-			backend.Stop ();
+			backend.CurrentProcess.Stop ();
 			backend.Run ();
 		}
 
 		void OnStepIntoActivate (object sender, EventArgs args)
 		{
-			if (backend.State == TargetState.STOPPED){
+			if (backend.CurrentProcess.CanStep){
 				Console.WriteLine ("State: " + backend.State);
-				backend.StepLine ();
+				backend.CurrentProcess.StepLine ();
 			}
 		}
 
 		void OnStepOverActivate (object sender, EventArgs args)
 		{
-			if (backend.State == TargetState.STOPPED)
-				backend.NextLine ();
+			if (backend.CurrentProcess.CanStep)
+				backend.CurrentProcess.NextLine ();
 		}
 
 		void OnStepOutActivate (object sender, EventArgs args)
 		{
-			if (backend.State == TargetState.STOPPED)
-				backend.Finish ();
+			if (backend.CurrentProcess.CanStep)
+				backend.CurrentProcess.Finish ();
 		}
 
 		void OnInstructionStepIntoActivate (object sender, EventArgs args)
 		{
-			if (backend.State == TargetState.STOPPED)
-				backend.StepInstruction ();
+			if (backend.CurrentProcess.CanStep)
+				backend.CurrentProcess.StepInstruction ();
 		}
 
 		void OnInstructionStepOverActivate (object sender, EventArgs args)
 		{
-			if (backend.State == TargetState.STOPPED)
-				backend.NextInstruction ();
+			if (backend.CurrentProcess.CanStep)
+				backend.CurrentProcess.NextInstruction ();
 		}
 		
 		void OnAboutActivate (object sender, EventArgs args)

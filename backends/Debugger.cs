@@ -34,6 +34,7 @@ namespace Mono.Debugger
 		SingleSteppingEngine sse;
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
+		Process process;
 
 		string[] argv;
 		string[] envp;
@@ -154,6 +155,18 @@ namespace Mono.Debugger
 			}
 		}
 
+		// <remarks>
+		//   This is a temporary solution during the DebuggerBackend -> Process migration.
+		// </remarks>
+		public Process CurrentProcess {
+			get {
+				if (process == null)
+					throw new NoTargetException ();
+
+				return process;
+			}
+		}
+
 		// <summary>
 		//   If true, load the target's native symbol table.  You need to enable this
 		//   to debug native C applications, but you can safely disable it if you just
@@ -256,6 +269,7 @@ namespace Mono.Debugger
 
 			sse = null;
 			core = null;
+			process = null;
 
 			frames_invalid ();	
 			if (FramesInvalidEvent != null)
@@ -396,6 +410,8 @@ namespace Mono.Debugger
 			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+
+			process = new Process (this, sse, inferior);
 		}
 
 		void method_invalid ()
@@ -526,91 +542,6 @@ namespace Mono.Debugger
 				}
 				return true;
 			}
-		}
-
-		public void StepInstruction ()
-		{
-			if (!check_can_run ())
-				return;
-			
-			sse.StepInstruction ();
-		}
-
-		public void NextInstruction ()
-		{
-			if (!check_can_run ())
-				return;
-			
-			sse.NextInstruction ();
-		}
-
-		public void StepLine ()
-		{
-			if (!check_can_run ())
-				return;
-			
-			sse.StepLine ();
-		}
-
-		public void NextLine ()
-		{
-			if (!check_can_run ())
-				return;
-			
-			sse.NextLine ();
-		}
-
-		public void Continue ()
-		{
-			if (!check_can_run ())
-				return;
-			
-			sse.Continue ();
-		}
-
-		public void Continue (TargetAddress until)
-		{
-			if (!check_can_run ())
-				return;
-			
-			TargetAddress current = CurrentFrameAddress;
-
-			Console.WriteLine (String.Format ("Requested to run from {0:x} until {1:x}.",
-							  current, until));
-
-			while (current < until)
-				current += inferior.Disassembler.GetInstructionSize (current);
-
-			if (current != until)
-				Console.WriteLine (String.Format (
-					"Oooops: reached {0:x} but symfile had {1:x}",
-					current, until));
-
-			sse.Continue (until);
-		}
-
-		public void Stop ()
-		{
-			if (!check_inferior ())
-				return;
-			
-			inferior.Stop ();
-		}
-
-		public void ClearSignal ()
-		{
-			if (!check_inferior ())
-				return;
-			
-			inferior.SetSignal (0);
-		}
-
-		public void Finish ()
-		{
-			if (!check_can_run ())
-				return;
-			
-			sse.Finish ();
 		}
 
 		SourceMethodInfo FindMethod (string name)
