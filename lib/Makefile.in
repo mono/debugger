@@ -1,7 +1,7 @@
 MCS=mcs
 DESTDIR=
 
-all: linux
+all: Makefile linux
 
 linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe Interpreter.exe
 
@@ -71,7 +71,9 @@ Interpreter.exe: $(INTERPRETER_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.
 	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SOURCES) $(MCS_FLAGS)
 
 clean:
-	rm -f *.exe
+	rm -f *.exe *.dll
 
 install: all
 
+Makefile: @top_srcdir@/config.status Makefile.in
+	cd @top_srcdir@ && CONFIG_FILES=lib/Makefile CONFIG_HEADERS= ./config.status

@@ -1,3 +1,8 @@
+2003-01-10  Peter Williams  <peterw@ximian.com>
+
+	* lib/Makefile.in (clean): Remove *.dll on make clean as well as *.exe.
+	Also add a rule to regenerate Makefile if Makefile.in changes.
+
 2003-01-08  Peter Williams  <peterw@ximian.com>
 
 	* frontends/scripting/Makefile.in: Make the jay rule not clobber Parser.cs
