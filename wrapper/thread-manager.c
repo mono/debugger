@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <string.h>
 
-static gpointer thread_manager_start_cond;
-static gpointer thread_manager_cond;
-static gpointer thread_manager_finished_cond;
-static gpointer thread_manager_thread_started_cond;
+static sem_t thread_manager_start_cond;
+static sem_t thread_manager_cond;
+static sem_t thread_manager_finished_cond;
+static sem_t thread_manager_thread_started_cond;
 static CRITICAL_SECTION thread_manager_start_mutex;
 static CRITICAL_SECTION thread_manager_finished_mutex;
 static CRITICAL_SECTION thread_manager_mutex;
@@ -31,7 +31,7 @@ mono_debugger_thread_manager_main (void)
 	while (TRUE) {
 		/* Wait for an event. */
 		IO_LAYER (LeaveCriticalSection) (&thread_manager_mutex);
-		mono_debugger_wait_cond (thread_manager_cond);
+		mono_debugger_wait_cond (&thread_manager_cond);
 		IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
 
 		/*
@@ -42,7 +42,7 @@ mono_debugger_thread_manager_main (void)
 		 */
 		notification_function (0, NULL);
 
-		IO_LAYER (ReleaseSemaphore) (thread_manager_finished_cond, 1, NULL);
+		sem_post (&thread_manager_finished_cond);
 	}
 }
 
@@ -90,10 +90,10 @@ mono_debugger_thread_manager_init (void)
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_mutex);
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_finished_mutex);
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_start_mutex);
-	thread_manager_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	thread_manager_start_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	thread_manager_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	thread_manager_thread_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	sem_init (&thread_manager_cond, 0, 0);
+	sem_init (&thread_manager_start_cond, 0, 0);
+	sem_init (&thread_manager_finished_cond, 0, 0);
+	sem_init (&thread_manager_thread_started_cond, 0, 0);
 
 	if (!thread_array)
 		thread_array = g_ptr_array_new ();
@@ -115,10 +115,10 @@ signal_thread_manager (guint32 command, guint32 tid, gpointer data)
 	MONO_DEBUGGER__thread_manager_notify_command = command;
 	MONO_DEBUGGER__thread_manager_notify_tid = tid;
 	MONO_DEBUGGER__thread_manager_notify_data = data;
-	IO_LAYER (ReleaseSemaphore) (thread_manager_cond, 1, NULL);
+	sem_post (&thread_manager_cond);
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_mutex);
 
-	mono_debugger_wait_cond (thread_manager_finished_cond);
+	mono_debugger_wait_cond (&thread_manager_finished_cond);
 	MONO_DEBUGGER__thread_manager_notify_command = 0;
 	MONO_DEBUGGER__thread_manager_notify_tid = 0;
 	MONO_DEBUGGER__thread_manager_notify_data = NULL;
@@ -140,7 +140,7 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 
 	signal_thread_manager (THREAD_MANAGER_CREATE_THREAD, thread->pid, thread);
 
-	IO_LAYER (ReleaseSemaphore) (thread_manager_thread_started_cond, 1, NULL);
+	sem_post (&thread_manager_thread_started_cond);
 
 	mono_debugger_thread_manager_thread_created (thread);
 
@@ -170,7 +170,7 @@ mono_debugger_thread_manager_start_resume (guint32 tid)
 void
 mono_debugger_thread_manager_end_resume (guint32 tid)
 {
-	mono_debugger_wait_cond (thread_manager_thread_started_cond);
+	mono_debugger_wait_cond (&thread_manager_thread_started_cond);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 	g_assert (last_tid == tid);

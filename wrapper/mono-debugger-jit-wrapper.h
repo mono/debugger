@@ -2,6 +2,7 @@
 #define __MONO_DEBUGGER_JIT_WRAPPER_H 1
 
 #include <mono/metadata/mono-debug-debugger.h>
+#include <semaphore.h>
 
 G_BEGIN_DECLS
 
@@ -51,7 +52,7 @@ enum {
 
 int mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp);
 
-void mono_debugger_wait_cond (gpointer cond);
+void mono_debugger_wait_cond (sem_t *cond);
 void mono_debugger_thread_manager_init (void);
 void mono_debugger_thread_manager_main (void);
 void mono_debugger_thread_manager_add_thread (guint32 thread, gpointer stack_start, gpointer func);

@@ -5,17 +5,18 @@
 #include <mono/metadata/mono-debug.h>
 #define IN_MONO_DEBUGGER
 #include <mono/private/libgc-mono-debugger.h>
+#include <semaphore.h>
 #include <unistd.h>
 #include <locale.h>
 
-static gpointer debugger_thread_cond;
-static gpointer debugger_started_cond;
-static gpointer main_started_cond;
-static gpointer command_started_cond;
-static gpointer command_ready_cond;
-static gpointer main_ready_cond;
+static sem_t debugger_thread_cond;
+static sem_t debugger_started_cond;
+static sem_t main_started_cond;
+static sem_t command_started_cond;
+static sem_t command_ready_cond;
+static sem_t main_ready_cond;
 
-static gpointer debugger_finished_cond;
+static sem_t debugger_finished_cond;
 
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
@@ -59,15 +60,15 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 };
 
 void
-mono_debugger_wait_cond (gpointer cond)
+mono_debugger_wait_cond (sem_t *cond)
 {
-	g_assert (IO_LAYER (WaitForSingleObject) (cond, INFINITE) == WAIT_OBJECT_0);
+	sem_wait (cond);
 }
 
 static void
 mono_debugger_wait (void)
 {
-	mono_debugger_wait_cond (debugger_finished_cond);
+	mono_debugger_wait_cond (&debugger_finished_cond);
 }
 
 static void
@@ -76,7 +77,7 @@ mono_debugger_signal (void)
 	mono_debugger_lock ();
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
-		IO_LAYER (ReleaseSemaphore) (debugger_thread_cond, 1, NULL);
+		sem_post (&debugger_thread_cond);
 	}
 	mono_debugger_unlock ();
 }
@@ -146,14 +147,14 @@ static MonoThreadCallbacks thread_callbacks = {
 static void
 initialize_debugger_support (void)
 {
-	debugger_thread_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	debugger_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	main_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	command_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	command_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	main_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	sem_init (&debugger_thread_cond, 0, 0);
+	sem_init (&debugger_started_cond, 0, 0);
+	sem_init (&main_started_cond, 0, 0);
+	sem_init (&command_started_cond, 0, 0);
+	sem_init (&command_ready_cond, 0, 0);
+	sem_init (&main_ready_cond, 0, 0);
 
-	debugger_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	sem_init (&debugger_finished_cond, 0, 0);
 
 	debugger_notification_function = mono_debugger_create_notification_function
 		(&debugger_notification_address);
@@ -205,7 +206,7 @@ debugger_thread_handler (gpointer user_data)
 	/*
 	 * Signal the main thread that we're ready.
 	 */
-	IO_LAYER (ReleaseSemaphore) (debugger_started_cond, 1, NULL);
+	sem_post (&debugger_started_cond);
 
 	/*
 	 * This mutex is locked by the parent thread until the debugger actually
@@ -216,7 +217,7 @@ debugger_thread_handler (gpointer user_data)
 	while (TRUE) {
 		/* Wait for an event. */
 		mono_debugger_unlock ();
-		mono_debugger_wait_cond (debugger_thread_cond);
+		mono_debugger_wait_cond (&debugger_thread_cond);
 		mono_debugger_lock ();
 
 		/*
@@ -232,7 +233,7 @@ debugger_thread_handler (gpointer user_data)
 		debugger_event_arg = 0;
 
 		if (must_send_finished) {
-			IO_LAYER (ReleaseSemaphore) (debugger_finished_cond, 1, NULL);
+			sem_post (&debugger_finished_cond);
 			must_send_finished = FALSE;
 		}
 	}
@@ -254,12 +255,12 @@ main_thread_handler (gpointer user_data)
 
 	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__main_thread);
 
-	IO_LAYER (ReleaseSemaphore) (main_started_cond, 1, NULL);
+	sem_post (&main_started_cond);
 
 	/*
 	 * Wait until everything is ready.
 	 */
-	mono_debugger_wait_cond (main_ready_cond);
+	mono_debugger_wait_cond (&main_ready_cond);
 
 	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
 
@@ -270,12 +271,12 @@ static guint32
 command_thread_handler (gpointer user_data)
 {
 	MONO_DEBUGGER__command_thread = getpid ();
-	IO_LAYER (ReleaseSemaphore) (command_started_cond, 1, NULL);
+	sem_post (&command_started_cond);
 
 	/*
 	 * Wait until everything is ready.
 	 */
-	mono_debugger_wait_cond (command_ready_cond);
+	mono_debugger_wait_cond (&command_ready_cond);
 
 	/*
 	 * This call will never return.
@@ -302,7 +303,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 * Start the debugger thread and wait until it's ready.
 	 */
 	mono_thread_create (domain, debugger_thread_handler, &debugger_args);
-	mono_debugger_wait_cond (debugger_started_cond);
+	mono_debugger_wait_cond (&debugger_started_cond);
 
 	/*
 	 * Start the main thread and wait until it's ready.
@@ -314,14 +315,14 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	main_args.argv = argv + 2;
 
 	mono_thread_create (domain, main_thread_handler, &main_args);
-	mono_debugger_wait_cond (main_started_cond);
+	mono_debugger_wait_cond (&main_started_cond);
 
 	/*
 	 * Create the command thread and wait until it's ready.
 	 */
 
 	mono_thread_create (domain, command_thread_handler, NULL);
-	mono_debugger_wait_cond (command_started_cond);
+	mono_debugger_wait_cond (&command_started_cond);
 
 	/*
 	 * Initialize the thread manager.
@@ -343,8 +344,8 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * Signal the main thread that it can execute the managed Main().
 	 */
-	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
-	IO_LAYER (ReleaseSemaphore) (command_ready_cond, 1, NULL);
+	sem_post (&main_ready_cond);
+	sem_post (&command_ready_cond);
 
 	mono_debugger_thread_manager_main ();
 

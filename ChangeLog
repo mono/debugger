@@ -1,3 +1,9 @@
+2003-06-13  Martin Baulig  <martin@ximian.com>
+
+	* wrapper/wrapper.c: Use POSIX semaphores instead of the mono
+	io-layer.  For some reason, using the mono io-layer doesn't work
+	on all systems.
+
 2003-06-10  Martin Baulig  <martin@ximian.com>
 
 	* arch/opcodes/: Imported from binutils 2.13.2.
