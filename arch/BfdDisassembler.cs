@@ -26,15 +26,23 @@ namespace Mono.Debugger.Architecture
 		[DllImport("monodebuggerserver")]
 		extern static void bfd_glue_free_disassembler (IntPtr info);
 
+		ReadMemoryHandler read_handler;
+		OutputHandler output_handler;
+		PrintAddressHandler print_handler;
+
 		internal BfdDisassembler (ITargetMemoryAccess memory, IntPtr dis, IntPtr info)
 		{
 			this.dis = dis;
 			this.info = info;
 			this.memory = memory;
 
-			bfd_glue_setup_disassembler (info, new ReadMemoryHandler (read_memory_func),
-						     new OutputHandler (output_func),
-						     new PrintAddressHandler (print_address_func));
+			read_handler = new ReadMemoryHandler (read_memory_func);
+			output_handler = new OutputHandler (output_func);
+			print_handler = new PrintAddressHandler (print_address_func);
+
+
+			bfd_glue_setup_disassembler (info, read_handler, output_handler,
+						     print_handler);
 		}
 
 		private delegate int ReadMemoryHandler (long address, IntPtr data, int size);

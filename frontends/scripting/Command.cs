@@ -169,7 +169,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected enum Format {
 			Default = 0,
 			Object,
-			Current
+			Current,
+			Address
 		};
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -188,6 +189,11 @@ namespace Mono.Debugger.Frontends.Scripting
 				case "c":
 				case "current":
 					format = Format.Current;
+					break;
+
+				case "a":
+				case "address":
+					format = Format.Address;
 					break;
 
 				default:
@@ -228,23 +234,32 @@ namespace Mono.Debugger.Frontends.Scripting
 						 Expression expression, Format format)
 		{
 			switch (format) {
-			case Format.Default:
+			case Format.Default: {
 				object retval = expression.Evaluate (context);
 				context.PrintObject (retval);
 				break;
+			}
 
-			case Format.Object:
+			case Format.Object: {
 				ITargetObject obj = expression.EvaluateVariable (context);
 				context.PrintObject (obj);
 				break;
+			}
 
-			case Format.Current:
-				obj = expression.EvaluateVariable (context);
+			case Format.Current: {
+				ITargetObject obj = expression.EvaluateVariable (context);
 				ITargetClassObject cobj = obj as ITargetClassObject;
 				if (cobj != null)
 					obj = cobj.CurrentObject;
 				context.PrintObject (obj);
 				break;
+			}
+
+			case Format.Address: {
+				ITargetObject obj = expression.EvaluateVariable (context);
+				context.Print (obj.Location.ReadAddress ());
+				break;
+			}
 
 			default:
 				throw new InvalidOperationException ();

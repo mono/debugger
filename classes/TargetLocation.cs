@@ -150,6 +150,24 @@ namespace Mono.Debugger.Languages
 			TargetAccess.WriteAddress (Address, address);
 		}
 
+		public virtual TargetAddress ReadAddress ()
+		{
+			if (HasAddress)
+				return Address;
+
+			byte[] data = ReadBuffer (TargetAccess.TargetAddressSize);
+
+			long address;
+			if (TargetAccess.TargetAddressSize == 4)
+				address = BitConverter.ToInt32 (data, 0);
+			else if (TargetAccess.TargetAddressSize == 8)
+				address = BitConverter.ToInt64 (data, 0);
+			else
+				throw new InternalError ();
+
+			return new TargetAddress (TargetAccess.AddressDomain, address);
+		}
+
 		public ITargetAccess TargetAccess {
 			get {
 				return frame.TargetAccess;

@@ -1,3 +1,15 @@
+2004-09-07  Martin Baulig  <martin@ximian.com>
+
+	* arch/BfdDisassembler.cs: Store the delegates in a class field
+	before passing them to native code, so they're not garbage
+	collected.
+
+	* classes/TargetLocation.cs (TargetLocation.ReadAddress): New
+	public method.
+
+	* frontends/scripting/Command.cs (PrintCommand.Format): Added
+	`Address' format ("/a", "/address").
+
 2004-09-02  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
