@@ -57,6 +57,7 @@ namespace Mono.Debugger.GUI {
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 		public event TargetExitedHandler TargetExitedEvent;
+		public event StateChangedHandler StateChangedEvent;
 
 		SourceList CreateSourceView (string filename, string contents)
 		{
@@ -138,10 +139,20 @@ namespace Mono.Debugger.GUI {
 				FramesInvalidEvent ();
 		}
 
+		protected override void StateChanged (TargetState state, int arg)
+		{
+			if (StateChangedEvent != null)
+				StateChangedEvent (state, arg);
+
+			base.StateChanged (state, arg);
+		}
+
 		protected override void TargetExited ()
 		{
 			if (TargetExitedEvent != null)
 				TargetExitedEvent ();
+
+			base.TargetExited ();
 		}
 
 		void MethodInvalid ()

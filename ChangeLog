@@ -1,5 +1,13 @@
 2003-01-12  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerGUI.cs: Make the "Program to Debug" menu
+	item work again.
+
+	* frontends/gui/debugger.glade: Removed the "File / Open" and
+	"Debug / Restart" menu items.
+
+2003-01-12  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerWidget.cs: Removed all the method stuff;
 	we only need it in the SourceManager.
 

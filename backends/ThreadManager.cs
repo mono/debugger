@@ -70,6 +70,7 @@ namespace Mono.Debugger
 			if (tdebug.IsNull || thread_handles.IsNull ||
 			    thread_handles_num.IsNull || last_thread_event.IsNull) {
 				Console.WriteLine ("No thread support.");
+				OnInitializedEvent (main_process);
 				return false;
 			}
 

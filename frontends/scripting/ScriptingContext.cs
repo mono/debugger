@@ -45,7 +45,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (pid > 0)
 				process.SingleSteppingEngine.Attach (pid, true);
 			else
-				process.SingleSteppingEngine.Run (false, true);
+				process.SingleSteppingEngine.Run (!context.IsSynchronous, true);
 			initialize ();
 			process_events ();
 		}
@@ -665,7 +665,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public ProcessStart ProcessStart {
 			get { return start; }
-			set { start = value; }
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -752,12 +751,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public ProcessHandle Start (string[] args)
+		public Process Start (string[] args)
 		{
 			return Start (args, -1);
 		}
 
-		public ProcessHandle Start (string[] args, int pid)
+		public Process Start (string[] args, int pid)
 		{
 			if (args.Length == 0)
 				throw new ScriptingException ("No program specified.");
@@ -781,7 +780,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			procs.Add (current_process);
 
-			return current_process;
+			return process;
 		}
 
 		public string GetFullPath (string filename)

@@ -12,6 +12,7 @@ void
 hello (const char *message, int a)
 {
 	printf ("%s\n", message);
+	sleep (5);
 	crashing_here (NULL);
 }
 

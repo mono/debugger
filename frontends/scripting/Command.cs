@@ -159,6 +159,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
+			if (!context.IsSynchronous)
+				throw new ScriptingException ("This command cannot be used in the GUI.");
 			context.Start (args, pid);
 		}
 	}

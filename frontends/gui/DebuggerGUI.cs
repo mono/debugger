@@ -106,6 +106,7 @@ namespace Mono.Debugger.GUI
 
 		DebuggerBackend backend;
 		Interpreter interpreter;
+		ScriptingContext context;
 		Process process;
 
 		SourceManager source_manager;
@@ -123,11 +124,13 @@ namespace Mono.Debugger.GUI
 
 			SetupGUI ();
 
+			interpreter = new Interpreter (backend, command_writer, output_writer);
+			context = interpreter.Context;
+
+			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (main_process_started);
+
 			if (arguments.Length > 0)
 				LoadProgram (arguments);
-
-			interpreter = new Interpreter (backend, command_writer, output_writer);
-			interpreter.Context.ProcessStart = start;
 		}
 
 		internal ThreadNotify ThreadNotify {
@@ -205,7 +208,7 @@ namespace Mono.Debugger.GUI
 					"run-button", "run-program-menu",
 					"program-to-debug-menu"
 				},
-				TargetState.EXITED, TargetState.NO_TARGET);
+				TargetState.NO_TARGET);
 
 			// I considered adding "register-notebook", but it looks
 			// ugly.
@@ -256,11 +259,13 @@ namespace Mono.Debugger.GUI
 		
 		void StateSensitivityUpdate (TargetState state)
 		{
-			// Console.WriteLine ("New state: " + state);
-			return;
-			
-			foreach (Widget w in all_state_widgets)
-				w.Sensitive = state_widgets_map [(int)state].Contains (w);
+			foreach (Widget w in all_state_widgets) {
+				ArrayList map = (ArrayList) state_widgets_map [(int)state];
+				if (map == null)
+					w.Sensitive = false;
+				else
+					w.Sensitive = map.Contains (w);
+			}
 		}
 			
 		//
@@ -279,21 +284,9 @@ namespace Mono.Debugger.GUI
 				//Console.WriteLine ("env: " + env[i]);
 				i++;
 			}
-			
-			if (args [0] == "core") {
-				string [] temp_args = new string [args.Length-1];
-				if (args.Length > 1)
-					Array.Copy (args, 1, temp_args, 0, args.Length-1);
-				args = temp_args;
 
-				start = ProcessStart.Create (null, args, env);
-				process = backend.ReadCoreFile (start, "thecore");
-			} else {
-				start = ProcessStart.Create (null, args, env);
-				process = backend.Run (start);
-				process.SingleSteppingEngine.Run (true, true);
-				SetProcess (process);
-			}
+			process = context.Start (args);
+			start = context.ProcessStart;
 
 			//
 			// FIXME: chdir here to working_dir
@@ -307,11 +300,9 @@ namespace Mono.Debugger.GUI
 			hex_editor.SetProcess (process);
 			breakpoint_manager.SetProcess (process);
 #endif
-			
-			process.StateChanged += new StateChangedHandler (BackendStateChanged);
 		}
 
-		void SetProcess (Process process)
+		void main_process_started (ThreadManager manager, Process process)
 		{
 			process.TargetOutput += new TargetOutputHandler (TargetOutput);
 			process.TargetError += new TargetOutputHandler (TargetError);
@@ -326,19 +317,15 @@ namespace Mono.Debugger.GUI
 			module_display.SetProcess (process);
 			memory_maps_display.SetProcess (process);
 			process_manager.SetProcess (process);
+
+			source_manager.StateChangedEvent += new StateChangedHandler (UpdateGUIState);
+
+			StateSensitivityUpdate (TargetState.STOPPED);
 		}
 
-		void UpdateGUIState (TargetState state)
+		void UpdateGUIState (TargetState state, int arg)
 		{
 			StateSensitivityUpdate (state);
-		}
-		
-		//
-		// Callbacks from the backend
-		//
-		void BackendStateChanged (TargetState state, int arg)
-		{
-			UpdateGUIState (state);
 		}
 		
 		//
@@ -347,14 +334,12 @@ namespace Mono.Debugger.GUI
 		ProgramToDebug program_to_debug;
 		void OnProgramToDebugActivate (object sender, EventArgs a)
 		{
-#if FALSE
-			string program = backend.TargetApplication;
-			string arg_string = String.Join (" ", backend.CommandLineArguments);
+			string program, arg_string;
 			
 			if (program_to_debug == null)
 				program_to_debug = new ProgramToDebug (gxml, "", null);
 
-			if (!program_to_debug.RunDialog (ref program, ref arg_string, ref working_dir))
+			if (!program_to_debug.RunDialog (out program, out arg_string, ref working_dir))
 				return;
 
 			ArrayList list = new ArrayList ();
@@ -365,33 +350,8 @@ namespace Mono.Debugger.GUI
 			list.CopyTo (argsv);
 
 			LoadProgram (argsv);
-#endif
 		}
 
-		FileSelection fs_window;
-
-		void OnFileSelectionOK (object sender, EventArgs args)
-		{
-			fs_window.Hide ();
-		}
-
-		void OnFileSelectionCancel (object sender, EventArgs args)
-		{
-			fs_window.Hide ();
-		}
-			
-		void OnOpenActivate (object sender, EventArgs args)
-		{
-			if (fs_window == null){
-				fs_window = new FileSelection ("Open File");
-				
-				fs_window.OkButton.Clicked += new EventHandler (OnFileSelectionOK);
-				fs_window.CancelButton.Clicked += new EventHandler (OnFileSelectionCancel);
-			}
-
-			fs_window.ShowAll ();
-		}
-		
 		void OnQuitActivate (object sender, EventArgs args)
 		{
 			if (backend != null) {
@@ -427,13 +387,6 @@ namespace Mono.Debugger.GUI
 		{
 			if (process != null)
 				process.Stop ();
-		}
-
-		void OnRestartProgramActivate (object sender, EventArgs args)
-		{
-			if (process != null)
-				process.Stop ();
-			// backend.Run ();
 		}
 
 		void OnStepIntoActivate (object sender, EventArgs args)

@@ -19,11 +19,12 @@ class ProgramToDebug {
 		arguments = (Gtk.Entry) gxml ["arguments-entry"];
 	}
 
-	public bool RunDialog (ref string res_program, ref string res_args, ref string res_working_dir)
+	public bool RunDialog (out string res_program, out string res_args, ref string res_working_dir)
 	{
 		res_program = null;
 		res_args = null;
-		res_working_dir = ".";
+
+		working_dir.Text = res_working_dir;
 
 		int v = d.Run ();
 
