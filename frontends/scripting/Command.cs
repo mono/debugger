@@ -195,25 +195,25 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[ShortDescription("Selects the user interface")]
-	public class UserInterfaceCommand : DebuggerCommand
+	[ShortDescription("Selects the output stype")]
+	public class StyleCommand : DebuggerCommand
 	{
-		UserInterface ui;
+		Style style;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Argument != "")
-				ui = context.Interpreter.GetUserInterface (Argument);
+				style = context.Interpreter.GetStyle (Argument);
 			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			if (ui != null)
-				context.Interpreter.UI = ui;
+			if (style != null)
+				context.Interpreter.Style = style;
 			else
-				context.Print ("Current user interface: {0}",
-					       context.Interpreter.UI.Name);
+				context.Print ("Current style interface: {0}",
+					       context.Interpreter.Style.Name);
 		}
 	}
 
@@ -269,7 +269,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = ResolveFrame (context);
 
-			context.Interpreter.UI.PrintFrame (context, frame);
+			context.Interpreter.Style.PrintFrame (context, frame);
 		}
 	}
 
@@ -473,7 +473,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex++;
-			context.Interpreter.UI.PrintFrame (context, process.CurrentFrame);
+			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
 		}
 	}
 
@@ -485,7 +485,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex--;
-			context.Interpreter.UI.PrintFrame (context, process.CurrentFrame);
+			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
 		}
 	}
 

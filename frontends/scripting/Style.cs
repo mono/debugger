@@ -16,7 +16,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	///   user, for instance the current stack frame or variables from
 	///   the target.
 	/// </summary>
-	public interface UserInterface
+	public interface Style
 	{
 		string Name {
 			get;
@@ -42,9 +42,9 @@ namespace Mono.Debugger.Frontends.Scripting
 		string FormatType (ITargetType type);
 	}
 
-	public class UserInterfaceMono : UserInterfaceNative
+	public class StyleMono : StyleNative
 	{
-		public UserInterfaceMono (Interpreter interpreter)
+		public StyleMono (Interpreter interpreter)
 			: base (interpreter)
 		{ }
 
@@ -60,9 +60,9 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class UserInterfaceNative : UserInterfaceBase, UserInterface
+	public class StyleNative : StyleBase, Style
 	{
-		public UserInterfaceNative (Interpreter interpreter)
+		public StyleNative (Interpreter interpreter)
 			: base (interpreter)
 		{ }
 
@@ -346,9 +346,9 @@ namespace Mono.Debugger.Frontends.Scripting
 	/// Ignore this `user interface' - I need it to debug the debugger.
 	///
 
-	public class UserInterfaceMartin : UserInterfaceBase, UserInterface
+	public class StyleMartin : StyleBase, Style
 	{
-		public UserInterfaceMartin (Interpreter interpreter)
+		public StyleMartin (Interpreter interpreter)
 			: base (interpreter)
 		{ }
 
@@ -356,7 +356,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return "martin"; }
 		}
 
-		bool UserInterface.IsNative {
+		bool Style.IsNative {
 			get { return true; }
 			set { ; }
 		}
@@ -463,11 +463,11 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public abstract class UserInterfaceBase
+	public abstract class StyleBase
 	{
 		Interpreter interpreter;
 
-		protected UserInterfaceBase (Interpreter interpreter)
+		protected StyleBase (Interpreter interpreter)
 		{
 			this.interpreter = interpreter;
 		}

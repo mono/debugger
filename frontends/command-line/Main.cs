@@ -80,7 +80,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("print", typeof (PrintCommand));
 			e.Register ("p", typeof (PrintCommand));
 			e.Register ("ptype", typeof (PrintTypeCommand));
-			e.Register ("mode", typeof (UserInterfaceCommand));
+			e.Register ("style", typeof (StyleCommand));
 			e.Register ("examine", typeof (ExamineCommand));
 			e.Register ("x", typeof (ExamineCommand));
 			e.Register ("frame", typeof (PrintFrameCommand));

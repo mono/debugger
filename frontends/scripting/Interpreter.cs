@@ -58,7 +58,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		Hashtable procs;
 		Hashtable breakpoints;
 		Hashtable user_interfaces;
-		UserInterface current_user_interface;
+		Style current_user_interface;
 
 		DebuggerTextWriter command_output;
 		DebuggerTextWriter inferior_output;
@@ -89,10 +89,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			breakpoints = new Hashtable ();
 
 			user_interfaces = new Hashtable ();
-			user_interfaces.Add ("mono", new UserInterfaceMono (this));
-			user_interfaces.Add ("native", new UserInterfaceNative (this));
-			user_interfaces.Add ("martin", new UserInterfaceMartin (this));
-			current_user_interface = (UserInterface) user_interfaces ["mono"];
+			user_interfaces.Add ("mono", new StyleMono (this));
+			user_interfaces.Add ("native", new StyleNative (this));
+			user_interfaces.Add ("martin", new StyleMartin (this));
+			current_user_interface = (Style) user_interfaces ["mono"];
 
 			context = new ScriptingContext (this, is_interactive, true);
 
@@ -143,7 +143,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return start; }
 		}
 
-		public UserInterface UI {
+		public Style Style {
 			get { return current_user_interface; }
 			set {
 				current_user_interface = value;
@@ -151,14 +151,14 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		public UserInterface GetUserInterface (string name)
+		public Style GetStyle (string name)
 		{
-			UserInterface ui = (UserInterface) user_interfaces [name];
-			if (ui == null)
+			Style style = (Style) user_interfaces [name];
+			if (style == null)
 				throw new ScriptingException (
 					"No such user interface: `{0}'", name);
 
-			return ui;
+			return style;
 		}
 
 		public DebuggerBackend DebuggerBackend {

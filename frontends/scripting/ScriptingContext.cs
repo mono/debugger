@@ -147,7 +147,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			IVariable[] param_vars = frame.Method.Parameters;
 			foreach (IVariable var in param_vars)
-				context.Interpreter.UI.PrintVariable (var, frame);
+				context.Interpreter.Style.PrintVariable (var, frame);
 		}
 
 		public void ShowLocals (ScriptingContext context)
@@ -157,7 +157,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			IVariable[] local_vars = frame.Locals;
 			foreach (IVariable var in local_vars)
-				context.Interpreter.UI.PrintVariable (var, frame);
+				context.Interpreter.Style.PrintVariable (var, frame);
 		}
 
 		public IVariable GetVariableInfo (string identifier, bool report_errors)
@@ -272,7 +272,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					StackFrame frame = process.CurrentFrame;
 					current_frame = new FrameHandle (this, frame);
 					interpreter.Print ("{0} stopped at {1}.", Name, frame);
-					interpreter.UI.PrintFrame (
+					interpreter.Style.PrintFrame (
 						interpreter.GlobalContext, current_frame);
 				}
 			}
@@ -344,7 +344,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				else
 					interpreter.Print ("{0} stopped{1}.", Name, frame);
 
-				interpreter.UI.TargetStopped (
+				interpreter.Style.TargetStopped (
 					interpreter.GlobalContext, current_frame, current_insn);
 
 				if (!interpreter.IsInteractive)
@@ -391,23 +391,23 @@ namespace Mono.Debugger.Frontends.Scripting
 				ok = process.Continue (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Step:
-				interpreter.UI.IsNative = false;
+				interpreter.Style.IsNative = false;
 				ok = process.StepLine (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Next:
-				interpreter.UI.IsNative = false;
+				interpreter.Style.IsNative = false;
 				ok = process.NextLine (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.StepInstruction:
-				interpreter.UI.IsNative = true;
+				interpreter.Style.IsNative = true;
 				ok = process.StepInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.StepNativeInstruction:
-				interpreter.UI.IsNative = true;
+				interpreter.Style.IsNative = true;
 				ok = process.StepNativeInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.NextInstruction:
-				interpreter.UI.IsNative = true;
+				interpreter.Style.IsNative = true;
 				ok = process.NextInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Finish:
@@ -710,7 +710,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			string formatted;
 			try {
-				formatted = interpreter.UI.FormatObject (obj);
+				formatted = interpreter.Style.FormatObject (obj);
 			} catch {
 				formatted = "<cannot display object>";
 			}
@@ -721,7 +721,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			string formatted;
 			try {
-				formatted = interpreter.UI.FormatType (type);
+				formatted = interpreter.Style.FormatType (type);
 			} catch (Exception ex) {
 				Console.WriteLine ("EX: {0}", ex);
 				formatted = "<cannot display type>";
