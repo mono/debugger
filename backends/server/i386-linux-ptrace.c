@@ -1,11 +1,11 @@
-static ServerCommandError
-server_get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
+ServerCommandError
+_mono_debugger_server_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
-	if (ptrace (PT_GETREGS, handle->pid, NULL, regs) != 0) {
+	if (ptrace (PT_GETREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
 	}
@@ -13,14 +13,14 @@ server_get_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 	return COMMAND_ERROR_NONE;
 }
 
-static ServerCommandError
-server_set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
+ServerCommandError
+_mono_debugger_server_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
-	if (ptrace (PT_SETREGS, handle->pid, NULL, regs) != 0) {
+	if (ptrace (PT_SETREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
 	}
@@ -28,14 +28,14 @@ server_set_registers (InferiorHandle *handle, INFERIOR_REGS_TYPE *regs)
 	return COMMAND_ERROR_NONE;
 }
 
-static ServerCommandError
-server_get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
+ServerCommandError
+_mono_debugger_server_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
 {
-	if (ptrace (PT_GETFPREGS, handle->pid, NULL, regs) != 0) {
+	if (ptrace (PT_GETFPREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
 	}
@@ -43,14 +43,14 @@ server_get_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 	return COMMAND_ERROR_NONE;
 }
 
-static ServerCommandError
-server_set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
+ServerCommandError
+_mono_debugger_server_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
 {
-	if (ptrace (PT_SETFPREGS, handle->pid, NULL, regs) != 0) {
+	if (ptrace (PT_SETFPREGS, inferior->pid, NULL, regs) != 0) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
 	}
@@ -58,15 +58,15 @@ server_set_fp_registers (InferiorHandle *handle, INFERIOR_FPREGS_TYPE *regs)
 	return COMMAND_ERROR_NONE;
 }
 
-static ServerCommandError
-server_ptrace_read_data (InferiorHandle *handle, ArchInfo *arch, guint64 start,
-			 guint32 size, gpointer buffer)
+ServerCommandError
+mono_debugger_server_read_memory (ServerHandle *handle, guint64 start,
+				  guint32 size, gpointer buffer)
 {
 	guint8 *ptr = buffer;
 	guint32 old_size = size;
 
 	while (size) {
-		int ret = pread64 (handle->mem_fd, ptr, size, start);
+		int ret = pread64 (handle->inferior->mem_fd, ptr, size, start);
 		if (ret < 0) {
 			if (errno == EINTR)
 				continue;
@@ -81,13 +81,13 @@ server_ptrace_read_data (InferiorHandle *handle, ArchInfo *arch, guint64 start,
 		ptr += ret;
 	}
 
-	i386_arch_remove_breakpoints_from_target_memory (handle, arch, start, old_size, buffer);
+	i386_arch_remove_breakpoints_from_target_memory (handle, start, old_size, buffer);
 
 	return COMMAND_ERROR_NONE;
 }
 
-static ServerCommandError
-server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
+ServerCommandError
+_mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 {
 	errno = 0;
 	ptrace (PTRACE_POKEUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]), value);
@@ -99,18 +99,18 @@ server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 	return COMMAND_ERROR_NONE;
 }
 
-static int
-server_do_wait (InferiorHandle *handle)
+int
+_mono_debugger_server_wait (InferiorHandle *inferior)
 {
 	int ret, status = 0, signo = 0;
 
  again:
-	if (!handle->is_thread)
-		check_io (handle);
+	if (!inferior->is_thread)
+		check_io (inferior);
 	/* Check whether the target changed its state in the meantime. */
-	ret = waitpid (handle->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
+	ret = waitpid (inferior->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
 	if (ret < 0) {
-		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
+		g_warning (G_STRLOC ": Can't waitpid (%d): %s", inferior->pid, g_strerror (errno));
 		status = -1;
 		goto out;
 	} else if (ret) {
@@ -134,12 +134,12 @@ server_do_wait (InferiorHandle *handle)
 	return status;
 }
 
-static void
-server_setup_inferior (InferiorHandle *handle, ArchInfo *arch)
+void
+_mono_debugger_server_setup_inferior (InferiorHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
 
-	server_do_wait (handle);
+	_mono_debugger_server_wait (handle);
 
 	handle->mem_fd = open64 (filename, O_RDONLY);
 
@@ -148,14 +148,16 @@ server_setup_inferior (InferiorHandle *handle, ArchInfo *arch)
 
 	g_free (filename);
 
-	if (server_get_registers (handle, &arch->current_regs) != COMMAND_ERROR_NONE)
+#if 0
+	if (server_get_registers (handle, &handle->arch->current_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get registers");
-	if (server_get_fp_registers (handle, &arch->current_fpregs) != COMMAND_ERROR_NONE)
+	if (server_get_fp_registers (handle, &handle->arch->current_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get fp registers");
+#endif
 }
 
-static ServerCommandError
-server_ptrace_get_signal_info (InferiorHandle *handle, ArchInfo *arch, SignalInfo *sinfo)
+ServerCommandError
+mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 {
 	sinfo->sigkill = SIGKILL;
 	sinfo->sigstop = SIGSTOP;

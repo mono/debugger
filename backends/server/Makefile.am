@@ -5,14 +5,15 @@ lib_LTLIBRARIES = libmonodebuggerserver.la
 EXTRA_libmonodebuggerserver_la_SOURCES = \
 	i386-linux-ptrace.c		\
 	i386-linux-ptrace.h		\
-	i386-freebsd-ptrace.c		\
-	i386-freebsd-ptrace.h		\
+	i386-win32.c			\
+	i386-win32.h			\
 	i386-arch.c			\
 	i386-arch.h			\
 	i386-ptrace.c
 
 libmonodebuggerserver_la_SOURCES = \
-	library.c		\
+	i386-arch.c		\
+	i386-ptrace.c		\
 	server.h		\
 	breakpoints.c		\
 	breakpoints.h		\

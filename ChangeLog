@@ -1,3 +1,13 @@
+2003-12-25  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/: Removed the `InferiorInfo' vtable; call the
+	functions directly.
+
+	* backends/server/library.c: Removed.
+
+	* backends/server/i386-ptrace.c: Call functions
+	`mono_debugger_server_*' and make them public.	
+
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
 	* classes/GnuReadLine.cs: Check whether readline is supported and

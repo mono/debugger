@@ -108,7 +108,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_finalize (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, out IntPtr data);
+		static extern CommandError mono_debugger_server_read_memory (IntPtr handle, long start, int size, IntPtr data);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_write_memory (IntPtr handle, IntPtr data, long start, int size);
@@ -706,14 +706,14 @@ namespace Mono.Debugger.Backends
 
 		IntPtr read_buffer (TargetAddress address, int size)
 		{
-			IntPtr data;
+			IntPtr data = Marshal.AllocHGlobal (size);
 			CommandError result = mono_debugger_server_read_memory (
-				server_handle, address.Address, size, out data);
+				server_handle, address.Address, size, data);
 			if (result == CommandError.MemoryAccess) {
-				g_free (data);
+				Marshal.FreeHGlobal (data);
 				throw new TargetMemoryException (address, size);
 			} else if (result != CommandError.None) {
-				g_free (data);
+				Marshal.FreeHGlobal (data);
 				handle_error (result);
 				throw new Exception ("Internal error: this line will never be reached");
 			}
@@ -732,7 +732,7 @@ namespace Mono.Debugger.Backends
 				Marshal.Copy (data, retval, 0, size);
 				return retval;
 			} finally {
-				g_free (data);
+				Marshal.FreeHGlobal (data);
 			}
 		}
 
@@ -744,7 +744,7 @@ namespace Mono.Debugger.Backends
 				data = read_buffer (address, 1);
 				return Marshal.ReadByte (data);
 			} finally {
-				g_free (data);
+				Marshal.FreeHGlobal (data);
 			}
 		}
 
@@ -756,7 +756,7 @@ namespace Mono.Debugger.Backends
 				data = read_buffer (address, 4);
 				return Marshal.ReadInt32 (data);
 			} finally {
-				g_free (data);
+				Marshal.FreeHGlobal (data);
 			}
 		}
 
@@ -768,7 +768,7 @@ namespace Mono.Debugger.Backends
 				data = read_buffer (address, 8);
 				return Marshal.ReadInt64 (data);
 			} finally {
-				g_free (data);
+				Marshal.FreeHGlobal (data);
 			}
 		}
 

@@ -38,28 +38,23 @@ typedef enum {
 	STOP_ACTION_CALLBACK
 } ChildStoppedAction;
 
-struct ArchInfo
-{
-	int last_signal;
-	long call_address;
-	guint64 callback_argument;
-	INFERIOR_REGS_TYPE current_regs;
-	INFERIOR_FPREGS_TYPE current_fpregs;
-	INFERIOR_REGS_TYPE *saved_regs;
-	INFERIOR_FPREGS_TYPE *saved_fpregs;
-	GPtrArray *rti_stack;
-	unsigned dr_control, dr_status;
-};
-
-static ArchInfo *
+ArchInfo *
 i386_arch_initialize (void);
 
-static void
+void
 i386_arch_finalize (ArchInfo *arch);
 
-static ChildStoppedAction
-i386_arch_child_stopped (InferiorHandle *, ArchInfo *arch, int, guint64 *, guint64 *, guint64 *);
+void
+i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 start,
+						 guint32 size, gpointer buffer);
 
+ServerCommandError
+i386_arch_get_frame (ServerHandle *handle, guint32 eip,
+		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame);
+
+ChildStoppedAction
+i386_arch_child_stopped (ServerHandle *handle, int stopsig,
+			 guint64 *callback_arg, guint64 *retval, guint64 *retval2);
 
 /* Debug registers' indices.  */
 #define DR_NADDR		4  /* the number of debug address registers */
@@ -99,35 +94,35 @@ i386_arch_child_stopped (InferiorHandle *, ArchInfo *arch, int, guint64 *, guint
 
 /* The I'th debug register is vacant if its Local and Global Enable
    bits are reset in the Debug Control register.  */
-#define I386_DR_VACANT(handle,i) \
-  ((handle->dr_control & (3 << (DR_ENABLE_SIZE * (i)))) == 0)
+#define I386_DR_VACANT(arch,i) \
+  ((arch->dr_control & (3 << (DR_ENABLE_SIZE * (i)))) == 0)
 
 /* Locally enable the break/watchpoint in the I'th debug register.  */
-#define I386_DR_LOCAL_ENABLE(handle,i) \
-  handle->dr_control |= (1 << (DR_LOCAL_ENABLE_SHIFT + DR_ENABLE_SIZE * (i)))
+#define I386_DR_LOCAL_ENABLE(arch,i) \
+  arch->dr_control |= (1 << (DR_LOCAL_ENABLE_SHIFT + DR_ENABLE_SIZE * (i)))
 
 /* Globally enable the break/watchpoint in the I'th debug register.  */
-#define I386_DR_GLOBAL_ENABLE(handle,i) \
-  handle->dr_control |= (1 << (DR_GLOBAL_ENABLE_SHIFT + DR_ENABLE_SIZE * (i)))
+#define I386_DR_GLOBAL_ENABLE(arch,i) \
+  arch->dr_control |= (1 << (DR_GLOBAL_ENABLE_SHIFT + DR_ENABLE_SIZE * (i)))
 
 /* Disable the break/watchpoint in the I'th debug register.  */
-#define I386_DR_DISABLE(handle,i) \
-  handle->dr_control &= ~(3 << (DR_ENABLE_SIZE * (i)))
+#define I386_DR_DISABLE(arch,i) \
+  arch->dr_control &= ~(3 << (DR_ENABLE_SIZE * (i)))
 
 /* Set in DR7 the RW and LEN fields for the I'th debug register.  */
-#define I386_DR_SET_RW_LEN(handle,i,rwlen) \
+#define I386_DR_SET_RW_LEN(arch,i,rwlen) \
   do { \
-    handle->dr_control &= ~(0x0f << (DR_CONTROL_SHIFT+DR_CONTROL_SIZE*(i)));   \
-    handle->dr_control |= ((rwlen) << (DR_CONTROL_SHIFT+DR_CONTROL_SIZE*(i))); \
+    arch->dr_control &= ~(0x0f << (DR_CONTROL_SHIFT+DR_CONTROL_SIZE*(i)));   \
+    arch->dr_control |= ((rwlen) << (DR_CONTROL_SHIFT+DR_CONTROL_SIZE*(i))); \
   } while (0)
 
 /* Get from DR7 the RW and LEN fields for the I'th debug register.  */
-#define I386_DR_GET_RW_LEN(handle,i) \
-  ((handle->dr_control >> (DR_CONTROL_SHIFT + DR_CONTROL_SIZE * (i))) & 0x0f)
+#define I386_DR_GET_RW_LEN(arch,i) \
+  ((arch->dr_control >> (DR_CONTROL_SHIFT + DR_CONTROL_SIZE * (i))) & 0x0f)
 
 /* Did the watchpoint whose address is in the I'th register break?  */
-#define I386_DR_WATCH_HIT(handle,i) \
-  (handle->dr_status & (1 << (i)))
+#define I386_DR_WATCH_HIT(arch,i) \
+  (arch->dr_status & (1 << (i)))
 
 G_END_DECLS
 
