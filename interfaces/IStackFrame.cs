@@ -36,16 +36,12 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Returns an ITargetLocation which can be used to access a local
-		//   variable at offset @offset.
+		//   Returns an ITargetMemoryAccess which can be used to access the frame's
+		//   parameters and local variables.
 		// </summary>
-		ITargetLocation GetLocalVariableLocation (long offset);
-
-		// <summary>
-		//   Returns an ITargetLocation which can be used to access a method
-		//   parameter at offset @offset.
-		// </summary>
-		ITargetLocation GetParameterLocation (long offset);
+		ITargetMemoryAccess TargetMemoryAccess {
+			get;
+		}
 
 		// <summary>
 		//   This event is emitted when the frame becomes invalid.

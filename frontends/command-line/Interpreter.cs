@@ -154,34 +154,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 			}
 
-			case "local": {
-				if (args.Length != 1) {
-					stderr.WriteLine ("Command requires an argument");
-					break;
-				}
-				int offset = Int32.Parse (args [0]);
-				IStackFrame frame = backend.CurrentFrame;
-				ITargetLocation location = frame.GetLocalVariableLocation (offset);
-				Console.WriteLine ("TEST: {0} {1}", location, location.Address);
-				int value = backend.TargetMemoryAccess.ReadInteger (location.Address);
-				Console.WriteLine ("VALUE: {0:x}", value);
-				break;
-			}
-
-			case "param": {
-				if (args.Length != 1) {
-					stderr.WriteLine ("Command requires an argument");
-					break;
-				}
-				int offset = Int32.Parse (args [0]);
-				IStackFrame frame = backend.CurrentFrame;
-				ITargetLocation location = frame.GetParameterLocation (offset);
-				Console.WriteLine ("TEST: {0} {1}", location, location.Address);
-				int value = backend.TargetMemoryAccess.ReadInteger (location.Address);
-				Console.WriteLine ("VALUE: {0:x}", value);
-				break;
-			}
-
 			case "frame":
 				Console.WriteLine ("CURRENT FRAME: {0}", backend.CurrentFrameAddress);
 				break;
@@ -194,8 +166,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				IVariable[] vars = backend.CurrentMethod.Parameters;
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("PARAM: {0}", var);
-					if (var.Location.IsValid)
-						Console.WriteLine ("VAR: {0}", var.MemoryReader);
+
+					ITargetObject obj = var.GetObject (backend.CurrentFrame);
+					Console.WriteLine ("VAR: {0}", obj);
+					if (obj.Location.IsValid)
+						Console.WriteLine ("DATA: {0}", obj.MemoryReader);
 				}
 				break;
 			}

@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	{
 		long offset;
 
-		protected bool is_valid;
+		protected bool is_valid = true;
 
 		protected TargetLocation (long offset)
 		{
@@ -41,8 +41,11 @@ namespace Mono.Debugger
 
 		public bool IsValid {
 			get {
+				if (!is_valid)
+					return false;
+
 				try {
-					return ReValidate ();
+					return GetIsValid ();
 				} catch {
 					return false;
 				}
@@ -52,7 +55,7 @@ namespace Mono.Debugger
 		protected abstract TargetAddress GetAddress ();
 		protected abstract object GetHandle ();
 
-		protected abstract bool ReValidate ();
+		protected abstract bool GetIsValid ();
 
 		public long Offset {
 			get {

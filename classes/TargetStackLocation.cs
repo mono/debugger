@@ -15,44 +15,25 @@ namespace Mono.Debugger
 		public TargetStackLocation (IDebuggerBackend backend, IStackFrame frame,
 					    bool is_local, long offset, TargetAddress start_scope,
 					    TargetAddress end_scope)
-			: this (backend, is_local, offset, start_scope, end_scope)
-		{
-			set_frame (frame);
-		}
-
-		public TargetStackLocation (IDebuggerBackend backend, bool is_local, long offset,
-					    TargetAddress start_scope, TargetAddress end_scope)
 			: base (offset)
 		{
 			this.backend = backend;
 			this.is_local = is_local;
 			this.start_scope = start_scope;
 			this.end_scope = end_scope;
+			this.frame = frame;
 
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
-		}
-
-		void set_frame (IStackFrame new_frame)
-		{
-			frame = new_frame;
-			frame.FrameInvalid += new StackFrameInvalidHandler (FramesInvalidEvent);
+			frame.FrameInvalid += new StackFrameInvalidHandler (FrameInvalidEvent);
 			iframe = frame.FrameHandle as IInferiorStackFrame;
 			if (iframe == null)
 				throw new InternalError ();
+
+			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FrameInvalidEvent);
 		}
 
-		void FramesInvalidEvent ()
+		void FrameInvalidEvent ()
 		{
 			is_valid = false;
-		}
-
-		void FrameChangedEvent (IStackFrame frame)
-		{
-			if (!is_valid)
-				return;
-			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress >= end_scope))
-				is_valid = false;
 		}
 
 		protected override object GetHandle ()
@@ -68,23 +49,12 @@ namespace Mono.Debugger
 				return new TargetAddress (frame, iframe.ParamsAddress.Address + Offset);
 		}
 
-		protected override bool ReValidate ()
+		protected override bool GetIsValid ()
 		{
-			if (!backend.HasTarget)
+			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress >= end_scope))
 				return false;
 
-			IStackFrame[] backtrace = backend.GetBacktrace ();
-
-			foreach (IStackFrame frame in backtrace) {
-				TargetAddress address = frame.TargetAddress;
-
-				if ((address >= start_scope) && (address < end_scope)) {
-					set_frame (frame);
-					return true;
-				}
-			}
-
-			return false;
+			return true;
 		}
 
 		public override object Clone ()

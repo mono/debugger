@@ -216,28 +216,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ITargetLocation GetLocalVariableLocation (long offset)
-		{
-			check_disposed ();
-
-			if ((method == null) || !method.HasMethodBounds)
-				throw new NoMethodException ();
-
-			return new TargetStackLocation (backend, this, true, offset,
-							method.MethodStartAddress,
-							method.MethodEndAddress);
-		}
-
-		public ITargetLocation GetParameterLocation (long offset)
-		{
-			check_disposed ();
-
-			if ((method == null) || !method.HasMethodBounds)
-				throw new NoMethodException ();
-
-			return new TargetStackLocation (backend, this, false, offset,
-							method.MethodStartAddress,
-							method.MethodEndAddress);
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get {
+				check_disposed ();
+				return inferior;
+			}
 		}
 
 		public event StackFrameInvalidHandler FrameInvalid;

@@ -3,7 +3,7 @@ using System;
 namespace Mono.Debugger
 {
 	// <summary>
-	//   This interface denotes a variable in the target application.
+	//   This interface provides information about a variable in the target application.
 	// </summary>
 	public interface IVariable
 	{
@@ -15,12 +15,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetLocation Location {
-			get;
-		}
-
-		ITargetMemoryReader MemoryReader {
-			get;
-		}
+		ITargetObject GetObject (IStackFrame frame);
 	}
 }

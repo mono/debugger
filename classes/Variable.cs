@@ -25,13 +25,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract ITargetLocation Location {
-			get;
-		}
-
-		public abstract ITargetMemoryReader MemoryReader {
-			get;
-		}
+		public abstract ITargetObject GetObject (IStackFrame frame);
 
 		public override string ToString ()
 		{

@@ -1,5 +1,13 @@
 2002-09-20  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IStackFrame.cs (IStackFrame.GetLocalVariableLocation): Removed.
+	(IStackFrame.GetParameterLocation): Removed.
+	(IStackFrame.TargetMemoryAccess): New property.
+
+	* interfaces/ITargetObject.cs: New interface.
+
+2002-09-20  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IInferior.cs (IInferiorStackFrame.Inferior): New property.
 
 	* interfaces/ITargetLocation.cs (ITargetLocation.ReValidate): Removed.

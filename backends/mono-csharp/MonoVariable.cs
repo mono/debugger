@@ -9,7 +9,6 @@ namespace Mono.Debugger.Languages.CSharp
 		VariableInfo info;
 		IDebuggerBackend backend;
 		TargetAddress start_scope, end_scope;
-		ITargetLocation location;
 		bool is_local;
 
 		public MonoVariable (IDebuggerBackend backend, string name, MonoType type,
@@ -28,31 +27,35 @@ namespace Mono.Debugger.Languages.CSharp
 				end_scope = method.StartAddress + info.EndScope;
 			else
 				end_scope = method.MethodEndAddress;
-
-			if (info.Mode == VariableInfo.AddressMode.Stack)
-				location = new TargetStackLocation (
-					backend, is_local, info.Offset, start_scope, end_scope);
 		}
 
-		public override ITargetLocation Location {
+		public IDebuggerBackend Backend {
 			get {
-				if (location == null)
-					throw new LocationInvalidException ();
-
-				return location;
+				return backend;
 			}
 		}
 
-		public override ITargetMemoryReader MemoryReader {
+		public VariableInfo VariableInfo {
 			get {
-				if (!Location.IsValid)
-					throw new LocationInvalidException ();
-
-				IStackFrame frame = (IStackFrame) Location.Handle;
-				IInferiorStackFrame iframe = (IInferiorStackFrame) frame.FrameHandle;
-
-				return iframe.Inferior.ReadMemory (Location.Address, Type.Size);
+				return info;
 			}
+		}
+
+		public TargetAddress StartScope {
+			get {
+				return start_scope;
+			}
+		}
+
+		public TargetAddress EndScope {
+			get {
+				return end_scope;
+			}
+		}
+
+		public override ITargetObject GetObject (IStackFrame frame)
+		{
+			return new MonoObject (frame, this, is_local);
 		}
 	}
 }
