@@ -75,6 +75,10 @@ namespace Mono.Debugger.Architecture
 
 		protected override void SymbolsChanged (bool loaded)
 		{
+			if (loaded)
+				OnSymbolsLoadedEvent ();
+			else
+				OnSymbolsUnLoadedEvent ();
 		}
 
 		protected override SourceInfo[] GetSources ()

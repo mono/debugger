@@ -176,7 +176,7 @@ namespace Mono.Debugger
 				symtabs.Lock ();
 
 				foreach (Module module in my_new_modules) {
-					if (!module.SymbolsLoaded)
+					if (!module.SymbolsLoaded || !module.LoadSymbols)
 						continue;
 
 					ISymbolTable symtab = module.SymbolTable;

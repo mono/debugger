@@ -41,11 +41,11 @@ namespace Mono.Debugger.Backends
 
 		void update_symtabs (object sender, ISymbolTable symbol_table)
 		{
-			Console.WriteLine ("SYMTAB CHANGED!");
 			disassembler.SymbolTable = symbol_table;
 			current_symtab = symbol_table;
 			if (State == TargetState.STOPPED) {
 				frames_invalid ();
+				current_method = null;
 				must_send_update = true;
 				frame_changed (inferior.CurrentFrame, 0);
 			}

@@ -196,6 +196,9 @@ namespace Mono.Debugger
 		internal void ReadModuleData ()
 		{
 			lock (this) {
+				if (!LoadSymbols)
+					return;
+
 				if (sources != null)
 					return;
 
