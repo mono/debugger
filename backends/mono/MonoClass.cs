@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 			: base (file, kind, type)
 		{
 			if (type.BaseType != null)
-				parent = file.MonoLanguage.LookupType (type.BaseType) as MonoClass;
+				parent = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClass;
 		}
 
 		public bool HasParent {
@@ -282,7 +282,7 @@ namespace Mono.Debugger.Languages.Mono
 				: base (klass, finfo, index, pos, finfo.IsStatic)
 			{
 				FieldInfo = finfo;
-				type = klass.File.MonoLanguage.LookupType (finfo.FieldType);
+				type = klass.File.MonoLanguage.LookupMonoType (finfo.FieldType);
 			}
 
 			public override MonoType Type {
@@ -355,7 +355,7 @@ namespace Mono.Debugger.Languages.Mono
 				: base (klass, pinfo, index, index, is_static)
 			{
 				PropertyInfo = pinfo;
-				type = klass.File.MonoLanguage.LookupType (pinfo.PropertyType);
+				type = klass.File.MonoLanguage.LookupMonoType (pinfo.PropertyType);
 
 				if (PropertyInfo.CanRead) {
 					R.MethodInfo getter = PropertyInfo.GetGetMethod (true);

@@ -243,6 +243,47 @@ namespace Mono.Debugger.Languages.Mono
 					      SymbolsLoaded, StepInto, LoadSymbols);
 		}
 
+
+		protected ArrayList SymbolRanges {
+			get { return ranges; }
+		}
+
+		public override ISymbolTable SymbolTable {
+			get { return symtab; }
+		}
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override ILanguage Language {
+			get { return MonoLanguage; }
+		}
+
+		internal override ILanguageBackend LanguageBackend {
+			get { return MonoLanguage; }
+		}
+
+		public override ISymbolFile SymbolFile {
+			get { return this; }
+		}
+
+		public override bool SymbolsLoaded {
+			get { return LoadSymbols; }
+		}
+
+		public SourceFile[] Sources {
+			get { return GetSources (); }
+		}
+
+		public override bool HasDebuggingInfo {
+			get { return File != null; }
+		}
+
+		public override ISimpleSymbolTable SimpleSymbolTable {
+			get { return this; }
+		}
+
 		internal void AddRangeEntry (ITargetMemoryReader reader, byte[] contents)
 		{
 			MethodRangeEntry range = MethodRangeEntry.Create (this, reader, contents);
@@ -258,13 +299,13 @@ namespace Mono.Debugger.Languages.Mono
 			else {
 				Type etype = C.MonoDebuggerSupport.ResolveType (Module, entry.Token);
 				Type atype = C.MonoDebuggerSupport.MakeArrayType (etype, entry.Rank);
-				MonoType type = LookupType (atype);
+				MonoType type = LookupMonoType (atype);
 
 				MonoLanguage.AddClass (entry.KlassAddress, type);
 			}
 		}
 
-		public MonoType LookupType (Type type)
+		public MonoType LookupMonoType (Type type)
 		{
 			MonoType result = (MonoType) type_hash [type];
 			if (result != null)
@@ -319,46 +360,6 @@ namespace Mono.Debugger.Languages.Mono
 				source_hash.Add (info, source);
 				source_file_hash.Add (source, info);
 			}
-		}
-
-		protected ArrayList SymbolRanges {
-			get { return ranges; }
-		}
-
-		public override ISymbolTable SymbolTable {
-			get { return symtab; }
-		}
-
-		public override string Name {
-			get { return name; }
-		}
-
-		public override ILanguage Language {
-			get { return MonoLanguage; }
-		}
-
-		internal override ILanguageBackend LanguageBackend {
-			get { return MonoLanguage; }
-		}
-
-		public override ISymbolFile SymbolFile {
-			get { return this; }
-		}
-
-		public override bool SymbolsLoaded {
-			get { return LoadSymbols; }
-		}
-
-		public SourceFile[] Sources {
-			get { return GetSources (); }
-		}
-
-		public override bool HasDebuggingInfo {
-			get { return File != null; }
-		}
-
-		public override ISimpleSymbolTable SimpleSymbolTable {
-			get { return this; }
 		}
 
 		public override TargetAddress SimpleLookup (string name)
@@ -594,7 +595,7 @@ namespace Mono.Debugger.Languages.Mono
 				for (int i = 0; i < param_info.Length; i++) {
 					Type type = param_info [i].ParameterType;
 
-					param_types [i] = file.MonoLanguage.LookupType (type);
+					param_types [i] = file.MonoLanguage.LookupMonoType (type);
 
 					parameters [i] = new MonoVariable (
 						file.backend, param_info [i].Name, param_types [i],
@@ -609,7 +610,7 @@ namespace Mono.Debugger.Languages.Mono
 					Type type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (
 						file.Assembly, local.Signature);
 
-					local_types [i] = file.MonoLanguage.LookupType (type);
+					local_types [i] = file.MonoLanguage.LookupMonoType (type);
 
 #if FIXME
 					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
@@ -634,7 +635,7 @@ namespace Mono.Debugger.Languages.Mono
 #endif
 				}
 
-				decl_type = (MonoClass) file.MonoLanguage.LookupType (rmethod.DeclaringType);
+				decl_type = (MonoClass) file.MonoLanguage.LookupMonoType (rmethod.DeclaringType);
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
@@ -718,38 +719,25 @@ namespace Mono.Debugger.Languages.Mono
 			string GetTypeSignature (Type t)
 			{
 				switch (Type.GetTypeCode (t)) {
-				case TypeCode.Char:
-					return "char";
-				case TypeCode.Boolean:
-					return "bool";
-				case TypeCode.Byte:
-					return "byte";
-				case TypeCode.SByte:
-					return "sbyte";
-				case TypeCode.Int16:
-					return "int16";
-				case TypeCode.UInt16:
-					return "uint16";
-				case TypeCode.Int32:
-					return "int";
-				case TypeCode.UInt32:
-					return "uint";
-				case TypeCode.Int64:
-					return "long";
-				case TypeCode.UInt64:
-					return "ulong";
-				case TypeCode.Single:
-					return "single";
-				case TypeCode.Double:
-					return "double";
-				case TypeCode.String:
-					return "string";
+				case TypeCode.Char:	return "char";
+				case TypeCode.Boolean:	return "bool";
+				case TypeCode.Byte:	return "byte";
+				case TypeCode.SByte:	return "sbyte";
+				case TypeCode.Int16:	return "int16";
+				case TypeCode.UInt16:	return "uint16";
+				case TypeCode.Int32:	return "int";
+				case TypeCode.UInt32:	return "uint";
+				case TypeCode.Int64:	return "long";
+				case TypeCode.UInt64:	return "ulong";
+				case TypeCode.Single:	return "single";
+				case TypeCode.Double:	return "double";
+				case TypeCode.String:	return "string";
 				case TypeCode.Object:
-				default:
-					return t.FullName;
+				default:		return t.FullName;
 				}
 			}
 
+#region load handlers for unjitted methods
 			public IDisposable RegisterLoadHandler (Process process,
 								MethodLoadedHandler handler,
 								object user_data)
@@ -837,6 +825,7 @@ namespace Mono.Debugger.Languages.Mono
 					Dispose (false);
 				}
 			}
+#endregion
 		}
 
 		protected class MonoMethodSource : MethodSource

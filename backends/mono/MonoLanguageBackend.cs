@@ -15,6 +15,10 @@ namespace Mono.Debugger.Languages.Mono
 	internal delegate void BreakpointHandler (Inferior inferior, TargetAddress address,
 						  object user_data);
 
+	// <summary>
+	//   This class is the managed representation of the MONO_DEBUGGER__debugger_info struct.
+	//   as defined in debugger/wrapper/mono-debugger-jit-wrapper.h
+	// </summary>
 	internal class MonoDebuggerInfo
 	{
 		public readonly TargetAddress GenericTrampolineCode;
@@ -35,23 +39,26 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
-			reader.Offset = reader.TargetLongIntegerSize +
-				2 * reader.TargetIntegerSize;
-			GenericTrampolineCode = reader.ReadGlobalAddress ();
-			SymbolTable = reader.ReadGlobalAddress ();
-			SymbolTableSize = reader.ReadInteger ();
-			CompileMethod = reader.ReadGlobalAddress ();
-			GetVirtualMethod = reader.ReadGlobalAddress ();
-			GetBoxedObjectMethod = reader.ReadGlobalAddress ();
-			InsertBreakpoint = reader.ReadGlobalAddress ();
-			RemoveBreakpoint = reader.ReadGlobalAddress ();
-			RuntimeInvoke = reader.ReadGlobalAddress ();
-			CreateString = reader.ReadGlobalAddress ();
+			/* skip past magic, version, and total_size */
+			reader.Offset = (reader.TargetLongIntegerSize +
+					 2 * reader.TargetIntegerSize);
+
+			GenericTrampolineCode   = reader.ReadGlobalAddress ();
+			SymbolTable             = reader.ReadGlobalAddress ();
+			SymbolTableSize         = reader.ReadInteger ();
+			CompileMethod           = reader.ReadGlobalAddress ();
+			GetVirtualMethod        = reader.ReadGlobalAddress ();
+			GetBoxedObjectMethod    = reader.ReadGlobalAddress ();
+			InsertBreakpoint        = reader.ReadGlobalAddress ();
+			RemoveBreakpoint        = reader.ReadGlobalAddress ();
+			RuntimeInvoke           = reader.ReadGlobalAddress ();
+			CreateString            = reader.ReadGlobalAddress ();
 			ClassGetStaticFieldData = reader.ReadGlobalAddress ();
-			LookupType = reader.ReadGlobalAddress ();
-			LookupAssembly = reader.ReadGlobalAddress ();
-			Heap = reader.ReadAddress ();
-			HeapSize = reader.ReadInteger ();
+			LookupType              = reader.ReadGlobalAddress ();
+			LookupAssembly          = reader.ReadGlobalAddress ();
+			Heap                    = reader.ReadAddress ();
+			HeapSize                = reader.ReadInteger ();
+
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
 
@@ -69,7 +76,6 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly MonoSymbolFile Corlib;
 		public readonly MonoObjectType ObjectType;
-		// public readonly MonoClass ValueType;
 		public readonly MonoFundamentalType ByteType;
 		public readonly MonoOpaqueType VoidType;
 		public readonly MonoFundamentalType BooleanType;
@@ -86,9 +92,6 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFundamentalType DoubleType;
 		public readonly MonoFundamentalType CharType;
 		public readonly MonoStringType StringType;
-		// public readonly MonoClass EnumType;
-		// public readonly MonoClass ArrayType;
-		// public readonly MonoClass ExceptionType;
 
 		public readonly int KlassFieldOffset;
 		public readonly int KlassMethodsOffset;
@@ -190,6 +193,7 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoLanguageBackend : ILanguage, ILanguageBackend
 	{
+		// These constants must match up with those in mono/mono/metadata/mono-debug.h
 		public const int  MinDynamicVersion = 48;
 		public const int  MaxDynamicVersion = 48;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
@@ -217,6 +221,7 @@ namespace Mono.Debugger.Languages.Mono
 			mutex = new DebuggerMutex ("mono_mutex");
 		}
 
+		// needed for both ILanguage and ILanguageBackend interfaces
 		public string Name {
 			get { return "Mono"; }
 		}
@@ -237,6 +242,27 @@ namespace Mono.Debugger.Languages.Mono
 			get { return backend; }
 		}
 
+		public MonoType LookupMonoType (Type type)
+		{
+			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [type.Assembly];
+			if (file == null) {
+				Console.WriteLine ("Type `{0}' from unknown assembly `{1}'", type, type.Assembly);
+				return null;
+			}
+
+			return file.LookupMonoType (type);
+		}
+
+		public void AddClass (TargetAddress klass_address, MonoType type)
+		{
+			class_hash.Add (klass_address, type);
+		}
+
+		public MonoType GetClass (TargetAddress klass_address)
+		{
+			return (MonoType) class_hash [klass_address];
+		}
+
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
 		{
 			TargetAddress symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
@@ -251,7 +277,7 @@ namespace Mono.Debugger.Languages.Mono
 					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
 
 			int version = header.ReadInteger ();
-			if (version <MinDynamicVersion)
+			if (version < MinDynamicVersion)
 				throw new SymbolTableException (
 					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
 					"but expected at least {1}.", version, MinDynamicVersion);
@@ -273,6 +299,7 @@ namespace Mono.Debugger.Languages.Mono
 			class_hash = new Hashtable ();
 		}
 
+#region symbol table management
 		void do_update_symbol_table (ITargetMemoryAccess memory)
 		{
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
@@ -397,6 +424,12 @@ namespace Mono.Debugger.Languages.Mono
 			last_data_table_offset = offset;
 		}
 
+		private enum DataItemType {
+			Unknown		= 0,
+			Method,
+			Class
+		}
+
 		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int start, int end)
 		{
 			ITargetMemoryReader reader = memory.ReadMemory (address + start, end - start);
@@ -455,52 +488,41 @@ namespace Mono.Debugger.Languages.Mono
 
 			file.AddClassEntry (reader, contents);
 		}
+#endregion
 
-		public MonoType LookupType (Type type)
+#region jit breakpoint handling
+		private struct MyBreakpointHandle
 		{
-			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [type.Assembly];
-			if (file == null) {
-				Console.WriteLine ("Type `{0}' from unknown assembly `{1}'", type, type.Assembly);
-				return null;
-			}
+			public readonly int Index;
+			public readonly BreakpointHandler Handler;
+			public readonly object UserData;
 
-			return file.LookupType (type);
-		}
-
-		public void AddClass (TargetAddress klass_address, MonoType type)
-		{
-			class_hash.Add (klass_address, type);
-		}
-
-		public MonoType GetClass (TargetAddress klass_address)
-		{
-			return (MonoType) class_hash [klass_address];
-		}
-
-		private enum DataItemType {
-			Unknown		= 0,
-			Method,
-			Class
-		}
-
-		private struct DataItem {
-			public readonly int Offset;
-			public readonly int Size;
-			public readonly DataItemType Type;
-			public readonly byte[] Data;
-
-			public DataItem (int offset, int size, DataItemType type, byte[] data)
+			public MyBreakpointHandle (int index, BreakpointHandler handler, object user_data)
 			{
-				this.Offset = offset;
-				this.Size = size;
-				this.Type = type;
-				this.Data = data;
-
-				Console.WriteLine ("DATA ITEM: {0} {1} {2} {3}", offset, size, type,
-						   TargetBinaryReader.HexDump (data));
+				this.Index = index;
+				this.Handler = handler;
+				this.UserData = user_data;
 			}
 		}
 
+		Hashtable breakpoints = new Hashtable ();
+
+		internal int InsertBreakpoint (Process process, string method_name,
+					       BreakpointHandler handler, object user_data)
+		{
+			long retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
+
+			int index = (int) retval;
+
+			if (index <= 0)
+				return -1;
+
+			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
+			return index;
+		}
+#endregion
+
+#region ILanguage implementation
 		private ITargetType LookupType (StackFrame frame, Type type, string name)
 		{
 			return null;
@@ -509,54 +531,22 @@ namespace Mono.Debugger.Languages.Mono
 		public ITargetType LookupType (StackFrame frame, string name)
 		{
 			switch (name) {
-			case "short":
-				name = "System.Int16";
-				break;
-			case "ushort":
-				name = "System.UInt16";
-				break;
-			case "int":
-				name = "System.Int32";
-				break;
-			case "uint":
-				name = "System.UInt32";
-				break;
-			case "long":
-				name = "System.Int64";
-				break;
-			case "ulong":
-				name = "System.UInt64";
-				break;
-			case "float":
-				name = "System.Single";
-				break;
-			case "double":
-				name = "System.Double";
-				break;
-			case "char":
-				name = "System.Char";
-				break;
-			case "byte":
-				name = "System.Byte";
-				break;
-			case "sbyte":
-				name = "System.SByte";
-				break;
-			case "object":
-				name = "System.Object";
-				break;
-			case "string":
-				name = "System.String";
-				break;
-			case "bool":
-				name = "System.Boolean";
-				break;
-			case "void":
-				name = "System.Void";
-				break;
-			case "decimal":
-				name = "System.Decimal";
-				break;
+			case "short":   name = "System.Int16";   break;
+			case "ushort":  name = "System.UInt16";  break;
+			case "int":     name = "System.Int32";   break;
+			case "uint":    name = "System.UInt32";  break;
+			case "long":    name = "System.Int64";   break;
+			case "ulong":   name = "System.UInt64";  break;
+			case "float":   name = "System.Single";  break;
+			case "double":  name = "System.Double";  break;
+			case "char":    name = "System.Char";    break;
+			case "byte":    name = "System.Byte";    break;
+			case "sbyte":   name = "System.SByte";   break;
+			case "object":  name = "System.Object";  break;
+			case "string":  name = "System.String";  break;
+			case "bool":    name = "System.Boolean"; break;
+			case "void":    name = "System.Void";    break;
+			case "decimal": name = "System.Decimal"; break;
 			}
 
 			if (name.IndexOf ('[') >= 0)
@@ -566,7 +556,6 @@ namespace Mono.Debugger.Languages.Mono
 				Type type = symfile.Assembly.GetType (name);
 				if (type == null)
 					continue;
-
 #if FIXME
 				MonoType mtype = (MonoType) types [type];
 				if (mtype != null)
@@ -618,37 +607,9 @@ namespace Mono.Debugger.Languages.Mono
 		ITargetType ILanguage.ExceptionType {
 			get { return null; }
 		}
+#endregion
 
-		Hashtable breakpoints = new Hashtable ();
-
-		internal int InsertBreakpoint (Process process, string method_name,
-					       BreakpointHandler handler, object user_data)
-		{
-			long retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
-
-			int index = (int) retval;
-
-			if (index <= 0)
-				return -1;
-
-			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
-			return index;
-		}
-
-		private struct MyBreakpointHandle
-		{
-			public readonly int Index;
-			public readonly BreakpointHandler Handler;
-			public readonly object UserData;
-
-			public MyBreakpointHandle (int index, BreakpointHandler handler, object user_data)
-			{
-				this.Index = index;
-				this.Handler = handler;
-				this.UserData = user_data;
-			}
-		}
-
+#region ILanguageBackend implementation
 		public TargetAddress GenericTrampolineCode {
 			get { return trampoline_address; }
 		}
@@ -657,9 +618,9 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.RuntimeInvoke; }
 		}
 
-		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
-								     TargetAddress address,
-								     out bool is_start)
+		public TargetAddress GetTrampolineAddress (ITargetMemoryAccess memory,
+						    TargetAddress address,
+						    out bool is_start)
 		{
 			is_start = false;
 
@@ -669,11 +630,11 @@ namespace Mono.Debugger.Languages.Mono
 			return memory.Architecture.GetTrampoline (memory, address, trampoline_address);
 		}
 
-		TargetAddress ILanguageBackend.CompileMethodFunc {
+		public TargetAddress CompileMethodFunc {
 			get { return info.CompileMethod; }
 		}
 
-		TargetAddress ILanguageBackend.GetVirtualMethodFunc {
+		public TargetAddress GetVirtualMethodFunc {
 			get { return info.GetVirtualMethod; }
 		}
 
@@ -681,8 +642,8 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.GetBoxedObjectMethod; }
 		}
 
-		SourceMethod ILanguageBackend.GetTrampoline (ITargetMemoryAccess memory,
-							     TargetAddress address)
+		public SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+						   TargetAddress address)
 		{
 			return null;
 		}
@@ -726,5 +687,6 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 			}
 		}
+#endregion
 	}
 }

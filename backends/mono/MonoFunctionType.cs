@@ -30,12 +30,12 @@ namespace Mono.Debugger.Languages.Mono
 				rtype = ((R.MethodInfo) mbase).ReturnType;
 				has_return_type = rtype != typeof (void);
 			}
-			return_type = file.LookupType (rtype);
+			return_type = file.LookupMonoType (rtype);
 
 			R.ParameterInfo[] pinfo = mbase.GetParameters ();
 			parameter_types = new MonoType [pinfo.Length];
 			for (int i = 0; i < parameter_types.Length; i++)
-				parameter_types [i] = file.LookupType (pinfo [i].ParameterType);
+				parameter_types [i] = file.LookupMonoType (pinfo [i].ParameterType);
 		}
 
 		public override bool IsByRef {
