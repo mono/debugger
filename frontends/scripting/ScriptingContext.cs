@@ -27,6 +27,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+			process.MethodChangedEvent += new MethodChangedHandler (method_changed);
+			process.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
 			process.StateChanged += new StateChangedHandler (state_changed);
 			process.TargetOutput += new TargetOutputHandler (inferior_output);
 			process.TargetError += new TargetOutputHandler (inferior_error);
@@ -49,6 +51,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		StackFrame current_frame = null;
 		StackFrame[] current_backtrace = null;
 		string current_insn = null;
+		IMethod current_method = null;
+		ISourceBuffer current_buffer = null;
+		string[] current_source = null;
 
 		void frame_changed (StackFrame frame)
 		{
@@ -73,6 +78,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_backtrace = null;
 		}
 
+		void method_changed (IMethod method)
+		{
+			current_method = method;
+			current_source = null;
+			if (!method.HasSource)
+				return;
+
+			string contents;
+			current_buffer = method.Source.SourceBuffer;
+			if (current_buffer.HasContents)
+				contents = current_buffer.Contents;
+			else {
+				SourceFile file = context.SourceFactory.FindFile (current_buffer.Name);
+				if (file == null)
+					return;
+				contents = file.Contents;
+			}
+
+			current_source = contents.Split ('\n');
+		}
+
+		void method_invalid ()
+		{
+			current_method = null;
+			current_source = null;
+			current_buffer = null;
+		}
+
 		void state_changed (TargetState state, int arg)
 		{
 			string frame = "";
@@ -93,10 +126,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 				else
 					context.Print ("Process @{0} stopped{1}.", id, frame);
 
-				if (current_insn != null)
-					context.Print (current_insn);
+				print_source ();
+
 				break;
 			}
+		}
+
+		void print_source ()
+		{
+			if (current_insn != null)
+				context.Print (current_insn);
+
+			if ((current_source == null) || (current_frame == null) || (current_buffer == null))
+				return;
+
+			SourceLocation source = current_frame.SourceLocation;
+			if ((source == null) || (source.Buffer != current_buffer))
+				return;
+
+			string line = current_source [source.Row - 1];
+			context.Print (String.Format ("{0,4} {1}", source.Row, line));
 		}
 
 		void inferior_output (string line)
@@ -330,6 +379,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		bool is_synchronous;
 		internal static readonly string DirectorySeparatorStr;
 
+		SourceFileFactory source_factory;
+
 		static ScriptingContext ()
 		{
 			// FIXME: Why isn't this public in System.IO.Path ?
@@ -354,7 +405,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 					current_process = handle;
 			}
 
+			source_factory = new SourceFileFactory ();
+
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+		}
+
+		public SourceFileFactory SourceFactory {
+			get { return source_factory; }
 		}
 
 		public ProcessStart ProcessStart {
