@@ -121,13 +121,20 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress ReadAddress ()
 		{
+			long address;
+
 			if (TargetAddressSize == 4)
-				return new TargetAddress (inferior, (uint) reader.ReadInt32 ());
+				address = (uint) reader.ReadInt32 ();
 			else if (TargetAddressSize == 8)
-				return new TargetAddress (inferior, reader.ReadInt64 ());
+				address = reader.ReadInt64 ();
 			else
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
+
+			if (address == 0)
+				return TargetAddress.Null;
+			else
+				return new TargetAddress (inferior, address);
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
