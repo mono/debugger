@@ -67,7 +67,7 @@ if test "x$from_cvs" = "xyes" ; then
 		GTKSHARP_PREFIX=`dirname $gtksharp_path`
 		have_gtk=yes
 	else
-		AC_MSG_WARN([Cannot find gtk#, the GUI won't be build!])
+		AC_MSG_WARN([Cannot find gtk-sharp, the GUI won't be build])
 		have_gtk=no
 	fi
 else
