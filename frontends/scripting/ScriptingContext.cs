@@ -620,7 +620,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		bool is_interactive;
 		int exit_code = 0;
 		internal static readonly string DirectorySeparatorStr;
-		static readonly Generator generator;
 
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
@@ -632,8 +631,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			// FIXME: Why isn't this public in System.IO.Path ?
 			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
-
-			generator = new Generator (Assembly.GetExecutingAssembly ());
 		}
 
 		internal ScriptingContext (DebuggerTextWriter command_out, DebuggerTextWriter inferior_out,
@@ -1263,11 +1260,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			for (int line = start; line < last_line; line++)
 				Print (String.Format ("{0,4} {1}", line, current_source_code [line]));
-		}
-
-		public void PrintHelp (string arguments)
-		{
-			generator.PrintHelp (this, arguments);
 		}
 
 		public void Kill ()

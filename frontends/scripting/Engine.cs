@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Reflection;
+using Mono.Debugger;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
@@ -34,14 +35,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string HelpText {
 			get { return help_text; }
 		}
-	}
-
-	public enum ArgumentType
-	{
-		Integer,
-		String,
-		Process,
-		Frame
 	}
 
 	[AttributeUsage (AttributeTargets.Property)]
@@ -82,22 +75,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("test", "Test command", "This is a simple test")]
-	public class TestCommand : TargetCommand
-	{
-		public TestCommand (ScriptingContext context)
+	[AttributeUsage (AttributeTargets.Class)]
+	public class ExpressionAttribute : Attribute
+	{ 
+		string name;
+		string short_description;
+		string help_text;
+
+		public ExpressionAttribute (string name, string short_description)
+			: this (name, short_description, null)
 		{ }
 
-		[Argument(ArgumentType.Integer, "foo", "Test argument")]
-		public int Foo {
-			set {
-				Console.WriteLine ("SETTING FOO TO: {0}", value);
-			}
+		public ExpressionAttribute (string name, string short_description, string help_text)
+		{
+			this.name = name;
+			this.short_description = short_description;
+			this.help_text = help_text;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
-		{ }
+		public string Name {
+			get { return name; }
+		}
+
+		public string ShortDescription {
+			get { return short_description; }
+		}
+
+		public string HelpText {
+			get { return help_text; }
+		}
 	}
+
+	public enum ArgumentType
+	{
+		Integer,
+		String,
+		Process,
+		Frame
+	}
+
 
 	public class Engine
 	{
@@ -140,8 +156,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return null;
 
 			try {
-				object[] args = new object [1] { context };
-				return (Command) Activator.CreateInstance (t, args);
+				return (Command) Activator.CreateInstance (t);
 			} catch (Exception ex) {
 				Console.WriteLine ("ERROR: {0}", ex);
 				return null;

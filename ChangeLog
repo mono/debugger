@@ -1,5 +1,11 @@
 2004-04-14  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Engine.cs (Engine): New public class.
+
+	* frontends/scripting/Generator.cs: Renamed to Engine.cs
+
+2004-04-14  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (TargetCommand): New abstract
 	base class.
 
