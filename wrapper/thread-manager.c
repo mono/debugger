@@ -1,7 +1,8 @@
 #include <mono-debugger-jit-wrapper.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
-#include <gc/gc.h>
+#define IN_MONO_DEBUGGER
+#include <mono/private/libgc-mono-debugger.h>
 #include <unistd.h>
 #include <string.h>
 

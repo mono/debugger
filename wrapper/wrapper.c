@@ -3,7 +3,8 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-debug.h>
-#include <gc/gc.h>
+#define IN_MONO_DEBUGGER
+#include <mono/private/libgc-mono-debugger.h>
 #include <unistd.h>
 #include <locale.h>
 
