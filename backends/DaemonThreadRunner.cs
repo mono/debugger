@@ -29,8 +29,29 @@ namespace Mono.Debugger.Backends
 
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 
-			daemon_thread = new Thread (new ThreadStart (daemon_thread_main));
+			daemon_thread = new Thread (new ThreadStart (daemon_thread_start));
 			daemon_thread.Start ();
+		}
+
+		public DaemonThreadRunner (DebuggerBackend backend, Process process, IInferior inferior,
+					   DaemonThreadHandler daemon_thread_handler, ProcessStart start)
+		{
+			this.backend = backend;
+			this.process = process;
+			this.inferior = inferior;
+			this.daemon_thread_handler = daemon_thread_handler;
+			this.start = start;
+
+			thread_manager = backend.ThreadManager;
+
+			inferior.TargetExited += new TargetExitedHandler (child_exited);
+
+			daemon_thread = new Thread (new ThreadStart (daemon_thread_start_wrapper));
+			daemon_thread.Start ();
+		}
+
+		public Process Process {
+			get { return process; }
 		}
 
 		internal IInferior Inferior {
@@ -45,6 +66,7 @@ namespace Mono.Debugger.Backends
 		Process process;
 		Thread daemon_thread;
 		DaemonThreadHandler daemon_thread_handler;
+		ProcessStart start;
 		int signal;
 		int pid;
 
@@ -76,12 +98,23 @@ namespace Mono.Debugger.Backends
 				return daemon_thread_handler (this, address, signal);
 		}
 
-		void daemon_thread_main ()
+		void daemon_thread_start ()
 		{
 			inferior.Attach (pid);
 			inferior.SetSignal (signal, false);
 			inferior.Continue ();
+			daemon_thread_main ();
+		}
 
+		void daemon_thread_start_wrapper ()
+		{
+			inferior.Run (false);
+			inferior.Continue ();
+			daemon_thread_main ();
+		}
+
+		void daemon_thread_main ()
+		{
 		again:
 			ChildEvent child_event = wait ();
 			ChildEventType message = child_event.Type;
