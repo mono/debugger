@@ -883,6 +883,13 @@ source_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
 	return TRUE;
 }
 
+/* NOTE: You need to poll at least one file descriptor in the glib mainloop - no
+ *       matter which file descriptor this is.
+ *
+ *       The trick here is that this source never blocks, whenever the child stops,
+ *       we get a SIGCHLD - and this signal interrupts the main loop's poll().
+ */
+
 GSourceFuncs mono_debugger_source_funcs =
 {
 	source_prepare,
