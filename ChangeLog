@@ -1,5 +1,10 @@
 2003-02-27  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/SourceManager.cs (GetSourceView): Use the
+	SourceFile / ISourceBuffer as hash key, not the IMethodSource.
+
+2003-02-27  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.h (CommandError): Cleaned this up.
 
 	* backends/ptrace/PTrace.cs: Throw a TargetMemoryException if

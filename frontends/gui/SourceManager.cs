@@ -201,12 +201,21 @@ namespace Mono.Debugger.GUI {
 			return buffer.Contents;
 		}
 
+		object GetSourceKey (IMethodSource source)
+		{
+			if (source.IsDynamic)
+				return source.SourceBuffer;
+			else
+				return source.SourceFile;
+		}
+
 		SourceView GetSourceView (IMethod method, IMethodSource source)
 		{
 			if (source == null)
 				return disassembler_view;
 
-			SourceList view = (SourceList) sources [source];
+			object source_key = GetSourceKey (source);
+			SourceList view = (SourceList) sources [source_key];
 			if (view != null)
 				return view;
 
@@ -217,7 +226,7 @@ namespace Mono.Debugger.GUI {
 			view = CreateSourceView (source.Name, String.Join ("\n", contents));
 			view.Widget.ShowAll ();
 					
-			sources [source] = view;
+			sources [source_key] = view;
 			notebook.InsertPage (view.Widget, view.TabWidget, -1);
 			notebook.SetMenuLabelText (view.Widget, source.Name);
 			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
