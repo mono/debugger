@@ -731,7 +731,7 @@ namespace Mono.Debugger.Architecture
 
 		TargetAddress ILanguageBackend.CompileMethodFunc {
 			get {
-				throw new InvalidOperationException ();
+				return TargetAddress.Null;
 			}
 		}
 

@@ -1500,6 +1500,22 @@ public class SingleSteppingEngine : ThreadManager
 			current_operation = null;
 		}
 
+		bool do_trampoline (StepFrame frame, TargetAddress trampoline)
+		{
+			TargetAddress compile = frame.Language.CompileMethodFunc;
+
+			if (compile.IsNull) {
+				insert_temporary_breakpoint (trampoline);
+				do_continue ();
+				return false;
+			}
+
+			do_callback (new Callback (
+				new CallMethodData (compile, trampoline.Address, 0, null),
+				new CallbackFunc (callback_method_compiled)));
+			return false;
+		}
+
 		bool callback_method_compiled (Callback cb, long data1, long data2)
 		{
 			Console.WriteLine ("COMPILED: {0:x}", data1);
@@ -1557,14 +1573,8 @@ public class SingleSteppingEngine : ThreadManager
 				 * and StepMode.StepFrame here since we'd leave the step frame anyways
 				 * when entering the method.
 				 */
-				if (!trampoline.IsNull) {
-					do_callback (new Callback (
-						new CallMethodData (
-							frame.Language.CompileMethodFunc,
-							trampoline.Address, 0, null),
-						new CallbackFunc (callback_method_compiled)));
-					return false;
-				}
+				if (!trampoline.IsNull)
+					return do_trampoline (frame, trampoline);
 
 				if (frame.Mode != StepMode.SingleInstruction) {
 					/*
@@ -1585,7 +1595,7 @@ public class SingleSteppingEngine : ThreadManager
 			 */
 			if (frame.Mode == StepMode.SingleInstruction) {
 				do_step ();
-				return true;
+				return false;
 			}
 
 			/*
@@ -1622,14 +1632,14 @@ public class SingleSteppingEngine : ThreadManager
 
 				insert_temporary_breakpoint (wrapper);
 				do_continue ();
-				return true;
+				return false;
 			}
 
 			/*
 			 * Finally, step into the method.
 			 */
 			do_step ();
-			return true;
+			return false;
 		}
 
 		// <summary>
