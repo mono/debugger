@@ -16,7 +16,7 @@ namespace Mono.Debugger
 		object handle;
 
 		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle,
-				      SourceLocation source, IMethod method)
+				   SourceLocation source, IMethod method)
 			: this (memory, address, handle)
 		{
 			this.source = source;

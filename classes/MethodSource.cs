@@ -120,6 +120,22 @@ namespace Mono.Debugger
 
 			return null;
 		}
+
+		public void DumpLineNumbers ()
+		{
+			Console.WriteLine ("--------");
+			Console.WriteLine ("DUMPING LINE NUMBER TABLE");
+			Console.WriteLine ("METHOD: {0}", method);
+			Console.WriteLine ("BOUNDS: start = {0} / {1}, end = {2} / {3}", 
+					   start, method_start, end, method_end);
+			Console.WriteLine ("SOURCE BOUNDS: start = {0}, end = {1}", start_row, end_row);
+			Console.WriteLine ("--------");
+			for (int i = 0; i < addresses.Count; i++) {
+				LineEntry entry = (LineEntry) addresses [i];
+				Console.WriteLine ("{0,4} {1,4}  {2}", i, entry.Line, entry.Address);
+			}
+			Console.WriteLine ("--------");
+		}
 	}
 }
 

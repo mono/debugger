@@ -143,6 +143,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.Finish ();
 				break;
 
+			case "f":
+			case "frame":
+				Console.WriteLine (backend.CurrentFrame);
+				break;
+
+			case "lnt":
+			case "dump-lnt":
+				dump_line_numbers (backend.CurrentFrame);
+				break;
+
 			case "clear-signal":
 				backend.ClearSignal ();
 				break;
@@ -441,6 +451,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			Console.WriteLine ("Total {0} modules, {1} source files and {2} methods.",
 					   module_count, source_count, method_count);
+		}
+
+		void dump_line_numbers (StackFrame frame)
+		{
+			if ((frame.Method == null) || !frame.Method.HasSource)
+				return;
+
+			MethodSource source = frame.Method.Source as MethodSource;;
+			if (source == null)
+				return;
+
+			source.DumpLineNumbers ();
 		}
 	}
 }
