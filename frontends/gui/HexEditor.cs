@@ -13,7 +13,6 @@ namespace Mono.Debugger.GUI
 {
 	public class HexEditor : DebuggerWidget
 	{
-		Glade.XML gxml;
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
 		Gtk.Entry address_entry, size_entry, area_entry;
@@ -26,11 +25,9 @@ namespace Mono.Debugger.GUI
 		Combo area_combo;
 		bool force_writable;
 
-		public HexEditor (Glade.XML gxml, Gtk.Container window, Gtk.Container container)
-			: base (window, container)
+		public HexEditor (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
+			: base (gui, window, container)
 		{
-			this.gxml = gxml;
-
 			store = new ListStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,

@@ -16,8 +16,8 @@ namespace Mono.Debugger.GUI
 
 		bool has_frame;
 
-		public SourceView (Gtk.Container container, Gtk.TextView widget)
-			: base (container, widget)
+		public SourceView (DebuggerGUI gui, Gtk.Container container, Gtk.TextView widget)
+			: base (gui, container, widget)
 		{
 			source_view = widget;
 			FontDescription font = FontDescription.FromString ("Monospace");

@@ -12,17 +12,14 @@ namespace Mono.Debugger.GUI
 {
 	public class VariableDisplay : DebuggerWidget
 	{
-		Glade.XML gxml;
 		StackFrame current_frame;
 
 		Gtk.TreeView tree;
 		Gtk.TreeStore store;
 
-		public VariableDisplay (Glade.XML gxml, Gtk.Container window, Gtk.Container container)
-			: base (window, container)
+		public VariableDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
+			: base (gui, window, container)
 		{
-			this.gxml = gxml;
-
 			store = new TreeStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeString);

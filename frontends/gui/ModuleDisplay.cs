@@ -12,15 +12,12 @@ namespace Mono.Debugger.GUI
 {
 	public class ModuleDisplay : DebuggerWidget
 	{
-		Glade.XML gxml;
 		Gtk.TreeView tree;
 		Gtk.ListStore store;
 
-		public ModuleDisplay (Glade.XML gxml, Gtk.Container window, Gtk.Container container)
-			: base (window, container)
+		public ModuleDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Container container)
+			: base (gui, window, container)
 		{
-			this.gxml = gxml;
-
 			store = new ListStore ((int)TypeFundamentals.TypeString,
 					       (int)TypeFundamentals.TypeBoolean,
 					       (int)TypeFundamentals.TypeBoolean,

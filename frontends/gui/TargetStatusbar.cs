@@ -12,8 +12,8 @@ namespace Mono.Debugger.GUI
 		protected Gtk.Statusbar status_bar;
 		protected uint status_id;
 
-		public TargetStatusbar (Gtk.Statusbar widget)
-			: base (widget)
+		public TargetStatusbar (DebuggerGUI gui, Gtk.Statusbar widget)
+			: base (gui, widget)
 		{
 			status_bar = widget;
 			status_id = status_bar.GetContextId ("message");

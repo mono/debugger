@@ -32,16 +32,14 @@ namespace Mono.Debugger.GUI
 {
 	public class RegisterDisplay : DebuggerWidget
 	{
-		Glade.XML gxml;
 		Gtk.Notebook notebook;
 		IArchitecture arch;
 		StackFrame current_frame;
 		Gdk.Color color_change, color_stable;
 
-		public RegisterDisplay (Glade.XML gxml, Gtk.Container window, Gtk.Notebook notebook)
-			: base (window, notebook)
+		public RegisterDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Notebook notebook)
+			: base (gui, window, notebook)
 		{
-			this.gxml = gxml;
 			this.notebook = notebook;
 
 			color_change.red = 0xffff;

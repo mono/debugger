@@ -230,10 +230,8 @@ namespace Mono.Debugger.GUI {
 		}
 	}
 	
-	public class SourceManager {
+	public class SourceManager : DebuggerWidget {
 		Hashtable sources; 
-		DebuggerBackend backend;
-		Process process;
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
 		bool initialized;
@@ -245,19 +243,20 @@ namespace Mono.Debugger.GUI {
 		IMethodSource current_method_source = null;
 		SourceList current_source = null;
 		
-		public SourceManager (Gtk.Notebook notebook, SourceStatusbar source_status)
+		public SourceManager (DebuggerGUI gui, Gtk.Notebook notebook, SourceStatusbar source_status)
+			: base (gui, notebook)
 		{
 			sources = new Hashtable ();
+			this.gui = gui;
 			this.notebook = notebook;
 			this.source_status = source_status;
 
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 		
-		public void SetBackend (DebuggerBackend backend, Process process)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			this.backend = backend;
-			this.process = process;
+			base.SetBackend (backend, process);
 
 			process.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
 			process.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);

@@ -11,13 +11,17 @@ namespace Mono.Debugger.GUI
 		protected Gtk.Widget widget;
 		protected DebuggerBackend backend;
 		protected Process process;
+		protected DebuggerGUI gui;
+		protected Glade.XML gxml;
 		bool visible;
 
 		[DllImport("glib-2.0")]
 		static extern bool g_main_context_iteration (IntPtr context, bool may_block);
 
-		public DebuggerWidget (Gtk.Container container, Gtk.Widget widget)
+		public DebuggerWidget (DebuggerGUI gui, Gtk.Container container, Gtk.Widget widget)
 		{
+			this.gui = gui;
+			this.gxml = gui.GXML;
 			this.widget = widget;
 			this.container = container;
 
@@ -53,8 +57,8 @@ namespace Mono.Debugger.GUI
 			visible = false;
 		}
 
-		public DebuggerWidget (Gtk.Widget widget)
-			: this (null, widget)
+		public DebuggerWidget (DebuggerGUI gui, Gtk.Widget widget)
+			: this (gui, null, widget)
 		{ }
 
 		public virtual Gtk.Widget Widget {

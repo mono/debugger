@@ -1,6 +1,12 @@
+2002-12-23  Martin Baulig  <martin@ximian.com>
+
+	* frontends/gui/DebuggerWidget.cs: Added `DebuggerGUI' argument;
+	get the Glade.XML from an internal property of the gui.
+	* frontends/gui/SourceManager.cs: Derive from DebuggerWidget.
+
 2002-12-15  Martin Baulig  <martin@ximian.com>
 
-	* frondends/gui/RegisterDisplay.cs: Make this working again.
+	* frontends/gui/RegisterDisplay.cs: Make this working again.
 	* frontends/gui/CurrentInstructionEntry.cs: Likewise.
 
 2002-12-15  Martin Baulig  <martin@ximian.com>

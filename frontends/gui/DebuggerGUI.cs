@@ -119,6 +119,10 @@ namespace Mono.Debugger.GUI
 			interpreter = new Interpreter (backend, output_writer, output_writer);
 		}
 
+		internal Glade.XML GXML {
+			get { return gxml; }
+		}
+
 		//
 		// Called back when the debugger finds an error
 		//
@@ -142,29 +146,29 @@ namespace Mono.Debugger.GUI
 			output_writer = new OutputWindow (target_output);
 
 			register_display = new RegisterDisplay (
-				gxml, null, (Gtk.Notebook) gxml ["register-notebook"]);
+				this, null, (Gtk.Notebook) gxml ["register-notebook"]);
 			variable_display = new VariableDisplay (
-				gxml, null, (Gtk.Container) gxml ["variable-display"]);
+				this, null, (Gtk.Container) gxml ["variable-display"]);
 			backtrace_view = new BackTraceView (
-				null, (Gtk.Container) gxml ["backtrace-view"]);
+				this, null, (Gtk.Container) gxml ["backtrace-view"]);
 			module_display = new ModuleDisplay (
-				gxml, null, (Gtk.Container) gxml ["module-view"]);
+				this, null, (Gtk.Container) gxml ["module-view"]);
 			hex_editor_dialog = (Gtk.Dialog) gxml ["hexeditor-dialog"];
 			hex_editor = new HexEditor (
-				gxml, hex_editor_dialog, (Gtk.Container) gxml ["hexeditor-view"]);
+				this, hex_editor_dialog, (Gtk.Container) gxml ["hexeditor-view"]);
 			memory_maps_display = new MemoryMapsDisplay (
-				gxml, null, (Gtk.Container) gxml ["memory-maps-view"]);
+				this, null, (Gtk.Container) gxml ["memory-maps-view"]);
 			breakpoint_manager = new BreakpointManager (
-				gxml, null, (Gtk.Container) gxml ["breakpoint-manager"]);
+				this, null, (Gtk.Container) gxml ["breakpoint-manager"]);
 
-			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
+			current_insn = new CurrentInstructionEntry (this, (Gtk.Entry) gxml ["current-insn"]);
 
-			source_status = new SourceStatusbar ((Gtk.Statusbar) gxml ["status-bar"]);
-			source_manager = new SourceManager ((Gtk.Notebook) gxml ["code-browser-notebook"],
+			source_status = new SourceStatusbar (this, (Gtk.Statusbar) gxml ["status-bar"]);
+			source_manager = new SourceManager (this, (Gtk.Notebook) gxml ["code-browser-notebook"],
 							    source_status);
 
 			disassembler_view = new DisassemblerView (
-				null, (Gtk.TextView) gxml ["disassembler-view"]);
+				this, null, (Gtk.TextView) gxml ["disassembler-view"]);
 			
 			gxml.Autoconnect (this);
 

@@ -10,8 +10,8 @@ namespace Mono.Debugger.GUI
 		Gtk.Entry entry;
 		string current_insn = null;
 
-		public CurrentInstructionEntry (Gtk.Entry widget)
-			: base (widget)
+		public CurrentInstructionEntry (DebuggerGUI gui, Gtk.Entry widget)
+			: base (gui, widget)
 		{
 			entry = widget;
 			entry.Sensitive = false;

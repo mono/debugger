@@ -8,8 +8,8 @@ namespace Mono.Debugger.GUI
 {
 	public class DisassemblerView : SourceView
 	{
-		public DisassemblerView (Gtk.Container container, Gtk.TextView widget)
-			: base (container, widget)
+		public DisassemblerView (DebuggerGUI gui, Gtk.Container container, Gtk.TextView widget)
+			: base (gui, container, widget)
 		{ }
 
 		protected override IMethodSource GetMethodSource (IMethod method)
