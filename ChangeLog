@@ -1,3 +1,10 @@
+2002-12-29  Peter Williams  <peterw@ximian.com>
+
+	* frontends/gui/DebuggerGUI.cs (Main): Any argument after a
+	nonoption argument is not for us, so just add it to args.
+	(LoadProgram): Pass in our environment variables to the
+	child process.
+
 2002-12-28  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Parser.jay: Transformed all the old

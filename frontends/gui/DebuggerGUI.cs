@@ -45,10 +45,11 @@ namespace Mono.Debugger.GUI
 		//
 		static void Main (string[] args)
 		{
+			bool gotarg = false;
 			ArrayList arguments = new ArrayList ();
 
 			foreach (string a in args){
-				if (a.StartsWith ("--")){
+				if (gotarg == false && a.StartsWith ("--")){
 					string name = a.Substring (2);
 					
 					switch (name) {
@@ -61,8 +62,10 @@ namespace Mono.Debugger.GUI
 						Environment.Exit (1);
 						break;
 					}
-				} else
+				} else {
+					gotarg = true;
 					arguments.Add (a);
+				}
 			}
 
 			DebuggerGUI gui = new DebuggerGUI ((string []) arguments.ToArray (typeof (string)));
@@ -268,16 +271,28 @@ namespace Mono.Debugger.GUI
 		//
 		void LoadProgram (string [] args)
 		{
+			IDictionary envars;
+
+			envars = Environment.GetEnvironmentVariables();
+			string [] env = new string [envars.Count];
+			int i = 0;
+
+			foreach (string name in envars.Keys) {
+				env[i] = name + "=" + Environment.GetEnvironmentVariable (name);
+				//Console.WriteLine ("env: " + env[i]);
+				i++;
+			}
+			
 			if (args [0] == "core") {
 				string [] temp_args = new string [args.Length-1];
 				if (args.Length > 1)
 					Array.Copy (args, 1, temp_args, 0, args.Length-1);
 				args = temp_args;
 
-				start = ProcessStart.Create (null, args, null);
+				start = ProcessStart.Create (null, args, env);
 				process = backend.ReadCoreFile (start, "thecore");
 			} else {
-				start = ProcessStart.Create (null, args, null);
+				start = ProcessStart.Create (null, args, env);
 				process = backend.Run (start);
 				SetProcess (process);
 				process.SingleSteppingEngine.Run (true);
