@@ -1,4 +1,4 @@
-#include <bfdglue.h>
+#include "bfdglue.h"
 #include <signal.h>
 #include <string.h>
 #ifdef __linux__

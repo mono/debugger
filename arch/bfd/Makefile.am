@@ -29,7 +29,7 @@ SOURCE_FILES = \
 	format.c init.c libbfd.c opncls.c reloc.c \
 	section.c syms.c targets.c hash.c linker.c \
 	srec.c binary.c tekhex.c ihex.c stabs.c stab-syms.c \
-	merge.c dwarf2.c
+	merge.c dwarf2.c bfdio.c simple.c
 
 libbfd_la_SOURCES = $(BFD_BACKEND) $(SOURCE_FILES)
 libbfd_la_LDFLAGS = -export-dynamic
