@@ -1,5 +1,11 @@
 2002-10-17  Martin Baulig  <martin@gnome.org>
 
+	* backends/SingleSteppingEngine.cs: Don't change the state to
+	running unless the stepping operation actually succeeded.  Don't
+	allow any stepping operations while sending out the event.
+
+2002-10-17  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/ITargetLocation.cs, class/TargetLocation.cs: Removed.
 	* backends/class/RelativeTargetLocation.cs: Removed.
 	* backends/class/TargetStackLocation.cs: Removed.

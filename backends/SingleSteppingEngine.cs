@@ -131,17 +131,22 @@ namespace Mono.Debugger.Backends
 			return change_target_state (new_state, 0);
 		}
 
+		bool in_event = false;
+
 		TargetState change_target_state (TargetState new_state, int arg)
 		{
-			TargetState istate = inferior != null ? inferior.State : TargetState.NO_TARGET;
 			if (new_state == target_state)
 				return target_state;
 
 			TargetState old_state = target_state;
 			target_state = new_state;
 
+			in_event = true;
+
 			if (StateChangedEvent != null)
 				StateChangedEvent (target_state, arg);
+
+			in_event = false;
 
 			return old_state;
 		}
@@ -167,7 +172,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 
-			if (State != TargetState.STOPPED)
+			if (in_event || (State != TargetState.STOPPED))
 				throw new TargetNotStoppedException ();
 		}
 
@@ -509,14 +514,10 @@ namespace Mono.Debugger.Backends
 			check_inferior ();
 			set_step_frame (frame);
 
-			TargetState old_state = change_target_state (TargetState.RUNNING);
-			try {
-				if (!inferior.CurrentInstructionIsBreakpoint)
-					inferior.EnableAllBreakpoints ();
-				inferior.Step ();
-			} catch {
-				change_target_state (old_state);
-			}
+			if (!inferior.CurrentInstructionIsBreakpoint)
+				inferior.EnableAllBreakpoints ();
+			inferior.Step ();
+			change_target_state (TargetState.RUNNING);
 		}
 
 		void do_next ()
