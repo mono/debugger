@@ -3,13 +3,19 @@
 #include <signal.h>
 #include <sched.h>
 
+void
+common_function (int is_thread, int sleep_seconds)
+{
+	while (1) {
+		printf ("COMMON FUNCTION: %d\n", is_thread);
+		sleep (sleep_seconds);
+	}
+}
+
 int
 thread_func (void *data)
 {
-	while (1) {
-		printf ("THREAD FUNC!\n");
-		sleep (2);
-	}
+	common_function (1, 5);
 	return 0;
 }
 
@@ -21,11 +27,7 @@ main (void)
 	pthread_create (&thread, NULL, thread_func, NULL);
 
 	asm ("int $03");
-
-	while (1) {
-		printf ("PARENT FUNC!\n");
-		sleep (1);
-	}
+	common_function (0, 2);
 
 	return 0;
 }
