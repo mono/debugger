@@ -126,7 +126,7 @@ namespace Mono.Debugger
 				throw start_error;
 		}
 
-		public Process StartApplication (ProcessStart start)
+		public void StartApplication (ProcessStart start)
 		{
 			this.start = start;
 
@@ -135,11 +135,12 @@ namespace Mono.Debugger
 
 			inferior_thread = new Thread (new ThreadStart (start_inferior));
 			inferior_thread.Start ();
+		}
 
+		public Process WaitForApplication ()
+		{
 			ready_event.WaitOne ();
 
-			OnInitializedEvent (main_process);
-			OnMainThreadCreatedEvent (main_process);
 			return main_process;
 		}
 
@@ -159,6 +160,9 @@ namespace Mono.Debugger
 
 		internal void ReachedMain ()
 		{
+			OnInitializedEvent (main_process);
+			OnMainThreadCreatedEvent (main_process);
+
 			ready_event.Set ();
 		}
 

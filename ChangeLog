@@ -1,5 +1,15 @@
 2004-03-03  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs (DebuggerBackend.Run): Changed return type
+	to void; don't wait until the application is started.
+
+	* backends/ThreadManager.cs (ThreadManager.StartApplication):
+	Changed return type to void.
+	(ThreadManager.WaitForApplication): New public method.
+	(ThreadManager.ReachedMain): Fire the events here.
+
+2004-03-03  Martin Baulig  <martin@ximian.com>
+
 	* lib/: Removed.
 
 	* lib/Debugger.exe.config.in: Removed.

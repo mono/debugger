@@ -826,7 +826,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (backend == null)
 				throw new ScriptingException ("No program loaded.");
 
-			Process process = backend.Run (start);
+			backend.Run (start);
+			Process process = backend.ThreadManager.WaitForApplication ();
 			current_process = (ProcessHandle) procs [process];
 
 			return process;

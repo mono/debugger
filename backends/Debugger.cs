@@ -59,6 +59,7 @@ namespace Mono.Debugger
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
 
 			thread_manager = new ThreadManager (this);
+			thread_manager.InitializedEvent += new ThreadEventHandler (initialized_event);
 		}
 
 		public ModuleManager ModuleManager {
@@ -114,7 +115,7 @@ namespace Mono.Debugger
 		{
 		}
 
-		public Process Run (ProcessStart start)
+		public void Run (ProcessStart start)
 		{
 			check_disposed ();
 
@@ -125,11 +126,14 @@ namespace Mono.Debugger
 
 			module_manager.Lock ();
 
-			process = thread_manager.StartApplication (start);
+			thread_manager.StartApplication (start);
+		}
+
+		void initialized_event (ThreadManager manager, Process process)
+		{
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 
 			main_group.AddThread (process.ID);
-			return process;
 		}
 
 		void modules_changed ()
