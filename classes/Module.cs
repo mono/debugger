@@ -209,7 +209,17 @@ namespace Mono.Debugger
 		//   Find method @name, which must be a full method name including the
 		//   signature (System.DateTime.GetUtcOffset(System.DateTime)).
 		// </summary>
-		public abstract SourceMethod FindMethod (string name);
+		public virtual SourceMethod FindMethod (string name)
+		{
+			foreach (SourceFile source in Sources) {
+				SourceMethod method = source.FindMethod (name);
+
+				if (method != null)
+					return method;
+			}
+
+			return null;
+		}
 
 		// <summary>
 		//   Find the method containing line @line in @source_file, which must be

@@ -7,12 +7,13 @@ using System.Runtime.Serialization;
 
 using Mono.Debugger;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Architecture
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : ISymbolContainer, ILanguageBackend, IDisposable
+	internal class Bfd : Module, ISymbolContainer, ILanguageBackend, IDisposable
 	{
 		IntPtr bfd;
 		protected BfdContainer container;
@@ -25,13 +26,16 @@ namespace Mono.Debugger.Architecture
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		Hashtable symbols;
 		BfdSymbolTable simple_symtab;
-		BfdModule bfd_module;
+		DwarfReader dwarf;
+		bool dwarf_loaded;
+		bool has_debugging_info;
 		string filename;
 		bool is_coredump;
 		bool initialized;
 		bool has_shlib_info;
 		TargetAddress base_address, start_address, end_address;
 		TargetAddress plt_start, plt_end, got_start;
+		ILanguage language;
 		bool has_got;
 
 		[Flags]
@@ -179,12 +183,15 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd (BfdContainer container, ITargetMemoryAccess memory, string filename,
 			    bool core_file, TargetAddress base_address)
+			: base (filename)
 		{
 			this.container = container;
 			this.memory = memory;
 			this.filename = filename;
 			this.base_address = base_address;
 			this.backend = container.DebuggerBackend;
+
+			language = new Mono.Debugger.Languages.Native.NativeLanguage (memory);
 
 			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -244,8 +251,6 @@ namespace Mono.Debugger.Architecture
 
 			simple_symtab = new BfdSymbolTable (this);
 
-			bfd_module = new BfdModule (backend, this, (ITargetInfo) memory);
-
 			InternalSection plt_section = GetSectionByName (".plt", false);
 			InternalSection got_section = GetSectionByName (".got", false);
 			if ((plt_section != null) && (got_section != null)) {
@@ -257,6 +262,12 @@ namespace Mono.Debugger.Architecture
 					memory.GlobalAddressDomain, base_address.Address + got_section.vma);
 				has_got = true;
 			}
+
+			has_debugging_info = GetSectionByName (".debug_info", false) != null;
+
+			backend.ModuleManager.AddModule (this);
+
+			OnModuleChangedEvent ();
 		}
 
 		protected ArrayList GetSimpleSymbols ()
@@ -404,8 +415,7 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				container.AddFile (inferior, name, bfd_module.StepInto,
-						   l_addr, null);
+				container.AddFile (inferior, name, StepInto, l_addr, null);
 			}
 		}
 
@@ -476,10 +486,93 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public ISimpleSymbolTable SimpleSymbolTable {
+		public override ISimpleSymbolTable SimpleSymbolTable {
 			get {
 				return simple_symtab;
 			}
+		}
+
+		public override ILanguage Language {
+			get {
+				return language;
+			}
+		}
+
+		internal override ILanguageBackend LanguageBackend {
+			get {
+				return this;
+			}
+		}
+
+		public override bool SymbolsLoaded {
+			get { return dwarf != null; }
+		}
+
+		public override SourceFile[] Sources {
+			get {
+				if (dwarf == null)
+					return new SourceFile [0];
+
+				return dwarf.Sources;
+			}
+		}
+
+		public override ISymbolTable SymbolTable {
+			get {
+				if (dwarf == null)
+					throw new InvalidOperationException ();
+
+				return dwarf.SymbolTable;
+			}
+		}
+
+		internal override void ReadModuleData ()
+		{ }
+
+		public override TargetAddress SimpleLookup (string name)
+		{
+			return this [name];
+		}
+
+		void load_dwarf ()
+		{
+			if (dwarf_loaded)
+				return;
+
+			try {
+				dwarf = new DwarfReader (this, this, backend.SourceFileFactory);
+			} catch {
+				// Silently ignore.
+			}
+
+			dwarf_loaded = true;
+
+			if (dwarf != null) {
+				has_debugging_info = true;
+				OnSymbolsLoadedEvent ();
+			}
+		}
+
+		void unload_dwarf ()
+		{
+			if (!dwarf_loaded)
+				return;
+
+			dwarf_loaded = false;
+			if (dwarf != null) {
+				dwarf = null;
+				OnSymbolsUnLoadedEvent ();
+			}
+		}
+
+		protected override void OnModuleChangedEvent ()
+		{
+			if (LoadSymbols)
+				load_dwarf ();
+			else
+				unload_dwarf ();
+
+			base.OnModuleChangedEvent ();
 		}
 
 		public BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
@@ -661,13 +754,13 @@ namespace Mono.Debugger.Architecture
 
 		public Module Module {
 			get {
-				return bfd_module;
+				return this;
 			}
 		}
 
-		public bool HasDebuggingInfo {
+		public override bool HasDebuggingInfo {
 			get {
-				return GetSectionByName (".debug_info", false) != null;
+				return has_debugging_info;
 			}
 		}
 
@@ -823,8 +916,6 @@ namespace Mono.Debugger.Architecture
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (bfd_module != null)
-						bfd_module.Dispose ();
 				}
 				
 				// Release unmanaged resources
