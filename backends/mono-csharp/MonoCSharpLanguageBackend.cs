@@ -308,8 +308,6 @@ namespace Mono.Debugger.Languages.CSharp
 		Hashtable types;
 		Hashtable image_hash;
 		Hashtable assembly_hash;
-		ArrayList modules;
-		protected Hashtable module_hash;
 
 		MonoBuiltinTypes builtin;
 		MonoSymbolFile corlib;
@@ -331,8 +329,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			address_size = memory.TargetAddressSize;
 
-			modules = new ArrayList ();
-			module_hash = new Hashtable ();
 			image_hash = new Hashtable ();
 			assembly_hash = new Hashtable ();
 			type_table = new ArrayList ();
@@ -380,20 +376,11 @@ namespace Mono.Debugger.Languages.CSharp
 				symbol_files += address_size;
 
 				MonoSymbolFile symfile = new MonoSymbolFile (
-					this, Backend, memory, memory, address, Language);
+					this, Backend, memory, memory, address);
 				SymbolFiles.Add (symfile);
 
 				if (address == corlib_address)
 					corlib = symfile;
-
-				string name = symfile.Assembly.GetName (true).Name;
-				MonoModule module = (MonoModule) module_hash [name];
-				if (module == null) {
-					module = new MonoModule (name, symfile);
-					modules.Add (module);
-					module_hash.Add (name, module);
-				}
-				symfile.Module = module;
 			}
 
 			int num_type_tables = header.ReadInteger ();
@@ -454,7 +441,7 @@ namespace Mono.Debugger.Languages.CSharp
 			bool updated = false;
 
 			foreach (MonoSymbolFile symfile in SymbolFiles) {
-				if (!symfile.Module.LoadSymbols)
+				if (!symfile.LoadSymbols)
 					continue;
 
 				if (symfile.Update (memory))
@@ -464,7 +451,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (updated) {
 				ranges = new ArrayList ();
 				foreach (MonoSymbolFile symfile in SymbolFiles) {
-					if (!symfile.Module.LoadSymbols)
+					if (!symfile.LoadSymbols)
 						continue;
 
 					ranges.AddRange (symfile.SymbolRanges);
@@ -636,12 +623,6 @@ namespace Mono.Debugger.Languages.CSharp
 			// If this is a call to Dispose, dispose all managed resources.
 				if (disposing) {
 					SymbolFiles = null;
-					if (modules != null) {
-						foreach (MonoModule module in modules)
-							module.Dispose ();
-					}
-					modules = new ArrayList ();
-					module_hash = new Hashtable ();
 					ranges = new ArrayList ();
 					types = new Hashtable ();
 					class_table = new Hashtable ();
@@ -723,104 +704,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			throw new InternalError ("Can't find type entry at offset {0}.", offset);
-		}
-
-		private class MonoModule : Module, IDisposable
-		{
-			bool has_debugging_info;
-			MonoSymbolFile reader;
-
-			public MonoModule (string name, MonoSymbolFile reader)
-				: base (name)
-			{
-				this.reader = reader;
-
-				has_debugging_info = reader.File != null;
-
-				reader.Table.Backend.ModuleManager.AddModule (this);
-
-				OnModuleChangedEvent ();
-			}
-
-			public override ILanguage Language {
-				get { return reader.Table; }
-			}
-
-			internal override ILanguageBackend LanguageBackend {
-				get { return reader.Table.Language; }
-			}
-
-			public MonoSymbolFile MonoSymbolFile {
-				get { return reader; }
-			}
-
-			public R.Assembly Assembly {
-				get { return reader.Assembly; }
-			}
-
-			public override bool SymbolsLoaded {
-				get { return LoadSymbols; }
-			}
-
-			public override SourceFile[] Sources {
-				get { return reader.GetSources (); }
-			}
-
-			public override bool HasDebuggingInfo {
-				get { return has_debugging_info; }
-			}
-
-			internal override void ReadModuleData ()
-			{ }
-
-			public override ISymbolTable SymbolTable {
-				get { return reader.SymbolTable; }
-			}
-
-			public override ISimpleSymbolTable SimpleSymbolTable {
-				get { return reader; }
-			}
-
-			public override TargetAddress SimpleLookup (string name)
-			{
-				return TargetAddress.Null;
-			}
-
-			public override SourceMethod FindMethod (string name)
-			{
-				return reader.FindMethod (name);
-			}
-
-			//
-			// IDisposable
-			//
-
-			private bool disposed = false;
-
-			private void Dispose (bool disposing)
-			{
-				// Check to see if Dispose has already been called.
-				if (!this.disposed) {
-				// If this is a call to Dispose, dispose all managed resources.
-					if (disposing) {
-					}
-				
-					// Release unmanaged resources
-					this.disposed = true;
-				}
-			}
-
-			public void Dispose ()
-			{
-				Dispose (true);
-				// Take yourself off the Finalization queue
-				GC.SuppressFinalize (this);
-			}
-
-			~MonoModule ()
-			{
-				Dispose (false);
-			}
 		}
 	}
 
@@ -912,7 +795,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   A single Assembly's symbol table.
 	// </summary>
-	internal class MonoSymbolFile : ISimpleSymbolTable
+	internal class MonoSymbolFile : Module, ISimpleSymbolTable
 	{
 		internal readonly int Index;
 		internal readonly R.Assembly Assembly;
@@ -920,15 +803,14 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
-		internal Module Module;
 		internal ThreadManager ThreadManager;
 		internal AddressDomain GlobalAddressDomain;
 		internal ITargetInfo TargetInfo;
-		internal MonoCSharpLanguageBackend Language;
 		protected DebuggerBackend backend;
 		protected Hashtable range_hash;
 		MonoCSharpSymbolTable symtab;
 		ArrayList ranges;
+		string name;
 
 		TargetAddress dynamic_address;
 		int class_entry_size;
@@ -940,13 +822,12 @@ namespace Mono.Debugger.Languages.CSharp
 		int num_class_entries;
 
 		internal MonoSymbolFile (MonoSymbolTable table, DebuggerBackend backend,
-						ITargetInfo target_info, ITargetMemoryAccess memory,
-						TargetAddress address, MonoCSharpLanguageBackend language)
+					 ITargetInfo target_info, ITargetMemoryAccess memory,
+					 TargetAddress address)
 		{
 			this.Table = table;
 			this.TargetInfo = target_info;
 			this.backend = backend;
-			this.Language = language;
 
 			ThreadManager = backend.ThreadManager;
 			GlobalAddressDomain = memory.GlobalAddressDomain;
@@ -979,6 +860,12 @@ namespace Mono.Debugger.Languages.CSharp
 			File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
 
 			symtab = new MonoCSharpSymbolTable (this);
+
+			name = Assembly.GetName (true).Name;
+
+			backend.ModuleManager.AddModule (this);
+
+			OnModuleChangedEvent ();
 		}
 
 		public override string ToString ()
@@ -1125,6 +1012,39 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public override string Name {
+			get { return name; }
+		}
+
+		public override ILanguage Language {
+			get { return Table; }
+		}
+
+		internal override ILanguageBackend LanguageBackend {
+			get { return Table.Language; }
+		}
+
+		public override bool SymbolsLoaded {
+			get { return LoadSymbols; }
+		}
+
+		public override SourceFile[] Sources {
+			get { return GetSources (); }
+		}
+
+		public override bool HasDebuggingInfo {
+			get { return File != null; }
+		}
+
+		public override ISimpleSymbolTable SimpleSymbolTable {
+			get { return this; }
+		}
+
+		public override TargetAddress SimpleLookup (string name)
+		{
+			return TargetAddress.Null;
+		}
+
 		public SourceFile[] GetSources ()
 		{
 			ensure_sources ();
@@ -1185,7 +1105,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return GetMethod_internal (entry.Index);
 		}
 
-		public SourceMethod FindMethod (string name)
+		public override SourceMethod FindMethod (string name)
 		{
 			if (File == null)
 				return null;
@@ -1209,7 +1129,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ISymbolTable SymbolTable {
+		public override ISymbolTable SymbolTable {
 			get {
 				return symtab;
 			}
@@ -1241,7 +1161,7 @@ namespace Mono.Debugger.Languages.CSharp
 			C.SourceFileEntry source;
 
 			public MonoSourceFile (MonoSymbolFile reader, C.SourceFileEntry source)
-				: base (reader.Module, source.FileName)
+				: base (reader, source.FileName)
 			{
 				this.reader = reader;
 				this.source = source;
@@ -1423,7 +1343,7 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodAddress address;
 
 			public MonoMethod (MonoSymbolFile reader, SourceMethod info, C.MethodEntry method)
-				: base (info.Name, reader.ImageFile, reader.Module)
+				: base (info.Name, reader.ImageFile, reader)
 			{
 				this.reader = reader;
 				this.info = info;
@@ -1543,7 +1463,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override SourceMethod GetTrampoline (TargetAddress address)
 			{
-				return reader.Language.GetTrampoline (address);
+				return reader.Table.Language.GetTrampoline (address);
 			}
 		}
 

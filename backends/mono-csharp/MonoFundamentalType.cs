@@ -10,11 +10,11 @@ namespace Mono.Debugger.Languages.CSharp
 			: this (type, size, info, table, true)
 		{ }
 
-		protected MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table,
+		protected MonoFundamentalType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file,
 					       bool has_fixed_size)
-			: base (TargetObjectKind.Fundamental, type, size, false, info, table, has_fixed_size)
+			: base (TargetObjectKind.Fundamental, type, size, false, info, file, has_fixed_size)
 		{
-			this.Heap = table.Language.DataHeap;
+			this.Heap = file.Table.Language.DataHeap;
 		}
 
 		public static bool Supports (Type type)

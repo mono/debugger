@@ -12,13 +12,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolFile table)
-			: base (type, size, info, table, false)
+		public MonoStringType (Type type, int size, TargetBinaryReader info, MonoSymbolFile file)
+			: base (type, size, info, file, false)
 		{
 			LengthOffset = info.ReadByte ();
 			LengthSize = info.ReadByte ();
 			DataOffset = info.ReadByte ();
-			CreateString = table.Language.MonoDebuggerInfo.CreateString;
+			CreateString = file.Table.Language.MonoDebuggerInfo.CreateString;
 		}
 
 		new public static bool Supports (Type type)

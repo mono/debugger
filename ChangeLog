@@ -1,5 +1,10 @@
 2004-01-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Merged
+	MonoSymbolFile and MonoModule.
+
+2004-01-16  Martin Baulig  <martin@ximian.com>
+
 	* arch/Bfd.cs: Merged with BfdModule.
 
 	* arch/BfdModule.cs: Removed.

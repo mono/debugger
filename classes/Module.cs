@@ -22,15 +22,12 @@ namespace Mono.Debugger
 	// </summary>
 	public abstract class Module
 	{
-		string name;
 		bool load_symbols;
 		bool step_into;
 		Hashtable breakpoints = new Hashtable ();
 
-		internal Module (string name)
+		internal Module ()
 		{
-			this.name = name;
-
 			load_symbols = true;
 			step_into = true;
 		}
@@ -46,10 +43,8 @@ namespace Mono.Debugger
 		// <summary>
 		//   This is the name which should be displayed to the user.
 		// </summary>
-		public string Name {
-			get {
-				return name;
-			}
+		public abstract string Name {
+			get;
 		}
 
 		// <summary>
@@ -61,7 +56,7 @@ namespace Mono.Debugger
 		// </summary>
 		public virtual string FullName {
 			get {
-				return name;
+				return Name;
 			}
 		}
 
@@ -192,7 +187,8 @@ namespace Mono.Debugger
 		//   name to a SourceMethod and a list of SourceMethod's which is
 		//   sorted by the method's start line.
 		// </remarks>
-		internal abstract void ReadModuleData ();
+		internal virtual void ReadModuleData ()
+		{ }
 
 		// <summary>
 		//   Returns a list of all source files in this method.

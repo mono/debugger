@@ -183,7 +183,6 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd (BfdContainer container, ITargetMemoryAccess memory, string filename,
 			    bool core_file, TargetAddress base_address)
-			: base (filename)
 		{
 			this.container = container;
 			this.memory = memory;
@@ -465,6 +464,12 @@ namespace Mono.Debugger.Architecture
 					memory.GlobalAddressDomain, BaseAddress.Address + address);
 		}
 
+		public override string Name {
+			get {
+				return filename;
+			}
+		}
+
 		public string FileName {
 			get {
 				return filename;
@@ -525,9 +530,6 @@ namespace Mono.Debugger.Architecture
 				return dwarf.SymbolTable;
 			}
 		}
-
-		internal override void ReadModuleData ()
-		{ }
 
 		public override TargetAddress SimpleLookup (string name)
 		{
