@@ -2077,7 +2077,7 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < pi.Length; i++) {
 					if (i > 0)
 						sb.Append (",");
-					sb.Append (GetTypeSignature (pi [i].ParameterType));
+					sb.Append (GetTypeSignature (pi [i].ParameterType).Replace ('+','/'));
 				}
 				sb.Append (")");
 				string full_name = sb.ToString ();
