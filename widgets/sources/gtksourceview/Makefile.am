@@ -34,10 +34,10 @@ libgtksourceview_la_LIBADD = @BUILD_GTK_LIBS@
 
 libgtksourceview_includedir=$(includedir)/gtksourceview
 
-libgtksourceview_include_HEADERS = \
-	gtksourcebuffer.h \
-	gtksourcetag.h \
-	gtksourceview.h
+#
+# Empty, because we do not want to install them
+#
+libgtksourceview_include_HEADERS = 
 
 gtksourceview-marshal.h: gtksourceview-marshal.list
 	glib-genmarshal \
