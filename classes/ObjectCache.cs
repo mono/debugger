@@ -109,7 +109,11 @@ namespace Mono.Debugger
 				}
 
 				data = func (user_data);
-				weak_reference = new WeakReference (data);
+				try {
+					weak_reference = new WeakReference (data);
+				} catch {
+					// Silently ignore.
+				}
 
 				// Just created a new object, add a hard reference to it and restart
 				// the timeout.
