@@ -186,6 +186,12 @@ namespace Mono.Debugger.Backends
 		static extern int mono_debugger_server_get_sigprof ();
 
 		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigpwr ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigxcpu ();
+
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_thread_abort_signal ();
 
 		[DllImport("monodebuggerserver")]
@@ -197,7 +203,7 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_mono_thread_debug_signal ();
 
-		static int sigkill, sigstop, sigint, sigchld, sigprof;
+		static int sigkill, sigstop, sigint, sigchld, sigprof, sigpwr, sigxcpu;
 		static int thread_abort_signal, thread_restart_signal;
 		static int thread_debug_signal, mono_thread_debug_signal;
 
@@ -208,6 +214,8 @@ namespace Mono.Debugger.Backends
 			sigint = mono_debugger_server_get_sigint ();
 			sigchld = mono_debugger_server_get_sigchld ();
 			sigprof = mono_debugger_server_get_sigprof ();
+			sigpwr = mono_debugger_server_get_sigpwr ();
+			sigxcpu = mono_debugger_server_get_sigxcpu ();
 			thread_abort_signal = mono_debugger_server_get_thread_abort_signal ();
 			thread_restart_signal = mono_debugger_server_get_thread_restart_signal ();
 			thread_debug_signal = mono_debugger_server_get_thread_debug_signal ();
@@ -588,6 +596,14 @@ namespace Mono.Debugger.Backends
 
 		public static int SIGPROF {
 			get { return sigprof; }
+		}
+
+		public static int SIGPWR {
+			get { return sigpwr; }
+		}
+
+		public static int SIGXCPU {
+			get { return sigxcpu; }
 		}
 
 		public static int ThreadAbortSignal {

@@ -370,6 +370,18 @@ mono_debugger_server_get_sigprof (void)
 }
 
 int
+mono_debugger_server_get_sigpwr (void)
+{
+	return SIGPWR;
+}
+
+int
+mono_debugger_server_get_sigxcpu (void)
+{
+	return SIGXCPU;
+}
+
+int
 mono_debugger_server_get_thread_abort_signal (void)
 {
 #ifdef __linux__

@@ -176,6 +176,12 @@ namespace Mono.Debugger
 				return true;
 			}
 
+			if ((signal == PTraceInferior.SIGPWR) || (signal == PTraceInferior.SIGXCPU)) {
+				inferior.SetSignal (0, false);
+				action = false;
+				return true;
+			}
+
 			if (signal != PTraceInferior.ThreadDebugSignal) {
 				action = true;
 				return false;

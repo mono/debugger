@@ -1,5 +1,10 @@
 2003-03-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs (SignalHandler): Ignore SIGPWR and
+	SIGXCPU since they're used by the garbage collector.
+
+2003-03-28  Martin Baulig  <martin@ximian.com>
+
 	* arch/Bfd.cs: Read the dynamic symbol table and make it available
 	via the ISimpleSymbolTable.  This finally gives us function names
 	from shared libraries in backtraces.
