@@ -201,7 +201,9 @@ static gpointer
 debugger_thread (gpointer data)
 {
 	CORBA_Environment ev;
-	const char *argv[6] = { "remoting-client", "--ORBIIOPIPv4=1", "--ORBIIOPUNIX=0", "--ORBIIOPIPName=127.0.0.1", "--ORBIIOPIPSock=40860", NULL };
+	const char *argv[6] = { "remoting-client", "--ORBIIOPIPv4=1", "--ORBIIOPUNIX=0",
+				"--ORBIIOPIPName=127.0.0.1", "--ORBIIOPIPSock=40860",
+				NULL };
 	int argc = 5;
 
 	CORBA_exception_init (&ev);
@@ -239,23 +241,24 @@ debugger_thread (gpointer data)
 	return NULL;
 }
 
-static GStaticMutex mutex = G_STATIC_MUTEX_INIT;
+static GMutex *mutex;
 static GCond *cond;
 
 static gpointer
 wait_thread (gpointer data)
 {
 	for (;;) {
-		guint32 ret, status_ret;
-		guint64 status;
+		guint32 ret, status;
 
-		g_cond_wait (cond, &mutex);
+		g_cond_wait (cond, mutex);
 
 		if (!global_vtable || !global_vtable->global_wait)
 			continue;
 
-		ret = htonl (global_vtable->global_wait (&status));
-		status_ret = htonl (status);
+		ret = global_vtable->global_wait (&status);
+
+		ret = htonl (ret);
+		status = htonl (status);
 
 		g_assert (send (the_socket, &ret, 4, 0) == 4);
 		g_assert (send (the_socket, &status, 4, 0) == 4);
@@ -279,6 +282,7 @@ main (int argc, char **argv)
 
 	g_thread_init (NULL);
 
+	mutex = g_mutex_new ();
 	cond = g_cond_new ();
 
 	g_thread_create (debugger_thread, NULL, TRUE, NULL);
@@ -332,7 +336,9 @@ main (int argc, char **argv)
 
 		switch (command) {
 		case 1:
+			g_mutex_lock (mutex);
 			g_cond_signal (cond);
+			g_mutex_unlock (mutex);
 			break;
 
 		case 2:

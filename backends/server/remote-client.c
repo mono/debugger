@@ -1,4 +1,6 @@
 #include <config.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <server.h>
 #include <signal.h>
 #include <unistd.h>
@@ -34,8 +36,7 @@ struct InferiorHandle {
 static int
 setup_corba (void)
 {
-	const char *argv[3] = {
-		"remoting-client", "--ORBIIOPIPv4=1", NULL };
+	const char *argv[3] = { "remoting-client", "--ORBIIOPIPv4=1", NULL };
         int argc = 2;
 	CORBA_Environment ev;
 	struct sockaddr_in name;
@@ -70,7 +71,7 @@ setup_corba (void)
 
 	g_assert (hostinfo);
 
-	if (connect (the_socket, &name, sizeof (name))) {
+	if (connect (the_socket, (struct sockaddr *) &name, sizeof (name))) {
 		g_warning (G_STRLOC ": Can't conntext: %s", g_strerror (errno));
 		return -1;
 	}
@@ -205,7 +206,7 @@ remote_server_finalize (ServerHandle *handle)
 }
 
 static ServerStatusMessageType
-remote_server_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg,
+remote_server_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
 			      guint64 *data1, guint64 *data2)
 {
 	CORBA_Environment ev;
@@ -588,9 +589,11 @@ remote_server_global_wait (guint64 *status)
 		return -1;
 	}
 
-	*status = ntohl (status_ret);
+	result = ntohl (result);
+	status_ret = ntohl (status_ret);
 
-	return ntohl (result);
+	*status = status_ret;
+	return result;
 }
 
 static void
