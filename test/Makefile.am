@@ -10,7 +10,8 @@ noinst_SCRIPTS = \
 noinst_PROGRAMS = testnativetypes module libfoo.so
 
 EXTRA_DIST = \
-	TestManagedTypes.cs TestAssembly.cs TestModule.cs TestNamespace.cs
+	TestManagedTypes.cs TestAssembly.cs TestModule.cs TestNamespace.cs \
+	mdb.exp
 
 testnativetypes_SOURCES = testnativetypes.c
 

@@ -1,10 +1,10 @@
 #!/usr/bin/expect -f
 #
 
-load_lib mdb.exp
+source $srcdir/mdb.exp
 
-set file [pwd]/module.c
-set foo [pwd]/foo.c
+set file $srcdir/module.c
+set foo $srcdir/foo.c
 
 mdb_start "module"
 mdb_expect_frame 0 "main" $file 11

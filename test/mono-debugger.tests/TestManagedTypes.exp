@@ -1,9 +1,9 @@
 #!/usr/bin/expect -f
 #
 
-load_lib mdb.exp
+source $srcdir/mdb.exp
 
-set file [pwd]/TestManagedTypes.cs
+set file $srcdir/TestManagedTypes.cs
 mdb_start "TestManagedTypes.exe"
 mdb_expect_frame 0 "X.Main()" $file 218
 mdb_send "break 120"

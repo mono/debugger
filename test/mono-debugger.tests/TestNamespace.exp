@@ -1,9 +1,9 @@
 #!/usr/bin/expect -f
 #
 
-load_lib mdb.exp
+source $srcdir/mdb.exp
 
-set file [pwd]/TestNamespace.cs
+set file $srcdir/TestNamespace.cs
 mdb_start "TestNamespace.exe"
 mdb_expect_frame 0 "Test.X.Main()" $file 21
 mdb_send "break Martin.Baulig.Hello.World"
