@@ -31,6 +31,7 @@ namespace Mono.Debugger
 		int pid, id;
 
 		static int next_id = 0;
+		static int next_daemon_id = 0;
 
 		protected enum ProcessType
 		{
@@ -47,7 +48,6 @@ namespace Mono.Debugger
 			this.backend = backend;
 			this.start = start;
 			this.bfd_container = bfd_container;
-			this.id = ++next_id;
 
 			IInferior inferior = new PTraceInferior (
 				backend, start, bfd_container, backend.ThreadManager.BreakpointManager,
@@ -65,6 +65,7 @@ namespace Mono.Debugger
 			switch (type) {
 			case ProcessType.Daemon:
 				is_daemon = true;
+				id = --next_daemon_id;
 				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
 				runner.TargetExited += new TargetExitedHandler (child_exited);
 				this.pid = pid;
@@ -72,12 +73,14 @@ namespace Mono.Debugger
 
 			case ProcessType.ManagedWrapper:
 				is_daemon = true;
+				id = --next_daemon_id;
 				runner = backend.ThreadManager.StartManagedApplication (this, inferior, start);
 				runner.TargetExited += new TargetExitedHandler (child_exited);
 				this.pid = runner.Inferior.PID;
 				break;
 
 			case ProcessType.Normal:
+				id = ++next_id;
 				sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
 				sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
@@ -95,6 +98,7 @@ namespace Mono.Debugger
 				break;
 
 			case ProcessType.CoreFile:
+				id = ++next_id;
 				CoreFile core = new CoreFileElfI386 (backend, start.TargetApplication,
 								     core_file, bfd_container);
 
