@@ -40,11 +40,11 @@ namespace Mono.Debugger
 			byte register;
 			int disp;
 
-			if (((address_byte & 0x18) == 0x10) && ((address_byte >> 6) == 1)) {
+			if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 1)) {
 				register = (byte) (address_byte & 0x07);
 				disp = reader.ReadByte ();
 				insn_size = 3;
-			} else if (((address_byte & 0x18) == 0x10) && ((address_byte >> 6) == 2)) {
+			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 2)) {
 				register = (byte) (address_byte & 0x07);
 				disp = reader.ReadInteger ();
 				insn_size = 6;
