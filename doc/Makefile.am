@@ -9,7 +9,7 @@ debugger.tree debugger.zip: $(srcdir)/api/*/*.xml
 	mono --debug @monodoc_prefix@/lib/monodoc/assembler.exe --ecma $(srcdir)/api/ -o debugger
 
 update:
-	mono --debug @monodoc_prefix@/lib/monodoc/updater.exe @prefix@/lib/mono/mono-debugger/Mono.Debugger.dll -o ./api -f -i
+	mono --debug @monodoc_prefix@/lib/monodoc/updater.exe @prefix@/lib/mono/mono-debugger/Mono.Debugger.dll -o ./api -f
 
 dist-hook:
 	find . -name '*.xml' > files
