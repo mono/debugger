@@ -24,11 +24,27 @@ namespace Mono.Debugger.Backends
 		CHILD_SIGNALED
 	}
 
+	internal enum CommandError {
+		NONE = 0,
+		IO,
+		UNKNOWN,
+		INVALID_COMMAND,
+		NOT_STOPPED
+	}
+	
+	internal enum ServerCommand {
+		GET_PC = 1,
+		CONTINUE,
+		DETACH,
+		SHUTDOWN,
+		KILL
+	}
+
 	internal delegate void ChildSetupHandler ();
 	internal delegate void ChildExitedHandler ();
 	internal delegate void ChildMessageHandler (ChildMessage message, int arg);
 
-	internal class Inferior : IDisposable
+	internal class Inferior : IInferior, IDisposable
 	{
 		IntPtr server_handle;
 		IOOutputChannel inferior_stdin;
@@ -56,46 +72,26 @@ namespace Mono.Debugger.Backends
 		static extern bool mono_debugger_spawn_async (string working_directory, string[] argv, string[] envp, bool search_path, ChildSetupHandler child_setup, out int child_pid, out IntPtr status_channel, out IntPtr server_handle, ChildExitedHandler child_exited, ChildMessageHandler child_message, out int standard_input, out int standard_output, out int standard_error, out IntPtr errout);
 
 		[DllImport("monodebuggerserver")]
-		static extern ulong mono_debugger_get_program_counter (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern ulong mono_debugger_continue (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern ulong mono_debugger_detach (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern ulong mono_debugger_shutdown (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern ulong mono_debugger_kill (IntPtr handle);
+		static extern CommandError mono_debugger_server_command (IntPtr handle, ServerCommand command);
 
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
-		public ulong GetProgramCounter ()
+		void send_command (ServerCommand command)
 		{
-			return mono_debugger_get_program_counter (server_handle);
-		}
+			CommandError error = mono_debugger_server_command (server_handle, command);
 
-		public void Continue ()
-		{
-			mono_debugger_continue (server_handle);
-		}
+			switch (error) {
+			case CommandError.NONE:
+				return;
 
-		public void Detach ()
-		{
-			mono_debugger_detach (server_handle);
-		}
+			case CommandError.NOT_STOPPED:
+				throw new TargetNotStoppedException ();
 
-		public void Shutdown ()
-		{
-			mono_debugger_shutdown (server_handle);
-		}
-
-		public void Kill ()
-		{
-			mono_debugger_kill (server_handle);
+			default:
+				throw new TargetException (
+					"Got unknown error condition from inferior: " + error);
+			}
 		}
 
 		public Inferior (string working_directory, string[] argv, string[] envp)
@@ -130,6 +126,9 @@ namespace Mono.Debugger.Backends
 			inferior_stdin = new IOOutputChannel (stdin_fd);
 			inferior_stdout = new IOInputChannel (stdout_fd);
 			inferior_stderr = new IOInputChannel (stderr_fd);
+
+			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
+			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
 		}
 
 		public Inferior (int pid, string[] envp)
@@ -161,6 +160,9 @@ namespace Mono.Debugger.Backends
 			inferior_stdin = new IOOutputChannel (stdin_fd);
 			inferior_stdout = new IOInputChannel (stdout_fd);
 			inferior_stderr = new IOInputChannel (stderr_fd);
+
+			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
+			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
 		}
 
 		void child_exited ()
@@ -174,6 +176,79 @@ namespace Mono.Debugger.Backends
 		{
 			if (ChildMessage != null)
 				ChildMessage (message, arg);
+		}
+
+		void inferior_output (string line)
+		{
+			if (TargetOutput != null)
+				TargetOutput (line);
+		}
+
+		void inferior_errors (string line)
+		{
+			if (TargetError != null)
+				TargetError (line);
+		}
+
+		//
+		// IInferior
+		//
+
+		public event TargetOutputHandler TargetOutput;
+		public event TargetOutputHandler TargetError;
+		public event StateChangedHandler StateChanged;
+
+		TargetState target_state = TargetState.NO_TARGET;
+		public TargetState State {
+			get {
+				return target_state;
+			}
+		}
+
+		void change_target_state (TargetState new_state)
+		{
+			if (new_state == target_state)
+				return;
+
+			target_state = new_state;
+
+			if (StateChanged != null)
+				StateChanged (target_state);
+		}
+
+		public void Continue ()
+		{
+			send_command (ServerCommand.CONTINUE);
+		}
+
+		public void Detach ()
+		{
+			send_command (ServerCommand.DETACH);
+		}
+
+		public void Shutdown ()
+		{
+			send_command (ServerCommand.SHUTDOWN);
+		}
+
+		public void Kill ()
+		{
+			send_command (ServerCommand.KILL);
+		}
+
+		public void Step ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		public void Next ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		public ITargetLocation Frame ()
+		{
+			throw new NotImplementedException ();
 		}
 
 		//

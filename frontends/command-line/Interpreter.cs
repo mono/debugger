@@ -86,6 +86,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.Run ();
 				break;
 
+			case "c":
+			case "continue":
+				backend.Continue ();
+				break;
+
 			case "f":
 			case "frame":
 				backend.Frame ();
@@ -102,7 +107,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 
 			case "abort":
-				backend.Abort ();
+				backend.Shutdown ();
 				break;
 
 			case "kill":

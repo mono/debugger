@@ -21,8 +21,8 @@ mono_debugger_process_server_message (ServerHandle *handle)
 	return TRUE;
 }
 
-static ServerCommandError
-send_command (ServerHandle *handle, ServerCommand command)
+ServerCommandError
+mono_debugger_server_command (ServerHandle *handle, ServerCommand command)
 {
 	ServerCommandError result;
 
@@ -39,35 +39,4 @@ send_command (ServerHandle *handle, ServerCommand command)
 	}
 
 	return result;
-}
-
-guint64
-mono_debugger_get_program_counter (ServerHandle *handle)
-{
-	send_command (handle, SERVER_COMMAND_GET_PC);
-	return -1;
-}
-
-void
-mono_debugger_continue (ServerHandle *handle)
-{
-	send_command (handle, SERVER_COMMAND_CONTINUE);
-}
-
-void
-mono_debugger_detach (ServerHandle *handle)
-{
-	send_command (handle, SERVER_COMMAND_DETACH);
-}
-
-void
-mono_debugger_shutdown (ServerHandle *handle)
-{
-	send_command (handle, SERVER_COMMAND_SHUTDOWN);
-}
-
-void
-mono_debugger_kill (ServerHandle *handle)
-{
-	send_command (handle, SERVER_COMMAND_KILL);
 }

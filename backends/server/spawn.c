@@ -387,7 +387,6 @@ do_exec (gint                 child_err_report_fd,
   
   /* Redirect pipes as required */
 
-#if 0  
   /* dup2 can't actually fail here I don't think */
   if (sane_dup2 (stdin_fd, 0) < 0)
     write_err_and_exit (child_err_report_fd,
@@ -411,7 +410,6 @@ do_exec (gint                 child_err_report_fd,
 
   /* ignore this if it doesn't work */
   close_and_invalidate (&stderr_fd);
-#endif
   
   /* dup2 can't actually fail here I don't think */
   if (sane_dup2 (status_fd, 3) < 0)

@@ -72,7 +72,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		//
-		// IDebuggerBackend
+		// IInferior
 		//
 
 		TargetState target_state = TargetState.NO_TARGET;
@@ -82,25 +82,33 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Run ()
+		void change_target_state (TargetState new_state)
 		{
-			if (inferior != null)
-				throw new TargetException ("Debugger already has an inferior.");
+			if (new_state == target_state)
+				return;
 
-			inferior = new Inferior (working_directory, argv, envp);
+			target_state = new_state;
+
+			if (StateChanged != null)
+				StateChanged (target_state);
 		}
 
-		public void Quit ()
+		public void Continue ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			inferior.Continue ();
+			change_target_state (TargetState.RUNNING);
+		}
+
+		public void Shutdown ()
 		{
 			if (inferior != null) {
 				inferior.Shutdown ();
 				inferior.Dispose ();
 				inferior = null;
 			}
-		}
-
-		public void Abort ()
-		{
 		}
 
 		public void Kill ()
@@ -112,28 +120,96 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Frame ()
+		public ITargetLocation Frame ()
 		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			throw new NotSupportedException ();
 		}
 
 		public void Step ()
 		{
+			if (inferior == null)
+				throw new NoTargetException ();
 		}
 		
 		public void Next ()
 		{
-		}
-
-		public IBreakPoint AddBreakPoint (ITargetLocation location)
-		{
-			throw new NotImplementedException ();
+			if (inferior == null)
+				throw new NoTargetException ();
 		}
 
 		public event TargetOutputHandler TargetOutput;
 		public event TargetOutputHandler TargetError;
 		public event StateChangedHandler StateChanged;
+
+		//
+		// IDebuggerBackend
+		//
+
 		public event StackFrameHandler CurrentFrameEvent;
 		public event StackFramesInvalidHandler FramesInvalidEvent;
+
+		void child_exited ()
+		{
+			inferior.Dispose ();
+			inferior = null;
+		}
+
+		void inferior_output (string line)
+		{
+			if (TargetOutput != null)
+				TargetOutput (line);
+		}
+
+		void inferior_errors (string line)
+		{
+			if (TargetError != null)
+				TargetError (line);
+		}
+
+		void child_message (ChildMessage message, int args)
+		{
+			switch (message) {
+			case ChildMessage.CHILD_STOPPED:
+				change_target_state (TargetState.STOPPED);
+				break;
+
+			case ChildMessage.CHILD_EXITED:
+			case ChildMessage.CHILD_SIGNALED:
+				change_target_state (TargetState.EXITED);
+				break;
+
+			default:
+				Console.WriteLine ("CHILD MESSAGE: {0} {1}", message, args);
+				break;
+			}
+		}
+
+		public void Run ()
+		{
+			if (inferior != null)
+				throw new TargetException ("Debugger already has an inferior.");
+
+			inferior = new Inferior (working_directory, argv, envp);
+			inferior.ChildExited += new ChildExitedHandler (child_exited);
+			inferior.ChildMessage += new ChildMessageHandler (child_message);
+			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
+			inferior.TargetError += new TargetOutputHandler (inferior_errors);
+
+			change_target_state (TargetState.STOPPED);
+		}
+
+		public void Quit ()
+		{
+			Shutdown ();
+		}
+
+		void IDebuggerBackend.Frame ()
+		{
+			IInferior.Frame ();
+		}
 
 		public ISourceFileFactory SourceFileFactory {
 			get {
@@ -147,19 +223,19 @@ namespace Mono.Debugger.Backends
 
 		uint IDebuggerBackend.TargetAddressSize {
 			get {
-				return target_address_size;
+				throw new NotImplementedException ();
 			}
 		}
 
 		uint IDebuggerBackend.TargetIntegerSize {
 			get {
-				return target_integer_size;
+				throw new NotImplementedException ();
 			}
 		}
 
 		uint IDebuggerBackend.TargetLongIntegerSize {
 			get {
-				return target_long_integer_size;
+				throw new NotImplementedException ();
 			}
 		}
 
@@ -198,6 +274,11 @@ namespace Mono.Debugger.Backends
 			throw new NotImplementedException ();
 		}
 
+		public IBreakPoint AddBreakPoint (ITargetLocation location)
+		{
+			throw new NotImplementedException ();
+		}
+
 		//
 		// IDisposable
 		//
@@ -212,7 +293,7 @@ namespace Mono.Debugger.Backends
 				// dispose all managed resources.
 				if (disposing) {
 					// Do stuff here
-					Quit ();
+					Kill ();
 				}
 				
 				// Release unmanaged resources

@@ -20,7 +20,8 @@ typedef enum {
 	COMMAND_ERROR_NONE = 0,
 	COMMAND_ERROR_IO,
 	COMMAND_ERROR_UNKNOWN,
-	COMMAND_ERROR_INVALID_COMMAND
+	COMMAND_ERROR_INVALID_COMMAND,
+	COMMAND_ERROR_NOT_STOPPED
 } ServerCommandError;
 
 typedef enum {
@@ -94,20 +95,9 @@ server_get_program_counter           (InferiorHandle          *handle,
 extern gboolean
 mono_debugger_process_server_message (ServerHandle            *handle);
 
-extern guint64
-mono_debugger_get_program_counter    (ServerHandle            *handle);
-
-extern void
-mono_debugger_continue               (ServerHandle            *handle);
-
-extern void
-mono_debugger_detach                 (ServerHandle            *handle);
-
-extern void
-mono_debugger_shutdown               (ServerHandle            *handle);
-
-extern void
-mono_debugger_kill                   (ServerHandle            *handle);
+extern ServerCommandError
+mono_debugger_server_send_command    (ServerHandle            *handle,
+				      ServerCommand            command);
 
 G_END_DECLS
 

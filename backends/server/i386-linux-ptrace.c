@@ -43,7 +43,10 @@ server_ptrace_attach (int pid)
 ServerCommandError
 server_ptrace_continue (InferiorHandle *handle)
 {
-	if (ptrace (PTRACE_CONT, handle->pid)) {
+	if (ptrace (PTRACE_CONT, handle->pid, NULL, NULL)) {
+		if (errno == ESRCH)
+			return COMMAND_ERROR_NOT_STOPPED;
+
 		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
@@ -67,7 +70,7 @@ server_get_program_counter (InferiorHandle *handle, guint64 *pc)
 {
 	*pc = ptrace (PTRACE_PEEKUSER, handle->pid, sizeof (long) * EIP);
 	if (errno) {
-		g_message (G_STRLOC ": %d - %d - %s - 0x%lx", handle->pid, errno, g_strerror (errno), *pc);
+		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
 

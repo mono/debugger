@@ -32,15 +32,7 @@ namespace Mono.Debugger
 		EXITED
 	}
 
-	/// <summary>
-	///   This denotes a single debuggable target in some debugger.
-	///
-	///   A debugger implements this interface to denote one single debuggable target
-	///   (an application the user is debugging).  If a debugger may debug more than
-	///   one application at a time, it will create multiple instances of a class which
-	///   implements this interface.
-	/// </summary>
-	public interface IDebuggerBackend : IDisposable
+	public interface IInferior : IDisposable
 	{
 		// <summary>
 		//   Get the state of the target we're debugging.
@@ -50,7 +42,77 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Start/continue the target.
+		//   Continue the target.
+		// </summary>
+		void Continue ();
+
+		// <summary>
+		//   Aborts the target being debugged, but gives it time to terminate cleanly.
+		//   On Unix systems, this'll send a SIGTERM to the target process.
+		// </summary>
+		void Shutdown ();
+
+		// <summary>
+		//   Forcibly kills the target without giving it any time to terminate.
+		//   On Unix systems, this'll send a SIGKILL to the target process.
+		// </summary>
+		void Kill ();
+
+		// <summary>
+		//   Ask the debugger for the current stack frame and
+		//   emit a CurrentFrameEvent.
+		// </summary>
+		ITargetLocation Frame ();
+
+		// <summary>
+		//   Single-step and enter into methods.
+		// </summary>
+		void Step ();
+
+		// <summary>
+		//   Single-step, but step over method invocations.
+		// </summary>
+		void Next ();
+
+		// <summary>
+		//   This event is called when the target we're currently debugging has sent any
+		//   output to stdout.
+		// </summary>
+		event TargetOutputHandler TargetOutput;
+
+		// <summary>
+		//   This event is called when the target we're currently debugging has sent any
+		//   error messages to stderr.
+		// </summary>
+		event TargetOutputHandler TargetError;
+
+		// <summary>
+		//   This event is called when the state of the target we're currently debugging
+		//   has changed, for instance when the target has stopped or exited.
+		// </summary>
+		event StateChangedHandler StateChanged;
+	}
+
+
+	/// <summary>
+	///   This denotes a single debuggable target in some debugger.
+	///
+	///   A debugger implements this interface to denote one single debuggable target
+	///   (an application the user is debugging).  If a debugger may debug more than
+	///   one application at a time, it will create multiple instances of a class which
+	///   implements this interface.
+	/// </summary>
+	public interface IDebuggerBackend : IInferior, IDisposable
+	{
+		// <summary>
+		//   Get the state of the target we're debugging.
+		// </summary>
+		TargetState State {
+			get;
+		}
+
+		// <summary>
+		//   Start the target.
 		// </summary>
 		void Run ();
 
@@ -65,32 +127,10 @@ namespace Mono.Debugger
 		void Quit ();
 
 		// <summary>
-		//   Aborts the target being debugged, but gives it time to terminate cleanly.
-		//   On Unix systems, this'll send a SIGTERM to the target process.
-		// </summary>
-		void Abort ();
-
-		// <summary>
-		//   Forcibly kills the target without giving it any time to terminate.
-		//   On Unix systems, this'll send a SIGKILL to the target process.
-		// </summary>
-		void Kill ();
-
-		// <summary>
 		//   Ask the debugger for the current stack frame and
 		//   emit a CurrentFrameEvent.
 		// </summary>
 		void Frame ();
-
-		// <summary>
-		//   Single-step and enter into methods.
-		// </summary>
-		void Step ();
-
-		// <summary>
-		//   Single-step, but step over method invocations.
-		// </summary>
-		void Next ();
 
 		// <summary>
 		//   Size of an address in the target.
@@ -153,24 +193,6 @@ namespace Mono.Debugger
 		//   Adds a breakpoint at the specified target location.
 		// </summary>
 		IBreakPoint AddBreakPoint (ITargetLocation location);
-
-		// <summary>
-		//   This event is called when the target we're currently debugging has sent any
-		//   output to stdout.
-		// </summary>
-		event TargetOutputHandler TargetOutput;
-
-		// <summary>
-		//   This event is called when the target we're currently debugging has sent any
-		//   error messages to stderr.
-		// </summary>
-		event TargetOutputHandler TargetError;
-
-		// <summary>
-		//   This event is called when the state of the target we're currently debugging
-		//   has changed, for instance when the target has stopped or exited.
-		// </summary>
-		event StateChangedHandler StateChanged;
 
 		// <summary>
 		//   This event is emitted each time the application

@@ -61,6 +61,8 @@ namespace GLib {
 		[DllImport("monodebuggerglue")]
 		static extern uint mono_debugger_glue_add_watch_input (IntPtr channel, ReadLineHandler cb);
 
+		StringBuilder sb = null;
+
 		void read_line (string line)
 		{
 			if (ReadLine == null)
@@ -71,12 +73,25 @@ namespace GLib {
 			while (true) {
 				int end = line.IndexOf ('\n', start);
 				if (end != -1) {
-					if (start != end)
-						ReadLine (line.Substring (start, end-start));
+					if (start != end) {
+						if (sb != null) {
+							sb.Append (line.Substring (start, end-start));
+							ReadLine (sb.ToString ());
+							sb = null;
+						} else
+							ReadLine (line.Substring (start, end-start));
+					} else if (sb != null) {
+						ReadLine (sb.ToString ());
+						sb = null;
+					}
 					start = end + 1;
 				} else {
-					if (start != length)
-						ReadLine (line.Substring (start));
+					if (start != length) {
+						if (sb != null)
+							sb.Append (line.Substring (start));
+						else
+							sb = new StringBuilder (line.Substring (start));
+					}
 					break;
 				}
 			}

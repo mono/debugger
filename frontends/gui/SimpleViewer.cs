@@ -48,7 +48,7 @@ namespace Mono.Debugger.GUI {
 			Gtk.Window win = CreateWindow ();
 			win.ShowAll ();
 
-			backend = new GDB (application, arguments);
+			backend = new Debugger (application, arguments);
 
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);

@@ -136,12 +136,17 @@ namespace Mono.Debugger.Backends
 			start_target (StepMode.RUN);
 		}
 
+		public void Continue ()
+		{
+			start_target (StepMode.RUN);
+		}
+
 		public void Quit ()
 		{
 			gdb_input.WriteLine ("quit");
 		}
 
-		public void Abort ()
+		public void Shutdown ()
 		{
 			gdb_input.WriteLine ("signal SIGTERM");
 		}
@@ -151,7 +156,12 @@ namespace Mono.Debugger.Backends
 			gdb_input.WriteLine ("kill");
 		}
 
-		public void Frame ()
+		ITargetLocation IInferior.Frame ()
+		{
+			throw new NotSupportedException ();
+		}
+
+		void IDebuggerBackend.Frame ()
 		{
 			current_frame = null;
 			send_gdb_command ("frame");
