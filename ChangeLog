@@ -1,5 +1,7 @@
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.cs: Added `finish' command.
+
 	* frontends/command-line/Interpreter.cs: Commented out almost
 	everything in this file; it'll go away really soon.
 

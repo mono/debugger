@@ -34,10 +34,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
-			if (process.State == TargetState.RUNNING) {
-				running = true;
-				wait_until_stopped ();
-			}
+			running = true;
+			process.SingleSteppingEngine.Run ();
+			wait_until_stopped ();
 		}
 
 		int current_frame_idx = -1;
@@ -63,6 +62,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void state_changed (TargetState state, int arg)
 		{
+			// Console.WriteLine ("STATE CHANGED: {0} {1}", state, arg);
 			switch (state) {
 			case TargetState.EXITED:
 				if (arg == 0)
@@ -129,6 +129,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 			case WhichStepCommand.NextInstruction:
 				process.NextInstruction ();
+				break;
+			case WhichStepCommand.Finish:
+				process.Finish ();
 				break;
 			default:
 				throw new Exception ();
@@ -202,6 +205,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (current_frame == null)
 					current_frame = process.CurrentFrame;
 
+				Console.WriteLine ("FRAME: {0}", process.CurrentFrameAddress);
+
 				return current_frame;
 			}
 
@@ -240,7 +245,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Step,
 		Next,
 		StepInstruction,
-		NextInstruction
+		NextInstruction,
+		Finish
 	}
 
 	public class ScriptingContext
@@ -319,10 +325,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					Array.Copy (args, 1, temp_args, 0, args.Length-1);
 				args = temp_args;
 
-				start = new ProcessStart (null, args, null);
+				start = ProcessStart.Create (null, args, null);
 				process = backend.ReadCoreFile (start, "thecore");
 			} else{
-				start = new ProcessStart (null, args, null);
+				start = ProcessStart.Create (null, args, null);
 				process = backend.Run (start);
 			}
 

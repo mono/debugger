@@ -62,6 +62,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("i", Token.STEPI);
 			keywords.Add ("nexti", Token.NEXTI);
 			keywords.Add ("t", Token.NEXTI);
+			keywords.Add ("finish", Token.FINISH);
 		}
 
 		ScriptingContext context;

@@ -70,6 +70,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token NEXT
 %token STEPI
 %token NEXTI
+%token FINISH
 
 %start command_loop
 %%
@@ -109,6 +110,10 @@ command
 	| NEXTI opt_process
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.NextInstruction);
+	  }
+	| FINISH opt_process
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Finish);
 	  }
 	| BACKTRACE opt_process
 	  {
