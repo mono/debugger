@@ -147,8 +147,6 @@ namespace Mono.Debugger
 				string name = line.Substring (0, pos);
 				string value = line.Substring (pos + 1);
 
-				Console.WriteLine ("ENV: {0} {1}", name, value);
-
 				hash.Add (name, value);
 			}
 		}
@@ -171,6 +169,9 @@ namespace Mono.Debugger
 
 			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
 			foreach (string var in env_vars.Keys) {
+				if (var == "GC_DONT_GC")
+					continue;
+
 				// Allow `UserEnvironment' to override env vars.
 				if (hash.Contains (var))
 					continue;

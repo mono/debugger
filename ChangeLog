@@ -1,5 +1,10 @@
 2004-06-30  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs (ProcessStart.SetupEnvironment): Don't
+	pass GC_DONT_GC to our child.
+
+2004-06-30  Martin Baulig  <martin@ximian.com>
+
 	* classes/Threading.cs (DebuggerWaitHandle.Debug): New protected
 	method.  Only call Report.Debug, if we're actually debugging.
 
