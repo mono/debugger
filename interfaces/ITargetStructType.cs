@@ -61,6 +61,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		ITargetObject GetStaticField (StackFrame frame, int index);
+
 		ITargetFieldInfo[] Properties {
 			get;
 		}
@@ -69,6 +71,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		ITargetObject GetStaticProperty (StackFrame frame, int index);
+
 		ITargetMethodInfo[] Methods {
 			get;
 		}
@@ -76,5 +80,7 @@ namespace Mono.Debugger
 		ITargetMethodInfo[] StaticMethods {
 			get;
 		}
+
+		ITargetFunctionType GetStaticMethod (int index);
 	}
 }

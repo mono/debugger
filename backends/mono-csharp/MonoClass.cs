@@ -290,13 +290,13 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject GetStaticField (TargetLocation location, int index)
+		internal ITargetObject GetStaticField (StackFrame frame, int index)
 		{
 			init_static_fields ();
 
 			try {
-				TargetAddress data_address = location.TargetAccess.CallMethod (ClassGetStaticFieldData, KlassAddress);
-				TargetLocation field_loc = new RelativeTargetLocation (location, data_address);
+				TargetAddress data_address = frame.TargetAccess.CallMethod (ClassGetStaticFieldData, KlassAddress);
+				TargetLocation field_loc = new AbsoluteTargetLocation (frame, data_address);
 
 				return static_fields [index].Type.GetObject (field_loc);
 			} catch (TargetException ex) {
@@ -438,6 +438,14 @@ namespace Mono.Debugger.Languages.CSharp
 				return func.Invoke (new object [0]);
 			}
 
+			internal ITargetObject Get (StackFrame frame)
+			{
+				if (!PropertyInfo.CanRead)
+					throw new InvalidOperationException ();
+
+				return GetterType.InvokeStatic (frame, new object [0]);
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("MonoProperty ({0:x}:{1}:{2})",
@@ -452,11 +460,11 @@ namespace Mono.Debugger.Languages.CSharp
 			return properties [index].Get (location);
 		}
 
-		internal ITargetObject GetStaticProperty (TargetLocation location, int index)
+		internal ITargetObject GetStaticProperty (StackFrame frame, int index)
 		{
 			init_static_properties ();
 
-			return static_properties [index].Get (location);
+			return static_properties [index].Get (frame);
 		}
 
 		void init_methods ()
@@ -613,12 +621,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetFunctionObject GetStaticMethod (TargetLocation location, int index)
+		internal ITargetFunctionType GetStaticMethod (int index)
 		{
 			init_static_methods ();
 
 			try {
-				return (ITargetFunctionObject) static_methods [index].FunctionType.GetObject (location);
+				return static_methods [index].FunctionType;
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

@@ -130,6 +130,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ITargetObject GetStaticField (StackFrame frame, int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetFieldInfo[] Properties {
 			get {
 				return new ITargetFieldInfo [0];
@@ -142,6 +147,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ITargetObject GetStaticProperty (StackFrame frame, int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetMethodInfo[] Methods {
 			get {
 				return new ITargetMethodInfo [0];
@@ -152,6 +162,11 @@ namespace Mono.Debugger.Languages.Native
 			get {
 				return new ITargetMethodInfo [0];
 			}
+		}
+
+		public ITargetFunctionType GetStaticMethod (int index)
+		{
+			throw new InvalidOperationException ();
 		}
 
 		public override NativeObject GetObject (TargetLocation location)

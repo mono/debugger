@@ -10,15 +10,9 @@ namespace Mono.Debugger
 
 		ITargetObject GetField (int index);
 
-		ITargetObject GetStaticField (int index);
-
 		ITargetObject GetProperty (int index);
 
-		ITargetObject GetStaticProperty (int index);
-
 		ITargetFunctionObject GetMethod (int index);
-
-		ITargetFunctionObject GetStaticMethod (int index);
 
 		// <summary>
 		//   Calls a function in the target to get a textual representation

@@ -40,29 +40,14 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.GetField (location, index);
 		}
 
-		public ITargetObject GetStaticField (int index)
-		{
-			return type.GetStaticField (location, index);
-		}
-
 		public ITargetObject GetProperty (int index)
 		{
 			return type.GetProperty (location, index);
 		}
 
-		public ITargetObject GetStaticProperty (int index)
-		{
-			return type.GetStaticProperty (location, index);
-		}
-
 		public ITargetFunctionObject GetMethod (int index)
 		{
 			return type.GetMethod (location, index);
-		}
-
-		public ITargetFunctionObject GetStaticMethod (int index)
-		{
-			return type.GetStaticMethod (location, index);
 		}
 
 		public string PrintObject ()

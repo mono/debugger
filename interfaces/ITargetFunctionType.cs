@@ -24,5 +24,7 @@ namespace Mono.Debugger
 		object MethodHandle {
 			get;
 		}
+
+		ITargetObject InvokeStatic (StackFrame frame, object[] args);
 	}
 }

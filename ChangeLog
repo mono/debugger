@@ -7,11 +7,9 @@
 	Added new overloaded version of this method.
 
 	* interfaces/ITargetStructType.cs (ITargetStructType): Added
-	StaticFields, StaticProperties and StaticMethods arguments.
-
-	* interfaces/ITargetStructObject.cs (ITargetStructObject): Added
+	StaticFields, StaticProperties and StaticMethods properties and
 	GetStaticField(), GetStaticProperty() and GetStaticMethod()
-	methods.  [FIXME: This needs to be moved to ITargetStructType].
+	methods.
 
 2003-08-06  Martin Baulig  <martin@ximian.com>
 

@@ -264,7 +264,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ITargetObject get_static_property (ITargetStructObject sobj, ITargetFieldInfo field)
 		{
 			try {
-				return sobj.GetStaticProperty (field.Index);
+				return sobj.Type.GetStaticProperty (sobj.Location.StackFrame, field.Index);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException (
 					"Can't get property {0}.{1}: {2}", var_expr.Name, field.Name, ex.Message);
@@ -279,7 +279,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			foreach (ITargetFieldInfo field in sobj.Type.StaticFields)
 				if (field.Name == identifier)
-					return sobj.GetStaticField (field.Index);
+					return sobj.Type.GetStaticField (sobj.Location.StackFrame, field.Index);
 
 			foreach (ITargetFieldInfo field in sobj.Type.Properties)
 				if (field.Name == identifier)
@@ -324,20 +324,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 						"Ambiguous method `{0}'; need to use full name", identifier);
 
 				match = sobj.GetMethod (method.Index);
-			}
-
-			if (match != null)
-				return match;
-
-			foreach (ITargetMethodInfo method in sobj.Type.StaticMethods) {
-				if (method.FullName != identifier)
-					continue;
-
-				if (match != null)
-					throw new ScriptingException (
-						"Ambiguous method `{0}'; need to use full name", identifier);
-
-				match = sobj.GetStaticMethod (method.Index);
 			}
 
 			if (match != null)
