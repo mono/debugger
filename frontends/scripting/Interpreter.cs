@@ -530,6 +530,14 @@ namespace Mono.Debugger.Frontends.Scripting
 			ThreadGroup.CreateThreadGroup (name);
 		}
 
+		public void DeleteThreadGroup (string name)
+		{
+			if (!ThreadGroup.ThreadGroupExists (name))
+				throw new ScriptingException ("No such thread group.");
+
+			ThreadGroup.DeleteThreadGroup (name);
+		}
+
 		public ThreadGroup GetThreadGroup (string name, bool writable)
 		{
 			if (!ThreadGroup.ThreadGroupExists (name))

@@ -28,13 +28,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				return null;
 
 			try {
-				DoExecute (engine.Context);
-			} catch (ScriptingException ex) {
-				engine.Context.Error (ex.Message);
-				return null;
-			} catch (TargetException ex) {
-				engine.Context.Error (ex.Message);
-				return null;
+				Execute (engine.Context);
 			} catch (Exception ex) {
 				engine.Context.Error (
 					"Caught exception while executing command {0}: {1}",
@@ -86,6 +80,17 @@ namespace Mono.Debugger.Frontends.Scripting
 			} catch (ScriptingException ex) {
 				context.Error (ex);
 				return false;
+			}
+		}
+
+		public void Execute (ScriptingContext context)
+		{
+			try {
+				DoExecute (context);
+			} catch (ScriptingException ex) {
+				context.Error (ex);
+			} catch (TargetException ex) {
+				context.Error (ex.Message);
 			}
 		}
 	}
@@ -470,7 +475,63 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show processes", "Show processes")]
+	[Command("show", "Show things")]
+	public class ShowCommand : DebuggerCommand
+	{
+		DebuggerCommand subcommand;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count < 1)) {
+				context.Print ("Need an argument: processes registers " +
+					       "locals parameters breakpoints modules");
+				return false;
+			}
+
+			switch ((string) Args [0]) {
+			case "processes":
+			case "procs":
+				subcommand = new ShowProcessesCommand ();
+				break;
+			case "registers":
+			case "regs":
+				subcommand = new ShowRegistersCommand ();
+				break;
+			case "locals":
+				subcommand = new ShowLocalsCommand ();
+				break;
+			case "parameters":
+			case "params":
+				subcommand = new ShowParametersCommand ();
+				break;
+			case "breakpoints":
+				subcommand = new ShowBreakpointsCommand ();
+				break;
+			case "modules":
+				subcommand = new ShowModulesCommand ();
+				break;
+			case "threadgroups":
+				subcommand = new ShowThreadGroupsCommand ();
+				break;
+			default:
+				context.Error ("Syntax error");
+				return false;
+			}
+
+			ArrayList new_args = new ArrayList ();
+			for (int i = 1; i < Args.Count; i++)
+				new_args.Add (Args [i]);
+
+			subcommand.Args = new_args;
+			return subcommand.Resolve (context);
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			subcommand.Execute (context);
+		}
+	}
+
 	public class ShowProcessesCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -491,7 +552,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show registers", "Show registers")]
 	public class ShowRegistersCommand : FrameCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -506,7 +566,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show parameters", "Show method parameters")]
 	public class ShowParametersCommand : FrameCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -517,7 +576,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show locals", "Show local variables")]
 	public class ShowLocalsCommand : FrameCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -528,7 +586,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show modules", "Show modules")]
 	public class ShowModulesCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -575,8 +632,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				context.Interpreter.ShowMethods (source);
 		}
 	}
+#endif
 
-	[Command("show breakpoints", "Show breakpoints")]
 	public class ShowBreakpointsCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -585,7 +642,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("show threadgroups", "Show thread groups")]
 	public class ShowThreadGroupsCommand : DebuggerCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -594,62 +650,136 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("THREADGROUP CREATE", "Create a new thread group")]
-	public class ThreadGroupCreateCommand : DebuggerCommand
+	[Command("threadgroup", "Manage thread groups")]
+	public class ThreadGroupCommand : DebuggerCommand
 	{
-		string name;
+		DebuggerCommand subcommand;
 
-		public ThreadGroupCreateCommand (string name)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.name = name;
+			if ((Args == null) || (Args.Count < 1)) {
+				context.Print ("Need an argument: create add remove delete");
+				return false;
+			}
+
+			switch ((string) Args [0]) {
+			case "create":
+				subcommand = new ThreadGroupCreateCommand ();
+				break;
+			case "delete":
+				subcommand = new ThreadGroupDeleteCommand ();
+				break;
+			case "add":
+				subcommand = new ThreadGroupAddCommand ();
+				break;
+			case "remove":
+				subcommand = new ThreadGroupRemoveCommand ();
+				break;
+			default:
+				context.Error ("Syntax error");
+				return false;
+			}
+
+			ArrayList new_args = new ArrayList ();
+			for (int i = 1; i < Args.Count; i++)
+				new_args.Add (Args [i]);
+
+			subcommand.Args = new_args;
+			return subcommand.Resolve (context);
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.CreateThreadGroup (name);
+			subcommand.Execute (context);
 		}
 	}
 
-	[Command("THREADGROUP ADD", "Add threads to a thread group")]
-	public class ThreadGroupAddCommand : DebuggerCommand
+	public class ThreadGroupCreateCommand : DebuggerCommand
 	{
-		string name;
-		ProcessListExpression process_list_expr;
-
-		public ThreadGroupAddCommand (string name, ProcessListExpression process_list_expr)
+		protected override bool DoResolve (ScriptingContext context)
 		{
-			this.name = name;
-			this.process_list_expr = process_list_expr;
+			if ((Args == null) || (Args.Count != 1)) {
+				context.Print ("Need exactly one argument: the name of " +
+					       "the new thread group");
+				return false;
+			}
+
+			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle[] threads = (ProcessHandle []) process_list_expr.Resolve (context);
+			context.Interpreter.CreateThreadGroup (Argument);
+		}
+	}
+
+	public class ThreadGroupDeleteCommand : DebuggerCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count != 1)) {
+				context.Print ("Need exactly one argument: the name of " +
+					       "the thread group to delete");
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.DeleteThreadGroup (Argument);
+		}
+	}
+
+	public class ThreadGroupAddCommand : DebuggerCommand
+	{
+		protected string name;
+		protected int[] procs;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count < 2)) {
+				context.Print ("Invalid arguments: Need the name of the " +
+					       "thread group to operate on and one ore more " +
+					       "processes");
+				return false;
+			}
+
+			name = (string) Args [0];
+			procs = new int [Args.Count - 1];
+			for (int i = 0; i < Args.Count - 1; i++) {
+				try {
+					procs [i] = (int) UInt32.Parse ((string) Args [i+1]);
+				} catch {
+					context.Print ("Invalid argument {0}: expected " +
+						       "process id", i+1);
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle[] threads = context.Interpreter.GetProcesses (procs);
 
 			context.Interpreter.AddToThreadGroup (name, threads);
 		}
 	}
 
-	[Command("THREADGROUP REMOVE", "Remove threads from a thread group")]
-	public class ThreadGroupRemoveCommand : DebuggerCommand
+	public class ThreadGroupRemoveCommand : ThreadGroupAddCommand
 	{
-		string name;
-		ProcessListExpression process_list_expr;
-
-		public ThreadGroupRemoveCommand (string name, ProcessListExpression process_list_expr)
-		{
-			this.name = name;
-			this.process_list_expr = process_list_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle[] threads = (ProcessHandle []) process_list_expr.Resolve (context);
+			ProcessHandle[] threads = context.Interpreter.GetProcesses (procs);
 
-			context.Interpreter.RemoveFromThreadGroup (name, threads);
+			context.Interpreter.AddToThreadGroup (name, threads);
 		}
 	}
 
+#if FIXME
 	[Command("BREAKPOINT ENABLE", "Enable breakpoint")]
 	public class BreakpointEnableCommand : DebuggerCommand
 	{

@@ -705,34 +705,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Expression("process_list_expression", "List of processes",
-		    "This is a comma separated list of process numbers\n" +
-		    "(from `show processes', without the `@'s)\n\n" +
-		    "Examples:  1\n" +
-		    "           1,2,3\n")]
-	public class ProcessListExpression : Expression
-	{
-		int[] processes;
-
-		public ProcessListExpression (int[] processes)
-		{
-			this.processes = processes;
-		}
-
-		protected override object DoResolve (ScriptingContext context)
-		{
-			return context.Interpreter.GetProcesses (processes);
-		}
-
-		public override string ToString ()
-		{
-			string[] temp = new string [processes.Length];
-			for (int i = 0; i < processes.Length;i ++)
-				temp [i] = processes [i].ToString ();
-			return String.Format ("{0} ({1})", GetType(), String.Join (":", temp));
-		}
-	}
-
 	[Expression("module_operations", "List of module operations",
 		    "Whitespace separated list of module operations:\n\n" +
 		    "  ignore           Completely ignore the module, do not step into any of\n" +

@@ -25,6 +25,11 @@ namespace Mono.Debugger
 			return group;
 		}
 
+		public static void DeleteThreadGroup (string name)
+		{
+			groups.Remove (name);
+		}
+
 		public static bool ThreadGroupExists (string name)
 		{
 			return groups.Contains (name);
