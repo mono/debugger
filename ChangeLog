@@ -1,5 +1,9 @@
 2003-03-22  Martin Baulig  <martin@ximian.com>
 
+	* doc/guadec-abstract.txt: Added the abstract of my GUADEC talk.
+
+2003-03-22  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IVariable.cs (IsValid): Renamed to CheckValid() and
 	added IsAlive().
 
