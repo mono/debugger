@@ -2,8 +2,10 @@
 #include <server.h>
 #include <signal.h>
 #include <unistd.h>
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <sys/poll.h>
 #include <sys/select.h>
+#endif
 #include <sys/time.h>
 #include <errno.h>
 #include <stdio.h>
@@ -155,12 +157,14 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
 
 	if (!initialized) {
+#if defined(__linux__) || defined(__FreeBSD__)
 		/* These signals are only unblocked by sigwait(). */
 		sigemptyset (&mono_debugger_signal_mask);
 		sigaddset (&mono_debugger_signal_mask, SIGCHLD);
 		sigaddset (&mono_debugger_signal_mask, SIGINT);
 		sigaddset (&mono_debugger_signal_mask, SIGIO);
 		sigprocmask (SIG_BLOCK, &mono_debugger_signal_mask, NULL);
+#endif
 
 		initialized = TRUE;
 	}
