@@ -12,7 +12,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal delegate void BreakpointHandler (Process process, TargetAddress address,
+	internal delegate void BreakpointHandler (Inferior inferior, TargetAddress address,
 						  object user_data);
 
 	internal class VariableInfo
@@ -1204,7 +1204,7 @@ namespace Mono.Debugger.Languages.CSharp
 					return TargetAddress.Null;
 			}
 
-			void breakpoint_hit (Process process, TargetAddress address,
+			void breakpoint_hit (Inferior inferior, TargetAddress address,
 					     object user_data)
 			{
 				if (load_handlers == null)
@@ -1213,13 +1213,13 @@ namespace Mono.Debugger.Languages.CSharp
 				ensure_method ();
 
 				foreach (HandlerData handler in load_handlers.Keys)
-					handler.Handler (process, handler.Method, handler.UserData);
+					handler.Handler (inferior, handler.Method, handler.UserData);
 
 				load_handlers = null;
 			}
 
-			public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
-									 object user_data)
+			internal override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+									   object user_data)
 			{
 				HandlerData data = new HandlerData (this, handler, user_data);
 
@@ -1768,7 +1768,7 @@ namespace Mono.Debugger.Languages.CSharp
 						goto done;
 
 					MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [arg];
-					handle.Handler (runner.Process, data, handle.UserData);
+					handle.Handler (runner.Inferior, data, handle.UserData);
 					breakpoints.Remove (arg);
 					goto done;
 				}

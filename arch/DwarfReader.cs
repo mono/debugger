@@ -1970,8 +1970,8 @@ namespace Mono.Debugger.Architecture
 					return method.Source.Lookup (line);
 				}
 
-				public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
-										 object user_data)
+				internal override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+										   object user_data)
 				{
 					throw new InvalidOperationException ();
 				}

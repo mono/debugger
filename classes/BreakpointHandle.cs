@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.Serialization;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	public class BreakpointHandle
@@ -41,7 +43,7 @@ namespace Mono.Debugger
 		//   The method has just been loaded, lookup the breakpoint
 		//   address and actually insert it.
 		// </summary>
-		void method_loaded (Process process, SourceMethod method, object user_data)
+		void method_loaded (Inferior inferior, SourceMethod method, object user_data)
 		{
 			load_handler = null;
 
@@ -49,7 +51,8 @@ namespace Mono.Debugger
 			if (address.IsNull)
 				return;
 
-			EnableBreakpoint (process);
+			breakpoint_id = inferior.BreakpointManager.InsertBreakpoint (
+				inferior, breakpoint, address);
 		}
 
 		TargetAddress address = TargetAddress.Null;

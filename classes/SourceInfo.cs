@@ -5,6 +5,8 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	// <summary>
@@ -146,8 +148,8 @@ namespace Mono.Debugger
 		}
 	}
 
-	public delegate void MethodLoadedHandler (Process process, SourceMethod method,
-						  object user_data);
+	internal delegate void MethodLoadedHandler (Inferior inferior, SourceMethod method,
+						    object user_data);
 
 	// <summary>
 	//   This is a handle to a method which persists across different invocations of
@@ -228,8 +230,8 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
-		public abstract IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
-								 object user_data);
+		internal abstract IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+								   object user_data);
 
 		public override string ToString ()
 		{

@@ -449,6 +449,10 @@ namespace Mono.Debugger.Backends
 			bfd.UpdateSharedLibraryInfo (this);
 		}
 
+		public BreakpointManager BreakpointManager {
+			get { return breakpoint_manager; }
+		}
+
 		public Bfd Bfd {
 			get { return bfd; }
 		}
