@@ -24,21 +24,52 @@ namespace Mono.Debugger.GUI
 {
 	public class DebuggerGUI
 	{
+		static void usage ()
+		{
+			Console.WriteLine (
+				"Mono debugger, (C) 2002 Ximian, Inc.\n\n" +
+				"To debug a C# application:\n" +
+				"  {0} [options] application.exe [args]\n\n" +
+				"To debug a native application:\n" +
+				"  {0} [options] native application.exe [args]\n\n" +
+				"Native applications can only be debugged if they have\n" +
+				"been compiled with GCC 3.1 and -gdarf-2.\n\n",
+				AppDomain.CurrentDomain.FriendlyName);
+			Console.WriteLine (
+				"Options:\n" +
+				"  --help               Show this help text.\n" +
+				"\n");
+			Environment.Exit (1);
+		}
+
 		//
 		// Main
 		//
 		static void Main (string[] args)
 		{
-			if (args.Length < 1) {
-				Console.WriteLine ("Usage: {0} application.exe [args]",
-						   AppDomain.CurrentDomain.FriendlyName);
-				Environment.Exit (1);
+			int idx = 0;
+			while ((idx < args.Length) && args [idx].StartsWith ("--")) {
+				string arg = args [idx++].Substring (2);
+				switch (arg) {
+				case "help":
+					usage ();
+					break;
+
+				default:
+					Console.WriteLine ("Unknown argument `{0}'.", arg);
+					Environment.Exit (1);
+				}
 			}
 
-			string[] new_args = new string [args.Length - 1];
-			Array.Copy (args, 1, new_args, 0, args.Length - 1);
+			int rest = args.Length - idx;
 
-			DebuggerGUI gui = new DebuggerGUI (args [0], new_args);
+			if (rest < 1)
+				usage ();
+
+			string[] new_args = new string [rest - 1];
+			Array.Copy (args, idx + 1, new_args, 0, rest - 1);
+
+			DebuggerGUI gui = new DebuggerGUI (args [idx], new_args);
 
 			gui.Run ();
 		}
