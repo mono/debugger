@@ -608,8 +608,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		ScriptingContext parent;
 		ArrayList method_search_results;
 		Hashtable method_search_hash;
-		Hashtable scripting_variables;
-		ITargetObject last_object;
 
 		bool is_interactive;
 		bool is_synchronous;
@@ -621,7 +619,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.is_interactive = is_interactive;
 			this.is_synchronous = is_synchronous;
 
-			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
 			method_search_hash = new Hashtable ();
 		}
@@ -737,29 +734,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (line.Label != null)
 				Print ("{0}:", line.Label);
 			Print ("{0:11x}\t{1}", line.Address, line.Text);
-		}
-
-		public VariableExpression this [string identifier] {
-			get {
-				return (VariableExpression) scripting_variables [identifier];
-			}
-
-			set {
-				if (scripting_variables.Contains (identifier))
-					scripting_variables [identifier] = value;
-				else
-					scripting_variables.Add (identifier, value);
-			}
-		}
-
-		public ITargetObject LastObject {
-			get {
-				return last_object;
-			}
-
-			set {
-				last_object = value;
-			}
 		}
 
 		public void AddMethodSearchResult (SourceMethod[] methods)
