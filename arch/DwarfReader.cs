@@ -638,6 +638,7 @@ namespace Mono.Debugger.Architecture
 				public bool epilogue_begin;
 				public long start_offset;
 
+				public int start_file;
 				public int start_line, end_line;
 				public ArrayList lines;
 
@@ -652,7 +653,7 @@ namespace Mono.Debugger.Architecture
 					this.creating = true;
 					this.start_offset = offset;
 					this.st_address = 0;
-					this.st_file = 0;
+					this.st_file = 1;
 					this.st_line = 1;
 					this.st_column = 0;
 					this.is_stmt = this.engine.default_is_stmt;
@@ -660,6 +661,7 @@ namespace Mono.Debugger.Architecture
 					this.end_sequence = false;
 					this.prologue_end = false;
 					this.epilogue_begin = false;
+					this.start_file = st_file;
 
 					this.const_add_pc_range =
 						((0xff - engine.opcode_base) / engine.line_range) *
@@ -682,6 +684,7 @@ namespace Mono.Debugger.Architecture
 					this.end_sequence = stm.end_sequence;
 					this.prologue_end = stm.prologue_end;
 					this.epilogue_begin = stm.epilogue_begin;
+					this.start_file = stm.st_file;
 
 					engine.debug ("CLONE: {0} {1} {2} - {3}",
 						      stm.start_line, stm.end_line, stm.st_file,
@@ -710,8 +713,10 @@ namespace Mono.Debugger.Architecture
 						end_line = st_line;
 					}
 
-					TargetAddress address = engine.dwarf.GetAddress (st_address);
-					lines.Add (new LineEntry (address, st_line));
+					if (st_file == start_file) {
+						TargetAddress address = engine.dwarf.GetAddress (st_address);
+						lines.Add (new LineEntry (address, st_line));
+					}
 
 					basic_block = false;
 					prologue_end = false;
@@ -749,6 +754,7 @@ namespace Mono.Debugger.Architecture
 
 					case StandardOpcode.set_file:
 						st_file = reader.ReadLeb128 ();
+						engine.debug ("FILE: {0}", st_file);
 						break;
 
 					case StandardOpcode.set_column:
@@ -964,8 +970,6 @@ namespace Mono.Debugger.Architecture
 				while (reader.PeekByte () != 0)
 					source_files.Add (new FileEntry (reader));
 				reader.Position++;
-
-				// Console.WriteLine (this);
 
 				next_method_index = 1;
 				next_method = (ISymbolContainer) methods [0];

@@ -1,5 +1,10 @@
 2003-03-01  Martin Baulig  <martin@ximian.com>
 
+	* arch/DwarfReader.cs: Ignore line numbers from other source files
+	(macros or #include'd files, for instance).
+
+2003-03-01  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceFileFactory.cs: Cache the file contents in an
 	ObjectCache.
 
