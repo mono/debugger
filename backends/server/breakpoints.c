@@ -2,8 +2,6 @@
 #include <server.h>
 #include <breakpoints.h>
 #include <sys/stat.h>
-#include <sys/ptrace.h>
-#include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
