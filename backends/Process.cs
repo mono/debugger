@@ -14,8 +14,10 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	public delegate bool BreakpointCheckHandler (StackFrame frame, int index, object user_data);
-	public delegate void BreakpointHitHandler (StackFrame frame, int index, object user_data);
+	public delegate bool BreakpointCheckHandler (StackFrame frame, ITargetAccess target,
+						     int index, object user_data);
+	public delegate void BreakpointHitHandler (StackFrame frame, int index,
+						   object user_data);
 	public delegate void ProcessExitedHandler (Process process);
 
 	public class Process : ITargetAccess, IDisassembler

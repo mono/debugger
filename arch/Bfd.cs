@@ -337,13 +337,13 @@ namespace Mono.Debugger.Architecture
 			return simple_symbols;
 		}
 
-		bool dynlink_handler (StackFrame frame, int index, object user_data)
+		bool dynlink_handler (StackFrame frame, ITargetAccess target, int index,
+				      object user_data)
 		{
-			Inferior inferior = (Inferior) user_data;
-			if (inferior.ReadInteger (rdebug_state_addr) != 0)
+			if (target.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			UpdateSharedLibraryInfo (inferior);
+			do_update_shlib_info (target);
 			return false;
 		}
 
@@ -392,7 +392,7 @@ namespace Mono.Debugger.Architecture
 			SimpleBreakpoint breakpoint = new SimpleBreakpoint (
 				"dynlink", null,
 				new BreakpointCheckHandler (dynlink_handler), null,
-				false, inferior);
+				false, null);
 
 			dynlink_breakpoint_id = inferior.BreakpointManager.InsertBreakpoint (
 				inferior, breakpoint, dynlink_breakpoint);
@@ -411,10 +411,15 @@ namespace Mono.Debugger.Architecture
 				return;
 			}
 
+			do_update_shlib_info (inferior);
+		}
+
+		void do_update_shlib_info (ITargetAccess target)
+		{
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
-				ITargetMemoryReader map_reader = inferior.ReadMemory (map, 16);
+				ITargetMemoryReader map_reader = target.ReadMemory (map, 16);
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
@@ -422,7 +427,7 @@ namespace Mono.Debugger.Architecture
 
 				string name;
 				try {
-					name = inferior.ReadString (l_name);
+					name = target.ReadString (l_name);
 					// glibc 2.3.x uses the empty string for the virtual
 					// "linux-gate.so.1".
 					if ((name != null) && (name == ""))
@@ -444,13 +449,13 @@ namespace Mono.Debugger.Architecture
 				Bfd bfd = container [name];
 				if (bfd != null) {
 					if (!bfd.IsLoaded)
-						bfd.ModuleLoaded (inferior, l_addr);
+						bfd.module_loaded (target, l_addr);
 					continue;
 				}
 
 				bfd = container.AddFile (
-					inferior, name, StepInto, l_addr, null, false, true);
-				bfd.ModuleLoaded (inferior, l_addr);
+					target, name, StepInto, l_addr, null, false, true);
+				bfd.module_loaded (target, l_addr);
 			}
 		}
 
@@ -1058,7 +1063,7 @@ namespace Mono.Debugger.Architecture
 			load_handlers.Remove (data);
 		}
 
-		internal void ModuleLoaded (Inferior inferior, TargetAddress address)
+		void module_loaded (ITargetAccess target, TargetAddress address)
 		{
 			this.base_address = address;
 
@@ -1070,7 +1075,7 @@ namespace Mono.Debugger.Architecture
 			}
 
 			foreach (LoadHandlerData data in load_handlers.Keys)
-				data.Handler (inferior, data.Method, data.UserData);
+				data.Handler (target, data.Method, data.UserData);
 		}
 
 		protected sealed class LoadHandlerData : IDisposable

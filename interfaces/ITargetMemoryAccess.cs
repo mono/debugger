@@ -142,5 +142,7 @@ namespace Mono.Debugger
 		void WriteAddress (TargetAddress address, TargetAddress value);
 
 		void SetRegisters (Registers registers);
+
+		int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
 	}
 }

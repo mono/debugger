@@ -48,7 +48,7 @@ namespace Mono.Debugger
 		//   The method has just been loaded, lookup the breakpoint
 		//   address and actually insert it.
 		// </summary>
-		void method_loaded (Inferior inferior, SourceMethod method, object user_data)
+		void method_loaded (ITargetAccess target, SourceMethod method, object data)
 		{
 			load_handler = null;
 
@@ -56,8 +56,7 @@ namespace Mono.Debugger
 			if (address.IsNull)
 				return;
 
-			breakpoint_id = inferior.BreakpointManager.InsertBreakpoint (
-				inferior, breakpoint, address);
+			breakpoint_id = target.InsertBreakpoint (breakpoint, address);
 		}
 
 		TargetAddress address = TargetAddress.Null;

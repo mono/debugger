@@ -1180,7 +1180,7 @@ namespace Mono.Debugger.Backends
 			// so we should only do it when it's actually needed.
 			if (bpt.HandlerNeedsFrame)
 				frame = get_frame ();
-			if (!bpt.CheckBreakpointHit (frame))
+			if (!bpt.CheckBreakpointHit (frame, inferior))
 				return false;
 
 			frame_changed (inferior.CurrentFrame, current_operation);

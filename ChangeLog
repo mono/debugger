@@ -1,5 +1,24 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetAccess.InsertBreakpoint): New method.
+
+	* backends/Process.cs (BreakpointCheckHandler): Added
+	`ITargetAccess target' argument.
+
+	* classes/Breakpoint.cs (Breakpoint.CheckBreakpointHit): Added
+	`ITargetAccess target' argument.
+
+	* classes/SourceInfo.cs (MethodLoadedHandler): Take an
+	ITargetAccess argument instead of an Inferior.
+
+	* arch/Bfd.cs (Bfd.dynlink_handler): Use the `ITargetAccess' which
+	we got as argument; this breakpoint may be hit on a different
+	thread than the one we used to insert it, so we can't pass the
+	`Inferior' as `user_data'.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* interface/ISymbolTable.cs (Symbol): New class.
 	(ISimpleSymbolTable.SimpleLookup): Return a `Symbol', not a
 	string.

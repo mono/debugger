@@ -737,6 +737,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		int ITargetAccess.InsertBreakpoint (Breakpoint bpt, TargetAddress address)
+		{
+			return breakpoint_manager.InsertBreakpoint (this, bpt, address);
+		}
+
 		//
 		// IInferior
 		//

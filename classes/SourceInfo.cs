@@ -111,7 +111,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	internal delegate void MethodLoadedHandler (Inferior inferior, SourceMethod method,
+	internal delegate void MethodLoadedHandler (ITargetAccess target, SourceMethod method,
 						    object user_data);
 
 	// <summary>

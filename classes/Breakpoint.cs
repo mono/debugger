@@ -104,7 +104,7 @@ namespace Mono.Debugger
 		//   get a flicker-free UI if you have a breakpoint which is ignored the
 		//   first 1000 times it is hit, for instance.
 		// </remarks>
-		public virtual bool CheckBreakpointHit (StackFrame frame)
+		public virtual bool CheckBreakpointHit (StackFrame frame, ITargetAccess target)
 		{
 			return true;
 		}
