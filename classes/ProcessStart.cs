@@ -35,6 +35,9 @@ namespace Mono.Debugger
 		[Option("Debugging flags", "debug-flags")]
 		public int DebugFlags = 0;
 
+		[Option("Override Mono prefix", "mono-prefix")]
+		public string MonoPrefix = null;
+
 		[Option("Display version and licensing information", 'V', "version")]
 		public override WhatToDoNext DoAbout()
 		{
@@ -132,21 +135,62 @@ namespace Mono.Debugger
 			get { return base_dir; }
 		}
 
+		void AddUserEnvironment (Hashtable hash)
+		{
+			if (UserEnvironment == null)
+				return;
+			foreach (string line in UserEnvironment) {
+				int pos = line.IndexOf ('=');
+				if (pos < 0)
+					throw new ArgumentException ();
+
+				string name = line.Substring (0, pos);
+				string value = line.Substring (pos + 1);
+
+				Console.WriteLine ("ENV: {0} {1}", name, value);
+
+				hash.Add (name, value);
+			}
+		}
+
+		void add_env_path (Hashtable hash, string name, string value)
+		{
+			if (!hash.Contains (name))
+				hash.Add (name, value);
+			else {
+				string old = (string) hash [name];
+				hash [name] = value + ":" + value;
+			}
+		}
+
 		protected virtual void SetupEnvironment ()
 		{
-			ArrayList list = new ArrayList ();
+			Hashtable hash = new Hashtable ();
 			if (UserEnvironment != null)
-				list.AddRange (UserEnvironment);
-			list.Add ("LD_BIND_NOW=yes");
+				AddUserEnvironment (hash);
 
 			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
-
-                        foreach (string name in env_vars.Keys) {
-				if ((name == "PATH") || (name == "LD_LIBRARY_PATH") ||
-				    (name == "LD_BIND_NOW"))
+			foreach (string var in env_vars.Keys) {
+				// Allow `UserEnvironment' to override env vars.
+				if (hash.Contains (var))
 					continue;
+				hash.Add (var, env_vars [var]);
+			}
 
-				list.Add (name + "=" + env_vars [name]);
+			if (Options.MonoPrefix != null) {
+				string prefix = Options.MonoPrefix;
+				add_env_path (hash, "MONO_GAC_PREFIX", prefix);
+				add_env_path (hash, "MONO_PATH", prefix + "/lib");
+				add_env_path (hash, "LD_LIBRARY_PATH", prefix + "/lib");
+				add_env_path (hash, "PATH", prefix + "/bin");
+			}
+
+			ArrayList list = new ArrayList ();
+			foreach (DictionaryEntry entry in hash) {
+				string key = (string) entry.Key;
+				string value = (string) entry.Value;
+
+				list.Add (key + "=" + value);
 			}
 
 			envp = new string [list.Count];

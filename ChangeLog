@@ -1,5 +1,15 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs (ProcessStart.SetupEnvironment):
+	Correctly process the environment here; if the user explicitly
+	sets an env var in `UserEnvironment', it overrides the value
+	inherited from our environment.
+	(DebuggerOptions.MonoPrefix): Added "--mono-prefix" command line
+	argument.  Sets the MONO_GAC_PREFIX, MONO_PATH, LD_LIBRARY_PATH
+	and PATH in the inferior.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs
 	(ProcessStart.Arguments): Renamed to `UserArguments'.
 	(ProcessStart.Environment): Renamed to `UserEnvironment'.
