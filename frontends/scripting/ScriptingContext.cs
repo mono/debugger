@@ -692,7 +692,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Error (string message)
 		{
 			command_output.WriteLine (true, message);
-			if (IsInteractive)
+			if (!IsInteractive)
 				Abort ();
 		}
 
