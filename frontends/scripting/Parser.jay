@@ -1,6 +1,7 @@
 %{
 using System.Text;
 using System.IO;
+using System.Collections;
 using System;
 
 namespace Mono.Debugger.Frontends.CommandLine
@@ -8,9 +9,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class Parser
 	{
 		string name;
-		GnuReadLineReader reader;
 		ScriptingContext current_context;
+		MyTextReader reader;
 		bool do_quit = false;
+		string[] default_args;
 
 		protected bool yacc_verbose_flag = false;
 
@@ -64,6 +66,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token BACKTRACE
 %token UP
 %token DOWN
+%token STEP
+%token NEXT
+%token STEPI
+%token NEXTI
 
 %start command_loop
 %%
@@ -71,72 +77,108 @@ namespace Mono.Debugger.Frontends.CommandLine
 command_loop
 	: /* empty */
 	| command_loop command EOL
-	{
+	  {
 		((Command) $2).Execute (current_context);
-	}
+	  }
 	| command_loop EOL
 	| command_loop EOF
-	{
+	  {
 		do_quit = true;
 		reader.Close ();
-	}
+	  }
 	;
 
 command
 	: RUN opt_process
-	{
-		$$ = new RunCommand ((ProcessExpression) $2);
-	}
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Run);
+	  }
 	| CONTINUE opt_process
-	{
-		$$ = new ContinueCommand ((ProcessExpression) $2);
-	}
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Continue);
+	  }
+	| STEP opt_process
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Step);
+	  }
+	| NEXT opt_process
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Next);
+	  }
+	| STEPI opt_process
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.StepInstruction);
+	  }
+	| NEXTI opt_process
+	  {
+		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.NextInstruction);
+	  }
 	| BACKTRACE opt_process
-	{
+	  {
 		$$ = new BacktraceCommand ((ProcessExpression) $2);
-	}
+	  }
 	| UP opt_process
-	{
+	  {
 		$$ = new UpCommand ((ProcessExpression) $2);
-	}
+	  }
 	| DOWN opt_process
-	{
+	  {
 		$$ = new DownCommand ((ProcessExpression) $2);
-	}
+	  }
 	| SHOW PROCESSES
-	{
+	  {
 		$$ = new ShowProcessesCommand ();
-	}
+	  }
 	| expression
-	{
+	  {
 		$$ = new CommandExpression ((Expression) $1);
-	}
+	  }
 	;
 
 expression
 	: FRAME opt_process opt_frame_number
-	{
+	  {
 		$$ = new FrameExpression ((ProcessExpression) $2, (int) $3);
-	}
-	| START program_name
-	{
-		$$ = new StartExpression ((string) $2);
-	}
+	  }
+	| START program_arguments
+	  {
+		$$ = new StartExpression ((string []) $2);
+	  }
 	| PROCESS opt_process
-	{
+	  {
 		$$ = new SelectProcessExpression ((ProcessExpression) $2);
-	}
+	  }
 	;
 
-program_name
+program_arguments
 	: /* empty */
-	{
-		$$ = "./a.out";
-	}
-	| STRING
-	{
-		$$ = $1;
-	}
+	  {
+		$$ = default_args;
+	  }
+	| program_arglist
+	  {
+		ArrayList args = (ArrayList) $1;
+		string[] retval = new string [args.Count];
+		args.CopyTo (retval, 0);
+		$$ = retval;
+	  }
+	;
+
+program_arglist
+	: STRING
+	  {
+		ArrayList args = new ArrayList ();
+		args.Add ($1);
+
+		$$ = args;
+	  }
+	| program_arguments STRING
+	  {
+		ArrayList args = (ArrayList) $1;
+		args.Add ($2);
+
+		$$ = args;
+	  }
 	;
 
 opt_process
@@ -163,11 +205,12 @@ opt_frame_number
 
 %%
 
-public Parser (ScriptingContext context, GnuReadLineReader reader, string name)
+public Parser (ScriptingContext context, MyTextReader reader, string name, string[] args)
 {
 	this.name = name;
 	this.reader = reader;
 	this.current_context = context;
+	this.default_args = args;
 
 	lexer = new Tokenizer (context, reader, name);
 }

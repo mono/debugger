@@ -39,7 +39,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public class GnuReadLineReader : TextReader
+	public class GnuReadLineReader : MyTextReader
 	{
 		GnuReadLine readline;
 
@@ -114,7 +114,7 @@ namespace Mono.Debugger
 			return ReadLine ();
 		}
 
-		public void Discard ()
+		public override void Discard ()
 		{
 			current_line = null;
 		}

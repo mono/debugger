@@ -101,16 +101,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class StartExpression : Expression
 	{
-		string program;
+		string[] args;
 
-		public StartExpression (string program)
+		public StartExpression (string[] args)
 		{
-			this.program = program;
+			this.args = args;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			return context.Start (program, new string [0]);
+			return context.Start (args);
 		}
 	}
 
@@ -131,35 +131,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class RunCommand : Command
+	public class StepCommand : Command
 	{
 		ProcessExpression process_expr;
+		WhichStepCommand which;
 
-		public RunCommand (ProcessExpression process_expr)
+		public StepCommand (ProcessExpression process_expr, WhichStepCommand which)
 		{
 			this.process_expr = process_expr;
+			this.which = which;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			Process process = (Process) process_expr.Resolve (context);
-			process.Run ();
-		}
-	}
-
-	public class ContinueCommand : Command
-	{
-		ProcessExpression process_expr;
-
-		public ContinueCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			Process process = (Process) process_expr.Resolve (context);
-			process.SSE.Continue ();
+			context.Step (process, which);
 		}
 	}
 

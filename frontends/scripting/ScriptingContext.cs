@@ -4,25 +4,43 @@ using System.IO;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
+	public delegate void ProcessStoppedHandler (Process process, TargetState state);
+
 	public class Process
 	{
 		DebuggerBackend backend;
+		ScriptingContext context;
 
 		static int next_id = 0;
 		int id;
 
-		public Process (DebuggerBackend backend)
+		public Process (ScriptingContext context, DebuggerBackend backend)
 		{
+			this.context = context;
 			this.backend = backend;
 			this.id = ++next_id;
 
 			backend.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+			backend.StateChanged += new StateChangedHandler (state_changed);
+			backend.TargetOutput += new TargetOutputHandler (inferior_output);
+			backend.TargetError += new TargetOutputHandler (inferior_error);
+			backend.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			backend.DebuggerError += new DebuggerErrorHandler (debugger_error);
+		}
+
+		public event ProcessStoppedHandler ProcessStoppedEvent;
+
+		protected virtual void OnProcessStoppedEvent (TargetState state)
+		{
+			if (ProcessStoppedEvent != null)
+				ProcessStoppedEvent (this, state);
 		}
 
 		int current_frame_idx = -1;
@@ -34,6 +52,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_frame = frame;
 			current_frame_idx = -1;
 			current_backtrace = null;
+
+			context.Print ("Process @{0} stopped at {1}", id, frame);
 		}
 
 		void frames_invalid ()
@@ -41,6 +61,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_frame = null;
 			current_frame_idx = -1;
 			current_backtrace = null;
+		}
+
+		void state_changed (TargetState state, int arg)
+		{
+			switch (state) {
+			case TargetState.EXITED:
+				if (arg == 0)
+					context.Print ("Process @{0} terminated normally.", id);
+				else
+					context.Print ("Process @{0} exited with exit code {1}.", id, arg);
+				OnProcessStoppedEvent (state);
+				break;
+
+			case TargetState.STOPPED:
+				if (arg != 0)
+					context.Print ("Process @{0} received signal {1}.", id, arg);
+				OnProcessStoppedEvent (state);
+				break;
+			}
+		}
+
+		void inferior_output (string line)
+		{
+			context.Print ("INFERIOR OUTPUT: {0}", line);
+		}
+
+		void inferior_error (string line)
+		{
+			context.Print ("INFERIOR ERROR: {0}", line);
+		}
+
+		void debugger_output (string line)
+		{
+			context.Print ("DEBUGGER OUTPUT: {0}", line);
+		}
+
+		void debugger_error (object sender, string message, Exception e)
+		{
+			context.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
 		}
 
 		public int ID {
@@ -126,13 +185,74 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{ }
 	}
 
+	public enum WhichStepCommand
+	{
+		Run,
+		Continue,
+		Step,
+		Next,
+		StepInstruction,
+		NextInstruction
+	}
+
 	public class ScriptingContext
 	{
-		Process current_process = null;
-		ArrayList procs = new ArrayList ();
+		Process current_process;
+		ArrayList procs;
+
+		bool program_stopped_event;
 
 		public ScriptingContext ()
 		{
+			program_stopped_event = false;
+			procs = new ArrayList ();
+			current_process = null;
+		}
+
+		void process_stopped (Process process, TargetState state)
+		{
+			program_stopped_event = true;
+		}
+
+		[DllImport("glib-2.0")]
+		static extern bool g_main_context_iteration (IntPtr context, bool may_block);
+
+		public void Step (Process process, WhichStepCommand which)
+		{
+			program_stopped_event = false;
+
+			int id = process.ID;
+			if (which == WhichStepCommand.Run) {
+				if (process.SSE != null)
+					throw new ScriptingException ("Process @{0} already running.", id);
+			} else if (process.SSE == null)
+				throw new ScriptingException ("Process @{0} not running.", id);
+
+			switch (which) {
+			case WhichStepCommand.Run:
+				process.Run ();
+				break;
+			case WhichStepCommand.Continue:
+				process.SSE.Continue ();
+				break;
+			case WhichStepCommand.Step:
+				process.SSE.StepLine ();
+				break;
+			case WhichStepCommand.Next:
+				process.SSE.NextLine ();
+				break;
+			case WhichStepCommand.StepInstruction:
+				process.SSE.StepInstruction ();
+				break;
+			case WhichStepCommand.NextInstruction:
+				process.SSE.NextInstruction ();
+				break;
+			default:
+				throw new Exception ();
+			}
+
+			while (!program_stopped_event)
+				g_main_context_iteration (IntPtr.Zero, true);
 		}
 
 		public Process[] Processes {
@@ -184,15 +304,34 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public Process Start (string program, string[] args)
+		public Process Start (string[] args)
 		{
+			if (args.Length == 0)
+				throw new ScriptingException ("No program specified.");
+
 			DebuggerBackend backend = new DebuggerBackend ();
-
-			backend.CommandLineArguments = args;
-			backend.TargetApplication = program;
-
-			current_process = new Process (backend);
+			current_process = new Process (this, backend);
+			current_process.ProcessStoppedEvent += new ProcessStoppedHandler (process_stopped);
 			procs.Add (current_process);
+
+			if (args [0] == "core") {
+				string [] program_args = new string [args.Length-2];
+				if (args.Length > 2)
+					Array.Copy (args, 2, program_args, 0, args.Length-2);
+
+				backend.CommandLineArguments = program_args;
+				backend.TargetApplication = args [1];
+				backend.ReadCoreFile ("thecore");
+			} else{
+				string [] program_args = new string [args.Length-1];
+				if (args.Length > 1)
+					Array.Copy (args, 1, program_args, 0, args.Length-1);
+
+				backend.CommandLineArguments = program_args;
+				backend.TargetApplication = args [0];
+				Step (current_process, WhichStepCommand.Run);
+			}
+
 			return current_process;
 		}
 	}

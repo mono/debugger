@@ -11,108 +11,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 {
 	public class CommandLineInterpreter
 	{
-		DebuggerBackend backend;
-		Interpreter interpreter;
 		GnuReadLineReader reader;
 		ScriptingContext context;
 		Parser parser;
 
 		public CommandLineInterpreter (string[] args)
 		{
-			backend = new DebuggerBackend ();
-			interpreter = new Interpreter (backend, Console.Out, Console.Error);
 			reader = new GnuReadLineReader (new GnuReadLine ("$ "));
 			context = new ScriptingContext ();
-			parser = new Parser (context, reader, "Debugger");
-
-			interpreter.PrintCurrentInsn = true;
-
-			if (args.Length > 0)
-				LoadProgram (args);
-
-			backend.FrameChangedEvent += new StackFrameHandler (frame_changed);
-			backend.StateChanged += new StateChangedHandler (state_changed);
-			backend.TargetOutput += new TargetOutputHandler (inferior_output);
-			backend.TargetError += new TargetOutputHandler (inferior_error);
-			backend.DebuggerOutput += new TargetOutputHandler (debugger_output);
-			backend.DebuggerError += new DebuggerErrorHandler (debugger_error);
-		}
-
-		void LoadProgram (string[] args)
-		{
-			if (args [0] == "core") {
-				string [] program_args = new string [args.Length-2];
-				if (args.Length > 2)
-					Array.Copy (args, 2, program_args, 0, args.Length-2);
-
-				LoadProgram (args [1], program_args);
-				backend.ReadCoreFile ("thecore");
-			} else{
-				string [] program_args = new string [args.Length-1];
-				if (args.Length > 1)
-					Array.Copy (args, 1, program_args, 0, args.Length-1);
-
-				LoadProgram (args [0], program_args);
-			}
-		}
-
-		void LoadProgram (string program, string [] args)
-		{
-			Console.WriteLine ("Loading program: {0}", program);
-			backend.CommandLineArguments = args;
-			backend.TargetApplication = program;
-		}
-
-		bool ProcessCommand (string line)
-		{
-			try {
-				return interpreter.ProcessCommand (line, false);
-			} catch (Exception e) {
-				Console.WriteLine (e);
-				return true;
-			}
-		}
-
-		void state_changed (TargetState state, int arg)
-		{
-			switch (state) {
-			case TargetState.EXITED:
-				if (arg == 0)
-					Console.WriteLine ("Program terminated normally.");
-				else
-					Console.WriteLine ("Program exited with exit code {0}.", arg);
-				break;
-
-			case TargetState.STOPPED:
-				if (arg != 0)
-					Console.WriteLine ("Program received signal {0}.", arg);
-				break;
-			}
-		}
-
-		void inferior_output (string line)
-		{
-			Console.WriteLine ("INFERIOR OUTPUT: {0}", line);
-		}
-
-		void inferior_error (string line)
-		{
-			Console.WriteLine ("INFERIOR ERROR: {0}", line);
-		}
-
-		void debugger_output (string line)
-		{
-			Console.WriteLine ("DEBUGGER OUTPUT: {0}", line);
-		}
-
-		void debugger_error (object sender, string message, Exception e)
-		{
-			Console.WriteLine ("DEBUGGER ERROR: {0}\n{1}", message, e);
-		}
-
-		void frame_changed (StackFrame frame)
-		{
-			interpreter.PrintFrame (frame, -1, true);
+			parser = new Parser (context, reader, "Debugger", args);
 		}
 
 		public void Run ()

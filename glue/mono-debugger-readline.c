@@ -5,8 +5,7 @@ static gboolean in_readline = FALSE;
 static void
 event_hook (void)
 {
-	while (g_main_context_iteration (NULL, FALSE))
-		;
+	g_main_context_iteration (NULL, FALSE);
 }
 
 void
@@ -22,6 +21,10 @@ mono_debugger_readline_readline (const char *prompt)
 
 	g_assert (!in_readline);
 	in_readline = TRUE;
+
+	while (g_main_context_iteration (NULL, FALSE))
+		;
+
 	retval = readline (prompt);
 	in_readline = FALSE;
 	return retval;

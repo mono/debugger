@@ -56,6 +56,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("bt", Token.BACKTRACE);
 			keywords.Add ("up", Token.UP);
 			keywords.Add ("down", Token.DOWN);
+			keywords.Add ("step", Token.STEP);
+			keywords.Add ("s", Token.STEP);
+			keywords.Add ("next", Token.NEXT);
+			keywords.Add ("n", Token.NEXT);
+			keywords.Add ("stepi", Token.STEPI);
+			keywords.Add ("i", Token.STEPI);
+			keywords.Add ("nexti", Token.NEXTI);
+			keywords.Add ("t", Token.NEXTI);
 		}
 
 		ScriptingContext context;
