@@ -216,31 +216,20 @@ namespace Mono.Debugger
 			return GetBacktrace (-1);
 		}
 
-		public Register GetRegister (int index)
-		{
-			return GetRegisters () [index];
-		}
-
-		public Register[] GetRegisters ()
+		public Registers GetRegisters ()
 		{
 			CommandResult result = engine.SendSyncCommand (CommandType.GetRegisters, null);
 			if (result.Type == CommandResultType.CommandOk) {
-				return (Register []) result.Data;
+				return (Registers) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else
 				throw new InternalError ();
 		}
 
-		public void SetRegister (int register, long value)
+		public void SetRegisters (Registers registers)
 		{
-			Register reg = new Register (register, true, value);
-			engine.SendSyncCommand (CommandType.SetRegister, reg);
-		}
-
-		public void SetRegisters (int[] registers, long[] values)
-		{
-			throw new NotImplementedException ();
+			engine.SendSyncCommand (CommandType.SetRegisters, registers);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()

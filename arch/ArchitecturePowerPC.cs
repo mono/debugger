@@ -126,6 +126,10 @@ namespace Mono.Debugger
 				       "r29", "r30", "r31", "pc", "ps", "cr", "lr", "ctr",
 				       "xer", "mq", "vrsave" };
 
+		int[] reg_sizes = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+				    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+				    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
+
 		public string[] RegisterNames {
 			get {
 				return registers;
@@ -141,6 +145,12 @@ namespace Mono.Debugger
 		public int[] AllRegisterIndices {
 			get {
 				return all_regs;
+			}
+		}
+
+		public int[] RegisterSizes {
+			get {
+				return reg_sizes;
 			}
 		}
 

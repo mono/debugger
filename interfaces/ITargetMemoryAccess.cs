@@ -122,7 +122,7 @@ namespace Mono.Debugger
 
 		byte[] ReadBuffer (TargetAddress address, int size);
 
-		Register[] GetRegisters ();
+		Registers GetRegisters ();
 
 		bool CanWrite {
 			get;
@@ -140,5 +140,7 @@ namespace Mono.Debugger
 		void WriteLongInteger (TargetAddress address, long value);
 
 		void WriteAddress (TargetAddress address, TargetAddress value);
+
+		void SetRegisters (Registers registers);
 	}
 }

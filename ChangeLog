@@ -1,5 +1,24 @@
 2004-06-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (Registers): New public class.
+	(StackFrame.WriteRegister): New public method to modify the
+	register.	
+
+	* interfaces/IArchitectures.cs
+	(IArchitecture.RegisterSizes): New property.
+
+	* backends/Inferior.cs (Inferior.GetRegisters): Return a
+	`Registers', not a `Register[]'.
+	(Inferior.SetRegisters): Take a `Registers' argument, not a
+	`Register[]' one.
+
+	* backends/Process.cs (Process.GetRegisters): Return a
+	`Registers', not a `Register[]'.
+	(Process.SetRegisters): Take a `Registers' argument, not a
+	`Register[]' one.
+
+2004-06-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs (Register.Data): Renamed to `Value' and
 	changed type to long.
 

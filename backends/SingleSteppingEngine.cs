@@ -247,8 +247,8 @@ namespace Mono.Debugger.Backends
 			case CommandType.GetRegisters:
 				return get_registers ();
 
-			case CommandType.SetRegister:
-				set_register ((Register) data);
+			case CommandType.SetRegisters:
+				set_registers ((Registers) data);
 				break;
 
 			case CommandType.InsertBreakpoint:
@@ -669,7 +669,7 @@ namespace Mono.Debugger.Backends
 			return current_simple_symtab.SimpleLookup (address, exact_match);
 		}
 
-		Register[] get_registers ()
+		Registers get_registers ()
 		{
 			registers = inferior.GetRegisters ();
 			return registers;
@@ -690,9 +690,12 @@ namespace Mono.Debugger.Backends
 			return current_backtrace;
 		}
 
-		void set_register (Register reg)
+		void set_registers (Registers registers)
 		{
-			registers [reg.Index] = reg;
+			if (!registers.FromCurrentFrame)
+				throw new InvalidOperationException ();
+
+			this.registers = registers;
 			inferior.SetRegisters (registers);
 		}
 
@@ -1209,7 +1212,7 @@ namespace Mono.Debugger.Backends
 		protected IMethod current_method;
 		protected StackFrame current_frame;
 		protected Backtrace current_backtrace;
-		protected Register[] registers;
+		protected Registers registers;
 
 		public Backtrace CurrentBacktrace {
 			get { return current_backtrace; }
@@ -1905,10 +1908,10 @@ namespace Mono.Debugger.Backends
 			public readonly IMethod Method;
 			public readonly StackFrame Frame;
 			public readonly Backtrace Backtrace;
-			public readonly Register[] Registers;
+			public readonly Registers Registers;
 
 			public StackData (IMethod method, StackFrame frame,
-					  Backtrace backtrace, Register[] registers)
+					  Backtrace backtrace, Registers registers)
 			{
 				this.Method = method;
 				this.Frame = frame;
@@ -2187,7 +2190,7 @@ namespace Mono.Debugger.Backends
 		Operation,
 		GetBacktrace,
 		GetRegisters,
-		SetRegister,
+		SetRegisters,
 		InsertBreakpoint,
 		RemoveBreakpoint,
 		GetInstructionSize,

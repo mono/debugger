@@ -99,20 +99,14 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return process.Architecture.RegisterNames; }
 		}
 
-		public Register[] GetRegisters (int[] indices)
+		public Registers GetRegisters ()
 		{
-			Register[] registers = frame.Registers;
+			Registers registers = frame.Registers;
 			if (registers == null)
-				throw new ScriptingException ("Cannot get registers of selected stack frame.");
+				throw new ScriptingException (
+					"Cannot get registers of selected stack frame.");
 
-			if (indices == null)
-				return registers;
-
-			Register[] retval = new Register [indices.Length];
-			for (int i = 0; i < indices.Length; i++)
-				retval [i] = registers [indices [i]];
-
-			return retval;
+			return registers;
 		}
 
 		public int FindRegister (string name)

@@ -117,7 +117,7 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 			}
 
-			Register[] regs = target.GetRegisters ();
+			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
 			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr);
@@ -174,6 +174,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public int[] RegisterSizes {
+			get {
+				return reg_sizes;
+			}
+		}
+
 		public int CountRegisters {
 			get {
 				return (int) I386Register.COUNT;
@@ -210,6 +216,8 @@ namespace Mono.Debugger
 				
 		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "ds",
 				       "es", "fs", "gs", "eip", "cs", "eflags", "esp", "ss" };
+
+		int[] reg_sizes = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 
 		public string PrintRegister (Register register)
 		{
@@ -276,7 +284,7 @@ namespace Mono.Debugger
 
 		public string PrintRegisters (StackFrame frame)
 		{
-			Register[] registers = frame.Registers;
+			Registers registers = frame.Registers;
 			return String.Format (
 				"EAX={0}  EBX={1}  ECX={2}  EDX={3}  ESI={4}  EDI={5}\n" +
 				"EBP={6}  ESP={7}  EIP={8}  EFLAGS={9}\n",
@@ -316,10 +324,8 @@ namespace Mono.Debugger
 				return null;
 			pos += 2;
 
-			Register[] old_regs = frame.Registers;
-			Register[] regs = new Register [CountRegisters];
-			for (int i = 0; i < CountRegisters; i++)
-				regs [i] = new Register (i, false, 0);
+			Registers old_regs = frame.Registers;
+			Registers regs = new Registers (this);
 
 			TargetAddress ebp = new TargetAddress (
 				memory.AddressDomain, old_regs [(int) I386Register.EBP]);

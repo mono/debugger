@@ -26,6 +26,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		int[] RegisterSizes {
+			get;
+		}
+
 		int CountRegisters {
 			get;
 		}

@@ -901,7 +901,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Register[] GetRegisters ()
+		public Registers GetRegisters ()
 		{
 			IntPtr buffer = IntPtr.Zero;
 			try {
@@ -914,30 +914,21 @@ namespace Mono.Debugger.Backends
 				long[] retval = new long [count];
 				Marshal.Copy (buffer, retval, 0, count);
 
-				Register[] regs = new Register [count];
-				for (int i = 0; i < count; i++)
-					regs [i] = new Register (i, true, retval [i]);
-
-				return regs;
+				return new Registers (arch, retval);
 			} finally {
 				if (buffer != IntPtr.Zero)
 					Marshal.FreeHGlobal (buffer);
 			}
 		}
 
-		public void SetRegisters (Register[] registers)
+		public void SetRegisters (Registers registers)
 		{
 			IntPtr buffer = IntPtr.Zero;
 			try {
 				int count = arch.CountRegisters;
-				if (registers.Length != count)
-					throw new ArgumentException ();
 				int buffer_size = count * 8;
 				buffer = Marshal.AllocHGlobal (buffer_size);
-				long[] values = new long [count];
-				for (int i = 0; i < count; i++)
-					values [i] = registers [i].Value;
-				Marshal.Copy (values, 0, buffer, registers.Length);
+				Marshal.Copy (registers.Values, 0, buffer, count);
 				TargetError result = mono_debugger_server_set_registers (
 					server_handle, buffer);
 				check_error (result);

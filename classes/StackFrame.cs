@@ -10,16 +10,21 @@ namespace Mono.Debugger
 {
 	public delegate void ObjectInvalidHandler (object obj);
 
-	public struct Register
+	public sealed class Register
 	{
 		public readonly int Index;
+		public readonly int Size;
 		TargetAddress addr_on_stack;
+		Registers registers;
 		bool valid;
 		long value;
 
-		public Register (int index, bool valid, long value)
+		public Register (Registers registers, int index, int size,
+				 bool valid, long value)
 		{
+			this.registers = registers;
 			this.Index = index;
+			this.Size = size;
 			this.valid = valid;
 			this.value = value;
 			this.addr_on_stack = TargetAddress.Null;
@@ -41,9 +46,77 @@ namespace Mono.Debugger
 			this.value = value;
 		}
 
+		public void WriteRegister (ITargetAccess target, long value)
+		{
+			this.value = value;
+
+			if (addr_on_stack.IsNull)
+				target.SetRegisters (registers);
+			else if (Size == target.TargetIntegerSize)
+				target.WriteInteger (addr_on_stack, (int) value);
+			else
+				target.WriteLongInteger (addr_on_stack, value);
+		}
+
 		public bool Valid {
 			get {
 				return valid;
+			}
+		}
+
+		public TargetAddress AddressOnStack {
+			get {
+				return addr_on_stack;
+			}
+		}
+	}
+
+	public sealed class Registers
+	{
+		Register[] regs;
+		bool from_current_frame;
+
+		public Registers (IArchitecture arch)
+		{
+			regs = new Register [arch.CountRegisters];
+			for (int i = 0; i < regs.Length; i++)
+				regs [i] = new Register (
+					this, i, arch.RegisterSizes [i], false, 0);
+		}
+
+		public Registers (IArchitecture arch, long[] values)
+		{
+			regs = new Register [arch.CountRegisters];
+			if (regs.Length != values.Length)
+				throw new ArgumentException ();
+			for (int i = 0; i < regs.Length; i++)
+				regs [i] = new Register (
+					this, i, arch.RegisterSizes [i], true, values [i]);
+			from_current_frame = true;
+		}
+
+		public Register this [int index] {
+			get {
+				return regs [index];
+			}
+		}
+
+		internal long[] Values {
+			get {
+				if (!from_current_frame)
+					throw new InvalidOperationException ();
+
+				long[] retval = new long [regs.Length];
+				for (int i = 0; i < regs.Length; i++)
+					retval [i] = regs [i].Value;
+
+				return retval;
+			}
+		}
+
+		public bool FromCurrentFrame {
+			get {
+				return from_current_frame;
 			}
 		}
 	}
@@ -56,14 +129,13 @@ namespace Mono.Debugger
 		SourceAddress source;
 		AddressDomain address_domain;
 		ILanguage language;
-		// ILanguageBackend lbackend;
 		bool has_registers;
-		Register[] registers;
+		Registers registers;
 		string name;
 		int level;
 
 		public StackFrame (Process process, TargetAddress address, TargetAddress stack,
-				   TargetAddress frame, Register[] registers, int level,
+				   TargetAddress frame, Registers registers, int level,
 				   IMethod method, SourceAddress source)
 		{
 			this.process = process;
@@ -75,11 +147,14 @@ namespace Mono.Debugger
 			this.method = method;
 			this.source = source;
 			this.name = method != null ? method.Name : null;
+
+			if (method != null)
+				language = method.Module.Language;
 		}
 
 		internal static StackFrame CreateFrame (Process process,
 							Inferior.StackFrame frame,
-							Register[] regs, int level,
+							Registers regs, int level,
 							IMethod method)
 		{
 			SourceAddress source = null;
@@ -90,7 +165,7 @@ namespace Mono.Debugger
 
 		internal static StackFrame CreateFrame (Process process,
 							Inferior.StackFrame frame,
-							Register[] regs, int level,
+							Registers regs, int level,
 							IMethod method, SourceAddress source)
 		{
 			return new StackFrame (process, frame.Address, frame.StackPointer,
@@ -161,7 +236,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public Register[] Registers {
+		public Registers Registers {
 			get {
 				check_disposed ();
 				return registers;
@@ -178,17 +253,6 @@ namespace Mono.Debugger
 		{
 			return new MonoVariableLocation (
 				this, dereference, index, reg_offset, false, offset);
-		}
-
-		public void SetRegister (int index, long value)
-		{
-			if (Level > 0)
-				throw new NotImplementedException ();
-
-			process.SetRegister (index, value);
-
-			has_registers = false;
-			registers = null;
 		}
 
 		public IMethod Method {
@@ -217,6 +281,11 @@ namespace Mono.Debugger
 				list.CopyTo (retval, 0);
 				return retval;
 			}
+		}
+
+		public void SetRegister (int index, long value)
+		{
+			registers [index].WriteRegister (process, value);
 		}
 
 		public event ObjectInvalidHandler FrameInvalidEvent;
