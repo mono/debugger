@@ -173,6 +173,9 @@ namespace Mono.Debugger
 
 		public static bool IsInSameMethod (IMethod method, TargetAddress address)
                 {
+			if (address.IsNull || !method.IsLoaded)
+				return false;
+
                         if ((address < method.StartAddress) || (address >= method.EndAddress))
                                 return false;
 
