@@ -1151,12 +1151,8 @@ namespace Mono.Debugger.Backends
 			if (operation == StepOperation.StepNativeInstruction)
 				return null;
 
-#if FIXME
-			if (method.IsWrapper && (address > method.StartAddress))
-				return new Command (StepOperation.StepLine, new StepFrame (
-					method.StartAddress, method.EndAddress,
-					null, StepMode.Finish));
-#endif
+			if (method.IsWrapper && (address == method.StartAddress))
+				return new Command (StepOperation.Run, method.WrapperAddress);
 
 			ILanguageBackend language = method.Module.Language as ILanguageBackend;
 			if (source == null)
