@@ -359,7 +359,7 @@ namespace Mono.Debugger.Architecture
 
 			public static DwarfBinaryReader GetBinaryReader (DwarfReader dwarf, string section_name)
 			{
-				byte[] contents = dwarf.bfd.GetSectionContents (section_name);
+				byte[] contents = dwarf.bfd.GetSectionContents (section_name, false);
 				if (contents == null)
 					throw new DwarfException (dwarf, "Can't file DWARF 2 debugging info");
 

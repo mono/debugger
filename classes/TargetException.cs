@@ -69,4 +69,18 @@ namespace Mono.Debugger
 			: base ("No such registers.")
 		{ }
 	}
+
+	public class CannotExecuteCoreFileException : TargetException
+	{
+		public CannotExecuteCoreFileException ()
+			: base ("Cannot execute a core file.")
+		{ }
+	}
+
+	public class InvalidCoreFileException : TargetException
+	{
+		public InvalidCoreFileException (string message)
+			: base ("Invalid core file: " + message)
+		{ }
+	}
 }

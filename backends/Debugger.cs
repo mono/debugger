@@ -485,7 +485,7 @@ namespace Mono.Debugger.Backends
 		ISourceFileFactory source_factory;
 		ISymbolTableCollection symtabs;
 
-		Inferior inferior;
+		IInferior inferior;
 		ILanguageBackend language;
 
 		readonly uint target_address_size;
@@ -641,6 +641,7 @@ namespace Mono.Debugger.Backends
 		public event TargetOutputHandler TargetOutput;
 		public event TargetOutputHandler TargetError;
 		public event StateChangedHandler StateChanged;
+		public event TargetExitedHandler TargetExited;
 
 		//
 		// IDebuggerBackend
@@ -653,12 +654,14 @@ namespace Mono.Debugger.Backends
 
 		public IInferior Inferior {
 			get {
+				check_disposed ();
 				return inferior;
 			}
 		}
 
 		public bool HasTarget {
 			get {
+				check_disposed ();
 				return inferior != null;
 			}
 		}
@@ -673,6 +676,8 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
+			if (TargetExited != null)
+				TargetExited ();
 		}
 
 		void inferior_output (string line)
@@ -689,6 +694,18 @@ namespace Mono.Debugger.Backends
 
 		public void Run ()
 		{
+			check_disposed ();
+			do_run ((string) null);
+		}
+
+		public void ReadCoreFile (string core_file)
+		{
+			check_disposed ();
+			do_run (core_file);
+		}
+
+		void do_run (string core_file)
+		{
 			if (inferior != null)
 				throw new AlreadyHaveTargetException ();
 
@@ -699,7 +716,7 @@ namespace Mono.Debugger.Backends
 				try {
 					Assembly application = Assembly.LoadFrom (target_application);
 					if (application != null) {
-						do_run (target_application, application);
+						do_run (target_application, core_file, application);
 						return;
 					}
 				} catch {
@@ -714,7 +731,10 @@ namespace Mono.Debugger.Backends
 			argv.CopyTo (new_argv, 1);
 
 			native = true;
-			do_run (new_argv);
+			if (core_file != null)
+				load_core (core_file, new_argv);
+			else
+				do_run (new_argv);
 		}
 
 		void setup_environment ()
@@ -727,7 +747,7 @@ namespace Mono.Debugger.Backends
 				working_directory = ".";
 		}
 
-		void do_run (string target_application, Assembly application)
+		void do_run (string target_application, string core_file, Assembly application)
 		{
 			MethodInfo main = application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
@@ -744,13 +764,16 @@ namespace Mono.Debugger.Backends
 			argv.CopyTo (new_argv, start_argv.Length);
 
 			native = false;
-			do_run (new_argv);
+			if (core_file != null)
+				load_core (core_file, new_argv);
+			else
+				do_run (new_argv);
 		}
 
 		void do_run (string[] argv)
 		{
 			inferior = new Inferior (working_directory, argv, envp, native, source_factory);
-			inferior.ChildExited += new ChildExitedHandler (child_exited);
+			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
@@ -765,17 +788,55 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		void load_core (string core_file, string[] argv)
+		{
+			inferior = new CoreFileElfI386 (argv [0], core_file, source_factory);
+
+			symtabs = new SymbolTableCollection ();
+			symtabs.AddSymbolTable (inferior.SymbolTable);
+
+			if (!native) {
+				language = new MonoCSharpLanguageBackend (inferior);
+				symtabs.AddSymbolTable (language.SymbolTable);
+				inferior.ApplicationSymbolTable = language.SymbolTable;
+				symtabs.UpdateSymbolTable ();
+			}
+		}
+
 		public void Quit ()
 		{
 			if (inferior != null)
 				inferior.Shutdown ();
 		}
 
-		IStepFrame get_step_frame ()
+		void check_inferior ()
 		{
+			check_disposed ();
 			if (inferior == null)
 				throw new NoTargetException ();
+		}
 
+		void check_stopped ()
+		{
+			check_inferior ();
+
+			if ((State != TargetState.STOPPED) && (State != TargetState.CORE_FILE))
+				throw new TargetNotStoppedException ();
+		}
+
+		void check_can_run ()
+		{
+			check_inferior ();
+
+			if (State == TargetState.CORE_FILE)
+				throw new CannotExecuteCoreFileException ();
+			else if (State != TargetState.STOPPED)
+				throw new TargetNotStoppedException ();
+		}
+
+		IStepFrame get_step_frame ()
+		{
+			check_inferior ();
 			IStackFrame frame = CurrentFrame;
 			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
 
@@ -793,9 +854,7 @@ namespace Mono.Debugger.Backends
 
 		IStepFrame get_simple_step_frame (StepMode mode)
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
+			check_inferior ();
 			IStackFrame frame = CurrentFrame;
 			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
 
@@ -804,45 +863,25 @@ namespace Mono.Debugger.Backends
 
 		public void StepInstruction ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
-
+			check_can_run ();
 			inferior.Step (get_simple_step_frame (StepMode.SingleInstruction));
 		}
 
 		public void NextInstruction ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
-
+			check_can_run ();
 			inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
 		}
 
 		public void StepLine ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
-
+			check_can_run ();
 			inferior.Step (get_step_frame ());
 		}
 
 		public void NextLine ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
-
+			check_can_run ();
 			IStepFrame frame = get_step_frame ();
 			if (frame == null) {
 				inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
@@ -855,28 +894,19 @@ namespace Mono.Debugger.Backends
 
 		public void Continue ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
+			check_can_run ();
 			inferior.Continue ();
 		}
 
 		public void Stop ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
+			check_inferior ();
 			inferior.Stop ();
 		}
 
 		public void Finish ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
-
+			check_can_run ();
 			IStackFrame frame = CurrentFrame;
 			if (frame.Method == null)
 				throw new NoMethodException ();
@@ -887,47 +917,28 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress CurrentFrameAddress {
 			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
-				if (State != TargetState.STOPPED)
-					throw new TargetNotStoppedException ();
-
+				check_stopped ();
 				return inferior.CurrentFrame;
 			}
 		}
 
 		public IStackFrame CurrentFrame {
 			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
-				if (State != TargetState.STOPPED)
-					throw new TargetNotStoppedException ();
-
+				check_stopped ();
 				return current_frame;
 			}
 		}
 
 		public IMethod CurrentMethod {
 			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
-				if (State != TargetState.STOPPED)
-					throw new TargetNotStoppedException ();
-
+				check_stopped ();
 				return current_method;
 			}
 		}
 
 		public IStackFrame[] GetBacktrace ()
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
-			if (State != TargetState.STOPPED)
-				throw new TargetNotStoppedException ();
+			check_stopped ();
 
 			if (current_backtrace != null)
 				return current_backtrace;
@@ -955,43 +966,33 @@ namespace Mono.Debugger.Backends
 
 		public long GetRegister (int register)
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
+			check_stopped ();
 			return inferior.GetRegister (register);
 		}
 
 		public long[] GetRegisters (int[] registers)
 		{
-			if (inferior == null)
-				throw new NoTargetException ();
-
+			check_stopped ();
 			return inferior.GetRegisters (registers);
 		}
 
 		public IDisassembler Disassembler {
 			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
+				check_inferior ();
 				return inferior.Disassembler;
 			}
 		}
 
 		public IArchitecture Architecture {
 			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
+				check_inferior ();
 				return inferior.Architecture;
 			}
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
 			get {
-				if (inferior == null)
-					throw new NoTargetException ();
-
+				check_inferior ();
 				return inferior;
 			}
 		}
@@ -1044,6 +1045,7 @@ namespace Mono.Debugger.Backends
 
 		public ISourceFileFactory SourceFileFactory {
 			get {
+				check_disposed ();
 				return source_factory;
 			}
 		}
@@ -1061,6 +1063,12 @@ namespace Mono.Debugger.Backends
 		//
 
 		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("Debugger");
+		}
 
 		protected virtual void Dispose (bool disposing)
 		{

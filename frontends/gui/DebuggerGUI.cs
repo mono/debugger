@@ -101,6 +101,8 @@ namespace Mono.Debugger.GUI
 			source_factory = new SourceFileFactory ();
 			backend = new Debugger (source_factory);
 
+			interpreter = new Interpreter (backend, output_writer, output_writer);
+
 			SetupGUI ();
 
 			if (arguments.Length > 0)
@@ -156,11 +158,20 @@ namespace Mono.Debugger.GUI
 		//
 		void LoadProgram (string [] args)
 		{
-			string [] program_args = new string [args.Length-1];
-			if (args.Length > 1)
-				Array.Copy (args, 1, program_args, 0, args.Length-1);
+			if (args [0] == "core") {
+				string [] program_args = new string [args.Length-2];
+				if (args.Length > 2)
+					Array.Copy (args, 2, program_args, 0, args.Length-2);
 
-			LoadProgram (args [0], program_args);
+				LoadProgram (args [1], program_args);
+				backend.ReadCoreFile ("thecore");
+			} else{
+				string [] program_args = new string [args.Length-1];
+				if (args.Length > 1)
+					Array.Copy (args, 1, program_args, 0, args.Length-1);
+
+				LoadProgram (args [0], program_args);
+			}
 		}
 
 		//
@@ -172,8 +183,6 @@ namespace Mono.Debugger.GUI
 			backend.CommandLineArguments = args;
 			backend.TargetApplication = program;
 
-			interpreter = new Interpreter (backend, output_writer, output_writer);
-			
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);
 

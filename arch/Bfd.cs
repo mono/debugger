@@ -17,6 +17,7 @@ namespace Mono.Debugger.Architecture
 		Hashtable symbols;
 		DwarfReader dwarf;
 		string filename;
+		bool is_coredump;
 
 		[DllImport("libbfd")]
 		extern static void bfd_init ();
@@ -30,6 +31,9 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libbfd")]
 		extern static IntPtr bfd_get_section_by_name (IntPtr bfd, string name);
 
+		[DllImport("libbfd")]
+		extern static string bfd_core_file_failing_command (IntPtr bfd);
+
 		[DllImport("libopcodes")]
 		extern static IntPtr disassembler (IntPtr bfd);
 
@@ -40,10 +44,13 @@ namespace Mono.Debugger.Architecture
 		extern static bool bfd_glue_check_format_object (IntPtr bfd);
 
 		[DllImport("libmonodebuggerbfdglue")]
+		extern static bool bfd_glue_check_format_core (IntPtr bfd);
+
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static int bfd_glue_get_symbols (IntPtr bfd, out IntPtr symtab);
 
 		[DllImport("libmonodebuggerbfdglue")]
-		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, long offset, out IntPtr data, out int size);
+		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, long offset, out IntPtr data, out int size);
 
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
@@ -57,11 +64,20 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (IInferior inferior, string filename, ISourceFileFactory factory)
+		public Bfd (IInferior inferior, string filename, bool core_file, ISourceFileFactory factory)
 		{
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
+
+			if (core_file) {
+				if (!bfd_glue_check_format_core (bfd))
+					throw new SymbolTableException ("Not a core file: {0}", filename);
+
+				is_coredump = true;
+
+				return;
+			}
 
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
@@ -98,6 +114,21 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public bool IsCoreDump {
+			get {
+				return is_coredump;
+			}
+		}
+
+		public string CrashProgram {
+			get {
+				if (!is_coredump)
+					throw new InvalidOperationException ();
+
+				return bfd_core_file_failing_command (bfd);
+			}
+		}
+
 		public ISymbolTable SymbolTable {
 			get {
 				if (dwarf == null)
@@ -128,7 +159,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public byte[] GetSectionContents (string name)
+		public byte[] GetSectionContents (string name, bool raw_section)
 		{
 			IntPtr section, data;
 			int size;
@@ -137,7 +168,7 @@ namespace Mono.Debugger.Architecture
 			if (section == IntPtr.Zero)
 				return null;
 
-			if (!bfd_glue_get_section_contents (bfd, section, 0, out data, out size))
+			if (!bfd_glue_get_section_contents (bfd, section, raw_section, 0, out data, out size))
 				return null;
 
 			try {

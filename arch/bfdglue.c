@@ -1,11 +1,20 @@
 #include <bfdglue.h>
 #include <signal.h>
 #include <string.h>
+#include <elf.h>
+#include <sys/user.h>
+#include <sys/procfs.h>
 
 gboolean
 bfd_glue_check_format_object (bfd *abfd)
 {
 	return bfd_check_format (abfd, bfd_object);
+}
+
+gboolean
+bfd_glue_check_format_core (bfd *abfd)
+{
+	return bfd_check_format (abfd, bfd_core);
 }
 
 int
@@ -126,16 +135,47 @@ bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info
 }
 
 gboolean
-bfd_glue_get_section_contents (bfd *abfd, asection *section, guint64 offset,
+bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, guint64 offset,
 			       gpointer *data, guint32 *size)
 {
 	gboolean retval;
 
-	*size = section->_cooked_size;
+	if (raw_section)
+		*size = section->_raw_size;
+	else
+		*size = section->_cooked_size;
 	*data = g_malloc0 (*size);
 
 	retval = bfd_get_section_contents (abfd, section, *data, offset, *size);
 	if (!retval)
 		g_free (*data);
 	return retval;
+}
+
+gboolean
+bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct user_regs_struct **regs)
+{
+	int pos = 0;
+
+	while (pos < size) {
+		Elf32_Nhdr *note = (Elf32_Nhdr *) (data + pos);
+
+		if (note->n_type == NT_PRSTATUS) {
+			struct elf_prstatus *prstatus;
+
+			if (note->n_descsz != sizeof (struct elf_prstatus)) {
+				g_warning (G_STRLOC ": NT_PRSTATUS note in core file has unexpected size.");
+				return FALSE;
+			}
+
+			prstatus = data + pos + sizeof (Elf32_Nhdr) + note->n_namesz;
+			*regs = (struct user_regs_struct *) &prstatus->pr_reg;
+			return TRUE;
+		}
+
+		pos += sizeof (Elf32_Nhdr) + note->n_namesz + note->n_descsz;
+	}
+
+	g_warning (G_STRLOC ": Can't find NT_PRSTATUS note in core file.");
+	return FALSE;
 }

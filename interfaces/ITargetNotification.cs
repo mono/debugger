@@ -3,6 +3,7 @@ using System.IO;
 
 namespace Mono.Debugger
 {
+	public delegate void TargetExitedHandler ();
 	public delegate void TargetOutputHandler (string otuput);
 	public delegate void StateChangedHandler (TargetState new_state, int arg);
 
@@ -34,7 +35,12 @@ namespace Mono.Debugger
 		// <summary>
 		//   The target has exited.
 		// </summary>
-		EXITED
+		EXITED,
+
+		// <summary>
+		//   This is a core file.
+		// </summary>
+		CORE_FILE
 	}
 
 	public interface ITargetNotification
@@ -47,21 +53,27 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   This event is called when the target we're currently debugging has sent any
+		//   This event is emitted when the target we're currently debugging has sent any
 		//   output to stdout.
 		// </summary>
 		event TargetOutputHandler TargetOutput;
 
 		// <summary>
-		//   This event is called when the target we're currently debugging has sent any
+		//   This event is emitted when the target we're currently debugging has sent any
 		//   error messages to stderr.
 		// </summary>
 		event TargetOutputHandler TargetError;
 
 		// <summary>
-		//   This event is called when the state of the target we're currently debugging
+		//   This event is emitted when the state of the target we're currently debugging
 		//   has changed, for instance when the target has stopped or exited.
 		// </summary>
 		event StateChangedHandler StateChanged;
+
+		// <summary>
+		//   This event is emitted when the state of the target we're currently debugging
+		//   has changed, for instance when the target has stopped or exited.
+		// </summary>
+		event TargetExitedHandler TargetExited;
 	}
 }

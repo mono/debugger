@@ -70,6 +70,8 @@ namespace Mono.Debugger
 		// </summary>
 		void Run ();
 
+		void ReadCoreFile (string filename);
+
 		void StepInstruction ();
 
 		void NextInstruction ();

@@ -42,7 +42,6 @@ namespace Mono.Debugger.Backends
 	}
 	
 	internal delegate void ChildSetupHandler ();
-	internal delegate void ChildExitedHandler ();
 	internal delegate void ChildCallbackHandler (long argument, long data);
 	internal delegate void ChildMessageHandler (ChildMessageType message, int arg);
 
@@ -84,14 +83,14 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public event ChildExitedHandler ChildExited;
+		public event TargetExitedHandler TargetExited;
 		public event ChildMessageHandler ChildMessage;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, ChildExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, TargetExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, ChildExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback);
+		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, TargetExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback);
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_get_g_source (IntPtr handle);
@@ -255,7 +254,7 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = new Bfd (this, argv [0], source_factory);
+			bfd = new Bfd (this, argv [0], false, source_factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -263,7 +262,7 @@ namespace Mono.Debugger.Backends
 
 			check_error (mono_debugger_server_spawn (
 				server_handle, working_directory, argv, envp, true,
-				new ChildExitedHandler (child_exited),
+				new TargetExitedHandler (child_exited),
 				new ChildMessageHandler (child_message),
 				new ChildCallbackHandler (child_callback),
 				out child_pid, out stdin_fd, out stdout_fd, out stderr_fd,
@@ -281,14 +280,14 @@ namespace Mono.Debugger.Backends
 			this.envp = envp;
 			this.source_factory = factory;
 
-			bfd = new Bfd (this, argv [0], factory);
+			bfd = new Bfd (this, argv [0], false, factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 
 			check_error (mono_debugger_server_attach (
-				server_handle, pid, new ChildExitedHandler (child_exited),
+				server_handle, pid, new TargetExitedHandler (child_exited),
 				new ChildMessageHandler (child_message),
 				new ChildCallbackHandler (child_callback)));
 
@@ -361,8 +360,8 @@ namespace Mono.Debugger.Backends
 		{
 			child_pid = 0;
 			Dispose ();
-			if (ChildExited != null)
-				ChildExited ();
+			if (TargetExited != null)
+				TargetExited ();
 		}
 
 		void child_callback (long callback, long data)

@@ -1,3 +1,23 @@
+2002-09-20  Martin Baulig  <martin@gnome.org>
+
+	Started to add support for core files.
+
+	* interfaces/IDebuggerBackend.cs (IDebuggerBackend.ReadCoreFile):
+	New method to read a core file.
+
+	* interfaces/ITargetNotification.cs (ITargetNotification): Added
+	TargetExited event.
+	(TargetState): Added CORE_FILE.
+
+	* arch/CoreFile.cs: New abstract class to read core files.
+
+	* arch/CoreFileElfI386.cs: Core file reader for ELF files on the i386.
+
+	* frontends/gui/DebuggerGUI.cs (.ctor): Create the interpreter
+	here since otherwise the `Quit' command won't work.
+	(LoadProgram): HACK: if the first argument is `core' read a core
+	file `thecore' in the current directory.
+
 2002-09-19  Martin Baulig  <martin@gnome.org>
 
 	* interfaces/ITargetNotification.cs: New file. Moved TargetState

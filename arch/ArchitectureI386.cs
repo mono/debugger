@@ -4,6 +4,27 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
+	internal enum I386Register
+	{
+		EBX		= 0,
+		ECX		= 1,
+		EDX		= 2,
+		ESI		= 3,
+		EDI		= 4,
+		EBP		= 5,
+		EAX		= 6,
+		XDS		= 7,
+		XES		= 8,
+		XFS		= 9,
+		XGS		= 10,
+		ORIG_EAX	= 11,
+		EIP		= 12,
+		XCS		= 13,
+		EFL		= 14,
+		ESP		= 15,
+		XSS		= 16
+	}
+
 	// <summary>
 	//   Architecture-dependent stuff for the i386.
 	// </summary>
@@ -115,26 +136,6 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 
 			return new TargetAddress (inferior, method_info);
-		}
-
-		enum I386Register {
-			EBX		= 0,
-			ECX		= 1,
-			EDX		= 2,
-			ESI		= 3,
-			EDI		= 4,
-			EBP		= 5,
-			EAX		= 6,
-			XDS		= 7,
-			XES		= 8,
-			XFS		= 9,
-			XGS		= 10,
-			ORIG_EAX	= 11,
-			EIP		= 12,
-			XCS		= 13,
-			EFL		= 14,
-			ESP		= 15,
-			XSS		= 16
 		}
 
 		public string[] RegisterNames {

@@ -145,6 +145,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Thread.Sleep (50000);
 				break;
 
+			case "core": {
+				if (args.Length != 1) {
+					stderr.WriteLine ("Command requires an argument");
+					break;
+				}
+				backend.ReadCoreFile (args [0]);
+				break;
+			}
+
 			case "local": {
 				if (args.Length != 1) {
 					stderr.WriteLine ("Command requires an argument");
@@ -172,6 +181,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Console.WriteLine ("VALUE: {0:x}", value);
 				break;
 			}
+
+			case "frame":
+				Console.WriteLine ("CURRENT FRAME: {0}", backend.CurrentFrameAddress);
+				break;
 
 			case "b":
 			case "break-method": {
