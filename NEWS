@@ -1,3 +1,17 @@
+April 28th, 2004 - Martin Baulig
+--------------------------------
+
+Preparing version 0.7 "Wilmington" of the Mono Debugger ...
+
+Lots of changes this time:
+
+- we got a cool new command line interface with a TCL-like language
+- lots of stability and usability improvements
+
+Documentation won't make it into this release, but will be in MonkeyGuide
+shortly after it.  I'm doing two weeks of vacations, so I just want to
+get the release out before leaving.
+
 March 16th, 2004 - Martin Baulig
 --------------------------------
 
