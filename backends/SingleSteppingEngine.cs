@@ -968,11 +968,18 @@ public class SingleSteppingEngine : ThreadManager
 				break;
 
 			case OperationType.NextLine:
-				operation.StepFrame = get_step_frame ();
-				if (operation.StepFrame == null)
+				// We cannot just set a breakpoint on the next line
+				// since we do not know which way the program's
+				// control flow will go; ie. there may be a jump
+				// instruction before reaching the next line.
+				StepFrame frame = get_step_frame ();
+				if (frame == null)
 					do_next ();
-				else
+				else {
+					operation.StepFrame = new StepFrame (
+						frame.Start, frame.End, null, StepMode.Finish);
 					Step (operation);
+				}
 				break;
 
 			case OperationType.StepInstruction:
