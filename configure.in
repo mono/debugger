@@ -35,9 +35,11 @@ AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-linux*)
 		server_sources="i386-linux-ptrace.c i386-linux-ptrace.h"
+		bfd_trad_core=yes
 		;;
 	*-*-freebsd*)
 		server_sources="i386-freebsd-ptrace.c i386-freebsd-ptrace.h"
+		bfd_trad_core=yes
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
@@ -45,6 +47,7 @@ case "$host" in
 esac
 AC_MSG_RESULT(ok)
 AC_SUBST(server_sources)
+AM_CONDITIONAL(bfd_trad_core, test x$bfd_trad_core = xyes)
 
 dnl may require a specific autoconf version
 dnl AC_PROG_CC_FOR_BUILD
