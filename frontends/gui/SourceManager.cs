@@ -103,7 +103,8 @@ namespace Mono.Debugger.GUI {
 
 				source_view.WindowToBufferCoords (TextWindowType.Left, (int) ev.x, (int) ev.y, out buffer_x, out buffer_y);
 				Gtk.TextIter iter;
-				source_view.GetLineAtY (out iter, buffer_y, 0);
+				int line_top;
+				source_view.GetLineAtY (out iter, buffer_y, out line_top);
 				int line = iter.Line + 1;
 
 				if (breakpoints [line] != null){
