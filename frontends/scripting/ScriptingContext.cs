@@ -272,6 +272,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
+
+			initialize ();
 		}
 
 		public ProcessHandle (Interpreter interpreter, Process process, int pid)
@@ -285,8 +287,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 					current_frame.Print (interpreter.GlobalContext);
 				}
 			}
-
-			initialize ();
 		}
 
 		public Process Process {

@@ -71,25 +71,33 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token NEW
 %token TYPEOF
 
-%start expression
+%start parse_expression
 %%
+
+parse_expression
+	: expression
+	  {
+		return $1;
+	  }
+	;
 
 expression
 	: NUMBER
 	  {
-		return new NumberExpression ((long) $1);
+		$$ = new NumberExpression ((long) $1);
 	  }
 	| INTEGER
 	  {
-		return new NumberExpression ((int) $1);
+		$$ = new NumberExpression ((int) $1);
 	  }
 	| STRING
 	  {
-		return new StringExpression ((string) $1);
+		$$ = new StringExpression ((string) $1);
 	  }
 	| variable_or_type_name
+	| PERCENT IDENTIFIER
 	  {
-		return $1;
+		$$ = new RegisterExpression ((string) $2, 0);
 	  }
 	;
 

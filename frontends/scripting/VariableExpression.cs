@@ -144,15 +144,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class RegisterExpression : VariableExpression
 	{
-		FrameExpression frame_expr;
 		string name;
 		int register;
 		long offset;
-		FrameHandle frame;
 
-		public RegisterExpression (FrameExpression frame_expr, string register, long offset)
+		public RegisterExpression (string register, long offset)
 		{
-			this.frame_expr = frame_expr;
 			this.name = register;
 			this.offset = offset;
 		}
@@ -161,42 +158,38 @@ namespace Mono.Debugger.Frontends.CommandLine
 			get { return '%' + name; }
 		}
 
-		protected override bool DoResolveBase (ScriptingContext context)
-		{
-			frame = (FrameHandle) frame_expr.Resolve (context);
-			return frame != null;
-		}
-
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
+			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
 			return frame.GetRegisterType (register);
 		}
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			return frame.GetRegister (register, offset);
+			FrameHandle frame = context.CurrentFrame;
+			register = frame.FindRegister (name);
+			return context.CurrentFrame.GetRegister (register, offset);
 		}
 
 		public TargetLocation ResolveLocation (ScriptingContext context)
 		{
 			ResolveBase (context);
+			FrameHandle frame = context.CurrentFrame;
+			register = frame.FindRegister (name);
 			return frame.GetRegisterLocation (register, offset, true);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, object obj)
 		{
 			if (offset != 0)
-				throw new ScriptingException ("Cannot assign a register expression which has an offset.");
+				throw new ScriptingException (
+					"Cannot assign a register expression which " +
+					"has an offset.");
 
 			long value = Convert.ToInt64 (obj);
-			frame.SetRegister (register, value);
+			context.CurrentFrame.SetRegister (register, value);
 			return true;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1},{2})", GetType (), frame_expr, register);
 		}
 	}
 
