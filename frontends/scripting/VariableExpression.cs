@@ -527,19 +527,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException (
 					"Expression `{0}' is not a method.", method_expr.Name);
 
-			for (int i = 0; i < arguments.Length; i++) {
-				arguments [i] = arguments [i].Resolve (context);
-				if (arguments [i] == null)
-					return null;
-			}
-
 			resolved = true;
 			return this;
-		}
-
-		protected override ITargetType DoEvaluateType (ScriptingContext context)
-		{
-			return method_expr.EvaluateType (context);
 		}
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
@@ -550,20 +539,34 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
 								      Expression[] types)
 		{
-			return method_expr.EvaluateLocation (context, arguments);
+			Expression[] argtypes = new Expression [arguments.Length];
+			for (int i = 0; i < arguments.Length; i++) {
+				argtypes [i] = arguments [i].ResolveType (context);
+				if (argtypes [i] == null)
+					return null;
+			}
+
+			return method_expr.EvaluateLocation (context, argtypes);
 		}
 
 		public ITargetObject Invoke (ScriptingContext context, bool debug)
 		{
-			ITargetFunctionObject func = mg.EvaluateMethod (
-				context, context.CurrentFrame.Frame, arguments);
+			Expression[] args = new Expression [arguments.Length];
+			for (int i = 0; i < arguments.Length; i++) {
+				args [i] = arguments [i].Resolve (context);
+				if (args [i] == null)
+					return null;
+			}
 
-			ITargetObject[] args = new ITargetObject [arguments.Length];
-			for (int i = 0; i < arguments.Length; i++)
-				args [i] = arguments [i].EvaluateVariable (context);
+			ITargetFunctionObject func = mg.EvaluateMethod (
+				context, context.CurrentFrame.Frame, args);
+
+			ITargetObject[] objs = new ITargetObject [args.Length];
+			for (int i = 0; i < args.Length; i++)
+				objs [i] = args [i].EvaluateVariable (context);
 
 			try {
-				ITargetObject retval = func.Invoke (args, debug);
+				ITargetObject retval = func.Invoke (objs, debug);
 				if (!debug && !func.Type.HasReturnValue)
 					throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
 
