@@ -1,3 +1,10 @@
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
+	* class/TargetBinaryReader.cs: New public class.  Moved most of
+	DwarfReader.DwarfBinaryReader's functionality here.
+
+	* backends/gdb/*: Removed, nothing useful there anymore.
+
 2002-09-18  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/DebuggerGUI.cs: Rework the bootstrap phase for the

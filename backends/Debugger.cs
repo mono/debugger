@@ -23,6 +23,10 @@ namespace Mono.Debugger.Backends
 		int target_long_size;
 		int target_address_size;
 
+		internal TargetInfo (int target_address_size)
+			: this (4, 8, target_address_size)
+		{ }
+
 		internal TargetInfo (int target_int_size, int target_long_size,
 				     int target_address_size)
 		{
@@ -675,7 +679,8 @@ namespace Mono.Debugger.Backends
 
 			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End);
 
-			inferior.Continue (frame.End);
+			inferior.Step (new StepFrame (
+				frame.Start, frame.End, null, StepMode.Finish));
 		}
 
 		public void Finish ()
