@@ -237,6 +237,8 @@ namespace Mono.Debugger.Frontends.Scripting
 	[ShortDescription("Examine memory.")]
 	public class ExamineCommand : DebuggerCommand
 	{
+		TargetAddress start;
+		ITargetAccess target;
 		Expression expression;
 		int count = 16;
 
@@ -247,17 +249,10 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Repeating) {
-				if (context.LastExamineAddress.IsNull)
-					throw new ScriptingException (
-						"Don't have a last examine command " +
-						"which I could continue.");
-				expression = new PointerDereferenceExpression (
-					new NumberExpression (
-						context.LastExamineAddress.Address));
-			} else
-				expression = ParseExpression (context);
+			if (Repeating)
+				return true;
 
+			expression = ParseExpression (context);
 			if (expression == null)
 				return false;
 
@@ -267,23 +262,24 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			TargetAddress taddress;
-			ITargetAccess taccess;
 			byte[] data;
 
-			PointerExpression pexp = expression as PointerExpression;
-			if (pexp == null)
-				throw new ScriptingException (
-					"Expression `{0}' is not a pointer.", expression.Name);
+			if (!Repeating) {
+				PointerExpression pexp = expression as PointerExpression;
+				if (pexp == null)
+					throw new ScriptingException (
+						"Expression `{0}' is not a pointer.",
+						expression.Name);
 
-			TargetLocation location = pexp.EvaluateAddress (context);
+				TargetLocation location = pexp.EvaluateAddress (context);
 
-			taddress = location.Address;
-			taccess = location.TargetAccess;
+				start = location.Address;
+				target = location.TargetAccess;
+			}
 
-			data = taccess.ReadBuffer (taddress, count);
-			context.Print (TargetBinaryReader.HexDump (taddress, data));
-			context.LastExamineAddress = taddress + count;
+			data = target.ReadBuffer (start, count);
+			context.Print (TargetBinaryReader.HexDump (start, data));
+			start += count;
 		}
 	}
 

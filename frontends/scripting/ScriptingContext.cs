@@ -603,7 +603,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		ScriptingContext parent;
 		ArrayList method_search_results;
 		Hashtable method_search_hash;
-		TargetAddress last_examine_addr;
 
 		static AddressDomain address_domain = new AddressDomain ("scripting");
 
@@ -680,16 +679,6 @@ namespace Mono.Debugger.Frontends.Scripting
 						"Current location doesn't have source code");
 
 				return frame.SourceAddress.Location;
-			}
-		}
-
-		public TargetAddress LastExamineAddress {
-			get {
-				return last_examine_addr;
-			}
-
-			set {
-				last_examine_addr = value;
 			}
 		}
 
