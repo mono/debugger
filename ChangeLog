@@ -1,5 +1,13 @@
 2003-02-03  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c: Return the correct thread abort/restart
+	signals.
+
+	* backends/ThreadManager.cs: Make this work for native
+	applications again.
+
+2003-02-03  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/ScriptingContext.cs: Added `--prompt'
 	command line argument to specify the prompt; useful when running
 	the debugger inside the debugger.

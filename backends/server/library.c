@@ -373,7 +373,7 @@ int
 mono_debugger_server_get_thread_abort_signal (void)
 {
 #ifdef __linux__
-	return 32;
+	return 33;
 #else
 	return SIGUSR1;
 #endif
@@ -383,7 +383,7 @@ int
 mono_debugger_server_get_thread_restart_signal (void)
 {
 #ifdef __linux__
-	return 33;
+	return 32;
 #else
 	return SIGUSR2;
 #endif

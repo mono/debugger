@@ -29,7 +29,6 @@ namespace Mono.Debugger
 		Mutex thread_lock_mutex;
 		AddressDomain address_domain;
 		BreakpointManager breakpoint_manager;
-		DaemonThreadHandler csharp_handler;
 		AutoResetEvent thread_started_event;
 		ThreadGroup global_group;
 		int thread_lock_level = 0;
@@ -67,9 +66,8 @@ namespace Mono.Debugger
 
 		public bool Initialize (Process process, IInferior inferior)
 		{
-			this.csharp_handler = csharp_handler;
 			this.main_process = process;
-			add_process (process, process.PID, false);
+			add_process (process, inferior.PID, false);
 
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
 
@@ -238,9 +236,6 @@ namespace Mono.Debugger
 				if (index == 1)
 					new_process = main_process.CreateDaemonThread (
 						pid, PTraceInferior.ThreadRestartSignal, null);
-				else if ((csharp_handler != null) && (index == 2))
-					new_process = debugger_process = main_process.CreateDaemonThread (
-						pid, PTraceInferior.ThreadRestartSignal, csharp_handler);
 				else {
 					new_process = main_process.CreateThread (pid);
 					new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
