@@ -20,6 +20,9 @@ namespace Mono.Debugger
 	public class Process : ITargetNotification, IDisposable
 	{
 		DebuggerBackend backend;
+		ProcessStart start;
+		BfdContainer bfd_container;
+
 		SingleSteppingEngine sse;
 		CoreFile core;
 		IInferior inferior;
@@ -27,6 +30,8 @@ namespace Mono.Debugger
 		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container)
 		{
 			this.backend = backend;
+			this.start = start;
+			this.bfd_container = bfd_container;
 
 			inferior = new PTraceInferior (backend, start, bfd_container,
 						       new DebuggerErrorHandler (debugger_error));
@@ -57,15 +62,51 @@ namespace Mono.Debugger
 		}
 
 		public DebuggerBackend DebuggerBackend {
-			get { return backend; }
+			get {
+				check_disposed ();
+				return backend;
+			}
 		}
 
 		public SingleSteppingEngine SingleSteppingEngine {
-			get { return sse; }
+			get {
+				check_disposed ();
+				return sse;
+			}
 		}
 
 		public IInferior Inferior {
-			get { return inferior; }
+			get {
+				check_disposed ();
+				return inferior;
+			}
+		}
+
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get {
+				check_disposed ();				
+				return inferior;
+			}
+		}
+
+		public IDisassembler Disassembler {
+			get {
+				check_disposed ();
+				if (inferior == null)
+					return null;
+
+				return inferior.Disassembler;
+			}
+		}
+
+		public IArchitecture Architecture {
+			get {
+				check_disposed ();
+				if (inferior == null)
+					return null;
+				
+				return inferior.Architecture;
+			}
 		}
 
 		//
@@ -279,6 +320,13 @@ namespace Mono.Debugger
 			sse.Finish ();
 		}
 
+		public void Kill ()
+		{
+			check_disposed ();
+			if (inferior != null)
+				inferior.Shutdown ();
+		}
+
 		public TargetAddress CurrentFrameAddress {
 			get {
 				check_stopped ();
@@ -327,6 +375,12 @@ namespace Mono.Debugger
 		{
 			check_stopped ();
 			inferior.SetRegisters (registers, values);
+		}
+
+		public TargetMemoryArea[] GetMemoryMaps ()
+		{
+			check_inferior ();
+			return inferior.GetMemoryMaps ();
 		}
 
 		void child_exited ()

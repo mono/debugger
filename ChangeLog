@@ -1,5 +1,8 @@
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs, backends/Debugger.cs: Moved all
+	process-specific stuff to the new `Process' class.
+
 	* frontends/gui/DebuggerWidget.cs (DebuggerWidget.SetBackend):
 	Added `Process process' argument; use the Process everywhere
 	instead of the DebuggerBackend.
