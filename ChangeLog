@@ -1,3 +1,8 @@
+2003-04-17  Martin Baulig  <martin@ximian.com>
+
+	* arch/ArchitectureI386.cs (GetCallTarget): Added support for the
+	`0xff 0x10' opcodes (call *(%eax)).
+
 2003-04-16  Martin Baulig  <martin@ximian.com>
 
 	* frontends/gui/Parser.jay: Added `run' command to restart an

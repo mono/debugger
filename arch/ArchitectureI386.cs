@@ -78,6 +78,11 @@ namespace Mono.Debugger
 				disp = 0;
 				insn_size = 2;
 				dereference_addr = false;
+			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 0)) {
+				register = (byte) (address_byte & 0x07);
+				disp = 0;
+				insn_size = 2;
+				dereference_addr = true;
 			} else {
 				insn_size = 0;
 				return TargetAddress.Null;
