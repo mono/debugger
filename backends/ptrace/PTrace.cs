@@ -169,9 +169,13 @@ namespace Mono.Debugger.Backends
 			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
 			pending_callbacks.Add (number, async);
 
-			change_target_state (TargetState.RUNNING);
-			check_error (mono_debugger_server_call_method (
-				server_handle, method.Location, method_argument, number));
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_call_method (
+					server_handle, method.Location, method_argument, number));
+			} catch {
+				change_target_state (old_state);
+			}
 			return async;
 		}
 
@@ -451,7 +455,7 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, sizeof (int));
+				data = read_buffer (location, 4);
 				return Marshal.ReadInt32 (data);
 			} finally {
 				g_free (data);
@@ -462,7 +466,7 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, sizeof (long));
+				data = read_buffer (location, 8);
 				return Marshal.ReadInt64 (data);
 			} finally {
 				g_free (data);
@@ -550,10 +554,10 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = Marshal.AllocHGlobal (sizeof (int));
+				data = Marshal.AllocHGlobal (4);
 				Marshal.WriteInt32 (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, location.Address, sizeof (int)));
+					server_handle, data, location.Address, 4));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -564,10 +568,10 @@ namespace Mono.Debugger.Backends
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = Marshal.AllocHGlobal (sizeof (long));
+				data = Marshal.AllocHGlobal (8);
 				Marshal.WriteInt64 (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, location.Address, sizeof (long)));
+					server_handle, data, location.Address, 8));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -604,21 +608,28 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void change_target_state (TargetState new_state)
+		TargetState change_target_state (TargetState new_state)
 		{
 			if (new_state == target_state)
-				return;
+				return target_state;
 
+			TargetState old_state = target_state;
 			target_state = new_state;
 
 			if (StateChanged != null)
 				StateChanged (target_state);
+
+			return old_state;
 		}
 
 		public void Continue ()
 		{
-			change_target_state (TargetState.RUNNING);
-			check_error (mono_debugger_server_continue (server_handle));
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_continue (server_handle));
+			} catch {
+				change_target_state (old_state);
+			}
 		}
 
 		public void Continue (ITargetLocation location)
@@ -686,8 +697,12 @@ namespace Mono.Debugger.Backends
 
 			current_step_frame = frame;
 
-			change_target_state (TargetState.RUNNING);
-			check_error (mono_debugger_server_step (server_handle));
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_step (server_handle));
+			} catch {
+				change_target_state (old_state);
+			}
 		}
 
 		public void Next ()
