@@ -304,8 +304,8 @@ namespace Mono.Debugger
 			get { return 50; }
 		}
 
-		public StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
-					       ISymbolTable symtab, byte[] code)
+		public SimpleStackFrame UnwindStack (StackFrame frame, byte[] code,
+						     ITargetMemoryAccess memory)
 		{
 			int pos = 0;
 			int length;
@@ -381,12 +381,8 @@ namespace Mono.Debugger
 				ebp -= addr_size;
 			}
 
-			Inferior.StackFrame iframe = new Inferior.StackFrame (
-				new_eip, new_esp, new_ebp);
-
-			IMethod new_method = symtab.Lookup (new_eip);
-			return StackFrame.CreateFrame (
-				frame.Process, iframe, regs, frame.Level + 1, new_method);
+			return new SimpleStackFrame (
+				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
 		}
 	}
 }

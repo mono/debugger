@@ -32,8 +32,9 @@ namespace Mono.Debugger.Architecture
 			return cie_list;
 		}
 
-		public StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess target,
-					       ISymbolTable symtab, IArchitecture arch)
+		public SimpleStackFrame UnwindStack (StackFrame frame,
+						     ITargetMemoryAccess target,
+						     IArchitecture arch)
 		{
 			TargetAddress address = frame.TargetAddress;
 
@@ -71,7 +72,7 @@ namespace Mono.Debugger.Architecture
 
 				Entry fde = new Entry (cie, start, address);
 				fde.Read (reader, end_pos);
-				return fde.Unwind (frame, target, symtab, arch);
+				return fde.Unwind (frame, target, arch);
 
 			end:
 				reader.Position = end_pos;
@@ -348,8 +349,9 @@ namespace Mono.Debugger.Architecture
 				GetValue (target, regs, cfa, I386Register.EDI, columns [8]);
 			}
 
-			public StackFrame Unwind (StackFrame frame, ITargetMemoryAccess target,
-						  ISymbolTable symtab, IArchitecture arch)
+			public SimpleStackFrame Unwind (StackFrame frame,
+							ITargetMemoryAccess target,
+							IArchitecture arch)
 			{
 				Registers old_regs = frame.Registers;
 				Registers regs = new Registers (old_regs);
@@ -373,13 +375,8 @@ namespace Mono.Debugger.Architecture
 					frame_addr = new TargetAddress (
 						target.GlobalAddressDomain, ebp.Value);
 
-				Inferior.StackFrame iframe = new Inferior.StackFrame (
-					address, stack, frame_addr);
-
-				IMethod new_method = symtab.Lookup (address);
-				return StackFrame.CreateFrame (
-					frame.Process, iframe, regs, frame.Level + 1,
-					new_method);
+				return new SimpleStackFrame (
+					address, stack, frame_addr, regs, frame.Level + 1);
 			}
 		}
 

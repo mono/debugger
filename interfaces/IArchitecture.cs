@@ -67,7 +67,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
-					ISymbolTable symtab, byte[] code);
+		SimpleStackFrame UnwindStack (StackFrame frame, byte[] code,
+					      ITargetMemoryAccess memory);
 	}
 }

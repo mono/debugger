@@ -685,7 +685,8 @@ namespace Mono.Debugger.Backends
 			current_backtrace = new Backtrace (
 				process, arch, current_frame, main_method_retaddr, max_frames);
 
-			current_backtrace.GetBacktrace (inferior, arch, current_symtab);
+			current_backtrace.GetBacktrace (
+				inferior, arch, current_symtab, current_simple_symtab);
 
 			return current_backtrace;
 		}
@@ -1246,8 +1247,9 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 
 			registers = inferior.GetRegisters ();
+			SimpleStackFrame simple = new SimpleStackFrame (iframe, registers, 0);
 			current_frame = StackFrame.CreateFrame (
-				process, iframe, registers, 0, current_method);
+				process, simple, current_method);
 
 			return current_frame;
 		}
@@ -1307,11 +1309,17 @@ namespace Mono.Debugger.Backends
 					return new_operation;
 				}
 
+				SimpleStackFrame simple = new SimpleStackFrame (
+					iframe, registers, 0);
 				current_frame = StackFrame.CreateFrame (
-					process, iframe, registers, 0, current_method, source);
-			} else
+					process, simple, current_method, source);
+			} else {
+				SimpleStackFrame simple = new SimpleStackFrame (
+					iframe, registers, 0);
 				current_frame = StackFrame.CreateFrame (
-					process, iframe, registers, 0, null);
+					process, simple, current_symtab,
+					current_simple_symtab);
+			}
 
 			return null;
 		}

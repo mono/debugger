@@ -94,13 +94,14 @@ namespace Mono.Debugger
 			this.wrapper_addr = wrapper_addr;
 		}
 
-		public virtual StackFrame UnwindStack (ITargetAccess target, IArchitecture arch,
-						       ISymbolTable symtab, StackFrame frame)
+		public virtual SimpleStackFrame UnwindStack (ITargetMemoryAccess target,
+							     IArchitecture arch,
+							     StackFrame frame)
 		{
 			if (!IsLoaded)
 				return null;
 
-			StackFrame new_frame = Module.UnwindStack (frame, target, symtab);
+			SimpleStackFrame new_frame = Module.UnwindStack (frame, target);
 			if (new_frame != null)
 				return new_frame;
 
@@ -115,7 +116,7 @@ namespace Mono.Debugger
 
 			byte[] prologue = target.ReadBuffer (StartAddress, prologue_size);
 
-			return arch.UnwindStack (frame, target, symtab, prologue);
+			return arch.UnwindStack (frame, prologue, target);
 		}
 
 		//

@@ -1,5 +1,10 @@
 2004-06-26  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (SimpleStackFrame): New public class.
+	Moved the stack frame's actual data here.
+
+2004-06-26  Martin Baulig  <martin@ximian.com>
+
 	* arch/Bfd.cs: Use correct start/end addresses.
 
 	* arch/DwarfReader.cs (DwarfException, DwarfBinaryReader): Don't

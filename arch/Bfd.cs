@@ -1042,19 +1042,18 @@ namespace Mono.Debugger.Architecture
 			return memory.ReadGlobalAddress (got_start + 8);
 		}
 
-		internal override StackFrame UnwindStack (StackFrame frame,
-							  ITargetMemoryAccess memory,
-							  ISymbolTable symtab)
+		internal override SimpleStackFrame UnwindStack (StackFrame frame,
+								ITargetMemoryAccess memory)
 		{
 			if (frame_reader != null) {
-				StackFrame new_frame = frame_reader.UnwindStack (
-					frame, memory, symtab, arch);
+				SimpleStackFrame new_frame = frame_reader.UnwindStack (
+					frame, memory, arch);
 				if (new_frame != null)
 					return new_frame;
 			}
 			if (eh_frame_reader != null) {
-				StackFrame new_frame = eh_frame_reader.UnwindStack (
-					frame, memory, symtab, arch);
+				SimpleStackFrame new_frame = eh_frame_reader.UnwindStack (
+					frame, memory, arch);
 				if (new_frame != null)
 					return new_frame;
 			}

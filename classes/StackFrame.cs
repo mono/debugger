@@ -139,61 +139,99 @@ namespace Mono.Debugger
 		}
 	}
 
+	public class SimpleStackFrame
+	{
+		public readonly TargetAddress Address;
+		public readonly TargetAddress StackPointer;
+		public readonly TargetAddress FrameAddress;
+		public readonly Registers Registers;
+		public readonly int Level;
+
+		public SimpleStackFrame (TargetAddress address, TargetAddress stack,
+					 TargetAddress frame, Registers regs, int level)
+		{
+			this.Address = address;
+			this.StackPointer = stack;
+			this.FrameAddress = frame;
+			this.Registers = regs;
+			this.Level = level;
+		}
+
+		internal SimpleStackFrame (Inferior.StackFrame iframe, Registers regs,
+					   int level)
+			: this (iframe.Address, iframe.StackPointer, iframe.FrameAddress,
+				regs, level)
+		{ }
+	}
+
 	public sealed class StackFrame : IDisposable
 	{
 		IMethod method;
 		Process process;
-		TargetAddress address, stack, frame;
+		SimpleStackFrame simple;
 		SourceAddress source;
 		AddressDomain address_domain;
 		ILanguage language;
-		bool has_registers;
-		Registers registers;
 		string name;
-		int level;
 
-		public StackFrame (Process process, TargetAddress address, TargetAddress stack,
-				   TargetAddress frame, Registers registers, int level,
-				   IMethod method, SourceAddress source)
+		public StackFrame (Process process, SimpleStackFrame simple,
+				   string name)
 		{
 			this.process = process;
-			this.address = address;
-			this.stack = stack;
-			this.frame = frame;
-			this.registers = registers;
-			this.level = level;
+			this.simple = simple;
+			this.name = name;
+		}
+
+		public StackFrame (Process process, SimpleStackFrame simple,
+				   IMethod method, SourceAddress source)
+			: this (process, simple, method != null ? method.Name : "")
+		{
+			this.process = process;
+			this.simple = simple;
 			this.method = method;
 			this.source = source;
-			this.name = method != null ? method.Name : null;
 
 			if (method != null)
 				language = method.Module.Language;
 		}
 
 		internal static StackFrame CreateFrame (Process process,
-							Inferior.StackFrame frame,
-							Registers regs, int level,
+							SimpleStackFrame simple,
 							IMethod method)
 		{
 			SourceAddress source = null;
 			if ((method != null) && method.HasSource)
-				source = method.Source.Lookup (frame.Address);
-			return CreateFrame (process, frame, regs, level, method, source);
+				source = method.Source.Lookup (simple.Address);
+			return CreateFrame (process, simple, method, source);
 		}
 
 		internal static StackFrame CreateFrame (Process process,
-							Inferior.StackFrame frame,
-							Registers regs, int level,
+							SimpleStackFrame simple,
 							IMethod method, SourceAddress source)
 		{
-			return new StackFrame (process, frame.Address, frame.StackPointer,
-					       frame.FrameAddress, regs, level, method,
-					       source);
+			return new StackFrame (process, simple, method, source);
+		}
+
+		internal static StackFrame CreateFrame (Process process,
+							SimpleStackFrame simple,
+							ISymbolTable symtab,
+							ISimpleSymbolTable simple_symtab)
+		{
+			IMethod method = symtab.Lookup (simple.Address);
+			if (method != null) {
+				SourceAddress source = null;
+				if (method.HasSource)
+					source = method.Source.Lookup (simple.Address);
+				return new StackFrame (process, simple, method, source);
+			}
+
+			string name = simple_symtab.SimpleLookup (simple.Address, false);
+			return new StackFrame (process, simple, name);
 		}
 
 		public int Level {
 			get {
-				return level;
+				return simple.Level;
 			}
 		}
 
@@ -213,21 +251,21 @@ namespace Mono.Debugger
 		public TargetAddress TargetAddress {
 			get {
 				check_disposed ();
-				return address;
+				return simple.Address;
 			}
 		}
 
 		public TargetAddress StackPointer {
 			get {
 				check_disposed ();
-				return stack;
+				return simple.StackPointer;
 			}
 		}
 
 		public TargetAddress FrameAddress {
 			get {
 				check_disposed ();
-				return frame;
+				return simple.FrameAddress;
 			}
 		}
 
@@ -257,7 +295,7 @@ namespace Mono.Debugger
 		public Registers Registers {
 			get {
 				check_disposed ();
-				return registers;
+				return simple.Registers;
 			}
 		}
 
@@ -303,7 +341,7 @@ namespace Mono.Debugger
 
 		public void SetRegister (int index, long value)
 		{
-			registers [index].WriteRegister (process, value);
+			Registers [index].WriteRegister (process, value);
 		}
 
 		public event ObjectInvalidHandler FrameInvalidEvent;
@@ -319,8 +357,9 @@ namespace Mono.Debugger
 		{
 			StringBuilder sb = new StringBuilder ();
 
-			sb.Append (String.Format ("#{0}: ", level));
+			sb.Append (String.Format ("#{0}: ", simple.Level));
 
+			TargetAddress address = simple.Address;
 			if (method != null) {
 				sb.Append (String.Format ("{0} in {1}", address, method.Name));
 				if (method.IsLoaded) {
