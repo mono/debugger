@@ -1,3 +1,7 @@
+2005-03-24  Chris Toshok  <toshok@ximian.com>
+
+	* configure.in (AC_OUTPUT): remove cslex/Makefile.
+
 2005-03-23  Chris Toshok  <toshok@ximian.com>
 
 	* cslex/ remove.
