@@ -5,7 +5,13 @@ source $srcdir/mdb.exp
 
 set file $srcdir/TestNamespace.cs
 mdb_start "TestNamespace.exe"
-mdb_expect_frame 0 "Test.X.Main()" $file 21
-mdb_send "break Martin.Baulig.Hello.World"
+mdb_expect_frame 0 "Test.X.Main()" $file 36
+mdb_send "break 12"
 set breakpoint [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_stopped  0 "Martin.Baulig.Hello.World()" $file 12
+mdb_send "print Foo.Print ()"
+mdb_expect "\"Boston\""
+mdb_send "print Foo.Boston"
+mdb_expect "\"Boston\""
 mdb_send "quit"

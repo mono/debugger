@@ -3,15 +3,35 @@ using System;
 public struct A
 {
 	public int a;
+	public string Hello;
+	public static string Boston = "Boston";
 
 	public A (int a)
 	{
 		this.a = a;
+		this.Hello = "Hello World";
 	}
 
-	public void Test ()
+	public string Test ()
 	{
-		Console.WriteLine (a);
+		return Hello;
+	}
+
+	public static string StaticTest ()
+	{
+		return Boston;
+	}
+
+	public string Property {
+		get {
+			return Hello;
+		}
+	}
+
+	public static string StaticProperty {
+		get {
+			return Boston;
+		}
 	}
 
 	public override string ToString ()
@@ -23,15 +43,35 @@ public struct A
 public class B
 {
 	public int a;
+	public string Hello;
+	public static string Boston = "Boston";
 
 	public B (int a)
 	{
 		this.a = a;
+		this.Hello = "Hello World";
 	}
 
-	public void Test ()
+	public string Test ()
 	{
-		Console.WriteLine (a);
+		return Hello;
+	}
+
+	public static string StaticTest ()
+	{
+		return Boston;
+	}
+
+	public string Property {
+		get {
+			return Hello;
+		}
+	}
+
+	public static string StaticProperty {
+		get {
+			return Boston;
+		}
 	}
 }
 
@@ -45,10 +85,9 @@ public class C : B
 		this.f = f;
 	}
 
-	public void Hello ()
+	public new void Hello ()
 	{
 		Test ();
-		Console.WriteLine (f);
 	}
 
 	public virtual int Virtual ()
@@ -79,9 +118,6 @@ public class X
 	{
 		A a = new A (5);
 		a.Test ();
-
-		DateTime time = DateTime.Now;
-		Console.WriteLine (time);
 
 		D d = new D (8, 3.14F, 500L);
 		d.Hello ();

@@ -7,7 +7,20 @@ namespace Martin
 		public class Hello
 		{
 			public static void World ()
-			{ }
+			{
+				string text = Foo.Print ();
+				Console.WriteLine (text);
+			}
+		}
+
+		public class Foo
+		{
+			public static string Boston = "Boston";
+
+			public static string Print ()
+			{
+				return Boston;
+			}
 		}
 	}
 }
