@@ -417,6 +417,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			case WhichStepCommand.Finish:
 				ok = process.Finish (interpreter.IsSynchronous);
 				break;
+			case WhichStepCommand.FinishNative:
+				ok = process.FinishNative (interpreter.IsSynchronous);
+				break;
 			default:
 				throw new Exception ();
 			}
@@ -592,7 +595,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		StepInstruction,
 		StepNativeInstruction,
 		NextInstruction,
-		Finish
+		Finish,
+		FinishNative
 	}
 
 	public class ScriptingContext

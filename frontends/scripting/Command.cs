@@ -537,10 +537,20 @@ namespace Mono.Debugger.Frontends.Scripting
 	[ShortDescription("Run until exit of current method")]
 	public class FinishCommand : ProcessCommand
 	{
+		bool native;
+
+		public bool Native {
+			get { return native; }
+			set { native = value; }
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
-			process.Step (WhichStepCommand.Finish);
+			if (Native)
+				process.Step (WhichStepCommand.FinishNative);
+			else
+				process.Step (WhichStepCommand.Finish);
 			context.ResetCurrentSourceCode ();
 		}
 	}

@@ -357,6 +357,10 @@ namespace Mono.Debugger.Backends
 				Step (operation);
 				break;
 
+			case OperationType.FinishNative:
+				Step (operation);
+				break;
+
 			default:
 				throw new InvalidOperationException ();
 			}
@@ -1427,6 +1431,7 @@ namespace Mono.Debugger.Backends
 
 			if ((operation.Type != OperationType.Run) &&
 			    (operation.Type != OperationType.RunInBackground) &&
+			    (operation.Type != OperationType.FinishNative) &&
 			    (operation.StepFrame == null)) {
 				do_step ();
 				return true;
@@ -1554,6 +1559,10 @@ namespace Mono.Debugger.Backends
 				else
 					do_continue ();
 				return false;
+			}
+
+			if (current_operation.Type == OperationType.FinishNative) {
+				return do_finish_native (first);
 			}
 
 			StepFrame frame = current_operation.StepFrame;
@@ -1702,6 +1711,27 @@ namespace Mono.Debugger.Backends
 				language = null;
 
 			return new StepFrame (language, mode);
+		}
+
+		bool do_finish_native (bool first)
+		{
+			if (first) {
+				do_step ();
+				return false;
+			}
+
+			TargetAddress stack = inferior.GetStackPointer ();
+			TargetAddress until = current_operation.Until;
+
+			Report.Debug (DebugFlags.SSE, "{0} finish native: stack = {1}, " +
+				      "until = {2}", this, stack, until);
+
+			if (stack <= until) {
+				do_next ();
+				return false;
+			}
+
+			return true;
 		}
 
 		bool handle_callback (Inferior.ChildEvent cevent, out bool ret,
@@ -2113,7 +2143,8 @@ namespace Mono.Debugger.Backends
 		NextLine,
 		StepFrame,
 		RuntimeInvoke,
-		CallMethod
+		CallMethod,
+		FinishNative
 	}
 
 	internal enum CommandType {

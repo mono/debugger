@@ -369,6 +369,21 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		// <summary>
+		//   Continue until leaving the current method.
+		// </summary>
+		public bool FinishNative (bool wait)
+		{
+			check_engine ();
+			if (!engine.StartOperation ())
+				return false;
+
+			TargetAddress stack = CurrentFrame.StackPointer;
+			Operation operation = new Operation (OperationType.FinishNative, stack);
+			engine.SendAsyncCommand (new Command (engine, operation), wait);
+			return true;
+		}
+
 		public bool Continue (TargetAddress until, bool synchronous)
 		{
 			return Continue (until, false, synchronous);
