@@ -64,6 +64,8 @@ namespace Mono.Debugger.GUI
 				return;
 
 			current_method_source = GetMethodSource (method);
+			if (current_method_source == null)
+				return;
 
 			ISourceBuffer buffer = current_method_source.SourceBuffer;
 			if (buffer == null) {
