@@ -44,6 +44,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		//
 		bool tokens_seen = false;
 		bool first_token = false;
+		bool parsing_expression = false;
 
 		//
 		// Details about the error encoutered by the tokenizer
@@ -53,6 +54,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public string error {
 			get {
 				return error_details;
+			}
+		}
+
+		public bool ParsingExpression {
+			get { return parsing_expression; }
+			set {
+				if (value) {
+					parsing_expression = true;
+					first_token = true;
+				} else {
+					parsing_expression = false;
+					advance ();
+				}
 			}
 		}
 
@@ -233,12 +247,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return true;
 			}
 
-			if (peekChar () < 0) {
+			int c = peekChar ();
+			if (c < 0) {
 				current_token = Token.EOF;
 				return false;
 			}
 
 			current_token = -1;
+
+			if (parsing_expression && ((char) c == '\n'))
+				return false;				
+
 			return true;
 		}
 
@@ -504,6 +523,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (current_token == -1)
 				current_token = xtoken ();
 			tokens_seen = true;
+			if (parsing_expression && (current_token == Token.EOL))
+				return Token.EOF;
 			return current_token;
 		}
 

@@ -87,6 +87,21 @@ expression
 	  {
 		return new StringExpression ((string) $1);
 	  }
+	| variable_or_type_name
+	  {
+		return $1;
+	  }
+	;
+
+variable_or_type_name
+	: IDENTIFIER
+	  {
+		$$ = new SimpleNameExpression ((string) $1);
+	  }
+	| variable_or_type_name DOT IDENTIFIER
+	  { 
+		$$ = new MemberAccessExpression ((Expression) $1, (string) $3);
+	  }
 	;
 
 %%

@@ -20,6 +20,8 @@ public class B
 	public long b;
 	public string c;
 
+	public static float Test = 3.14F;
+
 	public B (int a, long b, string c)
 	{
 		this.a = a;
@@ -38,6 +40,11 @@ public class C : B
 	{
 		this.f = f;
 		this.a = new_a;
+	}
+
+	public class Nested
+	{
+		public static long Foo = 512;
 	}
 }
 

@@ -379,9 +379,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class StructAccessExpression : VariableExpression
 	{
-		FrameExpression frame_expr;
-		VariableExpression instance_expr;
-		TypeExpression type_expr;
 		string name;
 
 		public readonly string Identifier;
@@ -391,27 +388,28 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ITargetStructObject Instance;
 		StackFrame Frame;
 
-		public StructAccessExpression (FrameExpression frame_expr, TypeExpression type_expr, string identifier)
+		public StructAccessExpression (StackFrame frame, ITargetStructType type,
+					       string identifier)
 		{
-			this.frame_expr = frame_expr;
-			this.type_expr = type_expr;
+			this.Frame = frame;
+			this.Type = type;
 			this.Identifier = identifier;
-			this.name = String.Concat (type_expr.Name, ".", identifier);
 			this.IsStatic = true;
 		}
 
-		public StructAccessExpression (VariableExpression instance_expr, string identifier)
+		public StructAccessExpression (StackFrame frame, ITargetStructObject instance,
+					       string identifier)
 		{
-			this.type_expr = instance_expr;
-			this.instance_expr = instance_expr;
+			this.Frame = frame;
+			this.Type = instance.Type;
+			this.Instance = instance;
 			this.Identifier = identifier;
-			this.name = String.Concat (instance_expr.Name, ".", identifier);
 			this.IsStatic = false;
 		}
 
 		public override string Name {
 			get {
-				return name;
+				return Identifier;
 			}
 		}
 
@@ -581,11 +579,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected ITargetMemberInfo ResolveTypeBase (ScriptingContext context, bool report_error)
 		{
-			Type = type_expr.ResolveType (context) as ITargetStructType;
-			if (Type == null)
-				throw new ScriptingException (
-					"Type `{0}' is not a struct or class type.", type_expr.Name);
-
 			ITargetMemberInfo member = FindMember (Type);
 			if ((member != null) || !report_error)
 				return member;
@@ -605,17 +598,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetMemberInfo member = ResolveTypeBase (context, true);
 
-			if (!IsStatic) {
-				Instance = instance_expr.ResolveVariable (context) as ITargetStructObject;
-				if (Instance == null)
-					throw new ScriptingException ("Variable {0} is not a struct or class type.",
-								      instance_expr.Name);
-
-				Frame = Instance.Location.StackFrame;
-			} else {
-				Frame = ((FrameHandle) frame_expr.Resolve (context)).Frame;
-			}
-
 			if (member.IsStatic)
 				return GetStaticMember (Type, Frame, member);
 			else if (!IsStatic)
@@ -629,17 +611,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ITargetMemberInfo member = ResolveTypeBase (context, false);
 			if (member != null)
 				throw new ScriptingException ("Member {0} of type {1} is not a method.", Identifier, Type.Name);
-
-			if (!IsStatic) {
-				Instance = instance_expr.ResolveVariable (context) as ITargetStructObject;
-				if (Instance == null)
-					throw new ScriptingException ("Variable {0} is not a struct or class type.",
-								      instance_expr.Name);
-
-				Frame = Instance.Location.StackFrame;
-			} else {
-				Frame = ((FrameHandle) frame_expr.Resolve (context)).Frame;
-			}
 
 			ITargetMethodInfo method;
 			if (Identifier.IndexOf ('(') != -1)

@@ -284,11 +284,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected void ParseArgument ()
 		{
-			lexer.dont_advance ();
+			lexer.ParsingExpression = true;
 
 			object expression = parser.Parse ();
 
-			lexer.advance ();
+			lexer.ParsingExpression = false;
 
 			if (arguments == null)
 				arguments = new ArrayList ();

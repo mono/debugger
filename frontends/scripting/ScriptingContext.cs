@@ -183,10 +183,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Print (String.Format ("${0} = ({1}) {2}", variable.Name, variable.Type.Name, contents));
 		}
 
-		public IVariable GetVariableInfo (string identifier)
+		public IVariable GetVariableInfo (string identifier, bool report_errors)
 		{
-			if (frame.Method == null)
-				throw new ScriptingException ("Selected stack frame has no method.");
+			if (frame.Method == null) {
+				if (!report_errors)
+					return null;
+				throw new ScriptingException (
+					"Selected stack frame has no method.");
+			}
 
 			IVariable[] local_vars = frame.Locals;
 			foreach (IVariable var in local_vars) {
@@ -200,12 +204,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return var;
 			}
 
-			throw new ScriptingException ("No variable or parameter with that name: `{0}'.", identifier);
+			if (!report_errors)
+				return null;
+
+			throw new ScriptingException (
+				"No variable or parameter with that name: `{0}'.", identifier);
 		}
 
 		public ITargetObject GetVariable (string identifier)
 		{
-			IVariable var = GetVariableInfo (identifier);
+			IVariable var = GetVariableInfo (identifier, true);
 			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
 			if (!var.CheckValid (frame))
@@ -216,7 +224,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public ITargetType GetVariableType (string identifier)
 		{
-			IVariable var = GetVariableInfo (identifier);
+			IVariable var = GetVariableInfo (identifier, true);
 			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
 			if (!var.CheckValid (frame))
@@ -598,8 +606,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ScriptingContext
 	{
 		ProcessHandle current_process;
+		FrameHandle current_frame;
 		Interpreter interpreter;
 
+		ScriptingContext parent;
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
 		ITargetObject last_object;
@@ -618,6 +628,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 			method_search_results = new ArrayList ();
 		}
 
+		protected ScriptingContext (ScriptingContext parent)
+			: this (parent.Interpreter, parent.IsInteractive, parent.IsSynchronous)
+		{
+			this.parent = parent;
+
+			current_process = parent.CurrentProcess;
+			current_frame = parent.CurrentFrame;
+		}
+
+		public ScriptingContext GetExpressionContext ()
+		{
+			return new ScriptingContext (this);
+		}
+
+		public ScriptingContext Parent {
+			get { return parent; }
+		}
+
 		public Interpreter Interpreter {
 			get { return interpreter; }
 		}
@@ -633,6 +661,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public ProcessHandle CurrentProcess {
 			get { return current_process; }
 			set { current_process = value; }
+		}
+
+		public FrameHandle CurrentFrame {
+			get {
+				if ((current_frame != null) && current_frame.Frame.IsValid)
+					return current_frame;
+
+				current_frame = CurrentProcess.CurrentFrame;
+				return current_frame;
+			}
+
+			set {
+				current_frame = value;
+			}
 		}
 
 		public void Error (string message)

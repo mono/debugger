@@ -69,6 +69,103 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class SimpleNameExpression : Expression
+	{
+		string name;
+
+		public SimpleNameExpression (string name)
+		{
+			this.name = name;
+		}
+
+		protected ITargetObject ResolveVariable (ScriptingContext context,
+							 IVariable var)
+		{
+			StackFrame frame = context.CurrentFrame.Frame;
+			if (!var.IsAlive (frame.TargetAddress))
+				throw new ScriptingException ("Variable out of scope.");
+			if (!var.CheckValid (frame))
+				throw new ScriptingException ("Variable cannot be accessed.");
+
+			return var.GetObject (frame);
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			FrameHandle frame = context.CurrentFrame;
+			IVariable var = frame.GetVariableInfo (name, false);
+			if (var != null)
+				return ResolveVariable (context, var);
+
+			ILanguage language = frame.Frame.Language;
+			if (language != null) {
+				ITargetType type = language.LookupType (frame.Frame, name);
+				if (type != null)
+					return type;
+			}
+
+			throw new ScriptingException ("No such variable or type: `{0}'", name);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType(), name);
+		}
+	}
+
+	public class MemberAccessExpression : Expression
+	{
+		Expression left;
+		string name;
+
+		public MemberAccessExpression (Expression left, string name)
+		{
+			this.left = left;
+			this.name = name;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			StackFrame frame = context.CurrentFrame.Frame;
+
+			object resolved = left.Resolve (context);
+			Console.WriteLine ("MA: {0} {1} {2}", this, left, resolved);
+
+			VariableExpression expr;
+			if (resolved is ITargetObject) {
+				ITargetStructObject sobj = resolved as ITargetStructObject;
+				if (sobj == null)
+					throw new ScriptingException (
+						"{0} is not a struct of class", left);
+
+				expr = new StructAccessExpression (frame, sobj, name);
+				return expr.ResolveVariable (context);
+			}
+
+			ITargetType type = (ITargetType) resolved;
+			if (frame.Language != null) {
+				string nested = type.Name + "+" + name;
+				ITargetType ntype = frame.Language.LookupType (frame, nested);
+				if (ntype != null)
+					return ntype;
+			}
+
+			ITargetStructType stype = resolved as ITargetStructType;
+			if (stype == null)
+				throw new ScriptingException (
+					"{0} is not a struct of class", left);
+
+			expr = new StructAccessExpression (frame, stype, name);
+
+			return expr.ResolveVariable (context);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1}:{2})", GetType(), left, name);
+		}
+	}
+
 	// So you can extend this by just creating a subclass
 	// of BinaryOperator that implements DoEvaluate and
 	// a constructor, but you'll need to add a new rule to

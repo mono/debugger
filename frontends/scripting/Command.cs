@@ -76,13 +76,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (frame_expr != null)
 				return (FrameHandle) frame_expr.Resolve (context);
-
-			return ResolveProcess (context).CurrentFrame;
+			else if (ProcessExpression != null)
+				return ResolveProcess (context).CurrentFrame;
+			else
+				return context.CurrentFrame;
 		}
 	}
 
 	[Command("print", "Print the result of an expression")]
-	public class PrintCommand : Command
+	public class PrintCommand : FrameCommand
 	{
 		Expression expression;
 
@@ -106,8 +108,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			object retval = expression.Resolve (context);
-			context.PrintObject (retval);
+			ScriptingContext new_context = context.GetExpressionContext ();
+			if (ProcessExpression != null)
+				new_context.CurrentProcess = ResolveProcess (new_context);
+			if (FrameExpression != null)
+				new_context.CurrentFrame = ResolveFrame (new_context);
+
+			object retval = expression.Resolve (new_context);
+			new_context.PrintObject (retval);
 		}
 	}
 
