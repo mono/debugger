@@ -42,5 +42,9 @@ namespace Mono.Debugger
 		int SourceOffset {
 			get;
 		}
+
+		string Name {
+			get;
+		}
 	}
 }

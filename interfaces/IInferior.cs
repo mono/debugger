@@ -120,6 +120,8 @@ namespace Mono.Debugger
 
 		long[] GetRegisters (int[] registers);
 
+		TargetAddress[] GetBacktrace ();
+
 		// <summary>
 		//   Returns a disassembler for the current target.
 		// </summary>

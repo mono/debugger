@@ -701,6 +701,54 @@ server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *reg
 	return COMMAND_ERROR_NONE;
 }
 
+static ServerCommandError
+server_ptrace_get_backtrace (InferiorHandle *handle, guint32 *count, guint64 **data)
+{
+	GArray *frames = g_array_new (FALSE, FALSE, 4);
+	ServerCommandError result;
+	struct user_regs_struct regs;
+	int frame, i;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		goto out;
+
+	g_array_append_val (frames, regs.eip);
+
+	frame = regs.ebp;
+	while (frame != 0) {
+		int address;
+
+		errno = 0;
+		address = ptrace (PTRACE_PEEKDATA, handle->pid, frame + 4, NULL);
+		if (errno) {
+			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+			result = COMMAND_ERROR_UNKNOWN;
+			goto out;
+		}
+
+		errno = 0;
+		frame = ptrace (PTRACE_PEEKDATA, handle->pid, frame);
+		if (errno) {
+			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+			result = COMMAND_ERROR_UNKNOWN;
+			goto out;
+		}
+
+		g_array_append_val (frames, address);
+	}
+
+	goto out;
+
+ out:
+	*count = frames->len;
+	*data = g_new0 (guint64, frames->len);
+	for (i = 0; i < frames->len; i++)
+		(*data)[i] = g_array_index (frames, guint32, i);
+	g_array_free (frames, FALSE);
+	return result;
+}
+
 /*
  * Method VTable for this backend.
  */
@@ -721,5 +769,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_insert_breakpoint,
 	server_ptrace_remove_breakpoint,
 	server_ptrace_get_breakpoints,
-	server_ptrace_get_registers
+	server_ptrace_get_registers,
+	server_ptrace_get_backtrace
 };

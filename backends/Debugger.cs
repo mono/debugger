@@ -628,6 +628,28 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public IStackFrame[] GetBacktrace ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			symtabs.UpdateSymbolTable ();
+
+			TargetAddress[] frames = inferior.GetBacktrace ();
+			IStackFrame[] retval = new IStackFrame [frames.Length];
+
+			for (int i = 0; i < frames.Length; i++) {
+				IMethod method = Lookup (frames [i]);
+				if ((method != null) && method.HasSource) {
+					ISourceLocation source = method.Source.Lookup (frames [i]);
+					retval [i] = new StackFrame (inferior, frames [i], source, method);
+				} else
+					retval [i] = new StackFrame (inferior, frames [i]);
+			}
+
+			return retval;
+		}
+
 		public IMethod Lookup (TargetAddress address)
 		{
 			return symtabs.Lookup (address);

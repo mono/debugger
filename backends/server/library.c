@@ -214,3 +214,15 @@ mono_debugger_server_get_registers (ServerHandle *handle, guint32 count, guint32
 
 	return (* handle->info->get_registers) (handle->inferior, count, registers, values);
 }
+
+ServerCommandError
+mono_debugger_server_get_backtrace (ServerHandle *handle, guint32 *count, guint64 **frames)
+{
+	*count = 0;
+	*frames = NULL;
+
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->get_backtrace) (handle->inferior, count, frames);
+}

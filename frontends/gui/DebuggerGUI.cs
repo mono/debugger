@@ -83,6 +83,7 @@ namespace Mono.Debugger.GUI
 		SourceView source_view;
 		DisassemblerView disassembler_view;
 		RegisterDisplay register_display;
+		BackTraceView backtrace_view;
 
 		Gtk.TextView target_output;
 		TargetStatusbar target_status;
@@ -150,6 +151,7 @@ namespace Mono.Debugger.GUI
 			source_view = new SourceView (backend, (Gtk.TextView) gxml ["source_view"]);
 			disassembler_view = new DisassemblerView (backend, (Gtk.TextView) gxml ["disassembler_view"]);
 			register_display = new RegisterDisplay (backend, (Gtk.Container) gxml ["register_view"]);
+			backtrace_view = new BackTraceView (backend, (Gtk.Container) gxml ["backtrace_view"]);
 
 			current_insn = new CurrentInstructionEntry (backend, (Gtk.Entry) gxml ["current_insn"]);
 

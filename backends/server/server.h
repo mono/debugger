@@ -171,6 +171,14 @@ typedef struct {
 						       guint32           count,
 						       guint32          *registers,
 						       guint64          *values);
+
+	/*
+	 * Get backtrace.  This tries to return a partial backtrace if possible, so check the `count'
+	 * and `frames' values even on an error.
+	 */
+	ServerCommandError    (* get_backtrace)       (InferiorHandle   *handle,
+						       guint32          *count,
+						       guint64         **frames);
 } InferiorInfo;
 
 extern InferiorInfo i386_linux_ptrace_inferior;
@@ -275,6 +283,11 @@ mono_debugger_server_get_registers       (ServerHandle        *handle,
 					  guint32              count,
 					  guint32             *registers,
 					  guint64             *values);
+
+ServerCommandError
+mono_debugger_server_get_backtrace       (ServerHandle        *handle,
+					  guint32             *count,
+					  guint64            **frames);
 
 G_END_DECLS
 

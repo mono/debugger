@@ -54,6 +54,14 @@ namespace Mono.Debugger
 			}
 		}
 
+		string ISourceLocation.Name {
+			get {
+				return String.Format (
+					"{0}:{1}", SourceBuffer != null ? SourceBuffer.Name : "<unknown>",
+					Row);
+			}
+		}
+
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();

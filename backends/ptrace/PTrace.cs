@@ -132,6 +132,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
 
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_get_backtrace (IntPtr handle, out int count, out IntPtr data);
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -803,6 +806,27 @@ namespace Mono.Debugger.Backends
 					Marshal.FreeHGlobal (data);
 				if (buffer != IntPtr.Zero)
 					Marshal.FreeHGlobal (buffer);
+			}
+		}
+
+		public TargetAddress[] GetBacktrace ()
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				int count;
+				CommandError result = mono_debugger_server_get_backtrace (
+					server_handle, out count, out data);
+				check_error (result);
+
+				long[] frames = new long [count];
+				Marshal.Copy (data, frames, 0, count);
+
+				TargetAddress[] retval = new TargetAddress [count];
+				for (int i = 0; i < count; i++)
+					retval [i] = new TargetAddress (this, frames [i]);
+				return retval;
+			} finally {
+				g_free (data);
 			}
 		}
 
