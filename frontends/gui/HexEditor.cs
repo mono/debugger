@@ -32,7 +32,7 @@ namespace Mono.Debugger.GUI
 		{ }
 
 		public HexEditor (DebuggerGUI gui, Gtk.Dialog dialog, Gtk.Container container)
-			: base (gui, null, container)
+			: base (gui, dialog, container)
 		{
 			this.dialog = dialog;
 
@@ -423,11 +423,6 @@ namespace Mono.Debugger.GUI
 
 			store.SetValue (iter, 16, new GLib.Value (String.Format ("{0:x}  ", address)));
 			store.SetValue (iter, 18, new GLib.Value (new String (data)));
-		}
-
-		public void RunDialog ()
-		{
-			dialog.Show ();
 		}
 	}
 }

@@ -469,7 +469,7 @@ namespace Mono.Debugger.GUI
 
 		void OnViewHexEditor (object sender, EventArgs args)
 		{
-			hex_editor.RunDialog ();
+			hex_editor.Show ();
 		}
 
 		void TargetOutput (string output)

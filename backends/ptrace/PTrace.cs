@@ -436,6 +436,7 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 
 			check_error (mono_debugger_server_attach (server_handle, pid));
+			this.child_pid = pid;
 
 			setup_inferior (start, error_handler);
 			change_target_state (TargetState.STOPPED, 0);
