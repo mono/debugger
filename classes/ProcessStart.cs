@@ -16,7 +16,6 @@ namespace Mono.Debugger
 		{
 			Unknown,
 			CoreFile,
-			LoadSession,
 			StartApplication
 		}
 
@@ -45,10 +44,6 @@ namespace Mono.Debugger
 			switch (value) {
 			case "core":
 				start_mode = StartMode.CoreFile;
-				return WhatToDoNext.GoAhead;
-
-			case "load":
-				start_mode = StartMode.LoadSession;
 				return WhatToDoNext.GoAhead;
 
 			case "start":
@@ -313,14 +308,6 @@ namespace Mono.Debugger
 
 				return Create (options, args, core_file);
 
-			case DebuggerOptions.StartMode.LoadSession:
-				if (args.Length != 1)
-					throw new CannotStartTargetException (
-						"This mode requires exactly one argument, " +
-						"the file to load the session from.");
-
-				return new SessionProcessStart (options, args [0]);
-
 			case DebuggerOptions.StartMode.Unknown:
 				if (args.Length == 0)
 					return null;
@@ -336,30 +323,6 @@ namespace Mono.Debugger
 				return Create (options, args, null);
 			}
 		}
-
-		public abstract DebuggerBackend Run ();
-	}
-
-	[Serializable]
-	public class SessionProcessStart : ProcessStart
-	{
-		string filename;
-
-		public SessionProcessStart (DebuggerOptions options, string filename)
-			: base (options)
-		{
-			this.filename = filename;
-		}
-
-		public override DebuggerBackend Run ()
-		{
-			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
-			BinaryFormatter formatter = new BinaryFormatter (null, context);
-
-			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
-				return (DebuggerBackend) formatter.Deserialize (stream);
-			}
-		}
 	}
 
 	[Serializable]
@@ -368,11 +331,6 @@ namespace Mono.Debugger
 		public NativeProcessStart (DebuggerOptions options, string[] argv, string core_file)
 			: base (options, argv, core_file)
 		{
-		}
-
-		public override DebuggerBackend Run ()
-		{
-			return new DebuggerBackend ();
 		}
 	}
 

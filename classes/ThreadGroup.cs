@@ -54,21 +54,21 @@ namespace Mono.Debugger
 			this.threads = Hashtable.Synchronized (new Hashtable ());
 		}
 
-		public void AddThread (IProcess process)
+		public void AddThread (Process process)
 		{
 			if (!threads.Contains (process))
 				threads.Add (process, true);
 		}
 
-		public void RemoveThread (IProcess process)
+		public void RemoveThread (Process process)
 		{
 			threads.Remove (process);
 		}
 
-		public IProcess[] Threads {
+		public Process[] Threads {
 			get {
 				lock (this) {
-					IProcess[] retval = new IProcess [threads.Keys.Count];
+					Process[] retval = new Process [threads.Keys.Count];
 					threads.Keys.CopyTo (retval, 0);
 					return retval;
 				}

@@ -9,15 +9,15 @@ namespace Mono.Debugger
 	public class Backtrace : IDisposable
 	{
 		protected StackFrame[] frames;
-		protected IProcess iprocess;
+		protected Process process;
 		protected IArchitecture arch;
 
-		public Backtrace (IProcess iprocess, StackFrame[] frames)
+		public Backtrace (Process process, StackFrame[] frames)
 		{
-			this.iprocess = iprocess;
+			this.process = process;
 			this.frames = frames;
 
-			arch = iprocess.Architecture;
+			arch = process.Architecture;
 		}
 
 		public StackFrame[] Frames {
@@ -64,7 +64,7 @@ namespace Mono.Debugger
 			if (unwind_info.Count > 0)
 				return (UnwindInfo) unwind_info [0];
 
-			Register[] registers = iprocess.GetRegisters ();
+			Register[] registers = process.GetRegisters ();
 			object data = arch.UnwindStack (registers);
 
 			UnwindInfo info = new UnwindInfo (data, registers);
@@ -100,12 +100,12 @@ namespace Mono.Debugger
 			prologue_size = Math.Min (prologue_size, offset);
 			prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
 
-			byte[] prologue = iprocess.TargetMemoryAccess.ReadBuffer (
+			byte[] prologue = process.TargetMemoryAccess.ReadBuffer (
 				method.StartAddress, prologue_size);
 
 			object new_data;
 			Register[] regs = arch.UnwindStack (
-				prologue, iprocess.TargetMemoryAccess, last.Data, out new_data);
+				prologue, process.TargetMemoryAccess, last.Data, out new_data);
 
 			UnwindInfo info = new UnwindInfo (new_data, regs);
 			unwind_info.Add (info);
