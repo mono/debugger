@@ -278,7 +278,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 					process.SingleSteppingEngine.Run (!context.IsSynchronous, true);
 			}
 			initialize ();
-			process_events ();
 		}
 
 		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
@@ -385,9 +384,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
 		}
 
-		[DllImport("glib-2.0")]
-		static extern bool g_main_context_iteration (IntPtr context, bool may_block);
-
 		public void Step (WhichStepCommand which)
 		{
 			if (process == null)
@@ -424,14 +420,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (!ok)
 				throw new ScriptingException ("Process @{0} is not stopped.", id);
-
-			process_events ();
-		}
-
-		void process_events ()
-		{
-			while (g_main_context_iteration (IntPtr.Zero, false))
-				;
 		}
 
 		public void Stop ()
@@ -733,7 +721,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void PrintInferior (bool is_stderr, string line)
 		{
-			inferior_output.WriteLine (is_stderr, line);
+			inferior_output.Write (is_stderr, line);
 		}
 
 		public ProcessHandle CurrentProcess {

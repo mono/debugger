@@ -1,5 +1,10 @@
 2003-04-21  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/ScriptingContext.cs (process_events):
+	Removed, we don't need to run the glib main loop anymore to get
+	the target's output.
+	(PrintInferior): Call Write(), not WriteLine().
+
 	* backends/server/i386-ptrace.c (server_ptrace_spawn): Use two
 	socketpairs for the target's stdout/stderr and set them to O_ASYNC
 	to receive a SIGIO when output becomes available.
