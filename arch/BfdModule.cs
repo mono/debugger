@@ -50,7 +50,7 @@ namespace Mono.Debugger.Architecture
 		public override SourceInfo[] Sources {
 			get {
 				if (dwarf == null)
-					return null;
+					return new SourceInfo [0];
 
 				return dwarf.GetSources ();
 			}
