@@ -18,15 +18,7 @@ namespace Mono.Debugger
 
 			if (location.Method.IsLoaded)
 				address = location.GetAddress ();
-			else if (location.Method.IsDynamic) {
-				// A dynamic method is a method which may emit a
-				// callback when it's loaded.  We register this
-				// callback here and do the actual insertion when
-				// the method is loaded.
-				load_handler = location.Method.RegisterLoadHandler (
-					process, new MethodLoadedHandler (method_loaded),
-					null);
-			}
+			EnableBreakpoint (process);
 		}
 
 		internal static BreakpointHandle Create (Process process, Breakpoint bpt,
@@ -67,7 +59,7 @@ namespace Mono.Debugger
 		int breakpoint_id = -1;
 
 		public bool IsEnabled {
-			get { return breakpoint_id > 0; }
+			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}
 
 		public TargetAddress Address {
@@ -77,10 +69,22 @@ namespace Mono.Debugger
 		protected void Enable (Process process)
 		{
 			lock (this) {
-				if ((address.IsNull) || (breakpoint_id > 0))
+				if ((load_handler != null) || (breakpoint_id > 0))
 					return;
 
-				breakpoint_id = process.InsertBreakpoint (breakpoint, address);
+				if (!address.IsNull)
+					breakpoint_id = process.InsertBreakpoint (
+						breakpoint, address);
+				else if (location.Method.IsDynamic) {
+					// A dynamic method is a method which may emit a
+					// callback when it's loaded.  We register this
+					// callback here and do the actual insertion when
+					// the method is loaded.
+					load_handler = location.Method.RegisterLoadHandler (
+						process,
+						new MethodLoadedHandler (method_loaded),
+						null);
+				}
 			}
 		}
 
@@ -90,6 +94,10 @@ namespace Mono.Debugger
 				if (breakpoint_id > 0)
 					process.RemoveBreakpoint (breakpoint_id);
 
+				if (load_handler != null)
+					load_handler.Dispose ();
+
+				load_handler = null;
 				breakpoint_id = -1;
 			}
 		}
