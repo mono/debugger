@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public class MyTextReader : TextReader
+	internal class MyTextReader : TextReader
 	{
 		bool closed = false;
 		string current_line = null;

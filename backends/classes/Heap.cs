@@ -1,13 +1,13 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	//
 	// FIXME: This class is just a big hack.  It's used when allocating objects to pass them to
 	//        mono_runtime_invoke() or when creating a new instance of an object to assign it to
 	//        a variable.
 	//
-	public class Heap
+	internal class Heap
 	{
 		public readonly ITargetInfo TargetInfo;
 		public readonly TargetAddress StartAddress;

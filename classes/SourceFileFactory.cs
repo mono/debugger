@@ -5,47 +5,50 @@ using System.Collections;
 using Mono.Debugger;
 using Mono.CSharp.Debugger;
 
-public class SourceFileFactory
+namespace Mono.Debugger
 {
-	Hashtable files = new Hashtable ();
-
-	public ISourceBuffer FindFile (string name)
+	public class SourceFileFactory
 	{
-		if (files.Contains (name))
-			return (ISourceBuffer) ((ObjectCache) files [name]).Data;
+		Hashtable files = new Hashtable ();
 
-		ObjectCache cache = (ObjectCache) files [name];
-		if (cache == null) {
-			cache = new ObjectCache (new ObjectCacheFunc (read_file), name, 10);
-			files.Add (name, cache);
-		}
+		public ISourceBuffer FindFile (string name)
+		{
+			if (files.Contains (name))
+				return (ISourceBuffer) ((ObjectCache) files [name]).Data;
 
-		return (ISourceBuffer) cache.Data;
-	}
-
-	object read_file (object user_data)
-	{
-		string name = (string) user_data;
-
-		FileInfo file_info = new FileInfo (name);
-
-		if (!file_info.Exists) {
-			Console.WriteLine ("Can't find source file: " + name);
-			return null;
-		}
-
-		ArrayList contents = new ArrayList ();
-		try {
-			Encoding encoding = Encoding.GetEncoding (28591);
-			using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
-				string line;
-				while ((line = reader.ReadLine ()) != null)
-					contents.Add (line);
+			ObjectCache cache = (ObjectCache) files [name];
+			if (cache == null) {
+				cache = new ObjectCache (new ObjectCacheFunc (read_file), name, 10);
+				files.Add (name, cache);
 			}
-		} catch {
-			return null;
+
+			return (ISourceBuffer) cache.Data;
 		}
 
-		return new SourceBuffer (name, contents);
+		object read_file (object user_data)
+		{
+			string name = (string) user_data;
+
+			FileInfo file_info = new FileInfo (name);
+
+			if (!file_info.Exists) {
+				Console.WriteLine ("Can't find source file: " + name);
+				return null;
+			}
+
+			ArrayList contents = new ArrayList ();
+			try {
+				Encoding encoding = Encoding.GetEncoding (28591);
+				using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
+					string line;
+					while ((line = reader.ReadLine ()) != null)
+						contents.Add (line);
+				}
+			} catch {
+				return null;
+			}
+
+			return new SourceBuffer (name, contents);
+		}
 	}
 }
