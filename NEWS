@@ -1,3 +1,20 @@
+March 4th, 2003 - Martin Baulig
+-------------------------------
+
+Released version 0.2.1 "Camebridge" of the Mono Debugger :-)
+
+March 3th, 2003 - Martin Baulig
+-------------------------------
+
+Reworked the help system of the command line interface; you can now get help about
+the arguments a command takes and expressions.
+
+February 28th, 2003 - Martin Baulig
+-----------------------------------
+
+Added support to read method parameters and local variables of unmanaged applications.
+This is currently limited to fundamental types and strings, but more will follow soon.
+
 February 2nd, 2003 - Martin Baulig
 ----------------------------------
 

@@ -1,3 +1,10 @@
+2003-03-04  Martin Baulig  <martin@ximian.com>
+
+	* RELEASE-NOTES-0.2.1.txt: New file.  This is more or less a copy
+	of the RELEASE-NOTES-0.2.0.txt.
+
+	* NEWS: Added a few news entries.
+
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Generator.cs (Generator.PrintHelp): New
