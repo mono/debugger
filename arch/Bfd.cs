@@ -19,6 +19,7 @@ namespace Mono.Debugger.Architecture
 		DwarfReader dwarf;
 		string filename;
 		bool is_coredump;
+		bool step_into;
 
 		internal struct InternalSection
 		{
@@ -345,6 +346,16 @@ namespace Mono.Debugger.Architecture
 					return;
 
 				read_dwarf ();
+			}
+		}
+
+		bool IModule.StepInto {
+			get {
+				return step_into;
+			}
+
+			set {
+				step_into = value;
 			}
 		}
 

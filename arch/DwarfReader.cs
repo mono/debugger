@@ -428,7 +428,7 @@ namespace Mono.Debugger.Architecture
 			protected DieSubprogram subprog;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
-				: base (subprog.Name, subprog.ImageFile)
+				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.bfd)
 			{
 				this.subprog = subprog;
 				this.engine = engine;
@@ -438,12 +438,6 @@ namespace Mono.Debugger.Architecture
 
 				if (engine != null)
 					SetSource (new DwarfNativeMethodSource (this));
-			}
-
-			public override ILanguageBackend Language {
-				get {
-					return null;
-				}
 			}
 
 			public override object MethodHandle {

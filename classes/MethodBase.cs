@@ -34,13 +34,14 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 		IMethodSource source;
+		IModule module;
 		bool is_loaded, has_bounds;
 		string image_file;
 		string name;
 
-		protected MethodBase (string name, string image_file,
+		protected MethodBase (string name, string image_file, IModule module,
 				      TargetAddress start, TargetAddress end)
-			: this (name, image_file)
+			: this (name, image_file, module)
 		{
 			this.start = start;
 			this.end = end;
@@ -49,14 +50,15 @@ namespace Mono.Debugger
 			this.is_loaded = true;
 		}
 
-		protected MethodBase (string name, string image_file)
+		protected MethodBase (string name, string image_file, IModule module)
 		{
 			this.name = name;
 			this.image_file = image_file;
+			this.module = module;
 		}
 
 		protected MethodBase (IMethod method)
-			: this (method.Name, method.ImageFile,
+			: this (method.Name, method.ImageFile, method.Module,
 				method.StartAddress, method.EndAddress)
 		{ }
 
@@ -96,8 +98,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract ILanguageBackend Language {
-			get;
+		public IModule Module {
+			get {
+				return module;
+			}
 		}
 
 		public abstract object MethodHandle {

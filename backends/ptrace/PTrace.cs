@@ -875,12 +875,12 @@ namespace Mono.Debugger.Backends
 				 * when entering the method.
 				 */
 				if (!trampoline.IsNull) {
-					IMethod trampoline_method = null;
+					IMethod tmethod = null;
 					if (application_symtab != null) {
 						application_symtab.UpdateSymbolTable ();
-						trampoline_method = application_symtab.Lookup (trampoline);
+						tmethod = application_symtab.Lookup (trampoline);
 					}
-					if (trampoline_method == null) {
+					if ((tmethod == null) || !tmethod.Module.StepInto) {
 						set_step_frame (frame);
 						do_next ();
 						return;
@@ -920,7 +920,7 @@ namespace Mono.Debugger.Backends
 				method = symtab_collection.Lookup (call);
 			else if (application_symtab != null)
 				method = application_symtab.Lookup (call);
-			if (method == null) {
+			if ((method == null) || !method.Module.StepInto) {
 				set_step_frame (frame);
 				do_next ();
 				return;

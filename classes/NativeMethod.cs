@@ -19,12 +19,6 @@ namespace Mono.Debugger
 			SetSource (new NativeMethodSource (this));
 		}
 
-		public override ILanguageBackend Language {
-			get {
-				return null;
-			}
-		}
-
 		public override object MethodHandle {
 			get {
 				return this;

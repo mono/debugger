@@ -1,5 +1,17 @@
 2002-09-27  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IModule.cs (IModule.StepInto): New property to
+	specify whether to enter methods in this module while
+	single-stepping.
+
+	* interfaces/IMethod.cs (IMethod.Language): Removed.
+	(IMethod.Module): Added.
+
+	* backends/ptrace/PTrace.cs (PTraceInferior.Step): Don't enter a
+	method if it's IModule.StepInto is false.
+
+2002-09-27  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IModule.cs: New interface.
 
 	* backends/Debugger.cs (DebuggerBackend.Modules): New property to get a

@@ -44,7 +44,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ILanguageBackend Language {
+		IModule Module {
 			get;
 		}
 

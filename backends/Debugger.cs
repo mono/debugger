@@ -427,7 +427,8 @@ namespace Mono.Debugger
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
-			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
+			ILanguageBackend language = (frame.Method != null) ?
+				frame.Method.Module.Language : null;
 
 			if (frame.SourceLocation == null)
 				return null;
@@ -445,7 +446,8 @@ namespace Mono.Debugger
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
-			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
+			ILanguageBackend language = (frame.Method != null) ?
+				frame.Method.Module.Language : null;
 
 			return new StepFrame (language, mode);
 		}
@@ -531,7 +533,8 @@ namespace Mono.Debugger
 			if (current_method == null)
 				return;
 
-			MonoCSharpLanguageBackend csharp = current_method.Language as MonoCSharpLanguageBackend;
+			MonoCSharpLanguageBackend csharp =
+				current_method.Module.Language as MonoCSharpLanguageBackend;
 			if (csharp == null)
 				return;
 
@@ -698,7 +701,7 @@ namespace Mono.Debugger
 
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
-				ILanguageBackend language = current_method.Language;
+				ILanguageBackend language = current_method.Module.Language;
 
 				if ((old_step_line || old_next_line) && (language != null)) {
 					if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {

@@ -307,6 +307,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public string FileName;
 			string name;
 			bool load_symbols;
+			bool step_into;
 			MonoSymbolFileTable table;
 
 			public MonoModule (MonoSymbolFileTable table, AssemblyName name)
@@ -314,6 +315,7 @@ namespace Mono.Debugger.Languages.CSharp
 				this.table = table;
 				this.name = name.FullName;
 				this.load_symbols = true;
+				this.step_into = true;
 			}
 
 			public ILanguageBackend Language {
@@ -361,6 +363,16 @@ namespace Mono.Debugger.Languages.CSharp
 					load_symbols = value;
 					table.Update ();
 					table.Language.ModulesChanged ();
+				}
+			}
+
+			public bool StepInto {
+				get {
+					return step_into;
+				}
+
+				set {
+					step_into = value;
 				}
 			}
 
@@ -740,7 +752,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
 					   string name, ITargetMemoryReader dynamic_reader)
-				: base (name, reader.ImageFile)
+				: base (name, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
 				this.method = method;
@@ -807,12 +819,6 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 
 				has_variables = true;
-			}
-
-			public override ILanguageBackend Language {
-				get {
-					return reader.language;
-				}
 			}
 
 			public override object MethodHandle {
