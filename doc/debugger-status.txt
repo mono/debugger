@@ -1,0 +1,86 @@
+Debugger Status Report as of October 18th, 2002
+===============================================
+
+Currently, the debugger can do everything which is mentioned in the
+RELEASE-NOTES-0.1.0.txt.
+
+Variables and types in managed code:
+------------------------------------
+
+* We don't have a GUI to display the locals and parameters of another stack frame.  If you
+  look at frontends/gui/VariableDisplay.cs, it's already done for the current stack frame
+  there.  Just replace `current_frame' with whatever frame you want (use
+  DebuggerBackend.GetBacktrace() to get a backtrace).
+
+* We can't access register variables from another stack frame yet.  Paolo mentioned that
+  they'll be saved on the stack when doing method calls, so we can unwind the stack to get
+  them.   For the current stack frame, we can just read the registers.
+
+* We can't access register variables which are stored in two registers (for instance a
+  long which is in %eax and %edx).  Look at backends/mono-csharp/MonoRegisterLocation.cs,
+  it should work in a similar way.
+
+* We can't invoke methods on structs, only on classes.  When invoking a method on a
+  struct, we need to box the `this' argument which isn't implemented yet.  The code is in
+  MonoStructType.Invoke in backends/mono-csharp/MonoStructType.cs.
+
+* We can only invoke methods without arguments.  The code to call a method is
+  IInferior.CallInvokeMethod() and it's also called from MonoStructType.Invoke(); what
+  needs to be done is creating a `MonoObject *' for each parameter (in the target) and
+  provide the addresses of these objects instead of the `new TargetAddress [0]'.
+
+  The problem here is that we need to create an object in the target, so we need to write
+  some code which evaluates a user supplied expression and creates an object instance for
+  it.
+
+* Also in MonoStructType.Invoke(), we should do something reasonable with the returned
+  exception; at the moment, it is returned instead of the method's return value.
+
+* There is no GUI to call a properties getter or an object's ToString(); see
+  frontends/command-line/Interpreter.cs for an example.
+
+JIT issues:
+-----------
+
+* The lifetime information for local variables is sometimes wrong: for the debugger, a
+  variable's lifetime starts _after_ it has been assigned, but the JIT need to create the
+  variable _before_ it can assign it a value.
+
+* We currently assumes that a variable's lifetime is continuous, ie. that it last from
+  code position X until code position Y.  This is not always correct; sometimes the JIT
+  creates two or more entries in MonoFlowGraph.locals for the same variable.
+
+* In jit.c we should always set t->cli_addr, add it as argument to PUSH_TREE(); Dietmar
+  should know what to do.
+
+* We should write a small tool to write a symbol file for an arbitrary assembly to debug
+  its IL code.  This tool should create both the IL file and the symbol file and use the
+  IL file as `source code'.
+
+Single stepping issues:
+-----------------------
+
+* There is no command to make the current stack frame return.
+
+Modules:
+--------
+
+* We should allow the user to add modules; for instance if the user knows that the
+  application will at some point dynamically open a shared library or assembly, it should be
+  possible to set a breakpoint in this module.  Currently, you need to wait until the
+  debugger loaded the module before you can insert the breakpoint.  However, the
+  breakpoint will be automatically inserted when restarting the target.
+
+* Currently, we're getting a notification when the target loads a new shared library.  We
+  should do the same for managed applications, ie. let the JIT call a special method each
+  time it opened a new assembly so that we could insert a breakpoint on that method.
+
+* When inserting a breakpoint for a not-yet-JITed method, the debugger invokes a special
+  function in the target's JIT to get a breakpoint when that method gets JITed.  This
+  method takes an arbitrary method name which does not need to exist - so we should also
+  add a GUI item to insert such an arbitrary breakpoint.
+
+  The same applies for native libraries: we could have a list of such breakpoints and each
+  time a new shared library gets loaded, we scan its symbol file to find out whether it
+  has a method with that name.
+
