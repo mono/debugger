@@ -330,7 +330,8 @@ namespace Mono.Debugger.Frontends.Scripting
 					return String.Format ("&({0}) {1}", deref.Type.Name,
 							      FormatObject (deref));
 				} else
-					return pobj.Print ();
+					return String.Format ("({0}) {1}", pobj.Type.Name,
+							      pobj.Print ());
 			}
 
 			case TargetObjectKind.Class:
