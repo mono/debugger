@@ -1,10 +1,13 @@
+#define _GNU_SOURCE
 #include <server.h>
+#include <sys/stat.h>
 #include <sys/ptrace.h>
 #include <asm/ptrace.h>
 #include <asm/user.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 /*
@@ -19,6 +22,7 @@
 struct InferiorHandle
 {
 	int pid;
+	int mem_fd;
 	long call_address;
 	ChildExitedFunc child_exited_cb;
 	ChildMessageFunc child_message_cb;
@@ -104,6 +108,18 @@ set_fp_registers (InferiorHandle *handle, struct user_i387_struct *regs)
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+setup_inferior (InferiorHandle *handle)
+{
+	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
+	handle->mem_fd = open64 (filename, O_RDONLY);
+
+	if (handle->mem_fd < 0)
+		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
+
+	g_free (filename);
+}
+
 static InferiorHandle *
 server_ptrace_attach (int pid, ChildExitedFunc child_exited, ChildMessageFunc child_message,
 		      ChildCallbackFunc child_callback)
@@ -118,6 +134,8 @@ server_ptrace_attach (int pid, ChildExitedFunc child_exited, ChildMessageFunc ch
 	handle->child_exited_cb = child_exited;
 	handle->child_message_cb = child_message;
 	handle->child_callback_cb = child_callback;
+
+	setup_inferior (handle);
 
 	return handle;
 }
@@ -180,29 +198,20 @@ server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 static ServerCommandError
 server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
-	int *ptr = buffer;
-	int addr = (int) start;
+	guint8 *ptr = buffer;
 
 	while (size) {
-		int word;
-
-		errno = 0;
-		word = ptrace (PTRACE_PEEKDATA, handle->pid, addr);
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
+		int ret = pread64 (handle->mem_fd, ptr, size, start);
+		if (ret < 0) {
+			if (errno == EINTR)
+				continue;
+			g_warning (G_STRLOC ": Can't read target memory at address %Lx: %s",
+				   start, g_strerror (errno));
 			return COMMAND_ERROR_UNKNOWN;
 		}
 
-		if (size >= sizeof (int)) {
-			*ptr++ = word;
-			addr += sizeof (int);
-			size -= sizeof (int);
-		} else {
-			memcpy (ptr, &word, size);
-			size = 0;
-		}
+		size -= ret;
+		ptr += ret;
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -285,7 +294,7 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 	*((guint32 *) (code+6)) = method_argument & 0xffffffff;
 	*((guint32 *) (code+11)) = call_disp - 15;
 
-	result = server_ptrace_write_data (handle, new_esp, size, code);
+	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -460,6 +469,8 @@ server_ptrace_spawn (const gchar *working_directory, gchar **argv, gchar **envp,
 	handle->child_exited_cb = child_exited;
 	handle->child_message_cb = child_message;
 	handle->child_callback_cb = child_callback;
+
+	setup_inferior (handle);
 
 	return handle;
 }

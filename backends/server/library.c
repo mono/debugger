@@ -47,7 +47,6 @@ mono_debugger_server_write_memory (ServerHandle *handle, gpointer data, guint64 
 	if (!handle->inferior)
 		return COMMAND_ERROR_NO_INFERIOR;
 
-
 	return (* handle->info->write_data) (handle->inferior, start, size, data);
 }
 
