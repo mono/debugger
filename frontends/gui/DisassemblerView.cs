@@ -8,12 +8,32 @@ namespace Mono.Debugger.GUI
 {
 	public class DisassemblerView : SourceView
 	{
-		public DisassemblerView (SourceManager manager, Gtk.Container container)
+		RegisterDisplay register_display;
+
+		public DisassemblerView (SourceManager manager, Gtk.Container container,
+					 RegisterDisplay register_display)
 			: base (manager, container)
-		{ }
+		{
+			this.register_display = register_display;
+		}
 
 		IMethod current_method = null;
 		IMethodSource current_method_source = null;
+
+		protected override void SetActive ()
+		{
+			base.SetActive ();
+			register_display.Active = true;
+		}
+
+		protected override void SetInactive ()
+		{
+			base.SetInactive ();
+
+			current_method = null;
+			current_method_source = null;
+			register_display.Active = false;
+		}
 
 		void MethodChanged (StackFrame frame)
 		{

@@ -76,6 +76,7 @@ namespace Mono.Debugger.GUI {
 			manager.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
 			manager.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
 			manager.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
+			manager.TargetExitedEvent += new TargetExitedHandler (target_exited_event);
 		}
 
 		public void SetProcess (Process process)
@@ -92,11 +93,23 @@ namespace Mono.Debugger.GUI {
 				if (active == value)
 					return;
 				active = value;
-				if (!active)
-					frame_invalid_event ();
+				if (process == null)
+					return;
+				if (active)
+					SetActive ();
 				else
-					frame_changed_event (process.CurrentFrame);
+					SetInactive ();
 			}
+		}
+
+		protected virtual void SetActive ()
+		{
+			frame_changed_event (process.CurrentFrame);
+		}
+
+		protected virtual void SetInactive ()
+		{
+			frame_invalid_event ();
 		}
 
 		protected void ClearLine ()
@@ -107,6 +120,13 @@ namespace Mono.Debugger.GUI {
 			}
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+		}
+
+		void target_exited_event ()
+		{
+			Active = false;
+			ClearLine ();
+			process = null;
 		}
 		
 		void method_invalid_event ()

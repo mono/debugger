@@ -1,3 +1,11 @@
+2003-01-12  Martin Baulig  <martin@ximian.com>
+
+	* frontends/gui/DebuggerWidget.cs: Removed all the method stuff;
+	we only need it in the SourceManager.
+
+	* frontends/gui/RegisterDisplay.cs (Active): New public property.
+	This is set to true while the CPU view is being displayed.
+
 2003-01-11  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs

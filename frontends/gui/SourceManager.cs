@@ -28,7 +28,8 @@ namespace Mono.Debugger.GUI {
 		
 		public SourceManager (DebuggerGUI gui, Gtk.Notebook notebook,
 				      Gtk.Container disassembler_container,
-				      SourceStatusbar source_status)
+				      SourceStatusbar source_status,
+				      RegisterDisplay register_display)
 			: base (gui, notebook)
 		{
 			sources = new Hashtable ();
@@ -36,7 +37,8 @@ namespace Mono.Debugger.GUI {
 			this.notebook = notebook;
 			this.source_status = source_status;
 
-			disassembler_view = new DisassemblerView (this, disassembler_container);
+			disassembler_view = new DisassemblerView (
+				this, disassembler_container, register_display);
 
 			factory = new SourceFileFactory ();
 
@@ -54,6 +56,7 @@ namespace Mono.Debugger.GUI {
 		public event MethodChangedHandler MethodChangedEvent;
 		public event StackFrameHandler FrameChangedEvent;
 		public event StackFrameInvalidHandler FramesInvalidEvent;
+		public event TargetExitedHandler TargetExitedEvent;
 
 		SourceList CreateSourceView (string filename, string contents)
 		{
@@ -107,8 +110,24 @@ namespace Mono.Debugger.GUI {
 			disassembler_view.Active = args.PageNum == 0;
 		}
 
+		IMethod current_method = null;
+		IMethodSource current_method_source = null;
+
 		protected override void FrameChanged (StackFrame frame)
 		{
+			if (frame.Method != current_method) {
+				current_method = frame.Method;
+				if (current_method != null) {
+					if (current_method.HasSource)
+						current_method_source = current_method.Source;
+					else
+						current_method_source = null;
+
+					MethodChanged (current_method, current_method_source);
+				} else
+					MethodInvalid ();
+			}
+
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (frame);
 		}
@@ -119,7 +138,13 @@ namespace Mono.Debugger.GUI {
 				FramesInvalidEvent ();
 		}
 
-		protected override void MethodInvalid ()
+		protected override void TargetExited ()
+		{
+			if (TargetExitedEvent != null)
+				TargetExitedEvent ();
+		}
+
+		void MethodInvalid ()
 		{
 			if (current_source != null)
 				current_source.Active = false;
@@ -129,7 +154,7 @@ namespace Mono.Debugger.GUI {
 				MethodInvalidEvent ();
 		}
 
-		protected string GetSource (ISourceBuffer buffer)
+		string GetSource (ISourceBuffer buffer)
 		{
 			if (buffer.HasContents)
 				return buffer.Contents;
@@ -143,7 +168,7 @@ namespace Mono.Debugger.GUI {
 			return file.Contents;
 		}
 
-		protected SourceView GetSourceView (IMethod method, IMethodSource source)
+		SourceView GetSourceView (IMethod method, IMethodSource source)
 		{
 			if (source == null)
 				return disassembler_view;
@@ -173,7 +198,7 @@ namespace Mono.Debugger.GUI {
 			return view;
 		}
 
-		protected override void MethodChanged (IMethod method, IMethodSource source)
+		void MethodChanged (IMethod method, IMethodSource source)
 		{
 			MethodInvalid ();
 
@@ -188,7 +213,6 @@ namespace Mono.Debugger.GUI {
 
 			disassembler_view.Active = notebook.Page == 0;
 
-		done:
 			initialized = true;
 			if (MethodChangedEvent != null)
 				MethodChangedEvent (method);

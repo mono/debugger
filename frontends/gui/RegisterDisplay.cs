@@ -35,6 +35,7 @@ namespace Mono.Debugger.GUI
 		Gtk.Notebook notebook;
 		IArchitecture arch;
 		Gdk.Color color_change, color_stable;
+		bool active;
 
 		public RegisterDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Notebook notebook)
 			: base (gui, window, notebook)
@@ -61,6 +62,9 @@ namespace Mono.Debugger.GUI
 
 		protected override void StateChanged (TargetState new_state, int arg)
 		{
+			if (!active)
+				return;
+
 			switch (new_state) {
 			case TargetState.STOPPED:
 			case TargetState.CORE_FILE:
@@ -76,6 +80,24 @@ namespace Mono.Debugger.GUI
 				break;
 			}
 		}
+
+		public bool Active {
+			get {
+				return active;
+			}
+
+			set {
+				if (active == value)
+					return;
+				active = value;
+				if (active && (regs != null)) {
+					notebook.Page = 1;
+					UpdateDisplay ();
+				} else
+					notebook.Page = 0;
+			}
+		}
+
 		
 		//
 		// The i386 registers

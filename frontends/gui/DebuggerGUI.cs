@@ -189,7 +189,7 @@ namespace Mono.Debugger.GUI
 			source_status = new SourceStatusbar (this, (Gtk.Statusbar) gxml ["status-bar"]);
 			source_manager = new SourceManager (this, (Gtk.Notebook) gxml ["code-browser-notebook"],
 							    (Gtk.Container) gxml ["disassembler-view"],
-							    source_status);
+							    source_status, register_display);
 
 			gxml.Autoconnect (this);
 
@@ -291,8 +291,8 @@ namespace Mono.Debugger.GUI
 			} else {
 				start = ProcessStart.Create (null, args, env);
 				process = backend.Run (start);
-				SetProcess (process);
 				process.SingleSteppingEngine.Run (true, true);
+				SetProcess (process);
 			}
 
 			//
