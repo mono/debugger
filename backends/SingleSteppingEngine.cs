@@ -482,7 +482,8 @@ namespace Mono.Debugger.Backends
 					      this, inferior.CurrentFrame);
 
 				if (!stop_requested &&
-				    (message != Inferior.ChildEventType.UNHANDLED_EXCEPTION)) {
+				    ((message != Inferior.ChildEventType.UNHANDLED_EXCEPTION) &&
+				     (message != Inferior.ChildEventType.HANDLE_EXCEPTION))) {
 					inferior.Continue (); // do_continue ();
 					return;
 				}
@@ -506,6 +507,19 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case Inferior.ChildEventType.UNHANDLED_EXCEPTION: {
+				TargetAddress exc = new TargetAddress (
+					manager.AddressDomain, cevent.Data1);
+				TargetAddress ip = new TargetAddress (
+					manager.AddressDomain, cevent.Data2);
+
+				current_operation = new Operation (
+					OperationType.Exception, exc);
+
+				do_continue (ip);
+				return;
+			}
+
+			case Inferior.ChildEventType.HANDLE_EXCEPTION: {
 				TargetAddress exc = new TargetAddress (
 					manager.AddressDomain, cevent.Data1);
 				TargetAddress ip = new TargetAddress (

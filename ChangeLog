@@ -1,5 +1,21 @@
 2004-10-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/ILanguageBackend.cs
+	(NotificationType): Added `HandleException'.
+
+	* backends/Inferior.cs
+	(Inferior.ChildEventType): Added `HANDLE_EXCEPTION'.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Added support for
+	`NotificationType.HandleException'.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ProcessEvent): Added support for
+	`Inferior.ChildEventType.HANDLE_EXCEPTION'.	
+
+2004-10-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBakcend.cs
 	(MonoMethod.GetTypeSignature): New method.
 	[FIXME: This needs some love.]	

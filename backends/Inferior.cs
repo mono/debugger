@@ -161,7 +161,8 @@ namespace Mono.Debugger.Backends
 			CHILD_MEMORY_CHANGED,
 			CHILD_CREATED_THREAD,
 			CHILD_NOTIFICATION,
-			UNHANDLED_EXCEPTION
+			UNHANDLED_EXCEPTION,
+			HANDLE_EXCEPTION
 		}
 
 		internal delegate void ChildEventHandler (ChildEventType message, int arg);

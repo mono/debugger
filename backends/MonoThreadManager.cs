@@ -207,6 +207,12 @@ namespace Mono.Debugger.Backends
 						0, cevent.Data1, cevent.Data2);
 					return false;
 
+				case NotificationType.HandleException:
+					cevent = new Inferior.ChildEvent (
+						Inferior.ChildEventType.HANDLE_EXCEPTION,
+						0, cevent.Data1, cevent.Data2);
+					return false;
+
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.GlobalAddressDomain, cevent.Data1);
