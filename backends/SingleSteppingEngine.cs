@@ -1755,6 +1755,28 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ();
 		}
 
+		CommandResult disassemble_method (object data)
+		{
+			try {
+				IMethodSource source = disassembler.DisassembleMethod ((IMethod) data);
+				return new CommandResult (CommandResultType.CommandOk, source);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		public IMethodSource DisassembleMethod (IMethod method)
+		{
+			check_inferior ();
+			CommandResult result = send_sync_command (new CommandFunc (disassemble_method), method);
+			if (result.Type == CommandResultType.CommandOk)
+				return (IMethodSource) result.Data;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
 		//
 		// Calling methods.
 		//
@@ -2068,6 +2090,19 @@ namespace Mono.Debugger.Backends
 
 					return registers;
 				}
+			}
+
+			protected override string DoDisassembleInstruction (ref TargetAddress address)
+			{
+				return sse.DisassembleInstruction (ref address);
+			}
+
+			public override IMethodSource DisassembleMethod ()
+			{
+				if (Method == null)
+					throw new NoMethodException ();
+
+				return sse.DisassembleMethod (Method);
 			}
 		}
 

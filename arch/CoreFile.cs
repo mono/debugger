@@ -246,6 +246,19 @@ namespace Mono.Debugger.Architecture
 					return core.GetRegisters ();
 				}
 			}
+
+			protected override string DoDisassembleInstruction (ref TargetAddress address)
+			{
+				return core.Disassembler.DisassembleInstruction (ref address);
+			}
+
+			public override IMethodSource DisassembleMethod ()
+			{
+				if (Method == null)
+					throw new NoMethodException ();
+
+				return core.Disassembler.DisassembleMethod (Method);
+			}
 		}
 
 		//

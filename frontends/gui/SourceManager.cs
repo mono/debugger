@@ -46,7 +46,6 @@ namespace Mono.Debugger.GUI {
 		public override void SetProcess (Process process)
 		{
 			disassembler_view.SetProcess (process);
-			disassembler_view.Active = true;
 
 			base.SetProcess (process);
 		}
@@ -172,20 +171,6 @@ namespace Mono.Debugger.GUI {
 			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
 
 			return view;
-		}
-
-		protected override void RealMethodChanged (IMethod method)
-		{
-			base.RealMethodChanged (method);
-
-			disassembler_view.RealMethodChanged (method);
-		}
-
-		protected override void RealMethodInvalid ()
-		{
-			base.RealMethodInvalid ();
-
-			disassembler_view.RealMethodInvalid ();
 		}
 
 		protected override void MethodChanged (IMethod method, IMethodSource source)

@@ -12,47 +12,33 @@ namespace Mono.Debugger.GUI
 			: base (manager, container)
 		{ }
 
+		IMethod current_method = null;
 		IMethodSource current_method_source = null;
-		bool dirty = false;
 
-		public void RealMethodChanged (IMethod method)
-		{
-			RealMethodInvalid ();
-
-			if (method == null)
-				return;
-
-			if (!process.HasTarget || (process.Disassembler == null))
-				return;
-
-			current_method_source = process.Disassembler.DisassembleMethod (method);
-		}
-
-		public void RealMethodInvalid ()
+		void MethodChanged (StackFrame frame)
 		{
 			current_method_source = null;
-			dirty = true;
-		}
+			current_method = null;
 
-		void update_buffer ()
-		{
-			if (!dirty)
+			if ((frame.Method == null) || !frame.Method.IsLoaded)
 				return;
+
+			current_method = frame.Method;
+			current_method_source = frame.DisassembleMethod ();
 
 			if (current_method_source == null)
 				text_buffer.Text = "";
 			else
 				text_buffer.Text = current_method_source.SourceBuffer.Contents;
-
-			dirty = false;
 		}
 
 		protected override SourceLocation GetSourceLocation (StackFrame frame)
 		{
+			if (frame.Method != current_method)
+				MethodChanged (frame);
+
 			if (current_method_source == null)
 				return null;
-
-			update_buffer ();
 
 			return current_method_source.Lookup (frame.TargetAddress);
 		}

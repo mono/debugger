@@ -1,5 +1,12 @@
 2003-01-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs
+	(DisassembleInstruction, DisassembleMethod): New public methods.
+
+	* frontends/gui/DisassemblerView.cs: Use StackFrame.DisassembleMethod().
+
+2003-01-11  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/SourceView.cs: Don't derive from DebuggerWidget;
 	moved most of the functionality from SourceList here.
 
