@@ -295,24 +295,26 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   Holds all the symbol tables from the target's JIT.
 	// </summary>
-	internal class MonoSymbolTable : ILanguage, IDisposable
+	internal class MonoSymbolTable : SymbolTable, ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 43;
+		public const int  MinDynamicVersion = 43;
+		public const int  MaxDynamicVersion = 44;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
 		public readonly MonoCSharpLanguageBackend Language;
 		public readonly DebuggerBackend Backend;
 		public readonly ITargetMemoryInfo TargetInfo;
-		ArrayList ranges;
+		// ArrayList ranges;
 		Hashtable class_table;
 		Hashtable types;
 		Hashtable image_hash;
 		Hashtable assembly_hash;
+		Hashtable wrappers;
 
 		MonoBuiltinTypes builtin;
 		MonoSymbolFile corlib;
-		TargetAddress StartAddress;
+		new TargetAddress StartAddress;
 		int TotalSize;
 
 		int address_size;
@@ -320,6 +322,9 @@ namespace Mono.Debugger.Languages.CSharp
 		int last_num_type_tables;
 		int last_type_table_offset;
 		ArrayList type_table;
+
+		int last_num_misc_tables;
+		int last_misc_table_offset = 1;
 
 		public MonoSymbolTable (DebuggerBackend backend, MonoCSharpLanguageBackend language,
 					ITargetMemoryAccess memory, TargetAddress address)
@@ -334,14 +339,16 @@ namespace Mono.Debugger.Languages.CSharp
 			assembly_hash = new Hashtable ();
 			type_table = new ArrayList ();
 
-			ranges = new ArrayList ();
 			types = new Hashtable ();
 			class_table = new Hashtable ();
+			wrappers = new Hashtable ();
 
 			SymbolFiles = new ArrayList ();
 
 			TotalSize = language.MonoDebuggerInfo.SymbolTableSize;
 			StartAddress = address;
+
+			backend.SymbolTableManager.AddSymbolTable (this);
 		}
 
 		internal void Update (ITargetMemoryAccess memory)
@@ -354,10 +361,16 @@ namespace Mono.Debugger.Languages.CSharp
 					"Dynamic section has unknown magic {0:x}.", magic);
 
 			int version = header.ReadInteger ();
-			if (version != DynamicVersion)
+			if (version < MinDynamicVersion)
 				throw new SymbolTableException (
-					"Dynamic section has version {0}, but expected {1}.",
-					version, DynamicVersion);
+					"Dynamic section has version {0}, but " +
+					"expected at least {1}.", version,
+					MinDynamicVersion);
+			if (version > MaxDynamicVersion)
+				throw new SymbolTableException (
+					"Dynamic section has version {0}, but " +
+					"expected at most {1}.", version,
+					MaxDynamicVersion);
 
 			int total_size = header.ReadInteger ();
 			if (total_size != TotalSize)
@@ -384,12 +397,37 @@ namespace Mono.Debugger.Languages.CSharp
 					corlib = symfile;
 			}
 
+			read_type_table (memory, header);
+
+			if (version == 44)
+				read_misc_table (memory, header);
+
+			if (corlib == null)
+				throw new InternalError ();
+			if (builtin == null) {
+				builtin = new MonoBuiltinTypes (this, memory, builtin_types_address, corlib);
+			}
+
+			bool updated = false;
+
+			foreach (MonoSymbolFile symfile in SymbolFiles) {
+				if (!symfile.LoadSymbols)
+					continue;
+
+				if (symfile.Update (memory))
+					updated = true;
+			}
+		}
+
+		void read_type_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
+		{
 			int num_type_tables = header.ReadInteger ();
 			int chunk_size = header.ReadInteger ();
 			TargetAddress type_tables = header.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, "TYPE TABLES: {0} {1} {2} {3}",
-				      last_num_type_tables, num_type_tables, chunk_size, type_tables);
+				      last_num_type_tables, num_type_tables, chunk_size,
+				      type_tables);
 
 			if (num_type_tables != last_num_type_tables) {
 				int old_offset = 0;
@@ -398,10 +436,12 @@ namespace Mono.Debugger.Languages.CSharp
 				byte[] old_data = new byte [old_size];
 
 				for (int i = 0; i < num_type_tables; i++) {
-					TargetAddress old_table = memory.ReadAddress (type_tables);
+					TargetAddress old_table = memory.ReadAddress (
+						type_tables);
 					type_tables += address_size;
 
-					byte[] temp_data = memory.ReadBuffer (old_table, chunk_size);
+					byte[] temp_data = memory.ReadBuffer (
+						old_table, chunk_size);
 					temp_data.CopyTo (old_data, old_offset);
 					old_offset += chunk_size;
 				}
@@ -421,42 +461,101 @@ namespace Mono.Debugger.Languages.CSharp
 			int size = offset - last_type_table_offset;
 			int read_offset = last_type_table_offset - start;
 
-			Report.Debug (DebugFlags.JitSymtab, "TYPE TABLE: {0} {1} {2} {3} - {4} {5}",
-				      type_table_address, type_table_total_size, offset, start,
-				      read_offset, size);
+			Report.Debug (DebugFlags.JitSymtab,
+				      "TYPE TABLE: {0} {1} {2} {3} - {4} {5}",
+				      type_table_address, type_table_total_size,
+				      offset, start, read_offset, size);
 
 			if (size != 0) {
-				byte[] data = memory.ReadBuffer (type_table_address + read_offset, size);
-				type_table.Add (new TypeEntry (last_type_table_offset, size, data));
+				byte[] data = memory.ReadBuffer (
+					type_table_address + read_offset, size);
+				type_table.Add (
+					new TypeEntry (last_type_table_offset, size, data));
 			}
 
 			last_type_table_offset = offset;
+		}
 
-			if (corlib == null)
-				throw new InternalError ();
-			if (builtin == null) {
-				builtin = new MonoBuiltinTypes (this, memory, builtin_types_address, corlib);
-			}
+		void read_misc_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
+		{
+			int num_misc_tables = header.ReadInteger ();
+			int chunk_size = header.ReadInteger ();
+			TargetAddress misc_tables = header.ReadAddress ();
 
-			bool updated = false;
+			Report.Debug (DebugFlags.JitSymtab, "MISC TABLES: {0} {1} {2} {3}",
+				      last_num_misc_tables, num_misc_tables, chunk_size,
+				      misc_tables);
 
-			foreach (MonoSymbolFile symfile in SymbolFiles) {
-				if (!symfile.LoadSymbols)
-					continue;
+			if (num_misc_tables != last_num_misc_tables) {
+				int old_offset = 0;
+				int old_count = num_misc_tables;
+				int old_size = old_count * chunk_size;
+				byte[] old_data = new byte [old_size];
 
-				if (symfile.Update (memory))
-					updated = true;
-			}
+				for (int i = 0; i < num_misc_tables; i++) {
+					TargetAddress old_table = memory.ReadAddress (
+						misc_tables);
+					misc_tables += address_size;
 
-			if (updated) {
-				ranges = new ArrayList ();
-				foreach (MonoSymbolFile symfile in SymbolFiles) {
-					if (!symfile.LoadSymbols)
-						continue;
-
-					ranges.AddRange (symfile.SymbolRanges);
+					byte[] temp_data = memory.ReadBuffer (
+						old_table, chunk_size);
+					temp_data.CopyTo (old_data, old_offset);
+					old_offset += chunk_size;
 				}
-				ranges.Sort ();
+
+				last_num_misc_tables = num_misc_tables;
+				last_misc_table_offset = old_size;
+			}
+
+			TargetAddress misc_table_address = header.ReadAddress ();
+			int misc_table_total_size = header.ReadInteger ();
+			int offset = header.ReadInteger ();
+			int start = header.ReadInteger ();
+
+			int size = offset - last_misc_table_offset;
+			int read_offset = last_misc_table_offset - start;
+
+			Report.Debug (DebugFlags.JitSymtab,
+				      "MISC TABLE: {0} {1} {2} {3} - {4} {5}",
+				      misc_table_address, misc_table_total_size,
+				      offset, start, read_offset, size);
+
+			if (!misc_table_address.IsNull && (size != 0)) {
+				ITargetMemoryReader reader = memory.ReadMemory (
+					misc_table_address + read_offset, size);
+				process_misc_entry (memory, reader);
+			}
+
+			last_misc_table_offset = offset;
+		}
+
+		enum MiscEntryType {
+			Unknown = 0,
+			Wrapper
+		}
+
+		void process_misc_entry (ITargetMemoryAccess memory,
+					 ITargetMemoryReader reader)
+		{
+			while (reader.BinaryReader.Position < reader.BinaryReader.Size) {
+				long offset = reader.BinaryReader.Position;
+				int size = reader.BinaryReader.ReadInt32 ();
+				long end = reader.BinaryReader.Position + size;
+
+				int type = reader.BinaryReader.ReadInt32 ();
+				switch ((MiscEntryType) type) {
+				case MiscEntryType.Wrapper:
+					WrapperEntry entry = WrapperEntry.ReadWrapper (
+						this, reader);
+					wrappers.Add (entry.StartAddress, entry);
+					break;
+
+				default:
+					// Ignore unknown entries
+					break;
+				}
+
+				reader.BinaryReader.Position = end;
 			}
 		}
 
@@ -501,10 +600,10 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public ArrayList SymbolRanges {
+		public ICollection Wrappers {
 			get {
 				lock (this) {
-					return ranges;
+					return wrappers.Values;
 				}
 			}
 		}
@@ -710,6 +809,134 @@ namespace Mono.Debugger.Languages.CSharp
 				return obj;
 		}
 
+		private class WrapperEntry : SymbolRangeEntry
+		{
+			MonoSymbolTable table;
+			TargetAddress func;
+			TargetAddress method_start, method_end;
+			string name;
+
+			private WrapperEntry (MonoSymbolTable table, string name,
+					      TargetAddress start, TargetAddress end,
+					      TargetAddress func, TargetAddress method_start,
+					      TargetAddress method_end)
+				: base (start, end)
+			{
+				this.table = table;
+				this.name = name;
+				this.func = func;
+				this.method_start = method_start;
+				this.method_end = method_end;
+			}
+
+			public static WrapperEntry ReadWrapper (MonoSymbolTable table,
+								ITargetMemoryReader reader)
+			{
+				string name = reader.BinaryReader.ReadString ();
+				TargetAddress start = reader.ReadGlobalAddress ();
+				TargetAddress end = reader.ReadGlobalAddress ();
+				TargetAddress func = reader.ReadGlobalAddress ();
+				TargetAddress method_start = reader.ReadGlobalAddress ();
+				TargetAddress method_end = reader.ReadGlobalAddress ();
+
+				return new WrapperEntry (table, name, start, end, func,
+							 method_start, method_end);
+			}
+
+			protected override ISymbolLookup GetSymbolLookup ()
+			{
+				return new WrapperMethod (
+					table, name, StartAddress, EndAddress, func,
+					method_start, method_end);
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("WrapperEntry [{0:x}:{1:x}:{2:x}:{3}]",
+						      StartAddress, EndAddress, func, name);
+			}
+		}
+
+		protected class WrapperMethod : MethodBase
+		{
+			public WrapperMethod (MonoSymbolTable table, string name,
+					      TargetAddress start, TargetAddress end,
+					      TargetAddress func, TargetAddress m_start,
+					      TargetAddress m_end)
+				: base (name, null, table.corlib, start, end)
+			{
+				SetMethodBounds (m_start, m_end);
+				SetWrapperAddress (func);
+			}
+
+			public override object MethodHandle {
+				get {
+					return null;
+				}
+			}
+
+			public override IVariable[] Parameters {
+				get {
+					return null;
+				}
+			}
+
+			public override IVariable[] Locals {
+				get {
+					return null;
+				}
+			}
+
+			public override ITargetStructType DeclaringType {
+				get {
+					return null;
+				}
+			}
+
+			public override bool HasThis {
+				get {
+					return false;
+				}
+			}
+
+			public override IVariable This {
+				get {
+					return null;
+				}
+			}
+
+			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+								    TargetAddress address)
+			{
+				return null;
+			}
+		}
+
+		public override bool HasMethods {
+			get {
+				return false;
+			}
+		}
+
+		protected override ArrayList GetMethods ()
+		{
+			throw new InvalidOperationException ();
+		}
+
+		public override bool HasRanges {
+			get {
+				return true;
+			}
+		}
+
+		public override ISymbolRange[] SymbolRanges {
+			get {
+				ISymbolRange[] retval = new ISymbolRange [wrappers.Count];
+				wrappers.Values.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
 		//
 		// IDisposable
 		//
@@ -723,7 +950,6 @@ namespace Mono.Debugger.Languages.CSharp
 			// If this is a call to Dispose, dispose all managed resources.
 				if (disposing) {
 					SymbolFiles = null;
-					ranges = new ArrayList ();
 					types = new Hashtable ();
 					class_table = new Hashtable ();
 				}
@@ -764,26 +990,6 @@ namespace Mono.Debugger.Languages.CSharp
 				this.Size = size;
 				this.Data = data;
 			}
-		}
-
-		void merge_type_entries ()
-		{
-			int count = type_table.Count;
-			TypeEntry last = (TypeEntry) type_table [count - 1];
-
-			int total_size = last.Offset + last.Size;
-
-			byte[] data = new byte [total_size];
-			int offset = 0;
-			for (int i = 0; i < count; i++) {
-				TypeEntry entry = (TypeEntry) type_table [i];
-
-				entry.Data.CopyTo (data, offset);
-				offset += entry.Size;
-			}
-
-			type_table = new ArrayList ();
-			type_table.Add (new TypeEntry (0, total_size, data));
 		}
 
 		public byte[] GetTypeInfo (int offset)
@@ -1791,10 +1997,16 @@ namespace Mono.Debugger.Languages.CSharp
 					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
 
 			int version = header.ReadInteger ();
-			if (version != MonoSymbolTable.DynamicVersion)
+			if (version < MonoSymbolTable.MinDynamicVersion)
 				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, but expected {1}.",
-					version, MonoSymbolTable.DynamicVersion);
+					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					"but expected at least {1}.", version,
+					MonoSymbolTable.MinDynamicVersion);
+			if (version > MonoSymbolTable.MaxDynamicVersion)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					"but expected at most {1}.", version,
+					MonoSymbolTable.MaxDynamicVersion);
 
 			int size = (int) header.ReadInteger ();
 
