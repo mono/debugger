@@ -15,8 +15,5 @@ generated-stamp: $(APIS)
 clean:
 	rm -f generated-stamp
 
-apidir=$(datadir)/gapi
+EXTRA_DISt = gtk-api.xml
 
-api_FILES = gtk-api.xml
-
-api_DATA = gtk-api.xml
