@@ -1,3 +1,7 @@
+2004-03-16  Martin Baulig  <martin@ximian.com>
+
+	Released version 0.7 "Wilmington" of the Mono Debugger :-)
+
 2004-04-29  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Bumped version number to 0.7.
