@@ -30,6 +30,8 @@ struct _MonoDebuggerInfo {
 
 #define IO_LAYER(func) (* mono_debugger_io_layer.func)
 
+int mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp);
+
 void mono_debugger_wait_cond (gpointer cond);
 void mono_debugger_thread_manager_init (void);
 void mono_debugger_thread_manager_main (void);

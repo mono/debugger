@@ -1,5 +1,15 @@
 2003-03-05  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/wrapper.c: This file was formerly known as main.c.
+
+	* wrapper/main.c: Moved everything but a very simple main()
+	function into wrapper.c.
+
+	* Makefile.am: Create a static libmonodebuggerwrapper.a library
+	containing everything but the main().
+
+2003-03-05  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Set version number to 0.2.1.1.
 
 2003-03-05  Martin Baulig  <martin@ximian.com>
