@@ -2575,6 +2575,14 @@ namespace Mono.Debugger.Architecture
 			protected override void ProcessAttribute (Attribute attribute)
 			{
 				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
 				default:
 					base.ProcessAttribute (attribute);
 					break;
