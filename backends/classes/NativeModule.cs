@@ -45,11 +45,18 @@ namespace Mono.Debugger.Backends
 		protected override void RemoveBreakpoint (BreakpointHandle handle)
 		{ }
 
-		bool breakpoint_hit (StackFrame frame, int index, object user_data)
+		bool check_breakpoint_hit (StackFrame frame, int index, object user_data)
 		{
 			BreakpointHandle handle = (BreakpointHandle) user_data;
 
-			return handle.Breakpoint.BreakpointHit (frame);
+			return handle.Breakpoint.CheckBreakpointHit (frame);
+		}
+
+		void breakpoint_hit (StackFrame frame, int index, object user_data)
+		{
+			BreakpointHandle handle = (BreakpointHandle) user_data;
+
+			handle.Breakpoint.BreakpointHit (frame);
 		}
 
 		protected override object EnableBreakpoint (BreakpointHandle handle,
@@ -65,7 +72,8 @@ namespace Mono.Debugger.Backends
 					throw new NotSupportedException ();
 
 				int id = process.SingleSteppingEngine.InsertBreakpoint (
-					address, new BreakpointHitHandler (breakpoint_hit),
+					address, new BreakpointCheckHandler (check_breakpoint_hit),
+					new BreakpointHitHandler (breakpoint_hit),
 					handle.Breakpoint.HandlerNeedsFrame, handle);
 				hash.Add (process, id);
 			}

@@ -9,10 +9,9 @@ namespace Mono.Debugger
 			: base (name, true, true)
 		{ }
 
-		public override bool BreakpointHit (StackFrame frame)
+		public override void BreakpointHit (StackFrame frame)
 		{
 			OnBreakpointHit ();
-			return true;
 		}
 
 		public event BreakpointEventHandler BreakpointHitEvent;

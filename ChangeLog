@@ -1,5 +1,12 @@
 2003-01-22  Martin Baulig  <martin@ximian.com>
 
+	* classes/Breakpoint.cs (BreakpointHit): Renamed to
+	CheckBreakpointHit() and added BreakpointHit() which'll be called
+	after the target is actually stopped and the notifications have
+	been send.
+
+2003-01-22  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs: Use the new mono thread manager in
 	the wrapper.
 
