@@ -478,7 +478,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress generic_trampoline_code;
 		public readonly TargetAddress breakpoint_trampoline_code;
 		public readonly TargetAddress symbol_file_generation;	
-		public readonly TargetAddress symbol_file_modified;
 		public readonly TargetAddress notification_code;
 		public readonly TargetAddress symbol_file_table;
 		public readonly TargetAddress update_symbol_file_table;
@@ -494,7 +493,6 @@ namespace Mono.Debugger.Languages.CSharp
 			generic_trampoline_code = reader.ReadAddress ();
 			breakpoint_trampoline_code = reader.ReadAddress ();
 			symbol_file_generation = reader.ReadAddress ();
-			symbol_file_modified = reader.ReadAddress ();
 			notification_code = reader.ReadAddress ();
 			symbol_file_table = reader.ReadAddress ();
 			update_symbol_file_table = reader.ReadAddress ();
@@ -1396,10 +1394,10 @@ namespace Mono.Debugger.Languages.CSharp
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
-		int symtab_modified;
 		TargetAddress trampoline_address;
 		TargetAddress notification_address;
 		IArchitecture arch;
+		bool initialized;
 		protected MonoSymbolFileTable table;
 
 		public MonoCSharpLanguageBackend (DebuggerBackend backend)
@@ -1445,7 +1443,6 @@ namespace Mono.Debugger.Languages.CSharp
 			process = null;
 			info = null;
 			symtab_generation = 0;
-			symtab_modified = 0;
 			arch = null;
 			trampoline_address = TargetAddress.Null;
 		}
@@ -1493,15 +1490,11 @@ namespace Mono.Debugger.Languages.CSharp
 			arch = inferior.Architecture;
 
 			notification_address = inferior.ReadGlobalAddress (info.notification_code);
-			Console.WriteLine ("NOTIFICATION ADDRESS: {0}", notification_address);
+			Console.WriteLine ("NOTIFICATION ADDRESS: {0} {1}", info.notification_code,
+					   notification_address);
 		}
 
 		bool updating_symfiles;
-		internal void Initialize ()
-		{
-			read_mono_debugger_info (process.Inferior);
-		}
-
 		public void do_update_symbol_table (IInferior inferior)
 		{
 			try {
@@ -1672,6 +1665,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			Console.WriteLine ("DAEMON THREAD HANDLER: {0} {1}", address, signal);
 
+			if (!initialized) {
+				read_mono_debugger_info (runner.Inferior);
+				initialized = true;
+			}
+
 			if (signal == runner.Inferior.StopSignal) {
 				runner.Inferior.SetSignal (0, false);
 				return true;
@@ -1679,6 +1677,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if ((signal != 0) || (address != notification_address))
 				return false;
+
+			do_update_symbol_table (runner.Inferior);
 
 			return true;
 		}
