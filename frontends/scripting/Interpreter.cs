@@ -29,21 +29,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[AttributeUsage (AttributeTargets.Class)]
-	public class HelpAttribute : Attribute
-	{
-		string text;
-
-		public HelpAttribute (string text)
-		{
-			this.text = text;
-		}
-
-		public string Text {
-			get { return text; }
-		}
-	}
-
 	public abstract class Interpreter
 	{
 		DebuggerBackend backend;

@@ -7,6 +7,7 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Reflection;
+using Mono.Debugger.Frontends.Scripting;
 
 namespace CL
 {
@@ -19,6 +20,30 @@ namespace CL
 		public CommandError (string message, params object[] args)
 			: this (String.Format (message, args))
 		{ }
+	}
+
+	public enum CommandFamily {
+		Running,
+		Breakpoints,
+		Catchpoints,
+		Threads,
+		Stack,
+		Files,
+		Data,
+		Internal,
+		Obscure,
+		Support
+	}
+
+	public interface IDocumentableCommand {
+		/* the class of this command (breakpoint, running, threads, etc) */
+		CL.CommandFamily Family {get; }
+
+		/* a short blurb */
+		string Description {get; }
+
+		/* a long blurb */
+		string Documentation {get; }
 	}
 
 	public abstract class Command {
@@ -43,9 +68,30 @@ namespace CL
 	}
 
 	public class Engine {
-		Hashtable commands = new Hashtable ();
+		public readonly string[] CommandFamilyBlurbs;
+		public readonly ArrayList[] CommandsByFamily;
+		public readonly Hashtable Commands = new Hashtable ();
+		public readonly Hashtable Aliases = new Hashtable ();
 
-		public void Register (string s, Type t)
+		public Engine () {
+
+		  CommandsByFamily = new ArrayList[Enum.GetValues(typeof (CommandFamily)).Length];
+		  CommandFamilyBlurbs = new string [Enum.GetValues(typeof (CommandFamily)).Length];
+		  
+
+		  CommandFamilyBlurbs[ (int)CommandFamily.Running ] = "Running the program";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Breakpoints ] = "Making program stops at certain points";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Catchpoints ] = "Dealing with exceptions";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Threads ] = "Dealing with multiple threads";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Stack ] = "Examining the stack";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Files ] = "Specifying and examining files";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Data ] = "Examining data";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Internal ] = "Maintenance commands";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Obscure ] = "Obscure features";
+		  CommandFamilyBlurbs[ (int)CommandFamily.Support ] = "Support facilities";
+		}
+
+		public void RegisterCommand (string s, Type t)
 		{
 			if (!t.IsSubclassOf (typeof (Command)))
 				throw new Exception ("Need a type derived from CL.Command");
@@ -53,14 +99,39 @@ namespace CL
 				throw new Exception (
 					"Some clown tried to register an abstract class");
 
-			commands [s] = t;
+			CL.IDocumentableCommand c = Activator.CreateInstance (t) as CL.IDocumentableCommand;
+			if (c != null) {
+				ArrayList cmds;
+
+				cmds = CommandsByFamily[(int)c.Family] as ArrayList;
+				if (cmds == null)
+					CommandsByFamily[(int)c.Family] = cmds = new ArrayList();
+
+				cmds.Add (s);
+			}
+
+			Commands [s] = t;
 		}
-		
+
+		public void RegisterAlias (string s, Type t)
+		{
+			if (!t.IsSubclassOf (typeof (Command)))
+				throw new Exception ("Need a type derived from CL.Command");
+			else if (t.IsAbstract)
+				throw new Exception (
+					"Some clown tried to register an abstract class");
+
+			Aliases [s] = t;
+		}
+
 		public Command Get (string s, ArrayList args)
 		{
-			Type t = (Type) commands [s];
-			if (t == null)
-				return null;
+			Type t = (Type) Commands [s];
+			if (t == null) {
+				t = (Type) Aliases [s];
+				if (t == null)
+			  		return null;
+			}
 
 			Command c = (Command) Activator.CreateInstance (t);
 			PropertyInfo [] pi = t.GetProperties ();

@@ -1,3 +1,20 @@
+2004-10-22  Chris Toshok  <toshok@ximian.com>
+
+	* frontends/command-line/Main.cs: differentiate between commands
+	and aliases (RegisterCommand/RegisterAlias).
+
+	* frontends/scripting/Interpreter.cs: remove the HelpAttribute.
+
+	* frontends/command-line/CL.cs: add the CommandFamily enum, and
+	differentiate between "aliases" and "commands".  Also, expose the
+	commands and aliases hashes as readonly so the HelpCommand can get
+	at them.  Also, When commands are registered, build up the list of
+	commands by family.
+
+	* frontends/scripting/Command.cs: add help docs (rather spartan at
+	the moment) for all commands, and make the HelpCommand generate
+	all its output from these docs.
+
 2004-10-22  Martin Baulig  <martin@ximian.com>
 
 	* wrapper/wrapper.c (debugger_get_virtual_method): Don't call
