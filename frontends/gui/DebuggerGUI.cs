@@ -278,11 +278,8 @@ namespace Mono.Debugger.GUI
 
 #if FALSE
 			variable_display.SetBackend (backend, process);
-			module_display.SetBackend (backend, process);
 			hex_editor.SetBackend (backend, process);
-			memory_maps_display.SetBackend (backend, process);
 			breakpoint_manager.SetBackend (backend, process);
-			disassembler_view.SetBackend (backend, process);
 #endif
 			
 			process.StateChanged += new StateChangedHandler (BackendStateChanged);
@@ -295,6 +292,9 @@ namespace Mono.Debugger.GUI
 			source_status.SetBackend (backend, process);
 			backtrace_view.SetBackend (backend, process);
 			source_manager.SetBackend (backend, process);
+			disassembler_view.SetBackend (backend, process);
+			module_display.SetBackend (backend, process);
+			memory_maps_display.SetBackend (backend, process);
 		}
 
 		void UpdateGUIState (TargetState state)
