@@ -1,5 +1,10 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* frontends/gui/DebuggerGUI.cs (DebuggerGUI.LoadProgram): Call
+	SetBackend() on the source_view.
+
+2002-09-18  Martin Baulig  <martin@gnome.org>
+
 	* class/ObjectCache.cs: New public class.  Keeps a hard reference
 	to an object and transforms the hard reference into a weak
 	reference after a timeout.

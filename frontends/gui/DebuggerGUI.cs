@@ -189,7 +189,7 @@ namespace Mono.Debugger.GUI
 			backtrace_view.SetBackend (backend);
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
-			
+			source_view.SetBackend (backend);
 		}
 		
 		//
