@@ -259,8 +259,13 @@ namespace Mono.Debugger.Architecture
 
 		public void UpdateSharedLibraryInfo ()
 		{
-			if (!read_dynamic_info ())
+			// This fails if it's a statically linked executable.
+			try {
+				if (!read_dynamic_info ())
+					return;
+			} catch {
 				return;
+			}
 
 			bool first = true;
 			TargetAddress map = first_link_map;
@@ -497,7 +502,7 @@ namespace Mono.Debugger.Architecture
 			try {
 				if (!bfd_glue_get_section_by_name (bfd, name, out data))
 					throw new SymbolTableException (
-						"Can't get bfd section `%s'", name);
+						"Can't get bfd section {0}", name);
 
 				return (InternalSection) Marshal.PtrToStructure (
 					data, typeof (InternalSection));
