@@ -1,5 +1,9 @@
 2003-03-09  Martin Baulig  <martin@ximian.com>
 
+	* test/TestSourceView.cs: Small test app for the Gtk.SourceView.
+
+2003-03-09  Martin Baulig  <martin@ximian.com>
+
 	* frontends/command-line/Interpreter.cs (ProcessCommand): Repeat
 	the last command when called with an empty string.
 
