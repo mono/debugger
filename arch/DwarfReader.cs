@@ -584,7 +584,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class DwarfNativeMethod : NativeMethod
+		protected class DwarfNativeMethod : MethodBase
 		{
 			DieCompileUnit comp_unit_die;
 			LineNumberEngine engine;
@@ -600,6 +600,12 @@ namespace Mono.Debugger.Architecture
 				this.comp_unit_die = subprog.comp_unit.DieCompileUnit;
 
 				factory = new SourceFileFactory ();
+			}
+
+			public override object MethodHandle {
+				get {
+					return this;
+				}
 			}
 
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -622,9 +628,7 @@ namespace Mono.Debugger.Architecture
 				Console.WriteLine ("FILE: {0} {1} {2} {3}", file, start_row, end_row,
 						   addresses.Count);
 
-				string dir = "/home/martin/monocvs/mono/mono/jit";
-
-				return factory.FindFile (String.Format ("{0}/{1}", dir, file));
+				return factory.FindFile (file);
 			}
 		}
 
@@ -658,7 +662,7 @@ namespace Mono.Debugger.Architecture
 				if (comp_unit_die.LineNumberOffset >= 0)
 					engine = new LineNumberEngine (
 						comp_unit_die.dwarf, comp_unit_die.LineNumberOffset,
-						list);
+						comp_unit_die.CompilationDirectory, list);
 
 				foreach (DieSubprogram subprog in list) {
 					DwarfNativeMethod native = new DwarfNativeMethod (subprog, engine);
@@ -679,6 +683,7 @@ namespace Mono.Debugger.Architecture
 			pointer_type		= 0x0f,
 			compile_unit		= 0x11,
 			structure_type		= 0x13,
+			comp_dir		= 0x1b,
 			inheritance		= 0x1c,
 			subrange_type		= 0x21,
 			access_declaration	= 0x23,
@@ -745,6 +750,7 @@ namespace Mono.Debugger.Architecture
 			protected bool default_is_stmt;
 			protected byte opcode_base;
 			protected int line_base, line_range;
+			protected ArrayList source_files;
 
 			long offset;
 
@@ -758,7 +764,7 @@ namespace Mono.Debugger.Architecture
 
 			int[] standard_opcode_lengths;
 			ArrayList include_directories;
-			protected ArrayList source_files;
+			string compilation_dir;
 			ArrayList methods;
 			Hashtable method_hash;
 
@@ -1069,12 +1075,14 @@ namespace Mono.Debugger.Architecture
 				// Console.WriteLine (String.Format (message, args));
 			}
 
-			public LineNumberEngine (DwarfReader dwarf, long offset, ArrayList methods)
+			public LineNumberEngine (DwarfReader dwarf, long offset, string compilation_dir,
+						 ArrayList methods)
 			{
 				this.dwarf = dwarf;
 				this.offset = offset;
 				this.reader = dwarf.DebugLineReader;
 				this.methods = methods;
+				this.compilation_dir = compilation_dir;
 
 				reader.Position = offset;
 				length = reader.ReadInitialLength ();
@@ -1128,9 +1136,15 @@ namespace Mono.Debugger.Architecture
 				end_row = stm.end_line;
 				addresses = stm.lines;
 
+				string dir_name;
 				if (file.Directory > 0)
+					dir_name = (string) include_directories [file.Directory - 1];
+				else
+					dir_name = compilation_dir;
+
+				if (dir_name != null)
 					return String.Format (
-						"{0}.{1}", (string) include_directories [file.Directory - 1],
+						"{0}{1}{2}", dir_name, Path.DirectorySeparatorChar,
 						file.FileName);
 				else
 					return file.FileName;
@@ -1560,6 +1574,7 @@ namespace Mono.Debugger.Architecture
 
 			long start_pc, end_pc;
 			string name;
+			string comp_dir;
 			bool is_continuous;
 
 			protected long line_offset;
@@ -1585,6 +1600,10 @@ namespace Mono.Debugger.Architecture
 						has_lines = true;
 						break;
 
+					case DwarfAttribute.comp_dir:
+						comp_dir = (string) attribute.Data;
+						break;
+
 					default:
 						break;
 					}
@@ -1601,6 +1620,12 @@ namespace Mono.Debugger.Architecture
 			public string ImageFile {
 				get {
 					return dwarf.FileName;
+				}
+			}
+
+			public string CompilationDirectory {
+				get {
+					return comp_dir;
 				}
 			}
 
