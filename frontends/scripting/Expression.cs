@@ -160,6 +160,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ProgramArgumentsExpression : Expression
+	{
+		string[] args;
+
+		public ProgramArgumentsExpression (string[] args)
+		{
+			this.args = args;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return args;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType(), String.Join (":", args));
+		}
+	}
+
 	public class ThreadGroupExpression : Expression
 	{
 		string name;

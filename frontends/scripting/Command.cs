@@ -95,27 +95,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class StartCommand : Command
 	{
-		string[] args;
-		int pid;
+		ProgramArgumentsExpression program_args_expr;
 
-		public StartCommand (string[] args)
+		public StartCommand (ProgramArgumentsExpression program_args_expr)
 		{
-			this.args = args;
-			this.pid = -1;
-		}
-
-		public StartCommand (string[] args, int pid)
-		{
-			this.args = args;
-			this.pid = pid;
+			this.program_args_expr = program_args_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (!context.IsSynchronous)
 				throw new ScriptingException ("This command cannot be used in the GUI.");
-			if (pid != -1)
-				throw new ScriptingException ("Attaching is not yet implemented.");
+
+			string[] args = (string []) program_args_expr.Resolve (context);
 			context.Start (args);
 		}
 	}

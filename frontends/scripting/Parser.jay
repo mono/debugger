@@ -161,7 +161,9 @@ command_loop
 	  }
 	;
 
-command
+command : generated_command | other_command | assert_command;
+
+generated_command
 	: CONTINUE process_expression
 	  {
 		$$ = new ContinueCommand ((ProcessExpression) $2);
@@ -274,13 +276,9 @@ command
 	  {
 		$$ = new DisassembleMethodCommand ((FrameExpression) $3);
 	  }
-	| START INTEGER program_arguments
+	| START program_arguments_expression
 	  {
-		$$ = new StartCommand ((string []) $3, (int) $2);
-	  }
-	| START program_arguments
-	  {
-		$$ = new StartCommand ((string []) $2);
+		$$ = new StartCommand ((ProgramArgumentsExpression) $2);
 	  }
 	| PROCESS process_expression
 	  {
@@ -294,21 +292,9 @@ command
 	  {
 		$$ = new StopProcessCommand ((ProcessExpression) $2);
 	  }
-	| SET BANG IDENTIFIER ASSIGN variable_expression
-	  {
-		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
-	  }
 	| MODULE module_list_expression module_operation_list_expression
 	  {
 		$$ = new ModuleOperationCommand ((ModuleListExpression) $2, (ModuleOperationListExpression) $3);
-	  }
-	| assert_command
-	  {
-		$$ = $1;
-	  }
-	| SAVE STRING
-	  {
-		$$ = new SaveCommand ((string) $2);
 	  }
 	| THREADGROUP CREATE STRING
 	  {
@@ -322,14 +308,6 @@ command
 	  {
 		$$ = new ThreadGroupRemoveCommand ((string) $3, (ProcessListExpression) $4);
 	  }
-	| HELP SHOW
-	  {
-		$$ = new HelpCommand ("show");
-	  }
-	| HELP
-	  {
-		$$ = new HelpCommand ("");
-	  }
 	| LIST source_expression
 	  {
 		$$ = new ListCommand ((SourceExpression) $2);
@@ -337,6 +315,17 @@ command
 	| LIST CONTINUE
 	  {
 		$$ = new ListCommand (null);
+	  }
+	;
+
+other_command
+	: SAVE STRING
+	  {
+		$$ = new SaveCommand ((string) $2);
+	  }
+	| SET BANG IDENTIFIER ASSIGN variable_expression
+	  {
+		$$ = new ScriptingVariableAssignCommand ((string) $3, (VariableExpression) $5);
 	  }
 	;
 
@@ -460,13 +449,12 @@ variable_expression
 	  }
 	;
 
-program_arguments
+program_arguments_expression
 	: program_arglist
 	  {
-		ArrayList args = (ArrayList) $1;
-		string[] retval = new string [args.Count];
-		args.CopyTo (retval, 0);
-		$$ = retval;
+		string[] args = new string [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (args, 0);
+		$$ = new ProgramArgumentsExpression (args);
 	  }
 	;
 
