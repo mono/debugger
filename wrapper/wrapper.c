@@ -156,8 +156,6 @@ initialize_debugger_support (void)
 		(&debugger_notification_address);
 	command_notification_function = mono_debug_create_notification_function
 		(&MONO_DEBUGGER__command_notification);
-
-	mono_debug_init (TRUE);
 }
 
 typedef struct 
@@ -180,10 +178,12 @@ debugger_thread_handler (gpointer user_data)
 	DebuggerThreadArgs *debugger_args = (DebuggerThreadArgs *) user_data;
 	MonoAssembly *assembly;
 	MonoImage *image;
-	MonoDebugHandle *debug;
 	int last_generation = 0;
 
 	MONO_DEBUGGER__debugger_thread = getpid ();
+
+	mono_debug_format = MONO_DEBUG_FORMAT_MONO;
+	mono_debug_init (mono_debug_format, TRUE, debugger_args->file, NULL);
 
 	assembly = mono_domain_assembly_open (debugger_args->domain, debugger_args->file);
 	if (!assembly){
@@ -191,8 +191,7 @@ debugger_thread_handler (gpointer user_data)
 		exit (1);
 	}
 
-	mono_debug_format = MONO_DEBUG_FORMAT_MONO;
-	debug = mono_debug_open (assembly, mono_debug_format, NULL);
+	mono_debug_init_2 (assembly);
 
 	/*
 	 * Get and compile the main function.
