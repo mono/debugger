@@ -84,6 +84,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("run", Token.RUN);
 			keywords.Add ("examine", Token.EXAMINE);
 			keywords.Add ("call", Token.CALL);
+			keywords.Add ("new", Token.NEW);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);
@@ -539,8 +540,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.DOT;
 				else if (c == '!')
 					return Token.BANG;
-				else if (c == '=')
+				else if (c == '=') {
+					dollar_seen = false;
 					return Token.ASSIGN;
+				}
 				else if (c == '*')
 					return Token.STAR;
 				else if (c == '+')

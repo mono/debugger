@@ -89,6 +89,12 @@ namespace Mono.Debugger
 			get;
 		}
 
+		ITargetMethodInfo[] Constructors {
+			get;
+		}
+
 		ITargetFunctionObject GetStaticMethod (StackFrame frame, int index);
+
+		ITargetFunctionObject GetConstructor (StackFrame frame, int index);
 	}
 }

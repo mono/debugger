@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Reflection;
+using R = System.Reflection;
 
 using Mono.Debugger.Backends;
 
@@ -9,34 +10,42 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
 		new MonoClass klass;
-		MethodInfo method_info;
+		R.MethodBase method_info;
 		TargetAddress method;
 		MonoType return_type;
 		MonoType[] parameter_types;
 		TargetAddress invoke_method;
 		MonoSymbolTable table;
+		bool has_return_type;
 
-		public MonoFunctionType (MonoClass klass, MethodInfo minfo, TargetBinaryReader info, MonoSymbolTable table)
-			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
+		public MonoFunctionType (MonoClass klass, R.MethodBase mbase, TargetBinaryReader info, MonoSymbolTable table)
+			: base (TargetObjectKind.Function, mbase.ReflectedType, 0)
 		{
 			this.klass = klass;
-			this.method_info = minfo;
+			this.method_info = mbase;
 			this.table = table;
 			this.method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 			int type_info = info.ReadInt32 ();
-			if (type_info != 0)
+			if (type_info != 0) {
+				R.MethodInfo minfo = (R.MethodInfo) mbase;
 				return_type = table.GetType (minfo.ReturnType, type_info);
+				has_return_type = minfo.ReturnType != typeof (void);
+			} else if (mbase is R.ConstructorInfo) {
+				R.ConstructorInfo cinfo = (R.ConstructorInfo) mbase;
+				return_type = klass;
+				has_return_type = true;
+			}
 
 			int num_params = info.ReadInt32 ();
 			parameter_types = new MonoType [num_params];
 
-			ParameterInfo[] parameters = minfo.GetParameters ();
+			ParameterInfo[] parameters = mbase.GetParameters ();
 			if (parameters.Length != num_params) {
 				throw new InternalError (
 					"MethodInfo.GetParameters() returns {0} parameters " +
 					"for method {1}, but the JIT has {2}",
-					parameters.Length, minfo.ReflectedType.Name + "." +
-					minfo.Name, num_params);
+					parameters.Length, mbase.ReflectedType.Name + "." +
+					mbase.Name, num_params);
 			}
 			for (int i = 0; i < num_params; i++) {
 				int param_info = info.ReadInt32 ();
@@ -75,7 +84,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool HasReturnValue {
 			get {
-				return method_info.ReturnType != typeof (void);
+				return has_return_type;
 			}
 		}
 

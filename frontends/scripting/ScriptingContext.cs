@@ -876,6 +876,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 					else
 						Print ("  It has a method: void {0}", method.FullName);
 				}
+				foreach (ITargetMethodInfo method in tstruct.StaticMethods) {
+					if (method.Type.HasReturnValue)
+						Print ("  It has a static method: {0} {1}", method.Type.ReturnType.Name, method.FullName);
+					else
+						Print ("  It has a static method: void {0}", method.FullName);
+				}
+				foreach (ITargetMethodInfo method in tstruct.Constructors) {
+					Print ("  It has a constructor: {0}", method.FullName);
+				}
 				return;
 			}
 

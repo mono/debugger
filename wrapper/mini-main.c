@@ -3,6 +3,8 @@
 #include <mono/jit/jit.h>
 #include <locale.h>
 
+extern gboolean mono_break_on_exc;
+
 extern MonoDomain *
 mono_init_debugger (const char *file, const char *opt_flags);
 
@@ -19,6 +21,8 @@ main (int argc, char **argv, char **envp)
 
 	g_assert (argc >= 3);
 	file = argv [2];
+
+	mono_break_on_exc = TRUE;
 
 	domain = mono_init_debugger (file, argv [1]);
 

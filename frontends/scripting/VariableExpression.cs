@@ -135,6 +135,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetObject target_object = ResolveVariable (context);
 
+			ITargetStructObject sobj = target_object as ITargetStructObject;
+			if (sobj != null) {
+				ITargetStructObject tobj = obj as ITargetStructObject;
+				string kind = sobj.Type.Kind == TargetObjectKind.Class ? "class" : "struct";
+				if (tobj == null)
+					throw new ScriptingException (
+						"Type mismatch: cannot assign non-{0} object to {1} variable {2}.",
+						kind, kind, Name);
+
+				if (sobj.Type != tobj.Type)
+					throw new ScriptingException (
+						"Type mismatch: cannot assign expression of type `{0}' to variable {1}, " +
+						"which is of type `{2}'.", tobj.Type.Name, Name, sobj.Type.Name);
+			}
+
 			ITargetFundamentalObject fundamental = target_object as ITargetFundamentalObject;
 			if ((fundamental == null) || !fundamental.HasObject)
 				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
@@ -412,8 +427,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return null;
 		}
 
-		protected ITargetMethodInfo OverloadResolve (ScriptingContext context, ITargetStructType stype,
-							     Expression[] args, ArrayList candidates)
+		public static ITargetMethodInfo OverloadResolve (ScriptingContext context, ITargetStructType stype,
+								 Expression[] args, ArrayList candidates)
 		{
 			// We do a very simple overload resolution here
 			VariableExpression[] vargs = new VariableExpression [args.Length];
@@ -815,6 +830,79 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Cannot invoke method `{0}': {1}", Name, ex.Message);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException ("Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
+			}
+		}
+	}
+
+	public class NewExpression : VariableExpression
+	{
+		FrameExpression frame_expr;
+		string type_name;
+		Expression[] arguments;
+
+		public NewExpression (FrameExpression frame_expr, string type_name, Expression[] arguments)
+		{
+			this.frame_expr = frame_expr;
+			this.type_name = type_name;
+			this.arguments = arguments;
+		}
+
+		public override string Name {
+			get { return String.Format (" new {0} ()", type_name); }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+
+			return frame.Frame.Language.LookupType (frame.Frame, type_name);
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			return Invoke (context, true);
+		}
+
+		public ITargetObject Invoke (ScriptingContext context, bool need_retval)
+		{
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+
+			ITargetType type = frame.Frame.Language.LookupType (frame.Frame, type_name);
+			if (type == null)
+				throw new ScriptingException ("No such type: `{0}'", type_name);
+
+			ITargetStructType stype = type as ITargetStructType;
+			if (stype == null)
+				throw new ScriptingException ("Type `{0}' is not a struct or class.", type_name);
+
+			ArrayList candidates = new ArrayList ();
+			candidates.AddRange (stype.Constructors);
+
+			ITargetMethodInfo method;
+			if (candidates.Count == 0)
+				throw new ScriptingException ("Type `{0}' has no public constructor.", type_name);
+			else if (candidates.Count == 1)
+				method = (ITargetMethodInfo) candidates [0];
+			else
+				method = StructAccessExpression.OverloadResolve (context, stype, arguments, candidates);
+
+			if (method == null)
+				throw new ScriptingException ("Type `{0}' has no constructor which is applicable for your " +
+							      "list of arguments.", type_name);
+
+			ITargetFunctionObject ctor = stype.GetConstructor (frame.Frame, method.Index);
+
+			object[] args = new object [arguments.Length];
+			for (int i = 0; i < arguments.Length; i++)
+				args [i] = arguments [i].Resolve (context);
+
+			try {
+				return ctor.Type.InvokeStatic (frame.Frame, args);
+			} catch (MethodOverloadException ex) {
+				throw new ScriptingException ("Cannot invoke constructor on type `{0}': {1}", type_name, ex.Message);
+			} catch (TargetInvocationException ex) {
+				throw new ScriptingException ("Invocation of type `{0}'s constructor raised an exception: {1}",
+							      type_name, ex.Message);
 			}
 		}
 	}

@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Reflection;
+using R = System.Reflection;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
@@ -10,13 +11,13 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		MonoFieldInfo[] fields, static_fields;
 		MonoPropertyInfo[] properties, static_properties;
-		MonoMethodInfo[] methods, static_methods;
+		MonoMethodInfo[] methods, static_methods, ctors;
 		TargetBinaryReader info;
 		internal readonly MonoSymbolTable Table;
 		bool is_valuetype;
 		int num_fields, num_static_fields, num_properties, num_static_properties, num_methods, num_static_methods;
-		int field_info_size, static_field_info_size, property_info_size, static_property_info_size;
-		int method_info_size, static_method_info_size;
+		int num_ctors, field_info_size, static_field_info_size, property_info_size, static_property_info_size;
+		int method_info_size, static_method_info_size, ctor_info_size;
 		long offset;
 
 		public readonly Type Type;
@@ -62,6 +63,8 @@ namespace Mono.Debugger.Languages.CSharp
 			method_info_size = info.ReadInt32 ();
 			num_static_methods = info.ReadInt32 ();
 			static_method_info_size = info.ReadInt32 ();
+			num_ctors = info.ReadInt32 ();
+			ctor_info_size = info.ReadInt32 ();
 			this.info = info;
 			this.offset = info.Position;
 			this.Type = type;
@@ -96,6 +99,8 @@ namespace Mono.Debugger.Languages.CSharp
 			method_info_size = old_class.method_info_size;
 			num_static_methods = old_class.num_static_methods;
 			static_method_info_size = old_class.static_method_info_size;
+			num_ctors = info.ReadInt32 ();
+			ctor_info_size = info.ReadInt32 ();
 			info = old_class.info;
 			offset = old_class.offset;
 			this.Type = type;
@@ -583,12 +588,53 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		void init_ctors ()
+		{
+			if (ctors != null)
+				return;
+
+			info.Position = offset + field_info_size + property_info_size + method_info_size +
+				static_field_info_size + static_property_info_size + static_method_info_size;
+			ctors = new MonoMethodInfo [num_ctors];
+
+			ConstructorInfo[] mono_ctors = EffectiveType.GetConstructors (
+				BindingFlags.DeclaredOnly | BindingFlags.Instance |
+				BindingFlags.Public);
+
+			ArrayList list = new ArrayList ();
+			for (int i = 0; i < mono_ctors.Length; i++) {
+				list.Add (mono_ctors [i]);
+			}
+
+			if (list.Count != num_ctors)
+				throw new InternalError (
+					"Type.GetConstructors() returns {0} ctors, but the JIT has {1}",
+					list.Count, num_ctors);
+
+			for (int i = 0; i < num_ctors; i++)
+				ctors [i] = new MonoMethodInfo (
+					this, i, (ConstructorInfo) list [i], true, info, Table);
+		}
+
+		ITargetMethodInfo[] ITargetStructType.Constructors {
+			get {
+				return Constructors;
+			}
+		}
+
+		protected MonoMethodInfo[] Constructors {
+			get {
+				init_ctors ();
+				return ctors;
+			}
+		}
+
 		protected class MonoMethodInfo : MonoStructMember, ITargetMethodInfo
 		{
-			public readonly MethodInfo MethodInfo;
+			public readonly R.MethodBase MethodInfo;
 			public readonly MonoFunctionType FunctionType;
 
-			internal MonoMethodInfo (MonoClass klass, int index, MethodInfo minfo, bool is_static,
+			internal MonoMethodInfo (MonoClass klass, int index, R.MethodBase minfo, bool is_static,
 						 TargetBinaryReader info, MonoSymbolTable table)
 				: base (klass, minfo, index, is_static)
 			{
@@ -645,6 +691,17 @@ namespace Mono.Debugger.Languages.CSharp
 
 			try {
 				return static_methods [index].FunctionType.GetStaticObject (frame);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}
+
+		public ITargetFunctionObject GetConstructor (StackFrame frame, int index)
+		{
+			init_ctors ();
+
+			try {
+				return ctors [index].FunctionType.GetStaticObject (frame);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

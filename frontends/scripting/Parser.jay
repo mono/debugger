@@ -129,6 +129,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token RUN
 %token EXAMINE
 %token CALL
+%token NEW
 
 %token NATIVE
 %token SELECT
@@ -523,6 +524,10 @@ variable_expression
 	| variable_expression OPEN_PARENS argument_list CLOSE_PARENS
 	  {
 		$$ = new InvocationExpression ((VariableExpression) $1, (Expression []) $3);
+	  }
+	| NEW frame_prefix type_name OPEN_PARENS argument_list CLOSE_PARENS
+	  {
+		$$ = new NewExpression ((FrameExpression) $2, (string) $3, (Expression []) $5);
 	  }
 	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
 	  {

@@ -1,3 +1,12 @@
+2003-09-07  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.Constructors): New property.
+	(ITargetStructType.GetConstructor): New method.
+
+	* frontends/scripting/Parser.jay (variable_expression): Added `new
+	type (args)' syntax to invoke a constructor.
+
 2003-08-12  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs (StackFrame.GetRegister): Removed.
