@@ -1,3 +1,14 @@
+2004-10-21  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoMethod.GetTypeSignature): fall through in the TypeCode.Object
+	case so we use t.FullName.
+	(MonoMethod.RegisterLoadHandler): allow multiple load handlers per method,
+	just make sure to only insert the load handler breakpoint (the one
+	that we hit when first entering the method that allows us to
+	insert all the user created ones) once.  Before this change you
+	could only insert one user breakpoint on an unjitted method.
+
 2004-10-21  Martin Baulig  <martin@ximian.com>
 
 	* backends/ILanguageBackend.cs

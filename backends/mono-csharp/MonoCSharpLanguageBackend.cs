@@ -2059,9 +2059,8 @@ namespace Mono.Debugger.Languages.CSharp
 				case TypeCode.String:
 					return "string";
 				case TypeCode.Object:
-					return "object";
 				default:
-					return t.Name;
+					return t.FullName;
 				}
 			}
 
@@ -2083,20 +2082,20 @@ namespace Mono.Debugger.Languages.CSharp
 				sb.Append (")");
 				string full_name = sb.ToString ();
 
-				if (load_handlers != null)
-					throw new TargetException (
-						TargetError.AlreadyHaveBreakpoint,
-						"Already have a breakpoint on method {0}.",
-						full_name);
+				if (load_handlers == null) {
+					/* only insert the load handler breakpoint once */
+					reader.Table.CSharpLanguage.InsertBreakpoint (
+						      process, full_name,
+						      new BreakpointHandler (breakpoint_hit),
+						      null);
+				 
+					load_handlers = new Hashtable ();
+				}
 
+				/* but permit lots of handlers so we
+				 * can insert multiple breakpoints in
+				 * an unjitted method */
 				HandlerData data = new HandlerData (this, handler, user_data);
-
-				load_handlers = new Hashtable ();
-
-				reader.Table.CSharpLanguage.InsertBreakpoint (
-					process, full_name,
-					new BreakpointHandler (breakpoint_hit),
-					null);
 
 				load_handlers.Add (data, true);
 				return data;
