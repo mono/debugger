@@ -1,5 +1,14 @@
 2004-06-23  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (PrintFrameCommand): Only derive
+	from ProcessCommand, not from FrameCommand.  Parse the arguments
+	to get the (optional) frame number.
+	(SelectProcessCommand): Only derive from DebuggerCommand, not from
+	ProcessCommand.  Parse the arguments to get the (optional) process
+	number.	
+
+2004-06-23  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.h
 	(mono_debugger_server_insert_hw_breakpoint): Automatically search
 	for a free debug register and return it in `idx' (made this an

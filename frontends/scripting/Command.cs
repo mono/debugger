@@ -319,11 +319,33 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 
 	[ShortDescription("Print the current stack frame.")]
-	public class PrintFrameCommand : FrameCommand
+	public class PrintFrameCommand : ProcessCommand
 	{
+		int index = -1;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Argument == "")
+				return true;
+
+			try {
+				index = (int) UInt32.Parse (Argument);
+			} catch {
+				context.Print ("Frame number expected.");
+				return false;
+			}
+
+			return true;
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = ResolveFrame (context);
+			ProcessHandle process = ResolveProcess (context);
+			context.ResetCurrentSourceCode ();
+
+			if (index >= 0)
+				process.CurrentFrameIndex = index;
+			FrameHandle frame = process.CurrentFrame;
 
 			if (context.Interpreter.IsScript)
 				context.Print (frame);
@@ -467,11 +489,33 @@ namespace Mono.Debugger.Frontends.Scripting
 	      "With a process argument, make that process the current process.\n" +
 	      "This is the process which is used if you do not explicitly specify\n" +
 	      "a process (see `help process_expression' for details).\n")]
-	public class SelectProcessCommand : ProcessCommand
+	public class SelectProcessCommand : DebuggerCommand
 	{
+		int index = -1;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Argument == "")
+				return true;
+
+			try {
+				index = (int) UInt32.Parse (Argument);
+			} catch {
+				context.Print ("Process number expected.");
+				return false;
+			}
+
+			return true;
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
+			ProcessHandle process;
+			if (index >= 0)
+				process = context.Interpreter.GetProcess (index);
+			else
+				process = context.CurrentProcess;
+
 			context.CurrentProcess = process;
 			context.Print (process);
 		}
