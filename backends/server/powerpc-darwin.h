@@ -9,8 +9,11 @@
 #include <mach/mach_error.h>
 #include <mach/vm_map.h>
 
-ServerCommandError
+static ServerCommandError
 _powerpc_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs);
+
+static ServerCommandError
+_powerpc_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs);
 
 static void
 _powerpc_setup_inferior (ServerHandle *handle, gboolean is_main);
