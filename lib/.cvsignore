@@ -3,3 +3,5 @@ Makefile.in
 *.exe
 *.dll
 *.config
+mdb
+mono-debug
