@@ -1,5 +1,9 @@
 2004-12-14  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs: nuke CommandError.
+
+2004-12-14  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Command.cs (Command.Complete): add parameter completion
 	here - for instance, you type "command -<tab><tab>" and it'll list
 	"command"'s possible arguments.

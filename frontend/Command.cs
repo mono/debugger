@@ -23,17 +23,6 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class CommandError : Exception
-	{
-		public CommandError (string message)
-			: base (message)
-		{ }
-
-		public CommandError (string message, params object[] args)
-			: this (String.Format (message, args))
-		{ }
-	}
-
 	public enum CommandFamily {
 		Running,
 		Breakpoints,
