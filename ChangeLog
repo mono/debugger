@@ -1,5 +1,9 @@
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs (HelpCommand): Removed.
+
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay (command): Splitted into
 	`generated_command', `other_command' and `assert_command' and
 	removed the "help" command.

@@ -658,57 +658,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class HelpCommand : Command
-	{
-		string type;
-		
-		public HelpCommand (string t)
-		{
-			type = t;
-		}
-		
-		protected override void DoExecute (ScriptingContext context)
-		{
-			switch (type){
-			case "show":
-				context.Print (
-					"show processes          Processes\n" +
-					"show registers [p][f]    CPU register contents for [p]rocess/[f]rame\n"+
-					"show parameters [p][f]  Parameters for [p]rocess/[f]rame\n"+
-					"show locals [p][f]      Local variables for [p]rocess/[f]rame\n"+
-					"show modules            The list of loaded modules\n" +
-					"show threadgroups       The list of threadgroups\n"+
-					"show type <expr>        displays the type for an expression\n");
-				break;
-			case "":
-				context.Print (
-					"    backtrace            prints out the backtrace\n" +
-					"    frame [proc][fn]     Selects frame\n" + 
-					"    c, continue          continue execution\n" +
-					"    s, step              single steps\n" +
-					"    stepi                single step, at instruction level\n" + 
-					"    n, next              next line\n" +
-					"    nexti                next line, at instruction level\n" +
-					"    finish               runs until the end of the current method\n" + 
-					"    up [N]               \n" +
-					"    down [N]             \n" +
-					"    kill PID             \n" +
-					"    show OPT             Shows some information, use help show for details\n" +
-					"    print expr           Prints the value of expression\n" + 
-					"    \n" +
-					"Breakpoints:\n" +
-					"    break [tg][func]     inserts a breakpoint, use help break\n" +
-					"    breakpoint           manages the breakoints, use help break\n" +
-					"    \n" +	          
-					"    print EXPR           Prints the expression\n" +
-					"    quit                 quits the debugger");
-				break;
-			default:
-				break;
-			}
-		}
-	}
-
 	public class ListCommand : Command
 	{
 		SourceExpression source_expr;
