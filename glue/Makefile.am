@@ -11,7 +11,7 @@ libmonodebuggerreadline_la_SOURCES = \
 	mono-debugger-readline.c	\
 	mono-debugger-readline.h
 
-libmonodebuggerreadline_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ -lreadline @READLINE_DEPLIBS@
+libmonodebuggerreadline_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ @READLINE_DEPLIBS@
 
 INCLUDES = @BASE_DEPENDENCIES_CFLAGS@
 

@@ -1,5 +1,13 @@
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
+	* configure.in (--disable-readline): New command line argument to
+	disable the use of GNU readline.
+
+	* glue/mono-debugger-readline.c: Don't use readline if we don't
+	have it.  Only set the GIOChannel flags on startup.
+
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
 	* glue/bfdglue.c (bfd_glue_core_file_elfi386_get_registers):
 	Changed the type of the `regs' argument to `gpointer *' to make it
 	portable.

@@ -83,7 +83,7 @@ AC_SUBST(BASE_DEPENDENCIES_CFLAGS)
 AC_SUBST(BASE_DEPENDENCIES_LIBS)
 
 ## Versions of dependencies
-PKG_CHECK_MODULES(SERVER_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
+PKG_CHECK_MODULES(SERVER_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
 AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
@@ -107,23 +107,31 @@ dnl
 dnl See if readline needs -ltermcap
 dnl
 
-LIBS="-lreadline"
-CFLAGS=""
+AC_MSG_CHECKING([if using the readline library is requested])
+AC_ARG_ENABLE(readline, [  --disable-readline       don't use GNU readline], use_readline=$enableval, use_readline=yes)
+AC_MSG_RESULT($use_readline)
+if test "x$use_readline" = "xyes"; then
+	AC_DEFINE(USE_READLINE,1,[Whether to use GNU readline])
 
-AC_TRY_LINK(,,[
-READLINE_DEPLIBS=
-],[
-	LIBS="$LIBS -ltermcap"
+	old_LIBS=$LIBS
+	LIBS="-lreadline"
+
 	AC_TRY_LINK(,,[
-		READLINE_DEPLIBS="-ltermcap"
+	READLINE_DEPLIBS="-lreadline"
 	],[
-		AC_MSG_ERROR([Cannot figure out how to link with the readline library; see config.log for more information])
+		LIBS="$LIBS -ltermcap"
+		AC_TRY_LINK(,,[
+			READLINE_DEPLIBS="-lreadline -ltermcap"
+		],[
+			AC_MSG_ERROR([Cannot figure out how to link with the readline library; see config.log for more information])
+		])
 	])
-])
 
+	LIBS=$old_LIBS
+else
+	READLINE_DEPLIBS=	
+fi
 AC_SUBST(READLINE_DEPLIBS)
-LIBS=""
-CFLAGS=""
 
 dnl
 dnl Quick hack

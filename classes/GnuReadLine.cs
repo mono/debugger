@@ -7,7 +7,10 @@ namespace Mono.Debugger
 	public class GnuReadLine
 	{
 		[DllImport("libmonodebuggerreadline")]
-		extern static void mono_debugger_readline_init ();
+		extern static void mono_debugger_readline_static_init ();
+
+		[DllImport("libmonodebuggerreadline")]
+		extern static void mono_debugger_readline_init (IntPtr channel);
 
 		[DllImport("libmonodebuggerreadline")]
 		extern static int mono_debugger_readline_is_a_tty (int fd);
@@ -23,13 +26,15 @@ namespace Mono.Debugger
 
 		static GnuReadLine ()
 		{
-			mono_debugger_readline_init ();
+			mono_debugger_readline_static_init ();
 		}
 
 		public GnuReadLine (IOChannel channel, string prompt)
 		{
 			this.channel = channel;
 			this.prompt = prompt;
+
+			mono_debugger_readline_init (channel.Channel);
 		}
 
 		public static bool IsTerminal (int fd)
