@@ -6,7 +6,7 @@ using Glade;
 
 class ProgramToDebug {
 	FileEntry program;
-	Entry working_dir, arguments;
+	Gtk.Entry working_dir, arguments;
 
 	Dialog d;
 	
@@ -15,8 +15,8 @@ class ProgramToDebug {
 		d = (Dialog) gxml ["program-open-dialog"];
 		
 		program = (FileEntry) gxml ["program-to-debug-entry"];
-		working_dir = (Entry) gxml ["working-directory-entry"];
-		arguments = (Entry) gxml ["arguments-entry"];
+		working_dir = (Gtk.Entry) gxml ["working-directory-entry"];
+		arguments = (Gtk.Entry) gxml ["arguments-entry"];
 	}
 
 	public bool RunDialog (out string res_program, out string res_args, out string res_working_dir)
