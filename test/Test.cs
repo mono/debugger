@@ -14,7 +14,7 @@ class X
 		return c;
 	}
 
-	static long ArrayTest (int[,,] a, long [] b)
+	static long ArrayTest (int[,,] a, long[] b, string[,] s)
 	{
 		return 29;
 	}
@@ -27,7 +27,9 @@ class X
 			      { { -5, -6, -7 }, { -8, -2, -4}, { -6, -1, -9 }, { -10, -50, -200 } } };
 		long[] b = { 59, 8, -19 };
 
-		long c = ArrayTest (a, b);
+		string[,] test = { { "Hello", "World" }, { "Ximian", "Monkeys" } };
+
+		long c = ArrayTest (a, b, test);
 		DateTime time = DateTime.Now;
 		int d = x.Test (ref c, true, 59, -18, 3.14F, time, Foo.B);
 		Console.WriteLine (d);

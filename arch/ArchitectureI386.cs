@@ -60,15 +60,23 @@ namespace Mono.Debugger
 			byte address_byte = reader.ReadByte ();
 			byte register;
 			int disp;
+			bool dereference_addr;
 
 			if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 1)) {
 				register = (byte) (address_byte & 0x07);
 				disp = reader.ReadByte ();
 				insn_size = 3;
+				dereference_addr = true;
 			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 2)) {
 				register = (byte) (address_byte & 0x07);
 				disp = reader.ReadInteger ();
 				insn_size = 6;
+				dereference_addr = true;
+			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 3)) {
+				register = (byte) (address_byte & 0x07);
+				disp = 0;
+				insn_size = 2;
+				dereference_addr = false;
 			} else {
 				insn_size = 0;
 				return TargetAddress.Null;
@@ -109,7 +117,10 @@ namespace Mono.Debugger
 
 			TargetAddress vtable_addr = new TargetAddress (inferior, addr + disp);
 
-			return inferior.ReadAddress (vtable_addr);
+			if (dereference_addr)
+				return inferior.ReadAddress (vtable_addr);
+			else
+				return vtable_addr;
 		}
 
 		public TargetAddress GetTrampoline (TargetAddress location,
