@@ -162,43 +162,43 @@ command_loop
 	;
 
 command
-	: CONTINUE opt_process
+	: CONTINUE process_expression
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Continue);
 	  }
-	| STEP opt_process
+	| STEP process_expression
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Step);
 	  }
-	| NEXT opt_process
+	| NEXT process_expression
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Next);
 	  }
-	| STEPI opt_process
+	| STEPI process_expression
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.StepInstruction);
 	  }
-	| NEXTI opt_process
+	| NEXTI process_expression
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.NextInstruction);
 	  }
-	| FINISH opt_process
+	| FINISH process_expression
 	  {
 		$$ = new StepCommand ((ProcessExpression) $2, WhichStepCommand.Finish);
 	  }
-	| BACKTRACE opt_process
+	| BACKTRACE process_expression
 	  {
 		$$ = new BacktraceCommand ((ProcessExpression) $2);
 	  }
-	| UP opt_process
+	| UP process_expression
 	  {
 		$$ = new UpCommand ((ProcessExpression) $2);
 	  }
-	| DOWN opt_process
+	| DOWN process_expression
 	  {
 		$$ = new DownCommand ((ProcessExpression) $2);
 	  }
-	| KILL opt_process
+	| KILL process_expression
 	  {
 		$$ = new KillProcessCommand ((ProcessExpression) $2);
 	  }
@@ -206,15 +206,15 @@ command
 	  {
 		$$ = new ShowProcessesCommand ();
 	  }
-	| SHOW REGISTERS opt_frame
+	| SHOW REGISTERS frame_expression
 	  {
 		$$ = new ShowRegistersCommand ((FrameExpression) $3);
 	  }
-	| SHOW PARAMETERS opt_frame
+	| SHOW PARAMETERS frame_expression
 	  {
 		$$ = new ShowParametersCommand ((FrameExpression) $3);
 	  }
-	| SHOW LOCALS opt_frame
+	| SHOW LOCALS frame_expression
 	  {
 		$$ = new ShowLocalsCommand ((FrameExpression) $3);
 	  }
@@ -248,7 +248,7 @@ command
 	  {
 		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
 	  }
-	| BREAK opt_thread_group source_expression
+	| BREAK thread_group_expression source_expression
 	  {
 		$$ = new BreakCommand ((ThreadGroupExpression) $2, (SourceExpression) $3);
 	  }
@@ -268,15 +268,15 @@ command
 	  {
 		$$ = new PrintCommand ((Expression) $2);
 	  }
-	| FRAME opt_frame
+	| FRAME frame_expression
 	  {
 		$$ = new FrameCommand ((FrameExpression) $2);
 	  }
-	| DISASSEMBLE opt_frame
+	| DISASSEMBLE frame_expression
 	  {
 		$$ = new DisassembleCommand ((FrameExpression) $2);
 	  }
-	| DISASSEMBLE METHOD opt_frame
+	| DISASSEMBLE METHOD frame_expression
 	  {
 		$$ = new DisassembleMethodCommand ((FrameExpression) $3);
 	  }
@@ -288,15 +288,15 @@ command
 	  {
 		$$ = new StartCommand ((string []) $2);
 	  }
-	| PROCESS opt_process
+	| PROCESS process_expression
 	  {
 		$$ = new SelectProcessCommand ((ProcessExpression) $2);
 	  }
-	| BACKGROUND opt_process
+	| BACKGROUND process_expression
 	  {
 		$$ = new BackgroundProcessCommand ((ProcessExpression) $2);
 	  }
-	| STOP opt_process
+	| STOP process_expression
 	  {
 		$$ = new StopProcessCommand ((ProcessExpression) $2);
 	  }
@@ -420,7 +420,7 @@ assert_command
 	;
 
 expression
-	: opt_frame PERCENT IDENTIFIER
+	: frame_expression PERCENT IDENTIFIER
 	  {
 		$$ = new RegisterExpression ((FrameExpression) $1, (string) $3);
 	  }
@@ -467,7 +467,7 @@ variable_expression
 	  {
 		$$ = new ScriptingVariableReference ((string) $2);
 	  }
-	| opt_frame DOLLAR IDENTIFIER
+	| frame_expression DOLLAR IDENTIFIER
 	  {
 		$$ = new VariableReferenceExpression ((FrameExpression) $1, (string) $3);
 	  }
@@ -512,7 +512,7 @@ program_arglist
 	  }
 	;
 
-opt_thread_group
+thread_group_expression
 	: /* empty */
 	  {
 		$$ = new ThreadGroupExpression ("main");
@@ -527,7 +527,7 @@ opt_thread_group
 	  }
 	;
 
-opt_process
+process_expression
 	: /* empty */
 	  {
 		$$ = new ProcessExpression (-1);
@@ -538,12 +538,12 @@ opt_process
 	  }
 	;	
 
-opt_frame
-	: opt_process /* empty */
+frame_expression
+	: process_expression /* empty */
 	  {
 		$$ = new FrameExpression ((ProcessExpression) $1, -1);
 	  }
-	| opt_process HASH INTEGER
+	| process_expression HASH INTEGER
 	  {
 		$$ = new FrameExpression ((ProcessExpression) $1, (int) $3);
 	  }
@@ -561,15 +561,15 @@ opt_line
 	;
 
 source_expression
-	: opt_frame
+	: frame_expression
 	  {
 		$$ = new SourceExpression ((FrameExpression) $1, null, -1);
 	  }
-	| opt_frame IDENTIFIER opt_line
+	| frame_expression IDENTIFIER opt_line
 	  {
 		$$ = new SourceExpression ((FrameExpression) $1, (string) $2, (int) $3);
 	  }
-	| opt_frame INTEGER
+	| frame_expression INTEGER
 	  {
 		$$ = new SourceExpression ((FrameExpression) $1, (int) $2);
 	  }
