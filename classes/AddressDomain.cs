@@ -85,7 +85,7 @@ namespace Mono.Debugger
 				throw new ObjectDisposedException ("AddressDomain");
 		}
 
-		protected virtual void Dispose (bool disposing)
+		private void Dispose (bool disposing)
 		{
 			if (!this.disposed) {
 				if (disposing) {
