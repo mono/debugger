@@ -365,6 +365,14 @@ public class SingleSteppingEngine : ThreadManager
 		WaitForCompletion (wait);
 	}
 
+	protected void SendCallbackCommand (Command command)
+	{
+		command_mutex.WaitOne ();
+		completed_event.WaitOne ();
+
+		SendAsyncCommand (command, true);
+	}
+
 	// <summary>
 	//   This method does two things:
 	//   a) It acquires the `command_mutex' (and blocks until it gets it).
@@ -565,6 +573,7 @@ public class SingleSteppingEngine : ThreadManager
 		public readonly OperationType Type;
 		public readonly TargetAddress Until;
 		public readonly RuntimeInvokeData RuntimeInvokeData;
+		public readonly CallMethodData CallMethodData;
 
 		public Operation (OperationType type)
 		{
@@ -588,6 +597,12 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			this.Type = OperationType.RuntimeInvoke;
 			this.RuntimeInvokeData = data;
+		}
+
+		public Operation (CallMethodData data)
+		{
+			this.Type = OperationType.CallMethod;
+			this.CallMethodData = data;
 		}
 
 		public StepMode StepMode;
@@ -619,7 +634,8 @@ public class SingleSteppingEngine : ThreadManager
 		StepLine,
 		NextLine,
 		StepFrame,
-		RuntimeInvoke
+		RuntimeInvoke,
+		CallMethod
 	}
 
 	protected delegate CommandResult CommandFunc (object data);
@@ -717,7 +733,7 @@ public class SingleSteppingEngine : ThreadManager
 		}
 
 		public TheEngine (SingleSteppingEngine sse, ProcessStart start)
-			: this (sse, Inferior.CreateInferior (sse.DebuggerBackend, start))
+			: this (sse, Inferior.CreateInferior (sse, start))
 		{
 			inferior.Run (true);
 			pid = inferior.PID;
@@ -980,6 +996,10 @@ public class SingleSteppingEngine : ThreadManager
 				do_runtime_invoke (operation.RuntimeInvokeData);
 				break;
 
+			case OperationType.CallMethod:
+				do_call_method (operation.CallMethodData);
+				break;
+
 			case OperationType.StepLine:
 				operation.StepFrame = get_step_frame ();
 				if (operation.StepFrame == null)
@@ -1012,6 +1032,12 @@ public class SingleSteppingEngine : ThreadManager
 
 		protected bool ProcessEvent (Inferior.ChildEvent cevent)
 		{
+			if (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK) {
+				bool ret;
+				if (handle_callback (cevent, out ret))
+					return ret;
+			}
+
 			TargetEventArgs result = process_child_event (cevent);
 
 		send_result:
@@ -1513,6 +1539,26 @@ public class SingleSteppingEngine : ThreadManager
 			current_operation = null;
 		}
 
+		bool callback_method_compiled (Callback cb, long data1, long data2)
+		{
+			Console.WriteLine ("COMPILED: {0:x}", data1);
+
+			TargetAddress trampoline = new TargetAddress (sse.AddressDomain, data1);
+			IMethod method = null;
+			if (current_symtab != null) {
+				sse.DebuggerBackend.UpdateSymbolTable ();
+				method = Lookup (trampoline);
+			}
+			if ((method == null) || !method.Module.StepInto) {
+				do_next ();
+				return false;
+			}
+
+			insert_temporary_breakpoint (trampoline);
+			do_continue ();
+			return true;
+		}
+
 		protected bool DoStep (bool first)
 		{
 			StepFrame frame = current_operation.StepFrame;
@@ -1551,18 +1597,12 @@ public class SingleSteppingEngine : ThreadManager
 				 * when entering the method.
 				 */
 				if (!trampoline.IsNull) {
-					if (current_symtab != null) {
-						sse.DebuggerBackend.UpdateSymbolTable ();
-						tmethod = Lookup (trampoline);
-					}
-					if ((tmethod == null) || !tmethod.Module.StepInto) {
-						do_next ();
-						return false;
-					}
-
-					insert_temporary_breakpoint (trampoline);
-					do_continue ();
-					return true;
+					do_callback (new Callback (
+						new CallMethodData (
+							frame.Language.CompileMethodFunc,
+							trampoline.Address, 0, null),
+						new CallbackFunc (callback_method_compiled)));
+					return false;
 				}
 
 				if (frame.Mode != StepMode.SingleInstruction) {
@@ -1672,19 +1712,127 @@ public class SingleSteppingEngine : ThreadManager
 			return new StepFrame (language, mode);
 		}
 
+		bool handle_callback (Inferior.ChildEvent cevent, out bool ret)
+		{
+			if ((current_callback == null) ||
+			    (cevent.Argument != current_callback.ID)) {
+				current_callback = null;
+				ret = false;
+				return false;
+			}
+
+			ret = current_callback.Func (
+				current_callback, cevent.Data1, cevent.Data2);
+			current_callback = null;
+			return true;
+		}
+
+		void do_callback (Callback cb)
+		{
+			if (current_callback != null)
+				throw new InternalError ();
+
+			current_callback = cb;
+			cb.Call (inferior);
+		}
+
+		Callback current_callback;
+
+		protected delegate bool CallbackFunc (Callback cb, long data1, long data2);
+
+		protected sealed class Callback
+		{
+			public readonly long ID;
+			public readonly CallMethodData Data;
+			public readonly CallbackFunc Func;
+
+			static int next_id = 0;
+
+			public Callback (CallMethodData data, CallbackFunc func)
+			{
+				this.ID = ++next_id;
+				this.Data = data;
+				this.Func = func;
+			}
+
+			public void Call (Inferior inferior)
+			{
+				switch (Data.Type) {
+				case CallMethodType.LongLong:
+					inferior.CallMethod (Data.Method, Data.Argument1,
+							     Data.Argument2, ID);
+					break;
+
+				case CallMethodType.LongString:
+					inferior.CallMethod (Data.Method, Data.Argument1,
+							     Data.StringArgument, ID);
+					break;
+
+				case CallMethodType.RuntimeInvoke:
+					RuntimeInvokeData rdata = (RuntimeInvokeData) Data.Data;
+					inferior.RuntimeInvoke (
+						rdata.Language.RuntimeInvokeFunc,
+						rdata.MethodArgument, rdata.ObjectArgument,
+						rdata.ParamObjects, ID);
+					break;
+
+				default:
+					throw new InvalidOperationException ();
+				}
+			}
+		}
+
 		void do_runtime_invoke (RuntimeInvokeData rdata)
 		{
 			check_inferior ();
 			frames_invalid ();
 
-			TargetAddress invoke = rdata.Language.CompileMethod (inferior, rdata.MethodArgument);
+			do_callback (new Callback (
+				new CallMethodData (rdata.Language.CompileMethodFunc,
+						    rdata.MethodArgument.Address, 0, rdata),
+				new CallbackFunc (callback_do_runtime_invoke)));
+		}
+
+		bool callback_do_runtime_invoke (Callback cb, long data1, long data2)
+		{
+			TargetAddress invoke = new TargetAddress (sse.AddressDomain, data1);
 
 			insert_temporary_breakpoint (invoke);
 
-			inferior.RuntimeInvoke (
-				rdata.Language.RuntimeInvokeFunc, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects);
+			do_callback (new Callback (
+				new CallMethodData ((RuntimeInvokeData) cb.Data.Data),
+				new CallbackFunc (callback_runtime_invoke_done)));
 
-			do_continue ();
+			return true;
+		}
+
+		bool callback_runtime_invoke_done (Callback cb, long data1, long data2)
+		{
+			RuntimeInvokeData rdata = (RuntimeInvokeData) cb.Data.Data;
+
+			rdata.InvokeOk = true;
+			rdata.ReturnObject = new TargetAddress (inferior.AddressDomain, data1);
+			if (data2 != 0)
+				rdata.ExceptionObject = new TargetAddress (inferior.AddressDomain, data2);
+			else
+				rdata.ExceptionObject = TargetAddress.Null;
+
+			return true;
+		}
+
+		void do_call_method (CallMethodData cdata)
+		{
+			do_callback (new Callback (
+				cdata, new CallbackFunc (callback_call_method)));
+		}
+
+		bool callback_call_method (Callback cb, long data1, long data2)
+		{
+			Console.WriteLine ("METHOD CALLED: {0} {1}", data1, data2);
+
+			cb.Data.Result = data1;
+
+			return true;
 		}
 
 		//
@@ -1699,6 +1847,57 @@ public class SingleSteppingEngine : ThreadManager
 		}
 	}
 
+	//
+	// Calling methods.
+	//
+
+	protected enum CallMethodType
+	{
+		LongLong,
+		LongString,
+		RuntimeInvoke
+	}
+
+	protected sealed class CallMethodData
+	{
+		public readonly CallMethodType Type;
+		public readonly TargetAddress Method;
+		public readonly long Argument1;
+		public readonly long Argument2;
+		public readonly string StringArgument;
+		public readonly object Data;
+		public object Result;
+
+		public CallMethodData (TargetAddress method, long arg, string sarg,
+				       object data)
+		{
+			this.Type = CallMethodType.LongString;
+			this.Method = method;
+			this.Argument1 = arg;
+			this.Argument2 = 0;
+			this.StringArgument = sarg;
+			this.Data = data;
+		}
+
+		public CallMethodData (TargetAddress method, long arg1, long arg2,
+				       object data)
+		{
+			this.Type = CallMethodType.LongLong;
+			this.Method = method;
+			this.Argument1 = arg1;
+			this.Argument2 = arg2;
+			this.StringArgument = null;
+			this.Data = data;
+		}
+
+		public CallMethodData (RuntimeInvokeData rdata)
+		{
+			this.Type = CallMethodType.RuntimeInvoke;
+			this.Method = rdata.InvokeMethod;
+			this.Data = rdata;
+		}
+	}
+
 	protected sealed class RuntimeInvokeData
 	{
 		public readonly TargetAddress InvokeMethod;
@@ -1706,6 +1905,10 @@ public class SingleSteppingEngine : ThreadManager
 		public readonly TargetAddress MethodArgument;
 		public readonly TargetAddress ObjectArgument;
 		public readonly TargetAddress[] ParamObjects;
+
+		public bool InvokeOk;
+		public TargetAddress ReturnObject;
+		public TargetAddress ExceptionObject;
 
 		public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
 					  TargetAddress object_argument, TargetAddress[] param_objects)
@@ -1934,6 +2137,16 @@ public class SingleSteppingEngine : ThreadManager
 		bool start_step_operation (OperationType operation, bool wait)
 		{
 			return start_step_operation (new Operation (operation), wait);
+		}
+
+		void call_method (CallMethodData cdata)
+		{
+			sse.SendCallbackCommand (new Command (this, new Operation (cdata)));
+		}
+
+		void call_method (RuntimeInvokeData rdata)
+		{
+			sse.SendCallbackCommand (new Command (this, new Operation (rdata)));
 		}
 
 		// <summary>
@@ -2236,115 +2449,50 @@ public class SingleSteppingEngine : ThreadManager
 				throw new InternalError ();
 		}
 
-		//
-		// Calling methods.
-		//
-
-		private struct CallMethodData
-		{
-			public readonly TargetAddress Method;
-			public readonly long Argument1;
-			public readonly long Argument2;
-			public readonly string StringArgument;
-
-			public CallMethodData (TargetAddress method, long arg, string string_arg)
-			{
-				this.Method = method;
-				this.Argument1 = arg;
-				this.Argument2 = 0;
-				this.StringArgument = string_arg;
-			}
-
-			public CallMethodData (TargetAddress method, long arg1, long arg2)
-			{
-				this.Method = method;
-				this.Argument1 = arg1;
-				this.Argument2 = arg2;
-				this.StringArgument = null;
-			}
-		}
-
-		CommandResult call_string_method (object data)
-		{
-			CallMethodData cdata = (CallMethodData) data;
-			long retval = inferior.CallStringMethod (cdata.Method, cdata.Argument1, cdata.StringArgument);
-			return new CommandResult (CommandResultType.CommandOk, retval);
-		}
-
 		public override long CallMethod (TargetAddress method, long method_argument,
 						 string string_argument)
 		{
-			CallMethodData data = new CallMethodData (method, method_argument, string_argument);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_string_method), data);
-			if (result.Type != CommandResultType.CommandOk)
+			CallMethodData data = new CallMethodData (
+				method, method_argument, string_argument, null);
+
+			call_method (data);
+			if (data.Result == null)
 				throw new Exception ();
-			return (long) result.Data;
+			return (long) data.Result;
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, string string_argument)
 		{
-			CallMethodData data = new CallMethodData (method, 0, string_argument);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_string_method), data);
-			if (result.Type != CommandResultType.CommandOk)
+			CallMethodData data = new CallMethodData (
+				method, 0, string_argument, null);
+
+			call_method (data);
+			if (data.Result == null)
 				throw new Exception ();
-			long retval = (long) result.Data;
+			long retval = (long) data.Result;
 			if (inferior.TargetAddressSize == 4)
 				retval &= 0xffffffffL;
 			return new TargetAddress (inferior.AddressDomain, retval);
 		}
 
-		CommandResult call_method (object data)
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+						 TargetAddress arg2)
 		{
-			CallMethodData cdata = (CallMethodData) data;
-			long retval = inferior.CallMethod (cdata.Method, cdata.Argument1, cdata.Argument2);
-			return new CommandResult (CommandResultType.CommandOk, retval);
-		}
+			CallMethodData data = new CallMethodData (
+				method, arg1.Address, arg2.Address, null);
 
-		internal long CallMethod (TargetAddress method, long arg1, long arg2)
-		{
-			CallMethodData data = new CallMethodData (method, arg1, arg2);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_method), data);
-			if (result.Type != CommandResultType.CommandOk)
+			call_method (data);
+			if (data.Result == null)
 				throw new Exception ();
-			return (long) result.Data;
-		}
 
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
-		{
-			CallMethodData data = new CallMethodData (method, arg1.Address, arg2.Address);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (call_method), data);
-			if (result.Type != CommandResultType.CommandOk)
-				throw new Exception ();
-			long retval = (long) result.Data;
+			long retval = (long) data.Result;
 			if (inferior.TargetAddressSize == 4)
 				retval &= 0xffffffffL;
 			return new TargetAddress (inferior.AddressDomain, retval);
 		}
 
-		CommandResult runtime_invoke_func (object data)
-		{
-			RuntimeInvokeData rdata = (RuntimeInvokeData) data;
-			TargetAddress exc_object;
-			TargetAddress retval = inferior.RuntimeInvoke (
-				rdata.InvokeMethod, rdata.MethodArgument, rdata.ObjectArgument, rdata.ParamObjects,
-				out exc_object);
-			RuntimeInvokeResult result = new RuntimeInvokeResult (retval, exc_object);
-			return new CommandResult (CommandResultType.CommandOk, result);
-		}
-
-		private struct RuntimeInvokeResult
-		{
-			public readonly TargetAddress ReturnObject;
-			public readonly TargetAddress ExceptionObject;
-
-			public RuntimeInvokeResult (TargetAddress return_object, TargetAddress exc_object)
-			{
-				this.ReturnObject = return_object;
-				this.ExceptionObject = exc_object;
-			}
-		}
-
-		protected bool RuntimeInvoke (StackFrame frame, TargetAddress method_argument, TargetAddress object_argument,
+		protected bool RuntimeInvoke (StackFrame frame, TargetAddress method_argument,
+					      TargetAddress object_argument,
 					      TargetAddress[] param_objects)
 		{
 			if ((frame == null) || (frame.Method == null))
@@ -2353,24 +2501,26 @@ public class SingleSteppingEngine : ThreadManager
 			if (language == null)
 				throw new ArgumentException ();
 
-			RuntimeInvokeData data = new RuntimeInvokeData (language, method_argument, object_argument, param_objects);
+			RuntimeInvokeData data = new RuntimeInvokeData (
+				language, method_argument, object_argument, param_objects);
 			return start_step_operation (new Operation (data), true);
 		}
 
-		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
-							   TargetAddress object_argument, TargetAddress[] param_objects,
-							   out TargetAddress exc_object)
+		public TargetAddress RuntimeInvoke (TargetAddress invoke_method,
+						    TargetAddress method_argument,
+						    TargetAddress object_argument,
+						    TargetAddress[] param_objects,
+						    out TargetAddress exc_object)
 		{
-			RuntimeInvokeData data = new RuntimeInvokeData (invoke_method, method_argument, object_argument, param_objects);
-			CommandResult result = sse.SendSyncCommand (new CommandFunc (runtime_invoke_func), data);
-			if (result.Type == CommandResultType.CommandOk) {
-				RuntimeInvokeResult retval = (RuntimeInvokeResult) result.Data;
-				exc_object = retval.ExceptionObject;
-				return retval.ReturnObject;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
+			RuntimeInvokeData data = new RuntimeInvokeData (
+				invoke_method, method_argument, object_argument, param_objects);
+
+			call_method (data);
+			if (!data.InvokeOk)
 				throw new Exception ();
+
+			exc_object = data.ExceptionObject;
+			return data.ReturnObject;
 		}
 
 		public override bool HasTarget {

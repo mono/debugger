@@ -19,17 +19,11 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Single-step until leaving the specified step frame or entering a method.
 		// </summary>
-		NativeStepFrame,
-
-		// <summary>
-		//   Single-step until leaving the specified step frame or entering a method.
-		//   This will step over all methods which are not in the application's symbol
-		//   table (you can set this using the IInferior.ApplicationSymbolTable property).
-		// </summary>
 		StepFrame,
 
 		// <summary>
-		//   Single-step until leaving the specified step frame and never enter any methods.
+		//   Single-step until leaving the specified step frame and never enter any
+		//   methods.
 		// </summary>
 		Finish
 	}
