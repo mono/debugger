@@ -5,13 +5,13 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeFundamentalObject : NativeObject, ITargetFundamentalObject
 	{
-		public NativeFundamentalObject (NativeType type, MonoTargetLocation location)
+		public NativeFundamentalObject (NativeType type, TargetLocation location)
 			: base (type, location)
 		{ }
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location)
+							TargetLocation location,
+							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected object GetObject (ITargetMemoryReader reader, MonoTargetLocation locaction)
+		protected object GetObject (ITargetMemoryReader reader, TargetLocation locaction)
 		{
 			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
 			case TypeCode.Boolean:

@@ -2101,7 +2101,7 @@ namespace Mono.Debugger.Architecture
 				return true;
 			}
 
-			protected MonoTargetLocation GetAddress (StackFrame frame)
+			protected TargetLocation GetAddress (StackFrame frame)
 			{
 				location.Position = 0;
 				switch (location.ReadByte ()) {
@@ -2120,7 +2120,7 @@ namespace Mono.Debugger.Architecture
 
 			public ITargetObject GetObject (StackFrame frame)
 			{
-				MonoTargetLocation location = GetAddress (frame);
+				TargetLocation location = GetAddress (frame);
 				if (location == null)
 					return null;
 

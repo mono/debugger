@@ -6,7 +6,7 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
 	{
-		public MonoFundamentalObjectBase (MonoType type, MonoTargetLocation location)
+		public MonoFundamentalObjectBase (MonoType type, TargetLocation location)
 			: base (type, location)
 		{ }
 
@@ -38,6 +38,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected abstract object GetObject (ITargetMemoryReader reader, MonoTargetLocation location);
+		protected abstract object GetObject (ITargetMemoryReader reader, TargetLocation location);
 	}
 }

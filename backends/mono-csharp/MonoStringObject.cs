@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoStringType type;
 
-		public MonoStringObject (MonoStringType type, MonoTargetLocation location)
+		public MonoStringObject (MonoStringType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -21,8 +21,8 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location)
+							TargetLocation location,
+							out TargetLocation dynamic_location)
 		{
 			reader.Offset = type.LengthOffset;
 			dynamic_location = location.GetLocationAtOffset (type.DataOffset, false);
@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		protected override object GetObject (ITargetMemoryReader reader,
-						     MonoTargetLocation location)
+						     TargetLocation location)
 		{
 			int length = (int) reader.Size / 2;
 

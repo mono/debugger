@@ -6,10 +6,10 @@ namespace Mono.Debugger.Languages.Native
 	internal abstract class NativeObject : ITargetObject
 	{
 		protected ITargetType type;
-		protected MonoTargetLocation location;
+		protected TargetLocation location;
 		protected bool is_valid;
 
-		public NativeObject (ITargetType type, MonoTargetLocation location)
+		public NativeObject (ITargetType type, TargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
@@ -51,7 +51,7 @@ namespace Mono.Debugger.Languages.Native
 					throw new InvalidOperationException ();
 
 				try {
-					MonoTargetLocation dynamic_location;
+					TargetLocation dynamic_location;
 					ITargetMemoryReader reader = location.ReadMemory (type.Size);
 					return GetDynamicSize (reader, location, out dynamic_location);
 				} catch (TargetException ex) {
@@ -74,11 +74,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected virtual ITargetMemoryReader GetDynamicContents (MonoTargetLocation location,
+		protected virtual ITargetMemoryReader GetDynamicContents (TargetLocation location,
 									  int max_size)
 		{
 			try {
-				MonoTargetLocation dynamic_location;
+				TargetLocation dynamic_location;
 				ITargetMemoryReader reader = location.ReadMemory (type.Size);
 				long size = GetDynamicSize (reader, location, out dynamic_location);
 
@@ -93,8 +93,8 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		protected abstract long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location);
+							TargetLocation location,
+							out TargetLocation dynamic_location);
 
 		public override string ToString ()
 		{

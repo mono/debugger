@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override MonoObject GetObject (MonoTargetLocation location)
+		public override MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoFundamentalObject (this, location);
 		}

@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoObjectType type;
 
-		public MonoObjectObject (MonoObjectType type, MonoTargetLocation location)
+		public MonoObjectObject (MonoObjectType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.CSharp
 				// after the `MonoObject' header.
 
 				int offset = current_type.IsByRef ? 0 : type.Size;
-				MonoTargetLocation new_location = location.GetLocationAtOffset (offset, false);
+				TargetLocation new_location = location.GetLocationAtOffset (offset, false);
 
 				return current_type.GetObject (new_location);
 			}
@@ -78,8 +78,8 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location)
+							TargetLocation location,
+							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}

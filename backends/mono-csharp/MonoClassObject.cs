@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		new MonoClassType type;
 
-		public MonoClassObject (MonoClassType type, MonoTargetLocation location)
+		public MonoClassObject (MonoClassType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;

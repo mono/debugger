@@ -1,3 +1,13 @@
+2003-06-21  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetLocation.cs: Moved here from
+	backends/classes/MonoTargetLocation.cs.
+
+	* classes/RelativeTargetLocation.cs: Moved here from
+	backends/classes/MonoRelativeTargetLocation.cs.
+
+	* classes/AbsoluteTargetLocation.cs: New public class.
+
 2003-06-20  Martin Baulig  <martin@ximian.com>
 
 	* doc/debugger.sxi: Added the slides from the GUADEC talk.

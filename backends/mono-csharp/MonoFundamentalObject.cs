@@ -6,19 +6,19 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFundamentalObject : MonoFundamentalObjectBase
 	{
-		public MonoFundamentalObject (MonoType type, MonoTargetLocation location)
+		public MonoFundamentalObject (MonoType type, TargetLocation location)
 			: base (type, location)
 		{ }
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location)
+							TargetLocation location,
+							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
 		protected override object GetObject (ITargetMemoryReader reader,
-						     MonoTargetLocation locaction)
+						     TargetLocation locaction)
 		{
 			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
 			case TypeCode.Boolean:

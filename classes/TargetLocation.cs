@@ -1,22 +1,22 @@
 using System;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger
 {
-	internal delegate void LocationEventHandler (MonoTargetLocation location);
+	internal delegate void LocationEventHandler (TargetLocation location);
 
 	// <summary>
 	//   This class represents the `location' of a variable.  The idea is that we do
 	//   not always have an address for a variable (for instance if it's stored in a
 	//   register) and that an addresses lifetime may be limited.
 	// </summary>
-	internal abstract class MonoTargetLocation : ICloneable
+	public abstract class TargetLocation : ICloneable
 	{
 		protected StackFrame frame;
 		protected long offset;
 		protected bool is_byref;
 		bool is_valid;
 
-		protected MonoTargetLocation (StackFrame frame, bool is_byref, long offset)
+		protected TargetLocation (StackFrame frame, bool is_byref, long offset)
 		{
 			this.is_byref = is_byref;
 			this.offset = offset;
@@ -152,17 +152,17 @@ namespace Mono.Debugger.Backends
 		//   the variable's contents (for instance to skip a header or access an
 		//   array element).
 		// </summary>
-		public virtual MonoTargetLocation GetLocationAtOffset (long offset, bool dereference)
+		public virtual TargetLocation GetLocationAtOffset (long offset, bool dereference)
 		{
-			MonoTargetLocation new_location = Clone (offset);
+			TargetLocation new_location = Clone (offset);
 			if (!dereference)
 				return new_location;
 
 			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
-			return new MonoRelativeTargetLocation (this,  address);
+			return new RelativeTargetLocation (this,  address);
 		}
 
-		protected abstract MonoTargetLocation Clone (long offset);
+		protected abstract TargetLocation Clone (long offset);
 
 		public object Clone ()
 		{

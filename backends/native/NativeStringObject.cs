@@ -6,7 +6,7 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeStringObject : NativeObject, ITargetFundamentalObject
 	{
-		public NativeStringObject (NativeType type, MonoTargetLocation location)
+		public NativeStringObject (NativeType type, TargetLocation location)
 			: base (type, location)
 		{ }
 
@@ -17,8 +17,8 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location)
+							TargetLocation location,
+							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -54,7 +54,7 @@ namespace Mono.Debugger.Languages.Native
 		static char[] hex_chars = { '0', '1', '2', '3', '4', '5', '6', '7',
 					    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-		protected string ReadString (MonoTargetLocation start)
+		protected string ReadString (TargetLocation start)
 		{
 			StringBuilder sb = new StringBuilder ();
 			bool done = false;
@@ -63,7 +63,7 @@ namespace Mono.Debugger.Languages.Native
 			bool quoted_chars = false;
 
 			while (!done && (offset < MaximumDynamicSize)) {
-				MonoTargetLocation location = start.GetLocationAtOffset (offset, false);
+				TargetLocation location = start.GetLocationAtOffset (offset, false);
 				byte[] buffer = location.ReadBuffer (ChunkSize);
 
 				int pos = 0;

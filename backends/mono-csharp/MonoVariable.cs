@@ -100,7 +100,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		MonoTargetLocation GetLocation (StackFrame frame)
+		TargetLocation GetLocation (StackFrame frame)
 		{
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return new MonoVariableLocation (frame, false, info.Index, info.Offset, type.IsByRef, 0);
@@ -115,7 +115,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (!IsAlive (frame.TargetAddress))
 				return false;
 
-			MonoTargetLocation location = GetLocation (frame);
+			TargetLocation location = GetLocation (frame);
 
 			if ((location == null) || !location.IsValid)
 				return false;
@@ -130,7 +130,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetObject GetObject (StackFrame frame)
 		{
-			MonoTargetLocation location = GetLocation (frame);
+			TargetLocation location = GetLocation (frame);
 
 			if ((location == null) || !location.IsValid)
 				throw new LocationInvalidException ();

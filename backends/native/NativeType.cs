@@ -60,7 +60,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public abstract NativeObject GetObject (MonoTargetLocation location);
+		public abstract NativeObject GetObject (TargetLocation location);
 
 		public override string ToString ()
 		{

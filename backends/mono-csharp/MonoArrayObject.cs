@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected readonly int base_index;
 		protected readonly MonoArrayBounds[] bounds;
 
-		public MonoArrayObject (MonoArrayType type, MonoTargetLocation location)
+		public MonoArrayObject (MonoArrayType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -51,7 +51,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public MonoArrayObject (MonoArrayObject array, MonoTargetLocation location, int index)
+		public MonoArrayObject (MonoArrayObject array, TargetLocation location, int index)
 			: base (array.type.SubArrayType, location)
 		{
 			this.type = array.type.SubArrayType;
@@ -88,7 +88,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 				if (dimension + 1 >= rank) {
 					ITargetMemoryReader reader;
-					MonoTargetLocation dynamic_location;
+					TargetLocation dynamic_location;
 					try {
 						reader = location.ReadMemory (type.Size);
 						GetDynamicSize (reader, location, out dynamic_location);
@@ -104,7 +104,7 @@ namespace Mono.Debugger.Languages.CSharp
 					else
 						throw new InvalidOperationException ();
 
-					MonoTargetLocation new_location =
+					TargetLocation new_location =
 						dynamic_location.GetLocationAtOffset (
 							offset, type.ElementType.IsByRef);
 
@@ -137,8 +137,8 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							MonoTargetLocation location,
-							out MonoTargetLocation dynamic_location)
+							TargetLocation location,
+							out TargetLocation dynamic_location)
 		{
 			int element_size = GetElementSize (reader);
 			dynamic_location = location.GetLocationAtOffset (

@@ -123,12 +123,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject GetField (MonoTargetLocation location, int index)
+		internal ITargetObject GetField (TargetLocation location, int index)
 		{
 			init_fields ();
 
 			try {
-				MonoTargetLocation field_loc = location.GetLocationAtOffset (
+				TargetLocation field_loc = location.GetLocationAtOffset (
 					fields [index].Offset, fields [index].Type.IsByRef);
 
 				return fields [index].Type.GetObject (field_loc);
@@ -166,7 +166,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected ITargetObject Invoke (TargetAddress method, MonoTargetLocation this_location)
+		protected ITargetObject Invoke (TargetAddress method, TargetLocation this_location)
 		{
 			throw new NotImplementedException ();
 #if FIXME
@@ -190,7 +190,7 @@ namespace Mono.Debugger.Languages.CSharp
 				try {
 					MonoType exc_type = Table.GetTypeFromClass (exc_class.Address);
 
-					MonoTargetLocation exc_loc = new MonoRelativeTargetLocation (
+					TargetLocation exc_loc = new MonoRelativeTargetLocation (
 						this_location, exc_object);
 
 					exc = new MonoClassObject ((MonoClassType) exc_type, exc_loc);
@@ -201,7 +201,7 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new TargetInvocationException (exc);
 			}
 
-			MonoTargetLocation retval_loc = new MonoRelativeTargetLocation (
+			TargetLocation retval_loc = new MonoRelativeTargetLocation (
 				this_location, retval);
 
 			MonoObjectObject retval_obj = new MonoObjectObject (ObjectType, retval_loc);
@@ -261,7 +261,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			internal ITargetObject Get (MonoTargetLocation location)
+			internal ITargetObject Get (TargetLocation location)
 			{
 				return StructType.Invoke (Getter, location);
 			}
@@ -273,7 +273,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject GetProperty (MonoTargetLocation location, int index)
+		internal ITargetObject GetProperty (TargetLocation location, int index)
 		{
 			init_properties ();
 
@@ -384,7 +384,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			internal ITargetObject Invoke (MonoTargetLocation location, ITargetObject[] args)
+			internal ITargetObject Invoke (TargetLocation location, ITargetObject[] args)
 			{
 				if (args.Length != 0)
 					throw new NotSupportedException ();
@@ -399,7 +399,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject InvokeMethod (MonoTargetLocation location, int index,
+		internal ITargetObject InvokeMethod (TargetLocation location, int index,
 						     ITargetObject[] arguments)
 		{
 			init_methods ();
@@ -413,12 +413,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override MonoObject GetObject (MonoTargetLocation location)
+		public override MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoStructObject (this, location);
 		}
 
-		public string PrintObject (MonoTargetLocation location)
+		public string PrintObject (TargetLocation location)
 		{
 			// Can't automatically box valuetypes yet.
 			if (!(this is MonoClassType))

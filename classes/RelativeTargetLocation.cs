@@ -1,16 +1,16 @@
 using System;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger
 {
 	// <summary>
 	//   This is just an address, but its lifetime is tied to the lifetime of another location.
 	// </summary>
-	internal class MonoRelativeTargetLocation : MonoTargetLocation
+	public class RelativeTargetLocation : TargetLocation
 	{
-		MonoTargetLocation relative_to;
+		TargetLocation relative_to;
 		TargetAddress address;
 
-		internal MonoRelativeTargetLocation (MonoTargetLocation relative_to, TargetAddress address)
+		internal RelativeTargetLocation (TargetLocation relative_to, TargetAddress address)
 			: base (relative_to.StackFrame, false, 0)
 		{
 			this.relative_to = relative_to;
@@ -19,7 +19,7 @@ namespace Mono.Debugger.Backends
 			relative_to.LocationInvalidEvent += new LocationEventHandler (location_invalid);
 		}
 
-		void location_invalid (MonoTargetLocation location)
+		void location_invalid (TargetLocation location)
 		{
 			SetInvalid ();
 		}
@@ -33,9 +33,9 @@ namespace Mono.Debugger.Backends
 			return address;
 		}
 
-		protected override MonoTargetLocation Clone (long offset)
+		protected override TargetLocation Clone (long offset)
 		{
-			return new MonoRelativeTargetLocation (relative_to, address + offset);
+			return new RelativeTargetLocation (relative_to, address + offset);
 		}
 
 		protected override string MyToString ()

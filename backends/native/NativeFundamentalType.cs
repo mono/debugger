@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (MonoTargetLocation location)
+		public override NativeObject GetObject (TargetLocation location)
 		{
 			return new NativeFundamentalObject (this, location);
 		}
