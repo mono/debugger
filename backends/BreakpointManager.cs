@@ -10,7 +10,7 @@ namespace Mono.Debugger.Backends
 		IntPtr _manager;
 
 		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_breakpoint_manager_new ();
+		static extern IntPtr mono_debugger_breakpoint_manager_new (BreakpointManagerMutexHandler lock_func, BreakpointManagerMutexHandler unlock_func);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_breakpoint_manager_free (IntPtr manager);
@@ -24,9 +24,25 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_breakpoint_info_get_owner (IntPtr info);
 
+		protected delegate void BreakpointManagerMutexHandler ();
+		protected Mutex lock_mutex;
+
 		public BreakpointManager ()
 		{
-			_manager = mono_debugger_breakpoint_manager_new ();
+			lock_mutex = new Mutex ();
+			_manager = mono_debugger_breakpoint_manager_new (
+				new BreakpointManagerMutexHandler (lock_func),
+				new BreakpointManagerMutexHandler (unlock_func));
+		}
+
+		void lock_func ()
+		{
+			lock_mutex.WaitOne ();
+		}
+
+		void unlock_func ()
+		{
+			lock_mutex.ReleaseMutex ();
 		}
 
 		internal IntPtr Manager {

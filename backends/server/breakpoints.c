@@ -13,17 +13,17 @@
 static int last_breakpoint_id = 0;
 
 BreakpointManager *
-mono_debugger_breakpoint_manager_new (void)
+mono_debugger_breakpoint_manager_new (BreakpointManagerMutexFunc lock_func,
+				      BreakpointManagerMutexFunc unlock_func)
 {
 	BreakpointManager *bpm = g_new0 (BreakpointManager, 1);
 
-	if (!g_thread_supported ())
-		g_thread_init (NULL);
-
-	g_static_rec_mutex_init (&bpm->mutex);
 	bpm->breakpoints = g_ptr_array_new ();
 	bpm->breakpoint_hash = g_hash_table_new (NULL, NULL);
 	bpm->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
+	bpm->lock_func = lock_func;
+	bpm->unlock_func = unlock_func;
+
 	return bpm;
 }
 
@@ -33,8 +33,19 @@ mono_debugger_breakpoint_manager_free (BreakpointManager *bpm)
 	g_ptr_array_free (bpm->breakpoints, TRUE);
 	g_hash_table_destroy (bpm->breakpoint_hash);
 	g_hash_table_destroy (bpm->breakpoint_by_addr);
-	g_static_rec_mutex_free (&bpm->mutex);
 	g_free (bpm);
+}
+
+void
+mono_debugger_breakpoint_manager_lock (BreakpointManager *bpm)
+{
+	(* bpm->lock_func) ();
+}
+
+void
+mono_debugger_breakpoint_manager_unlock (BreakpointManager *bpm)
+{
+	(* bpm->unlock_func) ();
 }
 
 void
@@ -49,6 +60,7 @@ mono_debugger_breakpoint_manager_insert (BreakpointManager *bpm, BreakpointInfo 
 BreakpointInfo *
 mono_debugger_breakpoint_manager_lookup (BreakpointManager *bpm, guint64 address)
 {
+	g_message (G_STRLOC ": %p - %p", bpm, bpm->breakpoint_by_addr);
 	return g_hash_table_lookup (bpm->breakpoint_by_addr, GUINT_TO_POINTER (address));
 }
 

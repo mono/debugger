@@ -5,11 +5,14 @@
 
 G_BEGIN_DECLS
 
+typedef void (*BreakpointManagerMutexFunc) (void);
+
 typedef struct {
-	GStaticRecMutex mutex;
 	GPtrArray *breakpoints;
 	GHashTable *breakpoint_hash;
 	GHashTable *breakpoint_by_addr;
+	BreakpointManagerMutexFunc lock_func;
+	BreakpointManagerMutexFunc unlock_func;
 } BreakpointManager;
 
 typedef struct {
@@ -22,10 +25,17 @@ typedef struct {
 } BreakpointInfo;
 
 BreakpointManager *
-mono_debugger_breakpoint_manager_new                 (void);
+mono_debugger_breakpoint_manager_new                 (BreakpointManagerMutexFunc lock_func,
+						      BreakpointManagerMutexFunc unlock_func);
 
 void
 mono_debugger_breakpoint_manager_free                (BreakpointManager *bpm);
+
+void
+mono_debugger_breakpoint_manager_lock                (BreakpointManager *bpm);
+
+void
+mono_debugger_breakpoint_manager_unlock              (BreakpointManager *bpm);
 
 int
 mono_debugger_breakpoint_manager_get_next_id         (void);
@@ -44,9 +54,6 @@ mono_debugger_breakpoint_manager_get_breakpoints     (BreakpointManager *bpm);
 
 void
 mono_debugger_breakpoint_manager_remove              (BreakpointManager *bpm, BreakpointInfo *breakpoint);
-
-#define mono_debugger_breakpoint_manager_lock(bpm)   (g_static_rec_mutex_lock (&bpm->mutex))
-#define mono_debugger_breakpoint_manager_unlock(bpm) (g_static_rec_mutex_unlock (&bpm->mutex))
 
 int
 mono_debugger_breakpoint_info_get_id                 (BreakpointInfo *info);
