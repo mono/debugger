@@ -1,3 +1,18 @@
+2004-03-03  Martin Baulig  <martin@ximian.com>
+
+	* lib/Debugger.exe.config.in: Removed.
+	* lib/Interpreter.exe.config.in: Removed.
+
+	* lib/Makefile.am: Build everything in ../wrapper/.
+
+	* wrapper/mdb.in: Moved here from ../lib.
+
+	* wrapper/Makefile.am: Call it mdb.exe instead of Interpreter.exe.
+
+	* classes/ProcessStart.cs: The `mono-debugger-mini-wrapper' is now
+	always in the same directory than Mono.Debugger.dll; use this to
+	setup the 'Path_Mono'.
+
 2004-03-02  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs

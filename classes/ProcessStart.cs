@@ -57,25 +57,10 @@ namespace Mono.Debugger
 
 		static ProcessStart ()
 		{
-			NameValueCollection settings = ConfigurationSettings.AppSettings;
+			Assembly debugger_ass = Assembly.GetExecutingAssembly ();
+			string libdir = Path.GetDirectoryName (debugger_ass.Location);
 
-			foreach (string key in settings.AllKeys) {
-				string value = settings [key];
-
-				switch (key) {
-				case "mono-path":
-					Path_Mono = value;
-					break;
-
-				case "environment-path":
-					Environment_Path = value;
-					break;
-
-				case "environment-libpath":
-					Environment_LibPath = value;
-					break;
-				}
-			}
+			Path_Mono = Path.Combine (libdir, "mono-debugger-mini-wrapper");
 		}
 
 		protected ProcessStart (DebuggerOptions options, string[] argv)

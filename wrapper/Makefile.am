@@ -14,5 +14,49 @@ mono_debugger_mini_wrapper_SOURCES = \
 mono_debugger_mini_wrapper_LDADD = \
 	@WRAPPER_LIBS@
 
+bin_SCRIPTS = mdb.exe mdb
 
+MCS_FLAGS = -g
+
+assdir = $(libdir)
+
+ass_SCRIPTS = Mono.Debugger.dll
+
+MDB_SRCLIST = \
+	@top_srcdir@/frontends/command-line/*.cs	\
+	@top_srcdir@/frontends/scripting/*.cs
+
+LIBRARY_SRCLIST = \
+	@top_srcdir@/interfaces/*.cs			\
+	@top_srcdir@/classes/*.cs			\
+	@top_srcdir@/backends/*.cs			\
+	@top_srcdir@/backends/classes/*.cs		\
+	@top_srcdir@/backends/ptrace/*.cs		\
+	@top_srcdir@/backends/mono-csharp/*.cs		\
+	@top_srcdir@/backends/native/*.cs		\
+	@top_srcdir@/arch/*.cs
+
+LIBRARY_DEPS = \
+	-r Mono.GetOptions	\
+	-r Mono.CSharp.Debugger
+
+MDB_DEPS = \
+	-r Mono.GetOptions	\
+	-r Mono.CSharp.Debugger	\
+	-r Mono.Debugger.dll
+
+Mono.Debugger.dll: $(LIBRARY_SRCLIST)
+	$(MCS) /target:library /out:Mono.Debugger.dll $(MCS_FLAGS) $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
+
+mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
+	$(MCS) -o mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
+
+CLEANFILES = *.exe *.dll
+
+EXTRA_DIST = \
+	mdb.in
+
+mdb: mdb.in Makefile
+	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
+	&& mv mdb.tmp mdb 
 
