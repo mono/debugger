@@ -136,24 +136,6 @@ mono_debugger_server_disable_breakpoint (ServerHandle *handle, guint32 breakpoin
 	return (* handle->info->disable_breakpoint) (handle->inferior, breakpoint);
 }
 
-ServerCommandError
-mono_debugger_server_enable_breakpoints (ServerHandle *handle)
-{
-	if (!handle->has_inferior)
-		return COMMAND_ERROR_NO_INFERIOR;
-
-	return (* handle->info->enable_breakpoints) (handle->inferior);
-}
-
-ServerCommandError
-mono_debugger_server_disable_breakpoints (ServerHandle *handle)
-{
-	if (!handle->has_inferior)
-		return COMMAND_ERROR_NO_INFERIOR;
-
-	return (* handle->info->disable_breakpoints) (handle->inferior);
-}
-
 static gboolean initialized = FALSE;
 
 static void

@@ -207,16 +207,6 @@ typedef struct {
 						       guint32           bhandle);
 
 	/*
-	 * Enables all breakpoints.
-	 */
-	ServerCommandError    (* enable_breakpoints)  (InferiorHandle   *handle);
-
-	/*
-	 * Disables all breakpoints.
-	 */
-	ServerCommandError    (* disable_breakpoints) (InferiorHandle   *handle);
-
-	/*
 	 * Get all breakpoints.  Writes number of breakpoints into `count' and returns a g_new0()
 	 * allocated list of guint32's in `breakpoints'.  The caller is responsible for freeing this
 	 * data structure.
@@ -398,12 +388,6 @@ mono_debugger_server_enable_breakpoint   (ServerHandle        *handle,
 ServerCommandError
 mono_debugger_server_disable_breakpoint  (ServerHandle        *handle,
 					  guint32              breakpoint);
-
-ServerCommandError
-mono_debugger_server_enable_breakpoints  (ServerHandle        *handle);
-
-ServerCommandError
-mono_debugger_server_disable_breakpoints (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_get_registers       (ServerHandle        *handle,

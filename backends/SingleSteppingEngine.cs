@@ -211,6 +211,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress main = TargetAddress.Null;
 			main = inferior.MainMethodAddress;
 			pid = inferior.PID;
+
 			engine_thread_main (new Command (StepOperation.Run, main));
 		}
 
@@ -271,6 +272,15 @@ namespace Mono.Debugger.Backends
 			} while (true);
 		}
 
+		ChildEvent wait ()
+		{
+			ChildEvent child_event;
+			do {
+				child_event = inferior.Wait ();
+			} while (child_event == null);
+			return child_event;
+		}
+
 		// <summary>
 		//   Waits until the target stopped and returns false if it already sent
 		//   the result back to the caller (this normally happens on an error
@@ -285,15 +295,9 @@ namespace Mono.Debugger.Backends
 		// <remarks>
 		//   This method may only be used in the background thread.
 		// </remarks>
-		bool wait (bool must_continue)
+		bool process_child_event (ChildEvent child_event, bool must_continue)
 		{
 		again:
-			ChildEvent child_event = inferior.Wait ();
-
-			if (child_event == null)
-				goto again;
-
-		again_with_event:
 			ChildEventType message = child_event.Type;
 			int arg = child_event.Argument;
 
@@ -302,13 +306,8 @@ namespace Mono.Debugger.Backends
 				restart_event.WaitOne ();
 				// A stop was requested and we actually received the SIGSTOP.  Note that
 				// we may also have stopped for another reason before receiving the SIGSTOP.
-				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.StopSignal)) {
-					if (must_continue) {
-						do_continue_nowait (false);
-						goto again;
-					} else
-						return true;
-				}
+				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.StopSignal))
+					goto done;
 				// Ignore the next SIGSTOP.
 				pending_sigstop++;
 			}
@@ -316,19 +315,10 @@ namespace Mono.Debugger.Backends
 			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
 				if ((pending_sigstop > 0) && (arg == inferior.StopSignal)) {
 					--pending_sigstop;
-					if (must_continue) {
-						do_continue_nowait (false);
-						goto again;
-					} else
-						return true;
+					goto done;
 				}
-				if (!backend.SignalHandler (process, arg)) {
-					if (must_continue) {
-						do_continue_nowait (false);
-						goto again;
-					} else
-						return true;
-				}
+				if (!backend.SignalHandler (process, arg))
+					goto done;
 			}
 
 			// To step over a method call, the sse inserts a temporary
@@ -368,30 +358,22 @@ namespace Mono.Debugger.Backends
 				ChildEvent new_event;
 				// Ok, the next thing we need to check is whether this is actually "our"
 				// breakpoint or whether it belongs to another thread.  In this case,
-				// `thread_breakpoint' does everything for us and we can just continue
+				// `step_over_breakpoint' does everything for us and we can just continue
 				// execution.
-				if (!thread_breakpoint (out new_event)) {
+				if (step_over_breakpoint (false, out new_event)) {
 					int new_arg = new_event.Argument;
 					// If the child stopped normally, just continue its execution
 					// here; otherwise, we need to deal with the unexpected stop.
 					if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
 					    ((new_arg != 0) && (new_arg != inferior.StopSignal))) {
 						child_event = new_event;
-						goto again_with_event;
-					}
-					if (must_continue) {
-						do_continue_nowait (true);
 						goto again;
-					} else
-						return true;
+					}
+					goto done;
 				} else if (!child_breakpoint (arg)) {
 					// we hit any breakpoint, but its handler told us
 					// to resume the target and continue.
-					if (must_continue) {
-						do_continue_nowait (true);
-						goto again;
-					} else
-						return true;
+					goto done;
 				}
 			}
 
@@ -417,6 +399,14 @@ namespace Mono.Debugger.Backends
 				send_result (message, arg);
 				return false;
 			}
+
+		done:
+			if (must_continue) {
+				child_event = do_continue_internal (true);
+				goto again;
+			}
+
+			return true;
 		}
 
 		// <summary>
@@ -451,7 +441,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress until = command.Until;
 				if (!until.IsNull)
 					insert_temporary_breakpoint (until);
-				ok = do_continue (false);
+				ok = do_continue ();
 				break;
 
 			case StepOperation.StepInstruction:
@@ -494,7 +484,7 @@ namespace Mono.Debugger.Backends
 			// running until it exits (or hit a breakpoint or receives
 			// a signal).
 			if (!main_method_retaddr.IsNull && (frame == main_method_retaddr)) {
-				ok = do_continue (false);
+				ok = do_continue ();
 				return;
 			}
 
@@ -874,8 +864,6 @@ namespace Mono.Debugger.Backends
 		Command current_command = null;
 		CommandResult command_result = null;
 
-		bool must_continue = false;
-
 		// <summary>
 		//   A breakpoint has been hit; now the sse needs to find out what do do:
 		//   either ignore the breakpoint and continue or keep the target stopped
@@ -914,7 +902,7 @@ namespace Mono.Debugger.Backends
 			return handle.Handler (frame, breakpoint, handle.UserData);
 		}
 
-		bool thread_breakpoint (out ChildEvent new_event)
+		bool step_over_breakpoint (bool current, out ChildEvent new_event)
 		{
 			int owner;
 			int id = breakpoint_manager.LookupBreakpoint (inferior.CurrentFrame, out owner);
@@ -922,10 +910,10 @@ namespace Mono.Debugger.Backends
 			new_event = null;
 
 			if (id == 0)
-				return true;
+				return false;
 
-			if ((owner == 0) || (owner == pid))
-				return true;
+			if (!current && ((owner == 0) || (owner == pid)))
+				return false;
 
 			thread_manager.AcquireGlobalThreadLock (process);
 			inferior.DisableBreakpoint (id);
@@ -935,7 +923,7 @@ namespace Mono.Debugger.Backends
 			} while (new_event == null);
 			inferior.EnableBreakpoint (id);
 			thread_manager.ReleaseGlobalThreadLock (process);
-			return false;
+			return true;
 		}
 
 		IMethod current_method;
@@ -1124,10 +1112,8 @@ namespace Mono.Debugger.Backends
 		bool do_step ()
 		{
 			check_inferior ();
-
-			inferior.Step ();
-
-			return wait (false);
+			ChildEvent child_event = do_continue_internal (false);
+			return process_child_event (child_event, false);
 		}
 
 		// <summary>
@@ -1146,7 +1132,7 @@ namespace Mono.Debugger.Backends
 			address += disassembler.GetInstructionSize (address);
 
 			insert_temporary_breakpoint (address);
-			return do_continue (false);
+			return do_continue ();
 		}
 
 		// <summary>
@@ -1155,28 +1141,35 @@ namespace Mono.Debugger.Backends
 		//   instruction before we can resume the target (see `must_continue' in
 		//   child_event() for more info).
 		// </summary>
-		bool do_continue (bool is_breakpoint)
+		bool do_continue ()
 		{
-			if (!do_continue_nowait (is_breakpoint))
-				return false;
-
-			return wait (true);
+			check_inferior ();
+			ChildEvent child_event = do_continue_internal (true);
+			return process_child_event (child_event, true);
 		}
 
-		bool do_continue_nowait (bool is_breakpoint)
+		ChildEvent do_continue_internal (bool do_run)
 		{
 			check_inferior ();
 
-			if (is_breakpoint || inferior.CurrentInstructionIsBreakpoint) {
-				must_continue = true;
-				inferior.Step ();
-				if (!wait (false))
-					return false;
+			ChildEvent new_event;
+			if (step_over_breakpoint (true, out new_event)) {
+				int new_arg = new_event.Argument;
+				// If the child stopped normally, just continue its execution
+				// here; otherwise, we need to deal with the unexpected stop.
+				if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
+				    ((new_arg != 0) && (new_arg != inferior.StopSignal)))
+					return new_event;
+				else if (!do_run)
+					return new_event;
 			}
 
-			inferior.EnableAllBreakpoints ();
-			inferior.Continue ();
-			return true;
+			if (do_run)
+				inferior.Continue ();
+			else
+				inferior.Step ();
+
+			return wait ();
 		}
 
 		protected bool Step (StepFrame frame)
@@ -1244,7 +1237,7 @@ namespace Mono.Debugger.Backends
 						}
 
 						insert_temporary_breakpoint (trampoline);
-						return do_continue (false);
+						return do_continue ();
 					}
 				}
 

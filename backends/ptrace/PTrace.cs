@@ -144,12 +144,6 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_disable_breakpoint (IntPtr handle, int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_enable_breakpoints (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_disable_breakpoints (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
@@ -335,16 +329,6 @@ namespace Mono.Debugger.Backends
 		{
 			check_error (mono_debugger_server_disable_breakpoint (
 				server_handle, breakpoint));
-		}
-
-		public void EnableAllBreakpoints ()
-		{
-			mono_debugger_server_enable_breakpoints (server_handle);
-		}
-
-		public void DisableAllBreakpoints ()
-		{
-			mono_debugger_server_disable_breakpoints (server_handle);
 		}
 
 		public DebuggerBackend DebuggerBackend {

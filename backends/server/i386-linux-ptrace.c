@@ -769,18 +769,6 @@ server_ptrace_disable_breakpoint (InferiorHandle *handle, guint32 bhandle)
 }
 
 static ServerCommandError
-server_ptrace_enable_all_breakpoints (InferiorHandle *handle)
-{
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
-server_ptrace_disable_all_breakpoints (InferiorHandle *handle)
-{
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
 server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 **retval)
 {
 	int i;
@@ -1275,8 +1263,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_remove_breakpoint,
 	server_ptrace_enable_breakpoint,
 	server_ptrace_disable_breakpoint,
-	server_ptrace_enable_all_breakpoints,
-	server_ptrace_disable_all_breakpoints,
 	server_ptrace_get_breakpoints,
 	server_ptrace_get_registers,
 	server_ptrace_set_registers,

@@ -1,5 +1,13 @@
 2002-12-26  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs: Correctly step over
+	breakpoints in the current thread.
+
+	* backends/IInferior.cs
+	(EnableAllBreakpoints, DisableAllBreakpoints): Removed.
+
+2002-12-26  Martin Baulig  <martin@ximian.com>
+
 	* inferfaces/IProcess.cs: New interface.  This is implemented by
 	backends/Process.cs; it's some kind of a hack because Process.cs
 	is in the backends dir, but I need this in Module.cs.

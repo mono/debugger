@@ -160,10 +160,6 @@ namespace Mono.Debugger.Backends
 
 		void DisableBreakpoint (int breakpoint);
 
-		void EnableAllBreakpoints ();
-
-		void DisableAllBreakpoints ();
-
 		int PID {
 			get;
 		}
