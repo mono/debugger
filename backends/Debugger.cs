@@ -20,7 +20,7 @@ namespace Mono.Debugger
 	public delegate void MethodInvalidHandler ();
 	public delegate void MethodChangedHandler (IMethod method);
 
-	public class DebuggerBackend : ITargetNotification, IDisposable
+	public class DebuggerBackend : IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
@@ -160,6 +160,9 @@ namespace Mono.Debugger
 		// </remarks>
 		public Process CurrentProcess {
 			get {
+				Console.WriteLine ("WARNING: DebuggerBackend.CurrentProcess is " +
+						   "only a temporary solution and will go away soon!");
+
 				if (process == null)
 					throw new NoTargetException ();
 
@@ -233,10 +236,6 @@ namespace Mono.Debugger
 				StateChanged (new_state, arg);
 		}
 
-		public event TargetOutputHandler TargetOutput;
-		public event TargetOutputHandler TargetError;
-		public event TargetOutputHandler DebuggerOutput;
-		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
 		public event SymbolTableChangedHandler SymbolTableChanged;
@@ -280,43 +279,25 @@ namespace Mono.Debugger
 				TargetExited ();
 		}
 
-		void inferior_output (string line)
-		{
-			if (TargetOutput != null)
-				TargetOutput (line);
-		}
-
-		void inferior_errors (string line)
-		{
-			if (TargetError != null)
-				TargetError (line);
-		}
-
-		void debugger_output (string line)
-		{
-			if (DebuggerOutput != null)
-				DebuggerOutput (line);
-		}
-
 		void debugger_error (object sender, string message, Exception e)
 		{
-			if (DebuggerError != null)
-				DebuggerError (this, message, e);
 		}
 
-		public void Run ()
+		public Process Run ()
 		{
 			check_disposed ();
-			do_run ((string) null);
+			process = do_run ((string) null);
+			return process;
 		}
 
-		public void ReadCoreFile (string core_file)
+		public Process ReadCoreFile (string core_file)
 		{
 			check_disposed ();
-			do_run (core_file);
+			process = do_run (core_file);
+			return process;
 		}
 
-		void do_run (string core_file)
+		Process do_run (string core_file)
 		{
 			if (inferior != null)
 				throw new AlreadyHaveTargetException ();
@@ -332,11 +313,9 @@ namespace Mono.Debugger
 					application = null;
 				}
 
-				if (application != null) {
+				if (application != null)
 					// Start it as a CIL application.
-					do_run (target_application, core_file, application);
-					return;
-				}
+					return do_run (target_application, core_file, application);
 			}
 
 			// Start it as a native application.
@@ -348,9 +327,9 @@ namespace Mono.Debugger
 
 			native = true;
 			if (core_file != null)
-				load_core (core_file, new_argv);
+				return load_core (core_file, new_argv);
 			else
-				do_run (new_argv);
+				return do_run (new_argv);
 		}
 
 		void setup_environment ()
@@ -363,7 +342,7 @@ namespace Mono.Debugger
 				working_directory = ".";
 		}
 
-		void do_run (string target_application, string core_file, Assembly application)
+		Process do_run (string target_application, string core_file, Assembly application)
 		{
 			MethodInfo main = application.EntryPoint;
 			string main_name = main.DeclaringType + ":" + main.Name;
@@ -381,12 +360,12 @@ namespace Mono.Debugger
 
 			native = false;
 			if (core_file != null)
-				load_core (core_file, new_argv);
+				return load_core (core_file, new_argv);
 			else
-				do_run (new_argv);
+				return do_run (new_argv);
 		}
 
-		void do_run (string[] argv)
+		Process do_run (string[] argv)
 		{
 			module_manager.Locked = true;
 
@@ -396,10 +375,6 @@ namespace Mono.Debugger
 						       load_native_symtab, bfd_container,
 						       new DebuggerErrorHandler (debugger_error));
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
-			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
-			inferior.TargetError += new TargetOutputHandler (inferior_errors);
-			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
-			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			if (!native)
 				csharp_language.Inferior = inferior;
@@ -411,7 +386,7 @@ namespace Mono.Debugger
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 
-			process = new Process (this, sse, inferior);
+			return new Process (this, sse, inferior);
 		}
 
 		void method_invalid ()
@@ -479,7 +454,7 @@ namespace Mono.Debugger
 			module_manager.UnLoadAllModules ();
 		}
 
-		void load_core (string core_file, string[] argv)
+		Process load_core (string core_file, string[] argv)
 		{
 			core = new CoreFileElfI386 (this, argv [0], core_file, bfd_container);
 			inferior = core;
@@ -488,6 +463,8 @@ namespace Mono.Debugger
 				csharp_language.Inferior = inferior;
 
 			Reload ();
+
+			return new Process (this, core);
 		}
 
 		public void Quit ()

@@ -1,5 +1,13 @@
 2002-12-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs (DebuggerBackend.Run): This method
+	now returns a new Process.
+	(DebuggerBackend.ReadCoreFile): Likewise.
+
+	* backends/Process.cs: Moved a few more things from Debugger.cs.
+
+2002-12-10  Martin Baulig  <martin@ximian.com>
+
 	Started to split DebuggerBackend into DebuggerBackend and Process.
 	Later one, a DebuggerBackend will have a Process for each thread
 	of the application being debugged.

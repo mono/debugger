@@ -24,14 +24,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.context = context;
 			this.backend = backend;
 			this.id = ++next_id;
-
-			backend.FrameChangedEvent += new StackFrameHandler (frame_changed);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
-			backend.StateChanged += new StateChangedHandler (state_changed);
-			backend.TargetOutput += new TargetOutputHandler (inferior_output);
-			backend.TargetError += new TargetOutputHandler (inferior_error);
-			backend.DebuggerOutput += new TargetOutputHandler (debugger_output);
-			backend.DebuggerError += new DebuggerErrorHandler (debugger_error);
 		}
 
 		int current_frame_idx = -1;
@@ -204,13 +196,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public void Run ()
 		{
-			backend.Run ();
-			process = backend.CurrentProcess;
+			process = backend.Run ();
+
+			process.FrameChangedEvent += new StackFrameHandler (frame_changed);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+			process.StateChanged += new StateChangedHandler (state_changed);
+			process.TargetOutput += new TargetOutputHandler (inferior_output);
+			process.TargetError += new TargetOutputHandler (inferior_error);
+			process.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
+		}
+
+		public TargetState State {
+			get {
+				if (process == null)
+					return TargetState.NO_TARGET;
+				else
+					return process.State;
+			}
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("Process @{0}: {1} {2}", id, backend.State, backend);
+			return String.Format ("Process @{0}: {1} {2}", id, State, process);
 		}
 	}
 

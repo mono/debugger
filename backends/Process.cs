@@ -17,10 +17,11 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
-	public class Process
+	public class Process : ITargetNotification, IDisposable
 	{
 		DebuggerBackend backend;
 		SingleSteppingEngine sse;
+		CoreFile core;
 		IInferior inferior;
 
 		internal Process (DebuggerBackend backend, SingleSteppingEngine sse, IInferior inferior)
@@ -30,6 +31,23 @@ namespace Mono.Debugger
 			this.inferior = inferior;
 
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
+			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
+			inferior.TargetError += new TargetOutputHandler (inferior_errors);
+			inferior.DebuggerOutput += new TargetOutputHandler (debugger_output);
+			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
+
+			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
+			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
+			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
+			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
+			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+		}
+
+		internal Process (DebuggerBackend backend, CoreFile core)
+		{
+			this.backend = backend;
+			this.inferior = core;
+			this.core = core;
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -44,15 +62,117 @@ namespace Mono.Debugger
 			get { return inferior; }
 		}
 
+		//
+		// ITargetNotification
+		//
+
+		bool busy = false;
 		public TargetState State {
 			get {
-				if (sse != null)
+				if (busy)
+					return TargetState.BUSY;
+				else if (sse != null)
 					return sse.State;
 				else if (inferior != null)
 					return inferior.State;
 				else
 					return TargetState.NO_TARGET;
 			}
+		}
+
+		bool DebuggerBusy {
+			get {
+				return busy;
+			}
+
+			set {
+				if (busy == value)
+					return;
+
+				busy = value;
+				if (StateChanged != null)
+					StateChanged (State, 0);
+			}
+		}
+
+		void target_state_changed (TargetState new_state, int arg)
+		{
+			if (new_state == TargetState.STOPPED) {
+				if (busy) {
+					busy = false;
+					return;
+				}
+			}
+
+			if (new_state == TargetState.BUSY) {
+				busy = true;
+				return;
+			}
+
+			busy = false;
+
+			if (StateChanged != null)
+				StateChanged (new_state, arg);
+		}
+
+		public event TargetOutputHandler TargetOutput;
+		public event TargetOutputHandler TargetError;
+		public event TargetOutputHandler DebuggerOutput;
+		public event DebuggerErrorHandler DebuggerError;
+		public event StateChangedHandler StateChanged;
+		public event TargetExitedHandler TargetExited;
+
+		public event MethodInvalidHandler MethodInvalidEvent;
+		public event MethodChangedHandler MethodChangedEvent;
+		public event StackFrameHandler FrameChangedEvent;
+		public event StackFrameInvalidHandler FramesInvalidEvent;
+
+		void inferior_output (string line)
+		{
+			if (TargetOutput != null)
+				TargetOutput (line);
+		}
+
+		void inferior_errors (string line)
+		{
+			if (TargetError != null)
+				TargetError (line);
+		}
+
+		void debugger_output (string line)
+		{
+			if (DebuggerOutput != null)
+				DebuggerOutput (line);
+		}
+
+		void debugger_error (object sender, string message, Exception e)
+		{
+			if (DebuggerError != null)
+				DebuggerError (this, message, e);
+		}
+
+		void method_invalid ()
+		{
+			if (MethodInvalidEvent != null)
+				MethodInvalidEvent ();
+		}
+
+		void method_changed (IMethod method)
+		{
+			if (MethodChangedEvent != null)
+				MethodChangedEvent (method);
+		}
+
+		void frame_changed (StackFrame frame)
+		{
+			if (FrameChangedEvent != null)
+				FrameChangedEvent (frame);
+		}
+
+		void frames_invalid ()
+		{
+			if (FramesInvalidEvent != null)
+				FramesInvalidEvent ();
 		}
 
 		// <summary>
@@ -151,6 +271,56 @@ namespace Mono.Debugger
 		{
 			check_can_run ();
 			sse.Finish ();
+		}
+
+		public TargetAddress CurrentFrameAddress {
+			get {
+				check_stopped ();
+				return inferior.CurrentFrame;
+			}
+		}
+
+		public StackFrame CurrentFrame {
+			get {
+				check_stopped ();
+				if (sse != null)
+					return sse.CurrentFrame;
+				else
+					return core.CurrentFrame;
+			}
+		}
+
+		public StackFrame[] GetBacktrace ()
+		{
+			check_stopped ();
+			if (sse != null)
+				return sse.GetBacktrace ();
+			else
+				return core.GetBacktrace ();
+		}
+
+		public long GetRegister (int register)
+		{
+			check_stopped ();
+			return inferior.GetRegister (register);
+		}
+
+		public long[] GetRegisters (int[] registers)
+		{
+			check_stopped ();
+			return inferior.GetRegisters (registers);
+		}
+
+		public void SetRegister (int register, long value)
+		{
+			check_stopped ();
+			inferior.SetRegister (register, value);
+		}
+
+		public void SetRegisters (int[] registers, long[] values)
+		{
+			check_stopped ();
+			inferior.SetRegisters (registers, values);
 		}
 
 		void child_exited ()

@@ -106,7 +106,9 @@ namespace Mono.Debugger.GUI
 			program = new Program ("Debugger", "0.2", Modules.UI, arguments);
 
 			backend = new DebuggerBackend ();
+#if FALSE
 			backend.DebuggerError += new DebuggerErrorHandler (ErrorHandler);
+#endif
 
 			SetupGUI ();
 
@@ -199,10 +201,12 @@ namespace Mono.Debugger.GUI
 
 			StateSensitivityUpdate (TargetState.NO_TARGET);
 
+#if FALSE
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);
 			backend.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
 			backend.DebuggerError += new DebuggerErrorHandler (DebuggerError);
+#endif
 		}
 
 		ArrayList all_state_widgets = new ArrayList ();
