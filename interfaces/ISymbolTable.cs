@@ -1,3 +1,4 @@
+using System.Collections;
 using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
@@ -31,7 +32,7 @@ namespace Mono.Debugger
 		bool Lookup (ITargetLocation target, out ISourceLocation source, out IMethod method);
 	}
 
-	public interface ISymbolTableCollection : ISymbolTable
+	public interface ISymbolTableCollection : ISymbolTable, ICollection
 	{
 		void AddSymbolTable (ISymbolTable symtab);
 	}

@@ -40,6 +40,10 @@ namespace Mono.Debugger
 
 		ISourceLocation Lookup (ITargetLocation target);
 
+		bool IsLoaded {
+			get;
+		}
+
 		ITargetLocation StartAddress {
 			get;
 		}
