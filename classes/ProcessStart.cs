@@ -293,8 +293,6 @@ namespace Mono.Debugger
 
 			string[] start_argv = { Path_Mono, opt_flags };
 
-			Console.WriteLine ("OPTIMIZE: {0}", opt_flags);
-
 			string[] new_argv = new string [old_argv.Length + start_argv.Length];
 			start_argv.CopyTo (new_argv, 0);
 			old_argv.CopyTo (new_argv, start_argv.Length);
