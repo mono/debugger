@@ -2,8 +2,6 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate void ObjectInvalidHandler ();
-
 	public interface ITargetObject
 	{
 		// <summary>
