@@ -29,7 +29,7 @@ namespace Mono.Debugger.GUI
 			}
 		}
 
-		public override void StateChanged (TargetState new_state, int arg)
+		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
@@ -45,26 +45,21 @@ namespace Mono.Debugger.GUI
 			switch (new_state) {
 			case TargetState.CORE_FILE:
 			case TargetState.STOPPED:
-				try {
-					StackFrame frame = process.CurrentFrame;
-					if (frame.SourceLocation == null) {
-						base.StateChanged (new_state, arg);
-						return;
-					}
-					string filename = Utils.GetBasename (frame.SourceLocation.Name);
-					string offset = "";
-					if (frame.SourceLocation.SourceOffset > 0)
-						offset = String.Format (
-							" (offset 0x{0})", frame.SourceLocation.SourceOffset);
-					Message (String.Format ("{0} at {1}{3} at {2}.", GetStopReason (arg),
-								filename, frame.TargetAddress, offset));
-				} catch (NoStackException) {
+				if (CurrentFrame == null) {
 					Message (String.Format ("{0}.", GetStopReason (arg)));
-				} catch (Exception e) {
-					Console.WriteLine (e);
-					Message (String.Format ("{0} ({1}).", GetStopReason (arg),
-								"(can't get current stackframe)"));
+					break;
 				}
+				if (CurrentFrame.SourceLocation == null) {
+					base.StateChanged (new_state, arg);
+					return;
+				}
+				string filename = Utils.GetBasename (CurrentFrame.SourceLocation.Name);
+				string offset = "";
+				if (CurrentFrame.SourceLocation.SourceOffset > 0)
+					offset = String.Format (
+						" (offset 0x{0})", CurrentFrame.SourceLocation.SourceOffset);
+				Message (String.Format ("{0} at {1}{3} at {2}.", GetStopReason (arg),
+							filename, CurrentFrame.TargetAddress, offset));
 				break;
 
 			default:

@@ -14,7 +14,7 @@ namespace Mono.Debugger.GUI
 		{
 		}
 
-		public override void StateChanged (TargetState new_state, int arg)
+		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;

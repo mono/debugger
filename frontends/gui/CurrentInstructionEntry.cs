@@ -17,25 +17,23 @@ namespace Mono.Debugger.GUI
 			entry.Sensitive = false;
 		}
 
-		public override void SetBackend (DebuggerBackend backend, Process process)
-		{
-			base.SetBackend (backend, process);
-			process.StateChanged += new StateChangedHandler (StateChanged);
-			process.FrameChangedEvent += new StackFrameHandler (FrameChanged);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalid);
-		}
-
 		protected void Update ()
 		{
 			entry.Text = current_insn;
 			widget.Sensitive = current_insn != null;
 		}
 
-		// <remarks>
-		//   This method is called from the SingleSteppingEngine's background thread,
-		//   so we must not use gtk# here.
-		// </remarks>
-		void FrameChanged (StackFrame frame)
+		protected override void FrameChanged (StackFrame frame)
+		{
+			Update ();
+		}
+
+		protected override void FramesInvalid ()
+		{
+			Update ();
+		}
+
+		protected override void RealFrameChanged (StackFrame frame)
 		{
 			try {
 				IDisassembler dis = process.Disassembler;
@@ -47,27 +45,23 @@ namespace Mono.Debugger.GUI
 				Console.WriteLine (e);
 				current_insn = null;
 			}
+
+			base.RealFrameChanged (frame);
 		}
 
-		void FramesInvalid ()
+		protected override void RealFramesInvalid ()
 		{
 			current_insn = null;
+			base.RealFramesInvalid ();
 		}
 		
-		public void StateChanged (TargetState new_state, int arg)
+		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
 
-			switch (new_state) {
-			case TargetState.STOPPED:
-				Update ();
-				break;
-
-			default:
+			if (new_state != TargetState.STOPPED)
 				widget.Sensitive = false;
-				break;
-			}
 		}
 	}
 }

@@ -1016,6 +1016,8 @@ namespace Mono.Debugger.Backends
 					frame.Dispose ();
 				current_backtrace = null;
 			}
+
+			registers = null;
 		}
 
 		int temp_breakpoint_id = 0;

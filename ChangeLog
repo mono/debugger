@@ -1,5 +1,13 @@
 2002-12-23  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerWidget.cs
+	(RealFrameChanged, RealFramesInvalid, RealStateChanged): New
+	protected virtual methods which may be called from any thread.
+	(FrameChanged, FramesInvalid, StateChanged): New protected virtual
+	methods which are guaranteed to be called from the gtk# thread.
+
+2002-12-23  Martin Baulig  <martin@ximian.com>
+
 	* class/ThreadNotify.cs: This can now have multiple listeners
 	(since file descriptors are a precious resource).
 

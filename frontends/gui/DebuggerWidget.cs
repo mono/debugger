@@ -12,18 +12,22 @@ namespace Mono.Debugger.GUI
 		protected DebuggerBackend backend;
 		protected Process process;
 		protected DebuggerGUI gui;
+		protected ThreadNotify thread_notify;
 		protected Glade.XML gxml;
 		bool visible;
-
-		[DllImport("glib-2.0")]
-		static extern bool g_main_context_iteration (IntPtr context, bool may_block);
+		int frame_notify_id;
+		int state_notify_id;
 
 		public DebuggerWidget (DebuggerGUI gui, Gtk.Container container, Gtk.Widget widget)
 		{
 			this.gui = gui;
+			this.thread_notify = gui.ThreadNotify;
 			this.gxml = gui.GXML;
 			this.widget = widget;
 			this.container = container;
+
+			frame_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (frame_event));
+			state_notify_id = thread_notify.RegisterListener (new ReadyEventHandler (state_event));
 
 			if (container == null) {
 				Gtk.Widget parent = widget.Parent;
@@ -45,7 +49,97 @@ namespace Mono.Debugger.GUI
 		{
 			this.backend = backend;
 			this.process = process;
+
+			process.FrameChangedEvent += new StackFrameHandler (RealFrameChanged);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (RealFramesInvalid);
+			process.StateChanged += new StateChangedHandler (RealStateChanged);
 		}
+
+		StackFrame current_frame = null;
+
+		void frame_event ()
+		{
+			lock (this) {
+				if (current_frame != null)
+					FrameChanged (current_frame);
+				else
+					FramesInvalid ();
+			}
+		}
+
+		// <remarks>
+		//   This method may get called from any thread, so we must not use gtk# here.
+		// </remarks>
+		protected virtual void RealFrameChanged (StackFrame frame)
+		{
+			lock (this) {
+				current_frame = frame;
+				thread_notify.Signal (frame_notify_id);
+			}
+		}
+
+		// <remarks>
+		//   This method may get called from any thread, so we must not use gtk# here.
+		// </remarks>
+		protected virtual void RealFramesInvalid ()
+		{
+			lock (this) {
+				current_frame = null;
+				thread_notify.Signal (frame_notify_id);
+			}
+		}
+
+		// <remarks>
+		//   This method will always get called from the gtk# thread and while keeping the
+		//   `this' lock.
+		// </remarks>
+		protected virtual void FrameChanged (StackFrame frame)
+		{ }
+
+		// <remarks>
+		//   This method will always get called from the gtk# thread and while keeping the
+		//   `this' lock.
+		// </remarks>
+		protected virtual void FramesInvalid ()
+		{ }
+
+		protected StackFrame CurrentFrame {
+			get { return current_frame; }
+		}
+
+		TargetState current_state = TargetState.NO_TARGET;
+		int current_state_arg = 0;
+		bool state_changed = false;
+
+		void state_event ()
+		{
+			lock (this) {
+				if (state_changed) {
+					state_changed = false;
+					StateChanged (current_state, current_state_arg);
+				}
+			}
+		}
+
+		// <remarks>
+		//   This method may get called from any thread, so we must not use gtk# here.
+		// </remarks>
+		protected virtual void RealStateChanged (TargetState state, int arg)
+		{
+			lock (this) {
+				state_changed = true;
+				current_state = state;
+				current_state_arg = arg;
+				thread_notify.Signal (state_notify_id);
+			}
+		}
+
+		// <remarks>
+		//   This method will always get called from the gtk# thread and while keeping the
+		//   `this' lock.
+		// </remarks>
+		protected virtual void StateChanged (TargetState state, int arg)
+		{ }
 		
 		void mapped (object o, EventArgs args)
 		{
@@ -95,12 +189,6 @@ namespace Mono.Debugger.GUI
 			get {
 				return visible;
 			}
-		}
-
-                protected void MainIteration ()
-		{
-			while (g_main_context_iteration (IntPtr.Zero, false))
-				;
 		}
 	}
 }

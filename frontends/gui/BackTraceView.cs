@@ -59,26 +59,21 @@ namespace Mono.Debugger.GUI
 		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
 			base.SetBackend (backend, process);
-
-			process.StateChanged += new StateChangedHandler (StateChangedEvent);
-			process.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 		
-		void FramesInvalidEvent ()
+		protected override void RealFramesInvalid ()
 		{
 			current_backtrace = null;
+			base.RealFramesInvalid ();
 		}
 
-		void FrameChangedEvent (StackFrame frame)
+		protected override void RealFrameChanged (StackFrame frame)
 		{
-			if (!IsVisible)
-				return;
-
 			current_backtrace = process.GetBacktrace ();
+			base.RealFrameChanged (frame);
 		}
 
-		void StateChangedEvent (TargetState new_state, int arg)
+		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;

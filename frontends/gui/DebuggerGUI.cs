@@ -89,6 +89,7 @@ namespace Mono.Debugger.GUI
 		MemoryMapsDisplay memory_maps_display;
 		BreakpointManager breakpoint_manager;
 		Dialog hex_editor_dialog;
+		ThreadNotify thread_notify;
 
 		Gtk.TextView target_output;
 		SourceStatusbar source_status;
@@ -104,6 +105,7 @@ namespace Mono.Debugger.GUI
 
 		public DebuggerGUI (string[] arguments)
 		{
+			thread_notify = new ThreadNotify ();
 			program = new Program ("Debugger", "0.2", Modules.UI, arguments);
 
 			backend = new DebuggerBackend ();
@@ -117,6 +119,10 @@ namespace Mono.Debugger.GUI
 				LoadProgram (arguments);
 
 			interpreter = new Interpreter (backend, output_writer, output_writer);
+		}
+
+		internal ThreadNotify ThreadNotify {
+			get { return thread_notify; }
 		}
 
 		internal Glade.XML GXML {

@@ -22,7 +22,6 @@ namespace Mono.Debugger.GUI
 		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
 			base.SetBackend (backend, process);
-			process.StateChanged += new StateChangedHandler (StateChanged);
 		}
 		
 		public void Message (string message)
@@ -60,7 +59,7 @@ namespace Mono.Debugger.GUI
 			return String.Format ("{1} at {0}.", frame.TargetAddress, GetStopReason (arg));
 		}
 
-		public virtual void StateChanged (TargetState new_state, int arg)
+		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
@@ -72,16 +71,10 @@ namespace Mono.Debugger.GUI
 
 			case TargetState.CORE_FILE:
 			case TargetState.STOPPED:
-				try {
-					StackFrame frame = process.CurrentFrame;
-					Message (GetStopMessage (frame, arg));
-				} catch (NoStackException) {
+				if (CurrentFrame != null)
+					Message (GetStopMessage (CurrentFrame, arg));
+				else
 					Message (String.Format ("{0}.", GetStopReason (arg)));
-				} catch (Exception e) {
-					Console.WriteLine (e);
-					Message (String.Format ("{0} ({1}).", GetStopReason (arg),
-								"(can't get current stackframe)"));
-				}
 				break;
 
 			case TargetState.EXITED:

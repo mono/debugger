@@ -34,7 +34,6 @@ namespace Mono.Debugger.GUI
 	{
 		Gtk.Notebook notebook;
 		IArchitecture arch;
-		StackFrame current_frame;
 		Gdk.Color color_change, color_stable;
 
 		public RegisterDisplay (DebuggerGUI gui, Gtk.Container window, Gtk.Notebook notebook)
@@ -55,13 +54,12 @@ namespace Mono.Debugger.GUI
 		{
 			base.SetBackend (backend, process);
 
-			process.StateChanged += new StateChangedHandler (state_changed);
 			arch = process.Architecture;
 			if (arch is ArchitectureI386)
 				SetupI386 ();
 		}
 
-		void state_changed (TargetState new_state, int arg)
+		protected override void StateChanged (TargetState new_state, int arg)
 		{
 			switch (new_state) {
 			case TargetState.STOPPED:
@@ -198,8 +196,6 @@ namespace Mono.Debugger.GUI
 				return;
 
 			i386_initialized = true;
-			process.FrameChangedEvent += new StackFrameHandler (I386_FrameChangedEvent);
-			process.FramesInvalidEvent += new StackFrameInvalidHandler (I386_FramesInvalidEvent);
 		}
 		
 		long [] last_regs, regs;
@@ -259,10 +255,8 @@ namespace Mono.Debugger.GUI
 			last_regs = regs;
 		}
 		
-		void I386_FrameChangedEvent (StackFrame frame)
+		protected override void RealFrameChanged (StackFrame frame)
 		{
-			current_frame = frame;
-
 			if (!process.HasTarget)
 				return;
 
@@ -272,12 +266,14 @@ namespace Mono.Debugger.GUI
 				Console.WriteLine ("ERROR: Register loading threw an exception here: {0}", e);
 				regs = null;
 			}
+
+			base.RealFrameChanged (frame);
 		}
 
-		void I386_FramesInvalidEvent ()
+		protected override void RealFramesInvalid ()
 		{
-			current_frame = null;
-			notebook.Page = 0;
+			regs = null;
+			base.RealFramesInvalid ();
 		}
 	}
 }

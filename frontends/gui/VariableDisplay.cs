@@ -12,7 +12,7 @@ namespace Mono.Debugger.GUI
 {
 	public class VariableDisplay : DebuggerWidget
 	{
-		StackFrame current_frame;
+		new StackFrame current_frame;
 
 		Gtk.TreeView tree;
 		Gtk.TreeStore store;
