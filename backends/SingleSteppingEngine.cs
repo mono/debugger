@@ -512,6 +512,7 @@ namespace Mono.Debugger.Backends
 				operation_completed (result);
 				if (is_main && !reached_main) {
 					reached_main = true;
+					main_method_retaddr = inferior.GetReturnAddress ();
 					manager.ReachedMain ();
 				}
 				return;
