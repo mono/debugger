@@ -237,9 +237,7 @@ namespace Mono.Debugger
 			args = options.RemainingArguments;
 
 			if (args.Length == 0)
-				throw new CannotStartTargetException (
-					"You need to specify the program you want " +
-					"to debug.");
+				return null;
 
 			Assembly application;
 			try {
