@@ -14,6 +14,14 @@ using Pango;
 namespace Mono.Debugger.GUI {
 
 	public class SourceList {
+		static Gdk.Pixbuf line, stop;
+
+		static SourceList ()
+		{
+			stop = new Gdk.Pixbuf (null, "stop.png");
+			line = new Gdk.Pixbuf (null, "line.png");
+		}
+			
 		ScrolledWindow sw;
 		Gtk.SourceView source_view;
 		TextTag frame_tag;
@@ -58,8 +66,8 @@ namespace Mono.Debugger.GUI {
 			//
 			// Load our markers
 			//
-			Gdk.Pixbuf stop_icon = new Gdk.Pixbuf (null, "stop.png");
-			source_view.AddPixbuf ("stop", stop_icon, false);
+			source_view.AddPixbuf ("stop", stop, false);
+			source_view.AddPixbuf ("line", line, false);
 			
 			sw.Add (source_view);
 			sw.ShowAll ();
@@ -139,18 +147,29 @@ namespace Mono.Debugger.GUI {
 			}
 		}
 
+		void ClearLine ()
+		{
+			if (last_line != -1){
+				text_buffer.LineRemoveMarker (last_line, "line");
+				last_line = -1;
+			}
+		}
+		
 		void method_invalid_event ()
 		{
 			Active = false;
+			ClearLine ();
 		}
 
 		void frame_invalid_event ()
 		{
 			Active = false;
+			ClearLine ();
 		}
 
 		StackFrame current_frame = null;
-
+		int last_line = 0;
+		
 		void frame_changed_event (StackFrame frame)
 		{
 			if (!active || (frame == current_frame))
@@ -175,6 +194,12 @@ namespace Mono.Debugger.GUI {
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 			text_buffer.ApplyTag (frame_tag, start_iter, end_iter);
 
+			if (last_line != -1)
+				text_buffer.LineRemoveMarker (last_line, "line");
+			
+			text_buffer.LineAddMarker (source.Row, "line");
+			last_line = source.Row;
+			
 			Gtk.TextMark frame_mark = text_buffer.GetMark ("frame");
 			text_buffer.MoveMark (frame_mark, start_iter);
 			source_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
