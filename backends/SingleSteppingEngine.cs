@@ -1143,6 +1143,11 @@ namespace Mono.Debugger.Backends
 		Command check_method_operation (TargetAddress address, IMethod method,
 						SourceLocation source, StepOperation operation)
 		{
+			if (method.IsWrapper && (address > method.StartAddress))
+				return new Command (StepOperation.Native, new StepFrame (
+					method.StartAddress, method.EndAddress,
+					null, StepMode.Finish));
+
 			ILanguageBackend language = method.Module.Language as ILanguageBackend;
 			if ((language == null) || (source == null))
 				return null;
