@@ -1991,9 +1991,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)
 		{
-			Console.WriteLine ("CSHARP HANDLER: {0} {1} {2}", runner.Process,
-					   address, signal);
-
 			if (!initialized) {
 				read_mono_debugger_info (runner.Inferior, runner.Inferior.Bfd);
 				initialized = true;

@@ -260,6 +260,31 @@ public class SingleSteppingEngine : ThreadManager
 			      new_thread, pid);
 	}
 
+	void thread_created (Inferior inferior, int pid)
+	{
+		Report.Debug (DebugFlags.Threads, "Thread created: {0}", pid);
+
+		Inferior new_inferior = inferior.CreateThread ();
+
+		TheEngine new_thread = new TheEngine (this, new_inferior, pid);
+
+		thread_hash.Add (pid, new_thread);
+
+		if ((mono_manager != null) &&
+		    mono_manager.ThreadCreated (new_thread, new_inferior)) {
+			main_process = new_thread;
+
+			main_method = mono_manager.Initialize (the_engine, inferior);
+
+			new_thread.Start (main_method, true);
+		}
+
+		new_inferior.Continue ();
+		OnThreadCreatedEvent (new_thread);
+
+		inferior.Continue ();
+	}
+
 	internal override bool HandleChildEvent (Inferior inferior,
 						 Inferior.ChildEvent cevent)
 	{
@@ -276,36 +301,14 @@ public class SingleSteppingEngine : ThreadManager
 				main_method = inferior.MainMethodAddress;
 			else
 				main_method = TargetAddress.Null;
-			the_engine.Initialize (main_method);
+			the_engine.Start (main_method, true);
 
 			initialized = true;
 			return true;
 		}
 
 		if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
-			int pid = (int) cevent.Argument;
-
-			Report.Debug (DebugFlags.Threads, "Thread created: {0}", pid);
-
-			Inferior new_inferior = inferior.CreateThread ();
-
-			TheEngine new_thread = new TheEngine (this, new_inferior, pid);
-
-			thread_hash.Add (pid, new_thread);
-
-			if ((mono_manager != null) &&
-			    (mono_manager.ThreadCreated (new_thread, new_inferior))) {
-				main_process = new_thread;
-
-				main_method = mono_manager.Initialize (the_engine, inferior);
-
-				new_thread.Initialize (main_method);
-			} else
-				OnThreadCreatedEvent (new_thread);
-
-			new_inferior.Continue ();
-
-			inferior.Continue ();
+			thread_created (inferior, (int) cevent.Argument);
 
 			return true;
 		}
@@ -671,7 +674,7 @@ public class SingleSteppingEngine : ThreadManager
 		{ }
 	}
 
-	protected class TheEngine : Process, ITargetAccess, IDisassembler
+	protected class TheEngine : NativeProcess, ITargetAccess, IDisassembler
 	{
 		protected TheEngine (SingleSteppingEngine sse, Inferior inferior)
 			: base (inferior.ProcessStart)
@@ -692,6 +695,8 @@ public class SingleSteppingEngine : ThreadManager
 			inferior.Run (true);
 			pid = inferior.PID;
 
+			is_main = true;
+
 			setup_engine ();
 		}
 
@@ -700,6 +705,9 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			this.pid = pid;
 			inferior.Attach (pid);
+
+			is_main = false;
+			tid = inferior.TID;
 
 			setup_engine ();
 		}
@@ -775,11 +783,12 @@ public class SingleSteppingEngine : ThreadManager
 			sse.SetCompleted ();
 		}
 
-		public void Initialize (TargetAddress main)
+		public override void Start (TargetAddress func, bool is_main)
 		{
-			if (!main.IsNull) {
-				insert_temporary_breakpoint (main);
+			if (!func.IsNull) {
+				insert_temporary_breakpoint (func);
 				current_operation = StepOperation.Initialize;
+				this.is_main = is_main;
 			}
 			do_continue ();
 		}
@@ -959,9 +968,9 @@ public class SingleSteppingEngine : ThreadManager
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
-				if (OnDaemonEvent (result)) {
-					is_daemon = true;
-					return false;
+				if (DaemonEventHandler != null) {
+					if (DaemonEventHandler (this, inferior, result))
+						return false;
 				}
 				SendTargetEvent (result);
 				return true;
@@ -971,8 +980,8 @@ public class SingleSteppingEngine : ThreadManager
 				return false;
 
 			if (current_operation == StepOperation.Initialize) {
-				sse.Initialize (inferior);
-				main_method_retaddr = inferior.GetReturnAddress ();
+				if (is_main)
+					sse.Initialize (inferior);
 				step_operation_finished ();
 			}
 
@@ -1047,13 +1056,19 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override TargetState State {
 			get {
-				return target_state;
+				return inferior.State;
 			}
 		}
 
 		public override int PID {
 			get {
 				return pid;
+			}
+		}
+
+		public override int TID {
+			get {
+				return tid;
 			}
 		}
 
@@ -1237,8 +1252,9 @@ public class SingleSteppingEngine : ThreadManager
 		AutoResetEvent restart_event;
 		bool stop_requested = false;
 		int pending_sigstop = 0;
+		bool is_main;
 		bool native;
-		int pid;
+		int pid, tid;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;

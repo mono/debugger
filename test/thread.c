@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <sched.h>
+#include <pthread.h>
 
 void
 hello (int is_thread)
 {
-	printf ("HELLO: %d\n", is_thread);
+	printf ("HELLO: %x\n", pthread_self ());
 	fflush (stdout);
 }
 

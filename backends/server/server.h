@@ -94,7 +94,8 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
-					   int                 pid);
+					   guint32             pid,
+					   guint32            *tid);
 
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
@@ -232,6 +233,7 @@ mono_debugger_server_kill                (ServerHandle        *handle);
 ServerCommandError
 mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo          *sinfo);
+
 
 G_END_DECLS
 

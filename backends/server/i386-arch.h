@@ -59,6 +59,9 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 void
 i386_arch_get_registers (ServerHandle *handle);
 
+guint32
+i386_arch_get_tid (ServerHandle *handle);
+
 /* Debug registers' indices.  */
 #define DR_NADDR		4  /* the number of debug address registers */
 #define DR_STATUS		6  /* index of debug status register (DR6) */

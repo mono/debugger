@@ -292,6 +292,10 @@ namespace Mono.Debugger.Architecture
 			get { return -1; }
 		}
 
+		public override int TID {
+			get { return -1; }
+		}
+
 		public override bool HasTarget {
 			get { return true; }
 		}

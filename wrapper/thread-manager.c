@@ -6,22 +6,16 @@
 #include <unistd.h>
 #include <string.h>
 
-static sem_t thread_manager_start_cond;
 static sem_t thread_manager_cond;
 static sem_t thread_manager_finished_cond;
-static sem_t thread_manager_thread_started_cond;
-static CRITICAL_SECTION thread_manager_start_mutex;
 static CRITICAL_SECTION thread_manager_finished_mutex;
 static CRITICAL_SECTION thread_manager_mutex;
 static GPtrArray *thread_array = NULL;
 
 static void (*notification_function) (int tid, gpointer data);
 
-gpointer MONO_DEBUGGER__thread_manager_notification = NULL;
-int MONO_DEBUGGER__thread_manager_notify_command = 0;
-int MONO_DEBUGGER__thread_manager_notify_tid = 0;
-gpointer MONO_DEBUGGER__thread_manager_notify_data = NULL;
-static int last_tid = 0, last_pid = 0;
+int mono_debugger_thread_manager_notify_command = 0;
+int mono_debugger_thread_manager_notify_tid = 0;
 
 extern void GC_push_all_stack (gpointer b, gpointer t);
 
@@ -63,16 +57,16 @@ debugger_gc_start_world (void)
 static void
 debugger_gc_push_all_stacks (void)
 {
-	int i, pid;
+	int i, tid;
 
-	pid = getpid ();
+	tid = IO_LAYER (GetCurrentThreadId) ();
 
 	if (!thread_array)
 		return;
 
 	for (i = 0; i < thread_array->len; i++) {
 		MonoDebuggerThread *thread = g_ptr_array_index (thread_array, i);
-		gpointer end_stack = (thread->pid == pid) ? &i : thread->end_stack;
+		gpointer end_stack = (thread->tid == tid) ? &i : thread->end_stack;
 
 		GC_push_all_stack (end_stack, thread->start_stack);
 	}
@@ -91,11 +85,8 @@ mono_debugger_thread_manager_init (void)
 {
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_mutex);
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_finished_mutex);
-	IO_LAYER (InitializeCriticalSection) (&thread_manager_start_mutex);
 	sem_init (&thread_manager_cond, 0, 0);
-	sem_init (&thread_manager_start_cond, 0, 0);
 	sem_init (&thread_manager_finished_cond, 0, 0);
-	sem_init (&thread_manager_thread_started_cond, 0, 0);
 
 	if (!thread_array)
 		thread_array = g_ptr_array_new ();
@@ -103,25 +94,23 @@ mono_debugger_thread_manager_init (void)
 	gc_thread_vtable = &mono_debugger_thread_vtable;
 
 	notification_function = mono_debugger_create_notification_function (
-		(gpointer) &MONO_DEBUGGER__thread_manager_notification);
+		(gpointer) &MONO_DEBUGGER__manager.thread_manager_notification);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
 }
 
 static void
-signal_thread_manager (guint32 command, guint32 tid, gpointer data)
+signal_thread_manager (guint32 command, guint32 tid)
 {
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
-	MONO_DEBUGGER__thread_manager_notify_command = command;
-	MONO_DEBUGGER__thread_manager_notify_tid = tid;
-	MONO_DEBUGGER__thread_manager_notify_data = data;
+	mono_debugger_thread_manager_notify_command = command;
+	mono_debugger_thread_manager_notify_tid = tid;
 	sem_post (&thread_manager_cond);
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_mutex);
 
 	mono_debugger_wait_cond (&thread_manager_finished_cond);
-	MONO_DEBUGGER__thread_manager_notify_command = 0;
-	MONO_DEBUGGER__thread_manager_notify_tid = 0;
-	MONO_DEBUGGER__thread_manager_notify_data = NULL;
+	mono_debugger_thread_manager_notify_command = 0;
+	mono_debugger_thread_manager_notify_tid = 0;
 }
 
 void
@@ -130,19 +119,12 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 	MonoDebuggerThread *thread = g_new0 (MonoDebuggerThread, 1);
 
 	thread->tid = tid;
-	thread->pid = getpid ();
 	thread->func = func;
 	thread->start_stack = start_stack;
 
-	g_message (G_STRLOC ": %d,%d - %p - %p", tid, last_tid, start_stack, func);
-
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
-	g_assert (last_tid == tid);
-	last_pid = thread->pid;
 
-	signal_thread_manager (THREAD_MANAGER_CREATE_THREAD, thread->pid, thread);
-
-	sem_post (&thread_manager_thread_started_cond);
+	notification_function (tid, func);
 
 	mono_debugger_thread_manager_thread_created (thread);
 
@@ -161,34 +143,21 @@ mono_debugger_thread_manager_thread_created (MonoDebuggerThread *thread)
 void
 mono_debugger_thread_manager_start_resume (guint32 tid)
 {
-	IO_LAYER (EnterCriticalSection) (&thread_manager_start_mutex);
-
-	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
-	g_assert (last_tid == 0);
-	last_tid = tid;
-	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
 }
 
 void
 mono_debugger_thread_manager_end_resume (guint32 tid)
 {
-	mono_debugger_wait_cond (&thread_manager_thread_started_cond);
-
-	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
-	g_assert (last_tid == tid);
-	signal_thread_manager (THREAD_MANAGER_RESUME_THREAD, last_pid, NULL);
-	last_tid = last_pid = 0;
-	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
-
-	IO_LAYER (LeaveCriticalSection) (&thread_manager_start_mutex);
 }
 
 void
 mono_debugger_thread_manager_acquire_global_thread_lock (void)
 {
+	int tid = IO_LAYER (GetCurrentThreadId) ();
+
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 
-	signal_thread_manager (THREAD_MANAGER_ACQUIRE_GLOBAL_LOCK, getpid (), NULL);
+	signal_thread_manager (THREAD_MANAGER_ACQUIRE_GLOBAL_LOCK, tid);
 
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
 }
@@ -196,9 +165,11 @@ mono_debugger_thread_manager_acquire_global_thread_lock (void)
 void
 mono_debugger_thread_manager_release_global_thread_lock (void)
 {
+	int tid = IO_LAYER (GetCurrentThreadId) ();
+
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 
-	signal_thread_manager (THREAD_MANAGER_RELEASE_GLOBAL_LOCK, getpid (), NULL);
+	signal_thread_manager (THREAD_MANAGER_RELEASE_GLOBAL_LOCK, tid);
 
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
 }

@@ -41,7 +41,7 @@ struct _MonoDebuggerInfo {
  */
 struct _MonoDebuggerThread {
 	gpointer end_stack;
-	guint32 tid, pid;
+	guint32 tid;
 	guint32 locked;
 	gpointer func;
 	gpointer start_stack;
@@ -49,20 +49,16 @@ struct _MonoDebuggerThread {
 
 struct _MonoDebuggerManager {
 	guint32 size;
-	MonoMethod *main_method;
 	gpointer main_function;
 	MonoDebuggerThread *main_thread;
 	gpointer command_notification;
 	gpointer thread_manager_notification;
-	guint32 thread_manager_last_pid;
-	gpointer thread_manager_last_func;
-	guint32 thread_manager_last_thread;
+	guint32 *thread_manager_command;
+	guint32 *thread_manager_tid;
 };
 
 enum {
-	THREAD_MANAGER_CREATE_THREAD = 1,
-	THREAD_MANAGER_RESUME_THREAD,
-	THREAD_MANAGER_ACQUIRE_GLOBAL_LOCK,
+	THREAD_MANAGER_ACQUIRE_GLOBAL_LOCK = 1,
 	THREAD_MANAGER_RELEASE_GLOBAL_LOCK
 };
 
@@ -82,6 +78,11 @@ void mono_debugger_thread_manager_release_global_thread_lock (void);
 void mono_debugger_init_icalls (void);
 
 void MONO_DEBUGGER__start_main (void);
+
+extern MonoDebuggerManager MONO_DEBUGGER__manager;
+extern int mono_debugger_thread_manager_notify_command;
+extern int mono_debugger_thread_manager_notify_tid;
+extern gpointer mono_debugger_thread_manager_notify_data;
 
 extern void (*mono_debugger_thread_manager_notification_function) (gpointer func);
 

@@ -13,16 +13,14 @@ namespace Mono.Debugger
 {
 	public delegate bool BreakpointCheckHandler (StackFrame frame, int index, object user_data);
 	public delegate void BreakpointHitHandler (StackFrame frame, int index, object user_data);
-	public delegate bool DaemonEventHandler (TargetEventArgs args);
 	public delegate void ProcessExitedHandler (Process process);
 
 	public abstract class Process : IDisposable
 	{
 		ProcessStart start;
 
-		protected bool is_daemon;
 		int id;
-
+		protected bool is_daemon;
 		static int next_id = 0;
 
 		protected Process (ProcessStart start)
@@ -66,6 +64,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract int TID {
+			get;
+		}
+
 		public abstract TargetState State {
 			get;
 		}
@@ -100,16 +102,6 @@ namespace Mono.Debugger
 		public event TargetEventHandler TargetEvent;
 		public event TargetExitedHandler TargetExitedEvent;
 		public event ProcessExitedHandler ProcessExitedEvent;
-
-		protected virtual bool OnDaemonEvent (TargetEventArgs args)
-		{
-			if (DaemonEvent != null)
-				return DaemonEvent (args);
-
-			return false;
-		}
-
-		public event DaemonEventHandler DaemonEvent;
 
 		protected virtual void OnInferiorOutput (bool is_stderr, string line)
 		{
@@ -253,7 +245,8 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("Process ({0}:{1}:{2})", is_daemon, id, PID);
+			return String.Format ("Process ({0}:{1}:{2}:{3:x})",
+					      IsDaemon, id, PID, TID);
 		}
 
 		//

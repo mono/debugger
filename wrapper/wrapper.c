@@ -24,6 +24,7 @@ static gboolean must_send_finished = FALSE;
 #define HEAP_SIZE 1048576
 static char mono_debugger_heap [HEAP_SIZE];
 
+static MonoMethod *debugger_main_method;
 static gpointer debugger_event_data;
 static guint32 debugger_event_arg;
 
@@ -64,7 +65,9 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 
 MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
-	NULL, NULL, NULL, NULL, NULL, 0, NULL, 0
+	NULL, NULL, NULL, NULL,
+	&mono_debugger_thread_manager_notify_command,
+	&mono_debugger_thread_manager_notify_tid
 };
 
 void
@@ -114,9 +117,13 @@ debugger_compile_method (MonoMethod *method)
 	gpointer retval;
 
 	mono_debugger_lock ();
+	must_send_finished = TRUE;
 	retval = mono_compile_method (method);
 	mono_debugger_signal ();
 	mono_debugger_unlock ();
+
+	mono_debugger_wait ();
+
 	return retval;
 }
 
@@ -231,8 +238,8 @@ debugger_thread_handler (gpointer user_data)
 	 */
 
 	image = assembly->image;
-	MONO_DEBUGGER__manager.main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
-	MONO_DEBUGGER__manager.main_function = mono_compile_method ((gpointer) MONO_DEBUGGER__manager.main_method);
+	debugger_main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+	MONO_DEBUGGER__manager.main_function = mono_compile_method (debugger_main_method);
 
 	/*
 	 * Signal the main thread that we're ready.
@@ -279,7 +286,7 @@ main_thread_handler (gpointer user_data)
 	int retval;
 
 	MONO_DEBUGGER__manager.main_thread = g_new0 (MonoDebuggerThread, 1);
-	MONO_DEBUGGER__manager.main_thread->pid = getpid ();
+	MONO_DEBUGGER__manager.main_thread->tid = IO_LAYER (GetCurrentThreadId) ();
 	MONO_DEBUGGER__manager.main_thread->start_stack = &main_args;
 
 	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__manager.main_thread);
@@ -314,6 +321,29 @@ command_thread_handler (gpointer user_data)
 	return 0;
 }
 
+void
+MONO_DEBUGGER__start_main (void)
+{
+	/*
+	 * Reload symbol tables.
+	 */
+	must_send_finished = TRUE;
+	mono_debugger_signal ();
+	mono_debugger_unlock ();
+
+	mono_debugger_wait ();
+
+	/*
+	 * Signal the main thread that it can execute the managed Main().
+	 */
+	sem_post (&main_ready_cond);
+	sem_post (&command_ready_cond);
+
+	mono_debugger_thread_manager_main ();
+
+	mono_thread_manage ();
+}
+
 int
 mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp)
 {
@@ -345,7 +375,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 */
 
 	main_args.domain = domain;
-	main_args.method = MONO_DEBUGGER__manager.main_method;
+	main_args.method = debugger_main_method;
 	main_args.argc = argc - 2;
 	main_args.argv = argv + 2;
 
@@ -360,24 +390,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	mono_install_thread_callbacks (&thread_callbacks);
 	mono_debugger_thread_manager_init ();
 
-	/*
-	 * Reload symbol tables.
-	 */
-	must_send_finished = TRUE;
-	mono_debugger_signal ();
-	mono_debugger_unlock ();
-
-	mono_debugger_wait ();
-
-	/*
-	 * Signal the main thread that it can execute the managed Main().
-	 */
-	sem_post (&main_ready_cond);
-	sem_post (&command_ready_cond);
-
-	mono_debugger_thread_manager_main ();
-
-	mono_thread_manage ();
+	MONO_DEBUGGER__start_main ();
 
 	return 0;
 }

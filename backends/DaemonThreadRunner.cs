@@ -15,16 +15,17 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class DaemonThreadRunner : IDisposable
 	{
-		public DaemonThreadRunner (Process process, Inferior inferior,
-					   DaemonThreadHandler handler)
+		internal DaemonThreadRunner (NativeProcess process, Inferior inferior,
+					     DaemonThreadHandler handler)
 		{
 			this.process = process;
 			this.inferior = inferior;
 			this.pid = inferior.PID;
 			this.daemon_thread_handler = handler;
 
-			process.DaemonEvent += new DaemonEventHandler (daemon_event);
+			process.DaemonEventHandler = new DaemonEventHandler (daemon_event);
 			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
+			process.SetDaemonFlag ();
 		}
 
 		public void Run ()
@@ -39,7 +40,8 @@ namespace Mono.Debugger.Backends
 				TargetExited ();
 		}
 
-		bool daemon_event (TargetEventArgs args)
+		bool daemon_event (NativeProcess process, Inferior inferior,
+				   TargetEventArgs args)
 		{
 			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data != 0)) {
 				int signal = (int) args.Data;

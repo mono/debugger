@@ -119,6 +119,19 @@ namespace Mono.Debugger.Backends
 			message = mono_debugger_server_dispatch_event (
 				server_handle, status, out arg, out data1, out data2);
 
+			switch (message) {
+			case ChildEventType.CHILD_EXITED:
+			case ChildEventType.CHILD_SIGNALED:
+				change_target_state (TargetState.EXITED);
+				break;
+
+			case ChildEventType.CHILD_CALLBACK:
+			case ChildEventType.CHILD_STOPPED:
+			case ChildEventType.CHILD_HIT_BREAKPOINT:
+				change_target_state (TargetState.STOPPED);
+				break;
+			}
+
 			return new ChildEvent (message, arg, data1, data2);
 		}
 

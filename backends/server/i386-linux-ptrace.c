@@ -100,22 +100,22 @@ _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long 
 }
 
 static int
-do_wait (guint32 *status)
+do_wait (int pid, guint32 *status)
 {
 	int ret;
 
-	ret = waitpid (-1, status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
+	ret = waitpid (pid, status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
 	if (ret < 0) {
-		g_warning (G_STRLOC ": Can't waitpid: %s", g_strerror (errno));
+		g_warning (G_STRLOC ": Can't waitpid for %d: %s", pid, g_strerror (errno));
 		return -1;
 	} else if (ret)
 		return ret;
 
 	GC_start_blocking ();
-	ret = waitpid (-1, status, WUNTRACED | __WALL | __WCLONE);
+	ret = waitpid (pid, status, WUNTRACED | __WALL | __WCLONE);
 	GC_end_blocking ();
 	if (ret < 0) {
-		g_warning (G_STRLOC ": Can't waitpid: %s", g_strerror (errno));
+		g_warning (G_STRLOC ": Can't waitpid for %d: %s", pid, g_strerror (errno));
 		return -1;
 	}
 
@@ -127,7 +127,7 @@ mono_debugger_server_wait (guint64 *status_ret)
 {
 	int ret, status;
 
-	ret = do_wait (&status);
+	ret = do_wait (-1, &status);
 	if (ret < 0)
 		return -1;
 
@@ -136,9 +136,17 @@ mono_debugger_server_wait (guint64 *status_ret)
 }
 
 void
-_mono_debugger_server_setup_inferior (ServerHandle *handle)
+_mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
+
+	if (!is_main) {
+		int status;
+
+		do_wait (handle->inferior->pid, &status);
+
+		i386_arch_get_registers (handle);
+	}
 
 	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
 
@@ -146,6 +154,10 @@ _mono_debugger_server_setup_inferior (ServerHandle *handle)
 		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
 
 	g_free (filename);
+
+	if (!is_main) {
+		handle->inferior->tid = i386_arch_get_tid (handle);
+	}
 }
 
 gboolean

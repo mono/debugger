@@ -301,6 +301,18 @@ i386_arch_get_registers (ServerHandle *handle)
 		g_error (G_STRLOC ": Can't get fp registers");
 }
 
+guint32
+i386_arch_get_tid (ServerHandle *handle)
+{
+	guint32 start = INFERIOR_REG_ESP (handle->arch->current_regs) + 12;
+	guint32 tid;
+
+	if (mono_debugger_server_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get tid");
+
+	return tid;
+}
+
 ChildStoppedAction
 i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 			 guint64 *callback_arg, guint64 *retval, guint64 *retval2)

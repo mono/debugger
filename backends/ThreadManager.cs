@@ -155,44 +155,6 @@ namespace Mono.Debugger
 				main_process.Kill ();
 		}
 
-		protected enum ThreadManagerCommand {
-			Unknown,
-			CreateThread,
-			ResumeThread,
-			AcquireGlobalLock,
-			ReleaseGlobalLock
-		};
-
-		protected class ThreadData {
-			public readonly int TID;
-			public readonly int PID;
-			public readonly bool IsManaged;
-			public readonly Process Process;
-			public readonly TargetAddress StartStack;
-			public readonly TargetAddress Data;
-
-			public ThreadData (Process process, int tid, int pid,
-					   TargetAddress start_stack, TargetAddress data)
-			{
-				this.IsManaged = true;
-				this.Process = process;
-				this.TID = tid;
-				this.PID = pid;
-				this.StartStack = start_stack;
-				this.Data = data;
-			}
-
-			public ThreadData (Process process, int pid)
-			{
-				this.IsManaged = false;
-				this.Process = process;
-				this.TID = -1;
-				this.PID = pid;
-				this.StartStack = TargetAddress.Null;
-				this.Data = TargetAddress.Null;
-			}
-		};
-
 		void inferior_output (bool is_stderr, string line)
 		{
 			if (TargetOutputEvent != null)

@@ -612,7 +612,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ScriptingContext
 	{
 		ProcessHandle current_process;
-		ArrayList procs;
+		Hashtable procs;
 
 		DebuggerBackend backend;
 		DebuggerTextWriter command_output;
@@ -646,7 +646,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 
-			procs = new ArrayList ();
+			procs = new Hashtable ();
 			current_process = null;
 
 			scripting_variables = new Hashtable ();
@@ -701,7 +701,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public ProcessHandle[] Processes {
 			get {
 				ProcessHandle[] retval = new ProcessHandle [procs.Count];
-				procs.CopyTo (retval, 0);
+				procs.Values.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -826,9 +826,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("No program loaded.");
 
 			Process process = backend.Run (start);
-			current_process = new ProcessHandle (this, backend, process, -1);
-
-			add_process (current_process);
+			current_process = (ProcessHandle) procs [process];
 
 			return process;
 		}
@@ -1122,7 +1120,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		void add_process (ProcessHandle process)
 		{
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-			procs.Add (process);
+			procs.Add (process.Process, process);
 		}
 
 		void target_exited ()

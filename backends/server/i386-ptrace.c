@@ -37,7 +37,7 @@
 
 struct InferiorHandle
 {
-	int pid;
+	int pid, tid;
 #ifdef __linux__
 	int mem_fd;
 #endif
@@ -180,7 +180,7 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 		}
 
 		default:
-			g_warning (G_STRLOC ": Received unknown wait result %lx on child %d",
+			g_warning (G_STRLOC ": Received unknown wait result %Lx on child %d",
 				   status, handle->inferior->pid);
 			return MESSAGE_UNKNOWN_ERROR;
 		}
@@ -227,7 +227,7 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 		return MESSAGE_CHILD_SIGNALED;
 	}
 
-	g_warning (G_STRLOC ": Got unknown waitpid() result: %lx", status);
+	g_warning (G_STRLOC ": Got unknown waitpid() result: %Lx", status);
 	return MESSAGE_UNKNOWN_ERROR;
 }
 
@@ -319,14 +319,14 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 	}
 
 	inferior->pid = *child_pid;
-	_mono_debugger_server_setup_inferior (handle);
+	_mono_debugger_server_setup_inferior (handle, TRUE);
 	*has_thread_manager = _mono_debugger_server_setup_thread_manager (handle);
 
 	return COMMAND_ERROR_NONE;
 }
 
 ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, int pid)
+mono_debugger_server_attach (ServerHandle *handle, guint32 pid, guint32 *tid)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -335,7 +335,9 @@ mono_debugger_server_attach (ServerHandle *handle, int pid)
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
-	_mono_debugger_server_setup_inferior (handle);
+	_mono_debugger_server_setup_inferior (handle, FALSE);
+
+	*tid = inferior->tid;
 
 	return COMMAND_ERROR_NONE;
 }

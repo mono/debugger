@@ -30,7 +30,8 @@ ServerCommandError _mono_debugger_server_set_registers (InferiorHandle *, INFERI
 ServerCommandError _mono_debugger_server_get_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
 ServerCommandError _mono_debugger_server_set_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
 ServerCommandError _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long value);
-void _mono_debugger_server_setup_inferior (ServerHandle *handle);
+void _mono_debugger_server_setup_inferior (ServerHandle *handle, gboolean is_main);
 gboolean _mono_debugger_server_has_thread_manager (ServerHandle *handle);
+gboolean _mono_debugger_server_setup_thread_manager (ServerHandle *handle);
 
 #endif

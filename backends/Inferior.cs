@@ -38,7 +38,7 @@ namespace Mono.Debugger.Backends
 		protected readonly AddressDomain global_address_domain;
 		protected readonly bool native;
 
-		int child_pid;
+		int child_pid, tid;
 		bool initialized;
 
 		ITargetInfo target_info;
@@ -60,6 +60,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public int TID {
+			get {
+				check_disposed ();
+				return tid;
+			}
+		}
+
 		public SingleSteppingEngine SingleSteppingEngine {
 			get {
 				return sse;
@@ -76,7 +83,7 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error, out bool has_thread_manager);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid);
+		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_pc (IntPtr handle, out long pc);
@@ -485,7 +492,7 @@ namespace Mono.Debugger.Backends
 
 			initialized = true;
 
-			check_error (mono_debugger_server_attach (server_handle, pid));
+			check_error (mono_debugger_server_attach (server_handle, pid, out tid));
 			this.child_pid = pid;
 
 			SetupInferior ();
@@ -854,7 +861,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetState change_target_state (TargetState new_state)
+		protected TargetState change_target_state (TargetState new_state)
 		{
 			return change_target_state (new_state, 0);
 		}
@@ -1088,6 +1095,13 @@ namespace Mono.Debugger.Backends
 			check_error (result);
 
 			return new TargetAddress (GlobalAddressDomain, address);
+		}
+
+		public TargetAddress GetStackPointer ()
+		{
+			long esp = GetRegister ((int) I386Register.ESP);
+
+			return new TargetAddress (address_domain, esp);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
