@@ -209,6 +209,29 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
+		public string GetFullPathByFilename (string filename){
+			string retval = null;
+
+			backend.ModuleManager.Lock ();
+
+			foreach (Module module in modules) {
+				if (!module.SymbolsLoaded)
+					continue;
+
+				foreach (SourceFile source in module.SymbolFile.Sources) {
+					if (filename.Equals (source.Name)) {
+						retval = source.FileName;
+						break;
+					}
+				}
+			}
+
+			backend.ModuleManager.UnLock ();
+
+			return retval;
+		}
+
+
 		public string GetFullPath (string filename)
 		{
 			if (start == null)
@@ -217,7 +240,11 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (Path.IsPathRooted (filename))
 				return filename;
 
-			return String.Concat (start.BaseDirectory, DirectorySeparatorStr, filename);
+			string path = GetFullPathByFilename (filename);
+			if (path == null)
+				path = String.Concat (start.BaseDirectory, DirectorySeparatorStr, filename);
+
+			return path;
 		}
 
 		void target_output (bool is_stderr, string line)

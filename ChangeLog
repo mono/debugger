@@ -1,5 +1,12 @@
 2004-10-21  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/scripting/Interpreter.cs
+	(Interpreter.GetFullPathByFilename): new method - find the full
+	path given just the filename.  This makes emacs breakpoints (C-x
+	space) work.
+
+2004-10-21  Chris Toshok  <toshok@ximian.com>
+
 	* frontends/scripting/Style.cs (StyleNative.FormatEvent): new
 	function.
 	(StyleNative.FormatType): format both instance and static events.
