@@ -1,5 +1,11 @@
 2004-03-04  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (ProcessCommand): Call Step()
+	for OperationType.Run and OperationType.RunInBackground.
+	(Step, DoStep): Allow OperationType.Run(InBackground).
+
+2004-03-04  Martin Baulig  <martin@ximian.com>
+
 	* classes/Backtrace.cs (Length): Return 0 if we don't have any
 	frame.
 

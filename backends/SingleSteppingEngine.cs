@@ -151,6 +151,10 @@ namespace Mono.Debugger.Backends
 				inferior.EnableBreakpoint (stepping_over_breakpoint);
 				manager.ReleaseGlobalThreadLock (this);
 				stepping_over_breakpoint = 0;
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} stepped over breakpoint: {1} ({2:x}) {3}",
+					      this, cevent, status, current_operation);
 			}
 
 			if (manager.HandleChildEvent (inferior, cevent))
@@ -301,11 +305,7 @@ namespace Mono.Debugger.Backends
 			switch (operation.Type) {
 			case OperationType.Run:
 			case OperationType.RunInBackground:
-				TargetAddress until = operation.Until;
-				if (!until.IsNull)
-					do_continue (until);
-				else
-					do_continue ();
+				Step (operation);
 				break;
 
 			case OperationType.StepNativeInstruction:
@@ -1404,7 +1404,8 @@ namespace Mono.Debugger.Backends
 
 			Report.Debug (DebugFlags.SSE, "{0} starting {1}", this, operation);
 
-			if (operation.StepFrame == null) {
+			if ((operation.Type != OperationType.Run) &&
+			    (operation.StepFrame == null)) {
 				do_step ();
 				return true;
 			}
@@ -1480,6 +1481,15 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		protected bool DoStep (bool first)
 		{
+			if (current_operation.Type == OperationType.Run) {
+				TargetAddress until = current_operation.Until;
+				if (!until.IsNull)
+					do_continue (until);
+				else
+					do_continue ();
+				return false;
+			}
+
 			StepFrame frame = current_operation.StepFrame;
 			if (frame == null)
 				return true;
