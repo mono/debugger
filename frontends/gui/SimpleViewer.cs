@@ -30,9 +30,16 @@ namespace Mono.Debugger.GUI {
 
 		Program kit;
 		GDB backend;
+		uint status_id;
+
+		string application;
+		string[] arguments;
 
 		SimpleViewer (string application, string[] arguments)
 		{
+			this.application = application;
+			this.arguments = arguments;
+
 			string[] args = new string [0];
 			kit = new Program ("simple-viewer", "0.0.1", Modules.UI, args);
 			
@@ -48,6 +55,8 @@ namespace Mono.Debugger.GUI {
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
 			backend.SourceFileFactory = new SourceFileFactory ();
+
+			Timeout.Add (100, new TimeoutHandler (backend.IdleLoop));
 		}
 
 		StringBuilder output_builder = null;
@@ -65,28 +74,58 @@ namespace Mono.Debugger.GUI {
 			AddOutput (output);
 		}
 
-		public void AddOutput (string output)
+		void AddOutput (string output)
 		{
 			output_buffer.Insert (output_buffer.EndIter, output + "\n",
 					      output.Length+1);
 			output_area.ScrollToMark (output_buffer.InsertMark, 0.4, true, 0.0, 1.0);
 		}
 
+		bool has_frame = false;
+
+		void StatusMessage (string message)
+		{
+			status_bar.Pop (status_id);
+			status_bar.Push (status_id, message);
+		}
+
 		void StateChanged (TargetState new_state)
 		{
-			Console.WriteLine ("STATE CHANGED: " + new_state);
+			switch (new_state) {
+			case TargetState.RUNNING:
+				StatusMessage ("Running ....");
+				break;
+
+			case TargetState.STOPPED:
+				if (!has_frame)
+					StatusMessage ("Stopped.");
+				break;
+
+			case TargetState.EXITED:
+				StatusMessage ("Program terminated.");
+				break;
+
+			case TargetState.NO_TARGET:
+				StatusMessage ("No target to debug.");
+				break;
+			}
 		}
 
 		ISourceBuffer current_buffer = null;
 
 		void FramesInvalidEvent ()
 		{
+			has_frame = false;
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+			StateChanged (backend.State);
 		}
 
 		void CurrentFrameEvent (IStackFrame frame)
 		{
-			if (frame.SourceLocation == null)
+			has_frame = true;
+			StatusMessage (frame.ToString ());
+
+			if ((frame.SourceLocation == null) || (frame.SourceLocation.Buffer == null))
 				return;
 
 			Gtk.TextBuffer buffer = text_view.Buffer;
@@ -113,54 +152,6 @@ namespace Mono.Debugger.GUI {
 			text_buffer.MoveMark (frame_mark, start_iter);
 
 			text_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
-
-			uint id = status_bar.GetContextId ("frame");
-			status_bar.Push (id, frame.ToString ());
-		}
-
-		Gtk.TextView CreateSourceView ()
-		{
-			Gtk.TextView text = new Gtk.TextView ();
-
-			text.Editable = false;
-
-			frame_tag = new Gtk.TextTag ("frame");
-			frame_tag.Background = "red";
-
-			text.Buffer.TagTable.Add (frame_tag);
-
-			frame_mark = text.Buffer.CreateMark ("frame", text.Buffer.StartIter, true);
-
-			return text;
-		}
-
-		Gtk.TextView CreateOutputArea ()
-		{
-			Gtk.TextView text = new Gtk.TextView ();
-
-			text.Editable = true;
-			text.WrapMode = Gtk.WrapMode.None;
-
-			return text;
-		}
-
-		Gtk.Statusbar CreateStatusBar ()
-		{
-			Gtk.Statusbar status = new Gtk.Statusbar ();
-
-			status.HasResizeGrip = false;
-
-			return status;
-		}
-
-		Gtk.Entry CreateCommandEntry ()
-		{
-			Gtk.Entry entry = new Gtk.Entry ();
-
-			entry.ActivatesDefault = true;
-			entry.Activated += new EventHandler (DoOneCommand);
-
-			return entry;
 		}
 
 		void ShowHelp ()
@@ -311,13 +302,33 @@ namespace Mono.Debugger.GUI {
 			Gnome.App win = new Gnome.App ("simple-viewer", "Mono Debugger");
 			win.DeleteEvent += new DeleteEventHandler (Window_Delete);
 
-			text_view = CreateSourceView ();
-			output_area = CreateOutputArea ();
-			status_bar = CreateStatusBar ();
-			command_entry = CreateCommandEntry ();
+			text_view = new Gtk.TextView ();
+			text_view.Editable = false;
+
+			frame_tag = new Gtk.TextTag ("frame");
+			frame_tag.Background = "red";
+
+			text_buffer = text_view.Buffer;
+			text_buffer.TagTable.Add (frame_tag);
+
+			frame_mark = text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
+
+			output_area = new Gtk.TextView ();
+
+			output_area.Editable = false;
+			output_area.WrapMode = Gtk.WrapMode.None;
 
 			output_buffer = output_area.Buffer;
-			text_buffer = text_view.Buffer;
+
+			status_bar = new Gtk.Statusbar ();
+			status_bar.HasResizeGrip = false;
+
+			status_id = status_bar.GetContextId ("message");
+
+			command_entry = new Gtk.Entry ();
+
+			command_entry.ActivatesDefault = true;
+			command_entry.Activated += new EventHandler (DoOneCommand);
 
 			VBox vbox = new VBox (false, 0);
 

@@ -33,6 +33,7 @@ namespace Mono.Debugger.Backends
 		ISourceFileFactory source_file_factory;
 
 		ManualResetEvent gdb_event;
+		Mutex gdb_mutex;
 
 		int last_breakpoint_id;
 
@@ -67,6 +68,8 @@ namespace Mono.Debugger.Backends
 
 			gdb_output = process.StandardOutput.BaseStream;
 			gdb_errors = process.StandardError.BaseStream;
+
+			gdb_mutex = new Mutex (false);
 
 			gdb_output_thread = new Thread (new ThreadStart (check_gdb_output));
 			gdb_output_thread.Start ();
@@ -484,6 +487,12 @@ namespace Mono.Debugger.Backends
 
 				current_frame.SourceLocation.SourceBuffer =
 					source_file_factory.FindFile (source_file);
+
+				if (current_frame.SourceLocation.SourceBuffer == null) {
+					if (target_error != null)
+						target_error ("Can't find source file: " + source_file);
+				}
+
 				break;
 
 			case "frame-source-line":
@@ -703,48 +712,92 @@ namespace Mono.Debugger.Backends
 			return text.ToString ();
 		}
 
-		void check_gdb_output (bool is_stderr)
+		ArrayList gdb_output_list = new ArrayList ();
+		ArrayList gdb_error_list = new ArrayList ();
+
+		void check_gdb_output (string line, bool is_stderr)
+		{
+			if ((line.Length > 2) && (line [0] == 26) && (line [1] == 26)) {
+				string annotation = line.Substring (2);
+				string[] args;
+
+				int idx = annotation.IndexOf (' ');
+				if (idx > 0) {
+					args = annotation.Substring (idx+1).Split (' ');
+					annotation = annotation.Substring (0, idx);
+				} else
+					args = new string [0];
+
+				HandleAnnotation (annotation, args);
+			} else if (!HandleOutput (line)) {
+				if (is_stderr) {
+					if (target_error != null)
+						target_error (line);
+				} else {
+					if (target_output != null)
+						target_output (line);
+				}
+			}
+		}
+
+		public bool IdleLoop ()
+		{
+			gdb_mutex.WaitOne ();
+
+			foreach (string line in gdb_output_list)
+				check_gdb_output (line, false);
+
+			foreach (string line in gdb_error_list)
+				check_gdb_output (line, true);
+
+			gdb_output_list.Clear ();
+			gdb_error_list.Clear ();
+
+			gdb_mutex.ReleaseMutex ();
+
+			return true;
+		}
+
+		void check_gdb_output ()
 		{
 			while (true) {
-				string line = read_one_line (is_stderr ? gdb_errors : gdb_output);
+				string line = read_one_line (gdb_output);
 
 				if (line == "")
 					continue;
 				if (line == null)
 					break;
 
-				if ((line.Length > 2) && (line [0] == 26) && (line [1] == 26)) {
-					string annotation = line.Substring (2);
-					string[] args;
+				gdb_mutex.WaitOne ();
 
-					int idx = annotation.IndexOf (' ');
-					if (idx > 0) {
-						args = annotation.Substring (idx+1).Split (' ');
-						annotation = annotation.Substring (0, idx);
-					} else
-						args = new string [0];
+				if (line == "\x1a\x1aprompt")
+					gdb_event.Set ();
 
-					HandleAnnotation (annotation, args);
-				} else if (!HandleOutput (line)) {
-					if (is_stderr) {
-						if (target_error != null)
-							target_error (line);
-					} else {
-						if (target_output != null)
-							target_output (line);
-					}
-				}
+				gdb_output_list.Add (line);
+
+				gdb_mutex.ReleaseMutex ();
 			}
-		}
-
-		void check_gdb_output ()
-		{
-			check_gdb_output (false);
 		}
 
 		void check_gdb_errors ()
 		{
-			check_gdb_output (true);
+			while (true) {
+				string line = read_one_line (gdb_errors);
+
+				if (line == "")
+					continue;
+				if (line == null)
+					break;
+
+				gdb_mutex.WaitOne ();
+
+				if (line == "\x1a\x1aprompt")
+					gdb_event.Set ();
+
+				gdb_error_list.Add (line);
+
+				gdb_mutex.ReleaseMutex ();
+			}
 		}
 
 		//

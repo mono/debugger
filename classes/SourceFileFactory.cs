@@ -18,26 +18,14 @@ public class SourceFile : ISourceFile
 	void ReadFile ()
 	{
 		try {
-			FileStream stream = file_info.OpenRead ();
-
-			char[] result = new char [stream.Length];
-
-			long count = 0;
-			while (true) {
-				int b = stream.ReadByte ();
-				if (b == -1)
-					break;
-
-				result [count++] = (char) b;
-			};
-
-			stream.Close ();
-
-			contents = new String (result);
+			using (StreamReader reader = file_info.OpenText ()) {
+				contents = reader.ReadToEnd ();
+			}
 		} catch {
 			return;
 		}
 	}
+
 
 	public string Name {
 		get {
