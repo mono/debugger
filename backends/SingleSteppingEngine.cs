@@ -272,7 +272,6 @@ namespace Mono.Debugger.Backends
 			if (State == TargetState.STOPPED) {
 				frames_invalid ();
 				current_method = null;
-				must_send_update = true;
 				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 			}
 		}
@@ -567,7 +566,6 @@ namespace Mono.Debugger.Backends
 		IMethod current_method;
 		StackFrame current_frame;
 		StackFrame[] current_backtrace;
-		bool must_send_update;
 
 		// <summary>
 		//   Compute the StackFrame for target address @address.
@@ -598,7 +596,6 @@ namespace Mono.Debugger.Backends
 				current_frame = new StackFrame (
 					inferior, address, frames [0], 0);
 
-			must_send_update = true;
 			return current_frame;
 		}
 
@@ -628,35 +625,6 @@ namespace Mono.Debugger.Backends
 		Command frame_changed (TargetAddress address, int arg, StepOperation operation)
 		{
 			IMethod old_method = current_method;
-
-#if FALSE
-			// We stopped normally (not because of a signal), a source
-			// stepping operation is running in we're still within it's step
-			// frame - so continue stepping.
-			if ((arg == 0) &&
-			    (current_operation != StepOperation.None) &&
-			    (current_operation != StepOperation.Native) &&
-			    (current_operation_frame != null) &&
-			    is_in_step_frame (current_operation_frame, address)) {
-				Step (current_operation_frame);
-				return;
-			}
-
-			// `must_send_update' means that we must recompute the current
-			// stack frame (including a new method lookup).
-			//
-			// If we don't need to do this and already have a current stack
-			// frame which is still valid (this happens if child_event()
-			// already needed to compute it), just send the notification that
-			// we've stopped.
-			if (!must_send_update && (current_frame != null) &&
-			    current_frame.IsValid && (current_frame.TargetAddress == address)) {
-				current_operation = StepOperation.None;
-				change_target_state (TargetState.STOPPED, arg);
-				return;
-			}
-#endif
-
 
 			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
@@ -692,8 +660,8 @@ namespace Mono.Debugger.Backends
 				current_frame = new StackFrame (
 					inferior, address, frames [0], 0);
 
-			// If the method changed or we `must_send_update', notify our clients.
-			if (must_send_update || (current_method != old_method)) {
+			// If the method changed, notify our clients.
+			if (current_method != old_method) {
 				if (current_method != null) {
 					if (MethodChangedEvent != null)
 						MethodChangedEvent (current_method);
@@ -702,8 +670,6 @@ namespace Mono.Debugger.Backends
 						MethodInvalidEvent ();
 				}
 			}
-
-			must_send_update = false;
 
 			if (FrameChangedEvent != null)
 				FrameChangedEvent (current_frame);
