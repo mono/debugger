@@ -15,7 +15,7 @@ noinst_PROGRAMS = testbfd
 testbfd_SOURCES = testbfd.c
 testbfd_LDADD = libmonodebuggerbfdglue.la
 
-INCLUDES = -I$(srcdir)/opcodes @BASE_DEPENDENCIES_CFLAGS@
+INCLUDES = -I$(srcdir)/bfd -I$(srcdir)/bfd/include -I$(srcdir)/opcodes @BASE_DEPENDENCIES_CFLAGS@
 
 CLEANFILES = lib*.a lib*.dll
 

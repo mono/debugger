@@ -1,8 +1,6 @@
 #include <bfdglue.h>
 #include <signal.h>
 #include <string.h>
-#include <link.h>
-#include <elf.h>
 #ifdef __linux__
 #include <sys/user.h>
 #include <sys/procfs.h>
@@ -15,12 +13,36 @@
 int
 main (void)
 {
-  bfd *bfd;
+	bfd *abfd;
+	asymbol **symtab = NULL;
+	void *dis;
+	int storage_needed;
 
-  bfd_init ();
+	bfd_init ();
 
-  bfd = bfd_openr ("testbfd.o", NULL);
+	abfd = bfd_openr ("testbfd.o", NULL);
+	if (!abfd) {
+		bfd_perror (NULL);
+		return 1;
+	}
 
-  printf ("BFD: %p\n", bfd);
-  return 0;
+	if (!bfd_check_format (abfd, bfd_object)) {
+		bfd_perror (NULL);
+		return 2;
+	}
+
+#if 0
+	if (!bfd_check_format (abfd, bfd_core)) {
+		bfd_perror (NULL);
+		return 3;
+	}
+#endif
+
+	storage_needed = bfd_glue_get_symbols (abfd, &symtab);
+
+	dis = disassembler (abfd);
+
+	printf ("BFD: %p - %d - %p - %p\n", abfd, storage_needed, symtab, dis);
+
+	return 0;
 }
