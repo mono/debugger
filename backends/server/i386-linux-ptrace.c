@@ -101,15 +101,14 @@ _mono_debugger_server_set_dr (InferiorHandle *handle, int regnum, unsigned long 
 }
 
 GStaticMutex wait_mutex = G_STATIC_MUTEX_INIT;
+GStaticMutex wait_mutex_2 = G_STATIC_MUTEX_INIT;
 
 static int
 do_wait (int pid, guint32 *status)
 {
 	int ret;
 
-	g_static_mutex_lock (&wait_mutex);
 	ret = waitpid (pid, status, WUNTRACED | __WALL | __WCLONE);
-	g_static_mutex_unlock (&wait_mutex);
 	if (ret < 0) {
 		if (errno == EINTR)
 			return 0;
@@ -123,6 +122,9 @@ do_wait (int pid, guint32 *status)
 static int first_status = 0;
 static int first_ret = 0;
 
+static int stop_requested = 0;
+static int stop_status = 0;
+
 guint32
 mono_debugger_server_global_wait (guint64 *status_ret)
 {
@@ -134,9 +136,19 @@ mono_debugger_server_global_wait (guint64 *status_ret)
 		return first_ret;
 	}
 
+	g_static_mutex_lock (&wait_mutex);
 	ret = do_wait (-1, &status);
+	g_static_mutex_unlock (&wait_mutex);
 	if (ret <= 0)
 		return ret;
+
+	g_static_mutex_lock (&wait_mutex_2);
+	if (ret == stop_requested) {
+		stop_status = status;
+		g_static_mutex_unlock (&wait_mutex_2);
+		return 0;
+	}
+	g_static_mutex_unlock (&wait_mutex_2);
 
 	*status_ret = status;
 	return ret;
@@ -178,20 +190,30 @@ mono_debugger_server_stop_and_wait (ServerHandle *handle, guint32 *status)
 	 * Try to get the thread's registers.  If we suceed, then it's already stopped
 	 * and still alive.
 	 */
+	g_static_mutex_lock (&wait_mutex_2);
 	result = mono_debugger_server_stop (handle);
-	if (result != COMMAND_ERROR_NONE)
+	if (result != COMMAND_ERROR_NONE) {
+		g_static_mutex_unlock (&wait_mutex_2);
 		return result;
+	}
+
+	stop_requested = handle->inferior->pid;
+	g_static_mutex_unlock (&wait_mutex_2);
 
 	g_static_mutex_lock (&wait_mutex);
-	result = i386_arch_get_registers (handle);
-	g_static_mutex_unlock (&wait_mutex);
+	if (stop_status) {
+		*status = stop_status;
+		stop_requested = stop_status = 0;
+		g_static_mutex_unlock (&wait_mutex);
+		return COMMAND_ERROR_NONE;
+	}
 
-	if (result == COMMAND_ERROR_NONE)
-		return COMMAND_ERROR_ALREADY_STOPPED;
+	stop_requested = stop_status = 0;
 
 	do {
 		ret = do_wait (handle->inferior->pid, status);
 	} while (ret == 0);
+	g_static_mutex_unlock (&wait_mutex);
 
 	/*
 	 * Should never happen.

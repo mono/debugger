@@ -1147,6 +1147,7 @@ namespace Mono.Debugger.Backends
 
 			stepping_over_breakpoint = index;
 			inferior.Step ();
+			manager.RequestWait ();
 
 			return true;
 		}
@@ -1766,7 +1767,14 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public void AcquireThreadLock ()
 		{
+			Report.Debug (DebugFlags.Threads,
+				      "{0} acquiring thread lock", this);
+
 			stopped = inferior.Stop (out stop_event);
+
+			Report.Debug (DebugFlags.Threads,
+				      "{0} acquired thread lock: {1} {2}",
+				      this, stopped, stop_event);
 
 			get_registers ();
 			long esp = (long) registers [(int) I386Register.ESP].Data;
@@ -1778,14 +1786,24 @@ namespace Mono.Debugger.Backends
 
 		public void ReleaseThreadLock ()
 		{
+			Report.Debug (DebugFlags.Threads,
+				      "{0} releasing thread lock: {1} {2}",
+				      this, stopped, stop_event);
+
 			// If the target was already stopped, there's nothing to do for us.
 			if (!stopped)
 				return;
-			else if (stop_event != null) {
+			if (stop_event != null) {
 				// The target stopped before we were able to send the SIGSTOP,
 				// but we haven't processed this event yet.
 				Inferior.ChildEvent cevent = stop_event;
 				stop_event = null;
+
+				if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+				    (cevent.Argument == 0)) {
+					do_continue ();
+					return;
+				}
 
 				if (manager.HandleChildEvent (inferior, cevent))
 					return;
