@@ -60,7 +60,6 @@ mono_debugger_breakpoint_manager_insert (BreakpointManager *bpm, BreakpointInfo 
 BreakpointInfo *
 mono_debugger_breakpoint_manager_lookup (BreakpointManager *bpm, guint64 address)
 {
-	g_message (G_STRLOC ": %p - %p", bpm, bpm->breakpoint_by_addr);
 	return g_hash_table_lookup (bpm->breakpoint_by_addr, GUINT_TO_POINTER (address));
 }
 
