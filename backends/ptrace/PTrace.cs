@@ -548,6 +548,7 @@ namespace Mono.Debugger.Backends
 
 			case ChildEventType.CHILD_EXITED:
 			case ChildEventType.CHILD_SIGNALED:
+				backend.ChildExited ();
 				change_target_state (TargetState.EXITED, arg);
 				break;
 

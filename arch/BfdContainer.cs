@@ -71,15 +71,8 @@ namespace Mono.Debugger.Architecture
 			bfd_hash.Add (filename, bfd);
 
 			OnModulesChangedEvent ();
-			if (new_module)
-				module.ModuleChangedEvent += new ModuleEventHandler (module_changed);
 
 			return bfd;
-		}
-
-		void module_changed (Module module)
-		{
-			OnModulesChangedEvent ();
 		}
 
 		public void CloseBfd (Bfd bfd)

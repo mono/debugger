@@ -449,6 +449,18 @@ namespace Mono.Debugger
 			modules_changed ();
 		}
 
+		internal void ChildExited ()
+		{
+			if (current_modules == null)
+				return;
+
+			modules_locked = true;
+			foreach (Module module in current_modules)
+				module.UnLoad ();
+			modules_locked = false;
+			modules_changed ();
+		}
+
 		void load_core (string core_file, string[] argv)
 		{
 			core = new CoreFileElfI386 (this, argv [0], core_file, bfd_container);

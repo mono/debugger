@@ -190,9 +190,6 @@ namespace Mono.Debugger.Languages.CSharp
 			ranges = new ArrayList ();
 			types = new Hashtable ();
 			type_cache = new Hashtable ();
-
-			foreach (MonoModule module in modules.Values)
-				module.UnLoad ();
 		}
 
 		void check_inferior ()
