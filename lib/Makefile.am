@@ -56,7 +56,7 @@ DEPS = \
 	-r Mono.Debugger.dll	\
 	-r Mono.Debugger.Backend.dll			\
 	-r ../widgets/gtk/gtksourceview-sharp.dll	\
-	-r ../widgets/mono.debugger.gui/debugger-widgets.dll
+	-r ../widgets/mono.debugger.gui/mono.debugger.gui-sharp.dll
 
 INTERPRETER_DEPS = \
 	-r Mono.GetOptions	\
