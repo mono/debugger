@@ -1,5 +1,11 @@
 <?xml version="1.0"?>
 <api>
+<!--
+
+        This file was automatically generated.
+        Please DO NOT MODIFY THIS FILE, modify .metadata files instead.
+
+-->
   <namespace name="Mono.Debugger.GUI" library="debuggerwidgets">
     <object name="DebuggerEntry" cname="DebuggerEntry" parent="GtkEntry">
       <signal name="PreviousLine" cname="previous_line" when="LAST">
@@ -18,6 +24,60 @@
         <return-type type="GType"/>
       </method>
       <constructor cname="debugger_entry_new"/>
+    </object>
+    <object name="DebuggerTerminal" cname="DebuggerTerminal" parent="GtkWidget">
+      <method name="Feed" cname="debugger_terminal_feed">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="gchar*" name="text"/>
+        </parameters>
+      </method>
+      <method name="GetBell" cname="debugger_terminal_get_bell">
+        <return-type type="gboolean"/>
+      </method>
+      <method name="GetType" cname="debugger_terminal_get_type" shared="true">
+        <return-type type="GType"/>
+      </method>
+      <method name="GetVadjustment" cname="debugger_terminal_get_vadjustment">
+        <return-type type="GtkAdjustment*"/>
+      </method>
+      <constructor cname="debugger_terminal_new"/>
+      <method name="SetBell" cname="debugger_terminal_set_bell">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="gboolean" name="state"/>
+        </parameters>
+      </method>
+      <method name="SetBlink" cname="debugger_terminal_set_blink">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="gboolean" name="state"/>
+        </parameters>
+      </method>
+      <method name="SetFontName" cname="debugger_terminal_set_font_name">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="const-char*" name="font_name"/>
+        </parameters>
+      </method>
+      <method name="SetScrollOnKeystroke" cname="debugger_terminal_set_scroll_on_keystroke">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="gboolean" name="state"/>
+        </parameters>
+      </method>
+      <method name="SetScrollOnOutput" cname="debugger_terminal_set_scroll_on_output">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="gboolean" name="state"/>
+        </parameters>
+      </method>
+      <method name="SetScrollback" cname="debugger_terminal_set_scrollback">
+        <return-type type="void"/>
+        <parameters>
+          <parameter type="int" name="scrollback"/>
+        </parameters>
+      </method>
     </object>
   </namespace>
 </api>

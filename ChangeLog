@@ -1,5 +1,19 @@
 2003-04-21  Martin Baulig  <martin@ximian.com>
 
+	Use a new libzvt based terminal widget to display the target's
+	output instead of the old Gtk.TextView based one.
+
+	* configure.in: Require libzvt-2.0.
+
+	* widgets/sources/debuggerwidgets/debuggerterminal.[ch]: New
+	files.  This is a new terminal widget using libzvt.
+
+	* widgets/Mono.Debugger.GUI.metadata: New file.
+
+	* frontends/gui/OutputWindow.cs: Use the new DebuggerTerminal widget.
+
+2003-04-21  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs (Quit): Removed.
 
 	* frontends/scripting/ScriptingContext.cs (process_events):

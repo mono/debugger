@@ -85,8 +85,8 @@ if test "x$have_gtk" = "xno"; then
 	AC_MSG_WARN(Building the GUI is disabled!)
 fi
 if test "x$build_gui" = "xyes"; then
-	BUILD_GTK_CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0 libgnome-2.0`
-	BUILD_GTK_LIBS=`$PKG_CONFIG --libs gtk+-2.0 libgnome-2.0`
+	BUILD_GTK_CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0 libgnome-2.0 libzvt-2.0`
+	BUILD_GTK_LIBS=`$PKG_CONFIG --libs gtk+-2.0 libgnome-2.0 libzvt-2.0`
 	GUI_TARGETS=Debugger.exe
 else
 	BUILD_GTK_CFLAGS=
@@ -133,7 +133,6 @@ MONO_REQUIRED_VERSION=0.23
 PKG_CHECK_MODULES(MINI_WRAPPER, mini >= $MONO_REQUIRED_VERSION libgc-mono >= 6.1)
 AC_SUBST(MINI_WRAPPER_CFLAGS)
 AC_SUBST(MINI_WRAPPER_LIBS)
-
 
 AC_SUBST(CFLAGS)
 

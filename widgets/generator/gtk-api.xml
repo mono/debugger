@@ -1,5 +1,11 @@
 <?xml version="1.0"?>
 <api>
+<!--
+
+        This file was automatically generated.
+        Please DO NOT MODIFY THIS FILE, modify .metadata files instead.
+
+-->
   <namespace name="Gtk" library="gtksourceview">
     <enum name="ETextSearchFlags" cname="GtkETextSearchFlags" type="enum">
       <member cname="GTK_ETEXT_SEARCH_VISIBLE_ONLY" name="VisibleOnly"/>

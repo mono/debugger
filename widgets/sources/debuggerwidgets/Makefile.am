@@ -16,6 +16,8 @@ $(libdebuggerwidgets_la_SOURCES): $(BUILD_SOURCES)
 libdebuggerwidgets_la_SOURCES = \
 	debuggerentry.c			\
 	debuggerentry.h			\
+	debuggerterminal.c		\
+	debuggerterminal.h		\
 	debuggerwidgets-marshal.c	\
 	debuggerwidgets-marshal.h
 

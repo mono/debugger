@@ -1,7 +1,8 @@
 using Gtk;
+using GNOME;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Text;
 using Pango;
 
 namespace Mono.Debugger.GUI {
@@ -13,53 +14,63 @@ namespace Mono.Debugger.GUI {
 	// </summary>
 	public class OutputWindow : DebuggerTextWriter
 	{
-		Gtk.TextView output_area;
-		Gtk.TextBuffer output_buffer;
-		Gtk.TextTag error_tag;
-		Gtk.TextMark last_mark;
+		DebuggerTerminal term;
+		ThreadNotify thread_notify;
+		int notify_id;
 
-		public OutputWindow (Gtk.TextView output_area)
+		public OutputWindow (DebuggerGUI gui, Gtk.Container container)
 		{
-			this.output_area = output_area;
+			Gtk.HBox hbox = new Gtk.HBox (false, 0);
+			hbox.Spacing = 2;
+			container.BorderWidth = 2;
+			container.Add (hbox);
 
-			output_area.Editable = false;
-			output_area.WrapMode = Gtk.WrapMode.None;
-			output_buffer = output_area.Buffer;
+			term = new DebuggerTerminal ();
+			term.Blink = true;
+			term.Bell = true;
+			term.Scrollback = 500;
+			term.ScrollOnKeystroke = false;
+			term.ScrollOnOutput = false;
+			term.FontName = "-*-courier-medium-r-normal--18-*-*-*-*-*-*-*";
 
-			FontDescription font = FontDescription.FromString ("Monospace");
-			output_area.ModifyFont (font);
+			Gtk.VScrollbar scrollbar = new Gtk.VScrollbar (term.Vadjustment);
+			hbox.PackStart (term, true, true, 0);
+			hbox.PackStart (scrollbar, false, true, 0);
+			hbox.ShowAll ();
 
-			error_tag = new Gtk.TextTag ("error");
-			error_tag.Foreground = "red";
-
-			output_buffer.TagTable.Add (error_tag);
-
-			last_mark = output_buffer.CreateMark ("last", output_buffer.StartIter, true);
+			thread_notify = gui.ThreadNotify;
+			notify_id = thread_notify.RegisterListener (new ReadyEventHandler (output_event));
 		}
 
-		// <summary>
-		//   The widget to be embedded into the parent application.
-		// </summary>
-		public Gtk.Widget Widget {
-			get {
-				return output_area;
+		void output_event ()
+		{
+			lock (this) {
+				if (sb == null)
+					return;
+
+				term.Feed (sb.ToString ());
+				sb = null;
+				signaled = false;
 			}
 		}
+
+		StringBuilder sb = null;
+		bool signaled = false;
 
 		// <summary>
 		//   The TextWriter's main output function.
 		// </summary>
                 public override void Write (bool is_stderr, string output)
 		{
-			output_buffer.Insert (output_buffer.EndIter, output);
-
-			if (is_stderr) {
-				Gtk.TextIter start_iter;
-				output_buffer.GetIterAtMark (out start_iter, last_mark);
-				output_buffer.ApplyTag (error_tag, start_iter, output_buffer.EndIter);
+			lock (this) {
+				if (sb == null)
+					sb = new StringBuilder ();
+				sb.Append (output);
+				if (!signaled) {
+					thread_notify.Signal (notify_id);
+					signaled = true;
+				}
 			}
-			output_buffer.MoveMark (last_mark, output_buffer.EndIter);
-			output_area.ScrollToMark (last_mark, 0.4, true, 0.0, 1.0);
 		}
 	}
 }

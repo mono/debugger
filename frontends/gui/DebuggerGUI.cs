@@ -120,8 +120,8 @@ namespace Mono.Debugger.GUI
 		DebuggerManager manager;
 		About about_dialog;
 
-		Gtk.TextView target_output;
-		Gtk.TextView command_output;
+		Gtk.Container target_output;
+		Gtk.Container command_output;
 
 		DebuggerTextWriter output_writer;
 		DebuggerTextWriter command_writer;
@@ -208,11 +208,11 @@ namespace Mono.Debugger.GUI
 			main_window = (App) gxml ["debugger-toplevel"];
 
 			command_entry = (Gtk.Entry) gxml ["command-entry"];
-			command_output = (Gtk.TextView) gxml ["command-output"];
-			target_output = (Gtk.TextView) gxml ["target-output"];
+			command_output = (Gtk.Container) gxml ["command-output"];
+			target_output = (Gtk.Container) gxml ["target-output"];
 
-			output_writer = new OutputWindow (target_output);
-			command_writer = new OutputWindow (command_output);
+			output_writer = new OutputWindow (this, target_output);
+			command_writer = new OutputWindow (this, command_output);
 
 			locals_display = new VariableDisplay (this, "locals-display", true);
 			params_display = new VariableDisplay (this, "params-display", false);
@@ -398,8 +398,8 @@ namespace Mono.Debugger.GUI
 		void OnQuitActivate (object sender, EventArgs args)
 		{
 			if (backend != null) {
-				backend.Quit ();
 				backend.Dispose ();
+				backend = null;
 			}
 
 			program.Quit ();
@@ -504,7 +504,7 @@ namespace Mono.Debugger.GUI
 
 		void AddOutput (string output)
 		{
-			output_writer.WriteLine (true, output);
+			output_writer.Write (true, output);
 		}
 
 		void DoOneCommand (object sender, EventArgs event_args)
@@ -517,7 +517,6 @@ namespace Mono.Debugger.GUI
 
 			if (!interpreter.ProcessCommand (line)) {
 				if (backend != null) {
-					backend.Quit ();
 					backend.Dispose ();
 					backend = null;
 				}
