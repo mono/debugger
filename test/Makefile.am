@@ -1,5 +1,7 @@
 MCS_FLAGS=-g
 
+noinst_SCRIPTS = $(test_FILES)
+
 test_FILES = TestManagedTypes.exe
 
 EXTRA_DIST = @srcdir@/*.cs
