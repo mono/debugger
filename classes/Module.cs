@@ -80,6 +80,21 @@ namespace Mono.Debugger
 		public event ModuleEventHandler SymbolsLoadedEvent;
 		public event ModuleEventHandler SymbolsUnLoadedEvent;
 
+		bool is_loaded = false;
+		protected virtual void CheckLoaded ()
+		{
+			bool new_is_loaded = IsLoaded;
+
+			if (new_is_loaded != is_loaded) {
+				is_loaded = new_is_loaded;
+
+				if (is_loaded)
+					OnModuleLoadedEvent ();
+				else
+					OnModuleUnLoadedEvent ();
+			}
+		}
+
 		protected virtual void OnModuleLoadedEvent ()
 		{
 			if (ModuleLoadedEvent != null)

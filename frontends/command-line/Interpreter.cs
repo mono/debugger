@@ -426,10 +426,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 				string language = module.Language != null ?
 					module.Language.Name : "native";
 
-				Console.WriteLine ("  {0} {1} {2} {3} {4} {5} {6}",
+				string library = "";
+				ISymbolContainer container = module as ISymbolContainer;
+				if (container != null) {
+					if (module.IsLoaded && container.IsContinuous)
+						library = String.Format ("{0} {1}", container.StartAddress,
+									 container.EndAddress);
+					else if (container.IsContinuous)
+						library = "library";
+				}
+
+				Console.WriteLine ("  {0} {1} {2} {3} {4} {5} {6} {7}",
 						   module.Name, module.FullName, language,
 						   module.IsLoaded, module.SymbolsLoaded,
-						   module.LoadSymbols, module.StepInto);
+						   module.LoadSymbols, module.StepInto,
+						   library);
 
 				foreach (SourceInfo source in module.Sources) {
 					Console.WriteLine ("    SOURCE: {0}", source);

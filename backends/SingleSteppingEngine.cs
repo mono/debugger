@@ -262,6 +262,7 @@ namespace Mono.Debugger.Backends
 				reached_main = true;
 				main_method_retaddr = inferior.GetReturnAddress ();
 				frames_invalid ();
+				inferior.UpdateModules ();
 			}
 
 			switch (message) {

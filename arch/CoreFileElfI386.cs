@@ -72,10 +72,9 @@ namespace Mono.Debugger.Architecture
 			return retval;
 		}
 
-		public override TargetAddress CurrentFrame {
-			get {
-				return new TargetAddress (this, registers [(int) I386Register.EIP]);
-			}
+		protected override TargetAddress GetCurrentFrame ()
+		{
+			return new TargetAddress (this, registers [(int) I386Register.EIP]);
 		}
 
 		public override long GetRegister (int index)

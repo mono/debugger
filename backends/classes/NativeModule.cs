@@ -27,10 +27,7 @@ namespace Mono.Debugger.Backends
 
 			set {
 				inferior = value;
-				if (inferior != null)
-					OnModuleLoadedEvent ();
-				else
-					OnModuleUnLoadedEvent ();
+				CheckLoaded ();
 			}
 		}
 

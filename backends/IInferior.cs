@@ -91,6 +91,8 @@ namespace Mono.Debugger.Backends
 						out TargetAddress exc_object);
 		TargetAddress SimpleLookup (string name);
 
+		void UpdateModules ();
+
 		long GetRegister (int register);
 		long[] GetRegisters (int[] registers);
 		TargetAddress GetReturnAddress ();

@@ -13,10 +13,15 @@ namespace Mono.Debugger.Architecture
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : IDisposable
+	internal class Bfd : ISymbolContainer, IDisposable
 	{
 		IntPtr bfd;
+		protected BfdContainer container;
 		protected IInferior inferior;
+		protected Bfd core_file_bfd;
+		protected Bfd main_bfd;
+		TargetAddress first_link_map = TargetAddress.Null;
+		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		Hashtable symbols;
 		Hashtable section_hash;
 		DwarfReader dwarf;
@@ -24,13 +29,24 @@ namespace Mono.Debugger.Architecture
 		string filename;
 		bool is_coredump;
 		bool step_into;
+		bool initialized;
+		bool has_shlib_info;
+		TargetAddress base_address, end_address;
+
+		[Flags]
+		internal enum SectionFlags {
+			Load = 1,
+			Alloc = 2,
+			ReadOnly = 4
+		};
 
 		internal struct InternalSection
 		{
 			public readonly int index;
+			public readonly int flags;
 			public readonly long vma;
 			public readonly long size;
-			public readonly IntPtr section;
+			public readonly long section;
 		}
 
 		public class Section
@@ -38,6 +54,7 @@ namespace Mono.Debugger.Architecture
 			public readonly Bfd bfd;
 			public readonly long vma;
 			public readonly long size;
+			public readonly SectionFlags flags;
 			public readonly ObjectCache contents;
 
 			internal Section (Bfd bfd, InternalSection section)
@@ -45,6 +62,7 @@ namespace Mono.Debugger.Architecture
 				this.bfd = bfd;
 				this.vma = section.vma;
 				this.size = section.size;
+				this.flags = (SectionFlags) section.flags;
 				contents = new ObjectCache (
 					new ObjectCacheFunc (get_section_contents), section,
 					new TimeSpan (0,5,0));
@@ -54,7 +72,7 @@ namespace Mono.Debugger.Architecture
 			{
 				InternalSection section = (InternalSection) user_data;
 
-				byte[] data = bfd.GetSectionContents (section.section, true);
+				byte[] data = bfd.GetSectionContents (new IntPtr (section.section), true);
 				return new TargetReader (data, bfd.inferior);
 			}
 
@@ -67,7 +85,8 @@ namespace Mono.Debugger.Architecture
 
 			public override string ToString ()
 			{
-				return String.Format ("BfdSection ({0:x},{1:x})", vma, size);
+				return String.Format ("BfdSection ({0:x}:{1:x}:{2}:{3})", vma, size,
+						      flags, bfd.FileName);
 			}
 		}
 
@@ -107,6 +126,12 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static bool bfd_glue_get_sections (IntPtr bfd, out IntPtr sections, out int count);
 
+		[DllImport("libmonodebuggerbfdglue")]
+		extern static bool bfd_glue_get_section_by_name (IntPtr bfd, string name, out IntPtr section);
+
+		[DllImport("libmonodebuggerbfdglue")]
+		extern static long bfd_glue_elfi386_locate_base (IntPtr bfd, IntPtr data, int size);
+
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
@@ -119,11 +144,14 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (IInferior inferior, string filename, bool core_file, BfdModule module)
+		public Bfd (BfdContainer container, IInferior inferior, string filename, bool core_file,
+			    BfdModule module, TargetAddress base_address)
 		{
+			this.container = container;
 			this.inferior = inferior;
 			this.filename = filename;
 			this.module = module;
+			this.base_address = base_address;
 
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -158,6 +186,115 @@ namespace Mono.Debugger.Architecture
 			}
 
 			g_free (symtab);
+
+			if (!base_address.IsNull) {
+				InternalSection bss = GetSectionByName (".bss");
+				end_address = base_address + bss.vma;
+			}
+		}
+
+		bool read_dynamic_info ()
+		{
+			if (initialized)
+				return has_shlib_info;
+
+			initialized = true;
+
+			InternalSection section = GetSectionByName (".dynamic");
+
+			TargetAddress vma = new TargetAddress (inferior, section.vma);
+
+			int size = (int) section.size;
+			byte[] dynamic = inferior.ReadBuffer (vma, size);
+
+			TargetAddress debug_base;
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (size);
+				Marshal.Copy (dynamic, 0, data, size);
+				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
+				if (base_ptr == 0)
+					return false;
+				debug_base = new TargetAddress (inferior, base_ptr);
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+			}
+
+			ITargetMemoryReader reader = inferior.ReadMemory (debug_base, 20);
+			if (reader.ReadInteger () != 1)
+				return false;
+
+			first_link_map = reader.ReadAddress ();
+			dynlink_breakpoint = reader.ReadAddress ();
+			if (reader.ReadInteger () != 0)
+				return false;
+
+			read_sections ();
+
+			has_shlib_info = true;
+			return true;
+		}
+
+		public void UpdateSharedLibraryInfo ()
+		{
+			if (!read_dynamic_info ())
+				return;
+
+			bool first = true;
+			TargetAddress map = first_link_map;
+			while (!map.IsNull) {
+				ITargetMemoryReader map_reader = inferior.ReadMemory (map, 16);
+
+				TargetAddress l_addr = map_reader.ReadAddress ();
+				TargetAddress l_name = map_reader.ReadAddress ();
+				TargetAddress l_ld = map_reader.ReadAddress ();
+
+				string name;
+				try {
+					name = inferior.ReadString (l_name);
+				} catch {
+					name = null;
+				}
+
+				map = map_reader.ReadAddress ();
+
+				if (first) {
+					first = false;
+					continue;
+				}
+
+				if (name == null)
+					continue;
+
+				Bfd library_bfd = container.AddFile (inferior, name, false, l_addr, null);
+			}
+		}
+
+		public Bfd CoreFileBfd {
+			get {
+				return core_file_bfd;
+			}
+
+			set {
+				core_file_bfd = value;
+				if (core_file_bfd != null) {
+					InternalSection text = GetSectionByName (".text");
+
+					base_address = new TargetAddress (inferior, text.vma);
+					end_address = new TargetAddress (inferior, text.vma + text.size);
+				}
+			}
+		}
+
+		public Bfd MainBfd {
+			get {
+				return main_bfd;
+			}
+
+			set {
+				main_bfd = value;
+			}
 		}
 
 		public void ReadDwarf ()
@@ -235,8 +372,12 @@ namespace Mono.Debugger.Architecture
 					return section;
 				}
 
+				if (main_bfd != null)
+					return main_bfd [address];
+
 				throw new SymbolTableException (String.Format (
-					"No section contains address {0:x}.", address));
+					"No section in file {1} contains address {0:x}.", address,
+					filename));
 			}
 		}
 
@@ -275,10 +416,25 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		InternalSection GetSectionByName (string name)
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				if (!bfd_glue_get_section_by_name (bfd, name, out data))
+					throw new SymbolTableException (
+						"Can't get bfd section `%s'", name);
+
+				return (InternalSection) Marshal.PtrToStructure (
+					data, typeof (InternalSection));
+			} finally {
+				g_free (data);
+			}
+		}
+
 		bool has_sections = false;
 		Section[] sections = null;
 
-		void read_sections ()
+		protected void read_sections ()
 		{
 			if (has_sections)
 				return;
@@ -316,6 +472,34 @@ namespace Mono.Debugger.Architecture
 				return null;
 
 			return dwarf.GetSources ();
+		}
+
+		//
+		// ISymbolContainer
+		//
+
+		public bool IsContinuous {
+			get {
+				return !end_address.IsNull;
+			}
+		}
+
+		public TargetAddress StartAddress {
+			get {
+				if (!IsContinuous)
+					throw new InvalidOperationException ();
+
+				return base_address;
+			}
+		}
+
+		public TargetAddress EndAddress {
+			get {
+				if (!IsContinuous)
+					throw new InvalidOperationException ();
+
+				return end_address;
+			}
 		}
 
 		//

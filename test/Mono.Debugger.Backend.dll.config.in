@@ -1,4 +1,7 @@
 <configuration>
+  <configSections>
+    <section name="appSettings" type="System.Configuration.NameValueFileSectionHandler,System"/>
+  </configSections>
   <appSettings>
     <add key="gdb-path" value="@GDB@" />
     <add key="mono-path" value="@MONO@" />

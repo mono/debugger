@@ -22,13 +22,14 @@ namespace Mono.Debugger
 
 	public class DebuggerBackend : ITargetNotification, ISymbolLookup, IDisposable
 	{
-		public readonly string Path_Mono	= "mono";
+		public readonly string Path_Mono	= "/home/martin/MONO-LINUX/bin/mono";
 		public readonly string Environment_Path	= "/usr/bin";
 
 		SymbolTableCollection symtabs;
 		BfdContainer bfd_container;
 
 		IInferior inferior;
+		CoreFile core;
 		ArrayList languages;
 		MonoCSharpLanguageBackend csharp_language;
 		SingleSteppingEngine sse;
@@ -236,6 +237,7 @@ namespace Mono.Debugger
 
 			sse = null;
 			symtabs = null;
+			core = null;
 
 			frames_invalid ();	
 			if (FramesInvalidEvent != null)
@@ -296,8 +298,6 @@ namespace Mono.Debugger
 					application = Assembly.LoadFrom (target_application);
 				} catch (Exception e) {
 					application = null;
-					if (core_file != null)
-						return;
 				}
 
 				if (application != null) {
@@ -420,7 +420,8 @@ namespace Mono.Debugger
 
 		void load_core (string core_file, string[] argv)
 		{
-			inferior = new CoreFileElfI386 (argv [0], core_file, bfd_container);
+			core = new CoreFileElfI386 (argv [0], core_file, bfd_container);
+			inferior = core;
 
 			symtabs = new SymbolTableCollection ();
 			symtabs.AddSymbolTable (inferior.SymbolTable);
@@ -431,6 +432,8 @@ namespace Mono.Debugger
 				inferior.ApplicationSymbolTable = csharp_language.SymbolTable;
 				UpdateSymbolTable ();
 			}
+
+			ReloadFrame ();
 		}
 
 		public void Quit ()
@@ -591,12 +594,23 @@ namespace Mono.Debugger
 
 		public StackFrame CurrentFrame {
 			get {
-				return sse.CurrentFrame;
+				if (State != TargetState.CORE_FILE)
+					return sse.CurrentFrame;
+				else
+					return core.CurrentFrame;
 			}
 		}
 
 		public StackFrame ReloadFrame ()
 		{
+			if (StateChanged != null)
+				StateChanged (State, 0);
+
+			IMethod method = CurrentMethod;
+
+			if ((method != null) && (MethodChangedEvent != null))
+				MethodChangedEvent (method);
+
 			StackFrame frame = CurrentFrame;
 
 			if (FrameChangedEvent != null)
@@ -607,13 +621,19 @@ namespace Mono.Debugger
 
 		public IMethod CurrentMethod {
 			get {
-				return sse.CurrentMethod;
+				if (State != TargetState.CORE_FILE)
+					return sse.CurrentMethod;
+				else
+					return core.CurrentMethod;
 			}
 		}
 
 		public StackFrame[] GetBacktrace ()
 		{
-			return sse.GetBacktrace ();
+			if (State != TargetState.CORE_FILE)
+				return sse.GetBacktrace ();
+			else
+				return core.GetBacktrace ();
 		}
 
 		public long GetRegister (int register)

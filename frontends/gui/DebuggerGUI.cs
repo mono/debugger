@@ -150,6 +150,7 @@ namespace Mono.Debugger.GUI
 			command_entry.Activated += new EventHandler (DoOneCommand);
 			command_entry.Sensitive = false;
 
+#if FALSE
 			//
 			// The items that we sensitize
 			//
@@ -176,6 +177,7 @@ namespace Mono.Debugger.GUI
 				new string [] {
 					"stop-button", "stop-program-menu"
 				}, TargetState.RUNNING);
+#endif
 
 			StateSensitivityUpdate (TargetState.NO_TARGET);
 

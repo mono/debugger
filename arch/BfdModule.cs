@@ -10,15 +10,18 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal sealed class BfdModule : NativeModule
+	internal sealed class BfdModule : NativeModule, ISymbolContainer
 	{
 		Bfd bfd;
 		string filename;
+		bool is_library;
+		TargetAddress start, end;
 
-		public BfdModule (string filename, DebuggerBackend backend)
+		public BfdModule (string filename, DebuggerBackend backend, bool is_library)
 			: base (filename, backend)
 		{
 			this.filename = filename;
+			this.is_library = is_library;
 		}
 
 		public override ILanguageBackend Language {
@@ -40,10 +43,22 @@ namespace Mono.Debugger.Architecture
 
 			set {
 				bfd = value;
-				if (bfd != null)
+				if (bfd != null) {
 					OnSymbolsLoadedEvent ();
-				else
+					if (bfd.IsContinuous) {
+						start = bfd.StartAddress;
+						end = bfd.EndAddress;
+						is_library = true;
+						CheckLoaded ();
+					}
+				} else
 					OnSymbolsUnLoadedEvent ();
+			}
+		}
+
+		public override bool IsLoaded {
+			get {
+				return base.IsLoaded && !start.IsNull;
 			}
 		}
 
@@ -60,6 +75,34 @@ namespace Mono.Debugger.Architecture
 		protected override SourceInfo[] GetSources ()
 		{
 			return Bfd.GetSources ();
+		}
+
+		//
+		// ISymbolContainer
+		//
+
+		public bool IsContinuous {
+			get {
+				return is_library;
+			}
+		}
+
+		public TargetAddress StartAddress {
+			get {
+				if (!IsContinuous || !IsLoaded)
+					throw new InvalidOperationException ();
+
+				return start;
+			}
+		}
+
+		public TargetAddress EndAddress {
+			get {
+				if (!IsContinuous || !IsLoaded)
+					throw new InvalidOperationException ();
+
+				return end;
+			}
 		}
 
 		//

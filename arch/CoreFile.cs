@@ -21,13 +21,40 @@ namespace Mono.Debugger.Architecture
 
 		public CoreFile (string application, string core_file, BfdContainer bfd_container)
 		{
-			bfd = bfd_container.AddFile (this, application, false);
-			core_bfd = new Bfd (this, core_file, true, null);
-
-			Console.WriteLine ("CORE DUMP FROM: {0}", core_bfd.CrashProgram);
-
-			// bfd_disassembler = bfd.GetDisassembler (this);
 			arch = new ArchitectureI386 (this);
+
+			core_file = Path.GetFullPath (core_file);
+			application = Path.GetFullPath (application);
+
+			core_bfd = new Bfd (bfd_container, this, core_file, true, null, TargetAddress.Null);
+			bfd = bfd_container.AddFile (this, application, false, TargetAddress.Null, core_bfd);
+			bfd.ReadDwarf ();
+
+			core_bfd.MainBfd = bfd;
+
+			bfd_disassembler = bfd.GetDisassembler (this);
+
+			string crash_program = Path.GetFullPath (core_bfd.CrashProgram);
+
+			if (crash_program != application)
+				throw new CannotStartTargetException (String.Format (
+					"Core file (generated from {0}) doesn't match executable {1}.",
+					crash_program, application));
+
+			bool ok;
+			try {
+				DateTime core_date = Directory.GetLastWriteTime (core_file);
+				DateTime app_date = Directory.GetLastWriteTime (application);
+
+				ok = app_date < core_date;
+			} catch {
+				ok = false;
+			}
+
+			if (!ok)
+				throw new CannotStartTargetException (String.Format (
+					"Executable {0} is more recent than core file {1}.",
+					application, core_file));
 
 			native_symtabs = new SymbolTableCollection ();
 
@@ -42,14 +69,85 @@ namespace Mono.Debugger.Architecture
 			update_symtabs ();
 		}
 
+		public void UpdateModules ()
+		{
+			bfd.UpdateSharedLibraryInfo ();
+		}
+
 		void update_symtabs ()
 		{
+			UpdateModules ();
 			symtab_collection = new SymbolTableCollection ();
 			symtab_collection.AddSymbolTable (native_symtabs);
 			symtab_collection.AddSymbolTable (application_symtab);
 
 			if (bfd_disassembler != null)
 				bfd_disassembler.SymbolTable = symtab_collection;
+		}
+
+		bool has_current_method = false;
+		IMethod current_method = null;
+
+		public IMethod CurrentMethod {
+			get {
+				if (has_current_method)
+					return current_method;
+
+				has_current_method = true;
+				current_method = symtab_collection.Lookup (IInferior.CurrentFrame);
+				return current_method;
+			}
+		}
+
+		bool has_current_frame = false;
+		StackFrame current_frame = null;
+
+		public StackFrame CurrentFrame {
+			get {
+				if (has_current_frame)
+					return current_frame;
+
+				TargetAddress address = IInferior.CurrentFrame;
+				IMethod method = CurrentMethod;
+
+				if ((method != null) && method.HasSource) {
+					SourceLocation source = method.Source.Lookup (address);
+
+					current_frame = new StackFrame (this, address, null, source, method);
+				} else
+					current_frame = new StackFrame (this, address, null);
+
+				has_current_frame = true;
+				return current_frame;
+			}
+		}
+
+		bool has_backtrace = false;
+		StackFrame[] backtrace = null;
+
+		public StackFrame[] GetBacktrace ()
+		{
+			if (has_backtrace)
+				return backtrace;
+
+			IInferiorStackFrame[] frames = GetBacktrace (-1, TargetAddress.Null);
+			backtrace = new StackFrame [frames.Length];
+
+			for (int i = 0; i < frames.Length; i++) {
+				TargetAddress address = frames [i].Address;
+
+				IMethod method = symtab_collection.Lookup (address);
+				if ((method != null) && method.HasSource) {
+					SourceLocation source = method.Source.Lookup (address);
+					backtrace [i] = new StackFrame (
+						this, address, frames [i], source, method);
+				} else
+					backtrace [i] = new StackFrame (
+						this, address, frames [i]);
+			}
+
+			has_backtrace = true;
+			return backtrace;
 		}
 
 		protected class CoreFileStackFrame : IInferiorStackFrame
@@ -97,8 +195,12 @@ namespace Mono.Debugger.Architecture
 		// IInferior
 		//
 
-		public abstract TargetAddress CurrentFrame {
-			get;
+		protected abstract TargetAddress GetCurrentFrame ();
+
+		TargetAddress IInferior.CurrentFrame {
+			get {
+				return GetCurrentFrame ();
+			}
 		}
 
 		public TargetAddress SimpleLookup (string name)

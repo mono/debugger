@@ -1,3 +1,16 @@
+2002-10-10  Martin Baulig  <martin@gnome.org>
+
+	Improved core file support.
+
+	* backends/IInferior.cs (IInferior.UpdateModules): New method to
+	reload the modules.
+
+	* backends/Debugger.cs (Backend.CurrentFrame, Backend.CurrentMethod,
+	Backend.GetBacktrace): Don't use the SingleSteppingEngine if this
+	is a core file.
+
+	* arch/Bfd.cs: Improved support for core files and shared libraries.
+
 2002-10-09  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/VariableDisplay.cs: Add a few GUI touchups to the

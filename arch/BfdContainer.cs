@@ -36,6 +36,12 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd AddFile (IInferior inferior, string filename, bool step_into)
 		{
+			return AddFile (inferior, filename, step_into, TargetAddress.Null, null);
+		}
+
+		public Bfd AddFile (IInferior inferior, string filename, bool step_into,
+				    TargetAddress base_address, Bfd core_bfd)
+		{
 			bool new_module = false;
 
 			check_disposed ();
@@ -44,16 +50,17 @@ namespace Mono.Debugger.Architecture
 
 			BfdModule module = (BfdModule) module_hash [filename];
 			if (module == null) {
-				module = new BfdModule (filename, backend);
+				module = new BfdModule (filename, backend, !base_address.IsNull);
 				module.LoadSymbols = true;
 				module.StepInto = step_into;
-				module.Inferior = inferior;
 				module_hash.Add (filename, module);
  				new_module = true;
 			}
 
-			Bfd bfd = new Bfd (inferior, filename, false, module);
+			Bfd bfd = new Bfd (this, inferior, filename, false, module, base_address);
+			bfd.CoreFileBfd = core_bfd;
  			module.Bfd = bfd;
+			module.Inferior = inferior;
 			bfd_hash.Add (filename, bfd);
 
 			update_symtabs ();

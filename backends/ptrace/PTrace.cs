@@ -393,15 +393,6 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			try {
-				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
-				if (load_native_symtab)
-					bfd.ReadDwarf ();
-			} catch (Exception e) {
-				error_handler (this, String.Format (
-					"Can't read symbol file {0}", argv [0]), e);
-			}
-
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
@@ -418,15 +409,6 @@ namespace Mono.Debugger.Backends
 			inferior_stdout = new IOInputChannel (stdout_fd);
 			inferior_stderr = new IOInputChannel (stderr_fd);
 
-			setup_inferior (load_native_symtab);
-		}
-
-		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
-				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
-		{
-			this.envp = envp;
-			this.bfd_container = bfd_container;
-
 			try {
 				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
 				if (load_native_symtab)
@@ -436,6 +418,15 @@ namespace Mono.Debugger.Backends
 					"Can't read symbol file {0}", argv [0]), e);
 			}
 
+			setup_inferior (load_native_symtab);
+		}
+
+		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
+				       BfdContainer bfd_container, DebuggerErrorHandler error_handler)
+		{
+			this.envp = envp;
+			this.bfd_container = bfd_container;
+
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
@@ -444,6 +435,15 @@ namespace Mono.Debugger.Backends
 				server_handle, pid, new TargetExitedHandler (child_exited),
 				new ChildEventHandler (child_event),
 				new ChildCallbackHandler (child_callback)));
+
+			try {
+				bfd = bfd_container.AddFile (this, argv [0], load_native_symtab);
+				if (load_native_symtab)
+					bfd.ReadDwarf ();
+			} catch (Exception e) {
+				error_handler (this, String.Format (
+					"Can't read symbol file {0}", argv [0]), e);
+			}
 
 			setup_inferior (load_native_symtab);
 		}
@@ -483,6 +483,11 @@ namespace Mono.Debugger.Backends
 			}
 
 			update_symtabs ();
+		}
+
+		public void UpdateModules ()
+		{
+			bfd.UpdateSharedLibraryInfo ();
 		}
 
 		void update_symtabs ()
