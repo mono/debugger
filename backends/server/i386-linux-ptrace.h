@@ -58,7 +58,7 @@ static gboolean
 _server_ptrace_setup_thread_manager (ServerHandle *handle);
 
 static ServerCommandError
-server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo *sinfo);
+server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo);
 
 static int
 do_wait (int pid, guint32 *status);

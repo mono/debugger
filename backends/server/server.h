@@ -306,7 +306,7 @@ struct InferiorVTable {
 	ServerCommandError    (* kill)                (ServerHandle     *handle);
 
 	ServerCommandError    (* get_signal_info)     (ServerHandle     *handle,
-						       SignalInfo       *sinfo);
+						       SignalInfo      **sinfo);
 
 	void                  (* set_notification)    (guint64           notification);
 };
@@ -481,7 +481,7 @@ mono_debugger_server_kill                (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_get_signal_info     (ServerHandle        *handle,
-					  SignalInfo          *sinfo);
+					  SignalInfo         **sinfo);
 
 void
 mono_debugger_server_set_notification    (guint64              notification);

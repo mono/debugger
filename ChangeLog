@@ -1,5 +1,15 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/server.h
+	(mono_debugger_server_get_signal_info): Changed type of last
+	argument to `SignalInfo **'; returns a pointer to the g_new()ed
+	SignalInfo struct.
+
+	* backends/ptrace/PTrace.cs (PTraceInferior.SetupInferior):
+	Correctly marshal the SignalInfo struct.
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.h (SignalInfo): Removed `sigprof',
 	`sigpwr', `sigxcpu', `thread_abort', `thread_restart',
 	`thread_debug' and `mono_thread_debug'; added `mono_thread_abort'.

@@ -331,14 +331,17 @@ _server_ptrace_setup_thread_manager (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
+server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 {
+	SignalInfo *sinfo = g_new0 (SignalInfo, 1);
+
 	sinfo->sigkill = SIGKILL;
 	sinfo->sigstop = SIGSTOP;
 	sinfo->sigint = SIGINT;
 	sinfo->sigchld = SIGCHLD;
-
 	sinfo->mono_thread_abort = mono_thread_get_abort_signal ();
+
+	*sinfo_out = sinfo;
 
 	return COMMAND_ERROR_NONE;
 }

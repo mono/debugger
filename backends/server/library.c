@@ -283,6 +283,7 @@ ServerCommandError
 mono_debugger_server_get_backtrace (ServerHandle *handle, gint32 max_frames, guint64 stop_address,
 				    guint32 *count, StackFrame **frames)
 {
+	*frames = NULL;
 	if (!global_vtable->get_backtrace)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
@@ -339,8 +340,10 @@ mono_debugger_server_kill (ServerHandle *handle)
 }
 
 ServerCommandError
-mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
+mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo **sinfo)
 {
+	*sinfo = NULL;
+
 	if (!global_vtable->get_signal_info)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 

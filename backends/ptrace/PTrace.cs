@@ -21,7 +21,7 @@ namespace Mono.Debugger.Backends
 		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, ref SignalInfo sinfo);
+		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, out IntPtr data);
 
 		private struct SignalInfo
 		{
@@ -62,8 +62,17 @@ namespace Mono.Debugger.Backends
 
 		protected override void SetupInferior ()
 		{
-			check_error (mono_debugger_server_get_signal_info (server_handle, ref signal_info));
-			has_signals = true;
+			IntPtr data = IntPtr.Zero;
+			try {
+				check_error (mono_debugger_server_get_signal_info (
+						     server_handle, out data));
+
+				signal_info = (SignalInfo) Marshal.PtrToStructure (
+					data, typeof (SignalInfo));
+				has_signals = true;
+			} finally {
+				g_free (data);
+			}
 
 			base.SetupInferior ();
 		}
