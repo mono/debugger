@@ -43,6 +43,12 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, guint64 *addres
 	else if (symbol->flags == (BSF_FUNCTION | BSF_GLOBAL)) {
 		*address = symbol->section->vma + symbol->value;
 		return symbol->name;
+	} else if (!strcmp (symbol->name, "__pthread_threads_debug") ||
+		   !strcmp (symbol->name, "__pthread_handles") ||
+		   !strcmp (symbol->name, "__pthread_handles_num") ||
+		   !strcmp (symbol->name, "__pthread_last_event")) {
+		*address = symbol->section->vma + symbol->value;
+		return symbol->name;
 	} else
 		return NULL;
 
