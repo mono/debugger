@@ -2382,8 +2382,6 @@ namespace Mono.Debugger.Architecture
 				if (type == null)
 					return null;
 
-				Console.WriteLine ("VARIABLE: {0} {1} {2}", name, type_offset, type);
-
 				TargetBinaryReader locreader = new TargetBinaryReader (location, target_info);
 				return new TargetVariable (parent, name, type.Type, false, locreader);
 			}
