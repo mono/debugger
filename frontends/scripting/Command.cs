@@ -516,24 +516,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[Command("SHOW TYPE", "Show type of variable")]
-	public class ShowVariableTypeCommand : Command
-	{
-		VariableExpression var_expr;
-
-		public ShowVariableTypeCommand (VariableExpression var_expr)
-		{
-			this.var_expr = var_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			ITargetType type = var_expr.ResolveType (context);
-
-			context.Interpreter.ShowVariableType (type, var_expr.Name);
-		}
-	}
-
 	[Command("show modules", "Show modules")]
 	public class ShowModulesCommand : Command
 	{
