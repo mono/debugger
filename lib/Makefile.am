@@ -80,7 +80,7 @@ Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 Mono.Debugger.Backend.dll: $(BACKEND_SRCLIST) Mono.Debugger.dll
 	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(MCS_FLAGS) $(BACKEND_DEPS) $(BACKEND_SRCLIST)
 
-Debugger.exe: $(ALL_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
+Debugger.exe: $(ALL_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll $(GUIDIR)/debugger.glade
 	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SRCLIST) $(RESOURCES) $(MCS_FLAGS)
 
 Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
