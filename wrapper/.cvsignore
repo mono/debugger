@@ -3,3 +3,4 @@
 Makefile.in
 Makefile
 mono-debugger-jit-wrapper
+mono-debugger-mini-wrapper

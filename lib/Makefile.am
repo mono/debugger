@@ -91,13 +91,13 @@ SymbolFileReader.exe: $(SYMFILE_READER_SRCLIST)
 	$(MCS) -o SymbolFileReader.exe $(SYMFILE_READER_DEPS) $(SYMFILE_READER_SRCLIST) $(MCS_FLAGS)
 
 Debugger.exe.config: Debugger.exe.config.in Makefile
-	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-jit-wrapper,g' \
+	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-mini-wrapper,g' \
 		-e 's,\@PATH\@,${PATH},g' \
 		-e 's,\@LD_LIBRARY_PATH\@,${libdir}:${LD_LIBRARY_PATH},g' \
 		< $< > tmp-t && mv tmp-t $@
 
 Interpreter.exe.config: Interpreter.exe.config.in Makefile
-	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-jit-wrapper,g' \
+	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-mini-wrapper,g' \
 		-e 's,\@PATH\@,${PATH},g' \
 		-e 's,\@LD_LIBRARY_PATH\@,${libdir}:${LD_LIBRARY_PATH},g' \
 		< $< > tmp-t && mv tmp-t $@

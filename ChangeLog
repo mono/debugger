@@ -1,5 +1,17 @@
 2003-04-07  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Require mono and mini for the moment.
+
+	* wrapper/Makefile.am: Build a `mono-debugger-jit-wrapper' for the
+	old JIT and a `mono-debugger-mini-wrapper' for the new one.
+
+	* wrapper/mini-main.c: New file.  This is the main.c for Mini.
+
+	* lib/Makefile.am: Make `mono-debugger-mini-wrapper' the default;
+	we're now using the new JIT in the debugger.
+
+2003-04-07  Martin Baulig  <martin@ximian.com>
+
 	Released version 0.3 "The White Mountains" of the Mono Debugger :-)
 
 2003-04-06  Martin Baulig  <martin@ximian.com>
