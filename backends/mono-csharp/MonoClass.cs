@@ -535,11 +535,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 				if (PropertyInfo.CanRead)
 					GetterType = new MonoFunctionType (
-						Klass, PropertyInfo.GetGetMethod (false), Getter, Type, file);
+						Klass, PropertyInfo.GetGetMethod (true),
+						Getter, Type, file);
 				if (PropertyInfo.CanWrite)
 					SetterType = new MonoFunctionType (
-						Klass, PropertyInfo.GetSetMethod (false), Setter, Type, file);
-
+						Klass, PropertyInfo.GetSetMethod (true),
+						Setter, Type, file);
 			}
 
 			public override MonoType Type {
