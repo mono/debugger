@@ -70,7 +70,7 @@ extern guint64
 bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size);
 
 extern gboolean
-bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, gpointer *regs);
+bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, guint32 *regs);
 
 G_END_DECLS
 

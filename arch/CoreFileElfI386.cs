@@ -9,7 +9,7 @@ namespace Mono.Debugger.Architecture
 	internal class CoreFileElfI386 : CoreFile
 	{
 		[DllImport("libmonodebuggerbfdglue")]
-		extern static bool bfd_glue_core_file_elfi386_get_registers (IntPtr data, int size, out IntPtr regs);
+		extern static bool bfd_glue_core_file_elfi386_get_registers (IntPtr data, int size, IntPtr regs);
 
 		long[] registers;
 
@@ -22,25 +22,27 @@ namespace Mono.Debugger.Architecture
 
 		long[] get_registers ()
 		{
-			IntPtr data = IntPtr.Zero;
+			IntPtr data = IntPtr.Zero, regs = IntPtr.Zero;
 
-			byte[] notes = core_bfd.GetSectionContents ("note0", true);
+			byte[] section = core_bfd.GetSectionContents (".reg", true);
 
 			try {
-				IntPtr regs;
-				data = Marshal.AllocHGlobal (notes.Length);
-				Marshal.Copy (notes, 0, data, notes.Length);
-				if (!bfd_glue_core_file_elfi386_get_registers (data, notes.Length, out regs))
+				regs = Marshal.AllocHGlobal (68);
+				data = Marshal.AllocHGlobal (section.Length);
+				Marshal.Copy (section, 0, data, section.Length);
+				if (!bfd_glue_core_file_elfi386_get_registers (data, section.Length, regs))
 					return null;
-				int[] registers = new int [18];
-				Marshal.Copy (regs, registers, 0, 18);
-				long[] retval = new long [18];
-				for (int i = 0; i < 18; i++)
+				int[] registers = new int [17];
+				Marshal.Copy (regs, registers, 0, 17);
+				long[] retval = new long [17];
+				for (int i = 0; i < 17; i++)
 					retval [i] = registers [i];
 				return retval;
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
+				if (regs != IntPtr.Zero)
+					Marshal.FreeHGlobal (regs);
 			}
 		}
 

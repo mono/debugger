@@ -7,6 +7,10 @@
 #include <sys/user.h>
 #include <sys/procfs.h>
 #endif
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/procfs.h>
+#endif
 
 gboolean
 bfd_glue_check_format_object (bfd *abfd)
@@ -231,33 +235,46 @@ bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size)
 }
 
 gboolean
-bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, gpointer *regs)
+bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, guint32 *regs)
 {
 #ifdef __linux__
-	int pos = 0;
-
-	while (pos < size) {
-		Elf32_Nhdr *note = (Elf32_Nhdr *) (data + pos);
-
-		if (note->n_type == NT_PRSTATUS) {
-			struct elf_prstatus *prstatus;
-
-			if (note->n_descsz != sizeof (struct elf_prstatus)) {
-				g_warning (G_STRLOC ": NT_PRSTATUS note in core file has unexpected size.");
-				return FALSE;
-			}
-
-			prstatus = (struct elf_prstatus *) (data + pos + sizeof (Elf32_Nhdr) + note->n_namesz);
-			*regs = &prstatus->pr_reg;
-			return TRUE;
-		}
-
-		pos += sizeof (Elf32_Nhdr) + note->n_namesz + note->n_descsz;
+	if (size != 68) {
+		g_warning (G_STRLOC ": Core file has unknown .reg section size %d", size);
+		return FALSE;
 	}
 
-	g_warning (G_STRLOC ": Can't find NT_PRSTATUS note in core file.");
-	return FALSE;
-#else
-	return FALSE;
+	memcpy (regs, data, size);
+	return TRUE;
 #endif
+#ifdef __FreeBSD__
+	gregset_t *regset = (gregset_t *) data;
+
+	if (size != sizeof (gregset_t)) {
+		g_warning (G_STRLOC ": Core file has unknown .reg section size %d (expected %d)",
+			   size, sizeof (gregset_t));
+		return FALSE;
+	}
+
+	regs [0] = regset->r_ebx;
+	regs [1] = regset->r_ecx;
+	regs [2] = regset->r_edx;
+	regs [3] = regset->r_esi;
+	regs [4] = regset->r_edi;
+	regs [5] = regset->r_ebp;
+	regs [6] = regset->r_eax;
+	regs [7] = regset->r_ds;
+	regs [8] = regset->r_es;
+	regs [9] = regset->r_fs;
+	regs [10] = regset->r_gs;
+	regs [12] = regset->r_eip;
+	regs [13] = regset->r_cs;
+	regs [14] = regset->r_eflags;
+	regs [15] = regset->r_esp;
+	regs [16] = regset->r_ss;
+
+	return TRUE;
+#endif
+
+	return FALSE;
 }
+

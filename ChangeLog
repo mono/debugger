@@ -1,3 +1,11 @@
+2003-01-14  Martin Baulig  <martin@ximian.com>
+
+	* arch/CoreFileElfI386.cs (get_registers): Read the registers from
+	the `.reg' section to make this more portable.
+
+	* arch/bfdglue.c (bfd_glue_core_file_elfi386_get_registers): Make
+	this work on FreeBSD 4.7.
+
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
 	* glue/mono-debugger-readline.c: Don't use a GIOChannel here, just
