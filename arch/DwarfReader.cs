@@ -61,6 +61,8 @@ namespace Mono.Debugger.Architecture
 				throw new DwarfException (this, String.Format (
 					"Unknown address size: {0}", address_size));
 
+			reader.TargetInfo = new TargetInfo (address_size);
+
 			compile_unit_hash = new Hashtable ();
 
 			Console.WriteLine ("Reading aranges table ....");
@@ -346,7 +348,9 @@ namespace Mono.Debugger.Architecture
 				if (contents == null)
 					throw new DwarfException (dwarf, "Can't file DWARF 2 debugging info");
 
-				ITargetInfo target_info = new TargetInfo (dwarf.AddressSize);
+				ITargetInfo target_info = null;
+				if (dwarf.AddressSize != 0)
+					target_info = new TargetInfo (dwarf.AddressSize);
 
 				return new DwarfBinaryReader (dwarf, section_name, contents, target_info);
 			}

@@ -6,29 +6,35 @@ namespace Mono.Debugger
 	{
 		ITargetInfo target_info;
 		byte[] contents;
-		int address_size;
 		int pos;
 
 		public TargetBinaryReader (byte[] contents, ITargetInfo target_info)
 		{
 			this.contents = contents;
 			this.target_info = target_info;
+		}
 
-			address_size = target_info.TargetAddressSize;
-			switch (address_size) {
-			case 4:
-			case 8:
-				break;
+		public int AddressSize {
+			get {
+				if (target_info == null)
+					throw new TargetMemoryException ("Can't get target address size");
 
-			default:
-				throw new TargetMemoryException (
-					"Unknown target address size " + address_size);
+				int address_size = target_info.TargetAddressSize;
+				if ((address_size != 4) && (address_size != 8))
+					throw new TargetMemoryException (
+						"Unknown target address size " + address_size);
+
+				return address_size;
 			}
 		}
 
 		public ITargetInfo TargetInfo {
 			get {
 				return target_info;
+			}
+
+			set {
+				target_info = value;
 			}
 		}
 
@@ -116,7 +122,7 @@ namespace Mono.Debugger
 
 		public long PeekAddress (long pos)
 		{
-			if (address_size == 8)
+			if (AddressSize == 8)
 				return PeekInt64 (pos);
 			else
 				return PeekInt32 (pos);
@@ -124,7 +130,7 @@ namespace Mono.Debugger
 
 		public long ReadAddress ()
 		{
-			if (address_size == 8)
+			if (AddressSize == 8)
 				return ReadInt64 ();
 			else
 				return ReadInt32 ();
