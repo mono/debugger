@@ -22,7 +22,8 @@ namespace Mono.Debugger.GUI {
 			line = new Gdk.Pixbuf (null, "line.png");
 		}
 
-		ClosableNotebookTab tab;
+		Label tab_label;
+		Widget tab_widget;
 		string filename;
 
 		Hashtable breakpoints = new Hashtable ();
@@ -38,19 +39,51 @@ namespace Mono.Debugger.GUI {
 		public SourceList (SourceManager manager, string name, string filename, string contents)
 			: base (manager)
 		{
-			Console.WriteLine ("Filename: " + filename);
 			this.filename = filename;
 
-			tab = new ClosableNotebookTab (name);
+			ClosableNotebookTab tab = new ClosableNotebookTab (name);
+			tab.ButtonClicked += new EventHandler (close_tab);
+			tab_widget = tab;
 
 			source_view.ButtonPressEvent += new ButtonPressEventHandler (button_pressed);
+		}
 
-			//
-			// Load contents
-			//
+		public SourceList (SourceManager manager)
+			: base (manager)
+		{
+			tab_widget = tab_label = new Label ("");
+
+			source_view.ButtonPressEvent += new ButtonPressEventHandler (button_pressed);
+		}
+
+		public void SetContents (string filename, string name, string contents)
+		{
+			this.filename = filename;
+			if (tab_label != null)
+				tab_label.Text = name;
+
 			text_buffer.BeginNotUndoableAction ();
 			text_buffer.Text = contents;
 			text_buffer.EndNotUndoableAction ();
+		}
+
+		protected override void PopulateViewPopup (Gtk.Menu menu)
+		{
+			Prepend (menu, "_Duplicate View", new EventHandler (DuplicateViewCB));
+			base.PopulateViewPopup (menu);
+		}
+
+		void DuplicateViewCB (object o, EventArgs a)
+		{
+			manager.LoadFile (filename);
+		}
+
+		public EventHandler CloseEvent;
+
+		void close_tab (object obj, EventArgs args)
+		{
+			if (CloseEvent != null)
+				CloseEvent (this, null);
 		}
 
 		void button_pressed (object obj, ButtonPressEventArgs args)
@@ -93,9 +126,9 @@ namespace Mono.Debugger.GUI {
 			return frame.SourceAddress;
 		}
 
-		public ClosableNotebookTab TabWidget {
+		public Widget TabWidget {
 			get {
-				return tab;
+				return tab_widget;
 			}
 		}
 

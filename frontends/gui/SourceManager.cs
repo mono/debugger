@@ -21,6 +21,7 @@ namespace Mono.Debugger.GUI {
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
 		DisassemblerView disassembler_view;
+		SourceList current_method_view;
 		bool initialized;
 
 		//
@@ -51,6 +52,10 @@ namespace Mono.Debugger.GUI {
 			disassembler_view = new DisassemblerView (this, register_display);
 			disassembler_container.Add (disassembler_view.Widget);
 			disassembler_view.Widget.ShowAll ();
+
+			current_method_view = new SourceList (this);
+			notebook.InsertPage (current_method_view.Widget, current_method_view.TabWidget, -1);
+			current_method_view.Widget.ShowAll ();
 
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
@@ -88,7 +93,9 @@ namespace Mono.Debugger.GUI {
 
 		SourceList CreateSourceView (string name, string filename, string contents)
 		{
-			return new SourceList (this, name, filename, contents);
+			SourceList view = new SourceList (this, name, filename, contents);
+			view.SetContents (name, filename, contents);
+			return view;
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -224,16 +231,15 @@ namespace Mono.Debugger.GUI {
 				return disassembler_view;
 
 			string filename = source.IsDynamic ? null : source.SourceFile.FileName;
-			
-			view = CreateSourceView (source.Name, filename, contents);
-			view.Widget.ShowAll ();
-					
-			sources [source_key] = view;
-			notebook.InsertPage (view.Widget, view.TabWidget, -1);
-			notebook.SetMenuLabelText (view.Widget, source.Name);
-			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
 
-			return view;
+			StringBuilder sb = new StringBuilder ();
+			for (int i = 0; i < contents.Length; i++) {
+				sb.Append (contents [i]);
+				sb.Append ("\n");
+			}
+
+			current_method_view.SetContents (filename, source.Name, sb.ToString ());
+			return current_method_view;
 		}
 
 		void MethodChanged (IMethod method, IMethodSource source)
@@ -296,7 +302,7 @@ namespace Mono.Debugger.GUI {
 			sources [filename] = view;
 			notebook.InsertPage (view.Widget, view.TabWidget, -1);
 			notebook.SetMenuLabelText (view.Widget, filename);
-			view.TabWidget.ButtonClicked += new EventHandler (close_tab);
+			view.CloseEvent += new EventHandler (close_tab);
 
 			return view;
                 }

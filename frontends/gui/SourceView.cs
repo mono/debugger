@@ -85,9 +85,9 @@ namespace Mono.Debugger.GUI {
 			process = manager.Process;
 		}
 
-		void Prepend (Gtk.Menu menu, string text, EventHandler cb)
+		protected void Prepend (Gtk.Menu menu, string text, EventHandler cb)
 		{
-			Gtk.MenuItem item = new MenuItem ("_Insert Breakpoint");
+			Gtk.MenuItem item = new MenuItem (text);
 			item.Show ();
 			item.Activated += cb;
 			menu.Prepend (item);
@@ -102,9 +102,11 @@ namespace Mono.Debugger.GUI {
 		
 		void PopulateViewPopup (object o, PopulatePopupArgs args)
 		{
-			Gtk.Menu menu = args.Menu;
-			Gtk.MenuItem item;
+			PopulateViewPopup (args.Menu);
+		}
 
+		protected virtual void PopulateViewPopup (Gtk.Menu menu)
+		{
 			Prepend (menu, "_Insert Breakpoint", new EventHandler (BreakpointCB));
 		}
 		

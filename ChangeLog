@@ -1,3 +1,11 @@
+2003-03-25  Martin Baulig  <martin@ximian.com>
+
+	* frontends/gui/SourceManager.cs: Use a single SourceList for all
+	source files.
+
+	* frontends/gui/SourceList.cs: Added "Duplicate View" item to the
+	context menu to create another view of this source file.
+
 2003-03-24  Martin Baulig  <martin@ximian.com>
 
 	* frontends/gui/SourceManager.cs (CreateSourceView): Pass the full
