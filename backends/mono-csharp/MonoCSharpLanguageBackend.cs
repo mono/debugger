@@ -588,9 +588,9 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return pointer_type; }
 		}
 
-		private ITargetType LookupType (Process target, Type type, string name)
+		private ITargetType LookupType (StackFrame frame, Type type, string name)
 		{
-			int offset = Language.LookupType (target, name);
+			int offset = Language.LookupType (frame, name);
 			if (offset == 0)
 				return null;
 			return GetType (type, offset);
@@ -610,7 +610,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (mtype != null)
 					return mtype;
 
-				return LookupType ((Process) frame.Process, type, name);
+				return LookupType (frame, type, name);
 			}
 
 			return null;
@@ -1936,12 +1936,12 @@ namespace Mono.Debugger.Languages.CSharp
 			return reader.GetMethodByToken (token);
 		}
 
-		internal int LookupType (Process target, string name)
+		internal int LookupType (StackFrame frame, string name)
 		{
 			int offset;
 			mutex.WaitOne ();
 			reload_event.Reset ();
-			offset = (int) target.CallMethod (info.LookupType, name).Address;
+			offset = (int) frame.CallMethod (info.LookupType, name).Address;
 			reload_event.WaitOne ();
 			mutex.ReleaseMutex ();
 			return offset;

@@ -340,7 +340,7 @@ namespace Mono.Debugger.Languages.CSharp
 			init_static_fields ();
 
 			try {
-				TargetAddress data_address = ((Process) frame.Process).CallMethod (
+				TargetAddress data_address = frame.CallMethod (
 					ClassGetStaticFieldData, KlassAddress, TargetAddress.Null);
 				TargetLocation field_loc = new AbsoluteTargetLocation (frame, data_address);
 

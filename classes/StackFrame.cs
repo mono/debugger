@@ -78,10 +78,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract object Process {
-			get;
-		}
-
 		public abstract ITargetAccess TargetAccess {
 			get;
 		}
@@ -150,6 +146,12 @@ namespace Mono.Debugger
 		protected abstract AssemblerLine DoDisassembleInstruction (TargetAddress address);
 
 		public abstract AssemblerMethod DisassembleMethod ();
+
+		public abstract TargetAddress CallMethod (TargetAddress method, string arg);
+
+		public abstract TargetAddress CallMethod (TargetAddress method,
+							  TargetAddress arg1,
+							  TargetAddress arg2);
 
 		public abstract bool RuntimeInvoke (TargetAddress method_argument,
 						    TargetAddress object_argument,

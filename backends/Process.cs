@@ -487,7 +487,7 @@ namespace Mono.Debugger
 		}
 
 		public long CallMethod (TargetAddress method, long method_argument,
-						 string string_argument)
+					string string_argument)
 		{
 			CallMethodData data = new CallMethodData (
 				method, method_argument, string_argument, null);
@@ -511,9 +511,8 @@ namespace Mono.Debugger
 			return new TargetAddress (engine.AddressDomain, retval);
 		}
 
-		public TargetAddress CallMethod (TargetAddress method,
-							  TargetAddress arg1,
-							  TargetAddress arg2)
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+						 TargetAddress arg2)
 		{
 			CallMethodData data = new CallMethodData (
 				method, arg1.Address, arg2.Address, null);
@@ -845,10 +844,6 @@ namespace Mono.Debugger
 				this.language = process.NativeLanguage;
 			}
 
-			public override object Process {
-				get { return process; }
-			}
-
 			public override ITargetAccess TargetAccess {
 				get { return process; }
 			}
@@ -903,6 +898,19 @@ namespace Mono.Debugger
 					throw new NoMethodException ();
 
 				return process.DisassembleMethod (Method);
+			}
+
+			public override TargetAddress CallMethod (TargetAddress method,
+								  TargetAddress arg1,
+								  TargetAddress arg2)
+			{
+				return process.CallMethod (method, arg1, arg2);
+			}
+
+			public override TargetAddress CallMethod (TargetAddress method,
+								  string arg)
+			{
+				return process.CallMethod (method, arg);
 			}
 
 			public override bool RuntimeInvoke (TargetAddress method_argument,
