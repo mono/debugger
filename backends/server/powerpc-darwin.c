@@ -156,12 +156,11 @@ powerpc_spawn (ServerHandle *handle, const gchar *working_directory,
 
 static ServerCommandError
 powerpc_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
-			 guint32 *target_address_size, guint32 *is_bigendian)
+			 guint32 *target_address_size)
 {
 	*target_int_size = sizeof (guint32);
 	*target_long_size = sizeof (guint64);
 	*target_address_size = sizeof (void *);
-	*is_bigendian = 1;
 
 	return COMMAND_ERROR_NONE;
 }
@@ -212,19 +211,41 @@ powerpc_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
 	*arg = *data1 = *data2 = 0;
 
 	if (WIFSTOPPED (status)) {
-		powerpc_arch_get_registers (handle);
+		guint64 callback_arg, retval, retval2;
+		ChildStoppedAction action;
 
-		if (WSTOPSIG (status) == SIGTRAP) {
-			handle->inferior->last_signal = 0;
-			*arg = 0;
-		} else {
-			if (WSTOPSIG (status) == SIGSTOP)
+		action = powerpc_arch_child_stopped (handle, WSTOPSIG (status),
+						     &callback_arg, &retval, &retval2);
+
+		switch (action) {
+		case STOP_ACTION_SEND_STOPPED:
+			if (WSTOPSIG (status) == SIGTRAP) {
 				handle->inferior->last_signal = 0;
-			else
+				*arg = 0;
+			} else if (WSTOPSIG (status) == 32) {
 				handle->inferior->last_signal = WSTOPSIG (status);
-			*arg = handle->inferior->last_signal;
+				return MESSAGE_NONE;
+			} else {
+				if (WSTOPSIG (status) == SIGSTOP)
+					handle->inferior->last_signal = 0;
+				else
+					handle->inferior->last_signal = WSTOPSIG (status);
+				*arg = handle->inferior->last_signal;
+			}
+			return MESSAGE_CHILD_STOPPED;
+
+		case STOP_ACTION_BREAKPOINT_HIT:
+			*arg = (int) retval;
+			return MESSAGE_CHILD_HIT_BREAKPOINT;
+
+		case STOP_ACTION_CALLBACK:
+			*arg = callback_arg;
+			*data1 = retval;
+			*data2 = retval2;
+			return MESSAGE_CHILD_CALLBACK;
 		}
-		return MESSAGE_CHILD_STOPPED;
+
+		g_assert_not_reached ();
 	} else if (WIFEXITED (status)) {
 		*arg = WEXITSTATUS (status);
 		return MESSAGE_CHILD_EXITED;
@@ -237,7 +258,7 @@ powerpc_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
 	return MESSAGE_UNKNOWN_ERROR;
 }
 
-ServerCommandError
+static ServerCommandError
 _powerpc_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
 	int count = PPC_THREAD_STATE_COUNT;
@@ -248,6 +269,24 @@ _powerpc_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 
 	if (kret != KERN_SUCCESS) {
 		g_warning (G_STRLOC ": thread_get_state(%d) returned %x (%s)",
+			   inferior->thread, kret, mach_error_string (kret));
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+_powerpc_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
+{
+	int count = PPC_THREAD_STATE_COUNT;
+	kern_return_t kret;
+
+	kret = thread_set_state (
+		inferior->thread, PPC_THREAD_STATE, (thread_state_t) regs, count);
+
+	if (kret != KERN_SUCCESS) {
+		g_warning (G_STRLOC ": thread_set_state(%d) returned %x (%s)",
 			   inferior->thread, kret, mach_error_string (kret));
 		return COMMAND_ERROR_UNKNOWN;
 	}
@@ -304,19 +343,70 @@ read_memory_remainder (InferiorHandle *inferior, vm_address_t addr, int size, gp
 		return COMMAND_ERROR_MEMORY_ACCESS;
 	}
 
-	memcpy (buffer, data + offset, size);
+	memcpy (buffer, ((guint8 *) data) + offset, size);
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+write_memory_remainder (InferiorHandle *inferior, vm_address_t addr, int size,
+			gconstpointer buffer)
+{
+	vm_machine_attribute_val_t flush = MATTR_VAL_CACHE_FLUSH;
+	kern_return_t kret;
+	vm_offset_t data;
+	int offset, count;
+
+	offset = addr % inferior->pagesize;
+	addr -= offset;
+
+	kret = vm_read (inferior->task, addr, inferior->pagesize, &data, &count);
+	if ((kret != KERN_SUCCESS) || (count != inferior->pagesize)) {
+		g_warning (G_STRLOC ": Can't read target memory at %x: %x (%s)",
+			   addr, kret, mach_error_string (kret));
+		return COMMAND_ERROR_MEMORY_ACCESS;
+	}
+
+	kret = vm_protect (inferior->task, addr, inferior->pagesize, 0,
+			   VM_PROT_READ | VM_PROT_WRITE);
+	if (kret != KERN_SUCCESS)
+		kret = vm_protect (inferior->task, addr, inferior->pagesize, 0,
+				   0x10 | VM_PROT_READ | VM_PROT_WRITE);
+	if (kret != KERN_SUCCESS) {
+		g_warning (G_STRLOC ": Unable to add write access to region at %x: %x (%s)",
+			   addr, kret, mach_error_string (kret));
+		return COMMAND_ERROR_MEMORY_ACCESS;
+	}
+
+	memcpy (((guint8 *) data) + offset, buffer, size);
+
+	kret = vm_machine_attribute (mach_task_self(), data, inferior->pagesize,
+				     MATTR_CACHE, &flush);
+	if (kret != KERN_SUCCESS) {
+		g_message (G_STRLOC ": Unable to flush the debugger's address space "
+			   "prior to vm_write: %x (%s)", kret, mach_error_string (kret));
+		return COMMAND_ERROR_MEMORY_ACCESS;
+	}
+
+	kret = vm_write (inferior->task, addr, data, inferior->pagesize);
+	if (kret != KERN_SUCCESS) {
+		g_warning (G_STRLOC ": Can't write target memory at %x: %x (%s)",
+			   addr, kret, mach_error_string (kret));
+		return COMMAND_ERROR_MEMORY_ACCESS;
+	}
+
 	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
 powerpc_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
-	unsigned int mempointer;
-	vm_address_t addr = (guint32) start;
-	kern_return_t kret;
-	int count;
+	return read_memory_remainder (handle->inferior, (vm_address_t) start, size, buffer);
+}
 
-	return read_memory_remainder (handle->inferior, (vm_address_t) addr, size, buffer);
+static ServerCommandError
+powerpc_write_memory (ServerHandle *handle, guint64 start, guint32 size, gconstpointer buffer)
+{
+	return write_memory_remainder (handle->inferior, (vm_address_t) start, size, buffer);
 }
 
 #include "powerpc-arch.c"
@@ -334,22 +424,22 @@ InferiorVTable powerpc_darwin_inferior = {
 	powerpc_continue,
 	powerpc_step,
 	powerpc_get_pc,
-	NULL, // powerpc_current_insn_is_bpt,
+	powerpc_current_insn_is_bpt,
 	NULL, // powerpc_peek_word,
 	powerpc_read_memory,
-	NULL, // powerpc_write_memory,
+	powerpc_write_memory,
 	NULL, // powerpc_call_method,
 	NULL, // powerpc_call_method_1,
 	NULL, // powerpc_call_method_invoke,
-	NULL, // powerpc_insert_breakpoint,
+	powerpc_insert_breakpoint,
 	NULL, // powerpc_insert_hw_breakpoint,
-	NULL, // powerpc_remove_breakpoint,
-	NULL, // powerpc_enable_breakpoint,
-	NULL, // powerpc_disable_breakpoint,
-	NULL, // powerpc_get_breakpoints,
-	NULL, // powerpc_get_registers,
-	NULL, // powerpc_set_registers,
-	NULL, // powerpc_get_backtrace,
+	powerpc_remove_breakpoint,
+	powerpc_enable_breakpoint,
+	powerpc_disable_breakpoint,
+	powerpc_get_breakpoints,
+	powerpc_get_registers,
+	powerpc_set_registers,
+	powerpc_get_backtrace,
 	powerpc_get_ret_address,
 	NULL, // powerpc_stop,
 	NULL, // powerpc_global_stop,
