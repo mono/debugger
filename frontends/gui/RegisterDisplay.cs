@@ -226,7 +226,7 @@ namespace Mono.Debugger.GUI
 			if (!IsVisible)
 				return;
 			
-			if (current_frame == null)
+			if ((current_frame == null) || (arch == null))
 				return;
 			
 			try {
