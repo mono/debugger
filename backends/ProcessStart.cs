@@ -145,10 +145,14 @@ namespace Mono.Debugger
 
 		protected string GetFullPath (string path)
 		{
+			string full_path;
 			if (path.StartsWith ("./"))
-				return Path.GetFullPath (path.Substring (2));
+				full_path = Path.GetFullPath (path.Substring (2));
 			else
-				return Path.GetFullPath (path);
+				full_path = Path.GetFullPath (path);
+			if (full_path.EndsWith ("/."))
+				full_path = full_path.Substring (0, full_path.Length-2);
+			return full_path;
 		}
 
 		protected virtual string[] SetupArguments ()
