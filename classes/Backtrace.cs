@@ -61,7 +61,12 @@ namespace Mono.Debugger
 			if (finished)
 				return false;
 
-			SimpleStackFrame new_frame = UnwindStack (target, arch);
+			SimpleStackFrame new_frame = null;
+			try {
+				new_frame = UnwindStack (target, arch);
+			} catch (TargetException) {
+			}
+
 			if (new_frame == null) {
 				finished = true;
 				return false;

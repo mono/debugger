@@ -630,7 +630,7 @@ namespace Mono.Debugger.Architecture
 
 		void create_frame_reader ()
 		{
-			long vma_base = StartAddress.Address;
+			long vma_base = base_address.IsNull ? 0 : base_address.Address;
 			InternalSection section = GetSectionByName (".debug_frame", false);
 			if (section != null) {
 				byte[] contents = GetSectionContents (
