@@ -102,7 +102,7 @@ namespace Mono.Debugger.Architecture
 			return -1;
 		}
 
-		protected ISymbolTable get_symtab_at_offset (long offset)
+		protected CompileUnitBlock get_block_at_offset (long offset)
 		{
 			CompileUnitBlock block;
 			lock (compile_unit_hash.SyncRoot) {
@@ -113,6 +113,13 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			return block;
+		}
+
+		protected ISymbolTable get_symtab_at_offset (long offset)
+		{
+			CompileUnitBlock block = get_block_at_offset (offset);
+
 			// This either return the already-read symbol table or acquire the
 			// thread lock and read it.
 			return block.SymbolTable;
@@ -122,36 +129,21 @@ namespace Mono.Debugger.Architecture
 		{
 			Hashtable source_hash = new Hashtable ();
 
-#if FIXME
-			foreach (IMethod method in symtab.GetAllMethods ()) {
-				if (!method.HasSource)
-					continue;
-
-				ISourceBuffer buffer = method.Source.SourceBuffer;
-				if ((buffer == null) || buffer.HasContents)
-					continue;
-
-				DwarfSourceFile source = (DwarfSourceFile) source_hash [buffer.Name];
-				if (source == null) {
-					source = new DwarfSourceFile (this, buffer.Name);
-					source_hash.Add (buffer.Name, source);
-				}
-				source.AddMethod (new DwarfSourceMethod (source, method));
+			foreach (DwarfSourceFile source in symtab.GetSources ()) {
+				source_hash.Add (source.FileName, source);
 			}
-#endif
 
 			SourceFile[] retval = new SourceFile [source_hash.Values.Count];
 			source_hash.Values.CopyTo (retval, 0);
 			return retval;
 		}
 
-		private class DwarfSourceMethod : SourceMethod
+		protected class DwarfSourceMethod : SourceMethod
 		{
 			IMethod method;
 
-			public DwarfSourceMethod (SourceFile source, IMethod method)
-				: base (source, method.Name, method.Source.StartRow, method.Source.EndRow,
-					false)
+			public DwarfSourceMethod (SourceFile source, IMethod method, int start, int end)
+				: base (source, method.Name, start, end, false)
 			{
 				this.method = method;
 			}
@@ -183,7 +175,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		private class DwarfSourceFile : SourceFile
+		protected class DwarfSourceFile : SourceFile
 		{
 			DwarfReader dwarf;
 			ArrayList methods;
@@ -213,6 +205,7 @@ namespace Mono.Debugger.Architecture
 
 			SymbolTableCollection symtabs;
 			ArrayList compile_units;
+			SourceFile[] sources;
 			bool initialized;
 
 			public IMethod Lookup (TargetAddress address)
@@ -233,6 +226,13 @@ namespace Mono.Debugger.Architecture
 				get {
 					read_block ();
 					return symtabs;
+				}
+			}
+
+			public SourceFile[] Sources {
+				get {
+					read_block ();
+					return sources;
 				}
 			}
 
@@ -269,13 +269,18 @@ namespace Mono.Debugger.Architecture
 						throw new DwarfException (dwarf, String.Format (
 							"Unknown address size: {0}", address_size));
 
+					ArrayList source_list = new ArrayList ();
 					compile_units = new ArrayList ();
 
 					while (reader.Position < stop) {
 						CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
 						compile_units.Add (comp_unit);
 						symtabs.AddSymbolTable (comp_unit.SymbolTable);
+						source_list.Add (comp_unit.DieCompileUnit.SourceFile);
 					}
+
+					sources = new SourceFile [source_list.Count];
+					source_list.CopyTo (sources, 0);
 
 					symtabs.UnLock ();
 
@@ -349,6 +354,19 @@ namespace Mono.Debugger.Architecture
 				}
 
 				return methods;
+			}
+
+			public ArrayList GetSources ()
+			{
+				ArrayList sources = new ArrayList ();
+
+				foreach (RangeEntry range in ranges) {
+					CompileUnitBlock block = dwarf.get_block_at_offset (range.FileOffset);
+
+					sources.AddRange (block.Sources);
+				}
+
+				return sources;
 			}
 
 			public override string SimpleLookup (TargetAddress address, bool exact_match)
@@ -675,6 +693,7 @@ namespace Mono.Debugger.Architecture
 		{
 			protected LineNumberEngine engine;
 			protected DieSubprogram subprog;
+			protected SourceFile file;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
@@ -685,8 +704,10 @@ namespace Mono.Debugger.Architecture
 				if (subprog.IsContinuous)
 					SetAddresses (subprog.StartAddress, subprog.EndAddress);
 
-				if (engine != null)
+				if (engine != null) {
+					file = subprog.comp_unit.DieCompileUnit.SourceFile;
 					SetSource (new DwarfNativeMethodSource (this));
+				}
 			}
 
 			public override object MethodHandle {
@@ -710,11 +731,12 @@ namespace Mono.Debugger.Architecture
 			private class DwarfNativeMethodSource : MethodSource
 			{
 				DwarfNativeMethod method;
+				DwarfSourceMethod source;
 				int start_row, end_row;
 				ArrayList addresses;
 
 				public DwarfNativeMethodSource (DwarfNativeMethod method)
-					: base (method, null)
+					: base (method, method.file)
 				{
 					this.method = method;
 				}
@@ -739,7 +761,10 @@ namespace Mono.Debugger.Architecture
 						method.SetMethodBounds (start.Address, end.Address);
 					}
 
-					return new MethodSourceData (start_row, end_row, addresses);
+					source = new DwarfSourceMethod (
+						method.file, method, start_row, end_row);
+
+					return new MethodSourceData (start_row, end_row, addresses, source);
 				}
 
 				public override SourceMethod[] MethodLookup (string query)
@@ -1701,7 +1726,9 @@ namespace Mono.Debugger.Architecture
 			public DieCompileUnit (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					       AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
-			{ }
+			{
+				file = new DwarfSourceFile (dwarf, name);
+			}
 
 			public DieCompileUnit (DwarfBinaryReader reader, CompilationUnit comp_unit)
 				: this (reader, comp_unit,
@@ -1712,6 +1739,7 @@ namespace Mono.Debugger.Architecture
 			string name;
 			string comp_dir;
 			bool is_continuous;
+			DwarfSourceFile file;
 
 			protected long line_offset;
 			protected bool has_lines;
@@ -1738,6 +1766,10 @@ namespace Mono.Debugger.Architecture
 
 					case DwarfAttribute.comp_dir:
 						comp_dir = (string) attribute.Data;
+						break;
+
+					case DwarfAttribute.name:
+						name = (string) attribute.Data;
 						break;
 
 					default:
@@ -1797,6 +1829,12 @@ namespace Mono.Debugger.Architecture
 					return dwarf.GetAddress (end_pc);
 				}
 			}
+
+			public DwarfSourceFile SourceFile {
+				get {
+					return file;
+				}
+			}
 		}
 
 		protected class DieSubprogram : Die, IComparable, ISymbolContainer
@@ -1840,7 +1878,9 @@ namespace Mono.Debugger.Architecture
 			public DieSubprogram (DwarfBinaryReader reader, CompilationUnit comp_unit,
 						AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
-			{ }
+			{
+				DwarfSourceFile source = comp_unit.DieCompileUnit.SourceFile;
+			}
 
 			public string ImageFile {
 				get {

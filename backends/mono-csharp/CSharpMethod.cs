@@ -11,16 +11,18 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoSymbolTableReader reader;
 		JitLineNumberEntry[] line_numbers;
 		MethodEntry method;
+		SourceMethod source_method;
 		IMethod imethod;
 
 		public CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
 				     SourceMethod source_method, MethodEntry method,
 				     JitLineNumberEntry[] line_numbers)
-			: base (imethod, source_method)
+			: base (imethod, source_method.SourceFile)
 		{
 			this.reader = reader;
 			this.imethod = imethod;
 			this.method = method;
+			this.source_method = source_method;
 			this.line_numbers = line_numbers;
 			this.start_row = method.StartRow;
 			this.end_row = method.EndRow;
@@ -37,7 +39,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			lines.Sort ();
-			return new MethodSourceData (start_row, end_row, lines);
+			return new MethodSourceData (start_row, end_row, lines, source_method);
 		}
 
 		public override SourceMethod[] MethodLookup (string query)

@@ -6,6 +6,7 @@ namespace Mono.Debugger
 {
 	public abstract class MethodSource : IMethodSource
 	{
+		SourceFile file;
 		SourceMethod source_method;
 		int start_row, end_row;
 		bool sources_read;
@@ -14,9 +15,9 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 
-		protected MethodSource (IMethod method, SourceMethod source_method)
+		protected MethodSource (IMethod method, SourceFile file)
 		{
-			this.source_method = source_method;
+			this.file = file;
 			this.start = method.StartAddress;
 			this.end = method.EndAddress;
 			this.name = method.Name;
@@ -75,7 +76,7 @@ namespace Mono.Debugger
 
 		public bool IsDynamic {
 			get {
-				return source_method == null;
+				return file == null;
 			}
 		}
 
@@ -90,7 +91,7 @@ namespace Mono.Debugger
 				if (IsDynamic)
 					throw new InvalidOperationException ();
 
-				return source_method.SourceFile;
+				return file;
 			}
 		}
 
@@ -99,7 +100,7 @@ namespace Mono.Debugger
 				if (IsDynamic)
 					throw new InvalidOperationException ();
 
-				return source_method;
+				return SourceData.SourceMethod;
 			}
 		}
 
@@ -193,16 +194,23 @@ namespace Mono.Debugger
 			public readonly int StartRow;
 			public readonly int EndRow;
 			public readonly LineEntry[] Addresses;
+			public readonly SourceMethod SourceMethod;
 			public readonly ISourceBuffer SourceBuffer;
 
-			public MethodSourceData (int start, int end, ArrayList addresses)
-				: this (start, end, addresses, null)
+			public MethodSourceData (int start, int end, ArrayList addresses, SourceMethod method)
+				: this (start, end, addresses, method, null)
 			{ }
 
 			public MethodSourceData (int start, int end, ArrayList addresses, ISourceBuffer buffer)
+				: this (start, end, addresses, null, buffer)
+			{ }
+
+			protected MethodSourceData (int start, int end, ArrayList addresses,
+						    SourceMethod method, ISourceBuffer buffer)
 			{
 				this.StartRow = start;
 				this.EndRow = end;
+				this.SourceMethod = method;
 				this.SourceBuffer = buffer;
 
 				Addresses = new LineEntry [addresses.Count];

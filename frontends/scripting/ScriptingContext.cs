@@ -132,10 +132,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			IMethodSource source = method.Source;
-			if (source.SourceFile != null)
-				current_buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
-			else
+			if (source.IsDynamic)
 				current_buffer = source.SourceBuffer;
+			else
+				current_buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
 
 			if (current_buffer == null)
 				return;
@@ -412,10 +412,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string contents;
 			ISourceBuffer buffer;
-			if (source.SourceFile != null)
-				buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
-			else
+			if (source.IsDynamic)
 				buffer = source.SourceBuffer;
+			else
+				buffer = context.SourceFactory.FindFile (source.SourceFile.FileName);
 
 			if (buffer == null)
 				return;
