@@ -2408,7 +2408,11 @@ namespace Mono.Debugger.Languages.CSharp
 			if ((reader == null) || ((token & 0xff000000) != 0x06000000))
 				throw new InternalError ();
 
-			return reader.GetMethodByToken (token);
+			try {
+				return reader.GetMethodByToken (token);
+			} catch (C.MonoSymbolFileException) {
+				return null;
+			}
 		}
 
 		internal int LookupType (StackFrame frame, string name)

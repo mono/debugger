@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
 {

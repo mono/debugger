@@ -3,7 +3,6 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using Mono.Debugger;
-using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger
 {

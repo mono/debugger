@@ -1,3 +1,9 @@
+2004-09-02  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoCSharpLanguageBackend.GetTrampoline): Catch symbol file
+	exceptions and silently return null.
+
 2004-08-27  Martin Baulig  <martin@ximian.com>
 
 	* arch/DwarfReader.cs (DwarfReader.read_pubnames): Ignore
