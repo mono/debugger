@@ -25,9 +25,6 @@ Current status as of 01/06/03:
   serialization support in our class libs, so I decided to punt this for the 0.2.0 release
   and put it back later.
 
-* The GUI is currently broken and crashes on startup.  Of course, this is a major problem
-  and will be fixed as soon as possible.
-
 * The command line interface has a command to insert a breakpoint on a method, but for
   managed methods, this must be the full method name including the full signature (such as
   "Martin.Baulig.Foo(int,long)").  There should be an easier way to do this.
