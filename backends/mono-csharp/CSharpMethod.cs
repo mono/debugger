@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ISourceBuffer buffer = null;
 			if (buffer == null)
-				buffer = new SourceBuffer (method.SourceFile);
+				buffer = new SourceBuffer (method.SourceFile.FileName);
 
 			return new CSharpMethod (imethod, buffer, method, line_numbers);
 		}
