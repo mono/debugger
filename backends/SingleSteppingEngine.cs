@@ -1219,14 +1219,16 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			TargetAddress address = inferior.CurrentFrame;
-			if (arch.IsRetInstruction (address))
-				// If this is a `ret' instruction, step one instruction.
+
+			// Check whether this is a call instruction.
+			int insn_size;
+			TargetAddress call = arch.GetCallTarget (address, out insn_size);
+			if (call.IsNull)
+				// Step one instruction unless this is a call
 				return do_step ();
 
-			// Get the size of the current instruction, insert a temporary
-			// breakpoint immediately behind it and continue.
-			address += disassembler.GetInstructionSize (address);
-
+			// Insert a temporary breakpoint immediately behind it and continue.
+			address += insn_size;
 			insert_temporary_breakpoint (address);
 			return do_continue ();
 		}

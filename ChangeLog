@@ -1,5 +1,10 @@
 2003-03-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (do_next): Step one instruction
+	unless this is actually a call.
+
+2003-03-11  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerGUI.cs: Use Log.PrintTraceLogFunction for
 	glib and gtk+ to get backtraces.
 
