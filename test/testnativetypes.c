@@ -4,6 +4,13 @@
 typedef struct _TestStruct TestStruct;
 typedef struct _FunctionStruct FunctionStruct;
 
+typedef struct {
+	int a;
+	struct {
+		long b;
+	} foo, bar;
+} Anonymous;
+
 struct _TestStruct
 {
 	int a;
@@ -62,6 +69,17 @@ test_struct_2 (void)
 }
 
 void
+test_struct_3 (void)
+{
+	Anonymous s;
+
+	s.a = 5;
+	s.foo.b = 800;
+	s.bar.b = 9000;
+	printf ("Test: %d - %ld,%ld\n", s.a, s.foo.b, s.bar.b);
+}
+
+void
 test_func (int a)
 {
 	printf ("Test: %d\n", a);
@@ -81,6 +99,7 @@ main (void)
 	simple ();
 	test_struct ();
 	test_struct_2 ();
+	test_struct_3 ();
 	test_function_struct ();
 	return 0;
 }

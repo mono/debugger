@@ -59,6 +59,8 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public abstract NativeType CreateAlias (string name);
+
 		public abstract NativeObject GetObject (TargetLocation location);
 
 		ITargetObject ITargetType.GetObject (TargetLocation location)

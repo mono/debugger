@@ -118,19 +118,23 @@ namespace Mono.Debugger.Frontends.Scripting
 				return obj.ToString ();
 		}
 
-		protected string FormatMember (ITargetMemberInfo member, bool is_static)
+		protected string FormatMember (string prefix, ITargetMemberInfo member,
+					       bool is_static)
 		{
+			string tname = FormatType (prefix + "   ", member.Type);
 			if (is_static)
-				return String.Format ("    static {0} {1}",
-						      member.Type.Name, member.Name);
+				return String.Format (
+					"{0}   static {1} {2}", prefix, tname, member.Name);
 			else
-				return String.Format ("           {0} {1}",
-						      member.Type.Name, member.Name);
+				return String.Format (
+					"{0}   {1} {2}", prefix, tname, member.Name);
 		}
 
-		protected string FormatProperty (ITargetPropertyInfo prop, bool is_static)
+		protected string FormatProperty (string prefix, ITargetPropertyInfo prop,
+						 bool is_static)
 		{
-			StringBuilder sb = new StringBuilder (FormatMember (prop, is_static));
+			StringBuilder sb = new StringBuilder ();
+			sb.Append (FormatMember (prefix, prop, is_static));
 			sb.Append (" {");
 			if (prop.CanRead)
 				sb.Append (" get;");
@@ -140,16 +144,17 @@ namespace Mono.Debugger.Frontends.Scripting
 			return sb.ToString ();
 		}
 
-		protected string FormatMethod (ITargetMethodInfo method, bool is_static,
-					       bool is_ctor)
+		protected string FormatMethod (string prefix, ITargetMethodInfo method,
+					       bool is_static, bool is_ctor)
 		{
 			StringBuilder sb = new StringBuilder ();
+			sb.Append (prefix);
 			if (is_ctor)
-				sb.Append ("    ctor   ");
+				sb.Append ("   ctor ");
 			else if (is_static)
-				sb.Append ("    static ");
+				sb.Append ("   static ");
 			else
-				sb.Append ("           ");
+				sb.Append ("   ");
 
 			ITargetFunctionType ftype = method.Type;
 			if (!is_ctor) {
@@ -176,10 +181,16 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public string FormatType (ITargetType type)
 		{
+			return FormatType ("", type);
+		}
+
+		public string FormatType (string prefix, ITargetType type)
+		{
 			switch (type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayType atype = (ITargetArrayType) type;
-				return String.Format ("{0} []", atype.ElementType.Name);
+				return String.Format (
+					"{0}{1} []", prefix, atype.ElementType.Name);
 			}
 
 			case TargetObjectKind.Class:
@@ -188,33 +199,41 @@ namespace Mono.Debugger.Frontends.Scripting
 				StringBuilder sb = new StringBuilder ();
 				ITargetClassType ctype = type as ITargetClassType;
 				if (ctype != null) {
+					sb.Append (prefix);
 					sb.Append ("class ");
-					sb.Append (ctype.Name);
+					if (ctype.Name != null) {
+						sb.Append (ctype.Name);
+						sb.Append (" ");
+					}
 					if (ctype.HasParent) {
-						sb.Append (" : ");
+						sb.Append (": ");
 						sb.Append (ctype.ParentType.Name);
 					}
 				} else {
 					sb.Append ("struct ");
-					sb.Append (stype.Name);
+					if (stype.Name != null) {
+						sb.Append (stype.Name);
+						sb.Append (" ");
+					}
 				}
-				sb.Append (" {\n");
+				sb.Append ("{\n");
 				foreach (ITargetFieldInfo field in stype.Fields)
-					sb.Append (FormatMember (field, false) + ";\n");
+					sb.Append (FormatMember (prefix, field, false) + ";\n");
 				foreach (ITargetFieldInfo field in stype.StaticFields)
-					sb.Append (FormatMember (field, true) + ";\n");
+					sb.Append (FormatMember (prefix, field, true) + ";\n");
 				foreach (ITargetPropertyInfo property in stype.Properties)
-					sb.Append (FormatProperty (property, false));
+					sb.Append (FormatProperty (prefix, property, false));
 				foreach (ITargetPropertyInfo property in stype.StaticProperties)
-					sb.Append (FormatProperty (property, true));
+					sb.Append (FormatProperty (prefix, property, true));
 				foreach (ITargetMethodInfo method in stype.Methods)
-					sb.Append (FormatMethod (method, false, false));
+					sb.Append (FormatMethod (prefix, method, false, false));
 				foreach (ITargetMethodInfo method in stype.StaticMethods)
-					sb.Append (FormatMethod (method, true, false));
+					sb.Append (FormatMethod (prefix, method, true, false));
 				foreach (ITargetMethodInfo method in stype.Constructors)
-					sb.Append (FormatMethod (method, true, true));
+					sb.Append (FormatMethod (prefix, method, true, true));
 
-				sb.Append ("}\n");
+				sb.Append (prefix);
+				sb.Append ("}");
 
 				return sb.ToString ();
 			}

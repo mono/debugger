@@ -43,6 +43,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override NativeType CreateAlias (string name)
+		{
+			return new NativePointerType (name, target_type, Size);
+		}
+
 		public override NativeObject GetObject (TargetLocation location)
 		{
 			return new NativePointerObject (this, location);

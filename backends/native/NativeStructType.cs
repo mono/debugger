@@ -102,9 +102,20 @@ namespace Mono.Debugger.Languages.Native
 			: base (name, TargetObjectKind.Struct, size)
 		{ }
 
+		internal NativeStructType (string name, NativeFieldInfo[] fields, int size)
+			: this (name, size)
+		{
+			this.fields = fields;
+		}
+
 		internal void SetFields (NativeFieldInfo[] fields)
 		{
 			this.fields = fields;
+		}
+
+		public override NativeType CreateAlias (string name)
+		{
+			return new NativeStructType (name, fields, Size);
 		}
 
 		public override bool IsByRef {

@@ -62,6 +62,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override NativeType CreateAlias (string name)
+		{
+			return new NativeFunctionType (name, return_type, parameter_types);
+		}
+
 		public override NativeObject GetObject (TargetLocation location)
 		{
 			return new NativeFunctionObject (this, location);

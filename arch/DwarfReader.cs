@@ -2233,12 +2233,21 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			internal void SetName (string name)
+			protected void SetName (string name)
 			{
 				if (resolved)
 					throw new InvalidOperationException ();
 
 				this.name = name;
+			}
+
+			internal NativeType GetAlias (string name)
+			{
+				if (this.name == null) {
+					this.name = name;
+					return Type;
+				} else
+					return Type.CreateAlias (name);
 			}
 
 			public override string ToString ()
@@ -2438,11 +2447,7 @@ namespace Mono.Debugger.Architecture
 				if (reference == null)
 					return null;
 
-				reference.SetName (Name);
-				if (!reference.HasType)
-					return null;
-
-				return reference.Type;
+				return reference.GetAlias (Name);
 			}
 		}
 
@@ -2474,8 +2479,6 @@ namespace Mono.Debugger.Architecture
 			{
 				if (type != null)
 					return type;
-				if (Name == null)
-					throw new InternalError ();
 
 				type = new NativeStructType (Name, byte_size);
 
