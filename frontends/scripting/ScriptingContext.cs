@@ -1315,33 +1315,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public SourceLocation FindLocation (string file, int line)
 		{
-			if (modules == null)
-				throw new ScriptingException ("No modules.");
+			string path = GetFullPath (file);
+			SourceLocation location = backend.FindLocation (path, line);
 
-			string full_file = GetFullPath (file);
-			foreach (Module module in modules) {
-				SourceLocation location = module.FindLocation (full_file, line);
-				
-				if (location != null)
-					return location;
-			}
-
-			throw new ScriptingException ("No method contains the specified file/line.");
+			if (location != null)
+				return location;
+			else
+				throw new ScriptingException ("No method contains the specified file/line.");
 		}
 
 		public SourceLocation FindLocation (string name)
 		{
-			if (modules == null)
-				throw new ScriptingException ("No modules.");
+			SourceLocation location = backend.FindLocation (name);
 
-			foreach (Module module in modules) {
-				SourceMethod method = module.FindMethod (name);
-				
-				if (method != null)
-					return new SourceLocation (method);
-			}
-
-			throw new ScriptingException ("No such method.");
+			if (location != null)
+				return location;
+			else
+				throw new ScriptingException ("No such method.");
 		}
 
 		public void AddMethodSearchResult (SourceMethod[] methods)

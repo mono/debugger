@@ -208,6 +208,30 @@ namespace Mono.Debugger
 				process.Kill ();
 		}
 
+		public SourceLocation FindLocation (string file, int line)
+		{
+			foreach (Module module in Modules) {
+				SourceLocation location = module.FindLocation (file, line);
+				
+				if (location != null)
+					return location;
+			}
+
+			return null;
+		}
+
+		public SourceLocation FindLocation (string name)
+		{
+			foreach (Module module in Modules) {
+				SourceMethod method = module.FindMethod (name);
+				
+				if (method != null)
+					return new SourceLocation (method);
+			}
+
+			return null;
+		}
+
 		void method_loaded (SourceMethod method, object user_data)
 		{
 			Console.WriteLine ("METHOD LOADED: {0}", method);

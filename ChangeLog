@@ -1,3 +1,18 @@
+2003-03-11  Martin Baulig  <martin@ximian.com>
+
+	* backends/Debugger.cs (FindLocation): New convenience function.
+	Walks the module list and calls FindLocation() on all modules
+	until finding a match - or returns null.
+
+	* frontends/scripting/ScriptingContext.cs (FindLocation): Call
+	DebuggerBackend.FindLocation() and throw the ScriptingException if
+	needed.
+
+	* frontends/gui/SourceManager.cs: Use
+	DebuggerBackend.FindLocation, not ScriptingContext.FindLocation.
+
+	* frontends/gui/DebuggerGUI.cs (Context): Removed this property.
+
 2003-03-10  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/gui/SourceList.cs: Generate an informational message

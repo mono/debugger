@@ -258,7 +258,7 @@ namespace Mono.Debugger.GUI {
 
 		public SourceLocation FindLocation (string filename, int line)
 		{
-			return gui.Context.FindLocation (filename, line);
+			return backend.FindLocation (filename, line);
 		}
 	}
 }
