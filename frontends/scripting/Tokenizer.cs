@@ -41,9 +41,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			keywords.Add ("frame", Token.FRAME);
 			keywords.Add ("f", Token.FRAME);
-			keywords.Add ("quit", Token.EOF);
-			keywords.Add ("exit", Token.EOF);
-			keywords.Add ("q", Token.EOF);
+			keywords.Add ("quit", Token.QUIT);
+			keywords.Add ("exit", Token.QUIT);
+			keywords.Add ("q", Token.QUIT);
 			keywords.Add ("start", Token.START);
 			keywords.Add ("run", Token.RUN);
 			keywords.Add ("r", Token.RUN);

@@ -13,22 +13,39 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class CommandLineInterpreter
 	{
 		IOChannel channel;
-		GnuReadLineReader reader;
+		GnuReadLine readline;
 		ScriptingContext context;
 		Parser parser;
 
 		public CommandLineInterpreter (string[] args)
 		{
 			channel = new IOChannel (0);
-			reader = new GnuReadLineReader (new GnuReadLine (channel, "$ "));
+			readline = new GnuReadLine (channel, "$ ");
 			context = new ScriptingContext ();
-			parser = new Parser (context, reader, "Debugger", args);
+			parser = new Parser (context, "Debugger", args);
 		}
 
 		public void Run ()
 		{
-			while (!parser.Quit)
-				parser.parse ();
+			string last_line = null;
+
+			while (!parser.Quit) {
+				string line = readline.ReadLine ();
+				if (line == null)
+					break;
+
+				line = line.TrimStart (' ', '\t');
+				line = line.TrimEnd (' ', '\t');
+				if (line == "")
+					continue;
+
+				if (!parser.Parse (line))
+					continue;
+
+				if (line != last_line)
+					readline.AddHistory (line);
+				last_line = line;					
+			}
 		}
 
 		public static void Main (string[] args)

@@ -42,6 +42,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 %}
 
+%token QUIT
 %token EOL
 %token EOF
 %token NONE	// This token is never returned by our lexer
@@ -82,6 +83,7 @@ command_loop
 	  }
 	| command_loop EOL
 	| command_loop EOF
+	| QUIT EOL
 	  {
 		do_quit = true;
 		reader.Close ();
@@ -205,31 +207,33 @@ opt_frame_number
 
 %%
 
-public Parser (ScriptingContext context, MyTextReader reader, string name, string[] args)
+public Parser (ScriptingContext context, string name, string[] args)
 {
 	this.name = name;
-	this.reader = reader;
+	this.reader = new MyTextReader ();
 	this.current_context = context;
 	this.default_args = args;
 
 	lexer = new Tokenizer (context, reader, name);
 }
 
-public void parse ()
+public bool Parse (string text)
 {
 	try {
-		reader.Discard ();
+		reader.Text = text;
 		lexer.restart ();
 		if (yacc_verbose_flag)
 			yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
 			yyparse (lexer);
+		return true;
 	} catch (Exception e){
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//
 		Console.WriteLine (lexer.location + "  : Parsing error ");
 		Console.WriteLine (e);
+		return false;
 	}
 }
 
