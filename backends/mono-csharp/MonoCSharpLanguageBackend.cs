@@ -1393,11 +1393,13 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress trampoline_address;
 		TargetAddress notification_address;
 		bool initialized;
+		ManualResetEvent reload_event;
 		protected MonoSymbolFileTable table;
 
 		public MonoCSharpLanguageBackend (DebuggerBackend backend)
 		{
 			this.backend = backend;
+			reload_event = new ManualResetEvent (false);
 		}
 
 		public string Name {
@@ -1590,7 +1592,12 @@ namespace Mono.Debugger.Languages.CSharp
 			if (trampoline.IsNull)
 				return TargetAddress.Null;
 
-			long result = inferior.CallMethod (info.compile_method, trampoline.Address);
+			long result;
+			lock (this) {
+				reload_event.Reset ();
+				result = inferior.CallMethod (info.compile_method, trampoline.Address);
+			}
+			reload_event.WaitOne ();
 
 			TargetAddress method;
 			switch (inferior.TargetAddressSize) {
@@ -1606,8 +1613,6 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new TargetMemoryException (
 					"Unknown target address size " + inferior.TargetAddressSize);
 			}
-
-			Console.WriteLine ("TRAMPOLINE: {0} {1}", address, method);
 
 			return method;
 		}
@@ -1652,8 +1657,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)
 		{
-			Console.WriteLine ("DAEMON THREAD HANDLER: {0} {1}", address, signal);
-
 			if (!initialized) {
 				read_mono_debugger_info (runner.Inferior);
 				initialized = true;
@@ -1667,7 +1670,10 @@ namespace Mono.Debugger.Languages.CSharp
 			if ((signal != 0) || (address != notification_address))
 				return false;
 
-			do_update_symbol_table (runner.Inferior);
+			lock (this) {
+				do_update_symbol_table (runner.Inferior);
+				reload_event.Set ();
+			}
 
 			return true;
 		}
