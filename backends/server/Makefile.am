@@ -26,26 +26,32 @@ martin_hack_srclist =
 martin_hack_progs =
 endif
 
+if PLATFORM_POWERPC
+server_sources = powerpc-darwin.c
+else
+server_sources = i386-ptrace.c
+endif
+
 noinst_PROGRAMS = \
 	$(martin_hack_progs)
 
 remote_server_SOURCES = \
 	remote-server.c		\
 	debugger-srv.c		\
-	Debugger-skels.c
+	Debugger-skels.c	\
+	$(server_sources)
 
 libmonodebuggerserver_la_SOURCES = \
 	server.h		\
 	library.c		\
 	$(martin_hack_srclist)	\
+	$(server_sources)	\
 	breakpoints.c		\
 	breakpoints.h
 
-remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la @server_sources@
-remote_server_DEPENDENCIES = @server_sources@
+remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
 
 libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@ @server_sources@
 libmonodebuggerserver_la_LDFLAGS = -no-undefined -module -export-dynamic -shared
-libmonodebuggerserver_la_DEPENDENCIES = @server_sources@
 
 CLEANFILES = lib*.a lib*.dll

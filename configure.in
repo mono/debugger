@@ -34,18 +34,18 @@ AC_SUBST(WARN_CFLAGS)
 AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-linux*)
-		server_sources='i386-ptrace.$(OBJEXT)'
 		glue_cflags=
 		server_cflags=
 		server_only=no
 		bfd_target=i386linux
+		platform=i386linux
 		;;
 	powerpc-apple-darwin*)
-		server_sources='i386-darwin.$(OBJEXT)'
 		glue_flags=
 		server_cflags=
 		server_only=yes
 		bfd_target=powerpc
+		platform=powerpc
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
@@ -61,8 +61,8 @@ AC_ARG_WITH(bfd-target,
 )
 
 AM_CONDITIONAL(BFD_TARGET_POWERPC, test x$bfd_target = xpowerpc)
+AM_CONDITIONAL(PLATFORM_POWERPC, test x$platform = xpowerpc)
 
-AC_SUBST(server_sources)
 AC_SUBST(glue_cflags)
 AC_SUBST(server_cflags)
 
