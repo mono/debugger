@@ -22,7 +22,7 @@ namespace Mono.Debugger
 		public string Prompt = "$";
 
 		[Option("Full path name of the JIT wrapper", "jit-wrapper")]
-		public string JitWrapper = ProcessStart.Path_Mono;
+		public string JitWrapper = ProcessStart.JitWrapper;
 
 		[Option("JIT Optimizations", "jit-optimizations")]
 		public string JitOptimizations = "";
@@ -41,9 +41,7 @@ namespace Mono.Debugger
 	[Serializable]
 	public abstract class ProcessStart
 	{
-		public static string Path_Mono			= "mono-debugger-mini-wrapper";
-		public static string Environment_Path		= "/usr/bin";
-		public static string Environment_LibPath	= "";
+		public static string JitWrapper			= "mono-debugger-mini-wrapper";
 
 		string cwd;
 		protected string base_dir;
@@ -60,7 +58,7 @@ namespace Mono.Debugger
 			Assembly debugger_ass = Assembly.GetExecutingAssembly ();
 			string libdir = Path.GetDirectoryName (debugger_ass.Location);
 
-			Path_Mono = Path.Combine (libdir, "mono-debugger-mini-wrapper");
+			JitWrapper = Path.Combine (libdir, "mono-debugger-mini-wrapper");
 		}
 
 		protected ProcessStart (DebuggerOptions options, string[] argv)
@@ -203,8 +201,7 @@ namespace Mono.Debugger
 
 		protected virtual void DoSetup ()
 		{
-			SetupEnvironment ("PATH=" + Environment_Path, "LD_BIND_NOW=yes",
-					  "LD_LIBRARY_PATH=" + Environment_LibPath);
+			SetupEnvironment ("LD_BIND_NOW=yes");
 			argv = SetupArguments ();
 			SetupWorkingDirectory ();
 			SetupBaseDirectory ();
