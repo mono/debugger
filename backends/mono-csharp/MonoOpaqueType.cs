@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override object GetObject (ITargetMemoryReader target_reader)
+		protected override MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -2,32 +2,32 @@ using System;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoStringType : MonoType
+	internal class MonoArrayType : MonoType
 	{
 		int size;
 		int length_offset;
 		int length_size;
 		int data_offset;
+		MonoType element_type;
 
-		static int max_string_length = 100;
-
-		public MonoStringType (Type type, TargetBinaryReader info)
+		public MonoArrayType (Type type, ITargetMemoryAccess memory, TargetBinaryReader info)
 			: base (type)
 		{
 			int size_field = - info.ReadInt32 ();
-			if (size_field != 5)
-				throw new InternalError ();
-			if (info.ReadByte () != 1)
+			if (info.ReadByte () != 2)
 				throw new InternalError ();
 			size = info.ReadByte ();
 			length_offset = info.ReadByte ();
 			length_size = info.ReadByte ();
 			data_offset = info.ReadByte ();
+
+			long element_type_info = new TargetAddress (memory, info.ReadAddress ());
+			element_type = GetType (type.GetElementType (), 0, memory, element_type_info);
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)
 		{
-			return type == typeof (string);
+			return type.IsArray;
 		}
 
 		public override bool HasFixedSize {
@@ -50,17 +50,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public override bool HasObject {
 			get {
-				return true;
+				return element_type.HasObject && element_type.HasFixedSize;
 			}
 		}
 
-		public static int MaximumStringLength {
+		internal MonoType ElementType {
 			get {
-				return max_string_length;
-			}
-
-			set {
-				max_string_length = value;
+				return element_type;
 			}
 		}
 
@@ -72,17 +68,10 @@ namespace Mono.Debugger.Languages.CSharp
 			reader.Position = length_offset;
 			int length = (int) reader.ReadInteger (length_size);
 
-			if (length > max_string_length)
-				length = max_string_length;
+			ITargetLocation new_location = new RelativeTargetLocation (
+				location, address + data_offset);
 
-			byte[] contents = memory.ReadBuffer (address + data_offset, 2 * length);
-
-			char[] retval = new char [length];
-
-			for (int i = 0; i < length; i++)
-				retval [i] = (char) ((contents [2*i + 1] << 8) + contents [2*i]);
-
-			return new MonoObject (this, new String (retval));
+			return new MonoArray (this, length, new_location);
 		}
 	}
 }

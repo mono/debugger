@@ -165,16 +165,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("PARAM: {0}", var);
 
+					if (!var.Type.HasObject)
+						continue;
+
 					ITargetObject obj = var.GetObject (backend.CurrentFrame);
-					if (!obj.Location.IsValid)
-						continue;
-
-					if (!obj.Variable.Type.HasObject)
-						continue;
-
-					Console.WriteLine ("OBJECT: {0}", obj.Variable.Type.GetObject (
-						backend.CurrentFrame.TargetMemoryAccess,
-						obj.Location.Address));
+					print_object (obj);
 				}
 				break;
 			}
@@ -184,16 +179,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				foreach (IVariable var in vars) {
 					Console.WriteLine ("LOCAL: {0}", var);
 
+					if (!var.Type.HasObject)
+						continue;
+
 					ITargetObject obj = var.GetObject (backend.CurrentFrame);
-					if (!obj.Location.IsValid)
-						continue;
-
-					if (!obj.Variable.Type.HasObject)
-						continue;
-
-					Console.WriteLine ("OBJECT: {0}", obj.Variable.Type.GetObject (
-						backend.CurrentFrame.TargetMemoryAccess,
-						obj.Location.Address));
+					print_object (obj);
 				}
 				break;
 			}
@@ -249,6 +239,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			return true;
+		}
+
+		void print_object (ITargetObject obj)
+		{
+			Console.WriteLine ("OBJECT: {0}", obj);
+
+			if (obj.HasObject)
+				Console.WriteLine ("OBJECT CONTENTS: |{0}|", obj.Object);
+
+			ITargetArray array = obj as ITargetArray;
+			if (array != null) {
+				Console.WriteLine ("ARRAY");
+				for (int i = array.LowerBound; i < array.UpperBound; i++)
+					Console.WriteLine ("ELEMENT {0}: {1}", i, array [i]);
+			}
 		}
 	}
 }

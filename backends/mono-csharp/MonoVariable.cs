@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		VariableInfo info;
 		string name;
-		ITargetType type;
+		MonoType type;
 		DebuggerBackend backend;
 		TargetAddress start_scope, end_scope;
 		bool is_local;
@@ -70,7 +70,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public ITargetObject GetObject (StackFrame frame)
 		{
-			return new MonoObject (frame, this, is_local);
+			if (info.Mode != VariableInfo.AddressMode.Stack)
+				throw new LocationInvalidException ();
+
+			ITargetLocation location = new TargetStackLocation (
+				backend, frame, is_local, info.Offset,
+				start_scope, end_scope);
+
+			return type.GetObject (location);
 		}
 
 		public override string ToString ()

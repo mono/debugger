@@ -4,11 +4,15 @@ namespace Mono.Debugger
 {
 	public interface ITargetObject
 	{
-		IVariable Variable {
+		ITargetType Type {
 			get;
 		}
 
-		ITargetLocation Location {
+		bool HasObject {
+			get;
+		}
+
+		object Object {
 			get;
 		}
 	}

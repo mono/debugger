@@ -1,3 +1,17 @@
+2002-09-23  Martin Baulig  <martin@gnome.org>
+
+	* interfaces/ITargetArray.cs: New interface.
+
+	* interfaces/ITargetObject.cs: Replaced location with type, added HasObject
+	and Object.
+
+	* interfaces/ITargetType.cs (ITargetType.GetObject): Removed.
+
+	* backends/classes/RelativeTargetLocation.cs: New class.
+
+	* backends/mono-csharp/: Improved the type system; we're now supporting
+	strings and arrays.
+
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
 	* README: Added information about the directory layout.

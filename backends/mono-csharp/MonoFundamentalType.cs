@@ -6,24 +6,18 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		int size;
 
-		public MonoFundamentalType (Type type, int stack_size, TargetBinaryReader info)
+		public MonoFundamentalType (Type type, TargetBinaryReader info)
 			: base (type)
 		{
-			if (type.IsByRef) {
-				size = info.ReadInt32 ();
-				// Supports() already checked this.
-				if (size <= 0)
-					throw new InternalError ();
-			} else
-				size = stack_size;
+			size = info.ReadInt32 ();
+			// Supports() already checked this.
+			if (size <= 0)
+				throw new InternalError ();
 		}
 
 		public static bool Supports (Type type, TargetBinaryReader info)
 		{
 			if (!type.IsPrimitive)
-				return false;
-
-			if (type.IsByRef && (info == null))
 				return false;
 
 			switch (Type.GetTypeCode (type)) {
@@ -70,52 +64,53 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override object GetObject (ITargetMemoryReader target_reader)
+		object DoGetObject (ITargetMemoryAccess memory, TargetAddress address)
 		{
-			TargetBinaryReader reader = target_reader.BinaryReader;
-
-			switch (Type.GetTypeCode (type)) {
+			switch (System.Type.GetTypeCode (type)) {
 			case TypeCode.Boolean:
-				return reader.PeekByte () != 0;
+				return memory.ReadByte (address) != 0;
 
 			case TypeCode.Char:
-				return (char) reader.PeekInt16 ();
+				return BitConverter.ToChar (memory.ReadBuffer (address, 2), 0);
 
 			case TypeCode.SByte:
-				return (sbyte) reader.PeekByte ();
+				return (sbyte) memory.ReadByte (address);
 
 			case TypeCode.Byte:
-				return (byte) reader.PeekByte ();
+				return (byte) memory.ReadByte (address);
 
 			case TypeCode.Int16:
-				return (short) reader.PeekInt16 ();
+				return BitConverter.ToInt16 (memory.ReadBuffer (address, 2), 0);
 
 			case TypeCode.UInt16:
-				return (ushort) reader.PeekInt16 ();
+				return BitConverter.ToUInt16 (memory.ReadBuffer (address, 2), 0);
 
 			case TypeCode.Int32:
-				return (int) reader.PeekInt32 ();
+				return BitConverter.ToInt32 (memory.ReadBuffer (address, 4), 0);
 
 			case TypeCode.UInt32:
-				return (int) reader.PeekInt32 ();
+				return BitConverter.ToUInt32 (memory.ReadBuffer (address, 4), 0);
 
 			case TypeCode.Int64:
-				return (long) reader.ReadInt64 ();
+				return BitConverter.ToInt64 (memory.ReadBuffer (address, 8), 0);
 
 			case TypeCode.UInt64:
-				return (ulong) reader.ReadInt64 ();
+				return BitConverter.ToUInt64 (memory.ReadBuffer (address, 8), 0);
 
-			case TypeCode.Single: {
-				byte[] bits = BitConverter.GetBytes (reader.ReadInt32 ());
-				return BitConverter.ToSingle (bits, 0);
-			}
+			case TypeCode.Single:
+				return BitConverter.ToSingle (memory.ReadBuffer (address, 4), 0);
 
 			case TypeCode.Double:
-				return BitConverter.Int64BitsToDouble (reader.ReadInt64 ());
+				return BitConverter.ToDouble (memory.ReadBuffer (address, 8), 0);
 
 			default:
 				throw new InvalidOperationException ();
 			}
+		}
+
+		protected override MonoObject GetObject (ITargetMemoryAccess memory, ITargetLocation location)
+		{
+			return new MonoObject (this, DoGetObject (memory, location.Address));
 		}
 	}
 }

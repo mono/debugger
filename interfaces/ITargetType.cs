@@ -34,11 +34,5 @@ namespace Mono.Debugger
 		bool HasObject {
 			get;
 		}
-
-		// <summary>
-		//   If HasObject is true, get a Mono object which is suitable
-		//   to represent an instance of this type.
-		// </summary>
-		object GetObject (ITargetMemoryAccess memory, TargetAddress address);
 	}
 }

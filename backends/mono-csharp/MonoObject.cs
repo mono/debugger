@@ -6,36 +6,42 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoObject : ITargetObject
 	{
-		StackFrame frame;
-		MonoVariable variable;
-		bool is_local;
-		ITargetLocation location;
+		protected MonoType type;
+		protected object data;
 
-		public MonoObject (StackFrame frame, MonoVariable variable, bool is_local)
+		public MonoObject (MonoType type, object data)
 		{
-			this.frame = frame;
-			this.variable = variable;
-			this.is_local = is_local;
-
-			if (variable.VariableInfo.Mode == VariableInfo.AddressMode.Stack)
-				location = new TargetStackLocation (
-					variable.Backend, frame, is_local, variable.VariableInfo.Offset,
-					variable.StartScope, variable.EndScope);
+			this.type = type;
+			this.data = data;
 		}
 
-		public IVariable Variable {
+		public ITargetType Type {
 			get {
-				return variable;
+				return type;
 			}
 		}
 
-		public ITargetLocation Location {
+		public bool HasObject {
 			get {
-				if (location == null)
-					throw new LocationInvalidException ();
-
-				return location;
+				return data != null;
 			}
+		}
+
+		public virtual object Object {
+			get {
+				if (!HasObject)
+					throw new InvalidOperationException ();
+
+				return data;
+			}
+		}
+
+		public override string ToString ()
+		{
+			if (HasObject)
+				return String.Format ("{0} [{1}:{2}]", GetType (), Type, Object);
+			else
+				return String.Format ("{0} [{1}]", GetType (), Type);
 		}
 	}
 }

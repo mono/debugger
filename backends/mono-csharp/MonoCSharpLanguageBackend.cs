@@ -119,12 +119,16 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int TotalSize;
 		public readonly int Generation;
 		public readonly MonoSymbolTableReader[] SymbolFiles;
+		ITargetMemoryAccess memory;
 		ArrayList ranges;
+		Hashtable types;
 
 		public MonoSymbolFileTable (DebuggerBackend backend, IInferior inferior,
 					    ITargetMemoryAccess memory, TargetAddress address,
 					    ILanguageBackend language)
 		{
+			this.memory = memory;
+
 			ITargetMemoryReader header = memory.ReadMemory (address, 24);
 
 			long magic = header.ReadLongInteger ();
@@ -145,11 +149,27 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryReader reader = memory.ReadMemory (address + 24, TotalSize - 24);
 
 			ranges = new ArrayList ();
+			types = new Hashtable ();
 
 			SymbolFiles = new MonoSymbolTableReader [count];
 			for (int i = 0; i < count; i++)
 				SymbolFiles [i] = new MonoSymbolTableReader (
-					backend, inferior, memory, reader.ReadAddress (), language);
+					this, backend, inferior, memory, reader.ReadAddress (), language);
+		}
+
+		public MonoType GetType (Type type, int type_size, long address)
+		{
+			if (types.Contains (address))
+				return (MonoType) types [address];
+
+			MonoType retval;
+			if (address != 0)
+				retval = MonoType.GetType (type, type_size, memory, address);
+			else
+				retval = new MonoOpaqueType (type, type_size);
+
+			types.Add (address, retval);
+			return retval;
 		}
 
 		public ArrayList SymbolRanges {
@@ -215,7 +235,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected DebuggerBackend backend;
 		protected IInferior inferior;
 		protected ITargetMemoryAccess memory;
-		Hashtable types;
+		protected MonoSymbolFileTable table;
 		ArrayList ranges;
 
 		TargetAddress start_address;
@@ -236,10 +256,11 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetBinaryReader reader;
 		ITargetMemoryReader string_reader;
 
-		internal MonoSymbolTableReader (DebuggerBackend backend, IInferior inferior,
-						ITargetMemoryAccess memory, TargetAddress address,
-						ILanguageBackend language)
+		internal MonoSymbolTableReader (MonoSymbolFileTable table, DebuggerBackend backend,
+						IInferior inferior, ITargetMemoryAccess memory,
+						TargetAddress address, ILanguageBackend language)
 		{
+			this.table = table;
 			this.backend = backend;
 			this.inferior = inferior;
 			this.memory = memory;
@@ -251,7 +272,6 @@ namespace Mono.Debugger.Languages.CSharp
 			int_size = memory.TargetIntegerSize;
 
 			ranges = new ArrayList ();
-			types = new Hashtable ();
 
 			long magic = memory.ReadLongInteger (address);
 			if (magic != OffsetTable.Magic)
@@ -412,26 +432,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected MonoType GetType (Type type, int type_size, long address)
-		{
-			if (types.Contains (address))
-				return (MonoType) types [address];
-
-			MonoType retval;
-			if (address != 0) {
-				TargetAddress taddress = new TargetAddress (memory, address);
-				int size = memory.ReadInteger (taddress);
-				taddress += memory.TargetIntegerSize;
-
-				ITargetMemoryReader reader = memory.ReadMemory (taddress, size);
-				retval = MonoType.GetType (type, type_size, reader.BinaryReader);
-			} else
-				retval = MonoType.GetType (type, type_size);
-
-			types.Add (address, retval);
-			return retval;
-		}
-
 		private class MonoMethod : MethodBase
 		{
 			MonoSymbolTableReader reader;
@@ -490,13 +490,13 @@ namespace Mono.Debugger.Languages.CSharp
 					return;
 
 				if (address.ThisTypeInfoAddress != 0)
-					this_type = reader.GetType (rmethod.ReflectedType, 0,
-								    address.ThisTypeInfoAddress);
+					this_type = reader.table.GetType (
+						rmethod.ReflectedType, 0, address.ThisTypeInfoAddress);
 
 				ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
-					param_types [i] = reader.GetType (
+					param_types [i] = reader.table.GetType (
 						param_info [i].ParameterType,
 						address.ParamVariableInfo [i].Size,
 						address.ParamTypeInfoAddresses [i]);
@@ -515,7 +515,7 @@ namespace Mono.Debugger.Languages.CSharp
 					Type type = (Type) get_local_type_from_sig.Invoke (
 						reader.assembly, args);
 
-					local_types [i] = reader.GetType (
+					local_types [i] = reader.table.GetType (
 						type, address.LocalVariableInfo [i].Size,
 						address.LocalTypeInfoAddresses [i]);
 				}

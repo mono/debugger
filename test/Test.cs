@@ -8,12 +8,18 @@ class X
 		return c;
 	}
 
+	static long ArrayTest (int[] a)
+	{
+		return a [2];
+	}
+
 	static void Main ()
 	{
 		X x = new X ();
 
-		long b = 29;
-		int a = x.Test (ref b, true, 59, -18, 3.14F);
-		Console.WriteLine (a);
+		int[] a = { 5, 6, 7 };
+		long b = ArrayTest (a);
+		int c = x.Test (ref b, true, 59, -18, 3.14F);
+		Console.WriteLine (c);
 	}
 }
