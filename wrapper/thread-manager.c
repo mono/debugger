@@ -12,7 +12,7 @@ static CRITICAL_SECTION thread_manager_finished_mutex;
 static CRITICAL_SECTION thread_manager_mutex;
 static GPtrArray *thread_array = NULL;
 
-static void (*notification_function) (int tid, gpointer data);
+static void (*notification_function) (int tid, gpointer data, gpointer data2);
 
 int mono_debugger_thread_manager_notify_command = 0;
 int mono_debugger_thread_manager_notify_tid = 0;
@@ -22,7 +22,7 @@ extern void GC_push_all_stack (gpointer b, gpointer t);
 void
 mono_debugger_thread_manager_main (void)
 {
-	notification_function (0, NULL);
+	notification_function (0, NULL, NULL);
 
 	while (TRUE) {
 		/* Wait for an event. */
@@ -36,7 +36,7 @@ mono_debugger_thread_manager_main (void)
 		 * and owning the `thread_manager_mutex' so that no other thread can touch
 		 * them in the meantime.
 		 */
-		notification_function (0, NULL);
+		notification_function (0, NULL, NULL);
 
 		sem_post (&thread_manager_finished_cond);
 	}
@@ -124,7 +124,7 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 
-	notification_function (tid, func);
+	notification_function (tid, func, &thread->end_stack);
 
 	mono_debugger_thread_manager_thread_created (thread);
 

@@ -6,6 +6,14 @@
 
 2004-03-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine (EndStackAddress): New internal field.
+	(AcquireThreadLock): Return void; if we have an `EndStackAddress',
+	write our esp into it.
+
+	* backends/MonoThreadManager.cs: Added back GC support.
+
+2004-03-02  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Bumped version number to 0.6.  This is not a
 	release, but 0.5 was the old Clemson release.
 

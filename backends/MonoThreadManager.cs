@@ -147,8 +147,6 @@ namespace Mono.Debugger.Backends
 		bool command_handler (SingleSteppingEngine sse, Inferior inferior,
 				      TargetEventArgs args)
 		{
-			Console.WriteLine ("COMMAND HANDLER: {0}", args);
-
 			return false;
 		}
 
@@ -167,11 +165,14 @@ namespace Mono.Debugger.Backends
 			int tid = inferior.ReadInteger (esp);
 			esp += inferior.TargetIntegerSize;
 			TargetAddress until = inferior.ReadAddress (esp);
+			esp += inferior.TargetAddressSize;
+			TargetAddress data = inferior.ReadAddress (esp);
 
 			ThreadData thread = (ThreadData) thread_hash [tid];
-
-			Console.WriteLine ("MONO THREAD MANAGER #1: {0:x} {1} {2}",
-					   tid, until, sse);
+			sse.EndStackAddress = data;
+			thread.IsManaged = true;
+			thread.Engine = sse;
+			thread.Data = data;
 
 			if ((thread == null) || (thread.Engine != sse))
 				throw new InternalError ();
@@ -196,16 +197,26 @@ namespace Mono.Debugger.Backends
 
 			ThreadData thread = (ThreadData) thread_hash [tid];
 
+			switch ((ThreadManagerCommand) command) {
+			case ThreadManagerCommand.AcquireGlobalLock:
+				thread_manager.AcquireGlobalThreadLock (thread.Engine);
+				break;
+
+			case ThreadManagerCommand.ReleaseGlobalLock:
+				thread_manager.ReleaseGlobalThreadLock (thread.Engine);
+				break;
+			}
+
 			return true;
 		}
 
 		protected class ThreadData {
 			public readonly int TID;
 			public readonly int PID;
-			public readonly bool IsManaged;
-			public readonly SingleSteppingEngine Engine;
+			public bool IsManaged;
+			public SingleSteppingEngine Engine;
 			public readonly TargetAddress StartStack;
-			public readonly TargetAddress Data;
+			public TargetAddress Data;
 
 			public ThreadData (SingleSteppingEngine sse, int tid, int pid,
 					   TargetAddress start_stack, TargetAddress data)
@@ -231,8 +242,6 @@ namespace Mono.Debugger.Backends
 
 		protected enum ThreadManagerCommand {
 			Unknown,
-			CreateThread,
-			ResumeThread,
 			AcquireGlobalLock,
 			ReleaseGlobalLock
 		}

@@ -763,6 +763,7 @@ namespace Mono.Debugger.Backends
 
 		internal DaemonEventHandler DaemonEventHandler;
 		internal bool IsDaemon;
+		internal TargetAddress EndStackAddress;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
@@ -1756,12 +1757,16 @@ namespace Mono.Debugger.Backends
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		public Register[] AcquireThreadLock ()
+		public void AcquireThreadLock ()
 		{
 			stopped = inferior.Stop (out stop_event);
 
 			get_registers ();
-			return registers;
+			long esp = (long) registers [(int) I386Register.ESP].Data;
+			TargetAddress addr = new TargetAddress (AddressDomain, esp);
+
+			if (!EndStackAddress.IsNull)
+				inferior.WriteAddress (EndStackAddress, addr);
 		}
 
 		public void ReleaseThreadLock ()
@@ -1802,7 +1807,7 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("SSE ({0})", process.ID);
+			return String.Format ("SSE ({0}:{1}:{2:x})", process.ID, PID, TID);
 		}
 
 		//

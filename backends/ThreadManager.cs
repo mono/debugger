@@ -190,12 +190,7 @@ namespace Mono.Debugger
 			foreach (SingleSteppingEngine engine in thread_hash.Values) {
 				if (engine == caller)
 					continue;
-				Register[] regs = engine.AcquireThreadLock ();
-				long esp = (long) regs [(int) I386Register.ESP].Data;
-				TargetAddress addr = new TargetAddress (engine.AddressDomain, esp);
-				Report.Debug (DebugFlags.Threads,
-					      "Got thread lock on {0}: {1}",
-					      engine, addr);
+				engine.AcquireThreadLock ();
 			}
 			Report.Debug (DebugFlags.Threads,
 				      "Done acquiring global thread lock: {0}",
