@@ -1,4 +1,4 @@
-The Mono Debugger - 0.2.1 "Camebridge"
+The Mono Debugger - 0.2.1 "Cambridge"
 ======================================
 
 This is mostly a bug-fix release, but it also contains a few new
