@@ -1257,6 +1257,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int SymbolTableSize;
 		public readonly TargetAddress CompileMethod;
 		public readonly TargetAddress GetVirtualMethod;
+		public readonly TargetAddress GetBoxedObjectMethod;
 		public readonly TargetAddress InsertBreakpoint;
 		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeInvoke;
@@ -1276,6 +1277,7 @@ namespace Mono.Debugger.Languages.CSharp
 			SymbolTableSize = reader.ReadInteger ();
 			CompileMethod = reader.ReadAddress ();
 			GetVirtualMethod = reader.ReadAddress ();
+			GetBoxedObjectMethod = reader.ReadAddress ();
 			InsertBreakpoint = reader.ReadAddress ();
 			RemoveBreakpoint = reader.ReadAddress ();
 			RuntimeInvoke = reader.ReadAddress ();
@@ -2434,6 +2436,12 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress ILanguageBackend.GetVirtualMethodFunc {
 			get {
 				return info.GetVirtualMethod;
+			}
+		}
+
+		public TargetAddress GetBoxedObjectFunc {
+			get {
+				return info.GetBoxedObjectMethod;
 			}
 		}
 

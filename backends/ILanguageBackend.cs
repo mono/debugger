@@ -44,6 +44,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		TargetAddress GetBoxedObjectFunc {
+			get;
+		}
+
 		TargetAddress GetTrampolineAddress (ITargetMemoryAccess memory,
 						    TargetAddress address,
 						    out bool is_start);

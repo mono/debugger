@@ -986,6 +986,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		TargetAddress ILanguageBackend.GetBoxedObjectFunc {
+			get {
+				throw new InvalidOperationException ();
+			}
+		}
+
 		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
 								     TargetAddress address,
 								     out bool is_start)

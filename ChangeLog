@@ -1,5 +1,14 @@
 2004-10-22  Martin Baulig  <martin@ximian.com>
 
+	* backends/ILanguageBackend.cs
+	(ILanguageBackend): Added GetBoxedObjectFunc().
+
+	* backends/mono-csharp/MonoFunctionType.cs
+	(MonoFunctionType.Invoke): Box the instance object when calling an
+	instance method on a valuetype.
+
+2004-10-22  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs (Operation): Added public
 	`SimpleStackFrame StartFrame' field; this is the stack frame where
 	the operation started.
