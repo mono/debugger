@@ -227,7 +227,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("STEPI", "Step one instruction")]
+	[Command("STEPI", "Step one instruction, but don't enter trampolines")]
 	public class StepInstructionCommand : Command
 	{
 		ProcessExpression process_expr;
@@ -241,6 +241,23 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 			process.Step (WhichStepCommand.StepInstruction);
+		}
+	}
+
+	[Command("NATIVE STEPI", "Step one instruction")]
+	public class StepNativeInstructionCommand : Command
+	{
+		ProcessExpression process_expr;
+
+		public StepNativeInstructionCommand (ProcessExpression process_expr)
+		{
+			this.process_expr = process_expr;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			process.Step (WhichStepCommand.StepNativeInstruction);
 		}
 	}
 

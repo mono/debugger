@@ -305,6 +305,12 @@ namespace Mono.Debugger
 			return sse.StepInstruction (synchronous);
 		}
 
+		public bool StepNativeInstruction (bool synchronous)
+		{
+			check_sse ();
+			return sse.StepNativeInstruction (synchronous);
+		}
+
 		public bool NextInstruction (bool synchronous)
 		{
 			check_sse ();

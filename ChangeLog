@@ -1,3 +1,12 @@
+2003-03-21  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs (StepNativeInstruction):
+	New public method.  Steps one machine instruction and always
+	enters all method calls, including trampolines.
+
+	* frontends/scripting/Parser.jay: Added `native stepi' command
+	for it.
+
 2003-03-16  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/IMethod.cs (GetTrampoline): New method.

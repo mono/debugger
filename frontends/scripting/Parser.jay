@@ -127,6 +127,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token SEARCH
 %token LIST
 
+%token NATIVE
 %token SELECT
 %token BACKGROUND
 %token STOP
@@ -179,6 +180,10 @@ generated_command
 	| STEPI process_expression
 	  {
 		$$ = new StepInstructionCommand ((ProcessExpression) $2);
+	  }
+	| NATIVE STEPI process_expression
+	  {
+		$$ = new StepNativeInstructionCommand ((ProcessExpression) $3);
 	  }
 	| NEXTI process_expression
 	  {

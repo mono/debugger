@@ -465,6 +465,10 @@ namespace Mono.Debugger.Backends
 				ok = Step (get_simple_step_frame (StepMode.SingleInstruction));
 				break;
 
+			case StepOperation.StepNativeInstruction:
+				ok = do_step ();
+				break;
+
 			case StepOperation.NextInstruction:
 				ok = do_next ();
 				break;
@@ -858,6 +862,7 @@ namespace Mono.Debugger.Backends
 			Run,
 			RunInBackground,
 			StepInstruction,
+			StepNativeInstruction,
 			NextInstruction,
 			StepLine,
 			NextLine,
@@ -1143,12 +1148,13 @@ namespace Mono.Debugger.Backends
 		Command check_method_operation (TargetAddress address, IMethod method,
 						SourceAddress source, StepOperation operation)
 		{
-#if FIXME
+			if (operation == StepOperation.StepNativeInstruction)
+				return null;
+
 			if (method.IsWrapper && (address > method.StartAddress))
 				return new Command (StepOperation.StepLine, new StepFrame (
 					method.StartAddress, method.EndAddress,
 					null, StepMode.Finish));
-#endif
 
 			ILanguageBackend language = method.Module.Language as ILanguageBackend;
 			if (source == null)
@@ -1340,18 +1346,18 @@ namespace Mono.Debugger.Backends
 						return do_continue ();
 					}
 
-#if FIXME
-					/*
-					 * If this is an ordinary method, check whether we have debugging
-					 * info for it and don't step into it if not.
-					 */
-					tmethod = Lookup (call);
-					if ((tmethod == null) || !tmethod.Module.StepInto) {
-						if (!do_next ())
-							return false;
-						continue;
+					if (frame.Mode != StepMode.SingleInstruction) {
+						/*
+						 * If this is an ordinary method, check whether we have
+						 * debugging info for it and don't step into it if not.
+						 */
+						tmethod = Lookup (call);
+						if ((tmethod == null) || !tmethod.Module.StepInto) {
+							if (!do_next ())
+								return false;
+							continue;
+						}
 					}
-#endif
 				}
 
 				/*
@@ -1525,7 +1531,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		// <summary>
-		//   Step one machine instruction.
+		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
 		public bool StepInstruction (bool synchronous)
 		{
@@ -1533,6 +1539,21 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			start_step_operation (StepOperation.StepInstruction);
+			if (synchronous)
+				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
+			return true;
+		}
+
+		// <summary>
+		//   Step one machine instruction, always step into method calls.
+		// </summary>
+		public bool StepNativeInstruction (bool synchronous)
+		{
+			if (!check_can_run ())
+				return false;
+
+			start_step_operation (StepOperation.StepNativeInstruction);
 			if (synchronous)
 				wait_for_completion ();
 			command_mutex.ReleaseMutex ();

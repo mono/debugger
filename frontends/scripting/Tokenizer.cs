@@ -103,6 +103,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("create", Token.CREATE);
 			keywords.Add ("add", Token.ADD);
 			keywords.Add ("remove", Token.REMOVE);
+			keywords.Add ("native", Token.NATIVE);
 
 			keywords.Add ("unknown", Token.UNKNOWN);
 			keywords.Add ("fundamental", Token.FUNDAMENTAL);

@@ -447,6 +447,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			case WhichStepCommand.StepInstruction:
 				ok = process.StepInstruction (context.IsSynchronous);
 				break;
+			case WhichStepCommand.StepNativeInstruction:
+				ok = process.StepNativeInstruction (context.IsSynchronous);
+				break;
 			case WhichStepCommand.NextInstruction:
 				ok = process.NextInstruction (context.IsSynchronous);
 				break;
@@ -618,6 +621,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Step,
 		Next,
 		StepInstruction,
+		StepNativeInstruction,
 		NextInstruction,
 		Finish
 	}
