@@ -491,6 +491,15 @@ namespace Mono.Debugger.GUI
 		{
 			hex_editor.Show ();
 		}
+	
+		GotoLineDialog goto_line_dialog;
+		void OnGotoLineActivate (object sender, EventArgs args)
+		{
+			if (goto_line_dialog == null)
+				goto_line_dialog = new GotoLineDialog (gxml, source_manager);
+
+			goto_line_dialog.ShowDialog ();
+		}
 
 		void DebuggerOutput (string output)
 		{

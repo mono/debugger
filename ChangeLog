@@ -1,3 +1,7 @@
+2003-06-08  Martin Baulig  <martin@ximian.com>
+
+	* frontends/gui/GotoLineDialog.cs: New dialog for "Edit / Goto Line".
+
 2003-05-08  Martin Baulig  <martin@ximian.com>
 
 	* arch/bfdglue.c (bfd_glue_openr): New function.  We need to
