@@ -1,5 +1,10 @@
 2004-07-02  Martin Baulig  <martin@ximian.com>
 
+	* frontends/command-line/ExpressionParser.jay: Added `->' syntax
+	for pointer dereference + member access.
+
+2004-07-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs (ThreadManager.AcquireGlobalThread):
 	Fixed a bad deadlock.
 

@@ -199,6 +199,11 @@ variable_or_type_name
 	  { 
 		$$ = new MemberAccessExpression ((Expression) $1, (string) $3);
 	  }
+	| expression MINUS OP_GT IDENTIFIER
+	  {
+		Expression expr = new PointerDereferenceExpression ((Expression) $1);
+		$$ = new MemberAccessExpression (expr, (string) $4);
+	  }
 	;
 
 %%
