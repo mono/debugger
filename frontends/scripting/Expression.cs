@@ -756,7 +756,7 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class RegisterExpression : PointerExpression
 	{
 		string name;
-		int register;
+		int register = -1;
 		long offset;
 
 		public RegisterExpression (string register, long offset)
@@ -811,7 +811,9 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			object obj = fobj.Object;
 			long value = Convert.ToInt64 (obj);
-			context.CurrentFrame.SetRegister (register, value);
+			FrameHandle frame = context.CurrentFrame;
+			register = frame.FindRegister (name);
+			frame.SetRegister (register, value);
 			return true;
 		}
 	}
