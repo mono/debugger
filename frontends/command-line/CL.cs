@@ -34,19 +34,11 @@ namespace CL
 			}
 		}
 
-		public abstract bool Resolve (Engine e, object context);
-		
-		public abstract string Execute ();
+		public abstract string Execute (Engine e);
 	}
 
 	public class Engine {
 		Hashtable commands = new Hashtable ();
-		object context;
-
-		public Engine (object context)
-		{
-			this.context = context;
-		}
 
 		public void Register (string s, Type t)
 		{
@@ -140,14 +132,9 @@ namespace CL
 				return;
 			}
 
-			if (!c.Resolve (this, context))
-				return;
-
-			try {
-				c.Execute ();
-			} catch (CommandError e) {
-				Console.WriteLine (e);
-			}
+			string retval = c.Execute (this);
+			if ((retval != null) && (retval != ""))
+				Console.WriteLine (retval);
 		}
 	}
 

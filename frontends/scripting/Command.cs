@@ -9,28 +9,36 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontends.Scripting
 {
+	public class DebuggerEngine : CL.Engine
+	{
+		public readonly ScriptingContext Context;
+
+		public DebuggerEngine (ScriptingContext context)
+		{
+			this.Context = context;
+		}
+	}
+
 	public abstract class DebuggerCommand : CL.Command
 	{
-		private ScriptingContext context;
-
-		public override bool Resolve (CL.Engine e, object obj)
+		public override string Execute (CL.Engine e)
 		{
-			this.context = (ScriptingContext) obj;
+			DebuggerEngine engine = (DebuggerEngine) e;
+			if (!Resolve (engine.Context))
+				return null;
 
-			return Resolve (context);
-		}
-
-		public override string Execute ()
-		{
 			try {
-				Execute (context);
+				DoExecute (engine.Context);
 			} catch (ScriptingException ex) {
-				throw new CL.CommandError (ex.Message);
+				engine.Context.Error (ex.Message);
+				return null;
 			} catch (Exception ex) {
-				throw new CL.CommandError (
+				engine.Context.Error (
 					"Caught exception while executing command {0}: {1}",
 					this, ex);
+				return null;
 			}
+
 			return "";
 		}
 
@@ -75,15 +83,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			} catch (ScriptingException ex) {
 				context.Error (ex);
 				return false;
-			}
-		}
-
-		public void Execute (ScriptingContext context)
-		{
-			try {
-				DoExecute (context);
-			} catch (ScriptingException ex) {
-				context.Error (ex);
 			}
 		}
 	}

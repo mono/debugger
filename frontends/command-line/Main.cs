@@ -50,7 +50,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class CommandLineInterpreter : Interpreter
 	{
 		GnuReadLine readline = null;
-		Engine engine;
+		DebuggerEngine engine;
 		LineParser parser;
 		string default_prompt, prompt;
 		int line = 0;
@@ -71,9 +71,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		Engine SetupEngine ()
+		DebuggerEngine SetupEngine ()
 		{
-			Engine e = new Engine (GlobalContext);
+			DebuggerEngine e = new DebuggerEngine (GlobalContext);
 
 			Type command_type = typeof (Command);
 
