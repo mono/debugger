@@ -1,3 +1,9 @@
+January 25th, 2003 - Martin Baulig
+----------------------------------
+
+The Mono runtime now executes all managed code in a separate thread; rewrote the
+Debugger's thread manager to make this work again.
+
 January 19th, 2003 - Martin Baulig
 ----------------------------------
 
