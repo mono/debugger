@@ -168,12 +168,6 @@ namespace Mono.Debugger
 			return new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
 		}
 
-		internal void ReachedManagedMain (Process process)
-		{
-			module_manager.UnLock ();
-			symtab_manager.Wait ();
-		}
-
 		public SourceLocation FindLocation (string file, int line)
 		{
 			foreach (Module module in Modules) {
