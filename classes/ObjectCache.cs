@@ -109,14 +109,12 @@ namespace Mono.Debugger
 				}
 
 				data = func (user_data);
-#if FIXME
 				try {
 					weak_reference = new WeakReference (data);
 				} catch (Exception e) {
 					Console.WriteLine ("EX: {0}", e);
 					// Silently ignore.
 				}
-#endif
 
 				// Just created a new object, add a hard reference to it and restart
 				// the timeout.
