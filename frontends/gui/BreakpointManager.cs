@@ -52,6 +52,11 @@ namespace Mono.Debugger.GUI
 
 			container.Add (tree);
 			container.ShowAll ();
+		}
+
+		public override void SetProcess (Process process)
+		{
+			base.SetProcess (process);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (breakpoints_changed);
 			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (breakpoints_changed);

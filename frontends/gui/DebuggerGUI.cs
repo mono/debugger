@@ -123,7 +123,6 @@ namespace Mono.Debugger.GUI
 			thread_notify = new ThreadNotify ();
 			program = new Program ("Debugger", "0.2", Modules.UI, arguments);
 
-			backend = new DebuggerBackend ();
 #if FALSE
 			backend.DebuggerError += new DebuggerErrorHandler (ErrorHandler);
 #endif
@@ -132,10 +131,10 @@ namespace Mono.Debugger.GUI
 
 			main_window.DeleteEvent += new DeleteEventHandler (Window_Delete);
 
-			interpreter = new Interpreter (command_writer, output_writer);
-			context = interpreter.Context;
+			context = new ScriptingContext (command_writer, output_writer, false, true);
+			interpreter = new Interpreter (context);
 
-			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (main_process_started);
+			// backend.ThreadManager.InitializedEvent += new ThreadEventHandler (main_process_started);
 
 			if (arguments.Length > 0)
 				LoadProgram (arguments);
@@ -147,10 +146,6 @@ namespace Mono.Debugger.GUI
 
 		internal Glade.XML GXML {
 			get { return gxml; }
-		}
-
-		internal DebuggerBackend DebuggerBackend {
-			get { return backend; }
 		}
 
 		//
@@ -484,8 +479,11 @@ namespace Mono.Debugger.GUI
 				return;
 
 			if (!interpreter.ProcessCommand (line)) {
-				backend.Quit ();
-				backend.Dispose ();
+				if (backend != null) {
+					backend.Quit ();
+					backend.Dispose ();
+					backend = null;
+				}
 				Application.Quit ();
 			}
 		}

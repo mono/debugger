@@ -1,5 +1,10 @@
 2003-02-01  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerWidget.cs: The `backend' is now set in
+	SetProcess() and must not be used before SetProcess() has been called.
+
+2003-02-01  Martin Baulig  <martin@ximian.com>
+
 	* classes/ObjectCache.cs: Re-enable WeakReferences.
 
 2003-02-01  Martin Baulig  <martin@ximian.com>

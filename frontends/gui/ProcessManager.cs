@@ -56,6 +56,11 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 
 			notify_id = thread_notify.RegisterListener (new ReadyEventHandler (reload_event));
+		}
+
+		public override void SetProcess (Process process)
+		{
+			base.SetProcess (process);
 
 			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (manager_initialized);
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
