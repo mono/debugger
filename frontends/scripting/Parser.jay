@@ -117,6 +117,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token MODULE
 %token IGNORE
 %token UNIGNORE
+%token ALL
 
 %start command_loop
 %%
@@ -256,6 +257,12 @@ command
 		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $3).Count];
 		((ArrayList) $3).CopyTo (operations, 0);
 		$$ = new ModuleOperationCommand (modules, operations);
+	  }
+	| MODULE ALL module_operations
+	  {
+		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $2).Count];
+		((ArrayList) $2).CopyTo (operations, 0);
+		$$ = new ModuleOperationCommand (operations);
 	  }
 	| assert_command
 	  {

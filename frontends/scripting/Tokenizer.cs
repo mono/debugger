@@ -86,6 +86,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("module", Token.MODULE);
 			keywords.Add ("ignore", Token.IGNORE);
 			keywords.Add ("unignore", Token.UNIGNORE);
+			keywords.Add ("all", Token.ALL);
 
 			keywords.Add ("unknown", Token.UNKNOWN);
 			keywords.Add ("fundamental", Token.FUNDAMENTAL);

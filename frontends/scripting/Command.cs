@@ -401,9 +401,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.operations = operations;
 		}
 
+		public ModuleOperationCommand (ModuleOperation[] operations)
+		{
+			this.operations = operations;
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.ModuleOperations (modules, operations);
+			if (modules != null)
+				context.ModuleOperations (modules, operations);
+			else
+				context.ModuleOperations (operations);
 		}
 	}
 

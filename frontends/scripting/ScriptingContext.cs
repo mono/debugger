@@ -871,6 +871,28 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		void module_operation (Module module, ModuleOperation[] operations)
+		{
+			foreach (ModuleOperation operation in operations) {
+				switch (operation) {
+				case ModuleOperation.Ignore:
+					module.LoadSymbols = false;
+					break;
+				case ModuleOperation.UnIgnore:
+					module.LoadSymbols = true;
+					break;
+				case ModuleOperation.Step:
+					module.StepInto = true;
+					break;
+				case ModuleOperation.DontStep:
+					module.StepInto = false;
+					break;
+				default:
+					throw new InternalError ();
+				}
+			}
+		}
+
 		public void ModuleOperations (int[] module_indices, ModuleOperation[] operations)
 		{
 			if (modules == null) {
@@ -884,26 +906,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return;
 				}
 
-				Module module = modules [index];
-				foreach (ModuleOperation operation in operations) {
-					switch (operation) {
-					case ModuleOperation.Ignore:
-						module.LoadSymbols = false;
-						break;
-					case ModuleOperation.UnIgnore:
-						module.LoadSymbols = true;
-						break;
-					case ModuleOperation.Step:
-						module.StepInto = true;
-						break;
-					case ModuleOperation.DontStep:
-						module.StepInto = false;
-						break;
-					default:
-						throw new InternalError ();
-					}
-				}
+				module_operation (modules [index], operations);
 			}
+		}
+
+		public void ModuleOperations (ModuleOperation[] operations)
+		{
+			if (modules == null) {
+				Print ("No modules.");
+				return;
+			}
+
+			foreach (Module module in modules)
+				module_operation (module, operations);
 		}
 	}
 }
