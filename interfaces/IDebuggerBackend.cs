@@ -49,6 +49,8 @@ namespace Mono.Debugger
 
 		void NextLine ();
 
+		void Finish ();
+
 		// <summary>
 		//   Tell the debugger that we're finished debugging.  This kills the target
 		//   and terminates the current debugging session.  If the backend is talking

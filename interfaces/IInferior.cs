@@ -80,7 +80,12 @@ namespace Mono.Debugger
 		//   This will step over all methods which are not in the application's symbol
 		//   table (you can set this using the IInferior.ApplicationSymbolTable property).
 		// </summary>
-		StepFrame
+		StepFrame,
+
+		// <summary>
+		//   Single-step until leaving the specified step frame and never enter any methods.
+		// </summary>
+		Finish
 	}
 
 	public interface IStepFrame

@@ -733,11 +733,19 @@ namespace Mono.Debugger.Backends
 
 		void do_step (IStepFrame frame)
 		{
-			if ((frame != null) &&
-			    ((frame.Mode == StepMode.StepFrame) ||
-			     (frame.Mode == StepMode.NativeStepFrame)))
-				current_step_frame = frame;
-			else
+			if (frame != null) {
+				switch (frame.Mode) {
+				case StepMode.StepFrame:
+				case StepMode.NativeStepFrame:
+				case StepMode.Finish:
+					current_step_frame = frame;
+					break;
+
+				default:
+					current_step_frame = null;
+					break;
+				}
+			} else
 				current_step_frame = null;
 
 			TargetState old_state = change_target_state (TargetState.RUNNING);
@@ -798,7 +806,7 @@ namespace Mono.Debugger.Backends
 			 * If we have a source language, check for trampolines.
 			 * This will trigger a JIT compilation if neccessary.
 			 */
-			if (frame.Language != null) {
+			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
 				TargetAddress trampoline = frame.Language.GetTrampoline (call);
 
 				/*
@@ -831,6 +839,15 @@ namespace Mono.Debugger.Backends
 			 */
 			if (frame.Mode == StepMode.SingleInstruction) {
 				do_step (null);
+				return;
+			}
+
+			/*
+			 * In StepMode.Finish, always step over all methods.
+			 */
+			if (frame.Mode == StepMode.Finish) {
+				current_step_frame = frame;
+				do_next ();
 				return;
 			}
 

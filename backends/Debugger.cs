@@ -659,6 +659,19 @@ namespace Mono.Debugger.Backends
 			inferior.Continue (frame.End);
 		}
 
+		public void Finish ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			IStackFrame frame = CurrentFrame;
+			if (frame.Method == null)
+				throw new TargetException ("Can't find bounds of current method");
+
+			inferior.Step (new StepFrame (
+				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
+		}
+
 		public IStackFrame CurrentFrame {
 			get {
 				if (inferior == null)

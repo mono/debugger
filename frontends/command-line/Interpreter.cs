@@ -134,6 +134,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				last_command = command;
 				break;
 
+			case "finish":
+				backend.Finish ();
+				break;
+
 			case "abort":
 				if (backend.Inferior == null)
 					throw new NoTargetException ();
