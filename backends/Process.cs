@@ -307,7 +307,7 @@ namespace Mono.Debugger
 
 		public StackFrame[] GetBacktrace ()
 		{
-			check_stopped ();
+			check_inferior ();
 			if (sse != null)
 				return sse.GetBacktrace ();
 			else

@@ -554,6 +554,9 @@ namespace Mono.Debugger.Backends
 			if (current_backtrace != null)
 				return current_backtrace;
 
+			if (Thread.CurrentThread == engine_thread)
+				return get_backtrace ();
+
 			if (!check_can_run ()) {
 				command_mutex.ReleaseMutex ();
 				return null;
