@@ -68,46 +68,17 @@ namespace Mono.Debugger.Frontend
 		}
 
 		/* override this to provide command specific completion */
-                public virtual void Complete (Engine e, string text, int start, int end) {
+                public virtual void Complete (Engine e, string text, int start, int end)
+		{
 			if (text.StartsWith ("-")) {
 				/* do our super cool argument completion on the command's
 				 * properties, if there are any.
 				 */
-				Type t = GetType();
-				ArrayList matched_args = new ArrayList();
-				PropertyInfo [] pi = t.GetProperties ();
-
-				foreach (PropertyInfo p in pi) {
-					if (!p.CanWrite)
-						continue;
-					if (text == "-" ||
-					    p.Name.ToLower().StartsWith (text.Substring (1))) {
-						matched_args.Add ("-" + p.Name.ToLower());
-					}
-				}
-
-				string[] match_strings = null;
-
-				if (matched_args.Count > 0) {
-					if (matched_args.Count > 1) {
-						/* always add the prefix at
-						 * the beginning when we have
-						 * > 1 matches, so that
-						 * readline will display the
-						 * matches. */
-						matched_args.Insert (0, text);
-					}
-
-					match_strings = new string [matched_args.Count + 1];
-					matched_args.CopyTo (match_strings);
-					match_strings [matched_args.Count] = null;
-				}
-
-				GnuReadLine.Instance().SetCompletionMatches (match_strings);
+				e.Completer.ArgumentCompleter (GetType(), text, start, end);
 			}
 			else {
 				/* otherwise punt */
-				GnuReadLine.Instance().SetCompletionMatches (null);
+				e.Completer.NoopCompleter (text, start, end);
 			}
                 }
 	}
@@ -1681,6 +1652,20 @@ namespace Mono.Debugger.Frontend
 			context.Print ("Inserted breakpoint {0} at {1}",
 				       index, location.Name);
 		}
+
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			if (text.StartsWith ("-")) {
+				e.Completer.ArgumentCompleter (GetType(), text, start, end);
+			}
+			else if (text.IndexOf (Path.DirectorySeparatorChar) != -1) {
+				/* attempt filename completion */
+				e.Completer.FilenameCompleter (text, start, end);
+			}
+			else {
+				/* attempt symbol name completion */
+			}
+                }
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }

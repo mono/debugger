@@ -1,5 +1,50 @@
 2004-12-14  Chris Toshok  <toshok@ximian.com>
 
+	* configure.in: simplify the readline stuff - we force the dep on
+	readline/libedit if the frontend is being built.  there's no
+	reason to allow the user to disable it.
+
+	* frontend/Main.cs: GnuReadLine is all static now, and it's
+	assumed to be there.
+
+	* glue/mono-debugger-readline.c (sigint_handler): remove the
+	USE_READLINE ifdef.
+	(mono_debugger_readline_static_init): same, and change the return
+	type to void.  also call rl_set_signals so readline's signal
+	handlers will get installed.
+	(mono_debugger_readline_readline): remove the USE_READLINE ifdef.
+	(mono_debugger_readline_add_history): same.
+	(mono_debugger_readline_get_filename_completion_desired): new
+	function.
+	(mono_debugger_readline_set_filename_completion_desired): same.
+	(mono_debugger_readline_enable_completion): remove the
+	USE_READLINE ifdef.
+
+	* glue/mono-debugger-readline.h: remove the USE_READLINE ifdefs
+	- we assume it's there - and add prototypes for the filename
+	completion stuff.
+
+	* frontend/GnuReadLine.cs: make all methods/properties static.
+	Also, remove the has_readline stuff.  from now on we'll just
+	assume readline is there if we're building the frontend.  Also,
+	add two more pinvoke functions, for getting/setting
+	rl_filename_completion_desired.
+
+	* frontend/Completer.cs (Completer.ArgumentCompleter): move the
+	argument completion stuff here.
+	(Completer.FilenameCompleter): new function, generate completions
+	based on the path.
+	
+	* frontend/Command.cs: GnuReadLine is all static now.  remove the
+	silly Instance() stuff.
+	(Command.Complete): take all the code for argument completion and
+	put it in Completer.ArgumentCompleter.
+	(BreakCommand.Complete): if the text begins with
+	Path.DirectorySeparatorChar, do filename completion.  This should
+	probably be made a bit smarter and moved to SourceCommand.
+
+2004-12-14  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Command.cs: nuke CommandError.
 
 2004-12-14  Chris Toshok  <toshok@ximian.com>

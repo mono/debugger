@@ -5,7 +5,6 @@ namespace Mono.Debugger.Frontend
 {
 	public class CommandLineInterpreter : Interpreter
 	{
-		GnuReadLine readline = null;
 		DebuggerEngine engine;
 		LineParser parser;
 		string prompt;
@@ -24,9 +23,7 @@ namespace Mono.Debugger.Frontend
 			if (is_interactive) {
 				prompt = options.Prompt;
 				if (!options.IsScript) {
-					readline = GnuReadLine.Instance ();
-					/* XXX disabled until I can figure out why it's causing crashes */
-					readline.EnableCompletion (new CompletionDelegate (engine.Completer.CompletionHandler));
+					GnuReadLine.EnableCompletion (new CompletionDelegate (engine.Completer.CompletionHandler));
 				}
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
@@ -120,38 +117,33 @@ namespace Mono.Debugger.Frontend
 		public string ReadInput (bool is_complete)
 		{
 			++line;
-			if (readline != null) {
 			again:
 				string the_prompt = is_complete ? prompt : "... ";
-				string result = readline.ReadLine (the_prompt);
+				string result = GnuReadLine.ReadLine (the_prompt);
 				if (result == null)
 					return null;
 				if (result != "")
-					readline.AddHistory (result);
+					GnuReadLine.AddHistory (result);
 				else if (is_complete) {
 					engine.Repeat ();
 					goto again;
 				}
 				return result;
-			} else {
-				if (prompt != null)
-					Console.Write (prompt);
-				return Console.ReadLine ();
-			}
 		}
 
 		public void Error (int pos, string message)
 		{
-			if (readline != null) {
-				string prefix = new String (' ', pos + prompt.Length);
-				Console.WriteLine ("{0}^", prefix);
-				Console.Write ("ERROR: ");
-				Console.WriteLine (message);
-			} else {
+			if (Options.IsScript) {
 				// If we're reading from a script, abort.
 				Console.Write ("ERROR in line {0}, column {1}: ", line, pos);
 				Console.WriteLine (message);
 				Environment.Exit (1);
+			}
+			else {
+				string prefix = new String (' ', pos + prompt.Length);
+				Console.WriteLine ("{0}^", prefix);
+				Console.Write ("ERROR: ");
+				Console.WriteLine (message);
 			}
 		}
 

@@ -187,17 +187,7 @@ AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
 
 if test x$server_only != xyes ; then
-   AC_MSG_CHECKING([if using the libreadline library is requested])
-   AC_ARG_ENABLE(readline, [  --disable-readline       don't use readline/libedit], use_readline=$enableval, use_readline=yes)
-   AC_MSG_RESULT($use_readline)
-   if test "x$use_readline" = "xyes"; then
-      AC_DEFINE(USE_READLINE,1,[Whether to use readline])
-
-      CHECK_READLINE
-   else
-      READLINE_DEPLIBS=
-   fi
-
+   CHECK_READLINE
    AC_SUBST(READLINE_DEPLIBS)
 fi
 

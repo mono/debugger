@@ -7,18 +7,15 @@
 
 static gboolean in_readline = FALSE;
 
-#if USE_READLINE
 static void
 sigint_handler (int dummy)
 {
 	printf ("Quit\n");
 }
-#endif
 
-int
+void
 mono_debugger_readline_static_init (void)
 {
-#if USE_READLINE
 	struct sigaction sa;
 
 	sa.sa_handler = sigint_handler;
@@ -27,10 +24,8 @@ mono_debugger_readline_static_init (void)
 
 	sigaction (SIGINT, &sa, NULL);
 
-	return TRUE;
-#else
-	return FALSE;
-#endif
+	rl_catch_signals = 1;
+	rl_set_signals ();
 }
 
 int
@@ -42,7 +37,6 @@ mono_debugger_readline_is_a_tty (int fd)
 char *
 mono_debugger_readline_readline (const char *prompt)
 {
-#if USE_READLINE
 	char *line;
 	char *retval = NULL;
 
@@ -56,17 +50,12 @@ mono_debugger_readline_readline (const char *prompt)
 
 	in_readline = FALSE;
 	return retval;
-#else
-	return NULL;
-#endif
 }
 
 void
 mono_debugger_readline_add_history (const char *line)
 {
-#ifdef USE_READLINE
 	add_history (line);
-#endif
 }
 
 char*
@@ -77,7 +66,18 @@ mono_debugger_readline_current_line_buffer (void)
 
 
 /* Completion stuff */
-#ifdef USE_READLINE
+
+int
+mono_debugger_readline_get_filename_completion_desired (void)
+{
+	return rl_filename_completion_desired;
+}
+    
+void
+mono_debugger_readline_set_filename_completion_desired (int v)
+{
+	rl_filename_completion_desired = v;
+}
 
 static CompletionDelegate completion_cb;
 static char **completion_matches = NULL;
@@ -108,15 +108,12 @@ mono_debugger_readline_completion_function (const char *text, int start, int end
 	}
 	return completion_matches;
 }
-#endif
 
 void
 mono_debugger_readline_enable_completion (CompletionDelegate cb)
 {
-#ifdef USE_READLINE
 	rl_attempted_completion_function = mono_debugger_readline_completion_function;
 
 	completion_cb = cb;
-#endif
 }
 
