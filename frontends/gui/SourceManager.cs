@@ -6,6 +6,7 @@
 //
 
 using System;
+using System.Text;
 using System.Collections;
 using Gtk;
 using GtkSharp;
@@ -87,9 +88,14 @@ namespace Mono.Debugger.GUI {
 				ProcessCreatedEvent (this, process);
 		}
 
-		SourceList CreateSourceView (string filename, string contents)
+		SourceList CreateSourceView (string filename, string[] contents)
 		{
-			return new SourceList (this, filename, contents);
+			StringBuilder sb = new StringBuilder ();
+			for (int i = 0; i < contents.Length; i++) {
+				sb.Append (contents [i]);
+				sb.Append ("\n");
+			}
+			return new SourceList (this, filename, sb.ToString ());
 		}
 
 		int GetPageIdx (Gtk.Widget w)
@@ -225,7 +231,7 @@ namespace Mono.Debugger.GUI {
 			if (contents == null)
 				return disassembler_view;
 			
-			view = CreateSourceView (source.Name, String.Join ("\n", contents));
+			view = CreateSourceView (source.Name, contents);
 			view.Widget.ShowAll ();
 					
 			sources [source_key] = view;

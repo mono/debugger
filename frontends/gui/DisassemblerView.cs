@@ -57,7 +57,7 @@ namespace Mono.Debugger.GUI
 				text_buffer.Text = "";
 			else {
 				string[] lines = current_method_source.SourceBuffer.Contents;
-				text_buffer.Text = String.Join ("\n", lines);
+				text_buffer.Text = String.Join ("\n", lines) + "\n";
 			}
 		}
 

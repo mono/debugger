@@ -75,6 +75,7 @@ namespace Mono.Debugger.GUI
 			Log.SetLogHandler ("Gtk", LogLevelFlags.All, func);
 			Log.SetLogHandler ("GLib", LogLevelFlags.All, func);
 			Log.SetLogHandler ("GLib-GObject", LogLevelFlags.All, func);
+			Log.SetLogHandler ("GtkSourceView", LogLevelFlags.All, func);
 
 			DebuggerGUI gui = new DebuggerGUI ((string []) arguments.ToArray (typeof (string)));
 
