@@ -32,7 +32,7 @@ namespace Mono.Debugger
 
 		static int next_id = 0;
 
-		protected enum ProcessType
+		internal enum ProcessType
 		{
 			Normal,
 			CoreFile,
@@ -41,7 +41,7 @@ namespace Mono.Debugger
 			CommandProcess
 		}
 
-		protected Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
+		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
 				   ProcessType type, string core_file, int pid, DaemonThreadHandler handler,
 				   int signal)
 		{
@@ -210,9 +210,9 @@ namespace Mono.Debugger
 				TargetEvent (this, args);
 		}
 
-		internal event TargetOutputHandler TargetOutput;
-		internal event DebuggerOutputHandler DebuggerOutput;
-		internal event DebuggerErrorHandler DebuggerError;
+		public event TargetOutputHandler TargetOutput;
+		public event DebuggerOutputHandler DebuggerOutput;
+		public event DebuggerErrorHandler DebuggerError;
 
 		public event TargetEventHandler TargetEvent;
 		public event TargetExitedHandler TargetExited;
@@ -437,7 +437,7 @@ namespace Mono.Debugger
 					    null, pid, null, 0);
 		}
 
-		public Process CreateDaemonThread (int pid, int signal, DaemonThreadHandler handler)
+		internal Process CreateDaemonThread (int pid, int signal, DaemonThreadHandler handler)
 		{
 			return new Process (backend, start, bfd_container, ProcessType.Daemon,
 					    null, pid, handler, signal);

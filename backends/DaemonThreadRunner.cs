@@ -8,12 +8,12 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	public delegate bool DaemonThreadHandler (DaemonThreadRunner sender, TargetAddress address, int signal);
+	internal delegate bool DaemonThreadHandler (DaemonThreadRunner sender, TargetAddress address, int signal);
 
 	// <summary>
 	//   This is a minimalistic SingleSteppingEngine for undebuggable daemon threads.
 	// </summary>
-	public class DaemonThreadRunner : IDisposable
+	internal class DaemonThreadRunner : IDisposable
 	{
 		public DaemonThreadRunner (DebuggerBackend backend, Process process, IInferior inferior,
 					   DaemonThreadHandler daemon_thread_handler, int pid, int signal)

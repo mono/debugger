@@ -62,7 +62,7 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	public class SingleSteppingEngine : IProcess, ITargetAccess, IDisassembler, IDisposable
 	{
-		public SingleSteppingEngine (DebuggerBackend backend, Process process,
+		internal SingleSteppingEngine (DebuggerBackend backend, Process process,
 					     IInferior inferior, bool native)
 		{
 			this.backend = backend;
@@ -276,7 +276,7 @@ namespace Mono.Debugger.Backends
 			do {
 				try {
 					process_command (command);
-				} catch (ThreadAbortException e) {
+				} catch (ThreadAbortException) {
 					// We're exiting here.
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0}", e);

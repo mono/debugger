@@ -49,7 +49,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	public interface IInferior : ITargetAccess, ITargetNotification, IDisposable
+	internal interface IInferior : ITargetAccess, ITargetNotification, IDisposable
 	{
 		/// <summary>
 		///   Start the target.
@@ -121,16 +121,12 @@ namespace Mono.Debugger.Backends
 				       string string_argument);
 		void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
 				    TargetAddress object_argument, TargetAddress[] param_objects);
-		TargetAddress RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
-					     TargetAddress object_argument, TargetAddress[] param_objects,
-					     out TargetAddress exc_object);
 		TargetAddress SimpleLookup (string name);
 
 		ChildEvent Wait ();
 
 		void UpdateModules ();
 
-		long GetRegister (int register);
 		long[] GetRegisters (int[] registers);
 		TargetAddress GetReturnAddress ();
 

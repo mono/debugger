@@ -71,7 +71,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ILanguageBackend Language {
+		internal ILanguageBackend Language {
 			get {
 				return language;
 			}

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Backends
 {
-	public interface ILanguageBackend
+	internal interface ILanguageBackend
 	{
 		string Name {
 			get;

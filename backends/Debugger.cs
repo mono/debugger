@@ -267,7 +267,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool SignalHandler (Process process, IInferior inferior, int signal)
+		internal bool SignalHandler (Process process, IInferior inferior, int signal)
 		{
 			bool action;
 			if (thread_manager.SignalHandler (inferior, signal, out action))

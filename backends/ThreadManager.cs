@@ -64,7 +64,7 @@ namespace Mono.Debugger
 			address_domain = new AddressDomain ("global");
 		}
 
-		public bool Initialize (Process process, IInferior inferior)
+		internal bool Initialize (Process process, IInferior inferior)
 		{
 			this.main_process = process;
 			add_process (process, inferior.PID, false);
@@ -158,7 +158,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool SignalHandler (IInferior inferior, int signal, out bool action)
+		internal bool SignalHandler (IInferior inferior, int signal, out bool action)
 		{
 			if (signal == inferior.ThreadRestartSignal) {
 				action = false;

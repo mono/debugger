@@ -280,7 +280,7 @@ namespace Mono.Debugger
 			Assembly application;
 			try {
 				application = Assembly.LoadFrom (argv [0]);
-			} catch (Exception e) {
+			} catch {
 				application = null;
 			}
 

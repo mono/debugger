@@ -1,5 +1,20 @@
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
+	* backends/IInferior.cs (IInferior): Made this interface internal.
+	(IInferior.RuntimeInvoke, IInferior.GetRegister): Removed; they're
+	inherited from ITargetAccess.
+
+	* backends/ILanguageBackend.cs: Made this interface internal.
+
+	* backends/DaemonThreadRunner.cs: Made this class internal.
+
+	* backends/Process.cs (Process.TargetOutput, DebuggerOutput,
+	DebuggerError): Made these events public.
+
+	* backends/SingleSteppingEngine.cs: Made the .ctor internal.	
+
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
 	* classes/IOChannel.cs (Spawn): Removed this obsolete class.
 
 	* glue/iochannel.c (mono_debugger_glue_kill_process): Removed.
