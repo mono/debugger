@@ -65,7 +65,7 @@ static ServerCommandError
 server_ptrace_continue (InferiorHandle *handle)
 {
 	errno = 0;
-	if (ptrace (PT_CONTINUE, handle->pid, NULL, handle->last_signal)) {
+	if (ptrace (PT_CONTINUE, handle->pid, (caddr_t) 1, handle->last_signal)) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
@@ -79,7 +79,7 @@ static ServerCommandError
 server_ptrace_step (InferiorHandle *handle)
 {
 	errno = 0;
-	if (ptrace (PT_STEP, handle->pid, NULL, handle->last_signal)) {
+	if (ptrace (PT_STEP, handle->pid, (caddr_t) 1, handle->last_signal)) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
