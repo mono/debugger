@@ -579,12 +579,16 @@ namespace Mono.Debugger.Languages.Mono
 
 		public bool CanCreateInstance (Type type)
 		{
-			return false;
+			return LookupMonoType (type) != null;
 		}
 
 		public ITargetObject CreateInstance (StackFrame frame, object obj)
 		{
-			return null;
+			MonoFundamentalType type = LookupMonoType (obj.GetType ()) as MonoFundamentalType;
+			if (type == null)
+				return null;
+
+			return type.CreateInstance (frame, obj);
 		}
 
 		public ITargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)

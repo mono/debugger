@@ -10,15 +10,12 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly int LengthSize;
 		internal readonly int DataOffset;
 
-		protected readonly TargetAddress CreateString;
-
 		public MonoStringTypeInfo (MonoStringType type, int object_size, int size, TargetAddress klass)
 			: base (type, size, klass)
 		{
 			this.LengthOffset = object_size;
 			this.LengthSize = 4;
 			this.DataOffset = object_size + 4;
-			CreateString = type.File.MonoLanguage.MonoDebuggerInfo.CreateString;
 		}
 
 		public override bool HasFixedSize {

@@ -117,5 +117,13 @@ namespace Mono.Debugger.Languages.Mono
 				throw new ArgumentException ();
 			}
 		}
+
+		internal virtual MonoFundamentalObjectBase CreateInstance (StackFrame frame, object obj)
+		{
+			TargetLocation location = Heap.Allocate (frame, size);
+			frame.TargetAccess.WriteBuffer (location.Address, CreateObject (obj));
+
+			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)CreateTypeInfo(), location);
+		}
 	}
 }

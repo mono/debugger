@@ -1,3 +1,22 @@
+2005-04-02  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.CanCreateInstance): we can create an instance
+	of any type we can lookup (really only fundamental types at the
+	moment).
+	(MonoLanguageBackend.CreateInstance): flesh out this method.
+
+	* backends/mono/MonoFundamentalType.cs (.CreateInstance):
+	reimplement this to create instances of fundamental types in the
+	inferior from within the debugger.
+
+	* backends/mono/MonoStringTypeInfo.cs: remove the CreateString
+	stuff from here, and move it to MonoStringType.cs
+
+	* backends/mono/MonoStringType.cs (.CreateObject,
+	.CreateInstance): reimplement these, so that we can create string
+	objects in the inferior process from inside the debugger.
+
 2005-03-31  Chris Toshok  <toshok@ximian.com>
 
 	* backends/mono/MonoSymbolFile.cs (MonoMethod.get_variables): we
