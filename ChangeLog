@@ -1,5 +1,10 @@
 2003-01-11  Martin Baulig  <martin@ximian.com>
 
+	* widgets/generator/gtk-api.xml: Removed
+	gtk_source_buffer_get_tag_start() and gtk_source_buffer_get_tag_end().
+
+2003-01-11  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added `MODULE ALL module_operations'
 	to do the operation on all modules.
 
