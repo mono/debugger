@@ -217,12 +217,23 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ITargetMethodInfo[] StaticConstructors {
+			get {
+				return new ITargetMethodInfo [0];
+			}
+		}
+
 		public ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
 		public ITargetFunctionObject GetConstructor (StackFrame frame, int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		public ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index)
 		{
 			throw new InvalidOperationException ();
 		}

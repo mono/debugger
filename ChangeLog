@@ -1,5 +1,24 @@
 2004-10-22  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/scripting/Style.cs (NativeStyle.FormatMethod): fix the
+	formatting of cctor/ctor.
+	(NativeStyle.FormatType): format cctors as well, as pass the right
+	values for is_static/is_ctor.
+
+	* frontends/scripting/Expression.cs: special case ".ctor" and
+	".cctor" method names.
+
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.StaticConstructors): new property.
+	(ITargetStructType.GetStaticConstructor): new method.
+
+	* backends/mono-csharp/MonoClass.cs: add support for cctors.
+
+	* backends/native/NativeStructType.cs: stub out the static
+	constructor foo.
+
+2004-10-22  Chris Toshok  <toshok@ximian.com>
+
 	* frontends/command-line/Tokenizer.cs (Tokenizer.xtoken): handle
 	"." (DOT) and ".." (DOTDOT).
 

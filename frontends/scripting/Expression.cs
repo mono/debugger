@@ -1145,8 +1145,27 @@ namespace Mono.Debugger.Frontends.Scripting
 			ArrayList methods = new ArrayList ();
 
 		again:
-			if (instance != null) {
-				foreach (ITargetMethodInfo method in stype.Methods) {
+			if (name == ".ctor") {
+				foreach (ITargetMethodInfo method in stype.Constructors) {
+					methods.Add (method);
+				}
+			}
+			else if (name == ".cctor") {
+				foreach (ITargetMethodInfo method in stype.StaticConstructors) {
+					methods.Add (method);
+				}
+			}
+			else {
+				if (instance != null) {
+					foreach (ITargetMethodInfo method in stype.Methods) {
+						if (method.Name != name)
+							continue;
+
+						methods.Add (method);
+					}
+				}
+
+				foreach (ITargetMethodInfo method in stype.StaticMethods) {
 					if (method.Name != name)
 						continue;
 
@@ -1154,18 +1173,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				}
 			}
 
-			foreach (ITargetMethodInfo method in stype.StaticMethods) {
-				if (method.Name != name)
-					continue;
-
-				methods.Add (method);
-			}
-
-			if (name == ".ctor") {
-				foreach (ITargetMethodInfo method in stype.Constructors) {
-					methods.Add (method);
-				}
-			}
 
 			if (methods.Count > 0)
 				return new MethodGroupExpression (

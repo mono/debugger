@@ -205,7 +205,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			StringBuilder sb = new StringBuilder ();
 			sb.Append (prefix);
 			if (is_ctor)
-				sb.Append ("   ctor ");
+				if (is_static)
+					sb.Append ("   .cctor ");
+				else
+					sb.Append ("   .ctor ");
 			else if (is_static)
 				sb.Append ("   static ");
 			else
@@ -309,6 +312,9 @@ namespace Mono.Debugger.Frontends.Scripting
 					sb.Append (FormatMethod (
 							   prefix, method, true, false, hash));
 				foreach (ITargetMethodInfo method in stype.Constructors)
+					sb.Append (FormatMethod (
+							   prefix, method, false, true, hash));
+				foreach (ITargetMethodInfo method in stype.StaticConstructors)
 					sb.Append (FormatMethod (
 							   prefix, method, true, true, hash));
 

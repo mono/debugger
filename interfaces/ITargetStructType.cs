@@ -124,5 +124,11 @@ namespace Mono.Debugger.Languages
 		}
 
 		ITargetFunctionObject GetConstructor (StackFrame frame, int index);
+
+		ITargetMethodInfo[] StaticConstructors {
+			get;
+		}
+
+		ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index);
 	}
 }

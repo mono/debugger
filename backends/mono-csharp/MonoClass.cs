@@ -10,16 +10,16 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoFieldInfo[] fields, static_fields;
 		MonoPropertyInfo[] properties, static_properties;
 		MonoEventInfo[] events, static_events;
-		MonoMethodInfo[] methods, static_methods, ctors;
+		MonoMethodInfo[] methods, static_methods, ctors, cctors;
 		TargetBinaryReader info;
 		internal readonly MonoSymbolFile File;
 		bool is_valuetype;
 		int num_fields, num_static_fields, num_properties, num_static_properties;
 		int num_events, num_static_events;
-		int num_methods, num_static_methods, num_ctors, num_ifaces;
+		int num_methods, num_static_methods, num_ctors, num_cctors, num_ifaces;
 		int field_info_offset, static_field_info_offset, property_info_offset, event_info_offset;
 		int static_property_info_offset, method_info_offset, static_method_info_offset, static_event_info_offset;
-		int ctor_info_offset, iface_info_offset;
+		int ctor_info_offset, cctor_info_offset ,iface_info_offset;
 		int first_field, first_static_field, first_property, first_static_property;
 		int first_event, first_static_event;
 		int first_method, first_static_method;
@@ -75,6 +75,8 @@ namespace Mono.Debugger.Languages.CSharp
 			static_method_info_offset = info.ReadInt32 ();
 			num_ctors = info.ReadInt32 ();
 			ctor_info_offset = info.ReadInt32 ();
+			num_cctors = info.ReadInt32 ();
+			cctor_info_offset = info.ReadInt32 ();
 			num_ifaces = info.ReadInt32 ();
 			iface_info_offset = info.ReadInt32 ();
 			int parent = info.ReadInt32 ();
@@ -118,6 +120,8 @@ namespace Mono.Debugger.Languages.CSharp
 			static_method_info_offset = old_class.static_method_info_offset;
 			num_ctors = old_class.num_ctors;
 			ctor_info_offset = old_class.ctor_info_offset;
+			num_cctors = old_class.num_cctors;
+			cctor_info_offset = old_class.cctor_info_offset;
 			num_ifaces = old_class.num_ifaces;
 			iface_info_offset = old_class.iface_info_offset;
 			info = old_class.info;
@@ -822,7 +826,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			R.MethodInfo[] mono_methods = EffectiveType.GetMethods (
 				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
-				R.BindingFlags.Public);
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 
 			ArrayList list = new ArrayList ();
 			for (int i = 0; i < mono_methods.Length; i++) {
@@ -869,7 +873,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			R.MethodInfo[] mono_methods = EffectiveType.GetMethods (
 				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
-				R.BindingFlags.Public);
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 
 			ArrayList list = new ArrayList ();
 			for (int i = 0; i < mono_methods.Length; i++) {
@@ -916,7 +920,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			R.ConstructorInfo[] mono_ctors = EffectiveType.GetConstructors (
 				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
-				R.BindingFlags.Public);
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
 
 			ArrayList list = new ArrayList ();
 			for (int i = 0; i < mono_ctors.Length; i++) {
@@ -943,6 +947,46 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				init_ctors ();
 				return ctors;
+			}
+		}
+
+		void init_cctors ()
+		{
+			if (cctors != null)
+				return;
+
+			info.Position = offset + cctor_info_offset;
+			cctors = new MonoMethodInfo [num_cctors];
+
+			R.ConstructorInfo[] mono_cctors = EffectiveType.GetConstructors (
+				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
+				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+
+			ArrayList list = new ArrayList ();
+			for (int i = 0; i < mono_cctors.Length; i++) {
+				list.Add (mono_cctors [i]);
+			}
+
+			if (list.Count != num_cctors)
+				throw new InternalError (
+					"Type.GetStaticConstructors() returns {0} cctors, but the JIT has {1}",
+					list.Count, num_cctors);
+
+			for (int i = 0; i < num_cctors; i++)
+				cctors [i] = new MonoMethodInfo (
+					this, i, (R.ConstructorInfo) list [i], true, info, File);
+		}
+
+		ITargetMethodInfo[] ITargetStructType.StaticConstructors {
+			get {
+				return StaticConstructors;
+			}
+		}
+
+		protected MonoMethodInfo[] StaticConstructors {
+			get {
+				init_cctors ();
+				return cctors;
 			}
 		}
 
@@ -1025,6 +1069,17 @@ namespace Mono.Debugger.Languages.CSharp
 
 			try {
 				return ctors [index].FunctionType.GetStaticObject (frame);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}
+
+		public ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index)
+		{
+			init_cctors ();
+
+			try {
+				return cctors [index].FunctionType.GetStaticObject (frame);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
