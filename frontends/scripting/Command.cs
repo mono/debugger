@@ -1287,4 +1287,45 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context.Save (filename);
 		}
 	}
+
+	public class HelpCommand : Command
+	{
+		string type;
+		
+		public HelpCommand (string t)
+		{
+			type = t;
+		}
+		
+		protected override void DoExecute (ScriptingContext context)
+		{
+			switch (type){
+			case "show":
+				break;
+			case "":
+				context.Print (
+					"    backtrace        prints out the backtrace\n" +
+					"    c, continue      continue execution" +
+					"    s, step          single steps\n" +
+					"    stepi            single step, at instruction level\n" + 
+					"    n, next          next line\n" +
+					"    nexti            next line, at instruction level\n" +
+					"    finish           runs until the end of the current method\n" + 
+					"    up [N]           \n" +
+					"    down [N]         \n" +
+					"    kill PID         \n" +
+					"    show OPT         Shows some information, use help show for details\n" +
+					"    \n" +
+					"Breakpoints:\n" +
+					"      break          inserts a breakpoint, use help break\n" +
+					"      breakpoint     manages the breakoints, use help break\n" +
+					"    \n" +
+					"    print EXPR       Prints the expression\n" +
+					"    quit          quits the debugger");
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }

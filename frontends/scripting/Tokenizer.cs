@@ -108,6 +108,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("pointer", Token.POINTER);
 			keywords.Add ("global", Token.GLOBAL);
 
+			keywords.Add ("help", Token.HELP);
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);
 			short_keywords.Add ("c", Token.CONTINUE);
@@ -121,6 +122,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			short_keywords.Add ("b", Token.BREAK);
 			short_keywords.Add ("p", Token.PRINT);
 			short_keywords.Add ("dis", Token.DISASSEMBLE);
+			short_keywords.Add ("h", Token.HELP);
+			short_keywords.Add ("?", Token.HELP);
 		}
 
 		ScriptingContext context;

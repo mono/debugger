@@ -135,6 +135,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token ADD
 %token REMOVE
 
+%token HELP
 %start command_loop
 %%
 
@@ -328,6 +329,12 @@ command
 		((ArrayList) $4).CopyTo (threads, 0);
 
 		$$ = new ThreadGroupRemoveCommand ((string) $3, threads);
+	  }
+	| HELP SHOW {
+		$$ = new HelpCommand ("show");
+	  }
+	| HELP {
+		$$ = new HelpCommand ("");
 	  }
 	;
 
@@ -647,3 +654,4 @@ public bool Parse (string text)
 /* end end end */
 }
 
+}
