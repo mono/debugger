@@ -39,8 +39,8 @@ fi
 
 dnl for use on the build system
 dnl pkg-config is stupid
-BUILD_GTK_CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0`
-BUILD_GTK_LIBS=`$PKG_CONFIG --libs gtk+-2.0`
+BUILD_GTK_CFLAGS=`$PKG_CONFIG --cflags gtk+-2.0 libgnome-2.0`
+BUILD_GTK_LIBS=`$PKG_CONFIG --libs gtk+-2.0 libgnome-2.0`
 AC_SUBST(BUILD_GTK_CFLAGS)
 AC_SUBST(BUILD_GTK_LIBS)
 
@@ -89,6 +89,11 @@ AC_SUBST(PATH)
 AC_OUTPUT([
 Makefile
 glue/Makefile
+widgets/Makefile
+widgets/gtk/Makefile
+widgets/generator/Makefile
+widgets/sources/Makefile
+widgets/sources/gtksourceview/Makefile
 backends/Makefile
 backends/server/Makefile
 arch/Makefile
