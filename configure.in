@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono-debugger, 0.2.0)
+AM_INIT_AUTOMAKE(mono-debugger, 0.2.1)
 AM_MAINTAINER_MODE
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -95,6 +95,11 @@ PKG_CHECK_MODULES(SERVER_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
+MONO_REQUIRED_VERSION=0.19.1
+PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION)
+AC_SUBST(WRAPPER_CFLAGS)
+AC_SUBST(WRAPPER_LIBS)
+
 AC_SUBST(CFLAGS)
 
 top_srcdir=`pwd`
@@ -183,6 +188,7 @@ glue/Makefile
 lib/Makefile
 lib/Debugger.exe.config
 lib/Interpreter.exe.config
+wrapper/Makefile
 widgets/Makefile
 widgets/gtk/Makefile
 widgets/mono.debugger.gui/Makefile
