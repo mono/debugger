@@ -18,8 +18,6 @@ namespace Mono.Debugger.Architecture
 			this.bfd = bfd;
 			this.blob = blob;
 			this.is_ehframe = is_ehframe;
-
-			Console.WriteLine (this);
 		}
 
 		protected CIE find_cie (long offset)
@@ -40,10 +38,6 @@ namespace Mono.Debugger.Architecture
 			TargetAddress address = frame.TargetAddress;
 
 			DwarfBinaryReader reader = new DwarfBinaryReader (bfd, blob, false);
-
-			Console.WriteLine ("START UNWIND: {0} {1} {2} {3}",
-					   reader.Bfd.FileName, address, reader.Size,
-					   is_ehframe);
 
 			while (reader.Position < reader.Size) {
 				long length = reader.ReadInitialLength ();
@@ -72,17 +66,8 @@ namespace Mono.Debugger.Architecture
 				TargetAddress start = new TargetAddress (
 					target.GlobalAddressDomain, initial);
 
-				Console.WriteLine ("CHECK: {0} - {1} {2:x} {3}",
-						   address, start, range, cie_pointer);
-
 				if ((address < start) || (address >= start + range))
 					goto end;
-
-				Console.WriteLine ("FDE: {0} {1:x} {2:x} {3}",
-						   initial, range, address - initial,
-						   cie_pointer);
-
-				Console.WriteLine ("DONE READING CIE");
 
 				Entry fde = new Entry (cie, start, address);
 				fde.Read (reader, end_pos);
@@ -92,7 +77,6 @@ namespace Mono.Debugger.Architecture
 				reader.Position = end_pos;
 			}
 
-			Console.WriteLine ("NO FDE FOR {0}", address);
 			return null;
 		}
 
@@ -105,7 +89,6 @@ namespace Mono.Debugger.Architecture
 			switch (encoding & 0x70) {
 			case (byte) DW_EH_PE.pcrel:
 				base_addr = bfd.StartAddress.Address + reader.Position;
-				Console.WriteLine ("BASE: {0} {1}", bfd, base_addr);
 				break;
 			}
 
@@ -238,22 +221,16 @@ namespace Mono.Debugger.Architecture
 					byte first = reader.ReadByte ();
 					int opcode = first >> 6;
 					int low = first & 0x3f;
-					Console.WriteLine ("OPCODE: {0:x} {1:x} {2:x}",
-							   first, opcode, low);
 
 					if (opcode == (int) DW_CFA.offset) {
 						int offset = reader.ReadLeb128 ();
 						offset *= cie.DataAlignment;
-
-						Console.WriteLine ("  OFFSET: {0} {1:x}",
-								   low, offset);
 
 						columns [low + 1].State = State.Offset;
 						columns [low + 1].Register = 0;
 						columns [low + 1].Offset = offset;
 						continue;
 					} else if (opcode == (int) DW_CFA.advance_loc) {
-						Console.WriteLine ("  ADVANCE: {0}", low);
 						current_address += low;
 						if (current_address > address)
 							return;
@@ -320,8 +297,6 @@ namespace Mono.Debugger.Architecture
 			{
 				I386Register index = GetArchRegister (column.Register);
 				long value = regs [(int) index].GetValue () + column.Offset;
-				Console.WriteLine ("GET REG VALUE: {0} {1:x} {2}",
-						   index, value, column.Offset);
 				regs [(int) reg].SetValue (TargetAddress.Null, value);
 				return value;
 			}
@@ -329,9 +304,6 @@ namespace Mono.Debugger.Architecture
 			void GetValue (ITargetMemoryAccess target, Registers regs,
 				       TargetAddress cfa, I386Register reg, Column column)
 			{
-				Console.WriteLine ("GET VALUE: {0} {1} {2}",
-						   cfa, reg, column);
-
 				switch (column.State) {
 				case State.Register: {
 					GetRegisterValue (regs, reg, column);
@@ -348,8 +320,6 @@ namespace Mono.Debugger.Architecture
 				case State.Offset: {
 					TargetAddress addr = cfa + column.Offset;
 					long value = (uint) target.ReadInteger (addr);
-					Console.WriteLine ("GET OFFSET VALUE: {0} {1:x}",
-							   addr, value);
 					regs [(int) reg].SetValue (addr, value);
 					break;
 				}
@@ -362,9 +332,6 @@ namespace Mono.Debugger.Architecture
 			void SetRegisters (Registers regs, ITargetMemoryAccess target,
 					   IArchitecture arch, Column[] columns)
 			{
-				for (int i = 0; i < columns.Length; i++)
-					Console.WriteLine ("COLUMN: {0} {1}", i, columns [i]);
-
 				long cfa_addr = GetRegisterValue (
 					regs, I386Register.ESP, columns [0]);
 				TargetAddress cfa = new TargetAddress (
@@ -379,16 +346,6 @@ namespace Mono.Debugger.Architecture
 				GetValue (target, regs, cfa, I386Register.EBP, columns [6]);
 				GetValue (target, regs, cfa, I386Register.ESI, columns [7]);
 				GetValue (target, regs, cfa, I386Register.EDI, columns [8]);
-
-				Console.WriteLine ("UNWIND: {0} {1}", cfa, regs);
-
-				for (int i = 0; i < arch.CountRegisters; i++) {
-					Console.WriteLine ("REG: {0} {1} {2} {3} {4:x}",
-							   i, arch.RegisterNames [i],
-							   regs [i].Valid,
-							   regs [i].AddressOnStack,
-							   regs [i].GetValue ());
-				}
 			}
 
 			public StackFrame Unwind (StackFrame frame, ITargetMemoryAccess target,
@@ -403,10 +360,8 @@ namespace Mono.Debugger.Architecture
 				Register esp = regs [(int) I386Register.ESP];
 				Register ebp = regs [(int) I386Register.EBP];
 
-				if (!eip.Valid || !esp.Valid) {
-					Console.WriteLine ("OOOPS, NO ESP OR NO EIP");
+				if (!eip.Valid || !esp.Valid)
 					return null;
-				}
 
 				TargetAddress address = new TargetAddress (
 						target.GlobalAddressDomain, eip.Value);
@@ -515,8 +470,6 @@ namespace Mono.Debugger.Architecture
 				for (int pos = 0; pos < augmentation.Length; pos++) {
 					if (augmentation [pos] == 'z') {
 						long value = reader.ReadLeb128 ();
-						Console.WriteLine ("Z AUGMENTATION: {0:x}",
-								   value);
 						has_z_augmentation = true;
 						continue;
 					}
@@ -539,14 +492,8 @@ namespace Mono.Debugger.Architecture
 				columns [7].State = State.SameValue;
 				columns [8].State = State.SameValue;
 
-				Console.WriteLine ("CIE: {0} {1} {2}", code_alignment,
-						   data_alignment, return_register);
-
 				Entry entry = new Entry (this);
 				entry.Read (reader, end_pos);
-
-				for (int i = 0; i < columns.Length; i++)
-					Console.WriteLine (columns [i]);
 			}
 		}
 
