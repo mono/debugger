@@ -1120,51 +1120,51 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public class SaveCommand : DebuggerCommand
 	{
-		string filename;
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Args == null)
-				filename = "test.session";
-			else if (Args.Count != 1) {
+			if ((Args == null) || (Args.Count != 1)) {
 				context.Error ("Filename argument expected");
 				return false;
-			} else
-				filename = Argument;
+			}
 
 			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.SaveSession (filename);
+			using (FileStream stream = new FileStream (Argument, FileMode.Create))
+				context.Interpreter.SaveSession (stream);
 		}
 	}
 
 	public class LoadCommand : DebuggerCommand
 	{
-		string filename;
-
 		protected override bool NeedsProcess {
 			get { return false; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Args == null)
-				filename = "test.session";
-			else if (Args.Count != 1) {
+			if ((Args == null) || (Args.Count != 1)) {
 				context.Error ("Filename argument expected");
 				return false;
-			} else
-				filename = Argument;
+			}
 
 			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.LoadSession (filename);
+			using (FileStream stream = new FileStream (Argument, FileMode.Open))
+				context.Interpreter.LoadSession (stream);
+		}
+	}
+
+	public class RestartCommand : DebuggerCommand
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.Restart ();
 		}
 	}
 
