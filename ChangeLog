@@ -1,5 +1,11 @@
 2004-12-09  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs: Move class CommandError, enum Command
+	Family, interface IDocumentableCommand, and class Command from
+	CL.cs here.
+
+2004-12-09  Chris Toshok  <toshok@ximian.com>
+
 	* glue/mono-debugger-readline.c
 	(mono_debugger_readline_current_line_buffer): new function, return
 	rl_line_buffer, dup'ed.

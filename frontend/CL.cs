@@ -10,62 +10,6 @@ using System.Reflection;
 
 namespace Mono.Debugger.Frontend
 {
-	public class CommandError : Exception
-	{
-		public CommandError (string message)
-			: base (message)
-		{ }
-
-		public CommandError (string message, params object[] args)
-			: this (String.Format (message, args))
-		{ }
-	}
-
-	public enum CommandFamily {
-		Running,
-		Breakpoints,
-		Catchpoints,
-		Threads,
-		Stack,
-		Files,
-		Data,
-		Internal,
-		Obscure,
-		Support
-	}
-
-	public interface IDocumentableCommand {
-		/* the class of this command (breakpoint, running, threads, etc) */
-		CommandFamily Family {get; }
-
-		/* a short blurb */
-		string Description {get; }
-
-		/* a long blurb */
-		string Documentation {get; }
-	}
-
-	public abstract class Command {
-		public ArrayList Args;
-
-		public string Argument {
-			get {
-				if (Args != null){
-					string [] s = (string []) Args.ToArray (typeof (string));
-					return String.Join (" ", s);
-				} else
-					return "";
-			}
-		}
-
-		public abstract string Execute (Engine e);
-
-		public virtual string Repeat (Engine e)
-		{
-			return Execute (e);
-		}
-	}
-
 	public class Engine {
 		public readonly string[] CommandFamilyBlurbs;
 		public readonly ArrayList[] CommandsByFamily;
