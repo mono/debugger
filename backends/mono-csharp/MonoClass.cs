@@ -408,6 +408,9 @@ namespace Mono.Debugger.Languages.CSharp
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					fields [index].Offset, fields [index].Type.IsByRef);
 
+				if (field_loc.Address.IsNull)
+					return null;
+
 				return fields [index].Type.GetObject (field_loc);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);

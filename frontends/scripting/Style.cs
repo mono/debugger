@@ -132,7 +132,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			else if (obj is ITargetObject) {
 				ITargetObject tobj = (ITargetObject) obj;
 				return String.Format ("({0}) {1}", tobj.Type.Name,
-						      FormatObject (tobj));
+						      FormatObject (tobj, false));
 			} else
 				return obj.ToString ();
 		}
@@ -298,12 +298,28 @@ namespace Mono.Debugger.Frontends.Scripting
 			return retval;
 		}
 
-		public string FormatObject (ITargetObject obj)
+		public string FormatObject (ITargetObject obj, bool recursed)
 		{
 			try {
-				return DoFormatObject (obj);
+				if (recursed)
+					return DoFormatObjectRecursed (obj);
+				else
+					return DoFormatObject (obj);
 			} catch {
 				return "<cannot display object>";
+			}
+		}
+
+		protected string DoFormatObjectRecursed (ITargetObject obj)
+		{
+			switch (obj.Type.Kind) {
+			case TargetObjectKind.Class:
+			case TargetObjectKind.Struct:
+				return String.Format (
+					"({0}) {1}", obj.Type.Name, obj.Location.Address);
+
+			default:
+				return obj.Print ();
 			}
 		}
 
@@ -318,7 +334,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				for (int i = lower; i < upper; i++) {
 					if (i > lower)
 						sb.Append (",");
-					sb.Append (FormatObject (aobj [i]));
+					sb.Append (FormatObject (aobj [i], true));
 				}
 				sb.Append ("]");
 				return sb.ToString ();
@@ -329,7 +345,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				if (pobj.Type.IsTypesafe && pobj.HasDereferencedObject) {
 					ITargetObject deref = pobj.DereferencedObject;
 					return String.Format ("&({0}) {1}", deref.Type.Name,
-							      FormatObject (deref));
+							      FormatObject (deref, false));
 				} else
 					return pobj.Print ();
 			}
@@ -347,7 +363,10 @@ namespace Mono.Debugger.Frontends.Scripting
 					else
 						sb.Append (",  ");
 					sb.Append (field.Name + "=");
-					sb.Append (FormatObject (fobj));
+					if (fobj == null)
+						sb.Append ("null");
+					else
+						sb.Append (FormatObject (fobj, true));
 				}
 				sb.Append (" }");
 				return sb.ToString ();
@@ -369,7 +388,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			string contents;
 			try {
 				if (obj != null)
-					contents = FormatObject (obj);
+					contents = FormatObject (obj, false);
 				else
 					contents = "<cannot display object>";
 			} catch {

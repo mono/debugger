@@ -661,6 +661,12 @@ namespace Mono.Debugger.Languages.CSharp
 			case MonoDebuggerType.String:
 				return builtin.StringType;
 
+			case MonoDebuggerType.IntPtr:
+				return builtin.IntType;
+
+			case MonoDebuggerType.UIntPtr:
+				return builtin.UIntType;
+
 			default:
 				throw new InvalidOperationException ();
 			}
