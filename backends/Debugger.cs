@@ -604,6 +604,8 @@ namespace Mono.Debugger
 			Console.WriteLine ("METHOD LOADED: {0}", method);
 		}
 
+		Hashtable breakpoint_module_map = new Hashtable ();
+		
 		// <summary>
 		//   Inserts a breakpoint for method @name, which must be the method's full
 		//   name, including the signature.
@@ -625,6 +627,7 @@ namespace Mono.Debugger
 			Module module = method.SourceInfo.Module;
 
 			int index = module.AddBreakpoint (breakpoint, method);
+			breakpoint_module_map [index] = module;
 			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;
 		}
@@ -647,8 +650,18 @@ namespace Mono.Debugger
 			Module module = method.SourceInfo.Module;
 
 			int index = module.AddBreakpoint (breakpoint, method, line);
+			breakpoint_module_map [index] = module;
 			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
 			return index;
+		}
+
+		public void RemoveBreakpoint (int index)
+		{
+			if (breakpoint_module_map [index] == null)
+				throw new Exception ("Breakpoint is not registered");
+
+			Module mod = (Module) breakpoint_module_map [index];
+			mod.RemoveBreakpoint (index);
 		}
 
 		public TargetAddress CurrentFrameAddress {

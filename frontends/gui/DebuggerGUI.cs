@@ -67,7 +67,11 @@ namespace Mono.Debugger.GUI
 
 			DebuggerGUI gui = new DebuggerGUI ((string []) arguments.ToArray (typeof (string)));
 
-			gui.Run ();
+			try {
+				gui.Run ();
+			} catch (System.Reflection.TargetInvocationException e) {
+				Console.WriteLine (e.InnerException.ToString ());
+			}
 		}
 
 		Program program;

@@ -86,16 +86,17 @@ namespace Mono.Debugger.GUI {
 				int line = iter.Line + 1;
 
 				if (breakpoints [line] != null){
-					//
-					// FIXME: Remove breakpoint.
-					//
+					int key = (int) breakpoints [line];
+
+					backend.RemoveBreakpoint (key);
+					text_buffer.LineRemoveMarker (line, "stop");
 					breakpoints [line] = null;
 				} else {
 					Breakpoint bp = new SimpleBreakpoint (String.Format ("{0}:{1}", filename, line));
-					backend.InsertBreakpoint (bp, filename, line);
+					int id = backend.InsertBreakpoint (bp, filename, line);
 
 					text_buffer.LineAddMarker (line, "stop");
-					breakpoints [line] = true;
+					breakpoints [line] = id;
 				}
 			} 
 		}

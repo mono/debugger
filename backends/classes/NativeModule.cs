@@ -73,7 +73,7 @@ namespace Mono.Debugger.Backends
 			if (!IsLoaded)
 				return;
 
-			backend.SingleSteppingEngine.RemoveBreakpoint ((int) data);
+			backend.SingleSteppingEngine.RemoveBreakpoint (handle.Index);
 		}
 
 		//

@@ -651,7 +651,7 @@ namespace Mono.Debugger
 			//   being Disposed.
 			// </summary>
 			protected virtual void Dispose (bool disposing)
-			{
+		{
 				if (!this.disposed) {
 					if (disposing) {
 						if (enabled)
