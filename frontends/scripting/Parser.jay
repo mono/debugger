@@ -284,7 +284,7 @@ generated_command
 	  {
 		$$ = new StopProcessCommand ((ProcessExpression) $2);
 	  }
-	| MODULE module_list_expression module_operation_list_expression
+	| MODULE module_list_expression module_operations
 	  {
 		$$ = new ModuleOperationCommand ((ModuleListExpression) $2, (ModuleOperationListExpression) $3);
 	  }
@@ -631,8 +631,8 @@ module_operation
 	  }
 	;
 
-module_operation_list_expression
-	: module_operations
+module_operations
+	: module_operation_list
 	  {
 		ModuleOperation[] operations = new ModuleOperation [((ArrayList) $1).Count];
 		((ArrayList) $1).CopyTo (operations, 0);
@@ -641,7 +641,7 @@ module_operation_list_expression
 	  }
 	;
 
-module_operations
+module_operation_list
 	: module_operation
 	  {
 		ArrayList args = new ArrayList ();
@@ -649,7 +649,7 @@ module_operations
 
 		$$ = args;
 	  }
-	| module_operations module_operation
+	| module_operation_list module_operation
 	  {
 		ArrayList args = (ArrayList) $1;
 		args.Add ($2);

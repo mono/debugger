@@ -198,7 +198,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Expression("thread_group_expression", "Thread group")]
+	[Expression("thread_group_expression", "Thread group",
+		    "Syntax:  ['<' IDENTIFIER '>']\n" +
+		    "         ['<main>']\n\n" +
+		    "Thread groups are used to give one or more processes a symbolic name.\n" +
+		    "They're used to specify on which threads a breakpoint \"breaks\".\n\n" +
+		    "If no thread group is specified, `main' is used which is always set to\n" +
+		    "the application's main thread.\n\n" +
+		    "To get a list of all thread groups, use `show threadgroups'\n" +
+		    "Use the `threadgroup' command to create/modifiy thread groups\n" +
+		    "(see `help threadgroup' for details)\n\n" +
+		    "Example:  <foo>\n"
+		    )]
 	public class ThreadGroupExpression : Expression
 	{
 		string name;
@@ -426,7 +437,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Expression("module_list_expression", "List of modules")]
+	[Expression("module_list_expression", "List of modules",
+		    "This is a comma separated list of module numbers\n" +
+		    "(from `show modules')\n\n" +
+		    "Examples:  1\n" +
+		    "           1,2,3\n")]
 	public class ModuleListExpression : Expression
 	{
 		int[] modules;
@@ -450,7 +465,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Expression("source_list_expression", "List of source files")]
+	[Expression("source_list_expression", "List of source files",
+		    "This is a comma separated list of source file numbers\n" +
+		    "(from `show sources')\n\n" +
+		    "Examples:  1\n" +
+		    "           1,2,3\n")]
 	public class SourceListExpression : Expression
 	{
 		int[] sources;
@@ -474,7 +493,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Expression("process_list_expression", "List of processes")]
+	[Expression("process_list_expression", "List of processes",
+		    "This is a comma separated list of process numbers\n" +
+		    "(from `show processes', without the `@'s)\n\n" +
+		    "Examples:  1\n" +
+		    "           1,2,3\n")]
 	public class ProcessListExpression : Expression
 	{
 		int[] processes;
@@ -498,7 +521,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Expression("module_operation_list_expression", "List of module operations")]
+	[Expression("module_operations", "List of module operations",
+		    "Whitespace separated list of module operations:\n\n" +
+		    "  ignore           Completely ignore the module, do not step into any of\n" +
+		    "                   its methods and do not include its method names in\n" +
+		    "                   stack traces.\n\n" +
+		    "  unignore         The contrary of `ignore'.\n" +
+		    "  !ignore\n\n" +
+		    "  step             Step into methods from this module while single-stepping\n\n" +
+		    "  !step            The contrary of `step'.\n" +
+		    "                   Note that the debugger still shows method names and source\n" +
+		    "                   code in stack traces, for instance when the target hits a\n" +
+		    "                   breakpoint somewhere inside this module.\n\n" +
+		    "Example:  !ignore step\n")]
 	public class ModuleOperationListExpression : Expression
 	{
 		ModuleOperation[] operations;

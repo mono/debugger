@@ -615,7 +615,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("MODULE", "Change module parameters")]
+	[Command("MODULE", "Change module parameters",
+		 "The module parameters control how the debugger should behave while single-stepping\n" +
+		 "wrt methods from this method.\n\n" +
+		 "Use `show modules' to get a list of modules.\n" +
+		 "Use `help module_operations' to get help about module operations.\n\n" +
+		 "Example:  module 1,2 !ignore step\n")]
 	public class ModuleOperationCommand : Command
 	{
 		ModuleListExpression module_list_expr;
