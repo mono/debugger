@@ -377,7 +377,7 @@ namespace Mono.Debugger.Backends
 				return;
 
 			if (command.Type == CommandType.StepOperation)
-				goto again;
+				goto step_operation;
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.
@@ -403,6 +403,11 @@ namespace Mono.Debugger.Backends
 			else
 				send_result (CommandResultType.CommandOk);
 			return;
+
+		step_operation:
+			frames_invalid ();
+			if (FramesInvalidEvent != null)
+				FramesInvalidEvent ();
 
 		again:
 			// Process another stepping command.
@@ -475,11 +480,8 @@ namespace Mono.Debugger.Backends
 			disassembler.SymbolTable = symbol_table;
 			current_symtab = symbol_table;
 
-			if (check_can_run ()) {
+			if (check_can_run ())
 				send_sync_command (new Command (CommandType.ReloadSymtab));
-				if (FrameChangedEvent != null)
-					FrameChangedEvent (current_frame);
-			}
 			command_mutex.ReleaseMutex ();
 		}
 
@@ -498,6 +500,9 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public event StateChangedHandler StateChangedEvent;
 
+		// <summary>
+		//   These four events are emitted from the background thread.
+		// </summary>
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
 		public event StackFrameHandler FrameChangedEvent;
@@ -946,6 +951,9 @@ namespace Mono.Debugger.Backends
 						MethodInvalidEvent ();
 				}
 			}
+
+			if (FrameChangedEvent != null)
+				FrameChangedEvent (current_frame);
 
 			return null;
 		}

@@ -49,30 +49,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		int current_frame_idx = -1;
 		StackFrame current_frame = null;
 		StackFrame[] current_backtrace = null;
+		string current_insn = null;
 
 		void frame_changed (StackFrame frame)
 		{
 			current_frame = frame;
 			current_frame_idx = -1;
 			current_backtrace = null;
+			current_insn = null;
 
-			context.Print ("Process @{0} stopped at {1}", id, frame);
-
-			if (process.State != TargetState.STOPPED)
-				return;
-
-#if FALSE
 			IDisassembler dis = process.Disassembler;
 			if (dis != null) {
 				TargetAddress address = frame.TargetAddress;
-				context.Print ("{0:11x}\t{1}", address,
-					       dis.DisassembleInstruction (ref address));
+				current_insn = String.Format ("{0:11x}\t{1}", address,
+							      dis.DisassembleInstruction (ref address));
 			}
-#endif
 		}
 
 		void frames_invalid ()
 		{
+			current_insn = null;
 			current_frame = null;
 			current_frame_idx = -1;
 			current_backtrace = null;
@@ -80,6 +76,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void state_changed (TargetState state, int arg)
 		{
+			string frame = "";
+			if (current_frame != null)
+				frame = String.Format (" at {0}", current_frame);
+
 			switch (state) {
 			case TargetState.EXITED:
 				if (arg == 0)
@@ -90,10 +90,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case TargetState.STOPPED:
 				if (arg != 0)
-					context.Print ("Process @{0} received signal {1}.", id, arg);
-				else {
-					frame_changed (process.SingleSteppingEngine.CurrentFrame);
-				}
+					context.Print ("Process @{0} received signal {1}{2}.", id, arg, frame);
+				else
+					context.Print ("Process @{0} stopped{1}.", id, frame);
+
+				if (current_insn != null)
+					context.Print (current_insn);
 				break;
 			}
 		}
