@@ -63,12 +63,12 @@ namespace Mono.Debugger
 			this.main_process = process;
 			thread_hash.Add (process.PID, process);
 
-			TargetAddress mpid = bfdc.LookupSymbol ("mono_debugger_thread_manager");
-			TargetAddress maddr = bfdc.LookupSymbol ("mono_debugger_thread_manager_notification");
-			thread_manager_last_pid = bfdc.LookupSymbol ("mono_debugger_thread_manager_last_pid");
-			thread_manager_last_func = bfdc.LookupSymbol ("mono_debugger_thread_manager_last_func");
-			thread_manager_last_thread = bfdc.LookupSymbol ("mono_debugger_thread_manager_last_thread");
-			TargetAddress bpid = bfdc.LookupSymbol ("mono_debugger_background_thread");
+			TargetAddress mpid = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager");
+			TargetAddress maddr = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_notification");
+			thread_manager_last_pid = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_pid");
+			thread_manager_last_func = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_func");
+			thread_manager_last_thread = bfdc.LookupSymbol ("MONO_DEBUGGER__thread_manager_last_thread");
+			TargetAddress bpid = bfdc.LookupSymbol ("MONO_DEBUGGER__background_thread");
 
 			if (!mpid.IsNull && !maddr.IsNull) {
 				int manager_pid = inferior.ReadInteger (mpid);

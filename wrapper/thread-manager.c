@@ -15,11 +15,11 @@ static CRITICAL_SECTION thread_manager_mutex;
 
 static void (*notification_function) (int pid, gpointer func);
 
-gpointer mono_debugger_thread_manager_notification = NULL;
-int mono_debugger_thread_manager = 0;
-int mono_debugger_thread_manager_last_pid = 0;
-gpointer mono_debugger_thread_manager_last_func = NULL;
-MonoThread *mono_debugger_thread_manager_last_thread = NULL;
+volatile gpointer MONO_DEBUGGER__thread_manager_notification = NULL;
+volatile int MONO_DEBUGGER__thread_manager = 0;
+volatile int MONO_DEBUGGER__thread_manager_last_pid = 0;
+volatile gpointer MONO_DEBUGGER__thread_manager_last_func = NULL;
+volatile MonoThread *MONO_DEBUGGER__thread_manager_last_thread = NULL;
 static MonoThread *last_thread = NULL;
 
 /*
@@ -31,7 +31,7 @@ thread_manager_func (gpointer dummy)
 	int last_stack = 0;
 
 	mono_new_thread_init (NULL, &last_stack, NULL);
-	mono_debugger_thread_manager = getpid ();
+	MONO_DEBUGGER__thread_manager = getpid ();
 
 	/*
 	 * The parent thread waits on this condition because it needs our pid.
@@ -64,8 +64,8 @@ thread_manager_func (gpointer dummy)
 	return 0;
 }
 
-void
-mono_debugger_main (void)
+volatile void
+MONO_DEBUGGER__main (void)
 { }
 
 void
@@ -82,7 +82,7 @@ mono_debugger_thread_manager_init (void)
 	thread_manager_thread_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
 
 	notification_function = mono_debug_create_notification_function (
-		&mono_debugger_thread_manager_notification);
+		(gpointer) &MONO_DEBUGGER__thread_manager_notification);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
 
@@ -94,7 +94,7 @@ mono_debugger_thread_manager_init (void)
 	 */
 	mono_debugger_wait_cond (thread_manager_start_cond);
 
-	mono_debugger_main ();
+	MONO_DEBUGGER__main ();
 
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_mutex);
 }
@@ -103,16 +103,16 @@ static void
 signal_thread_manager (MonoThread *thread, int pid, gpointer func)
 {
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
-	mono_debugger_thread_manager_last_pid = pid;
-	mono_debugger_thread_manager_last_func = func;
-	mono_debugger_thread_manager_last_thread = thread;
+	MONO_DEBUGGER__thread_manager_last_pid = pid;
+	MONO_DEBUGGER__thread_manager_last_func = func;
+	MONO_DEBUGGER__thread_manager_last_thread = thread;
 	IO_LAYER (ReleaseSemaphore) (thread_manager_cond, 1, NULL);
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_mutex);
 
 	mono_debugger_wait_cond (thread_manager_finished_cond);
-	mono_debugger_thread_manager_last_pid = 0;
-	mono_debugger_thread_manager_last_func = NULL;
-	mono_debugger_thread_manager_last_thread = NULL;
+	MONO_DEBUGGER__thread_manager_last_pid = 0;
+	MONO_DEBUGGER__thread_manager_last_func = NULL;
+	MONO_DEBUGGER__thread_manager_last_thread = NULL;
 }
 
 void

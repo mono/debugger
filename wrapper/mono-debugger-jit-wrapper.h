@@ -36,10 +36,15 @@ void mono_debugger_thread_manager_add_thread (MonoThread *thread, int pid, gpoin
 void mono_debugger_thread_manager_start_resume (MonoThread *thread);
 void mono_debugger_thread_manager_end_resume (MonoThread *thread);
 
-void mono_debugger_main (void);
+volatile void MONO_DEBUGGER__main (void);
 
-extern void (*mono_debugger_thread_manager_notification_function) (gpointer func);
-extern int mono_debugger_thread_manager;
+extern volatile void (*mono_debugger_thread_manager_notification_function) (gpointer func);
+extern volatile gpointer MONO_DEBUGGER__thread_manager_notification;
+extern volatile int MONO_DEBUGGER__thread_manager;
+extern volatile int MONO_DEBUGGER__background_thread;
+extern volatile int MONO_DEBUGGER__thread_manager_last_pid;
+extern volatile gpointer MONO_DEBUGGER__thread_manager_last_func;
+extern volatile MonoThread *MONO_DEBUGGER__thread_manager_last_thread;
 
 G_END_DECLS
 

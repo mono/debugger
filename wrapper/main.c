@@ -16,7 +16,7 @@ static CRITICAL_SECTION debugger_finished_mutex;
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
 
-pid_t mono_debugger_background_thread;
+volatile int MONO_DEBUGGER__background_thread = 0;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -143,7 +143,7 @@ debugger_thread_func (gpointer dummy)
 	int last_generation = 0;
 
 	mono_new_thread_init (NULL, &last_generation, NULL);
-	mono_debugger_background_thread = getpid ();
+	MONO_DEBUGGER__background_thread = getpid ();
 
 	/*
 	 * The parent thread waits on this condition because it needs our pid.
@@ -298,8 +298,8 @@ main (int argc, char **argv, char **envp)
 	/*
 	 * Kill the background thread.
 	 */
-	kill (mono_debugger_background_thread, SIGKILL);
-	kill (mono_debugger_thread_manager, SIGKILL);
+	kill (MONO_DEBUGGER__background_thread, SIGKILL);
+	kill (MONO_DEBUGGER__thread_manager, SIGKILL);
 
 	return retval;
 }

@@ -1,3 +1,8 @@
+2003-01-24  Martin Baulig  <martin@ximian.com>
+
+	* wrapper/: Prefix all symbols which are accessed from the
+	debugger with `MONO_DEBUGGER__' and mark them as volatile.
+
 2003-01-23  Nick Drochak <ndrochak@gol.com>
 
 	* frontends/gui/DebuggerGUI.cs: Hook up close button on window border.
