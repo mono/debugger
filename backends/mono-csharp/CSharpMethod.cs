@@ -41,31 +41,17 @@ namespace Mono.Debugger.Languages.CSharp
 							    JitLineNumberEntry[] line_numbers,
 							    SourceFileFactory factory)
 		{
-			if (method.SourceFile != null) {
-				ISourceBuffer buffer;
-
-				if (factory != null)
-					buffer = factory.FindFile (method.SourceFile);
-				else
-					buffer = new SourceBuffer (method.SourceFile);
-
-				if (buffer != null)
-					return new CSharpMethod (imethod, buffer, method, line_numbers);
-			}
-
-			if (method.Token >> 24 != 6)
+			if (method.SourceFile == null)
 				throw new InvalidOperationException ();
 
-			int index = (int) (method.Token & 0xffffff);
-			try {
-				ILDisassembler dis = ILDisassembler.Disassemble (imethod.ImageFile);
+			ISourceBuffer buffer = null;
+			if (factory != null)
+				buffer = factory.FindFile (method.SourceFile);
 
-				return new CSharpMethod (imethod, method, line_numbers, dis,
-							 dis.GetStartLine (index), dis.GetEndLine (index));
-			} catch {
-				ISourceBuffer buffer = new SourceBuffer (imethod.ImageFile);
-				return new CSharpMethod (imethod, buffer, method, line_numbers);
-			}
+			if (buffer == null)
+				buffer = new SourceBuffer (method.SourceFile);
+
+			return new CSharpMethod (imethod, buffer, method, line_numbers);
 		}
 
 		internal static ISourceBuffer GetMethodSource (IMethod imethod, MethodEntry method,

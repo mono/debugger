@@ -616,7 +616,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
 					   string name, ITargetMemoryReader dynamic_reader)
-				: base (name, reader.ImageFile, method.Token >> 24 == 6)
+				: base (name, reader.ImageFile, method.SourceFile != null)
 			{
 				this.reader = reader;
 				this.method = method;
