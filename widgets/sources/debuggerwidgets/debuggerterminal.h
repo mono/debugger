@@ -1,6 +1,7 @@
 #ifndef __DEBUGGER_TERMINAL_H__
 #define __DEBUGGER_TERMINAL_H__
 
+#define HAS_I18N
 #include <libzvt/libzvt.h>
 
 G_BEGIN_DECLS
