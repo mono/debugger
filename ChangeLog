@@ -1,5 +1,8 @@
 2002-12-13  Martin Baulig  <martin@ximian.com>
 
+	WARNING: The Debugger is currently more or less broken since I
+	haven't finished all this stuff yet.
+
 	Rewrote and redesigned the SingleSteppingEngine to do all the
 	stepping in a background thread.
 
