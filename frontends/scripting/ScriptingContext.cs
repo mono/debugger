@@ -451,14 +451,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public int InsertBreakpoint (string method)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (method);
-			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, method);
+			int index = backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, method);
+			if (index < 0)
+				throw new ScriptingException ("Could not insert breakpoint.");
+			return index;
 		}
 
 		public int InsertBreakpoint (string file, int line)
 		{
 			string full_file = context.GetFullPath (file);
 			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
-			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, full_file, line);
+			int index = backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, full_file, line);
+			if (index < 0)
+				throw new ScriptingException ("Could not insert breakpoint.");
+			return index;
 		}
 
 		public void ShowParameters (int frame_number)
