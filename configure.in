@@ -206,7 +206,6 @@ mono-debugger.pc
 interfaces/Makefile
 classes/Makefile
 glue/Makefile
-lib/Makefile
 wrapper/Makefile
 backends/Makefile
 backends/classes/Makefile

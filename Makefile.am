@@ -1,4 +1,4 @@
-SUBDIRS = interfaces classes glue arch backends frontends lib wrapper test doc
+SUBDIRS = interfaces classes glue arch backends frontends wrapper test doc
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mono-debugger.pc

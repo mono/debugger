@@ -1,5 +1,7 @@
 2004-03-03  Martin Baulig  <martin@ximian.com>
 
+	* lib/: Removed.
+
 	* lib/Debugger.exe.config.in: Removed.
 	* lib/Interpreter.exe.config.in: Removed.
 
