@@ -24,6 +24,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override TargetAddress GetAddress ()
 		{
+			throw new NotImplementedException ();
+#if FIXME
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
 			// register and return it.
@@ -32,10 +34,13 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new LocationInvalidException ();
 
 			return new TargetAddress (Inferior, contents);
+#endif
 		}
 
 		public override ITargetMemoryReader ReadMemory (int size)
 		{
+			throw new NotImplementedException ();
+#if FIXME
 			if (IsByRef)
 				return base.ReadMemory (size);
 
@@ -60,6 +65,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			reader.Offset = Offset;
 			return reader;
+#endif
 		}
 
 		protected override MonoTargetLocation Clone (int offset)

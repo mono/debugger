@@ -1,5 +1,16 @@
 2002-12-31  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs: Made this class abstract.
+	(Handle): Removed this property.
+	(LocalsAddress, ParamsAddress): New abstract properties.
+	(TargetMemoryAccess): New abstract property.
+
+	* classes/SingleSteppingEngine.cs: Explicitly implement
+	ITargetMemoryAccess; we're sending a sync_command for each
+	operation.  This is used to read the target's memory.
+
+2002-12-31  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Parser.jay: Added `print $name'.
 
 2002-12-31  Martin Baulig  <martin@ximian.com>

@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected override TargetAddress GetAddress ()
 		{
 			// First get the address of this variable on the stack.
-			TargetAddress base_address = is_local ? iframe.LocalsAddress : iframe.ParamsAddress;
+			TargetAddress base_address = is_local ? frame.LocalsAddress : frame.ParamsAddress;
 			TargetAddress address;
 			if (is_local)
 				address = new TargetAddress (frame, base_address.Address + stack_offset);
@@ -48,7 +48,7 @@ namespace Mono.Debugger.Languages.CSharp
 			// If this is a reference type, there's just a pointer to the
 			// actual contents on the stack which we need to dereference.
 			if (IsByRef)
-				return Inferior.ReadAddress (address);
+				return TargetMemoryAccess.ReadAddress (address);
 			else
 				return address;
 		}

@@ -59,7 +59,7 @@ namespace Mono.Debugger.Backends
 	//   time.  So if you attempt to issue a step command while the engine is still
 	//   busy, the step command will return false to signal this error.
 	// </summary>
-	public class SingleSteppingEngine : IDisposable
+	public class SingleSteppingEngine : ITargetMemoryAccess, IDisposable
 	{
 		public SingleSteppingEngine (DebuggerBackend backend, Process process,
 					     IInferior inferior, bool native)
@@ -610,10 +610,10 @@ namespace Mono.Debugger.Backends
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
-					backtrace [i] = new StackFrame (inferior, address,
-									frames [i], i, source, method);
+					backtrace [i] = new MyStackFrame (this, address, i,
+									  frames [i], source, method);
 				} else
-					backtrace [i] = new StackFrame (inferior, address, frames [i], i);
+					backtrace [i] = new MyStackFrame (this, address, i, frames [i]);
 			}
 
 			current_backtrace = backtrace;
@@ -842,7 +842,8 @@ namespace Mono.Debugger.Backends
 		private enum CommandResultType {
 			ChildEvent,
 			CommandOk,
-			UnknownError
+			UnknownError,
+			Exception
 		}
 
 		private class CommandResult {
@@ -970,11 +971,11 @@ namespace Mono.Debugger.Backends
 				SourceLocation source = current_method.Source.Lookup (address);
 				ILanguageBackend language = current_method.Module.Language;
 
-				current_frame = new StackFrame (
-					inferior, address, frames [0], 0, source, current_method);
+				current_frame = new MyStackFrame (
+					this, address, 0, frames [0], source, current_method);
 			} else
-				current_frame = new StackFrame (
-					inferior, address, frames [0], 0);
+				current_frame = new MyStackFrame (
+					this, address, 0, frames [0]);
 
 			return current_frame;
 		}
@@ -1032,11 +1033,11 @@ namespace Mono.Debugger.Backends
 				if (new_command != null)
 					return new_command;
 
-				current_frame = new StackFrame (
-					inferior, address, frames [0], 0, source, current_method);
+				current_frame = new MyStackFrame (
+					this, address, 0, frames [0], source, current_method);
 			} else
-				current_frame = new StackFrame (
-					inferior, address, frames [0], 0);
+				current_frame = new MyStackFrame (
+					this, address, 0, frames [0]);
 
 			// If the method changed, notify our clients.
 			if (current_method != old_method) {
@@ -1684,6 +1685,213 @@ namespace Mono.Debugger.Backends
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			return (long) result.Data;
+		}
+
+		//
+		// ITargetInfo
+		//
+
+		public int TargetAddressSize {
+			get {
+				check_inferior ();
+				return inferior.TargetAddressSize;
+			}
+		}
+
+		public int TargetIntegerSize {
+			get {
+				check_inferior ();
+				return inferior.TargetIntegerSize;
+			}
+		}
+
+		public int TargetLongIntegerSize {
+			get {
+				check_inferior ();
+				return inferior.TargetLongIntegerSize;
+			}
+		}
+
+		//
+		// ITargetMemoryAccess
+		//
+
+		private struct ReadMemoryData
+		{
+			public TargetAddress Address;
+			public int Size;
+
+			public ReadMemoryData (TargetAddress address, int size)
+			{
+				this.Address = address;
+				this.Size = size;
+			}
+		}
+
+		CommandResult do_read_memory (object data)
+		{
+			ReadMemoryData mdata = (ReadMemoryData) data;
+
+			try {
+				byte[] buffer = inferior.ReadBuffer (mdata.Address, mdata.Size);
+				return new CommandResult (CommandResultType.CommandOk, buffer);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		byte[] read_memory (TargetAddress address, int size)
+		{
+			ReadMemoryData data = new ReadMemoryData (address, size);
+			CommandResult result = send_sync_command (new CommandFunc (do_read_memory), data);
+			if (result.Type == CommandResultType.CommandOk)
+				return (byte []) result.Data;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		CommandResult do_read_string (object data)
+		{
+			ReadMemoryData mdata = (ReadMemoryData) data;
+
+			try {
+				string retval = inferior.ReadString (mdata.Address);
+				return new CommandResult (CommandResultType.CommandOk, retval);
+			} catch (Exception e) {
+				return new CommandResult (CommandResultType.Exception, e);
+			}
+		}
+
+		string read_string (TargetAddress address)
+		{
+			ReadMemoryData data = new ReadMemoryData (address, 0);
+			CommandResult result = send_sync_command (new CommandFunc (do_read_string), data);
+			if (result.Type == CommandResultType.CommandOk)
+				return (string) result.Data;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		ITargetMemoryReader get_memory_reader (TargetAddress address, int size)
+		{
+			byte[] buffer = read_memory (address, size);
+			return new TargetReader (buffer, inferior);
+		}
+
+		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
+		{
+			byte[] data = read_memory (address, 1);
+			return data [0];
+		}
+
+		int ITargetMemoryAccess.ReadInteger (TargetAddress address)
+		{
+			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			return reader.ReadInteger ();
+		}
+
+		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
+		{
+			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			return reader.ReadLongInteger ();
+		}
+
+		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
+		{
+			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			return reader.ReadAddress ();
+		}
+
+		TargetAddress ITargetMemoryAccess.ReadGlobalAddress (TargetAddress address)
+		{
+			ITargetMemoryReader reader = get_memory_reader (address, TargetIntegerSize);
+			return reader.ReadGlobalAddress ();
+		}
+
+		string ITargetMemoryAccess.ReadString (TargetAddress address)
+		{
+			return read_string (address);
+		}
+
+		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
+		{
+			return get_memory_reader (address, size);
+		}
+
+		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
+		{
+			return read_memory (address, size);
+		}
+
+		bool ITargetMemoryAccess.CanWrite {
+			get { return false; }
+		}
+
+		void ITargetMemoryAccess.WriteBuffer (TargetAddress address, byte[] buffer, int size)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		void ITargetMemoryAccess.WriteByte (TargetAddress address, byte value)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		void ITargetMemoryAccess.WriteInteger (TargetAddress address, int value)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		void ITargetMemoryAccess.WriteLongInteger (TargetAddress address, long value)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		void ITargetMemoryAccess.WriteAddress (TargetAddress address, TargetAddress value)
+		{
+			throw new InvalidOperationException ();
+		}		
+
+		//
+		// Stack frames.
+		//
+
+		protected class MyStackFrame : StackFrame
+		{
+			SingleSteppingEngine sse;
+			IInferiorStackFrame frame;
+
+			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
+					     IInferiorStackFrame frame, SourceLocation source, IMethod method)
+				: base (address, level, source, method)
+			{
+				this.sse = sse;
+				this.frame = frame;
+			}
+
+			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
+					     IInferiorStackFrame frame)
+				: base (address, level)
+			{
+				this.sse = sse;
+				this.frame = frame;
+			}
+
+			public override ITargetMemoryAccess TargetMemoryAccess {
+				get { return sse; }
+			}
+
+			public override TargetAddress LocalsAddress {
+				get { return frame.LocalsAddress; }
+			}
+
+			public override TargetAddress ParamsAddress {
+				get { return frame.ParamsAddress; }
+			}
 		}
 
 		//

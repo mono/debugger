@@ -163,6 +163,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected ITargetObject Invoke (TargetAddress method, MonoTargetLocation this_location)
 		{
+			throw new NotImplementedException ();
+#if FIXME
 			TargetAddress exc_object;
 
 			IInferior inferior = this_location.Inferior;
@@ -206,6 +208,7 @@ namespace Mono.Debugger.Languages.CSharp
 				// Do nothing.
 			}
 			return retval_obj;
+#endif
 		}
 
 		protected class MonoPropertyInfo : ITargetFieldInfo

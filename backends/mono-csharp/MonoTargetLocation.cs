@@ -15,7 +15,6 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected DebuggerBackend backend;
 		protected StackFrame frame;
-		protected IInferiorStackFrame iframe;
 		protected TargetAddress start_scope, end_scope;
 		protected long offset;
 		protected bool is_byref;
@@ -37,9 +36,6 @@ namespace Mono.Debugger.Languages.CSharp
 				this.start_scope += frame.SourceLocation.SourceRange;
 
 			frame.FrameInvalid += new StackFrameInvalidHandler (SetInvalid);
-			iframe = frame.Handle as IInferiorStackFrame;
-			if (iframe == null)
-				throw new InternalError ();
 
 			// backend.FramesInvalidEvent += new StackFrameInvalidHandler (SetInvalid);
 		}
@@ -151,7 +147,7 @@ namespace Mono.Debugger.Languages.CSharp
 		// </remarks>
 		public virtual ITargetMemoryReader ReadMemory (int size)
 		{
-			return Inferior.ReadMemory (Address, size);
+			return TargetMemoryAccess.ReadMemory (Address, size);
 		}
 
 		// <summary>
@@ -162,9 +158,9 @@ namespace Mono.Debugger.Languages.CSharp
 			return ReadMemory (size).Contents;
 		}
 
-		public IInferior Inferior {
+		public ITargetMemoryAccess TargetMemoryAccess {
 			get {
-				return iframe.Inferior;
+				return frame.TargetMemoryAccess;
 			}
 		}
 
@@ -191,7 +187,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (!dereference)
 				return new_location;
 
-			TargetAddress address = Inferior.ReadAddress (new_location.Address);
+			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
 			return new MonoRelativeTargetLocation (this,  address);
 		}
 

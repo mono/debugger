@@ -111,9 +111,9 @@ namespace Mono.Debugger.Architecture
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
 
-					current_frame = new StackFrame (this, address, null, 0, source, method);
+					current_frame = new MyStackFrame (address, 0, null, source, method);
 				} else
-					current_frame = new StackFrame (this, address, null, 0);
+					current_frame = new MyStackFrame (address, 0, null);
 
 				has_current_frame = true;
 				return current_frame;
@@ -139,11 +139,11 @@ namespace Mono.Debugger.Architecture
 					method = current_symtab.Lookup (address);
 				if ((method != null) && method.HasSource) {
 					SourceLocation source = method.Source.Lookup (address);
-					backtrace [i] = new StackFrame (
-						this, address, frames [i], i, source, method);
+					backtrace [i] = new MyStackFrame (
+						address, i, frames [i], source, method);
 				} else
-					backtrace [i] = new StackFrame (
-						this, address, frames [i], i);
+					backtrace [i] = new MyStackFrame (
+						address, i, frames [i]);
 			}
 
 			has_backtrace = true;
@@ -187,6 +187,51 @@ namespace Mono.Debugger.Architecture
 			public TargetAddress LocalsAddress {
 				get {
 					return locals_address;
+				}
+			}
+		}
+
+		protected class MyStackFrame : StackFrame
+		{
+			IInferiorStackFrame frame;
+
+			public MyStackFrame (TargetAddress address, int level, IInferiorStackFrame frame,
+					     SourceLocation source, IMethod method)
+				: base (address, level, source, method)
+			{
+				this.frame = frame;
+			}
+
+			public MyStackFrame (TargetAddress address, int level, IInferiorStackFrame frame)
+				: base (address, level)
+			{
+				this.frame = frame;
+			}
+
+			public override ITargetMemoryAccess TargetMemoryAccess {
+				get {
+					if (frame != null)
+						return frame.Inferior;
+					else
+						return null;
+				}
+			}
+
+			public override TargetAddress LocalsAddress {
+				get {
+					if (frame != null)
+						return frame.LocalsAddress;
+					else
+						return TargetAddress.Null;
+				}
+			}
+
+			public override TargetAddress ParamsAddress {
+				get {
+					if (frame != null)
+						return frame.ParamsAddress;
+					else
+						return TargetAddress.Null;
 				}
 			}
 		}

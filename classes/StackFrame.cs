@@ -7,29 +7,24 @@ namespace Mono.Debugger
 	public delegate void StackFrameHandler (StackFrame frame);
 	public delegate void StackFrameInvalidHandler ();
 
-	public sealed class StackFrame : IDisposable
+	public abstract class StackFrame : IDisposable
 	{
 		IMethod method;
 		TargetAddress address;
-		ITargetMemoryAccess memory;
 		SourceLocation source;
-		object handle;
 		int level;
 
-		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle,
-				   int level, SourceLocation source, IMethod method)
-			: this (memory, address, handle, level)
+		public StackFrame (TargetAddress address, int level,
+				   SourceLocation source, IMethod method)
+			: this (address, level)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (ITargetMemoryAccess memory, TargetAddress address, object handle,
-				   int level)
+		public StackFrame (TargetAddress address, int level)
 		{
-			this.memory = memory;
 			this.address = address;
-			this.handle = handle;
 			this.level = level;
 		}
 
@@ -59,24 +54,22 @@ namespace Mono.Debugger
 			}
 		}
 
+		public abstract ITargetMemoryAccess TargetMemoryAccess {
+			get;
+		}
+
+		public abstract TargetAddress LocalsAddress {
+			get;
+		}
+
+		public abstract TargetAddress ParamsAddress {
+			get;
+		}
+
 		public IMethod Method {
 			get {
 				check_disposed ();
 				return method;
-			}
-		}
-
-		public object Handle {
-			get {
-				check_disposed ();
-				return handle;
-			}
-		}
-
-		public ITargetMemoryAccess TargetMemoryAccess {
-			get {
-				check_disposed ();
-				return memory;
 			}
 		}
 
@@ -126,9 +119,7 @@ namespace Mono.Debugger
 						FrameInvalid ();
 
 					method = null;
-					memory = null;
 					source = null;
-					handle = null;
 				}
 				
 				this.disposed = true;
