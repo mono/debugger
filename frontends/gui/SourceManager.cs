@@ -134,6 +134,7 @@ namespace Mono.Debugger.GUI {
 		DebuggerBackend backend;
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
+		bool initialized;
 
 		//
 		// State tracking
@@ -260,15 +261,19 @@ namespace Mono.Debugger.GUI {
 
 				view.Active = true;
 
-				int idx = GetPageIdx (view.ToplevelWidget);
-				if (idx != -1)
-					notebook.Page = idx;
+				if (!initialized || (notebook.Page != 0)) {
+					int idx = GetPageIdx (view.ToplevelWidget);
+					if (idx != -1)
+						notebook.Page = idx;
+				}
 
 				current_source = view;
 			} else {
 				Console.WriteLine ("********* Need to show disassembly **********");
 				current_source = null;
 			}
+
+			initialized = true;
 		}
 	}
 }

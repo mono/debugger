@@ -345,6 +345,17 @@ namespace Mono.Debugger.Backends
 			return current_frame;
 		}
 
+		bool is_in_step_frame (StepFrame frame, TargetAddress address)
+                {
+			if (address.IsNull || frame.Start.IsNull)
+				return false;
+
+                        if ((address < frame.Start) || (address >= frame.End))
+                                return false;
+
+                        return true;
+                }
+
 		void frame_changed (TargetAddress address, int arg)
 		{
 			IMethod old_method = current_method;
@@ -352,8 +363,7 @@ namespace Mono.Debugger.Backends
 			if ((current_operation != StepOperation.None) &&
 			    (current_operation != StepOperation.Native) &&
 			    (current_operation_frame != null) &&
-			    (address >= current_operation_frame.Start) &&
-			    (address < current_operation_frame.End)) {
+			    is_in_step_frame (current_operation_frame, address)) {
 				Step (current_operation_frame);
 				return;
 			}
