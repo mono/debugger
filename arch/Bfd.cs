@@ -733,8 +733,7 @@ namespace Mono.Debugger.Architecture
 				if (disposing) {
 					if (module != null)
 						module.BfdDisposed ();
-					if (dwarf != null)
-						dwarf.Dispose ();
+					dwarf = null;
 				}
 				
 				// Release unmanaged resources

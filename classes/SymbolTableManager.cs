@@ -25,7 +25,7 @@ namespace Mono.Debugger
 			symtab_reload_event = new ManualResetEvent (false);
 			symtabs_loaded_event = new ManualResetEvent (true);
 			modules_loaded_event = new ManualResetEvent (true);
-			symtab_thread = new Thread (new ThreadStart (symtab_thread_main));
+			symtab_thread = new Thread (new ThreadStart (symtab_thread_start));
 			symtab_thread.Start ();
 		}
 
@@ -84,7 +84,8 @@ namespace Mono.Debugger
 		// </summary>
 		public ISymbolTable SymbolTable {
 			get {
-				symtabs_loaded_event.WaitOne ();
+				if (symtab_thread != null)
+					symtabs_loaded_event.WaitOne ();
 				lock (this) {
 					return current_symtab;
 				}
@@ -103,7 +104,8 @@ namespace Mono.Debugger
 		// </summary>
 		public Module[] Modules {
 			get {
-				modules_loaded_event.WaitOne ();
+				if (symtab_thread != null)
+					modules_loaded_event.WaitOne ();
 				lock (this) {
 					return current_modules;
 				}
@@ -144,6 +146,20 @@ namespace Mono.Debugger
 		// <summary>
 		//   This thread reloads the symbol tables in the background.
 		// </summary>
+
+		void symtab_thread_start ()
+		{
+			try {
+				symtab_thread_main ();
+			} catch (ThreadAbortException) {
+				symtabs_loaded_event.Set ();
+				modules_loaded_event.Set ();
+				symtab_update_in_progress = false;
+				module_update_in_progress = false;
+				symtab_thread = null;
+			}
+		}
+
 		void symtab_thread_main ()
 		{
 			while (symtab_reload_event.WaitOne ()) {

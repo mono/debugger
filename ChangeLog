@@ -1,3 +1,10 @@
+2003-01-19  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs: Don't make this an IDisposable.
+
+	* classes/SymbolTableManager.cs: Catch the ThreadAbortException
+	and set the events to wake up a potentially waiting caller.
+
 2003-01-18  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/IProcess.cs (State, Disassembler): New properties.

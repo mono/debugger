@@ -9,7 +9,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class DwarfReader : IDisposable
+	internal class DwarfReader
 	{
 		protected Bfd bfd;
 		protected Module module;
@@ -1971,42 +1971,6 @@ namespace Mono.Debugger.Architecture
 						      address_size, start_offset, unit_length,
 						      abbrev_offset);
 			}
-		}
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		protected virtual void Dispose (bool disposing)
-		{
-			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-					// Do stuff here
-				}
-				
-				// Release unmanaged resources
-				this.disposed = true;
-
-				lock (this) {
-				}
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~DwarfReader ()
-		{
-			Dispose (false);
 		}
 	}
 }
