@@ -79,10 +79,14 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress string_table;
 		int string_table_size;
 
+		TargetAddress type_table;
+		int type_table_size;
+
 		TargetBinaryReader reader;
 		TargetBinaryReader address_reader;
 		ITargetMemoryReader range_reader;
 		ITargetMemoryReader string_reader;
+		ITargetMemoryReader type_reader;
 
 		internal MonoSymbolTableReader (IDebuggerBackend backend, IInferior inferior,
 						ITargetMemoryReader symtab_reader,
@@ -109,6 +113,8 @@ namespace Mono.Debugger.Languages.CSharp
 			range_table_size = symtab_reader.ReadInteger ();
 			string_table = symtab_reader.ReadAddress ();
 			string_table_size = symtab_reader.ReadInteger ();
+			type_table = symtab_reader.ReadAddress ();
+			type_table_size = symtab_reader.ReadInteger ();
 			symtab_reader.ReadAddress ();
 
 			assembly = Assembly.LoadFrom (ImageFile);
@@ -120,6 +126,7 @@ namespace Mono.Debugger.Languages.CSharp
 			address_reader = inferior.ReadMemory (address_table, address_table_size).BinaryReader;
 			range_reader = inferior.ReadMemory (range_table, range_table_size);
 			string_reader = inferior.ReadMemory (string_table, string_table_size);
+			type_reader = inferior.ReadMemory (type_table, type_table_size);
 
 			//
 			// Read the offset table.
@@ -231,13 +238,14 @@ namespace Mono.Debugger.Languages.CSharp
 				param_types = new MonoType [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
 					param_types [i] = MonoType.GetType (
-						param_info [i].ParameterType, method.Parameters [i].Size);
+						param_info [i].ParameterType,
+						method.ParameterVarInfo [i].Size);
 
 				parameters = new IVariable [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
 					parameters [i] = new MonoVariable (
 						reader.backend, param_info [i].Name, param_types [i],
-						false, this, method.Parameters [i]);
+						false, this, method.ParameterVarInfo [i]);
 
 				has_variables = true;
 			}
