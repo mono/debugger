@@ -13,6 +13,7 @@ using System.Reflection;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Frontends.CommandLine;
 using Mono.Debugger.GUI;
 
 namespace Mono.Debugger.GUI {
@@ -21,15 +22,16 @@ namespace Mono.Debugger.GUI {
 	{
 		Gtk.Statusbar status_bar;
 		Gtk.TextView text_view;
-		Gtk.TextView output_area;
 		Gtk.TextBuffer text_buffer;
-		Gtk.TextBuffer output_buffer;
 		Gtk.Entry command_entry;
 		Gtk.TextTag frame_tag;
 		Gtk.TextMark frame_mark;
 
+		TextWriter output_writer;
+
 		Program kit;
 		IDebuggerBackend backend;
+		Interpreter interpreter;
 		uint status_id;
 
 		string application;
@@ -55,16 +57,13 @@ namespace Mono.Debugger.GUI {
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
 			backend.SourceFileFactory = new SourceFileFactory ();
-		}
 
-		StringBuilder output_builder = null;
+			interpreter = new Interpreter (backend, output_writer, output_writer);
+		}
 
 		void TargetOutput (string output)
 		{
-			if (output_builder != null)
-				output_builder.Append (output);
-			else
-				AddOutput (output);
+			AddOutput (output);
 		}
 
 		void TargetError (string output)
@@ -74,9 +73,7 @@ namespace Mono.Debugger.GUI {
 
 		void AddOutput (string output)
 		{
-			output_buffer.Insert (output_buffer.EndIter, output + "\n",
-					      output.Length+1);
-			output_area.ScrollToMark (output_buffer.InsertMark, 0.4, true, 0.0, 1.0);
+			output_writer.WriteLine (output);
 		}
 
 		bool has_frame = false;
@@ -152,146 +149,14 @@ namespace Mono.Debugger.GUI {
 			text_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
 		}
 
-		void ShowHelp ()
-		{
-			AddOutput ("Commands:");
-			AddOutput ("  q, quit,exit     Quit the debugger");
-			AddOutput ("  r, run           Start the target");
-			AddOutput ("  c, continue      Continue the target");
-			AddOutput ("  abort            Abort the target");
-			AddOutput ("  kill             Kill the target");
-			AddOutput ("  b, break-method  Add breakpoint for a CSharp method");
-			AddOutput ("  f, frame         Get current stack frame");
-			AddOutput ("  s, step          Single-step");
-			AddOutput ("  n, next          Single-step");
-			AddOutput ("  !, gdb           Send command to gdb");
-		}
-
 		void DoOneCommand (object sender, EventArgs event_args)
 		{
 			string line = command_entry.Text;
 			command_entry.Text = "";
 
-			if (line == "")
-				return;
-
-			string[] tmp_args = line.Split (' ', '\t');
-			string[] args = new string [tmp_args.Length - 1];
-			Array.Copy (tmp_args, 1, args, 0, tmp_args.Length - 1);
-			string command = tmp_args [0];
-
-			switch (command) {
-			case "h":
-			case "help":
-				ShowHelp ();
-				break;
-
-			case "q":
-			case "quit":
-			case "exit":
+			if (!interpreter.ProcessCommand (line)) {
 				backend.Quit ();
 				Application.Quit ();
-				break;
-
-			case "r":
-			case "run":
-				backend.Run ();
-				break;
-
-			case "c":
-			case "continue":
-				backend.Continue ();
-				break;
-
-			case "f":
-			case "frame":
-				backend.Frame ();
-				break;
-
-			case "s":
-			case "step":
-				backend.Step ();
-				break;
-
-			case "n":
-			case "next":
-				backend.Next ();
-				break;
-
-			case "abort":
-				backend.Abort ();
-				break;
-
-			case "kill":
-				backend.Kill ();
-				break;
-
-			case "sleep":
-				Thread.Sleep (50000);
-				break;
-
-			case "b":
-			case "break-method": {
-				if (args.Length != 2) {
-					AddOutput ("Command requires an argument");
-					break;
-				}
-
-				ILanguageCSharp csharp = backend as ILanguageCSharp;
-				if (csharp == null) {
-					AddOutput ("Debugger doesn't support C#");
-					break;
-				}
-
-				Type type = csharp.CurrentAssembly.GetType (args [0]);
-				if (type == null) {
-					AddOutput ("No such type: `" + args [0] + "'");
-					break;
-				}
-
-				MethodInfo method = type.GetMethod (args [1]);
-				if (method == null) {
-					AddOutput ("Can't find method `" + args [1] + "' in type `" +
-						   args [0] + "'");
-					break;
-				}
-
-				ITargetLocation location = csharp.CreateLocation (method);
-				if (location == null) {
-					AddOutput ("Can't get location for method: " +
-						   args [0] + "." + args [1]);
-					break;
-				}
-
-				IBreakPoint break_point = backend.AddBreakPoint (location);
-
-				if (break_point != null)
-					AddOutput ("Added breakpoint: " + break_point);
-				else
-					AddOutput ("Unable to add breakpoint!");
-
-				break;
-			}
-
-			case "!":
-			case "gdb": {
-				GDB gdb = backend as GDB;
-				if (gdb == null) {
-					AddOutput ("This command is only available when using " +
-						   "gdb as backend");
-					break;
-				}
-
-				output_builder = new StringBuilder ();
-				gdb.SendUserCommand (String.Join (" ", args));
-				AddOutput (output_builder.ToString ());
-				output_builder = null;
-				break;
-			}
-
-			default:
-				AddOutput ("Unknown command: " + command);
-				break;
 			}
 		}
 
@@ -311,12 +176,7 @@ namespace Mono.Debugger.GUI {
 
 			frame_mark = text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
 
-			output_area = new Gtk.TextView ();
-
-			output_area.Editable = false;
-			output_area.WrapMode = Gtk.WrapMode.None;
-
-			output_buffer = output_area.Buffer;
+			output_writer = new OutputWindow ();
 
 			status_bar = new Gtk.Statusbar ();
 			status_bar.HasResizeGrip = false;
@@ -343,7 +203,7 @@ namespace Mono.Debugger.GUI {
 			output_sw.VscrollbarPolicy = Gtk.PolicyType.Always;
 			output_sw.HscrollbarPolicy = Gtk.PolicyType.Always;
 			output_frame.Add (output_sw);
-			output_sw.Add (output_area);
+			output_sw.Add (((OutputWindow) output_writer).Widget);
 
 			vbox.PackStart (command_frame, false, true, 4);
 			vbox.PackStart (source_frame, true, true, 4);
