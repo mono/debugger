@@ -23,6 +23,8 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			if (MonoFundamentalType.Supports (type, reader))
 				return new MonoFundamentalType (type, size, reader);
+			else if (MonoStringType.Supports (type, reader))
+				return new MonoStringType (type, reader);
 
 			return GetType (type, size);
 		}

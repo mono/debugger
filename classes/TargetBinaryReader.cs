@@ -269,5 +269,26 @@ namespace Mono.Debugger
 			pos += size;
 			return retval;
 		}
+
+		public long ReadInteger (int size)
+		{
+			switch (size) {
+			case 1:
+				return ReadByte ();
+
+			case 2:
+				return ReadInt16 ();
+
+			case 4:
+				return ReadInt32 ();
+
+			case 8:
+				return ReadInt64 ();
+
+			default:
+				throw new TargetMemoryException (
+					"Unknown integer size " + size);
+			}
+		}
 	}
 }
