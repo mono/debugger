@@ -1,5 +1,10 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs (Options.LoadNativeSymbolTable): Added
+	`--native-symtabs' command line option.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* arch/ArchitecturePowerPC.cs: New file.
 
 	* arch/StabsReader.cs: New file.

@@ -30,6 +30,9 @@ namespace Mono.Debugger
 		[Option("Working directory", "working-directory")]
 		public string WorkingDirectory = ".";
 
+		[Option("Load native symtabs", "native-symtabs")]
+		public bool LoadNativeSymbolTable = false;
+
 		[Option("Display version and licensing information", 'V', "version")]
 		public override WhatToDoNext DoAbout()
 		{
@@ -71,6 +74,7 @@ namespace Mono.Debugger
 		{
 			this.options = options;
 			this.cwd = options.WorkingDirectory;
+			this.load_native_symtab = options.LoadNativeSymbolTable;
 		}
 
 		public DebuggerOptions Options {
