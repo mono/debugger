@@ -653,10 +653,10 @@ namespace Mono.Debugger.Frontends.Scripting
 
 	public class InvocationExpression : VariableExpression
 	{
-		VariableExpression method_expr;
+		Expression method_expr;
 		Expression[] arguments;
 
-		public InvocationExpression (VariableExpression method_expr, Expression[] arguments)
+		public InvocationExpression (Expression method_expr, Expression[] arguments)
 		{
 			this.method_expr = method_expr;
 			this.arguments = arguments;

@@ -6,11 +6,21 @@ public struct A
 	public long b;
 	public string c;
 
+	public float f;
+	public static string Hello = "Hello World";
+
 	public A (int a, long b, string c)
 	{
 		this.a = a;
 		this.b = b;
 		this.c = c;
+		this.f = (float) b / (float) a;
+	}
+
+	public void Test ()
+	{
+		Console.WriteLine (f);
+		Console.WriteLine (Hello);
 	}
 }
 
@@ -150,6 +160,7 @@ public class X
 	public static void StructType ()
 	{
 		A a = new A (5, 256, "New England Patriots");
+		a.Test ();
 		Console.WriteLine (a);
 	}
 

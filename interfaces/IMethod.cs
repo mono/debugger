@@ -95,6 +95,18 @@ namespace Mono.Debugger
 			get;
 		}
 
+		ITargetType DeclaringType {
+			get;
+		}
+
+		bool HasThis {
+			get;
+		}
+
+		IVariable This {
+			get;
+		}
+
 		// <summary>
 		//   The method's parameters.
 		// </summary>

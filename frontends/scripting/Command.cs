@@ -899,6 +899,13 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected bool DoResolveExpression (ScriptingContext context)
 		{
+			Expression expr = ParseExpression (context);
+			if (expr == null)
+				return false;
+
+			Console.WriteLine ("EXPR: {0}", expr);
+			ITargetFunctionObject func = expr.ResolveMethod (context, null);
+			Console.WriteLine ("FUNC: {0}", func);
 			return false;
 		}
 
@@ -930,6 +937,9 @@ namespace Mono.Debugger.Frontends.Scripting
 				location = context.Interpreter.FindLocation (filename, line);
 				return true;
 			}
+
+			if (Argument == "")
+				return true;
 
 			try {
 				line = (int) UInt32.Parse (Argument);

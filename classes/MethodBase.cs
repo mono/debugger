@@ -208,6 +208,18 @@ namespace Mono.Debugger
                         return true;
                 }
 
+		public abstract ITargetType DeclaringType {
+			get;
+		}
+
+		public abstract bool HasThis {
+			get;
+		}
+
+		public abstract IVariable This {
+			get;
+		}
+
 		public abstract IVariable[] Parameters {
 			get;
 		}

@@ -115,6 +115,10 @@ expression
 	  {
 		$$ = new ArrayAccessExpression ((Expression) $1, (Expression) $3);
 	  }
+	| expression OPEN_PARENS CLOSE_PARENS
+	  {
+		$$ = new InvocationExpression ((Expression) $1, null);
+	  }
 	;
 
 variable_or_type_name

@@ -1315,8 +1315,10 @@ namespace Mono.Debugger.Languages.CSharp
 			SourceMethod info;
 			C.MethodEntry method;
 			R.MethodBase rmethod;
+			MonoType decl_type;
 			MonoType[] param_types;
 			MonoType[] local_types;
+			IVariable this_var;
 			IVariable[] parameters;
 			IVariable[] locals;
 			bool has_variables;
@@ -1413,6 +1415,14 @@ namespace Mono.Debugger.Languages.CSharp
 					}
 				}
 
+				decl_type = reader.Table.GetType (
+					rmethod.DeclaringType, address.ClassTypeInfoOffset);
+
+				if (address.HasThis)
+					this_var = new MonoVariable (
+						reader.backend, "this", decl_type, true,
+						this, address.ThisVariableInfo);
+
 				has_variables = true;
 			}
 
@@ -1439,6 +1449,32 @@ namespace Mono.Debugger.Languages.CSharp
 
 					get_variables ();
 					return locals;
+				}
+			}
+
+			public override ITargetType DeclaringType {
+				get {
+					return decl_type;
+				}
+			}
+
+			public override bool HasThis {
+				get {
+					if (!is_loaded)
+						throw new InvalidOperationException ();
+
+					get_variables ();
+					return this_var != null;
+				}
+			}
+
+			public override IVariable This {
+				get {
+					if (!is_loaded)
+						throw new InvalidOperationException ();
+
+					get_variables ();
+					return this_var;
 				}
 			}
 

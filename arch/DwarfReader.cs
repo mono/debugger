@@ -1863,6 +1863,20 @@ namespace Mono.Debugger.Architecture
 					get { return this; }
 				}
 
+				public override ITargetType DeclaringType {
+					get { return null; }
+				}
+
+				public override bool HasThis {
+					get { return false; }
+				}
+
+				public override IVariable This {
+					get {
+						throw new InvalidOperationException ();
+					}
+				}
+
 				public override IVariable[] Parameters {
 					get { return subprog.Parameters; }
 				}
