@@ -11,7 +11,7 @@ using Mono.Debugger.Languages.Native;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class DwarfReader
+	internal class DwarfReader : ISymbolFile
 	{
 		protected Bfd bfd;
 		protected Module module;
@@ -1454,7 +1454,7 @@ namespace Mono.Debugger.Architecture
 						comp_dir, Path.DirectorySeparatorChar, name);
 				else
 					file_name = name;
-				file = new DwarfSourceFile (dwarf, file_name);
+				file = new SourceFile (dwarf.bfd, file_name);
 				symtab = new CompileUnitSymbolTable (this);
 			}
 
@@ -1462,7 +1462,7 @@ namespace Mono.Debugger.Architecture
 			string name;
 			string comp_dir;
 			bool is_continuous;
-			DwarfSourceFile file;
+			SourceFile file;
 			CompileUnitSymbolTable symtab;
 			ArrayList children;
 			LineNumberEngine engine;
@@ -1597,27 +1597,6 @@ namespace Mono.Debugger.Architecture
 			public void AddMethod (SourceMethod method)
 			{
 				file.AddMethod (method);
-			}
-
-			protected class DwarfSourceFile : SourceFile
-			{
-				ArrayList methods;
-
-				public DwarfSourceFile (DwarfReader dwarf, string filename)
-					: base (dwarf.module, filename)
-				{
-					this.methods = new ArrayList ();
-				}
-
-				public void AddMethod (SourceMethod method)
-				{
-					methods.Add (method);
-				}
-
-				protected override ArrayList GetMethods ()
-				{
-					return methods;
-				}
 			}
 
 			protected class CompileUnitSymbolTable : SymbolTable

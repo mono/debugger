@@ -874,7 +874,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   A single Assembly's symbol table.
 	// </summary>
-	internal class MonoSymbolFile : Module, ISimpleSymbolTable
+	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable
 	{
 		internal readonly int Index;
 		internal readonly R.Assembly Assembly;
@@ -1086,6 +1086,11 @@ namespace Mono.Debugger.Languages.CSharp
 			foreach (C.SourceFileEntry source in File.Sources) {
 				MonoSourceFile info = new MonoSourceFile (this, source);
 
+				foreach (C.MethodSourceEntry entry in source.Methods) {
+					SourceMethod method = GetMethod (entry.Index);
+					info.AddMethod (method);
+				}
+
 				sources.Add (info);
 				source_hash.Add (source, info);
 			}
@@ -1103,11 +1108,15 @@ namespace Mono.Debugger.Languages.CSharp
 			get { return Table.Language; }
 		}
 
+		public override ISymbolFile SymbolFile {
+			get { return this; }
+		}
+
 		public override bool SymbolsLoaded {
 			get { return LoadSymbols; }
 		}
 
-		public override SourceFile[] Sources {
+		public SourceFile[] Sources {
 			get { return GetSources (); }
 		}
 
@@ -1229,7 +1238,7 @@ namespace Mono.Debugger.Languages.CSharp
 				this.source = source;
 			}
 
-			protected override ArrayList GetMethods ()
+			protected ArrayList GetMethods ()
 			{
 				ArrayList list = new ArrayList ();
 

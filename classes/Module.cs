@@ -181,14 +181,7 @@ namespace Mono.Debugger
 				BreakpointsChangedEvent (this);
 		}
 
-		// <summary>
-		//   Returns a list of all source files in this method.
-		//   May only be used while @SymbolsLoaded is true.
-		//
-		//   Throws:
-		//     InvalidOperationException - if @SymbolsLoaded was false.
-		// </summary>
-		public abstract SourceFile[] Sources {
+		public abstract ISymbolFile SymbolFile {
 			get;
 		}
 
@@ -198,7 +191,10 @@ namespace Mono.Debugger
 		// </summary>
 		public virtual SourceMethod FindMethod (string name)
 		{
-			foreach (SourceFile source in Sources) {
+			if (!SymbolsLoaded)
+				return null;
+
+			foreach (SourceFile source in SymbolFile.Sources) {
 				SourceMethod method = source.FindMethod (name);
 
 				if (method != null)
@@ -217,7 +213,7 @@ namespace Mono.Debugger
 			if (!SymbolsLoaded)
 				return null;
 
-			foreach (SourceFile source in Sources) {
+			foreach (SourceFile source in SymbolFile.Sources) {
 				if (source.FileName != source_file)
 					continue;
 

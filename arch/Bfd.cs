@@ -583,14 +583,14 @@ namespace Mono.Debugger.Architecture
 			get { return (dwarf != null) || (stabs != null); }
 		}
 
-		public override SourceFile[] Sources {
+		public override ISymbolFile SymbolFile {
 			get {
 				if (dwarf != null)
-					return dwarf.Sources;
+					return dwarf;
 				else if (stabs != null)
-					return stabs.Sources;
+					return stabs;
 				else
-					return new SourceFile [0];
+					return null;
 			}
 		}
 

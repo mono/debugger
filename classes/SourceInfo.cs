@@ -13,7 +13,7 @@ namespace Mono.Debugger
 	//   A single source file.  It is used to find a breakpoint's location by method
 	//   name or source file.
 	// </summary>
-	public abstract class SourceFile
+	public class SourceFile
 	{
 		public string Name {
 			get {
@@ -42,35 +42,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected abstract ArrayList GetMethods ();
-
-		ObjectCache method_cache = null;
-		SourceData ensure_methods ()
+		public void AddMethod (SourceMethod method)
 		{
-			lock (this) {
-				if (method_cache == null)
-					method_cache = new ObjectCache
-						(new ObjectCacheFunc (get_methods), null, 1);
-
-				return (SourceData) method_cache.Data;
-			}
-		}
-
-		object get_methods (object user_data)
-		{
-			lock (this) {
-				ArrayList methods = GetMethods ();
-				if (methods == null)
-					return null;
-
-				Hashtable method_hash = new Hashtable ();
-				foreach (SourceMethod method in methods) {
-					if (!method_hash.Contains (method.Name))
-						method_hash.Add (method.Name, method);
-				}
-
-				return new SourceData (methods, method_hash);
-			}
+			methods.Add (method);
+			method_hash.Add (method.Name, method);
 		}
 
 		// <summary>
@@ -80,32 +55,20 @@ namespace Mono.Debugger
 		// </summary>
 		public SourceMethod[] Methods {
 			get {
-				SourceData data = ensure_methods ();
-				if (data == null)
-					return new SourceMethod [0];
-
-				SourceMethod[] retval = new SourceMethod [data.Methods.Count];
-				data.Methods.CopyTo (retval, 0);
+				SourceMethod[] retval = new SourceMethod [methods.Count];
+				methods.CopyTo (retval, 0);
 				return retval;
 			}
 		}
 
 		public SourceMethod FindMethod (string name)
 		{
-			SourceData data = ensure_methods ();
-			if (data == null)
-				return null;
-
-			return (SourceMethod) data.MethodHash [name];
+			return (SourceMethod) method_hash [name];
 		}
 
 		public SourceLocation FindLine (int line)
 		{
-			SourceData data = ensure_methods ();
-			if (data == null)
-				return null;
-
-			foreach (SourceMethod method in data.Methods) {
+			foreach (SourceMethod method in methods) {
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return new SourceLocation (method, line);
 			}
@@ -113,38 +76,25 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		protected SourceFile (Module module, string filename)
+		public SourceFile (Module module, string filename)
 		{
 			this.id = ++next_id;
 			this.module = module;
 			this.filename = filename;
+			this.methods = new ArrayList ();
+			this.method_hash = new Hashtable ();
 		}
 
 		string filename;
 		Module module;
 		int id;
+		ArrayList methods;
+		Hashtable method_hash;
 		static int next_id = 0;
 
 		public override string ToString ()
 		{
 			return String.Format ("SourceFile ({0}:{1})", ID, FileName);
-		}
-
-		// <remarks>
-		//   This is cached in a weak reference; `Methods' is a list of
-		//   SourceMethod's, sorted by their start lines and `MethodHash' maps
-		//   the method's full name to a SourceMethod.
-		// </remarks>
-		private class SourceData
-		{
-			public readonly ArrayList Methods;
-			public readonly Hashtable MethodHash;
-
-			public SourceData (ArrayList methods, Hashtable method_hash)
-			{
-				this.Methods = methods;
-				this.MethodHash = method_hash;
-			}
 		}
 	}
 

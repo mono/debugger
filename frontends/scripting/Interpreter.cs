@@ -370,7 +370,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				if (!module.SymbolsLoaded)
 					continue;
 
-				foreach (SourceFile source in module.Sources)
+				foreach (SourceFile source in module.SymbolFile.Sources)
 					source_hash.Add (source.ID, source);
 			}
 
@@ -451,7 +451,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			Print ("Sources for module {0}:", module.Name);
 
-			foreach (SourceFile source in module.Sources)
+			foreach (SourceFile source in module.SymbolFile.Sources)
 				Print ("{0,4}  {1}", source.ID, source.FileName);
 		}
 

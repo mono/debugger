@@ -1,3 +1,12 @@
+2004-04-23  Martin Baulig  <martin@ximian.com>
+
+	* classes/ISymbolFile.cs: New public interface.
+
+	* classes/SourceInfo.cs (SourceFile): Don't make this abstract.
+
+	* classes/Module.cs (Module.SourceFile): New abstract property.
+	(Module.Sources): Moved this property into ISymbolFile.
+
 2004-04-20  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/command-line/Main.cs: Add alias for "b" to mean "break"

@@ -7,7 +7,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class StabsReader : SymbolTable, ISimpleSymbolTable
+	internal class StabsReader : SymbolTable, ISymbolFile, ISimpleSymbolTable
 	{
 		protected Module module;
 		protected ArrayList methods;
@@ -461,9 +461,10 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class FileEntry : SourceFile, ISymbolLookup, ISymbolContainer {
+		protected class FileEntry : ISymbolLookup, ISymbolContainer {
 			StabsReader stabs;
 			public readonly ISourceBuffer SourceBuffer;
+			public readonly SourceFile SourceFile;
 
 			TargetAddress start, end;
 
@@ -472,9 +473,9 @@ namespace Mono.Debugger.Architecture
 
 			FileEntry (TargetBinaryReader reader, TargetBinaryReader str_reader,
 				   StabsReader stabs, ref Entry entry, string name)
-				: base (stabs.module, name)
 			{
 				this.stabs = stabs;
+				this.SourceFile = new SourceFile (stabs.module, name);
 
 				start = stabs.bfd.GetAddress (entry.n_value);
 
@@ -558,11 +559,6 @@ namespace Mono.Debugger.Architecture
 
 				return null;
 			}
-
-			protected override ArrayList GetMethods ()
-			{
-				return null;
-			}
 		}
 
 		protected class MethodRange : SymbolRangeEntry
@@ -586,7 +582,7 @@ namespace Mono.Debugger.Architecture
 			MethodEntry method;
 
 			public MethodSourceEntry (MethodEntry method)
-				: base (method, method.File)
+				: base (method, method.File.SourceFile)
 			{
 				this.method = method;
 			}
@@ -875,8 +871,8 @@ namespace Mono.Debugger.Architecture
 			MethodEntry method;
 
 			public StabsSourceMethod (MethodEntry method)
-				: base (method.File, method.Name, method.StartLine,
-					method.EndLine, false)
+				: base (method.File.SourceFile, method.Name,
+					method.StartLine, method.EndLine, false)
 			{
 				this.method = method;
 			}
