@@ -8,8 +8,17 @@
 #include <string.h>
 #include <breakpoints.h>
 
+#define DEBUG_WAIT 0
+
+#include "powerpc-arch.h"
+#include "powerpc-darwin.h"
+
 struct InferiorHandle {
 	int pid;
+	task_t task;
+	thread_t thread;
+	int pagesize;
+	int last_signal;
 };
 
 static ServerHandle *
@@ -19,15 +28,26 @@ powerpc_initialize (BreakpointManager *bpm)
 
 	handle->bpm = bpm;
 	handle->inferior = g_new0 (InferiorHandle, 1);
+	handle->arch = powerpc_arch_initialize ();
 	return handle;
 }
+
+static int global_pid = 0;
+static int stop_requested = 0;
+static int stop_status = 0;
 
 static int
 do_wait (int pid, guint32 *status)
 {
 	int ret;
 
+#ifdef DEBUG_WAIT
+	g_message (G_STRLOC ": Calling waitpid (%d)", pid);
+#endif
 	ret = waitpid (pid, status, WUNTRACED);
+#ifdef DEBUG_WAIT
+	g_message (G_STRLOC ": waitpid (%d) returned %d - %x", pid, ret, *status);
+#endif
 	if (ret < 0) {
 		if (errno == EINTR)
 			return 0;
@@ -45,6 +65,22 @@ static void
 _powerpc_setup_inferior (ServerHandle *handle, gboolean is_main)
 {
 	int status, ret;
+	kern_return_t kret;
+	mach_port_t itask;
+	thread_array_t thread_list;
+	unsigned int count;
+
+	kret = task_for_pid (mach_task_self(), handle->inferior->pid, &itask);
+	g_assert (kret == KERN_SUCCESS);
+	handle->inferior->task = itask;
+
+	kret = task_threads (itask, &thread_list, &count);
+	g_assert ((kret == KERN_SUCCESS) && (count >= 1));
+
+	handle->inferior->thread = thread_list [0];
+
+	kret = host_page_size (mach_host_self (), &handle->inferior->pagesize);
+	g_assert (kret == KERN_SUCCESS);
 
 	do {
 		ret = do_wait (handle->inferior->pid, &status);
@@ -54,7 +90,10 @@ _powerpc_setup_inferior (ServerHandle *handle, gboolean is_main)
 		g_assert (ret == handle->inferior->pid);
 		first_status = status;
 		first_ret = ret;
+		global_pid = handle->inferior->pid;
 	}
+
+	powerpc_arch_get_registers (handle);
 }
 
 static void
@@ -126,22 +165,177 @@ powerpc_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
 	return COMMAND_ERROR_NONE;
 }
 
+GStaticMutex wait_mutex = G_STATIC_MUTEX_INIT;
+GStaticMutex wait_mutex_2 = G_STATIC_MUTEX_INIT;
+
+static guint32
+powerpc_global_wait (guint32 *status_ret)
+{
+	int ret, status;
+
+	if (first_status) {
+		*status_ret = first_status;
+		first_status = 0;
+		return first_ret;
+	}
+
+	g_static_mutex_lock (&wait_mutex);
+	ret = do_wait (-1, &status);
+	if (ret <= 0)
+		goto out;
+
+#if DEBUG_WAIT
+	g_message (G_STRLOC ": global wait finished: %d - %x - %d",
+		   ret, status, stop_requested);
+#endif
+
+	g_static_mutex_lock (&wait_mutex_2);
+	if (ret == stop_requested) {
+		stop_status = status;
+		g_static_mutex_unlock (&wait_mutex_2);
+		g_static_mutex_unlock (&wait_mutex);
+		return 0;
+	}
+	g_static_mutex_unlock (&wait_mutex_2);
+
+	*status_ret = status;
+ out:
+	g_static_mutex_unlock (&wait_mutex);
+	return ret;
+}
+
+static ServerStatusMessageType
+powerpc_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
+			guint64 *data1, guint64 *data2)
+{
+	*arg = *data1 = *data2 = 0;
+
+	if (WIFSTOPPED (status)) {
+		powerpc_arch_get_registers (handle);
+
+		if (WSTOPSIG (status) == SIGTRAP) {
+			handle->inferior->last_signal = 0;
+			*arg = 0;
+		} else {
+			if (WSTOPSIG (status) == SIGSTOP)
+				handle->inferior->last_signal = 0;
+			else
+				handle->inferior->last_signal = WSTOPSIG (status);
+			*arg = handle->inferior->last_signal;
+		}
+		return MESSAGE_CHILD_STOPPED;
+	} else if (WIFEXITED (status)) {
+		*arg = WEXITSTATUS (status);
+		return MESSAGE_CHILD_EXITED;
+	} else if (WIFSIGNALED (status)) {
+		*arg = WTERMSIG (status);
+		return MESSAGE_CHILD_SIGNALED;
+	}
+
+	g_warning (G_STRLOC ": Got unknown waitpid() result: %x", status);
+	return MESSAGE_UNKNOWN_ERROR;
+}
+
+ServerCommandError
+_powerpc_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
+{
+	int count = PPC_THREAD_STATE_COUNT;
+	kern_return_t kret;
+
+	kret = thread_get_state (
+		inferior->thread, PPC_THREAD_STATE, (thread_state_t) regs, &count);
+
+	if (kret != KERN_SUCCESS) {
+		g_warning (G_STRLOC ": thread_get_state(%d) returned %x (%s)",
+			   inferior->thread, kret, mach_error_string (kret));
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+powerpc_continue (ServerHandle *handle)
+{
+	InferiorHandle *inferior = handle->inferior;
+
+	errno = 0;
+	if (ptrace (PT_CONTINUE, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
+		if (errno == ESRCH)
+			return COMMAND_ERROR_NOT_STOPPED;
+
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+powerpc_step (ServerHandle *handle)
+{
+	InferiorHandle *inferior = handle->inferior;
+
+	errno = 0;
+	if (ptrace (PT_STEP, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
+		if (errno == ESRCH)
+			return COMMAND_ERROR_NOT_STOPPED;
+
+		return COMMAND_ERROR_UNKNOWN;
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+read_memory_remainder (InferiorHandle *inferior, vm_address_t addr, int size, gpointer buffer)
+{
+	kern_return_t kret;
+	vm_offset_t data;
+	int offset, count;
+
+	offset = addr % inferior->pagesize;
+	addr -= offset;
+
+	kret = vm_read (inferior->task, addr, inferior->pagesize, &data, &count);
+	if ((kret != KERN_SUCCESS) || (count != inferior->pagesize)) {
+		g_warning (G_STRLOC ": Can't read target memory at %x: %x (%s)",
+			   addr, kret, mach_error_string (kret));
+		return COMMAND_ERROR_MEMORY_ACCESS;
+	}
+
+	memcpy (buffer, data + offset, size);
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+powerpc_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer)
+{
+	unsigned int mempointer;
+	vm_address_t addr = (guint32) start;
+	kern_return_t kret;
+	int count;
+
+	return read_memory_remainder (handle->inferior, (vm_address_t) addr, size, buffer);
+}
+
+#include "powerpc-arch.c"
+
 InferiorVTable powerpc_darwin_inferior = {
 	powerpc_initialize,
 	powerpc_spawn,
 	NULL, // powerpc_attach,
 	NULL, // powerpc_detach,
 	NULL, // powerpc_finalize,
-	NULL, // powerpc_global_wait,
+	powerpc_global_wait,
 	NULL, // powerpc_stop_and_wait,
-	NULL, // powerpc_dispatch_event,
+	powerpc_dispatch_event,
 	powerpc_get_target_info,
-	NULL, // powerpc_continue,
-	NULL, // powerpc_step,
-	NULL, // powerpc_get_pc,
+	powerpc_continue,
+	powerpc_step,
+	powerpc_get_pc,
 	NULL, // powerpc_current_insn_is_bpt,
 	NULL, // powerpc_peek_word,
-	NULL, // powerpc_read_memory,
+	powerpc_read_memory,
 	NULL, // powerpc_write_memory,
 	NULL, // powerpc_call_method,
 	NULL, // powerpc_call_method_1,
@@ -155,7 +349,7 @@ InferiorVTable powerpc_darwin_inferior = {
 	NULL, // powerpc_get_registers,
 	NULL, // powerpc_set_registers,
 	NULL, // powerpc_get_backtrace,
-	NULL, // powerpc_get_ret_address,
+	powerpc_get_ret_address,
 	NULL, // powerpc_stop,
 	NULL, // powerpc_global_stop,
 	NULL, // powerpc_set_signal,
