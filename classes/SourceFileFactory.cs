@@ -5,63 +5,14 @@ using System.Collections;
 using Mono.Debugger;
 using Mono.CSharp.Debugger;
 
-public class SourceFile : ISourceBuffer
-{
-	FileInfo file_info;
-	string contents;
-
-	public SourceFile (FileInfo file_info)
-	{
-		this.file_info = file_info;
-		ReadFile ();
-	}
-
-	void ReadFile ()
-	{
-		try {
-			Encoding encoding = Encoding.GetEncoding (28591);
-			using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
-				contents = reader.ReadToEnd ();
-			}
-		} catch {
-			return;
-		}
-	}
-
-
-	public string Name {
-		get {
-			return file_info.Name;
-		}
-	}
-
-	public FileInfo FileInfo {
-		get {
-			return file_info;
-		}
-	}
-
-	public bool HasContents {
-		get {
-			return contents != null;
-		}
-	}
-
-	public string Contents {
-		get {
-			return contents;
-		}
-	}
-}
-
 public class SourceFileFactory
 {
 	Hashtable files = new Hashtable ();
 
-	public SourceFile FindFile (string name)
+	public ISourceBuffer FindFile (string name)
 	{
 		if (files.Contains (name))
-			return (SourceFile) files [name];
+			return (ISourceBuffer) files [name];
 
 		FileInfo file_info = new FileInfo (name);
 
@@ -70,7 +21,17 @@ public class SourceFileFactory
 			return null;
 		}
 
-		SourceFile retval = new SourceFile (file_info);
+		string contents = null;
+		try {
+			Encoding encoding = Encoding.GetEncoding (28591);
+			using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
+				contents = reader.ReadToEnd ();
+			}
+		} catch {
+			return null;
+		}
+
+		SourceBuffer retval = new SourceBuffer (name, contents);
 		files.Add (name, retval);
 		return retval;
 	}

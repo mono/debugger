@@ -1,5 +1,11 @@
 2003-02-24  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceFileFactory.cs (SourceFileFactory.FindFile):
+	Return an ISourceBuffer.
+	(SourceFile): Removed.
+
+2003-02-24  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceLocation.cs: New public class.
 
 	* classes/BreakpointHandle.cs (BreakpointHandleMethod): Merged all

@@ -138,7 +138,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (current_buffer.HasContents)
 				contents = current_buffer.Contents;
 			else {
-				SourceFile file = context.SourceFactory.FindFile (current_buffer.Name);
+				ISourceBuffer file = context.SourceFactory.FindFile (current_buffer.Name);
 				if (file == null)
 					return;
 				contents = file.Contents;
@@ -419,7 +419,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (buffer.HasContents)
 				contents = buffer.Contents;
 			else {
-				SourceFile file = context.SourceFactory.FindFile (buffer.Name);
+				ISourceBuffer file = context.SourceFactory.FindFile (buffer.Name);
 				if (file == null)
 					return;
 				contents = file.Contents;
