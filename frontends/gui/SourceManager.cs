@@ -8,6 +8,7 @@
 using System;
 using System.Collections;
 using Gtk;
+using GtkSharp;
 
 namespace Mono.Debugger.GUI {
 
@@ -147,12 +148,16 @@ namespace Mono.Debugger.GUI {
 	public class SourceManager {
 		Hashtable sources; 
 		DebuggerBackend backend;
+		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
 
-		public SourceManager (Gtk.Notebook notebook)
+		public SourceManager (Gtk.Notebook notebook, SourceStatusbar source_status)
 		{
 			sources = new Hashtable ();
 			this.notebook = notebook;
+			this.source_status = source_status;
+
+			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 		
 		public void SetBackend (DebuggerBackend backend)
@@ -212,6 +217,11 @@ namespace Mono.Debugger.GUI {
 					} while (v != null);
 				}
 			}
+		}
+
+		void switch_page (object o, SwitchPageArgs args)
+		{
+			source_status.IsSourceStatusBar = args.PageNum != 0;
 		}
 		
 		void MethodChangedEvent (IMethod method)

@@ -19,7 +19,6 @@ namespace Mono.Debugger.GUI
 		{
 			this.widget = widget;
 			this.container = container;
-			this.backend = backend;
 
 			if (container == null) {
 				Gtk.Widget parent = widget.Parent;

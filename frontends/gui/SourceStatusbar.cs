@@ -14,10 +14,33 @@ namespace Mono.Debugger.GUI
 		{
 		}
 
+		bool is_source_status = false;
+		TargetState state;
+		int arg;
+
+		public bool IsSourceStatusBar {
+			get {
+				return is_source_status;
+			}
+
+			set {
+				is_source_status = value;
+				StateChanged (state, arg);
+			}
+		}
+
 		public override void StateChanged (TargetState new_state, int arg)
 		{
 			if (!IsVisible)
 				return;
+
+			this.state = new_state;
+			this.arg = arg;
+
+			if (!is_source_status) {
+				base.StateChanged (new_state, arg);
+				return;
+			}
 
 			switch (new_state) {
 			case TargetState.STOPPED:

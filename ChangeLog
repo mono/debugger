@@ -1,5 +1,11 @@
 2002-10-05  Martin Baulig  <martin@gnome.org>
 
+	* frontends/gui/: Display the SourceStatusbar while the source
+	code is visible and the TargetStatusbar while the CPU view is
+	visible.
+
+2002-10-05  Martin Baulig  <martin@gnome.org>
+
 	* frontends/gui/SourceView.cs: Made this class abstract.
 
 	* frontends/gui/SourceManager.cs: Use Gtk.SourceView.
