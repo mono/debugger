@@ -92,8 +92,8 @@ namespace Mono.Debugger.GUI
 			store.Append (out iter);
 			store.SetValue (iter, 0, new GLib.Value (id));
 			store.SetValue (iter, 1, new GLib.Value (frame.TargetAddress.ToString ()));
-			if (frame.Method != null)
-				store.SetValue (iter, 2, new GLib.Value (frame.Method.Name));
+			if (frame.Name != null)
+				store.SetValue (iter, 2, new GLib.Value (frame.Name));
 			if (frame.SourceLocation != null) {
 				string filename = Utils.GetBasename (frame.SourceLocation.Name);
 				store.SetValue (iter, 3, new GLib.Value (filename));

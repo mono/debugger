@@ -1,5 +1,13 @@
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (Name): New public property.  Returns the
+	method name from ISymbolLookup.SimpleLookup().
+
+	* frontends/gui/BacktraceView.cs: Use the new StackFrame.Name
+	property to get the method name.
+
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ISymbolTable.cs (ISymbolLookup.SimpleLookup): New
 	interface method which returns just the name of the method without
 	constructing the method itself.

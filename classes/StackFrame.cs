@@ -111,6 +111,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string Name {
+			get {
+				check_disposed ();
+				return name;
+			}
+		}
+
 		public event StackFrameInvalidHandler FrameInvalid;
 
 		public AssemblerLine DisassembleInstruction (TargetAddress address)
