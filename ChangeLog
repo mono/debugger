@@ -1,3 +1,7 @@
+2003-12-09  Martin Baulig  <martin@ximian.com>
+
+	Released version 0.5 "Clemson" of the Mono Debugger :-)
+
 2003-11-06  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Completely disable the GUI for the moment.

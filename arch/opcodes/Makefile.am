@@ -5,4 +5,4 @@ INCLUDES = -D_GNU_SOURCE -DARCH_i386 -I$(srcdir)/../bfd -I$(srcdir)/../bfd/inclu
 libopcodes_la_SOURCES =  dis-buf.c disassemble.c i386-dis.c
 libopcodes_la_LDFLAGS = -export-dynamic
 
-EXTRA_DIST = opintl.h
+EXTRA_DIST = opintl.h sysdep.h

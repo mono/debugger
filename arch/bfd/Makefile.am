@@ -36,4 +36,4 @@ targets.lo: targets.c Makefile
 archures.lo: archures.c Makefile
 	$(LIBTOOL) --mode=compile $(COMPILE) -c $(TDEFAULTS) $(srcdir)/archures.c
 
-EXTRA_DIST = @srcdir@/*.h coff-i386.c peigen.c pepigen.c
+EXTRA_DIST = @srcdir@/*.h coff-i386.c peigen.c
