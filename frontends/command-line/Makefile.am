@@ -8,6 +8,5 @@ ExpressionParser.cs: ExpressionParser.jay
 MAINTAINERCLEANFILES = ExpressionParser.cs y.output
 
 EXTRA_DIST = \
-	DebuggerTextWriter.cs GnuReadLine.cs Interpreter.cs Main.cs \
-	ExpressionParser.cs ExpressionParser.jay skeleton
-
+	DebuggerTextWriter.cs GnuReadLine.cs Main.cs CL.cs \
+	ExpressionParser.cs ExpressionParser.jay Tokenizer.cs skeleton
