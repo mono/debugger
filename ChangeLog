@@ -1,3 +1,7 @@
+2003-02-02  Martin Baulig  <martin@ximian.com>
+
+	* arch/ArchitectureI386.cs (I386Register): Made this public.
+
 2003-02-01  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/ScriptingContext.cs (Start): Splitted into

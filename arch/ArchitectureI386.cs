@@ -5,7 +5,7 @@ using Mono.Debugger.Backends;
 namespace Mono.Debugger
 {
 	// Keep in sync with DebuggerI386Registers in backends/server/i386-arch.h.
-	internal enum I386Register
+	public enum I386Register
 	{
 		EBX		= 0,
 		ECX		= 1,
