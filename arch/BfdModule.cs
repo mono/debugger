@@ -144,7 +144,7 @@ namespace Mono.Debugger.Architecture
 
 		private bool disposed = false;
 
-		protected virtual void Dispose (bool disposing)
+		private void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
 			if (!this.disposed) {
