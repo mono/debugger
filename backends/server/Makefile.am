@@ -50,7 +50,7 @@ libmonodebuggerserver_la_SOURCES = \
 
 remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
 
-libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@ @server_sources@
+libmonodebuggerserver_la_LIBADD = @SERVER_DEPENDENCIES_LIBS@
 libmonodebuggerserver_la_LDFLAGS = -no-undefined -module -export-dynamic -shared
 
 CLEANFILES = lib*.a lib*.dll
