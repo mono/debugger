@@ -626,7 +626,6 @@ server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint3
 	breakpoint = g_new0 (I386BreakpointInfo, 1);
 
 	breakpoint->info.refcount = 1;
-	breakpoint->info.owner = handle->pid;
 	breakpoint->info.address = address;
 	breakpoint->info.is_hardware_bpt = FALSE;
 	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
@@ -685,7 +684,6 @@ server_ptrace_insert_hw_breakpoint (InferiorHandle *handle, guint32 idx, guint64
 
 	mono_debugger_breakpoint_manager_lock (handle->bpm);
 	breakpoint = g_new0 (I386BreakpointInfo, 1);
-	breakpoint->info.owner = handle->pid;
 	breakpoint->info.address = address;
 	breakpoint->info.refcount = 1;
 	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();

@@ -34,40 +34,14 @@ namespace Mono.Debugger.Backends
 		}
 
 		protected override object EnableBreakpoint (BreakpointHandle handle,
-							    ThreadGroup group, TargetAddress address)
+							    TargetAddress address)
 		{
-			Hashtable hash = new Hashtable ();
-			foreach (IProcess thread in group.Threads) {
-				Process process = thread as Process;
-				if (process == null)
-					throw new NotSupportedException ();
-
-				int id = process.SingleSteppingEngine.InsertBreakpoint (
-					address, new BreakpointCheckHandler (check_breakpoint_hit),
-					new BreakpointHitHandler (breakpoint_hit),
-					handle.Breakpoint.HandlerNeedsFrame, handle);
-				hash.Add (process, id);
-			}
-
-			return hash;
+			throw new NotImplementedException ();
 		}
 
-		protected override void DisableBreakpoint (BreakpointHandle handle,
-							   ThreadGroup group, object data)
+		protected override void DisableBreakpoint (BreakpointHandle handle, object data)
 		{
-			Hashtable hash = (Hashtable) data;
-
-			foreach (IProcess thread in group.Threads) {
-				Process process = thread as Process;
-				if (process == null)
-					throw new NotSupportedException ();
-				if (!hash.Contains (process))
-					throw new NotSupportedException ();
-
-				int id = (int) hash [process];
-				process.SingleSteppingEngine.RemoveBreakpoint (id);
-				hash.Remove (id);
-			}
+			throw new NotImplementedException ();
 		}
 	}
 }

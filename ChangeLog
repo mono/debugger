@@ -1,3 +1,22 @@
+2003-04-27  Martin Baulig  <martin@ximian.com>
+
+	Reworked the breakpoint code; we're now getting a callback from
+	the JIT when a method containing a breakpoint is JITed instead of
+	using the breakpoint trampoline.
+
+	* backends/ILanguageBackend.cs (BreakpointHit): Removed.
+
+	* backends/Debugger.cs (BreakpointHit): Removed.
+
+	* classes/ModuleData.cs (EnableBreakpoint, DisableBreakpoint):
+	Removed the ThreadGroup argument.
+
+	* classes/BreakpointManager.cs
+	(BreakpointManager.Handle): New public class.
+	(InsertBreakpoint, RemoveBreakpoint, LookupBreakpoint): New public
+	methods; this class is now responsible for actually inserting all
+	breakpoints.
+
 2003-04-22  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs

@@ -717,11 +717,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		bool ILanguageBackend.BreakpointHit (IInferior inferior, TargetAddress address)
-		{
-			return true;
-		}
-
 		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
 		{
 			return GetTrampoline (address);

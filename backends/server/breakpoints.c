@@ -99,9 +99,3 @@ mono_debugger_breakpoint_info_get_id (BreakpointInfo *info)
 {
 	return info->id;
 }
-
-int
-mono_debugger_breakpoint_info_get_owner (BreakpointInfo *info)
-{
-	return info->owner;
-}

@@ -8,6 +8,7 @@ namespace Mono.Debugger.Backends
 	internal class BreakpointManager : IDisposable
 	{
 		IntPtr _manager;
+		Hashtable breakpoints;
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_breakpoint_manager_new (BreakpointManagerMutexHandler lock_func, BreakpointManagerMutexHandler unlock_func);
@@ -21,15 +22,13 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_breakpoint_info_get_id (IntPtr info);
 
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_breakpoint_info_get_owner (IntPtr info);
-
 		protected delegate void BreakpointManagerMutexHandler ();
 		protected Mutex lock_mutex;
 
 		public BreakpointManager ()
 		{
 			lock_mutex = new Mutex ();
+			breakpoints = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_new (
 				new BreakpointManagerMutexHandler (lock_func),
 				new BreakpointManagerMutexHandler (unlock_func));
@@ -49,16 +48,66 @@ namespace Mono.Debugger.Backends
 			get { return _manager; }
 		}
 
-		public int LookupBreakpoint (TargetAddress address, out int owner)
+		public Handle LookupBreakpoint (TargetAddress address, out int index)
 		{
-			IntPtr info = mono_debugger_breakpoint_manager_lookup (_manager, address.Address);
-			if (info == IntPtr.Zero) {
-				owner = 0;
-				return 0;
-			}
+			lock (this) {
+				IntPtr info = mono_debugger_breakpoint_manager_lookup (
+					_manager, address.Address);
+				if (info == IntPtr.Zero) {
+					index = 0;
+					return null;
+				}
 
-			owner = mono_debugger_breakpoint_info_get_owner (info);
-			return mono_debugger_breakpoint_info_get_id (info);
+				index = mono_debugger_breakpoint_info_get_id (info);
+				return (Handle) breakpoints [index];
+			}
+		}
+
+		public Handle LookupBreakpoint (int breakpoint)
+		{
+			lock (this) {
+				return (Handle) breakpoints [breakpoint];
+			}
+		}
+
+		public int InsertBreakpoint (IInferior inferior, Handle handle)
+		{
+			lock (this) {
+				int index = inferior.InsertBreakpoint (handle.Address);
+				breakpoints.Add (index, handle);
+				return index;
+			}
+		}
+
+		public void RemoveBreakpoint (IInferior inferior, int index)
+		{
+			lock (this) {
+				inferior.RemoveBreakpoint (index);
+				breakpoints.Remove (index);
+			}
+		}
+
+		public class Handle
+		{
+			public readonly TargetAddress Address;
+			public readonly BreakpointHandle BreakpointHandle;
+			public readonly BreakpointCheckHandler CheckHandler;
+			public readonly BreakpointHitHandler HitHandler;
+			public readonly bool NeedsFrame;
+			public readonly object UserData;
+
+			public Handle (TargetAddress address, BreakpointHandle handle,
+				       BreakpointCheckHandler check_handler,
+				       BreakpointHitHandler hit_handler,
+				       bool needs_frame, object user_data)
+			{
+				this.Address = address;
+				this.BreakpointHandle = handle;
+				this.CheckHandler = check_handler;
+				this.HitHandler = hit_handler;
+				this.NeedsFrame = needs_frame;
+				this.UserData = user_data;
+			}
 		}
 
 		//

@@ -267,16 +267,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool BreakpointHit (IInferior inferior, TargetAddress address)
-		{
-			foreach (ILanguageBackend language in languages) {
-				if (!language.BreakpointHit (inferior, address))
-					return false;
-			}
-
-			return true;
-		}
-
 		public bool SignalHandler (Process process, IInferior inferior, int signal)
 		{
 			bool action;

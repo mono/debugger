@@ -17,7 +17,6 @@ typedef struct {
 
 typedef struct {
 	int id;
-	int owner;
 	int refcount;
 	int enabled;
 	int is_hardware_bpt;
@@ -57,9 +56,6 @@ mono_debugger_breakpoint_manager_remove              (BreakpointManager *bpm, Br
 
 int
 mono_debugger_breakpoint_info_get_id                 (BreakpointInfo *info);
-
-int
-mono_debugger_breakpoint_info_get_owner              (BreakpointInfo *info);
 
 G_END_DECLS
 

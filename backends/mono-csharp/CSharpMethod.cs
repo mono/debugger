@@ -54,6 +54,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			lines.Sort ();
+
 			ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
 			return new MethodSourceData (start_row, end_row, lines, source_method, buffer);
 		}

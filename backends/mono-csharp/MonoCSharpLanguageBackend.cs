@@ -598,6 +598,18 @@ namespace Mono.Debugger.Languages.CSharp
 				return reader.FindMethod (name);
 			}
 
+			protected override object EnableBreakpoint (BreakpointHandle handle,
+								    TargetAddress address)
+			{
+				return reader.Language.EnableBreakpoint (handle, address);
+			}
+
+			protected override void DisableBreakpoint (BreakpointHandle handle,
+								   object data)
+			{
+				reader.Language.DisableBreakpoint ((int) data);
+			}
+
 			//
 			// IDisposable
 			//
@@ -635,7 +647,6 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoDebuggerInfo
 	{
 		public readonly TargetAddress GenericTrampolineCode;
-		public readonly TargetAddress BreakpointTrampolineCode;
 		public readonly TargetAddress NotificationCode;
 		public readonly TargetAddress SymbolTable;
 		public readonly int SymbolTableSize;
@@ -643,13 +654,14 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress InsertBreakpoint;
 		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeInvoke;
+		public readonly TargetAddress EventData;
+		public readonly TargetAddress EventArg;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
 			reader.Offset = reader.TargetLongIntegerSize +
 				2 * reader.TargetIntegerSize;
 			GenericTrampolineCode = reader.ReadAddress ();
-			BreakpointTrampolineCode = reader.ReadAddress ();
 			NotificationCode = reader.ReadAddress ();
 			SymbolTable = reader.ReadAddress ();
 			SymbolTableSize = reader.ReadInteger ();
@@ -657,14 +669,16 @@ namespace Mono.Debugger.Languages.CSharp
 			InsertBreakpoint = reader.ReadAddress ();
 			RemoveBreakpoint = reader.ReadAddress ();
 			RuntimeInvoke = reader.ReadAddress ();
+			EventData = reader.ReadAddress ();
+			EventArg = reader.ReadAddress ();
 			Report.Debug (DebugFlags.JIT_SYMTAB, this);
 		}
 
 		public override string ToString ()
 		{
 			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x}:{8:x})",
-				GenericTrampolineCode, BreakpointTrampolineCode, NotificationCode,
+				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x})",
+				GenericTrampolineCode, NotificationCode,
 				SymbolTable, SymbolTableSize,  CompileMethod,
 				InsertBreakpoint, RemoveBreakpoint, RuntimeInvoke);
 		}
@@ -732,7 +746,7 @@ namespace Mono.Debugger.Languages.CSharp
 		internal ThreadManager ThreadManager;
 		internal AddressDomain GlobalAddressDomain;
 		internal ITargetInfo TargetInfo;
-		protected MonoCSharpLanguageBackend language;
+		internal MonoCSharpLanguageBackend Language;
 		protected DebuggerBackend backend;
 		protected Hashtable range_hash;
 		MonoCSharpSymbolTable symtab;
@@ -755,7 +769,7 @@ namespace Mono.Debugger.Languages.CSharp
 			this.Table = table;
 			this.TargetInfo = target_info;
 			this.backend = backend;
-			this.language = language;
+			this.Language = language;
 
 			ThreadManager = backend.ThreadManager;
 			GlobalAddressDomain = memory.GlobalAddressDomain;
@@ -1316,7 +1330,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override TargetAddress GetTrampoline (TargetAddress address)
 			{
-				return reader.language.GetTrampoline (address);
+				return reader.Language.GetTrampoline (address);
 			}
 		}
 
@@ -1559,17 +1573,44 @@ namespace Mono.Debugger.Languages.CSharp
 			if (index <= 0)
 				return -1;
 
-			breakpoints.Add (index, new BreakpointHandle (index, handler, user_data));
+			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
 			return index;
 		}
 
-		private struct BreakpointHandle
+		bool check_breakpoint_hit (StackFrame frame, int index, object user_data)
+		{
+			BreakpointHandle handle = (BreakpointHandle) user_data;
+
+			return handle.Breakpoint.CheckBreakpointHit (frame);
+		}
+
+		void breakpoint_hit (StackFrame frame, int index, object user_data)
+		{
+			BreakpointHandle handle = (BreakpointHandle) user_data;
+
+			handle.Breakpoint.BreakpointHit (frame);
+		}
+
+		internal int EnableBreakpoint (BreakpointHandle handle, TargetAddress address)
+		{
+			return process.SingleSteppingEngine.InsertBreakpoint (
+				handle, address, new BreakpointCheckHandler (check_breakpoint_hit),
+				new BreakpointHitHandler (breakpoint_hit),
+				handle.Breakpoint.HandlerNeedsFrame, handle);
+		}
+
+		internal void DisableBreakpoint (int index)
+		{
+			process.SingleSteppingEngine.RemoveBreakpoint (index);
+		}
+
+		private struct MyBreakpointHandle
 		{
 			public readonly int Index;
 			public readonly BreakpointHandler Handler;
 			public readonly object UserData;
 
-			public BreakpointHandle (int index, BreakpointHandler handler, object user_data)
+			public MyBreakpointHandle (int index, BreakpointHandler handler, object user_data)
 			{
 				this.Index = index;
 				this.Handler = handler;
@@ -1625,38 +1666,6 @@ namespace Mono.Debugger.Languages.CSharp
 			return TargetAddress.Null;
 		}
 
-		public bool BreakpointHit (IInferior inferior, TargetAddress address)
-		{
-			IArchitecture arch = inferior.Architecture;
-
-			if (info == null)
-				return true;
-
-			try {
-				TargetAddress trampoline = inferior.ReadGlobalAddress (
-					info.BreakpointTrampolineCode);
-				if (trampoline.IsNull || (inferior.CurrentFrame != trampoline + 6))
-					return true;
-
-				TargetAddress method, code, retaddr;
-				int breakpoint_id = arch.GetBreakpointTrampolineData (
-					out method, out code, out retaddr);
-
-				if (!breakpoints.Contains (breakpoint_id))
-					return false;
-
-				BreakpointHandle handle = (BreakpointHandle) breakpoints [breakpoint_id];
-				handle.Handler (code, handle.UserData);
-				breakpoints.Remove (breakpoint_id);
-
-				return false;
-			} catch (Exception e) {
-				Console.WriteLine ("BREAKPOINT EXCEPTION: {0}", e);
-				// Do nothing.
-			}
-			return true;
-		}
-
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)
 		{
 			if (!initialized) {
@@ -1668,7 +1677,21 @@ namespace Mono.Debugger.Languages.CSharp
 				return false;
 
 			lock (this) {
+				TargetAddress data = runner.Inferior.ReadAddress (info.EventData);
+				int arg = runner.Inferior.ReadInteger (info.EventArg);
+
 				do_update_symbol_table (runner.Inferior, false);
+
+				if (arg != 0) {
+					if (!breakpoints.Contains (arg))
+						goto done;
+
+					MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [arg];
+					handle.Handler (data, handle.UserData);
+					breakpoints.Remove (arg);
+					goto done;
+				}
+			done:
 				reload_event.Set ();
 			}
 

@@ -970,17 +970,17 @@ namespace Mono.Debugger.Backends
 		//   If we can't find a handler for the breakpoint, the default is to stop
 		//   the target and let the user decide what to do.
 		// </summary>
-		bool child_breakpoint (int breakpoint)
+		bool child_breakpoint (int index)
 		{
 			// The inferior knows about breakpoints from all threads, so if this is
 			// zero, then no other thread has set this breakpoint.
-			if (breakpoint == 0)
-				return backend.BreakpointHit (inferior, inferior.CurrentFrame);
-
-			if (!breakpoints.Contains (breakpoint))
+			if (index == 0)
 				return true;
 
-			BreakpointHandle handle = (BreakpointHandle) breakpoints [breakpoint];
+			BreakpointManager.Handle handle = breakpoint_manager.LookupBreakpoint (index);
+			if (handle == null)
+				return true;
+
 			StackFrame frame = null;
 			// Only compute the current stack frame if the handler actually
 			// needs it.  Note that this computation is an expensive operation
@@ -988,35 +988,38 @@ namespace Mono.Debugger.Backends
 			if (handle.NeedsFrame)
 				frame = get_frame (inferior.CurrentFrame);
 			if ((handle.CheckHandler != null) &&
-			    !handle.CheckHandler (frame, breakpoint, handle.UserData))
+			    !handle.CheckHandler (frame, index, handle.UserData))
 				return false;
 
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			send_frame_event (current_frame, handle);
+			send_frame_event (current_frame, handle.BreakpointHandle);
 
 			return true;
 		}
 
 		bool step_over_breakpoint (bool current, out ChildEvent new_event)
 		{
-			int owner;
-			int id = breakpoint_manager.LookupBreakpoint (inferior.CurrentFrame, out owner);
+			int index;
+			BreakpointManager.Handle handle = breakpoint_manager.LookupBreakpoint (
+				inferior.CurrentFrame, out index);
 
-			new_event = null;
-
-			if (id == 0)
+			if (handle == null) {
+				new_event = null;
 				return false;
+			}
 
-			if (!current && ((owner == 0) || (owner == pid)))
+			if (!current && handle.BreakpointHandle.Breaks (this)) {
+				new_event = null;
 				return false;
+			}
 
 			thread_manager.AcquireGlobalThreadLock (inferior, process);
-			inferior.DisableBreakpoint (id);
+			inferior.DisableBreakpoint (index);
 			inferior.Step ();
 			do {
 				new_event = inferior.Wait ();
 			} while (new_event == null);
-			inferior.EnableBreakpoint (id);
+			inferior.EnableBreakpoint (index);
 			thread_manager.ReleaseGlobalThreadLock (inferior, process);
 			return true;
 		}
@@ -1742,17 +1745,16 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		Hashtable breakpoints = new Hashtable ();
-
 		CommandResult insert_breakpoint (object data)
 		{
-			int index = inferior.InsertBreakpoint ((TargetAddress) data);
+			int index = breakpoint_manager.InsertBreakpoint (
+				inferior, (BreakpointManager.Handle) data);
 			return new CommandResult (CommandResultType.CommandOk, index);
 		}
 
 		CommandResult remove_breakpoint (object data)
 		{
-			inferior.RemoveBreakpoint ((int) data);
+			breakpoint_manager.RemoveBreakpoint (inferior, (int) data);
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
@@ -1765,20 +1767,21 @@ namespace Mono.Debugger.Backends
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (TargetAddress address, BreakpointCheckHandler check_handler,
-					     BreakpointHitHandler hit_handler, bool needs_frame,
-					     object user_data)
+		public int InsertBreakpoint (BreakpointHandle handle, TargetAddress address,
+					     BreakpointCheckHandler check_handler,
+					     BreakpointHitHandler hit_handler,
+					     bool needs_frame, object user_data)
 		{
 			check_inferior ();
 
-			CommandResult result = send_sync_command (new CommandFunc (insert_breakpoint), address);
+			BreakpointManager.Handle data = new BreakpointManager.Handle (
+				address, handle, check_handler, hit_handler, needs_frame, user_data);
+
+			CommandResult result = send_sync_command (new CommandFunc (insert_breakpoint), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 
-			int index = (int) result.Data;
-			breakpoints.Add (index, new BreakpointHandle (
-				index, check_handler, hit_handler, needs_frame, user_data));
-			return index;
+			return (int) result.Data;
 		}
 
 		// <summary>
@@ -1790,27 +1793,6 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			if (inferior != null)
 				send_sync_command (new CommandFunc (remove_breakpoint), index);
-			breakpoints.Remove (index);
-		}
-
-		private class BreakpointHandle
-		{
-			public readonly int Index;
-			public readonly bool NeedsFrame;
-			public readonly BreakpointCheckHandler CheckHandler;
-			public readonly BreakpointHitHandler HitHandler;
-			public readonly object UserData;
-
-			public BreakpointHandle (int index, BreakpointCheckHandler check_handler,
-						 BreakpointHitHandler hit_handler, bool needs_frame,
-						 object user_data)
-			{
-				this.Index = index;
-				this.CheckHandler = check_handler;
-				this.HitHandler = hit_handler;
-				this.NeedsFrame = needs_frame;
-				this.UserData = user_data;
-			}
 		}
 
 		//

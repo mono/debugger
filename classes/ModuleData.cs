@@ -95,7 +95,6 @@ namespace Mono.Debugger
 		//   as the @data argument to DisableBreakpoint() when disabling the breakpoint.
 		// </summary>
 		protected internal abstract object EnableBreakpoint (BreakpointHandle handle,
-								     ThreadGroup group,
 								     TargetAddress address);
 
 		// <summary>
@@ -104,6 +103,6 @@ namespace Mono.Debugger
 		//   alive.  The @data argument is whatever EnableBreakpoint() returned.
 		// </summary>
 		protected internal abstract void DisableBreakpoint (BreakpointHandle handle,
-								    ThreadGroup group, object data);
+								    object data);
 	}
 }

@@ -51,6 +51,21 @@ namespace Mono.Debugger
 				ModuleLoaded (module);
 		}
 
+		public bool Breaks (IProcess process)
+		{
+			if (group == null)
+				return true;
+
+			int id = process.ID;
+
+			foreach (IProcess thread in group.Threads) {
+				if (thread.ID == id)
+					return true;
+			}
+
+			return false;
+		}
+
 		IDisposable load_handler;
 
 		// <summary>
@@ -131,7 +146,7 @@ namespace Mono.Debugger
 				if (module_data == null)
 					throw new InternalError ();
 
-				breakpoint_data = module_data.EnableBreakpoint (this, group, bpt_address);
+				breakpoint_data = module_data.EnableBreakpoint (this, bpt_address);
 			}
 		}
 
@@ -140,7 +155,7 @@ namespace Mono.Debugger
 			lock (this) {
 				ModuleData module_data = module.ModuleData;
 				if ((module_data != null) && (breakpoint_data != null))
-					module_data.DisableBreakpoint (this, group, breakpoint_data);
+					module_data.DisableBreakpoint (this, breakpoint_data);
 				breakpoint_data = null;
 			}
 		}

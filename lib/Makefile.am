@@ -1,5 +1,7 @@
 bin_SCRIPTS = Interpreter.exe @GUI_TARGETS@ mdb mono-debug 
 
+MCS_FLAGS = -g
+
 assdir = $(libdir)
 
 ass_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll 
