@@ -719,6 +719,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		MyOptions options;
 
+		ArrayList method_search_results;
 		SourceFileFactory source_factory;
 		Hashtable scripting_variables;
 		Module[] modules;
@@ -743,6 +744,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_process = null;
 
 			scripting_variables = new Hashtable ();
+			method_search_results = new ArrayList ();
 
 			source_factory = new SourceFileFactory ();
 		}
@@ -1235,23 +1237,61 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public int InsertBreakpoint (ThreadGroup group, string method)
+		public int InsertBreakpoint (ThreadGroup group, SourceMethodInfo method)
 		{
-			Breakpoint breakpoint = new SimpleBreakpoint (method);
+			Breakpoint breakpoint = new SimpleBreakpoint (method.Name);
 			int index = backend.InsertBreakpoint (breakpoint, group, method);
 			if (index < 0)
 				throw new ScriptingException ("Could not insert breakpoint.");
 			return index;
 		}
 
-		public int InsertBreakpoint (ThreadGroup group, string file, int line)
+		public SourceMethodInfo FindMethod (string file, int line)
 		{
+			if (modules == null)
+				throw new ScriptingException ("No modules.");
+
 			string full_file = GetFullPath (file);
-			Breakpoint breakpoint = new SimpleBreakpoint (String.Format ("{0}:{1}", file, line));
-			int index = backend.InsertBreakpoint (breakpoint, group, full_file, line);
-			if (index < 0)
-				throw new ScriptingException ("Could not insert breakpoint.");
-			return index;
+			foreach (Module module in modules) {
+				SourceMethodInfo method = module.FindMethod (full_file, line);
+				
+				if (method != null)
+					return method;
+			}
+
+			throw new ScriptingException ("No method contains the specified file/line.");
+		}
+
+		public SourceMethodInfo FindMethod (string name)
+		{
+			if (modules == null)
+				throw new ScriptingException ("No modules.");
+
+			foreach (Module module in modules) {
+				SourceMethodInfo method = module.FindMethod (name);
+				
+				if (method != null)
+					return method;
+			}
+
+			throw new ScriptingException ("No such method.");
+		}
+
+		public void AddMethodSearchResult (SourceMethodInfo[] methods)
+		{
+			Print ("More than one method matches your query:");
+			foreach (SourceMethodInfo method in methods) {
+				Print ("{0,4}  {1}", method_search_results.Count + 1, method.Name);
+				method_search_results.Add (method);
+			}
+		}
+
+		public SourceMethodInfo GetMethodSearchResult (int index)
+		{
+			if ((index < 1) || (index > method_search_results.Count))
+				throw new ScriptingException ("No such history item.");
+
+			return (SourceMethodInfo) method_search_results [index - 1];
 		}
 	}
 }

@@ -33,6 +33,11 @@ namespace Mono.Debugger
 		//   This is used to find the line corresponding to a line number.
 		// </summary>
 		TargetAddress Lookup (int line);
+
+		// <summary>
+		//   Do a method lookup and return all methods matching @query.
+		// </summary>
+		SourceMethodInfo[] MethodLookup (string query);
 	}
 
 	public interface IMethod

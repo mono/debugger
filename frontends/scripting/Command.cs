@@ -527,31 +527,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class BreakCommand : Command
 	{
 		ThreadGroupExpression thread_group_expr;
-		string identifier;
-		int line;
+		MethodExpression method_expr;
 
-		public BreakCommand (ThreadGroupExpression thread_group_expr, string identifier)
+		public BreakCommand (ThreadGroupExpression thread_group_expr, MethodExpression method_expr)
 		{
 			this.thread_group_expr = thread_group_expr;
-			this.identifier = identifier;
-			this.line = -1;
-		}
-
-		public BreakCommand (ThreadGroupExpression thread_group_expr, string identifier, int line)
-		{
-			this.thread_group_expr = thread_group_expr;
-			this.identifier = identifier;
-			this.line = line;
+			this.method_expr = method_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ThreadGroup group = (ThreadGroup) thread_group_expr.Resolve (context);
-			int index;
-			if (line != -1)
-				index = context.InsertBreakpoint (group, identifier, line);
-			else
-				index = context.InsertBreakpoint (group, identifier);
+
+			object result = method_expr.Resolve (context);
+			if (result == null)
+				throw new ScriptingException ("No such method.");
+
+			SourceMethodInfo method = result as SourceMethodInfo;
+			if (method == null) {
+				context.AddMethodSearchResult ((SourceMethodInfo []) result);
+				return;
+			}
+
+			int index = context.InsertBreakpoint (group, method);
 			context.Print ("Inserted breakpoint {0}.", index);
 		}
 	}
@@ -1336,6 +1334,83 @@ namespace Mono.Debugger.Frontends.CommandLine
 			default:
 				break;
 			}
+		}
+	}
+
+	public class MethodExpression : Expression
+	{
+		ProcessExpression process_expr;
+		int line, number, history_id;
+		string file_name, name;
+
+		public MethodExpression (ProcessExpression process_expr, int number, string name)
+		{
+			this.process_expr = process_expr;
+			this.history_id = -1;
+			this.number = number;
+			this.name = name;
+		}
+
+		public MethodExpression (ProcessExpression process_expr, int number, int line)
+		{
+			this.process_expr = process_expr;
+			this.history_id = -1;
+			this.number = number;
+			this.line = line;
+		}
+
+		public MethodExpression (int history_id)
+		{
+			this.history_id = history_id;
+		}
+
+		public MethodExpression (string file_name, int line)
+		{
+			this.file_name = file_name;
+			this.line = line;
+		}
+
+		public MethodExpression (string file_name)
+		{
+			this.file_name = file_name;
+			this.line = -1;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			if (history_id > 0)
+				return context.GetMethodSearchResult (history_id);
+
+			if (file_name != null) {
+				if (line == -1)
+					return context.FindMethod (file_name);
+				else
+					return context.FindMethod (file_name, line);
+			}
+
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			StackFrame frame = process.GetFrame (number);
+
+			IMethod method = frame.Method;
+			if ((method == null) || !method.HasSource)
+				throw new ScriptingException ("No current method.");
+
+			IMethodSource source = method.Source;
+			if (name == null) {
+				if (source.SourceBuffer.HasContents)
+					throw new ScriptingException ("Current method has no source file.");
+
+				return context.FindMethod (source.SourceBuffer.Name, line);
+			}
+
+			SourceMethodInfo[] result = source.MethodLookup (name);
+
+			if (result.Length == 0)
+				throw new ScriptingException ("No method matches your query.");
+			else if (result.Length == 1)
+				return result [0];
+			else
+				return result;
 		}
 	}
 }

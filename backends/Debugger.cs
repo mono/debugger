@@ -199,30 +199,6 @@ namespace Mono.Debugger
 				process.Kill ();
 		}
 
-		SourceMethodInfo FindMethod (string name)
-		{
-			foreach (Module module in Modules) {
-				SourceMethodInfo method = module.FindMethod (name);
-				
-				if (method != null)
-					return method;
-			}
-
-			return null;
-		}
-
-		SourceMethodInfo FindMethod (string source, int line)
-		{
-			foreach (Module module in Modules) {
-				SourceMethodInfo method = module.FindMethod (source, line);
-				
-				if (method != null)
-					return method;
-			}
-
-			return null;
-		}
-
 		void method_loaded (SourceMethodInfo method, object user_data)
 		{
 			Console.WriteLine ("METHOD LOADED: {0}", method);
@@ -230,54 +206,20 @@ namespace Mono.Debugger
 
 		Hashtable breakpoint_module_map = new Hashtable ();
 
-		public int InsertBreakpoint (Breakpoint breakpoint, string name)
+		public int InsertBreakpoint (Breakpoint breakpoint, SourceMethodInfo method)
 		{
-			return InsertBreakpoint (breakpoint, main_group, name);
+			return InsertBreakpoint (breakpoint, main_group, method);
 		}
 
-		public int InsertBreakpoint (Breakpoint breakpoint, string source, int line)
-		{
-			return InsertBreakpoint (breakpoint, main_group, source, line);
-		}
-		
 		// <summary>
-		//   Inserts a breakpoint for method @name, which must be the method's full
-		//   name, including the signature.
-		//
-		//   Example:
-		//     System.DateTime.GetUtcOffset(System.DateTime)
+		//   Inserts a breakpoint for method @method.
 		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group, string name)
+		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group,
+					     SourceMethodInfo method)
 		{
-			SourceMethodInfo method = FindMethod (name);
-			if (method == null) {
-				Console.WriteLine ("Can't find any method with this name.");
-				return -1;
-			}
-
 			Module module = method.SourceInfo.Module;
 
 			int index = module.AddBreakpoint (breakpoint, group, method);
-			breakpoint_module_map [index] = module;
-			return index;
-		}
-
-		// <summary>
-		//   Inserts a breakpoint at source file @source (while must be a full pathname)
-		//   and line @line.
-		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group,
-					     string source, int line)
-		{
-			SourceMethodInfo method = FindMethod (source, line);
-			if (method == null) {
-				Console.WriteLine ("No method contains this line.");
-				return -1;
-			}
-
-			Module module = method.SourceInfo.Module;
-
-			int index = module.AddBreakpoint (breakpoint, group, method, line);
 			breakpoint_module_map [index] = module;
 			return index;
 		}

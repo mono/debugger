@@ -7,15 +7,18 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class CSharpMethod : MethodSource
 	{
 		int start_row, end_row;
+		MonoSymbolTableReader reader;
 		ISourceBuffer source;
 		JitLineNumberEntry[] line_numbers;
 		MethodEntry method;
 		IMethod imethod;
 
-		protected CSharpMethod (IMethod imethod, ISourceBuffer source,
-					MethodEntry method, JitLineNumberEntry[] line_numbers)
+		protected CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
+					ISourceBuffer source, MethodEntry method,
+					JitLineNumberEntry[] line_numbers)
 			: base (imethod)
 		{
+			this.reader = reader;
 			this.imethod = imethod;
 			this.source = source;
 			this.method = method;
@@ -24,7 +27,8 @@ namespace Mono.Debugger.Languages.CSharp
 			this.end_row = method.EndRow;
 		}
 
-		public static CSharpMethod GetMethodSource (IMethod imethod, MethodEntry method,
+		public static CSharpMethod GetMethodSource (MonoSymbolTableReader reader,
+							    IMethod imethod, MethodEntry method,
 							    JitLineNumberEntry[] line_numbers)
 		{
 			if (method.SourceFile == null)
@@ -34,7 +38,7 @@ namespace Mono.Debugger.Languages.CSharp
 			if (buffer == null)
 				buffer = new SourceBuffer (method.SourceFile.FileName);
 
-			return new CSharpMethod (imethod, buffer, method, line_numbers);
+			return new CSharpMethod (reader, imethod, buffer, method, line_numbers);
 		}
 
 		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -58,6 +62,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 			lines.Sort ();
 			return lines;
+		}
+
+		public override SourceMethodInfo[] MethodLookup (string query)
+		{
+			string class_name = method.MethodBase.ReflectedType.FullName;
+			string full_name = String.Concat (class_name, ".", query);
+
+			return reader.MethodLookup (full_name);
 		}
 	}
 }

@@ -738,6 +738,11 @@ namespace Mono.Debugger.Architecture
 
 					return new SourceBuffer (file);
 				}
+
+				public override SourceMethodInfo[] MethodLookup (string query)
+				{
+					return new SourceMethodInfo [0];
+				}
 			}
 		}
 

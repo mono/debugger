@@ -68,6 +68,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token CLOSE_PARENS
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
+%token OP_LT
+%token OP_GT
 
 %token PROCESSES
 %token REGISTERS
@@ -119,6 +121,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token SAVE
 %token KILL
 %token THREADGROUP
+%token SEARCH
 
 %token SELECT
 %token BACKGROUND
@@ -227,13 +230,9 @@ command
 	  {
 		$$ = new ShowVariableTypeCommand ((VariableExpression) $3);
 	  }
-	| BREAK opt_thread_group function_name
+	| BREAK opt_thread_group method_expression
 	  {
-		$$ = new BreakCommand ((ThreadGroupExpression) $2, (string) $3);
-	  }
-	| BREAK opt_thread_group STRING INTEGER
-	  {
-		$$ = new BreakCommand ((ThreadGroupExpression) $2, (string) $3, (int) $4);
+		$$ = new BreakCommand ((ThreadGroupExpression) $2, (MethodExpression) $3);
 	  }
 	| BREAKPOINT INTEGER ENABLE
 	  {
@@ -330,11 +329,17 @@ command
 
 		$$ = new ThreadGroupRemoveCommand ((string) $3, threads);
 	  }
-	| HELP SHOW {
+	| HELP SHOW
+	  {
 		$$ = new HelpCommand ("show");
 	  }
-	| HELP {
+	| HELP
+	  {
 		$$ = new HelpCommand ("");
+	  }
+	| SEARCH METHOD opt_process opt_frame_number IDENTIFIER
+	  {
+		$$ = new MethodExpression ((ProcessExpression) $3, (int) $4, (string) $5);
 	  }
 	;
 
@@ -490,11 +495,11 @@ opt_thread_group
 	  {
 		$$ = new ThreadGroupExpression ("main");
 	  }
-	| AT IDENTIFIER
+	| OP_LT IDENTIFIER OP_GT
 	  {
-		$$ = new ThreadGroupExpression ((string) $2);
+		$$ = new ThreadGroupExpression ((string) $3);
 	  }
-	| AT GLOBAL
+	| OP_LT GLOBAL OP_GT
 	  {
 		$$ = new ThreadGroupExpression ("global");
 	  }
@@ -522,14 +527,26 @@ opt_frame_number
 	  }
 	;
 
-function_name
-	: IDENTIFIER
+method_expression
+	: opt_process opt_frame_number IDENTIFIER
 	  {
-		$$ = (string) $1;
+		$$ = new MethodExpression ((ProcessExpression) $1, (int) $2, (string) $3);
+	  }
+	| opt_process opt_frame_number INTEGER
+	  {
+		$$ = new MethodExpression ((ProcessExpression) $1, (int) $2, (int) $3);
 	  }
 	| STRING
 	  {
-		$$ = (string) $1;
+		$$ = new MethodExpression ((string) $1);
+	  }
+	| STRING INTEGER
+	  {
+		$$ = new MethodExpression ((string) $1, (int) $2);
+	  }
+	| BANG INTEGER
+	  {
+		$$ = new MethodExpression ((int) $2);
 	  }
 	;
 

@@ -79,6 +79,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("save", Token.SAVE);
 			keywords.Add ("kill", Token.KILL);
 			keywords.Add ("threadgroup", Token.THREADGROUP);
+			keywords.Add ("search", Token.SEARCH);
 
 			keywords.Add ("kind", Token.KIND);
 			keywords.Add ("accessible", Token.ACCESSIBLE);
@@ -296,7 +297,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		bool is_identifier_part_character (char c)
 		{
-			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || (c >= '0' && c <= '9') || Char.IsLetter (c);
+			return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.' || (c >= '0' && c <= '9') || Char.IsLetter (c);
 		}
 
 		int GetKeyword (string name, bool tokens_seen)
@@ -503,6 +504,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.CLOSE_BRACKET;
 				else if (c == ',')
 					return Token.COMMA;
+				else if (c == '<')
+					return Token.OP_LT;
+				else if (c == '>')
+					return Token.OP_GT;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;

@@ -146,5 +146,10 @@ namespace Mono.Debugger
 			addresses = this.addresses;
 			return new SourceBuffer (name, sb.ToString ());
 		}
+
+		public override SourceMethodInfo[] MethodLookup (string query)
+		{
+			return new SourceMethodInfo [0];
+		}
 	}
 }
