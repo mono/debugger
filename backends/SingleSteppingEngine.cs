@@ -530,7 +530,8 @@ namespace Mono.Debugger.Backends
 
 			address += disassembler.GetInstructionSize (address);
 
-			Continue (address);
+			insert_temporary_breakpoint (address);
+			do_continue (false);
 		}
 
 		void do_continue (bool is_breakpoint)
@@ -611,7 +612,8 @@ namespace Mono.Debugger.Backends
 						return;
 					}
 
-					Continue (trampoline);
+					insert_temporary_breakpoint (trampoline);
+					do_continue (false);
 					return;
 				}
 			}
