@@ -51,4 +51,4 @@ archures.lo: archures.c Makefile
 EXTRA_DIST = coff-i386.c peigen.c aout-target.h aoutx.h bfd.h bfd-in2.h bfd-in.h coffcode.h \
 	coffswap.h elf32-target.h elf-bfd.h elfcode.h elfcore.h elflink.h genlink.h libaout.h \
 	libbfd.h libbfd-in.h libcoff.h libcoff-in.h libecoff.h libpei.h peicode.h sysdep.h \
-	targmatch.h version.h
+	targmatch.h version.h bfdver.h

@@ -9,7 +9,8 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 	i386-win32.h			\
 	i386-arch.c			\
 	i386-arch.h			\
-	i386-ptrace.c
+	i386-ptrace.c			\
+	i386-ptrace.h
 
 if MARTIN_HACKS
 martin_hack_srclist = \
