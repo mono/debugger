@@ -8,34 +8,14 @@ namespace Mono.Debugger
 		Breakpoint breakpoint;
 		SourceLocation location;
 
-		internal BreakpointHandle (Process process, Breakpoint breakpoint,
-					   SourceLocation location)
+		internal BreakpointHandle (Breakpoint breakpoint, SourceLocation location)
 		{
 			this.breakpoint = breakpoint;
 			this.location = location;
 
-			initialize (process);
-		}
-
-		internal BreakpointHandle (Process process, Breakpoint breakpoint,
-					   TargetAddress address)
-		{
-			this.breakpoint = breakpoint;
-			this.address = address;
-
-			EnableBreakpoint (process);
-		}
-
-		public Breakpoint Breakpoint {
-			get { return breakpoint; }
-		}
-
-		void initialize (Process process)
-		{
-			if (location.Method.IsLoaded) {
+			if (location.Method.IsLoaded)
 				address = location.GetAddress ();
-				EnableBreakpoint (process);
-			} else if (location.Method.IsDynamic) {
+			else if (location.Method.IsDynamic) {
 				// A dynamic method is a method which may emit a
 				// callback when it's loaded.  We register this
 				// callback here and do the actual insertion when
@@ -43,6 +23,16 @@ namespace Mono.Debugger
 				load_handler = location.Method.RegisterLoadHandler (
 					new MethodLoadedHandler (method_loaded), null);
 			}
+		}
+
+		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)
+		{
+			this.breakpoint = breakpoint;
+			this.address = address;
+		}
+
+		public Breakpoint Breakpoint {
+			get { return breakpoint; }
 		}
 
 		IDisposable load_handler;

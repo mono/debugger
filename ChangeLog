@@ -1,5 +1,11 @@
 2004-01-16  Martin Baulig  <martin@ximian.com>
 
+	* classes/BreakpointHandle.cs: The .ctors don't take a `Process'
+	argument anymore; you need to call EnableBreakpoint() to actually
+	enable the breakpoint.
+
+2004-01-16  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IMethod.cs (IMethodSource): Removed this interface;
 	the abstract class `MethodSource' is identical to this interface.
 

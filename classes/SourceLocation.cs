@@ -69,7 +69,9 @@ namespace Mono.Debugger
 
 		public BreakpointHandle InsertBreakpoint (Process process, Breakpoint bpt)
 		{
-			return new BreakpointHandle (process, bpt, this);
+			BreakpointHandle handle = new BreakpointHandle (bpt, this);
+			handle.EnableBreakpoint (process);
+			return handle;
 		}
 
 		public override string ToString ()
