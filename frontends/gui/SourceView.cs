@@ -94,7 +94,7 @@ namespace Mono.Debugger.GUI
 			return method.Source;
 		}
 
-		protected virtual ISourceLocation GetSource (StackFrame frame)
+		protected virtual SourceLocation GetSource (StackFrame frame)
 		{
 			if (current_method_source == null)
 				return null;
@@ -111,7 +111,7 @@ namespace Mono.Debugger.GUI
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 
-			ISourceLocation source = GetSource (frame);
+			SourceLocation source = GetSource (frame);
 			if (source == null)
 				return;
 

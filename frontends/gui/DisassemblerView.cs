@@ -23,7 +23,7 @@ namespace Mono.Debugger.GUI
 			return backend.Disassembler.DisassembleMethod (method);
 		}
 
-		protected override ISourceLocation GetSource (StackFrame frame)
+		protected override SourceLocation GetSource (StackFrame frame)
 		{
 			if (current_method_source == null)
 				return null;

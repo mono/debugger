@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	public class TargetStackLocation : TargetLocation
+	internal class TargetStackLocation : TargetLocation
 	{
 		DebuggerBackend backend;
 		StackFrame frame;
@@ -24,7 +24,7 @@ namespace Mono.Debugger
 			this.frame = frame;
 
 			frame.FrameInvalid += new StackFrameInvalidHandler (FrameInvalidEvent);
-			iframe = frame.FrameHandle as IInferiorStackFrame;
+			iframe = frame.Handle as IInferiorStackFrame;
 			if (iframe == null)
 				throw new InternalError ();
 

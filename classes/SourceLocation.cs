@@ -3,12 +3,12 @@ using System.Text;
 
 namespace Mono.Debugger
 {
-	public class SourceLocation : ISourceLocation
+	public class SourceLocation
 	{
 		ISourceBuffer SourceBuffer;
-		int Row;
-		int SourceOffset;
-		int SourceRange;
+		int row;
+		int source_offset;
+		int source_range;
 
 		public static SourceLocation Null = new SourceLocation (null, 0);
 
@@ -19,42 +19,42 @@ namespace Mono.Debugger
 		public SourceLocation (ISourceBuffer buffer, int row, int offset, int range)
 		{
 			this.SourceBuffer = buffer;
-			this.Row = row;
-			this.SourceOffset = offset;
-			this.SourceRange = range;
+			this.row = row;
+			this.source_offset = offset;
+			this.source_range = range;
 		}
 
-		ISourceBuffer ISourceLocation.Buffer {
+		public ISourceBuffer Buffer {
 			get {
 				return SourceBuffer;
 			}
 		}
 
-		int ISourceLocation.Row {
+		public int Row {
 			get {
-				return Row;
+				return row;
 			}
 		}
 
-		int ISourceLocation.Column {
+		public int Column {
 			get {
 				return 0;
 			}
 		}
 
-		int ISourceLocation.SourceRange {
+		public int SourceRange {
 			get {
-				return SourceRange;
+				return source_range;
 			}
 		}
 
-		int ISourceLocation.SourceOffset {
+		public int SourceOffset {
 			get {
-				return SourceOffset;
+				return source_offset;
 			}
 		}
 
-		string ISourceLocation.Name {
+		public string Name {
 			get {
 				return String.Format (
 					"{0}:{1}", SourceBuffer != null ? SourceBuffer.Name : "<unknown>",

@@ -222,7 +222,7 @@ namespace Mono.Debugger
 			return true;
 		}
 
-		public ISourceLocation Lookup (TargetAddress address)
+		public SourceLocation Lookup (TargetAddress address)
 		{
 			if (!IsInSameMethod (this, address))
 				return null;

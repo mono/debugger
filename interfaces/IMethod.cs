@@ -27,7 +27,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   This is used to lookup a source line in the method.
 		// </summary>
-		ISourceLocation Lookup (TargetAddress target);
+		SourceLocation Lookup (TargetAddress target);
 	}
 
 	public interface IMethod

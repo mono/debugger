@@ -726,7 +726,7 @@ namespace Mono.Debugger
 
 				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
-					ISourceLocation source = method.Source.Lookup (address);
+					SourceLocation source = method.Source.Lookup (address);
 					current_backtrace [i] = new StackFrame (
 						this, inferior, address, frames [i], source, method);
 				} else
@@ -805,7 +805,7 @@ namespace Mono.Debugger
 			}
 
 			if ((current_method != null) && current_method.HasSource) {
-				ISourceLocation source = current_method.Source.Lookup (address);
+				SourceLocation source = current_method.Source.Lookup (address);
 				current_frame = new StackFrame (
 					this, inferior, address, frames [0], source, current_method);
 			} else

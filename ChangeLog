@@ -1,5 +1,10 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/ISourceLocation.cs: Removed.
+	* classes/SourceLocation.cs: This is the only implementation.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IBreakPoint.cs: Killed.
 
 2002-09-21  Martin Baulig  <martin@gnome.org>

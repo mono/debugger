@@ -10,25 +10,25 @@ namespace Mono.Debugger
 		TargetAddress address;
 		DebuggerBackend backend;
 		ITargetMemoryAccess memory;
-		ISourceLocation source;
-		object frame_handle;
+		SourceLocation source;
+		object handle;
 
 		public StackFrame (DebuggerBackend backend, ITargetMemoryAccess memory,
-				   TargetAddress address, object frame_handle,
-				   ISourceLocation source, IMethod method)
-			: this (backend, memory, address, frame_handle)
+				   TargetAddress address, object handle,
+				   SourceLocation source, IMethod method)
+			: this (backend, memory, address, handle)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
 		public StackFrame (DebuggerBackend backend, ITargetMemoryAccess memory,
-				   TargetAddress address, object frame_handle)
+				   TargetAddress address, object handle)
 		{
 			this.backend = backend;
 			this.memory = memory;
 			this.address = address;
-			this.frame_handle = frame_handle;
+			this.handle = handle;
 		}
 
 		public bool IsValid {
@@ -37,7 +37,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ISourceLocation SourceLocation {
+		public SourceLocation SourceLocation {
 			get {
 				check_disposed ();
 				return source;
@@ -58,10 +58,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public object FrameHandle {
+		public object Handle {
 			get {
 				check_disposed ();
-				return frame_handle;
+				return handle;
 			}
 		}
 
@@ -109,7 +109,7 @@ namespace Mono.Debugger
 					method = null;
 					memory = null;
 					source = null;
-					frame_handle = null;
+					handle = null;
 				}
 				
 				this.disposed = true;
