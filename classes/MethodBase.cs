@@ -94,9 +94,9 @@ namespace Mono.Debugger
 			this.wrapper_addr = wrapper_addr;
 		}
 
-		public virtual SimpleStackFrame UnwindStack (ITargetMemoryAccess target,
-							     IArchitecture arch,
-							     StackFrame frame)
+		public virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
+							     ITargetMemoryAccess target,
+							     IArchitecture arch)
 		{
 			if (!IsLoaded)
 				return null;
@@ -110,7 +110,7 @@ namespace Mono.Debugger
 				prologue_size = (int) (MethodStartAddress - StartAddress);
 			else
 				prologue_size = (int) (EndAddress - StartAddress);
-			int offset = (int) (frame.TargetAddress - StartAddress);
+			int offset = (int) (frame.Address - StartAddress);
 			prologue_size = Math.Min (prologue_size, offset);
 			prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
 

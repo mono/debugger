@@ -124,7 +124,8 @@ namespace Mono.Debugger
 		SourceMethod GetTrampoline (ITargetMemoryAccess memory,
 					    TargetAddress address);
 
-		SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-					      IArchitecture arch, StackFrame frame);
+		SimpleStackFrame UnwindStack (SimpleStackFrame frame,
+					      ITargetMemoryAccess memory,
+					      IArchitecture arch);
 	}
 }

@@ -229,6 +229,12 @@ namespace Mono.Debugger
 			return new StackFrame (process, simple, name);
 		}
 
+		public SimpleStackFrame SimpleFrame {
+			get {
+				return simple;
+			}
+		}
+
 		public int Level {
 			get {
 				return simple.Level;

@@ -32,11 +32,11 @@ namespace Mono.Debugger.Architecture
 			return cie_list;
 		}
 
-		public SimpleStackFrame UnwindStack (StackFrame frame,
+		public SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 						     ITargetMemoryAccess target,
 						     IArchitecture arch)
 		{
-			TargetAddress address = frame.TargetAddress;
+			TargetAddress address = frame.Address;
 
 			DwarfBinaryReader reader = new DwarfBinaryReader (bfd, blob, false);
 
@@ -349,7 +349,7 @@ namespace Mono.Debugger.Architecture
 				GetValue (target, regs, cfa, I386Register.EDI, columns [8]);
 			}
 
-			public SimpleStackFrame Unwind (StackFrame frame,
+			public SimpleStackFrame Unwind (SimpleStackFrame frame,
 							ITargetMemoryAccess target,
 							IArchitecture arch)
 			{

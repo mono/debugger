@@ -78,21 +78,22 @@ namespace Mono.Debugger
 			return true;
 		}
 
-		protected SimpleStackFrame UnwindStack (ITargetMemoryAccess target,
+		protected SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
 							IArchitecture arch)
 		{
 			IMethod method = last_frame.Method;
 			if (method != null)
-				return method.UnwindStack (target, arch, last_frame);
+				return method.UnwindStack (
+					last_frame.SimpleFrame, memory, arch);
 
 			foreach (Module module in last_frame.Process.DebuggerBackend.Modules) {
 				SimpleStackFrame new_frame = module.UnwindStack (
-					last_frame, target);
+					last_frame.SimpleFrame, memory);
 				if (new_frame != null)
 					return new_frame;
 			}
 
-			return arch.UnwindStack (last_frame, null, target);
+			return arch.UnwindStack (last_frame.SimpleFrame, null, memory);
 		}
 
 		//

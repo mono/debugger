@@ -1042,7 +1042,7 @@ namespace Mono.Debugger.Architecture
 			return memory.ReadGlobalAddress (got_start + 8);
 		}
 
-		internal override SimpleStackFrame UnwindStack (StackFrame frame,
+		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 								ITargetMemoryAccess memory)
 		{
 			if (frame_reader != null) {

@@ -67,7 +67,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		SimpleStackFrame UnwindStack (StackFrame frame, byte[] code,
+		SimpleStackFrame UnwindStack (SimpleStackFrame frame, byte[] code,
 					      ITargetMemoryAccess memory);
 	}
 }
