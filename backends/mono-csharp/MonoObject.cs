@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected MonoType type;
 		protected MonoTargetLocation location;
-		bool is_valid;
+		protected bool is_valid;
 
 		public MonoObject (MonoType type, MonoTargetLocation location)
 		{

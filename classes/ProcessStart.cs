@@ -17,12 +17,12 @@ namespace Mono.Debugger
 		public static string Environment_LibPath	= "";
 
 		string cwd;
-		string base_dir;
+		protected string base_dir;
 		string[] argv;
 		string[] envp;
 		string core_file;
-		bool native;
-		bool load_native_symtab;
+		protected bool native;
+		protected bool load_native_symtab;
 
 		bool initialized = false;
 

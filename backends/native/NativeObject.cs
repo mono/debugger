@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.Native
 	{
 		protected ITargetType type;
 		protected MonoTargetLocation location;
-		bool is_valid;
+		protected bool is_valid;
 
 		public NativeObject (ITargetType type, MonoTargetLocation location)
 		{
