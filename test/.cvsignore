@@ -6,3 +6,7 @@ a.out
 test
 foo
 register
+testnativetypes
+*.log
+*.sum
+site.exp

@@ -1,11 +1,13 @@
 #!/usr/bin/expect -d -f
 #
-set mdb "../wrapper/mdb"
+set mono mono
+set mdb "../wrapper/mdb.exe"
 set timeout 10
 set verbose 1
 
 proc mdb_start {file main} {
     global mdb
+    global mono
     global timeout
     global verbose
     global process
@@ -13,7 +15,7 @@ proc mdb_start {file main} {
 
     verbose "Spawning $mdb $file"
 
-    set res [spawn "$mdb" --script $file];
+    set res [spawn $mono $mdb --script $file];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $mdb failed."
 	return 1;

@@ -315,5 +315,6 @@ arch/bfd/include/coff/Makefile
 arch/bfd/include/elf/Makefile
 arch/bfd/include/opcode/Makefile
 test/Makefile
+test/mono-debugger.tests/Makefile
 doc/Makefile
 ])

@@ -1,7 +1,7 @@
-#!/usr/bin/expect -d -f
+#!/usr/bin/expect -f
 #
 
-load_lib "mdb.exp"
+load_lib mdb.exp
 
 set file [pwd]/TestManagedTypes.cs
 mdb_start "TestManagedTypes.exe" "X.Main()"

@@ -1,8 +1,12 @@
+SUBDIRS = mono-debugger.tests
+
 AUTOMAKE_OPTIONS = dejagnu
 
 MCS_FLAGS=-g
 
 noinst_SCRIPTS = $(test_FILES)
+
+# DEJATOOL = TestManagedTypes
 
 runtest = $(srcdir)/runtest.pl
 debugger = '$(MONO) ../lib/Interpreter.exe'
@@ -15,7 +19,7 @@ EXTRA_DIST = runtest.pl GC.cs MultiThread.cs TestAppDomain.cs \
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -o $@ $<
 
-CLEANFILES = *.exe *.dbg a.out
+CLEANFILES = *.exe *.dbg a.out *.log *.sum dbg.out
 
 test: $(test_FILES)
 	for test in $(test_FILES) ; do \
