@@ -29,7 +29,7 @@ namespace Mono.Debugger.GUI {
 		Gtk.TextMark frame_mark;
 
 		Program kit;
-		GDB backend;
+		IDebuggerBackend backend;
 		uint status_id;
 
 		string application;
@@ -55,8 +55,6 @@ namespace Mono.Debugger.GUI {
 			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
 			backend.SourceFileFactory = new SourceFileFactory ();
-
-			Timeout.Add (100, new TimeoutHandler (backend.IdleLoop));
 		}
 
 		StringBuilder output_builder = null;

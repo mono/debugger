@@ -1,3 +1,4 @@
+using GLib;
 using System;
 using System.IO;
 using System.Text;
@@ -76,6 +77,8 @@ namespace Mono.Debugger.Backends
 
 			gdb_error_thread = new Thread (new ThreadStart (check_gdb_errors));
 			gdb_error_thread.Start ();
+
+			Timeout.Add (100, new TimeoutHandler (IdleLoop));
 
 			send_gdb_command ("run");
 			send_gdb_command ("call mono_debug_make_symbols ()");
@@ -740,7 +743,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public bool IdleLoop ()
+		bool IdleLoop ()
 		{
 			gdb_mutex.WaitOne ();
 
