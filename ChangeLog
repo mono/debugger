@@ -1,5 +1,9 @@
 2002-10-11  Martin Baulig  <martin@gnome.org>
 
+	* frontends/gui/HexEditor.cs: Added hex editor.
+
+2002-10-11  Martin Baulig  <martin@gnome.org>
+
 	* frontends/gui/ModuleDisplay.cs: Added module display.
 
 2002-10-10  Martin Baulig  <martin@gnome.org>

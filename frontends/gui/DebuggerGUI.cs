@@ -81,6 +81,8 @@ namespace Mono.Debugger.GUI
 		VariableDisplay variable_display;
 		BackTraceView backtrace_view;
 		ModuleDisplay module_display;
+		HexEditor hex_editor;
+		Dialog hex_editor_dialog;
 
 		Gtk.TextView target_output;
 		SourceStatusbar source_status;
@@ -135,6 +137,9 @@ namespace Mono.Debugger.GUI
 				null, (Gtk.Container) gxml ["backtrace-view"]);
 			module_display = new ModuleDisplay (
 				gxml, null, (Gtk.Container) gxml ["module-view"]);
+			hex_editor_dialog = (Gtk.Dialog) gxml ["hexeditor-dialog"];
+			hex_editor = new HexEditor (
+				gxml, hex_editor_dialog, (Gtk.Container) gxml ["hexeditor-view"]);
 
 			current_insn = new CurrentInstructionEntry ((Gtk.Entry) gxml ["current-insn"]);
 
@@ -254,6 +259,7 @@ namespace Mono.Debugger.GUI
 			variable_display.SetBackend (backend);
 			backtrace_view.SetBackend (backend);
 			module_display.SetBackend (backend);
+			hex_editor.SetBackend (backend);
 			current_insn.SetBackend (backend);
 			disassembler_view.SetBackend (backend);
 			source_manager.SetBackend (backend);
@@ -364,6 +370,11 @@ namespace Mono.Debugger.GUI
 						 new string [] { },
 						 "", pixbuf);
 			about.Run ();
+		}
+
+		void OnViewHexEditor (object sender, EventArgs args)
+		{
+			hex_editor_dialog.Show ();
 		}
 
 		void TargetOutput (string output)
