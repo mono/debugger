@@ -1349,6 +1349,9 @@ namespace Mono.Debugger.Backends
 				      "{0} handling exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
 
+			if (current_operation == null)
+				return true;
+
 			/*
 			 * We're dealing with a non-fatal exception here.
 			 */
@@ -2027,8 +2030,8 @@ namespace Mono.Debugger.Backends
 						  out TargetEventArgs args)
 			{
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} while waiting for " +
-					      "callback {2}", sse, cevent, this);
+					      "{0} received event {1} at {2} while waiting for " +
+					      "callback {3}", sse, cevent, inferior.CurrentFrame, this);
 
 				args = null;
 				if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
