@@ -19,7 +19,8 @@ typedef enum {
 	COMMAND_ERROR_NOT_STOPPED,
 	COMMAND_ERROR_ALIGNMENT,
 	COMMAND_ERROR_RECURSIVE_CALL,
-	COMMAND_ERROR_NO_SUCH_BREAKPOINT
+	COMMAND_ERROR_NO_SUCH_BREAKPOINT,
+	COMMAND_ERROR_UNKNOWN_REGISTER
 } ServerCommandError;
 
 typedef enum {
@@ -161,6 +162,15 @@ typedef struct {
 	ServerCommandError    (* get_breakpoints)     (InferiorHandle   *handle,
 						       guint32          *count,
 						       guint32         **breakpoints);
+
+	/*
+	 * Get processor registers.
+	 *
+	 */
+	ServerCommandError    (* get_registers)       (InferiorHandle   *handle,
+						       guint32           count,
+						       guint32          *registers,
+						       guint64          *values);
 } InferiorInfo;
 
 extern InferiorInfo i386_linux_ptrace_inferior;
@@ -209,7 +219,7 @@ GSource *
 mono_debugger_server_get_g_source         (ServerHandle       *handle);
 
 void
-mono_debugger_sever_finalize              (ServerHandle       *handle);
+mono_debugger_server_finalize             (ServerHandle       *handle);
 
 void
 mono_debugger_server_wait                 (ServerHandle       *handle);
@@ -259,6 +269,12 @@ mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,
 ServerCommandError
 mono_debugger_server_remove_breakpoint   (ServerHandle        *handle,
 					  guint32              breakpoint);
+
+ServerCommandError
+mono_debugger_server_get_registers       (ServerHandle        *handle,
+					  guint32              count,
+					  guint32             *registers,
+					  guint64             *values);
 
 G_END_DECLS
 

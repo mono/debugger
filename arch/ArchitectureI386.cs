@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
@@ -113,6 +114,124 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 
 			return new TargetAddress (inferior, method_info);
+		}
+
+		enum I386Register {
+			EBX		= 0,
+			ECX		= 1,
+			EDX		= 2,
+			ESI		= 3,
+			EDI		= 4,
+			EBP		= 5,
+			EAX		= 6,
+			XDS		= 7,
+			XES		= 8,
+			XFS		= 9,
+			XGS		= 10,
+			ORIG_EAX	= 11,
+			EIP		= 12,
+			XCS		= 13,
+			EFL		= 14,
+			ESP		= 15,
+			XSS		= 16
+		}
+
+		public string[] RegisterNames {
+			get {
+				return registers;
+			}
+		}
+
+		public int[] RegisterIndices {
+			get {
+				return important_regs;
+			}
+		}
+
+		public int[] AllRegisterIndices {
+			get {
+				return all_regs;
+			}
+		}
+
+		int[] all_regs = { (int) I386Register.EBX,
+				   (int) I386Register.ECX,
+				   (int) I386Register.EDX,
+				   (int) I386Register.ESI,
+				   (int) I386Register.EDI,
+				   (int) I386Register.EBP,
+				   (int) I386Register.EAX,
+				   (int) I386Register.XDS,
+				   (int) I386Register.XES,
+				   (int) I386Register.XFS,
+				   (int) I386Register.XGS,
+				   (int) I386Register.ORIG_EAX,
+				   (int) I386Register.EIP,
+				   (int) I386Register.XCS,
+				   (int) I386Register.EFL,
+				   (int) I386Register.ESP,
+				   (int) I386Register.XSS };
+
+		int[] important_regs = { (int) I386Register.EAX,
+					 (int) I386Register.EBX,
+					 (int) I386Register.ECX,
+					 (int) I386Register.EDX,
+					 (int) I386Register.ESI,
+					 (int) I386Register.EDI,
+					 (int) I386Register.EBP,
+					 (int) I386Register.ESP,
+					 (int) I386Register.EIP,
+					 (int) I386Register.EFL };
+				
+		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "xds",
+				       "xes", "xfs", "xgs", "orig_eax", "eip", "xcs", "eflags",
+				       "esp", "xss" };
+
+		public string PrintRegister (int register, long value)
+		{
+			switch ((I386Register) register) {
+			case I386Register.EFL: {
+				ArrayList flags = new ArrayList ();
+				if ((value & (1 << 0)) != 0)
+					flags.Add ("CF");
+				if ((value & (1 << 2)) != 0)
+					flags.Add ("PF");
+				if ((value & (1 << 4)) != 0)
+					flags.Add ("AF");
+				if ((value & (1 << 6)) != 0)
+					flags.Add ("ZF");
+				if ((value & (1 << 7)) != 0)
+					flags.Add ("SF");
+				if ((value & (1 << 8)) != 0)
+					flags.Add ("TF");
+				if ((value & (1 << 9)) != 0)
+					flags.Add ("IF");
+				if ((value & (1 << 10)) != 0)
+					flags.Add ("DF");
+				if ((value & (1 << 11)) != 0)
+					flags.Add ("OF");
+				if ((value & (1 << 14)) != 0)
+					flags.Add ("NT");
+				if ((value & (1 << 16)) != 0)
+					flags.Add ("RF");
+				if ((value & (1 << 17)) != 0)
+					flags.Add ("VM");
+				if ((value & (1 << 18)) != 0)
+					flags.Add ("AC");
+				if ((value & (1 << 19)) != 0)
+					flags.Add ("VIF");
+				if ((value & (1 << 20)) != 0)
+					flags.Add ("VIP");
+				if ((value & (1 << 21)) != 0)
+					flags.Add ("ID");
+				string[] fstrings = new string [flags.Count];
+				flags.CopyTo (fstrings, 0);
+				return String.Join (" ", fstrings);
+			}
+
+			default:
+				return String.Format ("{0:x}", value);
+			}
 		}
 	}
 }

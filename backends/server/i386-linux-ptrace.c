@@ -629,6 +629,78 @@ server_ptrace_wait (InferiorHandle *handle)
 	do_dispatch (handle, status);
 }
 
+static ServerCommandError
+server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *registers, guint64 *values)
+{
+	ServerCommandError result;
+	struct user_regs_struct regs;
+	int i;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	for (i = 0; i < count; i++) {
+		switch (registers [i]) {
+		case EBX:
+			values [i] = (guint32) regs.ebx;
+			break;
+		case ECX:
+			values [i] = (guint32) regs.ecx;
+			break;
+		case EDX:
+			values [i] = (guint32) regs.edx;
+			break;
+		case ESI:
+			values [i] = (guint32) regs.esi;
+			break;
+		case EDI:
+			values [i] = (guint32) regs.edi;
+			break;
+		case EBP:
+			values [i] = (guint32) regs.ebp;
+			break;
+		case EAX:
+			values [i] = (guint32) regs.eax;
+			break;
+		case DS:
+			values [i] = (guint32) regs.ds;
+			break;
+		case ES:
+			values [i] = (guint32) regs.es;
+			break;
+		case FS:
+			values [i] = (guint32) regs.fs;
+			break;
+		case GS:
+			values [i] = (guint32) regs.gs;
+			break;
+		case ORIG_EAX:
+			values [i] = (guint32) regs.orig_eax;
+			break;
+		case EIP:
+			values [i] = (guint32) regs.eip;
+			break;
+		case CS:
+			values [i] = (guint32) regs.cs;
+			break;
+		case EFL:
+			values [i] = (guint32) regs.eflags;
+			break;
+		case UESP:
+			values [i] = (guint32) regs.esp;
+			break;
+		case SS:
+			values [i] = (guint32) regs.ss;
+			break;
+		default:
+			return COMMAND_ERROR_UNKNOWN_REGISTER;
+		}
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
 /*
  * Method VTable for this backend.
  */
@@ -648,5 +720,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_call_method,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_remove_breakpoint,
-	server_ptrace_get_breakpoints
+	server_ptrace_get_breakpoints,
+	server_ptrace_get_registers
 };

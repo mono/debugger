@@ -129,6 +129,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
 
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -777,6 +780,29 @@ namespace Mono.Debugger.Backends
 			get {
 				check_disposed ();
 				return arch;
+			}
+		}
+
+		public long[] GetRegisters (int[] registers)
+		{
+			IntPtr data = IntPtr.Zero, buffer = IntPtr.Zero;
+			try {
+				int size = registers.Length * 4;
+				int buffer_size = registers.Length * 8;
+				data = Marshal.AllocHGlobal (size);
+				Marshal.Copy (registers, 0, data, registers.Length);
+				buffer = Marshal.AllocHGlobal (buffer_size);
+				CommandError result = mono_debugger_server_get_registers (
+					server_handle, registers.Length, data, buffer);
+				check_error (result);
+				long[] retval = new long [registers.Length];
+				Marshal.Copy (buffer, retval, 0, registers.Length);
+				return retval;
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+				if (buffer != IntPtr.Zero)
+					Marshal.FreeHGlobal (buffer);
 			}
 		}
 

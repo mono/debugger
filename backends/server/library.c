@@ -204,3 +204,13 @@ mono_debugger_server_finalize (ServerHandle *handle)
 		(* handle->info->finalize) (handle->inferior);
 	g_free (handle);
 }
+
+ServerCommandError
+mono_debugger_server_get_registers (ServerHandle *handle, guint32 count, guint32 *registers,
+				    guint64 *values)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->get_registers) (handle->inferior, count, registers, values);
+}

@@ -8,6 +8,27 @@ namespace Mono.Debugger
 	internal interface IArchitecture
 	{
 		// <summary>
+		//   The names of all registers.
+		// </summary>
+		string[] RegisterNames {
+			get;
+		}
+
+		// <summary>
+		//   Indices of the "important" registers, sorted in a way that's suitable
+		//   to display them to the user.
+		// </summary>
+		int[] RegisterIndices {
+			get;
+		}
+
+		int[] AllRegisterIndices {
+			get;
+		}
+
+		string PrintRegister (int register, long value);
+
+		// <summary>
 		//   Check whether target address @address is a `call' instruction and
 		//   returns the destination of the call or null.  The out parameter
 		//   @insn_size is set to the size on bytes of the call instructions.  This

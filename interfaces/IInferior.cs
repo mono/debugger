@@ -118,6 +118,8 @@ namespace Mono.Debugger
 		long CallMethod (TargetAddress method, long method_argument);
 		TargetAddress SimpleLookup (string name);
 
+		long[] GetRegisters (int[] registers);
+
 		// <summary>
 		//   Returns a disassembler for the current target.
 		// </summary>
