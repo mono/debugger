@@ -1,0 +1,11 @@
+This is a list of GUI issues which need to be fixed for the next release.
+
+* The debugger is now using Mini, so we should have a GUI element which lets you specify
+  the JIT optimizations.
+
+* The ProgramToDebug dialog needs some loving; for instance, there is no way to specify
+  environment variables.
+
+
+April 7th, 2003
+Martin Baulig
