@@ -1424,6 +1424,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void init_inferior ()
 		{
+			breakpoints = new Hashtable ();
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			if (table != null)
 				table.Inferior = inferior;
