@@ -308,10 +308,12 @@ namespace Mono.Debugger.Architecture
 				if (core_file_bfd != null) {
 					InternalSection text = GetSectionByName (".text");
 
+#if FALSE
 					base_address = new TargetAddress (
 						memory.GlobalAddressDomain, text.vma);
 					end_address = new TargetAddress (
 						memory.GlobalAddressDomain, text.vma + text.size);
+#endif
 				}
 			}
 		}
