@@ -7,8 +7,6 @@ INCLUDES = \
 # libs
 lib_LTLIBRARIES = libdebuggerwidgets.la
 
-BUILT_SOURCES =
-
 BUILT_SOURCES = \
 	debuggerwidgets-marshal.c \
 	debuggerwidgets-marshal.h
