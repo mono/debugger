@@ -3,7 +3,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <mono/metadata/debug-helpers.h>
 
 static gboolean in_readline = FALSE;
 
@@ -86,6 +85,8 @@ void
 mono_debugger_readline_set_completion_matches (char **matches, int count)
 {
 	int i;
+
+	rl_attempted_completion_over = 1;
 
 	if (count == 0){
 		completion_matches = NULL;

@@ -1,8 +1,6 @@
 #ifndef __MONO_DEBUGGER_READLINE_H__
 #define __MONO_DEBUGGER_READLINE_H__
 
-#include <mono/jit/jit.h>
-
 #include <glib.h>
 #include <stdio.h>
 #if READLINE_IS_LIBEDIT
