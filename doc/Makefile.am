@@ -6,10 +6,10 @@ sourcesdir = @mono_prefix@/lib/monodoc/sources
 sources_DATA = debugger.tree debugger.zip debugger.source
 
 debugger.tree debugger.zip: $(srcdir)/api/*/*.xml
-	mono --debug @mono_prefix@/lib/monodoc/assembler.exe --ecma $(srcdir)/api/ -o debugger
+	mono --debug @monodoc_prefix@/lib/monodoc/assembler.exe --ecma $(srcdir)/api/ -o debugger
 
 update:
-	mono --debug @mono_prefix@/lib/monodoc/updater.exe @prefix@/lib/Mono.Debugger.dll -o ./api -f -p
+	mono --debug @monodoc_prefix@/lib/monodoc/updater.exe @prefix@/lib/Mono.Debugger.dll -o ./api -f -p
 
 dist-hook:
 	find . -name '*.xml' > files

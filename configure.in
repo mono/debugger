@@ -216,7 +216,9 @@ AC_SUBST(WRAPPER_LIBS)
 AC_SUBST(CFLAGS)
 
 mono_prefix="`$PKG_CONFIG --variable=prefix mono`"
+monodoc_prefix="`$PKG_CONFIG --variable=prefix monodoc`"
 AC_SUBST(mono_prefix)
+AC_SUBST(monodoc_prefix)
 
 top_srcdir=`pwd`
 AC_SUBST(top_srcdir)
