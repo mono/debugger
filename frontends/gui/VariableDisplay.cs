@@ -3,6 +3,7 @@ using Gtk;
 using GtkSharp;
 using System;
 using System.IO;
+using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
@@ -57,10 +58,90 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
+		bool add_array (TreeIter parent, ITargetArrayObject array)
+		{
+			bool inserted = false;
+
+			for (int i = array.LowerBound; i < array.UpperBound; i++) {
+				ITargetObject elt = array [i];
+				if (elt == null)
+					continue;
+
+				TreeIter iter;
+				store.Append (out iter, parent);
+				add_object (elt, i.ToString (), iter);
+				inserted = true;
+			}
+
+			return inserted;
+		}
+
+		bool add_struct (TreeIter parent, ITargetStructObject sobj)
+		{
+			bool inserted = false;
+
+			foreach (ITargetFieldInfo field in sobj.Type.Fields) {
+				if (!field.Type.HasObject)
+					continue;
+
+				TreeIter iter;
+				store.Append (out iter, parent);
+				add_object (sobj.GetField (field.Index), field.Name, iter);
+				inserted = true;
+			}
+
+			return inserted;
+		}
+
+		void add_message (TreeIter parent, string message)
+		{
+			TreeIter iter;
+			store.Append (out iter, parent);
+			store.SetValue (iter, 2, new GLib.Value (message));
+		}
+
 		void test_expand_row (object o, TestExpandRowArgs args)
 		{
-			Console.WriteLine ("EVENT");
-			// store.SetValue (args.Iter, 0, new GLib.Value ("Hello"));
+			bool inserted = false;
+
+			ITargetObject obj = (ITargetObject) iters [args.Iter];
+
+			TreeIter child;
+			if (store.IterChildren (out child, args.Iter)) {
+				while (!child.IsNull && (child.stamp != 0))
+					store.Remove (ref child);
+			}
+
+			if (obj == null) {
+				store.Append (out child, args.Iter);
+				return;
+			}
+
+			ITargetArrayObject array = obj as ITargetArrayObject;
+			if (array != null) {
+				try {
+					inserted = add_array (args.Iter, array);
+				} catch {
+					add_message (args.Iter, "<can't display array>");
+				}
+				if (!inserted)
+					add_message (args.Iter, "<empty array>");
+				return;
+			}
+
+			ITargetStructObject sobj = obj as ITargetStructObject;
+			if (sobj != null) {
+				try {
+					inserted = add_struct (args.Iter, sobj);
+				} catch {
+					add_message (args.Iter, "<can't display struct>");
+				}
+				if (!inserted)
+					add_message (args.Iter, "<empty struct>");
+				return;
+			}
+
+			add_message (args.Iter, "<unknown object>");
 		}
 
 		public override void SetBackend (DebuggerBackend backend)
@@ -71,34 +152,38 @@ namespace Mono.Debugger.GUI
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 
-		void add_data (IVariable variable, TreeIter parent)
+		void add_data (ITargetObject obj, TreeIter parent)
 		{
-			TreeIter iter = new TreeIter ();
-
+			TreeIter iter;
 			store.Append (out iter, parent);
+			iters.Add (parent, obj);
+		}
+
+		void add_object (ITargetObject obj, string name, TreeIter iter)
+		{
+			store.SetValue (iter, 0, new GLib.Value (name));
+			store.SetValue (iter, 1, new GLib.Value (obj.Type.Name));
+
+			if (obj.HasObject) {
+				object contents = obj.Object;
+				store.SetValue (iter, 2, new GLib.Value (contents.ToString ()));
+				return;
+			}
+
+			if ((obj is ITargetArrayObject) || (obj is ITargetStructObject))
+				add_data (obj, iter);
 		}
 
 		void add_variable (IVariable variable)
 		{
-			TreeIter iter = new TreeIter ();
-
-			Console.WriteLine ("ADD VARIABLE: {0} {1} {2}", variable.Name, variable.Type.Name,
-					   variable.Type.HasObject);
-
+			TreeIter iter;
 			store.Append (out iter);
-			store.SetValue (iter, 0, new GLib.Value (variable.Name));
-			store.SetValue (iter, 1, new GLib.Value (variable.Type.Name));
 
 			ITargetObject obj = variable.GetObject (current_frame);
-
-			Console.WriteLine ("OBJECT: {0} {1}", obj, obj.HasObject);
-			if (obj.HasObject) {
-				object contents = obj.Object;
-				store.SetValue (iter, 2, new GLib.Value (contents.ToString ()));
-			}
-
-			// add_data (variable, iter);
+			add_object (obj, variable.Name, iter);
 		}
+
+		Hashtable iters = null;
 
 		public void UpdateDisplay ()
 		{
@@ -106,6 +191,7 @@ namespace Mono.Debugger.GUI
 				return;
 			
 			store.Clear ();
+			iters = new Hashtable ();
 
 			if ((current_frame == null) || (current_frame.Method == null))
 				return;
@@ -119,6 +205,7 @@ namespace Mono.Debugger.GUI
 					add_variable (var);
 			} catch {
 				store.Clear ();
+				iters = new Hashtable ();
 			}
 		}
 		

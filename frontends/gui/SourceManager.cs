@@ -31,18 +31,20 @@ namespace Mono.Debugger.GUI {
 			source_view = new Gtk.SourceView ();
 			source_view.Editable = false;
 			
-			sw.Add (source_view);
-			sw.ShowAll ();
-
 			factory = new SourceFileFactory ();
 			
 			text_buffer = source_view.Buffer;
+			DateTime start = DateTime.Now;
 			string contents = GetSource (source_buffer);
 			frame_tag = new Gtk.TextTag ("frame");
 			frame_tag.Background = "red";
 			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
 			text_buffer.TagTable.Add (frame_tag);
-			text_buffer.Insert (text_buffer.EndIter, contents, contents.Length);
+			start = DateTime.Now;
+			text_buffer.SetText (contents);
+
+			sw.Add (source_view);
+			sw.ShowAll ();
 		}
 
 		string GetSource (ISourceBuffer buffer)
@@ -69,8 +71,9 @@ namespace Mono.Debugger.GUI {
 		{
 			this.backend = backend;
 
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
+			backend.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
+			backend.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
+			backend.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
 		}
 
 		public bool Active {
@@ -79,22 +82,38 @@ namespace Mono.Debugger.GUI {
 			}
 
 			set {
+				if (active == value)
+					return;
 				active = value;
-				if (!active)
+				if (!active) {
+					current_frame = null;
 					text_buffer.RemoveTag (
 						frame_tag, text_buffer.StartIter, text_buffer.EndIter);
-				else
-					FrameChangedEvent (backend.CurrentFrame);
+				} else
+					frame_changed_event (backend.CurrentFrame);
 			}
 		}
 
-		void MethodInvalidEvent ()
+		void method_invalid_event ()
 		{
 			Active = false;
 		}
 
-		void FrameChangedEvent (StackFrame frame)
+		void frame_invalid_event ()
 		{
+			Active = false;
+		}
+
+		StackFrame current_frame = null;
+
+		void frame_changed_event (StackFrame frame)
+		{
+			if (!active || (frame == current_frame))
+				return;
+
+			current_frame = frame;
+
+			DateTime start = DateTime.Now;
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 
 			if (!active)
