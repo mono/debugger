@@ -38,8 +38,7 @@ noinst_PROGRAMS = \
 remote_server_SOURCES = \
 	remote-server.c		\
 	debugger-srv.c		\
-	Debugger-skels.c	\
-	$(server_sources)
+	Debugger-skels.c
 
 libmonodebuggerserver_la_SOURCES = \
 	server.h		\
