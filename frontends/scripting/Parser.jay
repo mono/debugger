@@ -72,6 +72,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token TYPE
 %token METHOD
 %token PARENT
+%token LENGTH
+%token LOWER
+%token UPPER
 
 %token FRAME
 %token START
@@ -232,6 +235,18 @@ expression
 	| opt_process opt_frame_number PERCENT IDENTIFIER
 	  {
 		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
+	  }
+	| LENGTH OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = new ArrayLengthExpression ((VariableExpression) $3);
+	  }
+	| LOWER OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = new ArrayLowerBoundExpression ((VariableExpression) $3);
+	  }
+	| UPPER OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = new ArrayUpperBoundExpression ((VariableExpression) $3);
 	  }
 	;
 

@@ -798,4 +798,63 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ArrayLengthExpression : Expression
+	{
+		VariableExpression var_expr;
+
+		public ArrayLengthExpression (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
+			if (obj == null)
+				throw new ScriptingException (
+					"Variable {0} is not an array type.", var_expr.Name);
+
+			return obj.UpperBound - obj.LowerBound;
+		}
+	}
+
+	public class ArrayLowerBoundExpression : Expression
+	{
+		VariableExpression var_expr;
+
+		public ArrayLowerBoundExpression (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
+			if (obj == null)
+				throw new ScriptingException (
+					"Variable {0} is not an array type.", var_expr.Name);
+
+			return obj.LowerBound;
+		}
+	}
+
+	public class ArrayUpperBoundExpression : Expression
+	{
+		VariableExpression var_expr;
+
+		public ArrayUpperBoundExpression (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ITargetArrayObject obj = var_expr.ResolveVariable (context) as ITargetArrayObject;
+			if (obj == null)
+				throw new ScriptingException (
+					"Variable {0} is not an array type.", var_expr.Name);
+
+			return obj.UpperBound;
+		}
+	}
 }

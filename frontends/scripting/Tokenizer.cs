@@ -71,6 +71,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("method", Token.METHOD);
 			keywords.Add ("set", Token.SET);
 			keywords.Add ("parent", Token.PARENT);
+			keywords.Add ("length", Token.LENGTH);
+			keywords.Add ("lower", Token.LOWER);
+			keywords.Add ("upper", Token.UPPER);
 
 			short_keywords.Add ("f", Token.FRAME);
 			short_keywords.Add ("q", Token.QUIT);
