@@ -1,6 +1,3 @@
-MCS=mcs
-DESTDIR=
-
 noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll @GUI_TARGETS@ Interpreter.exe
 
 EXTRA_SCRIPTS = Debugger.exe

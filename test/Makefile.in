@@ -32,6 +32,8 @@ mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
 
+DESTDIR =
+
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -76,10 +78,13 @@ EXEEXT = @EXEEXT@
 GTKSHARP_PREFIX = @GTKSHARP_PREFIX@
 GUI_TARGETS = @GUI_TARGETS@
 HOST_CC = @HOST_CC@
+JAY = @JAY@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
+MCS = @MCS@
+MONO = @MONO@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -94,12 +99,13 @@ VERSION = @VERSION@
 server_sources = @server_sources@
 top_srcdir = @top_srcdir@
 
-MCS = mcs
 MCS_FLAGS = -g
-MONO = mono
-DESTDIR = 
 
 TESTS = TestManagedTypes.exe
+
+EXTRA_DIST = *.cs
+
+CLEANFILES = *.exe *.dbg a.out
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ../config.h
 CONFIG_CLEAN_FILES = 
@@ -198,6 +204,7 @@ installdirs:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-rm -f Makefile $(CONFIG_CLEAN_FILES)
@@ -231,15 +238,8 @@ distclean-generic clean-generic maintainer-clean-generic clean \
 mostlyclean distclean maintainer-clean
 
 
-all: linux
-
-linux: $(TESTS)
-
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) $<
-
-clean:
-	rm -f *.exe *.dbg a.out
 
 test:
 	for test in $(TESTS) ; do \
@@ -251,8 +251,6 @@ test:
 		fi \
 	done
 	@echo "All tests passed."
-
-install: all
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -1,6 +1,3 @@
-MCS=mcs
-JAY=jay
-
 noinst_DATA = Parser.cs
 
 Parser.cs: Parser.jay

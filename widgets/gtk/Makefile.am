@@ -1,5 +1,3 @@
-MCS=mcs
-
 all: gtksourceview-sharp.dll
 
 gtksourceview-sharp.dll: generated/*.cs
