@@ -15,7 +15,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	/// </summary>
 	public class Interpreter
 	{
-		IDebuggerBackend backend;
+		DebuggerBackend backend;
 		TextWriter stdout, stderr;
 		string last_command;
 		string[] last_args;
@@ -24,7 +24,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		//   Create a new command interpreter for the debugger backend @backend.
 		//   The interpreter sends its stdout to @stdout and its stderr to @stderr.
 		// </summary>
-		public Interpreter (IDebuggerBackend backend, TextWriter stdout, TextWriter stderr)
+		public Interpreter (DebuggerBackend backend, TextWriter stdout, TextWriter stderr)
 		{
 			this.backend = backend;
 			this.stdout = stdout;

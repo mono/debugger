@@ -105,7 +105,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly MonoSymbolTableReader[] SymbolFiles;
 		ArrayList ranges;
 
-		public MonoSymbolFileTable (IDebuggerBackend backend, IInferior inferior,
+		public MonoSymbolFileTable (DebuggerBackend backend, IInferior inferior,
 					    ITargetMemoryAccess memory, TargetAddress address,
 					    ILanguageBackend language)
 		{
@@ -214,7 +214,7 @@ namespace Mono.Debugger.Languages.CSharp
 		protected string SymbolFile;
 		protected OffsetTable offset_table;
 		protected ILanguageBackend language;
-		protected IDebuggerBackend backend;
+		protected DebuggerBackend backend;
 		protected IInferior inferior;
 		protected ITargetMemoryAccess memory;
 		ArrayList ranges;
@@ -237,7 +237,7 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetBinaryReader reader;
 		ITargetMemoryReader string_reader;
 
-		internal MonoSymbolTableReader (IDebuggerBackend backend, IInferior inferior,
+		internal MonoSymbolTableReader (DebuggerBackend backend, IInferior inferior,
 						ITargetMemoryAccess memory, TargetAddress address,
 						ILanguageBackend language)
 		{
@@ -609,7 +609,7 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoCSharpLanguageBackend : SymbolTable, ILanguageBackend
 	{
 		IInferior inferior;
-		IDebuggerBackend backend;
+		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
 		ArrayList ranges;
@@ -617,7 +617,7 @@ namespace Mono.Debugger.Languages.CSharp
 		IArchitecture arch;
 		MonoSymbolFileTable table;
 
-		public MonoCSharpLanguageBackend (IDebuggerBackend backend, IInferior inferior)
+		public MonoCSharpLanguageBackend (DebuggerBackend backend, IInferior inferior)
 		{
 			this.backend = backend;
 			this.inferior = inferior;

@@ -6,15 +6,15 @@ namespace Mono.Debugger
 {
 	public class TargetStackLocation : TargetLocation
 	{
-		IDebuggerBackend backend;
-		IStackFrame frame;
+		DebuggerBackend backend;
+		StackFrame frame;
 		IInferiorStackFrame iframe;
 		TargetAddress start_scope, end_scope;
 		bool is_local;
 
-		public TargetStackLocation (IDebuggerBackend backend, IStackFrame frame,
-					    bool is_local, long offset, TargetAddress start_scope,
-					    TargetAddress end_scope)
+		internal TargetStackLocation (DebuggerBackend backend, StackFrame frame,
+					      bool is_local, long offset, TargetAddress start_scope,
+					      TargetAddress end_scope)
 			: base (offset)
 		{
 			this.backend = backend;

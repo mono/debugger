@@ -16,7 +16,7 @@ namespace Mono.Debugger.GUI
 			entry.Sensitive = false;
 		}
 
-		public override void SetBackend (IDebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend)
 		{
 			base.SetBackend (backend);
 			backend.StateChanged += new StateChangedHandler (StateChanged);

@@ -3,17 +3,28 @@ DESTDIR=
 
 all: linux
 
-linux: Debugger.exe
+linux: Mono.Debugger.dll Mono.Debugger.Backend.dll Debugger.exe
 
 ALL_SOURCES = \
 	@top_srcdir@/frontends/gui/*.cs			\
-	@top_srcdir@/frontends/command-line/*.cs	\
-	@top_srcdir@/backends/ptrace/*.cs		\
-	@top_srcdir@/backends/mono-csharp/*.cs		\
-	@top_srcdir@/backends/*.cs			\
-	@top_srcdir@/arch/*.cs				\
+	@top_srcdir@/frontends/command-line/*.cs
+
+LIBRARY_SOURCES = \
 	@top_srcdir@/interfaces/*.cs			\
 	@top_srcdir@/classes/*.cs
+
+BACKEND_SOURCES = \
+	@top_srcdir@/backends/*.cs			\
+	@top_srcdir@/backends/ptrace/*.cs		\
+	@top_srcdir@/backends/mono-csharp/*.cs		\
+	@top_srcdir@/arch/*.cs
+
+LIBRARY_DEPS = \
+	-r Mono.CSharp.Debugger
+
+BACKEND_DEPS = \
+	-r Mono.Debugger.dll	\
+	-r Mono.CSharp.Debugger
 
 DEPS = \
 	-r glib-sharp.dll	\
@@ -24,14 +35,22 @@ DEPS = \
 	-r gnome-sharp.dll	\
 	-r glade-sharp.dll	\
 	-r System.Drawing	\
-	-r Mono.CSharp.Debugger
+	-r Mono.CSharp.Debugger	\
+	-r Mono.Debugger.dll	\
+	-r Mono.Debugger.Backend.dll
 
 GUIDIR=../frontends/gui
 RESOURCES = \
 	 -resource:$(GUIDIR)/debugger.glade,debugger.glade \
 	-resource:$(GUIDIR)/mono.png,mono.png
 
-Debugger.exe: $(ALL_SOURCES)
+Mono.Debugger.dll: $(LIBRARY_SOURCES)
+	$(MCS) /target:library /out:Mono.Debugger.dll $(LIBRARY_DEPS) $(LIBRARY_SOURCES)
+
+Mono.Debugger.Backend.dll: $(BACKEND_SOURCES) Mono.Debugger.dll
+	$(MCS) /target:library /out:Mono.Debugger.Backend.dll $(BACKEND_DEPS) $(BACKEND_SOURCES)
+
+Debugger.exe: $(ALL_SOURCES) Mono.Debugger.dll Mono.Debugger.Backend.dll
 	$(MCS) -o Debugger.exe $(DEPS) $(ALL_SOURCES) $(RESOURCES)
 
 clean:

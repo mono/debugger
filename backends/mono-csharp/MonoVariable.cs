@@ -4,18 +4,21 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
-	internal class MonoVariable : Variable
+	internal class MonoVariable : IVariable
 	{
 		VariableInfo info;
-		IDebuggerBackend backend;
+		string name;
+		ITargetType type;
+		DebuggerBackend backend;
 		TargetAddress start_scope, end_scope;
 		bool is_local;
 
-		public MonoVariable (IDebuggerBackend backend, string name, MonoType type,
+		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
 				     bool is_local, IMethod method, VariableInfo info)
-			: base (name, type)
 		{
 			this.backend = backend;
+			this.name = name;
+			this.type = type;
 			this.is_local = is_local;
 			this.info = info;
 
@@ -29,13 +32,25 @@ namespace Mono.Debugger.Languages.CSharp
 				end_scope = method.MethodEndAddress;
 		}
 
-		public IDebuggerBackend Backend {
+		public DebuggerBackend Backend {
 			get {
 				return backend;
 			}
 		}
 
-		public VariableInfo VariableInfo {
+		public string Name {
+			get {
+				return name;
+			}
+		}
+
+		public ITargetType Type {
+			get {
+				return type;
+			}
+		}
+
+		internal VariableInfo VariableInfo {
 			get {
 				return info;
 			}
@@ -53,9 +68,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override ITargetObject GetObject (IStackFrame frame)
+		public ITargetObject GetObject (object frame)
 		{
-			return new MonoObject (frame, this, is_local);
+			return new MonoObject ((StackFrame) frame, this, is_local);
 		}
 	}
 }

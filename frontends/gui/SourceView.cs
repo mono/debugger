@@ -29,7 +29,7 @@ namespace Mono.Debugger.GUI
 			text_buffer.CreateMark ("frame", text_buffer.StartIter, true);
 		}
 
-		public override void SetBackend (IDebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend)
 		{
 			base.SetBackend (backend);
 			
@@ -94,7 +94,7 @@ namespace Mono.Debugger.GUI
 			return method.Source;
 		}
 
-		protected virtual ISourceLocation GetSource (IStackFrame frame)
+		protected virtual ISourceLocation GetSource (StackFrame frame)
 		{
 			if (current_method_source == null)
 				return null;
@@ -102,7 +102,7 @@ namespace Mono.Debugger.GUI
 			return current_method_source.Lookup (frame.TargetAddress);
 		}
 
-		void FrameChangedEvent (IStackFrame frame)
+		void FrameChangedEvent (StackFrame frame)
 		{
 			if (!IsVisible)
 				return;

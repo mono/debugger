@@ -9,7 +9,7 @@ namespace Mono.Debugger.GUI
 	{
 		protected Gtk.Widget container;
 		protected Gtk.Widget widget;
-		protected IDebuggerBackend backend;
+		protected DebuggerBackend backend;
 		bool visible;
 
 		[DllImport("glib-2.0")]
@@ -35,7 +35,7 @@ namespace Mono.Debugger.GUI
 			container.Unmapped += new EventHandler (unmapped);
 		}
 
-		public virtual void SetBackend (IDebuggerBackend backend)
+		public virtual void SetBackend (DebuggerBackend backend)
 		{
 			this.backend = backend;
 		}
@@ -66,7 +66,7 @@ namespace Mono.Debugger.GUI
 			}
 		}
 
-		public virtual IDebuggerBackend Debugger {
+		public virtual DebuggerBackend Debugger {
 			get {
 				return backend;
 			}

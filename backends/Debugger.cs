@@ -10,13 +10,19 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger;
+using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.CSharp;
 using Mono.Debugger.Architecture;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger
 {
+	public delegate void MethodInvalidHandler ();
+	public delegate void MethodChangedHandler (IMethod method);
+
+	public delegate void StackFrameHandler (StackFrame frame);
+	public delegate void StackFrameInvalidHandler ();
+
 	internal class TargetInfo : ITargetInfo
 	{
 		int target_int_size;
@@ -156,131 +162,6 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class StackFrame : IStackFrame, IDisposable
-	{
-		IMethod method;
-		TargetAddress address;
-		IDebuggerBackend backend;
-		IInferior inferior;
-		ISourceLocation source;
-		object frame_handle;
-
-		public StackFrame (IDebuggerBackend backend, IInferior inferior, TargetAddress address,
-				   object frame_handle, ISourceLocation source, IMethod method)
-			: this (backend, inferior, address, frame_handle)
-		{
-			this.source = source;
-			this.method = method;
-		}
-
-		public StackFrame (IDebuggerBackend backend, IInferior inferior, TargetAddress address,
-				   object frame_handle)
-		{
-			this.backend = backend;
-			this.inferior = inferior;
-			this.address = address;
-			this.frame_handle = frame_handle;
-		}
-
-		public bool IsValid {
-			get {
-				return !disposed;
-			}
-		}
-
-		public ISourceLocation SourceLocation {
-			get {
-				check_disposed ();
-				return source;
-			}
-		}
-
-		public TargetAddress TargetAddress {
-			get {
-				check_disposed ();
-				return address;
-			}
-		}
-
-		public IMethod Method {
-			get {
-				check_disposed ();
-				return method;
-			}
-		}
-
-		public object FrameHandle {
-			get {
-				check_disposed ();
-				return frame_handle;
-			}
-		}
-
-		public ITargetMemoryAccess TargetMemoryAccess {
-			get {
-				check_disposed ();
-				return inferior;
-			}
-		}
-
-		public event StackFrameInvalidHandler FrameInvalid;
-
-		public override string ToString ()
-		{
-			StringBuilder builder = new StringBuilder ();
-
-			if (source != null) {
-				builder.Append (source);
-				builder.Append (" at ");
-			}
-			builder.Append (address);
-
-			return builder.ToString ();
-		}
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		private void check_disposed ()
-		{
-			if (disposed)
-				throw new ObjectDisposedException ("StackFrame");
-		}
-
-		protected virtual void Dispose (bool disposing)
-		{
-			if (!this.disposed) {
-				if (disposing) {
-					if (FrameInvalid != null)
-						FrameInvalid ();
-
-					method = null;
-					inferior = null;
-					source = null;
-					frame_handle = null;
-				}
-				
-				this.disposed = true;
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~StackFrame ()
-		{
-			Dispose (false);
-		}
-
-	}
-
 	internal class StepFrame : IStepFrame
 	{
 		TargetAddress start, end;
@@ -370,7 +251,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	public class Debugger : IDebuggerBackend, ISymbolLookup, IDisposable
+	public class DebuggerBackend : ITargetNotification, ISymbolLookup, IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
@@ -392,11 +273,11 @@ namespace Mono.Debugger.Backends
 
 		bool native;
 
-		public Debugger (ISourceFileFactory source_factory)
+		public DebuggerBackend (ISourceFileFactory source_factory)
 			: this (source_factory, false)
 		{ }
 
-		public Debugger (ISourceFileFactory source_factory, bool native)
+		public DebuggerBackend (ISourceFileFactory source_factory, bool native)
 		{
 			NameValueCollection settings = ConfigurationSettings.AppSettings;
 
@@ -531,10 +412,6 @@ namespace Mono.Debugger.Backends
 		public event TargetOutputHandler TargetError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
-
-		//
-		// IDebuggerBackend
-		//
 
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
@@ -731,7 +608,7 @@ namespace Mono.Debugger.Backends
 		IStepFrame get_step_frame ()
 		{
 			check_inferior ();
-			IStackFrame frame = CurrentFrame;
+			StackFrame frame = CurrentFrame;
 			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
 
 			if (frame.SourceLocation == null)
@@ -749,7 +626,7 @@ namespace Mono.Debugger.Backends
 		IStepFrame get_simple_step_frame (StepMode mode)
 		{
 			check_inferior ();
-			IStackFrame frame = CurrentFrame;
+			StackFrame frame = CurrentFrame;
 			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
 
 			return new StepFrame (language, mode);
@@ -801,7 +678,7 @@ namespace Mono.Debugger.Backends
 		public void Finish ()
 		{
 			check_can_run ();
-			IStackFrame frame = CurrentFrame;
+			StackFrame frame = CurrentFrame;
 			if (frame.Method == null)
 				throw new NoMethodException ();
 
@@ -816,7 +693,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IStackFrame CurrentFrame {
+		public StackFrame CurrentFrame {
 			get {
 				check_stopped ();
 				return current_frame;
@@ -832,7 +709,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IStackFrame[] GetBacktrace ()
+		public StackFrame[] GetBacktrace ()
 		{
 			check_stopped ();
 
@@ -994,7 +871,7 @@ namespace Mono.Debugger.Backends
 			GC.SuppressFinalize (this);
 		}
 
-		~Debugger ()
+		~DebuggerBackend ()
 		{
 			Dispose (false);
 		}

@@ -1,5 +1,22 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/IDebuggerBackend.cs: Removed.
+	* interfaces/IStackFrame.cs: Removed.
+	* interfaces/IInferior.cs: Moved to ../backends/.
+
+	* classes/IOChannel.cs: Moved here from ../backends/ptrace/ and made public.
+
+	* classes/Variable.cs: Removed.
+
+	* backends/StackFrame.cs: Moved the StackFrame class here and made it public.
+	* backends/IInferior.cs: Moved here from ../interfaces/.
+	* backends/TargetStackLocation.cs: Moved here from ../classes/.
+	* backends/Debugger.cs: It's now called `DebuggerBackend'.
+
+	* test/Makefile.in: Create Mono.Debugger.dll and Mono.Debugger.Backend.dll.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/ILanguageCSharp.cs: Killed.
 
 2002-09-21  Martin Baulig  <martin@gnome.org>

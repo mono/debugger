@@ -27,7 +27,7 @@ namespace Mono.Debugger.GUI
 			ISourceLocation source = null;
 			TargetAddress address;
 			try {
-				IStackFrame frame = backend.CurrentFrame;
+				StackFrame frame = backend.CurrentFrame;
 				source = frame.SourceLocation;
 				address = frame.TargetAddress;
 			} catch {

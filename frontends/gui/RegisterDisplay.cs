@@ -40,7 +40,7 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		public override void SetBackend (IDebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend)
 		{
 			base.SetBackend (backend);
 
@@ -56,7 +56,7 @@ namespace Mono.Debugger.GUI
 			store.Clear ();
 		}
 
-		void FrameChangedEvent (IStackFrame frame)
+		void FrameChangedEvent (StackFrame frame)
 		{
 			if (!IsVisible)
 				return;

@@ -55,7 +55,7 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		public override void SetBackend (IDebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend)
 		{
 			base.SetBackend (backend);
 			
@@ -71,7 +71,7 @@ namespace Mono.Debugger.GUI
 			store.Clear ();
 		}
 
-		void add_frame (int id, IStackFrame frame)
+		void add_frame (int id, StackFrame frame)
 		{
 			TreeIter iter = new TreeIter ();
 
@@ -84,7 +84,7 @@ namespace Mono.Debugger.GUI
 				store.SetValue (iter, 3, new GLib.Value (frame.SourceLocation.Name));
 		}
 
-		void FrameChangedEvent (IStackFrame frame)
+		void FrameChangedEvent (StackFrame frame)
 		{
 			if (!IsVisible)
 				return;
@@ -95,7 +95,7 @@ namespace Mono.Debugger.GUI
 				return;
 
 			try {
-				IStackFrame[] frames = backend.GetBacktrace ();
+				StackFrame[] frames = backend.GetBacktrace ();
 				for (int i = 0; i < frames.Length; i++)
 					add_frame (i, frames [i]);
 			} catch {

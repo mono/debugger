@@ -22,7 +22,7 @@ namespace Mono.Debugger.GUI
 			switch (new_state) {
 			case TargetState.STOPPED:
 				try {
-					IStackFrame frame = backend.CurrentFrame;
+					StackFrame frame = backend.CurrentFrame;
 					Message (String.Format ("{1} at {0}.", frame, GetStopReason (arg)));
 				} catch (NoStackException) {
 					Message (String.Format ("{0}.", GetStopReason (arg)));

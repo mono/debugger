@@ -90,7 +90,7 @@ namespace Mono.Debugger.GUI
 
 		TextWriter output_writer;
 
-		IDebuggerBackend backend;
+		DebuggerBackend backend;
 		Interpreter interpreter;
 		ISourceFileFactory source_factory;
 
@@ -99,7 +99,7 @@ namespace Mono.Debugger.GUI
 			program = new Program ("Debugger", "0.1", Modules.UI, arguments);
 
 			source_factory = new SourceFileFactory ();
-			backend = new Mono.Debugger.Backends.Debugger (source_factory);
+			backend = new DebuggerBackend (source_factory);
 
 			SetupGUI ();
 

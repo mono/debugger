@@ -6,12 +6,12 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoObject : ITargetObject
 	{
-		IStackFrame frame;
+		StackFrame frame;
 		MonoVariable variable;
 		bool is_local;
 		ITargetLocation location;
 
-		public MonoObject (IStackFrame frame, MonoVariable variable, bool is_local)
+		public MonoObject (StackFrame frame, MonoVariable variable, bool is_local)
 		{
 			this.frame = frame;
 			this.variable = variable;

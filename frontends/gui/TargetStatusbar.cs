@@ -19,7 +19,7 @@ namespace Mono.Debugger.GUI
 			status_id = status_bar.GetContextId ("message");
 		}
 
-		public override void SetBackend (IDebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend)
 		{
 			base.SetBackend (backend);
 			backend.StateChanged += new StateChangedHandler (StateChanged);
@@ -43,7 +43,7 @@ namespace Mono.Debugger.GUI
 				return String.Format ("Received signal {0}", arg);
 		}
 
-		protected virtual string GetStopMessage (IStackFrame frame, int arg)
+		protected virtual string GetStopMessage (StackFrame frame, int arg)
 		{
 			if (frame.Method != null) {
 				long offset = frame.TargetAddress - frame.Method.StartAddress;
@@ -73,7 +73,7 @@ namespace Mono.Debugger.GUI
 
 			case TargetState.STOPPED:
 				try {
-					IStackFrame frame = backend.CurrentFrame;
+					StackFrame frame = backend.CurrentFrame;
 					Message (GetStopMessage (frame, arg));
 				} catch (NoStackException) {
 					Message (String.Format ("{0}.", GetStopReason (arg)));
