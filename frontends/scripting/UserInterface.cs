@@ -106,6 +106,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			if (obj is long)
 				return String.Format ("0x{0:x}", (long) obj);
+			else if (obj is string)
+				return '"' + (string) obj + '"';
 			else if (obj is ITargetType)
 				return FormatType ((ITargetType) obj);
 			else if (obj is ITargetObject)
@@ -121,8 +123,9 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public string FormatObject (ITargetObject obj)
 		{
-			ITargetArrayObject aobj = obj as ITargetArrayObject;
-			if (aobj != null) {
+			switch (obj.Type.Kind) {
+			case TargetObjectKind.Array: {
+				ITargetArrayObject aobj = (ITargetArrayObject) obj;
 				StringBuilder sb = new StringBuilder ("[");
 				int lower = aobj.LowerBound;
 				int upper = aobj.UpperBound;
@@ -134,7 +137,28 @@ namespace Mono.Debugger.Frontends.Scripting
 				sb.Append ("]");
 				return sb.ToString ();
 			}
-			return obj.Print ();
+
+			case TargetObjectKind.Class:
+			case TargetObjectKind.Struct: {
+				ITargetStructObject sobj = (ITargetStructObject) obj;
+				StringBuilder sb = new StringBuilder ("{");
+				bool first = true;
+				ITargetFieldInfo[] fields = sobj.Type.Fields;
+				foreach (ITargetFieldInfo field in fields) {
+					ITargetObject fobj = sobj.GetField (field.Index);
+					if (first)
+						first = false;
+					else
+						sb.Append (", ");
+					sb.Append (FormatObject (fobj));
+				}
+				sb.Append ("}");
+				return sb.ToString ();
+			}
+
+			default:
+				return obj.Print ();
+			}
 		}
 
 		public void PrintVariable (IVariable variable, StackFrame frame)

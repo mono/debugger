@@ -39,6 +39,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 			return new String (retval);
 		}
+
+		public override string Print ()
+		{
+			object obj = GetObject ();
+			return '"' + (string) obj + '"';
+		}
 	}
 }
 
