@@ -685,6 +685,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		[Option("The command-line prompt", 'p')]
+		public string prompt = "$";
+
 		public StartMode StartMode {
 			get { return start_mode; }
 		}
@@ -706,6 +709,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		DebuggerTextWriter command_output;
 		DebuggerTextWriter inferior_output;
 		ProcessStart start;
+		string prompt = "$";
 		bool is_synchronous;
 		bool is_interactive;
 		int exit_code = 0;
@@ -844,9 +848,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public string Prompt {
+			get {
+				return prompt;
+			}
+		}
+
 		public Process Start (string[] args)
 		{
-			ParseArguments (args);
+			backend = ParseArguments (args);
+			if (backend == null)
+				return null;
+
 			return Run ();
 		}
 
@@ -858,6 +871,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("No program specified.");
 
 			options.ProcessArgs (args);
+			prompt = options.prompt;
 
 			switch (options.StartMode) {
 			case StartMode.CoreFile:
@@ -873,6 +887,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 						"This mode requires exactly one argument, the file " +
 						"to load the session from.");
 				return LoadSession (options.RemainingArguments [0]);
+
+			case StartMode.Unknown:
+				if (options.RemainingArguments.Length == 0)
+					return null;
+				return StartApplication (options.RemainingArguments);
 
 			default:
 				return StartApplication (options.RemainingArguments);

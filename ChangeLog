@@ -1,3 +1,9 @@
+2003-02-03  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/ScriptingContext.cs: Added `--prompt'
+	command line argument to specify the prompt; useful when running
+	the debugger inside the debugger.
+
 2003-02-02  Martin Baulig  <martin@ximian.com>
 
 	* test/TestInternCall.cs: New test.

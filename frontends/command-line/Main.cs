@@ -54,12 +54,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public CommandLineInterpreter (string[] args)
 		{
-			if (GnuReadLine.IsTerminal (0)) {
-				readline = new GnuReadLine ("$ ");
-			}
+			bool is_terminal = GnuReadLine.IsTerminal (0);
 
 			writer = new ConsoleTextWriter ();
-			context = new ScriptingContext (writer, writer, true, readline != null);
+			context = new ScriptingContext (writer, writer, true, is_terminal);
 			parser = new Parser (context, "Debugger");
 
 			if ((args != null) && (args.Length > 0)) {
@@ -70,6 +68,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 					Environment.Exit (255);
 				}
 			}
+
+			if (is_terminal)
+				readline = new GnuReadLine (context.Prompt + " ");
 		}
 
 		public void Run ()
