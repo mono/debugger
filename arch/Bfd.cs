@@ -194,8 +194,9 @@ namespace Mono.Debugger.Architecture
 			InternalSection bss = GetSectionByName (".bss");
 
 			if (!base_address.IsNull) {
-				start_address = base_address;
-				end_address = base_address + bss.vma;
+				start_address = new TargetAddress (
+					memory.GlobalAddressDomain, base_address.Address);
+				end_address = start_address + bss.vma;
 				initialized = true;
 			} else {
 				start_address = new TargetAddress (memory.GlobalAddressDomain, text.vma);
