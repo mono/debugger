@@ -6,8 +6,5 @@ config.h
 config.log
 config.status
 configure
-elf32-target.h
 libtool
 ofiles
-peigen.c
-targmatch.h
