@@ -56,6 +56,9 @@ namespace Mono.Debugger
 
 	public delegate void SymbolTableChangedHandler ();
 
+	// <summary>
+	//   This interface is used to find a method by an address.
+	// </summary>
 	public interface ISymbolTable : ISymbolLookup, ISymbolContainer
 	{
 		// <summary>
@@ -82,10 +85,18 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   If true, you may use the `Methods' property to get a list of all the
+		//   methods in this symbol table.
+		// </summary>
 		bool HasMethods {
 			get;
 		}
 
+		// <summary>
+		//   Get a list of all methods in this symbol table.  May only be used if
+		//   `HasMethods' is true.
+		// </summary>
 		IMethod[] Methods {
 			get;
 		}
