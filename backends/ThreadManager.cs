@@ -38,12 +38,6 @@ namespace Mono.Debugger
 
 		TargetAddress mono_thread_info = TargetAddress.Null;
 
-		const int PThread_Signal_Debug		= 34;
-		const int PThread_Signal_Abort		= 30;
-		const int PThread_Signal_Restart	= 31;
-
-		const int Mono_Thread_Signal		= 29;
-
 		internal ThreadManager (DebuggerBackend backend, BfdContainer bfdc)
 		{
 			this.backend = backend;
@@ -69,7 +63,7 @@ namespace Mono.Debugger
 					   process.PID);
 
 			if (!mdebug.IsNull && !mono_thread_info.IsNull) {
-				inferior.WriteInteger (mdebug, Mono_Thread_Signal);
+				inferior.WriteInteger (mdebug, PTraceInferior.MonoThreadDebugSignal);
 
 				initialized = true;
 
@@ -147,12 +141,12 @@ namespace Mono.Debugger
 
 		public bool SignalHandler (IInferior inferior, int signal, out bool action)
 		{
-			if (signal == PThread_Signal_Restart) {
+			if (signal == PTraceInferior.ThreadRestartSignal) {
 				action = false;
 				return true;
 			}
 
-			if (signal == PThread_Signal_Abort) {
+			if (signal == PTraceInferior.ThreadAbortSignal) {
 				action = false;
 				return true;
 			}
@@ -169,7 +163,7 @@ namespace Mono.Debugger
 				return true;
 			}
 
-			if (signal == Mono_Thread_Signal) {
+			if (signal == PTraceInferior.MonoThreadDebugSignal) {
 				inferior.SetSignal (0,false);
 				action = false;
 
@@ -178,14 +172,14 @@ namespace Mono.Debugger
 				return true;
 			}
 
-			if (signal != PThread_Signal_Debug) {
+			if (signal != PTraceInferior.ThreadDebugSignal) {
 				action = true;
 				return false;
 			}
 
 			reload_threads (inferior);
 
-			inferior.SetSignal (PThread_Signal_Restart, false);
+			inferior.SetSignal (PTraceInferior.ThreadRestartSignal, false);
 			action = false;
 			return true;
 		}
@@ -215,13 +209,13 @@ namespace Mono.Debugger
 				Process new_process;
 				if (index == 1)
 					new_process = main_process.CreateDaemonThread (
-						pid, PThread_Signal_Restart, null);
+						pid, PTraceInferior.ThreadRestartSignal, null);
 				else if ((csharp_handler != null) && (index == 2))
 					new_process = debugger_process = main_process.CreateDaemonThread (
-						pid, PThread_Signal_Restart, csharp_handler);
+						pid, PTraceInferior.ThreadRestartSignal, csharp_handler);
 				else {
 					new_process = main_process.CreateThread (pid);
-					new_process.SetSignal (PThread_Signal_Restart, true);
+					new_process.SetSignal (PTraceInferior.ThreadRestartSignal, true);
 				}
 
 				thread_hash.Add (pid, new_process);

@@ -212,8 +212,7 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 	if (!ret)
 		return COMMAND_ERROR_FORK;
 #else
-#warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)
-'"
+#warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)'"
 	*child_pid = fork ();
 	if (*child_pid == 0) {
 		child_setup_func (NULL);

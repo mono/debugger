@@ -183,7 +183,21 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_sigprof ();
 
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_thread_abort_signal ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_thread_restart_signal ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_thread_debug_signal ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_mono_thread_debug_signal ();
+
 		static int sigstop, sigint, sigchld, sigprof;
+		static int thread_abort_signal, thread_restart_signal;
+		static int thread_debug_signal, mono_thread_debug_signal;
 
 		static PTraceInferior ()
 		{
@@ -191,6 +205,10 @@ namespace Mono.Debugger.Backends
 			sigint = mono_debugger_server_get_sigint ();
 			sigchld = mono_debugger_server_get_sigchld ();
 			sigprof = mono_debugger_server_get_sigprof ();
+			thread_abort_signal = mono_debugger_server_get_thread_abort_signal ();
+			thread_restart_signal = mono_debugger_server_get_thread_restart_signal ();
+			thread_debug_signal = mono_debugger_server_get_thread_debug_signal ();
+			mono_thread_debug_signal = mono_debugger_server_get_mono_thread_debug_signal ();
 		}
 
 		[DllImport("glib-2.0")]
@@ -565,27 +583,35 @@ namespace Mono.Debugger.Backends
 		}
 
 		public static int SIGSTOP {
-			get {
-				return sigstop;
-			}
+			get { return sigstop; }
 		}
 
 		public static int SIGINT {
-			get {
-				return sigint;
-			}
+			get { return sigint; }
 		}
 
 		public static int SIGCHLD {
-			get {
-				return sigchld;
-			}
+			get { return sigchld; }
 		}
 
 		public static int SIGPROF {
-			get {
-				return sigprof;
-			}
+			get { return sigprof; }
+		}
+
+		public static int ThreadAbortSignal {
+			get { return thread_abort_signal; }
+		}
+
+		public static int ThreadRestartSignal {
+			get { return thread_restart_signal; }
+		}
+
+		public static int ThreadDebugSignal {
+			get { return thread_debug_signal; }
+		}
+
+		public static int MonoThreadDebugSignal {
+			get { return mono_thread_debug_signal; }
 		}
 
 		//

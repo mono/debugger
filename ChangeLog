@@ -1,5 +1,13 @@
 2003-01-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs: Don't hardcode signal numbers.
+
+	* backends/ptrace/PTrace.cs
+	(ThreadAbortSignal, ThreadRestartSignal, ThreadDebugSignal,
+	MonoThreadDebugSignal): New static properties.
+
+2003-01-16  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs: Use the new thread manager in
 	mono/io-layer when debugging managed applications.
 
