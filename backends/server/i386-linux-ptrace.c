@@ -206,7 +206,6 @@ server_ptrace_continue (InferiorHandle *handle)
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
-		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
 
@@ -216,15 +215,11 @@ server_ptrace_continue (InferiorHandle *handle)
 static ServerCommandError
 server_ptrace_step (InferiorHandle *handle)
 {
-	if (handle->last_signal)
-		return server_ptrace_continue (handle);
-
 	errno = 0;
-	if (ptrace (PTRACE_SINGLESTEP, handle->pid, NULL, NULL)) {
+	if (ptrace (PTRACE_SINGLESTEP, handle->pid, NULL, GUINT_TO_POINTER (handle->last_signal))) {
 		if (errno == ESRCH)
 			return COMMAND_ERROR_NOT_STOPPED;
 
-		g_message (G_STRLOC ": %d - %s", handle->pid, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN;
 	}
 
