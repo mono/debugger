@@ -32,6 +32,7 @@ struct _MonoDebuggerInfo {
 
 void mono_debugger_wait_cond (gpointer cond);
 void mono_debugger_thread_manager_init (void);
+void mono_debugger_thread_manager_main (void);
 void mono_debugger_thread_manager_add_thread (guint32 thread, int pid, gpointer func);
 void mono_debugger_thread_manager_start_resume (guint32 thread);
 void mono_debugger_thread_manager_end_resume (guint32 thread);
@@ -40,9 +41,11 @@ volatile void MONO_DEBUGGER__main (void);
 
 extern volatile void (*mono_debugger_thread_manager_notification_function) (gpointer func);
 extern volatile gpointer MONO_DEBUGGER__thread_manager_notification;
-extern volatile int MONO_DEBUGGER__thread_manager;
-extern volatile int MONO_DEBUGGER__background_thread;
+extern volatile int MONO_DEBUGGER__main_thread;
+extern volatile int MONO_DEBUGGER__debugger_thread;
 extern volatile int MONO_DEBUGGER__thread_manager_last_pid;
+extern volatile MonoMethod *MONO_DEBUGGER__main_method;
+extern volatile gpointer MONO_DEBUGGER__main_function;
 extern volatile gpointer MONO_DEBUGGER__thread_manager_last_func;
 extern volatile guint32 MONO_DEBUGGER__thread_manager_last_thread;
 

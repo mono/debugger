@@ -16,33 +16,15 @@ static CRITICAL_SECTION thread_manager_mutex;
 static void (*notification_function) (int pid, gpointer func);
 
 volatile gpointer MONO_DEBUGGER__thread_manager_notification = NULL;
-volatile int MONO_DEBUGGER__thread_manager = 0;
 volatile int MONO_DEBUGGER__thread_manager_last_pid = 0;
 volatile gpointer MONO_DEBUGGER__thread_manager_last_func = NULL;
 volatile guint32 MONO_DEBUGGER__thread_manager_last_thread = 0;
 static guint32 last_thread = 0;
 
-/*
- * NOTE: We must not call any functions here which we ever may want to debug !
- */
-static guint32
-thread_manager_func (gpointer dummy)
+void
+mono_debugger_thread_manager_main (void)
 {
-	int last_stack = 0;
-
-	mono_new_thread_init (0, &last_stack, NULL);
-	MONO_DEBUGGER__thread_manager = getpid ();
-
-	/*
-	 * The parent thread waits on this condition because it needs our pid.
-	 */
-	IO_LAYER (ReleaseSemaphore) (thread_manager_start_cond, 1, NULL);
-
-	/*
-	 * This mutex is locked by the parent thread until the debugger actually
-	 * attached to us, so we don't need a SIGSTOP here anymore.
-	 */
-	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
+	notification_function (0, NULL);
 
 	while (TRUE) {
 		/* Wait for an event. */
@@ -60,19 +42,11 @@ thread_manager_func (gpointer dummy)
 
 		IO_LAYER (ReleaseSemaphore) (thread_manager_finished_cond, 1, NULL);
 	}
-
-	return 0;
 }
-
-volatile void
-MONO_DEBUGGER__main (void)
-{ }
 
 void
 mono_debugger_thread_manager_init (void)
 {
-	HANDLE thread;
-
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_mutex);
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_finished_mutex);
 	IO_LAYER (InitializeCriticalSection) (&thread_manager_start_mutex);
@@ -86,17 +60,7 @@ mono_debugger_thread_manager_init (void)
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_mutex);
 
-	thread = IO_LAYER (CreateThread) (NULL, 0, thread_manager_func, NULL, FALSE, NULL);
-	g_assert (thread);
-
-	/*
-	 * Wait until the background thread set its pid.
-	 */
-	mono_debugger_wait_cond (thread_manager_start_cond);
-
-	MONO_DEBUGGER__main ();
-
-	IO_LAYER (LeaveCriticalSection) (&thread_manager_mutex);
+	notification_function (0, NULL);
 }
 
 static void
@@ -118,6 +82,8 @@ signal_thread_manager (guint32 thread, int pid, gpointer func)
 void
 mono_debugger_thread_manager_add_thread (guint32 thread, int pid, gpointer func)
 {
+	g_message (G_STRLOC ": %d - %d - %p", thread, pid, func);
+
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 	g_assert (!last_thread || (last_thread == thread));
 
@@ -127,6 +93,8 @@ mono_debugger_thread_manager_add_thread (guint32 thread, int pid, gpointer func)
 		IO_LAYER (ReleaseSemaphore) (thread_manager_thread_started_cond, 1, NULL);
 
 	IO_LAYER (LeaveCriticalSection) (&thread_manager_finished_mutex);
+
+	g_message (G_STRLOC ": %d", thread);
 }
 
 void

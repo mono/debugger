@@ -8,7 +8,9 @@
 #include <locale.h>
 
 static gpointer debugger_thread_cond;
-static gpointer debugger_start_cond;
+static gpointer debugger_started_cond;
+static gpointer main_started_cond;
+static gpointer main_ready_cond;
 
 static gpointer debugger_finished_cond;
 static CRITICAL_SECTION debugger_finished_mutex;
@@ -16,7 +18,10 @@ static CRITICAL_SECTION debugger_finished_mutex;
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
 
-volatile int MONO_DEBUGGER__background_thread = 0;
+volatile MonoMethod *MONO_DEBUGGER__main_method = NULL;
+volatile gpointer MONO_DEBUGGER__main_function = NULL;
+volatile int MONO_DEBUGGER__main_thread = 0;
+volatile int MONO_DEBUGGER__debugger_thread = 0;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -134,21 +139,68 @@ static MonoThreadCallbacks thread_callbacks = {
 	&mono_debugger_thread_manager_end_resume
 };
 
-/*
- * NOTE: We must not call any functions here which we ever may want to debug !
- */
-static guint32
-debugger_thread_func (gpointer dummy)
+static void
+initialize_debugger_support (void)
 {
+	debugger_thread_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	debugger_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	main_started_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+	main_ready_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+
+	IO_LAYER (InitializeCriticalSection) (&debugger_finished_mutex);
+	debugger_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
+
+	debugger_notification_function = mono_debug_create_notification_function (&debugger_notification_address);
+
+	mono_debug_init (TRUE);
+}
+
+typedef struct 
+{
+	MonoDomain *domain;
+	const char *file;
+} DebuggerThreadArgs;
+
+typedef struct
+{
+	MonoDomain *domain;
+	MonoMethod *method;
+	int argc;
+	char **argv;
+} MainThreadArgs;
+
+static guint32
+debugger_thread_handler (gpointer user_data)
+{
+	DebuggerThreadArgs *debugger_args = (DebuggerThreadArgs *) user_data;
+	MonoAssembly *assembly;
+	MonoImage *image;
+	MonoDebugHandle *debug;
 	int last_generation = 0;
 
-	mono_new_thread_init (0, &last_generation, NULL);
-	MONO_DEBUGGER__background_thread = getpid ();
+	MONO_DEBUGGER__debugger_thread = getpid ();
+
+	assembly = mono_domain_assembly_open (debugger_args->domain, debugger_args->file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", debugger_args->file);
+		exit (1);
+	}
+
+	mono_debug_format = MONO_DEBUG_FORMAT_MONO;
+	debug = mono_debug_open (assembly, mono_debug_format, NULL);
 
 	/*
-	 * The parent thread waits on this condition because it needs our pid.
+	 * Get and compile the main function.
 	 */
-	IO_LAYER (ReleaseSemaphore) (debugger_start_cond, 1, NULL);
+
+	image = assembly->image;
+	MONO_DEBUGGER__main_method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+	MONO_DEBUGGER__main_function = mono_compile_method ((gpointer) MONO_DEBUGGER__main_method);
+
+	/*
+	 * Signal the main thread that we're ready.
+	 */
+	IO_LAYER (ReleaseSemaphore) (debugger_started_cond, 1, NULL);
 
 	/*
 	 * This mutex is locked by the parent thread until the debugger actually
@@ -191,53 +243,32 @@ debugger_thread_func (gpointer dummy)
 	return 0;
 }
 
-static void
-initialize_debugger_support (void)
+static guint32
+main_thread_handler (gpointer user_data)
 {
-	HANDLE thread;
+	MainThreadArgs *main_args = (MainThreadArgs *) user_data;
+	int retval;
 
-	debugger_thread_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-	debugger_start_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-
-	IO_LAYER (InitializeCriticalSection) (&debugger_finished_mutex);
-	debugger_finished_cond = IO_LAYER (CreateSemaphore) (NULL, 0, 1, NULL);
-
-	debugger_notification_function = mono_debug_create_notification_function (&debugger_notification_address);
-
-	mono_install_thread_callbacks (&thread_callbacks);
-
-	mono_debug_init ();
+	MONO_DEBUGGER__main_thread = getpid ();
+	IO_LAYER (ReleaseSemaphore) (main_started_cond, 1, NULL);
 
 	/*
-	 * We keep this mutex until mono_debugger_jit_exec().
+	 * Wait until everything is ready.
 	 */
-	mono_debug_lock ();
+	mono_debugger_wait_cond (main_ready_cond);
 
-	/*
-	 * This mutex is only unlocked in mono_debugger_wait().
-	 */
-	IO_LAYER (EnterCriticalSection) (&debugger_finished_mutex);
+	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
 
-	thread = IO_LAYER (CreateThread) (NULL, 0, debugger_thread_func, NULL, FALSE, NULL);
-	g_assert (thread);
-
-	/*
-	 * Wait until the background thread set its pid.
-	 */
-	mono_debugger_wait_cond (debugger_start_cond);
+	return retval;
 }
 
 int
 main (int argc, char **argv, char **envp)
 {
 	MonoDomain *domain;
-	MonoAssembly *assembly;
-	MonoImage *image;
-	MonoDebugHandle *debug;
-	MonoMethod *method;
+	DebuggerThreadArgs debugger_args;
+	MainThreadArgs main_args;
 	const char *file, *error;
-	gpointer addr;
-	int retval;
 
 	setlocale(LC_ALL, "");
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
@@ -249,9 +280,6 @@ main (int argc, char **argv, char **envp)
 	g_set_prgname (file);
 
 	initialize_debugger_support ();
-	mono_debugger_thread_manager_init ();
-
-	mono_debug_init ();
 
 	domain = mono_jit_init (file);
 
@@ -261,45 +289,52 @@ main (int argc, char **argv, char **envp)
 		exit (1);
 	}
 
-	assembly = mono_domain_assembly_open (domain, file);
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", file);
-		exit (1);
-	}
-
-	mono_debugger_event_handler = debugger_event_handler;
-
-	mono_debug_format = MONO_DEBUG_FORMAT_MONO;
-	debug = mono_debug_open (assembly, mono_debug_format, NULL);
-
-	image = assembly->image;
-	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
-	mono_insert_breakpoint_full (mono_method_desc_from_method (method), FALSE);
-
-	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
-
-	addr = mono_compile_method (method);
+	debugger_args.domain = domain;
+	debugger_args.file = file;
 
 	/*
-	 * The mutex has been locked in initialize_debugger_support(); we keep it locked
-	 * until we compiled the main method and signalled the debugger.
+	 * Start the debugger thread and wait until it's ready.
+	 */
+	mono_thread_create (domain, debugger_thread_handler, &debugger_args);
+	mono_debugger_wait_cond (debugger_started_cond);
+
+	/*
+	 * Start the main thread and wait until it's ready.
+	 */
+
+	main_args.domain = domain;
+	main_args.method = MONO_DEBUGGER__main_method;
+	main_args.argc = argc;
+	main_args.argv = argv;
+
+	mono_thread_create (domain, main_thread_handler, &main_args);
+	mono_debugger_wait_cond (main_started_cond);
+
+	/*
+	 * Initialize the thread manager.
+	 */
+
+	mono_debugger_thread_manager_init ();
+	mono_debugger_event_handler = debugger_event_handler;
+	mono_install_thread_callbacks (&thread_callbacks);
+
+	/*
+	 * Reload symbol tables.
 	 */
 	must_send_finished = TRUE;
 	mono_debugger_signal (TRUE);
 	mono_debug_unlock ();
 
-	/*
-	 * Wait until the debugger has loaded the initial symbol tables.
-	 */
 	mono_debugger_wait ();
 
-	retval = mono_runtime_run_main (method, argc, argv, NULL);
-
 	/*
-	 * Kill the background thread.
+	 * Signal the main thread that it can execute the managed Main().
 	 */
-	kill (MONO_DEBUGGER__background_thread, SIGKILL);
-	kill (MONO_DEBUGGER__thread_manager, SIGKILL);
+	IO_LAYER (ReleaseSemaphore) (main_ready_cond, 1, NULL);
 
-	return retval;
+	mono_debugger_thread_manager_main ();
+
+	mono_thread_manage ();
+
+	return 0;
 }
