@@ -199,6 +199,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   The application's symbol table.  You should set this property to get
+		//   your application's symbol names in a disassembly.
+		// </summary>
 		ISymbolTable ApplicationSymbolTable {
 			get; set;
 		}
