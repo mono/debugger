@@ -1464,23 +1464,38 @@ namespace Mono.Debugger.Backends
 				method = Lookup (trampoline);
 			}
 			Report.Debug (DebugFlags.SSE,
-				      "{0} compiled trampoline: {1} {2} {3} {4}",
+				      "{0} compiled trampoline: {1} {2} {3} {4} {5}",
 				      this, current_operation, trampoline, method,
-				      method != null ? method.Module : null);
-			if ((method == null) || !method.Module.StepInto) {
+				      method != null ? method.Module : null,
+				      method_has_source (method));
+
+			if (!method_has_source (method)) {
 				do_next ();
 				return false;
 			}
 
-			if ((current_operation != null) &&
-			    current_operation.IsSourceOperation &&
-			    method.HasSource) {
-				do_next ();
-				return false;
-			}
+			Report.Debug (DebugFlags.SSE,
+				      "{0} entering trampoline: {1}",
+				      this, trampoline);
 
 			do_continue (trampoline);
 			return false;
+		}
+
+		bool method_has_source (IMethod method)
+		{
+			if ((current_operation == null) || !current_operation.IsSourceOperation)
+				return true;
+
+			if ((method == null) || !method.HasSource || !method.Module.StepInto)
+				return false;
+
+			MethodSource source = method.Source;
+			if ((source == null) || source.IsDynamic)
+				return false;
+
+			SourceFileFactory factory = manager.DebuggerBackend.SourceFileFactory;
+			return factory.Exists (source.SourceFile.FileName);
 		}
 
 		// <summary>
@@ -1549,7 +1564,7 @@ namespace Mono.Debugger.Backends
 					 * debugging info for it and don't step into it if not.
 					 */
 					tmethod = Lookup (call);
-					if ((tmethod == null) || !tmethod.Module.StepInto) {
+					if (!method_has_source (tmethod)) {
 						do_next ();
 						return false;
 					}

@@ -25,6 +25,15 @@ namespace Mono.Debugger
 			return (ISourceBuffer) cache.Data;
 		}
 
+		public bool Exists (string name)
+		{
+			if (files.Contains (name))
+				return true;
+
+			FileInfo file_info = new FileInfo (name);
+			return file_info.Exists;
+		}
+
 		object read_file (object user_data)
 		{
 			string name = (string) user_data;
