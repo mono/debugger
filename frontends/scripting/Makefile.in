@@ -1,16 +1,18 @@
 MCS=mcs
-JAY=jay
+JAY=/home/peter/cvs/mcs/jay/jay
 DESTDIR=
 
-all: linux
+all: Makefile linux
 
 linux: Parser.cs
 
 Parser.cs: Parser.jay
-	$(JAY) -ctv < skeleton Parser.jay > Parser.cs
+	$(JAY) -ctv < skeleton Parser.jay > Parser.tmp && mv -f Parser.tmp Parser.cs
 
 clean:
 	rm -f Parser.cs y.output
 
 install: all
 
+Makefile: Makefile.in
+	cd ../.. && CONFIG_FILES=frontends/scripting/Makefile CONFIG_HEADERS= ./config.status

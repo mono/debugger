@@ -1,3 +1,11 @@
+2003-01-08  Peter Williams  <peterw@ximian.com>
+
+	* frontends/scripting/Makefile.in: Make the jay rule not clobber Parser.cs
+	if jay fails, and add a rule to regenerate Makefile if needed.
+
+	* backends/ProcessStart.cs: If no directory argument is given, assume
+	we're looking in the current directory.
+
 2003-01-06  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Set version number to 0.1.7 (this is an odd number

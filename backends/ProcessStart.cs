@@ -148,8 +148,11 @@ namespace Mono.Debugger
 			string full_path;
 			if (path.StartsWith ("./"))
 				full_path = Path.GetFullPath (path.Substring (2));
-			else
+			else if (path.Length > 0)
 				full_path = Path.GetFullPath (path);
+			else // FIXME: should search $PATH or something too
+				full_path = Path.GetFullPath ("./");
+
 			if (full_path.EndsWith ("/."))
 				full_path = full_path.Substring (0, full_path.Length-2);
 			return full_path;
