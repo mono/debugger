@@ -1,5 +1,9 @@
 2005-02-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/*.cs: The new Mono debugging interface :-)
+
+2005-02-10  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetBinaryReader.cs (TargetBinaryReader.PeekBuffer):
 	New public method.
 

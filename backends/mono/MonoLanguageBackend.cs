@@ -11,7 +11,7 @@ using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Architecture;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Languages.Mono
 {
 	internal delegate void BreakpointHandler (Inferior inferior, TargetAddress address,
 						  object user_data);
@@ -36,9 +36,7 @@ namespace Mono.Debugger.Languages.CSharp
 		const long AddressModeFlags = 0xf0000000;
 
 		public static int StructSize {
-			get {
-				return 20;
-			}
+			get { return 20; }
 		}
 
 		// FIXME: Map mono/arch/x86/x86-codegen.h registers to
@@ -50,11 +48,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public VariableInfo (TargetBinaryReader reader)
 		{
-			Index = reader.ReadInt32 ();
-			Offset = reader.ReadInt32 ();
-			Size = reader.ReadInt32 ();
-			BeginLiveness = reader.ReadInt32 ();
-			EndLiveness = reader.ReadInt32 ();
+			Index = reader.ReadLeb128 ();
+			Offset = reader.ReadSLeb128 ();
+			Size = reader.ReadLeb128 ();
+			BeginLiveness = reader.ReadLeb128 ();
+			EndLiveness = reader.ReadLeb128 ();
 
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
@@ -77,10 +75,10 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int Offset;
 		public readonly int Address;
 
-		public JitLineNumberEntry (TargetBinaryReader reader)
+		public JitLineNumberEntry (int offset, int address)
 		{
-			Offset = reader.ReadInt32 ();
-			Address = reader.ReadInt32 ();
+			this.Offset = offset;
+			this.Address = address;
 		}
 
 		public override string ToString ()
@@ -114,15 +112,10 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress MethodEndAddress;
 		public readonly TargetAddress WrapperAddress;
 		public readonly JitLineNumberEntry[] LineNumbers;
-		public readonly JitLexicalBlockEntry[] LexicalBlocks;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
 		public readonly bool HasThis;
-		public readonly int NumParameters;
-		public readonly int ClassTypeInfoOffset;
-		public readonly int[] ParamTypeInfoOffsets;
-		public readonly int[] LocalTypeInfoOffsets;
 
 		protected TargetAddress ReadAddress (TargetBinaryReader reader, AddressDomain domain)
 		{
@@ -135,65 +128,38 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MethodAddress (C.MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
 		{
-			reader.Position = 4;
+			reader.Position = 16;
 			StartAddress = ReadAddress (reader, domain);
-			EndAddress = ReadAddress (reader, domain);
-			MethodStartAddress = ReadAddress (reader, domain);
-			MethodEndAddress = ReadAddress (reader, domain);
+			EndAddress = StartAddress + reader.ReadInt32 ();
 			WrapperAddress = ReadAddress (reader, domain);
 
-			HasThis = reader.ReadInt32 () != 0;
-			NumParameters = reader.ReadInt32 ();
-			int variables_offset = reader.ReadInt32 ();
-			int type_table_offset = reader.ReadInt32 ();
+			MethodStartAddress = StartAddress + reader.ReadLeb128 ();
+			MethodEndAddress = StartAddress + reader.ReadLeb128 ();
 
-			int num_line_numbers = reader.ReadInt32 ();
+			int num_line_numbers = reader.ReadLeb128 ();
 			LineNumbers = new JitLineNumberEntry [num_line_numbers];
 
-			int line_number_offset = reader.ReadInt32 ();
+			int il_offset = 0, native_offset = 0;
+			for (int i = 0; i < num_line_numbers; i++) {
+				il_offset += reader.ReadSLeb128 ();
+				native_offset += reader.ReadSLeb128 ();
 
-			int lexical_block_table_offset = reader.ReadInt32 ();
-
-			Report.Debug (DebugFlags.MethodAddress,
-				      "METHOD ADDRESS: {0} {1} {2} {3} {4} {5} {6} {7}",
-				      StartAddress, EndAddress, MethodStartAddress, MethodEndAddress,
-				      WrapperAddress, variables_offset, type_table_offset, num_line_numbers);
-
-			if (num_line_numbers > 0) {
-				reader.Position = line_number_offset;
-				for (int i = 0; i < num_line_numbers; i++)
-					LineNumbers [i] = new JitLineNumberEntry (reader);
-				MethodStartAddress = StartAddress + LineNumbers [0].Address;
-				MethodEndAddress = StartAddress + LineNumbers [num_line_numbers-1].Address;
+				LineNumbers [i] = new JitLineNumberEntry (il_offset, native_offset);
 			}
 
-			reader.Position = variables_offset;
+			HasThis = reader.ReadByte () != 0;
 			if (HasThis)
 				ThisVariableInfo = new VariableInfo (reader);
 
-			ParamVariableInfo = new VariableInfo [NumParameters];
-			for (int i = 0; i < NumParameters; i++)
+			int num_params = reader.ReadLeb128 ();
+			ParamVariableInfo = new VariableInfo [num_params];
+			for (int i = 0; i < num_params; i++)
 				ParamVariableInfo [i] = new VariableInfo (reader);
 
-			LocalVariableInfo = new VariableInfo [entry.NumLocals];
-			for (int i = 0; i < entry.NumLocals; i++)
+			int num_locals = reader.ReadLeb128 ();
+			LocalVariableInfo = new VariableInfo [num_locals];
+			for (int i = 0; i < num_locals; i++)
 				LocalVariableInfo [i] = new VariableInfo (reader);
-
-			reader.Position = type_table_offset;
-			ClassTypeInfoOffset = reader.ReadInt32 ();
-
-			ParamTypeInfoOffsets = new int [NumParameters];
-			for (int i = 0; i < NumParameters; i++)
-				ParamTypeInfoOffsets [i] = reader.ReadInt32 ();
-
-			LocalTypeInfoOffsets = new int [entry.NumLocals];
-			for (int i = 0; i < entry.NumLocals; i++)
-				LocalTypeInfoOffsets [i] = reader.ReadInt32 ();
-
-			reader.Position = lexical_block_table_offset;
-			LexicalBlocks = new JitLexicalBlockEntry [entry.LexicalBlocks.Length];
-			for (int i = 0; i < LexicalBlocks.Length; i++)
-				LexicalBlocks [i] = new JitLexicalBlockEntry (reader);
 		}
 
 		public override string ToString ()
@@ -201,1064 +167,6 @@ namespace Mono.Debugger.Languages.CSharp
 			return String.Format ("[Address {0:x}:{1:x}:{3:x}:{4:x},{5:x},{2}]",
 					      StartAddress, EndAddress, LineNumbers.Length,
 					      MethodStartAddress, MethodEndAddress, WrapperAddress);
-		}
-	}
-
-	internal class MonoBuiltinTypes
-	{
-		public readonly MonoObjectType ObjectType;
-		public readonly MonoClass ValueType;
-		public readonly MonoFundamentalType ByteType;
-		public readonly MonoOpaqueType VoidType;
-		public readonly MonoFundamentalType BooleanType;
-		public readonly MonoFundamentalType SByteType;
-		public readonly MonoFundamentalType Int16Type;
-		public readonly MonoFundamentalType UInt16Type;
-		public readonly MonoFundamentalType Int32Type;
-		public readonly MonoFundamentalType UInt32Type;
-		public readonly MonoFundamentalType IntType;
-		public readonly MonoFundamentalType UIntType;
-		public readonly MonoFundamentalType Int64Type;
-		public readonly MonoFundamentalType UInt64Type;
-		public readonly MonoFundamentalType SingleType;
-		public readonly MonoFundamentalType DoubleType;
-		public readonly MonoFundamentalType CharType;
-		public readonly MonoStringType StringType;
-		public readonly MonoClass EnumType;
-		public readonly int EnumInfo;
-		public readonly MonoClass ArrayType;
-		public readonly int ArrayInfo;
-		public readonly MonoClass ExceptionType;
-
-		protected readonly int TypeInfoSize;
-
-		public MonoBuiltinTypes (MonoSymbolTable table, ITargetMemoryAccess memory, TargetAddress address,
-					 MonoSymbolFile corlib)
-		{
-			int size = memory.ReadInteger (address);
-			ITargetMemoryReader reader = memory.ReadMemory (address, size);
-
-			reader.Offset = reader.TargetIntegerSize;
-			TypeInfoSize = reader.ReadInteger ();
-			ObjectType = (MonoObjectType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			ValueType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			ByteType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			VoidType = (MonoOpaqueType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			BooleanType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			SByteType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			Int16Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			UInt16Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			Int32Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			UInt32Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			IntType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			UIntType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			Int64Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			UInt64Type = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			SingleType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			DoubleType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			CharType = (MonoFundamentalType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			StringType = (MonoStringType) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-			EnumType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib, out EnumInfo);
-			ArrayType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib, out ArrayInfo);
-			ExceptionType = (MonoClass) BuiltinTypeInfo.GetType (this, memory, reader.ReadGlobalAddress (), corlib);
-		}
-
-		private struct BuiltinTypeInfo
-		{
-			public readonly TargetAddress Klass;
-			readonly TargetAddress ClassInfoAddress;
-			readonly int TypeInfo;
-			readonly int ClassInfo;
-			readonly TargetAddress TypeData;
-
-			public BuiltinTypeInfo (ITargetMemoryReader reader)
-			{
-				ClassInfoAddress = reader.ReadGlobalAddress ();
-				Klass = reader.ReadGlobalAddress ();
-				TypeInfo = reader.ReadInteger ();
-				ClassInfo = reader.ReadInteger ();
-				TypeData = reader.ReadGlobalAddress ();
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("{0} ({1}:{2}:{3:x}:{4:x}:{5})",
-						      GetType (), Klass, ClassInfoAddress,
-						      TypeInfo, ClassInfo, TypeData);
-			}
-
-			public static MonoType GetType (MonoBuiltinTypes builtin,
-							ITargetMemoryAccess memory,
-							TargetAddress address,
-							MonoSymbolFile corlib)
-			{
-				int info;
-				return GetType (builtin, memory, address, corlib, out info);
-			}
-
-			public static MonoType GetType (MonoBuiltinTypes builtin,
-							ITargetMemoryAccess memory,
-							TargetAddress address,
-							MonoSymbolFile corlib,
-							out int type_info)
-			{
-				int size = builtin.TypeInfoSize;
-				ITargetMemoryReader reader = memory.ReadMemory (address, size);
-
-				BuiltinTypeInfo info = new BuiltinTypeInfo (reader);
-				TargetAddress class_info_address = memory.ReadAddress (
-					info.ClassInfoAddress);
-
-				type_info = info.TypeInfo;
-				return corlib.GetType (memory, class_info_address);
-			}
-		}
-	}
-
-	// <summary>
-	//   Holds all the symbol tables from the target's JIT.
-	// </summary>
-	internal class MonoSymbolTable : Module, ISymbolFile, ISimpleSymbolTable,
-		ILanguage, IDisposable
-	{
-		public const int  MinDynamicVersion = 47;
-		public const int  MaxDynamicVersion = 47;
-		public const long DynamicMagic   = 0x7aff65af4253d427;
-
-		internal ArrayList SymbolFiles;
-		public readonly MonoCSharpLanguageBackend CSharpLanguage;
-		public readonly DebuggerBackend Backend;
-		public readonly ITargetMemoryInfo TargetInfo;
-		// ArrayList ranges;
-		Hashtable class_table;
-		Hashtable types;
-		Hashtable image_hash;
-		Hashtable assembly_hash;
-		ArrayList wrappers;
-
-		MonoBuiltinTypes builtin;
-		MonoSymbolFile corlib;
-		TargetAddress StartAddress;
-		SymbolTable symtab;
-		int TotalSize;
-
-		int address_size;
-
-		int last_num_type_tables;
-		int last_type_table_offset;
-		ArrayList type_table;
-
-		int last_num_misc_tables;
-		int last_misc_table_offset = 1;
-
-		public MonoSymbolTable (DebuggerBackend backend, MonoCSharpLanguageBackend language,
-					ITargetMemoryAccess memory, TargetAddress address)
-		{
-			this.CSharpLanguage = language;
-			this.Backend = backend;
-			this.TargetInfo = memory;
-
-			address_size = memory.TargetAddressSize;
-
-			image_hash = new Hashtable ();
-			assembly_hash = new Hashtable ();
-			type_table = new ArrayList ();
-
-			types = new Hashtable ();
-			class_table = new Hashtable ();
-			wrappers = new ArrayList ();
-
-			SymbolFiles = new ArrayList ();
-
-			TotalSize = language.MonoDebuggerInfo.SymbolTableSize;
-			StartAddress = address;
-
-			symtab = new WrapperSymbolTable (this);
-			backend.ModuleManager.AddModule (this);
-		}
-
-		// This method reads the MonoDebuggerSymbolTable
-		// structure (struct definition is in
-		// mono-debug-debugger.h)
-		internal void Update (ITargetMemoryAccess memory)
-		{
-			ITargetMemoryReader header = memory.ReadMemory (StartAddress, TotalSize);
-
-			long magic = header.ReadLongInteger ();
-			if (magic != DynamicMagic)
-				throw new SymbolTableException (
-					"Debugger symbol table has unknown magic {0:x}.", magic);
-
-			int version = header.ReadInteger ();
-			if (version < MinDynamicVersion)
-				throw new SymbolTableException (
-					"Debugger symbol table has version {0}, but " +
-					"expected at least {1}.", version,
-					MinDynamicVersion);
-			if (version > MaxDynamicVersion)
-				throw new SymbolTableException (
-					"Debugger symbol table has version {0}, but " +
-					"expected at most {1}.", version,
-					MaxDynamicVersion);
-
-			int total_size = header.ReadInteger ();
-			if (total_size != TotalSize)
-				throw new SymbolTableException (
-					"Debugger symbol table has size {0}, but " +
-					"expected {1}.", total_size,
-					TotalSize);
-
-			TargetAddress corlib_address = header.ReadAddress ();
-			TargetAddress builtin_types_address = header.ReadAddress ();
-
-			int num_symbol_files = header.ReadInteger ();
-			TargetAddress symbol_files = header.ReadAddress ();
-
-			symbol_files += SymbolFiles.Count * address_size;
-
-			for (int i = SymbolFiles.Count; i < num_symbol_files; i++) {
-				TargetAddress address = memory.ReadAddress (symbol_files);
-				symbol_files += address_size;
-
-				try {
-					MonoSymbolFile symfile = new MonoSymbolFile (
-						this, Backend, memory, memory, address);
-					SymbolFiles.Add (symfile);
-
-					if (address == corlib_address)
-						corlib = symfile;
-				} catch (C.MonoSymbolFileException ex) {
-					Console.WriteLine (ex.Message);
-				} catch (Exception ex) {
-					Console.WriteLine (ex.Message);
-				}
-			}
-
-			read_type_table (memory, header);
-
-			read_misc_table (memory, header);
-
-			if (corlib == null)
-				throw new InternalError ();
-			if (builtin == null) {
-				builtin = new MonoBuiltinTypes (this, memory, builtin_types_address, corlib);
-			}
-
-			bool updated = false;
-
-			foreach (MonoSymbolFile symfile in SymbolFiles) {
-				if (!symfile.LoadSymbols)
-					continue;
-
-				if (symfile.Update (memory))
-					updated = true;
-			}
-		}
-
-		// This method reads a portion of the
-		// MonoDebuggerSymbolTable (defn in
-		// mono-debug-debugger.h)
-		void read_type_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
-		{
-			int num_type_tables = header.ReadInteger ();
-			int chunk_size = header.ReadInteger ();
-			TargetAddress type_tables = header.ReadAddress ();
-
-			Report.Debug (DebugFlags.JitSymtab, "TYPE TABLES: {0} {1} {2} {3}",
-				      last_num_type_tables, num_type_tables, chunk_size,
-				      type_tables);
-
-			if (num_type_tables != last_num_type_tables) {
-				int old_offset = 0;
-				int old_count = num_type_tables;
-				int old_size = old_count * chunk_size;
-				byte[] old_data = new byte [old_size];
-
-				for (int i = 0; i < num_type_tables; i++) {
-					TargetAddress old_table = memory.ReadAddress (
-						type_tables);
-					type_tables += address_size;
-
-					byte[] temp_data = memory.ReadBuffer (
-						old_table, chunk_size);
-					temp_data.CopyTo (old_data, old_offset);
-					old_offset += chunk_size;
-				}
-
-				last_num_type_tables = num_type_tables;
-				last_type_table_offset = old_size;
-
-				type_table = new ArrayList ();
-				type_table.Add (new TypeEntry (0, old_size, old_data));
-			}
-
-			TargetAddress type_table_address = header.ReadAddress ();
-			int type_table_total_size = header.ReadInteger ();
-			int offset = header.ReadInteger ();
-			int start = header.ReadInteger ();
-
-			int size = offset - last_type_table_offset;
-			int read_offset = last_type_table_offset - start;
-
-			Report.Debug (DebugFlags.JitSymtab,
-				      "TYPE TABLE: {0} {1} {2} {3} - {4} {5}",
-				      type_table_address, type_table_total_size,
-				      offset, start, read_offset, size);
-
-			if (size != 0) {
-				byte[] data = memory.ReadBuffer (
-					type_table_address + read_offset, size);
-				type_table.Add (
-					new TypeEntry (last_type_table_offset, size, data));
-			}
-
-			last_type_table_offset = offset;
-		}
-
-		// This method reads a portion of the
-		// MonoDebuggerSymbolTable (defn in
-		// mono-debug-debugger.h)
-		void read_misc_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
-		{
-			int num_misc_tables = header.ReadInteger ();
-			int chunk_size = header.ReadInteger ();
-			TargetAddress misc_tables = header.ReadAddress ();
-
-			Report.Debug (DebugFlags.JitSymtab, "MISC TABLES: {0} {1} {2} {3}",
-				      last_num_misc_tables, num_misc_tables, chunk_size,
-				      misc_tables);
-
-			if (num_misc_tables != last_num_misc_tables) {
-				int old_offset = 0;
-				int old_count = num_misc_tables;
-				int old_size = old_count * chunk_size;
-				byte[] old_data = new byte [old_size];
-
-				for (int i = 0; i < num_misc_tables; i++) {
-					TargetAddress old_table = memory.ReadAddress (
-						misc_tables);
-					misc_tables += address_size;
-
-					byte[] temp_data = memory.ReadBuffer (
-						old_table, chunk_size);
-					temp_data.CopyTo (old_data, old_offset);
-					old_offset += chunk_size;
-				}
-
-				last_num_misc_tables = num_misc_tables;
-				last_misc_table_offset = old_size;
-			}
-
-			TargetAddress misc_table_address = header.ReadAddress ();
-			int misc_table_total_size = header.ReadInteger ();
-			int offset = header.ReadInteger ();
-			int start = header.ReadInteger ();
-
-			int size = offset - last_misc_table_offset;
-			int read_offset = last_misc_table_offset - start;
-
-			Report.Debug (DebugFlags.JitSymtab,
-				      "MISC TABLE: {0} {1} {2} {3} - {4} {5}",
-				      misc_table_address, misc_table_total_size,
-				      offset, start, read_offset, size);
-
-			if (!misc_table_address.IsNull && (size != 0)) {
-				ITargetMemoryReader reader = memory.ReadMemory (
-					misc_table_address + read_offset, size);
-				process_misc_entry (memory, reader);
-			}
-
-			last_misc_table_offset = offset;
-		}
-
-		enum MiscEntryType {
-			Unknown = 0,
-			Wrapper
-		}
-
-		void process_misc_entry (ITargetMemoryAccess memory,
-					 ITargetMemoryReader reader)
-		{
-			while (reader.BinaryReader.Position < reader.BinaryReader.Size) {
-				long offset = reader.BinaryReader.Position;
-				int size = reader.BinaryReader.ReadInt32 ();
-				long end = reader.BinaryReader.Position + size;
-
-				int type = reader.BinaryReader.ReadInt32 ();
-				switch ((MiscEntryType) type) {
-				case MiscEntryType.Wrapper:
-					wrappers.Add (WrapperEntry.ReadWrapper ( this, reader));
-					break;
-
-				default:
-					// Ignore unknown entries
-					break;
-				}
-
-				reader.BinaryReader.Position = end;
-			}
-		}
-
-		enum MonoDebuggerType {
-			Unknown = 0,
-			Void,
-			Boolean,
-			Char,
-			Byte,
-			SByte,
-			Int16,
-			UInt16,
-			Int32,
-			UInt32,
-			Int64,
-			UInt64,
-			Single,
-			Double,
-			IntPtr,
-			UIntPtr,
-			String,
-			Array,
-			Enum,
-			Max = 100
-		}
-
-		int GetBuiltinTypeInfo (MonoDebuggerType type)
-		{
-			switch (type) {
-			case MonoDebuggerType.Enum:
-				return builtin.EnumInfo;
-
-			case MonoDebuggerType.Array:
-				return builtin.ArrayInfo;
-
-			default:
-				throw new InvalidOperationException ();
-			}
-		}
-
-		MonoType GetBuiltinType (MonoDebuggerType type)
-		{
-			switch (type) {
-			case MonoDebuggerType.Void:
-				return builtin.VoidType;
-
-			case MonoDebuggerType.Boolean:
-				return builtin.BooleanType;
-
-			case MonoDebuggerType.Char:
-				return builtin.CharType;
-
-			case MonoDebuggerType.Byte:
-				return builtin.ByteType;
-
-			case MonoDebuggerType.SByte:
-				return builtin.SByteType;
-
-			case MonoDebuggerType.Int16:
-				return builtin.Int16Type;
-
-			case MonoDebuggerType.UInt16:
-				return builtin.UInt16Type;
-
-			case MonoDebuggerType.Int32:
-				return builtin.Int32Type;
-
-			case MonoDebuggerType.UInt32:
-				return builtin.UInt32Type;
-
-			case MonoDebuggerType.Int64:
-				return builtin.Int64Type;
-
-			case MonoDebuggerType.UInt64:
-				return builtin.UInt64Type;
-
-			case MonoDebuggerType.Single:
-				return builtin.SingleType;
-
-			case MonoDebuggerType.Double:
-				return builtin.DoubleType;
-
-			case MonoDebuggerType.String:
-				return builtin.StringType;
-
-			case MonoDebuggerType.IntPtr:
-				return builtin.IntType;
-
-			case MonoDebuggerType.UIntPtr:
-				return builtin.UIntType;
-
-			default:
-				throw new InvalidOperationException ();
-			}
-		}
-
-		public MonoType GetType (Type type, int offset)
-		{
-			MonoType retval = (MonoType) types [type];
-			if (retval != null)
-				return retval;
-
-			MonoSymbolFile reader = GetImage (type.Assembly);
-			if (reader == null)
-				throw new InternalError ();
-
-			if (offset < (int) MonoDebuggerType.Max)
-				return GetBuiltinType ((MonoDebuggerType) offset);
-
-			byte[] data = GetTypeInfo (offset);
-			TargetBinaryReader info = new TargetBinaryReader (data, TargetInfo);
-			retval = MonoType.GetType (type, info, reader);
-			if (!types.Contains (type))
-				types.Add (type, retval);
-			return retval;
-		}
-
-		public MonoType GetTypeFromClass (Type type, long klass_address)
-		{
-			ClassEntry entry = (ClassEntry) class_table [klass_address];
-
-			if ((entry == null) || (entry.Type == null)) {
-				Console.WriteLine ("Can't find class for type {0} at address {1:x}",
-						   type, klass_address);
-				return new MonoOpaqueType (type, 0);
-			}
-
-			return GetType (entry.Type, entry.TypeInfo);
-		}
-
-		public AddressDomain GlobalAddressDomain {
-			get {
-				return TargetInfo.GlobalAddressDomain;
-			}
-		}
-
-		public AddressDomain AddressDomain {
-			get {
-				return Backend.ThreadManager.AddressDomain;
-			}
-		}
-
-		public ArrayList Wrappers {
-			get {
-				lock (this) {
-					return wrappers;
-				}
-			}
-		}
-
-		internal void AddType (ClassEntry type)
-		{
-			lock (this) {
-				if (!class_table.Contains (type.KlassAddress.Address))
-					class_table.Add (type.KlassAddress.Address, type);
-			}
-		}
-
-		internal void AddImage (MonoSymbolFile reader)
-		{
-			lock (this) {
-				image_hash.Add (reader.MonoImage.Address, reader);
-				assembly_hash.Add (reader.Assembly, reader);
-			}
-		}
-
-		public MonoSymbolFile GetImage (TargetAddress address)
-		{
-			lock (this) {
-				return (MonoSymbolFile) image_hash [address.Address];
-			}
-		}
-
-		public MonoSymbolFile GetImage (R.Assembly assembly)
-		{
-			lock (this) {
-				return (MonoSymbolFile) assembly_hash [assembly];
-			}
-		}
-
-		//
-		// ILanguage
-		//
-
-		string ILanguage.Name {
-			get { return "C#"; }
-		}
-
-		public MonoObjectType ObjectType {
-			get { return builtin.ObjectType; }
-		}
-
-		public MonoStringType StringType {
-			get { return builtin.StringType; }
-		}
-
-		ITargetFundamentalType ILanguage.IntegerType {
-			get { return builtin.Int32Type; }
-		}
-
-		ITargetFundamentalType ILanguage.LongIntegerType {
-			get { return builtin.Int64Type; }
-		}
-
-		ITargetFundamentalType ILanguage.StringType {
-			get { return builtin.StringType; }
-		}
-
-		ITargetType ILanguage.PointerType {
-			get { return builtin.IntType; }
-		}
-
-		ITargetType ILanguage.ExceptionType {
-			get { return builtin.ExceptionType; }
-		}
-
-		private ITargetType LookupType (StackFrame frame, Type type, string name)
-		{
-			int offset = CSharpLanguage.LookupType (frame, name);
-			if (offset == 0)
-				return null;
-			return GetType (type, offset);
-		}
-
-		public ITargetType LookupType (StackFrame frame, string name)
-		{
-			switch (name) {
-			case "short":
-				name = "System.Int16";
-				break;
-			case "ushort":
-				name = "System.UInt16";
-				break;
-			case "int":
-				name = "System.Int32";
-				break;
-			case "uint":
-				name = "System.UInt32";
-				break;
-			case "long":
-				name = "System.Int64";
-				break;
-			case "ulong":
-				name = "System.UInt64";
-				break;
-			case "float":
-				name = "System.Single";
-				break;
-			case "double":
-				name = "System.Double";
-				break;
-			case "char":
-				name = "System.Char";
-				break;
-			case "byte":
-				name = "System.Byte";
-				break;
-			case "sbyte":
-				name = "System.SByte";
-				break;
-			case "object":
-				name = "System.Object";
-				break;
-			case "string":
-				name = "System.String";
-				break;
-			case "bool":
-				name = "System.Boolean";
-				break;
-			case "void":
-				name = "System.Void";
-				break;
-			case "decimal":
-				name = "System.Decimal";
-				break;
-			}
-
-			if (name.IndexOf ('[') >= 0)
-				return null;
-
-			foreach (MonoSymbolFile symfile in SymbolFiles) {
-				Type type = symfile.Assembly.GetType (name);
-				if (type == null)
-					continue;
-
-				MonoType mtype = (MonoType) types [type];
-				if (mtype != null)
-					return mtype;
-
-				return LookupType (frame, type, name);
-			}
-
-			return null;
-		}
-
-		public MonoFundamentalType GetType (Type type)
-		{
-			if (type == typeof (byte))
-				return builtin.ByteType;
-			else if (type == typeof (sbyte))
-				return builtin.SByteType;
-			else if (type == typeof (bool))
-				return builtin.BooleanType;
-			else if (type == typeof (short))
-				return builtin.Int16Type;
-			else if (type == typeof (ushort))
-				return builtin.UInt16Type;
-			else if (type == typeof (int))
-				return builtin.Int32Type;
-			else if (type == typeof (uint))
-				return builtin.UInt32Type;
-			else if (type == typeof (long))
-				return builtin.Int64Type;
-			else if (type == typeof (ulong))
-				return builtin.UInt64Type;
-			else if (type == typeof (float))
-				return builtin.SingleType;
-			else if (type == typeof (double))
-				return builtin.DoubleType;
-			else if (type == typeof (char))
-				return builtin.CharType;
-			else if (type == typeof (string))
-				return builtin.StringType;
-			else if (type == typeof (IntPtr))
-				return builtin.IntType;
-
-			return null;
-		}
-
-		public bool CanCreateInstance (Type type)
-		{
-			return GetType (type) != null;
-		}
-
-		public ITargetObject CreateInstance (StackFrame frame, object obj)
-		{
-			MonoFundamentalType type = GetType (obj.GetType ());
-			if (type == null)
-				return null;
-
-			return type.CreateInstance (frame, obj);
-		}
-
-		public ITargetPointerObject CreatePointer (StackFrame frame,
-							   TargetAddress address)
-		{
-			return Backend.BfdContainer.NativeLanguage.CreatePointer (
-				frame, address);
-		}
-
-		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
-		{
-			MonoObjectObject obj = builtin.ObjectType.CreateObject (frame, address);
-			if (obj == null)
-				return null;
-
-			if (obj.HasDereferencedObject)
-				return obj.DereferencedObject;
-			else
-				return obj;
-		}
-
-		private class WrapperEntry : SymbolRangeEntry
-		{
-			MonoSymbolTable table;
-			TargetAddress func;
-			TargetAddress method_start, method_end;
-			public readonly string Name;
-
-			private WrapperEntry (MonoSymbolTable table, string name,
-					      TargetAddress start, TargetAddress end,
-					      TargetAddress func, TargetAddress method_start,
-					      TargetAddress method_end)
-				: base (start, end)
-			{
-				this.table = table;
-				this.Name = name;
-				this.func = func;
-				this.method_start = method_start;
-				this.method_end = method_end;
-			}
-
-			public static WrapperEntry ReadWrapper (MonoSymbolTable table,
-								ITargetMemoryReader reader)
-			{
-				string name = reader.BinaryReader.ReadString ();
-				TargetAddress start = reader.ReadGlobalAddress ();
-				TargetAddress end = reader.ReadGlobalAddress ();
-				TargetAddress func = reader.ReadGlobalAddress ();
-				TargetAddress method_start = reader.ReadGlobalAddress ();
-				TargetAddress method_end = reader.ReadGlobalAddress ();
-
-				return new WrapperEntry (table, name, start, end, func,
-							 method_start, method_end);
-			}
-
-			protected override ISymbolLookup GetSymbolLookup ()
-			{
-				return new WrapperMethod (
-					table, Name, StartAddress, EndAddress, func,
-					method_start, method_end);
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("WrapperEntry [{0:x}:{1:x}:{2:x}:{3}]",
-						      StartAddress, EndAddress, func, Name);
-			}
-		}
-
-		protected class WrapperMethod : MethodBase
-		{
-			public WrapperMethod (MonoSymbolTable table, string name,
-					      TargetAddress start, TargetAddress end,
-					      TargetAddress func, TargetAddress m_start,
-					      TargetAddress m_end)
-				: base (name, null, table.corlib, start, end)
-			{
-				SetMethodBounds (m_start, m_end);
-				SetWrapperAddress (func);
-			}
-
-			public override object MethodHandle {
-				get {
-					return null;
-				}
-			}
-
-			public override IVariable[] Parameters {
-				get {
-					return null;
-				}
-			}
-
-			public override IVariable[] Locals {
-				get {
-					return null;
-				}
-			}
-
-			public override ITargetStructType DeclaringType {
-				get {
-					return null;
-				}
-			}
-
-			public override bool HasThis {
-				get {
-					return false;
-				}
-			}
-
-			public override IVariable This {
-				get {
-					return null;
-				}
-			}
-
-			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
-								    TargetAddress address)
-			{
-				return null;
-			}
-		}
-
-		private class WrapperSymbolTable : SymbolTable
-		{
-			MonoSymbolTable table;
-
-			public WrapperSymbolTable (MonoSymbolTable table)
-			{
-				this.table = table;
-			}
-
-			public override bool HasMethods {
-				get {
-					return false;
-				}
-			}
-
-			protected override ArrayList GetMethods ()
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override bool HasRanges {
-				get {
-					return true;
-				}
-			}
-
-			public override ISymbolRange[] SymbolRanges {
-				get {
-					ArrayList ranges = table.Wrappers;
-					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
-					ranges.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-		}
-
-		public override string Name {
-			get { return "<Mono Runtime>"; }
-		}
-
-		public override ILanguage Language {
-			get { return this; }
-		}
-
-		internal override ILanguageBackend LanguageBackend {
-			get { return CSharpLanguage; }
-		}
-
-		public override ISymbolFile SymbolFile {
-			get { return this; }
-		}
-
-		public override bool SymbolsLoaded {
-			get { return true; }
-		}
-
-		public SourceFile[] Sources {
-			get { return new SourceFile [0]; }
-		}
-
-		public override bool HasDebuggingInfo {
-			get { return true; }
-		}
-
-		public override ISymbolTable SymbolTable {
-			get { return symtab; }
-		}
-
-		public override ISimpleSymbolTable SimpleSymbolTable {
-			get { return this; }
-		}
-
-		public override TargetAddress SimpleLookup (string name)
-		{
-			return TargetAddress.Null;
-		}
-
-		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
-		{
-			foreach (WrapperEntry wrapper in wrappers) {
-				if ((address < wrapper.StartAddress) ||
-				    (address > wrapper.EndAddress))
-					continue;
-
-				long offset = address - wrapper.StartAddress;
-				if (exact_match && (offset != 0))
-					continue;
-
-				return new Symbol (
-					wrapper.Name, wrapper.StartAddress, (int) offset);
-			}
-
-			return null;
-		}
-
-		internal override IDisposable RegisterLoadHandler (Process process,
-								   SourceMethod source,
-								   MethodLoadedHandler handler,
-								   object user_data)
-		{
-			return null;
-		}
-
-		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-								ITargetMemoryAccess memory)
-		{
-			return null;
-		}
-
-		void ISymbolFile.GetMethods (SourceFile file)
-		{ }
-
-		IMethod ISymbolFile.GetMethod (long handle)
-		{
-			return null;
-		}
-
-		SourceMethod ISymbolFile.FindMethod (string name)
-		{
-			return null;
-		}
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		private void Dispose (bool disposing)
-		{
-			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-			// If this is a call to Dispose, dispose all managed resources.
-				if (disposing) {
-					SymbolFiles = null;
-					types = new Hashtable ();
-					class_table = new Hashtable ();
-				}
-
-				// Release unmanaged resources
-				this.disposed = true;
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-				// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~MonoSymbolTable ()
-		{
-			Dispose (false);
-		}
-
-		private struct TypeEntry {
-			public readonly int Offset;
-			public readonly int Size;
-			public readonly byte[] Data;
-
-			public TypeEntry (ITargetMemoryAccess memory, TargetAddress address,
-					  int offset, int size)
-			{
-				this.Offset = offset;
-				this.Size = size;
-				this.Data = memory.ReadBuffer (address + offset, size);
-			}
-
-			public TypeEntry (int offset, int size, byte[] data)
-			{
-				this.Offset = offset;
-				this.Size = size;
-				this.Data = data;
-			}
-		}
-
-		public byte[] GetTypeInfo (int offset)
-		{
-			if (offset < (int) MonoDebuggerType.Max)
-				offset = GetBuiltinTypeInfo ((MonoDebuggerType) offset);
-
-			int count = type_table.Count;
-			for (int i = 0; i < count; i++) {
-				TypeEntry entry = (TypeEntry) type_table [i];
-
-				if (offset >= entry.Offset + entry.Size)
-					continue;
-
-				offset -= entry.Offset;
-				int size = BitConverter.ToInt32 (entry.Data, offset);
-
-				byte[] retval = new byte [size];
-				Array.Copy (entry.Data, offset + 4, retval, 0, size);
-				return retval;
-			}
-
-			throw new InternalError ("Can't find type entry at offset {0}.", offset);
 		}
 	}
 
@@ -1284,19 +192,19 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			reader.Offset = reader.TargetLongIntegerSize +
 				2 * reader.TargetIntegerSize;
-			GenericTrampolineCode = reader.ReadAddress ();
-			SymbolTable = reader.ReadAddress ();
+			GenericTrampolineCode = reader.ReadGlobalAddress ();
+			SymbolTable = reader.ReadGlobalAddress ();
 			SymbolTableSize = reader.ReadInteger ();
-			CompileMethod = reader.ReadAddress ();
-			GetVirtualMethod = reader.ReadAddress ();
-			GetBoxedObjectMethod = reader.ReadAddress ();
-			InsertBreakpoint = reader.ReadAddress ();
-			RemoveBreakpoint = reader.ReadAddress ();
-			RuntimeInvoke = reader.ReadAddress ();
-			CreateString = reader.ReadAddress ();
-			ClassGetStaticFieldData = reader.ReadAddress ();
-			LookupType = reader.ReadAddress ();
-			LookupAssembly = reader.ReadAddress ();
+			CompileMethod = reader.ReadGlobalAddress ();
+			GetVirtualMethod = reader.ReadGlobalAddress ();
+			GetBoxedObjectMethod = reader.ReadGlobalAddress ();
+			InsertBreakpoint = reader.ReadGlobalAddress ();
+			RemoveBreakpoint = reader.ReadGlobalAddress ();
+			RuntimeInvoke = reader.ReadGlobalAddress ();
+			CreateString = reader.ReadGlobalAddress ();
+			ClassGetStaticFieldData = reader.ReadGlobalAddress ();
+			LookupType = reader.ReadGlobalAddress ();
+			LookupAssembly = reader.ReadGlobalAddress ();
 			Heap = reader.ReadAddress ();
 			HeapSize = reader.ReadInteger ();
 			Report.Debug (DebugFlags.JitSymtab, this);
@@ -1312,78 +220,161 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class ClassEntry
+	internal class MonoBuiltinTypeInfo
 	{
-		public readonly TargetAddress KlassAddress;
-		public readonly int Rank;
-		public readonly int Token;
-		public readonly int TypeInfo;
-		public readonly Type Type;
+		public readonly MonoSymbolFile Corlib;
+		public readonly MonoObjectType ObjectType;
+		// public readonly MonoClass ValueType;
+		public readonly MonoFundamentalType ByteType;
+		public readonly MonoOpaqueType VoidType;
+		public readonly MonoFundamentalType BooleanType;
+		public readonly MonoFundamentalType SByteType;
+		public readonly MonoFundamentalType Int16Type;
+		public readonly MonoFundamentalType UInt16Type;
+		public readonly MonoFundamentalType Int32Type;
+		public readonly MonoFundamentalType UInt32Type;
+		public readonly MonoFundamentalType IntType;
+		public readonly MonoFundamentalType UIntType;
+		public readonly MonoFundamentalType Int64Type;
+		public readonly MonoFundamentalType UInt64Type;
+		public readonly MonoFundamentalType SingleType;
+		public readonly MonoFundamentalType DoubleType;
+		public readonly MonoFundamentalType CharType;
+		public readonly MonoStringType StringType;
+		// public readonly MonoClass EnumType;
+		// public readonly MonoClass ArrayType;
+		// public readonly MonoClass ExceptionType;
 
-		internal ClassEntry (MonoSymbolFile file, ITargetMemoryReader reader)
+		public readonly int KlassFieldOffset;
+		public readonly int KlassMethodsOffset;
+		public readonly int KlassMethodCountOffset;
+		public readonly int FieldInfoSize;
+
+		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, ITargetMemoryAccess memory,
+					    TargetAddress address)
 		{
-			KlassAddress = reader.ReadAddress ();
-			Rank = reader.BinaryReader.ReadInt32 ();
-			Token = reader.BinaryReader.ReadInt32 ();
-			TypeInfo = reader.BinaryReader.ReadInt32 ();
+			this.Corlib = corlib;
 
-			if (Token != 0)
-				Type = C.MonoDebuggerSupport.GetType (file.Assembly, Token);
-		}
+			int size = memory.ReadInteger (address);
+			ITargetMemoryReader reader = memory.ReadMemory (address, size);
+			reader.ReadInteger ();
 
-		public static void ReadClasses (MonoSymbolFile file,
-						ITargetMemoryReader reader, int count)
-		{
-			for (int i = 0; i < count; i++) {
-				ClassEntry entry = new ClassEntry (file, reader);
-				file.Table.AddType (entry);
-			}
-		}
+			int defaults_size = reader.ReadInteger ();
+			TargetAddress defaults_address = reader.ReadGlobalAddress ();
 
-		public override string ToString ()
-		{
-			return String.Format ("ClassEntry [{0:x}:{1}:{2:x}:{3:x}]",
-					      KlassAddress, Rank, Token, TypeInfo);
+			KlassFieldOffset = reader.ReadInteger ();
+			KlassMethodsOffset = reader.ReadInteger ();
+			KlassMethodCountOffset = reader.ReadInteger ();
+			FieldInfoSize = reader.ReadInteger ();
+
+			ITargetMemoryReader mono_defaults = memory.ReadMemory (defaults_address, defaults_size);
+			mono_defaults.ReadAddress ();
+
+			TargetAddress klass = mono_defaults.ReadGlobalAddress ();
+			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
+			ObjectType = new MonoObjectType (corlib, typeof (object), object_size, klass);
+			corlib.AddCoreType (ObjectType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			ByteType = new MonoFundamentalType (corlib, typeof (byte), 1, klass);
+			corlib.AddCoreType (ByteType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			VoidType = new MonoOpaqueType (corlib, typeof (void));
+			corlib.AddCoreType (VoidType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			BooleanType = new MonoFundamentalType (corlib, typeof (bool), 1, klass);
+			corlib.AddCoreType (BooleanType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			SByteType = new MonoFundamentalType (corlib, typeof (sbyte), 1, klass);
+			corlib.AddCoreType (SByteType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			Int16Type = new MonoFundamentalType (corlib, typeof (short), 2, klass);
+			corlib.AddCoreType (Int16Type);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			UInt16Type = new MonoFundamentalType (corlib, typeof (ushort), 2, klass);
+			corlib.AddCoreType (UInt16Type);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			Int32Type = new MonoFundamentalType (corlib, typeof (int), 4, klass);
+			Int32Type.Resolve ();
+			corlib.AddCoreType (Int32Type);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			UInt32Type = new MonoFundamentalType (corlib, typeof (uint), 4, klass);
+			corlib.AddCoreType (UInt32Type);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			IntType = new MonoFundamentalType (corlib, typeof (IntPtr), 4, klass);
+			corlib.AddCoreType (IntType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			UIntType = new MonoFundamentalType (corlib, typeof (UIntPtr), 4, klass);
+			corlib.AddCoreType (UIntType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			Int64Type = new MonoFundamentalType (corlib, typeof (long), 8, klass);
+			corlib.AddCoreType (Int64Type);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			UInt64Type = new MonoFundamentalType (corlib, typeof (ulong), 8, klass);
+			corlib.AddCoreType (UInt64Type);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			SingleType = new MonoFundamentalType (corlib, typeof (float), 4, klass);
+			corlib.AddCoreType (SingleType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			DoubleType = new MonoFundamentalType (corlib, typeof (double), 8, klass);
+			corlib.AddCoreType (DoubleType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			CharType = new MonoFundamentalType (corlib, typeof (char), 2, klass);
+			corlib.AddCoreType (CharType);
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			StringType = new MonoStringType (
+				corlib, typeof (string), object_size, object_size + 4, klass);
+			corlib.AddCoreType (StringType);
 		}
 	}
 
-	// <summary>
-	//   A single Assembly's symbol table.
-	// </summary>
-	[Serializable]
-	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable, ISerializable
+	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable
 	{
 		internal readonly int Index;
 		internal readonly R.Assembly Assembly;
-		internal readonly MonoSymbolTable Table;
+		internal readonly R.Module Module;
 		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
-		internal ThreadManager ThreadManager;
-		internal AddressDomain GlobalAddressDomain;
-		internal ITargetInfo TargetInfo;
-		protected DebuggerBackend backend;
-		protected Hashtable range_hash;
-		MonoCSharpSymbolTable symtab;
+		internal readonly ThreadManager ThreadManager;
+		internal readonly AddressDomain GlobalAddressDomain;
+		internal readonly ITargetInfo TargetInfo;
+		internal readonly MonoLanguageBackend MonoLanguage;
+		protected readonly DebuggerBackend backend;
+		readonly MonoSymbolTable symtab;
+		readonly string name;
+		readonly int address_size;
+		readonly int int_size;
+
+		Hashtable range_hash;
 		ArrayList ranges;
-		string name;
+		Hashtable type_hash;
+		Hashtable class_entry_hash;
+		ArrayList sources;
+		Hashtable source_hash;
+		Hashtable source_file_hash;
+		Hashtable method_index_hash;
 
-		TargetAddress dynamic_address;
-		int class_entry_size;
-		int address_size;
-		int int_size;
-
-		int generation;
-		int num_range_entries;
-
-		int last_class_table_index;
-		TargetAddress last_class_table = TargetAddress.Null;
-
-		internal MonoSymbolFile (MonoSymbolTable table, DebuggerBackend backend,
+		internal MonoSymbolFile (MonoLanguageBackend language, DebuggerBackend backend,
 					 ITargetInfo target_info, ITargetMemoryAccess memory,
 					 TargetAddress address)
 		{
-			this.Table = table;
+			this.MonoLanguage = language;
 			this.TargetInfo = target_info;
 			this.backend = backend;
 
@@ -1395,25 +386,21 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ranges = new ArrayList ();
 			range_hash = new Hashtable ();
+			type_hash = new Hashtable ();
+			class_entry_hash = new Hashtable ();
 
 			Index = memory.ReadInteger (address);
 			address += int_size;
-			address += address_size;
-			MonoImage = memory.ReadAddress (address);
-			address += address_size;
 			TargetAddress image_file_addr = memory.ReadAddress (address);
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
+			MonoImage = memory.ReadAddress (address);
+			address += address_size;
 
 			Assembly = R.Assembly.LoadFrom (ImageFile);
-
-			table.AddImage (this);
+			Module = Assembly.GetModules () [0];
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
-
-			class_entry_size = memory.ReadInteger (address);
-			address += int_size;
-			dynamic_address = address;
 
 			try {
 				File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
@@ -1421,7 +408,7 @@ namespace Mono.Debugger.Languages.CSharp
 				Console.WriteLine (ex.Message);
 			}
 
-			symtab = new MonoCSharpSymbolTable (this);
+			symtab = new MonoSymbolTable (this);
 
 			name = Assembly.GetName (true).Name;
 
@@ -1437,174 +424,62 @@ namespace Mono.Debugger.Languages.CSharp
 					      SymbolsLoaded, StepInto, LoadSymbols);
 		}
 
-		// <remarks>
-		//   Each time we reload the JIT's symbol tables, add the addresses of all
-		//   methods which have been JITed since the last update.
-		// </remarks>
-		bool update_ranges (ITargetMemoryAccess memory, ref TargetAddress address)
+		internal void AddRangeEntry (ITargetMemoryReader reader, byte[] contents)
 		{
-			TargetAddress range_table = memory.ReadAddress (address);
-			address += address_size;
-			int range_entry_size = memory.ReadInteger (address);
-			address += int_size;
-			int new_num_range_entries = memory.ReadInteger (address);
-			address += int_size;
-
-			Report.Debug (DebugFlags.JitSymtab, "RANGES: {0} {1} {2}", this,
-				      num_range_entries, new_num_range_entries);
-
-			if (new_num_range_entries == num_range_entries)
-				return false;
-
-			int count = new_num_range_entries - num_range_entries;
-			ITargetMemoryReader range_reader = memory.ReadMemory (
-				range_table + num_range_entries * range_entry_size,
-				count * range_entry_size);
-
-			ArrayList new_ranges = MethodRangeEntry.ReadRanges (
-				this, memory, range_reader, count);
-
-			ranges.AddRange (new_ranges);
-			num_range_entries = new_num_range_entries;
-			return true;
+			MethodRangeEntry range = MethodRangeEntry.Create (this, reader, contents);
+			range_hash.Add (range.Index, range);
+			ranges.Add (range);
 		}
 
-		// <summary>
-		//   Add all classes which have been created in the meantime.
-		// </summary>
-		bool update_classes (ITargetMemoryAccess memory, ref TargetAddress address)
+		internal void AddClassEntry (ITargetMemoryReader reader, byte[] contents)
 		{
-			int class_table_size = memory.ReadInteger (address);
-			address += int_size;
-			TargetAddress current_class_table = memory.ReadAddress (address);
-			address += address_size;
-			TargetAddress class_table_start = memory.ReadAddress (address);
-			address += address_size;
+			ClassEntry entry = new ClassEntry (this, reader, contents);
+			if (entry.Rank == 0)
+				class_entry_hash.Add (new TypeHashEntry (entry), entry);
+			else {
+				Type etype = Module.ResolveType (entry.Token);
+				Type atype = etype.MakeArrayType (entry.Rank);
+				MonoType type = LookupType (atype);
 
-			if (last_class_table.IsNull)
-				last_class_table = class_table_start;
-			if (last_class_table.IsNull)
-				return false;
-
-		again:
-			ITargetMemoryReader reader = memory.ReadMemory (
-				last_class_table, class_table_size);
-
-			TargetAddress next_class_table = reader.ReadAddress ();
-			int index = reader.ReadInteger ();
-			int size = reader.ReadInteger ();
-			TargetAddress data = reader.ReadAddress ();
-
-			int count = index - last_class_table_index;
-			if (count > 0) {
-				ITargetMemoryReader class_reader = memory.ReadMemory (
-					data + last_class_table_index * class_entry_size,
-					count * class_entry_size);
-
-				ClassEntry.ReadClasses (this, class_reader, count);
+				MonoLanguage.AddClass (entry.KlassAddress, type);
 			}
-
-			last_class_table_index = index;
-
-			if (!next_class_table.IsNull) {
-				last_class_table = next_class_table;
-				last_class_table_index = 0;
-				goto again;
-			}
-
-			return true;
 		}
 
-		public bool Update (ITargetMemoryAccess memory)
+		public MonoType LookupType (Type type)
 		{
-			TargetAddress address = dynamic_address;
-			if (memory.ReadInteger (address) != 0)
-				return false;
-			address += int_size;
+			MonoType result = (MonoType) type_hash [type];
+			if (result != null)
+				return result;
 
-			int new_generation = memory.ReadInteger (address);
-			if (new_generation == generation)
-				return false;
-			address += int_size;
+			int rank = type.GetArrayRank ();
+			if (rank > 0)
+				result = new MonoArrayType (this, type);
+			else
+				result = new MonoClassType (this, type);
 
-			generation = new_generation;
-
-			bool updated = false;
-
-			updated |= update_ranges (memory, ref address);
-			updated |= update_classes (memory, ref address);
-
-			return true;
+			type_hash.Add (type, result);
+			return result;
 		}
 
-		Hashtable method_hash = new Hashtable ();
-
-		IMethod ISymbolFile.GetMethod (long handle)
+		internal void AddCoreType (MonoType type)
 		{
-			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
+			type.Resolve ();
+			type_hash.Add (type.Type, type);
+		}
+
+		public void AddType (MonoType type)
+		{
+			type_hash.Add (type.Type, type);
+		}
+
+		public TargetBinaryReader GetTypeInfo (MonoType type)
+		{
+			ClassEntry entry = (ClassEntry) class_entry_hash [new TypeHashEntry (type.Type)];
 			if (entry == null)
 				return null;
-
-			return entry.GetMethod ();
+			return entry.Contents;
 		}
 
-		void ISymbolFile.GetMethods (SourceFile file)
-		{
-			ensure_sources ();
-			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
-
-			foreach (C.MethodSourceEntry entry in source.Methods)
-				GetSourceMethod (file, entry.Index);
-		}
-
-		public override SourceMethod FindMethod (string name)
-		{
-			return null;
-		}
-
-		protected MonoMethod GetMonoMethod (int index)
-		{
-			ensure_sources ();
-			MonoMethod mono_method = (MonoMethod) method_hash [index];
-			if (mono_method != null)
-				return mono_method;
-
-			SourceMethod method = GetSourceMethod (index);
-			C.MethodEntry entry = File.GetMethod (index);
-
-			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
-				File.Assembly, entry.Token);
-
-			mono_method = new MonoMethod (this, method, entry, mbase);
-			method_hash.Add (index, mono_method);
-			return mono_method;
-		}
-
-		protected MonoMethod GetMonoMethod (int index, byte[] contents)
-		{
-			MonoMethod method = GetMonoMethod (index);
-
-			if (!method.IsLoaded) {
-				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
-				method.Load (reader, GlobalAddressDomain);
-			}
-
-			return method;
-		}
-
-		internal MonoType GetType (ITargetMemoryAccess memory, TargetAddress address)
-		{
-			ITargetMemoryReader reader = memory.ReadMemory (
-				address, class_entry_size);
-			ClassEntry entry = new ClassEntry (this, reader);
-			Table.AddType (entry);
-			return Table.GetType (entry.Type, entry.TypeInfo);
-		}
-
-		ArrayList sources = null;
-		Hashtable source_hash = null;
-		Hashtable source_file_hash = null;
-		Hashtable method_index_hash = null;
 		void ensure_sources ()
 		{
 			if (sources != null)
@@ -1627,16 +502,24 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		protected ArrayList SymbolRanges {
+			get { return ranges; }
+		}
+
+		public override ISymbolTable SymbolTable {
+			get { return symtab; }
+		}
+
 		public override string Name {
 			get { return name; }
 		}
 
 		public override ILanguage Language {
-			get { return Table; }
+			get { return MonoLanguage; }
 		}
 
 		internal override ILanguageBackend LanguageBackend {
-			get { return Table.LanguageBackend; }
+			get { return MonoLanguage; }
 		}
 
 		public override ISymbolFile SymbolFile {
@@ -1662,6 +545,24 @@ namespace Mono.Debugger.Languages.CSharp
 		public override TargetAddress SimpleLookup (string name)
 		{
 			return TargetAddress.Null;
+		}
+
+		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			foreach (MethodRangeEntry range in ranges) {
+				if ((address < range.StartAddress) || (address > range.EndAddress))
+					continue;
+
+				long offset = address - range.StartAddress;
+				if (exact_match && (offset != 0))
+					continue;
+
+				IMethod method = range.GetMethod ();
+				return new Symbol (
+					method.Name, range.StartAddress, (int) offset);
+			}
+
+			return null;
 		}
 
 		public SourceFile[] GetSources ()
@@ -1743,34 +644,60 @@ namespace Mono.Debugger.Languages.CSharp
 			return GetSourceMethod (entry.Index);
 		}
 
-		internal ArrayList SymbolRanges {
-			get {
-				return ranges;
-			}
-		}
+		Hashtable method_hash = new Hashtable ();
 
-		public override ISymbolTable SymbolTable {
-			get {
-				return symtab;
-			}
-		}
-
-		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		IMethod ISymbolFile.GetMethod (long handle)
 		{
-			foreach (MethodRangeEntry range in ranges) {
-				if ((address < range.StartAddress) || (address > range.EndAddress))
-					continue;
+			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
+			Console.WriteLine ("GET METHOD BY HANDLE: {0} {1}", handle, entry);
+			if (entry == null)
+				return null;
 
-				long offset = address - range.StartAddress;
-				if (exact_match && (offset != 0))
-					continue;
+			return entry.GetMethod ();
+		}
 
-				IMethod method = range.GetMethod ();
-				return new Symbol (
-					method.Name, method.StartAddress, (int) offset);
+		void ISymbolFile.GetMethods (SourceFile file)
+		{
+			ensure_sources ();
+			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
+
+			foreach (C.MethodSourceEntry entry in source.Methods)
+				GetSourceMethod (file, entry.Index);
+		}
+
+		public override SourceMethod FindMethod (string name)
+		{
+			return null;
+		}
+
+		protected MonoMethod GetMonoMethod (int index)
+		{
+			ensure_sources ();
+			MonoMethod mono_method = (MonoMethod) method_hash [index];
+			if (mono_method != null)
+				return mono_method;
+
+			SourceMethod method = GetSourceMethod (index);
+			C.MethodEntry entry = File.GetMethod (index);
+
+			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+				File.Assembly, entry.Token);
+
+			mono_method = new MonoMethod (this, method, entry, mbase);
+			method_hash.Add (index, mono_method);
+			return mono_method;
+		}
+
+		protected MonoMethod GetMonoMethod (int index, byte[] contents)
+		{
+			MonoMethod method = GetMonoMethod (index);
+
+			if (!method.IsLoaded) {
+				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
+				method.Load (reader, GlobalAddressDomain);
 			}
 
-			return null;
+			return method;
 		}
 
 		internal override IDisposable RegisterLoadHandler (Process process,
@@ -1788,58 +715,9 @@ namespace Mono.Debugger.Languages.CSharp
 			return null;
 		}
 
-		//
-		// ISerializable
-		//
-
-		void ISerializable.GetObjectData (SerializationInfo info,
-						  StreamingContext context)
-		{
-			info.SetType (typeof (MonoSymbolFileProxy));
-			info.AddValue ("image", ImageFile);
-			info.AddValue ("step_into", StepInto);
-			info.AddValue ("load_symbols", LoadSymbols);
-		}
-
-		[Serializable]
-		protected sealed class MonoSymbolFileProxy : IObjectReference, ISerializable
-		{
-			string image;
-			bool step_into;
-			bool load_symbols;
-
-			public object GetRealObject (StreamingContext context)
-			{
-				Process process = (Process) context.Context;
-				DebuggerBackend backend = process.DebuggerBackend;
-				MonoCSharpLanguageBackend csharp = backend.CSharpLanguage;
-				MonoSymbolFile file = csharp.FindImage (process, image);
-				if (file == null)
-					throw new SerializationException ();
-
-				file.StepInto = step_into;
-				file.LoadSymbols = load_symbols;
-				return file;
-			}
-
-			void ISerializable.GetObjectData (SerializationInfo info,
-							  StreamingContext context)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			private MonoSymbolFileProxy (SerializationInfo info,
-						     StreamingContext context)
-			{
-				image = info.GetString ("image");
-				step_into = info.GetBoolean ("step_into");
-				load_symbols = info.GetBoolean ("load_symbols");
-			}
-		}
-
 		protected class MonoMethod : MethodBase
 		{
-			MonoSymbolFile reader;
+			MonoSymbolFile file;
 			SourceMethod info;
 			C.MethodEntry method;
 			R.MethodBase rmethod;
@@ -1854,31 +732,18 @@ namespace Mono.Debugger.Languages.CSharp
 			MethodAddress address;
 			Hashtable load_handlers;
 
-			public MonoMethod (MonoSymbolFile reader, SourceMethod info,
+			public MonoMethod (MonoSymbolFile file, SourceMethod info,
 					   C.MethodEntry method, R.MethodBase rmethod)
-				: base (info.Name, reader.ImageFile, reader)
+				: base (info.Name, file.ImageFile, file)
 			{
-				this.reader = reader;
+				this.file = file;
 				this.info = info;
 				this.method = method;
 				this.rmethod = rmethod;
 			}
 
-			public MonoMethod (MonoSymbolFile reader, SourceMethod info,
-					   C.MethodEntry method, R.MethodBase rmethod,
-					   ITargetMemoryReader dynamic_reader)
-				: this (reader, info, method, rmethod)
-			{
-				Load (dynamic_reader.BinaryReader, reader.GlobalAddressDomain);
-			}
-
-			public MethodAddress MethodAddress {
-				get {
-					if (!IsLoaded)
-						throw new InvalidOperationException ();
-
-					return address;
-				}
+			public override object MethodHandle {
+				get { return rmethod; }
 			}
 
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
@@ -1896,11 +761,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!address.WrapperAddress.IsNull)
 					SetWrapperAddress (address.WrapperAddress);
 
-				MethodSource source = new CSharpMethod (
-					reader, this, info, method, address.LineNumbers);
-
-				if (source != null)
-					SetSource (source);
+				SetSource (new MonoMethodSource (file, this, info, method, address.LineNumbers));
 			}
 
 			void get_variables ()
@@ -1910,60 +771,58 @@ namespace Mono.Debugger.Languages.CSharp
 
 				R.ParameterInfo[] param_info = rmethod.GetParameters ();
 				param_types = new MonoType [param_info.Length];
-				for (int i = 0; i < param_info.Length; i++)
-					param_types [i] = reader.Table.GetType (
-						param_info [i].ParameterType, address.ParamTypeInfoOffsets [i]);
-
 				parameters = new IVariable [param_info.Length];
-				for (int i = 0; i < param_info.Length; i++)
+				for (int i = 0; i < param_info.Length; i++) {
+					Type type = param_info [i].ParameterType;
+
+					param_types [i] = file.MonoLanguage.LookupType (type);
+
 					parameters [i] = new MonoVariable (
-						reader.backend, param_info [i].Name, param_types [i],
+						file.backend, param_info [i].Name, param_types [i],
 						false, param_types [i].IsByRef, this,
 						address.ParamVariableInfo [i], 0, 0);
-
-				local_types = new MonoType [method.NumLocals];
-				for (int i = 0; i < method.NumLocals; i++) {
-					Type type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (reader.File.Assembly, method.Locals [i].Signature);
-
-					local_types [i] = reader.Table.GetType (
-						type, address.LocalTypeInfoOffsets [i]);
 				}
 
+				local_types = new MonoType [method.NumLocals];
 				locals = new IVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
+					Type type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (
+						file.Assembly, local.Signature);
 
+					local_types [i] = file.MonoLanguage.LookupType (type);
+
+#if FIXME
 					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
 						locals [i] = new MonoVariable (
-							reader.backend, local.Name, local_types [i],
+							file.backend, local.Name, local_types [i],
 							true, local_types [i].IsByRef, this,
 							address.LocalVariableInfo [i],
 							block.StartAddress, block.EndAddress);
 					} else {
 						locals [i] = new MonoVariable (
-							reader.backend, local.Name, local_types [i],
+							file.backend, local.Name, local_types [i],
 							true, local_types [i].IsByRef, this,
 							address.LocalVariableInfo [i]);
 					}
+#else
+					locals [i] = new MonoVariable (
+						file.backend, local.Name, local_types [i],
+						true, local_types [i].IsByRef, this,
+						address.LocalVariableInfo [i]);
+#endif
 				}
 
-				decl_type = (MonoClass) reader.Table.GetType (
-					rmethod.DeclaringType, address.ClassTypeInfoOffset);
+				decl_type = (MonoClass) file.MonoLanguage.LookupType (rmethod.DeclaringType);
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
-						reader.backend, "this", decl_type, true,
+						file.backend, "this", decl_type, true,
 						true, this, address.ThisVariableInfo);
 
 				has_variables = true;
-			}
-
-			public override object MethodHandle {
-				get {
-					return rmethod;
-				}
 			}
 
 			public override IVariable[] Parameters {
@@ -1992,7 +851,7 @@ namespace Mono.Debugger.Languages.CSharp
 						throw new InvalidOperationException ();
 
 					get_variables ();
-					return decl_type;
+					return null;
 				}
 			}
 
@@ -2019,7 +878,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
 								    TargetAddress address)
 			{
-				return reader.LanguageBackend.GetTrampoline (memory, address);
+				return file.LanguageBackend.GetTrampoline (memory, address);
 			}
 
 			void breakpoint_hit (Inferior inferior, TargetAddress address,
@@ -2092,10 +951,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 				if (load_handlers == null) {
 					/* only insert the load handler breakpoint once */
-					reader.Table.CSharpLanguage.InsertBreakpoint (
-						      process, full_name,
-						      new BreakpointHandler (breakpoint_hit),
-						      null);
+					file.MonoLanguage.InsertBreakpoint (
+						process, full_name,
+						new BreakpointHandler (breakpoint_hit),
+						null);
 				 
 					load_handlers = new Hashtable ();
 				}
@@ -2161,82 +1020,231 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		protected class MonoMethodSource : MethodSource
+		{
+			int start_row, end_row;
+			MonoSymbolFile file;
+			JitLineNumberEntry[] line_numbers;
+			C.MethodEntry method;
+			SourceMethod source_method;
+			IMethod imethod;
+			SourceFileFactory factory;
+			Hashtable namespaces;
+
+			public MonoMethodSource (MonoSymbolFile file, IMethod imethod,
+						 SourceMethod source_method, C.MethodEntry method,
+						 JitLineNumberEntry[] line_numbers)
+				: base (imethod, source_method.SourceFile)
+			{
+				this.file = file;
+				this.imethod = imethod;
+				this.method = method;
+				this.line_numbers = line_numbers;
+				this.source_method = source_method;
+				this.start_row = method.StartRow;
+				this.end_row = method.EndRow;
+				this.factory = file.MonoLanguage.DebuggerBackend.SourceFileFactory;
+			}
+
+			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
+						   ref int last_line)
+			{
+				for (int i = method.NumLineNumbers - 1; i >= 0; i--) {
+					C.LineNumberEntry lne = method.LineNumbers [i];
+
+					if (lne.Offset > offset)
+						continue;
+
+					if (lne.Row > last_line) {
+						lines.Add (new LineEntry (address, lne.Row));
+						last_line = lne.Row;
+					}
+
+					break;
+				}
+			}
+
+			protected override MethodSourceData ReadSource ()
+			{
+				ArrayList lines = new ArrayList ();
+				int last_line = -1;
+
+				for (int i = 0; i < line_numbers.Length; i++) {
+					JitLineNumberEntry lne = line_numbers [i];
+
+					generate_line_number (lines, imethod.StartAddress + lne.Address,
+							      lne.Offset, ref last_line);
+				}
+
+				lines.Sort ();
+
+				LineEntry[] addresses = new LineEntry [lines.Count];
+				lines.CopyTo (addresses, 0);
+
+				ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
+				return new MethodSourceData (start_row, end_row, addresses, source_method, buffer);
+			}
+
+			public override string[] GetNamespaces ()
+			{
+				int index = method.NamespaceID;
+
+				if (namespaces == null) {
+					namespaces = new Hashtable ();
+
+					C.SourceFileEntry source = method.SourceFile;
+					foreach (C.NamespaceEntry entry in source.Namespaces)
+						namespaces.Add (entry.Index, entry);
+				}
+
+				ArrayList list = new ArrayList ();
+
+				while ((index > 0) && namespaces.Contains (index)) {
+					C.NamespaceEntry ns = (C.NamespaceEntry) namespaces [index];
+					list.Add (ns.Name);
+					list.AddRange (ns.UsingClauses);
+
+					index = ns.Parent;
+				}
+
+				string[] retval = new string [list.Count];
+				list.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
 		private class MethodRangeEntry : SymbolRangeEntry
 		{
-			MonoSymbolFile reader;
-			int index;
-			byte[] contents;
+			public readonly MonoSymbolFile File;
+			public readonly int Index;
+			public readonly TargetAddress WrapperAddress;
+			readonly byte[] contents;
 
-			private MethodRangeEntry (MonoSymbolFile reader, int index,
-						  byte[] contents, TargetAddress start_address,
-						  TargetAddress end_address)
+			private MethodRangeEntry (MonoSymbolFile file, int index,
+						  TargetAddress start_address, TargetAddress end_address,
+						  TargetAddress wrapper_address, byte[] contents)
 				: base (start_address, end_address)
 			{
-				this.reader = reader;
-				this.index = index;
+				this.File = file;
+				this.Index = index;
+				this.WrapperAddress = wrapper_address;
 				this.contents = contents;
 			}
 
-			public static ArrayList ReadRanges (MonoSymbolFile reader,
-							    ITargetMemoryAccess target,
-							    ITargetMemoryReader memory, int count)
+			public static MethodRangeEntry Create (MonoSymbolFile file, ITargetMemoryReader reader,
+							       byte[] contents)
 			{
-				ArrayList list = new ArrayList ();
+				int domain = reader.ReadInteger ();
+				int index = reader.ReadInteger ();
+				TargetAddress start = reader.ReadGlobalAddress ();
+				TargetAddress end = start + reader.ReadInteger ();
+				TargetAddress wrapper = reader.ReadGlobalAddress ();
 
-				for (int i = 0; i < count; i++) {
-					TargetAddress start = memory.ReadGlobalAddress ();
-					TargetAddress end = memory.ReadGlobalAddress ();
-					int index = memory.ReadInteger ();
-					TargetAddress dynamic_address = memory.ReadAddress ();
-					int dynamic_size = memory.ReadInteger ();
-
-					byte[] contents = target.ReadBuffer (dynamic_address, dynamic_size);
-
-					MethodRangeEntry entry = new MethodRangeEntry (
-						reader, index, contents, start, end);
-
-					Report.Debug (DebugFlags.JitSymtab,
-						      "RANGE ENTRY: {0} {1} {2} {3} {4} {5} {6}",
-						      reader, start, end, index, dynamic_address,
-						      dynamic_size, entry);
-
-					list.Add (entry);
-					reader.range_hash.Add (index, entry);
-				}
-
-				return list;
+				return new MethodRangeEntry (file, index, start, end, wrapper, contents);
 			}
 
-			internal MonoMethod GetMethod ()
+			internal IMethod GetMethod ()
 			{
-				return reader.GetMonoMethod (index, contents);
+				return File.GetMonoMethod (Index, contents);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
-				return reader.GetMonoMethod (index, contents);
+				return File.GetMonoMethod (Index, contents);
 			}
 
 			public override string ToString ()
 			{
-				return String.Format ("RangeEntry [{0:x}:{1:x}:{2:x}]",
-						      StartAddress, EndAddress, index);
+				return String.Format ("RangeEntry [{3}:{0:x}:{1:x}:{2:x}]",
+						      StartAddress, EndAddress, Index, File);
 			}
 		}
 
-		private class MonoCSharpSymbolTable : SymbolTable
+		protected struct TypeHashEntry
 		{
-			MonoSymbolFile reader;
+			public readonly int Token;
+			public readonly int Rank;
 
-			public MonoCSharpSymbolTable (MonoSymbolFile reader)
+			public TypeHashEntry (Type type)
 			{
-				this.reader = reader;
+				while (type.GetArrayRank () > 0)
+					type = type.GetElementType ();
+
+				Token = type.MetadataToken;
+				Rank = type.GetArrayRank ();
+			}
+
+			public TypeHashEntry (ClassEntry entry)
+			{
+				Token = entry.Token;
+				Rank = entry.Rank;
+			}
+
+			public TypeHashEntry (int token)
+			{
+				Token = token;
+				Rank = 0;
+			}
+
+			public override bool Equals (object o)
+			{
+				TypeHashEntry entry = (TypeHashEntry) o;
+				return (entry.Token == Token) && (entry.Rank == Rank);
+			}
+
+			public override int GetHashCode ()
+			{
+				return Token;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("TypeHashEntry ({0:x}:{1})", Token, Rank);
+			}
+		}
+
+		protected class ClassEntry
+		{
+			public readonly MonoSymbolFile File;
+			public readonly int Token;
+			public readonly int Rank;
+			public readonly int InstanceSize;
+			public readonly TargetAddress KlassAddress;
+			readonly byte[] contents;
+
+			public ClassEntry (MonoSymbolFile file, ITargetMemoryReader reader, byte[] contents)
+			{
+				this.File = file;
+				this.contents = contents;
+
+				Token = reader.BinaryReader.ReadLeb128 ();
+				Rank = reader.BinaryReader.ReadLeb128 ();
+				InstanceSize = reader.BinaryReader.ReadLeb128 ();
+				KlassAddress = reader.ReadGlobalAddress ();
+			}
+
+			public TargetBinaryReader Contents {
+				get { return new TargetBinaryReader (contents, File.TargetInfo); }
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("ClassEntry [{0}:{1:x}:{2}:{3}:{4}]",
+						      File, Token, Rank, InstanceSize, KlassAddress);
+			}
+		}
+
+		private class MonoSymbolTable : SymbolTable
+		{
+			MonoSymbolFile file;
+
+			public MonoSymbolTable (MonoSymbolFile file)
+			{
+				this.file = file;
 			}
 
 			public override bool HasMethods {
-				get {
-					return false;
-				}
+				get { return false; }
 			}
 
 			protected override ArrayList GetMethods ()
@@ -2245,14 +1253,12 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public override bool HasRanges {
-				get {
-					return true;
-				}
+				get { return true; }
 			}
 
 			public override ISymbolRange[] SymbolRanges {
 				get {
-					ArrayList ranges = reader.SymbolRanges;
+					ArrayList ranges = file.SymbolRanges;
 					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 					ranges.CopyTo (retval, 0);
 					return retval;
@@ -2266,54 +1272,52 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
-	internal class MonoCSharpLanguageBackend : ILanguageBackend
+	internal class MonoLanguageBackend : ILanguage, ILanguageBackend
 	{
+		public const int  MinDynamicVersion = 48;
+		public const int  MaxDynamicVersion = 48;
+		public const long DynamicMagic      = 0x7aff65af4253d427;
+
+		ArrayList symbol_files;
+		Hashtable assembly_hash;
+		Hashtable class_hash;
+		MonoSymbolFile corlib;
+		MonoBuiltinTypeInfo builtin_types;
+
+		int last_num_data_tables;
+		int last_data_table_offset;
+
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
 		TargetAddress trampoline_address;
 		bool initialized;
 		DebuggerMutex mutex;
-		protected MonoSymbolTable table;
 		Heap heap;
 
-		public MonoCSharpLanguageBackend (DebuggerBackend backend)
+		public MonoLanguageBackend (DebuggerBackend backend)
 		{
 			this.backend = backend;
-
-			mutex = new DebuggerMutex ("csharp_mutex");
+			mutex = new DebuggerMutex ("mono_mutex");
 		}
 
 		public string Name {
-			get {
-				return "Mono";
-			}
+			get { return "Mono"; }
 		}
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
-			get {
-				return info;
-			}
+			get { return info; }
 		}
 
-		internal MonoSymbolFile FindImage (Process process, string name)
-		{
-			if (table == null)
-				return null;
-
-			R.Assembly ass = R.Assembly.LoadFrom (name);
-			MonoSymbolFile file = table.GetImage (ass);
-			if (file != null)
-				return file;
-
-			int index = LookupAssembly (process, name);
-			if (index < 0)
-				return null;
-
-			return table.GetImage (ass);
+		internal MonoBuiltinTypeInfo BuiltinTypes {
+			get { return builtin_types; }
 		}
 
 		public Heap DataHeap {
 			get { return heap; }
+		}
+
+		public DebuggerBackend DebuggerBackend {
+			get { return backend; }
 		}
 
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
@@ -2325,21 +1329,19 @@ namespace Mono.Debugger.Languages.CSharp
 
 			ITargetMemoryReader header = memory.ReadMemory (symbol_info, 16);
 			long magic = header.ReadLongInteger ();
-			if (magic != MonoSymbolTable.DynamicMagic)
+			if (magic != DynamicMagic)
 				throw new SymbolTableException (
 					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
 
 			int version = header.ReadInteger ();
-			if (version < MonoSymbolTable.MinDynamicVersion)
+			if (version <MinDynamicVersion)
 				throw new SymbolTableException (
 					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at least {1}.", version,
-					MonoSymbolTable.MinDynamicVersion);
-			if (version > MonoSymbolTable.MaxDynamicVersion)
+					"but expected at least {1}.", version, MinDynamicVersion);
+			if (version > MaxDynamicVersion)
 				throw new SymbolTableException (
 					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at most {1}.", version,
-					MonoSymbolTable.MaxDynamicVersion);
+					"but expected at most {1}.", version, MaxDynamicVersion);
 
 			int size = (int) header.ReadInteger ();
 
@@ -2348,34 +1350,349 @@ namespace Mono.Debugger.Languages.CSharp
 
 			trampoline_address = memory.ReadGlobalAddress (info.GenericTrampolineCode);
 			heap = new Heap ((ITargetInfo) memory, info.Heap, info.HeapSize);
+
+			symbol_files = new ArrayList ();
+			assembly_hash = new Hashtable ();
+			class_hash = new Hashtable ();
 		}
 
-		void do_update_symbol_table (ITargetMemoryAccess memory, bool force_update)
+		void do_update_symbol_table (ITargetMemoryAccess memory)
 		{
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
 			backend.ModuleManager.Lock ();
 			try {
-				TargetAddress address = memory.ReadAddress (info.SymbolTable);
-				if (address.IsNull) {
-					Console.WriteLine ("Ooops, no symtab loaded.");
-					return;
-				}
-
-				if (table == null)
-					table = new MonoSymbolTable (backend, this, memory, address);
-
-				table.Update (memory);
+				do_update (memory);
 			} catch (ThreadAbortException) {
-				table = null;
 				return;
 			} catch (Exception e) {
 				Console.WriteLine ("Can't update symbol table: {0}", e);
-				table = null;
 				return;
 			} finally {
 				backend.ModuleManager.UnLock ();
 			}
 			Report.Debug (DebugFlags.JitSymtab, "Done updating symbol table");
+		}
+
+		// This method reads the MonoDebuggerSymbolTable structure
+		// (struct definition is in mono-debug-debugger.h)
+		void do_update (ITargetMemoryAccess memory)
+		{
+			TargetAddress symtab_address = memory.ReadAddress (info.SymbolTable);
+			ITargetMemoryReader header = memory.ReadMemory (symtab_address, info.SymbolTableSize);
+
+			long magic = header.ReadLongInteger ();
+			if (magic != DynamicMagic)
+				throw new SymbolTableException (
+					"Debugger symbol table has unknown magic {0:x}.", magic);
+
+			int version = header.ReadInteger ();
+			if (version < MinDynamicVersion)
+				throw new SymbolTableException (
+					"Debugger symbol table has version {0}, but " +
+					"expected at least {1}.", version,
+					MinDynamicVersion);
+			if (version > MaxDynamicVersion)
+				throw new SymbolTableException (
+					"Debugger symbol table has version {0}, but " +
+					"expected at most {1}.", version,
+					MaxDynamicVersion);
+
+			int total_size = header.ReadInteger ();
+			if (total_size != info.SymbolTableSize)
+				throw new SymbolTableException (
+					"Debugger symbol table has size {0}, but " +
+					"expected {1}.", total_size, info.SymbolTableSize);
+
+			TargetAddress corlib_address = header.ReadGlobalAddress ();
+			TargetAddress metadata_info = header.ReadGlobalAddress ();
+
+			int num_symbol_files = header.ReadInteger ();
+			TargetAddress symfiles_address = header.ReadAddress ();
+
+			symfiles_address += symbol_files.Count * memory.TargetAddressSize;
+
+			for (int i = symbol_files.Count; i < num_symbol_files; i++) {
+				TargetAddress address = memory.ReadGlobalAddress (symfiles_address);
+				symfiles_address += memory.TargetAddressSize;
+
+				try {
+					MonoSymbolFile symfile = new MonoSymbolFile (
+						this, backend, memory, memory, address);
+					symbol_files.Add (symfile);
+					assembly_hash.Add (symfile.Assembly, symfile);
+
+					if (address != corlib_address)
+						continue;
+
+					corlib = symfile;
+					builtin_types = new MonoBuiltinTypeInfo (corlib, memory, metadata_info);
+				} catch (C.MonoSymbolFileException ex) {
+					Console.WriteLine (ex.Message);
+				} catch (Exception ex) {
+					Console.WriteLine (ex.Message);
+				}
+			}
+
+			read_data_table (memory, header);
+		}
+
+		// This method reads a portion of the data table (defn in mono-debug-debugger.h)
+		void read_data_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
+		{
+			int num_data_tables = header.ReadInteger ();
+			int chunk_size = header.ReadInteger ();
+			TargetAddress data_tables = header.ReadAddress ();
+
+			Report.Debug (DebugFlags.JitSymtab, "DATA TABLES: {0} {1} {2} {3}",
+				      last_num_data_tables, num_data_tables, chunk_size,
+				      data_tables);
+
+			if (num_data_tables != last_num_data_tables) {
+				int old_offset = 0;
+				int old_count = num_data_tables;
+				int old_size = old_count * chunk_size;
+
+				for (int i = 0; i < num_data_tables; i++) {
+					TargetAddress old_table = memory.ReadAddress (data_tables);
+					data_tables += memory.TargetAddressSize;
+
+					read_data_items (memory, old_table, old_offset, chunk_size);
+					old_offset += chunk_size;
+				}
+
+				last_num_data_tables = num_data_tables;
+				last_data_table_offset = old_size;
+			}
+
+			TargetAddress data_table_address = header.ReadAddress ();
+			int data_table_total_size = header.ReadInteger ();
+			int offset = header.ReadInteger ();
+			int start = header.ReadInteger ();
+
+			int size = offset - last_data_table_offset;
+			int read_offset = last_data_table_offset - start;
+
+			Report.Debug (DebugFlags.JitSymtab,
+				      "DATA TABLE: {0} {1} {2} {3} - {4} {5}",
+				      data_table_address, data_table_total_size,
+				      offset, start, read_offset, size);
+
+			if (size != 0) {
+				data_table_address += read_offset;
+				read_data_items (memory, data_table_address, last_data_table_offset, size);
+			}
+
+			last_data_table_offset = offset;
+		}
+
+		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int offset, int size)
+		{
+			ITargetMemoryReader reader = memory.ReadMemory (address, size);
+
+			Report.Debug (DebugFlags.JitSymtab,
+				      "READ DATA ITEMS: {0} {1} {2} {3} - {4} {5}", address, offset,
+				      address + offset, size, reader.BinaryReader.Position, reader.Size);
+
+			while (reader.BinaryReader.Position < reader.Size) {
+				int item_size = reader.BinaryReader.ReadInt32 ();
+				DataItemType item_type = (DataItemType) reader.BinaryReader.ReadInt32 ();
+
+				long pos = reader.BinaryReader.Position;
+
+				switch (item_type) {
+				case DataItemType.Method:
+					read_range_entry (reader);
+					break;
+
+				case DataItemType.Class:
+					read_class_entry (reader);
+					break;
+				}
+
+				reader.BinaryReader.Position = pos + item_size;
+				offset += item_size + 8;
+			}
+		}
+
+		void read_range_entry (ITargetMemoryReader reader)
+		{
+			int size = reader.BinaryReader.PeekInt32 ();
+			byte[] contents = reader.BinaryReader.PeekBuffer (size);
+			reader.BinaryReader.ReadInt32 ();
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [reader.BinaryReader.ReadInt32 ()];
+			file.AddRangeEntry (reader, contents);
+		}
+
+		void read_class_entry (ITargetMemoryReader reader)
+		{
+			int size = reader.BinaryReader.PeekInt32 ();
+			byte[] contents = reader.BinaryReader.PeekBuffer (size);
+			reader.BinaryReader.ReadInt32 ();
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [reader.BinaryReader.ReadInt32 ()];
+			file.AddClassEntry (reader, contents);
+		}
+
+		public MonoType LookupType (Type type)
+		{
+			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [type.Assembly];
+			if (file == null) {
+				Console.WriteLine ("Type `{0}' from unknown assembly `{1}'", type, type.Assembly);
+				return null;
+			}
+
+			return file.LookupType (type);
+		}
+
+		public void AddClass (TargetAddress klass_address, MonoType type)
+		{
+			class_hash.Add (klass_address, type);
+		}
+
+		public MonoType GetClass (TargetAddress klass_address)
+		{
+			return (MonoType) class_hash [klass_address];
+		}
+
+		private enum DataItemType {
+			Unknown		= 0,
+			Method,
+			Class
+		}
+
+		private struct DataItem {
+			public readonly int Offset;
+			public readonly int Size;
+			public readonly DataItemType Type;
+			public readonly byte[] Data;
+
+			public DataItem (int offset, int size, DataItemType type, byte[] data)
+			{
+				this.Offset = offset;
+				this.Size = size;
+				this.Type = type;
+				this.Data = data;
+
+				Console.WriteLine ("DATA ITEM: {0} {1} {2} {3}", offset, size, type,
+						   TargetBinaryReader.HexDump (data));
+			}
+		}
+
+		private ITargetType LookupType (StackFrame frame, Type type, string name)
+		{
+			return null;
+		}
+
+		public ITargetType LookupType (StackFrame frame, string name)
+		{
+			switch (name) {
+			case "short":
+				name = "System.Int16";
+				break;
+			case "ushort":
+				name = "System.UInt16";
+				break;
+			case "int":
+				name = "System.Int32";
+				break;
+			case "uint":
+				name = "System.UInt32";
+				break;
+			case "long":
+				name = "System.Int64";
+				break;
+			case "ulong":
+				name = "System.UInt64";
+				break;
+			case "float":
+				name = "System.Single";
+				break;
+			case "double":
+				name = "System.Double";
+				break;
+			case "char":
+				name = "System.Char";
+				break;
+			case "byte":
+				name = "System.Byte";
+				break;
+			case "sbyte":
+				name = "System.SByte";
+				break;
+			case "object":
+				name = "System.Object";
+				break;
+			case "string":
+				name = "System.String";
+				break;
+			case "bool":
+				name = "System.Boolean";
+				break;
+			case "void":
+				name = "System.Void";
+				break;
+			case "decimal":
+				name = "System.Decimal";
+				break;
+			}
+
+			if (name.IndexOf ('[') >= 0)
+				return null;
+
+			foreach (MonoSymbolFile symfile in symbol_files) {
+				Type type = symfile.Assembly.GetType (name);
+				if (type == null)
+					continue;
+
+#if FIXME
+				MonoType mtype = (MonoType) types [type];
+				if (mtype != null)
+					return mtype;
+
+				return LookupType (frame, type, name);
+#endif
+			}
+
+			return null;
+		}
+
+		public bool CanCreateInstance (Type type)
+		{
+			return false;
+		}
+
+		public ITargetObject CreateInstance (StackFrame frame, object obj)
+		{
+			return null;
+		}
+
+		public ITargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
+		{
+			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
+		}
+
+		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
+		{
+			return null;
+		}
+
+		ITargetFundamentalType ILanguage.IntegerType {
+			get { return null; }
+		}
+
+		ITargetFundamentalType ILanguage.LongIntegerType {
+			get { return null; }
+		}
+
+		ITargetFundamentalType ILanguage.StringType {
+			get { return null; }
+		}
+
+		ITargetType ILanguage.PointerType {
+			get { return null; }
+		}
+
+		ITargetType ILanguage.ExceptionType {
+			get { return null; }
 		}
 
 		Hashtable breakpoints = new Hashtable ();
@@ -2409,15 +1726,11 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public TargetAddress GenericTrampolineCode {
-			get {
-				return trampoline_address;
-			}
+			get { return trampoline_address; }
 		}
 
 		public TargetAddress RuntimeInvokeFunc {
-			get {
-				return info.RuntimeInvoke;
-			}
+			get { return info.RuntimeInvoke; }
 		}
 
 		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
@@ -2429,73 +1742,25 @@ namespace Mono.Debugger.Languages.CSharp
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
-			return memory.Architecture.GetTrampoline (
-				memory, address, trampoline_address);
+			return memory.Architecture.GetTrampoline (memory, address, trampoline_address);
 		}
 
 		TargetAddress ILanguageBackend.CompileMethodFunc {
-			get {
-				return info.CompileMethod;
-			}
+			get { return info.CompileMethod; }
 		}
 
 		TargetAddress ILanguageBackend.GetVirtualMethodFunc {
-			get {
-				return info.GetVirtualMethod;
-			}
+			get { return info.GetVirtualMethod; }
 		}
 
 		public TargetAddress GetBoxedObjectFunc {
-			get {
-				return info.GetBoxedObjectMethod;
-			}
+			get { return info.GetBoxedObjectMethod; }
 		}
 
-		public SourceMethod GetTrampoline (ITargetMemoryAccess memory,
-						   TargetAddress address)
+		SourceMethod ILanguageBackend.GetTrampoline (ITargetMemoryAccess memory,
+							     TargetAddress address)
 		{
-			if (trampoline_address.IsNull)
-				return null;
-
-			TargetAddress trampoline = memory.Architecture.GetTrampoline (
-				memory, address, trampoline_address);
-
-			if (trampoline.IsNull)
-				return null;
-
-			int token = memory.ReadInteger (trampoline + 4);
-			TargetAddress klass = memory.ReadAddress (trampoline + 8);
-			TargetAddress image = memory.ReadAddress (klass);
-			MonoSymbolFile reader = table.GetImage (image);
-
-			// Console.WriteLine ("TRAMPOLINE: {0} {1:x} {2} {3} {4}", trampoline, token, klass, image, reader);
-
-			if ((reader == null) || ((token & 0xff000000) != 0x06000000))
-				return null;
-
-			try {
-				return reader.GetMethodByToken (token);
-			} catch (C.MonoSymbolFileException) {
-				return null;
-			}
-		}
-
-		internal int LookupType (StackFrame frame, string name)
-		{
-			int offset;
-			mutex.Lock ();
-			offset = (int) frame.Process.CallMethod (info.LookupType, name).Address;
-			mutex.Unlock ();
-			return offset;
-		}
-
-		internal int LookupAssembly (Process process, string name)
-		{
-			int retval;
-			mutex.Lock ();
-			retval = (int) process.CallMethod (info.LookupAssembly, name).Address;
-			mutex.Unlock ();
-			return retval;
+			return null;
 		}
 
 		public void Notification (Inferior inferior, NotificationType type,
@@ -2504,18 +1769,18 @@ namespace Mono.Debugger.Languages.CSharp
 			switch (type) {
 			case NotificationType.InitializeManagedCode:
 				read_mono_debugger_info (inferior, inferior.Bfd);
-				do_update_symbol_table (inferior, true);
+				do_update_symbol_table (inferior);
 				break;
 
 			case NotificationType.ReloadSymtabs:
-				do_update_symbol_table (inferior, true);
+				do_update_symbol_table (inferior);
 				break;
 
 			case NotificationType.JitBreakpoint:
 				if (!breakpoints.Contains ((int) arg))
 					break;
 
-				do_update_symbol_table (inferior, false);
+				do_update_symbol_table (inferior);
 
 				MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [(int) arg];
 				handle.Handler (inferior, data, handle.UserData);
@@ -2523,7 +1788,7 @@ namespace Mono.Debugger.Languages.CSharp
 				break;
 
 			case NotificationType.MethodCompiled:
-				do_update_symbol_table (inferior, false);
+				do_update_symbol_table (inferior);
 				break;
 
 			default:
