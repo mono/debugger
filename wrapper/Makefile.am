@@ -1,4 +1,5 @@
 wrapperdir = $(libdir)
+onedir = $(libdir)/mono/1.0
 
 wrapper_PROGRAMS = mono-debugger-mini-wrapper
 
@@ -16,7 +17,9 @@ mono_debugger_mini_wrapper_SOURCES = \
 mono_debugger_mini_wrapper_LDADD = \
 	@WRAPPER_LIBS@
 
-bin_SCRIPTS = mdb.exe mdb
+bin_SCRIPTS = mdb
+
+one_SCRIPTS = mdb.exe 
 
 MCS_FLAGS = -g
 
@@ -87,7 +90,7 @@ EXTRA_DIST = \
 	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config
 
 mdb: mdb.in Makefile
-	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
+	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
 install-data-local:

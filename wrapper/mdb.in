@@ -1,1 +1,1 @@
-mono --debug @bindir@/mdb.exe $*
+mono --debug @onedir@/mdb.exe $*
