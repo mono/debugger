@@ -267,7 +267,6 @@ namespace Mono.Debugger.GUI
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
 
 #if FALSE
-			source_status.SetBackend (backend, process);
 			variable_display.SetBackend (backend, process);
 			backtrace_view.SetBackend (backend, process);
 			module_display.SetBackend (backend, process);
@@ -285,6 +284,7 @@ namespace Mono.Debugger.GUI
 		{
 			current_insn.SetBackend (backend, process);
 			register_display.SetBackend (backend, process);
+			source_status.SetBackend (backend, process);
 		}
 
 		void UpdateGUIState (TargetState state)

@@ -32,7 +32,6 @@ namespace Mono.Debugger.GUI
 
 			status_bar.Pop (status_id);
 			status_bar.Push (status_id, message);
-			MainIteration ();
 		}
 
 		protected virtual string GetStopReason (int arg)
