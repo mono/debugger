@@ -1,3 +1,11 @@
+2004-04-16  Peter Williams  <peter@newton.cx>
+
+	* frontends/scripting/Command.cs: (ShowMethodsCommand.DoResolve):
+	Fix paste-o in help text.
+	(StepCommand.DoExecute): Call ResetCurrentSourceCode so that a
+	'list' command will cause listing to start from the next line.
+	Also for next, nexti, stepi, finish, and continue.
+
 2004-04-14  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Command.cs

@@ -341,6 +341,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Continue);
+			context.ResetCurrentSourceCode ();
 		}
 	}
 
@@ -351,6 +352,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Step);
+			context.ResetCurrentSourceCode ();
 		}
 	}
 
@@ -362,6 +364,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Next);
+			context.ResetCurrentSourceCode ();
 		}
 	}
 
@@ -382,6 +385,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				process.Step (WhichStepCommand.StepNativeInstruction);
 			else
 				process.Step (WhichStepCommand.StepInstruction);
+			context.ResetCurrentSourceCode ();
 		}
 	}
 
@@ -393,6 +397,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.NextInstruction);
+			context.ResetCurrentSourceCode ();
 		}
 	}
 
@@ -403,6 +408,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Finish);
+			context.ResetCurrentSourceCode ();
 		}
 	}
 
@@ -644,7 +650,7 @@ namespace Mono.Debugger.Frontends.Scripting
 					ids [i] = (int) UInt32.Parse ((string) Args [i]);
 				} catch {
 					context.Print ("Invalid argument {0}: expected " +
-						       "module id", i);
+						       "source file id", i);
 					return false;
 				}
 			}
