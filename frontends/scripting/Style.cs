@@ -337,7 +337,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
 				ITargetStructObject sobj = (ITargetStructObject) obj;
-				StringBuilder sb = new StringBuilder ("{");
+				StringBuilder sb = new StringBuilder ("{ ");
 				bool first = true;
 				ITargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (ITargetFieldInfo field in fields) {
@@ -345,10 +345,11 @@ namespace Mono.Debugger.Frontends.Scripting
 					if (first)
 						first = false;
 					else
-						sb.Append (", ");
+						sb.Append (",  ");
+					sb.Append (field.Name + " = ");
 					sb.Append (FormatObject (fobj));
 				}
-				sb.Append ("}");
+				sb.Append (" }");
 				return sb.ToString ();
 			}
 
