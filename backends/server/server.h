@@ -106,7 +106,8 @@ void
 mono_debugger_server_abort_wait           (void);
 
 guint32
-mono_debugger_server_global_wait          (guint64                 *status);
+mono_debugger_server_global_wait          (guint64                 *status,
+					   guint32                 *aborted);
 
 ServerCommandError
 mono_debugger_server_wait                 (ServerHandle            *handle,

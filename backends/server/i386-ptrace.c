@@ -237,10 +237,19 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint
 
 static gboolean initialized = FALSE;
 pthread_t mono_debugger_thread;
+int pending_sigint = 0;
 
 static void
 sigusr1_signal_handler (int _dummy)
 { }
+
+static void
+sigint_signal_handler (int _dummy)
+{
+	pending_sigint++;
+	if (pthread_self () != mono_debugger_thread)
+		mono_debugger_server_abort_wait ();
+}
 
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *bpm)
@@ -255,6 +264,12 @@ mono_debugger_server_initialize (BreakpointManager *bpm)
 		sigemptyset (&sa.sa_mask);
 		sa.sa_flags = 0;
 		g_assert (sigaction (SIGUSR1, &sa, NULL) != -1);
+
+		/* catch SIGINT */
+		sa.sa_handler = sigint_signal_handler;
+		sigemptyset (&sa.sa_mask);
+		sa.sa_flags = 0;
+		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
 
 		mono_debugger_thread = pthread_self ();
 
@@ -305,6 +320,8 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 3; i < open_max; i++)
 			fcntl (i, F_SETFD, FD_CLOEXEC);
+
+		setsid ();
 
 		child_setup_func (NULL);
 		execve (argv [0], argv, envp);

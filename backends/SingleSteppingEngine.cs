@@ -96,7 +96,7 @@ public class SingleSteppingEngine : ThreadManager
 	bool abort_requested;
 
 	[DllImport("monodebuggerserver")]
-	static extern int mono_debugger_server_global_wait (out long status);
+	static extern int mono_debugger_server_global_wait (out long status, out int aborted);
 
 	[DllImport("monodebuggerserver")]
 	static extern void mono_debugger_server_abort_wait ();
@@ -492,8 +492,9 @@ public class SingleSteppingEngine : ThreadManager
 		//
 
 		int pid;
+		int aborted;
 		long status;
-		pid = mono_debugger_server_global_wait (out status);
+		pid = mono_debugger_server_global_wait (out status, out aborted);
 
 		//
 		// Note: `pid' is basically just an unique number which identifies the
@@ -521,6 +522,16 @@ public class SingleSteppingEngine : ThreadManager
 				engine_is_ready = true;
 				start_event.Set ();
 			}
+		}
+
+		//
+		// We caught a SIGINT.
+		//
+
+		if (aborted > 0) {
+			Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT");
+			completed_event.Set ();
+			return;
 		}
 
 		if (abort_requested) {

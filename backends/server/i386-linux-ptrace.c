@@ -123,11 +123,13 @@ do_wait (int pid, guint32 *status)
 }
 
 guint32
-mono_debugger_server_global_wait (guint64 *status_ret)
+mono_debugger_server_global_wait (guint64 *status_ret, guint32 *aborted)
 {
 	int ret, status;
 
 	ret = do_wait (-1, &status);
+	*aborted = pending_sigint;
+	pending_sigint = 0;
 	if (ret <= 0)
 		return ret;
 
