@@ -12,17 +12,15 @@ namespace Mono.Debugger.Languages.CSharp
 		JitLineNumberEntry[] line_numbers;
 		MethodEntry method;
 		IMethod imethod;
-		SourceFile file;
 
 		public CSharpMethod (MonoSymbolTableReader reader, IMethod imethod,
-				     SourceFile file, MethodEntry method,
+				     SourceMethod source_method, MethodEntry method,
 				     JitLineNumberEntry[] line_numbers)
-			: base (imethod, file)
+			: base (imethod, source_method)
 		{
 			this.reader = reader;
 			this.imethod = imethod;
 			this.method = method;
-			this.file = file;
 			this.line_numbers = line_numbers;
 			this.start_row = method.StartRow;
 			this.end_row = method.EndRow;
@@ -46,7 +44,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			string class_name = method.MethodBase.ReflectedType.FullName;
 			string full_name = String.Concat (class_name, ".", query);
-
 			return reader.MethodLookup (full_name);
 		}
 	}

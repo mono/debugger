@@ -6,7 +6,7 @@ namespace Mono.Debugger
 {
 	public abstract class MethodSource : IMethodSource
 	{
-		SourceFile file;
+		SourceMethod source_method;
 		int start_row, end_row;
 		bool sources_read;
 		string name;
@@ -14,9 +14,9 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 
-		protected MethodSource (IMethod method, SourceFile file)
+		protected MethodSource (IMethod method, SourceMethod source_method)
 		{
-			this.file = file;
+			this.source_method = source_method;
 			this.start = method.StartAddress;
 			this.end = method.EndAddress;
 			this.name = method.Name;
@@ -75,7 +75,7 @@ namespace Mono.Debugger
 
 		public bool IsDynamic {
 			get {
-				return file == null;
+				return source_method == null;
 			}
 		}
 
@@ -87,7 +87,19 @@ namespace Mono.Debugger
 
 		public SourceFile SourceFile {
 			get {
-				return file;
+				if (IsDynamic)
+					throw new InvalidOperationException ();
+
+				return source_method.SourceFile;
+			}
+		}
+
+		public SourceMethod SourceMethod {
+			get {
+				if (IsDynamic)
+					throw new InvalidOperationException ();
+
+				return source_method;
 			}
 		}
 

@@ -1269,7 +1269,7 @@ namespace Mono.Debugger.Languages.CSharp
 					SetWrapperAddress (address.WrapperAddress);
 
 				IMethodSource source = new CSharpMethod (
-					reader, this, info.SourceFile, method, address.LineNumbers);
+					reader, this, info, method, address.LineNumbers);
 
 				if (source != null)
 					SetSource (source);

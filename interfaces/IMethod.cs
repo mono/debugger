@@ -45,6 +45,14 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <remarks>
+		//   At the moment, this is only implemented for non-dynamic methods, but
+		//   this limitation will go away soon.
+		// </remarks>
+		SourceMethod SourceMethod {
+			get;
+		}
+
 		int StartRow {
 			get;
 		}

@@ -1,5 +1,11 @@
 2003-02-24  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IMethod.cs (IMethodSource.SourceMethod): New property.
+
+	* classes/SourceAddress.cs (SourceLocation): New property.
+
+2003-02-24  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ISourceBuffer.cs (ISourceBuffer.HasContents): Removed
 	this property; from now on, an ISourceBuffer always has contents.
 	(ISourceBuffer.Contents): Changed the type of this property from

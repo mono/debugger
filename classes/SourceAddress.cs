@@ -24,6 +24,15 @@ namespace Mono.Debugger
 			this.source_range = range;
 		}
 
+		public SourceLocation Location {
+			get {
+				if (source.IsDynamic)
+					return null;
+
+				return new SourceLocation (source.SourceMethod, row);
+			}
+		}
+
 		public IMethodSource MethodSource {
 			get {
 				return source;
