@@ -63,6 +63,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		bool is_synchronous;
 		bool is_interactive;
 		bool is_script;
+		bool initialized;
 		int exit_code = 0;
 
 		AutoResetEvent start_event;
@@ -334,11 +335,16 @@ namespace Mono.Debugger.Frontends.Scripting
 		void thread_created (ThreadManager manager, Process process)
 		{
 			ProcessHandle handle = new ProcessHandle (this, process);
-			add_process (handle);
+			handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+			procs.Add (handle.Process.ID, handle);
+
+			if (initialized)
+				Print ("New process @{0}", process.ID);
 		}
 
 		void thread_manager_initialized (ThreadManager manager, Process process)
 		{
+			initialized = true;
 			start_event.Set ();
 		}
 
@@ -497,12 +503,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			procs.Remove (process.ID);
 			if (process == current_process)
 				current_process = null;
-		}
-
-		void add_process (ProcessHandle process)
-		{
-			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-			procs.Add (process.Process.ID, process);
 		}
 
 		void target_exited ()

@@ -4,6 +4,7 @@ set mono mono
 set mdb "../wrapper/mdb.exe"
 set timeout 20
 set verbose 2
+set max_repeat 20
 
 proc mdb_start {file args} {
     global mdb
@@ -56,16 +57,26 @@ proc mdb_expect_started { } {
 }
 
 proc mdb_expect_prompt { } {
-    expect {
-	{^(mdb) } {
-	    return 0
-	}
-	timeout {
-	    perror "(timeout) Mono Debugger hanging or not displaying command prompt."
-	    return -1
+    global max_repeat
+
+    set count 0
+    while {$count < $max_repeat} {
+	expect {
+	    {^(mdb) } {
+		return 0
+	    }
+	    -re {^([^\n\r]+)[\n\r]+} {
+		set line $expect_out(1,string)
+		verbose "Received `$line' when waiting for a command prompt"
+		incr count
+	    }
+	    timeout {
+		break
+	    }
 	}
     }
-    return 0
+    perror "(timeout) Mono Debugger hanging or not displaying command prompt."
+    return -1
 }
 
 proc mdb_send {command} {
@@ -76,7 +87,7 @@ proc mdb_send {command} {
 }
 
 proc mdb_test_frame {frame index func file line} {
-    if {![regexp "^\#(\[0-9\]+): 0x\[0-9A-Fa-f\]+ in (.*) at $file:(\[0-9\]+)$" "$frame" match real_index real_func real_line]} {
+    if {![regexp "^\#(\[0-9\]+): 0x\[0-9A-Fa-f\]+ in (.*) at (.*):(\[0-9\]+)$" "$frame" match real_index real_func real_file real_line]} {
 	fail "Received unknown stack frame `$frame'"
 	return -1
     }
@@ -92,6 +103,10 @@ proc mdb_test_frame {frame index func file line} {
     }
     if {$real_line != $line} {
 	fail "Debugger stopped in line $real_line, but expected $line"
+	return
+    }
+    if {$real_file != $file} {
+	fail "Debugger stopped on line $real_line in file $real_file, but expected $file"
 	return
     }
     pass "Debugger stopped in \#$index: $func, line $line"
@@ -121,9 +136,10 @@ proc mdb_expect_frame {index func file line} {
 
 proc mdb_expect_stopped {index func file line} {
     global process
+    global max_repeat
 
     set count 0
-    while {$count < 10} {
+    while {$count < $max_repeat} {
 	expect {
 	    -re {Process @([0-9]+) stopped at ([^\n\r]+)\.[\n\r]+} {
 		set real_process $expect_out(1,string)
@@ -135,7 +151,8 @@ proc mdb_expect_stopped {index func file line} {
 		}
 
 		mdb_test_frame $real_frame $index $func $file $line
-		break
+		mdb_expect_prompt
+		return
 	    }
 	    {^(mdb) } {
 		fail "Process failed to stop in $func at $file:$line"
@@ -147,26 +164,27 @@ proc mdb_expect_stopped {index func file line} {
 		incr count
 	    }
 	    timeout {
-		perror "(timeout) Mono Debugger not responding to `frame' command."
-		return
+		break
 	    }
 	}
     }
-    mdb_expect_prompt
+    perror "(timeout) Mono Debugger not responding to `frame' command."
     return
 }
 
 proc mdb_expect_breakpoint {} {
     global process
     global file
+    global max_repeat
 
     set count 0
-    while {$count < 10} {
+    while {$count < $max_repeat} {
 	expect {
 	    -re {^Inserted breakpoint ([0-9]+)([^\n\r]+)[\n\r]+} {
 		set index $expect_out(1,string)
 		pass "Inserted breakpoint $index"
-		break
+		mdb_expect_prompt
+		return $index
 	    }
 	    {^(mdb) } {
 		fail "Failed to insert breakpoint"
@@ -178,13 +196,38 @@ proc mdb_expect_breakpoint {} {
 		incr count
 	    }
 	    timeout {
-		perror "(timeout) Mono Debugger is not inserting breakpoint."
-		return -1
+		break
 	    }
 	}
     }
-    mdb_expect_prompt
-    return index
+    perror "(timeout) Mono Debugger is not inserting breakpoint."
+    return -1
+}
+
+proc mdb_expect_process {} {
+    global max_repeat
+
+    set count 0
+    set new_processs 0
+    while {$count < $max_repeat} {
+	expect {
+	    -re {^New process \@([\d]+)[\n\r]+} {
+		set new_process $expect_out(1,string)
+		pass "Started new process $new_process"
+		mdb_expect_prompt
+		return $new_process
+	    }
+	    -re {^([^\n\r]+)[\n\r]+} {
+		set line $expect_out(1,string)
+		verbose "Received `$line' when waiting for a new process"
+		incr count
+	    } timeout {
+		break
+	    }
+	}
+    }
+    perror "(timeout) Mono Debugger is not responding."
+    return -1
 }
 
 proc mdb_expect_line {text} {

@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set file $srcdir/MultiThread.cs
+mdb_start "MultiThread.exe"
+mdb_expect_frame 0 "X.Main()" $file 31
+mdb_send "break -group main 43"
+set breakpoint [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_line "STARTING!"
+set new_process [mdb_expect_process]
+mdb_expect_frame 0 "X.Main()" $file 43
+mdb_send "background -process $new_process"
+mdb_expect_prompt
+mdb_expect_frame 0 "X.Main()" $file 43
+verbose "FIXME: Sleeping 3 seconds"
+sleep 3
+mdb_send "step"
+mdb_expect_stopped 0 "X.CommonFunction(System.Int32)" $file 13
+mdb_send "step"
+mdb_expect_stopped 0 "X.CommonFunction(System.Int32)" $file 19
+mdb_send "next"
+mdb_expect_stopped 0 "X.CommonFunction(System.Int32)" $file 20
+verbose "The following command will take 15 seconds to complete"
+mdb_send "next"
+mdb_expect_stopped 0 "X.CommonFunction(System.Int32)" $file 21
+mdb_send "kill"
+mdb_send "quit"
