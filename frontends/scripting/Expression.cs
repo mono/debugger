@@ -196,7 +196,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	public class NumberExpression : Expression
+	public class NumberExpression : PointerExpression
 	{
 		object val;
 
@@ -242,6 +242,12 @@ namespace Mono.Debugger.Frontends.Scripting
 				return null;
 
 			return frame.Language.CreateInstance (frame, val);
+		}
+
+		public override TargetLocation EvaluateAddress (ScriptingContext context)
+		{
+			TargetAddress addr = new TargetAddress (context.AddressDomain, Value);
+			return new AbsoluteTargetLocation (context.CurrentFrame.Frame, addr);
 		}
 
 		protected override object DoEvaluate (ScriptingContext context)
@@ -1056,13 +1062,6 @@ namespace Mono.Debugger.Frontends.Scripting
 		public override TargetLocation EvaluateAddress (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
-
-			NumberExpression nexpr = expr as NumberExpression;
-			if (nexpr != null) {
-				TargetAddress addr = new TargetAddress (
-					context.AddressDomain, nexpr.Value);
-				return new AbsoluteTargetLocation (frame.Frame, addr);
-			}
 
 			object obj = expr.Resolve (context);
 			if (obj is int)
