@@ -61,8 +61,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 			lines.Sort ();
 
+			LineEntry[] addresses = new LineEntry [lines.Count];
+			lines.CopyTo (addresses, 0);
+
 			ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
-			return new MethodSourceData (start_row, end_row, lines, source_method, buffer);
+			return new MethodSourceData (start_row, end_row, addresses, source_method, buffer);
 		}
 	}
 }

@@ -214,6 +214,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		public void Test (Process process)
+		{
+			bfd_container.AddFile (
+				process, "/home/martin/monocvs/debugger/test/libfoo.so",
+				true, false);
+		}
+
 		//
 		// IDeserializationCallback
 		//

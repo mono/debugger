@@ -37,8 +37,11 @@ namespace Mono.Debugger.Architecture
 			core_file = Path.GetFullPath (core_file);
 			application = Path.GetFullPath (application);
 
-			core_bfd = new Bfd (bfd_container, this, this, core_file, true, TargetAddress.Null);
-			bfd = bfd_container.AddFile (this, application, true, TargetAddress.Null, core_bfd);
+			core_bfd = new Bfd (
+				bfd_container, this, this, core_file, true,
+				TargetAddress.Null, true);
+			bfd = bfd_container.AddFile (
+				this, application, true, TargetAddress.Null, core_bfd, true);
 
 			core_bfd.MainBfd = bfd;
 

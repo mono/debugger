@@ -27,26 +27,31 @@ namespace Mono.Debugger.Architecture
 			get { return backend; }
 		}
 
-		public Module this [string filename] {
+		public Bfd this [string filename] {
 			get {
 				check_disposed ();
-				return ((Bfd) bfd_hash [filename]).Module;
+				return (Bfd) bfd_hash [filename];
 			}
 		}
 
-		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into)
+		public Bfd AddFile (ITargetMemoryAccess memory, string filename,
+				    bool step_into, bool is_main)
 		{
-			return AddFile (memory, filename, step_into, TargetAddress.Null, null);
+			return AddFile (
+				memory, filename, step_into, TargetAddress.Null,
+				null, is_main);
 		}
 
 		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into,
-				    TargetAddress base_address, Bfd core_bfd)
+				    TargetAddress base_address, Bfd core_bfd, bool is_main)
 		{
 			check_disposed ();
-			if (bfd_hash.Contains (filename))
-				return (Bfd) bfd_hash [filename];
+			Bfd bfd = (Bfd) bfd_hash [filename];
+			if (bfd != null)
+				throw new InvalidOperationException ();
 
-			Bfd bfd = new Bfd (this, memory, memory, filename, false, base_address);
+			bfd = new Bfd (this, memory, memory, filename, false,
+				       base_address, is_main);
 			bfd.StepInto = step_into;
 			bfd.CoreFileBfd = core_bfd;
 

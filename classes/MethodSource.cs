@@ -186,20 +186,19 @@ namespace Mono.Debugger
 			public readonly SourceMethod SourceMethod;
 			public readonly ISourceBuffer SourceBuffer;
 
-			public MethodSourceData (int start, int end, ArrayList addresses, ISourceBuffer buffer)
+			public MethodSourceData (int start, int end, LineEntry[] addresses,
+						 ISourceBuffer buffer)
 				: this (start, end, addresses, null, buffer)
 			{ }
 
-			public MethodSourceData (int start, int end, ArrayList addresses,
+			public MethodSourceData (int start, int end, LineEntry[] addresses,
 						 SourceMethod method, ISourceBuffer buffer)
 			{
 				this.StartRow = start;
 				this.EndRow = end;
 				this.SourceMethod = method;
 				this.SourceBuffer = buffer;
-
-				Addresses = new LineEntry [addresses.Count];
-				addresses.CopyTo (Addresses, 0);
+				this.Addresses = addresses;
 			}
 		}
 	}

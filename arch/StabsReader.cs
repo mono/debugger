@@ -598,10 +598,11 @@ namespace Mono.Debugger.Architecture
 			protected override MethodSourceData ReadSource ()
 			{
 				Bfd bfd = method.File.StabsReader.bfd;
-				ArrayList addresses = new ArrayList ();
-				foreach (LineNumberEntry line in method.Lines) {
+				LineEntry[] addresses = new LineEntry [method.Lines.Length];
+				for (int i = 0; i < addresses.Length; i++) {
+					LineNumberEntry line = method.Lines [i];
 					TargetAddress addr = bfd.GetAddress (line.Offset);
-					addresses.Add (new LineEntry (addr, line.Line));
+					addresses [i] = new LineEntry (addr, line.Line);
 				}
 
 				SourceMethod source = new SourceMethod (

@@ -63,7 +63,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   Whether the module is currently loaded in memory.
 		// </summary>
-		public bool IsLoaded {
+		public virtual bool IsLoaded {
 			get { return true; }
 		}
 

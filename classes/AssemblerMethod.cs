@@ -132,7 +132,9 @@ namespace Mono.Debugger
 		protected override MethodSourceData ReadSource ()
 		{
 			buffer = new SourceBuffer (name, contents);
-			return new MethodSourceData (start_row, end_row, addresses, buffer);
+			LineEntry[] lines = new LineEntry [addresses.Count];
+			addresses.CopyTo (lines);
+			return new MethodSourceData (start_row, end_row, lines, buffer);
 		}
 	}
 }

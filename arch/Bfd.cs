@@ -18,7 +18,7 @@ namespace Mono.Debugger.Architecture
 		IntPtr bfd;
 		protected BfdContainer container;
 		protected DebuggerBackend backend;
-		protected ITargetMemoryAccess memory;
+		protected ITargetMemoryInfo info;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
 		protected IArchitecture arch;
@@ -26,7 +26,9 @@ namespace Mono.Debugger.Architecture
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		TargetAddress entry_point = TargetAddress.Null;
+		bool is_main_module;
 		int dynlink_breakpoint_id;
+		Hashtable load_handlers;
 		Hashtable symbols;
 		ArrayList simple_symbols;
 		ISimpleSymbolTable simple_symtab;
@@ -121,7 +123,7 @@ namespace Mono.Debugger.Architecture
 				InternalSection section = (InternalSection) user_data;
 
 				byte[] data = bfd.GetSectionContents (new IntPtr (section.section), true);
-				return new TargetReader (data, bfd.memory);
+				return new TargetReader (data, bfd.info);
 			}
 
 			public ITargetMemoryReader GetReader (TargetAddress address)
@@ -200,14 +202,16 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd (BfdContainer container, ITargetMemoryAccess memory,
 			    ITargetMemoryInfo info, string filename, bool core_file,
-			    TargetAddress base_address)
+			    TargetAddress base_address, bool is_main_module)
 		{
 			this.container = container;
-			this.memory = memory;
+			this.info = info;
 			this.filename = filename;
 			this.base_address = base_address;
 			this.backend = container.DebuggerBackend;
+			this.is_main_module = is_main_module;
 
+			load_handlers = new Hashtable ();
 			language = new Mono.Debugger.Languages.Native.NativeLanguage (info);
 
 			bfd = bfd_glue_openr (filename, null);
@@ -314,8 +318,6 @@ namespace Mono.Debugger.Architecture
 			symbols = new Hashtable ();
 			simple_symbols = new ArrayList ();
 
-			bool is_main_module = base_address.IsNull;
-
 			for (int i = 0; i < num_symbols; i++) {
 				string name;
 				long address;
@@ -365,10 +367,11 @@ namespace Mono.Debugger.Architecture
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
 		{
-			if (memory.ReadInteger (rdebug_state_addr) != 0)
+			Inferior inferior = (Inferior) user_data;
+			if (inferior.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			UpdateSharedLibraryInfo ((Inferior) user_data);
+			UpdateSharedLibraryInfo (inferior);
 			return false;
 		}
 
@@ -466,7 +469,16 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				container.AddFile (inferior, name, StepInto, l_addr, null);
+				Bfd bfd = container [name];
+				if (bfd != null) {
+					if (!bfd.IsLoaded)
+						bfd.ModuleLoaded (inferior, l_addr);
+					continue;
+				}
+
+				bfd = container.AddFile (
+					inferior, name, StepInto, l_addr, null, false);
+				bfd.ModuleLoaded (inferior, l_addr);
 			}
 		}
 
@@ -516,15 +528,15 @@ namespace Mono.Debugger.Architecture
 		{
 			if (BaseAddress.IsNull)
 				return new TargetAddress (
-					memory.GlobalAddressDomain, address);
+					info.GlobalAddressDomain, address);
 			else
 				return new TargetAddress (
-					memory.GlobalAddressDomain, BaseAddress.Address + address);
+					info.GlobalAddressDomain, BaseAddress.Address + address);
 		}
 
 		public ITargetInfo TargetInfo {
 			get {
-				return memory;
+				return info;
 			}
 		}
 
@@ -577,6 +589,10 @@ namespace Mono.Debugger.Architecture
 			get {
 				return this;
 			}
+		}
+
+		internal DwarfReader DwarfReader {
+			get { return dwarf; }
 		}
 
 		public override bool SymbolsLoaded {
@@ -713,7 +729,7 @@ namespace Mono.Debugger.Architecture
 					return TargetAddress.Null;
 
 				if (symbols.Contains (name))
-					return new TargetAddress (memory.GlobalAddressDomain, (long) symbols [name]);
+					return new TargetAddress (info.GlobalAddressDomain, (long) symbols [name]);
 
 				return TargetAddress.Null;
 			}
@@ -766,7 +782,7 @@ namespace Mono.Debugger.Architecture
 					continue;
 
 				TargetAddress start = new TargetAddress (
-					memory.GlobalAddressDomain, section.vma);
+					info.GlobalAddressDomain, section.vma);
 				TargetAddress end = start + section.size;
 
 				TargetMemoryFlags flags = 0;
@@ -892,6 +908,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public override bool IsLoaded {
+			get {
+				return is_main_module || !base_address.IsNull;
+			}
+		}
+
 		//
 		// ISymbolContainer
 		//
@@ -951,7 +973,7 @@ namespace Mono.Debugger.Architecture
 		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
 								     TargetAddress address)
 		{
-			return GetTrampoline (address);
+			return GetTrampoline (memory, address);
 		}
 
 		SourceMethod ILanguageBackend.GetTrampoline (ITargetMemoryAccess memory,
@@ -964,7 +986,8 @@ namespace Mono.Debugger.Architecture
 						    TargetAddress data, long arg)
 		{ }
 
-		public TargetAddress GetTrampoline (TargetAddress address)
+		public TargetAddress GetTrampoline (ITargetMemoryAccess memory,
+						    TargetAddress address)
 		{
 			if (!has_got || (address < plt_start) || (address > plt_end))
 				return TargetAddress.Null;
@@ -994,6 +1017,78 @@ namespace Mono.Debugger.Architecture
 								   object user_data)
 		{
 			throw new InvalidOperationException ();
+		}
+
+		internal IDisposable RegisterLoadHandler (SourceMethod method,
+							  MethodLoadedHandler handler,
+							  object user_data)
+		{
+			LoadHandlerData data = new LoadHandlerData (
+				this, method, handler, user_data);
+
+			load_handlers.Add (data, true);
+			return data;
+		}
+
+		protected void UnRegisterLoadHandler (LoadHandlerData data)
+		{
+			load_handlers.Remove (data);
+		}
+
+		internal void ModuleLoaded (Inferior inferior, TargetAddress address)
+		{
+			this.base_address = address;
+
+			Console.WriteLine ("MODULE LOADED: {0} {1}", BaseAddress, address);
+
+			load_dwarf ();
+
+			foreach (LoadHandlerData data in load_handlers.Keys) {
+				data.Handler (inferior, data.Method, data.UserData);
+			}
+		}
+
+		protected sealed class LoadHandlerData : IDisposable
+		{
+			public readonly Bfd Bfd;
+			public readonly SourceMethod Method;
+			public readonly MethodLoadedHandler Handler;
+			public readonly object UserData;
+
+			public LoadHandlerData (Bfd bfd, SourceMethod method,
+						MethodLoadedHandler handler,
+						object user_data)
+			{
+				this.Bfd = bfd;
+				this.Method = method;
+				this.Handler = handler;
+				this.UserData = user_data;
+			}
+
+			private bool disposed = false;
+
+			private void Dispose (bool disposing)
+			{
+				if (!this.disposed) {
+					if (disposing) {
+						Bfd.UnRegisterLoadHandler (this);
+					}
+				}
+						
+				this.disposed = true;
+			}
+
+			public void Dispose ()
+			{
+				Dispose (true);
+				// Take yourself off the Finalization queue
+				GC.SuppressFinalize (this);
+			}
+
+			~LoadHandlerData ()
+			{
+				Dispose (false);
+			}
 		}
 
 		//

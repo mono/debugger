@@ -26,14 +26,13 @@ namespace Mono.Debugger.Architecture
 		ObjectCache debug_pubnames_reader;
 		ObjectCache debug_str_reader;
 
+		Hashtable source_hash;
 		Hashtable method_source_hash;
 		Hashtable compile_unit_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
 		ITargetInfo target_info;
 		SourceFileFactory factory;
-
-		SourceFile[] sources;
 
 		protected class DwarfException : Exception
 		{
@@ -80,10 +79,12 @@ namespace Mono.Debugger.Architecture
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
+			source_hash = Hashtable.Synchronized (new Hashtable ());
 
-			aranges = ArrayList.Synchronized (read_aranges ());
-
-			symtab = new DwarfSymbolTable (this, aranges);
+			if (bfd.IsLoaded) {
+				aranges = ArrayList.Synchronized (read_aranges ());
+				symtab = new DwarfSymbolTable (this, aranges);
+			}
 
 			ArrayList source_list = new ArrayList ();
 
@@ -92,12 +93,7 @@ namespace Mono.Debugger.Architecture
 				CompileUnitBlock block = new CompileUnitBlock (this, offset);
 				compile_unit_hash.Add (offset, block);
 				offset += block.length;
-
-				source_list.AddRange (block.Sources);
 			}
-
-			sources = new SourceFile [source_list.Count];
-			source_list.CopyTo (sources, 0);
 		}
 
 		public static bool IsSupported (Bfd bfd)
@@ -116,6 +112,9 @@ namespace Mono.Debugger.Architecture
 
 		protected TargetAddress GetAddress (long address)
 		{
+			if (!bfd.IsLoaded)
+				throw new InvalidOperationException ();
+
 			return bfd.GetAddress (address);
 		}
 
@@ -130,7 +129,9 @@ namespace Mono.Debugger.Architecture
 
 		public SourceFile[] Sources {
 			get {
-				return sources;
+				SourceFile[] retval = new SourceFile [source_hash.Count];
+				source_hash.Keys.CopyTo (retval, 0);
+				return retval;
 			}
 		}
 
@@ -140,7 +141,15 @@ namespace Mono.Debugger.Architecture
 		}
 
 		void ISymbolFile.GetMethods (SourceFile file)
-		{ }
+		{
+			DieCompileUnit die = (DieCompileUnit) source_hash [file];
+
+			foreach (Die child in die.Subprograms) {
+				DieSubprogram subprog = child as DieSubprogram;
+				if (subprog == null)
+					continue;
+			}
+		}
 
 		protected SourceMethod GetSourceMethod (DieSubprogram subprog,
 							int start_row, int end_row)
@@ -157,6 +166,13 @@ namespace Mono.Debugger.Architecture
 			return source;
 		}
 
+		protected SourceFile AddSourceFile (DieCompileUnit die, string filename)
+		{
+			SourceFile file = new SourceFile (this, bfd, filename);
+			source_hash.Add (file, die);
+			return file;
+		}
+
 		protected class CompileUnitBlock
 		{
 			public readonly DwarfReader dwarf;
@@ -165,7 +181,6 @@ namespace Mono.Debugger.Architecture
 
 			SymbolTableCollection symtabs;
 			ArrayList compile_units;
-			SourceFile[] sources;
 			bool initialized;
 
 			public IMethod Lookup (TargetAddress address)
@@ -178,12 +193,6 @@ namespace Mono.Debugger.Architecture
 				get {
 					build_symtabs ();
 					return symtabs;
-				}
-			}
-
-			public SourceFile[] Sources {
-				get {
-					return sources;
 				}
 			}
 
@@ -242,11 +251,7 @@ namespace Mono.Debugger.Architecture
 				while (reader.Position < stop) {
 					CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
 					compile_units.Add (comp_unit);
-					source_list.Add (comp_unit.DieCompileUnit.SourceFile);
 				}
-
-				sources = new SourceFile [source_list.Count];
-				source_list.CopyTo (sources, 0);
 			}
 		}
 
@@ -618,6 +623,36 @@ namespace Mono.Debugger.Architecture
 			ref_udata		= 0x15
 		}
 
+		protected struct LineNumber : IComparable
+		{
+			public readonly long Offset;
+			public readonly int Line;
+
+			public LineNumber (long offset, int line)
+			{
+				this.Offset = offset;
+				this.Line = line;
+			}
+
+			public int CompareTo (object obj)
+			{
+				LineNumber entry = (LineNumber) obj;
+
+				if (entry.Offset < Offset)
+					return 1;
+				else if (entry.Offset > Offset)
+					return -1;
+				else
+					return 0;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("LineNumber ({0}:{1})",
+						      Line, Offset);
+			}
+		}
+
 		protected class LineNumberEngine
 		{
 			protected DwarfReader dwarf;
@@ -635,8 +670,8 @@ namespace Mono.Debugger.Architecture
 			long header_length, data_offset, end_offset;
 			long base_address;
 
-			ISymbolContainer next_method, current_method;
-			TargetAddress next_method_address;
+			DieSubprogram next_method, current_method;
+			long next_method_address;
 			int next_method_index;
 
 			int[] standard_opcode_lengths;
@@ -648,7 +683,7 @@ namespace Mono.Debugger.Architecture
 			protected class StatementMachine
 			{
 				public LineNumberEngine engine;			      
-				public TargetAddress st_address;
+				public long st_address;
 				public int st_line;
 				public int st_file;
 				public int st_column;
@@ -673,7 +708,7 @@ namespace Mono.Debugger.Architecture
 					this.reader = this.engine.reader;
 					this.creating = true;
 					this.start_offset = offset;
-					this.st_address = TargetAddress.Null;
+					this.st_address = 0;
 					this.st_file = 1;
 					this.st_line = 1;
 					this.st_column = 0;
@@ -734,7 +769,7 @@ namespace Mono.Debugger.Architecture
 					}
 
 					if (st_file == start_file)
-						lines.Add (new LineEntry (st_address, st_line));
+						lines.Add (new LineNumber (st_address, st_line));
 
 					basic_block = false;
 					prologue_end = false;
@@ -811,7 +846,7 @@ namespace Mono.Debugger.Architecture
 
 					switch ((ExtendedOpcode) opcode) {
 					case ExtendedOpcode.set_address:
-						st_address = engine.dwarf.GetAddress (reader.ReadAddress ());
+						st_address = reader.ReadAddress ();
 						engine.debug ("SETTING ADDRESS TO {0:x}", st_address);
 						break;
 
@@ -928,10 +963,10 @@ namespace Mono.Debugger.Architecture
 					method_hash.Add (current_method, new StatementMachine (stm));
 				current_method = next_method;
 				if (next_method_index < methods.Count) {
-					next_method = (ISymbolContainer) methods [next_method_index++];
+					next_method = (DieSubprogram) methods [next_method_index++];
 					next_method_address = next_method.StartAddress;
 				} else
-					next_method_address = TargetAddress.Null;
+					next_method_address = 0;
 
 				debug ("NEW NEXT: {0:x}", next_method_address);
 			}
@@ -941,7 +976,7 @@ namespace Mono.Debugger.Architecture
 				debug ("COMMIT: {0:x} {1} {2:x}", stm.st_address, stm.st_line,
 				       next_method_address);
 
-				if (!next_method_address.IsNull && (stm.st_address >= next_method_address))
+				if ((next_method_address > 0) && (stm.st_address >= next_method_address))
 					end_sequence (stm);
 			}
 
@@ -996,7 +1031,7 @@ namespace Mono.Debugger.Architecture
 
 				next_method_index = 1;
 				if (methods.Count > 0) {
-					next_method = (ISymbolContainer) methods [0];
+					next_method = (DieSubprogram) methods [0];
 					next_method_address = next_method.StartAddress;
 				}
 
@@ -1010,10 +1045,10 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public string GetSource (ISymbolContainer method, out int start_row, out int end_row,
-						 out ArrayList addresses)
+						 out LineNumber[] lines)
 			{
 				start_row = end_row = 0;
-				addresses = null;
+				lines = null;
 
 				StatementMachine stm = (StatementMachine) method_hash [method];
 				if ((stm == null) || (stm.st_file == 0))
@@ -1022,7 +1057,18 @@ namespace Mono.Debugger.Architecture
 				FileEntry file = (FileEntry) source_files [stm.st_file - 1];
 				start_row = stm.start_line;
 				end_row = stm.end_line;
-				addresses = stm.lines;
+
+#if FIXME
+				addresses = new LineEntry [stm.lines.Count];
+				for (int i = 0; i < addresses.Length; i++) {
+					LineNumber line = (LineNumber) stm.lines [i];
+					     addresses [i] = new LineEntry (
+						     dwarf.GetAddress (line.Offset), line.Line);
+				}
+#endif
+
+				lines = new LineNumber [stm.lines.Count];
+				stm.lines.CopyTo (lines, 0);
 
 				string dir_name;
 				if (file.Directory > 0)
@@ -1479,8 +1525,7 @@ namespace Mono.Debugger.Architecture
 						comp_dir, Path.DirectorySeparatorChar, name);
 				else
 					file_name = name;
-				file = new SourceFile (dwarf, dwarf.bfd, file_name);
-				symtab = new CompileUnitSymbolTable (this);
+				file = dwarf.AddSourceFile (this, file_name);
 			}
 
 			long start_pc, end_pc;
@@ -1522,6 +1567,14 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			void read_symtab ()
+			{
+				if ((symtab != null) || !dwarf.bfd.IsLoaded)
+					return;
+
+				symtab = new CompileUnitSymbolTable (this);
+			}
+
 			protected LineNumberEngine Engine {
 				get {
 					read_children ();
@@ -1529,7 +1582,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			protected ArrayList Subprograms {
+			public ArrayList Subprograms {
 				get {
 					read_children ();
 					return children;
@@ -1591,25 +1644,38 @@ namespace Mono.Debugger.Architecture
 
 			public ISymbolTable SymbolTable {
 				get {
+					read_symtab ();
 					return symtab;
 				}
 			}
 
-			public TargetAddress StartAddress {
+			TargetAddress ISymbolContainer.StartAddress {
 				get {
-					if (!is_continuous)
-						throw new InvalidOperationException ();
-
-					return dwarf.GetAddress (start_pc);
+					return dwarf.GetAddress (StartAddress);
 				}
 			}
 
-			public TargetAddress EndAddress {
+			TargetAddress ISymbolContainer.EndAddress {
+				get {
+					return dwarf.GetAddress (EndAddress);
+				}
+			}
+
+			public long StartAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return dwarf.GetAddress (end_pc);
+					return start_pc;
+				}
+			}
+
+			public long EndAddress {
+				get {
+					if (!is_continuous)
+						throw new InvalidOperationException ();
+
+					return end_pc;
 				}
 			}
 
@@ -1717,6 +1783,15 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			public SourceMethod SourceMethod {
+				get {
+					if (method == null)
+						return null;
+
+					return method.SourceMethod;
+				}
+			}
+
 			public string ImageFile {
 				get {
 					return dwarf.filename;
@@ -1735,21 +1810,33 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public TargetAddress StartAddress {
+			TargetAddress ISymbolContainer.StartAddress {
 				get {
-					if (!is_continuous)
-						throw new InvalidOperationException ();
-
-					return dwarf.GetAddress (start_pc);
+					return dwarf.GetAddress (StartAddress);
 				}
 			}
 
-			public TargetAddress EndAddress {
+			TargetAddress ISymbolContainer.EndAddress {
+				get {
+					return dwarf.GetAddress (EndAddress);
+				}
+			}
+
+			public long StartAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return dwarf.GetAddress (end_pc);
+					return start_pc;
+				}
+			}
+
+			public long EndAddress {
+				get {
+					if (!is_continuous)
+						throw new InvalidOperationException ();
+
+					return end_pc;
 				}
 			}
 
@@ -1850,7 +1937,7 @@ namespace Mono.Debugger.Architecture
 				DieSubprogram subprog;
 				SourceMethod source;
 				int start_row, end_row;
-				ArrayList addresses;
+				LineNumber[] lines;
 				ISourceBuffer buffer;
 
 				public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
@@ -1859,11 +1946,16 @@ namespace Mono.Debugger.Architecture
 					this.subprog = subprog;
 					this.engine = engine;
 
-					if (subprog.IsContinuous)
-						SetAddresses (subprog.StartAddress, subprog.EndAddress);
+					ISymbolContainer sc = (ISymbolContainer) subprog;
+					if (sc.IsContinuous && subprog.dwarf.bfd.IsLoaded)
+						SetAddresses (sc.StartAddress, sc.EndAddress);
 
 					read_source ();
-					SetSource (new DwarfTargetMethodSource (this, subprog.SourceFile));
+					method_loaded ();
+				}
+
+				public DwarfReader DwarfReader {
+					get { return subprog.dwarf; }
 				}
 
 				public override object MethodHandle {
@@ -1900,8 +1992,8 @@ namespace Mono.Debugger.Architecture
 					get { return end_row; }
 				}
 
-				public ArrayList Addresses {
-					get { return addresses; }
+				public LineNumber[] LineNumbers {
+					get { return lines; }
 				}
 
 				public SourceMethod SourceMethod {
@@ -1914,25 +2006,34 @@ namespace Mono.Debugger.Architecture
 
 				void read_source ()
 				{
-					start_row = end_row = 0;
-					addresses = null;
-
 					string file = engine.GetSource (
-						subprog, out start_row, out end_row, out addresses);
+						subprog, out start_row, out end_row, out lines);
 					if (file == null)
 						throw new InternalError ();
-
-					if ((addresses != null) && (addresses.Count > 2)) {
-						LineEntry start = (LineEntry) addresses [1];
-						LineEntry end = (LineEntry) addresses [addresses.Count - 1];
-
-						SetMethodBounds (start.Address, end.Address);
-					}
 
 					source = subprog.dwarf.GetSourceMethod (
 						subprog, StartRow, EndRow);
 
-					buffer = subprog.dwarf.factory.FindFile (subprog.SourceFile.FileName);
+					buffer = subprog.dwarf.factory.FindFile (
+						subprog.SourceFile.FileName);
+				}
+
+				void method_loaded ()
+				{
+					if (!subprog.dwarf.bfd.IsLoaded)
+						return;
+
+					SetSource (new DwarfTargetMethodSource (
+							   this, subprog.SourceFile));
+
+					if ((lines != null) && (lines.Length > 2)) {
+						LineNumber start = lines [1];
+						LineNumber end = lines [lines.Length - 1];
+
+						SetMethodBounds (
+							subprog.dwarf.GetAddress (start.Offset),
+							subprog.dwarf.GetAddress (end.Offset));
+					}
 				}
 
 				public override SourceMethod GetTrampoline (ITargetMemoryAccess memory, TargetAddress address)
@@ -1953,8 +2054,17 @@ namespace Mono.Debugger.Architecture
 
 				protected override MethodSourceData ReadSource ()
 				{
+					LineNumber[] lines = method.LineNumbers;
+					LineEntry[] addresses = new LineEntry [lines.Length];
+					for (int i = 0; i < lines.Length; i++) {
+						LineNumber line = lines [i];
+						addresses [i] = new LineEntry (
+							method.DwarfReader.GetAddress (line.Offset),
+							line.Line);
+					}
+
 					return new MethodSourceData (
-						method.StartRow, method.EndRow, method.Addresses,
+						method.StartRow, method.EndRow, addresses,
 						method.SourceMethod, method.SourceBuffer);
 				}
 			}
