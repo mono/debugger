@@ -63,6 +63,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		protected override void DoExecute (ScriptingContext context)
 		{
 			TargetAddress taddress;
+			ITargetAccess taccess;
 			byte[] data;
 
 			RegisterExpression rexp = expression as RegisterExpression;
@@ -70,7 +71,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				TargetLocation location = rexp.ResolveLocation (context);
 
 				taddress = location.Address;
-				data = location.ReadBuffer (format.Size);
+				taccess = location.TargetAccess;
 			} else if (expression != null) {
 				ITargetObject obj = expression.ResolveVariable (context);
 
@@ -78,12 +79,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 					throw new ScriptingException ("Expression doesn't have an address.");
 
 				taddress = obj.Location.Address;
-				data = obj.Location.ReadBuffer (format.Size);
+				taccess = obj.Location.TargetAccess;
 			} else {
 				FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
 				taddress = new TargetAddress (frame.Frame.AddressDomain, address);
-				data = frame.Frame.TargetAccess.ReadBuffer (taddress, format.Size);
+				taccess = frame.Frame.TargetAccess;
+			}
+
+			try {
+				data = taccess.ReadBuffer (taddress, format.Size);
+			} catch (TargetException) {
+				throw new ScriptingException ("Can't access target memory at address {0}.", taddress);
 			}
 
 			context.Print (TargetBinaryReader.HexDump (taddress, data));
