@@ -12,19 +12,6 @@ namespace Mono.Debugger.Languages.CSharp
 		MethodEntry method;
 		IMethod imethod;
 
-		private CSharpMethod (IMethod imethod, MethodEntry method,
-				      JitLineNumberEntry[] line_numbers, ISourceBuffer source,
-				      int start_row, int end_row)
-			: base (imethod)
-		{
-			this.imethod = imethod;
-			this.method = method;
-			this.line_numbers = line_numbers;
-			this.source = source;
-			this.start_row= start_row;
-			this.end_row = end_row;
-		}
-
 		protected CSharpMethod (IMethod imethod, ISourceBuffer source,
 					MethodEntry method, JitLineNumberEntry[] line_numbers)
 			: base (imethod)
@@ -48,21 +35,6 @@ namespace Mono.Debugger.Languages.CSharp
 				buffer = new SourceBuffer (method.SourceFile);
 
 			return new CSharpMethod (imethod, buffer, method, line_numbers);
-		}
-
-		internal static ISourceBuffer GetMethodSource (IMethod imethod, MethodEntry method,
-							       JitLineNumberEntry[] line_numbers,
-							       out int start_row, out int end_row,
-							       out ArrayList addresses)
-		{
-			CSharpMethod csharp = GetMethodSource (imethod, method, line_numbers);
-			if (csharp == null) {
-				start_row = end_row = 0;
-				addresses = null;
-				return null;
-			}
-
-			return csharp.ReadSource (out start_row, out end_row, out addresses);
 		}
 
 		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
