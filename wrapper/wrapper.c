@@ -37,8 +37,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_VERSION,
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
-	&mono_debugger_symbol_table,
-	sizeof (MonoDebuggerSymbolTable),
+	&mono_symbol_table,
+	sizeof (MonoSymbolTable),
 	&debugger_compile_method,
 	&debugger_get_virtual_method,
 	&debugger_get_boxed_object,
@@ -140,7 +140,8 @@ debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
 	guint64 retval;
 
 	mono_debugger_lock ();
-	retval = mono_debugger_lookup_type (string_argument);
+	// retval = mono_debugger_lookup_type (string_argument);
+	retval = -1;
 	mono_debugger_unlock ();
 	return retval;
 }
@@ -190,6 +191,10 @@ debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg)
 	switch (event) {
 	case MONO_DEBUGGER_EVENT_RELOAD_SYMTABS:
 		mono_debugger_notification_function (NOTIFICATION_RELOAD_SYMTABS, 0, 0);
+		break;
+
+	case MONO_DEBUGGER_EVENT_ADD_MODULE:
+		mono_debugger_notification_function (NOTIFICATION_ADD_MODULE, data, 0);
 		break;
 
 	case MONO_DEBUGGER_EVENT_BREAKPOINT:

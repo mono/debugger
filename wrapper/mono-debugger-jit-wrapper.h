@@ -19,7 +19,7 @@ struct _MonoDebuggerInfo {
 	guint32 version;
 	guint32 total_size;
 	guint8 **generic_trampoline_code;
-	MonoDebuggerSymbolTable **symbol_table;
+	MonoSymbolTable **symbol_table;
 	guint32 symbol_table_size;
 	guint64 (*compile_method) (guint64 method_argument);
 	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);
@@ -62,6 +62,7 @@ enum {
 
 enum {
 	NOTIFICATION_INITIALIZE_MANAGED_CODE	= 1,
+	NOTIFICATION_ADD_MODULE,
 	NOTIFICATION_RELOAD_SYMTABS,
 	NOTIFICATION_METHOD_COMPILED,
 	NOTIFICATION_JIT_BREAKPOINT,

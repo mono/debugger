@@ -46,7 +46,7 @@ LIBRARY_SRCLIST = \
 	@top_srcdir@/arch/*.cs				\
 	@top_srcdir@/backends/*.cs			\
 	@top_srcdir@/backends/classes/*.cs		\
-	@top_srcdir@/backends/mono-csharp/*.cs		\
+	@top_srcdir@/backends/mono/*.cs			\
 	@top_srcdir@/backends/native/*.cs		\
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/classes/*.cs			\
