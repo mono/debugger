@@ -1,5 +1,10 @@
 2002-12-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-linux-ptrace.c: Get the registers each time
+	the target stops and store them.
+
+2002-12-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/ProcessStart.cs: New class.  Moved the argv and envp
 	stuff here; this class specifies how to launch an application.
 

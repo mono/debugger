@@ -30,6 +30,8 @@ struct InferiorHandle
 	ChildMessageFunc child_message_cb;
 	ChildCallbackFunc child_callback_cb;
 	guint64 callback_argument;
+	struct user_regs_struct current_regs;
+	struct user_i387_struct current_fpregs;
 	struct user_regs_struct *saved_regs;
 	struct user_i387_struct *saved_fpregs;
 	GPtrArray *breakpoints;
@@ -128,6 +130,11 @@ setup_inferior (InferiorHandle *handle)
 		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
 
 	g_free (filename);
+
+	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get registers");
+	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get fp registers");
 }
 
 static InferiorHandle *
@@ -214,33 +221,19 @@ server_ptrace_detach (InferiorHandle *handle)
 static ServerCommandError
 server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 {
-	ServerCommandError result;
-	struct user_regs_struct regs;
-
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	*pc = (guint32) regs.eip;
-	return result;
+	*pc = (guint32) handle->current_regs.eip;
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
 server_ptrace_current_insn_is_bpt (InferiorHandle *handle, guint32 *is_breakpoint)
 {
-	ServerCommandError result;
-	struct user_regs_struct regs;
-
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
 	if (!handle->breakpoints) {
 		*is_breakpoint = FALSE;
 		return COMMAND_ERROR_NONE;
 	}
 
-	if (g_hash_table_lookup (handle->breakpoint_by_addr, GUINT_TO_POINTER (regs.eip)))
+	if (g_hash_table_lookup (handle->breakpoint_by_addr, GUINT_TO_POINTER (handle->current_regs.eip)))
 		*is_breakpoint = TRUE;
 	else
 		*is_breakpoint = FALSE;
@@ -329,7 +322,6 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 			   guint64 method_argument, guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
-	struct user_regs_struct regs;
 	long new_esp, call_disp;
 
 	guint8 code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
@@ -339,20 +331,12 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 	if (handle->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	new_esp = handle->current_regs.esp - size;
 
-	new_esp = regs.esp - size;
-
-	handle->saved_regs = g_memdup (&regs, sizeof (regs));
+	handle->saved_regs = g_memdup (&handle->current_regs, sizeof (handle->current_regs));
+	handle->saved_fpregs = g_memdup (&handle->current_fpregs, sizeof (handle->current_fpregs));
 	handle->call_address = new_esp + 16;
 	handle->callback_argument = callback_argument;
-
-	handle->saved_fpregs = g_malloc (sizeof (struct user_i387_struct));
-	result = get_fp_registers (handle, handle->saved_fpregs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
 
 	call_disp = (int) method_address - new_esp;
 
@@ -364,9 +348,9 @@ server_ptrace_call_method (InferiorHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	regs.esp = regs.eip = new_esp;
+	handle->current_regs.esp = handle->current_regs.eip = new_esp;
 
-	result = set_registers (handle, &regs);
+	result = set_registers (handle, &handle->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -384,7 +368,6 @@ server_ptrace_call_method_1 (InferiorHandle *handle, guint64 method_address,
 			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
-	struct user_regs_struct regs;
 	long new_esp, call_disp;
 
 	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
@@ -399,20 +382,12 @@ server_ptrace_call_method_1 (InferiorHandle *handle, guint64 method_address,
 	if (handle->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	new_esp = handle->current_regs.esp - size;
 
-	new_esp = regs.esp - size;
-
-	handle->saved_regs = g_memdup (&regs, sizeof (regs));
+	handle->saved_regs = g_memdup (&handle->current_regs, sizeof (handle->current_regs));
+	handle->saved_fpregs = g_memdup (&handle->current_fpregs, sizeof (handle->current_fpregs));
 	handle->call_address = new_esp + 21;
 	handle->callback_argument = callback_argument;
-
-	handle->saved_fpregs = g_malloc (sizeof (struct user_i387_struct));
-	result = get_fp_registers (handle, handle->saved_fpregs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
 
 	call_disp = (int) method_address - new_esp;
 
@@ -425,9 +400,9 @@ server_ptrace_call_method_1 (InferiorHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	regs.esp = regs.eip = new_esp;
+	handle->current_regs.esp = handle->current_regs.eip = new_esp;
 
-	result = set_registers (handle, &regs);
+	result = set_registers (handle, &handle->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -441,7 +416,6 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 				  guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
-	struct user_regs_struct regs;
 	long new_esp, call_disp;
 	int i;
 
@@ -464,20 +438,12 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 	if (handle->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
+	new_esp = handle->current_regs.esp - size;
 
-	new_esp = regs.esp - size;
-
-	handle->saved_regs = g_memdup (&regs, sizeof (regs));
+	handle->saved_regs = g_memdup (&handle->current_regs, sizeof (handle->current_regs));
+	handle->saved_fpregs = g_memdup (&handle->current_fpregs, sizeof (handle->current_fpregs));
 	handle->call_address = new_esp + static_size;
 	handle->callback_argument = callback_argument;
-
-	handle->saved_fpregs = g_malloc (sizeof (struct user_i387_struct));
-	result = get_fp_registers (handle, handle->saved_fpregs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
 
 	call_disp = (int) invoke_method - new_esp;
 
@@ -492,9 +458,9 @@ server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	regs.esp = regs.eip = new_esp;
+	handle->current_regs.esp = handle->current_regs.eip = new_esp;
 
-	result = set_registers (handle, &regs);
+	result = set_registers (handle, &handle->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -521,18 +487,18 @@ static ChildStoppedAction
 server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 			     guint64 *callback_arg, guint64 *retval, guint64 *retval2)
 {
-	struct user_regs_struct regs;
+	if (get_registers (handle, &handle->current_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get registers");
+	if (get_fp_registers (handle, &handle->current_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get fp registers");
 
-	if (get_registers (handle, &regs) != COMMAND_ERROR_NONE)
-		return STOP_ACTION_SEND_STOPPED;
-
-	if (check_breakpoint (handle, regs.eip - 1, retval)) {
-		regs.eip--;
-		set_registers (handle, &regs);
+	if (check_breakpoint (handle, handle->current_regs.eip - 1, retval)) {
+		handle->current_regs.eip--;
+		set_registers (handle, &handle->current_regs);
 		return STOP_ACTION_BREAKPOINT_HIT;
 	}
 
-	if (!handle->call_address || handle->call_address != regs.eip) {
+	if (!handle->call_address || handle->call_address != handle->current_regs.eip) {
 		int code;
 
 		if (stopsig != SIGTRAP) {
@@ -540,7 +506,7 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 			return STOP_ACTION_SEND_STOPPED;
 		}
 
-		if (server_ptrace_peek_word (handle, (guint32) (regs.eip - 1), &code) != COMMAND_ERROR_NONE)
+		if (server_ptrace_peek_word (handle, (guint32) (handle->current_regs.eip - 1), &code) != COMMAND_ERROR_NONE)
 			return STOP_ACTION_SEND_STOPPED;
 
 		if ((code & 0xff) == 0xcc) {
@@ -558,8 +524,8 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 	*callback_arg = handle->callback_argument;
-	*retval = (((guint64) regs.ecx) << 32) + ((gulong) regs.eax);
-	*retval2 = (((guint64) regs.ebx) << 32) + ((gulong) regs.edx);
+	*retval = (((guint64) handle->current_regs.ecx) << 32) + ((gulong) handle->current_regs.eax);
+	*retval2 = (((guint64) handle->current_regs.ebx) << 32) + ((gulong) handle->current_regs.edx);
 
 	g_free (handle->saved_regs);
 	g_free (handle->saved_fpregs);
@@ -930,65 +896,60 @@ static ServerCommandError
 server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *registers, guint64 *values)
 {
 	ServerCommandError result;
-	struct user_regs_struct regs;
 	int i;
-
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
 
 	for (i = 0; i < count; i++) {
 		switch (registers [i]) {
 		case EBX:
-			values [i] = (guint32) regs.ebx;
+			values [i] = (guint32) handle->current_regs.ebx;
 			break;
 		case ECX:
-			values [i] = (guint32) regs.ecx;
+			values [i] = (guint32) handle->current_regs.ecx;
 			break;
 		case EDX:
-			values [i] = (guint32) regs.edx;
+			values [i] = (guint32) handle->current_regs.edx;
 			break;
 		case ESI:
-			values [i] = (guint32) regs.esi;
+			values [i] = (guint32) handle->current_regs.esi;
 			break;
 		case EDI:
-			values [i] = (guint32) regs.edi;
+			values [i] = (guint32) handle->current_regs.edi;
 			break;
 		case EBP:
-			values [i] = (guint32) regs.ebp;
+			values [i] = (guint32) handle->current_regs.ebp;
 			break;
 		case EAX:
-			values [i] = (guint32) regs.eax;
+			values [i] = (guint32) handle->current_regs.eax;
 			break;
 		case DS:
-			values [i] = (guint32) regs.ds;
+			values [i] = (guint32) handle->current_regs.ds;
 			break;
 		case ES:
-			values [i] = (guint32) regs.es;
+			values [i] = (guint32) handle->current_regs.es;
 			break;
 		case FS:
-			values [i] = (guint32) regs.fs;
+			values [i] = (guint32) handle->current_regs.fs;
 			break;
 		case GS:
-			values [i] = (guint32) regs.gs;
+			values [i] = (guint32) handle->current_regs.gs;
 			break;
 		case ORIG_EAX:
-			values [i] = (guint32) regs.orig_eax;
+			values [i] = (guint32) handle->current_regs.orig_eax;
 			break;
 		case EIP:
-			values [i] = (guint32) regs.eip;
+			values [i] = (guint32) handle->current_regs.eip;
 			break;
 		case CS:
-			values [i] = (guint32) regs.cs;
+			values [i] = (guint32) handle->current_regs.cs;
 			break;
 		case EFL:
-			values [i] = (guint32) regs.eflags;
+			values [i] = (guint32) handle->current_regs.eflags;
 			break;
 		case UESP:
-			values [i] = (guint32) regs.esp;
+			values [i] = (guint32) handle->current_regs.esp;
 			break;
 		case SS:
-			values [i] = (guint32) regs.ss;
+			values [i] = (guint32) handle->current_regs.ss;
 			break;
 		default:
 			return COMMAND_ERROR_UNKNOWN_REGISTER;
@@ -1121,14 +1082,10 @@ static ServerCommandError
 server_ptrace_get_ret_address (InferiorHandle *handle, guint64 *retval)
 {
 	ServerCommandError result;
-	struct user_regs_struct regs;
 	guint32 retaddr, frame;
 
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	result = server_ptrace_get_frame (handle, regs.eip, regs.esp, regs.ebp, &retaddr, &frame);
+	result = server_ptrace_get_frame (handle, handle->current_regs.eip, handle->current_regs.esp,
+					  handle->current_regs.ebp, &retaddr, &frame);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -1142,25 +1099,20 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 {
 	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
 	ServerCommandError result;
-	struct user_regs_struct regs;
 	guint32 address, frame;
 	StackFrame sframe;
 	int i;
 
-	result = get_registers (handle, &regs);
-	if (result != COMMAND_ERROR_NONE)
-		goto out;
-
-	sframe.address = (guint32) regs.eip;
-	sframe.params_address = sframe.locals_address = (guint32) regs.ebp;
+	sframe.address = (guint32) handle->current_regs.eip;
+	sframe.params_address = sframe.locals_address = (guint32) handle->current_regs.ebp;
 
 	g_array_append_val (frames, sframe);
 
-	if (regs.ebp == 0)
+	if (handle->current_regs.ebp == 0)
 		goto out;
 
-	result = server_ptrace_get_frame (handle, regs.eip, regs.esp, regs.ebp,
-					  &address, &frame);
+	result = server_ptrace_get_frame (handle, handle->current_regs.eip, handle->current_regs.esp,
+					  handle->current_regs.ebp, &address, &frame);
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
