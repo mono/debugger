@@ -1,3 +1,8 @@
+2005-01-25  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Style.cs (StructFormatter): New public class.
+	(StyleNative.DoFormatObject): Use the new StructFormatter.
+
 2005-01-21  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Command.cs (SourceCommand.DoResolveExpression): don't

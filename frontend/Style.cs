@@ -11,6 +11,53 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontend
 {
+	public class StructFormatter
+	{
+		public const int DefaultWidth = 80;
+		public readonly int Width = DefaultWidth;
+
+		ArrayList items = new ArrayList ();
+
+		public void Add (string item)
+		{
+			items.Add (item);
+		}
+
+		public string Format ()
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			int pos = 0;
+			bool multi_line = false;
+			for (int i = 0; i < items.Count; i++) {
+				if (i > 0) {
+					sb.Append (", ");
+					pos += 2;
+				} else {
+					sb.Append (" ");
+					pos++;
+				}
+
+				string item = (string) items [i];
+
+				pos += item.Length;
+				if (pos > Width) {
+					sb.Append ("\n  ");
+					multi_line = true;
+					pos = 0;
+				}
+
+				sb.Append (item);
+			}
+
+			string text = sb.ToString ();
+			if (multi_line)
+				return "{\n " + text + "\n}";
+			else
+				return "{" + text + " }";
+		}
+	}
+
 	/// <summary>
 	///   This interface controls how things are being displayed to the
 	///   user, for instance the current stack frame or variables from
@@ -401,23 +448,18 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
 				ITargetStructObject sobj = (ITargetStructObject) obj;
-				StringBuilder sb = new StringBuilder ("{ ");
-				bool first = true;
+				StructFormatter formatter = new StructFormatter ();
 				ITargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (ITargetFieldInfo field in fields) {
 					ITargetObject fobj = sobj.GetField (field.Index);
-					if (first)
-						first = false;
-					else
-						sb.Append (",  ");
-					sb.Append (field.Name + "=");
+					string item;
 					if (fobj == null)
-						sb.Append ("null");
+						item = field.Name + " = null";
 					else
-						sb.Append (FormatObject (fobj, true));
+						item = field.Name + " = " + FormatObject (fobj, true);
+					formatter.Add (item);
 				}
-				sb.Append (" }");
-				return sb.ToString ();
+				return formatter.Format ();
 			}
 
 			default:
