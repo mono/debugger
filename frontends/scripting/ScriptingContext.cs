@@ -253,8 +253,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (current_frame == null)
 					current_frame = process.CurrentFrame;
 
-				Console.WriteLine ("FRAME: {0}", process.CurrentFrameAddress);
-
 				return current_frame;
 			}
 
