@@ -577,9 +577,9 @@ source_expression
 	  {
 		$$ = new SourceExpression ((string) $1);
 	  }
-	| STRING INTEGER
+	| STRING COLON INTEGER
 	  {
-		$$ = new SourceExpression ((string) $1, (int) $2);
+		$$ = new SourceExpression ((string) $1, (int) $3);
 	  }
 	| BANG INTEGER
 	  {
