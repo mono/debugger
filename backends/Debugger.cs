@@ -214,11 +214,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void Test (Process process)
+		public void LoadLibrary (Process process, string filename)
 		{
-			bfd_container.AddFile (
-				process, "/home/martin/monocvs/debugger/test/libfoo.so",
-				true, false);
+			Assembly ass = Assembly.LoadFrom (filename);
+			if (ass != null) {
+				if (csharp_language == null)
+					throw new SymbolTableException (
+						"Cannot load .NET assembly {0} while " +
+						"debugging an unmanaged application",
+						filename);
+				csharp_language.FindImage (process, filename);
+			} else
+				bfd_container.AddFile (process, filename, true, false);
 		}
 
 		//

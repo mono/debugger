@@ -1675,6 +1675,23 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		internal MonoSymbolFile FindImage (Process process, string name)
+		{
+			if (table == null)
+				return null;
+
+			R.Assembly ass = R.Assembly.LoadFrom (name);
+			MonoSymbolFile file = table.GetImage (ass);
+			if (file != null)
+				return file;
+
+			int index = LookupAssembly (process, name);
+			if (index < 0)
+				return null;
+
+			return table.GetImage (ass);
+		}
+
 		public Heap DataHeap {
 			get { return heap; }
 		}
@@ -1823,6 +1840,15 @@ namespace Mono.Debugger.Languages.CSharp
 			offset = (int) frame.CallMethod (info.LookupType, name).Address;
 			mutex.ReleaseMutex ();
 			return offset;
+		}
+
+		internal int LookupAssembly (Process process, string name)
+		{
+			int retval;
+			mutex.WaitOne ();
+			retval = (int) process.CallMethod (info.LookupAssembly, name).Address;
+			mutex.ReleaseMutex ();
+			return retval;
 		}
 
 		public void Notification (Inferior inferior, NotificationType type,

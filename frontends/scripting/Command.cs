@@ -1087,6 +1087,25 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class LibraryCommand : FrameCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count != 1)) {
+				context.Error ("Filename argument expected");
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.LoadLibrary (
+				context.CurrentProcess.Process, Argument);
+		}
+	}
+
 	public class HelpCommand : CL.Command {
 		public override string Execute (CL.Engine e)
 		{

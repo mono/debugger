@@ -606,5 +606,21 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (backend != null)
 				backend.ThreadManager.Kill ();
 		}
+
+		public void LoadLibrary (Process process, string filename)
+		{
+			string pathname = Path.GetFullPath (filename);
+			if (!File.Exists (pathname))
+				throw new ScriptingException (
+					"No such file: `{0}'", pathname);
+
+			try {
+				backend.LoadLibrary (process, pathname);
+			} catch (TargetException ex) {
+				throw new ScriptingException (
+					"Cannot load library `{0}': {1}",
+					pathname, ex.Message);
+			}
+		}
 	}
 }

@@ -48,7 +48,7 @@ namespace Mono.Debugger.Architecture
 			check_disposed ();
 			Bfd bfd = (Bfd) bfd_hash [filename];
 			if (bfd != null)
-				throw new InvalidOperationException ();
+				return bfd;
 
 			bfd = new Bfd (this, memory, memory, filename, false,
 				       base_address, is_main);

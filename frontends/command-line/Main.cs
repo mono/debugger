@@ -119,6 +119,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("q", typeof (QuitCommand));
 			e.Register ("dump", typeof (DumpCommand));
 			e.Register ("help", typeof (HelpCommand));
+			e.Register ("library", typeof (LibraryCommand));
 
 			return e;
 		}
