@@ -1,5 +1,13 @@
 2002-09-19  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/ITargetNotification.cs: New file. Moved TargetState
+	and ITargetNotification here.
+
+	* interfaces/IInferior.cs: Put this into the Mono.Debugger.Backends
+	namespace.
+
+2002-09-19  Martin Baulig  <martin@gnome.org>
+
 	* backends/Debugger.cs: Only dispose the current stack frame if it
 	has actually changed.
 
