@@ -23,5 +23,9 @@ namespace Mono.Debugger
 		ISourceLocation SourceLocation {
 			get;
 		}
+
+		ISymbolHandle SymbolHandle {
+			get;
+		}
 	}
 }

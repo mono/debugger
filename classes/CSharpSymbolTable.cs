@@ -25,6 +25,12 @@ namespace Mono.Debugger
 			this.method = method;
 		}
 
+		public MethodEntry Method {
+			get {
+				return method;
+			}
+		}
+
 		public bool IsInSameMethod (ITargetLocation target)
 		{
 			if (method.Address == null)

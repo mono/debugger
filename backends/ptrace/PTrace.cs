@@ -634,7 +634,20 @@ namespace Mono.Debugger.Backends
 
 		public void Continue (ITargetLocation location)
 		{
-			insert_temporary_breakpoint (location);
+			ITargetLocation current = CurrentFrame;
+
+			inferior_output (String.Format ("Requested to run from {0:x} until {1:x}.",
+							current.Address, location.Address));
+
+			while (current.Address < location.Address)
+				current.Offset += bfd_disassembler.GetInstructionSize (current);
+
+			if (current.Address != location.Address)
+				inferior_output (String.Format (
+					"Oooops: reached {0:x} but symfile had {1:x}",
+					current.Address, location.Address));
+
+			insert_temporary_breakpoint (current);
 			Continue ();
 		}
 
@@ -690,7 +703,8 @@ namespace Mono.Debugger.Backends
 
 					Console.WriteLine ("DONE COMPILING METHOD: {0:x}", method);
 
-					Continue (method);
+					insert_temporary_breakpoint (method);
+					Continue ();
 					return;
 				}
 			}
@@ -710,7 +724,8 @@ namespace Mono.Debugger.Backends
 			ITargetLocation location = CurrentFrame;
 			location.Offset += bfd_disassembler.GetInstructionSize (location);
 
-			Continue (location);
+			insert_temporary_breakpoint (location);
+			Continue ();
 		}
 
 		public ITargetLocation CurrentFrame {

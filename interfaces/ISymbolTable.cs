@@ -1,3 +1,5 @@
+using Mono.CSharp.Debugger;
+
 namespace Mono.Debugger
 {
 	public interface ISymbolLookup
@@ -9,6 +11,10 @@ namespace Mono.Debugger
 
 	public interface ISymbolHandle : ISymbolLookup
 	{
+		MethodEntry Method {
+			get;
+		}
+
 		bool IsInSameMethod (ITargetLocation target);
 	}
 

@@ -272,15 +272,16 @@ namespace Mono.Debugger.Backends
 	{
 		public readonly ISourceLocation SourceLocation = null;
 		public readonly ITargetLocation TargetLocation = null;
-		public readonly ISymbolHandle SymbolHandle = null;
 		public readonly IInferior Inferior;
+
+		ISymbolHandle symbol_handle;
 
 		public StackFrame (IInferior inferior, ITargetLocation location,
 				   ISourceLocation source, ISymbolHandle handle)
 			: this (inferior, location)
 		{
 			SourceLocation = source;
-			SymbolHandle = handle;
+			symbol_handle = handle;
 		}
 
 		public StackFrame (IInferior inferior, ITargetLocation location)
@@ -298,6 +299,12 @@ namespace Mono.Debugger.Backends
 		ITargetLocation IStackFrame.TargetLocation {
 			get {
 				return TargetLocation;
+			}
+		}
+
+		ISymbolHandle IStackFrame.SymbolHandle {
+			get {
+				return symbol_handle;
 			}
 		}
 
@@ -675,7 +682,7 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End);
+			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End.Address);
 
 			inferior.Continue (frame.End);
 		}
