@@ -165,7 +165,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override bool DoCheck (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentProcess.CurrentFrame;
+			StackFrame frame = context.CurrentProcess.CurrentFrame.Frame;
 
 			if (frame.SourceAddress == null)
 				return false;

@@ -1,5 +1,16 @@
 2003-03-03  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/ScriptingContext.cs
+	(FrameHandle, BacktraceHandle): New public classes.
+
+	* frontends/scripting/Expression.cs
+	(FrameExpression): New expression.
+
+	* frontends/scripting/Parser.jay: Use the new FrameExpression
+	instead of a ProcessExpression and a frame number.
+
+2003-03-03  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs: Moved some stuff into the
 	following three new files.
 

@@ -206,17 +206,17 @@ command
 	  {
 		$$ = new ShowProcessesCommand ();
 	  }
-	| SHOW REGISTERS opt_process opt_frame_number
+	| SHOW REGISTERS opt_frame
 	  {
-		$$ = new ShowRegistersCommand ((ProcessExpression) $3, (int) $4);
+		$$ = new ShowRegistersCommand ((FrameExpression) $3);
 	  }
-	| SHOW PARAMETERS opt_process opt_frame_number
+	| SHOW PARAMETERS opt_frame
 	  {
-		$$ = new ShowParametersCommand ((ProcessExpression) $3, (int) $4);
+		$$ = new ShowParametersCommand ((FrameExpression) $3);
 	  }
-	| SHOW LOCALS opt_process opt_frame_number
+	| SHOW LOCALS opt_frame
 	  {
-		$$ = new ShowLocalsCommand ((ProcessExpression) $3, (int) $4);
+		$$ = new ShowLocalsCommand ((FrameExpression) $3);
 	  }
 	| SHOW MODULES
 	  {
@@ -268,17 +268,17 @@ command
 	  {
 		$$ = new PrintCommand ((Expression) $2);
 	  }
-	| FRAME opt_process opt_frame_number
+	| FRAME opt_frame
 	  {
-		$$ = new FrameCommand ((ProcessExpression) $2, (int) $3);
+		$$ = new FrameCommand ((FrameExpression) $2);
 	  }
-	| DISASSEMBLE opt_process opt_frame_number
+	| DISASSEMBLE opt_frame
 	  {
-		$$ = new DisassembleCommand ((ProcessExpression) $2, (int) $3);
+		$$ = new DisassembleCommand ((FrameExpression) $2);
 	  }
-	| DISASSEMBLE METHOD opt_process opt_frame_number
+	| DISASSEMBLE METHOD opt_frame
 	  {
-		$$ = new DisassembleMethodCommand ((ProcessExpression) $3, (int) $4);
+		$$ = new DisassembleMethodCommand ((FrameExpression) $3);
 	  }
 	| START INTEGER program_arguments
 	  {
@@ -420,9 +420,9 @@ assert_command
 	;
 
 expression
-	: opt_process opt_frame_number PERCENT IDENTIFIER
+	: opt_frame PERCENT IDENTIFIER
 	  {
-		$$ = new RegisterExpression ((ProcessExpression) $1, (int) $2, (string) $4);
+		$$ = new RegisterExpression ((FrameExpression) $1, (string) $3);
 	  }
 	| LENGTH OPEN_PARENS variable_expression CLOSE_PARENS
 	  {
@@ -467,9 +467,9 @@ variable_expression
 	  {
 		$$ = new ScriptingVariableReference ((string) $2);
 	  }
-	| opt_process opt_frame_number DOLLAR IDENTIFIER
+	| opt_frame DOLLAR IDENTIFIER
 	  {
-		$$ = new VariableReferenceExpression ((ProcessExpression) $1, (int) $2, (string) $4);
+		$$ = new VariableReferenceExpression ((FrameExpression) $1, (string) $3);
 	  }
 	| variable_expression DOT IDENTIFIER
 	  {
@@ -538,14 +538,14 @@ opt_process
 	  }
 	;	
 
-opt_frame_number
-	: /* empty */
+opt_frame
+	: opt_process /* empty */
 	  {
-		$$ = -1;
+		$$ = new FrameExpression ((ProcessExpression) $1, -1);
 	  }
-	| HASH INTEGER
+	| opt_process HASH INTEGER
 	  {
-		$$ = $2;
+		$$ = new FrameExpression ((ProcessExpression) $1, (int) $3);
 	  }
 	;
 
@@ -561,17 +561,17 @@ opt_line
 	;
 
 source_expression
-	: opt_process opt_frame_number
+	: opt_frame
 	  {
-		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, null, -1);
+		$$ = new SourceExpression ((FrameExpression) $1, null, -1);
 	  }
-	| opt_process opt_frame_number IDENTIFIER opt_line
+	| opt_frame IDENTIFIER opt_line
 	  {
-		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, (string) $3, (int) $4);
+		$$ = new SourceExpression ((FrameExpression) $1, (string) $2, (int) $3);
 	  }
-	| opt_process opt_frame_number INTEGER
+	| opt_frame INTEGER
 	  {
-		$$ = new SourceExpression ((ProcessExpression) $1, (int) $2, (int) $3);
+		$$ = new SourceExpression ((FrameExpression) $1, (int) $2);
 	  }
 	| STRING
 	  {

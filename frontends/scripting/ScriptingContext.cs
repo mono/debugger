@@ -17,6 +17,227 @@ namespace Mono.Debugger.Frontends.CommandLine
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
 
+	public class FrameHandle
+	{
+		ProcessHandle process;
+		StackFrame frame;
+
+		public FrameHandle (ProcessHandle process, StackFrame frame)
+		{
+			this.process = process;
+			this.frame = frame;
+		}
+
+		public StackFrame Frame {
+			get { return frame; }
+		}
+
+		public void Print (ScriptingContext context)
+		{
+			context.Print (frame);
+			Disassemble (context);
+			PrintSource (context);
+		}
+
+		public void PrintSource (ScriptingContext context)
+		{
+			SourceAddress location = frame.SourceAddress;
+			if (location == null)
+				return;
+
+			IMethod method = frame.Method;
+			if ((method == null) || !method.HasSource || (method.Source == null))
+				return;
+
+			IMethodSource source = method.Source;
+			if (source.SourceBuffer == null)
+				return;
+
+			string line = source.SourceBuffer.Contents [location.Row - 1];
+			context.Print (String.Format ("{0,4} {1}", location.Row, line));
+		}
+
+		public void Disassemble (ScriptingContext context)
+		{
+			Disassemble (context, frame.TargetAddress);
+		}
+
+		AssemblerLine Disassemble (ScriptingContext context, TargetAddress address)
+		{
+			AssemblerLine line = frame.DisassembleInstruction (address);
+
+			if (line != null)
+				context.PrintInstruction (line);
+			else
+				context.Error ("Cannot disassemble instruction at address {0}.", address);
+
+			return line;
+		}
+
+		public void DisassembleMethod (ScriptingContext context)
+		{
+			IMethod method = frame.Method;
+
+			if ((method == null) || !method.IsLoaded)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			TargetAddress address = method.StartAddress;
+			while (address < method.EndAddress) {
+				AssemblerLine line = Disassemble (context, address);
+
+				if (line != null)
+					address += line.InstructionSize;
+				else
+					break;
+			}
+		}
+
+		public int[] RegisterIndices {
+			get { return process.Architecture.RegisterIndices; }
+		}
+
+		public string[] RegisterNames {
+			get { return process.Architecture.RegisterNames; }
+		}
+
+		public Register[] GetRegisters (int[] indices)
+		{
+			Register[] registers = frame.Registers;
+			if (registers == null)
+				throw new ScriptingException ("Cannot get registers of selected stack frame.");
+
+			if (indices == null)
+				return registers;
+
+			ArrayList list = new ArrayList ();
+			for (int i = 0; i < indices.Length; i++) {
+				foreach (Register register in registers) {
+					if (register.Index == indices [i]) {
+						list.Add (register);
+						break;
+					}
+				}
+			}
+
+			Register[] retval = new Register [list.Count];
+			list.CopyTo (retval, 0);
+			return retval;	
+		}
+
+		public long GetRegister (string name)
+		{
+			int register = process.GetRegisterIndex (name);
+
+			Register[] frame_registers = frame.Registers;
+			if (frame_registers == null)
+				throw new ScriptingException ("Cannot get registers of selected stack frame.");
+
+			foreach (Register reg in frame_registers) {
+				if (reg.Index == register)
+					return (long) reg.Data;
+			}
+
+			throw new ScriptingException ("Cannot get this register from the selected stack frame.");
+		}
+
+		public void ShowParameters (ScriptingContext context)
+		{
+			if (frame.Method == null)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			IVariable[] param_vars = frame.Method.Parameters;
+			foreach (IVariable var in param_vars)
+				PrintVariable (context, true, var);
+		}
+
+		public void ShowLocals (ScriptingContext context)
+		{
+			if (frame.Method == null)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			IVariable[] local_vars = frame.Method.Locals;
+			foreach (IVariable var in local_vars)
+				PrintVariable (context, false, var);
+		}
+
+		public void PrintVariable (ScriptingContext context, bool is_param, IVariable variable)
+		{
+			context.Print (variable);
+		}
+
+		public IVariable GetVariableInfo (string identifier)
+		{
+			if (frame.Method == null)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			IVariable[] local_vars = frame.Method.Locals;
+			foreach (IVariable var in local_vars) {
+				if (var.Name == identifier)
+					return var;
+			}
+
+			IVariable[] param_vars = frame.Method.Parameters;
+			foreach (IVariable var in param_vars) {
+				if (var.Name == identifier)
+					return var;
+			}
+
+			throw new ScriptingException ("No variable of parameter with that name.");
+		}
+
+		public ITargetObject GetVariable (string identifier)
+		{
+			IVariable var = GetVariableInfo (identifier);
+			if (!var.IsValid (frame))
+				throw new ScriptingException ("Variable out of scope.");
+
+			return var.GetObject (frame);
+		}
+
+		public ITargetType GetVariableType (string identifier)
+		{
+			IVariable var = GetVariableInfo (identifier);
+			if (!var.IsValid (frame))
+				throw new ScriptingException ("Variable out of scope.");
+
+			return var.Type;
+		}
+
+		public override string ToString ()
+		{
+			return frame.ToString ();
+		}
+	}
+
+	public class BacktraceHandle
+	{
+		ProcessHandle process;
+		Backtrace backtrace;
+		FrameHandle[] frames;
+
+		public BacktraceHandle (ProcessHandle process, Backtrace backtrace)
+		{
+			this.process = process;
+			this.backtrace = backtrace;
+
+			StackFrame[] bt_frames = backtrace.Frames;
+			if (bt_frames != null) {
+				frames = new FrameHandle [bt_frames.Length];
+				for (int i = 0; i < frames.Length; i++)
+					frames [i] = new FrameHandle (process, bt_frames [i]);
+			} else
+				frames = new FrameHandle [0];
+		}
+
+		public int Length {
+			get { return frames.Length; }
+		}
+
+		public FrameHandle this [int number] {
+			get { return frames [number]; }
+		}
+	}
+
 	public class ProcessHandle
 	{
 		DebuggerBackend backend;
@@ -54,11 +275,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			if (process.SingleSteppingEngine.HasTarget) {
-				current_frame = process.SingleSteppingEngine.CurrentFrame;
-				if (current_frame.Method != null)
-					method_changed (current_frame.Method);
-				context.Print ("Process @{0} stopped at {1}.", id, CurrentFrame);
-				PrintFrameSource (CurrentFrame);
+				StackFrame frame = process.SingleSteppingEngine.CurrentFrame;
+				current_frame = new FrameHandle (this, frame);
+				if (frame.Method != null)
+					method_changed (frame.Method);
+				context.Print ("Process @{0} stopped at {1}.", id, frame);
+				current_frame.Print (context);
 			} else {
 				if (pid > 0)
 					process.SingleSteppingEngine.Attach (pid, true);
@@ -95,8 +317,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 
 		int current_frame_idx = -1;
-		StackFrame current_frame = null;
-		Backtrace current_backtrace = null;
+		FrameHandle current_frame = null;
+		BacktraceHandle current_backtrace = null;
 		AssemblerLine current_insn = null;
 		IMethod current_method = null;
 		ISourceBuffer current_buffer = null;
@@ -104,7 +326,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void frame_changed (StackFrame frame)
 		{
-			current_frame = frame;
+			current_frame = new FrameHandle (this, frame);
 			current_frame_idx = -1;
 			current_backtrace = null;
 			current_insn = null;
@@ -180,36 +402,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 				else
 					context.Print ("Process @{0} stopped{1}.", id, frame);
 
-				print_source ();
+				if (current_insn != null)
+					context.PrintInstruction (current_insn);
+				if (current_frame != null)
+					current_frame.PrintSource (context);
 
 				if (!context.IsInteractive)
 					context.Abort ();
 
 				break;
 			}
-		}
-
-		void print_insn (AssemblerLine line)
-		{
-			if (line.Label != null)
-				context.Print ("{0}:", line.Label);
-			context.Print ("{0:11x}\t{1}", line.Address, line.Text);
-		}
-
-		void print_source ()
-		{
-			if (current_insn != null)
-				print_insn (current_insn);
-
-			if ((current_source == null) || (current_frame == null) || (current_buffer == null))
-				return;
-
-			SourceAddress source = current_frame.SourceAddress;
-			if ((source == null) || (source.MethodSource != current_method.Source))
-				return;
-
-			string line = current_source [source.Row - 1];
-			context.Print (String.Format ("{0,4} {1}", source.Row, line));
 		}
 
 		void inferior_output (string line)
@@ -330,7 +532,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public Backtrace GetBacktrace ()
+		public BacktraceHandle GetBacktrace ()
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
@@ -340,7 +542,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			current_backtrace = process.GetBacktrace ();
+			current_backtrace = new BacktraceHandle (this, process.GetBacktrace ());
 
 			if (current_backtrace == null)
 				throw new ScriptingException ("No stack.");
@@ -348,13 +550,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return current_backtrace;
 		}
 
-		public StackFrame CurrentFrame {
+		public FrameHandle CurrentFrame {
 			get {
 				return GetFrame (current_frame_idx);
 			}
 		}
 
-		public StackFrame GetFrame (int number)
+		public FrameHandle GetFrame (int number)
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
@@ -363,7 +565,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (number == -1) {
 				if (current_frame == null)
-					current_frame = process.CurrentFrame;
+					current_frame = new FrameHandle (this, process.CurrentFrame);
 
 				return current_frame;
 			}
@@ -375,63 +577,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return current_backtrace [number];
 		}
 
-		public void PrintFrame ()
-		{
-			PrintFrame (CurrentFrame);
-		}
-
-		public void PrintFrame (int number)
-		{
-			PrintFrame (GetFrame (number));
-		}
-
-		public void PrintFrame (StackFrame frame)
-		{
-			context.Print (frame);
-			PrintFrameSource (frame);
-		}
-
-		public void PrintFrameSource (StackFrame frame)
-		{
-			Disassemble (frame);
-
-			SourceAddress location = frame.SourceAddress;
-			if (location == null)
-				return;
-
-			IMethod method = frame.Method;
-			if ((method == null) || !method.HasSource || (method.Source == null))
-				return;
-
-			IMethodSource source = method.Source;
-			if (source.SourceBuffer == null)
-				return;
-
-			string line = source.SourceBuffer.Contents [location.Row - 1];
-			context.Print (String.Format ("{0,4} {1}", location.Row, line));
-		}
-
-		public long GetRegister (int frame_number, string name)
-		{
-			StackFrame frame = GetFrame (frame_number);
-
-			if (!registers.Contains (name))
-				throw new ScriptingException ("No such register: %{0}", name);
-
-			int register = (int) registers [name];
-
-			Register[] frame_registers = frame.Registers;
-			if (frame_registers == null)
-				throw new ScriptingException ("Cannot get registers of selected stack frame.");
-
-			foreach (Register reg in frame_registers) {
-				if (reg.Index == register)
-					return (long) reg.Data;
-			}
-
-			throw new ScriptingException ("Cannot get this register from the selected stack frame.");
-		}
-
 		public TargetState State {
 			get {
 				if (process == null)
@@ -441,153 +586,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public Register[] GetRegisters (int frame_number, int[] indices)
+		public int GetRegisterIndex (string name)
 		{
-			StackFrame frame = GetFrame (frame_number);
+			if (!registers.Contains (name))
+				throw new ScriptingException ("No such register: %{0}", name);
 
-			if (State == TargetState.NO_TARGET)
-				throw new ScriptingException ("No stack.");
-			else if (!process.IsStopped)
-				throw new ScriptingException ("Process @{0} is not stopped.", id);
-
-			Register[] registers = frame.Registers;
-			if (registers == null)
-				throw new ScriptingException ("Cannot get registers of selected stack frame.");
-
-			if (indices == null)
-				return registers;
-
-			ArrayList list = new ArrayList ();
-			for (int i = 0; i < indices.Length; i++) {
-				foreach (Register register in registers) {
-					if (register.Index == indices [i]) {
-						list.Add (register);
-						break;
-					}
-				}
-			}
-
-			Register[] retval = new Register [list.Count];
-			list.CopyTo (retval, 0);
-			return retval;	
+			return (int) registers [name];
 		}
 		
-		public void ShowParameters (int frame_number)
-		{
-			StackFrame frame = GetFrame (frame_number);
-
-			if (frame.Method == null)
-				throw new ScriptingException ("Selected stack frame has no method.");
-
-			IVariable[] param_vars = frame.Method.Parameters;
-			foreach (IVariable var in param_vars)
-				PrintVariable (true, var);
-		}
-
-		public void ShowLocals (int frame_number)
-		{
-			StackFrame frame = GetFrame (frame_number);
-
-			if (frame.Method == null)
-				throw new ScriptingException ("Selected stack frame has no method.");
-
-			IVariable[] local_vars = frame.Method.Locals;
-			foreach (IVariable var in local_vars)
-				PrintVariable (false, var);
-		}
-
-		public void PrintVariable (bool is_param, IVariable variable)
-		{
-			context.Print (variable);
-		}
-
-		public IVariable GetVariableInfo (StackFrame frame, string identifier)
-		{
-			if (frame.Method == null)
-				throw new ScriptingException ("Selected stack frame has no method.");
-
-			IVariable[] local_vars = frame.Method.Locals;
-			foreach (IVariable var in local_vars) {
-				if (var.Name == identifier)
-					return var;
-			}
-
-			IVariable[] param_vars = frame.Method.Parameters;
-			foreach (IVariable var in param_vars) {
-				if (var.Name == identifier)
-					return var;
-			}
-
-			throw new ScriptingException ("No variable of parameter with that name.");
-		}
-
-		public ITargetObject GetVariable (int frame_number, string identifier)
-		{
-			StackFrame frame = GetFrame (frame_number);
-
-			IVariable var = GetVariableInfo (frame, identifier);
-			if (!var.IsValid (frame))
-				throw new ScriptingException ("Variable out of scope.");
-
-			return var.GetObject (frame);
-		}
-
-		public ITargetType GetVariableType (int frame_number, string identifier)
-		{
-			StackFrame frame = GetFrame (frame_number);
-
-			IVariable var = GetVariableInfo (frame, identifier);
-			if (!var.IsValid (frame))
-				throw new ScriptingException ("Variable out of scope.");
-
-			return var.Type;
-		}
-
-		public void Disassemble (int frame_number)
-		{
-			Disassemble (GetFrame (frame_number));
-		}
-
-		public void Disassemble (StackFrame frame)
-		{
-			Disassemble (frame.TargetAddress);
-		}
-
-		public AssemblerLine Disassemble (TargetAddress address)
-		{
-			AssemblerLine line = process.DisassembleInstruction (address);
-
-			if (line != null)
-				print_insn (line);
-			else
-				context.Error ("Cannot disassemble instruction at address {0}.", address);
-
-			return line;
-		}
-
-		public void DisassembleMethod (int frame_number)
-		{
-			DisassembleMethod (GetFrame (frame_number));
-		}
-
-		public void DisassembleMethod (StackFrame frame)
-		{
-			IMethod method = frame.Method;
-
-			if ((method == null) || !method.IsLoaded)
-				throw new ScriptingException ("Selected stack frame has no method.");
-
-			TargetAddress address = method.StartAddress;
-			while (address < method.EndAddress) {
-				AssemblerLine line = Disassemble (address);
-
-				if (line != null)
-					address += line.InstructionSize;
-				else
-					break;
-			}
-		}
-
 		public void Kill ()
 		{
 			process.Kill ();
@@ -806,6 +812,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Print (object obj)
 		{
 			Print ("{0}", obj);
+		}
+
+		public void PrintInstruction (AssemblerLine line)
+		{
+			if (line.Label != null)
+				Print ("{0}:", line.Label);
+			Print ("{0:11x}\t{1}", line.Address, line.Text);
 		}
 
 		public void PrintInferior (bool is_stderr, string line)

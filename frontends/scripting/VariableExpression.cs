@@ -101,15 +101,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class VariableReferenceExpression : VariableExpression
 	{
-		int number;
-		ProcessExpression process_expr;
+		FrameExpression frame_expr;
 		string identifier;
 
-		public VariableReferenceExpression (ProcessExpression process_expr, int number,
-						    string identifier)
+		public VariableReferenceExpression (FrameExpression frame_expr, string identifier)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 			this.identifier = identifier;
 		}
 
@@ -119,22 +116,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			return process.GetVariable (number, identifier);
+			return frame.GetVariable (identifier);
 		}
 
 		protected override ITargetType DoResolveType (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			return process.GetVariableType (number, identifier);
+			return frame.GetVariableType (identifier);
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1},{2},{3})", GetType (), process_expr, number,
-					      identifier);
+			return String.Format ("{0} ({1},{2})", GetType (), frame_expr, identifier);
 		}
 	}
 

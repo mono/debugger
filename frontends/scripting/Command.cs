@@ -44,58 +44,52 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class FrameCommand : Command
 	{
-		int number;
-		ProcessExpression process_expr;
+		FrameExpression frame_expr;
 
-		public FrameCommand (ProcessExpression process_expr, int number)
+		public FrameCommand (FrameExpression frame_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			process.PrintFrame (number);
+			frame.Print (context);
 		}
 	}
 
 	public class DisassembleCommand : Command
 	{
-		int number;
-		ProcessExpression process_expr;
+		FrameExpression frame_expr;
 
-		public DisassembleCommand (ProcessExpression process_expr, int number)
+		public DisassembleCommand (FrameExpression frame_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			process.Disassemble (number);
+			frame.Disassemble (context);
 		}
 	}
 
 	public class DisassembleMethodCommand : Command
 	{
-		int number;
-		ProcessExpression process_expr;
+		FrameExpression frame_expr;
 
-		public DisassembleMethodCommand (ProcessExpression process_expr, int number)
+		public DisassembleMethodCommand (FrameExpression frame_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			process.DisassembleMethod (number);
+			frame.DisassembleMethod (context);
 		}
 	}
 
@@ -206,7 +200,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			int current_idx = process.CurrentFrameIndex;
-			Backtrace backtrace = process.GetBacktrace ();
+			BacktraceHandle backtrace = process.GetBacktrace ();
 			for (int i = 0; i < backtrace.Length; i++) {
 				string prefix = i == current_idx ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, backtrace [i]);
@@ -228,7 +222,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			process.CurrentFrameIndex++;
-			process.PrintFrame ();
+			process.CurrentFrame.Print (context);
 		}
 	}
 
@@ -246,7 +240,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			process.CurrentFrameIndex--;
-			process.PrintFrame ();
+			process.CurrentFrame.Print (context);
 		}
 	}
 
@@ -286,62 +280,56 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class ShowRegistersCommand : Command
 	{
-		ProcessExpression process_expr;
-		int number;
+		FrameExpression frame_expr;
 
-		public ShowRegistersCommand (ProcessExpression process_expr, int number)
+		public ShowRegistersCommand (FrameExpression frame_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			string[] names = process.Architecture.RegisterNames;
-			int[] indices = process.Architecture.RegisterIndices;
+			string[] names = frame.RegisterNames;
+			int[] indices = frame.RegisterIndices;
 
-			foreach (Register register in process.GetRegisters (number, indices))
+			foreach (Register register in frame.GetRegisters (indices))
 				context.Print ("%{0} = 0x{1:x}", names [register.Index], register.Data);
 		}
 	}
 
 	public class ShowParametersCommand : Command
 	{
-		ProcessExpression process_expr;
-		int number;
+		FrameExpression frame_expr;
 
-		public ShowParametersCommand (ProcessExpression process_expr, int number)
+		public ShowParametersCommand (FrameExpression frame_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			process.ShowParameters (number);
+			frame.ShowParameters (context);
 		}
 	}
 
 	public class ShowLocalsCommand : Command
 	{
-		ProcessExpression process_expr;
-		int number;
+		FrameExpression frame_expr;
 
-		public ShowLocalsCommand (ProcessExpression process_expr, int number)
+		public ShowLocalsCommand (FrameExpression frame_expr)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			process.ShowLocals (number);
+			frame.ShowLocals (context);
 		}
 	}
 

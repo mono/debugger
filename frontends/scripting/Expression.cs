@@ -117,6 +117,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class FrameExpression : Expression
+	{
+		ProcessExpression process_expr;
+		int number;
+
+		public FrameExpression (ProcessExpression process_expr, int number)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			return process.GetFrame (number);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1},{2})", GetType(), process_expr, number);
+		}
+	}
+
 	public class ThreadGroupExpression : Expression
 	{
 		string name;
@@ -143,28 +166,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class RegisterExpression : Expression
 	{
-		int number;
-		ProcessExpression process_expr;
+		FrameExpression frame_expr;
 		string register;
 
-		public RegisterExpression (ProcessExpression process_expr, int number, string register)
+		public RegisterExpression (FrameExpression frame_expr, string register)
 		{
-			this.process_expr = process_expr;
-			this.number = number;
+			this.frame_expr = frame_expr;
 			this.register = register;
 		}
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			return process.GetRegister (number, register);
+			return frame.GetRegister (register);
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1},{2},{3})", GetType (), process_expr, number,
-					      register);
+			return String.Format ("{0} ({1},{2})", GetType (), frame_expr, register);
 		}
 	}
 
@@ -250,24 +270,22 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 	public class SourceExpression : Expression
 	{
-		ProcessExpression process_expr;
-		int line, number, history_id;
+		FrameExpression frame_expr;
+		int line, history_id;
 		string file_name, name;
 
-		public SourceExpression (ProcessExpression process_expr, int number, string name, int line)
+		public SourceExpression (FrameExpression frame_expr, string name, int line)
 		{
-			this.process_expr = process_expr;
 			this.history_id = -1;
-			this.number = number;
+			this.frame_expr = frame_expr;
 			this.name = name;
 			this.line = line;
 		}
 
-		public SourceExpression (ProcessExpression process_expr, int number, int line)
+		public SourceExpression (FrameExpression frame_expr, int line)
 		{
-			this.process_expr = process_expr;
 			this.history_id = -1;
-			this.number = number;
+			this.frame_expr = frame_expr;
 			this.line = line;
 		}
 
@@ -314,20 +332,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return context.FindLocation (file_name, line);
 			}
 
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			StackFrame frame = process.GetFrame (number);
+			FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
 
-			IMethod method = frame.Method;
+			IMethod method = frame.Frame.Method;
 			if ((method == null) || !method.HasSource)
 				throw new ScriptingException ("No current method.");
 
 			IMethodSource source = method.Source;
 			if (name == null) {
-				if (source.IsDynamic || (frame.SourceAddress == null))
+				if (source.IsDynamic || (frame.Frame.SourceAddress == null))
 					throw new ScriptingException ("Current method has no source code.");
 
 				if (line == -1)
-					return frame.SourceAddress.Location;
+					return frame.Frame.SourceAddress.Location;
 				else
 					return context.FindLocation (source.SourceFile.FileName, line);
 			}
