@@ -338,3 +338,27 @@ mono_debugger_server_kill (ServerHandle *handle)
 
 	return (* handle->info->kill) (handle->inferior);
 }
+
+int
+mono_debugger_server_get_sigstop (void)
+{
+	return SIGSTOP;
+}
+
+int
+mono_debugger_server_get_sigint (void)
+{
+	return SIGINT;
+}
+
+int
+mono_debugger_server_get_sigchld (void)
+{
+	return SIGCHLD;
+}
+
+int
+mono_debugger_server_get_sigprof (void)
+{
+	return SIGPROF;
+}

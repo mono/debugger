@@ -309,14 +309,14 @@ namespace Mono.Debugger.Backends
 				restart_event.WaitOne ();
 				// A stop was requested and we actually received the SIGSTOP.  Note that
 				// we may also have stopped for another reason before receiving the SIGSTOP.
-				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.StopSignal))
+				if ((message == ChildEventType.CHILD_STOPPED) && (arg == PTraceInferior.SIGSTOP))
 					goto done;
 				// Ignore the next SIGSTOP.
 				pending_sigstop++;
 			}
 
 			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
-				if ((pending_sigstop > 0) && (arg == inferior.StopSignal)) {
+				if ((pending_sigstop > 0) && (arg == PTraceInferior.SIGSTOP)) {
 					--pending_sigstop;
 					goto done;
 				}
@@ -368,7 +368,7 @@ namespace Mono.Debugger.Backends
 					// If the child stopped normally, just continue its execution
 					// here; otherwise, we need to deal with the unexpected stop.
 					if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
-					    ((new_arg != 0) && (new_arg != inferior.StopSignal))) {
+					    ((new_arg != 0) && (new_arg != PTraceInferior.SIGSTOP))) {
 						child_event = new_event;
 						goto again;
 					}
@@ -1227,7 +1227,7 @@ namespace Mono.Debugger.Backends
 				// If the child stopped normally, just continue its execution
 				// here; otherwise, we need to deal with the unexpected stop.
 				if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
-				    ((new_arg != 0) && (new_arg != inferior.StopSignal)))
+				    ((new_arg != 0) && (new_arg != PTraceInferior.SIGSTOP)))
 					return new_event;
 				else if (!do_run)
 					return new_event;

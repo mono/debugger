@@ -171,6 +171,28 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigstop ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigint ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigchld ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_sigprof ();
+
+		static int sigstop, sigint, sigchld, sigprof;
+
+		static PTraceInferior ()
+		{
+			sigstop = mono_debugger_server_get_sigstop ();
+			sigint = mono_debugger_server_get_sigint ();
+			sigchld = mono_debugger_server_get_sigchld ();
+			sigprof = mono_debugger_server_get_sigprof ();
+		}
+
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
@@ -542,10 +564,27 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int StopSignal {
+		public static int SIGSTOP {
 			get {
-				// FIXME: Return SIGSTOP
-				return 19;
+				return sigstop;
+			}
+		}
+
+		public static int SIGINT {
+			get {
+				return sigint;
+			}
+		}
+
+		public static int SIGCHLD {
+			get {
+				return sigchld;
+			}
+		}
+
+		public static int SIGPROF {
+			get {
+				return sigprof;
 			}
 		}
 

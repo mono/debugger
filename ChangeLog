@@ -1,5 +1,14 @@
 2003-01-14  Martin Baulig  <martin@ximian.com>
 
+	* backends/IInferior.cs (StopSignal): Removed.
+
+	* backends/ptrace/PTrace.cs (SIGSTOP, SIGINT, SIGCHLD, SIGPROF):
+	New static properties; initialize them in a static .ctor.
+
+	* backend/ThreadManager.cs (SignalHandler): Ignore SIGPROF as well.
+
+2003-01-14  Martin Baulig  <martin@ximian.com>
+
 	* arch/ArchitectureI386.cs: Keep the registers in sync with
 	DebuggerI386Registers in backends/server/i386-arch.h.
 

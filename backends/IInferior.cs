@@ -161,10 +161,6 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		int StopSignal {
-			get;
-		}
-
 		Bfd Bfd {
 			get;
 		}

@@ -427,6 +427,18 @@ mono_debugger_server_set_signal          (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_kill                (ServerHandle       *handle);
 
+int
+mono_debugger_server_get_sigstop         (void);
+
+int
+mono_debugger_server_get_sigint          (void);
+
+int
+mono_debugger_server_get_sigchld         (void);
+
+int
+mono_debugger_server_get_sigprof         (void);
+
 G_END_DECLS
 
 #endif

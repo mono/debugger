@@ -36,9 +36,6 @@ namespace Mono.Debugger
 		TargetAddress last_thread_event = TargetAddress.Null;
 		bool initialized = false;
 
-		const int Signal_SIGINT			= 2;
-		const int Signal_SIGCHLD		= 17;
-
 		const int PThread_Signal_Debug		= 34;
 		const int PThread_Signal_Abort		= 33;
 		const int PThread_Signal_Restart	= 32;
@@ -138,13 +135,13 @@ namespace Mono.Debugger
 				return true;
 			}
 
-			if (signal == Signal_SIGCHLD) {
+			if ((signal == PTraceInferior.SIGCHLD) || (signal == PTraceInferior.SIGPROF)) {
 				inferior.SetSignal (0, false);
 				action = false;
 				return true;
 			}
 
-			if (signal == Signal_SIGINT) {
+			if (signal == PTraceInferior.SIGINT) {
 				inferior.SetSignal (0, false);
 				action = true;
 				return true;
