@@ -1,3 +1,17 @@
+2004-12-07  Martin Baulig  <martin@ximian.com>
+
+	* frontends/scripting/Command.cs (SourceCommand.Instance): Added
+	`-instance' argument to include instance members in static
+	context.
+
+	* frontends/scripting/Expression.cs
+	(MemberAccessExpression.ResolveMemberAccess): New public method;
+	moved all the DoResolve() implementation here and added `bool
+	allow_instance' argument.
+	(MemberAccessExpression.DoResolve): Just call ResolveMemberAccess().
+	(StructAccessExpression.FindMember): Added `bool allow_instance'
+	argument to include instance members in static context.
+
 2004-12-06  Chris Toshok  <toshok@ximian.com>
 
 	* backends/server/powerpc-arch.c (powerpc_get_registers): we get

@@ -529,7 +529,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			return StructAccessExpression.FindMember (
 				method.DeclaringType, frame.Frame,
-				(ITargetStructObject) instance, full_name);
+				(ITargetStructObject) instance, false, full_name);
 		}
 
 		string[] GetNamespaces (ScriptingContext context, FrameHandle frame)
@@ -624,7 +624,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return left.Name + "." + name; }
 		}
 
-		protected override Expression DoResolve (ScriptingContext context)
+		public Expression ResolveMemberAccess (ScriptingContext context, bool allow_instance)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 
@@ -638,7 +638,7 @@ namespace Mono.Debugger.Frontends.Scripting
 						"`{0}' is not a struct or class", ltype.Name);
 
 				expr = StructAccessExpression.FindMember (
-					stype, frame, null, name);
+					stype, frame, null, allow_instance, name);
 				if (expr == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -659,13 +659,18 @@ namespace Mono.Debugger.Frontends.Scripting
 					"`{0}' is not a struct or class", left.Name);
 
 			expr = StructAccessExpression.FindMember (
-				sobj.Type, frame, sobj, name);
+				sobj.Type, frame, sobj, true, name);
 			if (expr == null)
 				throw new ScriptingException (
 					"Type `{0}' has no member `{1}'",
 					sobj.Type.Name, name);
 
 			return expr;
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return ResolveMemberAccess (context, false);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -1099,8 +1104,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				return GetStaticField (stype, frame, (ITargetFieldInfo) member);
 		}
 
-		public static ITargetMemberInfo FindMember (ITargetStructType stype,
-							    bool is_static, string name)
+		public static ITargetMemberInfo FindMember (ITargetStructType stype, bool is_static, string name)
 		{
 			if (!is_static) {
 				foreach (ITargetFieldInfo field in stype.Fields)
@@ -1132,9 +1136,10 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		public static Expression FindMember (ITargetStructType stype, StackFrame frame,
-						     ITargetStructObject instance, string name)
+						     ITargetStructObject instance, bool allow_instance,
+						     string name)
 		{
-			ITargetMemberInfo member = FindMember (stype, instance == null, name);
+			ITargetMemberInfo member = FindMember (stype, (instance == null) && !allow_instance, name);
 			if (member != null) {
 				if (instance != null)
 					return new StructAccessExpression (frame, instance, name);
@@ -1156,7 +1161,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				}
 			}
 			else {
-				if (instance != null) {
+				if ((instance != null) || allow_instance) {
 					foreach (ITargetMethodInfo method in stype.Methods) {
 						if (method.Name != name)
 							continue;

@@ -1402,10 +1402,8 @@ namespace Mono.Debugger.Frontends.Scripting
 	public abstract class SourceCommand : DebuggerCommand
 	{
 		int method_id = -1;
-		bool is_getter = false;
-		bool is_setter = false;
-		bool is_event_add = false;
-		bool is_event_remove = false;
+		bool is_instance = false;
+		LocationType type = LocationType.Method;
 		protected SourceLocation location;
 
 		public int ID {
@@ -1414,23 +1412,28 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		public bool Get {
-			get { return is_getter; }
-			set { is_getter = value; }
+			get { return type == LocationType.PropertyGetter; }
+			set { type = LocationType.PropertyGetter; }
 		}
 
 		public bool Set {
-			get { return is_setter; }
-			set { is_setter = value; }
+			get { return type == LocationType.PropertySetter; }
+			set { type = LocationType.PropertySetter; }
 		}
 
 		public bool Add {
-			get { return is_event_add; }
-			set { is_event_add = value; }
+			get { return type == LocationType.EventAdd; }
+			set { type = LocationType.EventAdd; }
 		}
 
 		public bool Remove {
-			get { return is_event_remove; }
-			set { is_event_remove = value; }
+			get { return type == LocationType.EventRemove; }
+			set { type = LocationType.EventRemove; }
+		}
+
+		public bool Instance {
+			get { return is_instance; }
+			set { is_instance = value; }
 		}
 
 		protected bool DoResolveExpression (ScriptingContext context)
@@ -1439,20 +1442,15 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (expr == null)
 				return false;
 
-			expr = expr.Resolve (context);
+			MemberAccessExpression mexpr = expr as MemberAccessExpression;
+			if (mexpr != null)
+				expr = mexpr.ResolveMemberAccess (context, is_instance);
+			else
+				expr = expr.Resolve (context);
 			if (expr == null)
 				return false;
 
-			if (is_getter)
-				location = expr.EvaluateLocation (context, LocationType.PropertyGetter, null);
-			else if (is_setter)
-				location = expr.EvaluateLocation (context, LocationType.PropertySetter, null);
-			else if (is_event_add)
-				location = expr.EvaluateLocation (context, LocationType.EventAdd, null);
-			else if (is_event_remove)
-				location = expr.EvaluateLocation (context, LocationType.EventRemove, null);
-			else
-				location = expr.EvaluateLocation (context, LocationType.Method, null);
+			location = expr.EvaluateLocation (context, type, null);
 			return location != null;
 		}
 
