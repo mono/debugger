@@ -15,6 +15,7 @@ LIBRARY_SOURCES = \
 
 BACKEND_SOURCES = \
 	@top_srcdir@/backends/*.cs			\
+	@top_srcdir@/backends/classes/*.cs		\
 	@top_srcdir@/backends/ptrace/*.cs		\
 	@top_srcdir@/backends/mono-csharp/*.cs		\
 	@top_srcdir@/arch/*.cs
