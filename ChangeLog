@@ -1,5 +1,13 @@
 2003-03-04  Martin Baulig  <martin@ximian.com>
 
+	* widgets/generator/Makefile.am: Only rebuild things if we're in
+	maintainer mode.
+
+	* widgets/*/generated/: Include the generated files in the
+	distribution since we aren't rebuilding them in the tarballs.
+	
+2003-03-04  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Improved the gtk# check; actually check for
 	gapi_codegen.exe and don't build the GUI if we can't find gtk#.
 

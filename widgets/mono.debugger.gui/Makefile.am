@@ -11,8 +11,11 @@ debugger-widgets.dll: generated/*.cs
 
 clean:
 	rm -f *.dll
+
+maintainerclean:
 	rm -rf generated
 
 install: all
 	cp debugger-widgets.dll $(DESTDIR)@prefix@/lib
 
+EXTRA_DIST = @srcdir@/generated/*.cs

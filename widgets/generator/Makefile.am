@@ -9,6 +9,8 @@ API_INCLUDES = \
 
 RUNTIME=mono
 
+if MAINTAINER_MODE
+
 all: generated-stamp
 
 generated-stamp: $(APIS)
@@ -16,6 +18,8 @@ generated-stamp: $(APIS)
 
 clean:
 	rm -f generated-stamp
+
+endif
 
 EXTRA_DIST = $(APIS)
 

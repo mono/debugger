@@ -5,8 +5,12 @@ gtksourceview-sharp.dll: generated/*.cs
 
 clean:
 	rm -f *.dll
+
+maintainerclean:
 	rm -rf generated
 
 install: all
 	cp gtksourceview-sharp.dll $(DESTDIR)@prefix@/lib
+
+EXTRA_DIST = @srcdir@/generated/*.cs
 
