@@ -84,7 +84,12 @@ namespace Mono.Debugger
 
 		void start_inferior ()
 		{
-			the_engine = new SingleSteppingEngine (this, start);
+			try {
+				the_engine = new SingleSteppingEngine (this, start);
+			} catch (Exception ex) {
+				engine_error (ex);
+				return;
+			}
 
 			Report.Debug (DebugFlags.Threads, "Thread manager started: {0}",
 				      the_engine.PID);
@@ -145,6 +150,8 @@ namespace Mono.Debugger
 			inferior_thread = new Thread (new ThreadStart (start_inferior));
 			inferior_thread.IsBackground = true;
 			inferior_thread.Start ();
+
+			wait_until_engine_is_ready ();
 		}
 
 		public Process WaitForApplication ()
@@ -674,7 +681,8 @@ namespace Mono.Debugger
 
 			for (int i = 0; i < threads.Length; i++)
 				threads [i].Dispose ();
-			main_process.Dispose ();
+			if (main_process != null)
+				main_process.Dispose ();
 		}
 
 		private bool disposed = false;

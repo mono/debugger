@@ -64,6 +64,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		DebuggerTextWriter inferior_output;
 		bool is_synchronous;
 		bool is_interactive;
+		bool is_script;
 		int exit_code = 0;
 
 		internal static readonly string DirectorySeparatorStr;
@@ -83,6 +84,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
+			this.is_script = options.IsScript;
 
 			procs = new Hashtable ();
 
@@ -106,7 +108,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			try {
 				Run ();
 			} catch (TargetException e) {
-				Console.WriteLine ("Cannot start target: {0}", e.Message);
+				Error (e);
 			}
 
 			context.CurrentProcess = current_process;
@@ -178,6 +180,10 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return is_interactive; }
 		}
 
+		public bool IsScript {
+			get { return is_script; }
+		}
+
 		public int ExitCode {
 			get { return exit_code; }
 			set { exit_code = value; }
@@ -228,7 +234,10 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void Error (string message)
 		{
-			command_output.WriteLine (true, message);
+			if (IsScript)
+				command_output.WriteLine (true, "ERROR: " + message);
+			else
+				command_output.WriteLine (true, message);
 			if (!IsInteractive)
 				Abort ();
 		}
@@ -239,6 +248,11 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		public void Error (ScriptingException ex)
+		{
+			Error (ex.Message);
+		}
+
+		public void Error (TargetException ex)
 		{
 			Error (ex.Message);
 		}

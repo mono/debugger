@@ -688,7 +688,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void Error (ScriptingException ex)
 		{
-			interpreter.Error (ex.Message);
+			interpreter.Error (ex);
 		}
 
 		public void Print (string message)
