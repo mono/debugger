@@ -240,7 +240,11 @@ namespace Mono.Debugger
 			sse = null;
 
 			symtabs = null;
-			frames_invalid ();
+			frames_invalid ();	
+			if (FramesInvalidEvent != null)
+				FramesInvalidEvent ();
+			if (MethodInvalidEvent != null)
+				MethodInvalidEvent ();
 			if (TargetExited != null)
 				TargetExited ();
 		}
