@@ -10,6 +10,9 @@
 	SingleSteppingEngine.cs, ThreadManager.cs (Dispose): Make this
 	thread-safe.
 
+	* frontends/scripting/Parser.jay: Make the `kill' command kill the
+	whole application, not just one process.
+
 2003-04-10  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetNotification.cs
