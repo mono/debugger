@@ -32,17 +32,19 @@ namespace Mono.Debugger.Backends
 	{
 		TargetAddress start, end;
 		ILanguageBackend language;
+		SimpleStackFrame stack;
 		StepMode mode;
 
 		internal StepFrame (object language, StepMode mode)
-			: this (TargetAddress.Null, TargetAddress.Null, language, mode)
+			: this (TargetAddress.Null, TargetAddress.Null, null, language, mode)
 		{ }
 
-		internal StepFrame (TargetAddress start, TargetAddress end, object language,
-				    StepMode mode)
+		internal StepFrame (TargetAddress start, TargetAddress end, SimpleStackFrame stack,
+				    object language, StepMode mode)
 		{
 			this.start = start;
 			this.end = end;
+			this.stack = stack;
 			this.language = language as ILanguageBackend;
 			this.mode = mode;
 		}
@@ -62,6 +64,12 @@ namespace Mono.Debugger.Backends
 		public TargetAddress End {
 			get {
 				return end;
+			}
+		}
+
+		public SimpleStackFrame StackFrame {
+			get {
+				return stack;
 			}
 		}
 

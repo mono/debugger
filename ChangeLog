@@ -1,5 +1,15 @@
 2004-10-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/StepFrame.cs
+	(StepFrame.StackFrame): New public property.
+	(StepFrame.ctor): Added `SimpleStackFrame' argument.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.handle_exception): New private method to
+	handle exceptions.
+
+2004-10-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(NotificationType): Added `HandleException'.
 

@@ -156,19 +156,6 @@ unhandled_exception (gpointer data, guint32 arg)
 }
 
 static void
-handle_exception (gpointer data, guint32 arg)
-{
-	MonoObject *exc = (MonoObject *) data;
-	MonoClass *klass;
-	gchar *name;
-
-	klass = mono_object_get_class (exc);
-	name = mono_class_get_name (klass);
-
-	mono_debugger_notification_function (NOTIFICATION_HANDLE_EXCEPTION, data, arg);
-}
-
-static void
 debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 {
 	switch (event) {
@@ -185,7 +172,7 @@ debugger_event_handler (MonoDebuggerEvent event, gpointer data, guint32 arg)
 		break;
 
 	case MONO_DEBUGGER_EVENT_EXCEPTION:
-		handle_exception (data, arg);
+		mono_debugger_notification_function (NOTIFICATION_HANDLE_EXCEPTION, data, arg);
 		break;
 	}
 }

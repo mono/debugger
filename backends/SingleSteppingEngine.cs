@@ -352,7 +352,8 @@ namespace Mono.Debugger.Backends
 					do_next ();
 				else {
 					operation.StepFrame = new StepFrame (
-						frame.Start, frame.End, null, StepMode.Finish);
+						frame.Start, frame.End, frame.StackFrame,
+						null, StepMode.Finish);
 					Step (operation);
 				}
 				break;
@@ -520,16 +521,19 @@ namespace Mono.Debugger.Backends
 			}
 
 			case Inferior.ChildEventType.HANDLE_EXCEPTION: {
-				TargetAddress exc = new TargetAddress (
-					manager.AddressDomain, cevent.Data1);
+				TargetAddress stack = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
-				current_operation = new Operation (
-					OperationType.Exception, exc);
+				if (handle_exception (stack, ip)) {
+					current_operation = new Operation (OperationType.Exception, null);
 
-				do_continue (ip);
-				return;
+					do_continue (ip);
+					return;
+				}
+
+				break;
 			}
 
 			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
@@ -1251,6 +1255,55 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
+		bool handle_exception (TargetAddress stack, TargetAddress ip)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} handling exception {1} at {2} while running {3}", this, stack, ip,
+				      current_operation);
+
+			/*
+			 * We're dealing with a non-fatal exception here.
+			 */
+
+			switch (current_operation.Type) {
+			case OperationType.Run:
+			case OperationType.RunInBackground:
+				// Don't stop if we're running.
+				return false;
+
+			case OperationType.StepLine:
+			case OperationType.NextLine:
+			case OperationType.StepFrame:
+				// Check whether we need to stop.
+				break;
+
+			default:
+				// Anything else: always stop.
+				return true;
+			}
+
+			/*
+			 * If we don't have a StepFrame or if the StepFrame doesn't have a
+			 * SimpleStackFrame, we're doing something like instruction stepping -
+			 * always stop in this case.
+			 */
+			if ((current_operation.StepFrame == null) ||
+			    (current_operation.StepFrame.StackFrame == null))
+				return true;
+
+			SimpleStackFrame oframe = current_operation.StepFrame.StackFrame;
+
+			if (stack < oframe.StackPointer)
+				return false;
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} handling exception: {1} {2} - {3} {4} - {5}", this,
+				      current_operation.StepFrame, oframe, stack, oframe.StackPointer,
+				      stack < oframe.StackPointer);
+
+			return true;
+		}
+
 		protected IMethod current_method;
 		protected StackFrame current_frame;
 		protected Backtrace current_backtrace;
@@ -1412,14 +1465,14 @@ namespace Mono.Debugger.Backends
 				// next source line.
 				return new Operation (OperationType.StepFrame, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
-					language, operation.Type == OperationType.StepLine ?
+					null, language, operation.Type == OperationType.StepLine ?
 					StepMode.StepFrame : StepMode.Finish));
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
 				// method's actual code).
 				return new Operation (OperationType.StepFrame, new StepFrame (
-					method.StartAddress, method.MethodStartAddress,
+					method.StartAddress, method.MethodStartAddress, null,
 					null, StepMode.Finish));
 			}
 
@@ -1762,7 +1815,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress start = frame.TargetAddress - offset;
 			TargetAddress end = frame.TargetAddress + range;
 
-			return new StepFrame (start, end, language, StepMode.StepFrame);
+			return new StepFrame (start, end, frame.SimpleFrame, language, StepMode.StepFrame);
 		}
 
 		// <summary>

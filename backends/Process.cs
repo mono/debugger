@@ -364,7 +364,7 @@ namespace Mono.Debugger
 			}
 
 			StepFrame sf = new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress,
+				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
 				null, StepMode.Finish);
 
 			Operation operation = new Operation (OperationType.StepFrame, sf);
