@@ -276,9 +276,9 @@ namespace Mono.Debugger
 				TargetAddress mfunc = bfdc.LookupSymbol ("MONO_DEBUGGER__main_function");
 				TargetAddress main_function = runner.Inferior.ReadGlobalAddress (mfunc);
 
+				backend.ReachedManagedMain (main_process);
 				main_process.SingleSteppingEngine.Continue (main_function, true);
 				main_process.SingleSteppingEngine.ReachedMain ();
-				backend.ReachedManagedMain (main_process);
 
 				reached_main = true;
 				main_started_event.Set ();

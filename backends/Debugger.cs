@@ -186,6 +186,7 @@ namespace Mono.Debugger
 				module.BackendLoaded = true;
 
 			module_manager.UnLock ();
+			symtab_manager.Wait ();
 		}
 
 		public void Quit ()
