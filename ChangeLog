@@ -1,5 +1,10 @@
 2004-04-13  Martin Baulig  <martin@ximian.com>
 
+	* arch/Bfd.cs: Get the name of the target on startup, added
+	PowerPC support.
+
+2004-04-13  Martin Baulig  <martin@ximian.com>
+
 	* arch/bfdglue.c (bfd_glue_get_target_name): New function.
 
 2004-04-13  Martin Baulig  <martin@ximian.com>

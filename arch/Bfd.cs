@@ -21,14 +21,19 @@ namespace Mono.Debugger.Architecture
 		protected ITargetMemoryAccess memory;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
+		protected IArchitecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
+		TargetAddress entry_point = TargetAddress.Null;
 		int dynlink_breakpoint_id;
 		Hashtable symbols;
-		BfdSymbolTable simple_symtab;
+		ArrayList simple_symbols;
+		ISimpleSymbolTable simple_symtab;
 		DwarfReader dwarf;
+		StabsReader stabs;
 		bool dwarf_loaded;
+		bool stabs_loaded;
 		bool has_debugging_info;
 		string filename;
 		bool is_coredump;
@@ -37,6 +42,8 @@ namespace Mono.Debugger.Architecture
 		TargetAddress base_address, start_address, end_address;
 		TargetAddress plt_start, plt_end, got_start;
 		ILanguage language;
+		bool is_powerpc;
+		bool use_stabs;
 		bool has_got;
 
 		[Flags]
@@ -141,6 +148,9 @@ namespace Mono.Debugger.Architecture
 		extern static bool bfd_close (IntPtr bfd);
 
 		[DllImport("libmonodebuggerbfdglue")]
+		extern static string bfd_glue_get_target_name (IntPtr bfd);
+
+		[DllImport("libmonodebuggerbfdglue")]
 		extern static IntPtr bfd_get_section_by_name (IntPtr bfd, string name);
 
 		[DllImport("libmonodebuggerbfdglue")]
@@ -188,8 +198,9 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, ITargetMemoryAccess memory, string filename,
-			    bool core_file, TargetAddress base_address)
+		public Bfd (BfdContainer container, ITargetMemoryAccess memory,
+			    ITargetMemoryInfo info, string filename, bool core_file,
+			    TargetAddress base_address)
 		{
 			this.container = container;
 			this.memory = memory;
@@ -197,7 +208,7 @@ namespace Mono.Debugger.Architecture
 			this.base_address = base_address;
 			this.backend = container.DebuggerBackend;
 
-			language = new Mono.Debugger.Languages.Native.NativeLanguage (memory);
+			language = new Mono.Debugger.Languages.Native.NativeLanguage (info);
 
 			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -215,22 +226,87 @@ namespace Mono.Debugger.Architecture
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
 
-			InternalSection text = GetSectionByName (".text", true);
-			InternalSection bss = GetSectionByName (".bss", true);
+			string target = bfd_glue_get_target_name (bfd);
+			if (target == "elf32-i386") {
+				arch = new ArchitectureI386 ();
 
-			if (!base_address.IsNull) {
+				InternalSection text = GetSectionByName (".text", true);
+				InternalSection bss = GetSectionByName (".bss", true);
+
+				if (!base_address.IsNull) {
+					start_address = new TargetAddress (
+						info.GlobalAddressDomain,
+						base_address.Address);
+					end_address = start_address + bss.vma;
+				} else {
+					start_address = new TargetAddress (
+						info.GlobalAddressDomain, text.vma);
+					end_address = new TargetAddress (
+						info.GlobalAddressDomain, bss.vma);
+				}
+
+				read_bfd_symbols ();
+
+				has_debugging_info = GetSectionByName (
+					".debug_info", false) != null;
+
+				InternalSection plt_section = GetSectionByName (".plt", false);
+				InternalSection got_section = GetSectionByName (".got", false);
+				if ((plt_section != null) && (got_section != null)) {
+					plt_start = new TargetAddress (
+						memory.GlobalAddressDomain, base_address.Address + plt_section.vma);
+					plt_end = plt_start + plt_section.size;
+
+					got_start = new TargetAddress (
+						memory.GlobalAddressDomain, base_address.Address + got_section.vma);
+					has_got = true;
+				}
+			} else if (target == "mach-o-be") {
+				arch = new ArchitecturePowerPC ();
+
+				use_stabs = true;
+				is_powerpc = true;
+
+				InternalSection text = GetSectionByName (
+					"LC_SEGMENT.__TEXT.__text", true);
+				InternalSection bss = GetSectionByName (
+					"LC_SEGMENT.__DATA.__common", true);
+
 				start_address = new TargetAddress (
-					memory.GlobalAddressDomain, base_address.Address);
-				end_address = start_address + bss.vma;
-			} else {
-				start_address = new TargetAddress (memory.GlobalAddressDomain, text.vma);
-				end_address = new TargetAddress (memory.GlobalAddressDomain, bss.vma);
-			}
+					info.GlobalAddressDomain, text.vma);
+				end_address = new TargetAddress (
+					info.GlobalAddressDomain, bss.vma);
 
+				has_debugging_info = GetSectionByName (
+					".stab", false) != null;
+			} else
+				throw new SymbolTableException (
+					"Symbol file {0} has unknown target architecture {1}",
+					filename, target);
+
+			if (is_powerpc) {
+				load_stabs ();
+
+				if (stabs != null) {
+					simple_symtab = stabs;
+					entry_point = stabs.EntryPoint;
+				} else
+					entry_point = SimpleLookup ("_main");
+			} else
+				entry_point = SimpleLookup ("main");
+
+			backend.ModuleManager.AddModule (this);
+
+			OnModuleChangedEvent ();
+		}
+
+		void read_bfd_symbols ()
+		{
 			IntPtr symtab;
 			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
 
 			symbols = new Hashtable ();
+			simple_symbols = new ArrayList ();
 
 			bool is_main_module = base_address.IsNull;
 
@@ -240,7 +316,6 @@ namespace Mono.Debugger.Architecture
 				int is_function;
 
 				name = bfd_glue_get_symbol (bfd, symtab, i, out is_function, out address);
-
 				if (name == null)
 					continue;
 
@@ -251,49 +326,8 @@ namespace Mono.Debugger.Architecture
 					symbols.Add (name, relocated);
 				else if (name.StartsWith ("__pthread_"))
 					symbols.Add (name, relocated);
-			}
 
-			g_free (symtab);
-
-			simple_symtab = new BfdSymbolTable (this);
-
-			InternalSection plt_section = GetSectionByName (".plt", false);
-			InternalSection got_section = GetSectionByName (".got", false);
-			if ((plt_section != null) && (got_section != null)) {
-				plt_start = new TargetAddress (
-					memory.GlobalAddressDomain, base_address.Address + plt_section.vma);
-				plt_end = plt_start + plt_section.size;
-
-				got_start = new TargetAddress (
-					memory.GlobalAddressDomain, base_address.Address + got_section.vma);
-				has_got = true;
-			}
-
-			has_debugging_info = GetSectionByName (".debug_info", false) != null;
-
-			backend.ModuleManager.AddModule (this);
-
-			OnModuleChangedEvent ();
-		}
-
-		protected ArrayList GetSimpleSymbols ()
-		{
-			IntPtr symtab;
-			ArrayList list = new ArrayList ();
-
-			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
-
-			for (int i = 0; i < num_symbols; i++) {
-				string name;
-				long address;
-				int is_function;
-
-				name = bfd_glue_get_symbol (bfd, symtab, i, out is_function, out address);
-				if (name == null)
-					continue;
-
-				long relocated = base_address.Address + address;
-				list.Add (new SymbolEntry (relocated, name));
+				simple_symbols.Add (new SymbolEntry (relocated, name));
 			}
 
 			g_free (symtab);
@@ -310,12 +344,17 @@ namespace Mono.Debugger.Architecture
 					continue;
 
 				long relocated = base_address.Address + address;
-				list.Add (new SymbolEntry (relocated, name));
+				simple_symbols.Add (new SymbolEntry (relocated, name));
 			}
 
 			g_free (symtab);
 
-			return list;
+			simple_symtab = new BfdSymbolTable (this);
+		}
+
+		protected ArrayList GetSimpleSymbols ()
+		{
+			return simple_symbols;
 		}
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
@@ -461,6 +500,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public IArchitecture Architecture {
+			get {
+				return arch;
+			}
+		}
+
 		public TargetAddress GetAddress (long address)
 		{
 			if (BaseAddress.IsNull)
@@ -469,6 +514,12 @@ namespace Mono.Debugger.Architecture
 			else
 				return new TargetAddress (
 					memory.GlobalAddressDomain, BaseAddress.Address + address);
+		}
+
+		public ITargetInfo TargetInfo {
+			get {
+				return memory;
+			}
 		}
 
 		public override string Name {
@@ -517,30 +568,38 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public override bool SymbolsLoaded {
-			get { return dwarf != null; }
+			get { return (dwarf != null) || (stabs != null); }
 		}
 
 		public override SourceFile[] Sources {
 			get {
-				if (dwarf == null)
+				if (dwarf != null)
+					return dwarf.Sources;
+				else if (stabs != null)
+					return stabs.Sources;
+				else
 					return new SourceFile [0];
-
-				return dwarf.Sources;
 			}
 		}
 
 		public override ISymbolTable SymbolTable {
 			get {
-				if (dwarf == null)
+				if (dwarf != null)
+					return dwarf.SymbolTable;
+				else if (stabs != null)
+					return stabs;
+				else
 					throw new InvalidOperationException ();
-
-				return dwarf.SymbolTable;
 			}
 		}
 
 		public override TargetAddress SimpleLookup (string name)
 		{
 			return this [name];
+		}
+
+		public TargetAddress EntryPoint {
+			get { return entry_point; }
 		}
 
 		void load_dwarf ()
@@ -574,12 +633,51 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		void load_stabs ()
+		{
+			if (stabs_loaded)
+				return;
+
+			try {
+				stabs = new StabsReader (this, this, backend.SourceFileFactory);
+			} catch (Exception ex) {
+				Console.WriteLine ("CANNOT READ STABS: {0}", ex);
+				// Silently ignore.
+			}
+
+			stabs_loaded = true;
+
+			if (stabs != null) {
+				has_debugging_info = true;
+				OnSymbolsLoadedEvent ();
+			}
+		}
+
+		void unload_stabs ()
+		{
+			if (!stabs_loaded)
+				return;
+
+			stabs_loaded = false;
+			if (stabs != null) {
+				stabs = null;
+				OnSymbolsUnLoadedEvent ();
+			}
+		}
+
 		protected override void OnModuleChangedEvent ()
 		{
-			if (LoadSymbols)
-				load_dwarf ();
-			else
-				unload_dwarf ();
+			if (LoadSymbols) {
+				if (use_stabs)
+					load_stabs ();
+				else
+					load_dwarf ();
+			} else {
+				if (use_stabs)
+					unload_stabs ();
+				else
+					unload_dwarf ();
+			}
 
 			base.OnModuleChangedEvent ();
 		}
@@ -920,7 +1018,7 @@ namespace Mono.Debugger.Architecture
 				if (exact_match)
 					return null;
 				else
-					return String.Format ("<{0}:0x{1:x}>", bfd.FileName, address-start);
+					return String.Format ("<{0}:0x{1:x}>", bfd.FileName, address);
 			}
 		}
 
