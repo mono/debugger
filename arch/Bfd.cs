@@ -722,6 +722,11 @@ namespace Mono.Debugger.Architecture
 			return GetTrampoline (address);
 		}
 
+		SourceMethod ILanguageBackend.GetTrampoline (TargetAddress address)
+		{
+			return null;
+		}
+
 		public TargetAddress GetTrampoline (TargetAddress address)
 		{
 			if (!has_got || (address < plt_start) || (address > plt_end))

@@ -1,5 +1,30 @@
 2003-06-20  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IArchitecture.cs
+	(GetBreakpointTrampolineData): Removed.
+	(IsRetInstruction): Added ITargetMemoryAccess argument.
+	(GetCallTarget, GetTrampoline): Added ITargetAccess argument.
+
+	* arch/ArchitectureI386.cs: The .ctor doesn't take an
+	ITargetAccess argument anymore.  This allows us to use the
+	IArchitecture in all threads, not just in the IInferior one.
+
+	* interfaces/IMethod.cs (GetTrampoline): Changed return type from
+	TargetAddress to SourceMethod; don't trigger a JIT compilation
+	here.
+
+	* backends/ILanguageBackend.cs (GetTrampoline): Added overloaded
+	version which takes a TargetAddress and returns a SourceMethod.
+	This version doesn't trigger a JIT compilation can may be called
+	from all threads.
+
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs
+	(MonoSymbolTable): Added AddImage() and GetImage() methods to get
+	a MonoSymbolTableReader from the TargetAddress of a `MonoImage *'.
+	(MonoSymbolTableReader): Implement ISimpleSymbolTable.
+
+2003-06-20  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/wrapper.c, wrapper/thread-manager.c: Don't declare
 	variables as volatile which are not actually modified by the
 	debugger.

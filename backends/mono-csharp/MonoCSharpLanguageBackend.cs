@@ -205,7 +205,7 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal class MonoSymbolTable : IDisposable
 	{
-		public const int  DynamicVersion = 29;
+		public const int  DynamicVersion = 30;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
@@ -215,6 +215,7 @@ namespace Mono.Debugger.Languages.CSharp
 		ArrayList ranges;
 		Hashtable types;
 		Hashtable type_cache;
+		Hashtable image_hash;
 		ArrayList modules;
 		protected Hashtable module_hash;
 
@@ -242,6 +243,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			modules = new ArrayList ();
 			module_hash = new Hashtable ();
+			image_hash = new Hashtable ();
 			type_table = new ArrayList ();
 
 			ranges = new ArrayList ();
@@ -419,6 +421,20 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		internal void AddImage (MonoSymbolTableReader reader)
+		{
+			lock (this) {
+				image_hash.Add (reader.MonoImage.Address, reader);
+			}
+		}
+
+		public MonoSymbolTableReader GetImage (TargetAddress address)
+		{
+			lock (this) {
+				return (MonoSymbolTableReader) image_hash [address.Address];
+			}
+		}
+
 		//
 		// IDisposable
 		//
@@ -575,7 +591,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public override ISimpleSymbolTable SimpleSymbolTable {
-				get { return null; }
+				get { return reader; }
 			}
 
 			public override TargetAddress SimpleLookup (string name)
@@ -736,11 +752,12 @@ namespace Mono.Debugger.Languages.CSharp
 	// <summary>
 	//   A single Assembly's symbol table.
 	// </summary>
-	internal class MonoSymbolTableReader
+	internal class MonoSymbolTableReader : ISimpleSymbolTable
 	{
 		MethodEntry[] Methods;
 		internal readonly Reflection.Assembly Assembly;
 		internal readonly MonoSymbolTable Table;
+		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
 		internal readonly MonoSymbolFile File;
 		internal Module Module;
@@ -783,9 +800,13 @@ namespace Mono.Debugger.Languages.CSharp
 			range_hash = new Hashtable ();
 
 			address += address_size;
+			MonoImage = memory.ReadAddress (address);
+			address += address_size;
 			TargetAddress image_file_addr = memory.ReadAddress (address);
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
+
+			table.AddImage (this);
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
 
@@ -1012,6 +1033,26 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public string SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			foreach (MethodRangeEntry range in ranges) {
+				if ((address < range.StartAddress) || (address > range.EndAddress))
+					continue;
+
+				long offset = address - range.StartAddress;
+				if (exact_match && (offset != 0))
+					continue;
+
+				IMethod method = range.GetMethod ();
+				if (offset == 0)
+					return method.Name;
+				else
+					return String.Format ("{0}+0x{1:x}", method.Name, offset);
+			}
+
+			return null;
+		}	
+
 		private class MonoSourceFile : SourceFile
 		{
 			MonoSymbolTableReader reader;
@@ -1227,6 +1268,15 @@ namespace Mono.Debugger.Languages.CSharp
 				Load (dynamic_reader.BinaryReader, reader.GlobalAddressDomain);
 			}
 
+			public MethodAddress MethodAddress {
+				get {
+					if (!IsLoaded)
+						throw new InvalidOperationException ();
+
+					return address;
+				}
+			}
+
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
 			{
 				if (is_loaded)
@@ -1330,7 +1380,7 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
-			public override TargetAddress GetTrampoline (TargetAddress address)
+			public override SourceMethod GetTrampoline (TargetAddress address)
 			{
 				return reader.Language.GetTrampoline (address);
 			}
@@ -1626,14 +1676,14 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public TargetAddress GetTrampoline (IInferior inferior, TargetAddress address)
+		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
 		{
 			IArchitecture arch = inferior.Architecture;
 
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
-			TargetAddress trampoline = arch.GetTrampoline (address, trampoline_address);
+			TargetAddress trampoline = arch.GetTrampoline (inferior, address, trampoline_address);
 
 			if (trampoline.IsNull)
 				return TargetAddress.Null;
@@ -1663,9 +1713,30 @@ namespace Mono.Debugger.Languages.CSharp
 			return method;
 		}
 
-		public TargetAddress GetTrampoline (TargetAddress address)
+		public SourceMethod GetTrampoline (TargetAddress address)
 		{
-			return TargetAddress.Null;
+			IArchitecture arch = process.SingleSteppingEngine.Architecture;
+			ITargetAccess target = process.SingleSteppingEngine;
+
+			if (trampoline_address.IsNull)
+				return null;
+
+			TargetAddress trampoline = arch.GetTrampoline (target, address, trampoline_address);
+
+			if (trampoline.IsNull)
+				return null;
+
+			int token = target.ReadInteger (trampoline + 4);
+			TargetAddress klass = target.ReadAddress (trampoline + 8);
+			TargetAddress image = target.ReadAddress (klass);
+			MonoSymbolTableReader reader = table.GetImage (image);
+
+			// Console.WriteLine ("TRAMPOLINE: {0} {1:x} {2} {3} {4}", trampoline, token, klass, image, reader);
+
+			if ((reader == null) || ((token & 0xff000000) != 0x06000000))
+				throw new InternalError ();
+
+			return reader.GetMethod ((token & 0x00ffffff) - 1);
 		}
 
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)

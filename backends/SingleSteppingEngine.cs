@@ -1211,7 +1211,7 @@ namespace Mono.Debugger.Backends
 
 			// Check whether this is a call instruction.
 			int insn_size;
-			TargetAddress call = arch.GetCallTarget (address, out insn_size);
+			TargetAddress call = arch.GetCallTarget (inferior, address, out insn_size);
 			if (call.IsNull)
 				// Step one instruction unless this is a call
 				return do_step ();
@@ -1289,7 +1289,7 @@ namespace Mono.Debugger.Backends
 				 * the specified step frame.
 				 */
 				int insn_size;
-				TargetAddress call = arch.GetCallTarget (current_frame, out insn_size);
+				TargetAddress call = arch.GetCallTarget (inferior, current_frame, out insn_size);
 				if (call.IsNull) {
 					if (!do_step ())
 						return false;
@@ -1938,6 +1938,22 @@ namespace Mono.Debugger.Backends
 		{
 			CallMethodData data = new CallMethodData (method, method_argument, string_argument);
 			CommandResult result = send_sync_command (new CommandFunc (call_string_method), data);
+			if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+			return (long) result.Data;
+		}
+
+		CommandResult call_method (object data)
+		{
+			CallMethodData cdata = (CallMethodData) data;
+			long retval = inferior.CallMethod (cdata.Method, cdata.Argument);
+			return new CommandResult (CommandResultType.CommandOk, retval);
+		}
+
+		internal long CallMethod (TargetAddress method, long method_argument)
+		{
+			CallMethodData data = new CallMethodData (method, method_argument, null);
+			CommandResult result = send_sync_command (new CommandFunc (call_method), data);
 			if (result.Type != CommandResultType.CommandOk)
 				throw new Exception ();
 			return (long) result.Data;

@@ -31,28 +31,21 @@ namespace Mono.Debugger
 	// </summary>
 	internal class ArchitectureI386 : IArchitecture
 	{
-		ITargetAccess target;
-
-		public ArchitectureI386 (ITargetAccess target)
+		public bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address)
 		{
-			this.target = target;
+			return memory.ReadByte (address) == 0xc3;
 		}
 
-		public bool IsRetInstruction (TargetAddress address)
-		{
-			return target.ReadByte (address) == 0xc3;
-		}
-
-		public TargetAddress GetCallTarget (TargetAddress address, out int insn_size)
+		public TargetAddress GetCallTarget (ITargetAccess target, TargetAddress address, out int insn_size)
 		{
 			ITargetMemoryReader reader = target.ReadMemory (address, 6);
 
 			byte opcode = reader.ReadByte ();
 
 			if (opcode == 0xe8) {
-				int target = reader.ReadInteger ();
+				int call_target = reader.ReadInteger ();
 				insn_size = 5;
-				return address + reader.Offset + target;
+				return address + reader.Offset + call_target;
 			} else if (opcode != 0xff) {
 				insn_size = 0;
 				return TargetAddress.Null;
@@ -129,7 +122,7 @@ namespace Mono.Debugger
 				return vtable_addr;
 		}
 
-		public TargetAddress GetTrampoline (TargetAddress location,
+		public TargetAddress GetTrampoline (ITargetAccess target, TargetAddress location,
 						    TargetAddress trampoline_address)
 		{
 			if (trampoline_address.IsNull)
@@ -249,21 +242,6 @@ namespace Mono.Debugger
 			default:
 				return String.Format ("{0:x}", value);
 			}
-		}
-
-		public int GetBreakpointTrampolineData (out TargetAddress method, out TargetAddress code,
-							out TargetAddress retaddr)
-		{
-			TargetAddress stack = new TargetAddress (
-				target.AddressDomain, target.GetRegister ((int) I386Register.ESP));
-
-			method = target.ReadGlobalAddress (stack);
-			code = target.ReadGlobalAddress (stack + target.TargetAddressSize +
-							 target.TargetIntegerSize);
-			retaddr = target.ReadGlobalAddress (stack + 2 * target.TargetAddressSize +
-							    target.TargetIntegerSize);
-
-			return target.ReadInteger (stack + target.TargetAddressSize);
 		}
 
 		public int MaxPrologueSize {

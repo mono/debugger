@@ -182,6 +182,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		TargetAddress GetTrampoline (TargetAddress address);
+		SourceMethod GetTrampoline (TargetAddress address);
 	}
 }

@@ -28,7 +28,7 @@ namespace Mono.Debugger.Architecture
 			this.backend = backend;
 			this.symtab_manager = backend.SymbolTableManager;
 
-			arch = new ArchitectureI386 (this);
+			arch = new ArchitectureI386 ();
 
 			address_domain = new AddressDomain ("core");
 

@@ -32,7 +32,7 @@ namespace Mono.Debugger
 		//   Returns whether the instruction at target address @address is a `ret'
 		//   instruction.
 		// </summary>
-		bool IsRetInstruction (TargetAddress address);
+		bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address);
 
 		// <summary>
 		//   Check whether the instruction at target address @address is a `call'
@@ -42,22 +42,16 @@ namespace Mono.Debugger
 		//   instructions.  This can be used to set a breakpoint immediately after
 		//   the function.
 		// </summary>
-		TargetAddress GetCallTarget (TargetAddress address, out int insn_size);
+		TargetAddress GetCallTarget (ITargetAccess target, TargetAddress address,
+					     out int insn_size);
 
 		// <summary>
 		//   Check whether the instruction at target address @address is a trampoline method.
 		//   If it's a trampoline, return the address of the corresponding method's
 		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
 		// </summary>
-		TargetAddress GetTrampoline (TargetAddress address,
+		TargetAddress GetTrampoline (ITargetAccess target, TargetAddress address,
 					     TargetAddress generic_trampoline_address);
-
-		// <summary>
-		//   Assumes that the target just stopped in the JIT generated breakpoint trampoline
-		//   and returns its data.
-		// </summary>
-		int GetBreakpointTrampolineData (out TargetAddress method, out TargetAddress code,
-						 out TargetAddress retaddr);
 
 		int MaxPrologueSize {
 			get;

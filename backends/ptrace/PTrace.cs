@@ -401,7 +401,7 @@ namespace Mono.Debugger.Backends
 			this.breakpoint_manager = breakpoint_manager;
 
 			thread_manager = backend.ThreadManager;
-			arch = new ArchitectureI386 (this);
+			arch = new ArchitectureI386 ();
 
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)

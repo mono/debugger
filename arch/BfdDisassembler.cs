@@ -78,14 +78,16 @@ namespace Mono.Debugger.Architecture
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
 
 			if (current_method != null) {
-				TargetAddress trampoline = current_method.GetTrampoline (maddress);
-				if (!trampoline.IsNull) {
-					Console.WriteLine ("TRAMPOLINE: {0}", trampoline);
-					maddress = trampoline;
+				SourceMethod method = current_method.GetTrampoline (maddress);
+
+				if (method != null) {
+					output_func (method.Name);
+					return;
 				}
 			}
 
 			string name = symbol_table.SimpleLookup (maddress, false);
+
 			if (name == null)
 				output_func (address);
 			else
