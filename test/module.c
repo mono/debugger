@@ -8,7 +8,7 @@ main (void)
 	void *handle;
 	void (*ptr) (void);
 
-	handle = dlopen ("libfoo.so", RTLD_NOW | RTLD_GLOBAL);
+	handle = dlopen ("/home/martin/monocvs/debugger/test/libfoo.so", RTLD_NOW | RTLD_GLOBAL);
 	fprintf (stderr, "LOAD: %p\n", handle);
 	if (!handle) {
 		fprintf (stderr, "ERROR: %s\n", dlerror ());

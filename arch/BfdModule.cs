@@ -64,7 +64,7 @@ namespace Mono.Debugger.Architecture
 
 		public override bool SymbolsLoaded {
 			get {
-				return Bfd != null;
+				return (Bfd != null) && (Bfd.SymbolTable != null);
 			}
 		}
 

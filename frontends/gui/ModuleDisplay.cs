@@ -106,7 +106,7 @@ namespace Mono.Debugger.GUI
 			TreeIter iter = new TreeIter ();
 
 			store.Append (out iter);
-			store.SetValue (iter, 0, new GLib.Value (module.Name));
+			store.SetValue (iter, 0, new GLib.Value (Path.GetFileName (module.Name)));
 			store.SetValue (iter, 1, new GLib.Value (module.IsLoaded));
 			store.SetValue (iter, 2, new GLib.Value (module.SymbolsLoaded));
 			store.SetValue (iter, 3, new GLib.Value (module.StepInto));

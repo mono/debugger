@@ -31,7 +31,6 @@ namespace Mono.Debugger.Architecture
 		BfdModule module;
 		string filename;
 		bool is_coredump;
-		bool step_into;
 		bool initialized;
 		bool has_shlib_info;
 		TargetAddress base_address, end_address;
@@ -293,7 +292,8 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				Bfd library_bfd = container.AddFile (inferior, name, false, l_addr, null);
+				Bfd library_bfd = container.AddFile (
+					inferior, name, module.StepInto, l_addr, null);
 			}
 		}
 
@@ -320,6 +320,12 @@ namespace Mono.Debugger.Architecture
 
 			set {
 				main_bfd = value;
+			}
+		}
+
+		public TargetAddress BaseAddress {
+			get {
+				return base_address;
 			}
 		}
 

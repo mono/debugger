@@ -81,6 +81,14 @@ namespace Mono.Debugger.Architecture
 			Console.WriteLine ("Done reading aranges table");
 		}
 
+		protected TargetAddress GetAddress (long address)
+		{
+			if (bfd.BaseAddress.IsNull)
+				return new TargetAddress (inferior, address);
+			else
+				return bfd.BaseAddress + address;
+		}
+
 		protected long find_compile_unit_block (long offset)
 		{
 			for (int i = aranges.Count-1; i >= 0; i--) {
@@ -302,6 +310,7 @@ namespace Mono.Debugger.Architecture
 			{
 				this.dwarf = dwarf;
 				this.FileOffset = offset;
+				Console.WriteLine (this);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
@@ -401,8 +410,7 @@ namespace Mono.Debugger.Architecture
 					if ((address == 0) && (size == 0))
 						break;
 
-					TargetAddress taddress = new TargetAddress (inferior, address);
-
+					TargetAddress taddress = GetAddress (address);
 					ranges.Add (new RangeEntry (this, offset, taddress, size));
 				}
 			}
@@ -932,8 +940,7 @@ namespace Mono.Debugger.Architecture
 						end_line = st_line;
 					}
 
-					TargetAddress address = new TargetAddress (
-						engine.dwarf.inferior, st_address);
+					TargetAddress address = engine.dwarf.GetAddress (st_address);
 					lines.Add (new LineEntry (address, st_line));
 
 					basic_block = false;
@@ -1724,7 +1731,7 @@ namespace Mono.Debugger.Architecture
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetAddress (dwarf.inferior, start_pc);
+					return dwarf.GetAddress (start_pc);
 				}
 			}
 
@@ -1733,7 +1740,7 @@ namespace Mono.Debugger.Architecture
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetAddress (dwarf.inferior, end_pc);
+					return dwarf.GetAddress (end_pc);
 				}
 			}
 		}
@@ -1804,7 +1811,7 @@ namespace Mono.Debugger.Architecture
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetAddress (dwarf.inferior, start_pc);
+					return dwarf.GetAddress (start_pc);
 				}
 			}
 
@@ -1813,7 +1820,7 @@ namespace Mono.Debugger.Architecture
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetAddress (dwarf.inferior, end_pc);
+					return dwarf.GetAddress (end_pc);
 				}
 			}
 

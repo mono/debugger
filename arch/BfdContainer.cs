@@ -63,6 +63,14 @@ namespace Mono.Debugger.Architecture
 			module.Inferior = inferior;
 			bfd_hash.Add (filename, bfd);
 
+			if (module.StepInto) {
+				try {
+					bfd.ReadDwarf ();
+				} catch {
+					// Silently ignore.
+				}
+			}
+
 			update_symtabs ();
 
 			OnModulesChangedEvent ();
