@@ -458,11 +458,11 @@ namespace Mono.Debugger
 		// </summary>
 		void engine_thread_main ()
 		{
-			Report.Debug (DebugFlags.Wait, "SSE waiting");
+			Report.Debug (DebugFlags.Wait, "ThreadManager waiting");
 
 			engine_event.Wait ();
 
-			Report.Debug (DebugFlags.Wait, "SSE woke up");
+			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
 
 			long status;
 			SingleSteppingEngine event_engine;
@@ -498,7 +498,7 @@ namespace Mono.Debugger
 			// We caught a SIGINT.
 			//
 			if (mono_debugger_server_get_pending_sigint () > 0) {
-				Report.Debug (DebugFlags.EventLoop, "SSE received SIGINT: {0} {1}",
+				Report.Debug (DebugFlags.EventLoop, "ThreadManager received SIGINT: {0} {1}",
 					      command_engine, sync_command_running);
 
 				lock (this) {
@@ -533,7 +533,7 @@ namespace Mono.Debugger
 			if (command == null)
 				return;
 
-			Report.Debug (DebugFlags.EventLoop, "SSE received command: {0}", command);
+			Report.Debug (DebugFlags.EventLoop, "ThreadManager received command: {0}", command);
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.
@@ -577,6 +577,7 @@ namespace Mono.Debugger
 			Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
 			wait_event.WaitOne ();
 
+		again:
 			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
 
 			//
@@ -594,7 +595,7 @@ namespace Mono.Debugger
 
 			if (pid > 0) {
 				Report.Debug (DebugFlags.Wait,
-					      "SSE received event: {0} {1:x}", pid, status);
+					      "ThreadManager received event: {0} {1:x}", pid, status);
 
 				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
 				if (event_engine == null)
@@ -604,6 +605,11 @@ namespace Mono.Debugger
 				lock (this) {
 					if (current_event != null)
 						throw new InternalError ();
+
+					if (event_engine.SendEvent (status)) {
+						wait_event.Set ();
+						return;
+					}
 
 					current_event = event_engine;
 					current_event_status = status;

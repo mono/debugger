@@ -419,8 +419,6 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public abstract ChildEvent Wait ();
-
 		public abstract ChildEvent ProcessEvent (long status);
 
 		protected virtual void SetupInferior ()

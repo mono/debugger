@@ -130,21 +130,6 @@ mono_debugger_server_global_wait (guint64 *status_ret)
 }
 
 ServerCommandError
-mono_debugger_server_wait (ServerHandle *handle, guint32 *status)
-{
-	int ret;
-
-	do {
-		ret = do_wait (handle->inferior->pid, status);
-	} while (ret == 0);
-
-	if (ret < 0)
-		return COMMAND_ERROR_UNKNOWN;
-
-	return COMMAND_ERROR_NONE;
-}
-
-ServerCommandError
 mono_debugger_server_stop (ServerHandle *handle)
 {
 	ServerCommandError result;

@@ -52,7 +52,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		protected internal abstract void ReadModuleData ();
+		internal abstract void ReadModuleData ();
 
 		public abstract SourceMethod FindMethod (string name);
 
@@ -99,15 +99,17 @@ namespace Mono.Debugger
 		//   The implementation may return any arbitrary data which will be passed
 		//   as the @data argument to DisableBreakpoint() when disabling the breakpoint.
 		// </summary>
-		protected internal abstract object EnableBreakpoint (BreakpointHandle handle,
-								     TargetAddress address);
+		internal abstract object EnableBreakpoint (Process process,
+							   BreakpointHandle handle,
+							   TargetAddress address);
 
 		// <summary>
 		//   This must be implemented to actually disable the breakpoint.  It is
 		//   called which the method is still being loaded and the target is still
 		//   alive.  The @data argument is whatever EnableBreakpoint() returned.
 		// </summary>
-		protected internal abstract void DisableBreakpoint (BreakpointHandle handle,
-								    object data);
+		internal abstract void DisableBreakpoint (Process process,
+							  BreakpointHandle handle,
+							  object data);
 	}
 }

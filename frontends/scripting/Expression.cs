@@ -363,6 +363,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class SourceExpression : Expression
 	{
 		VariableExpression expr;
+		string identifier;
 		int history_id;
 		int line;
 
@@ -371,6 +372,13 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.history_id = -1;
 			this.expr = expr;
 			this.line = line;
+		}
+
+		public SourceExpression (string identifier)
+		{
+			this.history_id = -1;
+			this.identifier = identifier;
+			this.line = -1;
 		}
 
 		public SourceExpression (int history_id)
@@ -397,6 +405,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (history_id > 0)
 				return context.GetMethodSearchResult (history_id);
+
+			if (identifier != null)
+				return context.FindMethod (identifier);
 
 			ITargetFunctionObject obj = expr.ResolveMethod (context, null);
 

@@ -192,7 +192,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public SourceLocation FindLocation (string name)
+		public SourceLocation FindMethod (string name)
 		{
 			foreach (Module module in Modules) {
 				SourceMethod method = module.FindMethod (name);
@@ -207,33 +207,6 @@ namespace Mono.Debugger
 		void method_loaded (SourceMethod method, object user_data)
 		{
 			Console.WriteLine ("METHOD LOADED: {0}", method);
-		}
-
-		Hashtable breakpoint_map = new Hashtable ();
-
-		public int InsertBreakpoint (Breakpoint breakpoint, SourceLocation location)
-		{
-			return InsertBreakpoint (breakpoint, main_group, location);
-		}
-
-		// <summary>
-		//   Inserts a breakpoint for method @method.
-		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group,
-					     SourceLocation location)
-		{
-			int index = location.InsertBreakpoint (breakpoint, group);
-			breakpoint_map [index] = location;
-			return index;
-		}
-
-		public void RemoveBreakpoint (int index)
-		{
-			if (breakpoint_map [index] == null)
-				throw new Exception ("Breakpoint is not registered");
-
-			SourceLocation location = (SourceLocation) breakpoint_map [index];
-			location.RemoveBreakpoint (index);
 		}
 
 		public void UpdateSymbolTable ()

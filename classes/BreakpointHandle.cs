@@ -3,24 +3,25 @@ using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
-	[Serializable]
-	public class BreakpointHandle : ISerializable, IDeserializationCallback
+	public class BreakpointHandle
 	{
+		Process process;
 		Module module;
 		ThreadGroup group;
 		Breakpoint breakpoint;
 		SourceLocation location;
 		bool is_loaded;
 
-		public BreakpointHandle (Breakpoint breakpoint, Module module, ThreadGroup group,
-					 SourceLocation location)
+		public BreakpointHandle (Process process, Breakpoint breakpoint, Module module,
+					 ThreadGroup group, SourceLocation location)
 		{
+			this.process = process;
 			this.module = module;
 			this.group = group;
 			this.breakpoint = breakpoint;
 			this.location = location;
 
-			Initialize ();
+			initialize ();
 		}
 
 		public Module Module {
@@ -35,17 +36,11 @@ namespace Mono.Debugger
 			get { return group; }
 		}
 
-		void Initialize ()
+		void initialize ()
 		{
-			if (initialized)
-				throw new InternalError ();
-			initialized = true;
-
 			module.SymbolsLoadedEvent += new ModuleEventHandler (SymbolsLoaded);
 			module.ModuleLoadedEvent += new ModuleEventHandler (ModuleLoaded);
 			module.ModuleUnLoadedEvent += new ModuleEventHandler (ModuleUnLoaded);
-
-			breakpoint.BreakpointChangedEvent += new BreakpointEventHandler (breakpoint_changed);
 
 			if (module.IsLoaded)
 				ModuleLoaded (module);
@@ -74,11 +69,11 @@ namespace Mono.Debugger
 		{
 			load_handler = null;
 
-			TargetAddress address = location.GetAddress ();
-			if (address.IsNull)
+			bpt_address = location.GetAddress ();
+			if (bpt_address.IsNull)
 				return;
 
-			EnableBreakpoint (address);
+			EnableBreakpoint (process);
 		}
 
 		protected virtual void SymbolsLoaded (Module module)
@@ -92,9 +87,10 @@ namespace Mono.Debugger
 			if (is_loaded)
 				return;
 			is_loaded = true;
-			if (location.Method.IsLoaded)
-				EnableBreakpoint (location.GetAddress ());
-			else if (location.Method.IsDynamic) {
+			if (location.Method.IsLoaded) {
+				bpt_address = location.GetAddress ();
+				EnableBreakpoint (process);
+			} else if (location.Method.IsDynamic) {
 				// A dynamic method is a method which may emit a
 				// callback when it's loaded.  We register this
 				// callback here and do the actual insertion when
@@ -111,20 +107,7 @@ namespace Mono.Debugger
 				load_handler.Dispose ();
 				load_handler = null;
 			}
-			DisableBreakpoint ();
-		}
-
-		// <summary>
-		//   This is called via the Breakpoint.BreakpointChangedEvent to
-		//   actually enable/disable the breakpoint.
-		// </summary>
-		void breakpoint_changed (Breakpoint breakpoint)
-		{
-			if (breakpoint.Enabled)
-				Enable ();
-			else
-				Disable ();
-			module.OnBreakpointsChangedEvent ();
+			DisableBreakpoint (process);
 		}
 
 		TargetAddress bpt_address = TargetAddress.Null;
@@ -134,7 +117,7 @@ namespace Mono.Debugger
 			get { return breakpoint_data != null; }
 		}
 
-		protected void Enable ()
+		protected void Enable (Process process)
 		{
 			lock (this) {
 				if ((bpt_address.IsNull) || (breakpoint_data != null))
@@ -144,66 +127,44 @@ namespace Mono.Debugger
 				if (module_data == null)
 					throw new InternalError ();
 
-				breakpoint_data = module_data.EnableBreakpoint (this, bpt_address);
+				breakpoint_data = module_data.EnableBreakpoint (
+					process, this, bpt_address);
 			}
 		}
 
-		protected void Disable ()
+		protected void Disable (Process process)
 		{
 			lock (this) {
 				ModuleData module_data = module.ModuleData;
 				if ((module_data != null) && (breakpoint_data != null))
-					module_data.DisableBreakpoint (this, breakpoint_data);
+					module_data.DisableBreakpoint (
+						process, this, breakpoint_data);
 				breakpoint_data = null;
 			}
 		}
 
-		protected void EnableBreakpoint (TargetAddress address)
+		public void EnableBreakpoint (Process process)
 		{
 			lock (this) {
-				bpt_address = address;
-				if (breakpoint.Enabled)
-					Enable ();
+				Enable (process);
 			}
 		}
 
-		protected internal void DisableBreakpoint ()
+		public void DisableBreakpoint (Process process)
 		{
 			lock (this) {
-				Disable ();
-				bpt_address = TargetAddress.Null;
+				Disable (process);
 			}
 		}
 
-		//
-		// IDeserializationCallback
-		//
-
-		bool initialized = false;
-
-		public void OnDeserialization (object sender)
+		public void RemoveBreakpoint (Process process)
 		{
-			Initialize ();
-		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			info.AddValue ("breakpoint", breakpoint);
-			info.AddValue ("module", module);
-			info.AddValue ("group", group);
-			info.AddValue ("location", location);
-		}
-
-		protected BreakpointHandle (SerializationInfo info, StreamingContext context)
-		{
-			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
-			module = (Module) info.GetValue ("module", typeof (Module));
-			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
-			location = (SourceLocation) info.GetValue ("location", typeof (SourceLocation));
+			is_loaded = false;
+			if (load_handler != null) {
+				load_handler.Dispose ();
+				load_handler = null;
+			}
+			DisableBreakpoint (process);
 		}
 	}
 }

@@ -587,8 +587,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Ignore,
 		UnIgnore,
 		Step,
-		DontStep,
-		ShowBreakpoints
+		DontStep
 	}
 
 	public enum WhichStepCommand
@@ -620,6 +619,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		ArrayList method_search_results;
 		Hashtable scripting_variables;
+		Hashtable breakpoints;
 		ITargetObject last_object;
 		Module[] modules;
 
@@ -641,6 +641,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			procs = new Hashtable ();
 			current_process = null;
+
+			breakpoints = new Hashtable ();
 
 			scripting_variables = new Hashtable ();
 			method_search_results = new ArrayList ();
@@ -923,60 +925,29 @@ namespace Mono.Debugger.Frontends.CommandLine
 			modules = backend.Modules;
 		}
 
-		public void ShowBreakpoints (Module module)
-		{
-			BreakpointHandle[] breakpoints = module.BreakpointHandles;
-			if (breakpoints.Length == 0)
-				return;
-
-			Print ("Breakpoints for module {0}:", module.Name);
-			foreach (BreakpointHandle handle in breakpoints) {
-				Print ("{0} ({1}): {2}", handle.Breakpoint.Index,
-				       handle.ThreadGroup.Name, handle.Breakpoint);
-			}
-		}
-
 		public void ShowBreakpoints ()
 		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
+			Print ("Breakpoints:");
+			foreach (BreakpointHandle handle in breakpoints.Values) {
+				Print ("{0} ({1}): {3} {2}", handle.Breakpoint.Index,
+				       handle.ThreadGroup.Name, handle.Breakpoint,
+				       handle.IsEnabled ? "*" : " ");
 			}
-
-			foreach (Module module in modules)
-				ShowBreakpoints (module);
 		}
 
-		public Breakpoint FindBreakpoint (int index, out Module out_module)
+		public BreakpointHandle GetBreakpoint (int index)
 		{
-			if (modules == null)
-				goto error;
+			BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
+			if (handle == null)
+				throw new ScriptingException ("No such breakpoint.");
 
-			foreach (Module module in modules) {
-				foreach (Breakpoint breakpoint in module.Breakpoints) {
-					if (breakpoint.Index == index) {
-						out_module = module;
-						return breakpoint;
-					}
-				}
-			}
-
-		error:
-			out_module = null;
-			throw new ScriptingException ("No such breakpoint.");
+			return handle;
 		}
 
-		public Breakpoint GetBreakpoint (int index)
+		public void DeleteBreakpoint (ProcessHandle process, BreakpointHandle handle)
 		{
-			Module module;
-			return FindBreakpoint (index, out module);
-		}
-
-		public void DeleteBreakpoint (Breakpoint breakpoint)
-		{
-			Module module;
-			FindBreakpoint (breakpoint.Index, out module);
-			module.RemoveBreakpoint (breakpoint.Index);
+			handle.RemoveBreakpoint (process.Process);
+			breakpoints.Remove (handle);
 		}
 
 		public Module[] GetModules (int[] indices)
@@ -1070,9 +1041,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 					break;
 				case ModuleOperation.DontStep:
 					module.StepInto = false;
-					break;
-				case ModuleOperation.ShowBreakpoints:
-					ShowBreakpoints (module);
 					break;
 				default:
 					throw new InternalError ();
@@ -1210,13 +1178,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 				group.RemoveThread (process.Process.ID);
 		}
 
-		public int InsertBreakpoint (ThreadGroup group, SourceLocation location)
+		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
+					     SourceLocation location)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name);
-			int index = backend.InsertBreakpoint (breakpoint, group, location);
-			if (index < 0)
+			BreakpointHandle handle = new BreakpointHandle (
+				thread.Process, breakpoint, location.Module, group, location);
+			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
-			return index;
+
+			breakpoints.Add (breakpoint.Index, handle);
+
+			return breakpoint.Index;
 		}
 
 		public SourceLocation FindLocation (string file, int line)
@@ -1230,9 +1203,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("No method contains the specified file/line.");
 		}
 
-		public SourceLocation FindLocation (string name)
+		public SourceLocation FindMethod (string name)
 		{
-			SourceLocation location = backend.FindLocation (name);
+			SourceLocation location = backend.FindMethod (name);
 
 			if (location != null)
 				return location;

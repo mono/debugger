@@ -149,7 +149,7 @@ namespace Mono.Debugger.Backends
 		{
 			Console.WriteLine ("COMMAND HANDLER: {0}", args);
 
-			return true;
+			return false;
 		}
 
 		bool managed_handler (SingleSteppingEngine sse, Inferior inferior,

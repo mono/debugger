@@ -10,8 +10,7 @@ namespace Mono.Debugger
 	//   hold the user's settings for a breakpoint.
 	// </summary>
 
-	[Serializable]
-	public abstract class Breakpoint : ISerializable
+	public abstract class Breakpoint
 	{
 		// <summary>
 		//   An automatically generated unique index for this breakpoint.
@@ -41,28 +40,6 @@ namespace Mono.Debugger
 				name = value;
 			}
 		}
-
-		// <summary>
-		//   Whether this breakpoint is currently enabled.
-		// </summary>
-		public bool Enabled {
-			get {
-				return enabled;
-			}
-
-			set {
-				enabled = value;
-				OnBreakpointChangedEvent ();
-			}
-		}
-
-		// <summary>
-		//   This event is emitted each time the `Enabled' property is changed.
-		//   The backend listens to it to actually enable/disable the breakpoint,
-		//   but it can also be used by the user interface to check/uncheck an
-		//   `enabled' checkbox, for instance.
-		// </summary>
-		public event BreakpointEventHandler BreakpointChangedEvent;
 
 		// <summary>
 		//   Whether the `BreakpointHit' delegate needs the StackFrame argument.
@@ -109,7 +86,7 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3})", GetType (), Index, Name, Enabled);
+			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
 		}
 
 		//
@@ -118,42 +95,15 @@ namespace Mono.Debugger
 
 		protected int index;
 		protected string name;
-		protected bool enabled;
 		protected bool needs_frame;
 
 		protected static int NextBreakpointIndex = 0;
 
-		protected Breakpoint (string name, bool enabled, bool needs_frame)
+		protected Breakpoint (string name, bool needs_frame)
 		{
 			this.index = ++NextBreakpointIndex;
-			this.enabled = enabled;
 			this.needs_frame = needs_frame;
 			this.name = name;
-		}
-
-		protected virtual void OnBreakpointChangedEvent ()
-		{
-			if (BreakpointChangedEvent != null)
-				BreakpointChangedEvent (this);
-		}
-
-		//
-		// ISerializable
-		//
-
-		public virtual void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			info.AddValue ("name", name);
-			info.AddValue ("enabled", enabled);
-			info.AddValue ("needs_frame", needs_frame);
-		}
-
-		protected Breakpoint (SerializationInfo info, StreamingContext context)
-		{
-			index = ++NextBreakpointIndex;
-			name = info.GetString ("name");
-			enabled = info.GetBoolean ("enabled");
-			needs_frame = info.GetBoolean ("needs_frame");
 		}
 	}
 }

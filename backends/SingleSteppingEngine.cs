@@ -80,6 +80,7 @@ namespace Mono.Debugger.Backends
 			PID = inferior.PID;
 
 			operation_completed_event = new ManualResetEvent (false);
+			wait_event = new AutoResetEvent (false);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
@@ -147,6 +148,19 @@ namespace Mono.Debugger.Backends
 			ProcessEvent (cevent);
 		}
 
+		public bool SendEvent (long status)
+		{
+			lock (this) {
+				if (!wait_requested)
+					return false;
+
+				wait_requested = false;
+				wait_result = status;
+				wait_event.Set ();
+				return true;
+			}
+		}
+
 		void send_frame_event (StackFrame frame, int signal)
 		{
 			operation_completed (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
@@ -200,111 +214,6 @@ namespace Mono.Debugger.Backends
 				this.is_main = is_main;
 			}
 			do_continue ();
-		}
-
-		Inferior.ChildEvent wait ()
-		{
-			Inferior.ChildEvent child_event;
-			do {
-				child_event = inferior.Wait ();
-			} while (child_event == null);
-			return child_event;
-		}
-
-		// <summary>
-		//   Checks whether we got a "fatal" event: target died, received a
-		//   signal or hit a breakpoint.
-		// </summary>
-		TargetEventArgs process_child_event (ref Inferior.ChildEvent child_event)
-		{
-		again:
-			Inferior.ChildEventType message = child_event.Type;
-			int arg = (int) child_event.Argument;
-
-			// To step over a method call, the sse inserts a temporary
-			// breakpoint immediately after the call instruction and then
-			// resumes the target.
-			//
-			// If the target stops and we have such a temporary breakpoint, we
-			// need to distinguish a few cases:
-			//
-			// a) we may have received a signal
-			// b) we may have hit another breakpoint
-			// c) we actually hit the temporary breakpoint
-			//
-			// In either case, we need to remove the temporary breakpoint if
-			// the target is to remain stopped.  Note that this piece of code
-			// here only deals with the temporary breakpoint, the handling of
-			// a signal or another breakpoint is done later.
-			if (temp_breakpoint_id != 0) {
-				if ((message == Inferior.ChildEventType.CHILD_EXITED) ||
-				    (message == Inferior.ChildEventType.CHILD_SIGNALED))
-					// we can't remove the breakpoint anymore after
-					// the target exited, but we need to clear this id.
-					temp_breakpoint_id = 0;
-				else if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
-					if (arg == temp_breakpoint_id) {
-						// we hit the temporary breakpoint; this'll always
-						// happen in the `correct' thread since the
-						// `temp_breakpoint_id' is only set in this
-						// SingleSteppingEngine and not in any other thread's.
-						message = Inferior.ChildEventType.CHILD_STOPPED;
-						arg = 0;
-					}
-				}
-			}
-
-			if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
-				Inferior.ChildEvent new_event;
-				// Ok, the next thing we need to check is whether this is actually "our"
-				// breakpoint or whether it belongs to another thread.  In this case,
-				// `step_over_breakpoint' does everything for us and we can just continue
-				// execution.
-				if (stop_requested) {
-					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, null);
-					return new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
-				} else if (step_over_breakpoint (arg, out new_event)) {
-					child_event = new_event;
-					goto again;
-				} else if (!child_breakpoint (arg)) {
-					// we hit any breakpoint, but its handler told us
-					// to resume the target and continue.
-					do_continue ();
-					return null;
-				}
-			}
-
-			if (temp_breakpoint_id != 0) {
-				inferior.RemoveBreakpoint (temp_breakpoint_id);
-				temp_breakpoint_id = 0;
-			}
-
-			switch (message) {
-			case Inferior.ChildEventType.CHILD_STOPPED:
-				if (stop_requested || (arg != 0)) {
-					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, null);
-					return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
-				}
-
-				return null;
-
-			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
-				return null;
-
-			case Inferior.ChildEventType.CHILD_SIGNALED:
-				return new TargetEventArgs (TargetEventType.TargetSignaled, arg);
-
-			case Inferior.ChildEventType.CHILD_EXITED:
-				return new TargetEventArgs (TargetEventType.TargetExited, arg);
-
-			case Inferior.ChildEventType.CHILD_CALLBACK:
-				frame_changed (inferior.CurrentFrame, null);
-				return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
-			}
-
-			return null;
 		}
 
 		// <summary>
@@ -467,9 +376,12 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		protected void ProcessEvent (Inferior.ChildEvent cevent)
 		{
+			Inferior.ChildEventType message = cevent.Type;
+			int arg = (int) cevent.Argument;
+
 			// Callbacks happen when the user (or the engine) called a method
 			// in the target (RuntimeInvoke).
-			if (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK) {
+			if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
 				bool ret;
 				if (handle_callback (cevent, out ret)) {
 					Report.Debug (DebugFlags.EventLoop,
@@ -487,10 +399,94 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			// If the target stopped abnormally, this returns an event which
-			// we should send back to the user to inform him that something
-			// went wrong.
-			TargetEventArgs result = process_child_event (ref cevent);
+			TargetEventArgs result = null;
+
+			// To step over a method call, the sse inserts a temporary
+			// breakpoint immediately after the call instruction and then
+			// resumes the target.
+			//
+			// If the target stops and we have such a temporary breakpoint, we
+			// need to distinguish a few cases:
+			//
+			// a) we may have received a signal
+			// b) we may have hit another breakpoint
+			// c) we actually hit the temporary breakpoint
+			//
+			// In either case, we need to remove the temporary breakpoint if
+			// the target is to remain stopped.  Note that this piece of code
+			// here only deals with the temporary breakpoint, the handling of
+			// a signal or another breakpoint is done later.
+			if (temp_breakpoint_id != 0) {
+				if ((message == Inferior.ChildEventType.CHILD_EXITED) ||
+				    (message == Inferior.ChildEventType.CHILD_SIGNALED))
+					// we can't remove the breakpoint anymore after
+					// the target exited, but we need to clear this id.
+					temp_breakpoint_id = 0;
+				else if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
+					if (arg == temp_breakpoint_id) {
+						// we hit the temporary breakpoint; this'll always
+						// happen in the `correct' thread since the
+						// `temp_breakpoint_id' is only set in this
+						// SingleSteppingEngine and not in any other thread's.
+						message = Inferior.ChildEventType.CHILD_STOPPED;
+						arg = 0;
+					}
+				}
+			}
+
+			if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
+				// Ok, the next thing we need to check is whether this is actually "our"
+				// breakpoint or whether it belongs to another thread.  In this case,
+				// `step_over_breakpoint' does everything for us and we can just continue
+				// execution.
+				if (stop_requested) {
+					stop_requested = false;
+					frame_changed (inferior.CurrentFrame, null);
+					result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
+				} else if (arg == 0) {
+					// Unknown breakpoint, always stop.
+				} else if (step_over_breakpoint (false)) {
+					return;
+				} else if (!child_breakpoint (arg)) {
+					// we hit any breakpoint, but its handler told us
+					// to resume the target and continue.
+					do_continue ();
+					return;
+				}
+			}
+
+			if (temp_breakpoint_id != 0) {
+				inferior.RemoveBreakpoint (temp_breakpoint_id);
+				temp_breakpoint_id = 0;
+			}
+
+			switch (message) {
+			case Inferior.ChildEventType.CHILD_STOPPED:
+				if (stop_requested || (arg != 0)) {
+					stop_requested = false;
+					frame_changed (inferior.CurrentFrame, null);
+					result = new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
+				}
+
+				break;
+
+			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
+				step_operation_finished ();
+				break;
+
+			case Inferior.ChildEventType.CHILD_SIGNALED:
+				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
+				break;
+
+			case Inferior.ChildEventType.CHILD_EXITED:
+				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
+				break;
+
+			case Inferior.ChildEventType.CHILD_CALLBACK:
+				frame_changed (inferior.CurrentFrame, null);
+				result = new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
+				break;
+			}
 
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
@@ -757,11 +753,15 @@ namespace Mono.Debugger.Backends
 		ISimpleSymbolTable current_simple_symtab;
 		bool engine_stopped;
 		ManualResetEvent operation_completed_event;
-		bool stop_requested = false;
+		bool stop_requested;
 		bool is_main, reached_main;
 		bool native;
 		public readonly int PID;
 		public readonly int TID;
+
+		AutoResetEvent wait_event;
+		bool wait_requested;
+		long wait_result;
 
 		internal DaemonEventHandler DaemonEventHandler;
 		internal bool IsDaemon;
@@ -1119,35 +1119,41 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			frame_changed (inferior.CurrentFrame, current_operation);
-			send_frame_event (current_frame, handle.BreakpointHandle);
 
 			return true;
 		}
 
-		bool step_over_breakpoint (int arg, out Inferior.ChildEvent new_event)
+		bool step_over_breakpoint (bool current)
 		{
-			if (arg == 0) {
-				new_event = null;
-				return false;
-			}
-
 			int index;
 			BreakpointManager.Handle handle = manager.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index);
 
-			if ((handle != null) && handle.BreakpointHandle.Breaks (process.ID)) {
-				new_event = null;
+			if ((handle == null) ||
+			    (!current && handle.BreakpointHandle.Breaks (process.ID)))
 				return false;
-			}
+
+			Report.Debug (DebugFlags.SSE,
+				      "SSE {0} stepping over breakpoint {0}",
+				      this, index);
 
 			manager.AcquireGlobalThreadLock (this);
 			inferior.DisableBreakpoint (index);
+
+			wait_requested = true;
 			inferior.Step ();
-			do {
-				new_event = inferior.Wait ();
-			} while (new_event == null);
+			wait_event.WaitOne ();
+
+			long status = wait_result;
+
+			Report.Debug (DebugFlags.SSE,
+				      "SSE {0} got event {1:x} - reenabling breakpoint {2}",
+				      this, status, index);
+
 			inferior.EnableBreakpoint (index);
 			manager.ReleaseGlobalThreadLock (this);
+
+			ProcessEvent (status);
 			return true;
 		}
 
@@ -1333,7 +1339,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			frames_invalid ();
-			inferior.Step ();
+			do_continue_internal (true);
 		}
 
 		// <summary>
@@ -1366,7 +1372,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			frames_invalid ();
-			inferior.Continue ();
+			do_continue_internal (false);
 		}
 
 		void do_continue (TargetAddress until)
@@ -1374,7 +1380,18 @@ namespace Mono.Debugger.Backends
 			check_inferior ();
 			frames_invalid ();
 			insert_temporary_breakpoint (until);
-			inferior.Continue ();
+			do_continue_internal (false);
+		}
+
+		void do_continue_internal (bool step)
+		{
+			if (step_over_breakpoint (true))
+				return;
+
+			if (step)
+				inferior.Step ();
+			else
+				inferior.Continue ();
 		}
 
 		Operation current_operation;

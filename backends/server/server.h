@@ -104,10 +104,6 @@ mono_debugger_server_finalize             (ServerHandle       *handle);
 guint32
 mono_debugger_server_global_wait          (guint64                 *status);
 
-ServerCommandError
-mono_debugger_server_wait                 (ServerHandle            *handle,
-					   guint32                 *status);
-
 ServerStatusMessageType
 mono_debugger_server_dispatch_event       (ServerHandle            *handle,
 					   guint64                  status,

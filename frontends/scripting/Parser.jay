@@ -261,17 +261,20 @@ generated_command
 	  {
 		$$ = new BreakCommand ((ThreadGroupExpression) $2, (SourceExpression) $3);
 	  }
-	| BREAKPOINT ENABLE breakpoint_number_expression
+	| BREAKPOINT ENABLE process_expression breakpoint_number_expression
 	  {
-		$$ = new BreakpointEnableCommand ((BreakpointNumberExpression) $3);
+		$$ = new BreakpointEnableCommand ((ProcessExpression) $3,
+						  (BreakpointNumberExpression) $4);
 	  }
-	| BREAKPOINT DISABLE breakpoint_number_expression
+	| BREAKPOINT DISABLE process_expression breakpoint_number_expression
 	  {
-		$$ = new BreakpointDisableCommand ((BreakpointNumberExpression) $3);
+		$$ = new BreakpointDisableCommand ((ProcessExpression) $3,
+						   (BreakpointNumberExpression) $4);
 	  }
-	| BREAKPOINT DELETE breakpoint_number_expression
+	| BREAKPOINT DELETE process_expression breakpoint_number_expression
 	  {
-		$$ = new BreakpointDeleteCommand ((BreakpointNumberExpression) $3);
+		$$ = new BreakpointDeleteCommand ((ProcessExpression) $3,
+						  (BreakpointNumberExpression) $4);
 	  }
 	| FRAME frame_expression
 	  {
@@ -729,6 +732,10 @@ source_expression
 	  {
 		$$ = new SourceExpression ((int) $2);
 	  }
+	| STRING
+	  {
+		$$ = new SourceExpression ((string) $1);
+	  }
 	;
 
 module_list_expression
@@ -798,10 +805,6 @@ module_operation
 	| BANG STEP
 	  {
 		$$ = ModuleOperation.DontStep;
-	  }
-	| SHOW BREAKPOINTS
-	  {
-		$$ = ModuleOperation.ShowBreakpoints;
 	  }
 	;
 

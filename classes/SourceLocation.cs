@@ -55,16 +55,6 @@ namespace Mono.Debugger
 			this.line = line;
 		}
 
-		public int InsertBreakpoint (Breakpoint breakpoint, ThreadGroup group)
-		{
-			return Module.AddBreakpoint (breakpoint, group, this);
-		}
-
-		public void RemoveBreakpoint (int index)
-		{
-			Module.RemoveBreakpoint (index);
-		}
-
 		internal TargetAddress GetAddress ()
 		{
 			if (!method.IsLoaded)

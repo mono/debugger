@@ -709,51 +709,60 @@ namespace Mono.Debugger.Frontends.CommandLine
 	[Command("BREAKPOINT ENABLE", "Enable breakpoint")]
 	public class BreakpointEnableCommand : Command
 	{
+		ProcessExpression process_expr;
 		BreakpointNumberExpression breakpoint_number_expr;
 
-		public BreakpointEnableCommand (BreakpointNumberExpression breakpoint_number_expr)
+		public BreakpointEnableCommand (ProcessExpression process_expr, BreakpointNumberExpression breakpoint_number_expr)
 		{
+			this.process_expr = process_expr;
 			this.breakpoint_number_expr = breakpoint_number_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Breakpoint breakpoint = (Breakpoint) breakpoint_number_expr.Resolve (context);
-			breakpoint.Enabled = true;
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
+			handle.EnableBreakpoint (process.Process);
 		}
 	}
 
 	[Command("BREAKPOINT DISABLE", "Disable breakpoint")]
 	public class BreakpointDisableCommand : Command
 	{
+		ProcessExpression process_expr;
 		BreakpointNumberExpression breakpoint_number_expr;
 
-		public BreakpointDisableCommand (BreakpointNumberExpression breakpoint_number_expr)
+		public BreakpointDisableCommand (ProcessExpression process_expr, BreakpointNumberExpression breakpoint_number_expr)
 		{
+			this.process_expr = process_expr;
 			this.breakpoint_number_expr = breakpoint_number_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Breakpoint breakpoint = (Breakpoint) breakpoint_number_expr.Resolve (context);
-			breakpoint.Enabled = false;
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
+			handle.DisableBreakpoint (process.Process);
 		}
 	}
 
 	[Command("BREAKPOINT DELETE", "Delete breakpoint")]
 	public class BreakpointDeleteCommand : Command
 	{
+		ProcessExpression process_expr;
 		BreakpointNumberExpression breakpoint_number_expr;
 
-		public BreakpointDeleteCommand (BreakpointNumberExpression breakpoint_number_expr)
+		public BreakpointDeleteCommand (ProcessExpression process_expr, BreakpointNumberExpression breakpoint_number_expr)
 		{
+			this.process_expr = process_expr;
 			this.breakpoint_number_expr = breakpoint_number_expr;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Breakpoint breakpoint = (Breakpoint) breakpoint_number_expr.Resolve (context);
-			context.DeleteBreakpoint (breakpoint);
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			BreakpointHandle handle = (BreakpointHandle) breakpoint_number_expr.Resolve (context);
+			context.DeleteBreakpoint (process, handle);
 		}
 	}
 
@@ -790,7 +799,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ThreadGroupExpression thread_group_expr;
 		SourceExpression source_expr;
 
-		public BreakCommand (ThreadGroupExpression thread_group_expr, SourceExpression source_expr)
+		public BreakCommand (ThreadGroupExpression thread_group_expr,
+				     SourceExpression source_expr)
 		{
 			this.thread_group_expr = thread_group_expr;
 			this.source_expr = source_expr;
@@ -804,7 +814,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (location == null)
 				return;
 
-			int index = context.InsertBreakpoint (group, location);
+			int index = context.InsertBreakpoint (
+				context.CurrentProcess, group, location);
 			context.Print ("Inserted breakpoint {0}.", index);
 		}
 	}

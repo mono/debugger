@@ -11,7 +11,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Architecture
 {
-	internal sealed class BfdModule : NativeModule, ISymbolContainer, IDisposable
+	internal sealed class BfdModule : ModuleData, ISymbolContainer, IDisposable
 	{
 		Bfd bfd;
 		bool dwarf_loaded;
@@ -82,7 +82,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected override void ReadModuleData ()
+		internal override void ReadModuleData ()
 		{ }
 
 		public override TargetAddress SimpleLookup (string name)
@@ -143,6 +143,20 @@ namespace Mono.Debugger.Architecture
 				load_dwarf ();
 			else
 				unload_dwarf ();
+		}
+
+		internal override object EnableBreakpoint (Process process,
+							   BreakpointHandle handle,
+							   TargetAddress address)
+		{
+			return process.InsertBreakpoint (handle, address, null, null,
+							 false, null);
+		}
+
+		internal override void DisableBreakpoint (Process process,
+							  BreakpointHandle handle, object data)
+		{
+			process.RemoveBreakpoint ((int) data);
 		}
 
 		//

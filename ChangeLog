@@ -1,3 +1,23 @@
+2004-01-16  Martin Baulig  <martin@ximian.com>
+
+	Merged Mono.Debugger.dll and Mono.Debugger.Backend.dll.
+
+	* backends/classes/NativeModule.cs: Removed.
+
+	* backends/Debugger.cs: Removed the breakpoint code from here.
+
+	* backends/SingleSteppingEngine.cs: We can now step over
+	breakpoints again.
+
+	* classes/Breakpoint.cs (Breakpoint.Enabled): Removed this
+	property.
+
+	* classes/BreakpointHandle.cs: Reworked this class; it's now
+	public and you call EnableBreakpoint() and DisableBreakpoint() on
+	it to enable/disable breakpoints.
+
+	* classes/Module.cs: Removed the breakpoint code from here.	
+
 2004-01-15  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetEvent.cs (TargetEventType): Added `FrameChanged'.

@@ -728,7 +728,7 @@ namespace Mono.Debugger.Languages.CSharp
 			throw new InternalError ("Can't find type entry at offset {0}.", offset);
 		}
 
-		private class MonoModule : NativeModule, IDisposable
+		private class MonoModule : ModuleData, IDisposable
 		{
 			Module module;
 			bool symbols_loaded;
@@ -778,7 +778,7 @@ namespace Mono.Debugger.Languages.CSharp
 				get { return has_debugging_info; }
 			}
 
-			protected override void ReadModuleData ()
+			internal override void ReadModuleData ()
 			{ }
 
 			public override ISymbolTable SymbolTable {
@@ -810,14 +810,16 @@ namespace Mono.Debugger.Languages.CSharp
 				return reader.FindMethod (name);
 			}
 
-			protected override object EnableBreakpoint (BreakpointHandle handle,
-								    TargetAddress address)
+			internal override object EnableBreakpoint (Process process,
+								   BreakpointHandle handle,
+								   TargetAddress address)
 			{
 				return reader.Language.EnableBreakpoint (handle, address);
 			}
 
-			protected override void DisableBreakpoint (BreakpointHandle handle,
-								   object data)
+			internal override void DisableBreakpoint (Process process,
+								  BreakpointHandle handle,
+								  object data)
 			{
 				reader.Language.DisableBreakpoint ((int) data);
 			}
