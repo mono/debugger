@@ -38,9 +38,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			Console.WriteLine ("Go, baby, go ....");
 
-			while (process.IsAlive) {
-				Console.WriteLine (process.CurrentFrame);
-				command.Execute (context);
+			int count = 0;
+			try {
+				while (process.IsAlive) {
+					Console.WriteLine (process.CurrentFrame);
+					command.Execute (context);
+					count++;
+				}
+				context.Print ("Executed command {0} times.", count);
+			} catch (Exception ex) {
+				context.Print ("Aborting after {0} iterations.", count);
+				throw;
 			}
 		}
 	}
