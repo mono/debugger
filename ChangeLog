@@ -1,5 +1,10 @@
 2003-01-26  Martin Baulig  <martin@ximian.com>
 
+	* doc/user-manual.texi: New file.  Explained thread groups and
+	per-thread breakpoints there.
+
+2003-01-26  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/: Implemented ThreadGroup support.
 
 2003-01-26  Martin Baulig  <martin@ximian.com>

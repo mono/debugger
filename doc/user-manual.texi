@@ -1,0 +1,74 @@
+\input texinfo    @c -*-texinfo-*-
+
+@setfilename user-manual.info
+
+@ifnottex
+@node Top, Thread Groups, (dir), (dir)
+@top User Manual
+@end ifnottex
+
+@menu
+* Thread Groups::               Thread Groups
+* Breakpoints::                 Breakpoints
+@end menu
+
+@node Thread Groups, Breakpoints, Top, Top
+@chapter Thread Groups
+
+A @dfn{Thread Group} is a collection of processes which is identified by
+a name.  It is used when saving a debugging session to disk: the
+debugger can only write the name of the thread group to disk, but not
+the process IDs since they wouldn't have any meaning when the session is
+loaded.
+
+This means that you must manually tell the debugger which threads belong
+to a particular thread group after loading the session.
+
+There are two predefined thread groups:
+
+@table @samp
+@item main
+This is always the main thread of the current application.
+@item global
+Refers to all debuggable threads.
+@end table
+
+To create a new thread group, use the @code{threadgroup create} command:
+
+@example
+threadgroup create "foo"
+threadgroup create "bar" 2,3
+@end example
+
+You can add/remove threads with the @code{threadgroup add} and
+@code{threadgroup remove} commands:
+
+@example
+threadgroup add "foo" 2
+threadgroup remove "bar" 3
+@end example
+
+To get a list of all currently defined thread groups, use @code{show threadgroups}.
+
+@node Breakpoints,  , Thread Groups, Top
+@chapter Breakpoints
+
+Breakpoints are always inserted on a thread group (@pxref{Thread
+Groups}) and break on all the threads in the thread group.  You can add
+or remove threads to this thread group after the breakpoint has been
+created.
+
+When a debugging session is saved to disk, the debugger only saves the
+thread group name and not the particular process IDs.  When the session
+is loaded, you manually need to put the threads into the thread group.
+
+The @code{break} command takes an optional thread group argument, which
+defaults to the @samp{main} group, the application's main thread:
+
+@example
+break "hello"
+break @@global "foo"
+break @@foo "test.c" 84
+@end example
+
+
