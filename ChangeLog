@@ -1,5 +1,13 @@
 2002-09-21  Martin Baulig  <martin@gnome.org>
 
+	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Make this
+	work with the new symbol table format.
+
+	* arch/CoreFile.cs, CoreFileElfI1386.cs: Reading memory and
+	getting a backtrace works.
+
+2002-09-21  Martin Baulig  <martin@gnome.org>
+
 	* interfaces/IMethod.cs (IMethod.Locals): New property.
 
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs (MonoMethod):

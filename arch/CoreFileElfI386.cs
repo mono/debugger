@@ -48,13 +48,21 @@ namespace Mono.Debugger.Architecture
 			uint ebp = (uint) GetRegister ((int) I386Register.EBP);
 			uint eip = (uint) GetRegister ((int) I386Register.EIP);
 
-			Console.WriteLine ("BACKTRACE: {0:x} {1:x}", eip, ebp);
+			ArrayList frames = new ArrayList ();
 
-			Bfd.Section section = core_bfd [ebp];
+			while (ebp != 0) {
+				frames.Add (new CoreFileStackFrame (this, eip, ebp, ebp));
 
-			Console.WriteLine ("SECTION: {0}", section);
+				if ((max_frames >= 0) && (frames.Count >= max_frames))
+					break;
 
-			return new IInferiorStackFrame [0];
+				eip = (uint) ReadInteger (new TargetAddress (this, ebp + 4));
+				ebp = (uint) ReadInteger (new TargetAddress (this, ebp));
+			}
+
+			IInferiorStackFrame[] retval = new IInferiorStackFrame [frames.Count];
+			frames.CopyTo (retval, 0);
+			return retval;
 		}
 
 		public override TargetAddress CurrentFrame {

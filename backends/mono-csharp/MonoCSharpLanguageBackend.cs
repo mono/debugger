@@ -9,14 +9,166 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
+	internal class VariableInfo
+	{
+		public readonly int Index;
+		public readonly int Offset;
+		public readonly int Size;
+		public readonly AddressMode Mode;
+		public readonly int BeginScope;
+		public readonly int EndScope;
+
+		public enum AddressMode : long
+		{
+			Stack		= 0,
+			Register	= 0x10000000,
+			TwoRegisters	= 0x20000000
+		}
+
+		const long AddressModeFlags = 0xf0000000;
+
+		public static int StructSize {
+			get {
+				return 20;
+			}
+		}
+
+		public VariableInfo (TargetBinaryReader reader)
+		{
+			Index = reader.ReadInt32 ();
+			Offset = reader.ReadInt32 ();
+			Size = reader.ReadInt32 ();
+			BeginScope = reader.ReadInt32 ();
+			EndScope = reader.ReadInt32 ();
+
+			Mode = (AddressMode) (Index & AddressModeFlags);
+			Index = (int) ((long) Index & ~AddressModeFlags);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[VariableInfo {0}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}]",
+					      Mode, Index, Offset, Size, BeginScope, EndScope);
+		}
+	}
+
+	internal class MethodAddress
+	{
+		public readonly long StartAddress;
+		public readonly long EndAddress;
+		public readonly int[] LineAddresses;
+		public readonly VariableInfo ThisVariableInfo;
+		public readonly VariableInfo[] ParamVariableInfo;
+		public readonly VariableInfo[] LocalVariableInfo;
+
+		public MethodAddress (MethodEntry entry, TargetBinaryReader reader)
+		{
+			reader.Position = 4;
+			StartAddress = reader.ReadInt64 ();
+			EndAddress = reader.ReadInt64 ();
+			LineAddresses = new int [entry.NumLineNumbers];
+
+			int lines_offset = reader.ReadInt32 ();
+			int variables_offset = reader.ReadInt32 ();
+
+			reader.Position = lines_offset;
+			for (int i = 0; i < entry.NumLineNumbers; i++)
+				LineAddresses [i] = reader.ReadInt32 ();
+
+			reader.Position = variables_offset;
+			if (entry.ThisTypeIndex != 0)
+				ThisVariableInfo = new VariableInfo (reader);
+
+			ParamVariableInfo = new VariableInfo [entry.NumParameters];
+			for (int i = 0; i < entry.NumParameters; i++)
+				ParamVariableInfo [i] = new VariableInfo (reader);
+
+			LocalVariableInfo = new VariableInfo [entry.NumLocals];
+			for (int i = 0; i < entry.NumLocals; i++)
+				LocalVariableInfo [i] = new VariableInfo (reader);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[Address {0:x}:{1:x}:{2}]",
+					      StartAddress, EndAddress, LineAddresses.Length);
+		}
+	}
+
+	internal class MonoSymbolFileTable
+	{
+		public const int  DynamicVersion = 1;
+		public const long DynamicMagic   = 0x7aff65af4253d427;
+
+		public readonly int TotalSize;
+		public readonly int Generation;
+		public readonly MonoSymbolTableReader[] SymbolFiles;
+		ArrayList ranges;
+
+		public MonoSymbolFileTable (IDebuggerBackend backend, IInferior inferior,
+					    ITargetMemoryAccess memory, TargetAddress address,
+					    ILanguageBackend language)
+		{
+			ITargetMemoryReader header = memory.ReadMemory (address, 24);
+
+			long magic = header.ReadLongInteger ();
+			if (magic != DynamicMagic)
+				throw new SymbolTableException (
+					"Dynamic section has unknown magic {0:x}.", magic);
+
+			int version = header.ReadInteger ();
+			if (version != DynamicVersion)
+				throw new SymbolTableException (
+					"Dynamic section has version {0}, but expected {1}.",
+					version, DynamicVersion);
+
+			TotalSize = header.ReadInteger ();
+			int count = header.ReadInteger ();
+			Generation = header.ReadInteger ();
+
+			ITargetMemoryReader reader = memory.ReadMemory (address + 24, TotalSize - 24);
+
+			ranges = new ArrayList ();
+
+			SymbolFiles = new MonoSymbolTableReader [count];
+			for (int i = 0; i < count; i++)
+				SymbolFiles [i] = new MonoSymbolTableReader (
+					backend, inferior, memory, reader.ReadAddress (), language);
+		}
+
+		public ArrayList SymbolRanges {
+			get {
+				return ranges;
+			}
+		}
+
+		public bool Update ()
+		{
+			bool updated = false;
+			for (int i = 0; i < SymbolFiles.Length; i++)
+				if (SymbolFiles [i].Update ())
+					updated = true;
+
+			if (!updated)
+				return false;
+
+			ranges = new ArrayList ();
+			for (int i = 0; i < SymbolFiles.Length; i++)
+				ranges.AddRange (SymbolFiles [i].SymbolRanges);
+
+			ranges.Sort ();
+			return true;
+		}
+	}
+
 	public class SymbolTableException : Exception
 	{
 		public SymbolTableException ()
 			: base ("Invalid mono symbol table")
 		{ }
 
-		public SymbolTableException (string message)
-			: base (message)
+		public SymbolTableException (string message, params object args)
+			: base (String.Format (message, args))
 		{ }
 	}
 
@@ -59,90 +211,159 @@ namespace Mono.Debugger.Languages.CSharp
 		MethodEntry[] Methods;
 		protected Assembly assembly;
 		protected string ImageFile;
+		protected string SymbolFile;
 		protected OffsetTable offset_table;
 		protected ILanguageBackend language;
 		protected IDebuggerBackend backend;
 		protected IInferior inferior;
+		protected ITargetMemoryAccess memory;
 		ArrayList ranges;
 
-		int is_dynamic;
+		TargetAddress start_address;
+		TargetAddress dynamic_address;
+		int address_size;
+		int long_size;
+		int int_size;
 
 		TargetAddress raw_contents;
 		int raw_contents_size;
 
-		TargetAddress address_table;
-		int address_table_size;
-
-		TargetAddress range_table;
-		int range_table_size;
+		int generation;
+		int num_range_entries;
 
 		TargetAddress string_table;
 		int string_table_size;
 
-		TargetAddress type_table;
-		int type_table_size;
-
 		TargetBinaryReader reader;
-		TargetBinaryReader address_reader;
-		ITargetMemoryReader range_reader;
 		ITargetMemoryReader string_reader;
-		ITargetMemoryReader type_reader;
 
 		internal MonoSymbolTableReader (IDebuggerBackend backend, IInferior inferior,
-						ITargetMemoryReader symtab_reader,
+						ITargetMemoryAccess memory, TargetAddress address,
 						ILanguageBackend language)
 		{
 			this.backend = backend;
 			this.inferior = inferior;
+			this.memory = memory;
 			this.language = language;
 
-			if (symtab_reader.ReadLongInteger () != OffsetTable.Magic)
-				throw new SymbolTableException ();
+			start_address = address;
+			address_size = memory.TargetAddressSize;
+			long_size = memory.TargetLongIntegerSize;
+			int_size = memory.TargetIntegerSize;
 
-			if (symtab_reader.ReadInteger () != OffsetTable.Version)
-				throw new SymbolTableException ();
+			ranges = new ArrayList ();
 
-			is_dynamic = symtab_reader.ReadInteger ();
-			TargetAddress image_file_addr = symtab_reader.ReadAddress ();
-			ImageFile = inferior.ReadString (image_file_addr);
-			raw_contents = symtab_reader.ReadAddress ();
-			raw_contents_size = symtab_reader.ReadInteger ();
-			address_table = symtab_reader.ReadAddress ();
-			address_table_size = symtab_reader.ReadInteger ();
-			range_table = symtab_reader.ReadAddress ();
-			range_table_size = symtab_reader.ReadInteger ();
-			string_table = symtab_reader.ReadAddress ();
-			string_table_size = symtab_reader.ReadInteger ();
-			type_table = symtab_reader.ReadAddress ();
-			type_table_size = symtab_reader.ReadInteger ();
-			symtab_reader.ReadAddress ();
+			long magic = memory.ReadLongInteger (address);
+			if (magic != OffsetTable.Magic)
+				throw new SymbolTableException (
+					"Symbol file has unknown magic {0:x}.", magic);
+			address += long_size;
+
+			int version = memory.ReadInteger (address);
+			if (version != OffsetTable.Version)
+				throw new SymbolTableException (
+					"Symbol file has version {0}, but expected {1}.",
+					version, OffsetTable.Version);
+			address += int_size;
+
+			long dynamic_magic = memory.ReadLongInteger (address);
+			if (dynamic_magic != MonoSymbolFileTable.DynamicMagic)
+				throw new SymbolTableException (
+					"Dynamic section has unknown magic {0:x}.", dynamic_magic);
+			address += long_size;
+
+			int dynamic_version = memory.ReadInteger (address);
+			if (dynamic_version != MonoSymbolFileTable.DynamicVersion)
+				throw new SymbolTableException (
+					"Dynamic section has version {0}, but expected {1}.",
+					dynamic_version, MonoSymbolFileTable.DynamicVersion);
+			address += 2 * int_size;
+
+			TargetAddress image_file_addr = memory.ReadAddress (address);
+			address += address_size;
+			ImageFile = memory.ReadString (image_file_addr);
+			TargetAddress symbol_file_addr = memory.ReadAddress (address);
+			address += address_size;
+			SymbolFile = memory.ReadString (symbol_file_addr);
+			raw_contents = memory.ReadAddress (address);
+			address += address_size;
+			raw_contents_size = memory.ReadInteger (address);
+			address += int_size;
+			string_table = memory.ReadAddress (address);
+			address += address_size;
+			string_table_size = memory.ReadInteger (address);
+			address += int_size;
+
+			dynamic_address = address;
 
 			assembly = Assembly.LoadFrom (ImageFile);
 
-			if ((raw_contents_size == 0) || (address_table_size == 0))
+			if (raw_contents_size == 0)
 				throw new SymbolTableEmptyException ();
 
-			reader = inferior.ReadMemory (raw_contents, raw_contents_size).BinaryReader;
-			address_reader = inferior.ReadMemory (address_table, address_table_size).BinaryReader;
-			range_reader = inferior.ReadMemory (range_table, range_table_size);
-			string_reader = inferior.ReadMemory (string_table, string_table_size);
-			type_reader = inferior.ReadMemory (type_table, type_table_size);
+			if (inferior.State == TargetState.CORE_FILE) {
+				// This is a mmap()ed area and thus not written to the core file,
+				// so we need to suck the whole file in.
+				using (FileStream stream = File.OpenRead (SymbolFile)) {
+					byte[] contents = new byte [raw_contents_size];
+					stream.Read (contents, 0, raw_contents_size);
+					reader = new TargetBinaryReader (contents, inferior);
+				}
+			} else
+				reader = memory.ReadMemory (raw_contents, raw_contents_size).BinaryReader;
+
+			string_reader = memory.ReadMemory (string_table, string_table_size);
 
 			//
 			// Read the offset table.
 			//
 			try {
-				long magic = reader.ReadInt64 ();
-				int version = reader.ReadInt32 ();
+				magic = reader.ReadInt64 ();
+				version = reader.ReadInt32 ();
 				if ((magic != OffsetTable.Magic) || (version != OffsetTable.Version))
 					throw new SymbolTableException ();
 				offset_table = new OffsetTable (reader);
 			} catch {
 				throw new SymbolTableException ();
 			}
+		}
 
-			ranges = MethodRangeEntry.ReadRanges (
-				this, range_reader, range_table_size, offset_table);
+		public bool Update ()
+		{
+			TargetAddress address = dynamic_address;
+			if (memory.ReadInteger (address) != 0)
+				return false;
+			address += int_size;
+
+			int new_generation = memory.ReadInteger (address);
+			if (new_generation == generation)
+				return false;
+			address += int_size;
+
+			generation = new_generation;
+
+			TargetAddress range_table = memory.ReadAddress (address);
+			address += address_size;
+			int range_entry_size = memory.ReadInteger (address);
+			address += int_size;
+			int new_num_range_entries = memory.ReadInteger (address);
+			address += int_size;
+
+			if (new_num_range_entries == num_range_entries)
+				return false;
+
+			int count = new_num_range_entries - num_range_entries;
+			ITargetMemoryReader range_reader = memory.ReadMemory (
+				range_table + num_range_entries * range_entry_size,
+				count * range_entry_size);
+
+			ArrayList new_ranges = MethodRangeEntry.ReadRanges (
+				this, range_reader, count, offset_table);
+
+			ranges.AddRange (new_ranges);
+			num_range_entries = new_num_range_entries;
+
+			return true;
 		}
 
 		internal int CheckMethodOffset (long offset)
@@ -161,12 +382,13 @@ namespace Mono.Debugger.Languages.CSharp
 			return (int) index;
 		} 
 
-		internal ISymbolLookup GetMethod (long offset)
+		internal ISymbolLookup GetMethod (long offset, TargetAddress dynamic_address,
+						  int dynamic_size)
 		{
 			int index = CheckMethodOffset (offset);
 			reader.Position = offset;
-			MethodEntry method = new MethodEntry (reader, address_reader);
-			string_reader.Offset = index * inferior.TargetIntegerSize;
+			MethodEntry method = new MethodEntry (reader);
+			string_reader.Offset = index * int_size;
 			string_reader.Offset = string_reader.ReadInteger ();
 
 			StringBuilder sb = new StringBuilder ();
@@ -178,7 +400,10 @@ namespace Mono.Debugger.Languages.CSharp
 				sb.Append ((char) b);
 			}
 
-			return new MonoMethod (this, method, sb.ToString ());
+			ITargetMemoryReader dynamic_reader = memory.ReadMemory (
+				dynamic_address, dynamic_size);
+
+			return new MonoMethod (this, method, sb.ToString (), dynamic_reader);
 		}
 
 		internal ArrayList SymbolRanges {
@@ -198,6 +423,7 @@ namespace Mono.Debugger.Languages.CSharp
 			IVariable[] parameters;
 			IVariable[] locals;
 			bool has_variables;
+			MethodAddress address;
 
 			static MethodInfo get_method;
 			static MethodInfo get_local_type_from_sig;
@@ -217,20 +443,20 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
-					   string name)
+					   string name, ITargetMemoryReader dynamic_reader)
 				: base (name, reader.ImageFile, method.Token >> 24 == 6)
 			{
 				this.reader = reader;
 				this.method = method;
 				this.factory = new SourceFileFactory ();
 
-				if (method.Address != null) {
-					TargetAddress start = new TargetAddress (
-						reader.inferior, method.Address.StartAddress);
-					TargetAddress end = new TargetAddress (
-						reader.inferior, method.Address.EndAddress);
-					SetAddresses (start, end);
-				}
+				address = new MethodAddress (method, dynamic_reader.BinaryReader);
+
+				TargetAddress start = new TargetAddress (
+					reader.inferior, address.StartAddress);
+				TargetAddress end = new TargetAddress (
+						reader.inferior, address.EndAddress);
+				SetAddresses (start, end);
 
 				object[] args = new object[] { (int) method.Token };
 				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
@@ -247,13 +473,13 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < param_info.Length; i++)
 					param_types [i] = MonoType.GetType (
 						param_info [i].ParameterType,
-						method.ParameterVarInfo [i].Size);
+						address.ParamVariableInfo [i].Size);
 
 				parameters = new IVariable [param_info.Length];
 				for (int i = 0; i < param_info.Length; i++)
 					parameters [i] = new MonoVariable (
 						reader.backend, param_info [i].Name, param_types [i],
-						false, this, method.ParameterVarInfo [i]);
+						false, this, address.ParamVariableInfo [i]);
 
 				local_types = new MonoType [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
@@ -264,7 +490,7 @@ namespace Mono.Debugger.Languages.CSharp
 						reader.assembly, args);
 
 					local_types [i] = MonoType.GetType (
-						type, method.LocalVarInfo [i].Size);
+						type, address.LocalVariableInfo [i].Size);
 				}
 
 				locals = new IVariable [method.NumLocals];
@@ -273,7 +499,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 					locals [i] = new MonoVariable (
 						reader.backend, local.Name, local_types [i],
-						true, this, method.LocalVarInfo [i]);
+						true, this, address.LocalVariableInfo [i]);
 				}
 
 				has_variables = true;
@@ -283,7 +509,8 @@ namespace Mono.Debugger.Languages.CSharp
 								     out ArrayList addresses)
 			{
 				ISourceBuffer retval = CSharpMethod.GetMethodSource (
-					this, method, factory, out start_row, out end_row, out addresses);
+					this, method, address.LineAddresses, factory,
+					out start_row, out end_row, out addresses);
 
 				if ((addresses != null) && (addresses.Count > 2)) {
 					LineEntry start = (LineEntry) addresses [1];
@@ -325,33 +552,41 @@ namespace Mono.Debugger.Languages.CSharp
 		private class MethodRangeEntry : SymbolRangeEntry
 		{
 			MonoSymbolTableReader reader;
-			long file_offset;
+			int file_offset;
+			TargetAddress dynamic_address;
+			int dynamic_size;
 
-			private MethodRangeEntry (MonoSymbolTableReader reader, long offset,
+			private MethodRangeEntry (MonoSymbolTableReader reader, int file_offset,
+						  TargetAddress dynamic_address, int dynamic_size,
 						  TargetAddress start_address, TargetAddress end_address)
 				: base (start_address, end_address)
 			{
 				this.reader = reader;
-				this.file_offset = offset;
+				this.file_offset = file_offset;
+				this.dynamic_address = dynamic_address;
+				this.dynamic_size = dynamic_size;
 			}
 
 			public static ArrayList ReadRanges (MonoSymbolTableReader reader,
-							    ITargetMemoryReader memory, long size,
+							    ITargetMemoryReader memory, int count,
 							    OffsetTable offset_table)
 			{
 				ArrayList list = new ArrayList ();
 
-				while (memory.Offset < size) {
+				for (int i = 0; i < count; i++) {
 					long start = memory.ReadLongInteger ();
 					long end = memory.ReadLongInteger ();
 					int offset = memory.ReadInteger ();
+					TargetAddress dynamic_address = memory.ReadAddress ();
+					int dynamic_size = memory.ReadInteger ();
 
 					reader.CheckMethodOffset (offset);
 
 					TargetAddress tstart = new TargetAddress (reader.inferior, start);
 					TargetAddress tend = new TargetAddress (reader.inferior, end);
 
-					list.Add (new MethodRangeEntry (reader, offset, tstart, tend));
+					list.Add (new MethodRangeEntry (reader, offset, dynamic_address,
+									dynamic_size, tstart, tend));
 				}
 
 				return list;
@@ -359,7 +594,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
-				return reader.GetMethod (file_offset);
+				return reader.GetMethod (file_offset, dynamic_address, dynamic_size);
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("RangeEntry [{0:x}:{1:x}:{2:x}:{3:x}:{4:x}]",
+						      StartAddress, EndAddress, file_offset,
+						      dynamic_address, dynamic_size);
 			}
 		}
 	}
@@ -370,10 +612,10 @@ namespace Mono.Debugger.Languages.CSharp
 		IDebuggerBackend backend;
 		MonoDebuggerInfo info;
 		int symtab_generation;
-		ArrayList symtabs;
 		ArrayList ranges;
 		TargetAddress trampoline_address;
 		IArchitecture arch;
+		MonoSymbolFileTable table;
 
 		public MonoCSharpLanguageBackend (IDebuggerBackend backend, IInferior inferior)
 		{
@@ -425,10 +667,16 @@ namespace Mono.Debugger.Languages.CSharp
 					"Can't get address of `MONO_DEBUGGER__debugger_info'.");
 
 			ITargetMemoryReader header = inferior.ReadMemory (symbol_info, 16);
-			if (header.ReadLongInteger () != OffsetTable.Magic)
-				throw new SymbolTableException ();
-			if (header.ReadInteger () != OffsetTable.Version)
-				throw new SymbolTableException ();
+			long magic = header.ReadLongInteger ();
+			if (magic != MonoSymbolFileTable.DynamicMagic)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
+
+			int version = header.ReadInteger ();
+			if (version != MonoSymbolFileTable.DynamicVersion)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has version {0}, but expected {1}.",
+					version, MonoSymbolFileTable.DynamicVersion);
 
 			int size = (int) header.ReadInteger ();
 
@@ -449,25 +697,31 @@ namespace Mono.Debugger.Languages.CSharp
 
 			try {
 				int generation = inferior.ReadInteger (info.symbol_file_generation);
-				if (generation == symtab_generation)
+				if ((table != null) && (generation == symtab_generation)) {
+					do_update_table ();
 					return;
-			} catch {
+				}
+			} catch (Exception e) {
+				Console.WriteLine ("Can't update symbol table: {0}", e);
+				ranges = null;
+				table = null;
 				return;
 			}
 
 			try {
 				updating_symfiles = true;
 
-				int result = (int) inferior.CallMethod (info.update_symbol_file_table, 0);
-
-				// Nothing to do.
-				if (result == 0)
+				if ((inferior.State != TargetState.CORE_FILE) &&
+				    ((int) inferior.CallMethod (info.update_symbol_file_table, 0) == 0)) {
+					// Nothing to do.
 					return;
+				}
 
 				do_update_symbol_files ();
-			} catch {
-				symtabs = null;
+			} catch (Exception e) {
+				Console.WriteLine ("Can't update symbol table: {0}", e);
 				ranges = null;
+				table = null;
 			} finally {
 				updating_symfiles = false;
 				base.UpdateSymbolTable ();
@@ -476,40 +730,28 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void do_update_symbol_files ()
 		{
-			Console.WriteLine ("Updating symbol files.");
+			Console.WriteLine ("Re-reading symbol files.");
 
-			symtabs = new ArrayList ();
 			ranges = new ArrayList ();
 
-			int header_size = 3 * inferior.TargetIntegerSize;
-			TargetAddress symbol_file_table = inferior.ReadAddress (info.symbol_file_table);
-			ITargetMemoryReader header = inferior.ReadMemory (symbol_file_table, header_size);
-
-			int size = header.ReadInteger ();
-			int count = header.ReadInteger ();
-			symtab_generation = header.ReadInteger ();
-
-			ITargetMemoryReader symtab_reader = inferior.ReadMemory (
-				symbol_file_table, size + header_size);
-			symtab_reader.Offset = header_size;
-
-			for (int i = 0; i < count; i++) {
-				MonoSymbolTableReader reader;
-				try {
-					reader = new MonoSymbolTableReader (
-						backend, inferior, symtab_reader, this);
-					ranges.AddRange (reader.SymbolRanges);
-					symtabs.Add (reader);
-				} catch (SymbolTableEmptyException) {
-					continue;
-				} catch (Exception) {
-					throw new SymbolTableException ();
-				}
+			TargetAddress address = inferior.ReadAddress (info.symbol_file_table);
+			if (address.Address == 0) {
+				Console.WriteLine ("Ooops, no symtab loaded.");
+				return;
 			}
+			table = new MonoSymbolFileTable (backend, inferior, inferior, address, this);
 
-			ranges.Sort ();
+			symtab_generation = table.Generation;
 
-			Console.WriteLine ("Done updating symbol files.");
+			do_update_table ();
+
+			Console.WriteLine ("Done re-reading symbol files.");
+		}
+
+		void do_update_table ()
+		{
+			if (table.Update ())
+				ranges = table.SymbolRanges;
 		}
 
 		public TargetAddress GenericTrampolineCode {

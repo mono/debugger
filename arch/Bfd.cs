@@ -13,7 +13,7 @@ namespace Mono.Debugger.Architecture
 	public class Bfd : IDisposable
 	{
 		IntPtr bfd;
-		IInferior inferior;
+		protected IInferior inferior;
 		Hashtable symbols;
 		Hashtable section_hash;
 		DwarfReader dwarf;
@@ -49,7 +49,15 @@ namespace Mono.Debugger.Architecture
 			{
 				InternalSection section = (InternalSection) user_data;
 
-				return bfd.GetSectionContents (section.section, true);
+				byte[] data = bfd.GetSectionContents (section.section, true);
+				return new TargetReader (data, bfd.inferior);
+			}
+
+			public ITargetMemoryReader GetReader (TargetAddress address)
+			{
+				ITargetMemoryReader reader = (ITargetMemoryReader) contents.Data;
+				reader.Offset = address.Address - vma;
+				return reader;
 			}
 
 			public override string ToString ()
@@ -108,6 +116,9 @@ namespace Mono.Debugger.Architecture
 
 		public Bfd (IInferior inferior, string filename, bool core_file, ISourceFileFactory factory)
 		{
+			this.inferior = inferior;
+			this.filename = filename;
+
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
@@ -125,9 +136,6 @@ namespace Mono.Debugger.Architecture
 
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
-
-			this.inferior = inferior;
-			this.filename = filename;
 
 			IntPtr symtab;
 			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
@@ -218,6 +226,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public ITargetMemoryReader GetReader (TargetAddress address)
+		{
+			Section section = this [address.Address];
+			return section.GetReader (address);
+		}
+
 		public byte[] GetSectionContents (string name, bool raw_section)
 		{
 			IntPtr section, data;
@@ -270,6 +284,7 @@ namespace Mono.Debugger.Architecture
 					sections [i] = new Section (this, isection);
 					ptr = new IntPtr ((long) ptr + Marshal.SizeOf (isection));
 				}
+				has_sections = true;
 			} finally {
 				g_free (data);
 			}

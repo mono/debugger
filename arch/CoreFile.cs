@@ -28,7 +28,7 @@ namespace Mono.Debugger.Architecture
 
 			Console.WriteLine ("CORE DUMP FROM: {0}", core_bfd.CrashProgram);
 
-			bfd_disassembler = bfd.GetDisassembler (this);
+			// bfd_disassembler = bfd.GetDisassembler (this);
 			arch = new ArchitectureI386 (this);
 
 			native_symtabs = new SymbolTableCollection ();
@@ -50,7 +50,49 @@ namespace Mono.Debugger.Architecture
 			symtab_collection.AddSymbolTable (native_symtabs);
 			symtab_collection.AddSymbolTable (application_symtab);
 
-			bfd_disassembler.SymbolTable = symtab_collection;
+			if (bfd_disassembler != null)
+				bfd_disassembler.SymbolTable = symtab_collection;
+		}
+
+		protected class CoreFileStackFrame : IInferiorStackFrame
+		{
+			IInferior inferior;
+			TargetAddress address;
+			TargetAddress params_address;
+			TargetAddress locals_address;
+
+			public CoreFileStackFrame (IInferior inferior, long address,
+						   long params_address, long locals_address)
+			{
+				this.inferior = inferior;
+				this.address = new TargetAddress (inferior, address);
+				this.params_address = new TargetAddress (inferior, params_address);
+				this.locals_address = new TargetAddress (inferior, locals_address);
+			}
+
+			public IInferior Inferior {
+				get {
+					return inferior;
+				}
+			}
+
+			public TargetAddress Address {
+				get {
+					return address;
+				}
+			}
+
+			public TargetAddress ParamsAddress {
+				get {
+					return params_address;
+				}
+			}
+
+			public TargetAddress LocalsAddress {
+				get {
+					return locals_address;
+				}
+			}
 		}
 
 		//
@@ -127,19 +169,22 @@ namespace Mono.Debugger.Architecture
 
 		public int TargetAddressSize {
 			get {
-				throw new NotImplementedException ();
+				// FIXME
+				return 4;
 			}
 		}
 
 		public int TargetIntegerSize {
 			get {
-				throw new NotImplementedException ();
+				// FIXME
+				return 4;
 			}
 		}
 
 		public int TargetLongIntegerSize {
 			get {
-				throw new NotImplementedException ();
+				// FIXME
+				return 8;
 			}
 		}
 
@@ -149,42 +194,37 @@ namespace Mono.Debugger.Architecture
 
 		public byte ReadByte (TargetAddress address)
 		{
-			throw new NotImplementedException ();
+			return core_bfd.GetReader (address).ReadByte ();
 		}
 
 		public int ReadInteger (TargetAddress address)
 		{
-			throw new NotImplementedException ();
+			return core_bfd.GetReader (address).ReadInteger ();
 		}
 
 		public long ReadLongInteger (TargetAddress address)
 		{
-			throw new NotImplementedException ();
+			return core_bfd.GetReader (address).ReadLongInteger ();
 		}
 
 		public TargetAddress ReadAddress (TargetAddress address)
 		{
-			throw new NotImplementedException ();
+			return core_bfd.GetReader (address).ReadAddress ();
 		}
 
 		public string ReadString (TargetAddress address)
 		{
-			throw new NotImplementedException ();
+			return core_bfd.GetReader (address).BinaryReader.ReadString ();
 		}
 
 		public ITargetMemoryReader ReadMemory (TargetAddress address, int size)
 		{
-			throw new NotImplementedException ();
+			return new TargetReader (ReadBuffer (address, size), this);
 		}
 
 		public byte[] ReadBuffer (TargetAddress address, int size)
 		{
-			throw new NotImplementedException ();
-		}
-
-		public Stream GetMemoryStream (TargetAddress address)
-		{
-			throw new NotImplementedException ();
+			return core_bfd.GetReader (address).BinaryReader.ReadBuffer (size);
 		}
 
 		public bool CanWrite {

@@ -149,7 +149,7 @@ namespace Mono.Debugger.Backends
 			for (int i = 0; i < data.Length; i++) {
 				if (i > 0)
 					sb.Append (" ");
-				sb.Append (String.Format ("{0:x}", data [i]));
+				sb.Append (String.Format ("{1}{0:x}", data [i], data [i] >= 16 ? "" : "0"));
 			}
 			sb.Append ("])");
 			return sb.ToString ();
@@ -608,8 +608,10 @@ namespace Mono.Debugger.Backends
 						do_run (target_application, core_file, application);
 						return;
 					}
-				} catch {
-					// Do nothing.
+				} catch (Exception e) {
+					Console.WriteLine ("EXCEPTION: {0}", e);
+					if (core_file != null)
+						return;
 				}
 			}
 
@@ -679,6 +681,7 @@ namespace Mono.Debugger.Backends
 
 		void load_core (string core_file, string[] argv)
 		{
+			Console.WriteLine ("CORE: {0} {1}", argv [0], core_file);
 			inferior = new CoreFileElfI386 (argv [0], core_file, source_factory);
 
 			symtabs = new SymbolTableCollection ();
@@ -690,6 +693,8 @@ namespace Mono.Debugger.Backends
 				inferior.ApplicationSymbolTable = language.SymbolTable;
 				symtabs.UpdateSymbolTable ();
 			}
+
+			frame_changed ();
 		}
 
 		public void Quit ()
