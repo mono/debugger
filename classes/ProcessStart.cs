@@ -260,6 +260,14 @@ namespace Mono.Debugger
 			return new ProcessStart (options, args);
 		}
 
+		public static ProcessStart Create (DebuggerOptions options, string[] argv)
+		{
+			if (argv.Length == 0)
+				return null;
+
+			return new ProcessStart (options, argv);
+		}
+
 		protected string print_argv (string[] argv)
 		{
 			if (argv == null)

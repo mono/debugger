@@ -300,12 +300,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		public ProcessStart Start (DebuggerOptions options)
+		public ProcessStart Start (DebuggerOptions options, string[] argv)
 		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
 
-			start = ProcessStart.Create (options);
+			start = ProcessStart.Create (options, argv);
 
 			return start;
 		}

@@ -586,9 +586,8 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			try {
 				DebuggerOptions options = new DebuggerOptions ();
-				options.ProcessArgs (args);
 
-				context.Interpreter.Start (options);
+				context.Interpreter.Start (options, args);
 				context.Interpreter.Initialize ();
 				context.Interpreter.Run ();
 			} catch (TargetException e) {

@@ -1,5 +1,19 @@
 2004-11-17  Chris Toshok  <toshok@ximian.com>
 
+	* frontends/scripting/Interpreter.cs (Interpreter.Start): accept a
+	"string[] argv" argument, and pass that along to
+	ProcessStart.Create.
+
+	* frontends/scripting/Command.cs (StartCommand.DoExecute): pass
+	the args directly to Interpreter.Start, so we don't parse them for
+	debugger options (and don't expand @ args, etc.)
+
+	* classes/ProcessStart.cs (ProcessStart.Create): add a new
+	overloaded version that takes the argv as well as the
+	DebuggerOptions.  This argv is used as is, without any processing.
+
+2004-11-17  Chris Toshok  <toshok@ximian.com>
+
 	* test/regress.exp: some changes - add pass/fail procs, keep track
 	of the number of operations performed, and sometimes (rarely)
 	choose "finish".
