@@ -89,6 +89,8 @@ namespace Mono.Debugger.Frontends.Scripting
 		ProcessHandle current_process;
 		Hashtable procs;
 		Hashtable breakpoints;
+		Hashtable user_interfaces;
+		UserInterface current_user_interface;
 
 		DebuggerTextWriter command_output;
 		DebuggerTextWriter inferior_output;
@@ -117,6 +119,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			procs = new Hashtable ();
 
 			breakpoints = new Hashtable ();
+
+			user_interfaces = new Hashtable ();
+			user_interfaces.Add ("mono", new UserInterfaceMono (this));
+			user_interfaces.Add ("native", new UserInterfaceNative (this));
+			user_interfaces.Add ("martin", new UserInterfaceMartin (this));
+			current_user_interface = (UserInterface) user_interfaces ["mono"];
 
 			context = new ScriptingContext (this, is_interactive, true);
 
@@ -165,6 +173,24 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public ProcessStart ProcessStart {
 			get { return start; }
+		}
+
+		public UserInterface UI {
+			get { return current_user_interface; }
+			set {
+				current_user_interface = value;
+				current_user_interface.Reset ();
+			}
+		}
+
+		public UserInterface GetUserInterface (string name)
+		{
+			UserInterface ui = (UserInterface) user_interfaces [name];
+			if (ui == null)
+				throw new ScriptingException (
+					"No such user interface: `{0}'", name);
+
+			return ui;
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -600,55 +626,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				return location;
 			else
 				throw new ScriptingException ("No such method.");
-		}
-
-
-		public void ShowVariableType (ITargetType type, string name)
-		{
-			ITargetArrayType array = type as ITargetArrayType;
-			if (array != null)
-				Print ("{0} is an array of {1}", name, array.ElementType);
-
-			ITargetClassType tclass = type as ITargetClassType;
-			ITargetStructType tstruct = type as ITargetStructType;
-			if (tclass != null) {
-				if (tclass.HasParent)
-					Print ("{0} is a class of type {1} which inherits from {2}",
-					       name, tclass.Name, tclass.ParentType);
-				else
-					Print ("{0} is a class of type {1}", name, tclass.Name);
-			} else if (tstruct != null)
-				Print ("{0} is a value type of type {1}", name, tstruct.Name);
-
-			if (tstruct != null) {
-				foreach (ITargetFieldInfo field in tstruct.Fields)
-					Print ("  It has a field `{0}' of type {1}", field.Name,
-					       field.Type.Name);
-				foreach (ITargetFieldInfo field in tstruct.StaticFields)
-					Print ("  It has a static field `{0}' of type {1}", field.Name,
-					       field.Type.Name);
-				foreach (ITargetFieldInfo property in tstruct.Properties)
-					Print ("  It has a property `{0}' of type {1}", property.Name,
-					       property.Type.Name);
-				foreach (ITargetMethodInfo method in tstruct.Methods) {
-					if (method.Type.HasReturnValue)
-						Print ("  It has a method: {0} {1}", method.Type.ReturnType.Name, method.FullName);
-					else
-						Print ("  It has a method: void {0}", method.FullName);
-				}
-				foreach (ITargetMethodInfo method in tstruct.StaticMethods) {
-					if (method.Type.HasReturnValue)
-						Print ("  It has a static method: {0} {1}", method.Type.ReturnType.Name, method.FullName);
-					else
-						Print ("  It has a static method: void {0}", method.FullName);
-				}
-				foreach (ITargetMethodInfo method in tstruct.Constructors) {
-					Print ("  It has a constructor: {0}", method.FullName);
-				}
-				return;
-			}
-
-			Print ("{0} is a {1}", name, type);
 		}
 
 		public ISourceBuffer FindFile (string filename)

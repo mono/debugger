@@ -33,29 +33,23 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return frame; }
 		}
 
-		public void Print (ScriptingContext context)
-		{
-			context.Print (frame);
-			Disassemble (context);
-			PrintSource (context);
-		}
-
-		public void PrintSource (ScriptingContext context)
+		public bool PrintSource (ScriptingContext context)
 		{
 			SourceAddress location = frame.SourceAddress;
 			if (location == null)
-				return;
+				return false;
 
 			IMethod method = frame.Method;
 			if ((method == null) || !method.HasSource || (method.Source == null))
-				return;
+				return false;
 
 			MethodSource source = method.Source;
 			if (source.SourceBuffer == null)
-				return;
+				return false;
 
 			string line = source.SourceBuffer.Contents [location.Row - 1];
 			context.Print (String.Format ("{0,4} {1}", location.Row, line));
+			return true;
 		}
 
 		public void Disassemble (ScriptingContext context)
@@ -153,7 +147,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			IVariable[] param_vars = frame.Method.Parameters;
 			foreach (IVariable var in param_vars)
-				PrintVariable (context, true, var);
+				context.Interpreter.UI.PrintVariable (var, frame);
 		}
 
 		public void ShowLocals (ScriptingContext context)
@@ -163,24 +157,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 			IVariable[] local_vars = frame.Locals;
 			foreach (IVariable var in local_vars)
-				PrintVariable (context, false, var);
-		}
-
-		public void PrintVariable (ScriptingContext context, bool is_param, IVariable variable)
-		{
-			ITargetObject obj = null;
-			try {
-				obj = variable.GetObject (frame);
-			} catch {
-			}
-
-			string contents;
-			if (obj != null)
-				contents = context.FormatObject (obj);
-			else
-				contents = "<cannot display object>";
-				
-			context.Print (String.Format ("${0} = ({1}) {2}", variable.Name, variable.Type.Name, contents));
+				context.Interpreter.UI.PrintVariable (var, frame);
 		}
 
 		public IVariable GetVariableInfo (string identifier, bool report_errors)
@@ -295,7 +272,8 @@ namespace Mono.Debugger.Frontends.Scripting
 					StackFrame frame = process.CurrentFrame;
 					current_frame = new FrameHandle (this, frame);
 					interpreter.Print ("{0} stopped at {1}.", Name, frame);
-					current_frame.Print (interpreter.GlobalContext);
+					interpreter.UI.PrintFrame (
+						interpreter.GlobalContext, current_frame);
 				}
 			}
 		}
@@ -366,11 +344,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				else
 					interpreter.Print ("{0} stopped{1}.", Name, frame);
 
-				if (current_insn != null)
-					interpreter.GlobalContext.PrintInstruction (current_insn);
-
-				if (current_frame != null)
-					current_frame.PrintSource (interpreter.GlobalContext);
+				interpreter.UI.TargetStopped (
+					interpreter.GlobalContext, current_frame, current_insn);
 
 				if (!interpreter.IsInteractive)
 					interpreter.Abort ();
@@ -416,18 +391,23 @@ namespace Mono.Debugger.Frontends.Scripting
 				ok = process.Continue (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Step:
+				interpreter.UI.IsNative = false;
 				ok = process.StepLine (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Next:
+				interpreter.UI.IsNative = false;
 				ok = process.NextLine (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.StepInstruction:
+				interpreter.UI.IsNative = true;
 				ok = process.StepInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.StepNativeInstruction:
+				interpreter.UI.IsNative = true;
 				ok = process.StepNativeInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.NextInstruction:
+				interpreter.UI.IsNative = true;
 				ok = process.NextInstruction (interpreter.IsSynchronous);
 				break;
 			case WhichStepCommand.Finish:
@@ -726,17 +706,13 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void PrintObject (object obj)
 		{
-			Print (FormatObject (obj));
-		}
-
-		public string FormatObject (object obj)
-		{
-			if (obj is long)
-				return String.Format ("0x{0:x}", (long) obj);
-			else if (obj is ITargetObject)
-				return ((ITargetObject) obj).Print ();
-			else
-				return obj.ToString ();
+			string formatted;
+			try {
+				formatted = interpreter.UI.FormatObject (obj);
+			} catch {
+				formatted = "<cannot display object>";
+			}
+			Print (formatted);
 		}
 
 		public void PrintInstruction (AssemblerLine line)

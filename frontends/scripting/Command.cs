@@ -185,7 +185,29 @@ namespace Mono.Debugger.Frontends.Scripting
 				new_context.CurrentFrame = ResolveFrame (new_context);
 
 			ITargetType type = expression.EvaluateType (new_context);
-			new_context.Print (type);
+			new_context.PrintObject (type);
+		}
+	}
+
+	[Command("mode", "Switches the user interface")]
+	public class UserInterfaceCommand : DebuggerCommand
+	{
+		UserInterface ui;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Argument != "")
+				ui = context.Interpreter.GetUserInterface (Argument);
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			if (ui != null)
+				context.Interpreter.UI = ui;
+			else
+				context.Print ("Current user interface: {0}",
+					       context.Interpreter.UI.Name);
 		}
 	}
 
@@ -241,7 +263,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			FrameHandle frame = ResolveFrame (context);
 
-			frame.Print (context);
+			context.Interpreter.UI.PrintFrame (context, frame);
 		}
 	}
 
@@ -445,7 +467,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex++;
-			process.CurrentFrame.Print (context);
+			context.Interpreter.UI.PrintFrame (context, process.CurrentFrame);
 		}
 	}
 
@@ -457,7 +479,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex--;
-			process.CurrentFrame.Print (context);
+			context.Interpreter.UI.PrintFrame (context, process.CurrentFrame);
 		}
 	}
 
