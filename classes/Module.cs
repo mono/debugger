@@ -258,6 +258,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		// <summary>
+		//   Find method @name, which must be a full method name including the
+		//   signature.
+		// </summary>
 		public virtual SourceMethodInfo FindMethod (string name)
 		{
 			if (!SymbolsLoaded)
@@ -275,6 +279,9 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		// <summary>
+		//   Find the method containing line @line in @source_file.
+		// </summary>
 		public virtual SourceMethodInfo FindMethod (string source_file, int line)
 		{
 			if (!SymbolsLoaded)
