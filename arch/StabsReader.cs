@@ -157,7 +157,7 @@ namespace Mono.Debugger.Architecture
 			return methods;
 		}
 
-		public override string SimpleLookup (TargetAddress address, bool exact_match)
+		public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			if ((address < StartAddress) || (address >= EndAddress))
 				return null;
@@ -171,21 +171,16 @@ namespace Mono.Debugger.Architecture
 
 				long offset = address.Address - method.StartAddress.Address;
 				if (offset == 0)
-					return String.Format (
-						"0x{0:x} <{1}>", address.Address, method.Name);
+					return new Symbol (
+						method.Name, method.StartAddress, 0);
 				else if (exact_match)
 					return null;
 				else
-					return String.Format (
-						"0x{0:x} <{1}+0x{2:x}>",
-						address.Address, method.Name, offset);
+					return new Symbol (
+						method.Name, method.StartAddress, (int) offset);
 			}
 
-			if (exact_match)
-				return null;
-			else
-				return String.Format ("<{0}:0x{1:x}>", bfd.FileName,
-						      address.Address);
+			return null;
 		}
 
 		public SourceFile[] Sources {

@@ -661,7 +661,7 @@ namespace Mono.Debugger.Backends
 			return current_symtab.Lookup (address);
 		}
 
-		public string SimpleLookup (TargetAddress address, bool exact_match)
+		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			if (current_simple_symtab == null)
 				return null;
@@ -734,6 +734,13 @@ namespace Mono.Debugger.Backends
 				lock (disassembler) {
 					disassembler.SymbolTable = value;
 				}
+			}
+		}
+
+		public ISymbolTable SymbolTable {
+			get {
+				check_inferior ();
+				return current_symtab;
 			}
 		}
 

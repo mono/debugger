@@ -51,6 +51,27 @@ namespace Mono.Debugger
 			this.value = value;
 		}
 
+		public void SetValue (TargetAddress address, TargetAddress value)
+		{
+			this.valid = true;
+			this.addr_on_stack = address;
+			this.value = value.Address;
+		}
+
+		public void SetValue (long value)
+		{
+			this.valid = true;
+			this.addr_on_stack = TargetAddress.Null;
+			this.value = value;
+		}
+
+		public void SetValue (TargetAddress value)
+		{
+			this.valid = true;
+			this.addr_on_stack = TargetAddress.Null;
+			this.value = value.Address;
+		}
+
 		public void WriteRegister (ITargetAccess target, long value)
 		{
 			this.value = value;
@@ -162,6 +183,12 @@ namespace Mono.Debugger
 			: this (iframe.Address, iframe.StackPointer, iframe.FrameAddress,
 				regs, level)
 		{ }
+
+		public override string ToString ()
+		{
+			return String.Format ("SimpleStackFrame ({0}:{1}:{2}:{3})",
+					      Level, Address, StackPointer, FrameAddress);
+		}
 	}
 
 	public sealed class StackFrame : IDisposable
@@ -172,27 +199,33 @@ namespace Mono.Debugger
 		SourceAddress source;
 		AddressDomain address_domain;
 		ILanguage language;
-		string name;
+		Symbol name;
 
 		public StackFrame (Process process, SimpleStackFrame simple,
-				   string name)
+				   Symbol name)
 		{
 			this.process = process;
 			this.simple = simple;
 			this.name = name;
+
+			language = process.NativeLanguage;
 		}
 
 		public StackFrame (Process process, SimpleStackFrame simple,
 				   IMethod method, SourceAddress source)
-			: this (process, simple, method != null ? method.Name : "")
 		{
 			this.process = process;
 			this.simple = simple;
 			this.method = method;
 			this.source = source;
 
-			if (method != null)
+			if (method != null) {
+				name = new Symbol (method.Name, method.StartAddress, 0);
 				language = method.Module.Language;
+			} else {
+				name = null;
+				language = process.NativeLanguage;
+			}
 		}
 
 		internal static StackFrame CreateFrame (Process process,
@@ -217,9 +250,16 @@ namespace Mono.Debugger
 							ISymbolTable symtab,
 							ISimpleSymbolTable simple_symtab)
 		{
+			if (simple.Address.IsNull)
+				return new StackFrame (process, simple, null, null);
+
 			IMethod method = null;
-			if (symtab != null)
-				method = symtab.Lookup (simple.Address);
+			if (symtab != null) {
+				try {
+					method = symtab.Lookup (simple.Address);
+				} catch {
+				}
+			}
 			if (method != null) {
 				SourceAddress source = null;
 				if (method.HasSource)
@@ -228,9 +268,14 @@ namespace Mono.Debugger
 			}
 
 			if (simple_symtab == null)
-				return new StackFrame (process, simple, null);
+				return new StackFrame (process, simple, null, null);
 
-			string name = simple_symtab.SimpleLookup (simple.Address, false);
+			Symbol name;
+			try {
+				name = simple_symtab.SimpleLookup (simple.Address, false);
+			} catch {
+				name = null;
+			}
 			return new StackFrame (process, simple, name);
 		}
 
@@ -329,7 +374,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public string Name {
+		public Symbol Name {
 			get {
 				check_disposed ();
 				return name;

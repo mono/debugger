@@ -174,8 +174,16 @@ namespace Mono.Debugger
 			get { return 50; }
 		}
 
-		public SimpleStackFrame UnwindStack (SimpleStackFrame frame, byte[] code,
-						     ITargetMemoryAccess memory)
+		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+						     SimpleStackFrame frame, Symbol name,
+						     byte[] code)
+		{
+			throw new NotImplementedException ();
+		}
+
+
+		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+						     TargetAddress stack, TargetAddress frame)
 		{
 			throw new NotImplementedException ();
 		}

@@ -1264,7 +1264,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public string SimpleLookup (TargetAddress address, bool exact_match)
+		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			foreach (MethodRangeEntry range in ranges) {
 				if ((address < range.StartAddress) || (address > range.EndAddress))
@@ -1275,10 +1275,8 @@ namespace Mono.Debugger.Languages.CSharp
 					continue;
 
 				IMethod method = range.GetMethod ();
-				if (offset == 0)
-					return method.Name;
-				else
-					return String.Format ("{0}+0x{1:x}", method.Name, offset);
+				return new Symbol (
+					method.Name, method.StartAddress, (int) offset);
 			}
 
 			return null;

@@ -39,6 +39,9 @@ namespace Mono.Debugger.Architecture
 						     ITargetMemoryAccess target,
 						     IArchitecture arch)
 		{
+			if (frame.Address.IsNull)
+				return null;
+
 			TargetAddress address = frame.Address;
 
 			DwarfBinaryReader reader = new DwarfBinaryReader (bfd, blob, false);

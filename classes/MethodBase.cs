@@ -95,13 +95,13 @@ namespace Mono.Debugger
 		}
 
 		public virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-							     ITargetMemoryAccess target,
+							     ITargetMemoryAccess memory,
 							     IArchitecture arch)
 		{
 			if (!IsLoaded)
 				return null;
 
-			SimpleStackFrame new_frame = Module.UnwindStack (frame, target);
+			SimpleStackFrame new_frame = Module.UnwindStack (frame, memory);
 			if (new_frame != null)
 				return new_frame;
 
@@ -114,9 +114,10 @@ namespace Mono.Debugger
 			prologue_size = Math.Min (prologue_size, offset);
 			prologue_size = Math.Min (prologue_size, arch.MaxPrologueSize);
 
-			byte[] prologue = target.ReadBuffer (StartAddress, prologue_size);
+			byte[] prologue = memory.ReadBuffer (StartAddress, prologue_size);
 
-			return arch.UnwindStack (frame, prologue, target);
+			Symbol name = new Symbol (Name, StartAddress, offset);
+			return arch.UnwindStack (memory, frame, name, prologue);
 		}
 
 		//

@@ -202,7 +202,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public virtual string SimpleLookup (TargetAddress address, bool exact_match)
+		public virtual Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			IMethod method = Lookup (address);
 			if ((method == null) || !method.IsLoaded)
@@ -213,9 +213,10 @@ namespace Mono.Debugger
 
 			long offset = address - method.StartAddress;
 			if (offset == 0)
-				return method.Name;
+				return new Symbol (method.Name, method.StartAddress, 0);
 			else if (!exact_match)
-				return String.Format ("{0}+0x{1:x}", method.Name, offset);
+				return new Symbol (
+					method.Name, method.StartAddress, (int) offset);
 			else
 				return null;
 		}

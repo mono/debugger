@@ -74,36 +74,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected struct SymbolEntry : IComparable
-		{
-			public readonly long Address;
-			public readonly string Name;
-
-			public SymbolEntry (long address, string name)
-			{
-				this.Address = address;
-				this.Name = name;
-			}
-
-			public int CompareTo (object obj)
-			{
-				SymbolEntry entry = (SymbolEntry) obj;
-
-				if (entry.Address < Address)
-					return 1;
-				else if (entry.Address > Address)
-					return -1;
-				else
-					return 0;
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("SymbolEntry ({0:x}:{1})",
-						      Address, Name);
-			}
-		}
-
 		internal class Section
 		{
 			public readonly Bfd bfd;
@@ -325,7 +295,9 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				long relocated = base_address.Address + address;
+				TargetAddress relocated = new TargetAddress (
+					info.GlobalAddressDomain,
+					base_address.Address + address);
 				if (is_function != 0)
 					symbols.Add (name, relocated);
 				else if (is_main_module && name.StartsWith ("MONO_DEBUGGER__"))
@@ -333,7 +305,7 @@ namespace Mono.Debugger.Architecture
 				else if (name.StartsWith ("__pthread_"))
 					symbols.Add (name, relocated);
 
-				simple_symbols.Add (new SymbolEntry (relocated, name));
+				simple_symbols.Add (new Symbol (name, relocated, 0));
 			}
 
 			g_free (symtab);
@@ -349,8 +321,10 @@ namespace Mono.Debugger.Architecture
 				if (name == null)
 					continue;
 
-				long relocated = base_address.Address + address;
-				simple_symbols.Add (new SymbolEntry (relocated, name));
+				TargetAddress relocated = new TargetAddress (
+					info.GlobalAddressDomain,
+					base_address.Address + address);
+				simple_symbols.Add (new Symbol (name, relocated, 0));
 			}
 
 			g_free (symtab);
@@ -762,7 +736,7 @@ namespace Mono.Debugger.Architecture
 					return TargetAddress.Null;
 
 				if (symbols.Contains (name))
-					return new TargetAddress (info.GlobalAddressDomain, (long) symbols [name]);
+					return (TargetAddress) symbols [name];
 
 				return TargetAddress.Null;
 			}
@@ -1199,7 +1173,7 @@ namespace Mono.Debugger.Architecture
 		private class BfdSymbolTable : ISimpleSymbolTable
 		{
 			Bfd bfd;
-			SymbolEntry[] list;
+			Symbol[] list;
 			TargetAddress start, end;
 
 			public BfdSymbolTable (Bfd bfd)
@@ -1209,7 +1183,7 @@ namespace Mono.Debugger.Architecture
 				this.end = bfd.EndAddress;
 			}
 
-			public string SimpleLookup (TargetAddress address, bool exact_match)
+			public Symbol SimpleLookup (TargetAddress address, bool exact_match)
 			{
 				if ((address < start) || (address >= end))
 					return null;
@@ -1218,20 +1192,20 @@ namespace Mono.Debugger.Architecture
 					ArrayList the_list = bfd.GetSimpleSymbols ();
 					the_list.Sort ();
 
-					list = new SymbolEntry [the_list.Count];
+					list = new Symbol [the_list.Count];
 					the_list.CopyTo (list);
 				}
 
 				for (int i = list.Length - 1; i >= 0; i--) {
-					SymbolEntry entry = list [i];
+					Symbol entry = list [i];
 
-					if (address.Address < entry.Address)
+					if (address < entry.Address)
 						continue;
 
-					long offset = address.Address - entry.Address;
+					long offset = address - entry.Address;
 					if (offset == 0) {
 						while (i > 0) {
-							SymbolEntry n_entry = list [--i];
+							Symbol n_entry = list [--i];
 
 							if (n_entry.Address == entry.Address) 
 								entry = n_entry;
@@ -1239,17 +1213,16 @@ namespace Mono.Debugger.Architecture
 								break;
 						}
 
-						return entry.Name;
+						return new Symbol (entry.Name, address, 0);
 					} else if (exact_match)
 						return null;
 					else
-						return String.Format ("{0}+0x{1:x}", entry.Name, offset);
+						return new Symbol (
+							entry.Name, address - offset,
+							(int) offset);
 				}
 
-				if (exact_match)
-					return null;
-				else
-					return String.Format ("<{0}:0x{1:x}>", bfd.FileName, address);
+				return null;
 			}
 		}
 

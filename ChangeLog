@@ -1,3 +1,12 @@
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
+	* interface/ISymbolTable.cs (Symbol): New class.
+	(ISimpleSymbolTable.SimpleLookup): Return a `Symbol', not a
+	string.
+
+	* arch/ArchitectureI386.cs (ArchitectureI386.UnwindStack): Added
+	some "hacks" for special functions.
+
 2004-06-26  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs (SimpleStackFrame): New public class.

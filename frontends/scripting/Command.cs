@@ -1464,7 +1464,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				return;
 			}
 
-			string symbol = symtab.SimpleLookup (address, false);
+			Symbol symbol = symtab.SimpleLookup (address, false);
 			if (symbol == null)
 				context.Print ("No method contains address {0}.", address);
 			else
@@ -1472,4 +1472,55 @@ namespace Mono.Debugger.Frontends.Scripting
 					       address, symbol);
 		}
 	}
+
+	// Private command
+	public class UnwindCommand : ProcessCommand
+	{
+		Expression expression;
+		PointerExpression pexpr;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			expression = ParseExpression (context);
+			if (expression == null)
+				return false;
+
+			expression = expression.Resolve (context);
+			if (expression == null)
+				return false;
+
+			pexpr = expression as PointerExpression;
+			if (pexpr == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a pointer.",
+					expression.Name);
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ScriptingContext new_context = context.GetExpressionContext ();
+			if (Process > 0)
+				new_context.CurrentProcess = ResolveProcess (new_context);
+
+			TargetLocation location = pexpr.EvaluateAddress (context);
+			if (location == null)
+				throw new ScriptingException (
+					"Cannot evaluate expression `{0}'", pexpr.Name);
+
+			if (!location.HasAddress)
+				throw new ScriptingException (
+					"Cannot get address of expression `{0}'", pexpr.Name);
+
+			TargetAddress address = location.GlobalAddress;
+			ProcessHandle process = new_context.CurrentProcess;
+
+			Backtrace backtrace = process.Process.UnwindStack (address);
+			StackFrame[] frames = backtrace.Frames;
+			for (int i = 0; i < frames.Length; i++)
+				context.Print ("{0} {1}", "   ", frames [i]);
+		}
+	}
+
 }

@@ -55,6 +55,24 @@ namespace Mono.Debugger
 			}
 		}
 
+		public void GetBacktrace (ITargetAccess target, IArchitecture arch,
+					  ISymbolTable symtab, ISimpleSymbolTable simple,
+					  TargetAddress stack)
+		{
+			SimpleStackFrame new_frame = arch.UnwindStack (
+				target, stack, last_frame.FrameAddress);
+			if (new_frame == null)
+				return;
+
+			StackFrame frame = StackFrame.CreateFrame (
+				last_frame.Process, new_frame, symtab, simple);
+
+			frames.Add (frame);
+			last_frame = frame;
+
+			GetBacktrace (target, arch, symtab, simple);
+		}
+
 		public bool TryUnwind (ITargetAccess target, IArchitecture arch,
 				       ISymbolTable symtab, ISimpleSymbolTable simple_symtab)
 		{
@@ -98,7 +116,8 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			return arch.UnwindStack (last_frame.SimpleFrame, null, memory);
+			return arch.UnwindStack (
+				memory, last_frame.SimpleFrame, last_frame.Name, null);
 		}
 
 		//

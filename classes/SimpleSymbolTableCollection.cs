@@ -18,10 +18,10 @@ namespace Mono.Debugger
 		// ISimpleSymbolTable
 		//
 
-		string ISimpleSymbolTable.SimpleLookup (TargetAddress address, bool exact_match)
+		Symbol ISimpleSymbolTable.SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			foreach (ISimpleSymbolTable symtab in symtabs) {
-				string name = symtab.SimpleLookup (address, exact_match);
+				Symbol name = symtab.SimpleLookup (address, exact_match);
 				if (name != null)
 					return name;
 			}

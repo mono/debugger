@@ -87,12 +87,12 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			string name = symbol_table.SimpleLookup (maddress, false);
+			Symbol name = symbol_table.SimpleLookup (maddress, false);
 
 			if (name == null)
 				output_func (address);
 			else
-				output_func (name);
+				output_func (name.ToString ());
 		}
 
 		//
@@ -168,11 +168,16 @@ namespace Mono.Debugger.Architecture
 					current_method = null;
 				}
 
-				string label = null;
+				Symbol label = null;
 				if (SymbolTable != null)
 					label = SymbolTable.SimpleLookup (address, true);
 
-				return new AssemblerLine (label, address, (byte) insn_size, insn);
+				string label_name = null;
+				if (label != null)
+					label_name = label.ToString ();
+
+				return new AssemblerLine (
+					label_name, address, (byte) insn_size, insn);
 			}
 		}
 

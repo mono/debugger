@@ -304,27 +304,10 @@ namespace Mono.Debugger
 			get { return 50; }
 		}
 
-		public SimpleStackFrame UnwindStack (SimpleStackFrame frame, byte[] code,
-						     ITargetMemoryAccess memory)
+		SimpleStackFrame unwind_method (SimpleStackFrame frame,
+						ITargetMemoryAccess memory, byte[] code,
+						ref int pos)
 		{
-			int pos = 0;
-			int length;
-
-			length = code != null ? code.Length : 0;
-			if (length > 0) {
-				if ((code [pos] == 0x90) || (code [pos] == 0xcc))
-					pos++;
-
-				if (pos+2 >= length)
-					return null;
-				if (code [pos++] != 0x55)
-					return null;
-				if (((code [pos] != 0x8b) || (code [pos+1] != 0xec)) &&
-				    ((code [pos] != 0x89) || (code [pos+1] != 0xe5)))
-					return null;
-				pos += 2;
-			}
-
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (this);
 
@@ -333,17 +316,17 @@ namespace Mono.Debugger
 
 			int addr_size = memory.TargetAddressSize;
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
-			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp.Address);
+			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
 
 			TargetAddress new_eip = memory.ReadGlobalAddress (ebp + addr_size);
-			regs [(int) I386Register.EIP].SetValue (
-				ebp + addr_size, new_eip.Address);
+			regs [(int) I386Register.EIP].SetValue (ebp + addr_size, new_eip);
 
 			TargetAddress new_esp = ebp + 2 * addr_size;
-			regs [(int) I386Register.ESP].SetValue (ebp, new_esp.Address);
+			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
 
 			ebp -= addr_size;
 
+			int length = code.Length;
 			while (pos < length) {
 				byte opcode = code [pos++];
 
@@ -383,6 +366,202 @@ namespace Mono.Debugger
 
 			return new SimpleStackFrame (
 				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
+		}
+
+		SimpleStackFrame read_prologue (SimpleStackFrame frame,
+						ITargetMemoryAccess memory, byte[] code,
+						ref int pos)
+		{
+			int length = code.Length;
+
+			while ((pos <= length) &&
+			       (code [pos] == 0x90) || (code [pos] == 0xcc))
+				pos++;
+
+			if ((pos+3 < length) && (code [pos] == 0x55) &&
+			    (((code [pos+1] == 0x8b) && (code [pos+2] == 0xec)) ||
+			     ((code [pos+1] == 0x89) && (code [pos+2] == 0xe5)))) {
+				pos += 3;
+				return unwind_method (frame, memory, code, ref pos);
+			}
+
+			//
+			// Try smart unwinding
+			//
+
+			Console.WriteLine ("TRY SMART UNWIND: {0} {1} {2}",
+					   frame.Address, frame.StackPointer,
+					   frame.FrameAddress);
+
+			return null;
+		}
+
+		Registers copy_regs (Registers old_regs)
+		{
+			Registers regs = new Registers (this);
+			for (int i = 0; i < CountRegisters; i++) {
+				long old = old_regs [i].GetValue ();
+				regs [i].SetValue (old);
+			}
+			return regs;
+		}
+
+		SimpleStackFrame try_pthread_cond_timedwait (ITargetMemoryAccess memory,
+							     SimpleStackFrame frame,
+							     Symbol name)
+		{
+			/*
+			 * This is a hack for pthread_cond_timedwait() on Red Hat 9.
+			 */
+			if ((name == null) || (name.Name != "pthread_cond_timedwait") ||
+			    (name.Offset != 0xe5))
+				return null;
+
+			/*
+			 * Disassemble some bytes of the method to find out whether
+			 * it's the "correct" one.
+			 */
+			uint data = (uint) memory.ReadInteger (name.Address);
+			if (data != 0x53565755)
+				return null;
+			data = (uint) memory.ReadInteger (name.Address + 4);
+			if (data != 0x14245c8b)
+				return null;
+			data = (uint) memory.ReadInteger (name.Address + 8);
+			if (data != 0x1c246c8b)
+				return null;
+
+			data = (uint) memory.ReadInteger (frame.Address);
+			if (data != 0x8910eb83)
+				return null;
+
+			data = (uint) memory.ReadInteger (frame.Address + 0x7b);
+			if (data != 0x852cc483)
+				return null;
+			data = (uint) memory.ReadInteger (frame.Address + 0x7f);
+			if (data != 0xc6440fc0)
+				return null;
+
+			TargetAddress esp = frame.StackPointer;
+
+			Registers regs = new Registers (this);
+
+			TargetAddress ebx = memory.ReadAddress (esp + 0x2c);
+			TargetAddress esi = memory.ReadAddress (esp + 0x30);
+			TargetAddress edi = memory.ReadAddress (esp + 0x34);
+			TargetAddress ebp = memory.ReadAddress (esp + 0x38);
+			TargetAddress eip = memory.ReadGlobalAddress (esp + 0x3c);
+
+			regs [(int)I386Register.EBX].SetValue (esp + 0x2c, ebx);
+			regs [(int)I386Register.ESI].SetValue (esp + 0x30, esi);
+			regs [(int)I386Register.EDI].SetValue (esp + 0x34, edi);
+			regs [(int)I386Register.EBP].SetValue (esp + 0x38, ebp);
+			regs [(int)I386Register.EIP].SetValue (esp + 0x3c, eip);
+
+			esp += 0x40;
+			regs [(int)I386Register.ESP].SetValue (esp.Address);
+
+			return new SimpleStackFrame (eip, esp, ebp, regs, frame.Level + 1);
+		}
+
+		SimpleStackFrame try_syscall_trampoline (ITargetMemoryAccess memory,
+							 SimpleStackFrame frame, Symbol name)
+		{
+			/*
+			 * This is a hack for system call trampolines on NPTL-enabled glibc's.
+			 */
+			if (frame.Address.Address != 0xffffe002)
+				return null;
+
+			Registers old_regs = frame.Registers;
+			Registers regs = copy_regs (old_regs);
+
+			TargetAddress esp = frame.StackPointer;
+
+			TargetAddress new_eip = memory.ReadGlobalAddress (esp);
+			TargetAddress new_esp = esp + 4;
+			TargetAddress new_ebp = frame.FrameAddress;
+
+			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
+			regs [(int)I386Register.EBP].SetValue (new_ebp);
+
+			return new SimpleStackFrame (
+				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
+		}
+
+		SimpleStackFrame do_hacks (ITargetMemoryAccess memory,
+					   SimpleStackFrame frame, Symbol name)
+		{
+			SimpleStackFrame new_frame;
+			try {
+				new_frame = try_pthread_cond_timedwait (memory, frame, name);
+				if (new_frame != null)
+					return new_frame;
+			} catch {
+				new_frame = null;
+			}
+
+			try {
+				new_frame = try_syscall_trampoline (memory, frame, name);
+				if (new_frame != null)
+					return new_frame;
+			} catch {
+				new_frame = null;
+			}
+
+			return null;
+		}
+
+		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+						     SimpleStackFrame frame, Symbol name,
+						     byte[] code)
+		{
+			if (code != null) {
+				int pos = 0;
+				return read_prologue (frame, memory, code, ref pos);
+			}
+
+			Registers old_regs = frame.Registers;
+			TargetAddress eip = frame.Address;
+			TargetAddress esp = frame.StackPointer;
+			TargetAddress ebp = frame.FrameAddress;
+
+			SimpleStackFrame new_frame = do_hacks (memory, frame, name);
+			if (new_frame != null)
+				return new_frame;
+
+			int addr_size = memory.TargetAddressSize;
+
+			Registers regs = new Registers (this);
+
+			TargetAddress new_ebp = memory.ReadAddress (ebp);
+			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
+
+			TargetAddress new_eip = memory.ReadGlobalAddress (ebp + addr_size);
+			regs [(int) I386Register.EIP].SetValue (ebp + addr_size, new_eip);
+
+			TargetAddress new_esp = ebp + 2 * addr_size;
+			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
+
+			ebp -= addr_size;
+
+			return new SimpleStackFrame (
+				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
+		}
+
+		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+						     TargetAddress stack, TargetAddress frame)
+		{
+			TargetAddress eip = memory.ReadGlobalAddress (stack);
+			TargetAddress esp = stack;
+			TargetAddress ebp = frame;
+
+			Registers regs = new Registers (this);
+			regs [(int) I386Register.EIP].SetValue (eip);
+			regs [(int) I386Register.ESP].SetValue (esp);
+			regs [(int) I386Register.EBP].SetValue (ebp);
+
+			return new SimpleStackFrame (eip, esp, ebp, regs, 0);
 		}
 	}
 }

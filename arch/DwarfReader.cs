@@ -275,7 +275,7 @@ namespace Mono.Debugger.Architecture
 
 		protected SourceFile AddSourceFile (DieCompileUnit die, string filename)
 		{
-			SourceFile file = new SourceFile (bfd, filename);
+			SourceFile file = new SourceFile (module, filename);
 			source_hash.Add (file, die);
 			return file;
 		}

@@ -110,12 +110,48 @@ namespace Mono.Debugger
 		event SymbolTableChangedHandler SymbolTableChanged;
 	}
 
+	public class Symbol : IComparable
+	{
+		public readonly string Name;
+		public readonly TargetAddress Address;
+		public readonly int Offset;
+
+		public Symbol (string name, TargetAddress address, int offset)
+		{
+			this.Name = name;
+			this.Address = address;
+			this.Offset = offset;
+		}
+
+		public int CompareTo (object obj)
+		{
+			Symbol symbol = (Symbol) obj;
+
+			if (symbol.Address < Address)
+				return 1;
+			else if (symbol.Address > Address)
+				return -1;
+			else
+				return 0;
+		}
+
+		public override string ToString ()
+		{
+			if (Offset > 0)
+				return String.Format ("{0}+0x{1:x}", Name, Offset);
+			else if (Offset < 0)
+				return String.Format ("{0}-0x{1:x}", Name, Offset);
+			else
+				return Name;
+		}
+	}
+
 	// <summary>
 	//   This is used to resolve addresses to function names in backtraces.  Sometimes this
 	//   simple symbol table is also available if the module has no debugging info.
 	// </summary>
 	public interface ISimpleSymbolTable
 	{
-		string SimpleLookup (TargetAddress address, bool exact_match);
+		Symbol SimpleLookup (TargetAddress address, bool exact_match);
 	}
 }

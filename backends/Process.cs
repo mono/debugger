@@ -35,7 +35,7 @@ namespace Mono.Debugger
 		static int next_id = 0;
 		SingleSteppingEngine engine;
 
-		protected ILanguage NativeLanguage {
+		protected internal ILanguage NativeLanguage {
 			get {
 				check_engine ();
 				return engine.NativeLanguage;
@@ -216,6 +216,17 @@ namespace Mono.Debugger
 			return GetBacktrace (-1);
 		}
 
+		public Backtrace UnwindStack (TargetAddress stack_pointer)
+		{
+			check_engine ();
+			Backtrace bt = new Backtrace (
+				this, engine.Architecture, CurrentFrame);
+			bt.GetBacktrace (
+				this, engine.Architecture, engine.SymbolTable,
+				SimpleSymbolTable, stack_pointer);
+			return bt;
+		}
+
 		public Registers GetRegisters ()
 		{
 			CommandResult result = engine.SendSyncCommand (CommandType.GetRegisters, null);
@@ -238,7 +249,7 @@ namespace Mono.Debugger
 			return engine.GetMemoryMaps ();
 		}
 
-		protected string SimpleLookup (TargetAddress address, bool exact_match)
+		protected Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			check_engine ();
 			return engine.SimpleLookup (address, exact_match);
