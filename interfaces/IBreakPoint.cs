@@ -10,7 +10,7 @@ namespace Mono.Debugger
 	public interface IBreakPoint
 	{
 		// <summary>
-		//   The source location of this breakpoint.
+		//   The location in the target's address space.
 		// </summary>
 		ITargetLocation TargetLocation {
 			get;

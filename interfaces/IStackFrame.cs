@@ -2,13 +2,25 @@ using System;
 
 namespace Mono.Debugger
 {
+	public delegate void StackFrameHandler (IStackFrame frame);
+	public delegate void StackFramesInvalidHandler ();
+
+	// <summary>
+	//   A single stack frame.
+	// </summary>
 	public interface IStackFrame
 	{
-		ISourceFile SourceFile {
+		// <summary>
+		//   The location in the target address space.
+		// </summary>
+		ITargetLocation TargetLocation {
 			get;
 		}
 
-		int Row {
+		// <summary>
+		//   The location in the application's source code.
+		// </summary>
+		ISourceLocation SourceLocation {
 			get;
 		}
 	}

@@ -33,11 +33,15 @@ public class SourceFile : ISourceFile
 
 			stream.Close ();
 
-			Console.WriteLine ("DONE: " + count);
-
 			contents = new String (result);
 		} catch {
 			return;
+		}
+	}
+
+	public string Name {
+		get {
+			return file_info.Name;
 		}
 	}
 
@@ -47,7 +51,7 @@ public class SourceFile : ISourceFile
 		}
 	}
 
-	public string FileContents {
+	public string Contents {
 		get {
 			return contents;
 		}
@@ -60,11 +64,8 @@ public class SourceFileFactory : ISourceFileFactory
 
 	public ISourceFile FindFile (string name)
 	{
-		Console.WriteLine ("FIND FILE: |" + name + "|" + files);
-		if (files.Contains (name)) {
-			Console.WriteLine ("FOUND: " + files [name]);
+		if (files.Contains (name))
 			return (ISourceFile) files [name];
-		}
 
 		FileInfo file_info = new FileInfo (name);
 

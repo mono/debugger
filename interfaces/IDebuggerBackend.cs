@@ -4,7 +4,6 @@ namespace Mono.Debugger
 {
 	public delegate void TargetOutputHandler (string otuput);
 	public delegate void StateChangedHandler (TargetState new_state);
-	public delegate void StackFrameHandler (IStackFrame frame);
 
 	/// <summary>
 	///   State of the target (the application we're debugging).
@@ -81,10 +80,20 @@ namespace Mono.Debugger
 		// </summary>
 		void Kill ();
 
+		// <summary>
+		//   Ask the debugger for the current stack frame and
+		//   emit a CurrentFrameEvent.
+		// </summary>
 		void Frame ();
 
+		// <summary>
+		//   Single-step and enter into methods.
+		// </summary>
 		void Step ();
 
+		// <summary>
+		//   Single-step, but step over method invocations.
+		// </summary>
 		void Next ();
 
 		// <summary>
@@ -110,7 +119,21 @@ namespace Mono.Debugger
 		// </summary>
 		event StateChangedHandler StateChanged;
 
-		event StackFrameHandler FrameEvent;
+		// <summary>
+		//   This event is emitted each time the application
+		//   stops.  A GUI sould listen to this event to
+		//   highlight the source line corresponding to the
+		//   current stack frame.
+		// </summary>
+		event StackFrameHandler CurrentFrameEvent;
+
+		// <summary>
+		//   This event is emitted when the stack frames have
+		//   become invalid.  A GUI should listen to this
+		//   event to remove the highlighting of the current
+		//   stack frame.
+		// </summary>
+		event StackFramesInvalidHandler FramesInvalidEvent;
 
 		// <summary>
 		//   A source file factory is responsible for finding source files and creating

@@ -156,7 +156,8 @@ namespace Mono.Debugger.Backends
 		TargetOutputHandler target_output = null;
 		TargetOutputHandler target_error = null;
 		StateChangedHandler state_changed = null;
-		StackFrameHandler frame_event = null;
+		StackFrameHandler current_frame_event = null;
+		StackFramesInvalidHandler frames_invalid_event = null;
 
 		public event TargetOutputHandler TargetOutput {
 			add {
@@ -188,13 +189,23 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public event StackFrameHandler FrameEvent {
+		public event StackFrameHandler CurrentFrameEvent {
 			add {
-				frame_event += value;
+				current_frame_event += value;
 			}
 
 			remove {
-				frame_event -= value;
+				current_frame_event -= value;
+			}
+		}
+
+		public event StackFramesInvalidHandler FramesInvalidEvent {
+			add {
+				frames_invalid_event += value;
+			}
+
+			remove {
+				frames_invalid_event -= value;
 			}
 		}
 
@@ -220,7 +231,7 @@ namespace Mono.Debugger.Backends
 
 		ITargetLocation ILanguageCSharp.CreateLocation (MethodInfo method)
 		{
-			return new TargetAddress (this, method.DeclaringType + "." + method.Name);
+			return new TargetSymbol (this, method.DeclaringType + "." + method.Name);
 		}
 
 		Assembly ILanguageCSharp.CurrentAssembly {
@@ -233,12 +244,12 @@ namespace Mono.Debugger.Backends
 		// private interface implementations.
 		//
 
-		protected class TargetAddress : ITargetLocation
+		protected class TargetSymbol : ITargetLocation
 		{
 			public readonly string SymbolName;
 			public readonly GDB GDB;
 
-			public TargetAddress (GDB gdb, string symbol)
+			public TargetSymbol (GDB gdb, string symbol)
 			{
 				this.SymbolName = symbol;
 				this.GDB = gdb;
@@ -313,28 +324,90 @@ namespace Mono.Debugger.Backends
 			public event BreakPointHandler Hit;
 		}
 
-		protected class StackFrame : IStackFrame
+		protected class TargetLocation : ITargetLocation
 		{
-			public readonly GDB GDB;
+			public long Address = -1;
 
-			public ISourceFile SourceFile = null;
-			public int Row = 0;
-
-			public StackFrame (GDB gdb)
-			{
-				this.GDB = gdb;
-			}
-
-			ISourceFile IStackFrame.SourceFile {
+			long ITargetLocation.Location {
 				get {
-					return SourceFile;
+					return Address;
 				}
 			}
 
-			int IStackFrame.Row {
+			public override string ToString ()
+			{
+				if (Address > 0)
+					return "0x" + Address.ToString ("x");
+				else
+					return "<unknown>";
+			}
+		}
+
+		protected class SourceLocation : ISourceLocation
+		{
+			public ISourceBuffer SourceBuffer = null;
+			public int Row = 0;
+
+			ISourceBuffer ISourceLocation.Buffer {
+				get {
+					return SourceBuffer;
+				}
+			}
+
+			int ISourceLocation.Row {
 				get {
 					return Row;
 				}
+			}
+
+			int ISourceLocation.Column {
+				get {
+					return 0;
+				}
+			}
+
+			public override string ToString ()
+			{
+				StringBuilder builder = new StringBuilder ();
+				if (SourceBuffer != null)
+					builder.Append (SourceBuffer.Name);
+				else
+					builder.Append ("<unknown>");
+				if (Row > 0) {
+					builder.Append (" line ");
+					builder.Append (Row);
+				}
+
+				return builder.ToString ();
+			}
+		}
+
+		protected class StackFrame : IStackFrame
+		{
+			public SourceLocation SourceLocation = new SourceLocation ();
+			public TargetLocation TargetLocation = new TargetLocation ();
+
+			ISourceLocation IStackFrame.SourceLocation {
+				get {
+					return SourceLocation;
+				}
+			}
+
+			ITargetLocation IStackFrame.TargetLocation {
+				get {
+					return TargetLocation;
+				}
+			}
+
+			public override string ToString ()
+			{
+				StringBuilder builder = new StringBuilder ();
+
+				builder.Append (SourceLocation);
+				builder.Append (" at ");
+				builder.Append (TargetLocation);
+
+				return builder.ToString ();
 			}
 		}
 
@@ -348,6 +421,7 @@ namespace Mono.Debugger.Backends
 			ADD_BREAKPOINT,
 			BREAKPOINT,
 			FRAME,
+			FRAME_ADDRESS,
 			SOURCE_FILE,
 			SOURCE_LINE
 		}
@@ -359,8 +433,6 @@ namespace Mono.Debugger.Backends
 
 		void HandleAnnotation (string annotation, string[] args)
 		{
-			// Console.WriteLine ("ANNOTATION: |" + annotation + "|");
-
 			switch (annotation) {
 			case "starting":
 				target_state = TargetState.RUNNING;
@@ -393,7 +465,11 @@ namespace Mono.Debugger.Backends
 
 			case "frame-begin":
 				wait_for = WaitForOutput.FRAME;
-				current_frame = new StackFrame (this);
+				current_frame = new StackFrame ();
+				break;
+
+			case "frame-address":
+				wait_for = WaitForOutput.FRAME_ADDRESS;
 				break;
 
 			case "frame-source-file":
@@ -406,7 +482,8 @@ namespace Mono.Debugger.Backends
 				    (source_file == null))
 					break;
 
-				current_frame.SourceFile = source_file_factory.FindFile (source_file);
+				current_frame.SourceLocation.SourceBuffer =
+					source_file_factory.FindFile (source_file);
 				break;
 
 			case "frame-source-line":
@@ -414,8 +491,13 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case "frame-end":
-				if ((current_frame != null) && (frame_event != null))
-					frame_event (current_frame);
+				if ((current_frame != null) && (current_frame_event != null))
+					current_frame_event (current_frame);
+				break;
+
+			case "frames-invalid":
+				if (frames_invalid_event != null)
+					frames_invalid_event ();
 				break;
 
 			default:
@@ -544,12 +626,30 @@ namespace Mono.Debugger.Backends
 				wait_for = WaitForOutput.FRAME;
 				return true;
 
-			case WaitForOutput.SOURCE_LINE:
+			case WaitForOutput.SOURCE_LINE:	
+				wait_for = WaitForOutput.FRAME;
+				if (current_frame == null)
+					break;
+
 				try {
-					if (current_frame != null)
-						current_frame.Row = Int32.Parse (line);
+					current_frame.SourceLocation.Row = Int32.Parse (line);
 					return true;
 				} catch {
+					// FIXME: report error
+				}
+				break;
+
+			case WaitForOutput.FRAME_ADDRESS:
+				wait_for = WaitForOutput.FRAME;
+				if (current_frame == null)
+					break;
+
+				try {
+					current_frame.TargetLocation.Address = Int64.Parse (
+						line.Substring (2), NumberStyles.HexNumber);
+					return true;
+				} catch {
+					// FIXME: report error
 				}
 				break;
 

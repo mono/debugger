@@ -1,0 +1,34 @@
+using System;
+using System.IO;
+
+namespace Mono.Debugger
+{
+	// <summary>
+	//   A location in the application's source code or in an
+	//   implicitly generated source code buffer, for instance a
+	//   method's assembly code.
+	// </summary>
+	public interface ISourceLocation
+	{
+		// <summary>
+		//   The source buffer.
+		// </summary>
+		ISourceBuffer Buffer {
+			get;
+		}
+	
+		// <summary>
+		//   Row in this buffer.
+		// </summary>
+		int Row {
+			get;
+		}
+
+		// <summary>
+		//   Column in this buffer.
+		// </summary>
+		int Column {
+			get;
+		}
+	}
+}

@@ -44,7 +44,8 @@ namespace Mono.Debugger.GUI {
 			backend.TargetOutput += new TargetOutputHandler (TargetOutput);
 			backend.TargetError += new TargetOutputHandler (TargetError);
 			backend.StateChanged += new StateChangedHandler (StateChanged);
-			backend.FrameEvent += new StackFrameHandler (FrameEvent);
+			backend.CurrentFrameEvent += new StackFrameHandler (CurrentFrameEvent);
+			backend.FramesInvalidEvent += new StackFramesInvalidHandler (FramesInvalidEvent);
 
 			backend.SourceFileFactory = new SourceFileFactory ();
 		}
@@ -73,33 +74,38 @@ namespace Mono.Debugger.GUI {
 
 		void StateChanged (TargetState new_state)
 		{
-			if (new_state == TargetState.RUNNING)
-				text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
-
 			Console.WriteLine ("STATE CHANGED: " + new_state);
 		}
 
-		ISourceFile current_file = null;
+		ISourceBuffer current_buffer = null;
 
-		void FrameEvent (IStackFrame frame)
+		void FramesInvalidEvent ()
 		{
-			if ((frame.SourceFile == null) || (frame.SourceFile.FileContents == null))
+			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
+		}
+
+		void CurrentFrameEvent (IStackFrame frame)
+		{
+			if (frame.SourceLocation == null)
 				return;
 
 			Gtk.TextBuffer buffer = text_view.Buffer;
 
-			if (current_file != frame.SourceFile) {
-				current_file = frame.SourceFile;
+			ISourceBuffer source_buffer = frame.SourceLocation.Buffer;
+			int row = frame.SourceLocation.Row;
+
+			if (current_buffer != source_buffer) {
+				current_buffer = source_buffer;
 
 				text_buffer.Delete (text_buffer.StartIter, text_buffer.EndIter);
 
-				text_buffer.Insert (text_buffer.EndIter, frame.SourceFile.FileContents,
-						    frame.SourceFile.FileContents.Length);
+				text_buffer.Insert (text_buffer.EndIter, source_buffer.Contents,
+						    source_buffer.Contents.Length);
 			}
 
 			Gtk.TextIter start_iter, end_iter;
-			text_buffer.GetIterAtLineOffset (out start_iter, frame.Row - 1, 0);
-			text_buffer.GetIterAtLineOffset (out end_iter, frame.Row, 0);
+			text_buffer.GetIterAtLineOffset (out start_iter, row - 1, 0);
+			text_buffer.GetIterAtLineOffset (out end_iter, row, 0);
 
 			text_buffer.RemoveTag (frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 			text_buffer.ApplyTag (frame_tag, start_iter, end_iter);
@@ -108,10 +114,8 @@ namespace Mono.Debugger.GUI {
 
 			text_view.ScrollToMark (frame_mark, 0.0, true, 0.0, 0.5);
 
-			string text = frame.SourceFile.FileInfo.Name + " line " + frame.Row;
-
 			uint id = status_bar.GetContextId ("frame");
-			status_bar.Push (id, text);
+			status_bar.Push (id, frame.ToString ());
 		}
 
 		Gtk.TextView CreateSourceView ()
