@@ -1416,7 +1416,7 @@ namespace Mono.Debugger.Languages.CSharp
 					load_handlers = null;
 			}
 
-			private sealed class HandlerData : IDisposable
+			protected sealed class HandlerData : IDisposable
 			{
 				public readonly MonoSourceMethod Method;
 				public readonly MethodLoadedHandler Handler;

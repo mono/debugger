@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
-		new MonoClass klass;
+		MonoClass klass;
 		R.MethodBase method_info;
 		TargetAddress method;
 		MonoType return_type;
