@@ -25,6 +25,13 @@ namespace Mono.Debugger
 		int TargetLongIntegerSize {
 			get;
 		}
+
+		// <summary>
+		//   Whether this architecture is big-endian.
+		// </summary>
+		bool IsBigEndian {
+			get;
+		}
 	}
 
 	public interface ITargetMemoryReader : ITargetMemoryInfo

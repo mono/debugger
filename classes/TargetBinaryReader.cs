@@ -26,6 +26,7 @@ namespace Mono.Debugger
 		ITargetInfo target_info;
 		protected TargetBlob blob;
 		protected int pos;
+		protected bool swap;
 
 		public TargetBinaryReader (byte[] contents, ITargetInfo target_info)
 			: this (new TargetBlob (contents), target_info)
@@ -35,6 +36,7 @@ namespace Mono.Debugger
 		{
 			this.blob = blob;
 			this.target_info = target_info;
+			this.swap = target_info.IsBigEndian;
 		}
 
 		public int AddressSize {
@@ -106,7 +108,12 @@ namespace Mono.Debugger
 
 		public short PeekInt16 (long pos)
 		{
-			return ((short) (blob.Contents[pos] | (blob.Contents[pos+1] << 8)));
+			if (swap)
+				return ((short) (blob.Contents[pos+1] |
+						 (blob.Contents[pos] << 8)));
+			else
+				return ((short) (blob.Contents[pos] |
+						 (blob.Contents[pos+1] << 8)));
 		}
 
 		public short PeekInt16 ()
@@ -123,8 +130,16 @@ namespace Mono.Debugger
 
 		public int PeekInt32 (long pos)
 		{
-			return (blob.Contents[pos] | (blob.Contents[pos+1] << 8) |
-				(blob.Contents[pos+2] << 16) | (blob.Contents[pos+3] << 24));
+			if (swap)
+				return (blob.Contents[pos+3] |
+					(blob.Contents[pos+2] << 8) |
+					(blob.Contents[pos+1] << 16) |
+					(blob.Contents[pos] << 24));
+			else
+				return (blob.Contents[pos] |
+					(blob.Contents[pos+1] << 8) |
+					(blob.Contents[pos+2] << 16) |
+					(blob.Contents[pos+3] << 24));
 		}
 
 		public int PeekInt32 ()
@@ -141,14 +156,26 @@ namespace Mono.Debugger
 
 		public long PeekInt64 (long pos)
 		{
-			uint ret_low  = (uint) (blob.Contents[pos]           |
-						(blob.Contents[pos+1] << 8)  |
-						(blob.Contents[pos+2] << 16) |
-						(blob.Contents[pos+3] << 24));
-			uint ret_high = (uint) (blob.Contents[pos+4]         |
-						(blob.Contents[pos+5] << 8)  |
-						(blob.Contents[pos+6] << 16) |
-						(blob.Contents[pos+7] << 24));
+			uint ret_low, ret_high;
+			if (swap) {
+				ret_low  = (uint) (blob.Contents[pos+7]           |
+						   (blob.Contents[pos+6] << 8)  |
+						   (blob.Contents[pos+5] << 16) |
+						   (blob.Contents[pos+4] << 24));
+				ret_high = (uint) (blob.Contents[pos+3]         |
+						   (blob.Contents[pos+2] << 8)  |
+						   (blob.Contents[pos+1] << 16) |
+						   (blob.Contents[pos] << 24));
+			} else {
+				ret_low  = (uint) (blob.Contents[pos]           |
+						   (blob.Contents[pos+1] << 8)  |
+						   (blob.Contents[pos+2] << 16) |
+						   (blob.Contents[pos+3] << 24));
+				ret_high = (uint) (blob.Contents[pos+4]         |
+						   (blob.Contents[pos+5] << 8)  |
+						   (blob.Contents[pos+6] << 16) |
+						   (blob.Contents[pos+7] << 24));
+			}
 			return (long) ((((ulong) ret_high) << 32) | ret_low);
 		}
 
