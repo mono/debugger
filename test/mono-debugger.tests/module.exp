@@ -16,3 +16,4 @@ mdb_send "break hello"
 mdb_expect_breakpoint
 mdb_send "continue"
 mdb_expect_stopped 0 "hello" $foo 9
+mdb_send "quit"

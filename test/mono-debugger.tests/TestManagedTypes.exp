@@ -34,3 +34,4 @@ mdb_send "ptype hello"
 mdb_expect "System.String"
 mdb_send "print hello"
 mdb_expect {"Hello World"}
+mdb_send "quit"
