@@ -879,6 +879,9 @@ namespace Mono.Debugger.Languages.CSharp
 			source_hash = new Hashtable ();
 			method_name_hash = new Hashtable ();
 
+			if (file == null)
+				return;
+
 			foreach (SourceFileEntry source in file.Sources) {
 				MonoSourceInfo info = new MonoSourceInfo (this, source);
 
@@ -897,6 +900,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public SourceMethodInfo FindMethod (string name)
 		{
+			if (file == null)
+				return null;
+
 			ensure_sources ();
 			MonoMethodSourceEntry method = (MonoMethodSourceEntry) method_name_hash [name];
 			if (method != null)
