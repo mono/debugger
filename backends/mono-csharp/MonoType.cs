@@ -6,6 +6,9 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		protected Type type;
 		protected static MonoObjectType ObjectType;
+		protected static MonoClassType ObjectClass;
+		protected static ITargetMethodInfo[] ObjectClassMethods;
+		protected static ITargetMethodInfo ObjectToString;
 
 		bool has_fixed_size;
 		int size;
@@ -36,6 +39,9 @@ namespace Mono.Debugger.Languages.CSharp
 		private static MonoType GetType (Type type, ITargetMemoryReader info,
 						 MonoSymbolFileTable table)
 		{
+			if (type == typeof (void))
+				return new MonoOpaqueType (type, 0);
+
 			int size = info.ReadInteger ();
 			if (size > 0) {
 				if (MonoFundamentalType.Supports (type))
@@ -69,9 +75,15 @@ namespace Mono.Debugger.Languages.CSharp
 
 			case 7:
 				if (ObjectType == null) {
-					if (type != typeof (object))
+					ObjectType = new MonoObjectType (typeof (object), size, table);
+					ObjectClass = new MonoClassType (typeof (object), size, info, table);
+					ObjectClassMethods = ObjectClass.Methods;
+					foreach (ITargetMethodInfo method in ObjectClassMethods) {
+						if (method.Name == "ToString")
+							ObjectToString = method;
+					}
+					if (ObjectToString == null)
 						throw new InternalError ();
-					ObjectType = new MonoObjectType (type, size, table);
 				}
 
 				return ObjectType;

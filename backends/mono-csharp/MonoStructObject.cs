@@ -24,6 +24,11 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.GetProperty (location, index);
 		}
 
+		public string PrintObject ()
+		{
+			return type.PrintObject (location);
+		}
+
 		public override bool HasObject {
 			get {
 				return false;

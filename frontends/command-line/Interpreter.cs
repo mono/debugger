@@ -314,6 +314,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 					// Do nothing
 				}
 			}
+			try {
+				Console.WriteLine ("PRINT: {0}", tstruct.PrintObject ());
+			} catch (Exception e) {
+				Console.WriteLine ("PrintObject: {0}", e);
+			}
 		}
 
 		void print_class (ITargetClassObject tclass)
@@ -353,6 +358,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (tstruct != null) {
 				foreach (ITargetFieldInfo field in tstruct.Fields)
 					Console.WriteLine ("  HAS FIELD: {0}", field);
+				foreach (ITargetFieldInfo property in tstruct.Properties)
+					Console.WriteLine ("  HAS PROPERTY: {0}", property);
+				foreach (ITargetMethodInfo method in tstruct.Methods)
+					Console.WriteLine ("  HAS METHOD: {0}", method);
 				return;
 			}
 

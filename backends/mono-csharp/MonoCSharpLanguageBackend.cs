@@ -147,7 +147,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 13;
+		public const int  DynamicVersion = 14;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -532,7 +532,7 @@ namespace Mono.Debugger.Languages.CSharp
 			Type = (Type) get_type.Invoke (reader.Assembly, args);
 
 			if (Type == null)
-				throw new InvalidOperationException ();
+				Type = typeof (void);
 			else if (Type == typeof (object))
 				MonoType.GetType (Type, memory.TargetMemoryAccess, TypeInfo, reader.Table);
 		}

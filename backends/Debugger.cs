@@ -276,19 +276,23 @@ namespace Mono.Debugger
 				throw new CannotStartTargetException ("You must specify a program to debug.");
 
 			if (!native) {
+				Assembly application = null;
 				try {
-					Assembly application = Assembly.LoadFrom (target_application);
-					if (application != null) {
-						do_run (target_application, core_file, application);
-						return;
-					}
+					application = Assembly.LoadFrom (target_application);
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0}", e);
 					if (core_file != null)
 						return;
 				}
+
+				if (application != null) {
+					// Start it as a CIL application.
+					do_run (target_application, core_file, application);
+					return;
+				}
 			}
 
+			// Start it as a native application.
 			setup_environment ();
 
 			string[] new_argv = new string [argv.Length + 1];

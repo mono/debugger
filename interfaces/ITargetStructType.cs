@@ -24,10 +24,38 @@ namespace Mono.Debugger
 
 		// <summary>
 		//   The current programming language's native representation of
-		//   a field.  This is a System.Reflection.FieldInfo for managed
-		//   data types.
+		//   a field.  This is a System.Reflection.FieldInfo or a
+		//   System.Reflection.PropertyInfo for managed data types.
 		// </summary>
 		object FieldHandle {
+			get;
+		}
+	}
+
+	public interface ITargetMethodInfo
+	{
+		ITargetType ReturnType {
+			get;
+		}
+
+		ITargetType[] ParameterTypes {
+			get;
+		}
+
+		string Name {
+			get;
+		}
+
+		int Index {
+			get;
+		}
+
+		// <summary>
+		//   The current programming language's native representation of
+		//   a method.  This is a System.Reflection.MethodInfo for managed
+		//   data types.
+		// </summary>
+		object MethodHandle {
 			get;
 		}
 	}
@@ -39,6 +67,10 @@ namespace Mono.Debugger
 		}
 
 		ITargetFieldInfo[] Properties {
+			get;
+		}
+
+		ITargetMethodInfo[] Methods {
 			get;
 		}
 	}

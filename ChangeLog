@@ -1,3 +1,12 @@
+2002-10-02  Martin Baulig  <martin@gnome.org>
+
+	* interfaces/ITargetStructType.cs (ITargetStructType.Methods):
+	New property to get the methods.
+	(ITargetMethodInfo): New interface to represent a method.
+
+	* interfaces/ITargetStructObject.cs (ITargetStructObject.PrintObject):
+	New method to call a method in the target to print the object.
+
 2002-10-01  Miguel de Icaza  <miguel@ximian.com>
 
 	* frontends/command-line/Interpreter.cs: Update online help.
