@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -37,7 +38,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		private MonoArrayType (MonoArrayType type)
 			: base (type.File, TargetObjectKind.Array,
-				type.element_type.Type.MakeArrayType (type.Rank - 1))
+				C.MonoDebuggerSupport.MakeArrayType (type.element_type.Type, type.Rank - 1))
 		{
 			Rank = type.Rank;
 			Dimension = type.Dimension + 1;

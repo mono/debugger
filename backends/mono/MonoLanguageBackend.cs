@@ -437,8 +437,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (entry.Rank == 0)
 				class_entry_hash.Add (new TypeHashEntry (entry), entry);
 			else {
-				Type etype = Module.ResolveType (entry.Token);
-				Type atype = etype.MakeArrayType (entry.Rank);
+				Type etype = C.MonoDebuggerSupport.ResolveType (Module, entry.Token);
+				Type atype = C.MonoDebuggerSupport.MakeArrayType (etype, entry.Rank);
 				MonoType type = LookupType (atype);
 
 				MonoLanguage.AddClass (entry.KlassAddress, type);
@@ -1170,7 +1170,7 @@ namespace Mono.Debugger.Languages.Mono
 				while (type.GetArrayRank () > 0)
 					type = type.GetElementType ();
 
-				Token = type.MetadataToken;
+				Token = C.MonoDebuggerSupport.GetTypeToken (type);
 				Rank = type.GetArrayRank ();
 			}
 
