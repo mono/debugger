@@ -8,7 +8,6 @@ namespace Mono.Debugger
 	{
 		public readonly string Name;
 		public DebugFlags DebugFlags = DebugFlags.Mutex;
-		protected WaitHandle handle;
 
 		[DllImport("monodebuggerserver")]
 		static extern long mono_debugger_server_get_current_thread ();
@@ -25,16 +24,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool TryLock ()
-		{
-			Debug ("{0} trying to lock {1}", CurrentThread, Name);
-			bool success = handle.WaitOne (0, false);
-			if (success)
-				Debug ("{0} locked {1}", CurrentThread, Name);
-			else
-				Debug ("{0} could not lock {1}", CurrentThread, Name);
-			return success;
-		}
+		public abstract bool TryLock ();
 
 		protected void Debug (string format, params object[] args)
 		{
@@ -47,35 +37,70 @@ namespace Mono.Debugger
 
 	public class DebuggerMutex : DebuggerWaitHandle
 	{
-		Mutex mutex;
+		new IntPtr handle;
+
+		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_mutex_new ();
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_mutex_lock (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_mutex_unlock (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern bool mono_debugger_mutex_trylock (IntPtr handle);
 
 		public DebuggerMutex (string name)
 			: base (name)
 		{
-			handle = mutex = new Mutex ();
+			handle = mono_debugger_mutex_new ();
 		}
 
 		public void Lock ()
 		{
 			Debug ("{0} locking {1}", CurrentThread, Name);
-			while (!handle.WaitOne ()) {
-				Debug ("{0} still trying to lock {1}", CurrentThread, Name);
-			}
+			mono_debugger_mutex_lock (handle);
 			Debug ("{0} locked {1}", CurrentThread, Name);
 		}
 
 		public void Unlock ()
 		{
 			Debug ("{0} unlocking {1}", CurrentThread, Name);
-			mutex.ReleaseMutex ();
+			mono_debugger_mutex_unlock (handle);
+			Debug ("{0} unlocked {1}", CurrentThread, Name);
+		}
+
+		public override bool TryLock ()
+		{
+			Debug ("{0} trying to lock {1}", CurrentThread, Name);
+			bool success = mono_debugger_mutex_trylock (handle);
+			if (success)
+				Debug ("{0} locked {1}", CurrentThread, Name);
+			else
+				Debug ("{0} could not lock {1}", CurrentThread, Name);
+			return success;
 		}
 	}
 
 	public abstract class DebuggerEvent : DebuggerWaitHandle
 	{
+		protected WaitHandle handle;
+
 		protected DebuggerEvent (string name)
 			: base (name)
 		{ }
+
+		public override bool TryLock ()
+		{
+			Debug ("{0} trying to lock {1}", CurrentThread, Name);
+			bool success = handle.WaitOne (0, false);
+			if (success)
+				Debug ("{0} locked {1}", CurrentThread, Name);
+			else
+				Debug ("{0} could not lock {1}", CurrentThread, Name);
+			return success;
+		}
 
 		public void Wait ()
 		{

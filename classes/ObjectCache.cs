@@ -17,6 +17,7 @@ namespace Mono.Debugger
 		int id;
 
 		static ArrayList objects;
+		static DebuggerMutex mutex;
 		static int next_id = 0;
 
 		public ObjectCache (ObjectCacheFunc func, object user_data, int ttl)
@@ -26,19 +27,24 @@ namespace Mono.Debugger
 			this.initial_ttl = this.ttl = ttl;
 			this.id = ++next_id;
 
+			mutex.Lock ();
 			objects.Add (this);
+			mutex.Unlock ();
 		}
 
 		static ObjectCache ()
 		{
-			objects = ArrayList.Synchronized (new ArrayList ());
+			mutex = new DebuggerMutex ("object_cache");
+			objects = new ArrayList ();
 			new Timer (new TimerCallback (cleanup_process), null, 0, 60000);
 		}
 
 		static void cleanup_process (object dummy)
 		{
+			mutex.Lock ();
 			foreach (ObjectCache obj in objects)
 				obj.timeout_func ();
+			mutex.Unlock ();
 		}
 
 		void timeout_func ()
@@ -151,7 +157,9 @@ namespace Mono.Debugger
 				// dispose all managed resources.
 				if (disposing) {
 					ttl = -1;
+					mutex.Lock ();
 					objects.Remove (this);
+					mutex.Unlock ();
 					IDisposable data_dispose = cached_object as IDisposable;
 					if (data_dispose != null)
 						data_dispose.Dispose ();

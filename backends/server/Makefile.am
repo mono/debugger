@@ -47,7 +47,9 @@ libmonodebuggerserver_la_SOURCES = \
 	$(martin_hack_srclist)	\
 	$(server_sources)	\
 	breakpoints.c		\
-	breakpoints.h
+	breakpoints.h		\
+	mutex.c			\
+	mutex.h
 
 debugger_remote_server_LDADD = @SERVER_DEPENDENCIES_LIBS@ libmonodebuggerserver.la
 debugger_remote_server_LDFLAGS = -static

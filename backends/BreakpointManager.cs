@@ -11,7 +11,7 @@ namespace Mono.Debugger.Backends
 		Hashtable breakpoints;
 
 		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_breakpoint_manager_new (BreakpointManagerMutexHandler lock_func, BreakpointManagerMutexHandler unlock_func);
+		static extern IntPtr mono_debugger_breakpoint_manager_new ();
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_breakpoint_manager_free (IntPtr manager);
@@ -20,29 +20,28 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_breakpoint_manager_lookup (IntPtr manager, long address);
 
 		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_breakpoint_info_get_id (IntPtr info);
+		static extern void mono_debugger_breakpoint_manager_lock ();
 
-		protected delegate void BreakpointManagerMutexHandler ();
-		protected DebuggerMutex lock_mutex;
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_breakpoint_manager_unlock ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_breakpoint_info_get_id (IntPtr info);
 
 		public BreakpointManager ()
 		{
-			lock_mutex = new DebuggerMutex ("bpm_mutex");
-			lock_mutex.DebugFlags = DebugFlags.BreakpointManager;
 			breakpoints = new Hashtable ();
-			_manager = mono_debugger_breakpoint_manager_new (
-				new BreakpointManagerMutexHandler (lock_func),
-				new BreakpointManagerMutexHandler (unlock_func));
+			_manager = mono_debugger_breakpoint_manager_new ();
 		}
 
-		void lock_func ()
+		protected void Lock ()
 		{
-			lock_mutex.Lock ();
+			mono_debugger_breakpoint_manager_lock ();
 		}
 
-		void unlock_func ()
+		protected void Unlock ()
 		{
-			lock_mutex.Unlock ();
+			mono_debugger_breakpoint_manager_unlock ();
 		}
 
 		internal IntPtr Manager {
@@ -51,7 +50,8 @@ namespace Mono.Debugger.Backends
 
 		public Breakpoint LookupBreakpoint (TargetAddress address, out int index)
 		{
-			lock (this) {
+			Lock ();
+			try {
 				IntPtr info = mono_debugger_breakpoint_manager_lookup (
 					_manager, address.Address);
 				if (info == IntPtr.Zero) {
@@ -61,20 +61,26 @@ namespace Mono.Debugger.Backends
 
 				index = mono_debugger_breakpoint_info_get_id (info);
 				return (Breakpoint) breakpoints [index];
+			} finally {
+				Unlock ();
 			}
 		}
 
 		public Breakpoint LookupBreakpoint (int breakpoint)
 		{
-			lock (this) {
+			Lock ();
+			try {
 				return (Breakpoint) breakpoints [breakpoint];
+			} finally {
+				Unlock ();
 			}
 		}
 
 		public int InsertBreakpoint (Inferior inferior, Breakpoint breakpoint,
 					     TargetAddress address)
 		{
-			lock (this) {
+			Lock ();
+			try {
 				int index;
 				Breakpoint old = LookupBreakpoint (address, out index);
 				if (old != null)
@@ -86,14 +92,19 @@ namespace Mono.Debugger.Backends
 				index = inferior.InsertBreakpoint (address);
 				breakpoints.Add (index, breakpoint);
 				return index;
+			} finally {
+				Unlock ();
 			}
 		}
 
 		public void RemoveBreakpoint (Inferior inferior, int index)
 		{
-			lock (this) {
+			Lock ();
+			try {
 				inferior.RemoveBreakpoint (index);
 				breakpoints.Remove (index);
+			} finally {
+				Unlock ();
 			}
 		}
 

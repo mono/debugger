@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <server.h>
 #include <breakpoints.h>
+#include <glib/gthread.h>
 #include <sys/stat.h>
 #include <signal.h>
 #include <unistd.h>
@@ -8,19 +9,18 @@
 #include <fcntl.h>
 #include <errno.h>
 
+static GStaticRecMutex bpm_mutex = G_STATIC_REC_MUTEX_INIT;
+
 static int last_breakpoint_id = 0;
 
 BreakpointManager *
-mono_debugger_breakpoint_manager_new (BreakpointManagerMutexFunc lock_func,
-				      BreakpointManagerMutexFunc unlock_func)
+mono_debugger_breakpoint_manager_new (void)
 {
 	BreakpointManager *bpm = g_new0 (BreakpointManager, 1);
 
 	bpm->breakpoints = g_ptr_array_new ();
 	bpm->breakpoint_hash = g_hash_table_new (NULL, NULL);
 	bpm->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
-	bpm->lock_func = lock_func;
-	bpm->unlock_func = unlock_func;
 
 	return bpm;
 }
@@ -35,15 +35,15 @@ mono_debugger_breakpoint_manager_free (BreakpointManager *bpm)
 }
 
 void
-mono_debugger_breakpoint_manager_lock (BreakpointManager *bpm)
+mono_debugger_breakpoint_manager_lock (void)
 {
-	(* bpm->lock_func) ();
+	g_static_rec_mutex_lock (&bpm_mutex);
 }
 
 void
-mono_debugger_breakpoint_manager_unlock (BreakpointManager *bpm)
+mono_debugger_breakpoint_manager_unlock (void)
 {
-	(* bpm->unlock_func) ();
+	g_static_rec_mutex_unlock (&bpm_mutex);
 }
 
 void

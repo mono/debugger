@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -16,18 +17,20 @@ namespace Mono.Debugger
 		SSE			= 64,
 		Notification		= 128,
 		Mutex			= 256,
-		BreakpointManager	= 512
+		SymbolTable		= 512
 	}
 
 	public class Report
 	{
 		public static int CurrentDebugFlags = 0;
 
+		[Conditional("DEBUG")]
 		public static void Debug (DebugFlags category, object argument)
 		{
 			Debug (category, "{0}", argument);
 		}
 
+		[Conditional("DEBUG")]
 		public static void Debug (DebugFlags category, string message, params object[] args)
 		{
 			if (((int) category & (int) CurrentDebugFlags) == 0)

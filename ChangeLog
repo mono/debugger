@@ -1,5 +1,26 @@
 2004-06-30  Martin Baulig  <martin@ximian.com>
 
+	* classes/ObjectCache.cs: Don't make the `objects' ArrayList
+	synchronized, protect it with a mutex instead.  This seems to fix
+	the deadlock.
+
+	* classes/Threading.cs (DebuggerMutex): Use GMutex instead of Mono
+	mutexes.
+
+	* backends/server/breakpoints.h (BreakpointManager): Removed the
+	`lock_func' and `unlock_func'.
+	(mono_debugger_breakpoint_manager_new): Don't take the function
+	pointers as arguments anymore.
+	(mono_debugger_breakpoint_manager_lock): Don't take any arguments,
+	this is now global.
+	(mono_debugger_breakpoint_manager_unlock): Likewise.
+
+	* backends/server/breakpoints.c: Use a GStaticRecMutex.
+
+	* backends/server/mutex.[ch]: New files.
+
+2004-06-30  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs (ProcessStart.SetupEnvironment): Don't
 	pass GC_DONT_GC to our child.
 

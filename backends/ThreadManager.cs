@@ -35,6 +35,7 @@ namespace Mono.Debugger
 			start_event = new DebuggerManualResetEvent ("start_event", false);
 			completed_event = new DebuggerAutoResetEvent ("completed_event", false);
 			command_mutex = new DebuggerMutex ("command_mutex");
+			command_mutex.DebugFlags = DebugFlags.SSE;
 
 			ready_event = new DebuggerManualResetEvent ("ready_event", false);
 			engine_event = Semaphore.CreateThreadManagerSemaphore ();
@@ -209,7 +210,7 @@ namespace Mono.Debugger
 				      "Acquiring global thread lock: {0} {1}",
 				      caller, thread_lock_level);
 			if (thread_lock_level++ > 0)
-				return;
+				throw new ArgumentException ();
 			foreach (SingleSteppingEngine engine in thread_hash.Values) {
 				if (engine == caller)
 					continue;
@@ -235,7 +236,7 @@ namespace Mono.Debugger
 					continue;
 				engine.ReleaseThreadLock ();
 			}
-			thread_lock_mutex.Lock ();
+			thread_lock_mutex.Unlock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock: {0}", caller);
 		}
