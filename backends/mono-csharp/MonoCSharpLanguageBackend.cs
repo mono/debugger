@@ -1398,10 +1398,15 @@ namespace Mono.Debugger.Languages.CSharp
 		ManualResetEvent reload_event;
 		protected MonoSymbolFileTable table;
 
-		public MonoCSharpLanguageBackend (DebuggerBackend backend)
+		public MonoCSharpLanguageBackend (DebuggerBackend backend, Process process)
 		{
 			this.backend = backend;
+			this.process = process;
+
+			breakpoints = new Hashtable ();
 			reload_event = new ManualResetEvent (false);
+
+			process.TargetExited += new TargetExitedHandler (child_exited);
 		}
 
 		public string Name {
@@ -1411,17 +1416,7 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public Process Process {
-			get {
-				return process;
-			}
-
-			set {
-				process = value;
-				if (process != null)
-					init_process ();
-				else
-					child_exited ();
-			}
+			get { return process; }
 		}
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
@@ -1430,17 +1425,11 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		void init_process ()
-		{
-			// sse = process.SingleSteppingEngine;
-			breakpoints = new Hashtable ();
-			process.TargetExited += new TargetExitedHandler (child_exited);
-		}
-
 		void child_exited ()
 		{
 			process = null;
 			info = null;
+			initialized = false;
 			symtab_generation = 0;
 			trampoline_address = TargetAddress.Null;
 		}
@@ -1485,10 +1474,7 @@ namespace Mono.Debugger.Languages.CSharp
 			info = new MonoDebuggerInfo (table);
 
 			trampoline_address = inferior.ReadGlobalAddress (info.generic_trampoline_code);
-
 			notification_address = inferior.ReadGlobalAddress (info.notification_code);
-			Console.WriteLine ("NOTIFICATION ADDRESS: {0} {1}", info.notification_code,
-					   notification_address);
 		}
 
 		public void do_update_symbol_table (IInferior inferior)
@@ -1503,42 +1489,30 @@ namespace Mono.Debugger.Languages.CSharp
 					table.Update (inferior);
 					return;
 				}
+
+				Console.WriteLine ("Re-reading symbol files.");
+
+				TargetAddress address = inferior.ReadAddress (info.symbol_file_table);
+				if (address.IsNull) {
+					Console.WriteLine ("Ooops, no symtab loaded.");
+					return;
+				}
+
+				if (table == null)
+					table = new MonoSymbolFileTable (backend, this);
+
+				table.Reload (inferior, address);
+
+				symtab_generation = table.Generation;
+
+				table.Update (inferior);
+
+				Console.WriteLine ("Done re-reading symbol files.");
 			} catch (Exception e) {
 				Console.WriteLine ("Can't update symbol table: {0}", e);
 				table = null;
 				return;
 			}
-
-			try {
-				do_update_symbol_files (inferior);
-			} catch (Exception e) {
-				Console.WriteLine ("Can't update symbol table: {0}", e);
-				table = null;
-			}
-		}
-
-		void do_update_symbol_files (IInferior inferior)
-		{
-			Console.WriteLine ("Re-reading symbol files.");
-
-			TargetAddress address = inferior.ReadAddress (info.symbol_file_table);
-			if (address.IsNull) {
-				Console.WriteLine ("Ooops, no symtab loaded.");
-				return;
-			}
-
-			bool must_update = false;
-			if (table == null) {
-				table = new MonoSymbolFileTable (backend, this);
-				must_update = true;
-			}
-			table.Reload (inferior, address);
-
-			symtab_generation = table.Generation;
-
-			table.Update (inferior);
-
-			Console.WriteLine ("Done re-reading symbol files.");
 		}
 
 		Hashtable breakpoints = new Hashtable ();

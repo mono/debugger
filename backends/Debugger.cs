@@ -115,11 +115,6 @@ namespace Mono.Debugger
 
 			module_manager.Locked = true;
 
-			if (!start.IsNative) {
-				csharp_language = new MonoCSharpLanguageBackend (this);
-				languages.Add (csharp_language);
-			}
-
 			process = new Process (this, start, bfd_container);
 			main_group.AddThread (process);
 			return process;
@@ -161,8 +156,10 @@ namespace Mono.Debugger
 		internal void ReachedMain (Process process)
 		{
 			module_manager.Locked = true;
-			if (csharp_language != null)
-				csharp_language.Process = process;
+			if (!process.ProcessStart.IsNative) {
+				csharp_language = new MonoCSharpLanguageBackend (this, process);
+				languages.Add (csharp_language);
+			}
 			process.Inferior.UpdateModules ();
 
 			foreach (Module module in Modules)
