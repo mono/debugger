@@ -101,9 +101,6 @@ namespace Mono.Debugger
 
 			byte[] prologue = iprocess.TargetMemoryAccess.ReadBuffer (
 				method.StartAddress, prologue_size);
-			Console.WriteLine ("UNWIND STACK: {0} {1} {2} {3} - {4}", level,
-					   method.Name, method.StartAddress, prologue_size,
-					   TargetBinaryReader.HexDump (prologue));
 
 			object new_data;
 			Register[] regs = arch.UnwindStack (

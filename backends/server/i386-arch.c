@@ -494,7 +494,7 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 	int i;
 
 	sframe.address = (guint32) INFERIOR_REG_EIP (handle->current_regs);
-	sframe.params_address = sframe.locals_address = (guint32) INFERIOR_REG_EBP (handle->current_regs);
+	sframe.frame_address = (guint32) INFERIOR_REG_EBP (handle->current_regs);
 
 	g_array_append_val (frames, sframe);
 
@@ -516,7 +516,7 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 			goto out;
 
 		sframe.address = address;
-		sframe.params_address = sframe.locals_address = frame;
+		sframe.frame_address = frame;
 
 		g_array_append_val (frames, sframe);
 

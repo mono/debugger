@@ -250,30 +250,30 @@ namespace Mono.Debugger
 
 		public object UnwindStack (Register[] registers)
 		{
-			uint[] retval = new uint [7];
+			long[] retval = new long [7];
 
 			foreach (Register register in registers) {
 				switch (register.Index) {
 				case (int) I386Register.EBP:
-					retval [0] = (uint) ((long) register.Data);
+					retval [0] = (long) register.Data;
 					break;
 				case (int) I386Register.EAX:
-					retval [1] = (uint) ((long) register.Data);
+					retval [1] = (long) register.Data;
 					break;
 				case (int) I386Register.EBX:
-					retval [2] = (uint) ((long) register.Data);
+					retval [2] = (long) register.Data;
 					break;
 				case (int) I386Register.ECX:
-					retval [3] = (uint) ((long) register.Data);
+					retval [3] = (long) register.Data;
 					break;
 				case (int) I386Register.EDX:
-					retval [4] = (uint) ((long) register.Data);
+					retval [4] = (long) register.Data;
 					break;
 				case (int) I386Register.ESI:
-					retval [5] = (uint) ((long) register.Data);
+					retval [5] = (long) register.Data;
 					break;
 				case (int) I386Register.EDI:
-					retval [6] = (uint) ((long) register.Data);
+					retval [6] = (long) register.Data;
 					break;
 				}
 			}
@@ -287,7 +287,7 @@ namespace Mono.Debugger
 			int pos = 0;
 			int length = code.Length;
 
-			uint[] regs = (uint []) last_data;
+			long[] regs = (long []) last_data;
 
 			new_data = null;
 			if (length == 0)
@@ -306,7 +306,7 @@ namespace Mono.Debugger
 			pos += 2;
 
 			TargetAddress ebp = new TargetAddress (memory.AddressDomain, regs [0]);
-			regs [0] = (uint) memory.ReadInteger (ebp);
+			regs [0] = (long) memory.ReadInteger (ebp);
 			ebp -= memory.TargetAddressSize;
 
 			while (pos < length) {
@@ -317,22 +317,22 @@ namespace Mono.Debugger
 
 				switch (opcode) {
 				case 0x50: /* eax */
-					regs [1] = (uint) memory.ReadInteger (ebp);
+					regs [1] = (long) memory.ReadInteger (ebp);
 					break;
 				case 0x51: /* ecx */
-					regs [3] = (uint) memory.ReadInteger (ebp);
+					regs [3] = (long) memory.ReadInteger (ebp);
 					break;
 				case 0x52: /* edx */
-					regs [4] = (uint) memory.ReadInteger (ebp);
+					regs [4] = (long) memory.ReadInteger (ebp);
 					break;
 				case 0x53: /* ebx */
-					regs [2] = (uint) memory.ReadInteger (ebp);
+					regs [2] = (long) memory.ReadInteger (ebp);
 					break;
 				case 0x56: /* esi */
-					regs [5] = (uint) memory.ReadInteger (ebp);
+					regs [5] = (long) memory.ReadInteger (ebp);
 					break;
 				case 0x57: /* edi */
-					regs [6] = (uint) memory.ReadInteger (ebp);
+					regs [6] = (long) memory.ReadInteger (ebp);
 					break;
 				}
 

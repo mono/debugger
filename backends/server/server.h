@@ -36,8 +36,7 @@ typedef struct {
 
 typedef struct {
 	guint64 address;
-	guint64 params_address;
-	guint64 locals_address;
+	guint64 frame_address;
 } StackFrame;
 
 /* This is an opaque data structure which the backend may use to store stuff. */

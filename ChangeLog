@@ -1,3 +1,15 @@
+2003-07-10  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/server.h (StackFrame): Replaced the
+	`locals_address' and `params_address' fields with `frame_address'.
+
+	* backends/ptrace/PTrace.cs (PTraceInferior.StackFrame): Added
+	`FrameAddress' field.  We need to keep this structure in sync with
+	StackFrame in server.h.
+
+	* arch/ArchitectureI386.cs (UnwindStack): Registers are stored as
+	`long's, not as `uint's.
+
 2003-07-05  Martin Baulig  <martin@ximian.com>
 
 	* arch/bfd/elf32-target.h, peigen.c, targmatch.h: Include these

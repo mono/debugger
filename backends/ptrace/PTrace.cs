@@ -1043,6 +1043,7 @@ namespace Mono.Debugger.Backends
 		private struct ServerStackFrame
 		{
 			public long Address;
+			public long FrameAddress;
 		}
 
 		private class InferiorStackFrame : IInferiorStackFrame
