@@ -1919,11 +1919,14 @@ namespace Mono.Debugger.Backends
 
 			Report.Debug (DebugFlags.EventLoop, "Runtime invoke: {0}", invoke);
 
-			// insert_temporary_breakpoint (invoke);
+			RuntimeInvokeData rtd = (RuntimeInvokeData) cb.Data.Data;
+
+			if (rtd.Debug)
+				insert_temporary_breakpoint (invoke);
 
 			do_callback (new Callback (
-				new CallMethodData ((RuntimeInvokeData) cb.Data.Data),
-				new CallbackFunc (callback_runtime_invoke_done)));
+					     new CallMethodData (rtd),
+					     new CallbackFunc (callback_runtime_invoke_done)));
 
 			return false;
 		}
@@ -2312,6 +2315,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress ObjectArgument;
 		public readonly TargetAddress[] ParamObjects;
 
+		public bool Debug;
 		public bool InvokeOk;
 		public TargetAddress ReturnObject;
 		public TargetAddress ExceptionObject;

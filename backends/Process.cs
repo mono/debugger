@@ -560,6 +560,7 @@ namespace Mono.Debugger
 		{
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				language, method_argument, object_argument, param_objects);
+			data.Debug = true;
 			return start_step_operation (new Operation (data), true);
 		}
 

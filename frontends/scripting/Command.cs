@@ -212,6 +212,41 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	[ShortDescription("Invokes a method")]
+	public class CallCommand : FrameCommand
+	{
+		InvocationExpression invocation;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			Expression expr = ParseExpression (context);
+			if (expr == null)
+				return false;
+
+			expr = expr.Resolve (context);
+			if (expr == null)
+				return false;
+
+			invocation = expr as InvocationExpression;
+			if (invocation == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a method.", expr.Name);
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ScriptingContext new_context = context.GetExpressionContext ();
+			if (Process > 0)
+				new_context.CurrentProcess = ResolveProcess (new_context);
+			ResolveFrame (new_context);
+			new_context.CurrentFrameIndex = Frame;
+
+			invocation.Invoke (new_context, true);
+		}
+	}
+
 	[ShortDescription("Selects the output stype")]
 	public class StyleCommand : DebuggerCommand
 	{
