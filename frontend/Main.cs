@@ -26,7 +26,7 @@ namespace Mono.Debugger.Frontend
 				if (!options.IsScript) {
 					readline = GnuReadLine.Instance ();
 					/* XXX disabled until I can figure out why it's causing crashes */
-					//readline.EnableCompletion (new CompletionDelegate (engine.Completer.CompletionHandler));
+					readline.EnableCompletion (new CompletionDelegate (engine.Completer.CompletionHandler));
 				}
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
