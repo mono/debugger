@@ -57,13 +57,13 @@ namespace Mono.Debugger.Backends
 	internal class TargetReader : ITargetMemoryReader
 	{
 		byte[] data;
-		BinaryReader reader;
+		TargetBinaryReader reader;
 		int offset;
 		IInferior inferior;
 
 		internal TargetReader (byte[] data, IInferior inferior)
 		{
-			this.reader = new BinaryReader (new MemoryStream (data));
+			this.reader = new TargetBinaryReader (data, inferior);
 			this.inferior = inferior;
 			this.data = data;
 			this.offset = 0;
@@ -71,15 +71,15 @@ namespace Mono.Debugger.Backends
 
 		public long Offset {
 			get {
-				return reader.BaseStream.Position;
+				return reader.Position;
 			}
 
 			set {
-				reader.BaseStream.Position = value;
+				reader.Position = value;
 			}
 		}
 
-		public BinaryReader BinaryReader {
+		public TargetBinaryReader BinaryReader {
 			get {
 				return reader;
 			}

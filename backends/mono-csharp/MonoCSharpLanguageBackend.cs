@@ -76,8 +76,8 @@ namespace Mono.Debugger.Languages.CSharp
 		TargetAddress string_table;
 		int string_table_size;
 
-		BinaryReader reader;
-		BinaryReader address_reader;
+		TargetBinaryReader reader;
+		TargetBinaryReader address_reader;
 		ITargetMemoryReader range_reader;
 		ITargetMemoryReader string_reader;
 
@@ -151,7 +151,7 @@ namespace Mono.Debugger.Languages.CSharp
 		internal ISymbolLookup GetMethod (long offset)
 		{
 			int index = CheckMethodOffset (offset);
-			reader.BaseStream.Position = offset;
+			reader.Position = offset;
 			MethodEntry method = new MethodEntry (reader, address_reader);
 			string_reader.Offset = index * inferior.TargetIntegerSize;
 			string_reader.Offset = string_reader.ReadInteger ();

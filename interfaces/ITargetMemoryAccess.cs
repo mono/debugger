@@ -37,9 +37,9 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   Get the underlying BinaryReader.
+		//   Get the underlying TargetBinaryReader.
 		// </summary>
-		BinaryReader BinaryReader {
+		TargetBinaryReader BinaryReader {
 			get;
 		}
 

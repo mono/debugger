@@ -1,7 +1,14 @@
 2002-09-18  Martin Baulig  <martin@gnome.org>
 
+	* interfaces/ITargetMemoryAccess.cs (ITargetMemoryReader.BinaryReader):
+	Return a TargetBinaryReader instead of a BinaryReader.
+
+	* backends/debugger.cs (TargetReader): Derive from TargetBinaryReader.
+
 	* class/TargetBinaryReader.cs: New public class.  Moved most of
-	DwarfReader.DwarfBinaryReader's functionality here.
+	DwarfReader.DwarfBinaryReader's functionality here.  Implement the
+	Mono.CSharp.Debugger.IMonoBinaryReader interface so that we can
+	pass an instance of this class to the symbol reader.
 
 	* backends/gdb/*: Removed, nothing useful there anymore.
 

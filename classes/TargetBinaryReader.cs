@@ -2,7 +2,10 @@ using System;
 
 namespace Mono.Debugger
 {
-	public class TargetBinaryReader
+	// <summary>
+	//   This is a generic binary reader.
+	// </summary>
+	public class TargetBinaryReader : Mono.CSharp.Debugger.IMonoBinaryReader
 	{
 		ITargetInfo target_info;
 		byte[] contents;
