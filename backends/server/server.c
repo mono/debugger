@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 
 #include <server.h>
 
-static int command_available = 0;
 static int shutdown = 0;
 
 static void
@@ -180,12 +180,6 @@ child_setup_func (gpointer data)
 #define usage() g_error (G_STRLOC ": This program must not be called directly.");
 
 static void
-command_signal_handler (int dummy)
-{
-	command_available = TRUE;
-}
-
-static void
 signal_handler (int dummy)
 {
 	/* Do nothing.  This is just to wake us up. */
@@ -258,21 +252,21 @@ main (int argc, char **argv, char **envp)
 		attached = TRUE;
 	}
 
-	/* Get the current signal mask and remove the ones we want to wait for. */
+	/* These signals have been blocked by our parent, so we need to unblock them here. */
 	sigemptyset (&mask);
-	sigprocmask (SIG_BLOCK, NULL, &mask);
-	sigdelset (&mask, SIGUSR1);
-	sigdelset (&mask, SIGCHLD);
-	sigdelset (&mask, SIGTERM);
+	sigaddset (&mask, SIGCHLD);
+	sigaddset (&mask, SIGTERM);
+	sigprocmask (SIG_UNBLOCK, &mask, NULL);
 
 	/* Install our signal handlers. */
-	signal (SIGUSR1, command_signal_handler);
 	signal (SIGCHLD, signal_handler);
 	signal (SIGTERM, sigterm_handler);
 
 	while (!shutdown) {
 		int ret, status;
+		fd_set fds;
 
+		/* If the child stopped in the meantime. */
 		ret = waitpid (0, &status, WNOHANG | WUNTRACED);
 		if (ret < 0)
 			g_error (G_STRLOC ": Can't waitpid (%d): %s", pid, g_strerror (errno));
@@ -300,12 +294,15 @@ main (int argc, char **argv, char **envp)
 			continue;
 		}
 
-		/* Wait for a signal to arrive. */
-		command_available = FALSE;
-		sigsuspend (&mask);
+		FD_ZERO (&fds);
+		FD_SET (command_fd, &fds);
 
-		if (command_available)
+		/* Wait until either input becomes available or a signal is received. */
+		ret = select (command_fd + 1, &fds, NULL, NULL, NULL);
+		if (ret == 1)
 			command_func (info, handle, command_fd);
+		else if (errno != EINTR)
+			break;
 	}
 
 	/* If we attached to a running process, detach from it, otherwise kill it. */

@@ -72,8 +72,6 @@ mono_debugger_server_send_command (ServerHandle *handle, ServerCommand command)
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	kill (handle->pid, SIGUSR1);
-
 	return read_status (handle);
 }
 
@@ -93,8 +91,6 @@ mono_debugger_server_read_memory (ServerHandle *handle, guint64 start, guint32 s
 
 	if (!mono_debugger_util_write (handle->fd, &l_size, sizeof (l_size)))
 		return COMMAND_ERROR_IO;
-
-	kill (handle->pid, SIGUSR1);
 
 	result = read_status (handle);
 	if (result != COMMAND_ERROR_NONE)
@@ -127,8 +123,6 @@ mono_debugger_server_write_memory (ServerHandle *handle, gpointer data, guint64 
 
 	if (!mono_debugger_util_write (handle->fd, data, size))
 		return COMMAND_ERROR_IO;
-
-	kill (handle->pid, SIGUSR1);
 
 	return read_status (handle);
 }
@@ -179,8 +173,6 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 	if (!mono_debugger_util_write (handle->fd, &callback_argument, sizeof (callback_argument)))
 		return COMMAND_ERROR_IO;
 
-	kill (handle->pid, SIGUSR1);
-
 	return read_status (handle);
 }
 
@@ -195,8 +187,6 @@ mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, g
 
 	if (!mono_debugger_util_write (handle->fd, &address, sizeof (address)))
 		return COMMAND_ERROR_IO;
-
-	kill (handle->pid, SIGUSR1);
 
 	result = read_status (handle);
 	if (result != COMMAND_ERROR_NONE)
@@ -219,8 +209,6 @@ mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 breakpoint
 
 	if (!mono_debugger_util_write (handle->fd, &breakpoint, sizeof (breakpoint)))
 		return COMMAND_ERROR_IO;
-
-	kill (handle->pid, SIGUSR1);
 
 	return read_status (handle);
 }
