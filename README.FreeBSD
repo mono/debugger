@@ -33,3 +33,26 @@ b) You create a shared libbfd.  To do this, you need to give configure the (unfo
    Such a libbfd.so doesn't depend on any non-shared libraries and thus it can be
    dlopen()ed - that's what the debugger needs.
 
+threading issues:
+=================
+
+The debugger only works with kernel threads, not with user-space threads.
+
+The difference is that with kernel threads, each thread is a different kernel process with
+an unique pid while user-space threads have just one kernel process and do the scheduling
+in user space.
+
+While Linux only has kernel threads, FreeBSD uses user-space threads by default.
+
+To get kernel threads on FreeBSD, you need to install the LinuxThreads package - there's a
+port in the FreeBSD ports collection.  After installing it, you need to recompile both
+glib and the mono runtime with LinuxThreads.
+
+Make sure not to use the `-pthread' ld argument anywhere; link against -llthread instead.
+
+If you get any deadlocks in g_logv(), double-check whether your glib is really using
+liblthread.so and not libc_r.so.
+
+There seems to be a problem with boehm which makes it just crash for me, so I compiled my
+runtime with --with-gc=none.
+
