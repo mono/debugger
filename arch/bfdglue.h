@@ -33,6 +33,13 @@ typedef struct {
 	BfdGluePrintAddressHandler print_address_cb;
 } BfdGlueDisassemblerInfo;
 
+typedef struct {
+	guint32 index;
+	guint64 vma;
+	guint64 size;
+	asection *section;
+} BfdGlueSection;
+
 extern void
 bfd_glue_setup_disassembler (struct disassemble_info *info, BfdGlueReadMemoryHandler read_memory_cb,
 			     BfdGlueOutputHandler output_cb, BfdGluePrintAddressHandler print_address_cb);
@@ -46,6 +53,9 @@ bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info
 extern gboolean
 bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, guint64 offset,
 			       gpointer *data, guint32 *size);
+
+extern gboolean
+bfd_glue_get_sections (bfd *abfd, BfdGlueSection **sections, guint32 *count);
 
 extern gboolean
 bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct user_regs_struct **regs);

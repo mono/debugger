@@ -43,6 +43,20 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public override IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
+		{
+			uint ebp = (uint) GetRegister ((int) I386Register.EBP);
+			uint eip = (uint) GetRegister ((int) I386Register.EIP);
+
+			Console.WriteLine ("BACKTRACE: {0:x} {1:x}", eip, ebp);
+
+			Bfd.Section section = core_bfd [ebp];
+
+			Console.WriteLine ("SECTION: {0}", section);
+
+			return new IInferiorStackFrame [0];
+		}
+
 		public override TargetAddress CurrentFrame {
 			get {
 				return new TargetAddress (this, registers [(int) I386Register.EIP]);

@@ -70,10 +70,7 @@ namespace Mono.Debugger.Architecture
 
 		public abstract long[] GetRegisters (int[] registers);
 
-		public IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
-		{
-			throw new NotImplementedException ();
-		}
+		public abstract IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
 
 		public IDisassembler Disassembler {
 			get {

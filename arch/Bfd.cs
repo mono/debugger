@@ -15,9 +15,48 @@ namespace Mono.Debugger.Architecture
 		IntPtr bfd;
 		IInferior inferior;
 		Hashtable symbols;
+		Hashtable section_hash;
 		DwarfReader dwarf;
 		string filename;
 		bool is_coredump;
+
+		internal struct InternalSection
+		{
+			public readonly int index;
+			public readonly long vma;
+			public readonly long size;
+			public readonly IntPtr section;
+		}
+
+		public class Section
+		{
+			public readonly Bfd bfd;
+			public readonly long vma;
+			public readonly long size;
+			public readonly ObjectCache contents;
+
+			internal Section (Bfd bfd, InternalSection section)
+			{
+				this.bfd = bfd;
+				this.vma = section.vma;
+				this.size = section.size;
+				contents = new ObjectCache (
+					new ObjectCacheFunc (get_section_contents), section,
+					new TimeSpan (0,5,0));
+			}
+
+			object get_section_contents (object user_data)
+			{
+				InternalSection section = (InternalSection) user_data;
+
+				return bfd.GetSectionContents (section.section, true);
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("BfdSection ({0:x},{1:x})", vma, size);
+			}
+		}
 
 		[DllImport("libbfd")]
 		extern static void bfd_init ();
@@ -52,6 +91,9 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, long offset, out IntPtr data, out int size);
 
+		[DllImport("libmonodebuggerbfdglue")]
+		extern static bool bfd_glue_get_sections (IntPtr bfd, out IntPtr sections, out int count);
+
 		[DllImport("glib-2.0")]
 		extern static void g_free (IntPtr data);
 
@@ -69,6 +111,8 @@ namespace Mono.Debugger.Architecture
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
+
+			section_hash = new Hashtable ();
 
 			if (core_file) {
 				if (!bfd_glue_check_format_core (bfd))
@@ -159,6 +203,21 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public Section this [long address] {
+			get {
+				read_sections ();
+				foreach (Section section in sections) {
+					if ((address < section.vma) || (address >= section.vma + section.size))
+						continue;
+
+					return section;
+				}
+
+				throw new SymbolTableException (String.Format (
+					"No section contains address {0:x}.", address));
+			}
+		}
+
 		public byte[] GetSectionContents (string name, bool raw_section)
 		{
 			IntPtr section, data;
@@ -168,6 +227,14 @@ namespace Mono.Debugger.Architecture
 			if (section == IntPtr.Zero)
 				return null;
 
+			return GetSectionContents (section, raw_section);
+		}
+
+		byte[] GetSectionContents (IntPtr section, bool raw_section)
+		{
+			IntPtr data;
+			int size;
+
 			if (!bfd_glue_get_section_contents (bfd, section, raw_section, 0, out data, out size))
 				return null;
 
@@ -175,6 +242,34 @@ namespace Mono.Debugger.Architecture
 				byte[] retval = new byte [size];
 				Marshal.Copy (data, retval, 0, size);
 				return retval;
+			} finally {
+				g_free (data);
+			}
+		}
+
+		bool has_sections = false;
+		Section[] sections = null;
+
+		void read_sections ()
+		{
+			if (has_sections)
+				return;
+
+			IntPtr data = IntPtr.Zero;
+			try {
+				int count;
+				if (!bfd_glue_get_sections (bfd, out data, out count))
+					throw new SymbolTableException ("Can't get bfd sections");
+
+				sections = new Section [count];
+
+				IntPtr ptr = data;
+				for (int i = 0; i < count; i++) {
+					InternalSection isection = (InternalSection) Marshal.PtrToStructure (
+						ptr, typeof (InternalSection));
+					sections [i] = new Section (this, isection);
+					ptr = new IntPtr ((long) ptr + Marshal.SizeOf (isection));
+				}
 			} finally {
 				g_free (data);
 			}

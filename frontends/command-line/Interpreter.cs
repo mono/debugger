@@ -186,6 +186,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 				Console.WriteLine ("CURRENT FRAME: {0}", backend.CurrentFrameAddress);
 				break;
 
+			case "bt":
+				backend.GetBacktrace ();
+				break;
+
 			case "b":
 			case "break-method": {
 				if (args.Length != 2) {

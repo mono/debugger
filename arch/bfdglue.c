@@ -153,6 +153,28 @@ bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, gu
 }
 
 gboolean
+bfd_glue_get_sections (bfd *abfd, BfdGlueSection **sections, guint32 *count_ret)
+{
+	int count = 0;
+	asection *p;
+
+	for (p = abfd->sections; p != NULL; p = p->next)
+		count++;
+
+	*count_ret = count;
+	*sections = g_new0 (BfdGlueSection, count);
+
+	for (p = abfd->sections, count = 0; p != NULL; p = p->next, count++) {
+		(*sections) [count].index = count;
+		(*sections) [count].vma = p->vma;
+		(*sections) [count].size = p->_raw_size;
+		(*sections) [count].section = p;
+	}
+
+	return TRUE;
+}
+
+gboolean
 bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct user_regs_struct **regs)
 {
 	int pos = 0;
@@ -168,7 +190,7 @@ bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, struct u
 				return FALSE;
 			}
 
-			prstatus = data + pos + sizeof (Elf32_Nhdr) + note->n_namesz;
+			prstatus = (struct elf_prstatus *) (data + pos + sizeof (Elf32_Nhdr) + note->n_namesz);
 			*regs = (struct user_regs_struct *) &prstatus->pr_reg;
 			return TRUE;
 		}
