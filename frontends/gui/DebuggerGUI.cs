@@ -325,9 +325,7 @@ namespace Mono.Debugger.GUI
 			// FIXME: chdir here to working_dir
 			//
 
-			string[] args = start.CommandLineArguments;
-			main_window.Title = "Debugging: " + program +
-				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
+			main_window.Title = "Debugging: " + start.CommandLine;
 		}
 
 		void main_process_started (ThreadManager manager, Process process)

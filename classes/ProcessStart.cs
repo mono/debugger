@@ -132,6 +132,10 @@ namespace Mono.Debugger
 			get { return core_file; }
 		}
 
+		public virtual string CommandLine {
+			get { return String.Join (" ", argv); }
+		}
+
 		protected virtual void SetupEnvironment (params string[] add_envp)
 		{
 			ArrayList list = new ArrayList ();
@@ -258,6 +262,10 @@ namespace Mono.Debugger
 		{
 			if (base_dir == null)
 				base_dir = GetFullPath (Path.GetDirectoryName (old_argv [0]));
+		}
+
+		public override string CommandLine {
+			get { return String.Join (" ", old_argv); }
 		}
 
 		protected override string[] SetupArguments ()
