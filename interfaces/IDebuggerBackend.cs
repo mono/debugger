@@ -73,6 +73,12 @@ namespace Mono.Debugger
 		void Continue ();
 
 		// <summary>
+		//   Continue running until we either reach the specified location, hit a
+		//   breakpoint or receive a signal.
+		// </summary>
+		void Continue (ITargetLocation location);
+
+		// <summary>
 		//   Aborts the target being debugged, but gives it time to terminate cleanly.
 		//   On Unix systems, this'll send a SIGTERM to the target process.
 		// </summary>
@@ -93,6 +99,11 @@ namespace Mono.Debugger
 		//   Single-step and enter into methods.
 		// </summary>
 		void Step ();
+
+		// <summary>
+		//   Single-step until we leave the specified frame.
+		// </summary>
+		void Step (IStepFrame frame);
 
 		// <summary>
 		//   Single-step, but step over method invocations.
@@ -138,6 +149,10 @@ namespace Mono.Debugger
 		//   Start the target.
 		// </summary>
 		void Run ();
+
+		void StepLine ();
+
+		void NextLine ();
 
 		// <summary>
 		//   Tell the debugger that we're finished debugging.  This kills the target

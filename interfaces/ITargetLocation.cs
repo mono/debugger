@@ -2,6 +2,17 @@ using System;
 
 namespace Mono.Debugger
 {
+	public interface IStepFrame
+	{
+		ITargetLocation Start {
+			get;
+		}
+
+		ITargetLocation End {
+			get;
+		}
+	}
+
 	// <summary>
 	//   This interface denotes an address in the target's address
 	//   space.  An instance of this interface can be obtained by

@@ -333,6 +333,29 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
+	internal class StepFrame : IStepFrame
+	{
+		ITargetLocation start, end;
+
+		internal StepFrame (ITargetLocation start, ITargetLocation end)
+		{
+			this.start = start;
+			this.end = end;
+		}
+
+		public ITargetLocation Start {
+			get {
+				return start;
+			}
+		}
+
+		public ITargetLocation End {
+			get {
+				return end;
+			}
+		}
+	}
+
 	internal delegate void TargetAsyncCallback (object user_data, object result);
 
 	internal class TargetAsyncResult
@@ -624,6 +647,43 @@ namespace Mono.Debugger.Backends
 		{
 			if (inferior != null)
 				inferior.Shutdown ();
+		}
+
+		IStepFrame get_step_frame ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+
+			IStackFrame frame = Frame ();
+			if (frame.SourceLocation == null)
+				return null;
+
+			int offset = frame.SourceLocation.SourceOffset;
+			int range = frame.SourceLocation.SourceRange;
+
+			ITargetLocation start = new TargetLocation (frame.TargetLocation.Address - offset);
+			ITargetLocation end = (ITargetLocation) start.Clone ();
+			end.Offset += range;
+
+			return new StepFrame (start, end);
+		}
+
+		public void StepLine ()
+		{
+			inferior.Step (get_step_frame ());
+		}
+
+		public void NextLine ()
+		{
+			IStepFrame frame = get_step_frame ();
+			if (frame == null) {
+				inferior.Next ();
+				return;
+			}
+
+			Console.WriteLine ("RUNNING UNTIL: {0:x}", frame.End);
+
+			inferior.Continue (frame.End);
 		}
 
 		public IStackFrame Frame ()

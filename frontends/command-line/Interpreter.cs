@@ -99,18 +99,28 @@ namespace Mono.Debugger.Frontends.CommandLine
 				backend.Frame ();
 				break;
 
-			case "s":
-			case "step":
+			case "i":
+			case "stepi":
 				if (backend.Inferior == null)
 					throw new NoTargetException ();
 				backend.Inferior.Step ();
 				break;
 
-			case "n":
-			case "next":
+			case "t":
+			case "nexti":
 				if (backend.Inferior == null)
 					throw new NoTargetException ();
 				backend.Inferior.Next ();
+				break;
+
+			case "s":
+			case "step":
+				backend.StepLine ();
+				break;
+
+			case "n":
+			case "next":
+				backend.NextLine ();
 				break;
 
 			case "abort":

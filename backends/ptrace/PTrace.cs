@@ -69,6 +69,8 @@ namespace Mono.Debugger.Backends
 		Hashtable pending_callbacks = new Hashtable ();
 		long last_callback_id = 0;
 
+		IStepFrame current_step_frame = null;
+
 		public int PID {
 			get {
 				return child_pid;
@@ -340,6 +342,15 @@ namespace Mono.Debugger.Backends
 				} else if (!debugger_info_read) {
 					debugger_info_read = true;
 					read_mono_debugger_info ();
+				} else if (current_step_frame != null) {
+					ITargetLocation frame = Frame ();
+
+					if ((frame.Address >= current_step_frame.Start.Address) &&
+					    (frame.Address < current_step_frame.End.Address)) {
+						send_command (ServerCommand.STEP);
+						break;
+					}
+					current_step_frame = null;
 				}
 				change_target_state (TargetState.STOPPED);
 				break;
@@ -615,6 +626,12 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.RUNNING);
 		}
 
+		public void Continue (ITargetLocation location)
+		{
+			insert_temporary_breakpoint (location);
+			Continue ();
+		}
+
 		public void Detach ()
 		{
 			send_command (ServerCommand.DETACH);
@@ -632,6 +649,12 @@ namespace Mono.Debugger.Backends
 
 		public void Step ()
 		{
+			Step (null);
+		}
+
+		public void Step (IStepFrame frame)
+		{
+			current_step_frame = frame;
 			send_command (ServerCommand.STEP);
 			change_target_state (TargetState.RUNNING);
 		}
@@ -641,10 +664,7 @@ namespace Mono.Debugger.Backends
 			ITargetLocation location = Frame ();
 			location.Offset += bfd_disassembler.GetInstructionSize (location);
 
-			insert_temporary_breakpoint (location);
-
-			send_command (ServerCommand.CONTINUE);
-			change_target_state (TargetState.RUNNING);
+			Continue (location);
 		}
 
 		public ITargetLocation Frame ()
