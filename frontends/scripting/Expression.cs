@@ -352,6 +352,30 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class CatchExpression : Expression
+	{
+		public override string Name {
+			get { return "catch"; }
+		}
+
+		ITargetObject exc;
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			exc = context.CurrentProcess.CurrentException;
+			if (exc == null)
+				throw new ScriptingException ("No current exception.");
+
+			resolved = true;
+			return this;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			return exc;
+		}
+	}
+
 	public class TypeExpression : Expression
 	{
 		ITargetType type;

@@ -1,5 +1,14 @@
 2004-06-21  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ILanguage.cs (ILanguage.CreateObject): New method.
+
+	* frontends/scripting/Expression.cs
+	(CatchExpression): New expression.
+
+	* frontends/command-line/Tokenizer.cs: Added `catch' keyword.
+
+2004-06-21  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetEvent.cs
 	(TargetEventType): Added `UnhandledException'.
 

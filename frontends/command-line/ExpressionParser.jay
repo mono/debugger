@@ -79,6 +79,7 @@ namespace Mono.Debugger.Frontends.Scripting
 %token NEW
 %token THIS
 %token BASE
+%token CATCH
 
 %start parse_expression
 %%
@@ -114,6 +115,10 @@ expression
 	| THIS
 	  {
 		$$ = new ThisExpression ();
+	  }
+	| CATCH
+	  {
+		$$ = new CatchExpression ();
 	  }
 	| BASE DOT IDENTIFIER
 	  {

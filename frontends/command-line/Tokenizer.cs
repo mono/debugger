@@ -51,6 +51,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			keywords.Add ("new", Token.NEW);
 			keywords.Add ("this", Token.THIS);
 			keywords.Add ("base", Token.BASE);
+			keywords.Add ("catch", Token.CATCH);
 		}
 
 		ScriptingContext context;

@@ -50,5 +50,10 @@ namespace Mono.Debugger.Languages.Native
 		{
 			throw new InvalidOperationException ();
 		}
+
+		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
+		{
+			return null;
+		}
 	}
 }

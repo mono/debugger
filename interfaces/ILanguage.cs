@@ -29,6 +29,8 @@ namespace Mono.Debugger.Languages
 		bool CanCreateInstance (Type type);
 
 		ITargetObject CreateInstance (StackFrame frame, object obj);
+
+		ITargetObject CreateObject (StackFrame frame, TargetAddress address);
 	}
 }
 

@@ -698,6 +698,18 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.CreateInstance (frame, obj);
 		}
 
+		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
+		{
+			MonoObjectObject obj = builtin.ObjectType.CreateObject (frame, address);
+			if (obj == null)
+				return null;
+
+			if (obj.HasDereferencedObject)
+				return obj.DereferencedObject;
+			else
+				return obj;
+		}
+
 		//
 		// IDisposable
 		//

@@ -36,5 +36,11 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			return new MonoObjectObject (this, location);
 		}
+
+		public MonoObjectObject CreateObject (StackFrame frame, TargetAddress address)
+		{
+			TargetLocation location = new AbsoluteTargetLocation (frame, address);
+			return new MonoObjectObject (this, location);
+		}
 	}
 }

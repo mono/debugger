@@ -34,7 +34,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				    AssemblerLine current_insn);
 
 		void UnhandledException (ScriptingContext context, FrameHandle frame,
-					 AssemblerLine current_insn, TargetAddress exc);
+					 AssemblerLine current_insn, ITargetObject exc);
 
 		void ShowVariableType (ITargetType type, string name);
 
@@ -60,6 +60,13 @@ namespace Mono.Debugger.Frontends.Scripting
 		public override void Reset ()
 		{
 			IsNative = false;
+		}
+
+		public override void UnhandledException (ScriptingContext context,
+							 FrameHandle frame, AssemblerLine insn,
+							 ITargetObject exc)
+		{
+			base.UnhandledException (context, frame, insn, exc);
 		}
 	}
 
@@ -109,7 +116,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public virtual void UnhandledException (ScriptingContext context,
 							FrameHandle frame, AssemblerLine insn,
-							TargetAddress exc)
+							ITargetObject exc)
 		{
 			TargetStopped (context, frame, insn);
 		}
@@ -416,7 +423,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public void UnhandledException (ScriptingContext context,
 						FrameHandle frame, AssemblerLine insn,
-						TargetAddress exc)
+						ITargetObject exc)
 		{
 			TargetStopped (context, frame, insn);
 		}

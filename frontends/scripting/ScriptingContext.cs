@@ -308,6 +308,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		FrameHandle current_frame = null;
 		BacktraceHandle current_backtrace = null;
 		AssemblerLine current_insn = null;
+		ITargetObject current_exception = null;
 
 		void target_exited ()
 		{
@@ -319,6 +320,8 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		void target_event (object sender, TargetEventArgs args)
 		{
+			current_exception = null;
+
 			if (args.Frame != null) {
 				current_frame = new FrameHandle (this, args.Frame);
 				current_frame_idx = -1;
@@ -359,12 +362,20 @@ namespace Mono.Debugger.Frontends.Scripting
 				interpreter.Print ("{0} caught unhandled exception{1}",
 						   Name, frame);
 
+				TargetAddress exc = (TargetAddress) args.Data;
+				ITargetObject exc_object = null;
+				if (current_frame != null)
+					exc_object = current_frame.Language.CreateObject (
+						current_frame.Frame, exc);
+
+				current_exception = exc_object;
+
 				if (interpreter.IsScript)
 					break;
 
 				interpreter.Style.UnhandledException (
 					interpreter.GlobalContext, current_frame, current_insn,
-					(TargetAddress) args.Data);
+					exc_object);
 
 				if (!interpreter.IsInteractive)
 					interpreter.Abort ();
@@ -403,6 +414,8 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
+
+			current_exception = null;
 
 			bool ok;
 			switch (which) {
@@ -552,6 +565,12 @@ namespace Mono.Debugger.Frontends.Scripting
 					return TargetState.NO_TARGET;
 				else
 					return process.State;
+			}
+		}
+
+		public ITargetObject CurrentException {
+			get {
+				return current_exception;
 			}
 		}
 
