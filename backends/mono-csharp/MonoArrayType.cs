@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.CSharp
 					throw new InternalError ();
 			} else if (atype == 3) {
 				// MONO_TYPE_ARRAY
-				if (size_field != 13 + memory.TargetAddressSize)
+				if (size_field != 12 + memory.TargetAddressSize)
 					throw new InternalError ();
 			} else
 				throw new InternalError ();

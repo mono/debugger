@@ -20,6 +20,8 @@ namespace Mono.Debugger.Languages.CSharp
 				return new MonoStringType (type, reader);
 			else if (MonoArrayType.Supports (type, reader))
 				return new MonoArrayType (type, memory, reader);
+			else if (MonoEnumType.Supports (type, reader))
+				return new MonoEnumType (type, memory, reader);
 			else
 				return new MonoOpaqueType (type, size);
 		}
