@@ -142,7 +142,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class RegisterExpression : VariableExpression
+	public abstract class PointerExpression : VariableExpression
+	{
+		public abstract TargetLocation ResolveLocation (ScriptingContext context);
+	}
+
+	public class RegisterExpression : PointerExpression
 	{
 		string name;
 		int register;
@@ -172,7 +177,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return context.CurrentFrame.GetRegister (register, offset);
 		}
 
-		public TargetLocation ResolveLocation (ScriptingContext context)
+		public override TargetLocation ResolveLocation (ScriptingContext context)
 		{
 			ResolveBase (context);
 			FrameHandle frame = context.CurrentFrame;
@@ -450,11 +455,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class PointerExpression : VariableExpression
+	public class PointerDereferenceExpression : PointerExpression
 	{
 		Expression expr;
 
-		public PointerExpression (Expression expr)
+		public PointerDereferenceExpression (Expression expr)
 		{
 			this.expr = expr;
 		}
@@ -492,6 +497,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 					"Cannot get current type of `{0}'.", expr.Name);
 
 			return type;
+		}
+
+		public override TargetLocation ResolveLocation (ScriptingContext context)
+		{
+			ResolveBase (context);
+			FrameHandle frame = context.CurrentFrame;
+
+			object obj = expr.Resolve (context);
+			if (obj is int)
+				obj = (long) (int) obj;
+			if (obj is long) {
+				ITargetType type = frame.Frame.Language.PointerType;
+
+				TargetAddress taddress = new TargetAddress (
+					frame.Frame.AddressDomain, (long) obj);
+
+				return new AbsoluteTargetLocation (frame.Frame, taddress);
+			}
+
+			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			if (pobj == null)
+				throw new ScriptingException (
+					"Variable `{0}' is not a pointer type.", expr.Name);
+
+			return pobj.Location;
 		}
 
 		protected override object DoResolve (ScriptingContext context)

@@ -152,25 +152,32 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("EXAMINE", "Examine memory.")]
+	[Command("examine", "Examine memory.")]
 	public class ExamineCommand : Command
 	{
-		VariableExpression expression;
-		FrameExpression frame_expr;
-		long address;
-		Format format;
+		Expression expression;
+		int size = 16;
 
-		public ExamineCommand (Format format, VariableExpression expression)
-		{
-			this.format = format;
-			this.expression = expression;
+		[Argument(ArgumentType.Integer, "size", "Size")]
+		public int Size {
+			get { return size; }
+			set { size = value; }
 		}
 
-		public ExamineCommand (Format format, FrameExpression frame_expr, long address)
+		protected override bool DoResolve (ScriptingContext context, object[] args)
 		{
-			this.format = format;
-			this.frame_expr = frame_expr;
-			this.address = address;
+			if ((args == null) || (args.Length != 1)) {
+				context.Error ("`examine' takes exactly one argument");
+				return false;
+			}
+
+			expression = args [0] as Expression;
+			if (expression == null) {
+				context.Print ("Argument is not an expression");
+				return false;
+			}
+
+			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
@@ -179,52 +186,25 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ITargetAccess taccess;
 			byte[] data;
 
-			RegisterExpression rexp = expression as RegisterExpression;
-			if (rexp != null) {
-				TargetLocation location = rexp.ResolveLocation (context);
+			PointerExpression pexp = expression as PointerExpression;
+			if (pexp != null) {
+				TargetLocation location = pexp.ResolveLocation (context);
 
 				taddress = location.Address;
 				taccess = location.TargetAccess;
-			} else if (expression != null) {
+			} else {
 				ITargetObject obj = expression.ResolveVariable (context);
 
 				if (!obj.Location.HasAddress)
-					throw new ScriptingException ("Expression doesn't have an address.");
+					throw new ScriptingException (
+						"Expression doesn't have an address.");
 
 				taddress = obj.Location.Address;
 				taccess = obj.Location.TargetAccess;
-			} else {
-				FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
-
-				taddress = new TargetAddress (frame.Frame.AddressDomain, address);
-				taccess = frame.Frame.TargetAccess;
 			}
 
-			try {
-				data = taccess.ReadBuffer (taddress, format.Size);
-			} catch (TargetException) {
-				throw new ScriptingException ("Can't access target memory at address {0}.", taddress);
-			}
-
+			data = taccess.ReadBuffer (taddress, size);
 			context.Print (TargetBinaryReader.HexDump (taddress, data));
-		}
-
-		public struct Format
-		{
-			int size;
-
-			public static readonly Format Standard = new Format (16);
-
-			public Format (int size)
-			{
-				this.size = size;
-			}
-
-			public int Size {
-				get {
-					return size;
-				}
-			}
 		}
 	}
 
