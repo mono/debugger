@@ -16,7 +16,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   This is a generic binary reader.
 	// </summary>
-	public class TargetBinaryReader : Mono.CSharp.Debugger.IMonoBinaryReader
+	public class TargetBinaryReader
 	{
 		ITargetInfo target_info;
 		TargetBlob blob;
