@@ -1,3 +1,13 @@
+2004-06-20  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs: Read the .debug_pubnames section and use it
+	for name based lookups.
+
+	* classes/ISymbolFile.cs (ISymbolFile.FindMethod): New method.
+
+	* classes/SourceInfo.cs (SourceFile.FindMethod): Use
+	ISymbolFile.FindMethod() rather than looping over all the methods.
+
 2004-06-19  Martin Baulig  <martin@ximian.com>
 
 	* classes/MethodSource.cs (MethodSource.GetNamespaces): New public

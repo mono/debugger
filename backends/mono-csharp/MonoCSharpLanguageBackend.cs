@@ -1058,6 +1058,11 @@ namespace Mono.Debugger.Languages.CSharp
 				GetSourceMethod (file, entry.Index);
 		}
 
+		public override SourceMethod FindMethod (string name)
+		{
+			return null;
+		}
+
 		protected MonoMethod GetMonoMethod (int index)
 		{
 			ensure_sources ();

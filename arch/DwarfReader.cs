@@ -32,6 +32,7 @@ namespace Mono.Debugger.Architecture
 		Hashtable compile_unit_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
+		Hashtable pubnames;
 		ITargetInfo target_info;
 		SourceFileFactory factory;
 
@@ -86,6 +87,7 @@ namespace Mono.Debugger.Architecture
 			if (bfd.IsLoaded) {
 				aranges = ArrayList.Synchronized (read_aranges ());
 				symtab = new DwarfSymbolTable (this, aranges);
+				pubnames = Hashtable.Synchronized (read_pubnames ());
 			}
 
 			ArrayList source_list = new ArrayList ();
@@ -105,6 +107,8 @@ namespace Mono.Debugger.Architecture
 
 			aranges = ArrayList.Synchronized (read_aranges ());
 			symtab = new DwarfSymbolTable (this, aranges);
+
+			pubnames = Hashtable.Synchronized (read_pubnames ());
 		}
 
 		public static bool IsSupported (Bfd bfd)
@@ -167,6 +171,24 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public SourceMethod FindMethod (string name)
+		{
+			if (pubnames == null)
+				return null;
+
+			NameEntry entry = (NameEntry) pubnames [name];
+			if (entry == null)
+				return null;
+
+			SourceMethod source;
+			source = (SourceMethod) method_source_hash [entry.AbsoluteOffset];
+			if (source != null)
+				return source;
+
+			CompileUnitBlock block = (CompileUnitBlock) compile_unit_hash [entry.FileOffset];
+			return block.GetMethod (entry.AbsoluteOffset);
+		}
+
 		protected SourceMethod GetSourceMethod (DieSubprogram subprog,
 							int start_row, int end_row)
 		{
@@ -210,6 +232,34 @@ namespace Mono.Debugger.Architecture
 					build_symtabs ();
 					return symtabs;
 				}
+			}
+
+			CompilationUnit get_comp_unit (long offset)
+			{
+				foreach (CompilationUnit comp_unit in compile_units) {
+					long start = comp_unit.RealStartOffset;
+					long end = start + comp_unit.UnitLength;
+
+					if ((offset >= start) && (offset < end))
+						return comp_unit;
+				}
+
+				return null;
+			}
+
+			public SourceMethod GetMethod (long offset)
+			{
+				build_symtabs ();
+				CompilationUnit comp_unit = get_comp_unit (offset);
+				if (comp_unit == null)
+					return null;
+
+				DieCompileUnit die = comp_unit.DieCompileUnit;
+				DieSubprogram subprog = die.GetSubprogram (offset);
+				if (subprog == null)
+					return null;
+
+				return subprog.SourceMethod;
 			}
 
 			void build_symtabs ()
@@ -268,6 +318,12 @@ namespace Mono.Debugger.Architecture
 					CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
 					compile_units.Add (comp_unit);
 				}
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("CompileUnitBlock ({0}:{1}:{2})",
+						      dwarf.FileName, offset, length);
 			}
 		}
 
@@ -406,6 +462,59 @@ namespace Mono.Debugger.Architecture
 			}
 
 			return ranges;
+		}
+
+		private class NameEntry
+		{
+			public readonly long FileOffset;
+			public readonly long Offset;
+
+			public long AbsoluteOffset {
+				get { return FileOffset + Offset; }
+			}
+
+			public NameEntry (long file_offset, long offset)
+			{
+				this.FileOffset = file_offset;
+				this.Offset = offset;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("NameEntry ({0}:{1})",
+						      FileOffset, Offset);
+			}
+		}
+
+		Hashtable read_pubnames ()
+		{
+			DwarfBinaryReader reader = DebugPubnamesReader;
+
+			Hashtable names = new Hashtable ();
+
+			while (!reader.IsEof) {
+				long start = reader.Position;
+				long length = reader.ReadInitialLength ();
+				long stop = reader.Position + length;
+				int version = reader.ReadInt16 ();
+				long debug_offset = reader.ReadOffset ();
+				long debug_length = reader.ReadOffset ();
+
+				if (version != 2)
+					throw new DwarfException (this, String.Format (
+						"Wrong version in .debug_pubnames: {0}", version));
+
+				while (reader.Position < stop) {
+					long offset = reader.ReadInt32 ();
+					if (offset == 0)
+						break;
+
+					string name = reader.ReadString ();
+					names.Add (name, new NameEntry (debug_offset, offset));
+				}
+			}
+
+			return names;
 		}
 
 		object create_reader_func (object user_data)
@@ -1497,7 +1606,7 @@ namespace Mono.Debugger.Architecture
 					throw new InternalError ();
 
 				case DwarfTag.subprogram:
-					return new DieSubprogram (reader, comp_unit, abbrev);
+					return new DieSubprogram (reader, comp_unit, offset, abbrev);
 
 				case DwarfTag.base_type:
 					return new DieBaseType (reader, comp_unit, offset, abbrev);
@@ -1607,6 +1716,17 @@ namespace Mono.Debugger.Architecture
 					read_children ();
 					return children;
 				}
+			}
+
+			public DieSubprogram GetSubprogram (long offset)
+			{
+				read_children ();
+				foreach (DieSubprogram subprog in children) {
+					if (subprog.RealOffset == offset)
+						return subprog;
+				}
+
+				return null;
 			}
 
 			protected override void ProcessAttribute (Attribute attribute)
@@ -1749,7 +1869,7 @@ namespace Mono.Debugger.Architecture
 
 		protected class DieSubprogram : Die, IComparable, ISymbolContainer
 		{
-			long start_pc, end_pc;
+			long real_offset, start_pc, end_pc;
 			bool is_continuous;
 			string name;
 			DwarfTargetMethod method;
@@ -1790,9 +1910,10 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public DieSubprogram (DwarfBinaryReader reader, CompilationUnit comp_unit,
-					      AbbrevEntry abbrev)
+					      long offset, AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
 			{
+				this.real_offset = offset;
 				if ((start_pc != 0) && (end_pc != 0))
 					is_continuous = true;
 			}
@@ -1857,6 +1978,12 @@ namespace Mono.Debugger.Architecture
 						throw new InvalidOperationException ();
 
 					return end_pc;
+				}
+			}
+
+			internal long RealOffset {
+				get {
+					return real_offset;
 				}
 			}
 
@@ -2163,6 +2290,12 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
+			internal long UnitLength {
+				get {
+					return unit_length;
+				}
+			}
+
 			public AbbrevEntry this [int abbrev_id] {
 				get {
 					if (abbrevs.Contains (abbrev_id))
@@ -2188,8 +2321,8 @@ namespace Mono.Debugger.Architecture
 			{
 				return String.Format ("CompilationUnit ({0},{1},{2} - {3},{4},{5})",
 						      dwarf.Is64Bit ? "64-bit" : "32-bit", version,
-						      address_size, start_offset, unit_length,
-						      abbrev_offset);
+						      address_size, real_start_offset,
+						      unit_length, abbrev_offset);
 			}
 		}
 

@@ -9,5 +9,7 @@ namespace Mono.Debugger
 		void GetMethods (SourceFile file);
 
 		IMethod GetMethod (long handle);
+
+		SourceMethod FindMethod (string name);
 	}
 }

@@ -196,7 +196,6 @@ namespace Mono.Debugger
 
 			foreach (SourceFile source in SymbolFile.Sources) {
 				SourceMethod method = source.FindMethod (name);
-
 				if (method != null)
 					return method;
 			}

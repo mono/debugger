@@ -64,13 +64,7 @@ namespace Mono.Debugger
 
 		public SourceMethod FindMethod (string name)
 		{
-			module.SymbolFile.GetMethods (this);
-			foreach (SourceMethod method in methods) {
-				if (method.Name == name)
-					return method;
-			}
-
-			return null;
+			return module.SymbolFile.FindMethod (name);
 		}
 
 		public SourceLocation FindLine (int line)

@@ -204,6 +204,11 @@ namespace Mono.Debugger.Architecture
 		void ISymbolFile.GetMethods (SourceFile file)
 		{ }
 
+		public SourceMethod FindMethod (string name)
+		{
+			return null;
+		}
+
 		protected struct Entry {
 			public readonly string n_str;
 			public readonly byte n_type;
