@@ -53,6 +53,7 @@ case "$host" in
 		glue_cflags="-mno-cygwin"
 		server_cflags="-I/usr/include/w32api -mno-cygwin"
 		windows=true
+		AC_DEFINE(PLATFORM_WIN32,1, [Whether we're on Windows.])
 		;;
 	*)
 		AC_MSG_ERROR([*** This platform is not yet supported.])
