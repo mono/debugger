@@ -78,6 +78,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public abstract Process Process {
+			get;
+		}
+
 		public abstract ITargetAccess TargetAccess {
 			get;
 		}

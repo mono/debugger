@@ -6,7 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal abstract class CoreFile : Process, ITargetAccess
+	internal abstract class CoreFile : Process, ITargetMemoryAccess
 	{
 		protected Bfd bfd;
 		protected Bfd core_bfd;
@@ -236,9 +236,15 @@ namespace Mono.Debugger.Architecture
 				this.language = core.NativeLanguage;
 			}
 
+			public override Process Process {
+				get {
+					throw new InvalidOperationException ();
+				}
+			}
+
 			public override ITargetAccess TargetAccess {
 				get {
-					return core;
+					return null;
 				}
 			}
 
@@ -330,7 +336,7 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public override ITargetAccess TargetAccess {
-			get { return this; }
+			get { return null; }
 		}
 
 		public override TargetState State {
@@ -404,16 +410,6 @@ namespace Mono.Debugger.Architecture
 		public override TargetMemoryArea[] GetMemoryMaps ()
 		{
 			return core_bfd.GetMemoryMaps ();
-		}
-
-		TargetAddress ITargetAccess.CallMethod (TargetAddress method, string argument)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		TargetAddress ITargetAccess.CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
-		{
-			throw new InvalidOperationException ();
 		}
 
 		//
@@ -504,31 +500,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public void WriteBuffer (TargetAddress address, byte[] buffer)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public void WriteByte (TargetAddress address, byte value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public void WriteInteger (TargetAddress address, int value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public void WriteLongInteger (TargetAddress address, long value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public void WriteAddress (TargetAddress address, TargetAddress value)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public TargetAddress MainMethodAddress {
 			get {
 				throw new NotImplementedException ();
@@ -601,6 +572,18 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public override void RemoveBreakpoint (int index)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public override TargetAddress CallMethod (TargetAddress method, string arg)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public override TargetAddress CallMethod (TargetAddress method,
+							  TargetAddress arg1,
+							  TargetAddress arg2)
 		{
 			throw new CannotExecuteCoreFileException ();
 		}

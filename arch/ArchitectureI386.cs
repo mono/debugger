@@ -36,7 +36,7 @@ namespace Mono.Debugger
 			return memory.ReadByte (address) == 0xc3;
 		}
 
-		public TargetAddress GetCallTarget (ITargetAccess target, TargetAddress address, out int insn_size)
+		public TargetAddress GetCallTarget (ITargetMemoryAccess target, TargetAddress address, out int insn_size)
 		{
 			ITargetMemoryReader reader = target.ReadMemory (address, 6);
 
@@ -122,7 +122,8 @@ namespace Mono.Debugger
 				return vtable_addr;
 		}
 
-		public TargetAddress GetTrampoline (ITargetAccess target, TargetAddress location,
+		public TargetAddress GetTrampoline (ITargetMemoryAccess target,
+						    TargetAddress location,
 						    TargetAddress trampoline_address)
 		{
 			if (trampoline_address.IsNull)

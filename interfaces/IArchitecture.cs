@@ -42,7 +42,7 @@ namespace Mono.Debugger
 		//   instructions.  This can be used to set a breakpoint immediately after
 		//   the function.
 		// </summary>
-		TargetAddress GetCallTarget (ITargetAccess target, TargetAddress address,
+		TargetAddress GetCallTarget (ITargetMemoryAccess target, TargetAddress address,
 					     out int insn_size);
 
 		// <summary>
@@ -50,7 +50,7 @@ namespace Mono.Debugger
 		//   If it's a trampoline, return the address of the corresponding method's
 		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
 		// </summary>
-		TargetAddress GetTrampoline (ITargetAccess target, TargetAddress address,
+		TargetAddress GetTrampoline (ITargetMemoryAccess target, TargetAddress address,
 					     TargetAddress generic_trampoline_address);
 
 		int MaxPrologueSize {

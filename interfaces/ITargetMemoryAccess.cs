@@ -111,10 +111,15 @@ namespace Mono.Debugger
 
 		byte[] ReadBuffer (TargetAddress address, int size);
 
+		long GetRegister (int register);
+
 		bool CanWrite {
 			get;
 		}
+	}
 
+	public interface ITargetAccess : ITargetMemoryAccess
+	{
 		void WriteBuffer (TargetAddress address, byte[] buffer);
 
 		void WriteByte (TargetAddress address, byte value);
@@ -124,13 +129,5 @@ namespace Mono.Debugger
 		void WriteLongInteger (TargetAddress address, long value);
 
 		void WriteAddress (TargetAddress address, TargetAddress value);
-	}
-
-	public interface ITargetAccess : ITargetMemoryAccess
-	{
-		long GetRegister (int register);
-
-		TargetAddress CallMethod (TargetAddress method, string argument);
-		TargetAddress CallMethod (TargetAddress method, TargetAddress argument1, TargetAddress argument2);
 	}
 }

@@ -2471,10 +2471,9 @@ public class SingleSteppingEngine : ThreadManager
 			return (long) data.Result;
 		}
 
-		public TargetAddress CallMethod (TargetAddress method, string string_argument)
+		public override TargetAddress CallMethod (TargetAddress method, string arg)
 		{
-			CallMethodData data = new CallMethodData (
-				method, 0, string_argument, null);
+			CallMethodData data = new CallMethodData (method, 0, arg, null);
 
 			call_method (data);
 			if (data.Result == null)
@@ -2485,8 +2484,9 @@ public class SingleSteppingEngine : ThreadManager
 			return new TargetAddress (inferior.AddressDomain, retval);
 		}
 
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-						 TargetAddress arg2)
+		public override TargetAddress CallMethod (TargetAddress method,
+							  TargetAddress arg1,
+							  TargetAddress arg2)
 		{
 			CallMethodData data = new CallMethodData (
 				method, arg1.Address, arg2.Address, null);
@@ -2741,27 +2741,27 @@ public class SingleSteppingEngine : ThreadManager
 			get { return false; }
 		}
 
-		void ITargetMemoryAccess.WriteBuffer (TargetAddress address, byte[] buffer)
+		void ITargetAccess.WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			write_memory (address, buffer);
 		}
 
-		void ITargetMemoryAccess.WriteByte (TargetAddress address, byte value)
+		void ITargetAccess.WriteByte (TargetAddress address, byte value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetMemoryAccess.WriteInteger (TargetAddress address, int value)
+		void ITargetAccess.WriteInteger (TargetAddress address, int value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetMemoryAccess.WriteLongInteger (TargetAddress address, long value)
+		void ITargetAccess.WriteLongInteger (TargetAddress address, long value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetMemoryAccess.WriteAddress (TargetAddress address, TargetAddress value)
+		void ITargetAccess.WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			TargetBinaryWriter writer = new TargetBinaryWriter (TargetAddressSize, this);
 			writer.WriteAddress (value);
@@ -2816,6 +2816,10 @@ public class SingleSteppingEngine : ThreadManager
 				this.frame = frame;
 				this.backtrace = backtrace;
 				this.language = sse.NativeLanguage;
+			}
+
+			public override Process Process {
+				get { return sse; }
 			}
 
 			public override ITargetAccess TargetAccess {

@@ -240,6 +240,12 @@ namespace Mono.Debugger
 		public abstract Register[] AcquireThreadLock ();
 		public abstract void ReleaseThreadLock ();
 
+		public abstract TargetAddress CallMethod (TargetAddress method, string arg);
+
+		public abstract TargetAddress CallMethod (TargetAddress method,
+							  TargetAddress arg1,
+							  TargetAddress arg2);
+
 		public abstract long CallMethod (TargetAddress method, long method_argument,
 						 string string_argument);
 

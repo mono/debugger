@@ -336,16 +336,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetAddress ITargetAccess.CallMethod (TargetAddress method, string argument)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		TargetAddress ITargetAccess.CallMethod (TargetAddress method, TargetAddress arg1, TargetAddress arg2)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public int InsertBreakpoint (TargetAddress address)
 		{
 			int retval;
