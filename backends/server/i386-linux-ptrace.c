@@ -246,10 +246,37 @@ server_ptrace_current_insn_is_bpt (InferiorHandle *handle, guint32 *is_breakpoin
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+remove_breakpoints_from_target_memory (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
+{
+	GPtrArray *breakpoints;
+	guint8 *ptr = buffer;
+	int i;
+
+	mono_debugger_breakpoint_manager_lock (handle->bpm);
+
+	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
+	for (i = 0; i < breakpoints->len; i++) {
+		I386BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+		guint32 offset;
+
+		if (info->info.is_hardware_bpt || !info->info.enabled)
+			continue;
+		if ((info->info.address < start) || (info->info.address >= start+size))
+			continue;
+
+		offset = (guint32) info->info.address - start;
+		ptr [offset] = info->saved_insn;
+	}
+
+	mono_debugger_breakpoint_manager_unlock (handle->bpm);
+}
+
 static ServerCommandError
 server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
 	guint8 *ptr = buffer;
+	guint32 old_size = size;
 
 	while (size) {
 		int ret = pread64 (handle->mem_fd, ptr, size, start);
@@ -264,6 +291,8 @@ server_ptrace_read_data (InferiorHandle *handle, guint64 start, guint32 size, gp
 		size -= ret;
 		ptr += ret;
 	}
+
+	remove_breakpoints_from_target_memory (handle, start, old_size, buffer);
 
 	return COMMAND_ERROR_NONE;
 }

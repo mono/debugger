@@ -22,7 +22,7 @@ mono_debugger_breakpoint_manager_new (void)
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
-	bpm->mutex = g_mutex_new ();
+	g_static_rec_mutex_init (&bpm->mutex);
 	bpm->breakpoints = g_ptr_array_new ();
 	bpm->breakpoint_hash = g_hash_table_new (NULL, NULL);
 	bpm->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
@@ -35,7 +35,7 @@ mono_debugger_breakpoint_manager_free (BreakpointManager *bpm)
 	g_ptr_array_free (bpm->breakpoints, TRUE);
 	g_hash_table_destroy (bpm->breakpoint_hash);
 	g_hash_table_destroy (bpm->breakpoint_by_addr);
-	g_mutex_free (bpm->mutex);
+	g_static_rec_mutex_free (&bpm->mutex);
 	g_free (bpm);
 }
 

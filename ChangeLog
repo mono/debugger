@@ -1,3 +1,13 @@
+2002-12-27  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/breakpoints.h (BreakpointManager): Use a
+	GStaticRecMutex instead of a GMutex so we can call
+	mono_debugger_breakpoint_manager_lock/unlock recursively from the
+	same thread.
+
+	* backends/server/i386-linux-ptrace.c (server_ptrace_read_data):
+	Remove breakpoints from the returned memory area.
+
 2002-12-26  Martin Baulig  <martin@ximian.com>
 
 	* frontends/scripting/Parser.jay: The `break' command now takes
