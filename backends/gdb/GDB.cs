@@ -342,6 +342,11 @@ namespace Mono.Debugger.Backends
 				this.GDB = gdb;
 			}
 
+			void ITargetLocation.AddOffset (int offset)
+			{
+				throw new NotImplementedException ();
+			}
+
 			long ITargetLocation.Location {
 				get {
 					if (GDB.symbols.Contains (SymbolName))

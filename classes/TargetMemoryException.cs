@@ -9,11 +9,11 @@ namespace Mono.Debugger
 		{ }
 
 		public TargetMemoryException (ITargetLocation address)
-			: this (String.Format ("Cannot read target memory at address 0x{0:x}", address))
+			: this (String.Format ("Cannot read target memory at address {0:x}", address))
 		{ }
 
 		public TargetMemoryException (ITargetLocation address, int size)
-			: this (String.Format ("Cannot read {1} bytes from target memory at address 0x{0:x}",
+			: this (String.Format ("Cannot read {1} bytes from target memory at address {0:x}",
 					       address, size))
 		{ }
 	}

@@ -2,7 +2,7 @@ using GLib;
 using System;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Threading;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
@@ -19,10 +19,11 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	internal enum ChildMessage {
+	internal enum ChildMessageType {
 		CHILD_EXITED = 1,
 		CHILD_STOPPED,
-		CHILD_SIGNALED
+		CHILD_SIGNALED,
+		CHILD_CALLBACK
 	}
 
 	internal enum CommandError {
@@ -44,34 +45,8 @@ namespace Mono.Debugger.Backends
 
 	internal delegate void ChildSetupHandler ();
 	internal delegate void ChildExitedHandler ();
-	internal delegate void ChildMessageHandler (ChildMessage message, int arg);
-
-	internal class MonoDebuggerInfo
-	{
-		public readonly ITargetLocation trampoline_code;
-		public readonly ITargetLocation symbol_file_generation;
-		public readonly ITargetLocation symbol_file_table;
-		public readonly ITargetLocation update_symbol_file_table;
-		public readonly ITargetLocation compile_method;
-
-		internal MonoDebuggerInfo (ITargetMemoryReader reader)
-		{
-			reader.Offset = reader.TargetLongIntegerSize +
-				2 * reader.TargetIntegerSize;
-			trampoline_code = reader.ReadAddress ();
-			symbol_file_generation = reader.ReadAddress ();
-			symbol_file_table = reader.ReadAddress ();
-			update_symbol_file_table = reader.ReadAddress ();
-			compile_method = reader.ReadAddress ();
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("MonoDebuggerInfo ({0:x}, {1:x}, {2:x}, {3:x}, {4:x})",
-					      trampoline_code, symbol_file_generation, symbol_file_table,
-					      update_symbol_file_table, compile_method);
-		}
-	}
+	internal delegate void ChildCallbackHandler (long argument, long data);
+	internal delegate void ChildMessageHandler (ChildMessageType message, int arg);
 
 	internal class Inferior : IInferior, ITargetMemoryAccess, IDisposable
 	{
@@ -91,6 +66,8 @@ namespace Mono.Debugger.Backends
 		int child_pid;
 
 		ITargetInfo target_info;
+		Hashtable pending_callbacks = new Hashtable ();
+		long last_callback_id = 0;
 
 		public int PID {
 			get {
@@ -113,7 +90,7 @@ namespace Mono.Debugger.Backends
 		public event ChildMessageHandler ChildMessage;
 
 		[DllImport("monodebuggerserver")]
-		static extern bool mono_debugger_spawn_async (string working_directory, string[] argv, string[] envp, bool search_path, ChildSetupHandler child_setup, out int child_pid, out IntPtr status_channel, out IntPtr server_handle, ChildExitedHandler child_exited, ChildMessageHandler child_message, out int standard_input, out int standard_output, out int standard_error, out IntPtr errout);
+		static extern bool mono_debugger_spawn_async (string working_directory, string[] argv, string[] envp, bool search_path, ChildSetupHandler child_setup, out int child_pid, out IntPtr status_channel, out IntPtr server_handle, ChildExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int standard_input, out int standard_output, out int standard_error, out IntPtr errout);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_send_command (IntPtr handle, ServerCommand command);
@@ -126,6 +103,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_target_info (IntPtr handle, out int target_int_size, out int target_long_size, out int target_address_size);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument, long callback_argument);
 
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
@@ -165,6 +145,19 @@ namespace Mono.Debugger.Backends
 			return retval;
 		}
 
+		internal TargetAsyncResult call_method (ITargetLocation method, long method_argument,
+							TargetAsyncCallback callback, object user_data)
+		{
+			long number = ++last_callback_id;
+			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
+			pending_callbacks.Add (number, async);
+
+			CommandError result = mono_debugger_server_call_method (
+				server_handle, method.Location, method_argument, number);
+			handle_error (result);
+			return async;
+		}
+
 		public Inferior (string working_directory, string[] argv, string[] envp)
 		{
 			this.working_directory = working_directory;
@@ -189,6 +182,7 @@ namespace Mono.Debugger.Backends
 				out status_channel, out server_handle,
 				new ChildExitedHandler (child_exited),
 				new ChildMessageHandler (child_message),
+				new ChildCallbackHandler (child_callback),
 				out stdin_fd, out stdout_fd,
 				out stderr_fd, out error);
 
@@ -222,6 +216,7 @@ namespace Mono.Debugger.Backends
 				out status_channel, out server_handle,
 				new ChildExitedHandler (child_exited),
 				new ChildMessageHandler (child_message),
+				new ChildCallbackHandler (child_callback),
 				out stdin_fd, out stdout_fd,
 				out stderr_fd, out error);
 
@@ -275,7 +270,20 @@ namespace Mono.Debugger.Backends
 				ChildExited ();
 		}
 
-		void child_message (ChildMessage message, int arg)
+		void child_callback (long callback, long data)
+		{
+			child_message (ChildMessageType.CHILD_STOPPED, 0);
+
+			if (!pending_callbacks.Contains (callback))
+				return;
+
+			TargetAsyncResult async = (TargetAsyncResult) pending_callbacks [callback];
+			pending_callbacks.Remove (callback);
+
+			async.Completed (data);
+		}
+
+		void child_message (ChildMessageType message, int arg)
 		{
 			if (ChildMessage != null)
 				ChildMessage (message, arg);
@@ -372,7 +380,17 @@ namespace Mono.Debugger.Backends
 
 		public string ReadString (ITargetLocation location)
 		{
-			throw new TargetMemoryException (location);
+			StringBuilder sb = new StringBuilder ();
+
+			while (true) {
+				byte b = ReadByte (location);
+
+				if (b == 0)
+					return sb.ToString ();
+
+				sb.Append ((char) b);
+				location.AddOffset (1);
+			}
 		}
 
 		public ITargetMemoryReader ReadMemory (ITargetLocation location, int size)
@@ -447,8 +465,13 @@ namespace Mono.Debugger.Backends
 
 		public ITargetLocation Frame ()
 		{
-			send_command (ServerCommand.GET_PC);
-			return new TargetLocation (read_long ());
+			try {
+				send_command (ServerCommand.GET_PC);
+				return new TargetLocation (read_long ());
+			} catch {
+				Console.WriteLine ("Can't get current frame!");
+				return new TargetLocation (0);
+			}
 		}
 
 		//

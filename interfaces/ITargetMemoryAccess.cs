@@ -37,6 +37,13 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Get the underlying BinaryReader.
+		// </summary>
+		BinaryReader BinaryReader {
+			get;
+		}
+
+		// <summary>
 		//   Read a single byte from the target's address space at address @address.
 		// </summary>
 		byte ReadByte ();

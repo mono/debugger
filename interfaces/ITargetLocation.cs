@@ -17,5 +17,7 @@ namespace Mono.Debugger
 		long Location {
 			get;
 		}
+
+		void AddOffset (int offset);
 	}
 }

@@ -30,5 +30,21 @@ namespace Mono.Debugger
 
 			return builder.ToString ();
 		}
+
+		public void AddOffset (int offset)
+		{
+			this++;
+		}
+
+		public static TargetLocation operator ++ (TargetLocation location)
+		{
+			location.addr++;
+			return location;
+		}
+
+		public static TargetLocation operator + (TargetLocation location, int offset)
+		{
+			return new TargetLocation (location.addr + offset);
+		}
 	}
 }

@@ -148,6 +148,7 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 			   ServerHandle            **server_handle,
 			   SpawnChildExitedFunc      child_exited_cb,
 			   SpawnChildMessageFunc     child_message_cb,
+			   SpawnChildCallbackFunc    child_callback_cb,
 			   gint                     *standard_input,
 			   gint                     *standard_output,
 			   gint                     *standard_error,
@@ -200,6 +201,7 @@ mono_debugger_spawn_async (const gchar              *working_directory,
   *server_handle = g_new0 (ServerHandle, 1);
   (*server_handle)->status_channel = *status_channel;
   (*server_handle)->child_message_cb = child_message_cb;
+  (*server_handle)->child_callback_cb = child_callback_cb;
   (*server_handle)->fd = command_fd;
   (*server_handle)->pid = *child_pid;
 

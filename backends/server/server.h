@@ -16,7 +16,8 @@ typedef enum {
 	SERVER_COMMAND_CONTINUE,
 	SERVER_COMMAND_STEP,
 	SERVER_COMMAND_READ_DATA,
-	SERVER_COMMAND_GET_TARGET_INFO
+	SERVER_COMMAND_GET_TARGET_INFO,
+	SERVER_COMMAND_CALL_METHOD
 } ServerCommand;
 
 typedef enum {
@@ -24,13 +25,16 @@ typedef enum {
 	COMMAND_ERROR_IO,
 	COMMAND_ERROR_UNKNOWN,
 	COMMAND_ERROR_INVALID_COMMAND,
-	COMMAND_ERROR_NOT_STOPPED
+	COMMAND_ERROR_NOT_STOPPED,
+	COMMAND_ERROR_ALIGNMENT,
+	COMMAND_ERROR_RECURSIVE_CALL
 } ServerCommandError;
 
 typedef enum {
 	MESSAGE_CHILD_EXITED = 1,
 	MESSAGE_CHILD_STOPPED,
-	MESSAGE_CHILD_SIGNALED
+	MESSAGE_CHILD_SIGNALED,
+	MESSAGE_CHILD_CALLBACK
 } ServerStatusMessageType;
 
 typedef struct {
@@ -43,10 +47,12 @@ typedef struct InferiorHandle InferiorHandle;
 typedef void (*SpawnChildSetupFunc) (void);
 typedef void (*SpawnChildExitedFunc) (void);
 typedef void (*SpawnChildMessageFunc) (ServerStatusMessageType type, int arg);
+typedef void (*SpawnChildCallbackFunc) (guint64 callback, guint64 data);
 
 typedef struct {
 	GIOChannel *status_channel;
 	SpawnChildMessageFunc child_message_cb;
+	SpawnChildCallbackFunc child_callback_cb;
 	int fd, pid;
 } ServerHandle;
 
@@ -63,6 +69,7 @@ mono_debugger_spawn_async (const gchar              *working_directory,
 			   ServerHandle            **server_handle,
 			   SpawnChildExitedFunc      child_exited_cb,
 			   SpawnChildMessageFunc     child_message_cb,
+			   SpawnChildCallbackFunc    child_callback_cb,
 			   gint                     *standard_input,
 			   gint                     *standard_output,
 			   gint                     *standard_error,
@@ -100,6 +107,24 @@ server_ptrace_read_data              (InferiorHandle          *handle,
 				      guint32                  size,
 				      gpointer                 buffer);
 
+extern ServerCommandError
+server_ptrace_write_data             (InferiorHandle          *handle,
+				      guint64                  start,
+				      guint32                  size,
+				      gpointer                 buffer);
+
+extern ServerCommandError
+server_ptrace_call_method            (InferiorHandle          *handle,
+				      guint64                  method,
+				      guint64                  method_argument,
+				      guint64                  callback_argument);
+
+extern gboolean
+server_handle_child_stopped          (InferiorHandle          *handle,
+				      int                      signumber,
+				      guint64                 *callback_arg,
+				      guint64                 *retval);
+
 /*
  * Library functions.
  */
@@ -122,6 +147,12 @@ mono_debugger_server_get_target_info (ServerHandle            *handle,
 				      guint32                 *target_int_size,
 				      guint32                 *target_long_size,
 				      guint32                 *target_address_size);
+
+extern ServerCommandError
+mono_debugger_server_call_method     (ServerHandle            *handle,
+				      guint64                  method_address,
+				      guint64                  method_argument,
+				      guint64                  callback_argument);
 
 extern gboolean
 mono_debugger_server_read_uint64     (ServerHandle            *handle,

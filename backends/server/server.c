@@ -29,7 +29,7 @@ command_func (InferiorHandle *handle, int fd)
 {
 	ServerCommand command;
 	ServerCommandError result;
-	guint64 arg, arg2;
+	guint64 arg, arg2, arg3;
 	gpointer data;
 
 	if (read (fd, &command, sizeof (command)) != sizeof (command))
@@ -91,6 +91,16 @@ command_func (InferiorHandle *handle, int fd)
 		write_arg (fd, sizeof (void *));
 		return;
 
+	case SERVER_COMMAND_CALL_METHOD:
+		if (read (fd, &arg, sizeof (arg)) != sizeof (arg))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		if (read (fd, &arg2, sizeof (arg2)) != sizeof (arg2))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		if (read (fd, &arg3, sizeof (arg3)) != sizeof (arg3))
+			g_error (G_STRLOC ": Can't read arg: %s", g_strerror (errno));
+		result = server_ptrace_call_method (handle, arg, arg2, arg3);
+		break;
+
 	default:
 		result = COMMAND_ERROR_INVALID_COMMAND;
 		break;
@@ -109,6 +119,26 @@ send_status_message (GIOChannel *channel, ServerStatusMessageType type, int arg)
 	status = g_io_channel_write_chars (channel, (char *) &message, sizeof (message), NULL, &error);
 	if (status != G_IO_STATUS_NORMAL)
 		g_error (G_STRLOC ": Can't send status message: %s", error->message);
+}
+
+static void
+send_callback_message (GIOChannel *channel, guint64 callback, guint64 data)
+{
+	ServerStatusMessage message = { MESSAGE_CHILD_CALLBACK, 0 };
+	GError *error = NULL;
+	GIOStatus status;
+
+	status = g_io_channel_write_chars (channel, (char *) &message, sizeof (message), NULL, &error);
+	if (status != G_IO_STATUS_NORMAL)
+		g_error (G_STRLOC ": Can't send status message: %s", error->message);
+
+	status = g_io_channel_write_chars (channel, (char *) &callback, sizeof (callback), NULL, &error);
+	if (status != G_IO_STATUS_NORMAL)
+		g_error (G_STRLOC ": Can't send callback argument: %s", error->message);
+
+	status = g_io_channel_write_chars (channel, (char *) &data, sizeof (data), NULL, &error);
+	if (status != G_IO_STATUS_NORMAL)
+		g_error (G_STRLOC ": Can't send callback argument: %s", error->message);
 }
 
 static void
@@ -145,9 +175,9 @@ main (int argc, char **argv, char **envp)
 	struct stat statb;
 	const int command_fd = 4, status_fd = 3;
 	int version, pid, attached;
-	sigset_t mask, oldmask;
 	GSpawnFlags flags;
 	GError *error = NULL;
+	sigset_t mask;
 
 	if (argc < 4)
 		usage ();
@@ -218,8 +248,13 @@ main (int argc, char **argv, char **envp)
 
 		if (ret != 0) {
 			if (WIFSTOPPED (status)) {
-				send_status_message (status_channel, MESSAGE_CHILD_STOPPED,
-						     WSTOPSIG (status));
+				guint64 callback_arg, retval;
+				if (!server_handle_child_stopped (handle, WSTOPSIG (status),
+								  &callback_arg, &retval))
+					send_status_message (status_channel, MESSAGE_CHILD_STOPPED,
+							     WSTOPSIG (status));
+				else
+					send_callback_message (status_channel, callback_arg, retval);
 			} else if (WIFEXITED (status)) {
 				send_status_message (status_channel, MESSAGE_CHILD_EXITED,
 						     WEXITSTATUS (status));

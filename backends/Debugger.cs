@@ -2,6 +2,7 @@ using GLib;
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
@@ -73,6 +74,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public BinaryReader BinaryReader {
+			get {
+				return reader;
+			}
+		}
+
 		public int TargetIntegerSize {
 			get {
 				return target_info.TargetIntegerSize;
@@ -118,6 +125,33 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
+	internal class MonoDebuggerInfo
+	{
+		public readonly ITargetLocation trampoline_code;
+		public readonly ITargetLocation symbol_file_generation;
+		public readonly ITargetLocation symbol_file_table;
+		public readonly ITargetLocation update_symbol_file_table;
+		public readonly ITargetLocation compile_method;
+
+		internal MonoDebuggerInfo (ITargetMemoryReader reader)
+		{
+			reader.Offset = reader.TargetLongIntegerSize +
+				2 * reader.TargetIntegerSize;
+			trampoline_code = reader.ReadAddress ();
+			symbol_file_generation = reader.ReadAddress ();
+			symbol_file_table = reader.ReadAddress ();
+			update_symbol_file_table = reader.ReadAddress ();
+			compile_method = reader.ReadAddress ();
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("MonoDebuggerInfo ({0:x}, {1:x}, {2:x}, {3:x}, {4:x})",
+					      trampoline_code, symbol_file_generation, symbol_file_table,
+					      update_symbol_file_table, compile_method);
+		}
+	}
+
 	internal class StackFrame : IStackFrame
 	{
 		public readonly ISourceLocation SourceLocation = null;
@@ -156,6 +190,37 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
+	internal delegate void TargetAsyncCallback (object user_data, object result);
+
+	internal class TargetAsyncResult
+	{
+		object user_data;
+		bool completed;
+		TargetAsyncCallback callback;
+
+		internal TargetAsyncResult (TargetAsyncCallback callback, object user_data)
+		{
+			this.callback = callback;
+			this.user_data = user_data;
+		}
+
+		public void Completed (object result)
+		{
+			if (completed)
+				throw new InvalidOperationException ();
+
+			completed = true;
+			if (callback != null)
+				callback (user_data, result);
+		}
+
+		public bool IsCompleted {
+			get {
+				return completed;
+			}
+		}
+	}
+
 	public class Debugger : IDebuggerBackend, IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
@@ -176,6 +241,9 @@ namespace Mono.Debugger.Backends
 
 		bool initialized;
 		bool symtabs_read;
+
+		int symtab_generation;
+		ArrayList symtabs;
 
 		MonoDebuggerInfo mono_debugger_info;
 
@@ -276,6 +344,8 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				throw new NoTargetException ();
 
+			update_symbol_files ();
+
 			return inferior.Frame ();
 		}
 
@@ -328,10 +398,98 @@ namespace Mono.Debugger.Backends
 				TargetError (line);
 		}
 
-		void child_message (ChildMessage message, int args)
+		void do_update_symbol_files (object user_data, object result)
+		{
+			updating_symfiles = false;
+
+			// Ooops, we received an old callback.
+			if ((int) user_data < symtab_generation)
+				return;
+
+			// Nothing to do.
+			if ((long) result == 0)
+				return;
+
+			symtabs = new ArrayList ();
+
+			int header_size = 3 * inferior.TargetIntegerSize;
+
+			ITargetLocation symbol_file_table = inferior.ReadAddress (
+				mono_debugger_info.symbol_file_table);
+
+			ITargetMemoryReader header = inferior.ReadMemory (
+				symbol_file_table, header_size);
+
+			int size = header.ReadInteger ();
+			int count = header.ReadInteger ();
+			symtab_generation = header.ReadInteger ();
+
+			ITargetMemoryReader symtab_reader = inferior.ReadMemory (
+				symbol_file_table, size + header_size);
+			symtab_reader.Offset = header_size;
+
+			for (int i = 0; i < count; i++) {
+				if (symtab_reader.ReadLongInteger () != OffsetTable.Magic)
+					throw new SymbolTableException ();
+
+				if (symtab_reader.ReadInteger () != OffsetTable.Version)
+					throw new SymbolTableException ();
+
+				int is_dynamic = symtab_reader.ReadInteger ();
+				ITargetLocation image_file_addr = symtab_reader.ReadAddress ();
+				string image_file = inferior.ReadString (image_file_addr);
+				ITargetLocation raw_contents = symtab_reader.ReadAddress ();
+				int raw_contents_size = symtab_reader.ReadInteger ();
+				ITargetLocation address_table = symtab_reader.ReadAddress ();
+				int address_table_size = symtab_reader.ReadInteger ();
+				symtab_reader.ReadAddress ();
+
+				if ((raw_contents_size == 0) || (address_table_size == 0)) {
+					Console.WriteLine ("IGNORING SYMTAB");
+					continue;
+				}
+
+				ITargetMemoryReader reader = inferior.ReadMemory
+					(raw_contents, raw_contents_size);
+				ITargetMemoryReader address_reader = inferior.ReadMemory
+					(address_table, address_table_size);
+				
+				Console.WriteLine ("SYMTAB: {0:x} {1} - {2:x} {3} - {4:x} {5}",
+						   raw_contents, raw_contents_size,
+						   address_table, address_table_size,
+						   image_file_addr, image_file);
+
+				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
+					image_file, reader.BinaryReader, address_reader.BinaryReader);
+
+				symtabs.Add (new CSharpSymbolTable (symreader, source_file_factory));
+			}
+		}
+
+		bool updating_symfiles;
+		void update_symbol_files ()
+		{
+			if ((inferior == null) || (mono_debugger_info == null))
+				return;
+
+			if (updating_symfiles)
+				return;
+
+			updating_symfiles = true;
+
+			int generation = inferior.ReadInteger (mono_debugger_info.symbol_file_generation);
+			if (generation == symtab_generation)
+				return;
+
+			inferior.call_method (mono_debugger_info.update_symbol_file_table, 0,
+					      new TargetAsyncCallback (do_update_symbol_files), generation);
+			change_target_state (TargetState.RUNNING);
+		}
+
+		void child_message (ChildMessageType message, int args)
 		{
 			switch (message) {
-			case ChildMessage.CHILD_STOPPED:
+			case ChildMessageType.CHILD_STOPPED:
 				if (!initialized) {
 					Continue ();
 					initialized = true;
@@ -343,8 +501,8 @@ namespace Mono.Debugger.Backends
 				change_target_state (TargetState.STOPPED);
 				break;
 
-			case ChildMessage.CHILD_EXITED:
-			case ChildMessage.CHILD_SIGNALED:
+			case ChildMessageType.CHILD_EXITED:
+			case ChildMessageType.CHILD_SIGNALED:
 				change_target_state (TargetState.EXITED);
 				break;
 
