@@ -304,11 +304,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 					context.Print ("{0} stopped at {1}.", Name, frame);
 					current_frame.Print (context);
 				}
-			} else {
-				if (pid > 0)
-					process.SingleSteppingEngine.Attach (pid, true);
-				else
-					process.SingleSteppingEngine.Run (!context.IsSynchronous, true);
 			}
 			initialize ();
 		}

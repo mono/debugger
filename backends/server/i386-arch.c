@@ -292,6 +292,15 @@ get_runtime_invoke_data (ArchInfo *arch)
 	return g_ptr_array_index (arch->rti_stack, arch->rti_stack->len - 1);
 }
 
+void
+i386_arch_get_registers (ServerHandle *handle)
+{
+	if (_mono_debugger_server_get_registers (handle->inferior, &handle->arch->current_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get registers");
+	if (_mono_debugger_server_get_fp_registers (handle->inferior, &handle->arch->current_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't get fp registers");
+}
+
 ChildStoppedAction
 i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 			 guint64 *callback_arg, guint64 *retval, guint64 *retval2)
@@ -300,10 +309,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 	InferiorHandle *inferior = handle->inferior;
 	RuntimeInvokeData *rdata;
 
-	if (_mono_debugger_server_get_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get registers");
-	if (_mono_debugger_server_get_fp_registers (inferior, &arch->current_fpregs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get fp registers");
+	i386_arch_get_registers (handle);
 
 	if (check_breakpoint (handle, INFERIOR_REG_EIP (arch->current_regs) - 1, retval)) {
 		INFERIOR_REG_EIP (arch->current_regs)--;
@@ -328,10 +334,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_ptr_array_remove (arch->rti_stack, rdata);
 		g_free (rdata);
 
-		if (_mono_debugger_server_get_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE)
-			g_error (G_STRLOC ": Can't get registers");
-		if (_mono_debugger_server_get_fp_registers (inferior, &arch->current_fpregs) != COMMAND_ERROR_NONE)
-			g_error (G_STRLOC ": Can't get fp registers");
+		i386_arch_get_registers (handle);
 
 		return STOP_ACTION_CALLBACK;
 	}
@@ -373,10 +376,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 	arch->call_address = 0;
 	arch->callback_argument = 0;
 
-	if (_mono_debugger_server_get_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get registers");
-	if (_mono_debugger_server_get_fp_registers (inferior, &arch->current_fpregs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get fp registers");
+	i386_arch_get_registers (handle);
 
 	return STOP_ACTION_CALLBACK;
 }

@@ -302,6 +302,7 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 	if (*child_pid == 0) {
 		gchar *error_message;
 
+#if FIXME
 		close (0); close (1); close (2);
 		dup2 (inferior->output_fd [0], 0);
 		dup2 (inferior->output_fd [1], 1);
@@ -310,6 +311,8 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 3; i < open_max; i++)
 			fcntl (i, F_SETFD, FD_CLOEXEC);
+#endif
+
 
 		child_setup_func (NULL);
 		execve (argv [0], argv, envp);
@@ -321,6 +324,7 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		_exit (1);
 	}
 
+#if FIXME
 	close (fd [1]);
 	ret = read (fd [0], &len, sizeof (len));
 
@@ -336,9 +340,10 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 		close (inferior->error_fd [1]);
 		return COMMAND_ERROR_FORK;
 	}
+#endif
 
 	inferior->pid = *child_pid;
-	_mono_debugger_server_setup_inferior (inferior);
+	_mono_debugger_server_setup_inferior (handle);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -356,7 +361,7 @@ mono_debugger_server_attach (ServerHandle *handle, int pid)
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
-	_mono_debugger_server_setup_inferior (inferior);
+	_mono_debugger_server_setup_inferior (handle);
 
 	return COMMAND_ERROR_NONE;
 }

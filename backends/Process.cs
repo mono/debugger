@@ -18,13 +18,13 @@ namespace Mono.Debugger
 {
 	public delegate void ProcessExitedHandler (Process process);
 
-	public class Process : IProcess, IDisposable
+	public abstract class Process : IProcess, IDisposable
 	{
 		DebuggerBackend backend;
 		ProcessStart start;
 		BfdContainer bfd_container;
 
-		SingleSteppingEngine sse;
+		protected SingleSteppingEngine sse;
 		DaemonThreadRunner runner;
 		IProcess iprocess;
 		bool is_daemon;
@@ -41,81 +41,32 @@ namespace Mono.Debugger
 			CommandProcess
 		}
 
-		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
-				   ProcessType type, string core_file, int pid, DaemonThreadHandler handler,
-				   int signal)
+		protected Process (Inferior inferior)
 		{
-			this.backend = backend;
-			this.start = start;
-			this.bfd_container = bfd_container;
-
-			IInferior inferior = new PTraceInferior (
-				backend, start, bfd_container, backend.ThreadManager.BreakpointManager,
-				new DebuggerErrorHandler (debugger_error));
+			this.backend = inferior.DebuggerBackend;
+			this.start = inferior.ProcessStart;
+			this.bfd_container = inferior.BfdContainer;
+			this.pid = inferior.PID;
 
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
-			if ((type == ProcessType.Normal) && (pid == -1) && !start.IsNative)
-				type = ProcessType.ManagedWrapper;
+			id = ++next_id;
+			sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
-			switch (type) {
-			case ProcessType.Daemon:
-				is_daemon = true;
-				id = ++next_id;
-				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
-				runner.TargetExited += new TargetExitedHandler (child_exited);
-				iprocess = runner.SingleSteppingEngine;
-				this.pid = pid;
-				break;
-
-			case ProcessType.ManagedWrapper:
-				is_daemon = true;
-				id = ++next_id;
-				runner = backend.ThreadManager.StartManagedApplication (this, inferior, start);
-				runner.TargetExited += new TargetExitedHandler (child_exited);
-				iprocess = runner.SingleSteppingEngine;
-				this.pid = runner.Inferior.PID;
-				break;
-
-			case ProcessType.CommandProcess:
-				is_daemon = true;
-				goto case ProcessType.Normal;
-
-			case ProcessType.Normal:
-				id = ++next_id;
-				sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
-
-				sse.TargetEvent += new TargetEventHandler (target_event);
-				sse.TargetExitedEvent += new TargetExitedHandler (child_exited);
-
-				if (pid != -1) {
-					this.pid = pid;
-					sse.Attach (pid, true);
-				}
-
-				iprocess = sse;
-				break;
-
-			case ProcessType.CoreFile:
-				id = ++next_id;
-				CoreFile core = new CoreFileElfI386 (backend, this, start.TargetApplication,
-								     core_file, bfd_container);
-
-				backend.InitializeCoreFile (this, core);
-				iprocess = core;
-				break;
-
-			default:
-				throw new InternalError ();
-			}
+			sse.TargetEvent += new TargetEventHandler (target_event);
+			sse.TargetExitedEvent += new TargetExitedHandler (child_exited);
+			iprocess = sse;
 		}
 
-		internal Process (DebuggerBackend backend, ProcessStart start, BfdContainer bfd_container,
-				  string core_file)
-			: this (backend, start, bfd_container, ProcessType.CoreFile, core_file, -1, null, 0)
-		{ }
+		protected void SetDaemonThreadRunner (DaemonThreadRunner runner)
+		{
+			this.runner = runner;
+			runner.TargetExited += new TargetExitedHandler (child_exited);
+			iprocess = runner.SingleSteppingEngine;
+			is_daemon = true;
+		}
 
 		public DebuggerBackend DebuggerBackend {
 			get {
@@ -321,17 +272,6 @@ namespace Mono.Debugger
 				sse.Stop ();
 		}
 
-		public void ClearSignal ()
-		{
-			SetSignal (0, false);
-		}
-
-		public void SetSignal (int signal, bool send_it)
-		{
-			check_sse ();
-			sse.SetSignal (signal, send_it);
-		}
-
 		public bool Finish (bool synchronous)
 		{
 			check_sse ();
@@ -414,35 +354,6 @@ namespace Mono.Debugger
 			return iprocess.GetMemoryMaps ();
 		}
 
-		internal static Process StartApplication (DebuggerBackend backend, ProcessStart start,
-							  BfdContainer bfd_container)
-		{
-			Process process = new Process (
-				backend, start, bfd_container, ProcessType.Normal, null, -1, null, 0);
-			if (backend.ThreadManager.MainProcess != null)
-				return backend.ThreadManager.MainProcess;
-			else
-				return process;
-		}
-
-		public Process CreateThread (int pid)
-		{
-			return new Process (backend, start, bfd_container, ProcessType.Normal,
-					    null, pid, null, 0);
-		}
-
-		public Process CreateDaemonThread (int pid)
-		{
-			return new Process (backend, start, bfd_container, ProcessType.CommandProcess,
-					    null, pid, null, 0);
-		}
-
-		internal Process CreateDaemonThread (int pid, int signal, DaemonThreadHandler handler)
-		{
-			return new Process (backend, start, bfd_container, ProcessType.Daemon,
-					    null, pid, handler, signal);
-		}
-
 		public ProcessStart ProcessStart {
 			get { return start; }
 		}
@@ -469,6 +380,16 @@ namespace Mono.Debugger
 			if (sse == null)
 				throw new NoTargetException ();
 		}
+
+		public void Run ()
+		{
+			if (runner != null)
+				runner.Run ();
+			else if (sse != null)
+				sse.Run ();
+		}
+
+		internal abstract void RunInferior ();
 
 		public override string ToString ()
 		{

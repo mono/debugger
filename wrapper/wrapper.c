@@ -364,9 +364,9 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	 * Initialize the thread manager.
 	 */
 
-	mono_debugger_thread_manager_init ();
 	mono_debugger_event_handler = debugger_event_handler;
 	mono_install_thread_callbacks (&thread_callbacks);
+	mono_debugger_thread_manager_init ();
 
 	/*
 	 * Reload symbol tables.

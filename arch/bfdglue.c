@@ -63,8 +63,14 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 	} else if (flags == (BSF_FUNCTION | BSF_GLOBAL)) {
 		*is_function = 1;
 		*address = symbol->section->vma + symbol->value;
-	} else
-		return NULL;
+	} else if (flags == (BSF_OBJECT | BSF_LOCAL)) {
+		if (strncmp (symbol->name, "__pthread_", 10) &&
+		    strncmp (symbol->name, "MONO_DEBUGGER_", 14))
+			return NULL;
+
+		*is_function = 0;
+		*address = symbol->section->vma + symbol->value;
+	}
 
 	return symbol->name;
 }

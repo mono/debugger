@@ -86,6 +86,12 @@ GCThreadFunctions mono_debugger_thread_vtable = {
 	debugger_gc_start_world
 };
 
+void G_GNUC_UNUSED
+MONO_DEBUGGER__thread_manager_initialized (void)
+{
+	// The debugger sets a breakpoint here, so don't remove this function.
+}
+
 void
 mono_debugger_thread_manager_init (void)
 {
@@ -135,6 +141,8 @@ mono_debugger_thread_manager_add_thread (guint32 tid, gpointer start_stack, gpoi
 	thread->pid = getpid ();
 	thread->func = func;
 	thread->start_stack = start_stack;
+
+	g_message (G_STRLOC ": %d,%d - %p - %p", tid, last_tid, start_stack, func);
 
 	IO_LAYER (EnterCriticalSection) (&thread_manager_finished_mutex);
 	g_assert (last_tid == tid);

@@ -157,7 +157,7 @@ namespace Mono.Debugger.Architecture
 			if (has_backtrace)
 				return backtrace;
 
-			IInferiorStackFrame[] iframes = GetBacktrace (max_frames, TargetAddress.Null);
+			Inferior.StackFrame[] iframes = GetBacktrace (max_frames, TargetAddress.Null);
 			StackFrame[] frames = new StackFrame [iframes.Length];
 
 			for (int i = 0; i < iframes.Length; i++) {
@@ -180,7 +180,7 @@ namespace Mono.Debugger.Architecture
 			return backtrace;
 		}
 
-		protected class CoreFileStackFrame : IInferiorStackFrame
+		protected class CoreFileStackFrame
 		{
 			CoreFile core;
 			TargetAddress address;
@@ -217,12 +217,12 @@ namespace Mono.Debugger.Architecture
 
 		protected class MyStackFrame : StackFrame
 		{
-			IInferiorStackFrame frame;
+			Inferior.StackFrame frame;
 			CoreFile core;
 			ILanguage language;
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
-					     IInferiorStackFrame frame, SourceAddress source, IMethod method)
+					     Inferior.StackFrame frame, SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
 				this.frame = frame;
@@ -231,7 +231,7 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
-					     IInferiorStackFrame frame)
+					     Inferior.StackFrame frame)
 				: base (address, level, core.SimpleLookup (address, false))
 			{
 				this.frame = frame;
@@ -365,7 +365,7 @@ namespace Mono.Debugger.Architecture
 
 		public abstract Register[] GetRegisters ();
 
-		public abstract IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
+		public abstract Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 
 		public IDisassembler Disassembler {
 			get {

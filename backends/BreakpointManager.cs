@@ -70,7 +70,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int InsertBreakpoint (IInferior inferior, Handle handle)
+		public int InsertBreakpoint (Inferior inferior, Handle handle)
 		{
 			lock (this) {
 				int index = inferior.InsertBreakpoint (handle.Address);
@@ -79,7 +79,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void RemoveBreakpoint (IInferior inferior, int index)
+		public void RemoveBreakpoint (Inferior inferior, int index)
 		{
 			lock (this) {
 				inferior.RemoveBreakpoint (index);

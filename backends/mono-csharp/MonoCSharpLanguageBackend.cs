@@ -1906,7 +1906,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected TargetAddress CompileMethod (IInferior inferior, TargetAddress method_address)
+		protected TargetAddress CompileMethod (Inferior inferior, TargetAddress method_address)
 		{
 			long result;
 			lock (this) {
@@ -1933,7 +1933,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return method;
 		}
 
-		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
+		TargetAddress ILanguageBackend.GetTrampoline (Inferior inferior, TargetAddress address)
 		{
 			IArchitecture arch = inferior.Architecture;
 
@@ -1948,7 +1948,7 @@ namespace Mono.Debugger.Languages.CSharp
 			return CompileMethod (inferior, trampoline);
 		}
 
-		TargetAddress ILanguageBackend.CompileMethod (IInferior inferior, TargetAddress method_address)
+		TargetAddress ILanguageBackend.CompileMethod (Inferior inferior, TargetAddress method_address)
 		{
 			return CompileMethod (inferior, method_address);
 		}

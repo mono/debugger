@@ -15,8 +15,8 @@ namespace Mono.Debugger
 			: base ("Cannot start target")
 		{ }
 
-		public CannotStartTargetException (string message)
-			: base (message)
+		public CannotStartTargetException (string format, params object[] args)
+			: base (String.Format (format, args))
 		{ }
 	}
 

@@ -46,7 +46,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public override IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
+		public override Inferior.StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
 		{
 			uint ebp = (uint) GetRegister ((int) I386Register.EBP);
 			uint eip = (uint) GetRegister ((int) I386Register.EIP);
@@ -70,7 +70,7 @@ namespace Mono.Debugger.Architecture
 				ebp = (uint) ReadInteger (new TargetAddress (AddressDomain, ebp));
 			}
 
-			IInferiorStackFrame[] retval = new IInferiorStackFrame [frames.Count];
+			Inferior.StackFrame[] retval = new Inferior.StackFrame [frames.Count];
 			frames.CopyTo (retval, 0);
 			return retval;
 		}

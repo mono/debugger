@@ -7,12 +7,15 @@ namespace Mono.Debugger
 	[Flags]
 	public enum DebugFlags {
 		JitSymtab		= 1,
-		MethodAddress		= 2
+		MethodAddress		= 2,
+		Threads			= 4,
+		Signals			= 8,
+		EventLoop		= 16
 	}
 
 	public class Report
 	{
-		public static int CurrentDebugFlags = 0;
+		public static int CurrentDebugFlags = 4;
 
 		public static void Debug (DebugFlags category, object argument)
 		{

@@ -15,46 +15,22 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class DaemonThreadRunner : IDisposable
 	{
-		public DaemonThreadRunner (DebuggerBackend backend, Process process, IInferior inferior,
-					   DaemonThreadHandler daemon_thread_handler, int pid, int signal)
+		public DaemonThreadRunner (Process process, Inferior inferior, int pid,
+					   SingleSteppingEngine sse, DaemonThreadHandler handler)
 		{
-			this.backend = backend;
+			this.sse = sse;
 			this.process = process;
 			this.inferior = inferior;
-			this.daemon_thread_handler = daemon_thread_handler;
-			this.signal = signal;
 			this.pid = pid;
+			this.daemon_thread_handler = handler;
 
-			thread_manager = backend.ThreadManager;
-
-			sse = new SingleSteppingEngine (backend, process, inferior, false);
 			sse.DaemonEvent += new DaemonEventHandler (daemon_event);
 			sse.TargetExitedEvent += new TargetExitedHandler (target_exited);
-
-			sse.Attach (pid, true);
-			sse.Continue (true, false);
 		}
 
-		public DaemonThreadRunner (DebuggerBackend backend, Process process, IInferior inferior,
-					   DaemonThreadHandler daemon_thread_handler, ProcessStart start)
+		public void Run ()
 		{
-			this.backend = backend;
-			this.process = process;
-			this.inferior = inferior;
-			this.daemon_thread_handler = daemon_thread_handler;
-			this.start = start;
-			this.redirect_fds = true;
-
-			thread_manager = backend.ThreadManager;
-
-			is_main_thread = true;
-
-			sse = new SingleSteppingEngine (backend, process, inferior, false);
-			sse.DaemonEvent += new DaemonEventHandler (daemon_event);
-			sse.TargetExitedEvent += new TargetExitedHandler (target_exited);
-
-			sse.Run (false, true);
-			pid = sse.PID;
+			sse.Run ();
 			sse.Continue (true, false);
 		}
 
@@ -90,7 +66,7 @@ namespace Mono.Debugger.Backends
 			} else if ((args.Type == TargetEventType.TargetHitBreakpoint) && (args.Data == null))
 				return true;
 			else if (!daemon_stopped (inferior.CurrentFrame))
-				Console.WriteLine ("Daemon thread unexpectedly stopped at {0}.", inferior.CurrentFrame);
+				Console.WriteLine ("Daemon thread {0} stopped unexpectedly at {1}.", pid, inferior.CurrentFrame);
 			else
 				return true;
 
@@ -106,7 +82,7 @@ namespace Mono.Debugger.Backends
 			get { return process; }
 		}
 
-		internal IInferior Inferior {
+		internal Inferior Inferior {
 			get { return inferior; }
 		}
 
@@ -116,16 +92,13 @@ namespace Mono.Debugger.Backends
 
 		public event TargetExitedHandler TargetExited;
 
-		IInferior inferior;
-		DebuggerBackend backend;
-		ThreadManager thread_manager;	
+		Inferior inferior;
 		Process process;
 		SingleSteppingEngine sse;
 		DaemonThreadHandler daemon_thread_handler;
 		ProcessStart start;
 		bool is_main_thread;
 		bool redirect_fds;
-		int signal;
 		int pid;
 
 		protected bool daemon_stopped (TargetAddress address)
@@ -138,10 +111,7 @@ namespace Mono.Debugger.Backends
 
 		protected bool daemon_received_signal (TargetAddress address, int signal)
 		{
-			bool action;
-			if (thread_manager.SignalHandler (inferior, signal, out action))
-				return true;
-			else if (daemon_thread_handler == null)
+			if (daemon_thread_handler == null)
 				return false;
 			else
 				return daemon_thread_handler (this, address, signal);

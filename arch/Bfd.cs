@@ -233,6 +233,7 @@ namespace Mono.Debugger.Architecture
 				int is_function;
 
 				name = bfd_glue_get_symbol (bfd, symtab, i, out is_function, out address);
+
 				if (name == null)
 					continue;
 
@@ -240,6 +241,8 @@ namespace Mono.Debugger.Architecture
 				if (is_function != 0)
 					symbols.Add (name, relocated);
 				else if (is_main_module && name.StartsWith ("MONO_DEBUGGER__"))
+					symbols.Add (name, relocated);
+				else if (name.StartsWith ("__pthread_"))
 					symbols.Add (name, relocated);
 			}
 
@@ -311,11 +314,11 @@ namespace Mono.Debugger.Architecture
 			if (memory.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			UpdateSharedLibraryInfo ((IInferior) user_data);
+			UpdateSharedLibraryInfo ((Inferior) user_data);
 			return false;
 		}
 
-		bool read_dynamic_info (IInferior inferior)
+		bool read_dynamic_info (Inferior inferior)
 		{
 			if (initialized)
 				return has_shlib_info;
@@ -369,7 +372,7 @@ namespace Mono.Debugger.Architecture
 			return true;
 		}
 
-		public void UpdateSharedLibraryInfo (IInferior inferior)
+		public void UpdateSharedLibraryInfo (Inferior inferior)
 		{
 			// This fails if it's a statically linked executable.
 			try {
@@ -726,7 +729,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
+		TargetAddress ILanguageBackend.GetTrampoline (Inferior inferior, TargetAddress address)
 		{
 			return GetTrampoline (address);
 		}
@@ -736,7 +739,7 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
-		TargetAddress ILanguageBackend.CompileMethod (IInferior inferior, TargetAddress method_address)
+		TargetAddress ILanguageBackend.CompileMethod (Inferior inferior, TargetAddress method_address)
 		{
 			throw new InvalidOperationException ();
 		}

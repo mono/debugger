@@ -50,7 +50,8 @@ namespace Mono.Debugger
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
-			thread_manager = new ThreadManager (this, bfd_container);
+
+			thread_manager = new MonoThreadManager (this, bfd_container);
 
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent +=
@@ -118,8 +119,12 @@ namespace Mono.Debugger
 
 			module_manager.Lock ();
 
+#if FIXME
 			process = thread_manager.StartApplication (this, start, bfd_container);
 			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+#else
+			process = thread_manager.StartApplication (start);
+#endif
 
 			main_group.AddThread (process);
 			return process;
@@ -133,17 +138,6 @@ namespace Mono.Debugger
 				symtab_manager.SetModules (module_manager.Modules);
 				core.UpdateModules ();
 			}
-		}
-
-		public Process ReadCoreFile (ProcessStart start, string core_file)
-		{
-			check_disposed ();
-
-			if (process != null)
-				throw new AlreadyHaveTargetException ();
-
-			process = new Process (this, start, bfd_container, core_file);
-			return process;
 		}
 
 		void modules_changed ()
@@ -168,19 +162,16 @@ namespace Mono.Debugger
 				ModulesChangedEvent ();
 		}
 
-		internal void ReachedMain (Process process, IInferior inferior)
+		internal void ReachedMain (Process process)
 		{
-			inferior.UpdateModules ();
-
 			foreach (Module module in Modules)
 				module.BackendLoaded = true;
-
-			thread_manager.Initialize (process, inferior);
 
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
 		}
 
+#if FIXME
 		internal Process CreateDebuggerProcess (Process command_process, int pid)
 		{
 			csharp_language = new MonoCSharpLanguageBackend (this, command_process);
@@ -188,6 +179,15 @@ namespace Mono.Debugger
 
 			return command_process.CreateDaemonThread (
 				pid, 0, new DaemonThreadHandler (csharp_language.DaemonThreadHandler));
+		}
+#endif
+
+		internal DaemonThreadHandler CreateDebuggerHandler (Process command_process)
+		{
+			csharp_language = new MonoCSharpLanguageBackend (this, command_process);
+			languages.Add (csharp_language);
+
+			return new DaemonThreadHandler (csharp_language.DaemonThreadHandler);
 		}
 
 		internal void ReachedManagedMain (Process process)
@@ -265,15 +265,6 @@ namespace Mono.Debugger
 
 				return new Module [0];
 			}
-		}
-
-		internal bool SignalHandler (Process process, IInferior inferior, int signal)
-		{
-			bool action;
-			if (thread_manager.SignalHandler (inferior, signal, out action))
-				return action;
-
-			return true;
 		}
 
 		//

@@ -135,25 +135,20 @@ _mono_debugger_server_wait (InferiorHandle *inferior)
 }
 
 void
-_mono_debugger_server_setup_inferior (InferiorHandle *handle)
+_mono_debugger_server_setup_inferior (ServerHandle *handle)
 {
-	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->pid);
+	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
 
-	_mono_debugger_server_wait (handle);
+	_mono_debugger_server_wait (handle->inferior);
 
-	handle->mem_fd = open64 (filename, O_RDONLY);
+	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
 
-	if (handle->mem_fd < 0)
+	if (handle->inferior->mem_fd < 0)
 		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
 
 	g_free (filename);
 
-#if 0
-	if (server_get_registers (handle, &handle->arch->current_regs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get registers");
-	if (server_get_fp_registers (handle, &handle->arch->current_fpregs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get fp registers");
-#endif
+	i386_arch_get_registers (handle);
 }
 
 ServerCommandError
@@ -167,10 +162,17 @@ mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 	sinfo->sigpwr = SIGPWR;
 	sinfo->sigxcpu = SIGXCPU;
 
+#if 0
+	sinfo->thread_abort = 34;
+	sinfo->thread_restart = 33;
+	sinfo->thread_debug = 32;
+	sinfo->mono_thread_debug = -1;
+#else
 	sinfo->thread_abort = 33;
 	sinfo->thread_restart = 32;
 	sinfo->thread_debug = 34;
 	sinfo->mono_thread_debug = 34;
+#endif
 
 	return COMMAND_ERROR_NONE;
 }

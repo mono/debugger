@@ -63,7 +63,7 @@ namespace Mono.Debugger.Backends
 	public class SingleSteppingEngine : IProcess, ITargetAccess, IDisassembler, IDisposable
 	{
 		internal SingleSteppingEngine (DebuggerBackend backend, Process process,
-					     IInferior inferior, bool native)
+					       Inferior inferior, bool native)
 		{
 			this.backend = backend;
 			this.process = process;
@@ -90,41 +90,16 @@ namespace Mono.Debugger.Backends
 		//   stopped the first time.  In either case, this function blocks until
 		//   the application has actually been launched.
 		// </summary>
-		public void Run (bool redirect_fds, bool synchronous)
+		public void Run ()
 		{
 			if (engine_thread != null)
 				throw new AlreadyHaveTargetException ();
 
-			this.redirect_fds = redirect_fds;
 			engine_thread = new Thread (new ThreadStart (start_engine_thread));
 			engine_thread.Start ();
 
 			wait_until_engine_is_ready ();
-			if (synchronous)
-				wait_for_completion ();
-		}
-
-		// <summary>
-		//   Attach to `pid' and - if `synchronous' is true - wait until it
-		//   actually stopped.  In either case, this function blocks until the
-		//   application has actually been launched.
-		// </summary>
-		public void Attach (int pid, bool synchronous)
-		{
-			if (engine_thread != null)
-				throw new AlreadyHaveTargetException ();
-
-			this.pid = pid;
-
-			reached_main = true;
-			initialized = true;
-
-			engine_thread = new Thread (new ThreadStart (start_engine_thread_attach));
-			engine_thread.Start ();
-
-			wait_until_engine_is_ready ();
-			if (synchronous)
-				wait_for_completion ();
+			wait_for_completion ();
 		}
 
 		// <remarks>
@@ -195,7 +170,7 @@ namespace Mono.Debugger.Backends
 		void start_engine_thread ()
 		{
 			try {
-				inferior.Run (redirect_fds);
+				process.RunInferior ();
 			} catch (TargetException e) {
 				engine_error (e);
 				return;
@@ -204,39 +179,14 @@ namespace Mono.Debugger.Backends
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			initialized = true;
-
-			TargetAddress main = inferior.MainMethodAddress;
 			pid = inferior.PID;
 
-			if (!main.IsNull) {
-				engine_thread_main (new Command (StepOperation.Run, main));
-			} else if (DaemonEvent == null) {
-				Console.WriteLine ("WARNING: Cannot get address of `main' function!");
-				engine_thread_main (null);
-			} else {
-				reached_main = true;
-				engine_thread_main (null);
-			}
-		}
-
-		void start_engine_thread_attach ()
-		{
-			try {
-				inferior.Attach (pid);
-			} catch (TargetException e) {
-				engine_error (e);
-				return;
-			}
-
-			arch = inferior.Architecture;
-			disassembler = inferior.Disassembler;
+			backend.ReachedMain (process);
+			main_method_retaddr = inferior.GetReturnAddress ();
 
 			disassembler.SymbolTable = symtab_manager.SimpleSymbolTable;
 			current_simple_symtab = symtab_manager.SimpleSymbolTable;
 			current_symtab = symtab_manager.SymbolTable;
-
-			initialized = true;
 
 			engine_ready ();
 			engine_is_ready = true;
@@ -303,9 +253,9 @@ namespace Mono.Debugger.Backends
 			} while (true);
 		}
 
-		ChildEvent wait ()
+		Inferior.ChildEvent wait ()
 		{
-			ChildEvent child_event;
+			Inferior.ChildEvent child_event;
 			do {
 				child_event = inferior.Wait ();
 			} while (child_event == null);
@@ -326,10 +276,10 @@ namespace Mono.Debugger.Backends
 		// <remarks>
 		//   This method may only be used in the background thread.
 		// </remarks>
-		TargetEventArgs process_child_event (ChildEvent child_event, bool must_continue)
+		TargetEventArgs process_child_event (Inferior.ChildEvent child_event, bool must_continue)
 		{
 		again:
-			ChildEventType message = child_event.Type;
+			Inferior.ChildEventType message = child_event.Type;
 			int arg = child_event.Argument;
 
 			if (stop_requested) {
@@ -338,19 +288,17 @@ namespace Mono.Debugger.Backends
 				restart_event.WaitOne ();
 				// A stop was requested and we actually received the SIGSTOP.  Note that
 				// we may also have stopped for another reason before receiving the SIGSTOP.
-				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.SIGSTOP))
+				if ((message == Inferior.ChildEventType.CHILD_STOPPED) && (arg == inferior.SIGSTOP))
 					goto done;
 				// Ignore the next SIGSTOP.
 				pending_sigstop++;
 			}
 
-			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
+			if ((message == Inferior.ChildEventType.CHILD_STOPPED) && (arg != 0)) {
 				if ((pending_sigstop > 0) && (arg == inferior.SIGSTOP)) {
 					--pending_sigstop;
 					goto done;
 				}
-				if (!backend.SignalHandler (process, inferior, arg))
-					goto done;
 			}
 
 			// To step over a method call, the sse inserts a temporary
@@ -369,25 +317,25 @@ namespace Mono.Debugger.Backends
 			// here only deals with the temporary breakpoint, the handling of
 			// a signal or another breakpoint is done later.
 			if (temp_breakpoint_id != 0) {
-				if ((message == ChildEventType.CHILD_EXITED) ||
-				    (message == ChildEventType.CHILD_SIGNALED))
+				if ((message == Inferior.ChildEventType.CHILD_EXITED) ||
+				    (message == Inferior.ChildEventType.CHILD_SIGNALED))
 					// we can't remove the breakpoint anymore after
 					// the target exited, but we need to clear this id.
 					temp_breakpoint_id = 0;
-				else if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
+				else if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
 					if (arg == temp_breakpoint_id) {
 						// we hit the temporary breakpoint; this'll always
 						// happen in the `correct' thread since the
 						// `temp_breakpoint_id' is only set in this
 						// SingleSteppingEngine and not in any other thread's.
-						message = ChildEventType.CHILD_STOPPED;
+						message = Inferior.ChildEventType.CHILD_STOPPED;
 						arg = 0;
 					}
 				}
 			}
 
-			if (message == ChildEventType.CHILD_HIT_BREAKPOINT) {
-				ChildEvent new_event;
+			if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
+				Inferior.ChildEvent new_event;
 				// Ok, the next thing we need to check is whether this is actually "our"
 				// breakpoint or whether it belongs to another thread.  In this case,
 				// `step_over_breakpoint' does everything for us and we can just continue
@@ -396,7 +344,7 @@ namespace Mono.Debugger.Backends
 					int new_arg = new_event.Argument;
 					// If the child stopped normally, just continue its execution
 					// here; otherwise, we need to deal with the unexpected stop.
-					if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
+					if ((new_event.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 					    ((new_arg != 0) && (new_arg != inferior.SIGSTOP))) {
 						child_event = new_event;
 						goto again;
@@ -415,7 +363,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			switch (message) {
-			case ChildEventType.CHILD_STOPPED:
+			case Inferior.ChildEventType.CHILD_STOPPED:
 				if (arg != 0) {
 					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 					return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
@@ -423,16 +371,16 @@ namespace Mono.Debugger.Backends
 
 				return null;
 
-			case ChildEventType.CHILD_HIT_BREAKPOINT:
+			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
 				return null;
 
-			case ChildEventType.CHILD_SIGNALED:
+			case Inferior.ChildEventType.CHILD_SIGNALED:
 				return new TargetEventArgs (TargetEventType.TargetSignaled, arg);
 
-			case ChildEventType.CHILD_EXITED:
+			case Inferior.ChildEventType.CHILD_EXITED:
 				return new TargetEventArgs (TargetEventType.TargetExited, arg);
 
-			case ChildEventType.CHILD_CALLBACK:
+			case Inferior.ChildEventType.CHILD_CALLBACK:
 				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 				return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 			}
@@ -519,16 +467,6 @@ namespace Mono.Debugger.Backends
 			// Ok, the target stopped normally.  Now we need to compute the
 			// new stack frame and then send the result to our caller.
 			//
-
-			if (initialized && !reached_main) {
-				backend.ReachedMain (process, inferior);
-				main_method_retaddr = inferior.GetReturnAddress ();
-				disassembler.SymbolTable = symtab_manager.SimpleSymbolTable;
-				current_simple_symtab = symtab_manager.SimpleSymbolTable;
-				current_symtab = symtab_manager.SymbolTable;
-				reached_main = true;
-			}
-
 			TargetAddress frame = inferior.CurrentFrame;
 
 			// After returning from `main', resume the target and keep
@@ -590,7 +528,7 @@ namespace Mono.Debugger.Backends
 
 		// <summary>
 		//   This event is emitted each time a stepping operation is started or
-		//   completed.  Other than the IInferior's StateChangedEvent, it is only
+		//   completed.  Other than the Inferior's StateChangedEvent, it is only
 		//   emitted after the whole operation completed.
 		// </summary>
 		public event TargetEventHandler TargetEvent;
@@ -679,7 +617,7 @@ namespace Mono.Debugger.Backends
 		{
 			backend.UpdateSymbolTable ();
 
-			IInferiorStackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
+			Inferior.StackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
 			StackFrame[] frames = new StackFrame [iframes.Length];
 			MyBacktrace backtrace = new MyBacktrace (this);
 
@@ -787,7 +725,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		IInferior inferior;
+		Inferior inferior;
 		IArchitecture arch;
 		DebuggerBackend backend;
 		ThreadManager thread_manager;	
@@ -809,7 +747,6 @@ namespace Mono.Debugger.Backends
 		bool result_sent = false;
 		bool native;
 		int pending_sigstop = 0;
-		bool redirect_fds;
 		int pid = -1;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
@@ -891,8 +828,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		bool child_already_exited;
-		bool initialized;
-		bool reached_main;
 		bool debugger_info_read;
 
 		private enum StepOperation {
@@ -974,17 +909,17 @@ namespace Mono.Debugger.Backends
 
 		private class CommandResult {
 			public readonly CommandResultType Type;
-			public readonly ChildEventType EventType;
+			public readonly Inferior.ChildEventType EventType;
 			public readonly int Argument;
 			public readonly object Data;
 
-			public CommandResult (ChildEventType type, int arg)
+			public CommandResult (Inferior.ChildEventType type, int arg)
 			{
 				this.EventType = type;
 				this.Argument = arg;
 			}
 
-			public CommandResult (ChildEventType type, object data)
+			public CommandResult (Inferior.ChildEventType type, object data)
 			{
 				this.EventType = type;
 				this.Argument = 0;
@@ -1054,7 +989,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool step_over_breakpoint (bool current, out ChildEvent new_event)
+		bool step_over_breakpoint (bool current, out Inferior.ChildEvent new_event)
 		{
 			int index;
 			BreakpointManager.Handle handle = breakpoint_manager.LookupBreakpoint (
@@ -1103,7 +1038,7 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 
 			// This gets just one single stack frame.
-			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
+			Inferior.StackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
 
 			if ((current_method != null) && current_method.HasSource) {
 				SourceAddress source = current_method.Source.Lookup (address);
@@ -1155,7 +1090,7 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
-			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
+			Inferior.StackFrame[] frames = inferior.GetBacktrace (1, TargetAddress.Null);
 
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasSource) {
@@ -1255,7 +1190,7 @@ namespace Mono.Debugger.Backends
 		TargetEventArgs do_step ()
 		{
 			check_inferior ();
-			ChildEvent child_event = do_continue_internal (false);
+			Inferior.ChildEvent child_event = do_continue_internal (false);
 			return process_child_event (child_event, false);
 		}
 
@@ -1289,20 +1224,20 @@ namespace Mono.Debugger.Backends
 		TargetEventArgs do_continue ()
 		{
 			check_inferior ();
-			ChildEvent child_event = do_continue_internal (true);
+			Inferior.ChildEvent child_event = do_continue_internal (true);
 			return process_child_event (child_event, true);
 		}
 
-		ChildEvent do_continue_internal (bool do_run)
+		Inferior.ChildEvent do_continue_internal (bool do_run)
 		{
 			check_inferior ();
 
-			ChildEvent new_event;
+			Inferior.ChildEvent new_event;
 			if (step_over_breakpoint (true, out new_event)) {
 				int new_arg = new_event.Argument;
 				// If the child stopped normally, just continue its execution
 				// here; otherwise, we need to deal with the unexpected stop.
-				if ((new_event.Type != ChildEventType.CHILD_STOPPED) ||
+				if ((new_event.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 				    ((new_arg != 0) && (new_arg != inferior.SIGSTOP)))
 					return new_event;
 				else if (!do_run)
@@ -1752,6 +1687,7 @@ namespace Mono.Debugger.Backends
 			Dispose ();
 		}
 
+#if FIXME
 		public void SetSignal (int signal, bool send_it)
 		{
 			// Try to get the command mutex; if we succeed, then no stepping operation
@@ -1765,6 +1701,7 @@ namespace Mono.Debugger.Backends
 
 			throw new TargetNotStoppedException ();
 		}
+#endif
 
 		CommandResult reached_main_func (object data)
 		{
@@ -1951,7 +1888,11 @@ namespace Mono.Debugger.Backends
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else
-				throw new InternalError ("EXCEPTION: {0}", result.Data);
+				return null;
+#if FIXME
+				throw new InternalError ("EXCEPTION: {0} {1}",
+							 result.Type, result.Data);
+#endif
 		}
 
 		CommandResult disassemble_method (object data)
@@ -2429,7 +2370,7 @@ namespace Mono.Debugger.Backends
 		protected class MyStackFrame : StackFrame
 		{
 			SingleSteppingEngine sse;
-			IInferiorStackFrame frame;
+			Inferior.StackFrame frame;
 			MyBacktrace backtrace;
 			ILanguage language;
 
@@ -2437,7 +2378,7 @@ namespace Mono.Debugger.Backends
 			bool has_registers;
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
-					     IInferiorStackFrame frame, MyBacktrace backtrace,
+					     Inferior.StackFrame frame, MyBacktrace backtrace,
 					     SourceAddress source, IMethod method)
 				: base (address, level, source, method)
 			{
@@ -2448,7 +2389,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
-					     IInferiorStackFrame frame, MyBacktrace backtrace)
+					     Inferior.StackFrame frame, MyBacktrace backtrace)
 				: base (address, level, sse.SimpleLookup (address, false))
 			{
 				this.sse = sse;
