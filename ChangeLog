@@ -8,14 +8,6 @@
 	* Makefile.am: Create a static libmonodebuggerwrapper.a library
 	containing everything but the main().
 
-2003-03-05  Martin Baulig  <martin@ximian.com>
-
-	* configure.in: Set version number to 0.2.1.1.
-
-2003-03-05  Martin Baulig  <martin@ximian.com>
-
-	Released version 0.2.1 "Cambridge" of the Mono Debugger :-)
-
 2003-03-04  Martin Baulig  <martin@ximian.com>
 
 	* widgets/generator/Makefile.am: Only rebuild things if we're in
@@ -31,7 +23,7 @@
 
 2003-03-04  Martin Baulig  <martin@ximian.com>
 
-	* RELEASE-NOTES-0.2.1.txt: New file.  This is more or less a copy
+	* RELEASE-NOTES-0.2.2.txt: New file.  This is more or less a copy
 	of the RELEASE-NOTES-0.2.0.txt.
 
 	* NEWS: Added a few news entries.
