@@ -119,9 +119,9 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected string FormatMember (string prefix, ITargetMemberInfo member,
-					       bool is_static)
+					       bool is_static, Hashtable hash)
 		{
-			string tname = FormatType (prefix + "   ", member.Type);
+			string tname = FormatType (prefix + "   ", member.Type, hash);
 			if (is_static)
 				return String.Format (
 					"{0}   static {1} {2}", prefix, tname, member.Name);
@@ -131,10 +131,10 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected string FormatProperty (string prefix, ITargetPropertyInfo prop,
-						 bool is_static)
+						 bool is_static, Hashtable hash)
 		{
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (FormatMember (prefix, prop, is_static));
+			sb.Append (FormatMember (prefix, prop, is_static, hash));
 			sb.Append (" {");
 			if (prop.CanRead)
 				sb.Append (" get;");
@@ -145,7 +145,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 
 		protected string FormatMethod (string prefix, ITargetMethodInfo method,
-					       bool is_static, bool is_ctor)
+					       bool is_static, bool is_ctor, Hashtable hash)
 		{
 			StringBuilder sb = new StringBuilder ();
 			sb.Append (prefix);
@@ -181,16 +181,27 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public string FormatType (ITargetType type)
 		{
-			return FormatType ("", type);
+			return FormatType ("", type, null);
 		}
 
-		public string FormatType (string prefix, ITargetType type)
+		protected string FormatType (string prefix, ITargetType type, Hashtable hash)
 		{
+			string retval;
+
+			if (hash == null)
+				hash = new Hashtable ();
+
+			if (hash.Contains (type))
+				return type.Name;
+			else
+				hash.Add (type, true);
+
 			switch (type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayType atype = (ITargetArrayType) type;
-				return String.Format (
-					"{0}{1} []", prefix, atype.ElementType.Name);
+				retval = String.Format (
+					"{0} []", atype.ElementType.Name);
+				break;
 			}
 
 			case TargetObjectKind.Class:
@@ -199,7 +210,6 @@ namespace Mono.Debugger.Frontends.Scripting
 				StringBuilder sb = new StringBuilder ();
 				ITargetClassType ctype = type as ITargetClassType;
 				if (ctype != null) {
-					sb.Append (prefix);
 					sb.Append ("class ");
 					if (ctype.Name != null) {
 						sb.Append (ctype.Name);
@@ -216,41 +226,55 @@ namespace Mono.Debugger.Frontends.Scripting
 						sb.Append (" ");
 					}
 				}
-				sb.Append ("{\n");
+				sb.Append ("\n" + prefix + "{\n");
 				foreach (ITargetFieldInfo field in stype.Fields)
-					sb.Append (FormatMember (prefix, field, false) + ";\n");
+					sb.Append (FormatMember (
+							   prefix, field, false, hash) + ";\n");
 				foreach (ITargetFieldInfo field in stype.StaticFields)
-					sb.Append (FormatMember (prefix, field, true) + ";\n");
+					sb.Append (FormatMember (
+							   prefix, field, true, hash) + ";\n");
 				foreach (ITargetPropertyInfo property in stype.Properties)
-					sb.Append (FormatProperty (prefix, property, false));
+					sb.Append (FormatProperty (
+							   prefix, property, false, hash));
 				foreach (ITargetPropertyInfo property in stype.StaticProperties)
-					sb.Append (FormatProperty (prefix, property, true));
+					sb.Append (FormatProperty (
+							   prefix, property, true, hash));
 				foreach (ITargetMethodInfo method in stype.Methods)
-					sb.Append (FormatMethod (prefix, method, false, false));
+					sb.Append (FormatMethod (
+							   prefix, method, false, false, hash));
 				foreach (ITargetMethodInfo method in stype.StaticMethods)
-					sb.Append (FormatMethod (prefix, method, true, false));
+					sb.Append (FormatMethod (
+							   prefix, method, true, false, hash));
 				foreach (ITargetMethodInfo method in stype.Constructors)
-					sb.Append (FormatMethod (prefix, method, true, true));
+					sb.Append (FormatMethod (
+							   prefix, method, true, true, hash));
 
 				sb.Append (prefix);
 				sb.Append ("}");
 
-				return sb.ToString ();
+				retval = sb.ToString ();
+				break;
 			}
 
 			case TargetObjectKind.Alias: {
 				ITargetTypeAlias alias = (ITargetTypeAlias) type;
 				string target;
 				if (alias.TargetType != null)
-					target = FormatType (prefix, alias.TargetType);
+					target = FormatType (prefix, alias.TargetType, hash);
 				else
 					target = "<unknown type>";
-				return String.Format ("typedef {0} = {1}", alias.Name, target);
+				retval = String.Format (
+					"typedef {0} = {1}", alias.Name, target);
+				break;
 			}
 
 			default:
-				return type.Name;
+				retval = type.Name;
+				break;
 			}
+
+			hash.Remove (type);
+			return retval;
 		}
 
 		public string FormatObject (ITargetObject obj)
