@@ -27,7 +27,7 @@ namespace Mono.Debugger.GUI
 			SourceLocation source = null;
 			TargetAddress address;
 			try {
-				StackFrame frame = backend.CurrentFrame;
+				StackFrame frame = process.CurrentFrame;
 				source = frame.SourceLocation;
 				address = frame.TargetAddress;
 			} catch {
@@ -44,7 +44,7 @@ namespace Mono.Debugger.GUI
 			TargetAddress end = address + source.SourceRange;
 
 			string dis_message;
-			IDisassembler dis = backend.Disassembler;
+			IDisassembler dis = process.Disassembler;
 			if (dis != null) {
 				TargetAddress current = start;
 				while (current < end)

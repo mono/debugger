@@ -30,6 +30,7 @@ namespace Mono.Debugger.GUI {
 		ClosableNotebookTab tab;
 		SourceFileFactory factory;
 		DebuggerBackend backend;
+		Process process;
 		
 		bool active;
 		string filename;
@@ -131,13 +132,14 @@ namespace Mono.Debugger.GUI {
 			return file.Contents;
 		}
 
-		public void SetBackend (DebuggerBackend backend)
+		public void SetBackend (DebuggerBackend backend, Process process)
 		{
 			this.backend = backend;
+			this.process = process;
 
-			backend.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
-			backend.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
+			process.FrameChangedEvent += new StackFrameHandler (frame_changed_event);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (frame_invalid_event);
+			process.MethodInvalidEvent += new MethodInvalidHandler (method_invalid_event);
 		}
 
 		public bool Active {
@@ -154,7 +156,7 @@ namespace Mono.Debugger.GUI {
 					text_buffer.RemoveTag (
 						frame_tag, text_buffer.StartIter, text_buffer.EndIter);
 				} else
-					frame_changed_event (backend.CurrentFrame);
+					frame_changed_event (process.CurrentFrame);
 			}
 		}
 
@@ -231,6 +233,7 @@ namespace Mono.Debugger.GUI {
 	public class SourceManager {
 		Hashtable sources; 
 		DebuggerBackend backend;
+		Process process;
 		SourceStatusbar source_status;
 		Gtk.Notebook notebook;
 		bool initialized;
@@ -251,17 +254,18 @@ namespace Mono.Debugger.GUI {
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 		
-		public void SetBackend (DebuggerBackend backend)
+		public void SetBackend (DebuggerBackend backend, Process process)
 		{
 			this.backend = backend;
+			this.process = process;
 
-			backend.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
-			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
+			process.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
+			process.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
 
 			foreach (DictionaryEntry de in sources){
 				SourceList source = (SourceList) de.Value;
 
-				source.SetBackend (backend);
+				source.SetBackend (backend, process);
 			}
 		}
 
@@ -356,7 +360,7 @@ namespace Mono.Debugger.GUI {
 				if (view == null){
 					view = CreateSourceView (source_buffer, filename);
 					if (backend != null)
-						view.SetBackend (backend);
+						view.SetBackend (backend, process);
 					
 					sources [filename] = view;
 					notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);

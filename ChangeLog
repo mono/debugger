@@ -1,3 +1,9 @@
+2002-12-13  Martin Baulig  <martin@ximian.com>
+
+	* frontends/gui/DebuggerWidget.cs (DebuggerWidget.SetBackend):
+	Added `Process process' argument; use the Process everywhere
+	instead of the DebuggerBackend.
+
 2002-12-11  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/i386-linux-ptrace.c: Get the registers each time

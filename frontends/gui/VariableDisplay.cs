@@ -158,12 +158,12 @@ namespace Mono.Debugger.GUI
 			add_message (args.Iter, "<unknown object>");
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
+			process.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 
 		void add_data (ITargetObject obj, TreeIter parent)
@@ -238,7 +238,7 @@ namespace Mono.Debugger.GUI
 		{
 			current_frame = frame;
 
-			if (!backend.HasTarget)
+			if (!process.HasTarget)
 				return;
 
 			UpdateDisplay ();

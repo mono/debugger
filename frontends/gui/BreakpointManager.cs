@@ -97,9 +97,9 @@ namespace Mono.Debugger.GUI
 			store.SetValue (iter, 2, new GLib.Value (breakpoint.Enabled));
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (breakpoints_changed);
 			backend.BreakpointsChangedEvent += new BreakpointsChangedHandler (breakpoints_changed);

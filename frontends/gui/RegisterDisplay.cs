@@ -53,11 +53,11 @@ namespace Mono.Debugger.GUI
 			color_stable.blue = 0;
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 
-			backend.StateChanged += new StateChangedHandler (state_changed);
+			process.StateChanged += new StateChangedHandler (state_changed);
 		}
 
 		void state_changed (TargetState new_state, int arg)
@@ -65,7 +65,7 @@ namespace Mono.Debugger.GUI
 			switch (new_state) {
 			case TargetState.STOPPED:
 			case TargetState.CORE_FILE:
-				arch = backend.Architecture;
+				arch = process.Architecture;
 				
 				if (arch is ArchitectureI386){
 					SetupI386 ();
@@ -101,7 +101,7 @@ namespace Mono.Debugger.GUI
 					break;
 			}
 			
-			if (backend.State != TargetState.STOPPED){
+			if (process.State != TargetState.STOPPED){
 				Report.Error ("Can not set value, program is not stopped");
 				value = regs [ridx];
 			} else {
@@ -117,7 +117,7 @@ namespace Mono.Debugger.GUI
 			}
 
 			i386_registers [ridx].Text = String.Format ("{0:x8}", value);
-			backend.SetRegister (ridx, value);
+			process.SetRegister (ridx, value);
 		}
 		
 		//
@@ -181,7 +181,7 @@ namespace Mono.Debugger.GUI
 		//
 		void I386SetupModifiableWidgets ()
 		{
-			bool can_modify = backend.State != TargetState.CORE_FILE;
+			bool can_modify = process.State != TargetState.CORE_FILE;
 
 			for (int i = 0; i < (int) I386Register.COUNT; i++){
 				if (i386_registers [i] != null)
@@ -200,8 +200,8 @@ namespace Mono.Debugger.GUI
 				return;
 
 			i386_initialized = true;
-			backend.FrameChangedEvent += new StackFrameHandler (I386_FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (I386_FramesInvalidEvent);
+			process.FrameChangedEvent += new StackFrameHandler (I386_FrameChangedEvent);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (I386_FramesInvalidEvent);
 		}
 		
 		long [] last_regs, regs;
@@ -230,7 +230,7 @@ namespace Mono.Debugger.GUI
 				return;
 			
 			try {
-				regs = backend.GetRegisters (arch.AllRegisterIndices);
+				regs = process.GetRegisters (arch.AllRegisterIndices);
 
 				for (int i = 0; i < (int) I386Register.COUNT; i++){
 					if (i386_registers [i] == null)
@@ -267,7 +267,7 @@ namespace Mono.Debugger.GUI
 		{
 			current_frame = frame;
 
-			if (!backend.HasTarget)
+			if (!process.HasTarget)
 				return;
 
 			UpdateDisplay ();

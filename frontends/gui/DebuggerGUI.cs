@@ -97,6 +97,7 @@ namespace Mono.Debugger.GUI
 
 		DebuggerBackend backend;
 		Interpreter interpreter;
+		Process process;
 
 		SourceManager source_manager;
 		string working_dir = ".";
@@ -250,10 +251,11 @@ namespace Mono.Debugger.GUI
 				args = temp_args;
 
 				start = ProcessStart.Create (null, args, null);
-				backend.ReadCoreFile (start, "thecore");
+				process = backend.ReadCoreFile (start, "thecore");
 			} else {
 				start = ProcessStart.Create (null, args, null);
-				backend.Run (start);
+				process = backend.Run (start);
+				process.SingleSteppingEngine.Run ();
 			}
 
 			//
@@ -263,19 +265,19 @@ namespace Mono.Debugger.GUI
 			main_window.Title = "Debugging: " + program +
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
 
-			source_status.SetBackend (backend);
-			register_display.SetBackend (backend);
-			variable_display.SetBackend (backend);
-			backtrace_view.SetBackend (backend);
-			module_display.SetBackend (backend);
-			hex_editor.SetBackend (backend);
-			memory_maps_display.SetBackend (backend);
-			breakpoint_manager.SetBackend (backend);
-			current_insn.SetBackend (backend);
-			disassembler_view.SetBackend (backend);
-			source_manager.SetBackend (backend);
+			source_status.SetBackend (backend, process);
+			register_display.SetBackend (backend, process);
+			variable_display.SetBackend (backend, process);
+			backtrace_view.SetBackend (backend, process);
+			module_display.SetBackend (backend, process);
+			hex_editor.SetBackend (backend, process);
+			memory_maps_display.SetBackend (backend, process);
+			breakpoint_manager.SetBackend (backend, process);
+			current_insn.SetBackend (backend, process);
+			disassembler_view.SetBackend (backend, process);
+			source_manager.SetBackend (backend, process);
 			
-			backend.StateChanged += new StateChangedHandler (BackendStateChanged);
+			process.StateChanged += new StateChangedHandler (BackendStateChanged);
 		}
 
 		void UpdateGUIState (TargetState state)
@@ -297,6 +299,7 @@ namespace Mono.Debugger.GUI
 		ProgramToDebug program_to_debug;
 		void OnProgramToDebugActivate (object sender, EventArgs a)
 		{
+#if FALSE
 			string program = backend.TargetApplication;
 			string arg_string = String.Join (" ", backend.CommandLineArguments);
 			
@@ -314,6 +317,7 @@ namespace Mono.Debugger.GUI
 			list.CopyTo (argsv);
 
 			LoadProgram (argsv);
+#endif
 		}
 
 		FileSelection fs_window;
@@ -360,57 +364,58 @@ namespace Mono.Debugger.GUI
 
 		void OnRunProgramActivate (object sender, EventArgs args)
 		{
-			if (backend.HasTarget)
-				backend.CurrentProcess.Continue ();
+			if ((process != null) && process.HasTarget)
+				process.Continue ();
 		}
 
 		void OnContinueIgnoreSignalActivate (object sender, EventArgs args)
 		{
-			backend.CurrentProcess.ClearSignal ();
+			if (process != null)
+				process.ClearSignal ();
 			OnRunProgramActivate (sender, args);
 		}
 
 		void OnStopProgramActivate (object sender, EventArgs args)
 		{
-			backend.CurrentProcess.Stop ();
+			if (process != null)
+				process.Stop ();
 		}
 
 		void OnRestartProgramActivate (object sender, EventArgs args)
 		{
-			backend.CurrentProcess.Stop ();
+			if (process != null)
+				process.Stop ();
 			// backend.Run ();
 		}
 
 		void OnStepIntoActivate (object sender, EventArgs args)
 		{
-			if (backend.CurrentProcess.CanStep){
-				Console.WriteLine ("State: " + backend.State);
-				backend.CurrentProcess.StepLine ();
-			}
+			if ((process != null) && process.CanStep)
+				process.StepLine ();
 		}
 
 		void OnStepOverActivate (object sender, EventArgs args)
 		{
-			if (backend.CurrentProcess.CanStep)
-				backend.CurrentProcess.NextLine ();
+			if ((process != null) && process.CanStep)
+				process.NextLine ();
 		}
 
 		void OnStepOutActivate (object sender, EventArgs args)
 		{
-			if (backend.CurrentProcess.CanStep)
-				backend.CurrentProcess.Finish ();
+			if ((process != null) && process.CanStep)
+				process.Finish ();
 		}
 
 		void OnInstructionStepIntoActivate (object sender, EventArgs args)
 		{
-			if (backend.CurrentProcess.CanStep)
-				backend.CurrentProcess.StepInstruction ();
+			if ((process != null) && process.CanStep)
+				process.StepInstruction ();
 		}
 
 		void OnInstructionStepOverActivate (object sender, EventArgs args)
 		{
-			if (backend.CurrentProcess.CanStep)
-				backend.CurrentProcess.NextInstruction ();
+			if ((process != null) && process.CanStep)
+				process.NextInstruction ();
 		}
 		
 		void OnAboutActivate (object sender, EventArgs args)
@@ -420,7 +425,8 @@ namespace Mono.Debugger.GUI
 			About about = new About ("Mono Debugger", "0.1",
 						 "Copyright (C) 2002 Ximian, Inc.",
 						 "",
-						 new string [] { "Martin Baulig (martin@gnome.org)", "Miguel de Icaza (miguel@ximian.com)" },
+						 new string [] { "Martin Baulig (martin@ximian.com)",
+								 "Miguel de Icaza (miguel@ximian.com)" },
 						 new string [] { },
 						 "", pixbuf);
 			about.Run ();

@@ -34,15 +34,15 @@ namespace Mono.Debugger.GUI
 			factory = new SourceFileFactory ();
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 			
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
-			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
-			backend.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
-			backend.TargetExited += new TargetExitedHandler (TargetExitedEvent);
+			process.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
+			process.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
+			process.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
+			process.TargetExited += new TargetExitedHandler (TargetExitedEvent);
 		}
 
 		void TargetExitedEvent ()

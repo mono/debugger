@@ -16,22 +16,22 @@ namespace Mono.Debugger.GUI
 			entry.Sensitive = false;
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
-			backend.StateChanged += new StateChangedHandler (StateChanged);
-			backend.FrameChangedEvent += new StackFrameHandler (FrameChanged);
+			base.SetBackend (backend, process);
+			process.StateChanged += new StateChangedHandler (StateChanged);
+			process.FrameChangedEvent += new StackFrameHandler (FrameChanged);
 		}
 
 		protected void Update (TargetAddress frame)
 		{
-			if (!backend.HasTarget || (backend.Disassembler == null)) {
+			if (!process.HasTarget || (process.Disassembler == null)) {
 				widget.Sensitive = false;
 				return;
 			}
 
 			try {
-				IDisassembler dis = backend.Disassembler;
+				IDisassembler dis = process.Disassembler;
 				TargetAddress old_frame = frame;
 				string insn = dis.DisassembleInstruction (ref frame);
 				entry.Text = String.Format ("0x{0:x}   {1}", old_frame.Address, insn);
@@ -54,7 +54,7 @@ namespace Mono.Debugger.GUI
 
 			switch (new_state) {
 			case TargetState.STOPPED:
-				Update (backend.CurrentFrameAddress);
+				Update (process.CurrentFrameAddress);
 				break;
 
 			default:

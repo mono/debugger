@@ -68,7 +68,7 @@ namespace Mono.Debugger.GUI
 		{
 			TreeIter iter = new TreeIter ();
 
-			bool writable = backend.TargetMemoryAccess.CanWrite &&
+			bool writable = process.TargetMemoryAccess.CanWrite &&
 				((area.Flags & TargetMemoryFlags.ReadOnly) == 0);
 
 			store.Append (out iter);
@@ -86,7 +86,7 @@ namespace Mono.Debugger.GUI
 			store.Clear ();
 
 			try {
-				memory_maps = backend.GetMemoryMaps ();
+				memory_maps = process.GetMemoryMaps ();
 			} catch {
 				return;
 			}
@@ -95,9 +95,9 @@ namespace Mono.Debugger.GUI
 				add_area (area);
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}

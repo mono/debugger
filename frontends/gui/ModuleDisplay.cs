@@ -126,9 +126,9 @@ namespace Mono.Debugger.GUI
 				add_module (module);
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}

@@ -155,7 +155,7 @@ namespace Mono.Debugger.GUI
 			}
 
 			try {
-				backend.TargetMemoryAccess.WriteByte (start + offset, (byte) value);
+				process.TargetMemoryAccess.WriteByte (start + offset, (byte) value);
 			} catch (Exception e) {
 				Report.Error ("Can't modify memory: {0}", e);
 			}
@@ -243,7 +243,7 @@ namespace Mono.Debugger.GUI
 		{
 			ArrayList list = new ArrayList ();
 
-			memory_maps = backend.GetMemoryMaps ();
+			memory_maps = process.GetMemoryMaps ();
 			foreach (TargetMemoryArea area in memory_maps) {
 				list.Add (area.ToString ());
 			}
@@ -311,7 +311,7 @@ namespace Mono.Debugger.GUI
 			}
 
 			current_area = null;
-			start = new TargetAddress (backend.Inferior, address);
+			start = new TargetAddress (process.Inferior, address);
 
 			try {
 				update_areas ();
@@ -400,7 +400,7 @@ namespace Mono.Debugger.GUI
 				string text;
 
 				try {
-					byte b = backend.TargetMemoryAccess.ReadByte (address + i);
+					byte b = process.TargetMemoryAccess.ReadByte (address + i);
 					text = String.Format ("{1}{0:x}", b, b >= 16 ? "" : "0");
 					if (b > 0x20)
 						data [i] = (char) b;
@@ -418,9 +418,9 @@ namespace Mono.Debugger.GUI
 			store.SetValue (iter, 18, new GLib.Value (new String (data)));
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 		}

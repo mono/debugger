@@ -55,12 +55,12 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
+			base.SetBackend (backend, process);
 			
- backend.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
-			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
+			process.FrameChangedEvent += new StackFrameHandler (FrameChangedEvent);
+			process.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 		}
 		
 		void FramesInvalidEvent ()
@@ -93,11 +93,11 @@ namespace Mono.Debugger.GUI
 
 			store.Clear ();
 
-			if (!backend.HasTarget)
+			if (!process.HasTarget)
 				return;
 
 			try {
-				StackFrame[] frames = backend.GetBacktrace ();
+				StackFrame[] frames = process.GetBacktrace ();
 				for (int i = 0; i < frames.Length; i++)
 					add_frame (i, frames [i]);
 			} catch {

@@ -19,10 +19,10 @@ namespace Mono.Debugger.GUI
 			status_id = status_bar.GetContextId ("message");
 		}
 
-		public override void SetBackend (DebuggerBackend backend)
+		public override void SetBackend (DebuggerBackend backend, Process process)
 		{
-			base.SetBackend (backend);
-			backend.StateChanged += new StateChangedHandler (StateChanged);
+			base.SetBackend (backend, process);
+			process.StateChanged += new StateChangedHandler (StateChanged);
 		}
 		
 		public void Message (string message)
@@ -74,7 +74,7 @@ namespace Mono.Debugger.GUI
 			case TargetState.CORE_FILE:
 			case TargetState.STOPPED:
 				try {
-					StackFrame frame = backend.CurrentFrame;
+					StackFrame frame = process.CurrentFrame;
 					Message (GetStopMessage (frame, arg));
 				} catch (NoStackException) {
 					Message (String.Format ("{0}.", GetStopReason (arg)));

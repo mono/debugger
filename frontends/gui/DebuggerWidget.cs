@@ -10,6 +10,7 @@ namespace Mono.Debugger.GUI
 		protected Gtk.Widget container;
 		protected Gtk.Widget widget;
 		protected DebuggerBackend backend;
+		protected Process process;
 		bool visible;
 
 		[DllImport("glib-2.0")]
@@ -36,9 +37,10 @@ namespace Mono.Debugger.GUI
 			} catch {}
 		}
 
-		public virtual void SetBackend (DebuggerBackend backend)
+		public virtual void SetBackend (DebuggerBackend backend, Process process)
 		{
 			this.backend = backend;
+			this.process = process;
 		}
 		
 		void mapped (object o, EventArgs args)

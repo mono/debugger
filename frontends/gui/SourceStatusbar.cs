@@ -46,7 +46,7 @@ namespace Mono.Debugger.GUI
 			case TargetState.CORE_FILE:
 			case TargetState.STOPPED:
 				try {
-					StackFrame frame = backend.CurrentFrame;
+					StackFrame frame = process.CurrentFrame;
 					if (frame.SourceLocation == null) {
 						base.StateChanged (new_state, arg);
 						return;
