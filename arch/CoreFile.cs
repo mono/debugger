@@ -110,7 +110,7 @@ namespace Mono.Debugger.Architecture
 
 		public abstract long[] GetRegisters (int[] registers);
 
-		public abstract IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
+		public abstract IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
 
 		public IDisassembler Disassembler {
 			get {
@@ -146,9 +146,9 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public IModule[] Modules {
+		public Module[] Modules {
 			get {
-				return new IModule[] { bfd.Module };
+				return new Module[] { bfd.Module };
 			}
 		}
 
@@ -166,6 +166,7 @@ namespace Mono.Debugger.Architecture
 		public event TargetOutputHandler TargetError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
+		public event ChildEventHandler ChildEvent;
 
 		//
 		// ITargetInfo
@@ -262,16 +263,38 @@ namespace Mono.Debugger.Architecture
 			throw new InvalidOperationException ();
 		}
 
+		public TargetAddress MainMethodAddress {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public TargetAddress GetReturnAddress ()
+		{
+			throw new NotImplementedException ();
+		}
+
 		//
 		// IInferior - everything below throws a CannotExecuteCoreFileException.
 		//
 
-		public void Continue ()
-		{
-			throw new CannotExecuteCoreFileException ();
+		public SingleSteppingEngine SingleSteppingEngine {
+			get {
+				throw new CannotExecuteCoreFileException ();
+			}
+
+			set {
+				throw new CannotExecuteCoreFileException ();
+			}
 		}
 
-		public void Continue (TargetAddress until)
+		public bool CurrentInstructionIsBreakpoint {
+			get {
+				throw new CannotExecuteCoreFileException ();
+			}
+		}
+
+		public void Continue ()
 		{
 			throw new CannotExecuteCoreFileException ();
 		}
@@ -286,7 +309,7 @@ namespace Mono.Debugger.Architecture
 			// Do nothing.
 		}
 
-		public void Step (StepFrame frame)
+		public void Step ()
 		{
 			throw new CannotExecuteCoreFileException ();
 		}
@@ -303,6 +326,45 @@ namespace Mono.Debugger.Architecture
 
 		public long CallStringMethod (TargetAddress method, long method_argument,
 					      string string_argument)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public TargetAddress CallInvokeMethod (TargetAddress invoke_method,
+						       TargetAddress method_argument,
+						       TargetAddress object_argument,
+						       TargetAddress[] param_objects,
+						       out TargetAddress exc_object)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public int InsertBreakpoint (TargetAddress address)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public void RemoveBreakpoint (int breakpoint)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public void EnableBreakpoint (int breakpoint)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public void DisableBreakpoint (int breakpoint)
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public void EnableAllBreakpoints ()
+		{
+			throw new CannotExecuteCoreFileException ();
+		}
+
+		public void DisableAllBreakpoints ()
 		{
 			throw new CannotExecuteCoreFileException ();
 		}

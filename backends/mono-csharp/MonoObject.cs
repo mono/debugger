@@ -41,11 +41,15 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public virtual object Object {
 			get {
+				Console.WriteLine ("#0: {0} {1}", HasObject, location);
+
 				if (!HasObject)
 					throw new InvalidOperationException ();
 
 				ITargetMemoryAccess memory;
 				TargetAddress address = GetAddress (location, out memory);
+
+				Console.WriteLine ("#1: {0} {1} {2}", type, memory, address);
 
 				try {
 					ITargetMemoryReader reader;

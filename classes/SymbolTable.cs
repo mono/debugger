@@ -97,19 +97,26 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract bool HasSymbols {
-			get;
-		}
-
-		public abstract ISymbol[] Symbols {
-			get;
-		}
-
-		protected abstract bool HasMethods {
+		public abstract bool HasMethods {
 			get;
 		}
 
 		protected abstract ArrayList GetMethods ();
+
+		public IMethod[] Methods {
+			get {
+				if (!HasMethods)
+					throw new InvalidOperationException ();
+
+				ArrayList methods = ensure_methods ();
+				if (methods == null)
+					return new IMethod [0];
+
+				IMethod[] retval = new IMethod [methods.Count];
+				methods.CopyTo (retval, 0);
+				return retval;
+			}
+		}
 
 		static int count = 0;
 
@@ -190,18 +197,6 @@ namespace Mono.Debugger
 
 				return method;
 			}
-
-			return null;
-		}
-
-		public virtual ISymbol Lookup (string name)
-		{
-			if (!HasSymbols)
-				return null;
-
-			foreach (ISymbol symbol in Symbols)
-				if (symbol.Name == name)
-					return symbol;
 
 			return null;
 		}

@@ -7,8 +7,11 @@ namespace Mono.Debugger
 	public interface ISymbolLookup
 	{
 		IMethod Lookup (TargetAddress address);
+	}
 
-		ISymbol Lookup (string name);
+	public interface ISourceLookup
+	{
+		SourceMethodInfo Lookup (string method_name);
 	}
 
 	public interface ISymbolContainer
@@ -51,17 +54,6 @@ namespace Mono.Debugger
 		}
 	}
 
-	public interface ISymbol : IComparable
-	{
-		string Name {
-			get;
-		}
-
-		ITargetLocation Location {
-			get;
-		}
-	}
-
 	public delegate void SymbolTableChangedHandler ();
 
 	public interface ISymbolTable : ISymbolLookup, ISymbolContainer
@@ -90,18 +82,11 @@ namespace Mono.Debugger
 			get;
 		}
 
-		// <summary>
-		//   Whether the symbol table has a symbol list.
-		// </summary>
-		bool HasSymbols {
+		bool HasMethods {
 			get;
 		}
 
-		// <summary>
-		//   If HasNames is true, returns a list of ISymbols which can
-		//   be used to lookup symbols by name.
-		// </summary>
-		ISymbol[] Symbols {
+		IMethod[] Methods {
 			get;
 		}
 

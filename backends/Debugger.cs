@@ -30,22 +30,16 @@ namespace Mono.Debugger
 
 		IInferior inferior;
 		ArrayList languages;
+		MonoCSharpLanguageBackend csharp_language;
+		SingleSteppingEngine sse;
 
 		string[] argv;
 		string[] envp;
 		string target_application;
 		string working_directory;
 
-		StackFrame current_frame;
-		StackFrame[] current_backtrace;
-		IMethod current_method;
-
 		bool load_native_symtab = true;
 
-		bool step_line;
-		bool next_line;
-		StepFrame current_step_frame;
-		bool must_send_update;
 		bool native;
 
 		public DebuggerBackend ()
@@ -76,6 +70,10 @@ namespace Mono.Debugger
 			this.native = native;
 			this.languages = new ArrayList ();
 			this.bfd_container = new BfdContainer (this);
+
+			csharp_language = new MonoCSharpLanguageBackend (this);
+			csharp_language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+			languages.Add (csharp_language);
 		}
 
 		public string CurrentWorkingDirectory {
@@ -130,6 +128,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public SingleSteppingEngine SingleSteppingEngine {
+			get {
+				return sse;
+			}
+		}
+
 		// <summary>
 		//   If true, load the target's native symbol table.  You need to enable this
 		//   to debug native C applications, but you can safely disable it if you just
@@ -176,20 +180,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		void frames_invalid ()
-		{
-			if (current_frame != null) {
-				current_frame.Dispose ();
-				current_frame = null;
-			}
-
-			if (current_backtrace != null) {
-				foreach (StackFrame frame in current_backtrace)
-					frame.Dispose ();
-				current_backtrace = null;
-			}
-		}
-
 		void target_state_changed (TargetState new_state, int arg)
 		{
 			if (new_state == TargetState.STOPPED) {
@@ -197,9 +187,6 @@ namespace Mono.Debugger
 					busy = false;
 					return;
 				}
-					
-				if (!frame_changed ())
-					return;
 			}
 
 			if (new_state == TargetState.BUSY) {
@@ -242,12 +229,9 @@ namespace Mono.Debugger
 		{
 			inferior.Dispose ();
 			inferior = null;
-			languages = new ArrayList ();
+			sse = null;
 			symtabs = null;
-			current_method = null;
 			frames_invalid ();
-			if (FramesInvalidEvent != null)
-				FramesInvalidEvent ();
 			if (TargetExited != null)
 				TargetExited ();
 		}
@@ -353,7 +337,13 @@ namespace Mono.Debugger
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
-			inferior.StateChanged += new StateChangedHandler (target_state_changed);
+
+			sse = new SingleSteppingEngine (this, inferior, native);
+			sse.StateChangedEvent += new StateChangedHandler (target_state_changed);
+			sse.MethodInvalidEvent += new MethodInvalidHandler (method_invalid);
+			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
+			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
+			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
 
 			symtabs = new SymbolTableCollection ();
 			Console.WriteLine ("RUN: {0} {1}", native, load_native_symtab);
@@ -363,11 +353,34 @@ namespace Mono.Debugger
 			if (native)
 				return;
 
-			ILanguageBackend language = new MonoCSharpLanguageBackend (this, inferior);
-			symtabs.AddSymbolTable (language.SymbolTable);
-			inferior.ApplicationSymbolTable = language.SymbolTable;
-			language.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
-			languages.Add (language);
+			symtabs.AddSymbolTable (csharp_language);
+			csharp_language.Inferior = inferior;
+			inferior.ApplicationSymbolTable = csharp_language;
+			sse.ApplicationSymbolTable = csharp_language;
+		}
+
+		void method_invalid ()
+		{
+			if (MethodInvalidEvent != null)
+				MethodInvalidEvent ();
+		}
+
+		void method_changed (IMethod method)
+		{
+			if (MethodChangedEvent != null)
+				MethodChangedEvent (method);
+		}
+
+		void frame_changed (StackFrame frame)
+		{
+			if (FrameChangedEvent != null)
+				FrameChangedEvent (frame);
+		}
+
+		void frames_invalid ()
+		{
+			if (FramesInvalidEvent != null)
+				FramesInvalidEvent ();
 		}
 
 		void modules_changed ()
@@ -384,14 +397,11 @@ namespace Mono.Debugger
 			symtabs.AddSymbolTable (inferior.SymbolTable);
 
 			if (!native) {
-				ILanguageBackend language = new MonoCSharpLanguageBackend (this, inferior);
-				symtabs.AddSymbolTable (language.SymbolTable);
-				inferior.ApplicationSymbolTable = language.SymbolTable;
+				symtabs.AddSymbolTable (csharp_language);
+				csharp_language.Inferior = inferior;
+				inferior.ApplicationSymbolTable = csharp_language;
 				symtabs.UpdateSymbolTable ();
-				languages.Add (language);
 			}
-
-			frame_changed ();
 		}
 
 		public void Quit ()
@@ -419,78 +429,43 @@ namespace Mono.Debugger
 		{
 			check_inferior ();
 
+			if (sse == null)
+				throw new CannotExecuteCoreFileException ();
+
 			if (State == TargetState.CORE_FILE)
 				throw new CannotExecuteCoreFileException ();
 			else if (State != TargetState.STOPPED)
 				throw new TargetNotStoppedException ();
 		}
 
-		StepFrame get_step_frame ()
-		{
-			check_inferior ();
-			StackFrame frame = CurrentFrame;
-			ILanguageBackend language = (frame.Method != null) ?
-				frame.Method.Module.Language : null;
-
-			if (frame.SourceLocation == null)
-				return null;
-
-			int offset = frame.SourceLocation.SourceOffset;
-			int range = frame.SourceLocation.SourceRange;
-
-			TargetAddress start = frame.TargetAddress - offset;
-			TargetAddress end = frame.TargetAddress + range;
-
-			return new StepFrame (start, end, language, StepMode.StepFrame);
-		}
-
-		StepFrame get_simple_step_frame (StepMode mode)
-		{
-			check_inferior ();
-			StackFrame frame = CurrentFrame;
-			ILanguageBackend language = (frame.Method != null) ?
-				frame.Method.Module.Language : null;
-
-			return new StepFrame (language, mode);
-		}
-
 		public void StepInstruction ()
 		{
 			check_can_run ();
-			inferior.Step (get_simple_step_frame (StepMode.SingleInstruction));
+			sse.StepInstruction ();
 		}
 
 		public void NextInstruction ()
 		{
 			check_can_run ();
-			inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
+			sse.NextInstruction ();
 		}
 
 		public void StepLine ()
 		{
 			check_can_run ();
-			step_line = true;
-			inferior.Step (get_step_frame ());
+			sse.StepLine ();
 		}
 
 		public void NextLine ()
 		{
 			check_can_run ();
-			StepFrame frame = get_step_frame ();
-			if (frame == null) {
-				inferior.Step (get_simple_step_frame (StepMode.NextInstruction));
-				return;
-			}
-
-			next_line = true;
-			inferior.Step (new StepFrame (
-				frame.Start, frame.End, null, StepMode.Finish));
+			sse.NextLine ();
 		}
 
 		public void Continue ()
 		{
 			check_can_run ();
-			inferior.Continue ();
+			sse.Continue ();
 		}
 
 		public void Continue (TargetAddress until)
@@ -509,7 +484,7 @@ namespace Mono.Debugger
 					"Oooops: reached {0:x} but symfile had {1:x}",
 					current, until));
 
-			inferior.Continue (until);
+			sse.Continue (until);
 		}
 
 		public void Stop ()
@@ -521,36 +496,61 @@ namespace Mono.Debugger
 		public void Finish ()
 		{
 			check_can_run ();
-			StackFrame frame = CurrentFrame;
-			if (frame.Method == null)
-				throw new NoMethodException ();
-
-			current_step_frame = new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish);
-			inferior.Step (current_step_frame);
+			sse.Finish ();
 		}
 
-		public void TestBreakpoint (string name)
+		SourceMethodInfo FindMethod (string name)
 		{
-#if FALSE
-			if (current_method == null)
+			foreach (Module module in Modules) {
+				SourceMethodInfo method = module.FindMethod (name);
+				
+				if (method != null)
+					return method;
+			}
+
+			return null;
+		}
+
+		void method_loaded (SourceMethodInfo method, object user_data)
+		{
+			Console.WriteLine ("METHOD LOADED: {0}", method);
+		}
+
+		public int InsertBreakpoint (string name)
+		{
+			SourceMethodInfo method = FindMethod (name);
+			if (method == null)
+				return 0;
+
+			Console.WriteLine ("METHOD: {0} {1} {2}", method, method.SourceInfo,
+					   method.SourceInfo.Module);
+
+			Module module = method.SourceInfo.Module;
+
+			int index = module.AddBreakpoint (new SimpleBreakpoint (), method);
+			Console.WriteLine ("BREAKPOINT INSERTED: {0}", index);
+			return index;
+		}
+
+		public void Test (string name)
+		{
+			SourceMethodInfo source_method = FindMethod (name);
+			if ((source_method == null) || !source_method.IsLoaded)
 				return;
 
-			MonoCSharpLanguageBackend csharp =
-				current_method.Module.Language as MonoCSharpLanguageBackend;
+			IMethod method = source_method.Method;
+			if (!method.IsLoaded)
+				return;
+
+			Console.WriteLine ("METHOD: {0} {1}", source_method, method);
+
+			MonoCSharpLanguageBackend csharp = method.Module.Language as MonoCSharpLanguageBackend;
 			if (csharp == null)
 				return;
 
-			Console.WriteLine ("TEST: {0}", name);
+			Console.WriteLine ("METHOD: {0}", csharp);
 
-			csharp.InsertBreakpoint (name);
-#else
-			ISymbol symbol = Lookup (name);
-			if (symbol == null)
-				return;
-
-			Console.WriteLine ("SYMBOL: {0}", symbol);
-#endif
+			csharp.Test (method);
 		}
 
 		public TargetAddress CurrentFrameAddress {
@@ -562,46 +562,29 @@ namespace Mono.Debugger
 
 		public StackFrame CurrentFrame {
 			get {
-				check_stopped ();
-				return current_frame;
+				return sse.CurrentFrame;
 			}
+		}
+
+		public StackFrame ReloadFrame ()
+		{
+			StackFrame frame = CurrentFrame;
+
+			if (FrameChangedEvent != null)
+				FrameChangedEvent (frame);
+
+			return frame;
 		}
 
 		public IMethod CurrentMethod {
 			get {
-				check_stopped ();
-				if (current_method == null)
-					throw new NoMethodException ();
-				return current_method;
+				return sse.CurrentMethod;
 			}
 		}
 
 		public StackFrame[] GetBacktrace ()
 		{
-			check_stopped ();
-
-			if (current_backtrace != null)
-				return current_backtrace;
-
-			symtabs.UpdateSymbolTable ();
-
-			IInferiorStackFrame[] frames = inferior.GetBacktrace (-1, false);
-			current_backtrace = new StackFrame [frames.Length];
-
-			for (int i = 0; i < frames.Length; i++) {
-				TargetAddress address = frames [i].Address;
-
-				IMethod method = Lookup (address);
-				if ((method != null) && method.HasSource) {
-					SourceLocation source = method.Source.Lookup (address);
-					current_backtrace [i] = new StackFrame (
-						inferior, address, frames [i], source, method);
-				} else
-					current_backtrace [i] = new StackFrame (
-						inferior, address, frames [i]);
-			}
-
-			return current_backtrace;
+			return sse.GetBacktrace ();
 		}
 
 		public long GetRegister (int register)
@@ -642,122 +625,30 @@ namespace Mono.Debugger
 			return symtabs.Lookup (address);
 		}
 
-		public ISymbol Lookup (string name)
+		public void UpdateSymbolTable ()
 		{
-			return symtabs.Lookup (name);
+			symtabs.UpdateSymbolTable ();
 		}
 
-		public IModule[] Modules {
+		public Module[] Modules {
 			get {
 				check_disposed ();
 				ArrayList modules = new ArrayList ();
 				modules.AddRange (bfd_container.Modules);
 				foreach (ILanguageBackend language in languages)
 					modules.AddRange (language.Modules);
-				IModule[] retval = new IModule [modules.Count];
+				Module[] retval = new Module [modules.Count];
 				modules.CopyTo (retval, 0);
 				return retval;
 			}
 		}
 
-		static bool in_frame_changed = false;
-
-		bool frame_changed ()
+		public bool BreakpointHit (TargetAddress address)
 		{
-			if (in_frame_changed)
-				throw new InternalError ();
-
-			in_frame_changed = true;
-			bool retval = do_frame_changed ();
-			in_frame_changed = false;
-			return retval;
-		}
-
-		bool do_frame_changed ()
-		{
-			IMethod old_method = current_method;
-			bool old_step_line = step_line;
-			bool old_next_line = next_line;
-
-			IInferiorStackFrame[] frames = inferior.GetBacktrace (1, true);
-			TargetAddress address = frames [0].Address;
-
 			foreach (ILanguageBackend language in languages) {
 				if (!language.BreakpointHit (address))
 					return false;
 			}
-
-			if ((current_step_frame != null) &&
-			    ((address >= current_step_frame.Start) &&
-			     (address < current_step_frame.End))) {
-				inferior.Step (current_step_frame);
-				return false;
-			}
-
-			step_line = false;
-			next_line = false;
-			current_step_frame = null;
-
-			if (!must_send_update && (current_frame != null) && current_frame.IsValid &&
-			    (current_frame.TargetAddress == address))
-				return true;
-
-			frames_invalid ();
-
-			if ((current_method == null) ||
-			    (!MethodBase.IsInSameMethod (current_method, address))) {
-				symtabs.UpdateSymbolTable ();
-				current_method = Lookup (address);
-			}
-
-			// If some clown requested a backtrace while doing the symbol lookup ....
-			frames_invalid ();
-
-			if ((current_method != null) && current_method.HasSource) {
-				SourceLocation source = current_method.Source.Lookup (address);
-				ILanguageBackend language = current_method.Module.Language;
-
-				if ((old_step_line || old_next_line) && (language != null)) {
-					if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
-						must_send_update = true;
-
-						inferior.Step (new StepFrame (
-							address - source.SourceOffset,
-							address + source.SourceRange, language,
-							old_next_line ? StepMode.Finish : StepMode.StepFrame));
-						return false;
-					} else if (current_method.HasMethodBounds &&
-						   (address < current_method.MethodStartAddress)) {
-						must_send_update = true;
-
-						inferior.Step (new StepFrame (
-							current_method.StartAddress,
-							current_method.MethodStartAddress,
-							null, StepMode.Finish));
-						return false;
-					}
-				}
-
-				current_frame = new StackFrame (
-					inferior, address, frames [0], source, current_method);
-			} else
-				current_frame = new StackFrame (
-					inferior, address, frames [0]);
-
-			if (must_send_update || (current_method != old_method)) {
-				if (current_method != null) {
-					if (MethodChangedEvent != null)
-						MethodChangedEvent (current_method);
-				} else {
-					if (MethodInvalidEvent != null)
-						MethodInvalidEvent ();
-				}
-			}
-
-			must_send_update = false;
-
-			if (FrameChangedEvent != null)
-				FrameChangedEvent (current_frame);
 
 			return true;
 		}

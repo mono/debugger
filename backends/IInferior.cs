@@ -22,18 +22,22 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
+	public enum ChildEventType {
+		CHILD_EXITED = 1,
+		CHILD_STOPPED,
+		CHILD_SIGNALED,
+		CHILD_CALLBACK,
+		CHILD_HIT_BREAKPOINT
+	}
+
+	public delegate void ChildEventHandler (ChildEventType message, int arg);
+
 	public interface IInferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
 		// <summary>
 		//   Continue the target.
 		// </summary>
 		void Continue ();
-
-		// <summary>
-		//   Continue running until we either reach the specified location, hit a
-		//   breakpoint or receive a signal.
-		// </summary>
-		void Continue (TargetAddress until);
 
 		// <summary>
 		//   Aborts the target being debugged, but gives it time to terminate cleanly.
@@ -55,9 +59,21 @@ namespace Mono.Debugger.Backends
 		}
 
 		// <summary>
-		//   Single-step until we leave the specified frame.
+		//   Whether the user set a breakpoint at the current instruction.
 		// </summary>
-		void Step (StepFrame frame);
+		// <remarks>
+		//   This method only checks whether the user set a breakpoint at the
+		//   current instruction, it does not track breakpoint instruction which
+		//   were already in the source code.
+		// </remarks>
+		bool CurrentInstructionIsBreakpoint {
+			get;
+		}
+
+		// <summary>
+		//   Single-step one instruction.
+		// </summary>
+		void Step ();
 
 		// <summary>
 		//   Stop the target.
@@ -70,12 +86,32 @@ namespace Mono.Debugger.Backends
 		long CallMethod (TargetAddress method, long method_argument);
 		long CallStringMethod (TargetAddress method, long method_argument,
 				       string string_argument);
+		TargetAddress CallInvokeMethod (TargetAddress invoke_method, TargetAddress method_argument,
+						TargetAddress object_argument, TargetAddress[] param_objects,
+						out TargetAddress exc_object);
 		TargetAddress SimpleLookup (string name);
 
 		long GetRegister (int register);
 		long[] GetRegisters (int[] registers);
+		TargetAddress GetReturnAddress ();
 
-		IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace);
+		IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop);
+
+		int InsertBreakpoint (TargetAddress address);
+
+		void RemoveBreakpoint (int breakpoint);
+
+		void EnableBreakpoint (int breakpoint);
+
+		void DisableBreakpoint (int breakpoint);
+
+		void EnableAllBreakpoints ();
+
+		void DisableAllBreakpoints ();
+
+		TargetAddress MainMethodAddress {
+			get;
+		}
 
 		// <summary>
 		//   Returns a disassembler for the current target.
@@ -106,9 +142,15 @@ namespace Mono.Debugger.Backends
 			get; set;
 		}
 
-		IModule[] Modules {
+		Module[] Modules {
 			get;
 		}
+
+		SingleSteppingEngine SingleSteppingEngine {
+			get; set;
+		}
+		
+		event ChildEventHandler ChildEvent;
 	}
 }
 

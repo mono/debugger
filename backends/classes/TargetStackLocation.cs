@@ -15,7 +15,7 @@ namespace Mono.Debugger
 		internal TargetStackLocation (DebuggerBackend backend, StackFrame frame,
 					      bool is_local, long offset, TargetAddress start_scope,
 					      TargetAddress end_scope)
-			: base (offset)
+			: base (offset, false)
 		{
 			this.backend = backend;
 			this.is_local = is_local;
@@ -33,7 +33,7 @@ namespace Mono.Debugger
 
 		void FrameInvalidEvent ()
 		{
-			SetInvalid ();
+			SetIsValid (false);
 		}
 
 		protected override object GetHandle ()

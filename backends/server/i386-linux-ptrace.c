@@ -33,15 +33,17 @@ struct InferiorHandle
 	struct user_i387_struct *saved_fpregs;
 	GPtrArray *breakpoints;
 	GHashTable *breakpoint_hash;
+	GHashTable *breakpoint_by_addr;
 };
 
 static int last_breakpoint_id = 0;
 
 typedef struct {
 	int id;
+	int enabled;
 	char saved_insn;
-	guint64 address;
-} BreakPointInfo;
+	guint32 address;
+} BreakpointInfo;
 
 typedef struct {
 	GSource source;
@@ -159,6 +161,8 @@ server_ptrace_finalize (InferiorHandle *handle)
 		g_ptr_array_free (handle->breakpoints, TRUE);
 	if (handle->breakpoint_hash)
 		g_hash_table_destroy (handle->breakpoint_hash);
+	if (handle->breakpoint_by_addr)
+		g_hash_table_destroy (handle->breakpoint_by_addr);
 	g_free (handle);
 }
 
@@ -215,6 +219,29 @@ server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 
 	*pc = (guint32) regs.eip;
 	return result;
+}
+
+static ServerCommandError
+server_ptrace_current_insn_is_bpt (InferiorHandle *handle, guint32 *is_breakpoint)
+{
+	ServerCommandError result;
+	struct user_regs_struct regs;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if (!handle->breakpoints) {
+		*is_breakpoint = FALSE;
+		return COMMAND_ERROR_NONE;
+	}
+
+	if (g_hash_table_lookup (handle->breakpoint_by_addr, GUINT_TO_POINTER (regs.eip)))
+		*is_breakpoint = TRUE;
+	else
+		*is_breakpoint = FALSE;
+
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -403,24 +430,89 @@ server_ptrace_call_method_1 (InferiorHandle *handle, guint64 method_address,
 	return server_ptrace_continue (handle);
 }
 
+static ServerCommandError
+server_ptrace_call_method_invoke (InferiorHandle *handle, guint64 invoke_method,
+				  guint64 method_argument, guint64 object_argument,
+				  guint32 num_params, guint64 *param_data, guint64 *exc_address,
+				  guint64 callback_argument)
+{
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	struct user_regs_struct regs;
+	long new_esp, call_disp;
+	int i;
+
+	static guint8 static_code[] = { 0x90, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00,
+					0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00,
+					0x68, 0x00, 0x00, 0x00, 0x00, 0xe8, 0x00, 0x00,
+					0x00, 0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0x5a,
+					0x8d, 0x92, 0x00, 0x00, 0x00, 0x00, 0x8b, 0x12,
+					0xcc };
+	int static_size = sizeof (static_code);
+	int size = static_size + (num_params + 2) * 4;
+	guint8 *code = g_malloc0 (size);
+	guint32 *ptr = (guint32 *) (code + static_size);
+	memcpy (code, static_code, static_size);
+
+	for (i = 0; i < num_params; i++)
+		ptr [i] = param_data [i];
+	ptr [num_params] = 0;
+
+	if (handle->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	result = get_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	new_esp = regs.esp - size;
+
+	handle->saved_regs = g_memdup (&regs, sizeof (regs));
+	handle->call_address = new_esp + static_size;
+	handle->callback_argument = callback_argument;
+
+	handle->saved_fpregs = g_malloc (sizeof (struct user_i387_struct));
+	result = get_fp_registers (handle, handle->saved_fpregs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	call_disp = (int) invoke_method - new_esp;
+
+	*((guint32 *) (code+2)) = new_esp + static_size + (num_params + 1) * 4;
+	*((guint32 *) (code+7)) = new_esp + static_size;
+	*((guint32 *) (code+12)) = object_argument;
+	*((guint32 *) (code+17)) = method_argument;
+	*((guint32 *) (code+22)) = call_disp - 26;
+	*((guint32 *) (code+34)) = 10 + (num_params + 1) * 4;
+
+	g_message (G_STRLOC ": %x - %x", (guint32) invoke_method, handle->call_address);
+
+	result = server_ptrace_write_data (handle, (unsigned long) new_esp, size, code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	regs.esp = regs.eip = new_esp;
+
+	result = set_registers (handle, &regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
+}
+
 static gboolean
 check_breakpoint (InferiorHandle *handle, long address, guint64 *retval)
 {
-	int i;
+	BreakpointInfo *info;
 
 	if (!handle->breakpoints)
 		return FALSE;
 
-	for (i = 0; i < handle->breakpoints->len; i++) {
-		BreakPointInfo *info = g_ptr_array_index (handle->breakpoints, i);
+	info = g_hash_table_lookup (handle->breakpoint_by_addr, GUINT_TO_POINTER (address));
+	if (!info || !info->enabled)
+		return FALSE;
 
-		if (info->address == address) {
-			*retval = info->id;
-			return TRUE;
-		}
-	}
-
-	return FALSE;
+	*retval = info->id;
+	return TRUE;
 }
 
 static ChildStoppedAction
@@ -476,26 +568,60 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 }
 
 static ServerCommandError
-server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint32 *bhandle)
+do_enable (InferiorHandle *handle, BreakpointInfo *breakpoint)
 {
-	BreakPointInfo *breakpoint = g_new0 (BreakPointInfo, 1);
 	ServerCommandError result;
 	char bopcode = 0xcc;
+
+	if (breakpoint->enabled)
+		return COMMAND_ERROR_NONE;
+
+	result = server_ptrace_read_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_write_data (handle, breakpoint->address, 1, &bopcode);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	breakpoint->enabled = TRUE;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+do_disable (InferiorHandle *handle, BreakpointInfo *breakpoint)
+{
+	ServerCommandError result;
+
+	if (!breakpoint->enabled)
+		return COMMAND_ERROR_NONE;
+
+	result = server_ptrace_write_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	breakpoint->enabled = FALSE;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint32 *bhandle)
+{
+	BreakpointInfo *breakpoint = g_new0 (BreakpointInfo, 1);
+	ServerCommandError result;
 
 	if (!handle->breakpoints) {
 		handle->breakpoints = g_ptr_array_new ();
 		handle->breakpoint_hash = g_hash_table_new (NULL, NULL);
+		handle->breakpoint_by_addr = g_hash_table_new (NULL, NULL);
 	}
 
-	breakpoint->address = address;
+	breakpoint->address = (guint32) address;
 	breakpoint->id = ++last_breakpoint_id;
-	result = server_ptrace_read_data (handle, address, 1, &breakpoint->saved_insn);
-	if (result != COMMAND_ERROR_NONE) {
-		g_free (breakpoint);
-		return result;
-	}
 
-	result = server_ptrace_write_data (handle, address, 1, &bopcode);
+	result = do_enable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
 		g_free (breakpoint);
 		return result;
@@ -503,6 +629,7 @@ server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint3
 
 	g_ptr_array_add (handle->breakpoints, breakpoint);
 	g_hash_table_insert (handle->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id), breakpoint);
+	g_hash_table_insert (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address), breakpoint);
 	*bhandle = breakpoint->id;
 
 	return COMMAND_ERROR_NONE;
@@ -511,7 +638,7 @@ server_ptrace_insert_breakpoint (InferiorHandle *handle, guint64 address, guint3
 static ServerCommandError
 server_ptrace_remove_breakpoint (InferiorHandle *handle, guint32 bhandle)
 {
-	BreakPointInfo *breakpoint;
+	BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	if (!handle->breakpoints)
@@ -521,13 +648,78 @@ server_ptrace_remove_breakpoint (InferiorHandle *handle, guint32 bhandle)
 	if (!breakpoint)
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 
-	result = server_ptrace_write_data (handle, breakpoint->address, 1, &breakpoint->saved_insn);
+	result = do_disable (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
 	g_hash_table_remove (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
+	g_hash_table_remove (handle->breakpoint_by_addr, GUINT_TO_POINTER (breakpoint->address));
 	g_ptr_array_remove_fast (handle->breakpoints, breakpoint);
 	g_free (breakpoint);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_enable_breakpoint (InferiorHandle *handle, guint32 bhandle)
+{
+	BreakpointInfo *breakpoint;
+
+	if (!handle->breakpoints)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	breakpoint = g_hash_table_lookup (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
+	if (!breakpoint)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	return do_enable (handle, breakpoint);
+}
+
+static ServerCommandError
+server_ptrace_disable_breakpoint (InferiorHandle *handle, guint32 bhandle)
+{
+	BreakpointInfo *breakpoint;
+
+	if (!handle->breakpoints)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	breakpoint = g_hash_table_lookup (handle->breakpoint_hash, GUINT_TO_POINTER (bhandle));
+	if (!breakpoint)
+		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
+
+	return do_disable (handle, breakpoint);
+}
+
+static void
+do_enable_cb (gpointer key, gpointer value, gpointer user_data)
+{
+	do_enable ((InferiorHandle *) user_data, (BreakpointInfo *) value);
+}
+
+static void
+do_disable_cb (gpointer key, gpointer value, gpointer user_data)
+{
+	do_disable ((InferiorHandle *) user_data, (BreakpointInfo *) value);
+}
+
+static ServerCommandError
+server_ptrace_enable_all_breakpoints (InferiorHandle *handle)
+{
+	if (!handle->breakpoints)
+		return COMMAND_ERROR_NONE;
+
+	g_hash_table_foreach (handle->breakpoint_hash, do_enable_cb, handle);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_disable_all_breakpoints (InferiorHandle *handle)
+{
+	if (!handle->breakpoints)
+		return COMMAND_ERROR_NONE;
+
+	g_hash_table_foreach (handle->breakpoint_hash, do_disable_cb, handle);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -544,7 +736,7 @@ server_ptrace_get_breakpoints (InferiorHandle *handle, guint32 *count, guint32 *
 	*breakpoints = g_new0 (guint32, handle->breakpoints->len);
 
 	for (i = 0; i < handle->breakpoints->len; i++) {
-		BreakPointInfo *info = g_ptr_array_index (handle->breakpoints, i);
+		BreakpointInfo *info = g_ptr_array_index (handle->breakpoints, i);
 
 		(*breakpoints) [i] = info->id;
 	}
@@ -880,6 +1072,9 @@ server_ptrace_get_backtrace (InferiorHandle *handle, gint32 max_frames, guint64 
 
 	g_array_append_val (frames, sframe);
 
+	if (regs.ebp == 0)
+		goto out;
+
 	result = server_ptrace_get_frame (handle, regs.eip, regs.esp, regs.ebp,
 					  &address, &frame);
 	if (result != COMMAND_ERROR_NONE)
@@ -939,12 +1134,18 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_continue,
 	server_ptrace_step,
 	server_ptrace_get_pc,
+	server_ptrace_current_insn_is_bpt,
 	server_ptrace_read_data,
 	server_ptrace_write_data,
 	server_ptrace_call_method,
 	server_ptrace_call_method_1,
+	server_ptrace_call_method_invoke,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_remove_breakpoint,
+	server_ptrace_enable_breakpoint,
+	server_ptrace_disable_breakpoint,
+	server_ptrace_enable_all_breakpoints,
+	server_ptrace_disable_all_breakpoints,
 	server_ptrace_get_breakpoints,
 	server_ptrace_get_registers,
 	server_ptrace_get_backtrace,

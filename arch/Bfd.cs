@@ -303,10 +303,18 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public IModule Module {
+		public Module Module {
 			get {
 				return module;
 			}
+		}
+
+		public SourceInfo[] GetSources ()
+		{
+			if (dwarf == null)
+				return null;
+
+			return dwarf.GetSources ();
 		}
 
 		//
@@ -323,7 +331,7 @@ namespace Mono.Debugger.Architecture
 				// dispose all managed resources.
 				if (disposing) {
 					if (module != null)
-						module.IsLoaded = module.SymbolsLoaded = false;
+						module.Bfd = null;
 					if (dwarf != null)
 						dwarf.Dispose ();
 				}

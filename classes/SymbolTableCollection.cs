@@ -9,8 +9,6 @@ namespace Mono.Debugger
 	{
 		ArrayList symtabs = new ArrayList ();
 		ArrayList ranges = new ArrayList ();
-		ArrayList symbols = new ArrayList ();
-		bool has_symbols;
 		bool has_ranges;
 		bool in_update;
 
@@ -70,31 +68,25 @@ namespace Mono.Debugger
 			}
 		}
 
-		void update_symbols ()
-		{
-			symbols = new ArrayList ();
-			foreach (ISymbolTable symtab in symtabs) {
-				if (!symtab.IsLoaded || !symtab.HasSymbols)
-					continue;
-
-				symbols.AddRange (symtab.Symbols);
-				has_symbols = true;
-			}
-			symbols.Sort ();
-		}
-
-		public bool HasSymbols {
+		public bool HasMethods {
 			get {
-				return has_symbols;
+				return true;
 			}
 		}
 
-		public ISymbol[] Symbols {
+		public IMethod[] Methods {
 			get {
-				if (!has_symbols)
-					throw new InvalidOperationException ();
-				ISymbol[] retval = new ISymbol [symbols.Count];
-				symbols.CopyTo (retval, 0);
+				ArrayList methods = new ArrayList ();
+
+				foreach (ISymbolTable symtab in symtabs) {
+					if (!symtab.IsLoaded || !symtab.HasMethods)
+						continue;
+
+					methods.AddRange (symtab.Methods);
+				}
+
+				IMethod[] retval = new IMethod [methods.Count];
+				methods.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -114,18 +106,6 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public ISymbol Lookup (string name)
-		{
-			if (!HasSymbols)
-				return null;
-
-			foreach (ISymbol symbol in Symbols)
-				if (symbol.Name == name)
-					return symbol;
-
-			return null;
-		}
-
 		public bool IsLoaded {
 			get {
 				return true;
@@ -138,7 +118,6 @@ namespace Mono.Debugger
 				return;
 
 			update_ranges ();
-			update_symbols ();
 
 			if (SymbolTableChanged != null)
 				SymbolTableChanged ();

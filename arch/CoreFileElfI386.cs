@@ -43,14 +43,21 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public override IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
+		public override IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
 		{
 			uint ebp = (uint) GetRegister ((int) I386Register.EBP);
 			uint eip = (uint) GetRegister ((int) I386Register.EIP);
 
 			ArrayList frames = new ArrayList ();
 
+			long stop_addr = 0;
+			if (!stop.IsNull)
+				stop_addr = stop.Address;
+
 			while (ebp != 0) {
+				if (eip == stop_addr)
+					break;
+
 				frames.Add (new CoreFileStackFrame (this, eip, ebp, ebp));
 
 				if ((max_frames >= 0) && (frames.Count >= max_frames))

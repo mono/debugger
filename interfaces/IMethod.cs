@@ -25,7 +25,7 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   This is used to lookup a source line in the method.
+		//   This is used to find a source line by its address.
 		// </summary>
 		SourceLocation Lookup (TargetAddress target);
 	}
@@ -44,7 +44,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		IModule Module {
+		Module Module {
 			get;
 		}
 

@@ -40,6 +40,12 @@ namespace Mono.Debugger.GUI
 			backend.FramesInvalidEvent += new StackFrameInvalidHandler (FramesInvalidEvent);
 			backend.MethodInvalidEvent += new MethodInvalidHandler (MethodInvalidEvent);
 			backend.MethodChangedEvent += new MethodChangedHandler (MethodChangedEvent);
+			backend.TargetExited += new TargetExitedHandler (TargetExitedEvent);
+		}
+
+		void TargetExitedEvent ()
+		{
+			MethodInvalidEvent ();
 		}
 
 		void MethodInvalidEvent ()

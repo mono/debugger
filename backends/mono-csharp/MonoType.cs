@@ -67,7 +67,7 @@ namespace Mono.Debugger.Languages.CSharp
 				return new MonoClassType (type, size, info, table);
 
 			case 7:
-				return new MonoObjectType (type, size, info, table);
+				return new MonoObjectType (type, size, table);
 
 			default:
 				return new MonoOpaqueType (type, size);

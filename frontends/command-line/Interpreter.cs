@@ -153,7 +153,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			case "frame":
-				Console.WriteLine ("CURRENT FRAME: {0}", backend.CurrentFrameAddress);
+				Console.WriteLine ("CURRENT FRAME: {0}", backend.ReloadFrame ());
 				break;
 
 			case "bt":
@@ -200,12 +200,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 				break;
 			}
 
-			case "test-break":
+			case "break":
 				if (args.Length != 1) {
 					stderr.WriteLine ("Command requires an argument");
 					break;
 				}
-				backend.TestBreakpoint (args [0]);
+				backend.InsertBreakpoint (args [0]);
+				break;
+
+			case "test":
+				backend.Test ("Hello.Test");
 				break;
 
 			case "modules":
@@ -286,6 +290,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 				if (field.Type.HasObject)
 					print_object (tstruct.GetField (field.Index));
 			}
+			foreach (ITargetFieldInfo property in tstruct.Type.Properties) {
+				Console.WriteLine ("FIELD: {0}", property);
+				if (property.Type.HasObject)
+					print_object (tstruct.GetProperty (property.Index));
+			}
 		}
 
 		void print_class (ITargetClassObject tclass)
@@ -339,6 +348,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void print_object (ITargetObject obj)
 		{
+			if (obj == null)
+				return;
+
 			Console.WriteLine ("OBJECT: {0} [{1}]", obj,
 					   TargetBinaryReader.HexDump (obj.RawContents));
 
@@ -374,12 +386,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		void print_modules (IModule[] modules)
+		void print_modules (Module[] modules)
 		{
 			if (modules == null)
 				return;
 
-			foreach (IModule module in modules) {
+			foreach (Module module in modules) {
 				string language = module.Language != null ?
 					module.Language.Name : "native";
 
@@ -387,6 +399,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 						   module.Name, module.FullName, language,
 						   module.IsLoaded, module.SymbolsLoaded,
 						   module.LoadSymbols, module.StepInto);
+
+				foreach (SourceInfo source in module.Sources) {
+					Console.WriteLine ("    SOURCE: {0}", source);
+
+					foreach (SourceMethodInfo method in source.Methods)
+						Console.WriteLine ("      METHOD: {0}", method);
+				}
+
+				foreach (Breakpoint breakpoint in module.Breakpoints)
+					Console.WriteLine ("    BREAKPOINT: {0}", breakpoint);
 
 				if (module.Name == "Monkey")
 					module.LoadSymbols = false;

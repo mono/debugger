@@ -19,6 +19,11 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.GetField (location, index);
 		}
 
+		public ITargetObject GetProperty (int index)
+		{
+			return type.GetProperty (location, index);
+		}
+
 		public override bool HasObject {
 			get {
 				return false;

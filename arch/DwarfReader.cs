@@ -25,7 +25,8 @@ namespace Mono.Debugger.Architecture
 		ObjectCache debug_str_reader;
 
 		Hashtable compile_unit_hash;
-		ISymbolTable symtab;
+		DwarfSymbolTable symtab;
+		ArrayList aranges;
 
 		protected class DwarfException : Exception
 		{
@@ -73,12 +74,26 @@ namespace Mono.Debugger.Architecture
 
 			Console.WriteLine ("Reading aranges table ....");
 
-			symtab = new DwarfSymbolTable (this, read_aranges (), read_pubnames ());
+			aranges = read_aranges ();
+
+			symtab = new DwarfSymbolTable (this, aranges);
 
 			Console.WriteLine ("Done reading aranges table");
 		}
 
-		protected ISymbolLookup get_symtab_at_offset (long offset)
+		protected long find_compile_unit_block (long offset)
+		{
+			for (int i = aranges.Count-1; i >= 0; i--) {
+				RangeEntry entry = (RangeEntry) aranges [i];
+
+				if (entry.FileOffset < offset)
+					return entry.FileOffset;
+			}
+
+			return -1;
+		}
+
+		protected ISymbolTable get_symtab_at_offset (long offset)
 		{
 			CompileUnitBlock block = (CompileUnitBlock) compile_unit_hash [offset];
 			if (block != null)
@@ -87,6 +102,77 @@ namespace Mono.Debugger.Architecture
 			block = new CompileUnitBlock (this, offset);
 			compile_unit_hash.Add (offset, block);
 			return block.symtabs;
+		}
+
+		public SourceInfo[] GetSources ()
+		{
+			Hashtable source_hash = new Hashtable ();
+
+			foreach (IMethod method in symtab.GetAllMethods ()) {
+				if (!method.HasSource)
+					continue;
+
+				ISourceBuffer buffer = method.Source.SourceBuffer;
+				if ((buffer == null) || buffer.HasContents)
+					continue;
+
+				DwarfSourceInfo source = (DwarfSourceInfo) source_hash [buffer.Name];
+				if (source == null) {
+					source = new DwarfSourceInfo (this, buffer.Name);
+					source_hash.Add (buffer.Name, source);
+				}
+				source.AddMethod (new DwarfSourceMethodInfo (source, method));
+			}
+
+			SourceInfo[] retval = new SourceInfo [source_hash.Values.Count];
+			source_hash.Values.CopyTo (retval, 0);
+			return retval;
+		}
+
+		private class DwarfSourceMethodInfo : SourceMethodInfo
+		{
+			IMethod method;
+
+			public DwarfSourceMethodInfo (SourceInfo source, IMethod method)
+				: base (source, method.Name, method.Source.StartRow, method.Source.EndRow,
+					false)
+			{
+				this.method = method;
+			}
+
+			public override bool IsLoaded {
+				get {
+					return true;
+				}
+			}
+
+			public override IMethod Method {
+				get {
+					return method;
+				}
+			}
+
+			public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+									 object user_data)
+			{
+				throw new InvalidOperationException ();
+			}
+		}
+
+		private class DwarfSourceInfo : SourceInfo
+		{
+			DwarfReader dwarf;
+
+			public DwarfSourceInfo (DwarfReader dwarf, string filename)
+				: base (dwarf.bfd.Module, filename)
+			{
+				this.dwarf = dwarf;
+			}
+
+			public override ITargetLocation Lookup (int line)
+			{
+				return null;
+			}
 		}
 
 		protected class CompileUnitBlock
@@ -154,14 +240,12 @@ namespace Mono.Debugger.Architecture
 		{
 			DwarfReader dwarf;
 			ArrayList ranges;
-			ArrayList symbols;
 
-			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges, ArrayList symbols)
+			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges)
 			{
 				this.dwarf = dwarf;
 				this.ranges = ranges;
 				this.ranges.Sort ();
-				this.symbols = symbols;
 			}
 
 			public override bool HasRanges {
@@ -178,21 +262,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public override bool HasSymbols {
-				get {
-					return true;
-				}
-			}
-
-			public override ISymbol[] Symbols {
-				get {
-					ISymbol[] retval = new ISymbol [symbols.Count];
-					symbols.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-
-			protected override bool HasMethods {
+			public override bool HasMethods {
 				get {
 					return false;
 				}
@@ -201,6 +271,22 @@ namespace Mono.Debugger.Architecture
 			protected override ArrayList GetMethods ()
 			{
 				throw new InvalidOperationException ();
+			}
+
+			public ArrayList GetAllMethods ()
+			{
+				ArrayList methods = new ArrayList ();
+
+				foreach (RangeEntry range in ranges) {
+					ISymbolTable symtab = dwarf.get_symtab_at_offset (range.FileOffset);
+
+					if (!symtab.IsLoaded || !symtab.HasMethods)
+						continue;
+
+					methods.AddRange (symtab.Methods);
+				}
+
+				return methods;
 			}
 		}
 
@@ -224,6 +310,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+#if FALSE
 		private class PubNameEntry : ISymbol
 		{
 			public readonly long FileOffset;
@@ -233,9 +320,8 @@ namespace Mono.Debugger.Architecture
 			public PubNameEntry (DwarfReader dwarf, long offset, string name)
 			{
 				this.dwarf = dwarf;
-				this.FileOffset = offset;
+				this.FileOffset = dwarf.find_compile_unit_block (offset);
 				this.name = name;
-				Console.WriteLine (this);
 			}
 
 			public string Name {
@@ -246,7 +332,15 @@ namespace Mono.Debugger.Architecture
 
 			public ITargetLocation Location {
 				get {
-					return null;
+					ISourceLookup symtab = dwarf.get_symtab_at_offset (FileOffset);
+					if (symtab == null)
+						return null;
+
+					ISymbol symbol = symtab.Lookup (Name);
+					if (symbol == null)
+						return null;
+
+					return symbol.Location;
 				}
 			}
 
@@ -262,6 +356,7 @@ namespace Mono.Debugger.Architecture
 				return String.Format ("DwarfSymbol ({0},{1:x})", Name, FileOffset);
 			}
 		}
+#endif
 
 		ArrayList read_aranges ()
 		{
@@ -309,6 +404,7 @@ namespace Mono.Debugger.Architecture
 			return ranges;
 		}
 
+#if FALSE
 		ArrayList read_pubnames ()
 		{
 			DwarfBinaryReader reader = DebugPubnamesReader;
@@ -340,6 +436,7 @@ namespace Mono.Debugger.Architecture
 
 			return pubnames;
 		}
+#endif
 
 		private struct CreateReaderData
 		{
@@ -611,19 +708,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public override bool HasSymbols {
-				get {
-					return false;
-				}
-			}
-
-			public override ISymbol[] Symbols {
-				get {
-					throw new InvalidOperationException ();
-				}
-			}
-
-			protected override bool HasMethods {
+			public override bool HasMethods {
 				get {
 					return true;
 				}
@@ -1096,7 +1181,7 @@ namespace Mono.Debugger.Architecture
 					source_files.Add (new FileEntry (reader));
 				reader.Position++;
 
-				Console.WriteLine (this);
+				// Console.WriteLine (this);
 
 				next_method_index = 1;
 				next_method = (ISymbolContainer) methods [0];
@@ -1115,10 +1200,8 @@ namespace Mono.Debugger.Architecture
 				addresses = null;
 
 				StatementMachine stm = (StatementMachine) method_hash [method];
-				if (stm == null) {
-					Console.WriteLine ("NOT FOUND: {0}", method);
+				if (stm == null)
 					return null;
-				}
 
 				FileEntry file = (FileEntry) source_files [stm.st_file];
 				start_row = stm.start_line;
@@ -1764,7 +1847,7 @@ namespace Mono.Debugger.Architecture
 					throw new DwarfException (
 						dwarf, String.Format ("Wrong DWARF version: {0}", version));
 
-				Console.WriteLine (this);
+				// Console.WriteLine (this);
 
 				abbrevs = new Hashtable ();
 

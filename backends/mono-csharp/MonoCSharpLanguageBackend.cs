@@ -9,6 +9,8 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.CSharp
 {
+	internal delegate void BreakpointHandler (TargetAddress address, object user_data);
+
 	internal class VariableInfo
 	{
 		public readonly int Index;
@@ -145,7 +147,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoSymbolFileTable
 	{
-		public const int  DynamicVersion = 11;
+		public const int  DynamicVersion = 12;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal int TotalSize;
@@ -153,12 +155,51 @@ namespace Mono.Debugger.Languages.CSharp
 		internal MonoSymbolTableReader[] SymbolFiles;
 		public readonly MonoCSharpLanguageBackend Language;
 		public readonly DebuggerBackend Backend;
-		public readonly IInferior Inferior;
+		IInferior inferior;
 		ITargetMemoryAccess memory;
 		ArrayList ranges;
 		Hashtable types;
 		Hashtable type_cache;
 		protected Hashtable modules;
+
+		public IInferior Inferior {
+			get {
+				return inferior;
+			}
+
+			set {
+				inferior = value;
+				if (inferior != null)
+					init_inferior ();
+				else
+					child_exited ();
+			}
+		}
+
+		void init_inferior ()
+		{
+			inferior.TargetExited += new TargetExitedHandler (child_exited);
+			memory = inferior;
+		}
+
+		void child_exited ()
+		{
+			inferior = null;
+			memory = null;
+			SymbolFiles = null;
+			ranges = new ArrayList ();
+			types = new Hashtable ();
+			type_cache = new Hashtable ();
+
+			foreach (MonoModule module in modules.Values)
+				module.UnLoad ();
+		}
+
+		void check_inferior ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
+		}
 
 		public MonoSymbolFileTable (DebuggerBackend backend, IInferior inferior,
 					    MonoCSharpLanguageBackend language)
@@ -173,8 +214,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal void Reload (TargetAddress address)
 		{
-			Console.WriteLine ("RELOAD");
-
+			check_inferior ();
 			Report.Debug (DebugFlags.JIT_SYMTAB, "SYMBOL FILE TABLE: {0}", address);
 
 			ITargetMemoryReader header = memory.ReadMemory (address, 24);
@@ -224,10 +264,17 @@ namespace Mono.Debugger.Languages.CSharp
 					module = new MonoModule (this, name);
 					modules.Add (name.FullName, module);
 				}
+				symfile.Module = module;
+				module.MonoSymbolTableReader = symfile;
+			}
+
+			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
+				MonoModule module = (MonoModule) symfile.Module;
 
 				module.Assembly = symfile.Assembly;
+				module.MonoSymbolTableReader = symfile;
+				module.Inferior = Inferior;
 				module.FileName = symfile.ImageFile;
-				symfile.Module = module;
 			}
 
 			foreach (MonoSymbolTableReader symfile in SymbolFiles)
@@ -238,6 +285,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoType GetType (Type type, int type_size, TargetAddress address)
 		{
+			check_inferior ();
 			if (type_cache.Contains (address.Address))
 				return (MonoType) type_cache [address.Address];
 
@@ -247,13 +295,16 @@ namespace Mono.Debugger.Languages.CSharp
 			else
 				retval = new MonoOpaqueType (type, type_size);
 
-			type_cache.Add (address, retval);
+			type_cache.Add (address.Address, retval);
 			return retval;
 		}
 
 		public MonoType GetTypeFromClass (long klass_address)
 		{
+			check_inferior ();
 			TypeEntry entry = (TypeEntry) types [klass_address];
+
+			Console.WriteLine ("GET TYPE FROM CLASS: {0:x} {1}", klass_address, entry);
 
 			return MonoType.GetType (entry.Type, memory, entry.TypeInfo, this);
 		}
@@ -272,11 +323,15 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal void AddType (TypeEntry type)
 		{
+			check_inferior ();
 			types.Add (type.KlassAddress.Address, type);
 		}
 
 		public bool Update ()
 		{
+			if (inferior == null)
+				return false;
+
 			bool updated = false;
 			for (int i = 0; i < SymbolFiles.Length; i++) {
 				if (!SymbolFiles [i].Module.LoadSymbols)
@@ -301,79 +356,89 @@ namespace Mono.Debugger.Languages.CSharp
 			return true;
 		}
 
-		private class MonoModule : IModule
+		private class MonoModule : NativeModule
 		{
-			public Assembly Assembly;
 			public string FileName;
-			string name;
-			bool load_symbols;
-			bool step_into;
+
+			Assembly assembly;
 			MonoSymbolFileTable table;
+			MonoSymbolTableReader reader;
 
 			public MonoModule (MonoSymbolFileTable table, AssemblyName name)
+				: base (name.FullName, table.Backend)
 			{
 				this.table = table;
-				this.name = name.FullName;
-				this.load_symbols = true;
-				this.step_into = true;
 			}
 
-			public ILanguageBackend Language {
+			public override ILanguageBackend Language {
 				get {
 					return table.Language;
 				}
 			}
 
-			public string Name {
-				get {
-					return name;
-				}
-			}
-
-			public string FullName {
+			public override string FullName {
 				get {
 					if (FileName != null)
 						return FileName;
 					else
-						return name;
+						return Name;
 				}
 			}
 
-			public bool IsLoaded {
+			public MonoSymbolTableReader MonoSymbolTableReader {
 				get {
-					return Assembly != null;
-				}
-			}
-				
-			public bool SymbolsLoaded {
-				get {
-					return load_symbols && (Assembly != null);
-				}
-			}
-
-			public bool LoadSymbols {
-				get {
-					return load_symbols;
+					return reader;
 				}
 
 				set {
-					if (load_symbols == value)
-						return;
-
-					load_symbols = value;
-					table.Update ();
-					table.Language.ModulesChanged ();
+					reader = value;
+					if (reader != null)
+						OnSymbolsLoadedEvent ();
+					else
+						OnSymbolsUnLoadedEvent ();
 				}
 			}
 
-			public bool StepInto {
+			public Assembly Assembly {
 				get {
-					return step_into;
+					return assembly;
 				}
 
 				set {
-					step_into = value;
+					assembly = value;
 				}
+			}
+
+			public override bool SymbolsLoaded {
+				get {
+					return LoadSymbols && (MonoSymbolTableReader != null);
+				}
+			}
+
+			public override void UnLoad ()
+			{
+				reader = null;
+				Assembly = null;
+				base.UnLoad ();
+			}
+
+			protected override void SymbolsChanged (bool loaded)
+			{
+				table.Update ();
+				table.Language.ModulesChanged ();
+
+				if (loaded)
+					OnSymbolsLoadedEvent ();
+				else
+					OnSymbolsUnLoadedEvent ();
+			}
+
+			protected override SourceInfo[] GetSources ()
+			{
+				if (!SymbolsLoaded)
+					return new SourceInfo [0];
+
+				return reader.GetSources ();
 			}
 
 			public void ReadReferences ()
@@ -403,6 +468,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress compile_method;
 		public readonly TargetAddress insert_breakpoint;
 		public readonly TargetAddress remove_breakpoint;
+		public readonly TargetAddress runtime_invoke;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
@@ -416,17 +482,19 @@ namespace Mono.Debugger.Languages.CSharp
 			compile_method = reader.ReadAddress ();
 			insert_breakpoint = reader.ReadAddress ();
 			remove_breakpoint = reader.ReadAddress ();
+			runtime_invoke = reader.ReadAddress ();
 			Report.Debug (DebugFlags.JIT_SYMTAB, this);
 		}
 
 		public override string ToString ()
 		{
 			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x})",
+				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x}:{7:x}:{8:x})",
 				generic_trampoline_code, breakpoint_trampoline_code,
 				symbol_file_generation, symbol_file_table,
 				update_symbol_file_table, compile_method,
-				insert_breakpoint, remove_breakpoint);
+				insert_breakpoint, remove_breakpoint,
+				runtime_invoke);
 		}
 	}
 
@@ -490,12 +558,13 @@ namespace Mono.Debugger.Languages.CSharp
 		internal readonly MonoSymbolFileTable Table;
 		internal readonly string ImageFile;
 		internal readonly string SymbolFile;
-		internal IModule Module;
+		internal Module Module;
 		protected OffsetTable offset_table;
-		protected ILanguageBackend language;
+		protected MonoCSharpLanguageBackend language;
 		protected DebuggerBackend backend;
 		protected IInferior inferior;
 		protected ITargetMemoryAccess memory;
+		protected Hashtable range_hash;
 		ArrayList ranges;
 
 		TargetAddress start_address;
@@ -519,7 +588,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		internal MonoSymbolTableReader (MonoSymbolFileTable table, DebuggerBackend backend,
 						IInferior inferior, ITargetMemoryAccess memory,
-						TargetAddress address, ILanguageBackend language)
+						TargetAddress address, MonoCSharpLanguageBackend language)
 		{
 			this.Table = table;
 			this.backend = backend;
@@ -533,6 +602,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int_size = memory.TargetIntegerSize;
 
 			ranges = new ArrayList ();
+			range_hash = new Hashtable ();
 
 			long magic = memory.ReadLongInteger (address);
 			if (magic != OffsetTable.Magic)
@@ -693,10 +763,11 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new SymbolTableException ();
 
 			return (int) index;
-		} 
+		}
 
-		internal ISymbolLookup GetMethod (long offset, TargetAddress dynamic_address,
-						  int dynamic_size)
+		Hashtable method_hash;
+
+		protected MonoMethod GetMethod (long offset)
 		{
 			int index = CheckMethodOffset (offset);
 			reader.Position = offset;
@@ -708,10 +779,76 @@ namespace Mono.Debugger.Languages.CSharp
 			byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
 			string name = Encoding.UTF8.GetString (buffer);
 
-			ITargetMemoryReader dynamic_reader = memory.ReadMemory (
-				dynamic_address, dynamic_size);
+			MonoMethod mono_method = new MonoMethod (this, method, name);
+			if (method_hash == null)
+				method_hash = new Hashtable ();
+			method_hash.Add (offset, mono_method);
+			return mono_method;
+		}
 
-			return new MonoMethod (this, method, name, dynamic_reader);
+		protected MonoMethod GetMethod (long offset, TargetAddress dynamic_address,
+						int dynamic_size)
+		{
+			MonoMethod method = null;
+			if (method_hash != null)
+				method = (MonoMethod) method_hash [offset];
+
+			if (method == null) {
+				int index = CheckMethodOffset (offset);
+				reader.Position = offset;
+				MethodEntry entry = new MethodEntry (reader);
+				string_reader.Offset = index * int_size;
+				string_reader.Offset = string_reader.ReadInteger ();
+
+				int length = string_reader.BinaryReader.ReadInt32 ();
+				byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
+				string name = Encoding.UTF8.GetString (buffer);
+
+				method = new MonoMethod (this, entry, name);
+			}
+
+			if (!method.IsLoaded) {
+				ITargetMemoryReader dynamic_reader = memory.ReadMemory (
+					dynamic_address, dynamic_size);
+				method.Load (dynamic_reader);
+			}
+
+			return method;
+		}
+
+		public SourceInfo[] GetSources ()
+		{
+			Hashtable source_hash = new Hashtable ();
+
+			reader.Position = offset_table.method_table_offset;
+			for (int i = 0; i < offset_table.method_count; i++) {
+				int offset = (int) reader.Position;
+
+				MethodEntry method = new MethodEntry (reader);
+
+				if (method.SourceFile == null)
+					continue;
+
+				string_reader.Offset = i * int_size;
+				string_reader.Offset = string_reader.ReadInteger ();
+
+				int length = string_reader.BinaryReader.ReadInt32 ();
+				byte[] buffer = string_reader.BinaryReader.ReadBuffer (length);
+				string name = Encoding.UTF8.GetString (buffer);
+
+				SourceInfo source = (SourceInfo) source_hash [method.SourceFile];
+				if (source == null) {
+					source = new MonoSourceInfo (this, method.SourceFile);
+					source_hash.Add (method.SourceFile, source);
+				}
+
+				source.AddMethod (new MonoSourceMethod (source, this, method, name, offset));
+			}
+
+			SourceInfo[] retval = new SourceInfo [source_hash.Values.Count];
+			source_hash.Values.CopyTo (retval, 0);
+			return retval;
+
 		}
 
 		internal ArrayList SymbolRanges {
@@ -720,7 +857,153 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		private class MonoMethod : MethodBase
+		private class MonoSourceInfo : SourceInfo
+		{
+			MonoSymbolTableReader reader;
+
+			public MonoSourceInfo (MonoSymbolTableReader reader, string filename)
+				: base (reader.Module, filename)
+			{
+				this.reader = reader;
+			}
+
+			public override ITargetLocation Lookup (int line)
+			{
+				return null;
+			}
+		}
+
+		private class MonoSourceMethod : SourceMethodInfo
+		{
+			MonoSymbolTableReader reader;
+			Hashtable load_handlers;
+			int offset;
+			string full_name;
+			MonoMethod method;
+
+			public MonoSourceMethod (SourceInfo source, MonoSymbolTableReader reader,
+						 MethodEntry method, string name, int offset)
+				: base (source, name, method.StartRow, method.EndRow, true)
+			{
+				this.reader = reader;
+				this.offset = offset;
+
+				source.Module.ModuleUnLoadedEvent += new ModuleEventHandler (module_unloaded);
+			}
+
+			void module_unloaded (Module module)
+			{
+				reader = null;
+				method = null;
+			}
+
+			public override bool IsLoaded {
+				get {
+					return (method != null) ||
+						((reader != null) && reader.range_hash.Contains (offset));
+				}
+			}
+
+			public override IMethod Method {
+				get {
+					if (!IsLoaded)
+						throw new InvalidOperationException ();
+
+					if ((method != null) && method.IsLoaded)
+						return method;
+
+					MethodRangeEntry entry = (MethodRangeEntry) reader.range_hash [offset];
+					method = entry.GetMethod ();
+
+					return method;
+				}
+			}
+
+			void breakpoint_hit (TargetAddress address, object user_data)
+			{
+				if (load_handlers == null)
+					return;
+
+				foreach (HandlerData handler in load_handlers.Keys)
+					handler.Handler (handler.Method, handler.UserData);
+
+				load_handlers = null;
+			}
+
+			public override IDisposable RegisterLoadHandler (MethodLoadedHandler handler,
+									 object user_data)
+			{
+				HandlerData data = new HandlerData (this, handler, user_data);
+
+				if (load_handlers == null) {
+					load_handlers = new Hashtable ();
+
+					method = reader.GetMethod (offset);
+					MethodInfo minfo = (MethodInfo) method.MethodHandle;
+
+					string full_name = String.Format (
+						"{0}:{1}", minfo.ReflectedType.FullName, minfo.Name);
+
+					reader.Table.Language.InsertBreakpoint (
+						full_name, new BreakpointHandler (breakpoint_hit), null);
+				}
+
+				load_handlers.Add (data, true);
+				return data;
+			}
+
+			protected void UnRegisterLoadHandler (HandlerData data)
+			{
+				if (load_handlers == null)
+					return;
+
+				load_handlers.Remove (data);
+				if (load_handlers.Count == 0)
+					load_handlers = null;
+			}
+
+			private sealed class HandlerData : IDisposable
+			{
+				public readonly MonoSourceMethod Method;
+				public readonly MethodLoadedHandler Handler;
+				public readonly object UserData;
+
+				public HandlerData (MonoSourceMethod method, MethodLoadedHandler handler,
+						    object user_data)
+				{
+					this.Method = method;
+					this.Handler = handler;
+					this.UserData = user_data;
+				}
+
+				private bool disposed = false;
+
+				private void Dispose (bool disposing)
+				{
+					if (!this.disposed) {
+						if (disposing) {
+							Method.UnRegisterLoadHandler (this);
+						}
+					}
+						
+					this.disposed = true;
+				}
+
+				public void Dispose ()
+				{
+					Dispose (true);
+					// Take yourself off the Finalization queue
+					GC.SuppressFinalize (this);
+				}
+
+				~HandlerData ()
+				{
+					Dispose (false);
+				}
+			}
+		}
+
+		protected class MonoMethod : MethodBase
 		{
 			MonoSymbolTableReader reader;
 			MethodEntry method;
@@ -731,6 +1014,7 @@ namespace Mono.Debugger.Languages.CSharp
 			IVariable[] parameters;
 			IVariable[] locals;
 			bool has_variables;
+			bool is_loaded;
 			MethodAddress address;
 
 			static MethodInfo get_method;
@@ -750,21 +1034,35 @@ namespace Mono.Debugger.Languages.CSharp
 
 			}
 
-			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
-					   string name, ITargetMemoryReader dynamic_reader)
+			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method, string name)
 				: base (name, reader.ImageFile, reader.Module)
 			{
 				this.reader = reader;
 				this.method = method;
 
+				object[] args = new object[] { (int) method.Token };
+				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
+					reader.Assembly, args);
+			}
+
+			public MonoMethod (MonoSymbolTableReader reader, MethodEntry method,
+					   string name, ITargetMemoryReader dynamic_reader)
+				: this (reader, method, name)
+			{
+				Load (dynamic_reader);
+			}
+
+			public void Load (ITargetMemoryReader dynamic_reader)
+			{
+				if (is_loaded)
+					throw new InternalError ();
+
+				is_loaded = true;
+
 				address = new MethodAddress (method, dynamic_reader);
 
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
-
-				object[] args = new object[] { (int) method.Token };
-				rmethod = (System.Reflection.MethodBase) get_method.Invoke (
-					reader.Assembly, args);
 
 				IMethodSource source = CSharpMethod.GetMethodSource (
 					this, method, address.LineNumbers);
@@ -775,7 +1073,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			void get_variables ()
 			{
-				if (has_variables)
+				if (has_variables || !is_loaded)
 					return;
 
 				if (!address.ThisTypeInfoAddress.IsNull)
@@ -829,6 +1127,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override IVariable[] Parameters {
 				get {
+					if (!is_loaded)
+						throw new InvalidOperationException ();
+
 					get_variables ();
 					return parameters;
 				}
@@ -836,6 +1137,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override IVariable[] Locals {
 				get {
+					if (!is_loaded)
+						throw new InvalidOperationException ();
+
 					get_variables ();
 					return locals;
 				}
@@ -875,11 +1179,19 @@ namespace Mono.Debugger.Languages.CSharp
 
 					reader.CheckMethodOffset (offset);
 
-					list.Add (new MethodRangeEntry (reader, offset, dynamic_address,
-									dynamic_size, start, end));
+					MethodRangeEntry entry = new MethodRangeEntry (
+						reader, offset, dynamic_address, dynamic_size, start, end);
+
+					list.Add (entry);
+					reader.range_hash.Add (offset, entry);
 				}
 
 				return list;
+			}
+
+			internal MonoMethod GetMethod ()
+			{
+				return reader.GetMethod (file_offset, dynamic_address, dynamic_size);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
@@ -903,21 +1215,62 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoDebuggerInfo info;
 		int symtab_generation;
 		ArrayList ranges;
-		ArrayList symbols;
 		TargetAddress trampoline_address;
 		IArchitecture arch;
 		MonoSymbolFileTable table;
 
-		public MonoCSharpLanguageBackend (DebuggerBackend backend, IInferior inferior)
+		public MonoCSharpLanguageBackend (DebuggerBackend backend)
 		{
 			this.backend = backend;
-			this.inferior = inferior;
 		}
 
 		public string Name {
 			get {
 				return "Mono";
 			}
+		}
+
+		public IInferior Inferior {
+			get {
+				return inferior;
+			}
+
+			set {
+				inferior = value;
+				if (inferior != null)
+					init_inferior ();
+				else
+					child_exited ();
+			}
+		}
+
+		internal MonoDebuggerInfo MonoDebuggerInfo {
+			get {
+				return info;
+			}
+		}
+
+		void init_inferior ()
+		{
+			inferior.TargetExited += new TargetExitedHandler (child_exited);
+			if (table != null)
+				table.Inferior = inferior;
+		}
+
+		void child_exited ()
+		{
+			inferior = null;
+			info = null;
+			symtab_generation = 0;
+			ranges = null;
+			arch = null;
+			trampoline_address = TargetAddress.Null;
+		}
+
+		void check_inferior ()
+		{
+			if (inferior == null)
+				throw new NoTargetException ();
 		}
 
 		public ISymbolTable SymbolTable {
@@ -942,35 +1295,22 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public override bool HasSymbols {
+		public Module[] Modules {
 			get {
-				return symbols != null;
-			}
-		}
+				if (table == null)
+					return new Module [0];
 
-		public override ISymbol[] Symbols {
-			get {
-				if (symbols == null)
-					throw new InvalidOperationException ();
-				ISymbol[] retval = new ISymbol [symbols.Count];
-				symbols.CopyTo (retval, 0);
-				return retval;
-			}
-		}
-
-		public IModule[] Modules {
-			get {
 				ICollection modules = table.Modules;
 				if (modules == null)
-					return new IModule [0];
+					return new Module [0];
 
-				IModule[] retval = new IModule [modules.Count];
+				Module[] retval = new Module [modules.Count];
 				modules.CopyTo (retval, 0);
 				return retval;
 			}
 		}
 
-		protected override bool HasMethods {
+		public override bool HasMethods {
 			get {
 				return false;
 			}
@@ -1015,7 +1355,7 @@ namespace Mono.Debugger.Languages.CSharp
 		bool updating_symfiles;
 		public override void UpdateSymbolTable ()
 		{
-			if (updating_symfiles)
+			if (updating_symfiles || (inferior == null))
 				return;
 
 			read_mono_debugger_info ();
@@ -1081,21 +1421,46 @@ namespace Mono.Debugger.Languages.CSharp
 				ranges = table.SymbolRanges;
 		}
 
-		internal void InsertBreakpoint (string method_name)
+		Hashtable breakpoints = new Hashtable ();
+
+		internal int InsertBreakpoint (string method_name, BreakpointHandler handler,
+					       object user_data)
 		{
-			long retval = inferior.CallStringMethod (
-				info.insert_breakpoint, 0x12345678abcdef79, method_name);
-			Console.WriteLine ("RESULT: {0:x}", retval);
+			check_inferior ();
+			long retval = inferior.CallStringMethod (info.insert_breakpoint, 0, method_name);
+			int index = (int) retval;
+
+			if (index <= 0)
+				return -1;
+
+			breakpoints.Add (index, new BreakpointHandle (index, handler, user_data));
+			return index;
+		}
+
+		private struct BreakpointHandle
+		{
+			public readonly int Index;
+			public readonly BreakpointHandler Handler;
+			public readonly object UserData;
+
+			public BreakpointHandle (int index, BreakpointHandler handler, object user_data)
+			{
+				this.Index = index;
+				this.Handler = handler;
+				this.UserData = user_data;
+			}
 		}
 
 		public TargetAddress GenericTrampolineCode {
 			get {
+				check_inferior ();
 				return trampoline_address;
 			}
 		}
 
 		public TargetAddress GetTrampoline (TargetAddress address)
 		{
+			check_inferior ();
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
@@ -1126,6 +1491,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool BreakpointHit (TargetAddress address)
 		{
+			check_inferior ();
+
 			if (info == null)
 				return true;
 
@@ -1139,15 +1506,34 @@ namespace Mono.Debugger.Languages.CSharp
 				int breakpoint_id = arch.GetBreakpointTrampolineData (
 					out method, out code, out retaddr);
 
-				Console.WriteLine ("TRAMPOLINE BREAKPOINT: {0} {1} {2} {3}",
-						   code, method, breakpoint_id, retaddr);
+				Console.WriteLine ("TRAMPOLINE BREAKPOINT: {0} {1} {2} {3} {4}",
+						   code, method, breakpoint_id, retaddr,
+						   breakpoints.Contains (breakpoint_id));
 
-				inferior.Continue (retaddr);
+				if (!breakpoints.Contains (breakpoint_id))
+					return false;
+
+				UpdateSymbolTable ();
+
+				BreakpointHandle handle = (BreakpointHandle) breakpoints [breakpoint_id];
+				handle.Handler (code, handle.UserData);
+				breakpoints.Remove (breakpoint_id);
+
 				return false;
-			} catch {
+			} catch (Exception e) {
+				Console.WriteLine ("BREAKPOINT EXCEPTION: {0}", e);
 				// Do nothing.
 			}
 			return true;
+		}
+
+		public void Test (IMethod method)
+		{
+			MethodInfo minfo = method.MethodHandle as MethodInfo;
+			if (minfo == null)
+				return;
+
+			Console.WriteLine ("TEST: {0}", minfo);
 		}
 
 		public void ModulesChanged ()
@@ -1157,21 +1543,5 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 
 		public event ModulesChangedHandler ModulesChangedEvent;
-	}
-
-	internal class ManagedBreakpointLocation : TargetLocation
-	{
-		string method_name;
-
-		internal ManagedBreakpointLocation (string method_name, int offset)
-			: base (offset)
-		{
-			this.method_name = method_name;
-		}
-
-		public override object Clone ()
-		{
-			return new ManagedBreakpointLocation (method_name, (int) Offset);
-		}
 	}
 }

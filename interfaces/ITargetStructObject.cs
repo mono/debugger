@@ -9,5 +9,7 @@ namespace Mono.Debugger
 		}
 
 		ITargetObject GetField (int index);
+
+		ITargetObject GetProperty (int index);
 	}
 }

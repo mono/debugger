@@ -10,11 +10,12 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class BfdContainer : ISerializable, IDisposable
+	internal class BfdContainer : ILanguageBackend, ISerializable, IDisposable
 	{
 		Hashtable bfd_hash;
 		Hashtable module_hash;
 		DebuggerBackend backend;
+		SymbolTableCollection symtabs;
 
 		public BfdContainer (DebuggerBackend backend)
 		{
@@ -23,32 +24,43 @@ namespace Mono.Debugger.Architecture
 			this.module_hash = new Hashtable ();
 
 			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
+			update_symtabs ();			
 		}
 
-		public IModule this [string filename] {
+		public Module this [string filename] {
 			get {
 				check_disposed ();
-				return (IModule) module_hash [filename];
+				return (Module) module_hash [filename];
 			}
 		}
 
 		public Bfd AddFile (IInferior inferior, string filename, bool load_native_symtab)
 		{
+			bool new_module = false;
+
 			check_disposed ();
 			if (bfd_hash.Contains (filename))
 				return (Bfd) bfd_hash [filename];
 
 			BfdModule module = (BfdModule) module_hash [filename];
 			if (module == null) {
-				module = new BfdModule (filename);
+				module = new BfdModule (filename, backend);
 				module.LoadSymbols = true;
 				module.StepInto = load_native_symtab;
+				module.Inferior = inferior;
 				module_hash.Add (filename, module);
+ 				new_module = true;
 			}
 
-			Bfd bfd = new Bfd (inferior, filename, false, true, module);
-			module.IsLoaded = module.SymbolsLoaded = true;
+			Bfd bfd = new Bfd (inferior, filename, false, load_native_symtab, module);
+ 			module.Bfd = bfd;
 			bfd_hash.Add (filename, bfd);
+
+			update_symtabs ();
+
+			if (new_module && (ModulesChangedEvent != null))
+ 				ModulesChangedEvent ();
+
 			return bfd;
 		}
 
@@ -59,14 +71,8 @@ namespace Mono.Debugger.Architecture
 
 			bfd_hash.Remove (bfd.FileName);
 			bfd.Dispose ();
-		}
 
-		public IModule[] Modules {
-			get {
-				IModule[] modules = new IModule [module_hash.Values.Count];
-				module_hash.Values.CopyTo (modules, 0);
-				return modules;
-			}
+			update_symtabs ();
 		}
 
 		void target_exited_handler ()
@@ -75,8 +81,61 @@ namespace Mono.Debugger.Architecture
 				bfd.Dispose ();
 			bfd_hash = new Hashtable ();
 
-			foreach (BfdModule module in module_hash.Values)
-				module.IsLoaded = module.SymbolsLoaded = false;
+			foreach (BfdModule module in module_hash.Values) {
+				module.Bfd = null;
+				module.Inferior = null;
+			}
+
+			update_symtabs ();
+		}
+
+		void update_symtabs ()
+		{
+			symtabs = new SymbolTableCollection ();
+			foreach (Bfd bfd in bfd_hash.Values)
+				symtabs.AddSymbolTable (bfd.SymbolTable);
+		}
+
+		//
+		// ILanguageBackend
+		//
+
+		string ILanguageBackend.Name {
+			get {
+				return "native";
+			}
+		}
+
+		public ISymbolTable SymbolTable {
+			get {
+				return symtabs;
+			}
+		}
+
+		public Module[] Modules {
+			get {
+				Module[] modules = new Module [module_hash.Values.Count];
+				module_hash.Values.CopyTo (modules, 0);
+				return modules;
+			}
+		}
+
+		public event ModulesChangedHandler ModulesChangedEvent;
+
+		public TargetAddress GenericTrampolineCode {
+			get {
+				return TargetAddress.Null;
+			}
+		}
+
+		public TargetAddress GetTrampoline (TargetAddress address)
+		{
+			return TargetAddress.Null;
+		}
+
+		public bool BreakpointHit (TargetAddress address)
+		{
+			return true;
 		}
 
 		//

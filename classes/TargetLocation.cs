@@ -17,12 +17,13 @@ namespace Mono.Debugger
 	public abstract class TargetLocation : ITargetLocation
 	{
 		long offset;
+		bool is_valid = true;
+		bool can_revalidate;
 
-		protected bool is_valid = true;
-
-		protected TargetLocation (long offset)
+		protected TargetLocation (long offset, bool can_revaliate)
 		{
 			this.offset = offset;
+			this.can_revalidate = can_revalidate;
 		}
 
 		public TargetAddress Address {
@@ -41,21 +42,26 @@ namespace Mono.Debugger
 
 		public bool IsValid {
 			get {
-				if (!is_valid)
-					return false;
-
-				try {
-					return GetIsValid ();
-				} catch {
-					return false;
-				}
+				return is_valid && GetIsValid ();
 			}
+		}
+
+		protected abstract bool GetIsValid ();
+
+		protected virtual void SetIsValid (bool value)
+		{
+			if (is_valid == value)
+				return;
+
+			is_valid = value;
+			if (is_valid)
+				OnLocationRevalidatedEvent ();
+			else
+				OnLocationInvalidEvent ();
 		}
 
 		protected abstract TargetAddress GetAddress ();
 		protected abstract object GetHandle ();
-
-		protected abstract bool GetIsValid ();
 
 		public long Offset {
 			get {
@@ -77,15 +83,27 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected void SetInvalid ()
-		{
-			is_valid = false;
-			if (LocationInvalid != null)
-				LocationInvalid ();
+		public bool CanRevalidate {
+			get {
+				return can_revalidate;
+			}
 		}
 
-		public event LocationInvalidHandler LocationInvalid;
-		
+		public event LocationEventHandler LocationInvalidEvent;
+		public event LocationEventHandler LocationRevalidatedEvent;
+
+		protected virtual void OnLocationInvalidEvent ()
+		{
+			if (LocationInvalidEvent != null)
+				LocationInvalidEvent (this);
+		}
+
+		protected virtual void OnLocationRevalidatedEvent ()
+		{
+			if (LocationRevalidatedEvent != null)
+				LocationRevalidatedEvent (this);
+		}
+
 		public abstract object Clone ();
 	}
 }

@@ -10,91 +10,69 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal sealed class BfdModule : IModule, ISerializable
+	internal sealed class BfdModule : NativeModule
 	{
-		public bool IsLoaded;
-		public bool SymbolsLoaded;
-		public bool LoadSymbols;
-		public bool StepInto;
-
-		string name;
+		Bfd bfd;
 		string filename;
-		bool load_symbols;
-		bool step_into;
 
-		public BfdModule (string filename)
+		public BfdModule (string filename, DebuggerBackend backend)
+			: base (filename, backend)
 		{
-			this.name = this.filename = filename;
+			this.filename = filename;
 		}
 
-		public ILanguageBackend Language {
+		public override ILanguageBackend Language {
 			get {
 				return null;
 			}
 		}
 
-		public string Name {
-			get {
-				return name;
-			}
-		}
-
-		public string FullName {
+		public override string FullName {
 			get {
 				return filename;
 			}
 		}
 
-		bool IModule.IsLoaded {
+		public Bfd Bfd {
 			get {
-				return IsLoaded;
-			}
-		}
-
-		bool IModule.SymbolsLoaded {
-			get {
-				return SymbolsLoaded;
-			}
-		}
-
-		bool IModule.LoadSymbols {
-			get {
-				return LoadSymbols;
+				return bfd;
 			}
 
 			set {
-				LoadSymbols = value;
+				bfd = value;
+				if (bfd != null)
+					OnSymbolsLoadedEvent ();
+				else
+					OnSymbolsUnLoadedEvent ();
 			}
 		}
 
-		bool IModule.StepInto {
+		public override bool SymbolsLoaded {
 			get {
-				return StepInto;
+				return Bfd != null;
 			}
+		}
 
-			set {
-				StepInto = value;
-			}
+		protected override void SymbolsChanged (bool loaded)
+		{
+		}
+
+		protected override SourceInfo[] GetSources ()
+		{
+			return Bfd.GetSources ();
 		}
 
 		//
 		// ISerializable
 		//
 
-		public void GetObjectData (SerializationInfo info, StreamingContext context)
+		public override void GetObjectData (SerializationInfo info, StreamingContext context)
 		{
-			info.AddValue ("name", name);
-			info.AddValue ("filename", filename);
-			info.AddValue ("load_symbols", load_symbols);
-			info.AddValue ("step_into", step_into);
+			base.GetObjectData (info, context);
 		}
 
 		private BfdModule (SerializationInfo info, StreamingContext context)
-		{
-			name = info.GetString ("name");
-			filename = info.GetString ("filename");
-			load_symbols = info.GetBoolean ("load_symbols");
-			step_into = info.GetBoolean ("step_into");
-		}
+			: base (info, context)
+		{ }
 	}
 }

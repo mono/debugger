@@ -32,6 +32,31 @@ namespace Mono.Debugger
 			cached_object = null;
 		}
 
+		public object PeekData {
+			get {
+				check_disposed ();
+
+				// We must avoid a race condition here: when restarting the
+				// timeout, this may wipe out the cached_object immediately.
+				object data = cached_object;
+
+				// If we still have a hard reference to the data.
+				if (data != null)
+					return data;
+
+				// Maybe we still have a weak reference to it.
+				if (weak_reference != null) {
+					try {
+						data = weak_reference.Target;
+					} catch {
+						weak_reference = null;
+					}
+				}
+
+				return data;
+			}
+		}
+
 		public object Data {
 			get {
 				check_disposed ();

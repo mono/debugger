@@ -85,6 +85,20 @@ mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address
 }
 
 ServerCommandError
+mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
+					 guint64 method_argument, guint64 object_argument,
+					 guint32 num_params, guint64 *param_data,
+					 guint64 *exc_address, guint64 callback_argument)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->call_method_invoke) (handle->inferior, invoke_method, method_argument,
+						     object_argument, num_params, param_data, exc_address,
+						     callback_argument);
+}
+
+ServerCommandError
 mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *breakpoint)
 {
 	if (!handle->inferior)
@@ -100,6 +114,42 @@ mono_debugger_server_remove_breakpoint (ServerHandle *handle, guint32 breakpoint
 		return COMMAND_ERROR_NO_INFERIOR;
 
 	return (* handle->info->remove_breakpoint) (handle->inferior, breakpoint);
+}
+
+ServerCommandError
+mono_debugger_server_enable_breakpoint (ServerHandle *handle, guint32 breakpoint)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->enable_breakpoint) (handle->inferior, breakpoint);
+}
+
+ServerCommandError
+mono_debugger_server_disable_breakpoint (ServerHandle *handle, guint32 breakpoint)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->disable_breakpoint) (handle->inferior, breakpoint);
+}
+
+ServerCommandError
+mono_debugger_server_enable_breakpoints (ServerHandle *handle)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->enable_breakpoints) (handle->inferior);
+}
+
+ServerCommandError
+mono_debugger_server_disable_breakpoints (ServerHandle *handle)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->disable_breakpoints) (handle->inferior);
 }
 
 static gboolean initialized = FALSE;
@@ -176,6 +226,15 @@ mono_debugger_server_get_pc (ServerHandle *handle, guint64 *pc)
 		return COMMAND_ERROR_NO_INFERIOR;
 
 	return (* handle->info->get_pc) (handle->inferior, pc);
+}
+
+ServerCommandError
+mono_debugger_server_current_insn_is_bpt (ServerHandle *handle, guint32 *is_breakpoint)
+{
+	if (!handle->inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->current_insn_is_bpt) (handle->inferior, is_breakpoint);
 }
 
 ServerCommandError

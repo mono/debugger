@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate void LocationInvalidHandler ();
+	public delegate void LocationEventHandler (ITargetLocation location);
 
 	// <summary>
 	//   This interface denotes an address in the target's address
@@ -32,10 +32,15 @@ namespace Mono.Debugger
 			get;
 		}
 
+		bool CanRevalidate {
+			get;
+		}
+
 		object Handle {
 			get;
 		}
 
-		event LocationInvalidHandler LocationInvalid;
+		event LocationEventHandler LocationInvalidEvent;
+		event LocationEventHandler LocationRevalidatedEvent;
 	}
 }

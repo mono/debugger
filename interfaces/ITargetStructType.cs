@@ -37,5 +37,9 @@ namespace Mono.Debugger
 		ITargetFieldInfo[] Fields {
 			get;
 		}
+
+		ITargetFieldInfo[] Properties {
+			get;
+		}
 	}
 }

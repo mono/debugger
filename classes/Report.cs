@@ -12,7 +12,7 @@ namespace Mono.Debugger
 
 	public class Report
 	{
-		public static int CurrentDebugFlags = 3;
+		public static int CurrentDebugFlags = 0;
 
 		public static void Debug (DebugFlags category, object argument)
 		{

@@ -8,7 +8,7 @@ crashing_here (int *ptr)
 }
 
 void
-hello_world (const char *message, int a)
+hello (const char *message, int a)
 {
 	printf (message);
 	// crashing_here (NULL);
@@ -18,6 +18,6 @@ int
 main (void)
 {
 	int a = 5;
-	hello_world ("Hello World", a);
+	hello ("Hello World", a);
 	return 0;
 }

@@ -34,12 +34,12 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 		IMethodSource source;
-		IModule module;
+		Module module;
 		bool is_loaded, has_bounds;
 		string image_file;
 		string name;
 
-		protected MethodBase (string name, string image_file, IModule module,
+		protected MethodBase (string name, string image_file, Module module,
 				      TargetAddress start, TargetAddress end)
 			: this (name, image_file, module)
 		{
@@ -50,7 +50,7 @@ namespace Mono.Debugger
 			this.is_loaded = true;
 		}
 
-		protected MethodBase (string name, string image_file, IModule module)
+		protected MethodBase (string name, string image_file, Module module)
 		{
 			this.name = name;
 			this.image_file = image_file;
@@ -98,7 +98,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IModule Module {
+		public Module Module {
 			get {
 				return module;
 			}
@@ -200,11 +200,6 @@ namespace Mono.Debugger
 				return null;
 
 			return this;
-		}
-
-		ISymbol ISymbolLookup.Lookup (string name)
-		{
-			return null;
 		}
 
 		public int CompareTo (object obj)

@@ -18,13 +18,7 @@ using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
-	internal enum ChildMessageType {
-		CHILD_EXITED = 1,
-		CHILD_STOPPED,
-		CHILD_SIGNALED,
-		CHILD_CALLBACK,
-		CHILD_HIT_BREAKPOINT
-	}
+	internal delegate void ChildCallbackHandler (long argument, long data);
 
 	internal enum CommandError {
 		NONE = 0,
@@ -42,8 +36,6 @@ namespace Mono.Debugger.Backends
 	}
 	
 	internal delegate void ChildSetupHandler ();
-	internal delegate void ChildCallbackHandler (long argument, long data);
-	internal delegate void ChildMessageHandler (ChildMessageType message, int arg);
 
 	internal class PTraceInferior : IInferior, IDisposable
 	{
@@ -71,10 +63,7 @@ namespace Mono.Debugger.Backends
 		Hashtable pending_callbacks = new Hashtable ();
 		long last_callback_id = 0;
 
-		TargetAddress main_method_address = TargetAddress.Null;
-		TargetAddress main_method_retaddr = TargetAddress.Null;
-
-		StepFrame current_step_frame = null;
+		SingleSteppingEngine sse = null;
 
 		public int PID {
 			get {
@@ -83,13 +72,24 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public SingleSteppingEngine SingleSteppingEngine {
+			get {
+				return sse;
+			}
+
+			set {
+				sse = value;
+			}
+		}
+
 		public event TargetExitedHandler TargetExited;
+		internal event ChildEventHandler ChildEvent;
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, TargetExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
+		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool search_path, TargetExitedHandler child_exited, ChildEventHandler child_event, ChildCallbackHandler child_callback, out int child_pid, out int standard_input, out int standard_output, out int standard_error, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, TargetExitedHandler child_exited, ChildMessageHandler child_message, ChildCallbackHandler child_callback);
+		static extern CommandError mono_debugger_server_attach (IntPtr handle, int child_pid, TargetExitedHandler child_exited, ChildEventHandler child_event, ChildCallbackHandler child_callback);
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_get_g_source (IntPtr handle);
@@ -99,6 +99,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_pc (IntPtr handle, out long pc);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_current_insn_is_bpt (IntPtr handle, out int is_breakpoint);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_step (IntPtr handle);
@@ -128,10 +131,25 @@ namespace Mono.Debugger.Backends
 		static extern CommandError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, out long exc_address, long callback_argument);
+
+		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_enable_breakpoint (IntPtr handle, int breakpoint);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_disable_breakpoint (IntPtr handle, int breakpoint);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_enable_breakpoints (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_disable_breakpoints (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_registers (IntPtr handle, int count, IntPtr registers, IntPtr values);
@@ -256,7 +274,64 @@ namespace Mono.Debugger.Backends
 			return (long) result.AsyncResult;
 		}
 
-		int insert_breakpoint (TargetAddress address)
+		TargetAsyncResult call_method_invoke (TargetAddress invoke_method,
+						      TargetAddress method_argument,
+						      TargetAddress object_argument,
+						      TargetAddress[] param_objects,
+						      out TargetAddress exc_object,
+						      TargetAsyncCallback callback,
+						      object user_data)
+		{
+			check_disposed ();
+			long number = ++last_callback_id;
+			TargetAsyncResult async = new TargetAsyncResult (callback, user_data);
+			pending_callbacks.Add (number, async);
+
+			int size = param_objects.Length;
+			long[] param_addresses = new long [size];
+			for (int i = 0; i < param_objects.Length; i++)
+				param_addresses [i] = param_objects [i].Address;
+
+			IntPtr data = IntPtr.Zero;
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				if (size > 0) {
+					data = Marshal.AllocHGlobal (size);
+					Marshal.Copy (param_addresses, 0, data, size);
+				}
+
+				long exc_address;
+				check_error (mono_debugger_server_call_method_invoke (
+					server_handle, invoke_method.Address, method_argument.Address,
+					object_argument.Address, size, data, out exc_address, number));
+				exc_object = new TargetAddress (object_argument.Domain, exc_address);
+			} catch {
+				change_target_state (old_state);
+			} finally {
+				if (data != IntPtr.Zero)
+					Marshal.FreeHGlobal (data);
+			}
+
+			return async;
+		}
+
+		public TargetAddress CallInvokeMethod (TargetAddress invoke_method,
+						       TargetAddress method_argument,
+						       TargetAddress object_argument,
+						       TargetAddress[] param_objects,
+						       out TargetAddress exc_object)
+		{
+			check_disposed ();
+			TargetAsyncResult result = call_method_invoke (
+				invoke_method, method_argument, object_argument, param_objects,
+				out exc_object, null, null);
+			mono_debugger_server_wait (server_handle);
+			if (!result.IsCompleted)
+				throw new InternalError ("Call not completed");
+			return new TargetAddress (object_argument.Domain, (long) result.AsyncResult);
+		}
+
+		public int InsertBreakpoint (TargetAddress address)
 		{
 			int retval;
 			check_error (mono_debugger_server_insert_breakpoint (
@@ -264,16 +339,32 @@ namespace Mono.Debugger.Backends
 			return retval;
 		}
 
-		void remove_breakpoint (int breakpoint)
+		public void RemoveBreakpoint (int breakpoint)
 		{
 			check_error (mono_debugger_server_remove_breakpoint (
 				server_handle, breakpoint));
 		}
 
-		int temp_breakpoint_id = 0;
-		void insert_temporary_breakpoint (TargetAddress address)
+		public void EnableBreakpoint (int breakpoint)
 		{
-			temp_breakpoint_id = insert_breakpoint (address);
+			check_error (mono_debugger_server_enable_breakpoint (
+				server_handle, breakpoint));
+		}
+
+		public void DisableBreakpoint (int breakpoint)
+		{
+			check_error (mono_debugger_server_disable_breakpoint (
+				server_handle, breakpoint));
+		}
+
+		public void EnableAllBreakpoints ()
+		{
+			mono_debugger_server_enable_breakpoints (server_handle);
+		}
+
+		public void DisableAllBreakpoints ()
+		{
+			mono_debugger_server_disable_breakpoints (server_handle);
 		}
 
 		public PTraceInferior (string working_directory, string[] argv, string[] envp,
@@ -297,7 +388,7 @@ namespace Mono.Debugger.Backends
 			check_error (mono_debugger_server_spawn (
 				server_handle, working_directory, argv, envp, true,
 				new TargetExitedHandler (child_exited),
-				new ChildMessageHandler (child_message),
+				new ChildEventHandler (child_event),
 				new ChildCallbackHandler (child_callback),
 				out child_pid, out stdin_fd, out stdout_fd, out stderr_fd,
 				out error));
@@ -323,7 +414,7 @@ namespace Mono.Debugger.Backends
 
 			check_error (mono_debugger_server_attach (
 				server_handle, pid, new TargetExitedHandler (child_exited),
-				new ChildMessageHandler (child_message),
+				new ChildEventHandler (child_event),
 				new ChildCallbackHandler (child_callback)));
 
 			setup_inferior (load_native_symtab);
@@ -380,17 +471,10 @@ namespace Mono.Debugger.Backends
 			return bfd [name];
 		}
 
-		bool start_native ()
-		{
-			if (!native)
-				return false;
-
-			main_method_address = bfd ["main"];
-			if (main_method_address.IsNull)
-				return false;
-
-			insert_temporary_breakpoint (main_method_address);
-			return true;
+		public TargetAddress MainMethodAddress {
+			get {
+				return bfd ["main"];
+			}
 		}
 
 		void child_exited ()
@@ -412,80 +496,32 @@ namespace Mono.Debugger.Backends
 			pending_callbacks.Remove (callback);
 
 			async.Completed (data);
+
+			child_event (ChildEventType.CHILD_CALLBACK, 0);
 		}
 
-		bool initialized;
-		bool reached_main;
-		bool debugger_info_read;
-		void child_message (ChildMessageType message, int arg)
+		void child_event (ChildEventType message, int arg)
 		{
-			if (temp_breakpoint_id != 0) {
-				if ((message == ChildMessageType.CHILD_EXITED) ||
-				    (message == ChildMessageType.CHILD_SIGNALED))
-					temp_breakpoint_id = 0;
-				else {
-					remove_breakpoint (temp_breakpoint_id);
-					temp_breakpoint_id = 0;
-					if (message == ChildMessageType.CHILD_HIT_BREAKPOINT) {
-						child_message (ChildMessageType.CHILD_STOPPED, 0);
-						return;
-					}
-				}
-			}
-
-			if ((message == ChildMessageType.CHILD_STOPPED) && (arg != 0)) {
-				change_target_state (TargetState.STOPPED, arg);
-				return;
-			}
-
 			switch (message) {
-			case ChildMessageType.CHILD_STOPPED:
-				if (initialized && !reached_main) {
-					reached_main = true;
-					main_method_retaddr = GetReturnAddress ();
-				}
-				if (!initialized) {
-					initialized = true;
-					if (!native || start_native ()) {
-						Continue ();
-						break;
-					}
-				} else if (current_step_frame != null) {
-					TargetAddress frame = CurrentFrame;
-
-					if ((frame >= current_step_frame.Start) &&
-					    (frame < current_step_frame.End)) {
-						try {
-							Step (current_step_frame);
-						} catch (Exception e) {
-							inferior_output ("EXCEPTION: " + e.ToString ());
-						}
-						break;
-					}
-					current_step_frame = null;
-				}
-				if (CurrentFrame == main_method_retaddr) {
-					Continue ();
-					break;
-				}
-
+			case ChildEventType.CHILD_STOPPED:
 				change_target_state (TargetState.STOPPED, arg);
 				break;
 
-			case ChildMessageType.CHILD_EXITED:
-			case ChildMessageType.CHILD_SIGNALED:
+			case ChildEventType.CHILD_EXITED:
+			case ChildEventType.CHILD_SIGNALED:
 				change_target_state (TargetState.EXITED, arg);
 				break;
 
-			case ChildMessageType.CHILD_HIT_BREAKPOINT:
-				Console.WriteLine ("CHILD HIT BREAKPOINT: {0}", arg);
-				child_message (ChildMessageType.CHILD_STOPPED, 0);
+			case ChildEventType.CHILD_HIT_BREAKPOINT:
+				change_target_state (TargetState.STOPPED, 0);
 				break;
 
 			default:
-				Console.WriteLine ("CHILD MESSAGE: {0} {1}", message, arg);
 				break;
 			}
+
+			if (ChildEvent != null)
+				ChildEvent (message, arg);
 		}
 
 		void inferior_output (string line)
@@ -747,6 +783,18 @@ namespace Mono.Debugger.Backends
 			return old_state;
 		}
 
+		public void Step ()
+		{
+			check_disposed ();
+
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_step (server_handle));
+			} catch {
+				change_target_state (old_state);
+			}
+		}
+
 		public void Continue ()
 		{
 			check_disposed ();
@@ -756,13 +804,6 @@ namespace Mono.Debugger.Backends
 			} catch {
 				change_target_state (old_state);
 			}
-		}
-
-		public void Continue (TargetAddress until)
-		{
-			check_disposed ();
-			insert_temporary_breakpoint (until);
-			Continue ();
 		}
 
 		public void Stop ()
@@ -787,155 +828,6 @@ namespace Mono.Debugger.Backends
 			// send_command (ServerCommand.KILL);
 		}
 
-		void set_step_frame (StepFrame frame)
-		{
-			if (frame != null) {
-				switch (frame.Mode) {
-				case StepMode.StepFrame:
-				case StepMode.NativeStepFrame:
-				case StepMode.Finish:
-					current_step_frame = frame;
-					break;
-
-				default:
-					current_step_frame = null;
-					break;
-				}
-			} else
-				current_step_frame = null;
-		}
-
-		void do_step (StepFrame frame)
-		{
-			set_step_frame (frame);
-
-			TargetState old_state = change_target_state (TargetState.RUNNING);
-			try {
-				check_error (mono_debugger_server_step (server_handle));
-			} catch {
-				change_target_state (old_state);
-			}
-		}
-
-		void do_next ()
-		{
-			check_disposed ();
-			TargetAddress address = CurrentFrame;
-			if (arch.IsRetInstruction (address)) {
-				do_step (null);
-				return;
-			}
-
-			address += bfd_disassembler.GetInstructionSize (address);
-
-			insert_temporary_breakpoint (address);
-			Continue ();
-		}
-
-		public void Step (StepFrame frame)
-		{
-			check_disposed ();
-
-			/*
-			 * If no step frame is given, just step one machine instruction.
-			 */
-			if (frame == null) {
-				do_step (null);
-				return;
-			}
-
-			/*
-			 * Step one instruction, but step over function calls.
-			 */
-			if (frame.Mode == StepMode.NextInstruction) {
-				do_next ();
-				return;
-			}
-
-			/*
-			 * If this is not a call instruction, continue stepping until we leave
-			 * the specified step frame.
-			 */
-			int insn_size;
-			TargetAddress call = arch.GetCallTarget (CurrentFrame, out insn_size);
-			if (call.IsNull) {
-				do_step (frame);
-				return;
-			}
-
-			/*
-			 * If we have a source language, check for trampolines.
-			 * This will trigger a JIT compilation if neccessary.
-			 */
-			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-				TargetAddress trampoline = frame.Language.GetTrampoline (call);
-
-				/*
-				 * If this is a trampoline, insert a breakpoint at the start of
-				 * the corresponding method and continue.
-				 *
-				 * We don't need to distinguish between StepMode.SingleInstruction
-				 * and StepMode.StepFrame here since we'd leave the step frame anyways
-				 * when entering the method.
-				 */
-				if (!trampoline.IsNull) {
-					IMethod tmethod = null;
-					if (application_symtab != null) {
-						application_symtab.UpdateSymbolTable ();
-						tmethod = application_symtab.Lookup (trampoline);
-					}
-					if ((tmethod == null) || !tmethod.Module.StepInto) {
-						set_step_frame (frame);
-						do_next ();
-						return;
-					}
-
-					insert_temporary_breakpoint (trampoline);
-					Continue ();
-					return;
-				}
-			}
-
-			/*
-			 * When StepMode.SingleInstruction was requested, enter the method no matter
-			 * whether it's a system function or not.
-			 */
-			if (frame.Mode == StepMode.SingleInstruction) {
-				do_step (null);
-				return;
-			}
-
-			/*
-			 * In StepMode.Finish, always step over all methods.
-			 */
-			if (frame.Mode == StepMode.Finish) {
-				current_step_frame = frame;
-				do_next ();
-				return;
-			}
-
-			/*
-			 * Try to find out whether this is a system function by doing a symbol lookup.
-			 * If it can't be found in the symbol tables, assume it's a system function
-			 * and step over it.
-			 */
-			IMethod method = null;
-			if (native || (frame.Mode == StepMode.NativeStepFrame))
-				method = symtab_collection.Lookup (call);
-			else if (application_symtab != null)
-				method = application_symtab.Lookup (call);
-			if ((method == null) || !method.Module.StepInto) {
-				set_step_frame (frame);
-				do_next ();
-				return;
-			}
-
-			/*
-			 * Finally, step into the method.
-			 */
-			do_step (null);
-		}
-
 		public TargetAddress CurrentFrame {
 			get {
 				long pc;
@@ -945,6 +837,19 @@ namespace Mono.Debugger.Backends
 					throw new NoStackException ();
 
 				return new TargetAddress (this, pc);
+			}
+		}
+
+		public bool CurrentInstructionIsBreakpoint {
+			get {
+				check_disposed ();
+				int is_breakpoint;
+				CommandError result = mono_debugger_server_current_insn_is_bpt (
+					server_handle, out is_breakpoint);
+				if (result != CommandError.NONE)
+					throw new NoStackException ();
+
+				return is_breakpoint != 0;
 			}
 		}
 
@@ -982,9 +887,9 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IModule[] Modules {
+		public Module[] Modules {
 			get {
-				return new IModule[] { bfd.Module };
+				return new Module[] { bfd.Module };
 			}
 		}
 
@@ -1099,17 +1004,17 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IInferiorStackFrame[] GetBacktrace (int max_frames, bool full_backtrace)
+		public IInferiorStackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
 				int count;
 
-				long stop = 0;
-				if (!full_backtrace && !main_method_retaddr.IsNull)
-					stop = main_method_retaddr.Address;
+				long stop_addr = 0;
+				if (!stop.IsNull)
+					stop_addr = stop.Address;
 				CommandError result = mono_debugger_server_get_backtrace (
-					server_handle, max_frames, stop, out count, out data);
+					server_handle, max_frames, stop_addr, out count, out data);
 				check_error (result);
 
 				ServerStackFrame[] frames = new ServerStackFrame [count];

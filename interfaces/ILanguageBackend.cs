@@ -2,6 +2,8 @@ using System;
 
 namespace Mono.Debugger
 {
+	public delegate void ModulesChangedHandler ();
+
 	public interface ILanguageBackend
 	{
 		string Name {
@@ -12,7 +14,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		IModule[] Modules {
+		Module[] Modules {
 			get;
 		}
 
@@ -29,10 +31,13 @@ namespace Mono.Debugger
 
 		// <summary>
 		//   Called when a breakpoint has been hit.  Returns true if the
-		//   target is still stopped.  The implementation may decide to
-		//   ignore the breakpoint and continue the target - in this case,
-		//   it'll return false.
+		//   should remain stopped or false if the breakpoint should be
+		//   ignored.
 		// </summary>
+		// <remarks>
+		//   The implementation must not continue the target itself, this
+		//   is done automatically by the SingleSteppingEngine.
+		// </remarks>
 		bool BreakpointHit (TargetAddress address);
 	}
 }

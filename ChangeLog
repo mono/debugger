@@ -1,3 +1,18 @@
+2002-10-01  Martin Baulig  <martin@gnome.org>
+
+	Reworked the module stuff, implemented breakpoints and start to
+	add support for properties.
+
+	* interfaces/IModule.cs: Removed, has been replaced with class/Module.cs.
+
+	* class/Module.cs: New public class, replaces IModule.  This class
+	maintains all the breakpoints.
+
+	* interfaces/ISymbolTable.cs (ISymbol): Removed this interface.
+
+	* class/SingleSteppingEngine.cs: Moved the single-stepping engine
+	into its own class.  This is now also doing all the method lookups.
+
 2002-09-27  Martin Baulig  <martin@gnome.org>
 
 	* arch/BfdContainer.cs: New class to hold all Bfd instances of the

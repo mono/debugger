@@ -115,6 +115,12 @@ typedef struct {
 						       guint64          *pc);
 
 	/*
+	 * Checks whether the current instruction is a breakpoint.
+	 */
+	ServerCommandError    (* current_insn_is_bpt) (InferiorHandle   *handle,
+						       guint32          *is_breakpoint);
+
+	/*
 	 * Read `size' bytes from the target's address space starting at `start'.
 	 * Writes the result into `buffer' (which has been allocated by the caller).
 	 */
@@ -155,6 +161,15 @@ typedef struct {
 						       const gchar      *string_argument,
 						       guint64           callback_argument);
 
+	ServerCommandError    (* call_method_invoke)  (InferiorHandle   *handle,
+						       guint64           invoke_method,
+						       guint64           method_argument,
+						       guint64           object_argument,
+						       guint32           num_params,
+						       guint64          *param_data,
+						       guint64          *exc_address,
+						       guint64           callback_argument);
+
 	/*
 	 * Insert a breakpoint at address `address' in the target's address space.
 	 * Returns a breakpoint handle in `bhandle' which can be passed to `remove_breakpoint'
@@ -169,6 +184,28 @@ typedef struct {
 	 */
 	ServerCommandError    (* remove_breakpoint)   (InferiorHandle   *handle,
 						       guint32           bhandle);
+
+	/*
+	 * Enables breakpoint `bhandle'.
+	 */
+	ServerCommandError    (* enable_breakpoint)   (InferiorHandle   *handle,
+						       guint32           bhandle);
+
+	/*
+	 * Disables breakpoint `bhandle'.
+	 */
+	ServerCommandError    (* disable_breakpoint)  (InferiorHandle   *handle,
+						       guint32           bhandle);
+
+	/*
+	 * Enables all breakpoints.
+	 */
+	ServerCommandError    (* enable_breakpoints)  (InferiorHandle   *handle);
+
+	/*
+	 * Disables all breakpoints.
+	 */
+	ServerCommandError    (* disable_breakpoints) (InferiorHandle   *handle);
 
 	/*
 	 * Get all breakpoints.  Writes number of breakpoints into `count' and returns a g_new0()
@@ -273,6 +310,10 @@ mono_debugger_server_get_pc               (ServerHandle       *handle,
 					   guint64            *pc);
 
 ServerCommandError
+mono_debugger_server_current_insn_is_bpt  (ServerHandle       *handle,
+					   guint32            *is_breakpoint);
+
+ServerCommandError
 mono_debugger_server_step                 (ServerHandle       *handle);
 
 ServerCommandError
@@ -307,6 +348,16 @@ mono_debugger_server_call_method_1        (ServerHandle       *handle,
 					   guint64             callback_argument);
 
 ServerCommandError
+mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
+					   guint64             invoke_method,
+					   guint64             method_argument,
+					   guint64             object_argument,
+					   guint32             num_params,
+					   guint64            *param_data,
+					   guint64            *exc_address,
+					   guint64             callback_argument);
+
+ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,
 					  guint64              address,
 					  guint32             *breakpoint);
@@ -314,6 +365,20 @@ mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,
 ServerCommandError
 mono_debugger_server_remove_breakpoint   (ServerHandle        *handle,
 					  guint32              breakpoint);
+
+ServerCommandError
+mono_debugger_server_enable_breakpoint   (ServerHandle        *handle,
+					  guint32              breakpoint);
+
+ServerCommandError
+mono_debugger_server_disable_breakpoint  (ServerHandle        *handle,
+					  guint32              breakpoint);
+
+ServerCommandError
+mono_debugger_server_enable_breakpoints  (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_disable_breakpoints (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_get_registers       (ServerHandle        *handle,
