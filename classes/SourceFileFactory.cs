@@ -19,7 +19,8 @@ public class SourceFile : ISourceBuffer
 	void ReadFile ()
 	{
 		try {
-			using (StreamReader reader = file_info.OpenText ()) {
+			Encoding encoding = Encoding.GetEncoding (28591);
+			using (StreamReader reader = new StreamReader (file_info.OpenRead (), encoding)) {
 				contents = reader.ReadToEnd ();
 			}
 		} catch {
@@ -42,7 +43,7 @@ public class SourceFile : ISourceBuffer
 
 	public bool HasContents {
 		get {
-			return true;
+			return contents != null;
 		}
 	}
 
