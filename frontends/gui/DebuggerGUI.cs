@@ -150,6 +150,7 @@ namespace Mono.Debugger.GUI
 			command_entry.Activated += new EventHandler (DoOneCommand);
 			command_entry.Sensitive = false;
 
+			// FIXME: This is commented out because MCS miscompiles it.
 #if FALSE
 			//
 			// The items that we sensitize
