@@ -10,6 +10,9 @@ This is a list of GUI issues which need to be fixed for the next release.
   inserts the breakpoint somewhere, but not where the user actually klicked.
   This is bug #40869.
 
+* There seems to be a reference-counting bug somewhere in gtk#: if you display the "About"
+  dialog several times, you get a crash.  I did some debugging, but I was unable to find it.
 
-April 7th, 2003
+
+April 10th, 2003
 Martin Baulig
