@@ -1,3 +1,8 @@
+2003-03-16  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs: Fixed a bug to make shared libraries work
+	again.
+
 2003-03-14  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs (Locals): New public property.  Returns

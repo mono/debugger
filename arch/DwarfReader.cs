@@ -613,9 +613,10 @@ namespace Mono.Debugger.Architecture
 			long length;
 			int version;
 			long header_length, data_offset, end_offset;
+			long base_address;
 
 			ISymbolContainer next_method, current_method;
-			long next_method_address;
+			TargetAddress next_method_address;
 			int next_method_index;
 
 			int[] standard_opcode_lengths;
@@ -627,7 +628,7 @@ namespace Mono.Debugger.Architecture
 			protected class StatementMachine
 			{
 				public LineNumberEngine engine;			      
-				public long st_address;
+				public TargetAddress st_address;
 				public int st_line;
 				public int st_file;
 				public int st_column;
@@ -652,7 +653,7 @@ namespace Mono.Debugger.Architecture
 					this.reader = this.engine.reader;
 					this.creating = true;
 					this.start_offset = offset;
-					this.st_address = 0;
+					this.st_address = TargetAddress.Null;
 					this.st_file = 1;
 					this.st_line = 1;
 					this.st_column = 0;
@@ -713,10 +714,8 @@ namespace Mono.Debugger.Architecture
 						end_line = st_line;
 					}
 
-					if (st_file == start_file) {
-						TargetAddress address = engine.dwarf.GetAddress (st_address);
-						lines.Add (new LineEntry (address, st_line));
-					}
+					if (st_file == start_file)
+						lines.Add (new LineEntry (st_address, st_line));
 
 					basic_block = false;
 					prologue_end = false;
@@ -725,6 +724,8 @@ namespace Mono.Debugger.Architecture
 
 				void set_end_sequence ()
 				{
+					engine.debug ("SET END SEQUENCE");
+
 					end_sequence = true;
 
 					if (!creating)
@@ -791,7 +792,7 @@ namespace Mono.Debugger.Architecture
 
 					switch ((ExtendedOpcode) opcode) {
 					case ExtendedOpcode.set_address:
-						st_address = reader.ReadAddress ();
+						st_address = engine.dwarf.GetAddress (reader.ReadAddress ());
 						engine.debug ("SETTING ADDRESS TO {0:x}", st_address);
 						break;
 
@@ -801,8 +802,8 @@ namespace Mono.Debugger.Architecture
 
 					default:
 						engine.warning (String.Format (
-							"Unknown extended opcode {0:x} in line number engine",
-							opcode));
+							"Unknown extended opcode {0:x} in line number " +
+							"engine at offset {1}", opcode, reader.Position));
 						break;
 					}
 
@@ -821,6 +822,7 @@ namespace Mono.Debugger.Architecture
 				{
 					reader.Position = start_offset;
 					end_sequence = false;
+
 					while (!end_sequence) {
 						byte opcode = reader.ReadByte ();
 						engine.debug ("OPCODE: {0:x}", opcode);
@@ -905,22 +907,22 @@ namespace Mono.Debugger.Architecture
 
 				if (current_method != null)
 					method_hash.Add (current_method, new StatementMachine (stm));
-
 				current_method = next_method;
 				if (next_method_index < methods.Count) {
 					next_method = (ISymbolContainer) methods [next_method_index++];
-					next_method_address = next_method.StartAddress.Address;
+					next_method_address = next_method.StartAddress;
 				} else
-					next_method_address = Int64.MaxValue;
+					next_method_address = TargetAddress.Null;
 
 				debug ("NEW NEXT: {0:x}", next_method_address);
 			}
 
 			void commit (StatementMachine stm)
 			{
-				debug ("COMMIT: {0:x} {1}", stm.st_address, stm.st_line);
+				debug ("COMMIT: {0:x} {1} {2:x}", stm.st_address, stm.st_line,
+				       next_method_address);
 
-				if (stm.st_address >= next_method_address)
+				if (!next_method_address.IsNull && (stm.st_address >= next_method_address))
 					end_sequence (stm);
 			}
 
@@ -948,6 +950,8 @@ namespace Mono.Debugger.Architecture
 				this.methods = methods;
 				this.compilation_dir = compilation_dir;
 
+				base_address = dwarf.bfd.BaseAddress.Address;
+
 				reader.Position = offset;
 				length = reader.ReadInitialLength ();
 				end_offset = reader.Position + length;
@@ -973,7 +977,7 @@ namespace Mono.Debugger.Architecture
 
 				next_method_index = 1;
 				next_method = (ISymbolContainer) methods [0];
-				next_method_address = next_method.StartAddress.Address;
+				next_method_address = next_method.StartAddress;
 
 				method_hash = new Hashtable ();
 
