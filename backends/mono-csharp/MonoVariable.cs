@@ -82,12 +82,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal VariableInfo VariableInfo {
-			get {
-				return info;
-			}
-		}
-
 		public TargetAddress StartLiveness {
 			get {
 				return start_liveness;

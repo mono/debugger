@@ -281,6 +281,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		ITargetFunctionObject get_method (ITargetStructObject sobj)
 		{
+		again:
 			ITargetFunctionObject match = null;
 			foreach (ITargetMethodInfo method in sobj.Type.Methods) {
 				if (method.Name != identifier)
@@ -295,6 +296,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (match != null)
 				return match;
+
+			ITargetClassObject cobj = sobj as ITargetClassObject;
+			if ((cobj != null) && cobj.Type.HasParent) {
+				sobj = cobj.Parent;
+				goto again;
+			}
 
 			throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
 						      identifier);
@@ -312,7 +319,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context)
 		{
-			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
+			ITargetObject obj = var_expr.ResolveVariable (context);
+			ITargetStructObject sobj = obj as ITargetStructObject;
+			if (sobj == null) {
+				ITargetFundamentalObject fobj = obj as ITargetFundamentalObject;
+				if (fobj.HasClassObject)
+					sobj = fobj.ClassObject;
+			}
+
 			if (sobj == null)
 				throw new ScriptingException ("Variable {0} is not a struct or class type.",
 							      var_expr.Name);

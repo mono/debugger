@@ -13,9 +13,12 @@ namespace Mono.Debugger.Languages.CSharp
 			: base (TargetObjectKind.Class, type, size, klass, info, table)
 		{
 			int parent_type_info = info.ReadInt32 ();
-			if ((parent_type_info != 0) && (type.BaseType != null)) {
-				MonoType parent = GetType (type.BaseType, parent_type_info, table);
-				ParentType = parent as MonoClassType;
+			if (type.BaseType != null) {
+				if (parent_type_info != 0) {
+					MonoType parent = GetType (type.BaseType, parent_type_info, table);
+					ParentType = parent as MonoClassType;
+				} else
+					ParentType = ObjectClass;
 			}
 		}
 

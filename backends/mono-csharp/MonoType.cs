@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected Type type;
 		protected static MonoObjectType ObjectType;
-		protected static MonoClassType ObjectClass;
+		internal static MonoClassType ObjectClass;
 		protected static ITargetMethodInfo[] ObjectClassMethods;
 		protected static ITargetMethodInfo ObjectToString;
 		protected readonly TargetObjectKind kind;

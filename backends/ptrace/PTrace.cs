@@ -78,7 +78,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public event TargetExitedHandler TargetExited;
-		internal event ChildEventHandler ChildEvent;
+		public event ChildEventHandler ChildEvent;
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
