@@ -76,7 +76,6 @@ namespace Mono.Debugger.Architecture
 			}
 
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
-			Console.WriteLine ("ADDRESS: {0} {1}", current_method, maddress);
 
 			if (current_method != null) {
 				TargetAddress trampoline = current_method.GetTrampoline (maddress);
