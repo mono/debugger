@@ -1,5 +1,10 @@
 2003-01-02  Martin Baulig  <martin@ximian.com>
 
+	* arch/CoreFile.cs: Don't implement IInferior, just IProcess and
+	ITargetAccess.
+
+2003-01-02  Martin Baulig  <martin@ximian.com>
+
 	* classes/AddressDomain.cs: New global class.
 
 	* classes/TargetAddress.cs: Use an instance of the new

@@ -39,7 +39,19 @@ namespace Mono.Debugger
 
 		void Kill ();
 
+		IArchitecture Architecture {
+			get;
+		}
+
 		ITargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
+		ITargetMemoryAccess TargetMemoryAccess {
+			get;
+		}
+
+		ITargetAccess TargetAccess {
 			get;
 		}
 

@@ -93,7 +93,6 @@ namespace Mono.Debugger
 
 			core = new CoreFileElfI386 (backend, start.TargetApplication,
 						    core_file, bfd_container);
-			inferior = core;
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -110,21 +109,28 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetMemoryInfo TargetMemoryInfo {
+		internal IInferior Inferior {
 			get {
 				check_disposed ();
 				return inferior;
 			}
 		}
 
-		public IInferior Inferior {
+		public ITargetMemoryInfo TargetMemoryInfo {
 			get {
-				check_disposed ();
+				check_disposed ();				
 				return inferior;
 			}
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
+			get {
+				check_disposed ();				
+				return inferior;
+			}
+		}
+
+		public ITargetAccess TargetAccess {
 			get {
 				check_disposed ();				
 				return inferior;
@@ -165,6 +171,12 @@ namespace Mono.Debugger
 		public int ID {
 			get {
 				return id;
+			}
+		}
+
+		public int PID {
+			get{
+				return pid;
 			}
 		}
 
@@ -330,6 +342,12 @@ namespace Mono.Debugger
 		{
 			check_stopped ();
 			inferior.SetSignal (0, false);
+		}
+
+		public void SetSignal (int signal, bool send_it)
+		{
+			check_stopped ();
+			inferior.SetSignal (signal, send_it);
 		}
 
 		public bool Finish (bool synchronous)

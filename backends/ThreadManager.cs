@@ -60,7 +60,7 @@ namespace Mono.Debugger
 		{
 			this.csharp_handler = csharp_handler;
 			this.main_process = process;
-			thread_hash.Add (process.Inferior.PID, process);
+			thread_hash.Add (process.PID, process);
 
 			TargetAddress tdebug = bfdc.LookupSymbol ("__pthread_threads_debug");
 
@@ -74,7 +74,7 @@ namespace Mono.Debugger
 				return false;
 			}
 
-			process.Inferior.WriteInteger (tdebug, 1);
+			process.TargetAccess.WriteInteger (tdebug, 1);
 			initialized = true;
 
 			Console.WriteLine ("Initialized thread manager.");
@@ -141,13 +141,13 @@ namespace Mono.Debugger
 			}
 
 			if (signal == Signal_SIGCHLD) {
-				process.Inferior.SetSignal (0, false);
+				process.SetSignal (0, false);
 				action = false;
 				return true;
 			}
 
 			if (signal == Signal_SIGINT) {
-				process.Inferior.SetSignal (0, false);
+				process.SetSignal (0, false);
 				action = true;
 				return true;
 			}
@@ -157,9 +157,9 @@ namespace Mono.Debugger
 				return false;
 			}
 
-			reload_threads (process.Inferior);
+			reload_threads (process.TargetAccess);
 
-			process.Inferior.SetSignal (PThread_Signal_Restart, false);
+			process.SetSignal (PThread_Signal_Restart, false);
 			action = false;
 			return true;
 		}
@@ -195,7 +195,7 @@ namespace Mono.Debugger
 						pid, PThread_Signal_Restart, csharp_handler);
 				else {
 					new_process = main_process.CreateThread (pid);
-					new_process.Inferior.SetSignal (PThread_Signal_Restart, true);
+					new_process.SetSignal (PThread_Signal_Restart, true);
 				}
 
 				thread_hash.Add (pid, new_process);

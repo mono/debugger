@@ -6,7 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal abstract class CoreFile : IInferior
+	internal abstract class CoreFile : IProcess, ITargetAccess
 	{
 		protected Bfd bfd;
 		protected Bfd core_bfd;
@@ -95,7 +95,7 @@ namespace Mono.Debugger.Architecture
 				has_current_method = true;
 				if (current_symtab == null)
 					return null;
-				current_method = current_symtab.Lookup (IInferior.CurrentFrame);
+				current_method = current_symtab.Lookup (CurrentFrameAddress);
 				return current_method;
 			}
 		}
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Architecture
 				if (has_current_frame)
 					return current_frame;
 
-				TargetAddress address = IInferior.CurrentFrame;
+				TargetAddress address = CurrentFrameAddress;
 				IMethod method = CurrentMethod;
 
 				if ((method != null) && method.HasSource) {
@@ -259,12 +259,49 @@ namespace Mono.Debugger.Architecture
 		}
 
 		//
-		// IInferior
+		// IProcess
+		//
+
+		public bool HasTarget {
+			get { return true; }
+		}
+
+		public bool IsStopped {
+			get { return true; }
+		}
+
+		public bool CanStep {
+			get { return false; }
+		}
+
+		public bool CanRun {
+			get { return false; }
+		}
+
+		public ITargetMemoryInfo TargetMemoryInfo {
+			get { return this; }
+		}		
+
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get { return this; }
+		}
+
+		public ITargetAccess TargetAccess {
+			get { return this; }
+		}
+
+		public void Kill ()
+		{
+			// Do nothing.
+		}
+
+		//
+		// ITargetAccess
 		//
 
 		protected abstract TargetAddress GetCurrentFrame ();
 
-		TargetAddress IInferior.CurrentFrame {
+		public TargetAddress CurrentFrameAddress {
 			get {
 				return GetCurrentFrame ();
 			}
@@ -468,142 +505,6 @@ namespace Mono.Debugger.Architecture
 		public TargetAddress GetReturnAddress ()
 		{
 			throw new NotImplementedException ();
-		}
-
-		//
-		// IInferior - everything below throws a CannotExecuteCoreFileException.
-		//
-
-		public SingleSteppingEngine SingleSteppingEngine {
-			get {
-				throw new CannotExecuteCoreFileException ();
-			}
-
-			set {
-				throw new CannotExecuteCoreFileException ();
-			}
-		}
-
-		public int PID {
-			get {
-				throw new CannotExecuteCoreFileException ();
-			}
-		}
-
-		public bool CurrentInstructionIsBreakpoint {
-			get {
-				throw new CannotExecuteCoreFileException ();
-			}
-		}
-
-		public void Continue ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void Shutdown ()
-		{
-			// Do nothing.
-		}
-
-		public void Kill ()
-		{
-			// Do nothing.
-		}
-
-		public void Run ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void Attach (int pid)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public ChildEvent Wait ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void Step ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void SetSignal (int signal, bool send_it)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void Stop ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public long CallMethod (TargetAddress method, long method_argument)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public long CallStringMethod (TargetAddress method, long method_argument,
-					      string string_argument)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public TargetAddress CallInvokeMethod (TargetAddress invoke_method,
-						       TargetAddress method_argument,
-						       TargetAddress object_argument,
-						       TargetAddress[] param_objects,
-						       out TargetAddress exc_object)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public int InsertBreakpoint (TargetAddress address)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public int InsertHardwareBreakpoint (TargetAddress address, int index)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void RemoveBreakpoint (int breakpoint)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void EnableBreakpoint (int breakpoint)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void DisableBreakpoint (int breakpoint)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void EnableAllBreakpoints ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void DisableAllBreakpoints ()
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void SetRegister (int register, long value)
-		{
-			throw new CannotExecuteCoreFileException ();
-		}
-
-		public void SetRegisters (int[] registers, long[] values)
-		{
-			throw new CannotExecuteCoreFileException ();
 		}
 
 		//

@@ -1696,8 +1696,6 @@ namespace Mono.Debugger.Languages.CSharp
 			IInferior inferior = process.Inferior;
 			IArchitecture arch = process.Architecture;
 
-			ThreadManager thread_manager = process.DebuggerBackend.ThreadManager;
-
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
@@ -1716,7 +1714,7 @@ namespace Mono.Debugger.Languages.CSharp
 			ITargetMemoryInfo meminfo = process.TargetMemoryInfo;
 
 			TargetAddress method;
-			switch (inferior.TargetAddressSize) {
+			switch (meminfo.TargetAddressSize) {
 			case 4:
 				method = new TargetAddress (meminfo.GlobalAddressDomain, (int) result);
 				break;
@@ -1735,17 +1733,16 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public bool BreakpointHit (IProcess iprocess, TargetAddress address)
 		{
-			Process process = (Process) iprocess;
-			IInferior inferior = process.Inferior;
-			IArchitecture arch = process.Architecture;
+			ITargetMemoryAccess memory = iprocess.TargetMemoryAccess;
+			IArchitecture arch = iprocess.Architecture;
 
-			if ((info == null) || (inferior == null))
+			if ((info == null) || (memory == null))
 				return true;
 
 			try {
-				TargetAddress trampoline = inferior.ReadAddress (
+				TargetAddress trampoline = memory.ReadAddress (
 					info.breakpoint_trampoline_code);
-				if (trampoline.IsNull || (inferior.CurrentFrame != trampoline + 1))
+				if (trampoline.IsNull || (iprocess.CurrentFrameAddress != trampoline + 1))
 					return true;
 
 				TargetAddress method, code, retaddr;
