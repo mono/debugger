@@ -61,7 +61,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public void SetCompletionMatches (string[] matches) {
-			mono_debugger_readline_set_completion_matches (matches, matches.Length);
+			mono_debugger_readline_set_completion_matches (matches, matches == null ? 0 : matches.Length);
 		}
 
 		public void EnableCompletion (CompletionDelegate handler)
