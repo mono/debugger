@@ -25,8 +25,19 @@ assdir = $(libdir)
 ass_SCRIPTS = Mono.Debugger.dll
 
 MDB_SRCLIST = \
-	@top_srcdir@/frontends/command-line/*.cs	\
-	@top_srcdir@/frontends/scripting/*.cs
+	@top_srcdir@/frontends/command-line/DebuggerTextWriter.cs	\
+	@top_srcdir@/frontends/command-line/GnuReadLine.cs		\
+	@top_srcdir@/frontends/command-line/Main.cs			\
+	@top_srcdir@/frontends/command-line/CL.cs			\
+	@top_srcdir@/frontends/command-line/ExpressionParser.cs		\
+	@top_srcdir@/frontends/command-line/Tokenizer.cs		\
+	@top_srcdir@/frontends/scripting/Command.cs			\
+	@top_srcdir@/frontends/scripting/Expression.cs			\
+	@top_srcdir@/frontends/scripting/Interpreter.cs			\
+	@top_srcdir@/frontends/scripting/MyTextReader.cs		\
+	@top_srcdir@/frontends/scripting/ScriptingContext.cs		\
+	@top_srcdir@/frontends/scripting/Session.cs			\
+	@top_srcdir@/frontends/scripting/Style.cs
 
 LIBRARY_SRCLIST = \
 	@top_srcdir@/interfaces/*.cs			\
