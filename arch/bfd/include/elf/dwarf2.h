@@ -10,22 +10,22 @@
    Derived from the DWARF 1 implementation written by Ron Guilmette
    (rfg@netcom.com), November 1990.
 
-This file is part of GCC.
+   This file is part of GCC.
 
-GCC is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free
-Software Foundation; either version 2, or (at your option) any later
-version.
+   GCC is free software; you can redistribute it and/or modify it under
+   the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 2, or (at your option) any later
+   version.
 
-GCC is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-for more details.
+   GCC is distributed in the hope that it will be useful, but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+   License for more details.
 
-You should have received a copy of the GNU General Public License
-along with GCC; see the file COPYING.  If not, write to the Free
-Software Foundation, 59 Temple Place - Suite 330, Boston, MA
-02111-1307, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with GCC; see the file COPYING.  If not, write to the Free
+   Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+   02111-1307, USA.  */
 
 /* This file is derived from the DWARF specification (a public document)
    Revision 2.0.0 (July 27, 1993) developed by the UNIX International
@@ -87,7 +87,7 @@ typedef struct
 }
 DWARF2_Internal_PubNames;
 
-/* Strcuture found in .debug_info section.  */
+/* Structure found in .debug_info section.  */
 typedef struct
 {
   unsigned char  cu_length        [4];
@@ -194,7 +194,11 @@ enum dwarf_tag
     DW_TAG_function_template = 0x4102,	/* For C++.  */
     DW_TAG_class_template = 0x4103,	/* For C++.  */
     DW_TAG_GNU_BINCL = 0x4104,
-    DW_TAG_GNU_EINCL = 0x4105
+    DW_TAG_GNU_EINCL = 0x4105,
+    /* Extensions for UPC.  See: http://upc.gwu.edu/~upc.  */
+    DW_TAG_upc_shared_type = 0x8765,
+    DW_TAG_upc_strict_type = 0x8766,
+    DW_TAG_upc_relaxed_type = 0x8767
   };
 
 #define DW_TAG_lo_user	0x4080
@@ -309,7 +313,7 @@ enum dwarf_attribute
     DW_AT_call_column   = 0x57,
     DW_AT_call_file     = 0x58,
     DW_AT_call_line     = 0x59,
-    /* SGI/MIPS Extensions.  */
+    /* SGI/MIPS extensions.  */
     DW_AT_MIPS_fde = 0x2001,
     DW_AT_MIPS_loop_begin = 0x2002,
     DW_AT_MIPS_tail_loop_begin = 0x2003,
@@ -329,8 +333,10 @@ enum dwarf_attribute
     DW_AT_body_begin = 0x2105,
     DW_AT_body_end   = 0x2106,
     DW_AT_GNU_vector = 0x2107,
-    /* VMS Extensions.  */
-    DW_AT_VMS_rtnbeg_pd_address = 0x2201
+    /* VMS extensions.  */
+    DW_AT_VMS_rtnbeg_pd_address = 0x2201,
+    /* UPC extension.  */
+    DW_AT_upc_threads_scaled = 0x3210
   };
 
 #define DW_AT_lo_user	0x2000	/* Implementation-defined range start.  */
@@ -488,10 +494,12 @@ enum dwarf_location_atom
     DW_OP_push_object_address = 0x97,
     DW_OP_call2 = 0x98,
     DW_OP_call4 = 0x99,
-    DW_OP_calli = 0x9a
+    DW_OP_call_ref = 0x9a,
+    /* GNU extensions.  */
+    DW_OP_GNU_push_tls_address = 0xe0
   };
 
-#define DW_OP_lo_user	0x80	/* Implementation-defined range start.  */
+#define DW_OP_lo_user	0xe0	/* Implementation-defined range start.  */
 #define DW_OP_hi_user	0xff	/* Implementation-defined range end.  */
 
 /* Type encodings.  */
@@ -676,9 +684,10 @@ enum dwarf_source_language
     DW_LANG_Ada95 = 0x000d,
     DW_LANG_Fortran95 = 0x000e,
     /* MIPS.  */
-    DW_LANG_Mips_Assembler = 0x8001
+    DW_LANG_Mips_Assembler = 0x8001,
+    /* UPC.  */
+    DW_LANG_Upc = 0x8765
   };
-
 
 #define DW_LANG_lo_user 0x8000	/* Implementation-defined range start.  */
 #define DW_LANG_hi_user 0xffff	/* Implementation-defined range start.  */
