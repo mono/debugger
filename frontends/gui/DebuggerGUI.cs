@@ -20,6 +20,8 @@ using Mono.Debugger.GUI;
 
 namespace Mono.Debugger.GUI
 {
+	public delegate void ProgramLoadedHandler (object sender, Process process);
+
 	public class DebuggerGUI
 	{
 		static void Usage ()
@@ -144,6 +146,14 @@ namespace Mono.Debugger.GUI
 
 		internal Glade.XML GXML {
 			get { return gxml; }
+		}
+
+		public event ProgramLoadedHandler ProgramLoadedEvent;
+
+		protected void OnProgramLoadedEvent (Process process)
+		{
+			if (ProgramLoadedEvent != null)
+				ProgramLoadedEvent (this, process);
 		}
 
 		//
@@ -300,12 +310,6 @@ namespace Mono.Debugger.GUI
 
 			main_window.Title = "Debugging: " + program +
 				(args.Length > 0 ? (" " + String.Join (" ", args)) : "");
-
-#if FALSE
-			variable_display.SetProcess (process);
-			hex_editor.SetProcess (process);
-			breakpoint_manager.SetProcess (process);
-#endif
 		}
 
 		void main_process_started (ThreadManager manager, Process process)
@@ -322,14 +326,7 @@ namespace Mono.Debugger.GUI
 			process.DebuggerOutput += new TargetOutputHandler (DebuggerOutput);
 			process.DebuggerError += new DebuggerErrorHandler (DebuggerError);
 
-			current_insn.SetProcess (process);
-			register_display.SetProcess (process);
-			source_status.SetProcess (process);
-			backtrace_view.SetProcess (process);
-			source_manager.SetProcess (process);
-			module_display.SetProcess (process);
-			memory_maps_display.SetProcess (process);
-			process_manager.SetProcess (process);
+			OnProgramLoadedEvent (process);
 
 			source_manager.StateChangedEvent += new StateChangedHandler (UpdateGUIState);
 

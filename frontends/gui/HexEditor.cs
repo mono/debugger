@@ -118,7 +118,7 @@ namespace Mono.Debugger.GUI
 			force_writable_button.Toggled += new EventHandler (force_writable_toggled);
 		}
 
-		public override void SetProcess (Process process)
+		protected override void SetProcess (Process process)
 		{
 			base.SetProcess (process);
 

@@ -45,11 +45,11 @@ namespace Mono.Debugger.GUI {
 			notebook.SwitchPage += new SwitchPageHandler (switch_page);
 		}
 
-		public override void SetProcess (Process process)
+		protected override void SetProcess (Process process)
 		{
-			disassembler_view.SetProcess (process);
-
 			base.SetProcess (process);
+
+			OnProgramLoadedEvent (process);
 		}
 
 		public event MethodInvalidHandler MethodInvalidEvent;
@@ -58,6 +58,13 @@ namespace Mono.Debugger.GUI {
 		public event StackFrameInvalidHandler FramesInvalidEvent;
 		public event TargetExitedHandler TargetExitedEvent;
 		public event StateChangedHandler StateChangedEvent;
+		public event ProgramLoadedHandler ProgramLoadedEvent;
+
+		protected void OnProgramLoadedEvent (Process process)
+		{
+			if (ProgramLoadedEvent != null)
+				ProgramLoadedEvent (this, process);
+		}
 
 		SourceList CreateSourceView (string filename, string contents)
 		{
@@ -199,7 +206,6 @@ namespace Mono.Debugger.GUI {
 				return disassembler_view;
 			
 			view = CreateSourceView (filename, contents);
-			view.SetProcess (process);
 					
 			sources [filename] = view;
 			notebook.InsertPage (view.ToplevelWidget, view.TabWidget, -1);

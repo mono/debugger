@@ -54,7 +54,7 @@ namespace Mono.Debugger.GUI
 			container.ShowAll ();
 		}
 
-		public override void SetProcess (Process process)
+		protected override void SetProcess (Process process)
 		{
 			base.SetProcess (process);
 

@@ -58,7 +58,7 @@ namespace Mono.Debugger.GUI
 			notify_id = thread_notify.RegisterListener (new ReadyEventHandler (reload_event));
 		}
 
-		public override void SetProcess (Process process)
+		protected override void SetProcess (Process process)
 		{
 			base.SetProcess (process);
 

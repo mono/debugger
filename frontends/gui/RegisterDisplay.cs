@@ -51,7 +51,7 @@ namespace Mono.Debugger.GUI
 			color_stable.blue = 0;
 		}
 
-		public override void SetProcess (Process process)
+		protected override void SetProcess (Process process)
 		{
 			base.SetProcess (process);
 

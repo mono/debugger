@@ -1,5 +1,13 @@
 2003-02-01  Martin Baulig  <martin@ximian.com>
 
+	* frontends/gui/DebuggerGUI.cs (ProgramLoadedEvent): New public
+	event.
+
+	* frontends/gui/DebuggerWidget.cs (SetProcess): Made this
+	protected; we hook to the DebuggerGUI's ProgramLoadedEvent.
+
+2003-02-01  Martin Baulig  <martin@ximian.com>
+
 	* frontends/gui/DebuggerWidget.cs: The `backend' is now set in
 	SetProcess() and must not be used before SetProcess() has been called.
 

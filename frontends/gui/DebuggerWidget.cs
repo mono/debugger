@@ -43,6 +43,8 @@ namespace Mono.Debugger.GUI
 				container.Mapped += new EventHandler (mapped);
 				container.Unmapped += new EventHandler (unmapped);
 			} catch {}
+
+			gui.ProgramLoadedEvent += new ProgramLoadedHandler (program_loaded);
 		}
 
 		public DebuggerBackend DebuggerBackend {
@@ -53,7 +55,12 @@ namespace Mono.Debugger.GUI
 			get { return process; }
 		}
 
-		public virtual void SetProcess (Process process)
+		void program_loaded (object sender, Process process)
+		{
+			SetProcess (process);
+		}
+
+		protected virtual void SetProcess (Process process)
 		{
 			this.process = process;
 			this.backend = process.DebuggerBackend;
