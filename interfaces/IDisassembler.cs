@@ -14,6 +14,14 @@ namespace Mono.Debugger
 		// </summary>
 		int GetInstructionSize (ITargetLocation location);
 
+		// <summary>
+		//   Disassemble one method.
+		// </summary>
+		IMethodSource DisassembleMethod (IMethod method);
+
+		// <summary>
+		//   The symbol table the disassembler uses to display symbols.
+		// </summary>
 		ISymbolTable SymbolTable {
 			get; set;
 		}

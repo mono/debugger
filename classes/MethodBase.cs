@@ -27,20 +27,16 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class MethodBase : IMethodSource, IMethod, IComparable
+	public abstract class MethodBase : IMethod, IMethodSource, ISymbolLookup, IComparable
 	{
 		ArrayList addresses;
 		WeakReference weak_source;
+		int start_row, end_row;
 		long start, end;
 		bool is_loaded;
-		int start_row, end_row;
+		bool has_source;
 		string image_file;
 		string name;
-
-		protected MethodBase (IMethod method)
-			: this (method.Name, method.ImageFile,
-				method.StartAddress.Address, method.EndAddress.Address)
-		{ }
 
 		protected MethodBase (string name, string image_file, long start, long end)
 			: this (name, image_file)
@@ -51,9 +47,26 @@ namespace Mono.Debugger
 		}
 
 		protected MethodBase (string name, string image_file)
+			: this (name, image_file, true)
+		{ }
+
+		protected MethodBase (string name, string image_file, bool has_source)
 		{
 			this.name = name;
 			this.image_file = image_file;
+			this.has_source = has_source;
+		}
+
+		protected MethodBase (IMethod method)
+			: this (method.Name, method.ImageFile,
+				method.StartAddress.Address, method.EndAddress.Address)
+		{ }
+
+		protected void SetAddresses (long start, long end)
+		{
+			this.start = start;
+			this.end = end;
+			this.is_loaded = true;
 		}
 
 		protected ISourceBuffer ReadSource ()
@@ -79,12 +92,6 @@ namespace Mono.Debugger
 		protected abstract ISourceBuffer ReadSource (out int start_row, out int end_row,
 							     out ArrayList addresses);
 
-		protected void SetAddresses (long start, long end)
-		{
-			this.start = start;
-			this.end = end;
-			this.is_loaded = true;
-		}
 
 		//
 		// IMethod
@@ -106,11 +113,48 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public bool IsLoaded {
+			get {
+				return is_loaded;
+			}
+		}
+
+		public ITargetLocation StartAddress {
+			get {
+				if (!is_loaded)
+					throw new InvalidOperationException ();
+
+				return new TargetLocation (start);
+			}
+		}
+
+		public ITargetLocation EndAddress {
+			get {
+				if (!is_loaded)
+					throw new InvalidOperationException ();
+
+				return new TargetLocation (end);
+			}
+		}
+
+		public bool HasSource {
+			get {
+				return has_source;
+			}
+		}
+
 		public IMethodSource Source {
 			get {
+				if (!HasSource)
+					throw new InvalidOperationException ();
+
 				return this;
 			}
 		}
+
+		//
+		// IMethodSource
+		//
 
 		public ISourceBuffer SourceBuffer {
 			get {
@@ -130,7 +174,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool IsInSameMethod (ITargetLocation target)
+		bool IsInSameMethod (ITargetLocation target)
 		{
 			if ((target.Address < start) || (target.Address >= end))
 				return false;
@@ -167,28 +211,19 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public bool IsLoaded {
-			get {
-				return is_loaded;
-			}
-		}
+		//
+		// ISourceLookup
+		//
 
-		public ITargetLocation StartAddress {
-			get {
-				if (!is_loaded)
-					throw new InvalidOperationException ();
+		IMethod ISymbolLookup.Lookup (ITargetLocation target)
+		{
+			if (!is_loaded)
+				return null;
 
-				return new TargetLocation (start);
-			}
-		}
+			if ((target.Address < start) || (target.Address >= end))
+				return null;
 
-		public ITargetLocation EndAddress {
-			get {
-				if (!is_loaded)
-					throw new InvalidOperationException ();
-
-				return new TargetLocation (end);
-			}
+			return this;
 		}
 
 		public int CompareTo (object obj)

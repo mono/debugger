@@ -64,6 +64,7 @@ namespace Mono.Debugger.Backends
 		BfdDisassembler bfd_disassembler;
 		IArchitecture arch;
 		ISymbolTableCollection native_symtabs;
+		ISourceFileFactory source_factory;
 
 		int child_pid;
 		bool native;
@@ -78,14 +79,6 @@ namespace Mono.Debugger.Backends
 			get {
 				check_disposed ();
 				return child_pid;
-			}
-		}
-
-		MonoDebuggerInfo mono_debugger_info = null;
-		public MonoDebuggerInfo MonoDebuggerInfo {
-			get {
-				check_disposed ();
-				return mono_debugger_info;
 			}
 		}
 
@@ -221,17 +214,19 @@ namespace Mono.Debugger.Backends
 			temp_breakpoint_id = insert_breakpoint (address);
 		}
 
-		public Inferior (string working_directory, string[] argv, string[] envp, bool native)
+		public Inferior (string working_directory, string[] argv, string[] envp, bool native,
+				 ISourceFileFactory factory)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
 			this.envp = envp;
 			this.native = native;
+			this.source_factory = factory;
 
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = new Bfd (argv [0]);
+			bfd = new Bfd (argv [0], source_factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -252,13 +247,14 @@ namespace Mono.Debugger.Backends
 			setup_inferior ();
 		}
 
-		public Inferior (int pid, string[] envp)
+		public Inferior (int pid, string[] envp, ISourceFileFactory factory)
 		{
 			this.envp = envp;
+			this.source_factory = factory;
 
 			IntPtr error;
 
-			bfd = new Bfd (argv [0]);
+			bfd = new Bfd (argv [0], factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -306,27 +302,9 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void read_mono_debugger_info ()
+		public ITargetLocation SimpleLookup (string name)
 		{
-			if (native)
-				return;
-
-			ITargetLocation symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
-			if (symbol_info == null)
-				return;
-
-			ITargetMemoryReader header = ReadMemory (symbol_info, 16);
-			if (header.ReadLongInteger () != OffsetTable.Magic)
-				throw new SymbolTableException ();
-			if (header.ReadInteger () != OffsetTable.Version)
-				throw new SymbolTableException ();
-
-			int size = (int) header.ReadInteger ();
-
-			ITargetMemoryReader table = ReadMemory (symbol_info, size);
-			mono_debugger_info = new MonoDebuggerInfo (table);
-
-			arch.GenericTrampolineCode = ReadAddress (mono_debugger_info.trampoline_code);
+			return bfd [name];
 		}
 
 		bool start_native ()
@@ -384,9 +362,6 @@ namespace Mono.Debugger.Backends
 						Continue ();
 						break;
 					}
-				} else if (!debugger_info_read) {
-					debugger_info_read = true;
-					read_mono_debugger_info ();
 				} else if (current_step_frame != null) {
 					ITargetLocation frame = CurrentFrame;
 
@@ -738,6 +713,7 @@ namespace Mono.Debugger.Backends
 			int insn_size;
 			ITargetLocation call = arch.GetCallTarget (CurrentFrame, out insn_size);
 			if (!native && !call.IsNull) {
+#if FALSE
 				ITargetLocation trampoline = arch.GetTrampoline (call);
 
 				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
@@ -769,9 +745,10 @@ namespace Mono.Debugger.Backends
 					Continue ();
 					return;
 				}
+#endif
 			} else if (!call.IsNull) {
-				IMethod method;
-				if (!native_symtabs.Lookup (call, out method)) {
+				IMethod method = native_symtabs.Lookup (call);
+				if (method == null) {
 					Next ();
 					return;
 				}

@@ -4,27 +4,23 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public class NativeMethod : MethodBase, IMethodSource, IMethod
+	public class NativeMethod : MethodBase
 	{
 		IDisassembler disassembler;
+		IMethod method;
 
 		public NativeMethod (IDisassembler dis, IMethod method)
 			: base (method)
 		{
 			this.disassembler = dis;
+			this.method = method;
 		}
 
-		public NativeMethod (IDisassembler dis, string name, string image_file,
-				     ITargetLocation start, ITargetLocation end)
-			: this (name, image_file, start, end)
-		{
-			this.disassembler = dis;
+		public override object MethodHandle {
+			get {
+				return this;
+			}
 		}
-
-		public NativeMethod (string name, string image_file,
-				     ITargetLocation start, ITargetLocation end)
-			: base (name, image_file, start.Address, end.Address)
-		{ }
 
 		protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
 							     out ArrayList addresses)
@@ -35,23 +31,21 @@ namespace Mono.Debugger
 			if (disassembler == null)
 				return null;
 
-			Console.WriteLine ("READ SOURCE: {0}", this);
-
-			ITargetLocation current = StartAddress;
+			ITargetLocation current = method.StartAddress;
 
 			addresses = new ArrayList ();
 
 			StringBuilder sb = new StringBuilder ();
 
-			long end_address = EndAddress.Address;
+			long end_address = method.EndAddress.Address;
 
 			while (current.Address < end_address) {
 				long address = current.Address;
 
-				IMethod method;
-				if ((disassembler.SymbolTable != null) &&
-				    disassembler.SymbolTable.Lookup (current, out method) &&
-				    (method.StartAddress.Address == current.Address)) {
+				IMethod method = null;
+				if (disassembler.SymbolTable != null)
+					method = disassembler.SymbolTable.Lookup (current);
+				if ((method != null) && (method.StartAddress.Address == current.Address)) {
 					if (end_row > 0) {
 						sb.Append ("\n");
 						end_row++;
@@ -68,17 +62,7 @@ namespace Mono.Debugger
 				sb.Append (line);
 			}
 
-			return new SourceBuffer (Name, sb.ToString ());
-		}
-
-		//
-		// IMethod
-		//
-
-		public override object MethodHandle {
-			get {
-				return this;
-			}
+			return new SourceBuffer (method.Name, sb.ToString ());
 		}
 	}
 }

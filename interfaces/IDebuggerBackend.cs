@@ -23,6 +23,13 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   The ISourceFileFactory which is used to find source files.
+		// </summary>
+		ISourceFileFactory SourceFileFactory {
+			get;
+		}	       
+
+		// <summary>
 		//   Get the state of the target we're debugging.
 		// </summary>
 		TargetState State {
@@ -75,13 +82,5 @@ namespace Mono.Debugger
 		//   stack frame.
 		// </summary>
 		event StackFramesInvalidHandler FramesInvalidEvent;
-
-		// <summary>
-		//   A source file factory is responsible for finding source files and creating
-		//   ISourceFile instances for them.
-		// </summary>
-		ISourceFileFactory SourceFileFactory {
-			get; set;
-		}
 	}
 }

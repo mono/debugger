@@ -8,7 +8,7 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Architecture
 {
-	public class DwarfReader : ISymbolTable, IDisposable
+	public class DwarfReader : IDisposable
 	{
 		protected Bfd bfd;
 		protected string filename;
@@ -21,8 +21,9 @@ namespace Mono.Debugger.Architecture
 		WeakReference weak_aranges_reader;
 		WeakReference weak_str_reader;
 
-		ArrayList ranges;
 		Hashtable compile_unit_hash;
+		ISourceFileFactory factory;
+		ISymbolTable symtab;
 
 		protected class DwarfException : Exception
 		{
@@ -35,10 +36,11 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (Bfd bfd)
+		public DwarfReader (Bfd bfd, ISourceFileFactory factory)
 		{
 			this.bfd = bfd;
 			this.filename = bfd.FileName;
+			this.factory = factory;
 
 			DwarfBinaryReader reader = DebugInfoReader;
 
@@ -60,35 +62,49 @@ namespace Mono.Debugger.Architecture
 
 			Console.WriteLine ("Reading aranges table ....");
 
-			read_aranges ();
+			symtab = new DwarfSymbolTable (this, read_aranges ());
 
 			Console.WriteLine ("Done reading aranges table");
+		}
+
+		protected ISymbolLookup get_symtab_at_offset (long offset)
+		{
+			CompileUnitBlock block = (CompileUnitBlock) compile_unit_hash [offset];
+			if (block != null)
+				return block.symtabs;
+
+			block = new CompileUnitBlock (this, offset);
+			compile_unit_hash.Add (offset, block);
+			return block.symtabs;
 		}
 
 		protected class CompileUnitBlock
 		{
 			public readonly DwarfReader dwarf;
 			public readonly long offset;
+			public readonly SymbolTableCollection symtabs;
 
 			ArrayList compile_units;
 
-			public bool Lookup (ITargetLocation target, out IMethod method)
+			public IMethod Lookup (ITargetLocation target)
 			{
-				method = null;
 				foreach (CompilationUnit comp_unit in compile_units) {
 					ISymbolTable symtab = comp_unit.SymbolTable;
 
-					if (!symtab.Lookup (target, out method))
-						continue;
-					return true;
+					IMethod method = symtab.Lookup (target);
+					if (method != null)
+						return method;
 				}
-				return false;
+
+				return null;
 			}
 
 			public CompileUnitBlock (DwarfReader dwarf, long start)
 			{
 				this.dwarf = dwarf;
 				this.offset = start;
+
+				symtabs = new SymbolTableCollection ();
 
 				DwarfBinaryReader reader = dwarf.DebugInfoReader;
 				reader.Position = start;
@@ -100,7 +116,7 @@ namespace Mono.Debugger.Architecture
 						"Wrong DWARF version: {0}", version));
 
 				reader.ReadOffset ();
-				address_size = reader.ReadByte ();
+				int address_size = reader.ReadByte ();
 				reader.Position = start;
 
 				if ((address_size != 4) && (address_size != 8))
@@ -112,84 +128,85 @@ namespace Mono.Debugger.Architecture
 				while (reader.Position < stop) {
 					CompilationUnit comp_unit = new CompilationUnit (dwarf, reader);
 					compile_units.Add (comp_unit);
+					symtabs.AddSymbolTable (comp_unit.SymbolTable);
 				}
 			}
 		}
 
 		public ISymbolTable SymbolTable {
 			get {
-				return this;
+				return symtab;
 			}
 		}
 
-		bool ISymbolContainer.IsContinuous {
+		public ISourceFileFactory SourceFactory {
 			get {
-				return false;
+				return factory;
 			}
 		}
 
-		ITargetLocation ISymbolContainer.StartAddress {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
-		ITargetLocation ISymbolContainer.EndAddress {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
-		bool ISymbolTable.Lookup (ITargetLocation target, out IMethod method)
+		protected class DwarfSymbolTable : SymbolTable
 		{
-			method = null;
-			long address = target.Address;
-			foreach (RangeEntry range in ranges) {
-				if ((address < range.StartAddress) || (address >= range.EndAddress))
-					continue;
+			DwarfReader dwarf;
+			ArrayList ranges;
 
-				CompileUnitBlock block = (CompileUnitBlock) compile_unit_hash [range.Offset];
-				if (block == null) {
-					block = new CompileUnitBlock (this, range.Offset);
-					compile_unit_hash.Add (range.Offset, block);
-				}
-
-				return block.Lookup (target, out method);
-			}
-
-			return false;
-		}
-
-		bool ISymbolTable.Lookup (ITargetLocation target, out ISourceLocation source,
-					  out IMethod method)
-		{
-			source = null;
-			if (!ISymbolTable.Lookup (target, out method))
-				return false;
-
-			source = method.Lookup (target);
-			return true;
-		}
-
-		protected struct RangeEntry
-		{
-			public readonly long Offset;
-			public readonly long StartAddress;
-			public readonly long EndAddress;
-
-			public RangeEntry (long offset, long address, long size)
+			public DwarfSymbolTable (DwarfReader dwarf, ArrayList ranges)
 			{
-				this.Offset = offset;
-				this.StartAddress = address;
-				this.EndAddress = address + size;
+				this.dwarf = dwarf;
+				this.ranges = ranges;
+				this.ranges.Sort ();
+			}
+
+			public override bool HasRanges {
+				get {
+					return true;
+				}
+			}
+
+			public override ISymbolRange[] SymbolRanges {
+				get {
+					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
+					ranges.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+
+			protected override bool HasMethods {
+				get {
+					return false;
+				}
+			}
+
+			protected override ArrayList GetMethods ()
+			{
+				throw new InvalidOperationException ();
 			}
 		}
 
-		void read_aranges ()
+		private class RangeEntry : SymbolRangeEntry
+		{
+			public readonly long FileOffset;
+
+			DwarfReader dwarf;
+
+			public RangeEntry (DwarfReader dwarf, long offset, long address, long size)
+				: base (address, address + size)
+			{
+				this.dwarf = dwarf;
+				this.FileOffset = offset;
+			}
+
+			protected override ISymbolLookup GetSymbolLookup ()
+			{
+				return dwarf.get_symtab_at_offset (FileOffset);
+			}
+		}
+
+		ArrayList read_aranges ()
 		{
 			DwarfBinaryReader reader = DebugArangesReader;
 
-			ranges = new ArrayList ();
+			ArrayList ranges = new ArrayList ();
 
 			while (!reader.IsEof) {
 				long start = reader.Position;
@@ -222,9 +239,11 @@ namespace Mono.Debugger.Architecture
 					if ((address == 0) && (size == 0))
 						break;
 
-					ranges.Add (new RangeEntry (offset, address, size));
+					ranges.Add (new RangeEntry (this, offset, address, size));
 				}
 			}
+
+			return ranges;
 		}
 
 		DwarfBinaryReader get_reader (string section, ref WeakReference weak)
@@ -586,20 +605,20 @@ namespace Mono.Debugger.Architecture
 
 		protected class DwarfNativeMethod : MethodBase
 		{
-			DieCompileUnit comp_unit_die;
+			ISourceFileFactory factory;
 			LineNumberEngine engine;
 			DieSubprogram subprog;
-			SourceFileFactory factory;
 
 			public DwarfNativeMethod (DieSubprogram subprog, LineNumberEngine engine)
-				: base (subprog.Name, subprog.comp_unit.DieCompileUnit.ImageFile,
-					subprog.StartAddress.Address, subprog.EndAddress.Address)
+				: base (subprog.Name, subprog.ImageFile)
 			{
+				this.factory = subprog.dwarf.SourceFactory;
 				this.subprog = subprog;
 				this.engine = engine;
-				this.comp_unit_die = subprog.comp_unit.DieCompileUnit;
 
-				factory = new SourceFileFactory ();
+				if (subprog.IsContinuous)
+					SetAddresses (subprog.StartAddress.Address,
+						      subprog.EndAddress.Address);
 			}
 
 			public override object MethodHandle {
@@ -617,29 +636,41 @@ namespace Mono.Debugger.Architecture
 				if (engine == null)
 					return null;
 
-				Console.WriteLine ("READ SOURCE: {0:x} {1:x} {2}",
-						   StartAddress, EndAddress, engine);
-
 				string file = engine.GetSource (subprog, out start_row, out end_row,
 								out addresses);
 				if (file == null)
 					return null;
 
-				Console.WriteLine ("FILE: {0} {1} {2} {3}", file, start_row, end_row,
-						   addresses.Count);
-
 				return factory.FindFile (file);
 			}
 		}
 
-		protected class DwarfSymbolTable : SymbolTable
+		protected class DwarfCompileUnitSymbolTable : SymbolTable
 		{
 			DieCompileUnit comp_unit_die;
 
-			public DwarfSymbolTable (DieCompileUnit comp_unit_die)
+			public DwarfCompileUnitSymbolTable (DieCompileUnit comp_unit_die)
 				: base (comp_unit_die)
 			{
 				this.comp_unit_die = comp_unit_die;
+			}
+
+			public override bool HasRanges {
+				get {
+					return false;
+				}
+			}
+
+			public override ISymbolRange[] SymbolRanges {
+				get {
+					throw new InvalidOperationException ();
+				}
+			}
+
+			protected override bool HasMethods {
+				get {
+					return true;
+				}
 			}
 
 			protected override ArrayList GetMethods ()
@@ -799,7 +830,7 @@ namespace Mono.Debugger.Architecture
 					this.st_file = 0;
 					this.st_line = 1;
 					this.st_column = 0;
-					this.is_stmt = default_is_stmt;
+					this.is_stmt = this.engine.default_is_stmt;
 					this.basic_block = false;
 					this.end_sequence = false;
 					this.prologue_end = false;
@@ -821,15 +852,15 @@ namespace Mono.Debugger.Architecture
 					this.st_file = stm.st_file;
 					this.st_line = stm.st_line;
 					this.st_column = stm.st_column;
-					this.is_stmt = default_is_stmt;
+					this.is_stmt = this.engine.default_is_stmt;
 					this.basic_block = stm.basic_block;
 					this.end_sequence = stm.end_sequence;
 					this.prologue_end = stm.prologue_end;
 					this.epilogue_begin = stm.epilogue_begin;
 
-					debug ("CLONE: {0} {1} {2} - {3}",
-					       stm.start_line, stm.end_line, stm.st_file,
-					       engine.source_files [stm.st_file]);
+					engine.debug ("CLONE: {0} {1} {2} - {3}",
+						      stm.start_line, stm.end_line, stm.st_file,
+						      engine.source_files [stm.st_file]);
 
 					this.start_line = stm.start_line;
 					this.end_line = stm.end_line;
@@ -876,7 +907,7 @@ namespace Mono.Debugger.Architecture
 
 				void do_standard_opcode (byte opcode)
 				{
-					debug ("STANDARD OPCODE: {0:x}", opcode);
+					engine.debug ("STANDARD OPCODE: {0:x}", opcode);
 
 					switch (opcode) {
 					case StandardOpcode.copy:
@@ -912,7 +943,7 @@ namespace Mono.Debugger.Architecture
 						break;
 
 					default:
-						error (String.Format (
+						engine.error (String.Format (
 							"Unknown standard opcode {0:x} in line number engine",
 							opcode));
 						break;
@@ -925,12 +956,12 @@ namespace Mono.Debugger.Architecture
 					long end_pos = reader.Position + size;
 					byte opcode = reader.ReadByte ();
 
-					debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
+					engine.debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
 
 					switch (opcode) {
 					case ExtendedOpcode.set_address:
 						st_address = reader.ReadAddress ();
-						debug ("SETTING ADDRESS TO {0:x}", st_address);
+						engine.debug ("SETTING ADDRESS TO {0:x}", st_address);
 						break;
 
 					case ExtendedOpcode.end_sequence:
@@ -938,7 +969,7 @@ namespace Mono.Debugger.Architecture
 						break;
 
 					default:
-						warning (String.Format (
+						engine.warning (String.Format (
 							"Unknown extended opcode {0:x} in line number engine",
 							opcode));
 						break;
@@ -961,7 +992,7 @@ namespace Mono.Debugger.Architecture
 					end_sequence = false;
 					while (!end_sequence) {
 						byte opcode = reader.ReadByte ();
-						debug ("OPCODE: {0:x}", opcode);
+						engine.debug ("OPCODE: {0:x}", opcode);
 
 						if (opcode == 0)
 							do_extended_opcode ();
@@ -975,10 +1006,11 @@ namespace Mono.Debugger.Architecture
 							int line_inc = engine.line_base +
 								(opcode % engine.line_range);
 
-							debug ("INC: {0:x} {1:x} {2:x} {3:x} - {4} {5}",
-							       opcode, engine.opcode_base, addr_inc, line_inc,
-							       opcode % engine.line_range,
-							       opcode / engine.line_range);
+							engine.debug (
+								"INC: {0:x} {1:x} {2:x} {3:x} - {4} {5}",
+								opcode, engine.opcode_base, addr_inc, line_inc,
+								opcode % engine.line_range,
+								opcode / engine.line_range);
 
 							st_line += line_inc;
 							st_address += addr_inc;
@@ -1706,6 +1738,12 @@ namespace Mono.Debugger.Architecture
 				: base (reader, comp_unit, abbrev)
 			{ }
 
+			public string ImageFile {
+				get {
+					return dwarf.filename;
+				}
+			}
+
 			public string Name {
 				get {
 					return name != null ? name : "<unknown>";
@@ -1755,7 +1793,7 @@ namespace Mono.Debugger.Architecture
 			long start_offset, unit_length, abbrev_offset;
 			int version, address_size;
 			DieCompileUnit comp_unit_die;
-			DwarfSymbolTable symtab;
+			DwarfCompileUnitSymbolTable symtab;
 			Hashtable abbrevs;
 
 			public CompilationUnit (DwarfReader dwarf, DwarfBinaryReader reader)
@@ -1786,7 +1824,7 @@ namespace Mono.Debugger.Architecture
 
 				comp_unit_die = new DieCompileUnit (reader, this);
 
-				symtab = new DwarfSymbolTable (comp_unit_die);
+				symtab = new DwarfCompileUnitSymbolTable (comp_unit_die);
 
 				reader.Position = start_offset + unit_length;
 			}

@@ -114,6 +114,8 @@ namespace Mono.Debugger
 
 		long CallMethod (ITargetLocation method, long method_argument);
 
+		ITargetLocation SimpleLookup (string name);
+
 		// <summary>
 		//   Returns a disassembler for the current target.
 		// </summary>
@@ -129,3 +131,4 @@ namespace Mono.Debugger
 		}
 	}
 }
+

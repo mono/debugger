@@ -82,7 +82,7 @@ namespace Mono.Debugger
 				i++;
 
 				ArrayList list = new ArrayList ();
-				list.Add (new LineNumberEntry ((uint) i, 0));
+				list.Add (new LineNumberEntry (i, 0));
 
 				while (i < lines.Length) {
 					line = lines [i].TrimStart (' ', '\t').TrimEnd (' ', '\t');
@@ -94,9 +94,9 @@ namespace Mono.Debugger
 					}
 
 					if (line.StartsWith ("IL_")) {
-						uint offset = UInt32.Parse (
+						int offset = Int32.Parse (
 							line.Substring (3, 4), NumberStyles.HexNumber);
-						list.Add (new LineNumberEntry ((uint) i, offset));
+						list.Add (new LineNumberEntry (i, offset));
 					}
 				}
 

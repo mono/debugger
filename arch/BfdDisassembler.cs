@@ -74,9 +74,8 @@ namespace Mono.Debugger.Architecture
 				return;
 			}
 
-			IMethod method;
-			if (!symbol_table.Lookup (new TargetLocation (address), out method) ||
-			    (method == null)) {
+			IMethod method = symbol_table.Lookup (new TargetLocation (address));
+			if (method == null) {
 				output_func (address);
 				return;
 			}
@@ -138,6 +137,12 @@ namespace Mono.Debugger.Architecture
 			} finally {
 				memory_exception = null;
 			}
+		}
+
+		public IMethodSource DisassembleMethod (IMethod method)
+		{
+			IMethod native_method = new NativeMethod (this, method);
+			return native_method.Source;
 		}
 
 		//

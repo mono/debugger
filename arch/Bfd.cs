@@ -55,7 +55,7 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (string filename)
+		public Bfd (string filename, ISourceFileFactory factory)
 		{
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -83,7 +83,7 @@ namespace Mono.Debugger.Architecture
 			g_free (symtab);
 
 			try {
-				dwarf = new DwarfReader (this);
+				dwarf = new DwarfReader (this, factory);
 			} catch (Exception e) {
 				Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
 			}

@@ -12,8 +12,8 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.CSharp;
 using Mono.Debugger.Architecture;
-using Mono.CSharp.Debugger;
 
 namespace Mono.Debugger.Backends
 {
@@ -241,33 +241,6 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class MonoDebuggerInfo
-	{
-		public readonly ITargetLocation trampoline_code;
-		public readonly ITargetLocation symbol_file_generation;
-		public readonly ITargetLocation symbol_file_table;
-		public readonly ITargetLocation update_symbol_file_table;
-		public readonly ITargetLocation compile_method;
-
-		internal MonoDebuggerInfo (ITargetMemoryReader reader)
-		{
-			reader.Offset = reader.TargetLongIntegerSize +
-				2 * reader.TargetIntegerSize;
-			trampoline_code = reader.ReadAddress ();
-			symbol_file_generation = reader.ReadAddress ();
-			symbol_file_table = reader.ReadAddress ();
-			update_symbol_file_table = reader.ReadAddress ();
-			compile_method = reader.ReadAddress ();
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("MonoDebuggerInfo ({0:x}, {1:x}, {2:x}, {3:x}, {4:x})",
-					      trampoline_code, symbol_file_generation, symbol_file_table,
-					      update_symbol_file_table, compile_method);
-		}
-	}
-
 	internal class StackFrame : IStackFrame
 	{
 		public readonly ISourceLocation SourceLocation = null;
@@ -389,7 +362,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	public class Debugger : IDebuggerBackend, IDisposable
+	public class Debugger : IDebuggerBackend, ISymbolLookup, IDisposable
 	{
 		public readonly string Path_Mono	= "mono";
 		public readonly string Environment_Path	= "/usr/bin";
@@ -398,6 +371,7 @@ namespace Mono.Debugger.Backends
 
 		Assembly application;
 		Inferior inferior;
+		MonoSymbolTableCollection mono_symtab;
 
 		readonly uint target_address_size;
 		readonly uint target_integer_size;
@@ -408,10 +382,6 @@ namespace Mono.Debugger.Backends
 		string working_directory;
 
 		bool initialized;
-		bool symtabs_read;
-
-		int symtab_generation;
-		ArrayList symtabs;
 
 		public Debugger (string application, string[] arguments)
 			: this (application, arguments, new SourceFileFactory ())
@@ -547,8 +517,8 @@ namespace Mono.Debugger.Backends
 		{
 			inferior.Dispose ();
 			inferior = null;
+			mono_symtab = null;
 			initialized = false;
-			symtabs_read = false;
 			if (FramesInvalidEvent != null)
 				FramesInvalidEvent ();
 		}
@@ -565,118 +535,21 @@ namespace Mono.Debugger.Backends
 				TargetError (line);
 		}
 
-		ArrayList do_update_symbol_files ()
-		{
-			inferior_output ("Updating symbol files.");
-
-			ArrayList symtabs = new ArrayList ();
-
-			int header_size = 3 * inferior.TargetIntegerSize;
-
-			ITargetLocation symbol_file_table = inferior.ReadAddress (
-				inferior.MonoDebuggerInfo.symbol_file_table);
-
-			ITargetMemoryReader header = inferior.ReadMemory (
-				symbol_file_table, header_size);
-
-			int size = header.ReadInteger ();
-			int count = header.ReadInteger ();
-			symtab_generation = header.ReadInteger ();
-
-			ITargetMemoryReader symtab_reader = inferior.ReadMemory (
-				symbol_file_table, size + header_size);
-			symtab_reader.Offset = header_size;
-
-			for (int i = 0; i < count; i++) {
-				if (symtab_reader.ReadLongInteger () != OffsetTable.Magic)
-					throw new SymbolTableException ();
-
-				if (symtab_reader.ReadInteger () != OffsetTable.Version)
-					throw new SymbolTableException ();
-
-				int is_dynamic = symtab_reader.ReadInteger ();
-				ITargetLocation image_file_addr = symtab_reader.ReadAddress ();
-				string image_file = inferior.ReadString (image_file_addr);
-				ITargetLocation raw_contents = symtab_reader.ReadAddress ();
-				int raw_contents_size = symtab_reader.ReadInteger ();
-				ITargetLocation address_table = symtab_reader.ReadAddress ();
-				int address_table_size = symtab_reader.ReadInteger ();
-				symtab_reader.ReadAddress ();
-
-				if ((raw_contents_size == 0) || (address_table_size == 0))
-					continue;
-
-				ITargetMemoryReader reader = inferior.ReadMemory
-					(raw_contents, raw_contents_size);
-				ITargetMemoryReader address_reader = inferior.ReadMemory
-					(address_table, address_table_size);
-				
-				Console.WriteLine ("SYMTAB: {0:x} {1} - {2:x} {3} - {4:x} {5}",
-						   raw_contents, raw_contents_size,
-						   address_table, address_table_size,
-						   image_file_addr, image_file);
-
-				MonoSymbolTableReader symreader = new MonoSymbolTableReader (
-					image_file, reader.BinaryReader, address_reader.BinaryReader);
-
-				symtabs.Add (new CSharpSymbolTable (symreader, source_factory));
-			}
-
-			inferior_output ("Done updating symbol files.");
-
-			return symtabs;
-		}
-
-		bool updating_symfiles;
-		void update_symbol_files ()
-		{
-			if ((inferior == null) || (inferior.MonoDebuggerInfo == null))
-				return;
-
-			if (updating_symfiles)
-				return;
-
-			try {
-				int generation = inferior.ReadInteger (
-					inferior.MonoDebuggerInfo.symbol_file_generation);
-				if (generation == symtab_generation)
-					return;
-			} catch {
-				return;
-			}
-
-			try {
-				updating_symfiles = true;
-
-				int result = (int) inferior.CallMethod (
-					inferior.MonoDebuggerInfo.update_symbol_file_table, 0);
-
-				// Nothing to do.
-				if (result == 0)
-					return;
-
-				DebuggerBusy = true;
-
-				symtabs = do_update_symbol_files ();
-			} catch {
-				symtabs = null;
-			} finally {
-				DebuggerBusy = false;
-				frame_changed ();
-				updating_symfiles = false;
-			}
-		}
-
 		public void Run ()
 		{
 			if (inferior != null)
 				throw new TargetException ("Debugger already has an inferior.");
 
-			inferior = new Inferior (working_directory, argv, envp, application == null);
+			bool native = application == null;
+
+			inferior = new Inferior (working_directory, argv, envp, native, source_factory);
 			inferior.ChildExited += new ChildExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
+
+			if (!native)
+				mono_symtab = new MonoSymbolTableCollection (inferior);
 		}
 
 		public void Quit ()
@@ -729,39 +602,36 @@ namespace Mono.Debugger.Backends
 
 				ITargetLocation location = inferior.CurrentFrame;
 
-				update_symbol_files ();
+				if (mono_symtab != null)
+					mono_symtab.UpdateSymbolTables ();
 
-				IMethod method;
-				ISourceLocation source;
+				IMethod method = Lookup (location);
+				if ((method != null) && method.HasSource) {
+					ISourceLocation source = method.Source.Lookup (location);
+					return new StackFrame (inferior, location, source, method);
+				}
 
-				if (!LookupAddress (location, out source, out method))
-					return new StackFrame (inferior, location);
-
-				return new StackFrame (inferior, location, source, method);
+				return new StackFrame (inferior, location);
 			}
 		}
 
-		bool LookupAddress (ITargetLocation address, out ISourceLocation source, out IMethod method)
+		public IMethod Lookup (ITargetLocation address)
 		{
-			method = null;
-			source = null;
-
 			if (inferior == null)
-				return false;
+				return null;
 
-			if (inferior.SymbolTables != null)
-				if (inferior.SymbolTables.Lookup (address, out source, out method))
-					return true;
+			if (inferior.SymbolTables != null) {
+				IMethod method = inferior.SymbolTables.Lookup (address);
+				if (method != null)
+					return method;
+			}
 
-			if (symtabs == null)
-				return false;
+			if (mono_symtab == null)
+				return null;
 
-			foreach (ISymbolTable symtab in symtabs)
-				if (symtab.Lookup (address, out source, out method))
-					return true;
-
-			return false;
+			return mono_symtab.Lookup (address);
 		}
+
 
 		void frame_changed ()
 		{
@@ -772,10 +642,6 @@ namespace Mono.Debugger.Backends
 		public ISourceFileFactory SourceFileFactory {
 			get {
 				return source_factory;
-			}
-
-			set {
-				source_factory = value;
 			}
 		}
 

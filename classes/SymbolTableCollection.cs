@@ -7,11 +7,13 @@ namespace Mono.Debugger
 {
 	public class SymbolTableCollection : ISymbolTableCollection
 	{
-		ArrayList symtabs = new ArrayList();
+		ArrayList symtabs = new ArrayList ();
+		ArrayList ranges = new ArrayList ();
 
 		public void AddSymbolTable (ISymbolTable symtab)
 		{
 			symtabs.Add (symtab);
+			update_ranges ();
 		}
 
 		public bool IsContinuous {
@@ -32,28 +34,42 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool Lookup (ITargetLocation target, out IMethod method)
+		void update_ranges ()
 		{
-			method = null;
+			ranges = new ArrayList ();
+			foreach (ISymbolTable symtab in symtabs) {
+				if (!symtab.HasRanges)
+					continue;
 
-			foreach (ISymbolTable symtab in symtabs)
-				if (symtab.Lookup (target, out method))
-					return true;
-
-			return false;
+				ranges.AddRange (symtab.SymbolRanges);
+			}
+			ranges.Sort ();
 		}
 
-		public bool Lookup (ITargetLocation target, out ISourceLocation source,
-				    out IMethod method)
+		public bool HasRanges {
+			get {
+				return true;
+			}
+		}
+
+		public ISymbolRange[] SymbolRanges {
+			get {
+				ISymbolRange[] retval = new ISymbolRange [ranges.Count];
+				ranges.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
+		public IMethod Lookup (ITargetLocation target)
 		{
-			source = null;
-			method = null;
+			foreach (ISymbolTable symtab in symtabs) {
+				IMethod method = symtab.Lookup (target);
 
-			foreach (ISymbolTable symtab in symtabs)
-				if (symtab.Lookup (target, out source, out method))
-					return true;
+				if (method != null)
+					return method;
+			}
 
-			return false;
+			return null;
 		}
 
 		//

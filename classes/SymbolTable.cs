@@ -6,6 +6,66 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
+	public abstract class SymbolRangeEntry : ISymbolRange, IComparable
+	{
+		long start, end;
+		WeakReference weak_lookup;
+
+		public SymbolRangeEntry (long start, long end)
+		{
+			this.start = start;
+			this.end = end;
+		}
+
+		public long StartAddress {
+			get {
+				return start;
+			}
+		}
+
+		public long EndAddress {
+			get {
+				return end;
+			}
+		}
+
+		protected abstract ISymbolLookup GetSymbolLookup ();
+
+		public ISymbolLookup SymbolLookup {
+			get {
+				ISymbolLookup lookup = null;
+				if (weak_lookup != null) {
+					try {
+						lookup = (ISymbolLookup) weak_lookup.Target;
+					} catch {
+						weak_lookup = null;
+					}
+				}
+
+				if (lookup != null)
+					return lookup;
+
+				lookup = GetSymbolLookup ();
+				if (lookup == null)
+					return null;
+				weak_lookup = new WeakReference (lookup);
+				return lookup;
+			}
+		}
+
+		public int CompareTo (object obj)
+		{
+			SymbolRangeEntry range = (SymbolRangeEntry) obj;
+			
+			if (range.StartAddress < StartAddress)
+				return 1;
+			else if (range.StartAddress > StartAddress)
+				return -1;
+			else
+				return 0;
+		}
+	}
+
 	public abstract class SymbolTable : ISymbolTable
 	{
 		protected readonly bool is_continuous;
@@ -33,6 +93,18 @@ namespace Mono.Debugger
 				this.start_address = container.StartAddress;
 				this.end_address = container.EndAddress;
 			}
+		}
+
+		public abstract bool HasRanges {
+			get;
+		}
+
+		public abstract ISymbolRange[] SymbolRanges {
+			get;
+		}
+
+		protected abstract bool HasMethods {
+			get;
 		}
 
 		protected abstract ArrayList GetMethods ();
@@ -85,18 +157,33 @@ namespace Mono.Debugger
 			}
 		}
 
-		public virtual bool Lookup (ITargetLocation target, out IMethod imethod)
+		public virtual IMethod Lookup (ITargetLocation target)
 		{
-			imethod = null;
-
 			long address = target.Address;
 			if (IsContinuous &&
 			    ((address < start_address.Address) || (address >= end_address.Address)))
-				return false;
+				return null;
+
+			if (HasRanges) {
+				if (SymbolRanges == null)
+					return null;
+
+				foreach (SymbolRangeEntry range in SymbolRanges) {
+					if ((address < range.StartAddress) || (address >= range.EndAddress))
+						continue;
+
+					return range.SymbolLookup.Lookup (target);
+				}
+
+				return null;
+			}
+
+			if (!HasMethods)
+				return null;
 
 			ArrayList methods = ensure_methods ();
 			if (methods == null)
-				return false;
+				return null;
 
 			foreach (IMethod method in methods) {
 				if (!method.IsLoaded)
@@ -106,22 +193,10 @@ namespace Mono.Debugger
 				    (address >= method.EndAddress.Address))
 					continue;
 
-				imethod = method;
-				return true;
+				return method;
 			}
 
-			return false;
-		}
-
-		public virtual bool Lookup (ITargetLocation target, out ISourceLocation source,
-					    out IMethod method)
-		{
-			source = null;
-			if (!Lookup (target, out method))
-				return false;
-
-			source = method.Lookup (target);
-			return true;
+			return null;
 		}
 
 		public override string ToString ()

@@ -16,6 +16,8 @@ namespace Mono.Debugger
 		int EndRow {
 			get;
 		}
+
+		ISourceLocation Lookup (ITargetLocation target);
 	}
 
 	public interface IMethod
@@ -32,14 +34,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		IMethodSource Source {
-			get;
-		}
-
-		bool IsInSameMethod (ITargetLocation target);
-
-		ISourceLocation Lookup (ITargetLocation target);
-
 		bool IsLoaded {
 			get;
 		}
@@ -49,6 +43,14 @@ namespace Mono.Debugger
 		}
 
 		ITargetLocation EndAddress {
+			get;
+		}
+
+		bool HasSource {
+			get;
+		}
+
+		IMethodSource Source {
 			get;
 		}
 	}

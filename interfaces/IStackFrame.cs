@@ -24,6 +24,9 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   The current method.
+		// </summary>
 		IMethod Method {
 			get;
 		}

@@ -10,10 +10,9 @@ namespace Mono.Debugger.GUI
 	{
 		public DisassemblerView (IDebuggerBackend backend, Gtk.TextView widget)
 			: base (backend, widget)
-		{
-		}
+		{ }
 
-		IMethod current_method = null;
+		IMethodSource current_method = null;
 
 		protected override ISourceLocation GetSource (IStackFrame frame)
 		{
@@ -29,7 +28,7 @@ namespace Mono.Debugger.GUI
 			if (frame.Method == null)
 				return null;
 
-			current_method = new NativeMethod (backend.Inferior.Disassembler, frame.Method);
+			current_method = backend.Inferior.Disassembler.DisassembleMethod (frame.Method);
 
 			return current_method.Lookup (frame.TargetLocation);
 		}

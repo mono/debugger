@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Mono.CSharp.Debugger;
 
@@ -5,9 +6,7 @@ namespace Mono.Debugger
 {
 	public interface ISymbolLookup
 	{
-		ISourceLocation Lookup (ITargetLocation target);
-
-		ITargetLocation Lookup (ISourceLocation source);
+		IMethod Lookup (ITargetLocation target);
 	}
 
 	public interface ISymbolContainer
@@ -25,11 +24,50 @@ namespace Mono.Debugger
 		}
 	}
 
-	public interface ISymbolTable : ISymbolContainer
+	public interface ISymbolRange : IComparable
 	{
-		bool Lookup (ITargetLocation target, out IMethod method);
+		long StartAddress {
+			get;
+		}
 
-		bool Lookup (ITargetLocation target, out ISourceLocation source, out IMethod method);
+		long EndAddress {
+			get;
+		}
+
+		// <summary>
+		//   If the address you're looking for is within the
+		//   [StartAddress,EndAddress] interface, use this property
+		//   to get an ISymbolLookup instance which you can use to
+		//   search the symbol.  This'll automatically load the
+		//   symbol table from disk if necessary.
+		// </summary>
+		ISymbolLookup SymbolLookup {
+			get;
+		}
+	}
+
+	public interface ISymbolTable : ISymbolLookup, ISymbolContainer
+	{
+		bool HasRanges {
+			get;
+		}
+
+		// <summary>
+		//   If HasRanges is true, this is a sorted (by start address)
+		//   list of address ranges.  To lookup a symbol by its address,
+		//   first search in this table to find the correct ISymbolRange,
+		//   then use its SymbolLookup property to get an ISymbolLookup
+		//   on which you can do a Lookup().
+		// </summary>
+		// <remarks>
+		//   When searching in more than one ISymbolTable, consider using
+		//   an ISymbolTableCollection instead since this will merge the
+		//   address ranges from all its symbol tables into one big table
+		//   and thus a lookup fill me faster.
+		// </remarks>
+		ISymbolRange[] SymbolRanges {
+			get;
+		}
 	}
 
 	public interface ISymbolTableCollection : ISymbolTable, ICollection
