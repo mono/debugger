@@ -382,20 +382,32 @@ namespace Mono.Debugger.Backends
 			// in the target (RuntimeInvoke).
 			if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
 				bool ret;
-				if (handle_callback (cevent, out ret)) {
+				StackData stack_data;
+				if (handle_callback (cevent, out ret, out stack_data)) {
 					Report.Debug (DebugFlags.EventLoop,
 						      "{0} completed callback: {1}",
 						      this, ret);
 					if (!ret)
 						return;
+					if (stack_data != null)
+						restore_stack (stack_data);
+					else 
+						frame_changed (inferior.CurrentFrame, null);
 					// Ok, inform the user that we stopped.
-					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.FrameChanged, current_frame);
 					step_operation_finished ();
 					operation_completed (args);
 					return;
 				}
+			}
+
+			if (current_callback != null) {
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} deleting callback: {1}", this,
+					      current_callback);
+				current_callback.StackInvalid ();
+				current_callback = null;
 			}
 
 			TargetEventArgs result = null;
@@ -1674,19 +1686,49 @@ namespace Mono.Debugger.Backends
 			return new StepFrame (language, mode);
 		}
 
-		bool handle_callback (Inferior.ChildEvent cevent, out bool ret)
+		bool handle_callback (Inferior.ChildEvent cevent, out bool ret,
+				      out StackData stack_data)
 		{
 			if ((current_callback == null) ||
 			    (cevent.Argument != current_callback.ID)) {
+				if (current_callback != null)
+					current_callback.StackInvalid ();
 				current_callback = null;
 				ret = false;
+				stack_data = null;
 				return false;
 			}
 
 			Callback cb = current_callback;
+			stack_data = current_callback.StackData;
 			current_callback = null;
 			ret = cb.Func (cb, cevent.Data1, cevent.Data2);
 			return true;
+		}
+
+		void restore_stack (StackData stack)
+		{
+			if (inferior.CurrentFrame != stack.Frame.TargetAddress) {
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} discarding saved stack: stopped " +
+					      "at {1}, but recorded {2}", this,
+					      inferior.CurrentFrame, stack.Frame.TargetAddress);
+				frame_changed (inferior.CurrentFrame, null);
+				return;
+			}
+
+			current_method = stack.Method;
+			if ((current_frame != null) && (current_frame != stack.Frame)) {
+				current_frame.Dispose ();
+				if (current_backtrace != null)
+					current_backtrace.Dispose ();
+			}
+
+			current_frame = stack.Frame;
+			current_backtrace = stack.Backtrace;
+			registers = stack.Registers;
+			Report.Debug (DebugFlags.EventLoop,
+				      "{0} restored stack: {1}", this, current_frame);
 		}
 
 		void do_callback (Callback cb)
@@ -1707,6 +1749,7 @@ namespace Mono.Debugger.Backends
 			public readonly long ID;
 			public readonly CallMethodData Data;
 			public readonly CallbackFunc Func;
+			public readonly StackData StackData;
 
 			static int next_id = 0;
 
@@ -1715,6 +1758,25 @@ namespace Mono.Debugger.Backends
 				this.ID = ++next_id;
 				this.Data = data;
 				this.Func = func;
+			}
+
+			public Callback (CallMethodData data, CallbackFunc func,
+					 StackData stack)
+				: this (data, func)
+			{
+				this.StackData = stack;
+			}
+
+			public void StackInvalid ()
+			{
+				if (StackData == null)
+					return;
+
+				if (StackData.Frame != null)
+					StackData.Frame.Dispose ();
+
+				if (StackData.Backtrace != null)
+					StackData.Backtrace.Dispose ();
 			}
 
 			public void Call (Inferior inferior)
@@ -1744,15 +1806,48 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		internal sealed class StackData
+		{
+			public readonly IMethod Method;
+			public readonly StackFrame Frame;
+			public readonly Backtrace Backtrace;
+			public readonly Register[] Registers;
+
+			public StackData (IMethod method, StackFrame frame,
+					  Backtrace backtrace, Register[] registers)
+			{
+				this.Method = method;
+				this.Frame = frame;
+				this.Backtrace = backtrace;
+				this.Registers = registers;
+			}
+		}
+
+		StackData save_stack ()
+		{
+			//
+			// Save current state.
+			//
+			StackData stack_data = new StackData (
+				current_method, current_frame, current_backtrace, registers);
+
+			current_method = null;
+			current_frame = null;
+			current_backtrace = null;
+			registers = null;
+
+			return stack_data;
+		}
+
 		void do_runtime_invoke (RuntimeInvokeData rdata)
 		{
 			check_inferior ();
-			frames_invalid ();
 
 			do_callback (new Callback (
 				new CallMethodData (rdata.Language.CompileMethodFunc,
 						    rdata.MethodArgument.Address, 0, rdata),
-				new CallbackFunc (callback_do_runtime_invoke)));
+				new CallbackFunc (callback_do_runtime_invoke),
+				save_stack ()));
 		}
 
 		bool callback_do_runtime_invoke (Callback cb, long data1, long data2)
@@ -1791,7 +1886,8 @@ namespace Mono.Debugger.Backends
 		void do_call_method (CallMethodData cdata)
 		{
 			do_callback (new Callback (
-				cdata, new CallbackFunc (callback_call_method)));
+					     cdata, new CallbackFunc (callback_call_method),
+					     save_stack ()));
 		}
 
 		bool callback_call_method (Callback cb, long data1, long data2)
