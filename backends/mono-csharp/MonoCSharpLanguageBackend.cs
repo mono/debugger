@@ -178,6 +178,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void init_inferior ()
 		{
+			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			memory = inferior;
 		}
 
@@ -1412,19 +1413,13 @@ namespace Mono.Debugger.Languages.CSharp
 				table.Inferior = inferior;
 		}
 
-		bool modules_locked = false;
 		void child_exited ()
 		{
-			modules_locked = true;
-			if (table != null)
-				table.Inferior = null;
 			inferior = null;
 			info = null;
 			symtab_generation = 0;
 			arch = null;
 			trampoline_address = TargetAddress.Null;
-			modules_locked = false;
-			ModulesChanged ();
 		}
 
 		void check_inferior ()
@@ -1664,9 +1659,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public void ModulesChanged ()
 		{
-			if (modules_locked)
-				return;
-
 			if (ModulesChangedEvent != null)
 				ModulesChangedEvent ();
 		}
