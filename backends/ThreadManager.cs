@@ -213,7 +213,7 @@ namespace Mono.Debugger
 			if (thread_lock_level++ > 0)
 				return;
 			foreach (Process process in thread_hash.Values) {
-				if (process == caller)
+				if ((process == caller) || (process.SingleSteppingEngine == null))
 					continue;
 				process.SingleSteppingEngine.AcquireThreadLock ();
 			}
@@ -227,7 +227,7 @@ namespace Mono.Debugger
 			}
 				
 			foreach (Process process in thread_hash.Values) {
-				if (process == caller)
+				if ((process == caller) || (process.SingleSteppingEngine == null))
 					continue;
 				process.SingleSteppingEngine.ReleaseThreadLock ();
 			}
