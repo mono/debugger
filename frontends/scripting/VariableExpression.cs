@@ -58,7 +58,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return obj;
 			} catch (LocationInvalidException ex) {
 				throw new ScriptingException ("Location of variable `{0}' is invalid: {1}",
-							      Name, ex.Message);
+							      Name, ex);
 			}
 		}
 

@@ -19,6 +19,7 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly int Offset;
 		public readonly int Size;
 		public readonly AddressMode Mode;
+		public readonly bool HasLivenessInfo;
 		public readonly int BeginLiveness;
 		public readonly int EndLiveness;
 
@@ -57,6 +58,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			if (Mode == AddressMode.Register)
 				Index = register_map [Index];
+
+			HasLivenessInfo = (BeginLiveness != 0) && (EndLiveness != 0);
 		}
 
 		public override string ToString ()
@@ -1339,20 +1342,21 @@ namespace Mono.Debugger.Languages.CSharp
 				for (int i = 0; i < method.NumLocals; i++) {
 					LocalVariableEntry local = method.Locals [i];
 
-					int start_scope = 0;
-					int end_scope = 0;
-
-					if (local.BlockIndex > 0) {
+					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
-						start_scope = block.StartAddress;
-						end_scope = block.EndAddress;
-					}
+						int start_scope = block.StartAddress;
+						int end_scope = block.EndAddress;
 
-					locals [i] = new MonoVariable (
-						reader.backend, local.Name, local_types [i],
-						true, this, address.LocalVariableInfo [i],
-						start_scope, end_scope);
+						locals [i] = new MonoVariable (
+							reader.backend, local.Name, local_types [i],
+							true, this, address.LocalVariableInfo [i],
+							block.StartAddress, block.EndAddress);
+					} else {
+						locals [i] = new MonoVariable (
+							reader.backend, local.Name, local_types [i],
+							true, this, address.LocalVariableInfo [i]);
+					}
 				}
 
 				has_variables = true;

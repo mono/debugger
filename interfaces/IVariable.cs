@@ -15,7 +15,20 @@ namespace Mono.Debugger
 			get;
 		}
 
-		bool IsValid (StackFrame frame);
+		// <summary>
+		//   Checks whether the variable is alive at @address, but without actually
+		//   trying to access the variable.  The implementation just checks the data
+		//   from the symbol file and - if appropriate - from the JIT to find out
+		//   whether the specified address is within the variable's live range.
+		// </summary>
+		bool IsAlive (TargetAddress address);
+
+		// <summary>
+		//   Checks whether the variable can actually be accessed at the specified
+		//   address.  Note that this call returns false if the variable is a null
+		//   pointer.
+		// </summary>
+		bool CheckValid (StackFrame frame);
 
 		// <summary>
 		//   Retrieve an instance of this variable from the stack-frame @frame.

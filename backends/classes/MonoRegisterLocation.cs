@@ -6,9 +6,8 @@ namespace Mono.Debugger.Backends
 	{
 		int register;
 
-		internal MonoRegisterLocation (StackFrame frame, bool is_byref, int register, long offset,
-					       TargetAddress start_scope, TargetAddress end_scope)
-			: base (frame, is_byref, offset, start_scope, end_scope)
+		internal MonoRegisterLocation (StackFrame frame, bool is_byref, int register, long offset)
+			: base (frame, is_byref, offset)
 		{
 			this.register = register;
 		}
@@ -64,7 +63,7 @@ namespace Mono.Debugger.Backends
 		protected override MonoTargetLocation Clone (int offset)
 		{
 			return new MonoRegisterLocation (
-				frame, is_byref, register, Offset + offset, start_scope, end_scope);
+				frame, is_byref, register, Offset + offset);
 		}
 
 		protected override string MyToString ()

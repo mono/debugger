@@ -2103,7 +2103,12 @@ namespace Mono.Debugger.Architecture
 				get { return type; }
 			}
 
-			public bool IsValid (StackFrame frame)
+			public bool IsAlive (TargetAddress address)
+			{
+				return true;
+			}
+
+			public bool CheckValid (StackFrame frame)
 			{
 				return true;
 			}
@@ -2119,8 +2124,7 @@ namespace Mono.Debugger.Architecture
 						return null;
 
 					return new MonoStackLocation (
-						frame, false, is_local, offset, 0,
-						subprog.StartAddress, subprog.EndAddress);
+						frame, false, is_local, offset, 0);
 				}
 
 				return null;

@@ -1,3 +1,18 @@
+2003-03-22  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/IVariable.cs (IsValid): Renamed to CheckValid() and
+	added IsAlive().
+
+	* backends/mono-csharp/MonoVariable.cs: Only use scope and
+	liveness info if we actually have it.
+
+	* backends/mono-csharp/MonoType.cs (CheckValid): New method.
+	Checks whether the location is actually valid.
+
+	* backends/mono-csharp/MonoTargetLocation.cs (Address): Return
+	TargetAddress.Null on error; don't attempt to dereference null
+	pointers, just return TargetAddress.Null.
+
 2003-03-21  Martin Baulig  <martin@ximian.com>
 
 	* doc/FAQ.txt: Updated documentation about JIT trampolines and

@@ -129,6 +129,11 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public virtual bool CheckValid (MonoTargetLocation location)
+		{
+			return !location.Address.IsNull;
+		}
+
 		public abstract MonoObject GetObject (MonoTargetLocation location);
 
 		public override string ToString ()

@@ -12,31 +12,23 @@ namespace Mono.Debugger.Backends
 	internal abstract class MonoTargetLocation : ICloneable
 	{
 		protected StackFrame frame;
-		protected TargetAddress start_scope, end_scope;
 		protected long offset;
 		protected bool is_byref;
 		bool is_valid;
 
-		internal MonoTargetLocation (StackFrame frame, bool is_byref, long offset,
-					     TargetAddress start_scope, TargetAddress end_scope)
+		internal MonoTargetLocation (StackFrame frame, bool is_byref, long offset)
 		{
 			this.is_byref = is_byref;
 			this.offset = offset;
-			this.start_scope = start_scope;
-			this.end_scope = end_scope;
 			this.frame = frame;
 			this.is_valid = true;
-
-			if ((frame.SourceAddress != null) && (start_scope == frame.TargetAddress))
-				this.start_scope += frame.SourceAddress.SourceRange;
 
 			frame.FrameInvalid += new StackFrameInvalidHandler (SetInvalid);
 		}
 
 		protected MonoTargetLocation (MonoTargetLocation relative_to, TargetAddress address,
 					      bool isbyref)
-			: this (relative_to.frame, isbyref, 0,
-				relative_to.start_scope, relative_to.end_scope)
+			: this (relative_to.frame, isbyref, 0)
 		{ }
 
 		// <summary>
@@ -79,7 +71,7 @@ namespace Mono.Debugger.Backends
 				if (!HasAddress)
 					throw new InvalidOperationException ();
 				if (!IsValid)
-					throw new LocationInvalidException ();
+					return TargetAddress.Null;
 
 				// First get the address of this variable.
 				TargetAddress address;
@@ -87,7 +79,12 @@ namespace Mono.Debugger.Backends
 					address = GetAddress ();
 				} catch (TargetException ex) {
 					SetInvalid ();
-					throw new LocationInvalidException (ex);
+					return TargetAddress.Null;
+				}
+
+				if (address.IsNull) {
+					SetInvalid ();
+					return TargetAddress.Null;
 				}
 
 				// If the type is a reference type, the pointer on the
@@ -104,13 +101,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool IsValid {
 			get {
-				if (!is_valid)
-					return false;
-
-				if ((frame.TargetAddress < start_scope) || (frame.TargetAddress > end_scope))
-					return false;
-
-				return true;
+				return is_valid;
 			}
 		}
 
@@ -198,9 +189,9 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4:x}:{5}{6})",
-					      GetType (), frame.TargetAddress, start_scope, end_scope,
-					      offset, is_byref, MyToString ());
+			return String.Format ("{0} ({1}:{2:x}:{3}{4})",
+					      GetType (), frame.TargetAddress, offset,
+					      is_byref, MyToString ());
 		}
 	}
 }

@@ -187,7 +187,7 @@ namespace Mono.Debugger.GUI
 
 		void add_variable (IVariable variable)
 		{
-			if (!variable.IsValid (current_frame))
+			if (!variable.IsAlive (current_frame.TargetAddress))
 				return;
 
 			TreeIter iter;

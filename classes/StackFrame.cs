@@ -124,7 +124,7 @@ namespace Mono.Debugger
 				check_disposed ();
 				ArrayList list = new ArrayList ();
 				foreach (IVariable local in Method.Locals) {
-					if (local.IsValid (this))
+					if (local.IsAlive (TargetAddress))
 						list.Add (local);
 				}
 				IVariable[] retval = new IVariable [list.Count];

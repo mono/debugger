@@ -182,8 +182,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public ITargetObject GetVariable (string identifier)
 		{
 			IVariable var = GetVariableInfo (identifier);
-			if (!var.IsValid (frame))
+			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
+			if (!var.CheckValid (frame))
+				throw new ScriptingException ("Variable cannot be accessed.");
 
 			return var.GetObject (frame);
 		}
@@ -191,8 +193,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public ITargetType GetVariableType (string identifier)
 		{
 			IVariable var = GetVariableInfo (identifier);
-			if (!var.IsValid (frame))
+			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
+			if (!var.CheckValid (frame))
+				throw new ScriptingException ("Variable cannot be accessed.");
 
 			return var.Type;
 		}

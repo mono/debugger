@@ -12,11 +12,32 @@ namespace Mono.Debugger.Languages.CSharp
 		DebuggerBackend backend;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
+		bool has_scope_info, has_liveness_info;
 		bool is_local;
 
 		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
 				     bool is_local, IMethod method, VariableInfo info,
-				     int start_scope, int end_scope)
+				     int start_scope_offset, int end_scope_offset)
+			: this (backend, name, type, is_local, method, info)
+		{
+			start_scope = method.StartAddress + start_scope_offset;
+			end_scope = method.StartAddress + end_scope_offset;
+			has_scope_info = true;
+
+			if (has_liveness_info) {
+				if (start_liveness < start_scope)
+					start_liveness = start_scope;
+				if (end_liveness > end_scope)
+					end_liveness = end_scope;
+			} else {
+				start_liveness = start_scope;
+				end_liveness = end_scope;
+				has_liveness_info = true;
+			}
+		}
+
+		public MonoVariable (DebuggerBackend backend, string name, MonoType type,
+				     bool is_local, IMethod method, VariableInfo info)
 		{
 			this.backend = backend;
 			this.name = name;
@@ -24,22 +45,15 @@ namespace Mono.Debugger.Languages.CSharp
 			this.is_local = is_local;
 			this.info = info;
 
-			if (start_scope != 0)
-				this.start_scope = method.StartAddress + start_scope;
-			else
-				this.start_scope = method.MethodStartAddress;
-			if (end_scope != 0)
-				this.end_scope = method.StartAddress + end_scope;
-			else
-				this.end_scope = method.MethodEndAddress;
-			if (info.BeginLiveness != 0)
-				this.start_liveness = method.StartAddress + info.BeginLiveness;
-			else
-				this.start_liveness = method.MethodStartAddress;
-			if (info.EndLiveness != 0)
-				this.end_liveness = method.StartAddress + info.EndLiveness;
-			else
-				this.end_liveness = method.MethodEndAddress;
+			if (info.HasLivenessInfo) {
+				start_liveness = method.StartAddress + info.BeginLiveness;
+				end_liveness = method.StartAddress + info.EndLiveness;
+				has_liveness_info = true;
+			} else {
+				start_liveness = method.MethodStartAddress;
+				end_liveness = method.MethodEndAddress;
+				has_liveness_info = false;
+			}
 		}
 
 		public DebuggerBackend Backend {
@@ -85,19 +99,17 @@ namespace Mono.Debugger.Languages.CSharp
 					return null;
 				else
 					return new MonoRegisterLocation (
-						frame, type.IsByRef, info.Index, info.Offset,
-						start_liveness, end_liveness);
+						frame, type.IsByRef, info.Index, info.Offset);
 			} else if (info.Mode == VariableInfo.AddressMode.Stack)
 				return new MonoStackLocation (
-					frame, type.IsByRef, is_local, info.Offset, 0,
-					start_liveness, end_liveness);
+					frame, type.IsByRef, is_local, info.Offset, 0);
 			else
 				return null;
 		}
 
-		public bool IsValid (StackFrame frame)
+		public bool CheckValid (StackFrame frame)
 		{
-			if ((frame.TargetAddress < start_scope) || (frame.TargetAddress > end_scope))
+			if (!IsAlive (frame.TargetAddress))
 				return false;
 
 			MonoTargetLocation location = GetLocation (frame);
@@ -105,7 +117,12 @@ namespace Mono.Debugger.Languages.CSharp
 			if ((location == null) || !location.IsValid)
 				return false;
 
-			return true;
+			return type.CheckValid (location);
+		}
+
+		public bool IsAlive (TargetAddress address)
+		{
+			return (address >= start_liveness) && (address <= end_liveness);
 		}
 
 		public ITargetObject GetObject (StackFrame frame)

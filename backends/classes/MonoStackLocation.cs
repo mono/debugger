@@ -19,9 +19,8 @@ namespace Mono.Debugger.Backends
 		//   For valuetypes, these two are actually the same.
 		// </remarks>
 		internal MonoStackLocation (StackFrame frame, bool is_byref, bool is_local,
-					    long stack_offset, long offset,
-					    TargetAddress start_scope, TargetAddress end_scope)
-			: base (frame, is_byref, offset, start_scope, end_scope)
+					    long stack_offset, long offset)
+			: base (frame, is_byref, offset)
 		{
 			this.is_local = is_local;
 			this.stack_offset = stack_offset;
@@ -55,8 +54,7 @@ namespace Mono.Debugger.Backends
 		protected override MonoTargetLocation Clone (int offset)
 		{
 			return new MonoStackLocation (frame, is_byref, is_local,
-						      stack_offset, Offset + offset,
-						      start_scope, end_scope);
+						      stack_offset, Offset + offset);
 		}
 
 		protected override string MyToString ()
