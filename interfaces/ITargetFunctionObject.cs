@@ -2,7 +2,7 @@ namespace Mono.Debugger.Languages
 {
 	public interface ITargetFunctionObject : ITargetObject
 	{
-		ITargetFunctionType Type {
+		new ITargetFunctionType Type {
 			get;
 		}
 

@@ -67,7 +67,7 @@ namespace Mono.Debugger.Languages
 
 	public interface ITargetMethodInfo : ITargetMemberInfo
 	{
-		ITargetFunctionType Type {
+		new ITargetFunctionType Type {
 			get;
 		}
 

@@ -2,7 +2,7 @@ namespace Mono.Debugger.Languages
 {
 	public interface ITargetPointerObject : ITargetObject
 	{
-		ITargetPointerType Type {
+		new ITargetPointerType Type {
 			get;
 		}
 

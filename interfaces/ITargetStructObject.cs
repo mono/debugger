@@ -2,7 +2,7 @@ namespace Mono.Debugger.Languages
 {
 	public interface ITargetStructObject : ITargetObject
 	{
-		ITargetStructType Type {
+		new ITargetStructType Type {
 			get;
 		}
 
