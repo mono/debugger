@@ -1544,7 +1544,7 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointEnableCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected BreakpointHandle handle;
+		protected IEventHandle handle;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -1552,22 +1552,22 @@ namespace Mono.Debugger.Frontend
 			try {
 				id = (int) UInt32.Parse (Argument);
 			} catch {
-				context.Print ("Breakpoint number expected.");
+				context.Print ("event number expected.");
 				return false;
 			}
 
-			handle = context.Interpreter.GetBreakpoint (id);
+			handle = context.Interpreter.GetEvent (id);
 			return handle != null;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			handle.EnableBreakpoint (context.CurrentProcess.Process);
+			handle.Enable (context.CurrentProcess.Process);
 		}
 
 		// IDocumentableCommand
 		public virtual CommandFamily Family { get { return CommandFamily.Breakpoints; } }
-		public virtual string Description { get { return "Enable breakpoint."; } }
+		public virtual string Description { get { return "Enable breakpoint/catchpoint."; } }
 		public virtual string Documentation { get { return ""; } }
 	}
 
@@ -1575,12 +1575,12 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			handle.DisableBreakpoint (context.CurrentProcess.Process);
+			handle.Disable (context.CurrentProcess.Process);
 		}
 
 		// IDocumentableCommand
 		public override CommandFamily Family { get { return CommandFamily.Breakpoints; } }
-		public override string Description { get { return "Disable breakpoint."; } }
+		public override string Description { get { return "Disable breakpoint/catchpoint."; } }
 		public override string Documentation { get { return ""; } }
 	}
 
@@ -1588,12 +1588,12 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.DeleteBreakpoint (context.CurrentProcess, handle);
+			context.Interpreter.DeleteEvent (context.CurrentProcess, handle);
 		}
 
 		// IDocumentableCommand
 		public override CommandFamily Family { get { return CommandFamily.Breakpoints; } }
-		public override string Description { get { return "Delete breakpoint."; } }
+		public override string Description { get { return "Delete breakpoint/catchpoint."; } }
 		public override string Documentation { get { return ""; } }
 	}
 

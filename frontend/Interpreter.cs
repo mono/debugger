@@ -25,7 +25,6 @@ namespace Mono.Debugger.Frontend
 
 		ProcessHandle current_process;
 		Hashtable procs;
-		Hashtable breakpoints;
 		Hashtable events;
 
 		Hashtable styles;
@@ -64,7 +63,6 @@ namespace Mono.Debugger.Frontend
 			this.options = options;
 
 			procs = new Hashtable ();
-			breakpoints = new Hashtable ();
 			events = new Hashtable ();
 
 			styles = new Hashtable ();
@@ -465,26 +463,37 @@ namespace Mono.Debugger.Frontend
 		public void ShowBreakpoints ()
 		{
 			Print ("Breakpoints:");
-			foreach (BreakpointHandle handle in breakpoints.Values) {
-				Print ("{0} ({1}): [{3}] {2}", handle.Breakpoint.Index,
-				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint,
-				       handle.IsEnabled ? "*" : " ");
+			Print ("{0,3} {1,6} {2,3} {3,12}  {4}", "Id", "Type", "En", "ThreadGroup", "What");
+			foreach (IEventHandle handle in events.Values) {
+			  string type;
+
+			  if (handle is CatchpointHandle)
+			    type = "catch";
+			  else
+			    type = "break";
+
+				Print ("{0,3} {1,6} {2,3} {3,12}  {4}",
+				       handle.Breakpoint.Index,
+				       type,
+				       handle.IsEnabled ? "y" : "n",
+				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint.Name);
 			}
 		}
 
-		public BreakpointHandle GetBreakpoint (int index)
+		public IEventHandle GetEvent (int index)
 		{
-			BreakpointHandle handle = (BreakpointHandle) breakpoints [index];
+			IEventHandle handle = (IEventHandle) events [index];
+
 			if (handle == null)
-				throw new ScriptingException ("No such breakpoint.");
+				throw new ScriptingException ("No such breakpoint/catchpoint.");
 
 			return handle;
 		}
 
-		public void DeleteBreakpoint (ProcessHandle process, BreakpointHandle handle)
+		public void DeleteEvent (ProcessHandle process, IEventHandle handle)
 		{
-			handle.RemoveBreakpoint (process.Process);
-			breakpoints.Remove (handle.Breakpoint.Index);
+			handle.Remove (process.Process);
+			events.Remove (handle.Breakpoint.Index);
 		}
 
 		public Module[] GetModules (int[] indices)
@@ -637,7 +646,6 @@ namespace Mono.Debugger.Frontend
 
 			current_process = null;
 			procs = new Hashtable ();
-			breakpoints = new Hashtable ();
 			events = new Hashtable ();
 
 			context = new ScriptingContext (this, is_interactive, true);
@@ -738,7 +746,7 @@ namespace Mono.Debugger.Frontend
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
-			breakpoints.Add (breakpoint.Index, handle);
+			events.Add (breakpoint.Index, handle);
 
 			return breakpoint.Index;
 		}
@@ -748,8 +756,8 @@ namespace Mono.Debugger.Frontend
 		{
 			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);
 
-			EventHandle handle = EventHandle.Create (
-				thread.Process, EventType.CatchException, breakpoint);
+			CatchpointHandle handle = CatchpointHandle.Create (
+				thread.Process, breakpoint);
 
 			if (handle == null)
 				throw new ScriptingException ("Could not add catch point.");

@@ -72,6 +72,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
+	// <summary>
+	//   This class is the managed representation of the
+	//   MonoDefaults struct (at least the types we're interested
+	//   in) as defined in mono/metadata/class-internals.h.
+	// </summary>
 	internal class MonoBuiltinTypeInfo
 	{
 		public readonly MonoSymbolFile Corlib;
@@ -92,6 +97,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFundamentalType DoubleType;
 		public readonly MonoFundamentalType CharType;
 		public readonly MonoStringType StringType;
+		public readonly MonoClassType ExceptionType;
 
 		public readonly int KlassFieldOffset;
 		public readonly int KlassMethodsOffset;
@@ -188,6 +194,15 @@ namespace Mono.Debugger.Languages.Mono
 			StringType = new MonoStringType (
 				corlib, typeof (string), object_size, object_size + 4, klass);
 			corlib.AddCoreType (StringType);
+
+			// Skip a whole bunch of clases we don't care about
+			mono_defaults.Offset += 10 * corlib.TargetInfo.TargetAddressSize;
+
+			// and get to the Exception class
+			klass = mono_defaults.ReadGlobalAddress ();
+			ExceptionType = new MonoClassType (corlib, typeof (Exception));
+			//ExceptionType = new MonoFundamentalType (corlib, typeof (Exception), object_size, klass);
+			corlib.AddCoreType (ExceptionType);
 		}
 	}
 
@@ -599,7 +614,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		ITargetType ILanguage.ExceptionType {
-			get { return null; }
+			get { return builtin_types.ExceptionType; }
 		}
 #endregion
 

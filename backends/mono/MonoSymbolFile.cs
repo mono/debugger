@@ -497,7 +497,6 @@ namespace Mono.Debugger.Languages.Mono
 		IMethod ISymbolFile.GetMethod (long handle)
 		{
 			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
-			Console.WriteLine ("GET METHOD BY HANDLE: {0} {1}", handle, entry);
 			if (entry == null)
 				return null;
 
@@ -640,7 +639,7 @@ namespace Mono.Debugger.Languages.Mono
 
 					local_types [i] = file.MonoLanguage.LookupMonoType (type);
 
-					if (method.LocalNamesAmbiguous && (local.BlockIndex > 0)) {
+					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
 						locals [i] = new MonoVariable (

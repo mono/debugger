@@ -4,10 +4,13 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	public class BreakpointHandle
+	public class BreakpointHandle : IEventHandle
 	{
 		Breakpoint breakpoint;
 		SourceLocation location;
+		TargetAddress address = TargetAddress.Null;
+		int breakpoint_id = -1;
+		IDisposable load_handler;
 
 		private BreakpointHandle (Process process, Breakpoint breakpoint,
 					  SourceLocation location)
@@ -32,43 +35,40 @@ namespace Mono.Debugger
 			this.address = address;
 		}
 
+#region IEventHandle
 		public Breakpoint Breakpoint {
 			get { return breakpoint; }
 		}
-
-		public SourceLocation SourceLocation {
-			get { return location; }
-		}
-
-		IDisposable load_handler;
-
-		// <summary>
-		//   The method has just been loaded, lookup the breakpoint
-		//   address and actually insert it.
-		// </summary>
-		void method_loaded (ITargetAccess target, SourceMethod method, object data)
-		{
-			load_handler = null;
-
-			address = location.GetAddress ();
-			if (address.IsNull)
-				return;
-
-			breakpoint_id = target.InsertBreakpoint (breakpoint, address);
-		}
-
-		TargetAddress address = TargetAddress.Null;
-		int breakpoint_id = -1;
 
 		public bool IsEnabled {
 			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}
 
-		public TargetAddress Address {
-			get { return address; }
+		public void Enable (Process process)
+		{
+			lock (this) {
+				EnableBreakpoint (process);
+			}
 		}
 
-		protected void Enable (Process process)
+		public void Disable (Process process)
+		{
+			lock (this) {
+				DisableBreakpoint (process);
+			}
+		}
+
+		public void Remove (Process process)
+		{
+			if (load_handler != null) {
+				load_handler.Dispose ();
+				load_handler = null;
+			}
+			Disable (process);
+		}
+#endregion
+
+		void EnableBreakpoint (Process process)
 		{
 			lock (this) {
 				if ((load_handler != null) || (breakpoint_id > 0))
@@ -90,7 +90,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected void Disable (Process process)
+		void DisableBreakpoint (Process process)
 		{
 			lock (this) {
 				if (breakpoint_id > 0)
@@ -104,27 +104,27 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void EnableBreakpoint (Process process)
-		{
-			lock (this) {
-				Enable (process);
-			}
+		public SourceLocation SourceLocation {
+			get { return location; }
 		}
 
-		public void DisableBreakpoint (Process process)
+		// <summary>
+		//   The method has just been loaded, lookup the breakpoint
+		//   address and actually insert it.
+		// </summary>
+		void method_loaded (ITargetAccess target, SourceMethod method, object data)
 		{
-			lock (this) {
-				Disable (process);
-			}
+			load_handler = null;
+
+			address = location.GetAddress ();
+			if (address.IsNull)
+				return;
+
+			breakpoint_id = target.InsertBreakpoint (breakpoint, address);
 		}
 
-		public void RemoveBreakpoint (Process process)
-		{
-			if (load_handler != null) {
-				load_handler.Dispose ();
-				load_handler = null;
-			}
-			DisableBreakpoint (process);
+		public TargetAddress Address {
+			get { return address; }
 		}
 	}
 }

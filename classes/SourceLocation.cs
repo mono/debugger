@@ -72,7 +72,7 @@ namespace Mono.Debugger
 		public BreakpointHandle InsertBreakpoint (Process process, Breakpoint bpt)
 		{
 			BreakpointHandle handle = BreakpointHandle.Create (process, bpt, this);
-			handle.EnableBreakpoint (process);
+			handle.Enable (process);
 			return handle;
 		}
 

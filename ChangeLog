@@ -1,3 +1,49 @@
+2005-03-31  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoSymbolFile.cs (MonoMethod.get_variables): we
+	need to attach liveness ranges to MonoVariables if they're defined
+	in nested blocks regardless of whether or not local names are
+	ambiguous.  This is so MonoDevelop can update the variable display
+	and not show variables that aren't in scope.
+	(MonoSymbolFile.GetMethod): remove spew.
+
+	* backends/mono/MonoClassObject.cs (MonoClassObject.PrintObject):
+	80% implementation.  still needs some more type checking on the
+	method invoked.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoBuiltinTypeInfo..ctor): read in the Exception type from
+	mono_defaults.
+	(MonoLanguageBackend.get_ExceptionType): implement.
+
+	* frontend/Command.cs (BreakpointEnableCommand,
+	BreakpointDisableCommand, BreakpointDeleteCommand): switch from
+	BreakpointHandle to IEventHandle and track api change in
+	Interpreter, so we can deal with both catchpoints and breakpoints.
+
+	* frontend/Interpreter.cs (Interpreter.ShowBreakpoints): loop over
+	all IEventHandles now, and clean up the display a bit.
+	(Interpreter.GetEvent): rename GetBreakpoint to this, so it can
+	refer to both catchpoints and breakpoints.
+	(Interpreter.DeleteEvent): rename DeleteBreakpoint to this, so it
+	can refer to both catchpoints and breakpoints.
+	(Interpreter.InsertExceptionCatchPoint): EventHandle ->
+	CatchpointHandle.
+
+	* classes/SourceLocation.cs (SourceLocation.InsertBreakpoint):
+	track change to BreakpointHandle.
+
+	* classes/CatchpointHandle.cs: the majority of the old code from
+	EventHandle.cs, reorganized/renamed so as to implement
+	IEventHandle.
+	
+	* classes/BreakpointHandle.cs: reorganize/rename things a bit so
+	we implement IEventHandle.
+
+	* interfaces/IEventHandle.cs: move classes/EventHandle.cs here,
+	and make it a general interface, implemented by both
+	classes/CatchpointHandle and classes/BreakpointHandle.
+
 2005-03-24  Chris Toshok  <toshok@ximian.com>
 
 	* configure.in (AC_OUTPUT): remove cslex/Makefile.
