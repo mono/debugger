@@ -1,7 +1,17 @@
+June 2nd, 2004 - Martin Baulig
+------------------------------
+
+Released version 0.8 "Wrightsville Beach" of the Mono Debugger :-)
+
+- this is mostly a bug-fix release which was neccessary due to a
+  recent change of some runtime internals.
+- unfortunately, a last minute breakage slipped into Mono's beta2
+  which means that you need to use the latest version from CVS.
+
 April 28th, 2004 - Martin Baulig
 --------------------------------
 
-Preparing version 0.7 "Wilmington" of the Mono Debugger ...
+Released version 0.7 "Wilmington" of the Mono Debugger :-)
 
 Lots of changes this time:
 
