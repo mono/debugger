@@ -14,7 +14,7 @@ class X
 		Console.WriteLine ("Middle");
 
 		{
-			int a = 8;
+			float a = 8.9F;
 			Console.WriteLine (a);
 
 			{
