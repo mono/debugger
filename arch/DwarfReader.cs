@@ -310,7 +310,6 @@ namespace Mono.Debugger.Architecture
 			{
 				this.dwarf = dwarf;
 				this.FileOffset = offset;
-				Console.WriteLine (this);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
@@ -1124,7 +1123,8 @@ namespace Mono.Debugger.Architecture
 
 			void end_sequence (StatementMachine stm)
 			{
-				debug ("NEXT: {0:x} {1:x}", stm.st_address, next_method_address);
+				debug ("NEXT: {0:x} {1:x} {2} {3} {4}", stm.st_address, next_method_address,
+				       methods.Count, current_method, next_method);
 
 				if (current_method != null)
 					method_hash.Add (current_method, new StatementMachine (stm));
@@ -1204,6 +1204,9 @@ namespace Mono.Debugger.Architecture
 
 				StatementMachine stm = new StatementMachine (this, reader.Position);
 				stm.Read ();
+
+				if ((current_method != null) && !method_hash.Contains (current_method))
+					method_hash.Add (current_method, new StatementMachine (stm));
 			}
 
 			public string GetSource (ISymbolContainer method, out int start_row, out int end_row,
@@ -1834,6 +1837,12 @@ namespace Mono.Debugger.Architecture
 					return -1;
 				else
 					return 0;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("{0} ({1}:{2:x}:{3:x})", GetType (),
+						      Name, start_pc, end_pc);
 			}
 		}
 

@@ -227,10 +227,25 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public ISymbolTable SymbolTable {
+			get {
+				if (!SymbolsLoaded)
+					throw new InvalidOperationException ();
+
+				if (symbol_data == null)
+					return null;
+
+				return ((ModuleSymbolData) symbol_data.Data).SymbolTable;
+			}
+		}
+
+		protected abstract ISymbolTable GetSymbolTable ();
+
 		protected struct ModuleSymbolData
 		{
 			public readonly Module Module;
 			public readonly SourceInfo[] Sources;
+			public readonly ISymbolTable SymbolTable;
 
 			public ModuleSymbolData (Module module)
 			{
@@ -242,6 +257,8 @@ namespace Mono.Debugger
 
 				if (Sources == null)
 					Sources = new SourceInfo [0];
+
+				SymbolTable = Module.GetSymbolTable ();
 			}
 		}
 

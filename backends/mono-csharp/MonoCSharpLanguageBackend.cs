@@ -415,7 +415,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			public override bool SymbolsLoaded {
 				get {
-					return LoadSymbols && (MonoSymbolTableReader != null);
+					return LoadSymbols && (reader != null) && (table != null);
 				}
 			}
 
@@ -458,6 +458,11 @@ namespace Mono.Debugger.Languages.CSharp
 					MonoModule module = new MonoModule (table, name);
 					table.modules.Add (name.FullName, module);
 				}
+			}
+
+			protected override ISymbolTable GetSymbolTable ()
+			{
+				return table.Language.SymbolTable;	
 			}
 		}
 	}

@@ -1,3 +1,14 @@
+2002-10-12  Martin Baulig  <martin@gnome.org>
+
+	* class/Module.cs: Added property to get the ISymbolTable.
+
+	* backends/Debugger.cs: Do all the symbol table handling here
+	based on the module list.  Modifying the Module.StepInto property
+	of shared libraries will now actually work.
+
+	* backends/BfdModule.cs: Only report the symbols being loaded if
+	we have a DwarfReader.
+
 2002-10-11  Martin Baulig  <martin@gnome.org>
 
 	* backends/server/i386-linux-ptrace.c: If the target received a

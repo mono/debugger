@@ -34,7 +34,13 @@ namespace Mono.Debugger.Backends
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.ChildEvent += new ChildEventHandler (child_event);
 
+			backend.SymbolTableChanged += new SymbolTableChangedHandler (update_symtabs);
 			update_symtabs ();
+		}
+
+		void update_symtabs ()
+		{
+			disassembler.SymbolTable = backend.ApplicationSymbolTable;
 		}
 
 		public event StateChangedHandler StateChangedEvent;
@@ -46,19 +52,6 @@ namespace Mono.Debugger.Backends
 		public TargetState State {
 			get {
 				return target_state;
-			}
-		}
-
-		public ISymbolTable ApplicationSymbolTable {
-			get {
-				check_disposed ();
-				return application_symtab;
-			}
-
-			set {
-				check_disposed ();
-				application_symtab = value;
-				update_symtabs ();
 			}
 		}
 
@@ -112,20 +105,8 @@ namespace Mono.Debugger.Backends
 		IDisassembler disassembler;
 		bool native;
 
-		SymbolTableCollection symtab_collection;
-		ISymbolTable application_symtab;
-
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
-
-		void update_symtabs ()
-		{
-			symtab_collection = new SymbolTableCollection ();
-			symtab_collection.AddSymbolTable (inferior.SymbolTable);
-			symtab_collection.AddSymbolTable (application_symtab);
-
-			disassembler.SymbolTable = symtab_collection;
-		}
 
 		TargetState change_target_state (TargetState new_state)
 		{
@@ -602,9 +583,9 @@ namespace Mono.Debugger.Backends
 				 */
 				if (!trampoline.IsNull) {
 					IMethod tmethod = null;
-					if (application_symtab != null) {
-						application_symtab.UpdateSymbolTable ();
-						tmethod = application_symtab.Lookup (trampoline);
+					if (backend.ApplicationSymbolTable != null) {
+						backend.UpdateSymbolTable ();
+						tmethod = backend.ApplicationSymbolTable.Lookup (trampoline);
 					}
 					if ((tmethod == null) || !tmethod.Module.StepInto) {
 						set_step_frame (frame);
@@ -642,9 +623,9 @@ namespace Mono.Debugger.Backends
 			 */
 			IMethod method = null;
 			if (native || (frame.Mode == StepMode.NativeStepFrame))
-				method = symtab_collection.Lookup (call);
-			else if (application_symtab != null)
-				method = application_symtab.Lookup (call);
+				method = backend.ApplicationSymbolTable.Lookup (call);
+			else if (backend.ApplicationSymbolTable != null)
+				method = backend.ApplicationSymbolTable.Lookup (call);
 			if ((method == null) || !method.Module.StepInto) {
 				set_step_frame (frame);
 				do_next ();

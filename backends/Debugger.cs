@@ -208,6 +208,7 @@ namespace Mono.Debugger
 		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 		public event TargetExitedHandler TargetExited;
+		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		public event MethodInvalidHandler MethodInvalidEvent;
 		public event MethodChangedHandler MethodChangedEvent;
@@ -384,9 +385,25 @@ namespace Mono.Debugger
 			sse.MethodChangedEvent += new MethodChangedHandler (method_changed);
 			sse.FrameChangedEvent += new StackFrameHandler (frame_changed);
 			sse.FramesInvalidEvent += new StackFrameInvalidHandler (frames_invalid);
+		}
+
+		void update_symtabs ()
+		{
+			symtabs = new SymbolTableCollection ();
+			foreach (Module module in Modules) {
+				if (!module.SymbolsLoaded)
+					continue;
+
+				symtabs.AddSymbolTable (module.SymbolTable);
+			}
 
 			if (!native)
-				sse.ApplicationSymbolTable = csharp_language.SymbolTable;
+				symtabs.AddSymbolTable (csharp_language.SymbolTable);
+
+			symtabs.UpdateSymbolTable ();
+
+			if (SymbolTableChanged != null)
+				SymbolTableChanged ();
 		}
 
 		void method_invalid ()
@@ -415,6 +432,7 @@ namespace Mono.Debugger
 
 		void modules_changed ()
 		{
+			update_symtabs ();
 			if (ModulesChangedEvent != null)
 				ModulesChangedEvent ();
 		}
@@ -729,6 +747,12 @@ namespace Mono.Debugger
 		{
 			check_inferior ();
 			return inferior.GetMemoryMaps ();
+		}
+
+		public ISymbolTable ApplicationSymbolTable {
+			get {
+				return symtabs;
+			}
 		}
 
 		[DllImport("glib-2.0")]

@@ -77,6 +77,11 @@ namespace Mono.Debugger.Architecture
 			return Bfd.GetSources ();
 		}
 
+		protected override ISymbolTable GetSymbolTable ()
+		{
+			return Bfd.SymbolTable;
+		}
+
 		//
 		// ISymbolContainer
 		//
