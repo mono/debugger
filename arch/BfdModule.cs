@@ -112,7 +112,7 @@ namespace Mono.Debugger.Architecture
 
 			try {
 				dwarf = new DwarfReader (bfd, module, backend.SourceFileFactory);
-			} catch (Exception e) {
+			} catch {
 				// Silently ignore.
 			}
 

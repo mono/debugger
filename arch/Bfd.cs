@@ -586,8 +586,7 @@ namespace Mono.Debugger.Architecture
 
 		public byte[] GetSectionContents (string name, bool raw_section)
 		{
-			IntPtr section, data;
-			int size;
+			IntPtr section;
 
 			section = bfd_get_section_by_name (bfd, name);
 			if (section == IntPtr.Zero)

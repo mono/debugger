@@ -44,8 +44,6 @@ namespace Mono.Debugger.Architecture
 		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into,
 				    TargetAddress base_address, Bfd core_bfd)
 		{
-			bool new_module = false;
-
 			check_disposed ();
 			if (bfd_hash.Contains (filename))
 				return (Bfd) bfd_hash [filename];
@@ -56,7 +54,6 @@ namespace Mono.Debugger.Architecture
 				module.LoadSymbols = step_into;
 				module.StepInto = step_into;
 				module_hash.Add (filename, module);
- 				new_module = true;
 			}
 
 			Bfd bfd = new Bfd (this, memory, filename, false, module, base_address);
