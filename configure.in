@@ -196,6 +196,14 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 	fi
 )
 
+AC_ARG_ENABLE(martin_hacks, [  --enable-martin-hacks    This is only for Martin Baulig], use_martin_hacks=$enableval, use_martin_hacks=no)
+AM_CONDITIONAL(MARTIN_HACKS, test x$use_martin_hacks = xyes)
+
+martin_deps=
+if test x$use_martin_hacks = xyes; then
+   martin_deps="ORBit-2.0 >= 2.8.3"
+fi
+
 
 ## Versions of dependencies
 GLIB_REQUIRED_VERSION=2.0.0
@@ -204,7 +212,7 @@ AC_SUBST(BASE_DEPENDENCIES_CFLAGS)
 AC_SUBST(BASE_DEPENDENCIES_LIBS)
 
 ## Versions of dependencies
-PKG_CHECK_MODULES(SERVER_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
+PKG_CHECK_MODULES(SERVER_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION $martin_deps)
 AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
