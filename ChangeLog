@@ -1,5 +1,10 @@
 2004-06-30  Martin Baulig  <martin@ximian.com>
 
+	* classes/Threading.cs (DebuggerWaitHandle.Debug): New protected
+	method.  Only call Report.Debug, if we're actually debugging.
+
+2004-06-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(NotificationType.ThreadAbort): New notification.
 
