@@ -1,5 +1,10 @@
 2003-01-06  Martin Baulig  <martin@ximian.com>
 
+	* doc/debugger-status.txt: Added a few notes about the current
+	status here.
+
+2003-01-06  Martin Baulig  <martin@ximian.com>
+
 	* doc/debugger-status.txt: Updated this document.
 
 	* doc/roadmap.txt: This one was too much outdated.  Removed.
