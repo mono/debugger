@@ -173,22 +173,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class LockCommand : Command
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.Lock ();
-		}
-	}
-
-	public class UnLockCommand : Command
-	{
-		protected override void DoExecute (ScriptingContext context)
-		{
-			context.UnLock ();
-		}
-	}
-
 	public class StepCommand : Command
 	{
 		ProcessExpression process_expr;
