@@ -1,5 +1,8 @@
 2003-04-06  Martin Baulig  <martin@ximian.com>
 
+	* README.build: New file.  Please read it before compiling the
+	debugger.
+
 	* RELEASE-NOTES-0.3.txt: New file.
 
 2003-04-05  Martin Baulig  <martin@ximian.com>

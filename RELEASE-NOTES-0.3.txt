@@ -5,6 +5,13 @@ While the last release was mostly a bug-fix release, this one brings a
 lot of improvements in the user interface and also a few important bug
 fixes.
 
+Since we did not have the time to make new Mono and gtk# releases, you
+need to grab the latest versions of them from CVS.  This version of
+the debugger does not work with the Mono 0.23.
+
+Please read the file README.build before building the debugger, it
+contains some important information.
+
 About the Mono Debugger
 -----------------------
 

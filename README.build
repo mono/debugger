@@ -1,0 +1,30 @@
+This version of the Mono Debugger requires the latest CVS versions of
+the libgc, mono, mcs and gtk-sharp modules, it does not work with Mono
+0.23.
+
+The debugger also needs a modified version of Boehm GC which will also
+ship with the next Mono release.  For the moment, you need to grab it
+from CVS; it can be found in the `libgc' module.
+
+There's also a snapshot package available here:
+
+	http://primates.ximian.com/~martin/debugger/libgc-mono-6.1.tar.gz
+
+Compile and install it just like the normal libgc and make sure to
+give configure the -enable-threads=pthreads argument.
+
+After installing this libgc, you need to fully rebuild the runtime and
+the class libraries - make sure to use the latest CVS version, the
+packages from the 0.23 release do not work (most likely, you won't get
+a compilation error, but the debugger will not work).
+
+You may also need the latest gtk# from CVS, but not sure about this.
+In either case, you should get a compilation error if your gtk# is too
+old, not a mysterious crash somewhere, so this is not such a big issue.
+
+If you have any problems and questions, just ask and I'll do my best
+to help :-)
+
+
+Last changed April 6th, 2003
+Martin Baulig <martin@ximian.com>
