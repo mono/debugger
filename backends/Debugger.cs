@@ -199,12 +199,6 @@ namespace Mono.Debugger
 			symtab_manager.Wait ();
 		}
 
-		public void Quit ()
-		{
-			if (process != null)
-				process.Kill ();
-		}
-
 		public SourceLocation FindLocation (string file, int line)
 		{
 			foreach (Module module in Modules) {
