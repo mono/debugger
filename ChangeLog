@@ -1,5 +1,10 @@
 2004-06-17  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Main.cs (SetupEngine): `where' is now an
+	alias for `backtrace'.
+
+2004-06-17  Martin Baulig  <martin@ximian.com>
+
 	* test/mono-debugger.tests/start-restart.exp: New test.
 
 2004-06-17  Martin Baulig  <martin@ximian.com>

@@ -105,6 +105,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			e.Register ("finish", typeof (FinishCommand));
 			e.Register ("backtrace", typeof (BacktraceCommand));
 			e.Register ("bt", typeof (BacktraceCommand));
+			e.Register ("where", typeof (BacktraceCommand));
 			e.Register ("up", typeof (UpCommand));
 			e.Register ("down", typeof (DownCommand));
 			e.Register ("kill", typeof (KillCommand));

@@ -238,11 +238,11 @@ namespace Mono.Debugger.Frontends.Scripting
 	public class ExamineCommand : DebuggerCommand
 	{
 		Expression expression;
-		int size = 16;
+		int count = 16;
 
-		public int Size {
-			get { return size; }
-			set { size = value; }
+		public int Count {
+			get { return count; }
+			set { count = value; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -281,9 +281,9 @@ namespace Mono.Debugger.Frontends.Scripting
 			taddress = location.Address;
 			taccess = location.TargetAccess;
 
-			data = taccess.ReadBuffer (taddress, size);
+			data = taccess.ReadBuffer (taddress, count);
 			context.Print (TargetBinaryReader.HexDump (taddress, data));
-			context.LastExamineAddress = taddress + size;
+			context.LastExamineAddress = taddress + count;
 		}
 	}
 
@@ -1027,11 +1027,11 @@ namespace Mono.Debugger.Frontends.Scripting
 	[ShortDescription("List source code")]
 	public class ListCommand : SourceCommand
 	{
-		int count = 10;
+		int lines = 10;
 
-		public int Count {
-			get { return count; }
-			set { count = value; }
+		public int Lines {
+			get { return lines; }
+			set { lines = value; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -1045,9 +1045,9 @@ namespace Mono.Debugger.Frontends.Scripting
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (Repeating)
-				context.ListSourceCode (null, Count);
+				context.ListSourceCode (null, Lines);
 			else
-				context.ListSourceCode (location, Count);
+				context.ListSourceCode (location, Lines);
 		}
 	}
 

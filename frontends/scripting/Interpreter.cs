@@ -351,7 +351,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		{
 			Print ("Breakpoints:");
 			foreach (BreakpointHandle handle in breakpoints.Values) {
-				Print ("{0} ({1}): {3} {2}", handle.Breakpoint.Index,
+				Print ("{0} ({1}): [{3}] {2}", handle.Breakpoint.Index,
 				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint,
 				       handle.IsEnabled ? "*" : " ");
 			}
