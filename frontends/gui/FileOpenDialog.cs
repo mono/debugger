@@ -22,7 +22,6 @@ namespace Mono.Debugger.GUI
 		public FileOpenDialog (DebuggerGUI gui, string name)
 			: base (name)
 		{
-			Ref (); // FIXME
 			ShowFileops = false;
 			Response += new ResponseHandler (response_event);
 
