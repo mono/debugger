@@ -11,8 +11,6 @@ namespace Mono.Debugger.Languages.CSharp
 			: base (type, size, true)
 		{
 			TargetAddress element_type_info = info.ReadAddress ();
-			Console.WriteLine ("ENUM: {0} {1} {2}", element_type_info, type,
-					   type.GetElementType ());
 			element_type = GetType (type.GetElementType (), info.TargetMemoryAccess,
 						element_type_info, table);
 		}

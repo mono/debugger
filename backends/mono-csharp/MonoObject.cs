@@ -56,7 +56,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public virtual byte[] RawContents {
 			get {
 				try {
-					Console.WriteLine ("RAW CONTENTS: {0} {1}", location, type.Size);
 					return location.ReadBuffer (type.Size);
 				} catch {
 					is_valid = false;

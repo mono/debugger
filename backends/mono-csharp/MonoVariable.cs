@@ -71,7 +71,6 @@ namespace Mono.Debugger.Languages.CSharp
 		public ITargetObject GetObject (StackFrame frame)
 		{
 			MonoTargetLocation location;
-			Console.WriteLine ("GET OBJECT: {0} {1} {2}", frame.TargetAddress, type, info);
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				if (frame.Level != 0)
 					throw new LocationInvalidException ();

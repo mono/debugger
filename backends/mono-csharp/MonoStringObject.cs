@@ -30,19 +30,14 @@ namespace Mono.Debugger.Languages.CSharp
 							MonoTargetLocation location,
 							out MonoTargetLocation dynamic_location)
 		{
-			Console.WriteLine ("GET DYNAMIC SIZE: {0} {1}", type, location);
 			reader.Offset = type.LengthOffset;
 			dynamic_location = location.GetLocationAtOffset (type.DataOffset, false);
-			long length = reader.BinaryReader.ReadInteger (type.LengthSize) * 2;
-			Console.WriteLine ("STRING SIZE: {0} {1}", dynamic_location, length);
-			return length;
+			return reader.BinaryReader.ReadInteger (type.LengthSize) * 2;
 		}
 
 		protected override object GetObject (ITargetMemoryReader reader,
 						     MonoTargetLocation location)
 		{
-			Console.WriteLine ("GET STRING CONTENTS: {0}", location);
-
 			int length = (int) reader.Size / 2;
 
 			char[] retval = new char [length];
