@@ -161,6 +161,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_set_signal (IntPtr handle, int signal, int send_it);
 
+		[DllImport("monodebuggerserver")]
+		static extern CommandError mono_debugger_server_kill (IntPtr handle);
+
 		[DllImport("monodebuggerglue")]
 		static extern void mono_debugger_glue_kill_process (int pid, bool force);
 
@@ -813,12 +816,12 @@ namespace Mono.Debugger.Backends
 
 		public void Shutdown ()
 		{
-			// send_command (ServerCommand.SHUTDOWN);
+			mono_debugger_server_kill (server_handle);
 		}
 
 		public void Kill ()
 		{
-			// send_command (ServerCommand.KILL);
+			mono_debugger_server_kill (server_handle);
 		}
 
 		public TargetAddress CurrentFrame {

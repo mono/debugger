@@ -59,7 +59,7 @@ namespace Mono.Debugger.Backends
 	//   time.  So if you attempt to issue a step command while the engine is still
 	//   busy, the step command will return false to signal this error.
 	// </summary>
-	public class SingleSteppingEngine
+	public class SingleSteppingEngine : IDisposable
 	{
 		public SingleSteppingEngine (DebuggerBackend backend, Process process,
 					     IInferior inferior, bool native)
@@ -250,6 +250,8 @@ namespace Mono.Debugger.Backends
 			do {
 				try {
 					process_command (command);
+				} catch (ThreadAbortException e) {
+					// We're exiting here.
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
@@ -696,9 +698,6 @@ namespace Mono.Debugger.Backends
 				return old_state;
 			}
 		}
-
-		void check_disposed ()
-		{ }
 
 		void check_inferior ()
 		{
@@ -1635,6 +1634,56 @@ namespace Mono.Debugger.Backends
 				this.NeedsFrame = needs_frame;
 				this.UserData = user_data;
 			}
+		}
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("SingleSteppingEngine");
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			if (!this.disposed) {
+				// If this is a call to Dispose,
+				// dispose all managed resources.
+				if (disposing) {
+					if (engine_thread != null) {
+						engine_thread.Abort ();
+						engine_thread = null;
+					}
+					if (thread_notify != null) {
+						thread_notify.Dispose ();
+						thread_notify = null;
+					}
+				}
+
+				// Release unmanaged resources
+				this.disposed = true;
+
+				lock (this) {
+					// Nothing to do yet.
+				}
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~SingleSteppingEngine ()
+		{
+			Dispose (false);
 		}
 	}
 }

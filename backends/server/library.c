@@ -319,3 +319,12 @@ mono_debugger_server_set_signal (ServerHandle *handle, guint32 sig, guint32 send
 
 	return (* handle->info->set_signal) (handle->inferior, sig, send_it);
 }
+
+ServerCommandError
+mono_debugger_server_kill (ServerHandle *handle)
+{
+	if (!handle->has_inferior)
+		return COMMAND_ERROR_NO_INFERIOR;
+
+	return (* handle->info->kill) (handle->inferior);
+}

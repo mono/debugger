@@ -261,6 +261,10 @@ typedef struct {
 						       guint32           sig,
 						       guint32           send_it);
 
+	/*
+	 * Kill the target.
+	 */
+	ServerCommandError    (* kill)                (InferiorHandle   *handle);
 
 } InferiorInfo;
 
@@ -419,6 +423,9 @@ ServerCommandError
 mono_debugger_server_set_signal          (ServerHandle       *handle,
 					  guint32             sig,
 					  guint32             send_it);
+
+ServerCommandError
+mono_debugger_server_kill                (ServerHandle       *handle);
 
 G_END_DECLS
 

@@ -42,7 +42,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return true;
 			}
 
-			return true;
+			return !parser.Quit;
 		}
 	}
 }

@@ -227,6 +227,13 @@ server_ptrace_detach (InferiorHandle *handle)
 }
 
 static ServerCommandError
+server_ptrace_kill (InferiorHandle *handle)
+{
+	ptrace (PTRACE_KILL, handle->pid, NULL, NULL);
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
 server_ptrace_get_pc (InferiorHandle *handle, guint64 *pc)
 {
 	*pc = (guint32) handle->current_regs.eip;
@@ -1296,5 +1303,6 @@ InferiorInfo i386_linux_ptrace_inferior = {
 	server_ptrace_get_backtrace,
 	server_ptrace_get_ret_address,
 	server_ptrace_stop,
-	server_ptrace_set_signal
+	server_ptrace_set_signal,
+	server_ptrace_kill
 };

@@ -429,9 +429,10 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					// Do stuff here
+					if (sse != null)
+						sse.Dispose ();
 					if (inferior != null)
-						inferior.Kill ();
+						inferior.Dispose ();
 				}
 
 				// Release unmanaged resources

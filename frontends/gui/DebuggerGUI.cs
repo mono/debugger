@@ -72,6 +72,8 @@ namespace Mono.Debugger.GUI
 			} catch (System.Reflection.TargetInvocationException e) {
 				Console.WriteLine (e.InnerException.ToString ());
 			}
+
+			Environment.Exit (0);
 		}
 
 		Program program;
@@ -384,8 +386,8 @@ namespace Mono.Debugger.GUI
 				backend.Quit ();
 				backend.Dispose ();
 			}
-			
-			Application.Quit ();
+
+			program.Quit ();
 		}
 
 		void OnCPUViewActivate (object sender, EventArgs args)

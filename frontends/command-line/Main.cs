@@ -52,11 +52,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		public void Exit ()
+		{
+			backend.Dispose ();
+			Environment.Exit (0);
+		}
+
 		public static void Main (string[] args)
 		{
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (args);
 			interpreter.Run ();
-			Environment.Exit (0);
+			interpreter.Exit ();
 		}
 	}
 }

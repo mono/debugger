@@ -221,6 +221,8 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
+					foreach (Process thread in thread_hash.Values)
+						thread.Dispose ();
 					breakpoint_manager.Dispose ();
 				}
 				
