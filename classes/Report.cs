@@ -44,10 +44,13 @@ namespace Mono.Debugger
 
 			string var = Environment.GetEnvironmentVariable ("MDB_DEBUG_FLAGS");
 			if (var != null) {
-				CurrentDebugFlags = Int32.Parse (var);
-			} catch {
-				Console.WriteLine ("Invalid `MDB_DEBUG_FLAGS' environment " +
-						   "variable.");
+				try {
+					CurrentDebugFlags = Int32.Parse (var);
+				} catch {
+					Console.WriteLine (
+						"Invalid `MDB_DEBUG_FLAGS' environment " +
+						"variable.");
+				}
 			}
 		}
 
