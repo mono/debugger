@@ -76,7 +76,6 @@ void             gtk_source_buffer_set_highlight      (GtkSourceBuffer *buf,
 						       gboolean         highlight);
 
 /* Tags methods. */
-gint             gtk_source_buffer_get_tag_end         (GtkTextIter *iter);
 GtkSyntaxTag    *gtk_source_buffer_iter_has_syntax_tag (GtkTextIter *iter);
 
 /* Regex methods. */

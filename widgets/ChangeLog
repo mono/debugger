@@ -1,3 +1,9 @@
+2003-01-18  Martin Baulig  <martin@ximian.com>
+
+	* sources/gtksourceview/gtksourcebuffer.h
+	(gtk_source_buffer_get_tag_end): Removed external declaration
+	because this function does not exist.
+
 2002-10-05  Martin Baulig  <martin@gnome.org>
 
 	* generator/gtk-api.xml (gtk_source_view_remove_all_markers):
