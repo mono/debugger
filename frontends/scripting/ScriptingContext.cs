@@ -675,6 +675,18 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
+		public SourceLocation CurrentLocation {
+			get {
+				StackFrame frame = CurrentFrame.Frame;
+				if ((frame.SourceAddress == null) ||
+				    (frame.SourceAddress.Location == null))
+					throw new ScriptingException (
+						"Current location doesn't have source code");
+
+				return frame.SourceAddress.Location;
+			}
+		}
+
 		public void Error (string message)
 		{
 			interpreter.Error (message);
@@ -796,10 +808,9 @@ namespace Mono.Debugger.Frontends.Scripting
 		public void ListSourceCode (SourceLocation location)
 		{
 			int start;
+			if ((location == null) && (current_source_code == null))
+				location = CurrentLocation;
 			if (location == null) {
-				if (current_source_code == null)
-					return;
-
 				start = last_line;
 			} else {
 				string filename = location.SourceFile.FileName;

@@ -885,25 +885,11 @@ namespace Mono.Debugger.Frontends.Scripting
 	}
 #endif
 
-	[Command("break", "Insert breakpoint")]
-	public class BreakCommand : DebuggerCommand
+	[Command("list", "List source code")]
+	public class ListCommand : DebuggerCommand
 	{
-		string group;
 		int method_id = -1;
-		int process_id = -1;
-		ProcessHandle process;
-		ThreadGroup tgroup;
-		SourceLocation location;
-
-		public string Group {
-			get { return group; }
-			set { group = value; }
-		}
-
-		public int Process {
-			get { return process_id; }
-			set { process_id = value; }
-		}
+		protected SourceLocation location;
 
 		public int ID {
 			get { return method_id; }
@@ -912,16 +898,6 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (process_id > 0) {
-				process = context.Interpreter.GetProcess (process_id);
-				if (group == null)
-					tgroup = process.ThreadGroup;
-			} else
-				process = context.CurrentProcess;
-
-			if (tgroup == null)
-				tgroup = context.Interpreter.GetThreadGroup (Group, false);
-
 			if (ID > 0) {
 				if (Argument != "") {
 					context.Error ("Cannot specify both a method id " +
@@ -934,7 +910,52 @@ namespace Mono.Debugger.Frontends.Scripting
 				return true;
 			}
 
-			return false;
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.ListSourceCode (location);
+		}
+	}
+
+	[Command("break", "Insert breakpoint")]
+	public class BreakCommand : ListCommand
+	{
+		string group;
+		int process_id = -1;
+		ProcessHandle process;
+		ThreadGroup tgroup;
+
+		public string Group {
+			get { return group; }
+			set { group = value; }
+		}
+
+		public int Process {
+			get { return process_id; }
+			set { process_id = value; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (!base.DoResolve (context))
+				return false;
+
+			if (process_id > 0) {
+				process = context.Interpreter.GetProcess (process_id);
+				if (group == null)
+					tgroup = process.ThreadGroup;
+			} else
+				process = context.CurrentProcess;
+
+			if (tgroup == null)
+				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+
+			if (location == null)
+				location = context.CurrentLocation;
+
+			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
