@@ -217,13 +217,18 @@ namespace Mono.Debugger
 							ISymbolTable symtab,
 							ISimpleSymbolTable simple_symtab)
 		{
-			IMethod method = symtab.Lookup (simple.Address);
+			IMethod method = null;
+			if (symtab != null)
+				method = symtab.Lookup (simple.Address);
 			if (method != null) {
 				SourceAddress source = null;
 				if (method.HasSource)
 					source = method.Source.Lookup (simple.Address);
 				return new StackFrame (process, simple, method, source);
 			}
+
+			if (simple_symtab == null)
+				return new StackFrame (process, simple, null);
 
 			string name = simple_symtab.SimpleLookup (simple.Address, false);
 			return new StackFrame (process, simple, name);
