@@ -4,17 +4,17 @@ AC_DEFUN([READLINE_TRYLINK], [
     old_LIBS=$LIBS
     LIBS="-l$lib"
 
-    AC_TRY_LINK(,,[READLINE_DEPLIBS=$LIBS],[
+    AC_TRY_LINK(,[rl_set_signals();],[READLINE_DEPLIBS=$LIBS],[
 		LIBS="-l$lib -ltermcap"
-		AC_TRY_LINK(,,[
+		AC_TRY_LINK(,[rl_set_signals();],[
 			READLINE_DEPLIBS=$LIBS
 		],[
-			LIBS="-l$1 -lcurses"
-			AC_TRY_LINK(,,[
+			LIBS="-l$lib -lcurses"
+			AC_TRY_LINK(,[rl_set_signals();],[
 				READLINE_DEPLIBS=$LIBS
 			],[
-				LIBS="-l$1 -lncurses"
-				AC_TRY_LINK(,,[
+				LIBS="-l$lib -lncurses"
+				AC_TRY_LINK(,[rl_set_signals();],[
 					READLINE_DEPLIBS=$LIBS
 				],[
 					READLINE_DEPLIBS=

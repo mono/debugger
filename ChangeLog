@@ -1,3 +1,9 @@
+2005-03-09  Chris Toshok  <toshok@ximian.com>
+
+	* acinclude.m4 (READLINE_TRYLINK): supply a function body calling
+	a libreadline function.  This way, if libreadline is static, we'll
+	pull in the archive and get undefined symbols if there are any.
+
 2005-03-10  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/IVariable.cs (IVariable.GetLocation): New method.
