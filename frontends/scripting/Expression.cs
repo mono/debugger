@@ -486,7 +486,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (location != null)
 				return new SourceExpression (location);
 
-			return null;
+			return DoResolveType (context);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)

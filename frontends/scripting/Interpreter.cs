@@ -631,12 +631,7 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public SourceLocation FindMethod (string name)
 		{
-			SourceLocation location = backend.FindMethod (name);
-
-			if (location != null)
-				return location;
-			else
-				throw new ScriptingException ("No such method.");
+			return backend.FindMethod (name);
 		}
 
 		public ISourceBuffer FindFile (string filename)
