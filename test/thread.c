@@ -15,7 +15,7 @@ common_function (int is_thread, int sleep_seconds)
 int
 thread_func (void *data)
 {
-	common_function (1, 5);
+	common_function (1, 2);
 	return 0;
 }
 
@@ -27,7 +27,7 @@ main (void)
 	pthread_create (&thread, NULL, thread_func, NULL);
 
 	asm ("int $03");
-	common_function (0, 2);
+	common_function (0, 5);
 
 	return 0;
 }
