@@ -12,6 +12,7 @@ void
 hello (const char *message, int a)
 {
 	printf ("%s\n", message);
+	asm ("int $03");
 	crashing_here (NULL);
 }
 

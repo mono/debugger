@@ -561,8 +561,6 @@ server_ptrace_child_stopped (InferiorHandle *handle, int stopsig,
 
 		if ((code & 0xff) == 0xcc) {
 			*retval = 0;
-			handle->current_regs.eip--;
-			set_registers (handle, &handle->current_regs);
 			return STOP_ACTION_BREAKPOINT_HIT;
 		}
 
