@@ -214,7 +214,7 @@ namespace CL
 				p++;
 				
 				if (c == '"'){
-					AddArg (helper.ToString ());
+					AddArg ('"' + helper.ToString () + '"');
 					return true;
 				}
 

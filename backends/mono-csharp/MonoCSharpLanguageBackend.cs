@@ -435,7 +435,6 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new InternalError ();
 			if (builtin == null) {
 				builtin = new MonoBuiltinTypes (this, memory, builtin_types_address, corlib);
-				init_types ();
 			}
 
 			bool updated = false;
@@ -543,47 +542,32 @@ namespace Mono.Debugger.Languages.CSharp
 		// ILanguage
 		//
 
-		MonoFundamentalType integer_type;
-		MonoFundamentalType long_type;
-		MonoFundamentalType pointer_type;
-		MonoObjectType object_type;
-		MonoStringType string_type;
-
-		void init_types ()
-		{
-			object_type = (MonoObjectType) builtin.ObjectType;
-			string_type = (MonoStringType) builtin.StringType;
-			integer_type = (MonoFundamentalType) builtin.Int32Type;
-			long_type = (MonoFundamentalType) builtin.Int64Type;
-			pointer_type = (MonoFundamentalType) builtin.IntType;
-		}
-
 		string ILanguage.Name {
 			get { return "C#"; }
 		}
 
 		public MonoObjectType ObjectType {
-			get { return object_type; }
+			get { return builtin.ObjectType; }
 		}
 
 		public MonoStringType StringType {
-			get { return string_type; }
+			get { return builtin.StringType; }
 		}
 
 		ITargetFundamentalType ILanguage.IntegerType {
-			get { return integer_type; }
+			get { return builtin.Int32Type; }
 		}
 
 		ITargetFundamentalType ILanguage.LongIntegerType {
-			get { return long_type; }
+			get { return builtin.Int64Type; }
 		}
 
 		ITargetFundamentalType ILanguage.StringType {
-			get { return string_type; }
+			get { return builtin.StringType; }
 		}
 
 		ITargetType ILanguage.PointerType {
-			get { return pointer_type; }
+			get { return builtin.IntType; }
 		}
 
 		private ITargetType LookupType (StackFrame frame, Type type, string name)
@@ -663,6 +647,52 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			return null;
+		}
+
+		public MonoFundamentalType GetType (Type type)
+		{
+			if (type == typeof (byte))
+				return builtin.ByteType;
+			else if (type == typeof (sbyte))
+				return builtin.SByteType;
+			else if (type == typeof (bool))
+				return builtin.BooleanType;
+			else if (type == typeof (short))
+				return builtin.Int16Type;
+			else if (type == typeof (ushort))
+				return builtin.UInt16Type;
+			else if (type == typeof (int))
+				return builtin.Int32Type;
+			else if (type == typeof (uint))
+				return builtin.UInt32Type;
+			else if (type == typeof (long))
+				return builtin.Int64Type;
+			else if (type == typeof (ulong))
+				return builtin.UInt64Type;
+			else if (type == typeof (float))
+				return builtin.SingleType;
+			else if (type == typeof (double))
+				return builtin.DoubleType;
+			else if (type == typeof (char))
+				return builtin.CharType;
+			else if (type == typeof (string))
+				return builtin.StringType;
+
+			return null;
+		}
+
+		public bool CanCreateInstance (Type type)
+		{
+			return GetType (type) != null;
+		}
+
+		public ITargetObject CreateInstance (StackFrame frame, object obj)
+		{
+			MonoFundamentalType type = GetType (obj.GetType ());
+			if (type == null)
+				return null;
+
+			return type.CreateInstance (frame, obj);
 		}
 
 		//

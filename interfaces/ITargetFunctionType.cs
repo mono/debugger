@@ -27,6 +27,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject InvokeStatic (StackFrame frame, object[] args, bool debug);
+		ITargetObject InvokeStatic (StackFrame frame, ITargetObject[] args,
+					    bool debug);
 	}
 }

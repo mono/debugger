@@ -18,15 +18,16 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public NativeObject Invoke (object[] args)
+		public NativeObject Invoke (NativeObject[] args)
 		{
-			Console.WriteLine ("INVOKE: {0} {1}", this, location.Address);
 			return null;
 		}
 
-		ITargetObject ITargetFunctionObject.Invoke (object[] args, bool debug)
+		ITargetObject ITargetFunctionObject.Invoke (ITargetObject[] args, bool debug)
 		{
-			return Invoke (args);
+			NativeObject[] nargs = new NativeObject [args.Length];
+			args.CopyTo (nargs, 0);
+			return Invoke (nargs);
 		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,

@@ -179,6 +179,21 @@ namespace Mono.Debugger.Frontends.Scripting
 			get { return val.ToString (); }
 		}
 
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			return ResolveVariable (context).Type;
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			StackFrame frame = context.CurrentFrame.Frame;
+			if ((frame.Language == null) ||
+			    !frame.Language.CanCreateInstance (val.GetType ()))
+				return null;
+
+			return frame.Language.CreateInstance (frame, val);
+		}
+
 		protected override object DoResolve (ScriptingContext context)
 		{
 			return val;
@@ -196,6 +211,21 @@ namespace Mono.Debugger.Frontends.Scripting
 
 		public override string Name {
 			get { return val; }
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			return ResolveVariable (context).Type;
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			StackFrame frame = context.CurrentFrame.Frame;
+			if ((frame.Language == null) ||
+			    !frame.Language.CanCreateInstance (typeof (string)))
+				return null;
+
+			return frame.Language.CreateInstance (frame, val);
 		}
 
 		protected override object DoResolve (ScriptingContext context)

@@ -6,6 +6,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject Invoke (object[] args, bool debug);
+		ITargetObject Invoke (ITargetObject[] args, bool debug);
 	}
 }

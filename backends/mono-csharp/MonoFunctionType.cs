@@ -109,23 +109,8 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		MonoObject MarshalArgument (StackFrame frame, int index, object arg)
-		{
-			MonoType type = parameter_types [index];
-
-			if (arg is ITargetFundamentalObject)
-				arg = ((ITargetFundamentalObject) arg).Object;
-
-			if (type.Kind == TargetObjectKind.Fundamental) {
-				MonoFundamentalType ftype = (MonoFundamentalType) type;
-
-				return ftype.CreateInstance (frame, arg);
-			}
-
-			return null;
-		}
-
-		protected ITargetObject Invoke (StackFrame frame, TargetAddress this_object, object[] args, bool debug)
+		protected ITargetObject Invoke (StackFrame frame, TargetAddress this_object,
+						MonoObject[] args, bool debug)
 		{
 			TargetAddress exc_object;
 
@@ -135,19 +120,8 @@ namespace Mono.Debugger.Languages.CSharp
 					parameter_types.Length, args.Length);
 
 			TargetAddress[] arg_ptr = new TargetAddress [args.Length];
-			for (int i = 0; i < args.Length; i++) {
-				MonoObject obj;
-				try {
-					obj = MarshalArgument (frame, i, args [i]);
-				} catch (ArgumentException) {
-					throw new MethodOverloadException ("Cannot marshal argument {0}: invalid argument.", i+1);
-				} catch {
-					obj = null;
-				}
-				if (obj == null)
-					throw new MethodOverloadException ("Cannot marshal argument {0}.", i+1);
-				arg_ptr [i] = obj.Location.Address;
-			}
+			for (int i = 0; i < args.Length; i++)
+				arg_ptr [i] = args [i].Location.Address;
 
 			if (debug) {
 				frame.RuntimeInvoke (method, this_object, arg_ptr);
@@ -177,14 +151,25 @@ namespace Mono.Debugger.Languages.CSharp
 				return retval_obj.DereferencedObject;
 		}
 
-		internal ITargetObject Invoke (TargetLocation location, object[] args, bool debug)
+		internal ITargetObject Invoke (TargetLocation location, MonoObject[] args,
+					       bool debug)
 		{
 			return Invoke (location.StackFrame, location.Address, args, debug);
 		}
 
-		public ITargetObject InvokeStatic (StackFrame frame, object[] args, bool debug)
+		public ITargetObject InvokeStatic (StackFrame frame, MonoObject[] args,
+						   bool debug)
 		{
 			return Invoke (frame, TargetAddress.Null, args, debug);
+		}
+
+		ITargetObject ITargetFunctionType.InvokeStatic (StackFrame frame,
+								ITargetObject[] args,
+								bool debug)
+		{
+			MonoObject[] margs = new MonoObject [args.Length];
+			args.CopyTo (margs, 0);
+			return InvokeStatic (frame, margs, debug);
 		}
 
 		public override MonoObject GetObject (TargetLocation location)

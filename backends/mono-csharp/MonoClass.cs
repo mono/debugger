@@ -467,7 +467,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (func == null)
 					return null;
 
-				return func.Invoke (new object [0], false);
+				return func.Invoke (new MonoObject [0], false);
 			}
 
 			internal ITargetObject Get (StackFrame frame)
@@ -475,7 +475,8 @@ namespace Mono.Debugger.Languages.CSharp
 				if (!PropertyInfo.CanRead)
 					throw new InvalidOperationException ();
 
-				return GetterType.InvokeStatic (frame, new object [0], false);
+				return GetterType.InvokeStatic (
+					frame, new MonoObject [0], false);
 			}
 
 			protected override string MyToString ()

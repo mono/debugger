@@ -40,5 +40,15 @@ namespace Mono.Debugger.Languages.Native
 		{
 			return null;
 		}
+
+		public bool CanCreateInstance (Type type)
+		{
+			return false;
+		}
+
+		public ITargetObject CreateInstance (StackFrame frame, object obj)
+		{
+			throw new InvalidOperationException ();
+		}
 	}
 }

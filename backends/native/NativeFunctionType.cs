@@ -67,7 +67,9 @@ namespace Mono.Debugger.Languages.Native
 			return new NativeFunctionObject (this, location);
 		}
 
-		ITargetObject ITargetFunctionType.InvokeStatic (StackFrame frame, object[] args, bool debug)
+		ITargetObject ITargetFunctionType.InvokeStatic (StackFrame frame,
+								ITargetObject[] args,
+								bool debug)
 		{
 			throw new NotImplementedException ();
 		}

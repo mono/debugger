@@ -119,6 +119,10 @@ expression
 	  {
 		$$ = new InvocationExpression ((Expression) $1, ((Expression []) $3));
 	  }
+	| NEW expression OPEN_PARENS argument_list CLOSE_PARENS
+	  {
+		$$ = new NewExpression ((Expression) $2, ((Expression []) $4));
+	  }
 	;
 
 argument_list
