@@ -45,6 +45,38 @@ Current status as of 01/06/03:
   more tests there.
 
 
+How you can help with the debugger:
+-----------------------------------
+
+If someone wants to help with the debugger, here are a few things you could do:
+
+* What I need most are bug reports and people who're testing the debugger.  I'd especially
+  appreciate it if someone could try debugging large applications such as mcs with the
+  command line interface and report any problems to bugzilla (this'd be a bug in the
+  backend, so use the `backends' component for it).  You should try everything you'd
+  normally do with a debugger: single-step, insert breakpoints, inspect variables etc.
+
+  If everything works, do the same with the GUI; if possible, first try to run exactly the
+  same debugging session as you did in the command line interface, but enter the commands
+  in the GUI's command entry widget.  The debugger should display things graphically in
+  the GUI while doing this.  If something wents wrong, this is a bug in the GUI and should
+  go into the `gui' component.  If everything works fine, do the same debugging session
+  again, but only use GUI commands this time.
+
+* We need more tests in the test suite; there's a sample in tests/TestManagedTypes.cmd, but
+  this one needs to be finished.  We should also have tests for the single stepping engine
+  there; to do this, use the `assert line' command in the command file.
+
+These two things should be really easy and could also be done by users or newbies.  If
+you'd like to hack, here are a few things you could do:
+
+* The feature-freeze doesn't apply to the command line interface (the frontends/scripting
+  directory).  I don't have any time to hack on this myself before the release, so I won't
+  accept any feature requests.  However, this whole code is really easy to understand and
+  very straightforward so patches and people who'd like to hack on this would be very
+  welcome :-)
+
+
 Variables and types in managed code:
 ------------------------------------
 
