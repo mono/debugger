@@ -196,9 +196,9 @@ generated_command
 	  {
 		$$ = new FinishCommand ((ProcessExpression) $2);
 	  }
-	| BACKTRACE process_expression
+	| BACKTRACE process_expression opt_count
 	  {
-		$$ = new BacktraceCommand ((ProcessExpression) $2);
+		$$ = new BacktraceCommand ((ProcessExpression) $2, (int) $3);
 	  }
 	| UP process_expression
 	  {
@@ -515,6 +515,17 @@ examine_format
 	| DIV integer_or_number
 	  {
 		$$ = new ExamineCommand.Format ((int)(long) $2);
+	  }
+	;
+
+opt_count
+	: /* empty */
+	  {
+		$$ = -1;
+	  }
+	| INTEGER
+	  {
+		$$ = (int) $1;
 	  }
 	;
 

@@ -391,10 +391,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class BacktraceCommand : Command
 	{
 		ProcessExpression process_expr;
+		int max_frames;
 
-		public BacktraceCommand (ProcessExpression process_expr)
+		public BacktraceCommand (ProcessExpression process_expr, int max_frames)
 		{
 			this.process_expr = process_expr;
+			this.max_frames = max_frames;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
@@ -402,7 +404,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
 
 			int current_idx = process.CurrentFrameIndex;
-			BacktraceHandle backtrace = process.GetBacktrace ();
+			BacktraceHandle backtrace = process.GetBacktrace (max_frames);
+
 			for (int i = 0; i < backtrace.Length; i++) {
 				string prefix = i == current_idx ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, backtrace [i]);

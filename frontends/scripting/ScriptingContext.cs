@@ -468,7 +468,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			set {
-				GetBacktrace ();
+				GetBacktrace (-1);
 				if ((value < 0) || (value >= current_backtrace.Length))
 					throw new ScriptingException ("No such frame.");
 
@@ -477,17 +477,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		public BacktraceHandle GetBacktrace ()
+		public BacktraceHandle GetBacktrace (int max_frames)
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
 			else if (!process.IsStopped)
 				throw new ScriptingException ("{0} is not stopped.", Name);
 
-			if (current_backtrace != null)
+			if ((max_frames == -1) && (current_backtrace != null))
 				return current_backtrace;
 
-			current_backtrace = new BacktraceHandle (this, process.GetBacktrace ());
+			current_backtrace = new BacktraceHandle (this, process.GetBacktrace (max_frames));
 
 			if (current_backtrace == null)
 				throw new ScriptingException ("No stack.");
@@ -515,7 +515,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return current_frame;
 			}
 
-			GetBacktrace ();
+			GetBacktrace (-1);
 			if (number >= current_backtrace.Length)
 				throw new ScriptingException ("No such frame: {0}", number);
 

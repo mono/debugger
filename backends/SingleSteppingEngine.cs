@@ -650,7 +650,19 @@ namespace Mono.Debugger.Backends
 			if (current_backtrace != null)
 				return current_backtrace;
 
-			send_sync_command (new CommandFunc (get_backtrace), null);
+			send_sync_command (new CommandFunc (get_backtrace), -1);
+
+			return current_backtrace;
+		}
+
+		public Backtrace GetBacktrace (int max_frames)
+		{
+			check_inferior ();
+
+			if ((max_frames == -1) && (current_backtrace != null))
+				return current_backtrace;
+
+			send_sync_command (new CommandFunc (get_backtrace), max_frames);
 
 			return current_backtrace;
 		}
@@ -659,7 +671,7 @@ namespace Mono.Debugger.Backends
 		{
 			backend.UpdateSymbolTable ();
 
-			IInferiorStackFrame[] iframes = inferior.GetBacktrace (-1, main_method_retaddr);
+			IInferiorStackFrame[] iframes = inferior.GetBacktrace ((int) data, main_method_retaddr);
 			StackFrame[] frames = new StackFrame [iframes.Length];
 			MyBacktrace backtrace = new MyBacktrace (this);
 

@@ -149,10 +149,15 @@ namespace Mono.Debugger.Architecture
 
 		public Backtrace GetBacktrace ()
 		{
+			return GetBacktrace (-1);
+		}
+
+		public Backtrace GetBacktrace (int max_frames)
+		{
 			if (has_backtrace)
 				return backtrace;
 
-			IInferiorStackFrame[] iframes = GetBacktrace (-1, TargetAddress.Null);
+			IInferiorStackFrame[] iframes = GetBacktrace (max_frames, TargetAddress.Null);
 			StackFrame[] frames = new StackFrame [iframes.Length];
 
 			for (int i = 0; i < iframes.Length; i++) {

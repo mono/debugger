@@ -1,5 +1,14 @@
 2003-07-05  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IProcess.cs (GetBacktrace): Added overloaded version
+	which takes an `int max_frames' argument.
+
+	* frontends/scripting/Parsing.jay: The `bt' command now takes an
+	optional integer argument which is the maximum number of frames to
+	include in the backtrace.
+
+2003-07-05  Martin Baulig  <martin@ximian.com>
+
 	Released version 0.4 "New York City" of the Mono Debugger :-)
 
 2003-07-04  Martin Baulig  <martin@ximian.com>

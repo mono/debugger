@@ -370,6 +370,12 @@ namespace Mono.Debugger
 			return iprocess.GetBacktrace ();
 		}
 
+		public Backtrace GetBacktrace (int max_frames)
+		{
+			check_iprocess ();
+			return iprocess.GetBacktrace (max_frames);
+		}
+
 		public Register[] GetRegisters ()
 		{
 			check_iprocess ();

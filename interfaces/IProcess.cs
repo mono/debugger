@@ -86,6 +86,8 @@ namespace Mono.Debugger
 
 		Backtrace GetBacktrace ();
 
+		Backtrace GetBacktrace (int max_frames);
+
 		Register[] GetRegisters ();
 	}
 }
