@@ -13,22 +13,42 @@ namespace Mono.Debugger
 		ObjectCacheFunc func;
 		object user_data;
 		object cached_object;
+		int initial_ttl, ttl;
+		int id;
 
-		TimeSpan timeout;
-		Timer timer;
+		static Timer timer;
+		static ArrayList objects;
+		static int next_id = 0;
 
-		public ObjectCache (ObjectCacheFunc func, object user_data, TimeSpan timeout)
+		public ObjectCache (ObjectCacheFunc func, object user_data, int ttl)
 		{
 			this.func = func;
 			this.user_data = user_data;
-			this.timeout = timeout;
+			this.initial_ttl = this.ttl = ttl;
+			this.id = ++next_id;
 
-			timer = new Timer (new TimerCallback (timeout_cb), null,
-					   TimeSpan.Zero, TimeSpan.Zero);
+			objects.Add (this);
 		}
 
-		void timeout_cb (object dummy)
+		static ObjectCache ()
 		{
+			objects = ArrayList.Synchronized (new ArrayList ());
+			timer = new Timer (new TimerCallback (cleanup_process), null, 0, 60000);
+		}
+
+		static void cleanup_process (object dummy)
+		{
+			foreach (ObjectCache obj in objects)
+				obj.timeout_func ();
+		}
+
+		void timeout_func ()
+		{
+			if (ttl > 0)
+				--ttl;
+			if (ttl > 0)
+				return;
+
 			cached_object = null;
 		}
 
@@ -68,7 +88,7 @@ namespace Mono.Debugger
 				// If we still have a hard reference to the data.
 				if (data != null) {
 					// Reset timeout since the data has been accessed.
-					timer.Change (timeout, TimeSpan.Zero);
+					ttl = initial_ttl;
 					return data;
 				}
 
@@ -84,7 +104,7 @@ namespace Mono.Debugger
 					// Data is still there and has just been accessed, so
 					// add a hard reference to it again and restart the timeout.
 					cached_object = data;
-					timer.Change (timeout, TimeSpan.Zero);
+					ttl = initial_ttl;
 					return data;
 				}
 
@@ -94,28 +114,15 @@ namespace Mono.Debugger
 				// Just created a new object, add a hard reference to it and restart
 				// the timeout.
 				cached_object = data;
-				timer.Change (timeout, TimeSpan.Zero);
+				ttl = initial_ttl;
 
 				return data;
 			}
 		}
 
-		public TimeSpan Timeout {
-			get {
-				check_disposed ();
-				return timeout;
-			}
-
-			set {
-				check_disposed ();
-				timeout = value;
-				timer.Change (timeout, TimeSpan.Zero);
-			}
-		}
-
 		public void Flush ()
 		{
-			timer.Change (TimeSpan.Zero, TimeSpan.Zero);
+			ttl = 0;
 			cached_object = null;
 			weak_reference = null;
 		}
@@ -139,14 +146,14 @@ namespace Mono.Debugger
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					timer.Dispose ();
+					ttl = -1;
+					objects.Remove (this);
 					IDisposable data_dispose = cached_object as IDisposable;
 					if (data_dispose != null)
 						data_dispose.Dispose ();
 					cached_object = null;
 					weak_reference = null;
 					user_data = null;
-					timer = null;
 					// Do stuff here
 				}
 				
@@ -168,6 +175,12 @@ namespace Mono.Debugger
 		~ObjectCache ()
 		{
 			Dispose (false);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("ObjectCache ({0}:{1}:{2}:{3})", id,
+					      initial_ttl, ttl, cached_object != null);
 		}
 	}
 }

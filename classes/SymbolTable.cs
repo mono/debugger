@@ -40,8 +40,7 @@ namespace Mono.Debugger
 			get {
 				if (symbol_lookup == null)
 					symbol_lookup = new ObjectCache
-						(new ObjectCacheFunc (get_symbol_lookup), null,
-						 new TimeSpan (0,1,0));
+						(new ObjectCacheFunc (get_symbol_lookup), null, 1);
 
 				return (ISymbolLookup) symbol_lookup.Data;
 			}
@@ -136,8 +135,7 @@ namespace Mono.Debugger
 			lock (this) {
 				if (method_table == null)
 					method_table = new ObjectCache
-						(new ObjectCacheFunc (get_methods), null,
-						 new TimeSpan (0,1,0));
+						(new ObjectCacheFunc (get_methods), null, 1);
 
 				return (ArrayList) method_table.Data;
 			}

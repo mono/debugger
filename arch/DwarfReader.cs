@@ -526,8 +526,7 @@ namespace Mono.Debugger.Architecture
 
 		ObjectCache create_reader (string section_name)
 		{
-			return new ObjectCache (new ObjectCacheFunc (create_reader_func), section_name,
-						new TimeSpan (0,5,0));
+			return new ObjectCache (new ObjectCacheFunc (create_reader_func), section_name, 5);
 		}
 
 		//
@@ -1623,8 +1622,7 @@ namespace Mono.Debugger.Architecture
 
 					if (children_cache == null)
 						children_cache = new ObjectCache
-							(new ObjectCacheFunc (read_children), null,
-							 new TimeSpan (0,1,0));
+							(new ObjectCacheFunc (read_children), null, 1);
 
 					return (ArrayList) children_cache.Data;
 				}

@@ -66,8 +66,7 @@ namespace Mono.Debugger.Architecture
 				this.size = section.size;
 				this.flags = (SectionFlags) section.flags;
 				contents = new ObjectCache (
-					new ObjectCacheFunc (get_section_contents), section,
-					new TimeSpan (0,5,0));
+					new ObjectCacheFunc (get_section_contents), section, 5);
 			}
 
 			object get_section_contents (object user_data)

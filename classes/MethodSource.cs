@@ -37,8 +37,7 @@ namespace Mono.Debugger
 		protected ISourceBuffer ReadSource ()
 		{
 			if (source == null)
-				source = new ObjectCache (new ObjectCacheFunc (read_source), null,
-							  new TimeSpan (0,1,0));
+				source = new ObjectCache (new ObjectCacheFunc (read_source), null, 1);
 
 			return (ISourceBuffer) source.Data;
 		}

@@ -36,8 +36,7 @@ namespace Mono.Debugger
 			lock (this) {
 				if (method_cache == null)
 					method_cache = new ObjectCache
-						(new ObjectCacheFunc (get_methods), null,
-						 new TimeSpan (0,1,0));
+						(new ObjectCacheFunc (get_methods), null, 1);
 
 				return (SourceData) method_cache.Data;
 			}
