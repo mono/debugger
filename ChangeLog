@@ -1,5 +1,10 @@
 2003-12-15  Martin Baulig  <martin@ximian.com>
 
+	* arch/bfdglue.c (bfd_glue_elfi386_locate_base): This is only
+	supported on Linux and FreeBSD.
+
+2003-12-15  Martin Baulig  <martin@ximian.com>
+
 	* backends/IInferior.cs (IInferior): Made this interface internal.
 	(IInferior.RuntimeInvoke, IInferior.GetRegister): Removed; they're
 	inherited from ITargetAccess.

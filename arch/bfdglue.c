@@ -241,6 +241,7 @@ bfd_glue_get_section_by_name (bfd *abfd, const char *name, BfdGlueSection **sect
 guint64
 bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size)
 {
+#if defined(__linux__) || defined(__FreeBSD__)
 	const guint8 *ptr;
 
 	for (ptr = data; ptr < data + size; ptr += sizeof (Elf32_Dyn)) {
@@ -251,6 +252,7 @@ bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size)
 		else if (dyn->d_tag == DT_DEBUG)
 			return (guint32) dyn->d_un.d_ptr;
 	}
+#endif
 
 	return 0;
 }
