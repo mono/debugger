@@ -10,18 +10,14 @@ namespace Mono.Debugger
 		extern static void mono_debugger_readline_static_init ();
 
 		[DllImport("libmonodebuggerreadline")]
-		extern static void mono_debugger_readline_init (IntPtr channel);
-
-		[DllImport("libmonodebuggerreadline")]
 		extern static int mono_debugger_readline_is_a_tty (int fd);
 
 		[DllImport("libmonodebuggerreadline")]
-		extern static string mono_debugger_readline_readline (IntPtr channel, string prompt);
+		extern static string mono_debugger_readline_readline (string prompt);
 
 		[DllImport("libmonodebuggerreadline")]
 		extern static string mono_debugger_readline_add_history (string line);
 
-		IOChannel channel;
 		string prompt;
 
 		static GnuReadLine ()
@@ -29,12 +25,9 @@ namespace Mono.Debugger
 			mono_debugger_readline_static_init ();
 		}
 
-		public GnuReadLine (IOChannel channel, string prompt)
+		public GnuReadLine (string prompt)
 		{
-			this.channel = channel;
 			this.prompt = prompt;
-
-			mono_debugger_readline_init (channel.Channel);
 		}
 
 		public static bool IsTerminal (int fd)
@@ -44,7 +37,7 @@ namespace Mono.Debugger
 
 		public string ReadLine ()
 		{
-			return mono_debugger_readline_readline (channel.Channel, prompt);
+			return mono_debugger_readline_readline (prompt);
 		}
 
 		public void AddHistory (string line)

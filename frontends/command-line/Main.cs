@@ -11,7 +11,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 {
 	public class CommandLineInterpreter
 	{
-		IOChannel channel;
 		GnuReadLine readline = null;
 		DebuggerBackend backend;
 		ScriptingContext context;
@@ -21,8 +20,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public CommandLineInterpreter (string[] args)
 		{
 			if (GnuReadLine.IsTerminal (0)) {
-				channel = new IOChannel (0, false, true);
-				readline = new GnuReadLine (channel, "$ ");
+				readline = new GnuReadLine ("$ ");
 			}
 
 			backend = new DebuggerBackend ();

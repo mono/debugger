@@ -1,5 +1,12 @@
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
+	* glue/mono-debugger-readline.c: Don't use a GIOChannel here, just
+	read from stdin.
+
+	* classes/GnuReadline.cs: We don't need an IOChannel anymore.
+
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
 	* configure.in (--disable-readline): New command line argument to
 	disable the use of GNU readline.
 
