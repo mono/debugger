@@ -16,6 +16,7 @@
 #define INFERIOR_REG_ESI(r)	r.r_esi
 #define INFERIOR_REG_EDI(r)	r.r_edi
 #define INFERIOR_REG_EFLAGS(r)	r.r_eflags
+#define INFERIOR_REG_ESP(r)	r.r_esp
 #define INFERIOR_REG_FS(r)	r.r_fs
 #define INFERIOR_REG_ES(r)	r.r_es
 #define INFERIOR_REG_DS(r)	r.r_ds

@@ -336,6 +336,9 @@ server_ptrace_get_registers (InferiorHandle *handle, guint32 count, guint32 *reg
 		case DEBUGGER_REG_EFLAGS:
 			values [i] = (guint32) INFERIOR_REG_EFLAGS (handle->current_regs);
 			break;
+		case DEBUGGER_REG_ESP:
+			values [i] = (guint32) INFERIOR_REG_ESP (handle->current_regs);
+			break;
 		case DEBUGGER_REG_SS:
 			values [i] = (guint32) INFERIOR_REG_SS (handle->current_regs);
 			break;
@@ -401,6 +404,9 @@ server_ptrace_set_registers (InferiorHandle *handle, guint32 count, guint32 *reg
 			break;
 		case DEBUGGER_REG_EFLAGS:
 			INFERIOR_REG_EFLAGS (regs) = values [i];
+			break;
+		case DEBUGGER_REG_ESP:
+			INFERIOR_REG_ESP (regs) = values [i];
 			break;
 		case DEBUGGER_REG_SS:
 			INFERIOR_REG_SS (regs) = values [i];
