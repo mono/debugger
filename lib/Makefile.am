@@ -4,7 +4,7 @@ assdir = $(libdir)
 
 ass_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Backend.dll 
 
-noinst_SCRIPTS = SymbolFileReader.exe ParserGenerator.exe
+noinst_SCRIPTS = SymbolFileReader.exe
 
 EXTRA_SCRIPTS = Debugger.exe
 
@@ -31,10 +31,6 @@ BACKEND_SRCLIST = \
 
 SYMFILE_READER_SRCLIST = \
 	@top_srcdir@/lib/SymbolFileReader.cs
-
-PARSER_GENERATOR_SRCLIST = \
-	@top_srcdir@/lib/ParserGenerator.cs		\
-	@top_srcdir@/frontends/scripting/*.cs
 
 LIBRARY_DEPS = \
 	-r Mono.CSharp.Debugger
@@ -69,11 +65,6 @@ SYMFILE_READER_DEPS = \
 	-r Mono.GetOptions	\
 	-r Mono.CSharp.Debugger
 
-PARSER_GENERATOR_DEPS =		\
-	-r Mono.GetOptions	\
-	-r Mono.Debugger.dll	\
-	-r Mono.Debugger.Backend.dll
-
 GUIDIR = @top_srcdir@/frontends/gui
 RESOURCES = \
 	-resource:$(GUIDIR)/debugger.glade,debugger.glade	\
@@ -95,9 +86,6 @@ Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.
 
 SymbolFileReader.exe: $(SYMFILE_READER_SRCLIST)
 	$(MCS) -o SymbolFileReader.exe $(SYMFILE_READER_DEPS) $(SYMFILE_READER_SRCLIST) $(MCS_FLAGS)
-
-ParserGenerator.exe: $(PARSER_GENERATOR_SRCLIST)
-	$(MCS) -o ParserGenerator.exe $(PARSER_GENERATOR_DEPS) $(PARSER_GENERATOR_SRCLIST) $(MCS_FLAGS)
 
 Debugger.exe.config: Debugger.exe.config.in Makefile
 	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-jit-wrapper,g' \
