@@ -17,5 +17,14 @@ namespace Mono.Debugger
 		//   of the object.  For CIL applications, this'll call Object.ToString().
 		// </summary>
 		string PrintObject ();
+
+		// <summary>
+		//   Calls a method in the target.
+		//
+		//   Throws:
+		//     LocationInvalidException   - the object could not be accessed
+		//     TargetInvocationException  - the invocation raised an exception
+		// </summary>
+		ITargetObject InvokeMethod (int index, params ITargetObject[] args);
 	}
 }

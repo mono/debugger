@@ -165,6 +165,52 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		protected ITargetObject Invoke (TargetAddress method, ITargetLocation this_location)
+		{
+			ITargetMemoryAccess memory;
+			TargetAddress this_object = GetAddress (this_location, out memory);
+			TargetAddress exc_object;
+
+			IInferior inferior = memory as IInferior;
+			if (inferior == null)
+				throw new LocationInvalidException ();
+
+			TargetAddress retval = inferior.CallInvokeMethod (
+				invoke_method, method, this_object, new TargetAddress [0], out exc_object);
+
+			if (!exc_object.IsNull) {
+				TargetAddress exc_class = memory.ReadAddress (exc_object);
+				exc_class = memory.ReadAddress (exc_class);
+
+				ITargetClassObject exc = null;
+
+				try {
+					MonoType exc_type = Table.GetTypeFromClass (exc_class.Address);
+
+					ITargetLocation exc_loc = new RelativeTargetLocation (
+						this_location, exc_object);
+
+					exc = new MonoClassObject ((MonoClassType) exc_type, exc_loc, false);
+				} catch {
+					throw new LocationInvalidException ();
+				}
+
+				throw new TargetInvocationException (exc);
+			}
+
+			ITargetLocation retval_loc = new RelativeTargetLocation (this_location, retval);
+
+			MonoObjectObject retval_obj = new MonoObjectObject (ObjectType, retval_loc, false);
+			try {
+				ITargetObject obj = retval_obj.Object as ITargetObject;
+				if (obj != null)
+					return obj;
+			} catch {
+				// Do nothing.
+			}
+			return retval_obj;
+		}
+
 		protected class MonoPropertyInfo : ITargetFieldInfo
 		{
 			public readonly MonoType Type;
@@ -213,40 +259,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal ITargetObject Get (ITargetLocation location)
 			{
-				ITargetMemoryAccess memory;
-				TargetAddress this_object = StructType.GetAddress (location, out memory);
-				TargetAddress exc_object;
-
-				IInferior inferior = memory as IInferior;
-				if (inferior == null)
-					throw new LocationInvalidException ();
-
-				TargetAddress retval = inferior.CallInvokeMethod (
-					StructType.invoke_method, Getter, this_object,
-					new TargetAddress [0], out exc_object);
-
-				if (!exc_object.IsNull) {
-					Console.WriteLine ("EXCEPTION: {0}", exc_object);
-
-					TargetAddress exc_class = memory.ReadAddress (exc_object);
-					exc_class = memory.ReadAddress (exc_class);
-
-					try {
-						MonoType exc_type = StructType.Table.GetTypeFromClass (
-							exc_class.Address);
-
-						Console.WriteLine ("EXCEPTION TYPE: {0}", exc_type);
-					} catch {
-						throw new LocationInvalidException ();
-					}
-
-					throw new LocationInvalidException ();
-				}
-
-				ITargetLocation retval_loc = new RelativeTargetLocation (
-					location, retval);
-
-				return new MonoObjectObject (ObjectType, retval_loc, false);
+				return StructType.Invoke (Getter, location);
 			}
 
 			public override string ToString ()
@@ -369,11 +382,27 @@ namespace Mono.Debugger.Languages.CSharp
 				}
 			}
 
+			internal ITargetObject Invoke (ITargetLocation location, ITargetObject[] args)
+			{
+				if (args.Length != 0)
+					throw new NotSupportedException ();
+
+				return StructType.Invoke (Method, location);
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("MonoMethod ({0:x}:{1})",
 						      Index, MethodInfo.Name);
 			}
+		}
+
+		internal ITargetObject InvokeMethod (ITargetLocation location, int index,
+						     ITargetObject[] arguments)
+		{
+			init_methods ();
+
+			return methods [index].Invoke (location, arguments);
 		}
 
 		public override bool IsByRef {
@@ -401,51 +430,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public string PrintObject (ITargetLocation location)
 		{
-			ITargetMemoryAccess memory;
-			TargetAddress this_object = GetAddress (location, out memory);
-			TargetAddress exc_object;
-
-			IInferior inferior = memory as IInferior;
-			if (inferior == null)
-				throw new LocationInvalidException ();
-
-			MonoMethodInfo object_tostring = ObjectToString as MonoMethodInfo;
-			if (object_tostring == null)
+			MonoMethodInfo method = ObjectToString as MonoMethodInfo;
+			if (method == null)
 				throw new InternalError ();
 
-			MonoStringType retval_type = object_tostring.ReturnType as MonoStringType;
-			if (retval_type == null)
-				throw new InternalError ();
-
-			TargetAddress retval = inferior.CallInvokeMethod (
-				invoke_method, object_tostring.Method, this_object,
-				new TargetAddress [0], out exc_object);
-
-			if (!exc_object.IsNull) {
-				Console.WriteLine ("EXCEPTION: {0}", exc_object);
-
-				TargetAddress exc_class = memory.ReadAddress (exc_object);
-				exc_class = memory.ReadAddress (exc_class);
-
-				try {
-					MonoType exc_type = Table.GetTypeFromClass (exc_class.Address);
-
-					Console.WriteLine ("EXCEPTION TYPE: {0}", exc_type);
-				} catch {
-					throw new LocationInvalidException ();
-				}
-
-				throw new LocationInvalidException ();
-			}
-
-			ITargetLocation retval_loc = new RelativeTargetLocation (location, retval);
-
-			Console.WriteLine ("PRINT RETVAL: {0}", retval);
-
-			MonoStringObject obj = new MonoStringObject (retval_type, retval_loc, false);
-
-			Console.WriteLine ("PRINT OBJECT: {0}", obj);
-
+			ITargetObject obj = method.Invoke (location, new ITargetObject [0]);
 			return (string) obj.Object;
 		}
 	}

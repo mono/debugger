@@ -29,6 +29,11 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.PrintObject (location);
 		}
 
+		public ITargetObject InvokeMethod (int index, params ITargetObject[] arguments)
+		{
+			return type.InvokeMethod (location, index, arguments);
+		}
+
 		public override bool HasObject {
 			get {
 				return false;
