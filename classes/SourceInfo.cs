@@ -54,6 +54,7 @@ namespace Mono.Debugger
 		// </summary>
 		public SourceMethod[] Methods {
 			get {
+				symfile.GetMethods (this);
 				SourceMethod[] retval = new SourceMethod [methods.Count];
 				methods.CopyTo (retval, 0);
 				return retval;
@@ -80,14 +81,16 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public SourceFile (Module module, string filename)
+		public SourceFile (ISymbolFile symfile, Module module, string filename)
 		{
 			this.id = ++next_id;
+			this.symfile = symfile;
 			this.module = module;
 			this.filename = filename;
 			this.methods = new ArrayList ();
 		}
 
+		ISymbolFile symfile;
 		string filename;
 		Module module;
 		int id;

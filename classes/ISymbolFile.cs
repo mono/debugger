@@ -6,6 +6,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		void GetMethods (SourceFile file);
+
 		IMethod GetMethod (long handle);
 	}
 }

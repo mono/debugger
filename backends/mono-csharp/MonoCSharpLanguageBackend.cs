@@ -1045,6 +1045,15 @@ namespace Mono.Debugger.Languages.CSharp
 			return entry.GetMethod ();
 		}
 
+		void ISymbolFile.GetMethods (SourceFile file)
+		{
+			ensure_sources ();
+			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
+
+			foreach (C.MethodSourceEntry entry in source.Methods)
+				GetSourceMethod (file, entry.Index);
+		}
+
 		protected MonoMethod GetMonoMethod (int index)
 		{
 			ensure_sources ();
@@ -1083,6 +1092,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		ArrayList sources = null;
 		Hashtable source_hash = null;
+		Hashtable source_file_hash = null;
 		Hashtable method_index_hash = null;
 		void ensure_sources ()
 		{
@@ -1091,19 +1101,18 @@ namespace Mono.Debugger.Languages.CSharp
 
 			sources = new ArrayList ();
 			source_hash = new Hashtable ();
+			source_file_hash = new Hashtable ();
 			method_index_hash = new Hashtable ();
 
 			if (File == null)
 				return;
 
 			foreach (C.SourceFileEntry source in File.Sources) {
-				SourceFile info = new SourceFile (this, source.FileName);
+				SourceFile info = new SourceFile (this, this, source.FileName);
 
 				sources.Add (info);
-				source_hash.Add (source, info);
-
-				foreach (C.MethodSourceEntry entry in source.Methods)
-					CreateSourceMethod (info, entry.Index);
+				source_hash.Add (info, source);
+				source_file_hash.Add (source, info);
 			}
 		}
 
@@ -1155,10 +1164,27 @@ namespace Mono.Debugger.Languages.CSharp
 		SourceMethod GetSourceMethod (int index)
 		{
 			ensure_sources ();
-			return (SourceMethod) method_index_hash [index];
+			SourceMethod method = (SourceMethod) method_index_hash [index];
+			if (method != null)
+				return method;
+
+			C.MethodEntry entry = File.GetMethod (index);
+			SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
+
+			return CreateSourceMethod (file, index);
 		}
 
-		SourceMethod CreateSourceMethod (SourceFile info, int index)
+		SourceMethod GetSourceMethod (SourceFile file, int index)
+		{
+			ensure_sources ();
+			SourceMethod method = (SourceMethod) method_index_hash [index];
+			if (method != null)
+				return method;
+
+			return CreateSourceMethod (file, index);
+		}
+
+		SourceMethod CreateSourceMethod (SourceFile file, int index)
 		{
 			C.MethodEntry entry = File.GetMethod (index);
 			C.MethodSourceEntry source = File.GetMethodSource (index);
@@ -1181,7 +1207,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			string name = sb.ToString ();
 			SourceMethod method = new SourceMethod (
-				this, info, source.Index, name, source.StartRow,
+				this, file, source.Index, name, source.StartRow,
 				source.EndRow, true);
 
 			method_index_hash.Add (index, method);

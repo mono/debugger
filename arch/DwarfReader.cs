@@ -139,6 +139,9 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
+		void ISymbolFile.GetMethods (SourceFile file)
+		{ }
+
 		protected SourceMethod GetSourceMethod (DieSubprogram subprog,
 							int start_row, int end_row)
 		{
@@ -1476,7 +1479,7 @@ namespace Mono.Debugger.Architecture
 						comp_dir, Path.DirectorySeparatorChar, name);
 				else
 					file_name = name;
-				file = new SourceFile (dwarf.bfd, file_name);
+				file = new SourceFile (dwarf, dwarf.bfd, file_name);
 				symtab = new CompileUnitSymbolTable (this);
 			}
 

@@ -201,6 +201,9 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
+		void ISymbolFile.GetMethods (SourceFile file)
+		{ }
+
 		protected struct Entry {
 			public readonly string n_str;
 			public readonly byte n_type;
@@ -480,7 +483,7 @@ namespace Mono.Debugger.Architecture
 				   StabsReader stabs, ref Entry entry, string name)
 			{
 				this.stabs = stabs;
-				this.SourceFile = new SourceFile (stabs.module, name);
+				this.SourceFile = new SourceFile (stabs, stabs.module, name);
 
 				start = stabs.bfd.GetAddress (entry.n_value);
 
