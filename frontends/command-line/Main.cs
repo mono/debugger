@@ -5,7 +5,43 @@ using System.Threading;
 using System.Reflection;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using Mono.Debugger;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("Interpreter")]
+[assembly: AssemblyDescription("Mono Debugger - Command Line Interpreter")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("")]
+[assembly: AssemblyCopyright("(C) 2003 Ximian, Inc.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]		
+
+[assembly: Mono.About("Distributed under the GPL")]
+
+[assembly: Mono.UsageComplement("application args")]
+
+[assembly: Mono.Author("Martin Baulig")]
+[assembly: Mono.Author("Miguel de Icaza")]
+
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("0.2.*")]
+
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
@@ -26,8 +62,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 			context = new ScriptingContext (writer, writer, true, readline != null);
 			parser = new Parser (context, "Debugger");
 
-			if ((args != null) && (args.Length > 0))
-				context.Start (args);
+			if ((args != null) && (args.Length > 0)) {
+				try {
+					context.Start (args);
+				} catch (ScriptingException ex) {
+					Console.WriteLine (ex.Message);
+					Environment.Exit (255);
+				}
+			}
 		}
 
 		public void Run ()

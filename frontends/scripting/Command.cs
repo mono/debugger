@@ -135,7 +135,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			if (!context.IsSynchronous)
 				throw new ScriptingException ("This command cannot be used in the GUI.");
-			context.Start (args, pid);
+			if (pid != -1)
+				throw new ScriptingException ("Attaching is not yet implemented.");
+			context.Start (args);
 		}
 	}
 
@@ -1297,7 +1299,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Load (filename);
+			context.LoadSession (filename);
 		}
 	}
 }

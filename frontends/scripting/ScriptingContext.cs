@@ -11,6 +11,8 @@ using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
+using Mono.GetOptions;
+
 namespace Mono.Debugger.Frontends.CommandLine
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
@@ -642,6 +644,59 @@ namespace Mono.Debugger.Frontends.CommandLine
 		Finish
 	}
 
+	internal enum StartMode
+	{
+		Unknown,
+		CoreFile,
+		LoadSession,
+		StartApplication
+	}
+
+	internal class MyOptions : Options
+	{
+		StartMode start_mode = StartMode.Unknown;
+
+		[Option("PARAM is one of `core' (to load a core file),\n\t\t\t" +
+			"`load' (to load a previously saved debugging session)\n\t\t\t" +
+			"or `start' (to start a new application).", 'm')]
+		public WhatToDoNext mode (string value)
+		{
+			if (start_mode != StartMode.Unknown) {
+				Console.WriteLine ("This argument cannot be used multiple times.");
+				return WhatToDoNext.AbandonProgram;
+			}
+
+			switch (value) {
+			case "core":
+				start_mode = StartMode.CoreFile;
+				return WhatToDoNext.GoAhead;
+
+			case "load":
+				start_mode = StartMode.LoadSession;
+				return WhatToDoNext.GoAhead;
+
+			case "start":
+				start_mode = StartMode.StartApplication;
+				return WhatToDoNext.GoAhead;
+
+			default:
+				Console.WriteLine ("Invalid `--mode' argument.");
+				return WhatToDoNext.AbandonProgram;
+			}
+		}
+
+		public StartMode StartMode {
+			get { return start_mode; }
+		}
+
+		[Option("Display version and licensing information", 'V', "version")]
+		public override WhatToDoNext DoAbout()
+		{
+			base.DoAbout ();
+			return WhatToDoNext.AbandonProgram;
+		}
+	}
+
 	public class ScriptingContext
 	{
 		ProcessHandle current_process;
@@ -655,6 +710,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		bool is_interactive;
 		int exit_code = 0;
 		internal static readonly string DirectorySeparatorStr;
+
+		MyOptions options;
 
 		SourceFileFactory source_factory;
 		Hashtable scripting_variables;
@@ -673,6 +730,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
+
+			options = new MyOptions ();
 
 			procs = new ArrayList ();
 			current_process = null;
@@ -787,38 +846,82 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		public Process Start (string[] args)
 		{
-			if (args [0] == "load")
-				return Load (args [1]);
-			else
-				return Start (args, -1);
-		}
-
-		public Process Start (string[] args, int pid)
-		{
 			if (backend != null)
 				throw new ScriptingException ("Already have a target.");
 			if (args.Length == 0)
 				throw new ScriptingException ("No program specified.");
 
+			options.ProcessArgs (args);
+
+			switch (options.StartMode) {
+			case StartMode.CoreFile:
+				if (options.RemainingArguments.Length < 2)
+					throw new ScriptingException (
+						"You need to specify at least the name of the core " +
+						"file and the application it was generated from.");
+				return LoadCoreFile (options.RemainingArguments);
+
+			case StartMode.LoadSession:
+				if (options.RemainingArguments.Length != 1)
+					throw new ScriptingException (
+						"This mode requires exactly one argument, the file " +
+						"to load the session from.");
+				return LoadSession (options.RemainingArguments [0]);
+
+			default:
+				return StartApplication (options.RemainingArguments, -1);
+			}
+		}
+
+		protected Process LoadCoreFile (string[] args)
+		{
 			backend = new DebuggerBackend ();
 			Initialize ();
 
-			Process process;
+			string core_file = args [0];
+			string [] temp_args = new string [args.Length-1];
+			Array.Copy (args, 1, temp_args, 0, args.Length-1);
+			args = temp_args;
 
-			if (args [0] == "core") {
-				string [] temp_args = new string [args.Length-1];
-				if (args.Length > 1)
-					Array.Copy (args, 1, temp_args, 0, args.Length-1);
-				args = temp_args;
+			start = ProcessStart.Create (null, args, null);
+			Process process = backend.ReadCoreFile (start, core_file);
+			current_process = new ProcessHandle (this, backend, process, core_file);
 
-				start = ProcessStart.Create (null, args, null);
-				process = backend.ReadCoreFile (start, "thecore");
-				current_process = new ProcessHandle (this, backend, process, "thecore");
-			} else {
-				start = ProcessStart.Create (null, args, null);
-				process = backend.Run (start);
-				current_process = new ProcessHandle (this, backend, process, pid);
+			add_process (current_process);
+
+			return process;
+		}
+
+		protected Process StartApplication (string[] args, int pid)
+		{
+			backend = new DebuggerBackend ();
+			Initialize ();
+
+			start = ProcessStart.Create (null, args, null);
+			Process process = backend.Run (start);
+			current_process = new ProcessHandle (this, backend, process, pid);
+
+			add_process (current_process);
+
+			return process;
+		}
+
+		public Process LoadSession (string filename)
+		{
+			if (backend != null)
+				throw new ScriptingException ("Already have a target.");
+
+			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
+			BinaryFormatter formatter = new BinaryFormatter (null, context);
+
+			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
+				backend = (DebuggerBackend) formatter.Deserialize (stream);
 			}
+
+			Initialize ();
+
+			Process process = backend.Run (backend.ProcessStart);
+			current_process = new ProcessHandle (this, backend, process, -1);
 
 			add_process (current_process);
 
@@ -1049,28 +1152,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			using (FileStream stream = new FileStream (filename, FileMode.Create)) {
 				formatter.Serialize (stream, backend);
 			}
-		}
-
-		public Process Load (string filename)
-		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
-			StreamingContext context = new StreamingContext (StreamingContextStates.All, this);
-			BinaryFormatter formatter = new BinaryFormatter (null, context);
-
-			using (FileStream stream = new FileStream (filename, FileMode.Open)) {
-				backend = (DebuggerBackend) formatter.Deserialize (stream);
-			}
-
-			Initialize ();
-
-			Process process = backend.Run (backend.ProcessStart);
-			current_process = new ProcessHandle (this, backend, process, -1);
-
-			add_process (current_process);
-
-			return process;
 		}
 
 		public ProcessHandle ProcessByID (int number)

@@ -38,6 +38,7 @@ DEPS = \
 	-r gnome-sharp.dll	\
 	-r glade-sharp.dll	\
 	-r System.Drawing	\
+	-r Mono.GetOptions	\
 	-r Mono.CSharp.Debugger	\
 	-r Mono.Debugger.dll	\
 	-r Mono.Debugger.Backend.dll			\
@@ -45,6 +46,7 @@ DEPS = \
 	-r ../widgets/mono.debugger.gui/debugger-widgets.dll
 
 INTERPRETER_DEPS = \
+	-r Mono.GetOptions	\
 	-r Mono.CSharp.Debugger	\
 	-r Mono.Debugger.dll	\
 	-r Mono.Debugger.Backend.dll
