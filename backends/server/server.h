@@ -69,14 +69,7 @@ typedef struct {
 	int sigint;
 	int sigchld;
 
-	int sigprof;
-	int sigpwr;
-	int sigxcpu;
-
-	int thread_abort;
-	int thread_restart;
-	int thread_debug;
-	int mono_thread_debug;
+	int mono_thread_abort;
 } SignalInfo;
 
 /*

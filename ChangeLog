@@ -1,5 +1,14 @@
 2004-06-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/server.h (SignalInfo): Removed `sigprof',
+	`sigpwr', `sigxcpu', `thread_abort', `thread_restart',
+	`thread_debug' and `mono_thread_debug'; added `mono_thread_abort'.
+
+	* backends/Inferior.cs (Inferior): Removed the corresponding
+	properties.	
+
+2004-06-29  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/library.c (mono_debugger_server_static_init):
 	Don't override the mono thread abort signal.
 

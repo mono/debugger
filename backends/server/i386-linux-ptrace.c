@@ -337,21 +337,8 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo *sinfo)
 	sinfo->sigstop = SIGSTOP;
 	sinfo->sigint = SIGINT;
 	sinfo->sigchld = SIGCHLD;
-	sinfo->sigprof = SIGPROF;
-	sinfo->sigpwr = SIGPWR;
-	sinfo->sigxcpu = SIGXCPU;
 
-#if 0
-	sinfo->thread_abort = 34;
-	sinfo->thread_restart = 33;
-	sinfo->thread_debug = 32;
-	sinfo->mono_thread_debug = -1;
-#else
-	sinfo->thread_abort = 33;
-	sinfo->thread_restart = 32;
-	sinfo->thread_debug = 34;
-	sinfo->mono_thread_debug = 34;
-#endif
+	sinfo->mono_thread_abort = mono_thread_get_abort_signal ();
 
 	return COMMAND_ERROR_NONE;
 }

@@ -30,23 +30,13 @@ namespace Mono.Debugger.Backends
 			public int SIGINT;
 			public int SIGCHLD;
 
-			public int SIGPROF;
-			public int SIGPWR;
-			public int SIGXCPU;
-
-			public int ThreadAbortSignal;
-			public int ThreadRestartSignal;
-			public int ThreadDebugSignal;
-			public int MonoThreadDebugSignal;
+			public int MonoThreadAbortSignal;
 
 			public override string ToString ()
 			{
-				return String.Format ("SignalInfo ({0}:{1}:{2}:{3} - {4}:{5}:{6} - " +
-						      "{7}:{8}:{9}:{10})",
+				return String.Format ("SignalInfo ({0}:{1}:{2}:{3} - {4})",
 						      SIGKILL, SIGSTOP, SIGINT, SIGCHLD,
-						      SIGPROF, SIGPWR, SIGXCPU,
-						      ThreadAbortSignal, ThreadRestartSignal,
-						      ThreadDebugSignal, MonoThreadDebugSignal);
+						      MonoThreadAbortSignal);
 			}
 		}
 
@@ -138,66 +128,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override int SIGPROF {
+		public override int MonoThreadAbortSignal {
 			get {
-				if (!has_signals || (signal_info.SIGPROF < 0))
+				if (!has_signals || (signal_info.MonoThreadAbortSignal < 0))
 					throw new InvalidOperationException ();
 
-				return signal_info.SIGPROF;
-			}
-		}
-
-		public override int SIGPWR {
-			get {
-				if (!has_signals || (signal_info.SIGPWR < 0))
-					throw new InvalidOperationException ();
-
-				return signal_info.SIGPWR;
-			}
-		}
-
-		public override int SIGXCPU {
-			get {
-				if (!has_signals || (signal_info.SIGXCPU < 0))
-					throw new InvalidOperationException ();
-
-				return signal_info.SIGXCPU;
-			}
-		}
-
-		public override int ThreadAbortSignal {
-			get {
-				if (!has_signals || (signal_info.ThreadAbortSignal < 0))
-					throw new InvalidOperationException ();
-
-				return signal_info.ThreadAbortSignal;
-			}
-		}
-
-		public override int ThreadRestartSignal {
-			get {
-				if (!has_signals || (signal_info.ThreadRestartSignal < 0))
-					throw new InvalidOperationException ();
-
-				return signal_info.ThreadRestartSignal;
-			}
-		}
-
-		public override int ThreadDebugSignal {
-			get {
-				if (!has_signals || (signal_info.ThreadDebugSignal < 0))
-					throw new InvalidOperationException ();
-
-				return signal_info.ThreadDebugSignal;
-			}
-		}
-
-		public override int MonoThreadDebugSignal {
-			get {
-				if (!has_signals || (signal_info.MonoThreadDebugSignal < 0))
-					throw new InvalidOperationException ();
-
-				return signal_info.MonoThreadDebugSignal;
+				return signal_info.MonoThreadAbortSignal;
 			}
 		}
 

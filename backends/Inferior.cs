@@ -1130,25 +1130,7 @@ namespace Mono.Debugger.Backends
 		public abstract int SIGCHLD {
 			get;
 		}
-		public abstract int SIGPROF {
-			get;
-		}
-		public abstract int SIGPWR {
-			get;
-		}
-		public abstract int SIGXCPU {
-			get;
-		}
-		public abstract int ThreadAbortSignal {
-			get;
-		}
-		public abstract int ThreadRestartSignal {
-			get;
-		}
-		public abstract int ThreadDebugSignal {
-			get;
-		}
-		public abstract int MonoThreadDebugSignal {
+		public abstract int MonoThreadAbortSignal {
 			get;
 		}
 
