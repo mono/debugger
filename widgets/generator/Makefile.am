@@ -2,6 +2,7 @@ APIS = \
 	gtk-api.xml
 
 API_INCLUDES = \
+	$(GTKSHARP_PREFIX)/share/gapi/gdk-api.xml \
 	$(GTKSHARP_PREFIX)/share/gapi/gtk-api.xml \
 	$(GTKSHARP_PREFIX)/share/gapi/atk-api.xml
 

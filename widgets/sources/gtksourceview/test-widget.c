@@ -254,7 +254,7 @@ main (int argc, char *argv[])
 	gtk_source_view_add_pixbuf (GTK_SOURCE_VIEW (tw), "one", pixbuf, FALSE);
 	pixbuf = gdk_pixbuf_new_from_file ("/usr/share/pixmaps/no.xpm", NULL);
 	gtk_source_view_add_pixbuf (GTK_SOURCE_VIEW (tw), "two", pixbuf, FALSE);
-	pixbuf = gdk_pixbuf_new_from_file ("/usr/share/pixmaps/detach-menu.xpm", NULL);
+	pixbuf = gdk_pixbuf_new_from_file ("/usr/share/pixmaps/vmware.png", NULL);
 	gtk_source_view_add_pixbuf (GTK_SOURCE_VIEW (tw), "three", pixbuf, FALSE);
 
 	for (i = 1; i < 200; i += 20) {

@@ -72,8 +72,8 @@ gint gtk_source_view_get_tab_stop(GtkSourceView *view);
 /* Get the width in pixels */
 gint gtk_source_view_get_tab_stop_width(GtkSourceView *view);
 
-gboolean gtk_source_view_add_pixbuf(GtkSourceView *view, const gchar *key, GdkPixbuf *pixbuf, gboolean overwrite);
-GdkPixbuf *gtk_source_view_get_pixbuf(GtkSourceView *view, const gchar *key);
+gboolean gtk_source_view_add_pixbuf(GtkSourceView *view, gchar *key, GdkPixbuf *pixbuf, gboolean overwrite);
+GdkPixbuf *gtk_source_view_get_pixbuf(GtkSourceView *view, gchar *key);
 #ifdef __cplusplus
 }
 #endif
