@@ -634,8 +634,6 @@ namespace Mono.Debugger
 				language, method_argument, object_argument, param_objects);
 
 			call_method (data);
-			if (!data.InvokeOk)
-				throw new Exception ();
 
 			exc_object = data.ExceptionObject;
 			return data.ReturnObject;

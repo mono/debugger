@@ -1,5 +1,11 @@
 2005-02-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs (Process.RuntimeInvoke): Don't throw an
+	exception if the invoke failed; return the returned exception
+	object instead.
+
+2005-02-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/*.cs: The new Mono debugging interface :-)
 
 2005-02-10  Martin Baulig  <martin@ximian.com>
