@@ -257,7 +257,7 @@ namespace Mono.Debugger.GUI
 		
 		protected override void RealFrameChanged (StackFrame frame)
 		{
-			if (!process.HasTarget)
+			if (!process.HasTarget || (arch == null))
 				return;
 
 			try {
