@@ -139,9 +139,11 @@ namespace Mono.Debugger
 			this.start = start;
 
 			wait_thread = new Thread (new ThreadStart (start_wait_thread));
+			wait_thread.IsBackground = true;
 			wait_thread.Start ();
 
 			inferior_thread = new Thread (new ThreadStart (start_inferior));
+			inferior_thread.IsBackground = true;
 			inferior_thread.Start ();
 		}
 
@@ -668,7 +670,8 @@ namespace Mono.Debugger
 			thread_hash.Values.CopyTo (threads, 0);
 
 			for (int i = 0; i < threads.Length; i++)
-				threads [i].Kill ();
+				threads [i].Dispose ();
+			main_process.Dispose ();
 		}
 
 		private bool disposed = false;

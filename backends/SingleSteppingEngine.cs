@@ -1861,19 +1861,14 @@ namespace Mono.Debugger.Backends
 		protected virtual void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
-			lock (this) {
-				if (disposed)
-					return;
-
-				disposed = true;
-			}
-
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
 				if (inferior != null)
 					inferior.Kill ();
 				inferior = null;
 			}
+
+			disposed = true;
 		}
 
 		public void Dispose ()

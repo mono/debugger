@@ -26,6 +26,7 @@ namespace Mono.Debugger
 			modules_loaded_event = new ManualResetEvent (true);
 			update_completed_event = new ManualResetEvent (true);
 			symtab_thread = new Thread (new ThreadStart (symtab_thread_start));
+			symtab_thread.IsBackground = true;
 			symtab_thread.Start ();
 		}
 

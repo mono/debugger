@@ -772,7 +772,10 @@ namespace Mono.Debugger
 
 		protected virtual void DoDispose ()
 		{
-			engine.Dispose ();
+			if (engine != null) {
+				engine.Dispose ();
+				engine = null;
+			}
 		}
 
 		protected virtual void Dispose (bool disposing)
