@@ -62,7 +62,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected object GetObject (ITargetMemoryReader reader, TargetLocation locaction)
 		{
-			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
+			switch (System.Type.GetTypeCode ((Type) type.Type.TypeHandle)) {
 			case TypeCode.Boolean:
 				return reader.BinaryReader.PeekByte () != 0;
 
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected byte[] CreateObject (object obj)
 		{
-			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
+			switch (System.Type.GetTypeCode ((Type) type.Type.TypeHandle)) {
 			case TypeCode.Boolean:
 				return BitConverter.GetBytes (Convert.ToBoolean (obj));
 

@@ -4,18 +4,18 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal abstract class NativeObject : ITargetObject
 	{
-		protected ITargetType type;
+		protected ITargetTypeInfo type;
 		protected TargetLocation location;
 		protected bool is_valid;
 
-		public NativeObject (ITargetType type, TargetLocation location)
+		public NativeObject (ITargetTypeInfo type, TargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
 			is_valid = true;
 		}
 
-		public ITargetType Type {
+		public ITargetTypeInfo Type {
 			get {
 				return type;
 			}
