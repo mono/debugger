@@ -1,17 +1,14 @@
 using System;
-using Mono.CSharp.Debugger;
-using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Backends
 {
 	internal class MonoRegisterLocation : MonoTargetLocation
 	{
 		int register;
 
-		internal MonoRegisterLocation (DebuggerBackend backend, StackFrame frame,
-					       bool is_byref, int register, long offset,
+		internal MonoRegisterLocation (StackFrame frame, bool is_byref, int register, long offset,
 					       TargetAddress start_scope, TargetAddress end_scope)
-			: base (backend, frame, is_byref, offset, start_scope, end_scope)
+			: base (frame, is_byref, offset, start_scope, end_scope)
 		{
 			this.register = register;
 		}
@@ -66,8 +63,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override MonoTargetLocation Clone (int offset)
 		{
-			return new MonoRegisterLocation (backend, frame, is_byref, register,
-							 Offset + offset, start_scope, end_scope);
+			return new MonoRegisterLocation (
+				frame, is_byref, register, Offset + offset, start_scope, end_scope);
 		}
 
 		protected override string MyToString ()

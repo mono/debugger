@@ -75,11 +75,11 @@ namespace Mono.Debugger.Languages.CSharp
 					return null;
 				else
 					return new MonoRegisterLocation (
-						backend, frame, type.IsByRef, info.Index, info.Offset,
+						frame, type.IsByRef, info.Index, info.Offset,
 						start_scope, end_scope);
 			} else if (info.Mode == VariableInfo.AddressMode.Stack)
 				return new MonoStackLocation (
-					backend, frame, type.IsByRef, is_local, info.Offset, 0,
+					frame, type.IsByRef, is_local, info.Offset, 0,
 					start_scope, end_scope);
 			else
 				return null;

@@ -1,8 +1,6 @@
 using System;
-using Mono.CSharp.Debugger;
-using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Backends
 {
 	internal delegate void LocationEventHandler (MonoTargetLocation location);
 
@@ -13,18 +11,15 @@ namespace Mono.Debugger.Languages.CSharp
 	// </summary>
 	internal abstract class MonoTargetLocation : ICloneable
 	{
-		protected DebuggerBackend backend;
 		protected StackFrame frame;
 		protected TargetAddress start_scope, end_scope;
 		protected long offset;
 		protected bool is_byref;
 		bool is_valid;
 
-		internal MonoTargetLocation (DebuggerBackend backend, StackFrame frame,
-					     bool is_byref, long offset,
+		internal MonoTargetLocation (StackFrame frame, bool is_byref, long offset,
 					     TargetAddress start_scope, TargetAddress end_scope)
 		{
-			this.backend = backend;
 			this.is_byref = is_byref;
 			this.offset = offset;
 			this.start_scope = start_scope;
@@ -36,13 +31,11 @@ namespace Mono.Debugger.Languages.CSharp
 				this.start_scope += frame.SourceAddress.SourceRange;
 
 			frame.FrameInvalid += new StackFrameInvalidHandler (SetInvalid);
-
-			// backend.FramesInvalidEvent += new StackFrameInvalidHandler (SetInvalid);
 		}
 
 		protected MonoTargetLocation (MonoTargetLocation relative_to, TargetAddress address,
 					      bool isbyref)
-			: this (relative_to.backend, relative_to.frame, isbyref, 0,
+			: this (relative_to.frame, isbyref, 0,
 				relative_to.start_scope, relative_to.end_scope)
 		{ }
 

@@ -1,8 +1,6 @@
 using System;
-using Mono.CSharp.Debugger;
-using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Backends
 {
 	// <summary>
 	//   This is just an address, but its lifetime is tied to the lifetime of another location.

@@ -1,3 +1,15 @@
+2003-02-26  Martin Baulig  <martin@ximian.com>
+
+	Moved MonoTargetLocation.cs, MonoRelativeTargetLocation.cs,
+	MonoStackLocation.cs and MonoRegisterLocation.cs from
+	backends/mono-csharp/ to backends/classes/ and put them into the
+	Mono.Debugger.Backends namespace.
+
+	* backends/classes/MonoTargetLocation.cs: Moved here.
+	* backends/classes/MonoRelativeTargetLocation.cs: Moved here.
+	* backends/classes/MonoStackLocation.cs: Moved here.
+	* backends/classes/MonoRegisterLocation.cs: Moved here.
+
 2003-02-25  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceInfo.cs (SourceFile.FindMethod): Renamed the

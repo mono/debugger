@@ -1,8 +1,6 @@
 using System;
-using Mono.CSharp.Debugger;
-using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Languages.CSharp
+namespace Mono.Debugger.Backends
 {
 	internal class MonoStackLocation : MonoTargetLocation
 	{
@@ -20,10 +18,10 @@ namespace Mono.Debugger.Languages.CSharp
 		//
 		//   For valuetypes, these two are actually the same.
 		// </remarks>
-		internal MonoStackLocation (DebuggerBackend backend, StackFrame frame,
-					    bool is_byref, bool is_local, long stack_offset,
-					    long offset, TargetAddress start_scope, TargetAddress end_scope)
-			: base (backend, frame, is_byref, offset, start_scope, end_scope)
+		internal MonoStackLocation (StackFrame frame, bool is_byref, bool is_local,
+					    long stack_offset, long offset,
+					    TargetAddress start_scope, TargetAddress end_scope)
+			: base (frame, is_byref, offset, start_scope, end_scope)
 		{
 			this.is_local = is_local;
 			this.stack_offset = stack_offset;
@@ -56,7 +54,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override MonoTargetLocation Clone (int offset)
 		{
-			return new MonoStackLocation (backend, frame, is_byref, is_local,
+			return new MonoStackLocation (frame, is_byref, is_local,
 						      stack_offset, Offset + offset,
 						      start_scope, end_scope);
 		}
