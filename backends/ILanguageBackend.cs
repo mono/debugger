@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	public interface ILanguageBackend
 	{
@@ -19,7 +19,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		TargetAddress GetTrampoline (IProcess process, TargetAddress address);
+		TargetAddress GetTrampoline (IInferior inferior, TargetAddress address);
 
 		// <summary>
 		//   Called when a breakpoint has been hit.  Returns true if the
@@ -30,7 +30,7 @@ namespace Mono.Debugger
 		//   The implementation must not continue the target itself, this
 		//   is done automatically by the SingleSteppingEngine.
 		// </remarks>
-		bool BreakpointHit (IProcess process, TargetAddress address);
+		bool BreakpointHit (IInferior inferior, TargetAddress address);
 	}
 }
 

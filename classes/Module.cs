@@ -35,7 +35,7 @@ namespace Mono.Debugger
 			step_into = true;
 		}
 
-		public abstract ILanguageBackend Language {
+		public abstract object Language {
 			get;
 		}
 

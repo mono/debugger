@@ -499,7 +499,7 @@ namespace Mono.Debugger.Languages.CSharp
 				table.Backend.ModuleManager.AddModule (this);
 			}
 
-			public override ILanguageBackend Language {
+			public override object Language {
 				get {
 					return table.Language;
 				}
@@ -1690,11 +1690,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public TargetAddress GetTrampoline (IProcess iprocess, TargetAddress address)
+		public TargetAddress GetTrampoline (IInferior inferior, TargetAddress address)
 		{
-			Process process = (Process) iprocess;
-			IInferior inferior = process.Inferior;
-			IArchitecture arch = process.Architecture;
+			IArchitecture arch = inferior.Architecture;
 
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
@@ -1711,38 +1709,35 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 			reload_event.WaitOne ();
 
-			ITargetMemoryInfo meminfo = process.TargetMemoryInfo;
-
 			TargetAddress method;
-			switch (meminfo.TargetAddressSize) {
+			switch (inferior.TargetAddressSize) {
 			case 4:
-				method = new TargetAddress (meminfo.GlobalAddressDomain, (int) result);
+				method = new TargetAddress (inferior.GlobalAddressDomain, (int) result);
 				break;
 
 			case 8:
-				method = new TargetAddress (meminfo.GlobalAddressDomain, result);
+				method = new TargetAddress (inferior.GlobalAddressDomain, result);
 				break;
 				
 			default:
 				throw new TargetMemoryException (
-					"Unknown target address size " + meminfo.TargetAddressSize);
+					"Unknown target address size " + inferior.TargetAddressSize);
 			}
 
 			return method;
 		}
 
-		public bool BreakpointHit (IProcess iprocess, TargetAddress address)
+		public bool BreakpointHit (IInferior inferior, TargetAddress address)
 		{
-			ITargetMemoryAccess memory = iprocess.TargetMemoryAccess;
-			IArchitecture arch = iprocess.Architecture;
+			IArchitecture arch = inferior.Architecture;
 
-			if ((info == null) || (memory == null))
+			if (info == null)
 				return true;
 
 			try {
-				TargetAddress trampoline = memory.ReadAddress (
+				TargetAddress trampoline = inferior.ReadAddress (
 					info.breakpoint_trampoline_code);
-				if (trampoline.IsNull || (iprocess.CurrentFrameAddress != trampoline + 1))
+				if (trampoline.IsNull || (inferior.CurrentFrame != trampoline + 1))
 					return true;
 
 				TargetAddress method, code, retaddr;

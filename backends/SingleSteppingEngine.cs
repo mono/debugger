@@ -910,7 +910,7 @@ namespace Mono.Debugger.Backends
 			// zero, then no other thread has set this breakpoint.
 			if (breakpoint == 0) {
 				if (reached_main_2)
-					return backend.BreakpointHit (process, inferior.CurrentFrame);
+					return backend.BreakpointHit (inferior, inferior.CurrentFrame);
 				else
 					return true;
 			}
@@ -979,7 +979,6 @@ namespace Mono.Debugger.Backends
 
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
-				ILanguageBackend language = current_method.Module.Language;
 
 				current_frame = new MyStackFrame (
 					this, address, 0, frames [0], null, source, current_method);
@@ -1033,7 +1032,6 @@ namespace Mono.Debugger.Backends
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasSource) {
 				SourceLocation source = current_method.Source.Lookup (address);
-				ILanguageBackend language = current_method.Module.Language;
 
 				// If check_method_operation() returns true, it already
 				// started a stepping operation, so the target is
@@ -1077,7 +1075,7 @@ namespace Mono.Debugger.Backends
 		Command check_method_operation (TargetAddress address, IMethod method,
 						SourceLocation source, StepOperation operation)
 		{
-			ILanguageBackend language = method.Module.Language;
+			ILanguageBackend language = method.Module.Language as ILanguageBackend;
 			if (language == null)
 				return null;
 
@@ -1239,7 +1237,7 @@ namespace Mono.Debugger.Backends
 				 * This will trigger a JIT compilation if neccessary.
 				 */
 				if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-					TargetAddress trampoline = frame.Language.GetTrampoline (process, call);
+					TargetAddress trampoline = frame.Language.GetTrampoline (inferior, call);
 
 					/*
 					 * If this is a trampoline, insert a breakpoint at the start of
@@ -1308,8 +1306,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
-			ILanguageBackend language = (frame.Method != null) ?
-				frame.Method.Module.Language : null;
+			object language = (frame.Method != null) ? frame.Method.Module.Language : null;
 
 			if (frame.SourceLocation == null)
 				return null;
@@ -1334,7 +1331,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			StackFrame frame = CurrentFrame;
-			ILanguageBackend language;
+			object language;
 
 			if (frame != null)
 				language = (frame.Method != null) ? frame.Method.Module.Language : null;

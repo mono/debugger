@@ -26,7 +26,7 @@ namespace Mono.Debugger.Architecture
 			backend.ModuleManager.AddModule (this);
 		}
 
-		public override ILanguageBackend Language {
+		public override object Language {
 			get {
 				return null;
 			}

@@ -1,5 +1,18 @@
 2003-01-02  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ILanguageBackend.cs: Moved to ../backends.
+
+	* backends/ILanguageBackend.cs: This is now an internal interface.
+	(BreakpointHit, GetTrampoline): Take an IInferior, not an
+	IProcess argument.
+
+	* classes/Module.cs (Module.Language): The return type of this
+	property is now `object'.
+
+	* arch/BfdContainer.cs: Don't implement ILanguageBackend.
+
+2003-01-02  Martin Baulig  <martin@ximian.com>
+
 	* arch/CoreFile.cs: Don't implement IInferior, just IProcess and
 	ITargetAccess.
 

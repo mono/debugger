@@ -10,7 +10,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class BfdContainer : ILanguageBackend, ISerializable, IDisposable
+	internal class BfdContainer : ISerializable, IDisposable
 	{
 		Hashtable bfd_hash;
 		Hashtable module_hash;
@@ -110,46 +110,6 @@ namespace Mono.Debugger.Architecture
 				module.Bfd = null;
 				module.UnLoad ();
 			}
-		}
-
-		//
-		// ILanguageBackend
-		//
-
-		string ILanguageBackend.Name {
-			get {
-				return "native";
-			}
-		}
-
-		public ISymbolTable SymbolTable {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
-		public Module[] Modules {
-			get {
-				Module[] modules = new Module [module_hash.Values.Count];
-				module_hash.Values.CopyTo (modules, 0);
-				return modules;
-			}
-		}
-
-		public TargetAddress GenericTrampolineCode {
-			get {
-				return TargetAddress.Null;
-			}
-		}
-
-		public TargetAddress GetTrampoline (IProcess process, TargetAddress address)
-		{
-			return TargetAddress.Null;
-		}
-
-		public bool BreakpointHit (IProcess process, TargetAddress address)
-		{
-			return true;
 		}
 
 		//
