@@ -11,11 +11,11 @@ namespace Mono.Debugger
 		// <summary>
 		//   The address of the JIT's generic trampoline code.
 		// </summary>
-		ITargetLocation GenericTrampolineCode {
+		TargetAddress GenericTrampolineCode {
 			get;
 		}
 
-		ITargetLocation GetTrampoline (ITargetLocation address);
+		TargetAddress GetTrampoline (TargetAddress address);
 	}
 }
 

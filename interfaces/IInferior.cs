@@ -76,7 +76,7 @@ namespace Mono.Debugger
 		//   Continue running until we either reach the specified location, hit a
 		//   breakpoint or receive a signal.
 		// </summary>
-		void Continue (ITargetLocation location);
+		void Continue (TargetAddress until);
 
 		// <summary>
 		//   Aborts the target being debugged, but gives it time to terminate cleanly.
@@ -93,7 +93,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   Get the current target location.
 		// </summary>
-		ITargetLocation CurrentFrame {
+		TargetAddress CurrentFrame {
 			get;
 		}
 
@@ -115,8 +115,8 @@ namespace Mono.Debugger
 		// <remarks>
 		//   The following two methods are more or less private.
 		// </remarks>
-		long CallMethod (ITargetLocation method, long method_argument);
-		ITargetLocation SimpleLookup (string name);
+		long CallMethod (TargetAddress method, long method_argument);
+		TargetAddress SimpleLookup (string name);
 
 		// <summary>
 		//   Returns a disassembler for the current target.

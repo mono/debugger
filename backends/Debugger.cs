@@ -55,12 +55,12 @@ namespace Mono.Debugger.Backends
 		byte[] data;
 		BinaryReader reader;
 		int offset;
-		ITargetInfo target_info;
+		IInferior inferior;
 
-		internal TargetReader (byte[] data, ITargetInfo target_info)
+		internal TargetReader (byte[] data, IInferior inferior)
 		{
 			this.reader = new BinaryReader (new MemoryStream (data));
-			this.target_info = target_info;
+			this.inferior = inferior;
 			this.data = data;
 			this.offset = 0;
 		}
@@ -83,19 +83,19 @@ namespace Mono.Debugger.Backends
 
 		public int TargetIntegerSize {
 			get {
-				return target_info.TargetIntegerSize;
+				return inferior.TargetIntegerSize;
 			}
 		}
 
 		public int TargetLongIntegerSize {
 			get {
-				return target_info.TargetLongIntegerSize;
+				return inferior.TargetLongIntegerSize;
 			}
 		}
 
 		public int TargetAddressSize {
 			get {
-				return target_info.TargetAddressSize;
+				return inferior.TargetAddressSize;
 			}
 		}
 
@@ -114,12 +114,12 @@ namespace Mono.Debugger.Backends
 			return reader.ReadInt64 ();
 		}
 
-		public ITargetLocation ReadAddress ()
+		public TargetAddress ReadAddress ()
 		{
 			if (TargetAddressSize == 4)
-				return new TargetLocation (reader.ReadInt32 ());
+				return new TargetAddress (inferior, reader.ReadInt32 ());
 			else if (TargetAddressSize == 8)
-				return new TargetLocation (reader.ReadInt64 ());
+				return new TargetAddress (inferior, reader.ReadInt64 ());
 			else
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
@@ -128,15 +128,16 @@ namespace Mono.Debugger.Backends
 
 	internal class TargetMemoryStream : Stream
 	{
-		ITargetLocation location;
+		TargetAddress address;
 		ITargetInfo target_info;
 		ITargetMemoryAccess memory;
+		long position;
 
-		internal TargetMemoryStream (ITargetMemoryAccess memory, ITargetLocation location,
+		internal TargetMemoryStream (ITargetMemoryAccess memory, TargetAddress address,
 					     ITargetInfo target_info)
 		{
 			this.memory = memory;
-			this.location = (ITargetLocation) location.Clone ();
+			this.address = address;
 			this.target_info = target_info;
 		}
 
@@ -166,11 +167,11 @@ namespace Mono.Debugger.Backends
 
 		public override long Position {
 			get {
-				return location.Offset;
+				return position;
 			}
 
 			set {
-				location.Offset = (int) value;
+				position = value;
 			}
 		}
 
@@ -188,7 +189,7 @@ namespace Mono.Debugger.Backends
 				ref_point = 0;
 				break;
 			case SeekOrigin.Current:
-				ref_point = location.Offset;
+				ref_point = (int) position;
 				break;
 			case SeekOrigin.End:
 				throw new NotSupportedException ();
@@ -202,9 +203,9 @@ namespace Mono.Debugger.Backends
 			if (ref_point + offset < 0)
                                 throw new IOException ("Attempted to seek before start of stream");
 
-                        location.Offset = (int) (ref_point + offset);
+                        position = ref_point + offset;
 
-                        return location.Offset;
+                        return position;
                 }
 
 		public override void Flush ()
@@ -214,13 +215,13 @@ namespace Mono.Debugger.Backends
 		public override int Read (byte[] buffer, int offset, int count)
 		{
 			try {
-				byte[] retval = memory.ReadBuffer (location, count);
+				byte[] retval = memory.ReadBuffer (address + position, count);
 				retval.CopyTo (buffer, offset);
 			} catch (Exception e) {
 				throw new IOException ("Cannot read target memory", e);
 			}
 
-			location.Offset += count;
+			position += count;
 			return count;
 		}
 
@@ -230,48 +231,47 @@ namespace Mono.Debugger.Backends
 				if (offset != 0) {
 					byte[] temp = new byte [count];
 					Array.Copy (buffer, offset, temp, 0, count);
-					memory.WriteBuffer (location, temp, count);
+					memory.WriteBuffer (address + position, temp, count);
 				} else
-					memory.WriteBuffer (location, buffer, count);
+					memory.WriteBuffer (address + position, buffer, count);
 			} catch (Exception e) {
 				throw new IOException ("Cannot read target memory", e);
 			}
 
-			location.Offset += count;
+			position += count;
 		}
 	}
 
 	internal class StackFrame : IStackFrame
 	{
-		public readonly ISourceLocation SourceLocation = null;
-		public readonly ITargetLocation TargetLocation = null;
-		public readonly IInferior Inferior;
-
 		IMethod method;
+		TargetAddress address;
+		IInferior inferior;
+		ISourceLocation source;
 
-		public StackFrame (IInferior inferior, ITargetLocation location,
+		public StackFrame (IInferior inferior, TargetAddress address,
 				   ISourceLocation source, IMethod method)
-			: this (inferior, location)
+			: this (inferior, address)
 		{
-			this.SourceLocation = source;
+			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (IInferior inferior, ITargetLocation location)
+		public StackFrame (IInferior inferior, TargetAddress address)
 		{
-			Inferior = inferior;
-			TargetLocation = location;
+			this.inferior = inferior;
+			this.address = address;
 		}
 
 		ISourceLocation IStackFrame.SourceLocation {
 			get {
-				return SourceLocation;
+				return source;
 			}
 		}
 
-		ITargetLocation IStackFrame.TargetLocation {
+		TargetAddress IStackFrame.TargetAddress {
 			get {
-				return TargetLocation;
+				return address;
 			}
 		}
 
@@ -285,11 +285,11 @@ namespace Mono.Debugger.Backends
 		{
 			StringBuilder builder = new StringBuilder ();
 
-			if (SourceLocation != null) {
-				builder.Append (SourceLocation);
+			if (source != null) {
+				builder.Append (source);
 				builder.Append (" at ");
 			}
-			builder.Append (TargetLocation);
+			builder.Append (address);
 
 			return builder.ToString ();
 		}
@@ -297,23 +297,23 @@ namespace Mono.Debugger.Backends
 
 	internal class StepFrame : IStepFrame
 	{
-		ITargetLocation start, end;
+		TargetAddress start, end;
 		ILanguageBackend language;
 
-		internal StepFrame (ITargetLocation start, ITargetLocation end, ILanguageBackend language)
+		internal StepFrame (TargetAddress start, TargetAddress end, ILanguageBackend language)
 		{
 			this.start = start;
 			this.end = end;
 			this.language = language;
 		}
 
-		public ITargetLocation Start {
+		public TargetAddress Start {
 			get {
 				return start;
 			}
 		}
 
-		public ITargetLocation End {
+		public TargetAddress End {
 			get {
 				return end;
 			}
@@ -585,9 +585,8 @@ namespace Mono.Debugger.Backends
 			int offset = frame.SourceLocation.SourceOffset;
 			int range = frame.SourceLocation.SourceRange;
 
-			ITargetLocation start = new TargetLocation (frame.TargetLocation.Address - offset);
-			ITargetLocation end = (ITargetLocation) start.Clone ();
-			end.Offset += range;
+			TargetAddress start = frame.TargetAddress - offset;
+			TargetAddress end = start + range;
 
 			ILanguageBackend language = (frame.Method != null) ? frame.Method.Language : null;
 			return new StepFrame (start, end, language);
@@ -616,21 +615,20 @@ namespace Mono.Debugger.Backends
 				if (inferior == null)
 					throw new NoTargetException ();
 
-				ITargetLocation location = inferior.CurrentFrame;
+				TargetAddress address = inferior.CurrentFrame;
 
 				symtabs.UpdateSymbolTable ();
 
-				IMethod method = Lookup (location);
+				IMethod method = Lookup (address);
 				if ((method != null) && method.HasSource) {
-					ISourceLocation source = method.Source.Lookup (location);
-					return new StackFrame (inferior, location, source, method);
-				}
-
-				return new StackFrame (inferior, location);
+					ISourceLocation source = method.Source.Lookup (address);
+					return new StackFrame (inferior, address, source, method);
+				} else
+					return new StackFrame (inferior, address);
 			}
 		}
 
-		public IMethod Lookup (ITargetLocation address)
+		public IMethod Lookup (TargetAddress address)
 		{
 			return symtabs.Lookup (address);
 		}

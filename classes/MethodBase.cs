@@ -5,10 +5,10 @@ using System.Collections;
 namespace Mono.Debugger
 {
 	public struct LineEntry : IComparable {
-		public readonly long Address;
+		public readonly TargetAddress Address;
 		public readonly int Line;
 
-		public LineEntry (long address, int line)
+		public LineEntry (TargetAddress address, int line)
 		{
 			this.Address = address;;
 			this.Line = line;
@@ -32,13 +32,14 @@ namespace Mono.Debugger
 		ArrayList addresses;
 		WeakReference weak_source;
 		int start_row, end_row;
-		long start, end;
+		TargetAddress start, end;
 		bool is_loaded;
 		bool has_source;
 		string image_file;
 		string name;
 
-		protected MethodBase (string name, string image_file, long start, long end)
+		protected MethodBase (string name, string image_file,
+				      TargetAddress start, TargetAddress end)
 			: this (name, image_file)
 		{
 			this.start = start;
@@ -59,10 +60,10 @@ namespace Mono.Debugger
 
 		protected MethodBase (IMethod method)
 			: this (method.Name, method.ImageFile,
-				method.StartAddress.Address, method.EndAddress.Address)
+				method.StartAddress, method.EndAddress)
 		{ }
 
-		protected void SetAddresses (long start, long end)
+		protected void SetAddresses (TargetAddress start, TargetAddress end)
 		{
 			this.start = start;
 			this.end = end;
@@ -123,21 +124,21 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetLocation StartAddress {
+		public TargetAddress StartAddress {
 			get {
 				if (!is_loaded)
 					throw new InvalidOperationException ();
 
-				return new TargetLocation (start);
+				return start;
 			}
 		}
 
-		public ITargetLocation EndAddress {
+		public TargetAddress EndAddress {
 			get {
 				if (!is_loaded)
 					throw new InvalidOperationException ();
 
-				return new TargetLocation (end);
+				return end;
 			}
 		}
 
@@ -178,36 +179,35 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool IsInSameMethod (ITargetLocation target)
+		bool IsInSameMethod (TargetAddress address)
 		{
-			if ((target.Address < start) || (target.Address >= end))
+			if ((address < start) || (address >= end))
 				return false;
 
 			return true;
 		}
 
-		public ISourceLocation Lookup (ITargetLocation target)
+		public ISourceLocation Lookup (TargetAddress address)
 		{
-			if (!IsInSameMethod (target))
+			if (!IsInSameMethod (address))
 				return null;
 
 			ISourceBuffer source = ReadSource ();
 			if (source == null)
 				return null;
 
-			long target_address = target.Address;
-			long next_address = end;
+			TargetAddress next_address = end;
 
 			for (int i = addresses.Count-1; i >= 0; i--) {
 				LineEntry entry = (LineEntry) addresses [i];
 
-				int range = (int) (next_address - target_address);
+				int range = (int) (next_address - address);
 				next_address = entry.Address;
 
-				if (next_address > target_address)
+				if (next_address > address)
 					continue;
 
-				int offset = (int) (target_address - next_address);
+				int offset = (int) (address - next_address);
 
 				return new SourceLocation (source, entry.Line, offset, range);
 			}
@@ -219,12 +219,12 @@ namespace Mono.Debugger
 		// ISourceLookup
 		//
 
-		IMethod ISymbolLookup.Lookup (ITargetLocation target)
+		IMethod ISymbolLookup.Lookup (TargetAddress address)
 		{
 			if (!is_loaded)
 				return null;
 
-			if ((target.Address < start) || (target.Address >= end))
+			if ((address < start) || (address >= end))
 				return null;
 
 			return this;
@@ -234,9 +234,9 @@ namespace Mono.Debugger
 		{
 			IMethod method = (IMethod) obj;
 
-			long address;
+			TargetAddress address;
 			try {
-				address = method.StartAddress.Address;
+				address = method.StartAddress;
 			} catch {
 				return is_loaded ? -1 : 0;
 			}

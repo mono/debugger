@@ -8,22 +8,22 @@ namespace Mono.Debugger
 {
 	public abstract class SymbolRangeEntry : ISymbolRange, IComparable
 	{
-		long start, end;
+		TargetAddress start, end;
 		WeakReference weak_lookup;
 
-		public SymbolRangeEntry (long start, long end)
+		public SymbolRangeEntry (TargetAddress start, TargetAddress end)
 		{
 			this.start = start;
 			this.end = end;
 		}
 
-		public long StartAddress {
+		public TargetAddress StartAddress {
 			get {
 				return start;
 			}
 		}
 
-		public long EndAddress {
+		public TargetAddress EndAddress {
 			get {
 				return end;
 			}
@@ -69,12 +69,12 @@ namespace Mono.Debugger
 	public abstract class SymbolTable : ISymbolTable
 	{
 		protected readonly bool is_continuous;
-		protected readonly ITargetLocation start_address;
-		protected readonly ITargetLocation end_address;
+		protected readonly TargetAddress start_address;
+		protected readonly TargetAddress end_address;
 
 		WeakReference method_table;
 
-		protected SymbolTable (ITargetLocation start_address, ITargetLocation end_address)
+		protected SymbolTable (TargetAddress start_address, TargetAddress end_address)
 		{
 			this.is_continuous = true;
 			this.start_address = start_address;
@@ -139,7 +139,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetLocation StartAddress {
+		public TargetAddress StartAddress {
 			get {
 				if (!is_continuous)
 					throw new InvalidOperationException ();
@@ -148,7 +148,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetLocation EndAddress {
+		public TargetAddress EndAddress {
 			get {
 				if (!is_continuous)
 					throw new InvalidOperationException ();
@@ -157,11 +157,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		public virtual IMethod Lookup (ITargetLocation target)
+		public virtual IMethod Lookup (TargetAddress address)
 		{
-			long address = target.Address;
-			if (IsContinuous &&
-			    ((address < start_address.Address) || (address >= end_address.Address)))
+			if (IsContinuous && ((address < start_address) || (address >= end_address)))
 				return null;
 
 			if (HasRanges) {
@@ -172,7 +170,7 @@ namespace Mono.Debugger
 					if ((address < range.StartAddress) || (address >= range.EndAddress))
 						continue;
 
-					return range.SymbolLookup.Lookup (target);
+					return range.SymbolLookup.Lookup (address);
 				}
 
 				return null;
@@ -189,8 +187,7 @@ namespace Mono.Debugger
 				if (!method.IsLoaded)
 					continue;
 
-				if ((address < method.StartAddress.Address) ||
-				    (address >= method.EndAddress.Address))
+				if ((address < method.StartAddress) || (address >= method.EndAddress))
 					continue;
 
 				return method;

@@ -28,7 +28,7 @@ namespace Mono.Debugger.GUI
 
 				try {
 					IDisassembler dis = backend.Inferior.Disassembler;
-					ITargetLocation frame = backend.Inferior.CurrentFrame;
+					TargetAddress frame = backend.Inferior.CurrentFrame;
 					string insn = dis.DisassembleInstruction (ref frame);
 					entry.Text = String.Format ("0x{0:x}   {1}", frame.Address, insn);
 					widget.Sensitive = true;

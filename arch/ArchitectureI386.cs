@@ -15,19 +15,19 @@ namespace Mono.Debugger
 			this.inferior = inferior;
 		}
 
-		public ITargetLocation GetCallTarget (ITargetLocation location, out int insn_size)
+		public TargetAddress GetCallTarget (TargetAddress address, out int insn_size)
 		{
-			ITargetMemoryReader reader = inferior.ReadMemory (location, 6);
+			ITargetMemoryReader reader = inferior.ReadMemory (address, 6);
 
 			byte opcode = reader.ReadByte ();
 
 			if (opcode == 0xe8) {
 				int target = reader.ReadInteger ();
 				insn_size = 5;
-				return new TargetLocation (location.Address + reader.Offset + target);
+				return address + reader.Offset + target;
 			} else if (opcode != 0xff) {
 				insn_size = 0;
-				return TargetLocation.Null;
+				return TargetAddress.Null;
 			}
 
 			byte address_byte = reader.ReadByte ();
@@ -44,7 +44,7 @@ namespace Mono.Debugger
 				insn_size = 6;
 			} else {
 				insn_size = 0;
-				return TargetLocation.Null;
+				return TargetAddress.Null;
 			}
 
 #if FALSE
@@ -86,34 +86,33 @@ namespace Mono.Debugger
 			return backend.ReadAddress (vtable_addr);
 #endif
 
-			return TargetLocation.Null;
+			return TargetAddress.Null;
 		}
 
-		public ITargetLocation GetTrampoline (ITargetLocation location,
-						      ITargetLocation trampoline_address)
+		public TargetAddress GetTrampoline (TargetAddress location,
+						    TargetAddress trampoline_address)
 		{
-			if (trampoline_address == null)
-				return null;
+			if (trampoline_address.IsNull)
+				return TargetAddress.Null;
 
 			ITargetMemoryReader reader = inferior.ReadMemory (location, 10);
 
 			byte opcode = reader.ReadByte ();
 			if (opcode != 0x68)
-				return TargetLocation.Null;
+				return TargetAddress.Null;
 
 			int method_info = reader.ReadInteger ();
 
 			opcode = reader.ReadByte ();
 			if (opcode != 0xe9)
-				return TargetLocation.Null;
+				return TargetAddress.Null;
 
 			int call_disp = reader.ReadInteger ();
 
-			long address = location.Address + call_disp + 10;
-			if (address != trampoline_address.Address)
-				return TargetLocation.Null;
+			if (location + call_disp + 10 != trampoline_address)
+				return TargetAddress.Null;
 
-			return new TargetLocation (method_info);
+			return new TargetAddress (inferior, method_info);
 		}
 	}
 }

@@ -27,11 +27,11 @@ namespace Mono.Debugger.Languages.CSharp
 
 	internal class MonoDebuggerInfo
 	{
-		public readonly ITargetLocation trampoline_code;
-		public readonly ITargetLocation symbol_file_generation;
-		public readonly ITargetLocation symbol_file_table;
-		public readonly ITargetLocation update_symbol_file_table;
-		public readonly ITargetLocation compile_method;
+		public readonly TargetAddress trampoline_code;
+		public readonly TargetAddress symbol_file_generation;
+		public readonly TargetAddress symbol_file_table;
+		public readonly TargetAddress update_symbol_file_table;
+		public readonly TargetAddress compile_method;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
@@ -58,27 +58,29 @@ namespace Mono.Debugger.Languages.CSharp
 		protected string ImageFile;
 		protected OffsetTable offset_table;
 		protected ILanguageBackend language;
+		protected IInferior inferior;
 		ArrayList ranges;
 
 		int is_dynamic;
 
-		ITargetLocation raw_contents;
+		TargetAddress raw_contents;
 		int raw_contents_size;
 
-		ITargetLocation address_table;
+		TargetAddress address_table;
 		int address_table_size;
 
-		ITargetLocation range_table;
+		TargetAddress range_table;
 		int range_table_size;
 
 		BinaryReader reader;
 		BinaryReader address_reader;
 		ITargetMemoryReader range_reader;
 
-		internal MonoSymbolTableReader (ITargetMemoryAccess memory,
+		internal MonoSymbolTableReader (IInferior inferior,
 						ITargetMemoryReader symtab_reader,
 						ILanguageBackend language)
 		{
+			this.inferior = inferior;
 			this.language = language;
 
 			if (symtab_reader.ReadLongInteger () != OffsetTable.Magic)
@@ -88,8 +90,8 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new SymbolTableException ();
 
 			is_dynamic = symtab_reader.ReadInteger ();
-			ITargetLocation image_file_addr = symtab_reader.ReadAddress ();
-			ImageFile = memory.ReadString (image_file_addr);
+			TargetAddress image_file_addr = symtab_reader.ReadAddress ();
+			ImageFile = inferior.ReadString (image_file_addr);
 			raw_contents = symtab_reader.ReadAddress ();
 			raw_contents_size = symtab_reader.ReadInteger ();
 			address_table = symtab_reader.ReadAddress ();
@@ -101,9 +103,9 @@ namespace Mono.Debugger.Languages.CSharp
 			if ((raw_contents_size == 0) || (address_table_size == 0))
 				throw new SymbolTableEmptyException ();
 
-			reader = memory.ReadMemory (raw_contents, raw_contents_size).BinaryReader;
-			address_reader = memory.ReadMemory (address_table, address_table_size).BinaryReader;
-			range_reader = memory.ReadMemory (range_table, range_table_size);
+			reader = inferior.ReadMemory (raw_contents, raw_contents_size).BinaryReader;
+			address_reader = inferior.ReadMemory (address_table, address_table_size).BinaryReader;
+			range_reader = inferior.ReadMemory (range_table, range_table_size);
 
 			//
 			// Read the offset table.
@@ -178,8 +180,13 @@ namespace Mono.Debugger.Languages.CSharp
 				this.method = method;
 				this.factory = new SourceFileFactory ();
 
-				if (method.Address != null)
-					SetAddresses (method.Address.StartAddress, method.Address.EndAddress);
+				if (method.Address != null) {
+					TargetAddress start = new TargetAddress (
+						reader.inferior, method.Address.StartAddress);
+					TargetAddress end = new TargetAddress (
+						reader.inferior, method.Address.EndAddress);
+					SetAddresses (start, end);
+				}
 			}
 
 			protected override ISourceBuffer ReadSource (out int start_row, out int end_row,
@@ -207,8 +214,8 @@ namespace Mono.Debugger.Languages.CSharp
 			MonoSymbolTableReader reader;
 			long file_offset;
 
-			private MethodRangeEntry (MonoSymbolTableReader reader,
-						  long offset, long start_address, long end_address)
+			private MethodRangeEntry (MonoSymbolTableReader reader, long offset,
+						  TargetAddress start_address, TargetAddress end_address)
 				: base (start_address, end_address)
 			{
 				this.reader = reader;
@@ -228,7 +235,10 @@ namespace Mono.Debugger.Languages.CSharp
 
 					reader.CheckMethodOffset (offset);
 
-					list.Add (new MethodRangeEntry (reader, offset, start, end));
+					TargetAddress tstart = new TargetAddress (reader.inferior, start);
+					TargetAddress tend = new TargetAddress (reader.inferior, end);
+
+					list.Add (new MethodRangeEntry (reader, offset, tstart, tend));
 				}
 
 				return list;
@@ -244,18 +254,16 @@ namespace Mono.Debugger.Languages.CSharp
 	internal class MonoCSharpLanguageBackend : SymbolTable, ILanguageBackend
 	{
 		IInferior inferior;
-		ITargetMemoryAccess memory;
 		MonoDebuggerInfo info;
 		int symtab_generation;
 		ArrayList symtabs;
 		ArrayList ranges;
-		ITargetLocation trampoline_address;
+		TargetAddress trampoline_address;
 		IArchitecture arch;
 
 		public MonoCSharpLanguageBackend (IInferior inferior)
 		{
 			this.inferior = inferior;
-			this.memory = inferior;
 		}
 
 		public ISymbolTable SymbolTable {
@@ -296,12 +304,12 @@ namespace Mono.Debugger.Languages.CSharp
 			if (info != null)
 				return;
 
-			ITargetLocation symbol_info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
-			if (symbol_info == null)
+			TargetAddress symbol_info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
+			if (symbol_info.IsNull)
 				throw new SymbolTableException (
 					"Can't get address of `MONO_DEBUGGER__debugger_info'.");
 
-			ITargetMemoryReader header = memory.ReadMemory (symbol_info, 16);
+			ITargetMemoryReader header = inferior.ReadMemory (symbol_info, 16);
 			if (header.ReadLongInteger () != OffsetTable.Magic)
 				throw new SymbolTableException ();
 			if (header.ReadInteger () != OffsetTable.Version)
@@ -309,7 +317,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			int size = (int) header.ReadInteger ();
 
-			ITargetMemoryReader table = memory.ReadMemory (symbol_info, size);
+			ITargetMemoryReader table = inferior.ReadMemory (symbol_info, size);
 			info = new MonoDebuggerInfo (table);
 
 			trampoline_address = inferior.ReadAddress (info.trampoline_code);
@@ -325,7 +333,7 @@ namespace Mono.Debugger.Languages.CSharp
 			read_mono_debugger_info ();
 
 			try {
-				int generation = memory.ReadInteger (info.symbol_file_generation);
+				int generation = inferior.ReadInteger (info.symbol_file_generation);
 				if (generation == symtab_generation)
 					return;
 			} catch {
@@ -358,22 +366,22 @@ namespace Mono.Debugger.Languages.CSharp
 			symtabs = new ArrayList ();
 			ranges = new ArrayList ();
 
-			int header_size = 3 * memory.TargetIntegerSize;
-			ITargetLocation symbol_file_table = memory.ReadAddress (info.symbol_file_table);
-			ITargetMemoryReader header = memory.ReadMemory (symbol_file_table, header_size);
+			int header_size = 3 * inferior.TargetIntegerSize;
+			TargetAddress symbol_file_table = inferior.ReadAddress (info.symbol_file_table);
+			ITargetMemoryReader header = inferior.ReadMemory (symbol_file_table, header_size);
 
 			int size = header.ReadInteger ();
 			int count = header.ReadInteger ();
 			symtab_generation = header.ReadInteger ();
 
-			ITargetMemoryReader symtab_reader = memory.ReadMemory (
+			ITargetMemoryReader symtab_reader = inferior.ReadMemory (
 				symbol_file_table, size + header_size);
 			symtab_reader.Offset = header_size;
 
 			for (int i = 0; i < count; i++) {
 				MonoSymbolTableReader reader;
 				try {
-					reader = new MonoSymbolTableReader (memory, symtab_reader, this);
+					reader = new MonoSymbolTableReader (inferior, symtab_reader, this);
 					ranges.AddRange (reader.SymbolRanges);
 					symtabs.Add (reader);
 				} catch (SymbolTableEmptyException) {
@@ -388,35 +396,35 @@ namespace Mono.Debugger.Languages.CSharp
 			Console.WriteLine ("Done updating symbol files.");
 		}
 
-		public ITargetLocation GenericTrampolineCode {
+		public TargetAddress GenericTrampolineCode {
 			get {
 				return trampoline_address;
 			}
 		}
 
-		public ITargetLocation GetTrampoline (ITargetLocation address)
+		public TargetAddress GetTrampoline (TargetAddress address)
 		{
-			if (trampoline_address == null)
-				return null;
+			if (trampoline_address.IsNull)
+				return TargetAddress.Null;
 
-			ITargetLocation trampoline = arch.GetTrampoline (address, trampoline_address);
+			TargetAddress trampoline = arch.GetTrampoline (address, trampoline_address);
 
 			Console.WriteLine ("CALL: {0:x} {1:x} => {2:x}",
 					   address, trampoline_address, trampoline);
 
-			if ((trampoline == null) || trampoline.IsNull)
-				return null;
+			if (trampoline.IsNull)
+				return TargetAddress.Null;
 
 			long result = inferior.CallMethod (info.compile_method, trampoline.Address);
 
-			ITargetLocation method;
+			TargetAddress method;
 			switch (inferior.TargetAddressSize) {
 			case 4:
-				method = new TargetLocation ((int) result);
+				method = new TargetAddress (inferior, (int) result);
 				break;
 
 			case 8:
-				method = new TargetLocation (result);
+				method = new TargetAddress (inferior, result);
 				break;
 				
 			default:

@@ -12,6 +12,7 @@ namespace Mono.Debugger.Architecture
 	public class Bfd : IDisposable
 	{
 		IntPtr bfd;
+		IInferior inferior;
 		Hashtable symbols;
 		DwarfReader dwarf;
 		string filename;
@@ -55,7 +56,7 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (string filename, ISourceFileFactory factory)
+		public Bfd (IInferior inferior, string filename, ISourceFileFactory factory)
 		{
 			bfd = bfd_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -64,6 +65,7 @@ namespace Mono.Debugger.Architecture
 			if (!bfd_glue_check_format_object (bfd))
 				throw new TargetException ("Not an object file: " + filename);
 
+			this.inferior = inferior;
 			this.filename = filename;
 
 			IntPtr symtab;
@@ -83,7 +85,7 @@ namespace Mono.Debugger.Architecture
 			g_free (symtab);
 
 			try {
-				dwarf = new DwarfReader (this, factory);
+				dwarf = new DwarfReader (inferior, this, factory);
 			} catch (Exception e) {
 				Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
 			}
@@ -110,18 +112,18 @@ namespace Mono.Debugger.Architecture
 
 			IntPtr info = bfd_glue_init_disassembler (bfd);
 
-			return new BfdDisassembler (memory, dis, info);
+			return new BfdDisassembler (inferior, dis, info);
 		}
 
-		public ITargetLocation this [string name] {
+		public TargetAddress this [string name] {
 			get {
 				if (symbols == null)
-					return null;
+					return TargetAddress.Null;
 
 				if (symbols.Contains (name))
-					return new TargetLocation ((long) symbols [name]);
+					return new TargetAddress (inferior, (long) symbols [name]);
 
-				return null;
+				return TargetAddress.Null;
 			}
 		}
 

@@ -17,7 +17,7 @@ namespace Mono.Debugger.GUI
 		protected override ISourceLocation GetSource (IStackFrame frame)
 		{
 			if (current_method != null) {
-				ISourceLocation source = current_method.Lookup (frame.TargetLocation);
+				ISourceLocation source = current_method.Lookup (frame.TargetAddress);
 				if (source != null)
 					return source;
 			}
@@ -30,7 +30,7 @@ namespace Mono.Debugger.GUI
 
 			current_method = backend.Inferior.Disassembler.DisassembleMethod (frame.Method);
 
-			return current_method.Lookup (frame.TargetLocation);
+			return current_method.Lookup (frame.TargetAddress);
 		}
 	}
 }

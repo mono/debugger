@@ -6,7 +6,7 @@ namespace Mono.Debugger
 {
 	public interface ISymbolLookup
 	{
-		IMethod Lookup (ITargetLocation target);
+		IMethod Lookup (TargetAddress address);
 	}
 
 	public interface ISymbolContainer
@@ -18,22 +18,22 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetLocation StartAddress {
+		TargetAddress StartAddress {
 			get;
 		}
 
-		ITargetLocation EndAddress {
+		TargetAddress EndAddress {
 			get;
 		}
 	}
 
 	public interface ISymbolRange : IComparable
 	{
-		long StartAddress {
+		TargetAddress StartAddress {
 			get;
 		}
 
-		long EndAddress {
+		TargetAddress EndAddress {
 			get;
 		}
 

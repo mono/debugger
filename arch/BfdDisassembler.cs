@@ -14,7 +14,7 @@ namespace Mono.Debugger.Architecture
 		IntPtr dis;
 		IntPtr info;
 
-		ITargetMemoryAccess memory;
+		IInferior inferior;
 		ISymbolTable symbol_table;
 
 		[DllImport("libmonodebuggerbfdglue")]
@@ -26,11 +26,11 @@ namespace Mono.Debugger.Architecture
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static void bfd_glue_free_disassembler (IntPtr info);
 
-		internal BfdDisassembler (ITargetMemoryAccess memory, IntPtr dis, IntPtr info)
+		internal BfdDisassembler (IInferior inferior, IntPtr dis, IntPtr info)
 		{
 			this.dis = dis;
 			this.info = info;
-			this.memory = memory;
+			this.inferior = inferior;
 
 			bfd_glue_setup_disassembler (info, new ReadMemoryHandler (read_memory_func),
 						     new OutputHandler (output_func),
@@ -44,8 +44,8 @@ namespace Mono.Debugger.Architecture
 		int read_memory_func (long address, IntPtr data, int size)
 		{
 			try {
-				ITargetLocation location = new TargetLocation (address);
-				byte[] buffer = memory.ReadBuffer (location, size);
+				TargetAddress location = new TargetAddress (inferior, address);
+				byte[] buffer = inferior.ReadBuffer (location, size);
 				Marshal.Copy (buffer, 0, data, size);
 			} catch (Exception e) {
 				memory_exception = e;
@@ -74,7 +74,7 @@ namespace Mono.Debugger.Architecture
 				return;
 			}
 
-			IMethod method = symbol_table.Lookup (new TargetLocation (address));
+			IMethod method = symbol_table.Lookup (new TargetAddress (inferior, address));
 			if (method == null) {
 				output_func (address);
 				return;
@@ -103,19 +103,18 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public string DisassembleInstruction (ref ITargetLocation location)
+		public string DisassembleInstruction (ref TargetAddress location)
 		{
 			memory_exception = null;
 			sb = new StringBuilder ();
 
 			string insn;
 			try {
-				int count = bfd_glue_disassemble_insn (
-					dis, info, location.Location + location.Offset);
+				int count = bfd_glue_disassemble_insn (dis, info, location.Address);
 				if (memory_exception != null)
 					throw memory_exception;
 				insn = sb.ToString ();
-				location.Offset += count;
+				location += count;
 			} finally {
 				sb = null;
 				memory_exception = null;
@@ -124,13 +123,12 @@ namespace Mono.Debugger.Architecture
 			return insn;
 		}
 
-		public int GetInstructionSize (ITargetLocation location)
+		public int GetInstructionSize (TargetAddress location)
 		{
 			memory_exception = null;
 
 			try {
-				int count = bfd_glue_disassemble_insn (
-					dis, info, location.Location + location.Offset);
+				int count = bfd_glue_disassemble_insn (dis, info, location.Address);
 				if (memory_exception != null)
 					throw memory_exception;
 				return count;

@@ -13,7 +13,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   The location in the target address space.
 		// </summary>
-		ITargetLocation TargetLocation {
+		TargetAddress TargetAddress {
 			get;
 		}
 

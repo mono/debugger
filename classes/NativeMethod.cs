@@ -37,21 +37,19 @@ namespace Mono.Debugger
 			if (disassembler == null)
 				return null;
 
-			ITargetLocation current = method.StartAddress;
+			TargetAddress current = method.StartAddress;
 
 			addresses = new ArrayList ();
 
 			StringBuilder sb = new StringBuilder ();
 
-			long end_address = method.EndAddress.Address;
+			TargetAddress end_address = method.EndAddress;
 
-			while (current.Address < end_address) {
-				long address = current.Address;
-
+			while (current < end_address) {
 				IMethod imethod = null;
 				if (disassembler.SymbolTable != null)
 					imethod = disassembler.SymbolTable.Lookup (current);
-				if ((imethod != null) && (imethod.StartAddress.Address == current.Address)) {
+				if ((imethod != null) && (imethod.StartAddress == current)) {
 					if (end_row > 0) {
 						sb.Append ("\n");
 						end_row++;
@@ -61,6 +59,7 @@ namespace Mono.Debugger
 					end_row++;
 				}
 
+				TargetAddress address = current;
 				string insn = disassembler.DisassembleInstruction (ref current);
 				string line = String.Format ("  {0:x}   {1}\n", address, insn);
 

@@ -10,11 +10,13 @@ namespace Mono.Debugger
 		ISourceBuffer source;
 		LineNumberEntry[] line_numbers;
 		MethodEntry method;
+		IMethod imethod;
 
 		private CSharpMethod (IMethod imethod, MethodEntry method, ISourceBuffer source,
 				      int start_row, int end_row, LineNumberEntry[] line_numbers)
 			: base (imethod)
 		{
+			this.imethod = imethod;
 			this.method = method;
 			this.source = source;
 			this.start_row= start_row;
@@ -25,6 +27,7 @@ namespace Mono.Debugger
 		protected CSharpMethod (IMethod imethod, ISourceBuffer source, MethodEntry method)
 			: base (imethod)
 		{
+			this.imethod = imethod;
 			this.source = source;
 			this.method = method;
 			this.start_row = method.StartRow;
@@ -84,9 +87,7 @@ namespace Mono.Debugger
 				LineNumberEntry lne = line_numbers [i];
 				int line_address = method.Address.LineAddresses [i];
 
-				long address = method.Address.StartAddress + line_address;
-
-				lines.Add (new LineEntry (address, lne.Row));
+				lines.Add (new LineEntry (imethod.StartAddress + line_address, lne.Row));
 			}
 
 			lines.Sort ();

@@ -61,39 +61,39 @@ namespace Mono.Debugger
 		// <summary>
 		//   Read an address from the target's address space at address @address.
 		// </summary>
-		ITargetLocation ReadAddress ();
+		TargetAddress ReadAddress ();
 	}
 
 	public interface ITargetMemoryAccess : ITargetInfo
 	{
-		byte ReadByte (ITargetLocation location);
+		byte ReadByte (TargetAddress address);
 
-		int ReadInteger (ITargetLocation location);
+		int ReadInteger (TargetAddress address);
 
-		long ReadLongInteger (ITargetLocation location);
+		long ReadLongInteger (TargetAddress address);
 
-		ITargetLocation ReadAddress (ITargetLocation location);
+		TargetAddress ReadAddress (TargetAddress address);
 
-		string ReadString (ITargetLocation location);
+		string ReadString (TargetAddress address);
 
-		ITargetMemoryReader ReadMemory (ITargetLocation location, int size);
+		ITargetMemoryReader ReadMemory (TargetAddress address, int size);
 
-		byte[] ReadBuffer (ITargetLocation location, int size);
+		byte[] ReadBuffer (TargetAddress address, int size);
 
-		Stream GetMemoryStream (ITargetLocation location);
+		Stream GetMemoryStream (TargetAddress address);
 
 		bool CanWrite {
 			get;
 		}
 
-		void WriteBuffer (ITargetLocation location, byte[] buffer, int size);
+		void WriteBuffer (TargetAddress address, byte[] buffer, int size);
 
-		void WriteByte (ITargetLocation location, byte value);
+		void WriteByte (TargetAddress address, byte value);
 
-		void WriteInteger (ITargetLocation location, int value);
+		void WriteInteger (TargetAddress address, int value);
 
-		void WriteLongInteger (ITargetLocation location, long value);
+		void WriteLongInteger (TargetAddress address, long value);
 
-		void WriteAddress (ITargetLocation location, ITargetLocation address);
+		void WriteAddress (TargetAddress address, TargetAddress value);
 	}
 }

@@ -4,11 +4,11 @@ namespace Mono.Debugger
 {
 	public interface IStepFrame
 	{
-		ITargetLocation Start {
+		TargetAddress Start {
 			get;
 		}
 
-		ITargetLocation End {
+		TargetAddress End {
 			get;
 		}
 
@@ -19,32 +19,29 @@ namespace Mono.Debugger
 
 	// <summary>
 	//   This interface denotes an address in the target's address
-	//   space.  An instance of this interface can be obtained by
-	//   doing a symbol lookup or by calling CreateLocation() on
-	//   one of the ISourceLanguage derivatives.
-	//   backend.
+	//   space in a target independent way.  It is the only way to share
+	//   an address between different IInferior's.
+	//
+	//   Basically, this interface is a handle for a TargetAddress - before
+	//   you can use it, you must resolve the location to an actual address.
+	//
+	//   This is used to store target addresses across different invocations
+	//   of the target, for instance when setting breakpoints.
 	// </summary>
-	public interface ITargetLocation : ICloneable, IComparable
+	public interface ITargetLocation : ICloneable
 	{
 		// <summary>
 		//   Address of this location in the target's address space.
 		// </summary>
-		long Location {
+		TargetAddress Address {
 			get;
 		}
 
-		// <summary>
-		//   The sum of Location and Offset.
-		// </summary>
-		long Address {
+		long Offset {
 			get;
 		}
 
-		int Offset {
-			get; set;
-		}
-
-		bool IsNull {
+		bool HasAddress {
 			get;
 		}
 	}

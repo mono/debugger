@@ -3,30 +3,26 @@ using System.Text;
 
 namespace Mono.Debugger
 {
-	public class TargetLocation : ITargetLocation
+	public abstract class TargetLocation : ITargetLocation
 	{
-		long addr;
-		int offset;
+		TargetAddress address;
+		long offset;
 
-		internal TargetLocation (long addr)
-			: this (addr, 0)
-		{ }
-
-		internal TargetLocation (long addr, int offset)
+		internal TargetLocation (TargetAddress address, long offset)
 		{
-			this.addr = addr;
+			this.address = address;
 			this.offset = offset;
 		}
 
-		public static ITargetLocation Null = new TargetLocation (0);
-
-		public long Location {
-			get {
-				return addr;
-			}
+		public abstract TargetAddress Address {
+			get;
 		}
 
-		public int Offset {
+		public abstract bool HasAddress {
+			get;
+		}
+
+		public long Offset {
 			get {
 				return offset;
 			}
@@ -36,39 +32,11 @@ namespace Mono.Debugger
 			}
 		}
 
-		public long Address {
-			get {
-				return addr + offset;
-			}
-		}
-
-		public bool IsNull {
-			get {
-				return addr == 0;
-			}
-		}
-
-		public int CompareTo (object obj)
-		{
-			ITargetLocation target = (ITargetLocation) obj;
-
-			if (Address < target.Address)
-				return -1;
-			else if (Address >= target.Address)
-				return 1;
-			else
-				return 0;
-		}
-
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();
 
-			if (addr > 0) {
-				builder.Append ("0x");
-				builder.Append (addr.ToString ("x"));
-			} else
-				builder.Append ("<unknown>");
+			builder.Append (address);
 			if (offset > 0) {
 				builder.Append ("+0x");
 				builder.Append (offset.ToString ("x"));
@@ -77,9 +45,6 @@ namespace Mono.Debugger
 			return builder.ToString ();
 		}
 
-		public object Clone ()
-		{
-			return new TargetLocation (addr, offset);
-		}
+		public abstract object Clone ();
 	}
 }

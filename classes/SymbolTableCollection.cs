@@ -27,13 +27,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetLocation StartAddress {
+		public TargetAddress StartAddress {
 			get {
 				throw new InvalidOperationException ();
 			}
 		}
 
-		public ITargetLocation EndAddress {
+		public TargetAddress EndAddress {
 			get {
 				throw new InvalidOperationException ();
 			}
@@ -68,13 +68,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IMethod Lookup (ITargetLocation target)
+		public IMethod Lookup (TargetAddress address)
 		{
 			foreach (ISymbolTable symtab in symtabs) {
 				if (!symtab.IsLoaded)
 					continue;
 
-				IMethod method = symtab.Lookup (target);
+				IMethod method = symtab.Lookup (address);
 
 				if (method != null)
 					return method;

@@ -11,6 +11,7 @@ namespace Mono.Debugger.Architecture
 	public class DwarfReader : IDisposable
 	{
 		protected Bfd bfd;
+		protected IInferior inferior;
 		protected string filename;
 		bool is64bit;
 		byte address_size;
@@ -36,9 +37,10 @@ namespace Mono.Debugger.Architecture
 			{ }
 		}
 
-		public DwarfReader (Bfd bfd, ISourceFileFactory factory)
+		public DwarfReader (IInferior inferior, Bfd bfd, ISourceFileFactory factory)
 		{
 			this.bfd = bfd;
+			this.inferior = inferior;
 			this.filename = bfd.FileName;
 			this.factory = factory;
 
@@ -86,12 +88,12 @@ namespace Mono.Debugger.Architecture
 
 			ArrayList compile_units;
 
-			public IMethod Lookup (ITargetLocation target)
+			public IMethod Lookup (TargetAddress address)
 			{
 				foreach (CompilationUnit comp_unit in compile_units) {
 					ISymbolTable symtab = comp_unit.SymbolTable;
 
-					IMethod method = symtab.Lookup (target);
+					IMethod method = symtab.Lookup (address);
 					if (method != null)
 						return method;
 				}
@@ -189,7 +191,8 @@ namespace Mono.Debugger.Architecture
 
 			DwarfReader dwarf;
 
-			public RangeEntry (DwarfReader dwarf, long offset, long address, long size)
+			public RangeEntry (DwarfReader dwarf, long offset,
+					   TargetAddress address, long size)
 				: base (address, address + size)
 			{
 				this.dwarf = dwarf;
@@ -239,7 +242,9 @@ namespace Mono.Debugger.Architecture
 					if ((address == 0) && (size == 0))
 						break;
 
-					ranges.Add (new RangeEntry (this, offset, address, size));
+					TargetAddress taddress = new TargetAddress (inferior, address);
+
+					ranges.Add (new RangeEntry (this, offset, taddress, size));
 				}
 			}
 
@@ -617,8 +622,7 @@ namespace Mono.Debugger.Architecture
 				this.engine = engine;
 
 				if (subprog.IsContinuous)
-					SetAddresses (subprog.StartAddress.Address,
-						      subprog.EndAddress.Address);
+					SetAddresses (subprog.StartAddress, subprog.EndAddress);
 			}
 
 			public override ILanguageBackend Language {
@@ -891,8 +895,9 @@ namespace Mono.Debugger.Architecture
 						end_line = st_line;
 					}
 
-					// Console.WriteLine ("COMMIT: {0:x} {1}", st_address, st_line);
-					lines.Add (new LineEntry (st_address, st_line));
+					TargetAddress address = new TargetAddress (
+						engine.dwarf.inferior, st_address);
+					lines.Add (new LineEntry (address, st_line));
 
 					basic_block = false;
 					prologue_end = false;
@@ -1682,21 +1687,21 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public ITargetLocation StartAddress {
+			public TargetAddress StartAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetLocation (start_pc);
+					return new TargetAddress (dwarf.inferior, start_pc);
 				}
 			}
 
-			public ITargetLocation EndAddress {
+			public TargetAddress EndAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetLocation (end_pc);
+					return new TargetAddress (dwarf.inferior, end_pc);
 				}
 			}
 		}
@@ -1762,21 +1767,21 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public ITargetLocation StartAddress {
+			public TargetAddress StartAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetLocation (start_pc);
+					return new TargetAddress (dwarf.inferior, start_pc);
 				}
 			}
 
-			public ITargetLocation EndAddress {
+			public TargetAddress EndAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return new TargetLocation (end_pc);
+					return new TargetAddress (dwarf.inferior, end_pc);
 				}
 			}
 

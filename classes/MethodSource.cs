@@ -10,14 +10,14 @@ namespace Mono.Debugger
 		WeakReference weak_source;
 		int start_row, end_row;
 
-		long start, end;
+		TargetAddress start, end;
 		IMethod method;
 
 		protected MethodSource (IMethod method)
 		{
 			this.method = method;
-			this.start = method.StartAddress.Address;
-			this.end = method.EndAddress.Address;
+			this.start = method.StartAddress;
+			this.end = method.EndAddress;
 		}
 
 		protected ISourceBuffer ReadSource ()
@@ -65,36 +65,35 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool IsInSameMethod (ITargetLocation target)
+		public bool IsInSameMethod (TargetAddress address)
 		{
-			if ((target.Address < start) || (target.Address >= end))
+			if ((address < start) || (address >= end))
 				return false;
 
 			return true;
 		}
 
-		public ISourceLocation Lookup (ITargetLocation target)
+		public ISourceLocation Lookup (TargetAddress address)
 		{
-			if (!IsInSameMethod (target))
+			if (!IsInSameMethod (address))
 				return null;
 
 			ISourceBuffer source = ReadSource ();
 			if (source == null)
 				return null;
 
-			long target_address = target.Address;
-			long next_address = end;
+			TargetAddress next_address = end;
 
 			for (int i = addresses.Count-1; i >= 0; i--) {
 				LineEntry entry = (LineEntry) addresses [i];
 
-				int range = (int) (next_address - target_address);
+				int range = (int) (next_address - address);
 				next_address = entry.Address;
 
-				if (next_address > target_address)
+				if (next_address > address)
 					continue;
 
-				int offset = (int) (target_address - next_address);
+				int offset = (int) (address - next_address);
 
 				return new SourceLocation (source, entry.Line, offset, range);
 			}

@@ -30,19 +30,18 @@ namespace Mono.Debugger.GUI
 		protected virtual string GetStopMessage (IStackFrame frame)
 		{
 			if (frame.Method != null) {
-				long offset = frame.TargetLocation.Address -
-					frame.Method.StartAddress.Address;
+				long offset = frame.TargetAddress - frame.Method.StartAddress;
 
 				if (offset > 0)
 					return String.Format ("Stopped at {0} in {1}+{2:x}",
-							      frame.TargetLocation, frame.Method.Name,
+							      frame.TargetAddress, frame.Method.Name,
 							      offset);
 				else if (offset == 0)
 					return String.Format ("Stopped at {0} in {1}",
-							      frame.TargetLocation, frame.Method.Name);
+							      frame.TargetAddress, frame.Method.Name);
 			}
 
-			return String.Format ("Stopped at {0}.", frame.TargetLocation);
+			return String.Format ("Stopped at {0}.", frame.TargetAddress);
 		}
 
 		public virtual void StateChanged (TargetState new_state)

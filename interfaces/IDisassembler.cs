@@ -7,12 +7,12 @@ namespace Mono.Debugger
 		// <summary>
 		//   Disassemble one instruction and increment the location.
 		// </summary>
-		string DisassembleInstruction (ref ITargetLocation location);
+		string DisassembleInstruction (ref TargetAddress address);
 
 		// <summary>
 		//   Get the size of the current instruction.
 		// </summary>
-		int GetInstructionSize (ITargetLocation location);
+		int GetInstructionSize (TargetAddress address);
 
 		// <summary>
 		//   Disassemble one method.

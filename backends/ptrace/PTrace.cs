@@ -164,7 +164,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal TargetAsyncResult call_method (ITargetLocation method, long method_argument,
+		internal TargetAsyncResult call_method (TargetAddress method, long method_argument,
 							TargetAsyncCallback callback, object user_data)
 		{
 			check_disposed ();
@@ -175,14 +175,14 @@ namespace Mono.Debugger.Backends
 			TargetState old_state = change_target_state (TargetState.RUNNING);
 			try {
 				check_error (mono_debugger_server_call_method (
-					server_handle, method.Location, method_argument, number));
+					server_handle, method.Address, method_argument, number));
 			} catch {
 				change_target_state (old_state);
 			}
 			return async;
 		}
 
-		public long CallMethod (ITargetLocation method, long method_argument)
+		public long CallMethod (TargetAddress method, long method_argument)
 		{
 			check_disposed ();
 			TargetAsyncResult result = call_method (
@@ -193,7 +193,7 @@ namespace Mono.Debugger.Backends
 			return (long) result.AsyncResult;
 		}
 
-		int insert_breakpoint (ITargetLocation address)
+		int insert_breakpoint (TargetAddress address)
 		{
 			int retval;
 			check_error (mono_debugger_server_insert_breakpoint (
@@ -208,7 +208,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		int temp_breakpoint_id = 0;
-		void insert_temporary_breakpoint (ITargetLocation address)
+		void insert_temporary_breakpoint (TargetAddress address)
 		{
 			temp_breakpoint_id = insert_breakpoint (address);
 		}
@@ -225,7 +225,7 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = new Bfd (argv [0], source_factory);
+			bfd = new Bfd (this, argv [0], source_factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -251,7 +251,7 @@ namespace Mono.Debugger.Backends
 			this.envp = envp;
 			this.source_factory = factory;
 
-			bfd = new Bfd (argv [0], factory);
+			bfd = new Bfd (this, argv [0], factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -299,7 +299,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ITargetLocation SimpleLookup (string name)
+		public TargetAddress SimpleLookup (string name)
 		{
 			return bfd [name];
 		}
@@ -309,8 +309,8 @@ namespace Mono.Debugger.Backends
 			if (!native)
 				return false;
 
-			ITargetLocation symbol_info = bfd ["main"];
-			if (symbol_info == null)
+			TargetAddress symbol_info = bfd ["main"];
+			if (symbol_info.IsNull)
 				return false;
 
 			insert_temporary_breakpoint (symbol_info);
@@ -360,10 +360,10 @@ namespace Mono.Debugger.Backends
 						break;
 					}
 				} else if (current_step_frame != null) {
-					ITargetLocation frame = CurrentFrame;
+					TargetAddress frame = CurrentFrame;
 
-					if ((frame.Address >= current_step_frame.Start.Address) &&
-					    (frame.Address < current_step_frame.End.Address)) {
+					if ((frame >= current_step_frame.Start) &&
+					    (frame < current_step_frame.End)) {
 						Step (current_step_frame);
 						break;
 					}
@@ -429,11 +429,11 @@ namespace Mono.Debugger.Backends
 		// ITargetMemoryAccess
 		//
 
-		IntPtr read_buffer (ITargetLocation location, int size)
+		IntPtr read_buffer (TargetAddress address, int size)
 		{
 			IntPtr data;
 			CommandError result = mono_debugger_server_read_memory (
-				server_handle, location.Address, size, out data);
+				server_handle, address.Address, size, out data);
 			if (result != CommandError.NONE) {
 				g_free (data);
 				handle_error (result);
@@ -442,12 +442,12 @@ namespace Mono.Debugger.Backends
 			return data;
 		}
 
-		public byte[] ReadBuffer (ITargetLocation location, int size)
+		public byte[] ReadBuffer (TargetAddress address, int size)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, size);
+				data = read_buffer (address, size);
 				byte[] retval = new byte [size];
 				Marshal.Copy (data, retval, 0, size);
 				return retval;
@@ -456,51 +456,51 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public byte ReadByte (ITargetLocation location)
+		public byte ReadByte (TargetAddress address)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, 1);
+				data = read_buffer (address, 1);
 				return Marshal.ReadByte (data);
 			} finally {
 				g_free (data);
 			}
 		}
 
-		public int ReadInteger (ITargetLocation location)
+		public int ReadInteger (TargetAddress address)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, 4);
+				data = read_buffer (address, 4);
 				return Marshal.ReadInt32 (data);
 			} finally {
 				g_free (data);
 			}
 		}
 
-		public long ReadLongInteger (ITargetLocation location)
+		public long ReadLongInteger (TargetAddress address)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
 			try {
-				data = read_buffer (location, 8);
+				data = read_buffer (address, 8);
 				return Marshal.ReadInt64 (data);
 			} finally {
 				g_free (data);
 			}
 		}
 
-		public ITargetLocation ReadAddress (ITargetLocation location)
+		public TargetAddress ReadAddress (TargetAddress address)
 		{
 			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetLocation (ReadInteger (location));
+				return new TargetAddress (this, ReadInteger (address));
 
 			case 8:
-				return new TargetLocation (ReadLongInteger (location));
+				return new TargetAddress (this, ReadLongInteger (address));
 
 			default:
 				throw new TargetMemoryException (
@@ -508,35 +508,32 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public string ReadString (ITargetLocation location)
+		public string ReadString (TargetAddress address)
 		{
 			check_disposed ();
 			StringBuilder sb = new StringBuilder ();
 
-			ITargetLocation my_location = (ITargetLocation) location.Clone ();
-
 			while (true) {
-				byte b = ReadByte (my_location);
+				byte b = ReadByte (address++);
 
 				if (b == 0)
 					return sb.ToString ();
 
 				sb.Append ((char) b);
-				my_location.Offset++;
 			}
 		}
 
-		public ITargetMemoryReader ReadMemory (ITargetLocation location, int size)
+		public ITargetMemoryReader ReadMemory (TargetAddress address, int size)
 		{
 			check_disposed ();
-			byte [] retval = ReadBuffer (location, size);
-			return new TargetReader (retval, target_info);
+			byte [] retval = ReadBuffer (address, size);
+			return new TargetReader (retval, this);
 		}
 
-		public Stream GetMemoryStream (ITargetLocation location)
+		public Stream GetMemoryStream (TargetAddress address)
 		{
 			check_disposed ();
-			return new TargetMemoryStream (this, location, target_info);
+			return new TargetMemoryStream (this, address, target_info);
 		}
 
 		public bool CanWrite {
@@ -545,7 +542,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteBuffer (ITargetLocation location, byte[] buffer, int size)
+		public void WriteBuffer (TargetAddress address, byte[] buffer, int size)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -553,14 +550,14 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (size);
 				Marshal.Copy (buffer, 0, data, size);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, location.Address, size));
+					server_handle, data, address.Address, size));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 		}
 
-		public void WriteByte (ITargetLocation location, byte value)
+		public void WriteByte (TargetAddress address, byte value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -568,14 +565,14 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (1);
 				Marshal.WriteByte (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, location.Address, 1));
+					server_handle, data, address.Address, 1));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 		}
 
-		public void WriteInteger (ITargetLocation location, int value)
+		public void WriteInteger (TargetAddress address, int value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -583,14 +580,14 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (4);
 				Marshal.WriteInt32 (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, location.Address, 4));
+					server_handle, data, address.Address, 4));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 		}
 
-		public void WriteLongInteger (ITargetLocation location, long value)
+		public void WriteLongInteger (TargetAddress address, long value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -598,23 +595,23 @@ namespace Mono.Debugger.Backends
 				data = Marshal.AllocHGlobal (8);
 				Marshal.WriteInt64 (data, value);
 				check_error (mono_debugger_server_write_memory (
-					server_handle, data, location.Address, 8));
+					server_handle, data, address.Address, 8));
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 		}
 
-		public void WriteAddress (ITargetLocation location, ITargetLocation address)
+		public void WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_disposed ();
 			switch (TargetAddressSize) {
 			case 4:
-				WriteInteger (location, (int) address.Address);
+				WriteInteger (address, (int) value.Address);
 				break;
 
 			case 8:
-				WriteLongInteger (location, address.Address);
+				WriteLongInteger (address, value.Address);
 				break;
 
 			default:
@@ -664,21 +661,21 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Continue (ITargetLocation location)
+		public void Continue (TargetAddress until)
 		{
 			check_disposed ();
-			ITargetLocation current = CurrentFrame;
+			TargetAddress current = CurrentFrame;
 
 			inferior_output (String.Format ("Requested to run from {0:x} until {1:x}.",
-							current.Address, location.Address));
+							current, until));
 
-			while (current.Address < location.Address)
-				current.Offset += bfd_disassembler.GetInstructionSize (current);
+			while (current < until)
+				current += bfd_disassembler.GetInstructionSize (current);
 
-			if (current.Address != location.Address)
+			if (current != until)
 				inferior_output (String.Format (
 					"Oooops: reached {0:x} but symfile had {1:x}",
-					current.Address, location.Address));
+					current, until));
 
 			insert_temporary_breakpoint (current);
 			Continue ();
@@ -710,14 +707,14 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 			int insn_size;
-			ITargetLocation call = arch.GetCallTarget (CurrentFrame, out insn_size);
+			TargetAddress call = arch.GetCallTarget (CurrentFrame, out insn_size);
 			if (!native && !call.IsNull && (frame.Language != null)) {
-				ITargetLocation trampoline = frame.Language.GetTrampoline (call);
+				TargetAddress trampoline = frame.Language.GetTrampoline (call);
 
 				Console.WriteLine ("CALL: {4:x} {3} - {0:x} {1} => {2:x}",
 						   call, insn_size, trampoline, frame, CurrentFrame);
 
-				if ((trampoline != null) && !trampoline.IsNull) {
+				if (!trampoline.IsNull) {
 					insert_temporary_breakpoint (trampoline);
 					Continue ();
 					return;
@@ -743,14 +740,14 @@ namespace Mono.Debugger.Backends
 		public void Next ()
 		{
 			check_disposed ();
-			ITargetLocation location = CurrentFrame;
-			location.Offset += bfd_disassembler.GetInstructionSize (location);
+			TargetAddress address = CurrentFrame;
+			address += bfd_disassembler.GetInstructionSize (address);
 
-			insert_temporary_breakpoint (location);
+			insert_temporary_breakpoint (address);
 			Continue ();
 		}
 
-		public ITargetLocation CurrentFrame {
+		public TargetAddress CurrentFrame {
 			get {
 				long pc;
 				check_disposed ();
@@ -758,7 +755,7 @@ namespace Mono.Debugger.Backends
 				if (result != CommandError.NONE)
 					throw new NoStackException ();
 
-				return new TargetLocation (pc);
+				return new TargetAddress (this, pc);
 			}
 		}
 
