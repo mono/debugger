@@ -3,9 +3,8 @@
 
 #include <glib.h>
 #include <stdio.h>
-#if USE_READLINE
-#include <readline/readline.h>
-#include <readline/history.h>
+#if USE_LIBEDIT
+#include <editline/readline.h>
 #endif
 
 G_BEGIN_DECLS

@@ -6,7 +6,7 @@
 
 static gboolean in_readline = FALSE;
 
-#if USE_READLINE
+#if USE_LIBEDIT
 static void
 sigint_handler (int dummy)
 {
@@ -17,7 +17,7 @@ sigint_handler (int dummy)
 int
 mono_debugger_readline_static_init (void)
 {
-#if USE_READLINE
+#if USE_LIBEDIT
 	struct sigaction sa;
 
 	sa.sa_handler = sigint_handler;
@@ -41,7 +41,7 @@ mono_debugger_readline_is_a_tty (int fd)
 char *
 mono_debugger_readline_readline (const char *prompt)
 {
-#if USE_READLINE
+#if USE_LIBEDIT
 	char *line;
 	char *retval = NULL;
 
@@ -63,7 +63,7 @@ mono_debugger_readline_readline (const char *prompt)
 void
 mono_debugger_readline_add_history (const char *line)
 {
-#ifdef USE_READLINE
+#ifdef USE_LIBEDIT
 	add_history (line);
 #endif
 }

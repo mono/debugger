@@ -1,3 +1,13 @@
+2004-10-06  Chris Toshok  <toshok@ximian.com>
+
+	* glue/Makefile.am
+	(libmonodebuggerreadline_la_LIBADD): s/READLINE/LIBEDIT/
+
+	* glue/mono-debugger-readline.[ch]: same.
+
+	* configure.in: s/libreadline/libedit, and also add TRY_LINK
+	clauses that look for -lcurses and -lncurses, not just -ltermcap.
+
 2004-10-05  Chris Toshok  <toshok@ximian.com>
 
 	* arch/DwarfFrameReader.cs: stub out the 'P' augmentation (much as
