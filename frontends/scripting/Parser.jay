@@ -77,7 +77,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token UPPER
 
 %token KIND
-%token ACCESSABLE
+%token ACCESSIBLE
 %token CONTENTS
 %token LINE
 %token NOT
@@ -277,13 +277,13 @@ assert_command
 	  {
 		$$ = new AssertKindCommand ((TargetObjectKind) $3, (VariableExpression) $4);
 	  }
-	| ASSERT ACCESSABLE variable_expression
+	| ASSERT ACCESSIBLE variable_expression
 	  {
-		$$ = new AssertAccessableCommand ((VariableExpression) $3, true);
+		$$ = new AssertAccessibleCommand ((VariableExpression) $3, true);
 	  }
-	| ASSERT NOT ACCESSABLE variable_expression
+	| ASSERT NOT ACCESSIBLE variable_expression
 	  {
-		$$ = new AssertAccessableCommand ((VariableExpression) $4, false);
+		$$ = new AssertAccessibleCommand ((VariableExpression) $4, false);
 	  }
 	| ASSERT TYPE STRING variable_expression
 	  {

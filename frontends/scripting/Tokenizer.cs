@@ -77,7 +77,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			keywords.Add ("assert", Token.ASSERT);
 
 			keywords.Add ("kind", Token.KIND);
-			keywords.Add ("accessable", Token.ACCESSABLE);
+			keywords.Add ("accessible", Token.ACCESSIBLE);
 			keywords.Add ("not", Token.NOT);
 			keywords.Add ("contents", Token.CONTENTS);
 			keywords.Add ("line", Token.LINE);

@@ -913,19 +913,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public class AssertAccessableCommand : AssertCommand
+	public class AssertAccessibleCommand : AssertCommand
 	{
 		VariableExpression var_expr;
 		bool positive;
 
 		public override string Name {
 			get {
-				return String.Format ("{1}accessable ({0})", var_expr.Name,
+				return String.Format ("{1}accessible ({0})", var_expr.Name,
 						      positive ? "" : "not ");
 			}
 		}
 
-		public AssertAccessableCommand (VariableExpression var_expr, bool positive)
+		public AssertAccessibleCommand (VariableExpression var_expr, bool positive)
 		{
 			this.var_expr = var_expr;
 			this.positive = positive;
