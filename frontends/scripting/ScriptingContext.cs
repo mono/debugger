@@ -1326,10 +1326,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return location;
 			}
 
-			//
-			// It is ok to return null.  The GUI code already handled that.
-			//
-			return null;
+			throw new ScriptingException ("No method contains the specified file/line.");
 		}
 
 		public SourceLocation FindLocation (string name)
