@@ -24,6 +24,22 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		ITargetClassObject ITargetClassObject.CurrentObject {
+			get {
+				return GetCurrentObject ();
+			}
+		}
+
+		public MonoClassObject GetCurrentObject ()
+		{
+			ITargetAccess target = location.TargetAccess;
+			TargetAddress vtable = target.ReadAddress (location.Address);
+			TargetAddress klass = target.ReadAddress (vtable);
+
+			MonoType ctype = type.File.Table.GetTypeFromClass (klass.Address);
+			return new MonoClassObject ((MonoClass) ctype, location);
+		}
+
 		public ITargetClassObject Parent {
 			get {
 				if (type.ParentType == null)

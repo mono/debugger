@@ -1433,6 +1433,18 @@ namespace Mono.Debugger.Frontends.Scripting
 			return source.Parent;
 		}
 
+		static ITargetClassObject TryCurrentCast (ScriptingContext context,
+							  ITargetClassObject source,
+							  ITargetClassType source_type,
+							  ITargetClassType target_type)
+		{
+			ITargetClassObject current = source.CurrentObject;
+			if (current.Type == source_type)
+				return null;
+
+			return TryParentCast (context, current, current.Type, target_type);
+		}
+
 		static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
 					      ITargetClassType target_type)
 		{
@@ -1443,7 +1455,12 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (sobj == null)
 				return null;
 
-			return TryParentCast (context, sobj, sobj.Type, target_type);
+			ITargetClassObject result;
+			result = TryParentCast (context, sobj, sobj.Type, target_type);
+			if (result != null)
+				return result;
+
+			return TryCurrentCast (context, sobj, sobj.Type, target_type);
 		}
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)

@@ -6,6 +6,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetClassObject CurrentObject {
+			get;
+		}
+
 		ITargetClassObject Parent {
 			get;
 		}

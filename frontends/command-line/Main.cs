@@ -41,8 +41,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			DebuggerEngine e = new DebuggerEngine (this);
 
-			e.Register ("print", typeof (PrintCommand));
-			e.Register ("p", typeof (PrintCommand));
+			e.Register ("print", typeof (PrintExpressionCommand));
+			e.Register ("p", typeof (PrintExpressionCommand));
 			e.Register ("ptype", typeof (PrintTypeCommand));
 			e.Register ("call", typeof (CallCommand));
 			e.Register ("style", typeof (StyleCommand));

@@ -69,9 +69,14 @@ namespace Mono.Debugger.Frontends.Scripting
 				return null;
 			}
 
+			return DoParseExpression (context, Argument);
+		}
+
+		protected Expression DoParseExpression (ScriptingContext context, string arg)
+		{
 			ExpressionParser parser = new ExpressionParser (context, ToString ());
 
-			Expression expr = parser.Parse (Argument);
+			Expression expr = parser.Parse (arg);
 			if (expr == null)
 				context.Error ("Cannot parse arguments");
 
@@ -156,14 +161,44 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
-	[ShortDescription("Print the result of an expression")]
-	public class PrintCommand : FrameCommand
+	public abstract class PrintCommand : FrameCommand
 	{
 		Expression expression;
+		Format format = Format.Default;
+
+		protected enum Format {
+			Default = 0,
+			Object,
+			Current
+		};
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			expression = ParseExpression (context);
+			if (Argument.StartsWith ("/")) {
+				int pos = Argument.IndexOfAny (new char[] { ' ', '\t' });
+				string fstring = Argument.Substring (1, pos-1);
+				string arg = Argument.Substring (pos + 1);
+
+				switch (fstring) {
+				case "o":
+				case "object":
+					format = Format.Object;
+					break;
+
+				case "c":
+				case "current":
+					format = Format.Current;
+					break;
+
+				default:
+					throw new ScriptingException (
+						"Unknown format: `{0}'", format);
+				}
+
+				expression = DoParseExpression (context, arg);
+			} else
+				expression = ParseExpression (context);
+
 			if (expression == null)
 				return false;
 
@@ -179,36 +214,72 @@ namespace Mono.Debugger.Frontends.Scripting
 			ResolveFrame (new_context);
 			new_context.CurrentFrameIndex = Frame;
 
-			object retval = expression.Evaluate (new_context);
-			new_context.PrintObject (retval);
+			Execute (new_context, expression, format);
+		}
+
+		protected abstract void Execute (ScriptingContext context,
+						 Expression expression, Format format);
+	}
+
+	[ShortDescription("Print the result of an expression")]
+	public class PrintExpressionCommand : PrintCommand
+	{
+		protected override void Execute (ScriptingContext context,
+						 Expression expression, Format format)
+		{
+			switch (format) {
+			case Format.Default:
+				object retval = expression.Evaluate (context);
+				context.PrintObject (retval);
+				break;
+
+			case Format.Object:
+				ITargetObject obj = expression.EvaluateVariable (context);
+				context.PrintObject (obj);
+				break;
+
+			case Format.Current:
+				obj = expression.EvaluateVariable (context);
+				ITargetClassObject cobj = obj as ITargetClassObject;
+				if (cobj != null)
+					obj = cobj.CurrentObject;
+				context.PrintObject (obj);
+				break;
+
+			default:
+				throw new InvalidOperationException ();
+			}
 		}
 	}
 
 	[ShortDescription("Print the type of an expression")]
-	public class PrintTypeCommand : FrameCommand
+	public class PrintTypeCommand : PrintCommand
 	{
-		Expression expression;
-
-		protected override bool DoResolve (ScriptingContext context)
+		protected override void Execute (ScriptingContext context,
+						 Expression expression, Format format)
 		{
-			expression = ParseExpression (context);
-			if (expression == null)
-				return false;
+			switch (format) {
+			case Format.Default:
+				ITargetType type = expression.EvaluateType (context);
+				context.PrintType (type);
+				break;
 
-			expression = expression.Resolve (context);
-			return expression != null;
-		}
+			case Format.Object:
+				ITargetObject obj = expression.EvaluateVariable (context);
+				context.PrintType (obj.Type);
+				break;
 
-		protected override void DoExecute (ScriptingContext context)
-		{
-			ScriptingContext new_context = context.GetExpressionContext ();
-			if (Process > 0)
-				new_context.CurrentProcess = ResolveProcess (new_context);
-			ResolveFrame (new_context);
-			new_context.CurrentFrameIndex = Frame;
+			case Format.Current:
+				obj = expression.EvaluateVariable (context);
+				ITargetClassObject cobj = obj as ITargetClassObject;
+				if (cobj != null)
+					obj = cobj.CurrentObject;
+				context.PrintType (obj.Type);
+				break;
 
-			ITargetType type = expression.EvaluateType (new_context);
-			new_context.PrintType (type);
+			default:
+				throw new InvalidOperationException ();
+			}
 		}
 	}
 

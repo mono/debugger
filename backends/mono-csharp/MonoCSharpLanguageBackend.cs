@@ -688,7 +688,7 @@ namespace Mono.Debugger.Languages.CSharp
 			byte[] data = GetTypeInfo (offset);
 			TargetBinaryReader info = new TargetBinaryReader (data, TargetInfo);
 			retval = MonoType.GetType (type, info, reader);
-			if (types.Contains (type))
+			if (!types.Contains (type))
 				types.Add (type, retval);
 			return retval;
 		}

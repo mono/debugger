@@ -1,5 +1,13 @@
 2004-07-12  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetClassObject.cs
+	(ITargetClassObject.CurrentType): New property.
+
+	* frontends/scripting/Expression.cs (CastExpression): Allow a cast
+	to the current type.
+
+2004-07-12  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono-csharp/MonoCSharpLanguageBackend.cs: Reflect
 	latest runtime changes.
 
