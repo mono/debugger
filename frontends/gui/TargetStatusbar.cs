@@ -71,6 +71,7 @@ namespace Mono.Debugger.GUI
 				Message ("Running ....");
 				break;
 
+			case TargetState.CORE_FILE:
 			case TargetState.STOPPED:
 				try {
 					StackFrame frame = backend.CurrentFrame;

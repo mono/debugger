@@ -43,6 +43,7 @@ namespace Mono.Debugger.GUI
 			}
 
 			switch (new_state) {
+			case TargetState.CORE_FILE:
 			case TargetState.STOPPED:
 				try {
 					StackFrame frame = backend.CurrentFrame;
