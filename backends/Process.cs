@@ -31,7 +31,6 @@ namespace Mono.Debugger
 		int pid, id;
 
 		static int next_id = 0;
-		static int next_daemon_id = 0;
 
 		protected enum ProcessType
 		{
@@ -64,17 +63,19 @@ namespace Mono.Debugger
 			switch (type) {
 			case ProcessType.Daemon:
 				is_daemon = true;
-				id = --next_daemon_id;
+				id = ++next_id;
 				runner = new DaemonThreadRunner (backend, this, inferior, handler, pid, signal);
 				runner.TargetExited += new TargetExitedHandler (child_exited);
+				iprocess = runner.SingleSteppingEngine;
 				this.pid = pid;
 				break;
 
 			case ProcessType.ManagedWrapper:
 				is_daemon = true;
-				id = --next_daemon_id;
+				id = ++next_id;
 				runner = backend.ThreadManager.StartManagedApplication (this, inferior, start);
 				runner.TargetExited += new TargetExitedHandler (child_exited);
+				iprocess = runner.SingleSteppingEngine;
 				this.pid = runner.Inferior.PID;
 				break;
 
@@ -83,10 +84,7 @@ namespace Mono.Debugger
 				goto case ProcessType.Normal;
 
 			case ProcessType.Normal:
-				if (is_daemon)
-					id = --next_daemon_id;
-				else
-					id = ++next_id;
+				id = ++next_id;
 				sse = new SingleSteppingEngine (backend, this, inferior, start.IsNative);
 
 				sse.TargetEvent += new TargetEventHandler (target_event);
@@ -186,12 +184,16 @@ namespace Mono.Debugger
 
 		public TargetState State {
 			get {
-				if (is_daemon)
-					return TargetState.DAEMON;
-				else if (iprocess != null)
+				if (iprocess != null)
 					return iprocess.State;
 				else
 					return TargetState.NO_TARGET;
+			}
+		}
+
+		public bool IsDaemon {
+			get {
+				return is_daemon;
 			}
 		}
 

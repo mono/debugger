@@ -27,8 +27,12 @@ namespace Mono.Debugger.Backends
 
 			thread_manager = backend.ThreadManager;
 
-			daemon_thread = new Thread (new ThreadStart (daemon_thread_start));
-			daemon_thread.Start ();
+			sse = new SingleSteppingEngine (backend, process, inferior, false);
+			sse.DaemonEvent += new DaemonEventHandler (daemon_event);
+			sse.TargetExitedEvent += new TargetExitedHandler (target_exited);
+
+			sse.Attach (pid, true);
+			sse.Continue (true, false);
 		}
 
 		public DaemonThreadRunner (DebuggerBackend backend, Process process, IInferior inferior,
@@ -43,8 +47,59 @@ namespace Mono.Debugger.Backends
 
 			thread_manager = backend.ThreadManager;
 
-			daemon_thread = new Thread (new ThreadStart (daemon_thread_start_wrapper));
-			daemon_thread.Start ();
+			is_main_thread = true;
+
+			sse = new SingleSteppingEngine (backend, process, inferior, false);
+			sse.DaemonEvent += new DaemonEventHandler (daemon_event);
+			sse.TargetExitedEvent += new TargetExitedHandler (target_exited);
+
+			sse.Run (false, true);
+			pid = sse.PID;
+			sse.Continue (true, false);
+		}
+
+		void target_exited ()
+		{
+			if (TargetExited != null)
+				TargetExited ();
+		}
+
+		bool daemon_event (TargetEventArgs args)
+		{
+			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data != 0)) {
+				int signal = (int) args.Data;
+
+				if (signal == PTraceInferior.SIGKILL) {
+					Console.WriteLine ("Daemon thread {0} received SIGKILL.", pid);
+					return false;
+				}
+				if (!daemon_received_signal (inferior.CurrentFrame, signal))
+					Console.WriteLine ("Daemon thread {0} received unexpected " +
+							   "signal {1} at {2}.", pid, signal,
+							   Inferior.CurrentFrame);
+			} else if (args.Type == TargetEventType.TargetExited) {
+				return false;
+			} else if (args.Type == TargetEventType.TargetSignaled) {
+				int signal = (int) args.Data;
+
+				if (signal == PTraceInferior.SIGKILL)
+					return false;
+				else
+					Console.WriteLine ("Daemon thread {0} unexpectedly died with " +
+							   "fatal signal {1}.", pid, signal);
+			} else if ((args.Type == TargetEventType.TargetHitBreakpoint) && (args.Data == null))
+				return true;
+			else if (!daemon_stopped (inferior.CurrentFrame))
+				Console.WriteLine ("Daemon thread unexpectedly stopped at {0}.", inferior.CurrentFrame);
+			else
+				return true;
+
+#if FIXME
+			if (is_main_thread)
+				backend.ThreadManager.StartApplicationError ();
+#endif
+
+			return false;
 		}
 
 		public Process Process {
@@ -55,27 +110,23 @@ namespace Mono.Debugger.Backends
 			get { return inferior; }
 		}
 
+		public SingleSteppingEngine SingleSteppingEngine {
+			get { return sse; }
+		}
+
 		public event TargetExitedHandler TargetExited;
 
 		IInferior inferior;
 		DebuggerBackend backend;
 		ThreadManager thread_manager;	
 		Process process;
-		Thread daemon_thread;
+		SingleSteppingEngine sse;
 		DaemonThreadHandler daemon_thread_handler;
 		ProcessStart start;
+		bool is_main_thread;
 		bool redirect_fds;
 		int signal;
 		int pid;
-
-		ChildEvent wait ()
-		{
-			ChildEvent child_event;
-			do {
-				child_event = inferior.Wait ();
-			} while (child_event == null);
-			return child_event;
-		}
 
 		protected bool daemon_stopped (TargetAddress address)
 		{
@@ -94,86 +145,6 @@ namespace Mono.Debugger.Backends
 				return false;
 			else
 				return daemon_thread_handler (this, address, signal);
-		}
-
-		void daemon_thread_start ()
-		{
-			inferior.Attach (pid);
-			inferior.SetSignal (signal, false);
-			inferior.Continue ();
-			daemon_thread_main ();
-		}
-
-		void daemon_thread_start_wrapper ()
-		{
-			inferior.Run (redirect_fds);
-			inferior.Continue ();
-			pid = inferior.PID;
-			daemon_thread_main ();
-		}
-
-		void daemon_thread_main ()
-		{
-			try {
-				daemon_thread_main_loop ();
-			} catch (ThreadAbortException) {
-				// We're exiting here.
-			} finally {
-				child_exited ();
-			}
-		}
-
-		void daemon_thread_main_loop ()
-		{
-		again:
-			if (disposed)
-				return;
-
-			ChildEvent child_event = wait ();
-			ChildEventType message = child_event.Type;
-			int arg = child_event.Argument;
-
-			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
-				if (arg == PTraceInferior.SIGKILL) {
-					Console.WriteLine ("Daemon thread {0} received SIGKILL.", pid);
-					return;
-				}
-				if (!daemon_received_signal (inferior.CurrentFrame, arg))
-					throw new InternalError (
-						"Daemon thread {0} received unexpected " +
-						"signal {1} at {2}.", pid, arg, Inferior.CurrentFrame);
-				inferior.Continue ();
-				goto again;
-			} else if (message == ChildEventType.CHILD_EXITED) {
-				return;
-			} else if (message == ChildEventType.CHILD_SIGNALED) {
-				if (arg == PTraceInferior.SIGKILL)
-					return;
-				else
-					throw new InternalError (
-						"Daemon thread {0} unexpectedly died with fatal signal {1}.",
-						pid, arg);
-			} else if ((message != ChildEventType.CHILD_HIT_BREAKPOINT) && (arg != 0))
-				throw new InternalError ("Unexpected result from daemon thread: {0} {1}",
-							 message, arg);
-
-			if (!daemon_stopped (inferior.CurrentFrame))
-				throw new InternalError ("Daemon thread unexpectedly stopped at {0}.",
-							 inferior.CurrentFrame);
-
-			if (disposed)
-				return;
-
-			inferior.Continue ();
-			goto again;
-		}
-
-		void child_exited ()
-		{
-			inferior.Dispose ();
-
-			if (TargetExited != null)
-				TargetExited ();
 		}
 
 		//
@@ -203,11 +174,9 @@ namespace Mono.Debugger.Backends
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				if (inferior != null)
-					inferior.Kill ();
-				if (daemon_thread != null) {
-					daemon_thread.Abort ();
-					daemon_thread = null;
+				if (sse != null) {
+					sse.Kill ();
+					sse = null;
 				}
 			}
 		}

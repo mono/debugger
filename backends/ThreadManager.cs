@@ -380,7 +380,7 @@ namespace Mono.Debugger
 				backend.ReachedManagedMain (main_process);
 				main_process.SingleSteppingEngine.Continue (main_function, true);
 				OnMainThreadCreatedEvent (main_process);
-				main_process.SingleSteppingEngine.ReachedMain ();
+				main_process.SingleSteppingEngine.ReachedMain (true);
 
 				reached_main = true;
 				main_started_event.Set ();
@@ -471,6 +471,7 @@ namespace Mono.Debugger
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			main_started_event.WaitOne ();
+
 			return runner;
 		}
 

@@ -462,16 +462,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			if (!context.HasTarget) {
-				context.Print ("No target.");
-				return;
-			}
+			int current_id = -1;
+			if (context.HasTarget)
+				current_id = context.CurrentProcess.ID;
 
-			int current_id = context.CurrentProcess.ID;
+			bool printed_something = false;
 			foreach (ProcessHandle proc in context.Processes) {
 				string prefix = proc.ID == current_id ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, proc);
+				printed_something = true;
 			}
+
+			if (!printed_something)
+				context.Print ("No target.");
 		}
 	}
 

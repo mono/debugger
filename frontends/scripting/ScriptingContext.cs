@@ -238,6 +238,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		ScriptingContext context;	
 		IArchitecture arch;
 		Process process;
+		string name;
 
 		int id, pid;
 		Hashtable registers;
@@ -249,10 +250,16 @@ namespace Mono.Debugger.Frontends.CommandLine
 			this.process = process;
 			this.id = process.ID;
 
-			process.TargetEvent += new TargetEventHandler (target_event);
+			if (!process.IsDaemon)
+				process.TargetEvent += new TargetEventHandler (target_event);
 			process.TargetExited += new TargetExitedHandler (target_exited);
 			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
+
+			if (process.IsDaemon)
+				name = String.Format ("Daemon process @{0}", id);
+			else
+				name = String.Format ("Process @{0}", id);
 		}
 
 		public ProcessHandle (ScriptingContext context, DebuggerBackend backend, Process process,
@@ -263,10 +270,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 
 			if (process.SingleSteppingEngine.HasTarget) {
-				StackFrame frame = process.SingleSteppingEngine.CurrentFrame;
-				current_frame = new FrameHandle (this, frame);
-				context.Print ("Process @{0} stopped at {1}.", id, frame);
-				current_frame.Print (context);
+				if (!process.IsDaemon) {
+					StackFrame frame = process.SingleSteppingEngine.CurrentFrame;
+					current_frame = new FrameHandle (this, frame);
+					context.Print ("{0} stopped at {1}.", Name, frame);
+					current_frame.Print (context);
+				}
 			} else {
 				if (pid > 0)
 					process.SingleSteppingEngine.Attach (pid, true);
@@ -336,12 +345,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 			switch (args.Type) {
 			case TargetEventType.TargetStopped:
 				if ((int) args.Data != 0)
-					context.Print ("Process @{0} received signal {1}{2}.",
-						       id, (int) args.Data, frame);
+					context.Print ("{0} received signal {1}{2}.", Name, (int) args.Data, frame);
 				else if (!context.IsInteractive)
 					break;
 				else
-					context.Print ("Process @{0} stopped{1}.", id, frame);
+					context.Print ("{0} stopped{1}.", Name, frame);
 
 				if (current_insn != null)
 					context.PrintInstruction (current_insn);
@@ -355,15 +363,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			case TargetEventType.TargetExited:
 				if ((int) args.Data == 0)
-					context.Print ("Process @{0} terminated normally.", id);
+					context.Print ("{0} terminated normally.", Name);
 				else
-					context.Print ("Process @{0} exited with exit code {1}.",
-						       id, (int) args.Data);
+					context.Print ("{0} exited with exit code {1}.", id, (int) args.Data);
 				target_exited ();
 				break;
 
 			case TargetEventType.TargetSignaled:
-				context.Print ("Process @{0} died with fatal signal {1}.",
+				context.Print ("{0} died with fatal signal {1}.",
 					       id, (int) args.Data);
 				target_exited ();
 				break;
@@ -383,9 +390,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public void Step (WhichStepCommand which)
 		{
 			if (process == null)
-				throw new ScriptingException ("Process @{0} not running.", id);
+				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
-				throw new ScriptingException ("Process @{0} cannot be executed.", id);
+				throw new ScriptingException ("{0} cannot be executed.", Name);
 
 			bool ok;
 			switch (which) {
@@ -415,24 +422,24 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			if (!ok)
-				throw new ScriptingException ("Process @{0} is not stopped.", id);
+				throw new ScriptingException ("{0} is not stopped.", Name);
 		}
 
 		public void Stop ()
 		{
 			if (process == null)
-				throw new ScriptingException ("Process @{0} not running.", id);
+				throw new ScriptingException ("{0} not running.", Name);
 			process.Stop ();
 		}
 
 		public void Background ()
 		{
 			if (process == null)
-				throw new ScriptingException ("Process @{0} not running.", id);
+				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
-				throw new ScriptingException ("Process @{0} cannot be executed.", id);
+				throw new ScriptingException ("{0} cannot be executed.", Name);
 			else if (!process.IsStopped)
-				throw new ScriptingException ("Process @{0} is not stopped.", id);
+				throw new ScriptingException ("{0} is not stopped.", Name);
 
 			process.Continue (true, false);
 		}
@@ -440,7 +447,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		public IArchitecture Architecture {
 			get {
 				if (arch == null)
-					throw new ScriptingException ("Process @{0} not running.", id);
+					throw new ScriptingException ("{0} not running.", Name);
 
 				return arch;
 			}
@@ -475,7 +482,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
 			else if (!process.IsStopped)
-				throw new ScriptingException ("Process @{0} is not stopped.", id);
+				throw new ScriptingException ("{0} is not stopped.", Name);
 
 			if (current_backtrace != null)
 				return current_backtrace;
@@ -499,7 +506,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
 			else if (!process.IsStopped)
-				throw new ScriptingException ("Process @{0} is not stopped.", id);
+				throw new ScriptingException ("{0} is not stopped.", Name);
 
 			if (number == -1) {
 				if (current_frame == null)
@@ -539,9 +546,18 @@ namespace Mono.Debugger.Frontends.CommandLine
 			target_exited ();
 		}
 
+		public string Name {
+			get {
+				return name;
+			}
+		}
+
 		public override string ToString ()
 		{
-			return String.Format ("Process @{0}: {1} {2} {3}", id, State, process.PID, process);
+			if (process.IsDaemon)
+				return String.Format ("Daemon process @{0}: {1} {2}", id, process.PID, State);
+			else
+				return String.Format ("Process @{0}: {1} {2}", id, process.PID, State);
 		}
 	}
 
@@ -789,11 +805,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		void thread_created (ThreadManager manager, Process process)
 		{
-			if (process.State == TargetState.DAEMON)
-				return;
 			ProcessHandle handle = new ProcessHandle (this, process.DebuggerBackend, process);
 			add_process (handle);
-			handle.Background ();
+
+			if (!process.IsDaemon)
+				handle.Background ();
 		}
 
 		public void ShowVariableType (ITargetType type, string name)

@@ -19,6 +19,7 @@ namespace Mono.Debugger.Backends
 {
 	public delegate bool BreakpointCheckHandler (StackFrame frame, int index, object user_data);
 	public delegate void BreakpointHitHandler (StackFrame frame, int index, object user_data);
+	public delegate bool DaemonEventHandler (TargetEventArgs args);
 
 	// <summary>
 	//   The single stepping engine is responsible for doing all the stepping
@@ -156,14 +157,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void send_exited_event (TargetEventType type, int arg)
-		{
-			send_event (new TargetEventArgs (type, arg));
-
-			if (TargetExitedEvent != null)
-				TargetExitedEvent ();
-		}
-
 		void send_frame_event (StackFrame frame, int signal)
 		{
 			send_event (new TargetEventArgs (TargetEventType.TargetStopped, signal, frame));
@@ -184,6 +177,8 @@ namespace Mono.Debugger.Backends
 			case TargetEventType.TargetSignaled:
 			case TargetEventType.TargetExited:
 				target_state = TargetState.EXITED;
+				if (TargetExitedEvent != null)
+					TargetExitedEvent ();
 				break;
 
 			default:
@@ -216,8 +211,11 @@ namespace Mono.Debugger.Backends
 
 			if (!main.IsNull) {
 				engine_thread_main (new Command (StepOperation.Run, main));
-			} else {
+			} else if (DaemonEvent == null) {
 				Console.WriteLine ("WARNING: Cannot get address of `main' function!");
+				engine_thread_main (null);
+			} else {
+				reached_main = true;
 				engine_thread_main (null);
 			}
 		}
@@ -279,7 +277,6 @@ namespace Mono.Debugger.Backends
 				try {
 					process_command (command);
 				} catch (ThreadAbortException e) {
-					Console.WriteLine ("THREAD ABORT: {0}", pid);
 					// We're exiting here.
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0}", e);
@@ -329,7 +326,7 @@ namespace Mono.Debugger.Backends
 		// <remarks>
 		//   This method may only be used in the background thread.
 		// </remarks>
-		bool process_child_event (ChildEvent child_event, bool must_continue)
+		TargetEventArgs process_child_event (ChildEvent child_event, bool must_continue)
 		{
 		again:
 			ChildEventType message = child_event.Type;
@@ -421,22 +418,19 @@ namespace Mono.Debugger.Backends
 			case ChildEventType.CHILD_STOPPED:
 				if (arg != 0) {
 					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-					send_frame_event (current_frame, arg);
-					return false;
+					return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 				}
 
-				return true;
+				return null;
 
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
-				return true;
+				return null;
 
 			case ChildEventType.CHILD_SIGNALED:
-				send_exited_event (TargetEventType.TargetSignaled, arg);
-				return false;
+				return new TargetEventArgs (TargetEventType.TargetSignaled, arg);
 
 			case ChildEventType.CHILD_EXITED:
-				send_exited_event (TargetEventType.TargetExited, arg);
-				return false;
+				return new TargetEventArgs (TargetEventType.TargetExited, arg);
 			}
 
 		done:
@@ -445,7 +439,7 @@ namespace Mono.Debugger.Backends
 				goto again;
 			}
 
-			return true;
+			return null;
 		}
 
 		// <summary>
@@ -454,8 +448,6 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		void process_command (Command command)
 		{
-			bool ok;
-
 			if (command == null)
 				return;
 
@@ -471,6 +463,7 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 
 		again:
+			TargetEventArgs result;
 			// Process another stepping command.
 			switch (command.Operation) {
 			case StepOperation.Run:
@@ -478,35 +471,41 @@ namespace Mono.Debugger.Backends
 				TargetAddress until = command.Until;
 				if (!until.IsNull)
 					insert_temporary_breakpoint (until);
-				ok = do_continue ();
+				result = do_continue ();
 				break;
 
 			case StepOperation.StepInstruction:
-				ok = Step (get_simple_step_frame (StepMode.SingleInstruction));
+				result = Step (get_simple_step_frame (StepMode.SingleInstruction));
 				break;
 
 			case StepOperation.StepNativeInstruction:
-				ok = do_step ();
+				result = do_step ();
 				break;
 
 			case StepOperation.NextInstruction:
-				ok = do_next ();
+				result = do_next ();
 				break;
 
 			case StepOperation.StepLine:
 			case StepOperation.NextLine:
-				ok = Step (command.StepFrame);
+				result = Step (command.StepFrame);
 				break;
 
 			default:
-				ok = Step (command.StepFrame);
+				result = Step (command.StepFrame);
 				break;
 			}
 
-			// If `ok' is false, then the target stopped abnormally and one of
-			// the sub-methods already sent the error message to the caller.
-			if (!ok)
+		send_result:
+			// If `result' is not null, then the target stopped abnormally.
+			if (result != null) {
+				if ((DaemonEvent != null) && DaemonEvent (result)) {
+					command = new Command (StepOperation.RunInBackground);
+					goto again;
+				}
+				send_event (result);
 				return;
+			}
 
 			//
 			// Ok, the target stopped normally.  Now we need to compute the
@@ -528,7 +527,7 @@ namespace Mono.Debugger.Backends
 			// running until it exits (or hit a breakpoint or receives
 			// a signal).
 			if (!main_method_retaddr.IsNull && (frame == main_method_retaddr)) {
-				ok = do_continue ();
+				do_continue ();
 				return;
 			}
 
@@ -540,12 +539,16 @@ namespace Mono.Debugger.Backends
 				command = new_command;
 				goto again;
 			}
-			send_frame_event (current_frame, 0);
+
+			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
+			goto send_result;
 		}
 
 		CommandResult reload_symtab (object data)
 		{
-			frames_invalid ();
+			current_frame = null;
+			current_backtrace = null;
+			registers = null;
 			current_method = null;
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
 			return new CommandResult (CommandResultType.CommandOk);
@@ -558,7 +561,7 @@ namespace Mono.Debugger.Backends
 			current_simple_symtab = simple_symtab;
 			current_symtab = symbol_table;
 
-			send_sync_command (new CommandFunc (reload_symtab), null);
+			// send_sync_command (new CommandFunc (reload_symtab), null);
 		}
 
 		public IMethod Lookup (TargetAddress address)
@@ -585,6 +588,8 @@ namespace Mono.Debugger.Backends
 		public event TargetEventHandler TargetEvent;
 
 		public event TargetExitedHandler TargetExitedEvent;
+
+		internal event DaemonEventHandler DaemonEvent;
 
 		// <summary>
 		//   The single-stepping engine's target state.  This will be
@@ -1203,7 +1208,7 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Single-step one machine instruction.
 		// </summary>
-		bool do_step ()
+		TargetEventArgs do_step ()
 		{
 			check_inferior ();
 			ChildEvent child_event = do_continue_internal (false);
@@ -1213,7 +1218,7 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Step over the next machine instruction.
 		// </summary>
-		bool do_next ()
+		TargetEventArgs do_next ()
 		{
 			check_inferior ();
 			TargetAddress address = inferior.CurrentFrame;
@@ -1237,7 +1242,7 @@ namespace Mono.Debugger.Backends
 		//   instruction before we can resume the target (see `must_continue' in
 		//   child_event() for more info).
 		// </summary>
-		bool do_continue ()
+		TargetEventArgs do_continue ()
 		{
 			check_inferior ();
 			ChildEvent child_event = do_continue_internal (true);
@@ -1268,7 +1273,7 @@ namespace Mono.Debugger.Backends
 			return wait ();
 		}
 
-		protected bool Step (StepFrame frame)
+		protected TargetEventArgs Step (StepFrame frame)
 		{
 			check_inferior ();
 
@@ -1285,13 +1290,14 @@ namespace Mono.Debugger.Backends
 				return do_next ();
 
 			bool first = true;
+			TargetEventArgs result;
 			do {
 				TargetAddress current_frame = inferior.CurrentFrame;
 
 				if (first)
 					first = false;
 				else if (!is_in_step_frame (frame, current_frame))
-					return true;
+					return null;
 
 				/*
 				 * If this is not a call instruction, continue stepping until we leave
@@ -1300,8 +1306,9 @@ namespace Mono.Debugger.Backends
 				int insn_size;
 				TargetAddress call = arch.GetCallTarget (inferior, current_frame, out insn_size);
 				if (call.IsNull) {
-					if (!do_step ())
-						return false;
+					result = do_step ();
+					if (result != null)
+						return result;
 					continue;
 				}
 
@@ -1327,8 +1334,9 @@ namespace Mono.Debugger.Backends
 							tmethod = Lookup (trampoline);
 						}
 						if ((tmethod == null) || !tmethod.Module.StepInto) {
-							if (!do_next ())
-								return false;
+							result = do_next ();
+							if (result != null)
+								return result;
 							continue;
 						}
 
@@ -1343,8 +1351,9 @@ namespace Mono.Debugger.Backends
 						 */
 						tmethod = Lookup (call);
 						if ((tmethod == null) || !tmethod.Module.StepInto) {
-							if (!do_next ())
-								return false;
+							result = do_next ();
+							if (result != null)
+								return result;
 							continue;
 						}
 					}
@@ -1361,8 +1370,9 @@ namespace Mono.Debugger.Backends
 				 * In StepMode.Finish, always step over all methods.
 				 */
 				if (frame.Mode == StepMode.Finish) {
-					if (!do_next ())
-						return false;
+					result = do_next ();
+					if (result != null)
+						return result;
 					continue;
 				}
 
@@ -1373,8 +1383,9 @@ namespace Mono.Debugger.Backends
 				 */
 				IMethod method = Lookup (call);
 				if ((method == null) || !method.Module.StepInto) {
-					if (!do_next ())
-						return false;
+					result = do_next ();
+					if (result != null)
+						return result;
 					continue;
 				}
 
@@ -1387,8 +1398,9 @@ namespace Mono.Debugger.Backends
 					IMethod wmethod = Lookup (wrapper);
 
 					if ((wmethod == null) || !wmethod.Module.StepInto) {
-						if (!do_next ())
-							return false;
+						result = do_next ();
+						if (result != null)
+							return result;
 						continue;
 					}
 
@@ -1707,7 +1719,8 @@ namespace Mono.Debugger.Backends
 
 		CommandResult reached_main_func (object data)
 		{
-			main_method_retaddr = inferior.GetReturnAddress ();
+			if ((bool) data)
+				main_method_retaddr = inferior.GetReturnAddress ();
 			inferior.UpdateModules ();
 			frames_invalid ();
 			current_method = null;
@@ -1715,9 +1728,9 @@ namespace Mono.Debugger.Backends
 			return new CommandResult (CommandResultType.CommandOk);
 		}
 
-		internal void ReachedMain ()
+		internal void ReachedMain (bool set_return_address)
 		{
-			send_sync_command (new CommandFunc (reached_main_func), null);
+			send_sync_command (new CommandFunc (reached_main_func), set_return_address);
 			send_frame_event (current_frame, 0);
 		}
 
@@ -1889,7 +1902,7 @@ namespace Mono.Debugger.Backends
 			} else if (result.Type == CommandResultType.Exception)
 				throw (Exception) result.Data;
 			else
-				throw new InternalError ();
+				throw new InternalError ("EXCEPTION: {0}", result.Data);
 		}
 
 		CommandResult disassemble_method (object data)

@@ -1,3 +1,13 @@
+2003-07-04  Martin Baulig  <martin@ximian.com>
+
+	* backends/DaemonThreadRunner.cs: Rewrote this to use the
+	SingleSteppingEngine.  This allows us to debug daemon threads if
+	they ever crash.
+
+	* backends/Process.cs: Don't give daemon processes negative IDs.
+
+	* frontends/scripting/ScriptingContext.cs: Don't hide daemon processes.
+
 2003-06-30  Martin Baulig  <martin@ximian.com>
 
 	* arch/bfd: Imported from binutils 2.13.2.
