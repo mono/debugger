@@ -296,8 +296,23 @@ namespace Mono.Debugger.Backends
 				stop_event.Set ();
 				restart_event.WaitOne ();
 				Console.WriteLine ("RESTART AFTER STOP: {0} {1} {2}", pid, arg, message);
-				if ((message == ChildEventType.CHILD_STOPPED) &&
-				    (arg == 0) || (arg == inferior.StopSignal)) {
+				// A stop was requested and we actually received the SIGSTOP.  Note that
+				// we may also have stopped for another reason before receiving the SIGSTOP.
+				if ((message == ChildEventType.CHILD_STOPPED) && (arg == inferior.StopSignal)) {
+					do_continue_nowait (false);
+					goto again;
+				}
+				// Ignore the next SIGSTOP.
+				pending_sigstop++;
+			}
+
+			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
+				if ((pending_sigstop > 0) && (arg == inferior.StopSignal)) {
+					--pending_sigstop;
+					do_continue_nowait (false);
+					goto again;
+				}
+				if (!backend.SignalHandler (process, arg)) {
 					do_continue_nowait (false);
 					goto again;
 				}
@@ -340,13 +355,6 @@ namespace Mono.Debugger.Backends
 						do_continue_nowait (true);
 						goto again;
 					}
-				}
-			}
-
-			if ((message == ChildEventType.CHILD_STOPPED) && (arg != 0)) {
-				if (!backend.SignalHandler (process, arg)) {
-					do_continue_nowait (false);
-					goto again;
 				}
 			}
 
@@ -629,6 +637,7 @@ namespace Mono.Debugger.Backends
 		bool stop_requested = false;
 		bool result_sent = false;
 		bool native;
+		int pending_sigstop = 0;
 		int pid = -1;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
