@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <server.h>
 #include <breakpoints.h>
 #include <glib/gthread.h>

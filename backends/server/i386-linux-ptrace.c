@@ -349,9 +349,6 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 static void
 server_ptrace_global_init (void)
 {
-	g_static_mutex_init (&wait_mutex);
-	g_static_mutex_init (&wait_mutex_2);
-
 	first_status = 0;
 	first_ret = 0;
 

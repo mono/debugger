@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <config.h>
 #include <server.h>
 #include <signal.h>

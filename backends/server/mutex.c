@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <server.h>
 #include <mutex.h>
 
@@ -62,6 +61,8 @@ mono_debugger_event_trywait (DebuggerEvent *event)
 	retval = event->signaled;
 	event->signaled = FALSE;
 	g_mutex_unlock (event->mutex);
+
+	return retval;
 }
 
 void

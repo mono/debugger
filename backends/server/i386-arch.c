@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <server.h>
 #include <breakpoints.h>
 #include <sys/stat.h>
@@ -481,8 +480,7 @@ server_ptrace_get_registers (ServerHandle *handle, guint64 *values)
 }
 
 static ServerCommandError
-server_ptrace_set_registers (ServerHandle *handle, guint32 count,
-			     guint32 *registers, guint64 *values)
+server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
 

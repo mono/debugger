@@ -1,3 +1,23 @@
+2005-02-15  Chris Toshok  <toshok@ximian.com>
+
+	* backends/server/mutex.c (mono_debugger_event_trywait): fix
+	warning.
+
+	* backends/server/library.c: remove the #define for _GNU_SOURCE.
+	gcc defines that for us.
+
+	* backends/server/breakpoints.c: same.
+
+	* backends/server/mutex.c: same.
+
+	* backends/server/i386-arch.c: same.
+	(server_ptrace_set_registers): fix type to remove compiler
+	warning.
+
+	* backends/server/i386-linux-ptrace.c (server_ptrace_global_init):
+	no need to use g_static_mutex_init here since we initialize them
+	when we declare them above.
+
 2005-02-14  Chris Toshok  <toshok@ximian.com>
 
 	* wrapper/Makefile.am (MDB_SRCLIST): remove Session.cs.
