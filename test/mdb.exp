@@ -215,7 +215,7 @@ proc mdb_expect_process {} {
 	    -re {^New process \@([\d]+)[\n\r]+} {
 		set new_process $expect_out(1,string)
 		pass "Started new process $new_process"
-		mdb_expect_prompt
+		# mdb_expect_prompt
 		return $new_process
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {

@@ -1214,8 +1214,6 @@ namespace Mono.Debugger.Backends
 				insert_temporary_breakpoint (until);
 				inferior.Continue ();
 			}
-			manager.RequestWait ();
-
 			return true;
 		}
 

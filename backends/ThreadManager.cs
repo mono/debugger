@@ -419,13 +419,6 @@ namespace Mono.Debugger
 			get { return Thread.CurrentThread == inferior_thread; }
 		}
 
-		internal void RequestWait ()
-		{
-			if (current_event != null)
-				throw new InvalidOperationException ();
-			wait_event.Set ();
-		}
-
 		// <summary>
 		//   Sends a synchronous command to the background thread and wait until
 		//   it is completed.  This command never throws any exceptions, but returns

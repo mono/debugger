@@ -3,9 +3,11 @@ using System.Threading;
 
 class X
 {
+	public static bool Silent = true;
+
 	static void Loop (int seconds)
 	{
-		Thread.Sleep (seconds * 10);
+		Thread.Sleep (seconds * 100);
 	}
 
 	static void CommonFunction (int seconds)
@@ -16,7 +18,8 @@ class X
 			//
 			// So try to do a `NextLine' over the function call and the
 			// other thread will hit your breakpoint.
-			Console.WriteLine ("Loop: {0}", seconds);
+			if (!Silent)
+				Console.WriteLine ("Loop: {0}", seconds);
 			Loop (seconds);
 		}
 	}
@@ -28,8 +31,6 @@ class X
 
 	static void Main ()
 	{
-		Console.WriteLine ("STARTING!");
-
 		Thread thread = new Thread (new ThreadStart (ThreadMain));
 		thread.Start ();
 

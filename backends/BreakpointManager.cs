@@ -23,11 +23,11 @@ namespace Mono.Debugger.Backends
 		static extern int mono_debugger_breakpoint_info_get_id (IntPtr info);
 
 		protected delegate void BreakpointManagerMutexHandler ();
-		protected Mutex lock_mutex;
+		protected DebuggerMutex lock_mutex;
 
 		public BreakpointManager ()
 		{
-			lock_mutex = new Mutex ();
+			lock_mutex = new DebuggerMutex ("bpm_mutex");
 			breakpoints = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_new (
 				new BreakpointManagerMutexHandler (lock_func),
@@ -36,12 +36,12 @@ namespace Mono.Debugger.Backends
 
 		void lock_func ()
 		{
-			lock_mutex.WaitOne ();
+			lock_mutex.Lock ();
 		}
 
 		void unlock_func ()
 		{
-			lock_mutex.ReleaseMutex ();
+			lock_mutex.Unlock ();
 		}
 
 		internal IntPtr Manager {
