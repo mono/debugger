@@ -1,4 +1,4 @@
-bin_SCRIPTS = Interpreter.exe mdb mono-debug 
+bin_SCRIPTS = Interpreter.exe mdb
 
 MCS_FLAGS = -g
 
