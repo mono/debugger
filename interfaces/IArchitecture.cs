@@ -20,6 +20,6 @@ namespace Mono.Debugger
 		//   If it's a trampoline, return the address of the corresponding method's
 		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
 		// </summary>
-		long GetTrampoline (IDebuggerBackend backend, long address);
+		long GetTrampoline (IDebuggerBackend backend, long address, long generic_trampoline);
 	}
 }

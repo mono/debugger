@@ -474,7 +474,6 @@ namespace Mono.Debugger.Backends
 				return;
 
 			generic_trampoline_code = ReadAddress ("print/a mono_generic_trampoline_code");
-			Console.WriteLine ("TRAMPOLINE: {0:x}", generic_trampoline_code);
 
 			symtabs = new ArrayList ();
 
@@ -709,7 +708,9 @@ namespace Mono.Debugger.Backends
 			}
 
 		again:
-			long address = new_frame.TargetLocation.Address;
+			current_frame = new_frame;
+
+			long address = current_frame.TargetLocation.Address;
 
 			switch (step_mode) {
 			case StepMode.RUN:
@@ -733,11 +734,9 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
-			ISourceLocation source = LookupAddress (new_frame.TargetLocation);
+			ISourceLocation source = LookupAddress (current_frame.TargetLocation);
 			if (source != null)
-				new_frame.SourceLocation = source;
-
-			current_frame = new_frame;
+				current_frame.SourceLocation = source;
 
 			if (send_event && (current_frame_event != null))
 				current_frame_event (current_frame);
@@ -1069,28 +1068,60 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
-			if ((current_frame != null) &&
-			    ((mode == StepMode.STEP_LINE) || (mode == StepMode.SKIP_CALLS))) {
-				long address = current_frame.TargetLocation.Address;
-				int insn_size;
-				long call_target = arch.GetCallTarget (this, address, out insn_size);
-				bool step_over = false;
+			if ((current_frame == null) ||
+			    ((mode != StepMode.STEP_LINE) && (mode != StepMode.SKIP_CALLS))) {
+				new_frame = null;
+				send_gdb_command (command);
+				return;
+			}
 
-				if (call_target != 0) {
-					Console.WriteLine ("CALL TARGET: {0:x} {1}", call_target, insn_size);
-					if (mode == StepMode.STEP_LINE) {
-						ISourceLocation source = LookupAddress (call_target);
-						if (source == null)
-							step_over = true;
-					} else
-						step_over = true;
+			long address = current_frame.TargetLocation.Address;
+			int insn_size;
+			long call_target = arch.GetCallTarget (this, address, out insn_size);
+			long stop_address = 0;
 
-					if (step_over) {
-						long stop_address = address + insn_size;
-						send_gdb_command ("tbreak *" + stop_address);
-						command = "continue";
+			if (call_target == 0) {
+				new_frame = null;
+				send_gdb_command (command);
+				return;
+			}
+
+			Console.WriteLine ("CALL TARGET: {0:x} {1}", call_target, insn_size);
+			if (mode == StepMode.STEP_LINE) {
+				long trampoline = arch.GetTrampoline (
+					this, call_target, generic_trampoline_code);
+
+				if (trampoline != 0) {
+					Console.WriteLine ("TRAMPOLINE: {0:x}", trampoline);
+
+					long method = ReadAddress (
+						"call/a mono_compile_method (" + trampoline + ")");
+
+					Console.WriteLine ("COMPILED: {0:x}", method);
+
+					update_symbol_files ();
+
+					ISourceLocation source = LookupAddress (method);
+					if (source == null)
+						stop_address = address + insn_size;
+					else {
+						stop_address = method;
+						Console.WriteLine ("TRAMPOLINE CALL: {0}", source);
 					}
+				} else {
+					ISourceLocation source = LookupAddress (call_target);
+					if (source == null)
+						stop_address = address + insn_size;
+					else
+						Console.WriteLine ("CALL: {0}", source);
 				}
+			} else
+				stop_address = address + insn_size;
+
+			if (stop_address != 0) {
+				send_gdb_command ("tbreak *" + stop_address);
+				command = "continue";
+				step_mode = StepMode.RUN;
 			}
 
 			new_frame = null;

@@ -22,9 +22,28 @@ namespace Mono.Debugger
 			return 0;
 		}
 
-		public long GetTrampoline (IDebuggerBackend backend, long address)
+		public long GetTrampoline (IDebuggerBackend backend, long address, long generic_trampoline)
 		{
-			return 0;
+			long ptr = address;
+
+			byte opcode = backend.ReadByte (ptr++);
+			if (opcode != 0x68)
+				return 0;
+
+			uint method_info = backend.ReadInteger (ptr);
+			ptr += backend.TargetIntegerSize;
+
+			opcode = backend.ReadByte (ptr++);
+			if (opcode != 0xe9)
+				return 0;
+
+			int target_addr = backend.ReadSignedInteger (ptr);
+			ptr += backend.TargetIntegerSize;
+
+			if (ptr + target_addr != generic_trampoline)
+				return 0;
+
+			return method_info;
 		}
 	}
 }

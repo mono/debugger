@@ -32,7 +32,7 @@ namespace Mono.Debugger
 				MethodAddress method_address = method.Address;
 
 				if ((address < method_address.StartAddress) ||
-				    (address > method_address.EndAddress))
+				    (address >= method_address.EndAddress))
 					continue;
 
 				ISourceBuffer source;
@@ -49,6 +49,9 @@ namespace Mono.Debugger
 					source = source_factory.FindFile (method.SourceFile);
 					LineNumbers = method.LineNumbers;
 				}
+
+				if (source == null)
+					return null;
 
 				int source_range;
 				uint row = FindMethodLine (method, LineNumbers, address, out source_range);
