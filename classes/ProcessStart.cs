@@ -108,30 +108,8 @@ namespace Mono.Debugger
 
 				this.argv = argv;
 			}
-		}
 
-		void read_assembly_info (IDictionary env_vars, ArrayList list)
-		{
-			if (application == null)
-				return;
-
-			Type assinfo = application.GetType ("Mono.Debugger.AssemblyInfo");
-			if (assinfo == null)
-				return;
-
-			FieldInfo field = assinfo.GetField ("prefix");
-			if (field == null)
-				return;
-
-			string prefix = (string) field.GetValue (null);
-			Console.WriteLine ("PREFIX: {0}", prefix);
-
-			string gac_prefix = (string) env_vars ["MONO_GAC_PREFIX"];
-			if (gac_prefix == null)
-				list.Add (String.Format ("MONO_GAC_PREFIX={0}", prefix));
-			else
-				list.Add (String.Format ("MONO_GAC_PREFIX={0}:{1}",
-							 prefix, gac_prefix));
+			DoSetup ();
 		}
 
 		public DebuggerOptions Options {
@@ -158,8 +136,6 @@ namespace Mono.Debugger
 			list.Add ("LD_BIND_NOW=yes");
 
 			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
-
-			read_assembly_info (env_vars, list);
 
                         foreach (string name in env_vars.Keys) {
 				if ((name == "PATH") || (name == "LD_LIBRARY_PATH") ||
