@@ -23,8 +23,8 @@ namespace Mono.Debugger.Architecture
 		{
 			this.source_factory = factory;
 
-			bfd = new Bfd (this, application, false, factory);
-			core_bfd = new Bfd (this, core_file, true, null);
+			bfd = new Bfd (this, application, false, true, factory);
+			core_bfd = new Bfd (this, core_file, true, false, null);
 
 			Console.WriteLine ("CORE DUMP FROM: {0}", core_bfd.CrashProgram);
 

@@ -278,7 +278,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public PTraceInferior (string working_directory, string[] argv, string[] envp,
-				       bool native, SourceFileFactory factory)
+				       bool native, bool load_native_symtab, SourceFileFactory factory)
 		{
 			this.working_directory = working_directory;
 			this.argv = argv;
@@ -289,7 +289,7 @@ namespace Mono.Debugger.Backends
 			int stdin_fd, stdout_fd, stderr_fd;
 			IntPtr error;
 
-			bfd = new Bfd (this, argv [0], false, source_factory);
+			bfd = new Bfd (this, argv [0], false, load_native_symtab, source_factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -307,15 +307,16 @@ namespace Mono.Debugger.Backends
 			inferior_stdout = new IOInputChannel (stdout_fd);
 			inferior_stderr = new IOInputChannel (stderr_fd);
 
-			setup_inferior ();
+			setup_inferior (load_native_symtab);
 		}
 
-		public PTraceInferior (int pid, string[] envp, SourceFileFactory factory)
+		public PTraceInferior (int pid, string[] envp, bool load_native_symtab,
+				       SourceFileFactory factory)
 		{
 			this.envp = envp;
 			this.source_factory = factory;
 
-			bfd = new Bfd (this, argv [0], false, factory);
+			bfd = new Bfd (this, argv [0], false, load_native_symtab, factory);
 
 			server_handle = mono_debugger_server_initialize ();
 			if (server_handle == IntPtr.Zero)
@@ -326,10 +327,10 @@ namespace Mono.Debugger.Backends
 				new ChildMessageHandler (child_message),
 				new ChildCallbackHandler (child_callback)));
 
-			setup_inferior ();
+			setup_inferior (load_native_symtab);
 		}
 
-		void setup_inferior ()
+		void setup_inferior (bool load_native_symtab)
 		{
 			inferior_stdout.ReadLine += new ReadLineHandler (inferior_output);
 			inferior_stderr.ReadLine += new ReadLineHandler (inferior_errors);
@@ -353,12 +354,14 @@ namespace Mono.Debugger.Backends
 
 			native_symtabs = new SymbolTableCollection ();
 
-			try {
-				ISymbolTable bfd_symtab = bfd.SymbolTable;
-				if (bfd_symtab != null)
-					native_symtabs.AddSymbolTable (bfd_symtab);
-			} catch (Exception e) {
-				Console.WriteLine ("Can't get native symbol table: {0}", e);
+			if (load_native_symtab) {
+				try {
+					ISymbolTable bfd_symtab = bfd.SymbolTable;
+					if (bfd_symtab != null)
+						native_symtabs.AddSymbolTable (bfd_symtab);
+				} catch (Exception e) {
+					Console.WriteLine ("Can't get native symbol table: {0}", e);
+				}
 			}
 
 			update_symtabs ();

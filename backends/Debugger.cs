@@ -40,6 +40,8 @@ namespace Mono.Debugger
 		StackFrame[] current_backtrace;
 		IMethod current_method;
 
+		bool load_native_symtab = false;
+
 		bool step_line;
 		bool next_line;
 		bool must_send_update;
@@ -123,6 +125,21 @@ namespace Mono.Debugger
 					throw new AlreadyHaveTargetException ();
 
 				envp = value;
+			}
+		}
+
+		// <summary>
+		//   If true, load the target's native symbol table.  You need to enable this
+		//   to debug native C applications, but you can safely disable it if you just
+		//   want to debug managed C# code.
+		// </summary>
+		public bool LoadNativeSymbolTable {
+			get {
+				return load_native_symtab;
+			}
+
+			set {
+				load_native_symtab = value;
 			}
 		}
 
@@ -326,14 +343,16 @@ namespace Mono.Debugger
 
 		void do_run (string[] argv)
 		{
-			inferior = new PTraceInferior (working_directory, argv, envp, native, source_factory);
+			inferior = new PTraceInferior (working_directory, argv, envp, native,
+						       load_native_symtab, source_factory);
 			inferior.TargetExited += new TargetExitedHandler (child_exited);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output);
 			inferior.TargetError += new TargetOutputHandler (inferior_errors);
 			inferior.StateChanged += new StateChangedHandler (target_state_changed);
 
 			symtabs = new SymbolTableCollection ();
-			symtabs.AddSymbolTable (inferior.SymbolTable);
+			if (load_native_symtab)
+				symtabs.AddSymbolTable (inferior.SymbolTable);
 
 			if (!native) {
 				language = new MonoCSharpLanguageBackend (this, inferior);

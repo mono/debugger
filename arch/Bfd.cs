@@ -114,7 +114,8 @@ namespace Mono.Debugger.Architecture
 			bfd_init ();
 		}
 
-		public Bfd (IInferior inferior, string filename, bool core_file, SourceFileFactory factory)
+		public Bfd (IInferior inferior, string filename, bool core_file, bool read_dwarf_symtab,
+			    SourceFileFactory factory)
 		{
 			this.inferior = inferior;
 			this.filename = filename;
@@ -153,10 +154,12 @@ namespace Mono.Debugger.Architecture
 
 			g_free (symtab);
 
-			try {
-				dwarf = new DwarfReader (inferior, this, factory);
-			} catch (Exception e) {
-				Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
+			if (read_dwarf_symtab) {
+				try {
+					dwarf = new DwarfReader (inferior, this, factory);
+				} catch (Exception e) {
+					Console.WriteLine ("Can't read dwarf file {0}: {1}", filename, e);
+				}
 			}
 		}
 
