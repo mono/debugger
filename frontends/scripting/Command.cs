@@ -23,21 +23,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	public abstract class TargetCommand : Command
+	public abstract class ProcessCommand : Command
 	{
 		ProcessExpression process_expr;
-		FrameExpression frame_expr;
 
 		[Argument(ArgumentType.Process, "proc", "Target process to operate on")]
 		public ProcessExpression ProcessExpression {
 			get { return process_expr; }
 			set { process_expr = value; }
-		}
-
-		[Argument(ArgumentType.Frame, "frame", "Stack frame")]
-		public FrameExpression FrameExpression {
-			get { return frame_expr; }
-			set { frame_expr = value; }
 		}
 
 		protected virtual ProcessHandle ResolveProcess (ScriptingContext context)
@@ -47,8 +40,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			return context.CurrentProcess;
 		}
+	}
 
-		protected FrameHandle ResolveFrame (ScriptingContext context)
+	public abstract class FrameCommand : ProcessCommand
+	{
+		FrameExpression frame_expr;
+
+		[Argument(ArgumentType.Frame, "frame", "Stack frame")]
+		public FrameExpression FrameExpression {
+			get { return frame_expr; }
+			set { frame_expr = value; }
+		}
+
+		protected virtual FrameHandle ResolveFrame (ScriptingContext context)
 		{
 			if (frame_expr != null)
 				return (FrameHandle) frame_expr.Resolve (context);
@@ -171,7 +175,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	}
 
 	[Command("frame", "Print the current stack frame.")]
-	public class FrameCommand : TargetCommand
+	public class PrintFrameCommand : FrameCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -261,202 +265,133 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("process", "Select current process",
+	[Command("process", "Print or select current process",
 		 "Without argument, print the current process.\n\n" +
 		 "With a process argument, make that process the current process.\n" +
 		 "This is the process which is used if you do not explicitly specify\n" +
 		 "a process (see `help process_expression' for details).\n")]
-	public class SelectProcessCommand : Command
+	public class SelectProcessCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public SelectProcessCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			context.CurrentProcess = process;
+			context.Print (process);
 		}
 	}
 
-	[Command("BACKGROUND", "Run process in background",
+	[Command("background", "Run process in background",
 		 "Resumes execution of the selected process, but does not wait for it.\n\n" +
 		 "The difference to `continue' is that `continue' waits until the process\n" +
 		 "stops again (for instance, because it hit a breakpoint or received a signal)\n" +
 		 "while this command just lets the process running.  Note that the process\n" +
 		 "still stops if it hits a breakpoint.\n")]
-	public class BackgroundProcessCommand : Command
+	public class BackgroundProcessCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public BackgroundProcessCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Background ();
 		}
 	}
 
-	[Command("STOP", "Stop execution of a process")]
-	public class StopProcessCommand : Command
+	[Command("stop", "Stop execution of a process")]
+	public class StopProcessCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public StopProcessCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Stop ();
 		}
 	}
 
-	[Command("CONTINUE", "Continue execution of the target")]
-	public class ContinueCommand : Command
+	[Command("continue", "Continue execution of the target")]
+	public class ContinueCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public ContinueCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Continue);
 		}
 	}
 
-	[Command("STEP", "Step one source line")]
-	public class StepCommand : Command
+	[Command("step", "Step one source line")]
+	public class StepCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public StepCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Step);
 		}
 	}
 
-	[Command("NEXT", "Next source line",
+	[Command("next", "Next source line",
 		 "Steps one source line, but does not enter any methods.")]
-	public class NextCommand : Command
+	public class NextCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public NextCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Next);
 		}
 	}
 
-	[Command("STEPI", "Step one instruction, but don't enter trampolines")]
-	public class StepInstructionCommand : Command
+	[Command("stepi", "Step one instruction, but don't enter trampolines")]
+	public class StepInstructionCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
+		bool native;
 
-		public StepInstructionCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
+		[Argument(ArgumentType.Flag, "native", "Enter trampolines")]
+		public bool Native {
+			get { return native; }
+			set { native = value; }
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			process.Step (WhichStepCommand.StepInstruction);
+			ProcessHandle process = ResolveProcess (context);
+			if (Native)
+				process.Step (WhichStepCommand.StepNativeInstruction);
+			else
+				process.Step (WhichStepCommand.StepInstruction);
 		}
 	}
 
-	[Command("NATIVE STEPI", "Step one instruction")]
-	public class StepNativeInstructionCommand : Command
-	{
-		ProcessExpression process_expr;
-
-		public StepNativeInstructionCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
-			process.Step (WhichStepCommand.StepNativeInstruction);
-		}
-	}
-
-	[Command("NEXTI", "Next instruction",
+	[Command("nexti", "Next instruction",
 		 "Steps one machine instruction, but steps over method calls.")]
-	public class NextInstructionCommand : Command
+	public class NextInstructionCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public NextInstructionCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.NextInstruction);
 		}
 	}
 
-	[Command("FINISH", "Run until exit of current method")]
-	public class FinishCommand : Command
+	[Command("finish", "Run until exit of current method")]
+	public class FinishCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public FinishCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 			process.Step (WhichStepCommand.Finish);
 		}
 	}
 
-	[Command("BACKTRACE", "Print backtrace")]
-	public class BacktraceCommand : Command
+	[Command("backtrace", "Print backtrace")]
+	public class BacktraceCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-		int max_frames;
+		int max_frames = -1;
 
-		public BacktraceCommand (ProcessExpression process_expr, int max_frames)
-		{
-			this.process_expr = process_expr;
-			this.max_frames = max_frames;
+		[Argument(ArgumentType.Integer, "max", "Maximum number of frames")]
+		public int MaxFrames {
+			get { return max_frames; }
+			set { max_frames = value; }
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 
 			int current_idx = process.CurrentFrameIndex;
 			BacktraceHandle backtrace = process.GetBacktrace (max_frames);
@@ -468,45 +403,31 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
-	[Command("UP", "Go one frame up")]
-	public class UpCommand : Command
+	[Command("up", "Go one frame up")]
+	public class UpCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public UpCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex++;
 			process.CurrentFrame.Print (context);
 		}
 	}
 
-	[Command("DOWN", "Go one frame down")]
-	public class DownCommand : Command
+	[Command("down", "Go one frame down")]
+	public class DownCommand : ProcessCommand
 	{
-		ProcessExpression process_expr;
-
-		public DownCommand (ProcessExpression process_expr)
-		{
-			this.process_expr = process_expr;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex--;
 			process.CurrentFrame.Print (context);
 		}
 	}
 
-	[Command("KILL", "Kill the target")]
+	[Command("kill", "Kill the target")]
 	public class KillCommand : Command
 	{
 		protected override void DoExecute (ScriptingContext context)

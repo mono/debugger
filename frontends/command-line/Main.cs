@@ -61,7 +61,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				args)
 		{
 			engine = new Engine (GlobalContext);
-			parser = new Parser (engine, this);
+			parser = new Parser (engine, GlobalContext, this);
 
 			if (is_interactive) {
 				prompt = default_prompt = "$ ";

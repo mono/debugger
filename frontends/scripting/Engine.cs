@@ -110,6 +110,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 	{
 		Integer,
 		String,
+		Flag,
 		Process,
 		Frame
 	}

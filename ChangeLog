@@ -1,5 +1,11 @@
 2004-04-14  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Command.cs
+	(TargetCommand): Renamed this to FrameCommand.
+	(ProcessCommand): New abstract base class.	
+
+2004-04-14  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/AssertCommand.cs: Removed.
 
 2004-04-14  Martin Baulig  <martin@ximian.com>

@@ -173,7 +173,11 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override object DoResolve (ScriptingContext context)
 		{
-			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+			ProcessHandle process;
+			if (process_expr != null)
+				process = (ProcessHandle) process_expr.Resolve (context);
+			else
+				process = context.CurrentProcess;
 			return process.GetFrame (number);
 		}
 

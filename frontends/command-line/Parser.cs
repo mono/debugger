@@ -56,12 +56,14 @@ namespace Mono.Debugger.Frontends.CommandLine
 		State state;
 		Command current_command;
 		ExpressionParser parser;
+		ScriptingContext context;
 		Tokenizer lexer;
 		int pos = -1;
 
-		public Parser (Engine engine, InputProvider input)
+		public Parser (Engine engine, ScriptingContext context, InputProvider input)
 		{
 			this.engine = engine;
+			this.context = context;
 			this.input = input;
 
 			lexer = new Tokenizer (this, input);
@@ -196,14 +198,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 				result = ParseInteger ();
 				break;
 
+			case ArgumentType.Flag:
+				result = true;
+				break;
+
 			case ArgumentType.Process: {
-				TargetCommand tcommand = (TargetCommand) current_command;
-				if (tcommand.ProcessExpression != null)
+				ProcessCommand pcommand = (ProcessCommand) current_command;
+				if (pcommand.ProcessExpression != null)
 					throw new ParserError (
 						"The `{0}' argument can only be given once",
 						attr.Name);
 
-				if (tcommand.FrameExpression != null)
+				FrameCommand fcommand = current_command as FrameCommand;
+				if ((fcommand != null) && (fcommand.FrameExpression != null))
 					throw new ParserError (
 						"When specifying both a process and a stack " +
 						"frame, the process must come first");
@@ -214,15 +221,15 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 
 			case ArgumentType.Frame: {
-				TargetCommand tcommand = (TargetCommand) current_command;
-				if (tcommand.FrameExpression != null)
+				FrameCommand fcommand = (FrameCommand) current_command;
+				if (fcommand.FrameExpression != null)
 					throw new ParserError (
 						"The `{0}' argument can only be given once",
 						attr.Name);
 
 				state = State.Integer;
 				result = new FrameExpression (
-					tcommand.ProcessExpression, ParseInteger ());
+					fcommand.ProcessExpression, ParseInteger ());
 				break;
 			}
 
@@ -254,6 +261,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			if (current_command == null)
 				return;
+
+			current_command.Execute (context);
 		}
 
 		protected int ParseInteger ()
