@@ -253,21 +253,39 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		ITargetFieldInfo get_field (ITargetStructType tstruct)
+		ITargetObject get_field (ITargetStructObject sobj)
 		{
-			foreach (ITargetFieldInfo field in tstruct.Fields)
+			foreach (ITargetFieldInfo field in sobj.Type.Fields)
 				if (field.Name == identifier)
-					return field;
+					return sobj.GetField (field.Index);
+
+			foreach (ITargetFieldInfo field in sobj.Type.Properties)
+				if (field.Name == identifier)
+					return sobj.GetProperty (field.Index);
 
 			throw new ScriptingException ("Variable {0} has no field {1}.", var_expr.Name,
 						      identifier);
 		}
 
-		ITargetMethodInfo get_method (ITargetStructType tstruct)
+		ITargetType get_field_type (ITargetStructType tstruct)
 		{
-			foreach (ITargetMethodInfo method in tstruct.Methods)
+			foreach (ITargetFieldInfo field in tstruct.Fields)
+				if (field.Name == identifier)
+					return field.Type;
+
+			foreach (ITargetFieldInfo field in tstruct.Properties)
+				if (field.Name == identifier)
+					return field.Type;
+
+			throw new ScriptingException ("Variable {0} has no field {1}.", var_expr.Name,
+						      identifier);
+		}
+
+		ITargetFunctionObject get_method (ITargetStructObject sobj)
+		{
+			foreach (ITargetMethodInfo method in sobj.Type.Methods)
 				if (method.Name == identifier)
-					return method;
+					return sobj.GetMethod (method.Index);
 
 			throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
 						      identifier);
@@ -280,8 +298,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable {0} is not a struct or class type.",
 							      var_expr.Name);
 
-			ITargetFieldInfo field = get_field (sobj.Type);
-			return sobj.GetField (field.Index);
+			return get_field (sobj);
+		}
+
+		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context)
+		{
+			ITargetStructObject sobj = var_expr.ResolveVariable (context) as ITargetStructObject;
+			if (sobj == null)
+				throw new ScriptingException ("Variable {0} is not a struct or class type.",
+							      var_expr.Name);
+
+			return get_method (sobj);
 		}
 
 		protected override ITargetFunctionObject DoResolveMethod (ScriptingContext context)
@@ -302,8 +329,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 				throw new ScriptingException ("Variable {0} is not a struct or class type.",
 							      var_expr.Name);
 
-			ITargetFieldInfo field = get_field (tstruct);
-			return field.Type;
+			return get_field_type (tstruct);
 		}
 	}
 

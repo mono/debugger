@@ -1,5 +1,10 @@
 2003-07-12  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono-csharp/MonoStructType.cs: We can now call a
+	property's getter function.
+
+2003-07-12  Martin Baulig  <martin@ximian.com>
+
 	Started to added support for calling methods in the target.
 
 	* classes/TargetLocation.cs (TargetMemoryAccess): Renamed to

@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.CSharp
 			int type_info = info.ReadInt32 ();
 			if (type_info != 0)
 				return_type = struct_type.GetType (minfo.ReturnType, type_info, table);
-				
+
 			int num_params = info.ReadInt32 ();
 			parameter_types = new MonoType [num_params];
 
@@ -41,6 +41,20 @@ namespace Mono.Debugger.Languages.CSharp
 				parameter_types [i] = struct_type.GetType (
 					parameters [i].ParameterType, param_info, table);
 			}
+
+			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
+		}
+
+		public MonoFunctionType (MonoStructType struct_type, MethodInfo minfo,
+					 TargetAddress method, MonoType return_type, MonoSymbolTable table)
+			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
+		{
+			this.struct_type = struct_type;
+			this.method_info = minfo;
+			this.method = method;
+			this.return_type = return_type;
+
+			parameter_types = new MonoType [0];
 
 			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
 		}

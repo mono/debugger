@@ -173,6 +173,7 @@ namespace Mono.Debugger.Languages.CSharp
 			public readonly int Index;
 			public readonly TargetAddress Getter, Setter;
 			public readonly MonoStructType StructType;
+			public readonly MonoFunctionType GetterType, SetterType;
 
 			internal MonoPropertyInfo (MonoStructType type, int index, PropertyInfo pinfo,
 						   TargetBinaryReader info, MonoSymbolTable table)
@@ -185,6 +186,10 @@ namespace Mono.Debugger.Languages.CSharp
 					Type = type.GetType (pinfo.PropertyType, type_info, table);
 				Getter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 				Setter = new TargetAddress (table.AddressDomain, info.ReadAddress ());
+
+				if (PropertyInfo.CanRead)
+					GetterType = new MonoFunctionType (
+						type, PropertyInfo.GetGetMethod (false), Getter, Type, table);
 			}
 
 			ITargetType ITargetFieldInfo.Type {
@@ -213,7 +218,14 @@ namespace Mono.Debugger.Languages.CSharp
 
 			internal ITargetObject Get (TargetLocation location)
 			{
-				throw new NotImplementedException ();
+				if (!PropertyInfo.CanRead)
+					throw new InvalidOperationException ();
+
+				ITargetFunctionObject func = GetterType.GetObject (location) as ITargetFunctionObject;
+				if (func == null)
+					return null;
+
+				return func.Invoke ();
 			}
 
 			public override string ToString ()
