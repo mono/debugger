@@ -121,14 +121,14 @@ public class SingleSteppingEngine : ThreadManager
 
 		pid = mono_debugger_server_wait (out status);
 		if (pid < 0)
-			throw new Exception ("OOOPS");
+			throw new InternalError ();
 
 		Report.Debug (DebugFlags.Wait,
 			      "Wait thread received event: {0} {1:x}", pid, status);
 
 		TheEngine event_engine = (TheEngine) thread_hash [pid];
 		if (event_engine == null)
-			throw new Exception ("FUCK");
+			throw new InternalError ();
 
 		lock (this) {
 			if (current_event_engine != null)
@@ -264,6 +264,8 @@ public class SingleSteppingEngine : ThreadManager
 
 			Report.Debug (DebugFlags.Threads, "Engine created: {0}", new_thread);
 
+			new_inferior.Continue ();
+
 			return true;
 		}
 
@@ -298,14 +300,16 @@ public class SingleSteppingEngine : ThreadManager
 	//   synchronous or asynchronous operation since we can just block on the
 	//   `completed_event' in the synchronous case.
 	// </summary>
-	protected void SendAsyncCommand (TheEngine engine, Command command)
+	protected void SendAsyncCommand (Command command, bool wait)
 	{
 		lock (this) {
-			engine.SendTargetEvent (new TargetEventArgs (TargetEventType.TargetRunning, 0));
+			command.Process.SendTargetEvent (new TargetEventArgs (TargetEventType.TargetRunning, 0));
 			current_command = command;
 			engine_event.Set ();
 			completed_event.Reset ();
 		}
+
+		WaitForCompletion (wait);
 	}
 
 	// <summary>
@@ -339,9 +343,13 @@ public class SingleSteppingEngine : ThreadManager
 	// </remarks>
 	protected bool CheckCanRun ()
 	{
-		if (!command_mutex.WaitOne (0, false))
+		if (!command_mutex.WaitOne (0, false)) {
+			Console.WriteLine ("CANNOT GET COMMAND MUTEX");
+			throw new InternalError ();
 			return false;
+		}
 		if (!completed_event.WaitOne (0, false)) {
+			Console.WriteLine ("CANNOT GET COMPLETED EVENT");
 			command_mutex.ReleaseMutex ();
 			return false;
 		}
@@ -365,7 +373,7 @@ public class SingleSteppingEngine : ThreadManager
 			} catch (ThreadAbortException) {
 				;
 			} catch (Exception e) {
-				return new CommandResult (CommandResultType.Exception, e);
+				return new CommandResult (e);
 			}
 		}
 
@@ -393,16 +401,21 @@ public class SingleSteppingEngine : ThreadManager
 			return new CommandResult (CommandResultType.UnknownError);
 	}
 
-	protected void WaitForCompletion ()
+	protected void WaitForCompletion (bool wait)
 	{
-		completed_event.WaitOne ();
+		if (wait)
+			completed_event.WaitOne ();
+		else
+			completed_event.Set ();
+
+		command_mutex.ReleaseMutex ();
 	}
 
 	internal void Wait ()
 	{
 		command_mutex.WaitOne ();
 
-		WaitForCompletion ();
+		completed_event.WaitOne ();
 
 		command_mutex.ReleaseMutex ();
 	}
@@ -467,7 +480,7 @@ public class SingleSteppingEngine : ThreadManager
 			} catch (ThreadAbortException) {
 				return;
 			} catch (Exception e) {
-				result = new CommandResult (CommandResultType.Exception, e);
+				result = new CommandResult (e);
 			}
 
 			lock (this) {
@@ -572,6 +585,8 @@ public class SingleSteppingEngine : ThreadManager
 	}
 
 	protected class CommandResult {
+		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk);
+
 		public readonly CommandResultType Type;
 		public readonly Inferior.ChildEventType EventType;
 		public readonly int Argument;
@@ -599,6 +614,10 @@ public class SingleSteppingEngine : ThreadManager
 			this.Type = type;
 			this.Data = data;
 		}
+
+		public CommandResult (Exception e)
+			: this (CommandResultType.Exception, e)
+		{ }
 	}
 
 	protected class TheEngine : Process, ITargetAccess, IDisassembler
@@ -947,7 +966,7 @@ public class SingleSteppingEngine : ThreadManager
 			registers = null;
 			current_method = null;
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		void update_symtabs (object sender, ISymbolTable symbol_table,
@@ -1070,7 +1089,7 @@ public class SingleSteppingEngine : ThreadManager
 
 			backtrace.SetFrames (frames);
 			current_backtrace = backtrace;
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		public override long GetRegister (int index)
@@ -1106,7 +1125,7 @@ public class SingleSteppingEngine : ThreadManager
 		CommandResult get_registers (object data)
 		{
 			get_registers ();
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		CommandResult set_register (object data)
@@ -1114,7 +1133,7 @@ public class SingleSteppingEngine : ThreadManager
 			Register reg = (Register) data;
 			inferior.SetRegister (reg.Index, (long) reg.Data);
 			registers = null;
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		public override void SetRegister (int register, long value)
@@ -1182,12 +1201,6 @@ public class SingleSteppingEngine : ThreadManager
 
 		public override IArchitecture Architecture {
 			get { return arch; }
-		}
-
-		bool check_can_run ()
-		{
-			check_inferior ();
-			return sse.CheckCanRun ();
 		}
 
 		bool start_native ()
@@ -1270,6 +1283,9 @@ public class SingleSteppingEngine : ThreadManager
 				new_event = null;
 				return false;
 			}
+
+			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
+					   current, handle, index);
 
 			if (!current && handle.BreakpointHandle.Breaks (this)) {
 				new_event = null;
@@ -1716,122 +1732,109 @@ public class SingleSteppingEngine : ThreadManager
 			return new StepFrame (language, mode);
 		}
 
-		void start_step_operation (StepOperation operation, StepFrame frame)
+		bool start_step_operation (Command command, bool wait)
 		{
-			sse.SendAsyncCommand (this, new Command (this, operation, frame));
+			check_inferior ();
+			if (!sse.CheckCanRun ())
+				return false;
+			sse.SendAsyncCommand (command, wait);
+			return true;
 		}
 
-		void start_step_operation (StepOperation operation, TargetAddress until)
+		bool start_step_operation (StepOperation operation, StepFrame frame,
+					   bool wait)
 		{
-			sse.SendAsyncCommand (this, new Command (this, operation, until));
+			return start_step_operation (new Command (this, operation, frame), wait);
 		}
 
-		void start_step_operation (StepOperation operation)
+		bool start_step_operation (StepOperation operation, TargetAddress until,
+					   bool wait)
 		{
-			sse.SendAsyncCommand (this, new Command (this, operation));
+			return start_step_operation (new Command (this, operation, until), wait);
 		}
 
-		void start_step_operation (StepOperation operation, object data)
+		bool start_step_operation (StepOperation operation, bool wait)
 		{
-			sse.SendAsyncCommand (this, new Command (this, operation, data));
+			return start_step_operation (new Command (this, operation), wait);
 		}
 
-		void start_step_operation (StepMode mode)
+		bool start_step_operation (StepOperation operation, object data, bool wait)
 		{
-			start_step_operation (StepOperation.Native, get_simple_step_frame (mode));
+			return start_step_operation (new Command (this, operation, data), wait);
+		}
+
+		bool start_step_operation (StepMode mode, bool wait)
+		{
+			StepFrame frame = get_simple_step_frame (mode);
+			return start_step_operation (StepOperation.Native, frame, wait);
 		}
 
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public override bool StepInstruction (bool synchronous)
+		public override bool StepInstruction (bool wait)
 		{
-			if (!check_can_run ())
-				return false;
-
-			start_step_operation (StepOperation.StepInstruction);
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
-			return true;
+			return start_step_operation (StepOperation.StepInstruction, wait);
 		}
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public override bool StepNativeInstruction (bool synchronous)
+		public override bool StepNativeInstruction (bool wait)
 		{
-			if (!check_can_run ())
-				return false;
-
-			start_step_operation (StepOperation.StepNativeInstruction);
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
-			return true;
+			return start_step_operation (StepOperation.StepNativeInstruction, wait);
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public override bool NextInstruction (bool synchronous)
+		public override bool NextInstruction (bool wait)
 		{
-			if (!check_can_run ())
-				return false;
-
-			start_step_operation (StepOperation.NextInstruction);
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
-			return true;
+			return start_step_operation (StepOperation.NextInstruction, wait);
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public override bool StepLine (bool synchronous)
+		public override bool StepLine (bool wait)
 		{
-			if (!check_can_run ())
-				return false;
-
-			start_step_operation (StepOperation.StepLine, get_step_frame ());
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
-			return true;
+			return start_step_operation (StepOperation.StepLine,
+						     get_step_frame (), wait);
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public override bool NextLine (bool synchronous)
+		public override bool NextLine (bool wait)
 		{
-			if (!check_can_run ())
+			check_inferior ();
+			if (!sse.CheckCanRun ())
 				return false;
 
-			StepFrame frame = get_step_frame ();
+			Command command;
+			StepFrame new_frame, frame = get_step_frame ();
 			if (frame == null) {
-				start_step_operation (StepMode.NextInstruction);
-				goto done;
+				new_frame = get_simple_step_frame (StepMode.NextInstruction);
+
+				command = new Command (this, StepOperation.Native, new_frame);
+			} else {
+				new_frame = new StepFrame (
+					frame.Start, frame.End, null, StepMode.Finish);
+
+				command = new Command (this, StepOperation.NextLine, new_frame);
 			}
 
-			start_step_operation (
-				StepOperation.NextLine,
-				new StepFrame (frame.Start, frame.End, null, StepMode.Finish));
-
-		done:
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
+			sse.SendAsyncCommand (command, wait);
 			return true;
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public override bool Finish (bool synchronous)
+		public override bool Finish (bool wait)
 		{
-			if (!check_can_run ())
+			check_inferior ();
+			if (!sse.CheckCanRun ())
 				return false;
 
 			StackFrame frame = CurrentFrame;
@@ -1840,44 +1843,42 @@ public class SingleSteppingEngine : ThreadManager
 				throw new NoMethodException ();
 			}
 
-			start_step_operation (StepOperation.StepFrame, new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
+			StepFrame sf = new StepFrame (
+				frame.Method.StartAddress, frame.Method.EndAddress,
+				null, StepMode.Finish);
 
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
+			Command command = new Command (this, StepOperation.StepFrame, sf);
+			sse.SendAsyncCommand (command, wait);
 			return true;
 		}
 
-		public override bool Continue (TargetAddress until, bool in_background, bool synchronous)
+		public override bool Continue (TargetAddress until, bool in_background, bool wait)
 		{
-			if (!check_can_run ())
-				return false;
-
 			if (in_background)
-				start_step_operation (StepOperation.RunInBackground, until);
+				return start_step_operation (StepOperation.RunInBackground,
+							     until, wait);
 			else
-				start_step_operation (StepOperation.Run, until);
-			if (synchronous)
-				sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
-			return true;
+				return start_step_operation (StepOperation.Run, until, wait);
 		}
 
 		public override void Stop ()
 		{
-			// Try to get the command mutex; if we succeed, then no stepping operation
-			// is currently running.
-			bool stopped = check_can_run ();
+			// Try to get the command mutex; if we succeed, then no stepping
+			// operation is currently running.
+			check_inferior ();
+			bool stopped = sse.CheckCanRun ();
+			Console.WriteLine ("STOP: {0} {1} {2}", this, stopped, State);
 			if (stopped) {
+				inferior.Stop ();
 				sse.ReleaseCommandMutex ();
 				return;
 			}
 
-			// Ok, there's an operation running.  Stop the inferior and wait until the
-			// currently running operation completed.
+			// Ok, there's an operation running.
+			// Stop the inferior and wait until the currently running operation
+			// completed.
 			inferior.Stop ();
-			sse.WaitForCompletion ();
+			sse.WaitForCompletion (true);
 		}
 
 		public override void Kill ()
@@ -1890,7 +1891,8 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			// Try to get the command mutex; if we succeed, then no stepping operation
 			// is currently running.
-			bool stopped = check_can_run ();
+			check_inferior ();
+			bool stopped = sse.CheckCanRun ();
 			if (stopped) {
 				inferior.SetSignal (signal, send_it);
 				sse.ReleaseCommandMutex ();
@@ -1910,7 +1912,7 @@ public class SingleSteppingEngine : ThreadManager
 			frames_invalid ();
 			current_method = null;
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		internal void ReachedMain (bool set_return_address)
@@ -1928,7 +1930,8 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			// Try to get the command mutex; if we succeed, then no stepping operation
 			// is currently running.
-			bool stopped = check_can_run ();
+			check_inferior ();
+			bool stopped = sse.CheckCanRun ();
 			if (stopped)
 				return GetRegisters ();
 
@@ -1962,7 +1965,7 @@ public class SingleSteppingEngine : ThreadManager
 		CommandResult remove_breakpoint (object data)
 		{
 			sse.BreakpointManager.RemoveBreakpoint (inferior, (int) data);
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		// <summary>
@@ -2263,16 +2266,8 @@ public class SingleSteppingEngine : ThreadManager
 			if (language == null)
 				throw new ArgumentException ();
 
-			if (!check_can_run ())
-				return false;
-
 			RuntimeInvokeData data = new RuntimeInvokeData (language, method_argument, object_argument, param_objects);
-
-			start_step_operation (StepOperation.RuntimeInvoke, data);
-			sse.WaitForCompletion ();
-			sse.ReleaseCommandMutex ();
-
-			return true;
+			return start_step_operation (StepOperation.RuntimeInvoke, data, true);
 		}
 
 		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
@@ -2423,7 +2418,7 @@ public class SingleSteppingEngine : ThreadManager
 			WriteMemoryData mdata = (WriteMemoryData) data;
 
 			inferior.WriteBuffer (mdata.Address, mdata.Data);
-			return new CommandResult (CommandResultType.CommandOk);
+			return CommandResult.Ok;
 		}
 
 		protected void write_memory (TargetAddress address, byte[] buffer)
