@@ -47,7 +47,7 @@ module Debugger
 
 	interface Thread
 	{
-		long DispatchEvent (in long long status, out Address arg,
+		long DispatchEvent (in long status, out Address arg,
 				    out Address data1, out Address data2);
 
 		Address GetFrame ()
@@ -104,7 +104,7 @@ module Debugger
 		void Stop ()
 			raises (Error);
 
-		long long StopAndWait ()
+		long StopAndWait ()
 			raises (Error);
 	};
 

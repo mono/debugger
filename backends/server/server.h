@@ -108,13 +108,13 @@ struct InferiorVTable {
 
 	void                  (* finalize)            (ServerHandle        *handle);
 
-	guint32               (* global_wait)         (guint64             *status_ret);
+	guint32               (* global_wait)         (guint32             *status_ret);
 
 	ServerCommandError    (* stop_and_wait)       (ServerHandle        *handle,
 						       guint32             *status);
 
 	ServerStatusMessageType (* dispatch_event)    (ServerHandle        *handle,
-						       guint64              status,
+						       guint32              status,
 						       guint64             *arg,
 						       guint64             *data1,
 						       guint64             *data2);
@@ -340,11 +340,11 @@ void
 mono_debugger_server_finalize             (ServerHandle       *handle);
 
 guint32
-mono_debugger_server_global_wait          (guint64                 *status);
+mono_debugger_server_global_wait          (guint32                 *status);
 
 ServerStatusMessageType
 mono_debugger_server_dispatch_event       (ServerHandle            *handle,
-					   guint64                  status,
+					   guint32                  status,
 					   guint64                 *arg,
 					   guint64                 *data1,
 					   guint64                 *data2);

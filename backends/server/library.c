@@ -68,13 +68,13 @@ mono_debugger_server_finalize (ServerHandle *handle)
 }
 
 guint32
-mono_debugger_server_global_wait (guint64 *status)
+mono_debugger_server_global_wait (guint32 *status)
 {
 	return (* global_vtable->global_wait) (status);
 }
 
 ServerStatusMessageType
-mono_debugger_server_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg,
+mono_debugger_server_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
 				     guint64 *data1, guint64 *data2)
 {
 	return (*global_vtable->dispatch_event) (handle, status, arg, data1, data2);

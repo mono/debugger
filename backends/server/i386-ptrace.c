@@ -163,7 +163,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 
 
 static ServerStatusMessageType
-server_ptrace_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg,
+server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
 			      guint64 *data1, guint64 *data2)
 {
 	if (status >> 16) {
@@ -182,7 +182,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg
 		}
 
 		default:
-			g_warning (G_STRLOC ": Received unknown wait result %Lx on child %d",
+			g_warning (G_STRLOC ": Received unknown wait result %x on child %d",
 				   status, handle->inferior->pid);
 			return MESSAGE_UNKNOWN_ERROR;
 		}
@@ -232,7 +232,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint64 status, guint64 *arg
 		return MESSAGE_CHILD_SIGNALED;
 	}
 
-	g_warning (G_STRLOC ": Got unknown waitpid() result: %Lx", status);
+	g_warning (G_STRLOC ": Got unknown waitpid() result: %x", status);
 	return MESSAGE_UNKNOWN_ERROR;
 }
 

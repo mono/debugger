@@ -128,7 +128,7 @@ static int stop_requested = 0;
 static int stop_status = 0;
 
 static guint32
-server_ptrace_global_wait (guint64 *status_ret)
+server_ptrace_global_wait (guint32 *status_ret)
 {
 	int ret, status;
 

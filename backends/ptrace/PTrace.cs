@@ -18,7 +18,7 @@ namespace Mono.Debugger.Backends
 	internal class PTraceInferior : Inferior
 	{
 		[DllImport("monodebuggerserver")]
-		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, long status, out long arg, out long data1, out long data2);
+		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
 		static extern CommandError mono_debugger_server_get_signal_info (IntPtr handle, ref SignalInfo sinfo);
@@ -78,7 +78,7 @@ namespace Mono.Debugger.Backends
 			base.SetupInferior ();
 		}
 
-		public override ChildEvent ProcessEvent (long status)
+		public override ChildEvent ProcessEvent (int status)
 		{
 			long arg, data1, data2;
 			ChildEventType message;

@@ -1,3 +1,4 @@
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@ typedef struct
 } impl_POA_Debugger_Thread;
 
 static CORBA_long
-do_dispatch_event (impl_POA_Debugger_Thread *servant, const CORBA_long_long status,
+do_dispatch_event (impl_POA_Debugger_Thread *servant, const CORBA_long status,
 		   Debugger_Address *arg, Debugger_Address *data1, Debugger_Address *data2,
 		   CORBA_Environment *ev)
 {
@@ -106,6 +107,7 @@ do_read_memory (impl_POA_Debugger_Thread *servant, const Debugger_Address addres
 	Debugger_Blob *blob;
 
 	CHECK_VTABLE_RET (read_memory, NULL);
+
 	blob = Debugger_Blob__alloc ();
 	blob->_length = blob->_maximum = size;
 	blob->_buffer = Debugger_Blob_allocbuf (size);
