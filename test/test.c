@@ -5,7 +5,7 @@
 void
 crashing_here (int *ptr)
 {
-	// *ptr = 4;
+	*ptr = 4;
 }
 
 void
