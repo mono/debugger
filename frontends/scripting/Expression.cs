@@ -1198,8 +1198,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			default:
 				return null;
 			}
-
-			return null;
 		}
 	}
 
