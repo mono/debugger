@@ -117,6 +117,41 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	[Command("ptype", "Print the type of an expression")]
+	public class PrintTypeCommand : FrameCommand
+	{
+		Expression expression;
+
+		protected override bool DoResolve (ScriptingContext context, object[] args)
+		{
+			if ((args == null) || (args.Length != 1)) {
+				context.Error ("`ptype' takes exactly one argument");
+				return false;
+			}
+
+			expression = args [0] as Expression;
+			if (expression == null) {
+				context.Print ("Argument is not an expression");
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ScriptingContext new_context = context.GetExpressionContext ();
+			if (ProcessExpression != null)
+				new_context.CurrentProcess = ResolveProcess (new_context);
+			if (FrameExpression != null)
+				new_context.CurrentFrame = ResolveFrame (new_context);
+
+			Expression type_expr = new TypeOfExpression (expression);
+			ITargetType type = type_expr.ResolveType (new_context);
+			new_context.Print (type);
+		}
+	}
+
 	[Command("EXAMINE", "Examine memory.")]
 	public class ExamineCommand : Command
 	{
