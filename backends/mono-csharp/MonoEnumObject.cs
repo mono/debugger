@@ -23,12 +23,8 @@ namespace Mono.Debugger.Languages.CSharp
 		protected override object GetObject (ITargetMemoryReader reader,
 						     TargetLocation location)
 		{
-			return Enum.ToObject ((Type) type.TypeHandle, element_object.GetObject ());
-		}
-
-		protected override byte[] CreateObject (object obj)
-		{
-			throw new NotSupportedException ();
+			return Enum.ToObject ((Type) type.TypeHandle,
+					      element_object.GetObject ());
 		}
 	}
 }

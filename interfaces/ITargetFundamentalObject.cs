@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages
 		//   Returns a Mono object representing this object.
 		// </summary>
 		object Object {
-			get; set;
+			get;
 		}
 	}
 }

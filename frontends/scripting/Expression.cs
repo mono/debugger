@@ -121,19 +121,20 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		protected virtual bool DoAssign (ScriptingContext context, object obj)
+		protected virtual bool DoAssign (ScriptingContext context, ITargetObject obj)
 		{
 			return false;
 		}
 
-		public void Assign (ScriptingContext context, object obj)
+		public void Assign (ScriptingContext context, ITargetObject obj)
 		{
 			ResolveBase (context);
 
 			bool ok;
 			try {
 				ok = DoAssign (context, obj);
-			} catch {
+			} catch (Exception e) {
+				Console.WriteLine ("ASSIGN: {0} {1}", e, obj);
 				ok = false;
 			}
 
@@ -281,6 +282,21 @@ namespace Mono.Debugger.Frontends.Scripting
 			return context.CurrentFrame.GetVariable (var);
 		}
 
+		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		{
+			if (!var.CanWrite)
+				return false;
+
+			if (var.Type != obj.Type)
+				throw new ScriptingException (
+					"Type mismatch: cannot assign expression of type " +
+					"`{0}' to variable `{1}', which is of type `{2}'.",
+					obj.Type.Name, Name, var.Type);
+
+			var.SetObject (context.CurrentFrame.Frame, obj);
+			return true;
+		}
+
 		protected override object DoResolve (ScriptingContext context)
 		{
 			return ResolveVariable (context);
@@ -395,6 +411,16 @@ namespace Mono.Debugger.Frontends.Scripting
 				throw new ScriptingException ("No such method `{0}'", name);
 
 			return expr.ResolveLocation (context, types);
+		}
+
+		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		{
+			Expression expr = ResolveSimpleName (context);
+			if (expr == null)
+				throw new ScriptingException ("No such variable `{0}'", name);
+
+			expr.Assign (context, obj);
+			return true;
 		}
 
 		protected override object DoResolve (ScriptingContext context)

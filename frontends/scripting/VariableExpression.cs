@@ -50,40 +50,6 @@ namespace Mono.Debugger.Frontends.Scripting
 			}
 		}
 
-		protected override bool DoAssign (ScriptingContext context, object obj)
-		{
-			ITargetObject target_object = ResolveVariable (context);
-
-			ITargetStructObject sobj = target_object as ITargetStructObject;
-			if (sobj != null) {
-				ITargetStructObject tobj = obj as ITargetStructObject;
-				string kind = sobj.Type.Kind == TargetObjectKind.Class ? "class" : "struct";
-				if (tobj == null)
-					throw new ScriptingException (
-						"Type mismatch: cannot assign non-{0} object to {1} variable {2}.",
-						kind, kind, Name);
-
-				if (sobj.Type != tobj.Type)
-					throw new ScriptingException (
-						"Type mismatch: cannot assign expression of type `{0}' to variable {1}, " +
-						"which is of type `{2}'.", tobj.Type.Name, Name, sobj.Type.Name);
-			}
-
-			ITargetFundamentalObject fundamental = target_object as ITargetFundamentalObject;
-			if ((fundamental == null) || !fundamental.HasObject)
-				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
-
-			try {
-				fundamental.Object = obj;
-			} catch (NotSupportedException) {
-				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
-			} catch (InvalidOperationException) {
-				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
-			}
-
-			return true;
-		}
-
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1})", GetType (), Name);
@@ -133,13 +99,20 @@ namespace Mono.Debugger.Frontends.Scripting
 			return frame.GetRegisterLocation (register, offset, true);
 		}
 
-		protected override bool DoAssign (ScriptingContext context, object obj)
+		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)
 		{
 			if (offset != 0)
 				throw new ScriptingException (
 					"Cannot assign a register expression which " +
 					"has an offset.");
 
+			ITargetFundamentalObject fobj = tobj as ITargetFundamentalObject;
+			if ((fobj == null) || !fobj.HasObject)
+				throw new ScriptingException (
+					"Cannot store non-fundamental object `{0}' in " +
+					" a registers", tobj);
+
+			object obj = fobj.Object;
 			long value = Convert.ToInt64 (obj);
 			context.CurrentFrame.SetRegister (register, value);
 			return true;
@@ -767,6 +740,28 @@ namespace Mono.Debugger.Frontends.Scripting
 					"Invocation of type `{0}'s constructor raised an " +
 					"exception: {1}", type_expr.Name, ex.Message);
 			}
+		}
+	}
+
+	public class AssignmentExpression : VariableExpression
+	{
+		Expression left, right;
+
+		public AssignmentExpression (Expression left, Expression right)
+		{
+			this.left = left;
+			this.right = right;
+		}
+
+		public override string Name {
+			get { return left.Name + "=" + right.Name; }
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			ITargetObject obj = right.ResolveVariable (context);
+			left.Assign (context, obj);
+			return obj;
 		}
 	}
 }

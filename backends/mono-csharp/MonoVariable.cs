@@ -128,6 +128,18 @@ namespace Mono.Debugger.Languages.CSharp
 			return type.GetObject (location);
 		}
 
+		public bool CanWrite {
+			get { return true; }
+		}
+
+		public void SetObject (StackFrame frame, ITargetObject obj)
+		{
+			if (obj.Type != Type)
+				throw new InvalidOperationException ();
+			TargetLocation location = GetLocation (frame);
+			type.SetObject (location, (MonoObject) obj);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("MonoVariable [{0}:{1}:{2}:{3}]",

@@ -114,6 +114,11 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
+		public virtual void SetObject (ITargetObject obj)
+		{
+			Location.WriteAddress (obj.Location.Address);
+		}
+
 		public virtual string Print ()
 		{
 			return ToString ();

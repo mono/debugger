@@ -141,6 +141,12 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public abstract MonoObject GetObject (TargetLocation location);
 
+		public virtual void SetObject (TargetLocation location, MonoObject obj)
+		{
+			MonoObject left = GetObject (location);
+			left.SetObject (obj);
+		}
+
 		ITargetObject ITargetType.GetObject (TargetLocation location)
 		{
 			return GetObject (location);

@@ -72,7 +72,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 			TargetAddress retval = frame.CallMethod (CreateString, str);
 			TargetLocation location = new AbsoluteTargetLocation (frame, retval);
-			return new MonoFundamentalObject (this, location);
+			return new MonoStringObject (this, location);
 		}
 	}
 }

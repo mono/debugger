@@ -995,25 +995,4 @@ namespace Mono.Debugger.Frontends.Scripting
 				       index, location.Name);
 		}
 	}
-
-
-#if FIXME
-	public class VariableAssignCommand : DebuggerCommand
-	{
-		VariableExpression var_expr;
-		Expression expr;
-
-		public VariableAssignCommand (VariableExpression var_expr, Expression expr)
-		{
-			this.var_expr = var_expr;
-			this.expr = expr;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			object obj = expr.Resolve (context);
-			var_expr.Assign (context, obj);
-		}
-	}
-#endif
 }

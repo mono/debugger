@@ -78,9 +78,9 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		protected override byte[] CreateObject (object obj)
+		public override void SetObject (ITargetObject obj)
 		{
-			return type.CreateObject (obj);
+			RawContents = obj.RawContents;
 		}
 	}
 }

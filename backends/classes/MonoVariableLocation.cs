@@ -75,6 +75,26 @@ namespace Mono.Debugger.Languages
 			return reader;
 		}
 
+		public override void WriteBuffer (byte[] data)
+		{
+			if (HasAddress) {
+				base.WriteBuffer (data);
+				return;
+			}
+
+			long contents;
+			ITargetAccess memory = TargetAccess;
+			if (memory.TargetIntegerSize == 4)
+				contents = BitConverter.ToInt32 (data, 0);
+			else if (memory.TargetIntegerSize == 8)
+				contents = BitConverter.ToInt64 (data, 0);
+			else
+				throw new InternalError ();
+
+			// If this is a valuetype, the register hold the whole data.
+			frame.SetRegister (register, contents);
+		}
+
 		public override void WriteAddress (TargetAddress address)
 		{
 			if (!HasAddress)

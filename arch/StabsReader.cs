@@ -501,6 +501,15 @@ namespace Mono.Debugger.Architecture
 				return type.GetObject (location);
 			}
 
+			public bool CanWrite {
+				get { return false; }
+			}
+
+			public void SetObject (StackFrame frame, ITargetObject obj)
+			{
+				throw new InvalidOperationException ();
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("NativeVariable [{0}:{1}:{2}:{3:x}]",

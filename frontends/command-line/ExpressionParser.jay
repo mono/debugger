@@ -83,11 +83,19 @@ namespace Mono.Debugger.Frontends.Scripting
 %%
 
 parse_expression
-	: expression
+	: primary_expression
 	  {
 		return $1;
 	  }
 	;
+
+primary_expression
+	: expression
+	| expression ASSIGN expression
+	  {
+		$$ = new AssignmentExpression ((Expression) $1, (Expression) $3);
+	  }
+	;	
 
 expression
 	: NUMBER

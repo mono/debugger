@@ -39,5 +39,11 @@ namespace Mono.Debugger.Languages
 		//   get invalid after the target exited.
 		// </remarks>
 		ITargetObject GetObject (StackFrame frame);
+
+		bool CanWrite {
+			get;
+		}
+
+		void SetObject (StackFrame frame, ITargetObject obj);
 	}
 }
