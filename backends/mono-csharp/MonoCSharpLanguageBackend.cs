@@ -590,7 +590,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		private ITargetType LookupType (ITargetAccess target, Type type, string name)
 		{
-			int offset = (int) target.CallMethod (Language.MonoDebuggerInfo.LookupType, name).Address;
+			int offset = Language.LookupType (target, name);
 			if (offset == 0)
 				return null;
 			return GetType (type, offset);
@@ -1961,6 +1961,17 @@ namespace Mono.Debugger.Languages.CSharp
 				throw new InternalError ();
 
 			return reader.GetMethodByToken (token);
+		}
+
+		internal int LookupType (ITargetAccess target, string name)
+		{
+			int offset;
+			lock (this) {
+				reload_event.Reset ();
+				offset = (int) target.CallMethod (info.LookupType, name).Address;
+			}
+			reload_event.WaitOne ();
+			return offset;
 		}
 
 		public bool DaemonThreadHandler (DaemonThreadRunner runner, TargetAddress address, int signal)

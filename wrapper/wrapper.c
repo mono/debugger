@@ -132,9 +132,14 @@ debugger_create_string (guint64 dummy_argument, const gchar *string_argument)
 static guint64
 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
 {
-	return mono_debugger_lookup_type (string_argument);
-}
+	guint64 retval;
 
+	mono_debugger_lock ();
+	retval = mono_debugger_lookup_type (string_argument);
+	mono_debugger_signal ();
+	mono_debugger_unlock ();
+	return retval;
+}
 
 static guint64
 debugger_class_get_static_field_data (guint64 klass)
