@@ -18,8 +18,9 @@ namespace Mono.Debugger
 {
 	public class ProcessStart
 	{
-		public readonly string Path_Mono	= "mono";
-		public readonly string Environment_Path	= "/usr/bin";
+		public readonly string Path_Mono		= "mono";
+		public readonly string Environment_Path		= "/usr/bin";
+		public readonly string Environment_LibPath	= "";
 
 		string cwd;
 		string base_dir;
@@ -48,6 +49,10 @@ namespace Mono.Debugger
 
 				case "environment-path":
 					Environment_Path = value;
+					break;
+
+				case "environment-libpath":
+					Environment_LibPath = value;
 					break;
 
 				default:
@@ -167,7 +172,8 @@ namespace Mono.Debugger
 
 		protected virtual void DoSetup ()
 		{
-			SetupEnvironment ("PATH=" + Environment_Path, "LD_BIND_NOW=yes");
+			SetupEnvironment ("PATH=" + Environment_Path, "LD_BIND_NOW=yes",
+					  "LD_LIBRARY_PATH=" + Environment_LibPath);
 			argv = SetupArguments ();
 			SetupWorkingDirectory ();
 			SetupBaseDirectory ();

@@ -139,6 +139,7 @@ if test "x$JAY" = "x" ; then
 fi
 AM_CONDITIONAL(HAVE_JAY, test "x$have_jay" = "xyes")
 AC_SUBST(PATH)
+AC_SUBST(LD_LIBRARY_PATH)
 
 
 dnl
@@ -186,8 +187,6 @@ interfaces/Makefile
 classes/Makefile
 glue/Makefile
 lib/Makefile
-lib/Debugger.exe.config
-lib/Interpreter.exe.config
 wrapper/Makefile
 widgets/Makefile
 widgets/gtk/Makefile

@@ -1,5 +1,12 @@
 2003-01-22  Martin Baulig  <martin@ximian.com>
 
+	* lib/Makefile.am: Use the new wrapper instead of @MONO@.  Added
+	the ${LD_LIBRARY_PATH} to the config files.
+
+	* backends/ProcessStart: Pass the LD_LIBRARY_PATH to the target.
+
+2003-01-22  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs (BreakpointHit): Renamed to
 	CheckBreakpointHit() and added BreakpointHit() which'll be called
 	after the target is actually stopped and the notifications have

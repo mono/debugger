@@ -68,5 +68,20 @@ Debugger.exe: $(ALL_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
 Interpreter.exe: $(INTERPRETER_SRCLIST) Mono.Debugger.dll Mono.Debugger.Backend.dll
 	$(MCS) -o Interpreter.exe $(INTERPRETER_DEPS) $(INTERPRETER_SRCLIST) $(MCS_FLAGS)
 
+Debugger.exe.config: Debugger.exe.config.in Makefile
+	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-jit-wrapper,g' \
+		-e 's,\@PATH\@,${PATH},g' \
+		-e 's,\@LD_LIBRARY_PATH\@,${libdir}:${LD_LIBRARY_PATH},g' \
+		< $< > tmp-t && mv tmp-t $@
+
+Interpreter.exe.config: Interpreter.exe.config.in Makefile
+	sed -e 's,\@MONO\@,${libexecdir}/mono-debugger-jit-wrapper,g' \
+		-e 's,\@PATH\@,${PATH},g' \
+		-e 's,\@LD_LIBRARY_PATH\@,${libdir}:${LD_LIBRARY_PATH},g' \
+		< $< > tmp-t && mv tmp-t $@
+
+configdir = $(bindir)
+config_DATA = Debugger.exe.config Interpreter.exe.config
+
 CLEANFILES = *.exe *.dll
 

@@ -2,5 +2,6 @@
   <appSettings>
     <add key="mono-path" value="@MONO@" />
     <add key="environment-path" value="@PATH@" />
+    <add key="environment-libpath" value="@LD_LIBRARY_PATH@" />
   </appSettings>
 </configuration>
