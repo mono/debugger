@@ -1,5 +1,11 @@
 2003-01-04  Martin Baulig  <martin@ximian.com>
 
+	* frontends/scripting/Parser.jay (variable_expression): Move the
+	`STAR variable_expression' rule above the struct element one.
+	Added grouping expression "print (*$c.Object).Foo".
+
+2003-01-04  Martin Baulig  <martin@ximian.com>
+
 	* frontends/scripting/Command.cs (VariableExpression): Added
 	`ResolveType' which returns an ITargetType (without accessing the
 	ITargetObject if possible).

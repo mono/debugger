@@ -60,6 +60,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 %token BANG
 %token ASSIGN
 %token STAR
+%token OPEN_PARENS
+%token CLOSE_PARENS
 
 %token PROCESSES
 %token REGISTERS
@@ -231,9 +233,17 @@ expression
 	;
 
 variable_expression
-	: BANG IDENTIFIER
+	: STAR variable_expression
+	  {
+		$$ = new VariableDereferenceExpression ((VariableExpression) $2);
+	  }
+	| BANG IDENTIFIER
 	  {
 		$$ = new ScriptingVariableReference ((string) $2);
+	  }
+	| OPEN_PARENS variable_expression CLOSE_PARENS
+	  {
+		$$ = new VariableExpressionGroup ((VariableExpression) $2);
 	  }
 	| opt_process opt_frame_number DOLLAR IDENTIFIER
 	  {
@@ -242,10 +252,6 @@ variable_expression
 	| variable_expression DOT IDENTIFIER
 	  {
 		$$ = new StructAccessExpression ((VariableExpression) $1, (string) $3);
-	  }
-	| STAR variable_expression
-	  {
-		$$ = new VariableDereferenceExpression ((VariableExpression) $2);
 	  }
 	;
 

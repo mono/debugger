@@ -522,6 +522,30 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class VariableExpressionGroup : VariableExpression
+	{
+		VariableExpression var_expr;
+
+		public VariableExpressionGroup (VariableExpression var_expr)
+		{
+			this.var_expr = var_expr;
+		}
+
+		public override string Name {
+			get { return '(' + var_expr.Name + ')'; }
+		}
+
+		protected override ITargetObject DoResolveVariable (ScriptingContext context)
+		{
+			return var_expr.ResolveVariable (context);
+		}
+
+		protected override ITargetType DoResolveType (ScriptingContext context)
+		{
+			return var_expr.ResolveType (context);
+		}
+	}
+
 	public class ScriptingVariableReference : VariableExpression
 	{
 		string identifier;

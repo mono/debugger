@@ -447,6 +447,10 @@ namespace Mono.Debugger.Frontends.CommandLine
 					return Token.ASSIGN;
 				else if (c == '*')
 					return Token.STAR;
+				else if (c == '(')
+					return Token.OPEN_PARENS;
+				else if (c == ')')
+					return Token.CLOSE_PARENS;
 
 				if (c >= '0' && c <= '9') {
 					tokens_seen = true;
