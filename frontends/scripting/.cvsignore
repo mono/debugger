@@ -1,3 +1,4 @@
 Makefile
+Makefile.in
 Parser.cs
 y.output
