@@ -547,7 +547,7 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		} else {
 			try {
-				command.Process.ProcessCommand (command);
+				command.Process.ProcessCommand (command.Operation);
 			} catch (ThreadAbortException) {
 				;
 				return;
@@ -561,10 +561,56 @@ public class SingleSteppingEngine : ThreadManager
 		get { return address_domain; }
 	}
 
-	protected enum StepOperation {
-		None,
+	protected sealed class Operation {
+		public readonly OperationType Type;
+		public readonly TargetAddress Until;
+		public readonly RuntimeInvokeData RuntimeInvokeData;
+
+		public Operation (OperationType type)
+		{
+			this.Type = type;
+			this.Until = TargetAddress.Null;
+		}
+
+		public Operation (OperationType type, StepFrame frame)
+		{
+			this.Type = type;
+			this.StepFrame = frame;
+		}
+
+		public Operation (OperationType type, TargetAddress until)
+		{
+			this.Type = type;
+			this.Until = until;
+		}
+
+		public Operation (RuntimeInvokeData data)
+		{
+			this.Type = OperationType.RuntimeInvoke;
+			this.RuntimeInvokeData = data;
+		}
+
+		public StepMode StepMode;
+		public StepFrame StepFrame;
+
+		public bool IsNative {
+			get { return Type == OperationType.StepNativeInstruction; }
+		}
+
+		public bool IsSourceOperation {
+			get {
+				return (Type == OperationType.StepLine) ||
+					(Type == OperationType.NextLine) ||
+					(Type == OperationType.Run) ||
+					(Type == OperationType.RunInBackground) ||
+					(Type == OperationType.RuntimeInvoke) ||
+					(Type == OperationType.Initialize);
+			}
+		}
+	}
+
+	protected enum OperationType {
 		Initialize,
-		Native,
 		Run,
 		RunInBackground,
 		StepInstruction,
@@ -579,54 +625,22 @@ public class SingleSteppingEngine : ThreadManager
 	protected delegate CommandResult CommandFunc (object data);
 
 	protected enum CommandType {
-		StepOperation,
+		Operation,
 		Command
 	}
 
 	protected class Command {
 		public TheEngine Process;
 		public CommandType Type;
-		public StepOperation Operation;
-		public StepFrame StepFrame;
-		public TargetAddress Until;
+		public Operation Operation;
 		public CommandFunc CommandFunc;
 		public object CommandFuncData;
 
-		public Command (TheEngine process, StepOperation operation, StepFrame frame)
+		public Command (TheEngine process, Operation operation)
 		{
 			this.Process = process;
-			this.Type = CommandType.StepOperation;
+			this.Type = CommandType.Operation;
 			this.Operation = operation;
-			this.StepFrame = frame;
-			this.Until = TargetAddress.Null;
-		}
-
-		public Command (TheEngine process, StepOperation operation, TargetAddress until)
-		{
-			this.Process = process;
-			this.Type = CommandType.StepOperation;
-			this.Operation = operation;
-			this.StepFrame = null;
-			this.Until = until;
-		}
-
-		public Command (TheEngine process, StepOperation operation)
-		{
-			this.Process = process;
-			this.Type = CommandType.StepOperation;
-			this.Operation = operation;
-			this.StepFrame = null;
-			this.Until = TargetAddress.Null;
-		}
-
-		public Command (TheEngine process, StepOperation operation, object data)
-		{
-			this.Process = process;
-			this.Type = CommandType.StepOperation;
-			this.Operation = operation;
-			this.StepFrame = null;
-			this.Until = TargetAddress.Null;
-			this.CommandFuncData = data;
 		}
 
 		public Command (CommandFunc func, object data)
@@ -638,8 +652,8 @@ public class SingleSteppingEngine : ThreadManager
 
 		public override string ToString ()
 		{
-			return String.Format ("Command ({0}:{1}:{2}:{3}:{4}:{5}:{6})",
-					      Process, Type, Operation, StepFrame, Until,
+			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
+					      Process, Type, Operation,
 					      CommandFunc, CommandFuncData);
 		}
 	}
@@ -800,7 +814,7 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			if (!func.IsNull) {
 				insert_temporary_breakpoint (func);
-				current_operation = StepOperation.Initialize;
+				current_operation = new Operation (OperationType.Initialize);
 				this.is_main = is_main;
 			}
 			do_continue ();
@@ -915,7 +929,7 @@ public class SingleSteppingEngine : ThreadManager
 			switch (message) {
 			case Inferior.ChildEventType.CHILD_STOPPED:
 				if (arg != 0) {
-					frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+					frame_changed (inferior.CurrentFrame, 0, null);
 					return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 				}
 
@@ -931,7 +945,7 @@ public class SingleSteppingEngine : ThreadManager
 				return new TargetEventArgs (TargetEventType.TargetExited, arg);
 
 			case Inferior.ChildEventType.CHILD_CALLBACK:
-				frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+				frame_changed (inferior.CurrentFrame, 0, null);
 				return new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame);
 			}
 
@@ -942,35 +956,57 @@ public class SingleSteppingEngine : ThreadManager
 		//   The heart of the SingleSteppingEngine's background thread - process a
 		//   command and send the result back to the caller.
 		// </summary>
-		public void ProcessCommand (Command command)
+		public void ProcessCommand (Operation operation)
 		{
-			frames_invalid ();
-
 			// Process another stepping command.
-			switch (command.Operation) {
-			case StepOperation.Run:
-			case StepOperation.RunInBackground:
-				TargetAddress until = command.Until;
+			switch (operation.Type) {
+			case OperationType.Run:
+			case OperationType.RunInBackground:
+				TargetAddress until = operation.Until;
 				if (!until.IsNull)
 					insert_temporary_breakpoint (until);
 				do_continue ();
 				break;
 
-			case StepOperation.StepNativeInstruction:
+			case OperationType.StepNativeInstruction:
 				do_step ();
 				break;
 
-			case StepOperation.NextInstruction:
+			case OperationType.NextInstruction:
 				do_next ();
 				break;
 
-			case StepOperation.RuntimeInvoke:
-				do_runtime_invoke ((RuntimeInvokeData) command.CommandFuncData);
+			case OperationType.RuntimeInvoke:
+				do_runtime_invoke (operation.RuntimeInvokeData);
+				break;
+
+			case OperationType.StepLine:
+				operation.StepFrame = get_step_frame ();
+				if (operation.StepFrame == null)
+					do_step ();
+				else
+					Step (operation);
+				break;
+
+			case OperationType.NextLine:
+				operation.StepFrame = get_step_frame ();
+				if (operation.StepFrame == null)
+					do_next ();
+				else
+					Step (operation);
+				break;
+
+			case OperationType.StepInstruction:
+				operation.StepFrame = get_step_frame (StepMode.SingleInstruction);
+				Step (operation);
+				break;
+
+			case OperationType.StepFrame:
+				Step (operation);
 				break;
 
 			default:
-				Step (command.Operation, command.StepFrame);
-				break;
+				throw new InvalidOperationException ();
 			}
 		}
 
@@ -989,13 +1025,13 @@ public class SingleSteppingEngine : ThreadManager
 				return true;
 			}
 
-			if (!DoStep (false))
-				return false;
-
-			if (current_operation == StepOperation.Initialize) {
-				if (is_main)
-					sse.Initialize (inferior);
-				step_operation_finished ();
+			if (current_operation != null) {
+				if (current_operation.Type == OperationType.Initialize) {
+					if (is_main)
+						sse.Initialize (inferior);
+					step_operation_finished ();
+				} else if (!DoStep (false))
+					return false;
 			}
 
 			//
@@ -1015,10 +1051,11 @@ public class SingleSteppingEngine : ThreadManager
 			// `frame_changed' computes the new stack frame - and it may also
 			// send us a new step command.  This happens for instance, if we
 			// stopped within a method's prologue or epilogue code.
-			Command new_command = frame_changed (frame, 0, current_operation);
-			if (new_command != null) {
-				Console.WriteLine ("NEW COMMAND: {0}", new_command);
-				// return false;
+			Operation new_operation = frame_changed (frame, 0, current_operation);
+			if (new_operation != null) {
+				Console.WriteLine ("NEW OPERATION: {0}", new_operation);
+				ProcessCommand (new_operation);
+				return false;
 			}
 
 			step_operation_finished ();
@@ -1033,7 +1070,7 @@ public class SingleSteppingEngine : ThreadManager
 			current_backtrace = null;
 			registers = null;
 			current_method = null;
-			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
+			frame_changed (inferior.CurrentFrame, 0, null);
 			return CommandResult.Ok;
 		}
 
@@ -1273,7 +1310,7 @@ public class SingleSteppingEngine : ThreadManager
 		//   operation.  In this method, we check whether the stepping operation
 		//   has been completed or what to do next.
 		// </summary>
-		Command frame_changed (TargetAddress address, int arg, StepOperation operation)
+		Operation frame_changed (TargetAddress address, int arg, Operation operation)
 		{
 			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
@@ -1297,10 +1334,10 @@ public class SingleSteppingEngine : ThreadManager
 				// If check_method_operation() returns true, it already
 				// started a stepping operation, so the target is
 				// currently running.
-				Command new_command = check_method_operation (
+				Operation new_operation = check_method_operation (
 					address, current_method, source, operation);
-				if (new_command != null)
-					return new_command;
+				if (new_operation != null)
+					return new_operation;
 
 				current_frame = CreateFrame (
 					address, 0, frames [0], null, source, current_method);
@@ -1318,26 +1355,21 @@ public class SingleSteppingEngine : ThreadManager
 		//   that we don't stop somewhere inside a method's prologue code or
 		//   between two source lines.
 		// </summary>
-		Command check_method_operation (TargetAddress address, IMethod method,
-						SourceAddress source, StepOperation operation)
+		Operation check_method_operation (TargetAddress address, IMethod method,
+						  SourceAddress source, Operation operation)
 		{
-			if (operation == StepOperation.StepNativeInstruction)
+			if ((operation == null) || operation.IsNative)
 				return null;
 
 			if (method.IsWrapper && (address == method.StartAddress))
-				return new Command (this, StepOperation.Run, method.WrapperAddress);
+				return new Operation (OperationType.Run, method.WrapperAddress);
 
 			ILanguageBackend language = method.Module.LanguageBackend as ILanguageBackend;
 			if (source == null)
 				return null;
 
 			// Do nothing if this is not a source stepping operation.
-			if ((operation != StepOperation.StepLine) &&
-			    (operation != StepOperation.NextLine) &&
-			    (operation != StepOperation.Run) &&
-			    (operation != StepOperation.RunInBackground) &&
-			    (operation != StepOperation.RuntimeInvoke) &&
-			    (operation != StepOperation.Initialize))
+			if (!operation.IsSourceOperation)
 				return null;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
@@ -1345,15 +1377,15 @@ public class SingleSteppingEngine : ThreadManager
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
 				// next source line.
-				return new Command (this, StepOperation.Native, new StepFrame (
+				return new Operation (OperationType.StepFrame, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
-					language, operation == StepOperation.StepLine ?
+					language, operation.Type == OperationType.StepLine ?
 					StepMode.StepFrame : StepMode.Finish));
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
 				// method's actual code).
-				return new Command (this, StepOperation.Native, new StepFrame (
+				return new Operation (OperationType.StepFrame, new StepFrame (
 					method.StartAddress, method.MethodStartAddress,
 					null, StepMode.Finish));
 			}
@@ -1398,6 +1430,7 @@ public class SingleSteppingEngine : ThreadManager
 		void do_next ()
 		{
 			check_inferior ();
+			frames_invalid ();
 			TargetAddress address = inferior.CurrentFrame;
 
 			// Check whether this is a call instruction.
@@ -1431,6 +1464,8 @@ public class SingleSteppingEngine : ThreadManager
 		{
 			check_inferior ();
 
+			frames_invalid ();
+
 			Inferior.ChildEvent new_event;
 			if (step_over_breakpoint (true, out new_event)) {
 				int new_arg = (int) new_event.Argument;
@@ -1451,34 +1486,21 @@ public class SingleSteppingEngine : ThreadManager
 				inferior.Step ();
 		}
 
-		StepFrame current_operation_frame;
-		StepOperation current_operation;
+		Operation current_operation;
 
-		protected bool Step (StepOperation operation, StepFrame frame)
+		protected bool Step (Operation operation)
 		{
 			check_inferior ();
 
-			current_operation = StepOperation.None;
-			current_operation_frame = null;
+			current_operation = null;
+			frames_invalid ();
 
-			/*
-			 * If no step frame is given, just step one machine instruction.
-			 */
-			if (frame == null) {
+			if (operation.StepFrame == null) {
 				do_step ();
 				return true;
 			}
 
-			/*
-			 * Step one instruction, but step over function calls.
-			 */
-			if (frame.Mode == StepMode.NextInstruction) {
-				do_next ();
-				return true;
-			}
-
 			current_operation = operation;
-			current_operation_frame = frame;
 			if (DoStep (true)) {
 				step_operation_finished ();
 				return true;
@@ -1488,13 +1510,12 @@ public class SingleSteppingEngine : ThreadManager
 
 		void step_operation_finished ()
 		{
-			current_operation = StepOperation.None;
-			current_operation_frame = null;
+			current_operation = null;
 		}
 
 		protected bool DoStep (bool first)
 		{
-			StepFrame frame = current_operation_frame;
+			StepFrame frame = current_operation.StepFrame;
 			if (frame == null)
 				return true;
 
@@ -1613,10 +1634,10 @@ public class SingleSteppingEngine : ThreadManager
 		// <summary>
 		//   Create a step frame to step until the next source line.
 		// </summary>
-		protected StepFrame get_step_frame ()
+		StepFrame get_step_frame ()
 		{
 			check_inferior ();
-			StackFrame frame = CurrentFrame;
+			StackFrame frame = current_frame;
 			object language = (frame.Method != null) ? frame.Method.Module.LanguageBackend : null;
 
 			if (frame.SourceAddress == null)
@@ -1638,7 +1659,7 @@ public class SingleSteppingEngine : ThreadManager
 		// <summary>
 		//   Create a step frame for a native stepping operation.
 		// </summary>
-		protected StepFrame get_simple_step_frame (StepMode mode)
+		StepFrame get_step_frame (StepMode mode)
 		{
 			check_inferior ();
 			object language;
@@ -1654,6 +1675,7 @@ public class SingleSteppingEngine : ThreadManager
 		void do_runtime_invoke (RuntimeInvokeData rdata)
 		{
 			check_inferior ();
+			frames_invalid ();
 
 			TargetAddress invoke = rdata.Language.CompileMethod (inferior, rdata.MethodArgument);
 
@@ -1665,35 +1687,6 @@ public class SingleSteppingEngine : ThreadManager
 			do_continue ();
 		}
 
-		protected struct RuntimeInvokeData
-		{
-			public readonly TargetAddress InvokeMethod;
-			public readonly ILanguageBackend Language;
-			public readonly TargetAddress MethodArgument;
-			public readonly TargetAddress ObjectArgument;
-			public readonly TargetAddress[] ParamObjects;
-
-			public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
-						  TargetAddress object_argument, TargetAddress[] param_objects)
-			{
-				this.Language = language;
-				this.InvokeMethod = TargetAddress.Null;
-				this.MethodArgument = method_argument;
-				this.ObjectArgument = object_argument;
-				this.ParamObjects = param_objects;
-			}
-
-			public RuntimeInvokeData (TargetAddress invoke_method, TargetAddress method_argument,
-						  TargetAddress object_argument, TargetAddress[] param_objects)
-			{
-				this.Language = null;
-				this.InvokeMethod = invoke_method;
-				this.MethodArgument = method_argument;
-				this.ObjectArgument = object_argument;
-				this.ParamObjects = param_objects;
-			}
-		}
-
 		//
 		// IDisposable
 		//
@@ -1703,6 +1696,35 @@ public class SingleSteppingEngine : ThreadManager
 			if (inferior != null)
 				inferior.Kill ();
 			inferior = null;
+		}
+	}
+
+	protected sealed class RuntimeInvokeData
+	{
+		public readonly TargetAddress InvokeMethod;
+		public readonly ILanguageBackend Language;
+		public readonly TargetAddress MethodArgument;
+		public readonly TargetAddress ObjectArgument;
+		public readonly TargetAddress[] ParamObjects;
+
+		public RuntimeInvokeData (ILanguageBackend language, TargetAddress method_argument,
+					  TargetAddress object_argument, TargetAddress[] param_objects)
+		{
+			this.Language = language;
+			this.InvokeMethod = TargetAddress.Null;
+			this.MethodArgument = method_argument;
+			this.ObjectArgument = object_argument;
+			this.ParamObjects = param_objects;
+		}
+
+		public RuntimeInvokeData (TargetAddress invoke_method, TargetAddress method_argument,
+					  TargetAddress object_argument, TargetAddress[] param_objects)
+		{
+			this.Language = null;
+			this.InvokeMethod = invoke_method;
+			this.MethodArgument = method_argument;
+			this.ObjectArgument = object_argument;
+			this.ParamObjects = param_objects;
 		}
 	}
 
@@ -1894,41 +1916,24 @@ public class SingleSteppingEngine : ThreadManager
 			}
 		}
 
-		bool start_step_operation (Command command, bool wait)
+		bool start_step_operation (Operation operation, bool wait)
 		{
 			check_inferior ();
 			if (!sse.CheckCanRun ())
 				return false;
-			sse.SendAsyncCommand (command, wait);
+			sse.SendAsyncCommand (new Command (this, operation), wait);
 			return true;
 		}
 
-		bool start_step_operation (StepOperation operation, StepFrame frame,
+		bool start_step_operation (OperationType operation, TargetAddress until,
 					   bool wait)
 		{
-			return start_step_operation (new Command (this, operation, frame), wait);
+			return start_step_operation (new Operation (operation, until), wait);
 		}
 
-		bool start_step_operation (StepOperation operation, TargetAddress until,
-					   bool wait)
+		bool start_step_operation (OperationType operation, bool wait)
 		{
-			return start_step_operation (new Command (this, operation, until), wait);
-		}
-
-		bool start_step_operation (StepOperation operation, bool wait)
-		{
-			return start_step_operation (new Command (this, operation), wait);
-		}
-
-		bool start_step_operation (StepOperation operation, object data, bool wait)
-		{
-			return start_step_operation (new Command (this, operation, data), wait);
-		}
-
-		bool start_step_operation (StepMode mode, bool wait)
-		{
-			StepFrame frame = get_simple_step_frame (mode);
-			return start_step_operation (StepOperation.Native, frame, wait);
+			return start_step_operation (new Operation (operation), wait);
 		}
 
 		// <summary>
@@ -1936,7 +1941,7 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override bool StepInstruction (bool wait)
 		{
-			return start_step_operation (StepMode.SingleInstruction, wait);
+			return start_step_operation (OperationType.StepInstruction, wait);
 		}
 
 		// <summary>
@@ -1944,7 +1949,7 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override bool StepNativeInstruction (bool wait)
 		{
-			return start_step_operation (StepOperation.StepNativeInstruction, wait);
+			return start_step_operation (OperationType.StepNativeInstruction, wait);
 		}
 
 		// <summary>
@@ -1952,7 +1957,7 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override bool NextInstruction (bool wait)
 		{
-			return start_step_operation (StepOperation.NextInstruction, wait);
+			return start_step_operation (OperationType.NextInstruction, wait);
 		}
 
 		// <summary>
@@ -1960,8 +1965,7 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override bool StepLine (bool wait)
 		{
-			return start_step_operation (StepOperation.StepLine,
-						     get_step_frame (), wait);
+			return start_step_operation (OperationType.StepLine, wait);
 		}
 
 		// <summary>
@@ -1969,25 +1973,7 @@ public class SingleSteppingEngine : ThreadManager
 		// </summary>
 		public override bool NextLine (bool wait)
 		{
-			check_inferior ();
-			if (!sse.CheckCanRun ())
-				return false;
-
-			Command command;
-			StepFrame new_frame, frame = get_step_frame ();
-			if (frame == null) {
-				new_frame = get_simple_step_frame (StepMode.NextInstruction);
-
-				command = new Command (this, StepOperation.Native, new_frame);
-			} else {
-				new_frame = new StepFrame (
-					frame.Start, frame.End, null, StepMode.Finish);
-
-				command = new Command (this, StepOperation.NextLine, new_frame);
-			}
-
-			sse.SendAsyncCommand (command, wait);
-			return true;
+			return start_step_operation (OperationType.NextLine, wait);
 		}
 
 		// <summary>
@@ -2009,18 +1995,18 @@ public class SingleSteppingEngine : ThreadManager
 				frame.Method.StartAddress, frame.Method.EndAddress,
 				null, StepMode.Finish);
 
-			Command command = new Command (this, StepOperation.StepFrame, sf);
-			sse.SendAsyncCommand (command, wait);
+			Operation operation = new Operation (OperationType.StepFrame, sf);
+			sse.SendAsyncCommand (new Command (this, operation), wait);
 			return true;
 		}
 
 		public override bool Continue (TargetAddress until, bool in_background, bool wait)
 		{
 			if (in_background)
-				return start_step_operation (StepOperation.RunInBackground,
+				return start_step_operation (OperationType.RunInBackground,
 							     until, wait);
 			else
-				return start_step_operation (StepOperation.Run, until, wait);
+				return start_step_operation (OperationType.Run, until, wait);
 		}
 
 		public override void Stop ()
@@ -2368,7 +2354,7 @@ public class SingleSteppingEngine : ThreadManager
 				throw new ArgumentException ();
 
 			RuntimeInvokeData data = new RuntimeInvokeData (language, method_argument, object_argument, param_objects);
-			return start_step_operation (StepOperation.RuntimeInvoke, data, true);
+			return start_step_operation (new Operation (data), true);
 		}
 
 		TargetAddress ITargetAccess.RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
