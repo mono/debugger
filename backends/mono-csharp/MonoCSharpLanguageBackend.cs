@@ -423,6 +423,8 @@ namespace Mono.Debugger.Languages.CSharp
 						corlib = symfile;
 				} catch (C.MonoSymbolFileException ex) {
 					Console.WriteLine (ex.Message);
+				} catch (Exception ex) {
+					Console.WriteLine (ex.Message);
 				}
 			}
 
@@ -1400,7 +1402,11 @@ namespace Mono.Debugger.Languages.CSharp
 			address += int_size;
 			dynamic_address = address;
 
-			File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
+			try {
+				File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
+			} catch (Exception ex) {
+				Console.WriteLine (ex.Message);
+			}
 
 			symtab = new MonoCSharpSymbolTable (this);
 
