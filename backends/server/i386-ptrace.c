@@ -204,16 +204,13 @@ server_ptrace_spawn (InferiorHandle *handle, const gchar *working_directory, gch
 	if (redirect_fds)
 		ret = g_spawn_async_with_pipes (working_directory, argv, envp, flags, child_setup_func,
 						NULL, child_pid, standard_input, standard_output,
-						standard_error, &my_error);
+						standard_error, error);
 	else
 		ret = g_spawn_async (working_directory, argv, envp, flags, child_setup_func,
-				     NULL, child_pid, &my_error);
+				     NULL, child_pid, error);
 
-	if (!ret) {
-		g_message (G_STRLOC ": %d - %s", ret, my_error->message);
-
+	if (!ret)
 		return COMMAND_ERROR_FORK;
-	}
 #else
 #warning "FIXME: g_spawn_async() fails with `Failed to read from child pipe (Resource temporarily unavailable)
 '"
