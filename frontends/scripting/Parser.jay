@@ -59,6 +59,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 %token PROCESSES
 %token REGISTERS
+%token PARAMETERS
+%token LOCALS
 
 %token FRAME
 %token START
@@ -142,6 +144,14 @@ command
 	| SHOW REGISTERS opt_process
 	  {
 		$$ = new ShowRegistersCommand ((ProcessExpression) $3);
+	  }
+	| SHOW PARAMETERS opt_process opt_frame_number
+	  {
+		$$ = new ShowParametersCommand ((ProcessExpression) $3, (int) $4);
+	  }
+	| SHOW LOCALS opt_process opt_frame_number
+	  {
+		$$ = new ShowLocalsCommand ((ProcessExpression) $3, (int) $4);
 	  }
 	| BREAK opt_process function_name
 	  {

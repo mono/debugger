@@ -261,6 +261,44 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class ShowParametersCommand : Command
+	{
+		ProcessExpression process_expr;
+		int number;
+
+		public ShowParametersCommand (ProcessExpression process_expr, int number)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			process.ShowParameters (number);
+		}
+	}
+
+	public class ShowLocalsCommand : Command
+	{
+		ProcessExpression process_expr;
+		int number;
+
+		public ShowLocalsCommand (ProcessExpression process_expr, int number)
+		{
+			this.process_expr = process_expr;
+			this.number = number;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = (ProcessHandle) process_expr.Resolve (context);
+
+			process.ShowLocals (number);
+		}
+	}
+
 	public class BreakCommand : Command
 	{
 		ProcessExpression process_expr;

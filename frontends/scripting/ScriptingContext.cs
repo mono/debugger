@@ -378,6 +378,35 @@ namespace Mono.Debugger.Frontends.CommandLine
 			return backend.InsertBreakpoint (breakpoint, (ThreadGroup) process, full_file, line);
 		}
 
+		public void ShowParameters (int frame_number)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			if (frame.Method == null)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			IVariable[] param_vars = frame.Method.Parameters;
+			foreach (IVariable var in param_vars)
+				PrintVariable (true, var);
+		}
+
+		public void ShowLocals (int frame_number)
+		{
+			StackFrame frame = GetFrame (frame_number);
+
+			if (frame.Method == null)
+				throw new ScriptingException ("Selected stack frame has no method.");
+
+			IVariable[] local_vars = frame.Method.Locals;
+			foreach (IVariable var in local_vars)
+				PrintVariable (false, var);
+		}
+
+		public void PrintVariable (bool is_param, IVariable variable)
+		{
+			context.Print (variable);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("Process @{0}: {1} {2}", id, State, process);
