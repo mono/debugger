@@ -466,12 +466,6 @@ namespace Mono.Debugger
 			get { return start; }
 		}
 
-		public AssemblerLine DisassembleInstruction (TargetAddress address)
-		{
-			check_iprocess ();
-			return iprocess.Disassembler.DisassembleInstruction (address);
-		}
-
 		void child_exited ()
 		{
 			if (TargetExited != null)

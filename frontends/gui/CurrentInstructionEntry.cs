@@ -88,9 +88,8 @@ namespace Mono.Debugger.GUI
 
 		void RealFrameChanged (StackFrame frame)
 		{
-			IDisassembler dis = process.Disassembler;
 			TargetAddress addr = frame.TargetAddress;
-			AssemblerLine line = dis.DisassembleInstruction (addr);
+			AssemblerLine line = frame.DisassembleInstruction (addr);
 			if (line != null) {
 				current_insn = line.FullText;
 

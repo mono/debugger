@@ -89,7 +89,6 @@ namespace Mono.Debugger.Architecture
 
 		public void UpdateModules ()
 		{
-			bfd.UpdateSharedLibraryInfo ();
 			current_symtab = symtab_manager.SymbolTable;
 		}
 
@@ -261,7 +260,7 @@ namespace Mono.Debugger.Architecture
 
 			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
 			{
-				return core.Disassembler.DisassembleInstruction (address);
+				return core.Disassembler.DisassembleInstruction (Method, address);
 			}
 
 			public override AssemblerMethod DisassembleMethod ()

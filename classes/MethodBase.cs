@@ -215,6 +215,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract TargetAddress GetTrampoline (TargetAddress address);
+
 		//
 		// ISourceLookup
 		//

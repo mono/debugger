@@ -1,5 +1,24 @@
 2003-03-16  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IMethod.cs (GetTrampoline): New method.
+
+	* interfaces/IDisassembler.cs (DisassembleInstruction): Added
+	`IMethod method' argument.
+
+	* classes/AssemblerMethod.cs: The BfdDisassembler now calls the
+	.ctor with an array of AssemblerLine's.
+
+	* arch/Bfd.cs: Added support for ELF jump tables.
+
+	* arch/BfdModule.cs (Language): Return the Bfd, which now
+	implements ILanguageBackend.
+
+	* backends/ILanguageBackend.cs (Modules): Removed this property.
+
+	* backends/Process.cs (DisassembleInstruction): Removed.
+
+2003-03-16  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Fixed a bug to make shared libraries work
 	again.
 

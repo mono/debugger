@@ -42,6 +42,9 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 {
 	asymbol *symbol = symbol_table [idx];
 
+	if (!symbol->section->index)
+		return NULL;
+
 	if (symbol->flags == (BSF_OBJECT | BSF_GLOBAL)) {
 		*is_function = 0;
 		*address = symbol->section->vma + symbol->value;

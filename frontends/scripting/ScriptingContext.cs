@@ -81,15 +81,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			if ((method == null) || !method.IsLoaded)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			TargetAddress address = method.StartAddress;
-			while (address < method.EndAddress) {
-				AssemblerLine line = Disassemble (context, address);
-
-				if (line != null)
-					address += line.InstructionSize;
-				else
-					break;
-			}
+			AssemblerMethod asm = frame.DisassembleMethod ();
+			foreach (AssemblerLine line in asm.Lines)
+				context.PrintInstruction (line);
 		}
 
 		public int[] RegisterIndices {
@@ -329,13 +323,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 			current_frame = new FrameHandle (this, frame);
 			current_frame_idx = -1;
 			current_backtrace = null;
-			current_insn = null;
 
-			IDisassembler dis = process.Disassembler;
-			if (dis != null) {
-				TargetAddress address = frame.TargetAddress;
-				current_insn = dis.DisassembleInstruction (address);
-			}
+			current_insn = frame.DisassembleInstruction (frame.TargetAddress);
 		}
 
 		void frames_invalid ()

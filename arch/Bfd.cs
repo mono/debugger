@@ -12,7 +12,7 @@ namespace Mono.Debugger.Architecture
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : ISymbolContainer, IDisposable
+	internal class Bfd : ISymbolContainer, ILanguageBackend, IDisposable
 	{
 		IntPtr bfd;
 		protected BfdContainer container;
@@ -35,6 +35,8 @@ namespace Mono.Debugger.Architecture
 		bool initialized;
 		bool has_shlib_info;
 		TargetAddress base_address, start_address, end_address;
+		TargetAddress plt_start, plt_end, got_start, got_end;
+		bool has_got;
 
 		[Flags]
 		internal enum SectionFlags {
@@ -43,13 +45,19 @@ namespace Mono.Debugger.Architecture
 			ReadOnly = 4
 		};
 
-		internal struct InternalSection
+		internal class InternalSection
 		{
 			public readonly int index;
 			public readonly int flags;
 			public readonly long vma;
 			public readonly long size;
 			public readonly long section;
+
+			public override string ToString ()
+			{
+				return String.Format ("Section [{0}:{1:x}:{2:x}:{3:x}:{4:x}]",
+						      index, flags, vma, size, section);
+			}
 		}
 
 		public class Section
@@ -174,14 +182,13 @@ namespace Mono.Debugger.Architecture
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
 
-			InternalSection text = GetSectionByName (".text");
-			InternalSection bss = GetSectionByName (".bss");
+			InternalSection text = GetSectionByName (".text", true);
+			InternalSection bss = GetSectionByName (".bss", true);
 
 			if (!base_address.IsNull) {
 				start_address = new TargetAddress (
 					memory.GlobalAddressDomain, base_address.Address);
 				end_address = start_address + bss.vma;
-				initialized = true;
 			} else {
 				start_address = new TargetAddress (memory.GlobalAddressDomain, text.vma);
 				end_address = new TargetAddress (memory.GlobalAddressDomain, bss.vma);
@@ -214,6 +221,20 @@ namespace Mono.Debugger.Architecture
 			simple_symtab = new BfdSymbolTable (this, simple_symbols);
 
 			bfd_module = new BfdModule (backend, module, this);
+
+			InternalSection plt_section = GetSectionByName (".plt", false);
+			InternalSection got_section = GetSectionByName (".got", false);
+			if ((plt_section != null) && (got_section != null)) {
+				plt_start = new TargetAddress (
+					memory.GlobalAddressDomain, base_address.Address + plt_section.vma);
+				plt_end = plt_start + plt_section.size;
+
+				got_start = new TargetAddress (
+					memory.GlobalAddressDomain, base_address.Address + got_section.vma);
+				got_end = got_start + got_section.size;
+
+				has_got = true;
+			}
 		}
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
@@ -221,23 +242,25 @@ namespace Mono.Debugger.Architecture
 			if (memory.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			UpdateSharedLibraryInfo ();
+			UpdateSharedLibraryInfo ((IInferior) user_data);
 			return false;
 		}
 
-		bool read_dynamic_info ()
+		bool read_dynamic_info (IInferior inferior)
 		{
 			if (initialized)
 				return has_shlib_info;
 
 			initialized = true;
 
-			InternalSection section = GetSectionByName (".dynamic");
+			InternalSection section = GetSectionByName (".dynamic", false);
+			if (section == null)
+				return false;
 
-			TargetAddress vma = new TargetAddress (memory.AddressDomain, section.vma);
+			TargetAddress vma = new TargetAddress (inferior.AddressDomain, section.vma);
 
 			int size = (int) section.size;
-			byte[] dynamic = memory.ReadBuffer (vma, size);
+			byte[] dynamic = inferior.ReadBuffer (vma, size);
 
 			TargetAddress debug_base;
 			IntPtr data = IntPtr.Zero;
@@ -247,13 +270,13 @@ namespace Mono.Debugger.Architecture
 				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
 				if (base_ptr == 0)
 					return false;
-				debug_base = new TargetAddress (memory.GlobalAddressDomain, base_ptr);
+				debug_base = new TargetAddress (inferior.GlobalAddressDomain, base_ptr);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 
-			ITargetMemoryReader reader = memory.ReadMemory (debug_base, 20);
+			ITargetMemoryReader reader = inferior.ReadMemory (debug_base, 20);
 			if (reader.ReadInteger () != 1)
 				return false;
 
@@ -277,11 +300,11 @@ namespace Mono.Debugger.Architecture
 			return true;
 		}
 
-		public void UpdateSharedLibraryInfo ()
+		public void UpdateSharedLibraryInfo (IInferior inferior)
 		{
 			// This fails if it's a statically linked executable.
 			try {
-				if (!read_dynamic_info ())
+				if (!read_dynamic_info (inferior))
 					return;
 			} catch {
 				return;
@@ -290,7 +313,7 @@ namespace Mono.Debugger.Architecture
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
-				ITargetMemoryReader map_reader = memory.ReadMemory (map, 16);
+				ITargetMemoryReader map_reader = inferior.ReadMemory (map, 16);
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
@@ -298,7 +321,7 @@ namespace Mono.Debugger.Architecture
 
 				string name;
 				try {
-					name = memory.ReadString (l_name);
+					name = inferior.ReadString (l_name);
 				} catch {
 					name = null;
 				}
@@ -314,7 +337,7 @@ namespace Mono.Debugger.Architecture
 					continue;
 
 				Bfd library_bfd = container.AddFile (
-					memory, name, module.StepInto, l_addr, null);
+					inferior, name, module.StepInto, l_addr, null);
 			}
 		}
 
@@ -326,7 +349,7 @@ namespace Mono.Debugger.Architecture
 			set {
 				core_file_bfd = value;
 				if (core_file_bfd != null) {
-					InternalSection text = GetSectionByName (".text");
+					InternalSection text = GetSectionByName (".text", true);
 
 #if FALSE
 					base_address = new TargetAddress (
@@ -521,13 +544,17 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		InternalSection GetSectionByName (string name)
+		InternalSection GetSectionByName (string name, bool throw_exc)
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
-				if (!bfd_glue_get_section_by_name (bfd, name, out data))
-					throw new SymbolTableException (
-						"Can't get bfd section {0}", name);
+				if (!bfd_glue_get_section_by_name (bfd, name, out data)) {
+					if (throw_exc)
+						throw new SymbolTableException (
+							"Can't get bfd section {0}", name);
+					else
+						return null;
+				}
 
 				return (InternalSection) Marshal.PtrToStructure (
 					data, typeof (InternalSection));
@@ -600,11 +627,62 @@ namespace Mono.Debugger.Architecture
 		}
 
 		//
+		// ILanguageBackend
+		//
+
+		string ILanguageBackend.Name {
+			get {
+				return "Native";
+			}
+		}
+
+		TargetAddress ILanguageBackend.GenericTrampolineCode {
+			get {
+				return TargetAddress.Null;
+			}
+		}
+
+		bool ILanguageBackend.BreakpointHit (IInferior inferior, TargetAddress address)
+		{
+			return true;
+		}
+
+		TargetAddress ILanguageBackend.GetTrampoline (IInferior inferior, TargetAddress address)
+		{
+			return GetTrampoline (address);
+		}
+
+		public TargetAddress GetTrampoline (TargetAddress address)
+		{
+			if (!has_got || (address < plt_start) || (address > plt_end))
+				return TargetAddress.Null;
+
+			ITargetMemoryReader reader = memory.ReadMemory (address, 10);
+
+			byte opcode = reader.ReadByte ();
+			byte opcode2 = reader.ReadByte ();
+			if ((opcode != 0xff) || (opcode2 != 0x25))
+				return TargetAddress.Null;
+
+			TargetAddress jmp_target = reader.ReadAddress ();
+			TargetAddress method = memory.ReadGlobalAddress (jmp_target);
+
+			if (method != address + 6)
+				return method;
+
+			// FIXME: This is not yet implemented; we need to use LD_BIND_NOW=yes for
+			//        the moment.
+
+			return TargetAddress.Null;
+		}
+
+		//
 		// The BFD symbol table.
 		//
 
 		private class BfdSymbolTable : SymbolTable
 		{
+			Bfd bfd;
 			Hashtable hash;
 			ArrayList list;
 			TargetAddress start, end;
@@ -635,6 +713,7 @@ namespace Mono.Debugger.Architecture
 
 			public BfdSymbolTable (Bfd bfd, Hashtable hash)
 			{
+				this.bfd = bfd;
 				this.hash = hash;
 				this.start = bfd.StartAddress;
 				this.end = bfd.EndAddress;

@@ -16,8 +16,10 @@ namespace Mono.Debugger
 
 		// <summary>
 		//   Disassemble one instruction.
+		//   If @imethod is non-null, it specifies the current method which will
+		//   be used to lookup function names from trampoline calls.
 		// </summary>
-		AssemblerLine DisassembleInstruction (TargetAddress address);
+		AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address);
 
 		// <summary>
 		//   The symbol table the disassembler uses to display symbols.

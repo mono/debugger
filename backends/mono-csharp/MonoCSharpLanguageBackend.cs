@@ -384,14 +384,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public ICollection Modules {
-			get {
-				lock (this) {
-					return module_hash.Values;
-				}
-			}
-		}
-
 		internal void AddType (ClassEntry type)
 		{
 			lock (this) {
@@ -1384,6 +1376,11 @@ namespace Mono.Debugger.Languages.CSharp
 					return locals;
 				}
 			}
+
+			public override TargetAddress GetTrampoline (TargetAddress address)
+			{
+				return reader.language.GetTrampoline (address);
+			}
 		}
 
 		private class MethodRangeEntry : SymbolRangeEntry
@@ -1547,21 +1544,6 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		public Module[] Modules {
-			get {
-				if (table == null)
-					return new Module [0];
-
-				ICollection modules = table.Modules;
-				if (modules == null)
-					return new Module [0];
-
-				Module[] retval = new Module [modules.Count];
-				modules.CopyTo (retval, 0);
-				return retval;
-			}
-		}
-
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
 		{
 			TargetAddress symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
@@ -1710,6 +1692,11 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			return method;
+		}
+
+		public TargetAddress GetTrampoline (TargetAddress address)
+		{
+			return TargetAddress.Null;
 		}
 
 		public bool BreakpointHit (IInferior inferior, TargetAddress address)

@@ -500,7 +500,7 @@ namespace Mono.Debugger.Backends
 
 		public void UpdateModules ()
 		{
-			bfd.UpdateSharedLibraryInfo ();
+			bfd.UpdateSharedLibraryInfo (this);
 		}
 
 		public Bfd Bfd {

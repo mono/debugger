@@ -56,6 +56,7 @@ namespace Mono.Debugger.Architecture
 
 		StringBuilder sb;
 		Exception memory_exception;
+		IMethod current_method;
 		void output_func (string output)
 		{
 			if (sb != null)
@@ -75,6 +76,16 @@ namespace Mono.Debugger.Architecture
 			}
 
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
+			Console.WriteLine ("ADDRESS: {0} {1}", current_method, maddress);
+
+			if (current_method != null) {
+				TargetAddress trampoline = current_method.GetTrampoline (maddress);
+				if (!trampoline.IsNull) {
+					Console.WriteLine ("TRAMPOLINE: {0}", trampoline);
+					maddress = trampoline;
+				}
+			}
+
 			string name = symbol_table.SimpleLookup (maddress, false);
 			if (name == null)
 				output_func (address);
@@ -112,32 +123,52 @@ namespace Mono.Debugger.Architecture
 
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
-			return new AssemblerMethod (
-				method.StartAddress, method.EndAddress, method.Name, this);
+			lock (this) {
+				ArrayList list = new ArrayList ();
+				TargetAddress current = method.StartAddress;
+				while (current < method.EndAddress) {
+					AssemblerLine line = DisassembleInstruction (method, current);
+					if (line == null)
+						break;
+
+					current += line.InstructionSize;
+					list.Add (line);
+				}
+
+				AssemblerLine[] lines = new AssemblerLine [list.Count];
+				list.CopyTo (lines, 0);
+
+				return new AssemblerMethod (
+					method.StartAddress, method.EndAddress, method.Name, lines);
+			}
 		}
 
-		public AssemblerLine DisassembleInstruction (TargetAddress address)
+		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
 		{
-			memory_exception = null;
-			sb = new StringBuilder ();
-
-			string insn;
-			int insn_size;
-			try {
-				insn_size = bfd_glue_disassemble_insn (dis, info, address.Address);
-				if (memory_exception != null)
-					return null;
-				insn = sb.ToString ();
-			} finally {
-				sb = null;
+			lock (this) {
 				memory_exception = null;
+				sb = new StringBuilder ();
+
+				string insn;
+				int insn_size;
+				try {
+					current_method = method;
+					insn_size = bfd_glue_disassemble_insn (dis, info, address.Address);
+					if (memory_exception != null)
+						return null;
+					insn = sb.ToString ();
+				} finally {
+					sb = null;
+					memory_exception = null;
+					current_method = null;
+				}
+
+				string label = null;
+				if (SymbolTable != null)
+					label = SymbolTable.SimpleLookup (address, true);
+
+				return new AssemblerLine (label, address, (byte) insn_size, insn);
 			}
-
-			string label = null;
-			if (SymbolTable != null)
-				label = SymbolTable.SimpleLookup (address, true);
-
-			return new AssemblerLine (label, address, (byte) insn_size, insn);
 		}
 
 		//

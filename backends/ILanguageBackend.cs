@@ -8,10 +8,6 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		Module[] Modules {
-			get;
-		}
-
 		// <summary>
 		//   The address of the JIT's generic trampoline code.
 		// </summary>

@@ -40,7 +40,7 @@ namespace Mono.Debugger
 		string name;
 
 		public AssemblerMethod (TargetAddress start, TargetAddress end, string name,
-					IDisassembler disassembler)
+					AssemblerLine[] lines)
 			: base (start, start)
 		{
 			start_row = end_row = 0;
@@ -50,20 +50,12 @@ namespace Mono.Debugger
 			this.start_address = start;
 			this.end_address = start;
 
-			lines = new ArrayList ();
-			addresses = new ArrayList ();
-			contents = new ArrayList ();
+			this.lines = new ArrayList ();
+			this.addresses = new ArrayList ();
+			this.contents = new ArrayList ();
 
-			TargetAddress current = start_address;
-
-			while (current < end) {
-				AssemblerLine line = disassembler.DisassembleInstruction (current);
-				if (line == null)
-					break;
-
-				current += line.InstructionSize;
+			foreach (AssemblerLine line in lines)
 				add_one_line (line);
-			}
 		}
 
 		public AssemblerMethod (AssemblerLine line)

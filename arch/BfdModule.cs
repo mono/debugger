@@ -40,7 +40,7 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public override object Language {
-			get { return null; }
+			get { return bfd; }
 		}
 
 		public override bool SymbolsLoaded {

@@ -1143,10 +1143,12 @@ namespace Mono.Debugger.Backends
 		Command check_method_operation (TargetAddress address, IMethod method,
 						SourceAddress source, StepOperation operation)
 		{
+#if FIXME
 			if (method.IsWrapper && (address > method.StartAddress))
 				return new Command (StepOperation.StepLine, new StepFrame (
 					method.StartAddress, method.EndAddress,
 					null, StepMode.Finish));
+#endif
 
 			ILanguageBackend language = method.Module.Language as ILanguageBackend;
 			if (source == null)
@@ -1338,6 +1340,7 @@ namespace Mono.Debugger.Backends
 						return do_continue ();
 					}
 
+#if FIXME
 					/*
 					 * If this is an ordinary method, check whether we have debugging
 					 * info for it and don't step into it if not.
@@ -1348,6 +1351,7 @@ namespace Mono.Debugger.Backends
 							return false;
 						continue;
 					}
+#endif
 				}
 
 				/*
@@ -1691,6 +1695,7 @@ namespace Mono.Debugger.Backends
 		CommandResult reached_main_func (object data)
 		{
 			main_method_retaddr = inferior.GetReturnAddress ();
+			inferior.UpdateModules ();
 			frames_invalid ();
 			current_method = null;
 			frame_changed (inferior.CurrentFrame, 0, StepOperation.None);
@@ -1854,12 +1859,25 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ();
 		}
 
+		private struct DisassembleData
+		{
+			public readonly IMethod Method;
+			public readonly TargetAddress Address;
+
+			public DisassembleData (IMethod method, TargetAddress address)
+			{
+				this.Method = method;
+				this.Address = address;
+			}
+		}
+
 		CommandResult disassemble_insn (object data)
 		{
 			try {
 				lock (disassembler) {
-					TargetAddress address = (TargetAddress) data;
-					AssemblerLine result = disassembler.DisassembleInstruction (address);
+					DisassembleData dis = (DisassembleData) data;
+					AssemblerLine result = disassembler.DisassembleInstruction (
+						dis.Method, dis.Address);
 					return new CommandResult (CommandResultType.CommandOk, result);
 				}
 			} catch (Exception e) {
@@ -1867,10 +1885,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public AssemblerLine DisassembleInstruction (TargetAddress address)
+		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
 		{
 			check_inferior ();
-			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn), address);
+			DisassembleData data = new DisassembleData (method, address);
+			CommandResult result = send_sync_command (new CommandFunc (disassemble_insn), data);
 			if (result.Type == CommandResultType.CommandOk) {
 				return (AssemblerLine) result.Data;
 			} else if (result.Type == CommandResultType.Exception)
@@ -2220,7 +2239,7 @@ namespace Mono.Debugger.Backends
 
 			protected override AssemblerLine DoDisassembleInstruction (TargetAddress address)
 			{
-				return sse.DisassembleInstruction (address);
+				return sse.DisassembleInstruction (Method, address);
 			}
 
 			public override AssemblerMethod DisassembleMethod ()

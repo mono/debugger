@@ -181,5 +181,7 @@ namespace Mono.Debugger
 		IVariable[] Locals {
 			get;
 		}
+
+		TargetAddress GetTrampoline (TargetAddress address);
 	}
 }
