@@ -540,6 +540,14 @@ namespace Mono.Debugger.Backends
 			return current_symtab.Lookup (address);
 		}
 
+		public string SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			if (current_symtab == null)
+				return null;
+
+			return current_symtab.SimpleLookup (address, exact_match);
+		}
+
 		// <summary>
 		//   This event is emitted each time a stepping operation is started or
 		//   completed.  Other than the IInferior's StateChangedEvent, it is only
@@ -2042,7 +2050,7 @@ namespace Mono.Debugger.Backends
 
 			public MyStackFrame (SingleSteppingEngine sse, TargetAddress address, int level,
 					     IInferiorStackFrame frame, MyBacktrace backtrace)
-				: base (address, level)
+				: base (address, level, sse.SimpleLookup (address, false))
 			{
 				this.sse = sse;
 				this.frame = frame;

@@ -435,7 +435,7 @@ namespace Mono.Debugger.Backends
 				bfd = bfd_container.AddFile (this, start.TargetApplication,
 							     start.LoadNativeSymtab);
 				if (start.LoadNativeSymtab)
-					bfd.ReadDwarf ();
+					bfd.ReadSymbols ();
 			} catch (Exception e) {
 				error_handler (this, String.Format (
 					"Can't read symbol file {0}", start.TargetApplication), e);

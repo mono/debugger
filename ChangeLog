@@ -1,5 +1,14 @@
 2003-01-13  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ISymbolTable.cs (ISymbolLookup.SimpleLookup): New
+	interface method which returns just the name of the method without
+	constructing the method itself.
+
+	* arch/Bfd.cs: Read the bfd symbol table and make it available via
+	the ISymbolLookup's SimpleLookup() method.
+
+2003-01-13  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IDisassembler.cs (DisassembleInstruction): Removed
 	the version which took a `ref TargetAddress'; the other one now
 	returns an AssemblerLine or null on error, it doesn't throw an

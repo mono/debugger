@@ -7,6 +7,8 @@ namespace Mono.Debugger
 	public interface ISymbolLookup
 	{
 		IMethod Lookup (TargetAddress address);
+
+		string SimpleLookup (TargetAddress address, bool exact_match);
 	}
 
 	public interface ISourceLookup

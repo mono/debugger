@@ -27,12 +27,13 @@ namespace Mono.Debugger.Architecture
 		Hashtable symbols;
 		Hashtable section_hash;
 		DwarfReader dwarf;
+		BfdSymbolTable simple_symtab;
 		BfdModule module;
 		string filename;
 		bool is_coredump;
 		bool initialized;
 		bool has_shlib_info;
-		TargetAddress base_address, end_address;
+		TargetAddress base_address, start_address, end_address;
 
 		[Flags]
 		internal enum SectionFlags {
@@ -137,7 +138,7 @@ namespace Mono.Debugger.Architecture
 
 		[DllImport("libmonodebuggerbfdglue")]
 		extern static string bfd_glue_get_symbol (IntPtr bfd, IntPtr symtab, int index,
-							  out long address);
+							  int only_functions, out long address);
 
 		static Bfd ()
 		{
@@ -179,20 +180,28 @@ namespace Mono.Debugger.Architecture
 
 			for (int i = 0; i < num_symbols; i++) {
 				long address;
-				string name =  bfd_glue_get_symbol (bfd, symtab, i, out address);
+				string name =  bfd_glue_get_symbol (bfd, symtab, i, 0, out address);
 				if (name == null)
 					continue;
 
-				symbols.Add (name, base_address.Address + address);
+				long relocated = base_address.Address + address;
+				symbols.Add (name, relocated);
 			}
 
 			g_free (symtab);
 
+			InternalSection text = GetSectionByName (".init");
+			InternalSection bss = GetSectionByName (".bss");
+
 			if (!base_address.IsNull) {
-				InternalSection bss = GetSectionByName (".bss");
+				start_address = base_address;
 				end_address = base_address + bss.vma;
-				initialized = true;
+			} else {
+				start_address = new TargetAddress (memory.GlobalAddressDomain, text.vma);
+				end_address = new TargetAddress (memory.GlobalAddressDomain, bss.vma);
 			}
+
+			initialized = true;
 		}
 
 		bool dynlink_handler (StackFrame frame, int index, object user_data)
@@ -343,17 +352,35 @@ namespace Mono.Debugger.Architecture
 					memory.GlobalAddressDomain, BaseAddress.Address + address);
 		}
 
-		public void ReadDwarf ()
+		public void ReadSymbols ()
 		{
 			if (dwarf != null)
 				return;
 
+			IntPtr symtab;
+			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
+
+			Hashtable hash = new Hashtable ();
+
+			for (int i = 0; i < num_symbols; i++) {
+				long address;
+				string name =  bfd_glue_get_symbol (bfd, symtab, i, 1, out address);
+				if (name == null)
+					continue;
+
+				long relocated = base_address.Address + address;
+				if (!hash.Contains (relocated))
+					hash.Add (relocated, name);
+			}
+
+			g_free (symtab);
+
+			simple_symtab = new BfdSymbolTable (this, hash);
+
 			try {
-				dwarf = new DwarfReader (this, module);
+				dwarf = new DwarfReader (this, module, simple_symtab);
 			} catch (Exception e) {
-				throw new SymbolTableException (
-					"Symbol file {0} doesn't contain any DWARF 2 debugging info.",
-					filename);
+				// Silently ignore.
 			}
 		}
 
@@ -381,9 +408,9 @@ namespace Mono.Debugger.Architecture
 		public ISymbolTable SymbolTable {
 			get {
 				if (dwarf == null)
-					return null;
-
-				return dwarf.SymbolTable;
+					return simple_symtab;
+				else
+					return dwarf.SymbolTable;
 			}
 		}
 
@@ -590,7 +617,7 @@ namespace Mono.Debugger.Architecture
 				if (!IsContinuous)
 					throw new InvalidOperationException ();
 
-				return base_address;
+				return start_address;
 			}
 		}
 
@@ -600,6 +627,94 @@ namespace Mono.Debugger.Architecture
 					throw new InvalidOperationException ();
 
 				return end_address;
+			}
+		}
+
+		//
+		// The BFD symbol table.
+		//
+
+		private class BfdSymbolTable : SymbolTable
+		{
+			Hashtable hash;
+			ArrayList list;
+			TargetAddress start, end;
+
+			private struct Entry : IComparable
+			{
+				public long Address;
+				public string Name;
+
+				public Entry (long address, string name)
+				{
+					this.Address = address;
+					this.Name = name;
+				}
+
+				public int CompareTo (object obj)
+				{
+					Entry entry = (Entry) obj;
+
+					if (entry.Address < Address)
+						return 1;
+					else if (entry.Address > Address)
+						return -1;
+					else
+						return 0;
+				}
+			}
+
+			public BfdSymbolTable (Bfd bfd, Hashtable hash)
+			{
+				this.hash = hash;
+				this.start = bfd.StartAddress;
+				this.end = bfd.EndAddress;
+
+				list = new ArrayList ();
+				foreach (long key in hash.Keys)
+					list.Add (new Entry (key, (string) hash [key]));
+				list.Sort ();
+			}
+
+			public override bool HasMethods {
+				get { return false; }
+			}
+
+			protected override ArrayList GetMethods ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override bool HasRanges {
+				get { return false; }
+			}
+
+			public override ISymbolRange[] SymbolRanges {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override string SimpleLookup (TargetAddress address, bool exact_match)
+			{
+				if ((address < start) || (address >= end))
+					return null;
+
+				if (exact_match)
+					return (string) hash [address.Address];
+
+				for (int i = list.Count - 1; i >= 0; i--) {
+					Entry entry = (Entry) list [i];
+
+					if (address.Address < entry.Address)
+						continue;
+
+					long offset = address.Address - entry.Address;
+					if (offset == 0)
+						return entry.Name;
+					else
+						return String.Format ("{0}+{1:x}", entry.Name, offset);
+				}
+
+				return null;
 			}
 		}
 

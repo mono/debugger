@@ -25,7 +25,7 @@ namespace Mono.Debugger
 
 		public string FullText {
 			get {
-				return String.Format ("0x{0:x}   {1}", Address, Text);
+				return String.Format ("{0:x}   {1}", Address, Text);
 			}
 		}
 	}

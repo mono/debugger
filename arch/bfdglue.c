@@ -32,11 +32,11 @@ bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 }
 
 const char *
-bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, guint64 *address)
+bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int only_functions, guint64 *address)
 {
 	asymbol *symbol = symbol_table [idx];
 
-	if (symbol->flags == (BSF_OBJECT | BSF_GLOBAL))
+	if (!only_functions && (symbol->flags == (BSF_OBJECT | BSF_GLOBAL)))
 		*address = symbol->section->vma + symbol->value;
 	else if (symbol->flags == BSF_FUNCTION)
 		*address = symbol->value;

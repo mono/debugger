@@ -72,7 +72,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 		int current_frame_idx = -1;
 		StackFrame current_frame = null;
 		Backtrace current_backtrace = null;
-		string current_insn = null;
+		AssemblerLine current_insn = null;
 		IMethod current_method = null;
 		ISourceBuffer current_buffer = null;
 		string[] current_source = null;
@@ -87,8 +87,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			IDisassembler dis = process.Disassembler;
 			if (dis != null) {
 				TargetAddress address = frame.TargetAddress;
-				AssemblerLine asm = dis.DisassembleInstruction (address);
-				current_insn = asm != null ? asm.FullText : "";
+				current_insn = dis.DisassembleInstruction (address);
 			}
 		}
 
@@ -167,10 +166,17 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
+		void print_insn (AssemblerLine line)
+		{
+			if (line.Label != null)
+				context.Print ("{0}:", line.Label);
+			context.Print ("{0:11x}\t{1}", line.Address, line.Text);
+		}
+
 		void print_source ()
 		{
 			if (current_insn != null)
-				context.Print (current_insn);
+				print_insn (current_insn);
 
 			if ((current_source == null) || (current_frame == null) || (current_buffer == null))
 				return;
@@ -555,7 +561,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 			AssemblerLine line = process.DisassembleInstruction (address);
 
 			if (line != null)
-				context.Print ("{0:11x}\t{1}", address, line.Text);
+				print_insn (line);
 			else
 				context.Error ("Cannot disassemble instruction at address {0}.", address);
 

@@ -121,6 +121,21 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public string SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			foreach (ISymbolTable symtab in symtabs) {
+				if (!symtab.IsLoaded)
+					continue;
+
+				string name = symtab.SimpleLookup (address, exact_match);
+
+				if (name != null)
+					return name;
+			}
+
+			return null;
+		}
+
 		public bool IsLoaded {
 			get {
 				return true;

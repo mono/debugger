@@ -25,20 +25,22 @@ namespace Mono.Debugger
 		TargetAddress address;
 		SourceLocation source;
 		AddressDomain address_domain;
+		string name;
 		int level;
 
 		public StackFrame (TargetAddress address, int level,
 				   SourceLocation source, IMethod method)
-			: this (address, level)
+			: this (address, level, method.Name)
 		{
 			this.source = source;
 			this.method = method;
 		}
 
-		public StackFrame (TargetAddress address, int level)
+		public StackFrame (TargetAddress address, int level, string name)
 		{
 			this.address = address;
 			this.level = level;
+			this.name = name;
 		}
 
 		public int Level {
@@ -143,7 +145,9 @@ namespace Mono.Debugger
 					else if (offset < 0)
 						sb.Append (String.Format ("-0x{0:x}", -offset));
 				}
-			} else
+			} else if (name != null)
+				sb.Append (String.Format ("{0} in {1}", address, name));
+			else
 				sb.Append (String.Format ("{0}", address));
 
 			if (source != null)

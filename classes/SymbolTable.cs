@@ -204,6 +204,24 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public virtual string SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			IMethod method = Lookup (address);
+			if ((method == null) || !method.IsLoaded)
+				return null;
+
+			if ((address < method.StartAddress) || (address >= method.EndAddress))
+				return null;
+
+			long offset = method.StartAddress - address;
+			if (offset == 0)
+				return method.Name;
+			else if (!exact_match)
+				return String.Format ("{0}+{1:x}", method.Name, offset);
+			else
+				return null;
+		}
+
 		public virtual bool IsLoaded {
 			get {
 				return true;

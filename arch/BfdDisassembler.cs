@@ -75,19 +75,11 @@ namespace Mono.Debugger.Architecture
 			}
 
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
-			IMethod method = symbol_table.Lookup (maddress);
-			if (method == null) {
+			string name = symbol_table.SimpleLookup (maddress, false);
+			if (name == null)
 				output_func (address);
-				return;
-			}
-
-			long offset = method.StartAddress.Address - address;
-			if (offset > 0)
-				output_func (String.Format ("{0}+{1:x}", method.Name, offset));
-			else if (offset == 0)
-				output_func (method.Name);
 			else
-				output_func (address);
+				output_func (name);
 		}
 
 		//
@@ -142,11 +134,8 @@ namespace Mono.Debugger.Architecture
 			}
 
 			string label = null;
-			if (SymbolTable != null) {
-				IMethod imethod = SymbolTable.Lookup (address);
-				if ((imethod != null) && (imethod.StartAddress == address))
-					label = imethod.Name;
-			}
+			if (SymbolTable != null)
+				label = SymbolTable.SimpleLookup (address, true);
 
 			return new AssemblerLine (label, address, (byte) insn_size, insn);
 		}

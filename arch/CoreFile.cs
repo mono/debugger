@@ -35,7 +35,7 @@ namespace Mono.Debugger.Architecture
 
 			core_bfd = new Bfd (bfd_container, this, core_file, true, null, TargetAddress.Null);
 			bfd = bfd_container.AddFile (this, application, true, TargetAddress.Null, core_bfd);
-			bfd.ReadDwarf ();
+			bfd.ReadSymbols ();
 
 			core_bfd.MainBfd = bfd;
 
@@ -130,6 +130,14 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public string SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			if (current_symtab == null)
+				return null;
+
+			return current_symtab.SimpleLookup (address, exact_match);
+		}
+
 		bool has_backtrace = false;
 		Backtrace backtrace = null;
 
@@ -211,7 +219,7 @@ namespace Mono.Debugger.Architecture
 
 			public MyStackFrame (CoreFile core, TargetAddress address, int level,
 					     IInferiorStackFrame frame)
-				: base (address, level)
+				: base (address, level, core.SimpleLookup (address, false))
 			{
 				this.frame = frame;
 				this.core = core;

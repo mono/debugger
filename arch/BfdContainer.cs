@@ -64,11 +64,7 @@ namespace Mono.Debugger.Architecture
  			module.Bfd = bfd;
 
 			if (module.StepInto) {
-				try {
-					bfd.ReadDwarf ();
-				} catch {
-					// Silently ignore.
-				}
+				bfd.ReadSymbols ();
 			}
 
 			module.Load ();
