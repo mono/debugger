@@ -101,9 +101,12 @@ namespace Mono.Debugger
 			if (!IsLoaded)
 				return null;
 
-			SimpleStackFrame new_frame = Module.UnwindStack (frame, memory);
-			if (new_frame != null)
-				return new_frame;
+			try {
+				SimpleStackFrame new_frame = Module.UnwindStack (frame, memory);
+				if (new_frame != null)
+					return new_frame;
+			} catch {
+			}
 
 			int prologue_size;
 			if (HasMethodBounds)

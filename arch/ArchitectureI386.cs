@@ -306,7 +306,7 @@ namespace Mono.Debugger
 
 		SimpleStackFrame unwind_method (SimpleStackFrame frame,
 						ITargetMemoryAccess memory, byte[] code,
-						ref int pos)
+						int pos)
 		{
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (this);
@@ -369,20 +369,23 @@ namespace Mono.Debugger
 		}
 
 		SimpleStackFrame read_prologue (SimpleStackFrame frame,
-						ITargetMemoryAccess memory, byte[] code,
-						ref int pos)
+						ITargetMemoryAccess memory, byte[] code)
 		{
 			int length = code.Length;
+			int pos = 0;
 
-			while ((pos <= length) &&
+			if (length < 3)
+				return null;
+
+			while ((pos < length) &&
 			       (code [pos] == 0x90) || (code [pos] == 0xcc))
 				pos++;
 
-			if ((pos+3 < length) && (code [pos] == 0x55) &&
+			if ((pos+4 < length) && (code [pos] == 0x55) &&
 			    (((code [pos+1] == 0x8b) && (code [pos+2] == 0xec)) ||
 			     ((code [pos+1] == 0x89) && (code [pos+2] == 0xe5)))) {
 				pos += 3;
-				return unwind_method (frame, memory, code, ref pos);
+				return unwind_method (frame, memory, code, pos);
 			}
 
 			//
@@ -516,10 +519,8 @@ namespace Mono.Debugger
 						     SimpleStackFrame frame, Symbol name,
 						     byte[] code)
 		{
-			if (code != null) {
-				int pos = 0;
-				return read_prologue (frame, memory, code, ref pos);
-			}
+			if ((code != null) && (code.Length > 3))
+				return read_prologue (frame, memory, code);
 
 			Registers old_regs = frame.Registers;
 			TargetAddress eip = frame.Address;
