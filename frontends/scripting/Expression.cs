@@ -351,6 +351,36 @@ namespace Mono.Debugger.Frontends.Scripting
 		}
 	}
 
+	public class SourceExpression : Expression
+	{
+		SourceLocation location;
+
+		public SourceExpression (SourceLocation location)
+		{
+			this.location = location;
+			resolved = true;
+		}
+
+		public override string Name {
+			get { return location.Name; }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			resolved = true;
+			return this;
+		}
+
+		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
+								      Expression[] types)
+		{
+			if (types != null)
+				return null;
+
+			return location;
+		}
+	}
+
 	public class SimpleNameExpression : Expression
 	{
 		string name;
@@ -386,7 +416,15 @@ namespace Mono.Debugger.Frontends.Scripting
 			if (var != null)
 				return new VariableAccessExpression (var);
 
-			return LookupMember (context, frame);
+			Expression expr = LookupMember (context, frame);
+			if (expr != null)
+				return expr;
+
+			SourceLocation location = context.Interpreter.FindMethod (name);
+			if (location != null)
+				return new SourceExpression (location);
+
+			return null;
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
