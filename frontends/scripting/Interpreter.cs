@@ -14,8 +14,70 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.GetOptions;
 
-namespace Mono.Debugger.Frontends.CommandLine
+namespace Mono.Debugger.Frontends.Scripting
 {
+	[AttributeUsage (AttributeTargets.Class)]
+	public class CommandAttribute : Attribute
+	{
+		string name;
+		string short_description;
+		string help_text;
+
+		public CommandAttribute (string name, string short_description)
+			: this (name, short_description, null)
+		{ }
+
+		public CommandAttribute (string name, string short_description, string help_text)
+		{
+			this.name = name;
+			this.short_description = short_description;
+			this.help_text = help_text;
+		}
+
+		public string Name {
+			get { return name; }
+		}
+
+		public string ShortDescription {
+			get { return short_description; }
+		}
+
+		public string HelpText {
+			get { return help_text; }
+		}
+	}
+
+	[AttributeUsage (AttributeTargets.Class)]
+	public class ExpressionAttribute : Attribute
+	{ 
+		string name;
+		string short_description;
+		string help_text;
+
+		public ExpressionAttribute (string name, string short_description)
+			: this (name, short_description, null)
+		{ }
+
+		public ExpressionAttribute (string name, string short_description, string help_text)
+		{
+			this.name = name;
+			this.short_description = short_description;
+			this.help_text = help_text;
+		}
+
+		public string Name {
+			get { return name; }
+		}
+
+		public string ShortDescription {
+			get { return short_description; }
+		}
+
+		public string HelpText {
+			get { return help_text; }
+		}
+	}
+
 	public abstract class Interpreter
 	{
 		DebuggerBackend backend;

@@ -5,10 +5,12 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using Mono.Debugger;
+using Debugger = Mono.Debugger.Frontends.Scripting;
+using Token = Debugger.Token;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
-	public class Tokenizer : yyParser.yyInput
+	public class Tokenizer : Debugger.yyParser.yyInput
 	{
 		//
 		// Class variables

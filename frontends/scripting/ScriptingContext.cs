@@ -14,7 +14,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.GetOptions;
 
-namespace Mono.Debugger.Frontends.CommandLine
+namespace Mono.Debugger.Frontends.Scripting
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
 

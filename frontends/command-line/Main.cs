@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Mono.Debugger;
+using Mono.Debugger.Frontends.Scripting;
 
 //
 // General Information about an assembly is controlled through the following 
@@ -60,8 +61,27 @@ namespace Mono.Debugger.Frontends.CommandLine
 			: base (command_out, inferior_out, is_synchronous, is_interactive,
 				args)
 		{
-			engine = new Engine (GlobalContext);
+			engine = new Engine ();
 			parser = new Parser (engine, GlobalContext, this);
+
+			Type command_type = typeof (Command);
+			Type expression_type = typeof (Expression);
+
+			foreach (Type type in command_type.Assembly.GetTypes ()) {
+				if (!type.IsSubclassOf (command_type) || type.IsAbstract)
+					continue;
+
+				object[] attrs = type.GetCustomAttributes (
+					typeof (CommandAttribute), true);
+
+				if (attrs.Length != 1) {
+					Console.WriteLine ("Ignoring command `{0}'", type);
+					continue;
+				}
+
+				CommandAttribute attr = (CommandAttribute) attrs [0];
+				Engine.RegisterCommand (Engine.Root, attr.Name, type);
+			}
 
 			if (is_interactive) {
 				prompt = default_prompt = "$ ";

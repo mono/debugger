@@ -7,7 +7,7 @@ using System.Globalization;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Frontends.CommandLine
+namespace Mono.Debugger.Frontends.Scripting
 {
 	public abstract class Command
 	{

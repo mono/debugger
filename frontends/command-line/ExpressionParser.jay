@@ -4,11 +4,13 @@ using System.IO;
 using System.Collections;
 using System;
 
-namespace Mono.Debugger.Frontends.CommandLine
+using CL = Mono.Debugger.Frontends.CommandLine;
+
+namespace Mono.Debugger.Frontends.Scripting
 {
 	internal class ExpressionParser
 	{
-		Parser parser;
+		CL.Parser parser;
 
 		protected bool yacc_verbose_flag = true;
 
@@ -22,9 +24,9 @@ namespace Mono.Debugger.Frontends.CommandLine
 			}
 		}
 
-		Tokenizer lexer;
+		CL.Tokenizer lexer;
 
-		public Tokenizer Lexer {
+		public CL.Tokenizer Lexer {
 			get {
 				return lexer;
 			}
@@ -122,7 +124,7 @@ variable_or_type_name
 
 %%
 
-public ExpressionParser (Parser parser, Tokenizer lexer)
+public ExpressionParser (CL.Parser parser, CL.Tokenizer lexer)
 {
 	this.parser = parser;
 	this.lexer = lexer;
@@ -139,7 +141,7 @@ public object Parse ()
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//
-		throw new ParserError (e.ToString ());
+		throw new CL.ParserError (e.ToString ());
 	}
 }
 

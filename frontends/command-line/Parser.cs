@@ -2,6 +2,8 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Reflection;
+using Debugger = Mono.Debugger.Frontends.Scripting;
+using Token = Debugger.Token;
 
 namespace Mono.Debugger.Frontends.CommandLine
 {
@@ -56,20 +58,21 @@ namespace Mono.Debugger.Frontends.CommandLine
 		State state;
 		ArrayList arguments = null;
 		CommandGroup current_group;
-		Command current_command;
-		ExpressionParser parser;
-		ScriptingContext context;
+		Debugger.Command current_command;
+		Debugger.ScriptingContext context;
+		Debugger.ExpressionParser parser;
 		Tokenizer lexer;
 		int pos = -1;
 
-		public Parser (Engine engine, ScriptingContext context, InputProvider input)
+		public Parser (Engine engine, Debugger.ScriptingContext context,
+			       InputProvider input)
 		{
 			this.engine = engine;
 			this.context = context;
 			this.input = input;
 
 			lexer = new Tokenizer (this, input);
-			parser = new ExpressionParser (this, lexer);
+			parser = new Debugger.ExpressionParser (this, lexer);
 
 			Reset ();
 		}
@@ -173,7 +176,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 			}
 
-			current_command = (Command) Activator.CreateInstance ((Type) result);
+			current_command = (Debugger.Command) Activator.CreateInstance (
+				(Type) result);
 			state = State.ParameterOrArgument;
 		}
 
@@ -197,7 +201,8 @@ namespace Mono.Debugger.Frontends.CommandLine
 				return;
 			}
 
-			current_command = (Command) Activator.CreateInstance ((Type) result);
+			current_command = (Debugger.Command) Activator.CreateInstance (
+				(Type) result);
 			state = State.ParameterOrArgument;
 		}
 
@@ -224,7 +229,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			string id = (string) lexer.value ();
 
-			PropertyInfo pi = engine.GetParameter (current_command, id);
+			PropertyInfo pi = engine.GetParameter (current_command.GetType (), id);
 			if (pi == null)
 				throw new ParserError ("No such parameter: {0}", id);
 
