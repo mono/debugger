@@ -29,6 +29,9 @@ int MONO_DEBUGGER__debugger_thread = 0;
 int MONO_DEBUGGER__command_thread = 0;
 gpointer MONO_DEBUGGER__command_notification = NULL;
 
+#define HEAP_SIZE 1048576
+static char MONO_DEBUGGER__heap [HEAP_SIZE];
+
 static gpointer debugger_event_data;
 static guint32 debugger_event_arg;
 
@@ -56,7 +59,9 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_remove_breakpoint,
 	&mono_runtime_invoke,
 	&debugger_event_data,
-	&debugger_event_arg
+	&debugger_event_arg,
+	MONO_DEBUGGER__heap,
+	HEAP_SIZE
 };
 
 void
@@ -185,7 +190,7 @@ debugger_thread_handler (gpointer user_data)
 
 	MONO_DEBUGGER__debugger_thread = getpid ();
 
-	mono_debug_init (MONO_DEBUG_FORMAT_DEBUGGER);
+	mono_debug_init (debugger_args->domain, MONO_DEBUG_FORMAT_DEBUGGER);
 
 	assembly = mono_domain_assembly_open (debugger_args->domain, debugger_args->file);
 	if (!assembly){

@@ -48,6 +48,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 		}
 	}
 
+	public class StringExpression : Expression
+	{
+		string val;
+
+		public StringExpression (string val)
+		{
+			this.val = val;
+		}
+
+		protected override object DoResolve (ScriptingContext context)
+		{
+			return this.val;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} {1:x}", GetType(), this.val);
+		}
+	}
+
 	// So you can extend this by just creating a subclass
 	// of BinaryOperator that implements DoEvaluate and
 	// a constructor, but you'll need to add a new rule to

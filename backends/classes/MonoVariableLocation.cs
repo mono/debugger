@@ -37,7 +37,8 @@ namespace Mono.Debugger.Backends
 				throw new LocationInvalidException ();
 
 			TargetAddress address = new TargetAddress (TargetAccess.AddressDomain, contents + regoffset);
-			if (is_byref)
+
+			if (is_byref && is_regoffset)
 				address = TargetAccess.ReadAddress (address);
 
 			return address;
@@ -71,6 +72,26 @@ namespace Mono.Debugger.Backends
 
 			reader.Offset = Offset;
 			return reader;
+		}
+
+		public override void WriteAddress (TargetAddress address)
+		{
+			if (!HasAddress)
+				throw new InvalidOperationException ();
+
+			if (is_regoffset) {
+				// If this is a reference type, the register just holds the
+				// address of the actual data, so read the address from the
+				// register and return it.
+				long contents = frame.GetRegister (register);
+				if (contents == 0)
+					throw new LocationInvalidException ();
+
+				TargetAddress taddress = new TargetAddress (TargetAccess.AddressDomain, contents + regoffset);
+				TargetAccess.WriteAddress (taddress, address);
+			} else {
+				frame.SetRegister (register, address.Address);
+			}
 		}
 
 		protected override TargetLocation Clone (long offset)

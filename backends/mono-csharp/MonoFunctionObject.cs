@@ -27,9 +27,9 @@ namespace Mono.Debugger.Languages.CSharp
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetObject Invoke ()
+		public ITargetObject Invoke (object[] args)
 		{
-			return type.Invoke (location, new ITargetObject [0]);
+			return type.Invoke (location, args);
 		}
 	}
 }

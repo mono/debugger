@@ -343,9 +343,13 @@ other_command
 	  {
 		$$ = new ExamineCommand ((ExamineCommand.Format) $2, (VariableExpression) $3);
 	  }
-	| CALL variable_expression
+	| EXAMINE examine_format frame_expression NUMBER
 	  {
-		$$ = new CallMethodCommand ((VariableExpression) $2);
+		$$ = new ExamineCommand ((ExamineCommand.Format) $2, (FrameExpression) $3, (long) $4);
+	  }
+	| CALL variable_expression OPEN_PARENS argument_list CLOSE_PARENS
+	  {
+		$$ = new CallMethodCommand ((VariableExpression) $2, (Expression []) $4);
 	  }
 	| START program_arguments_expression
 	  {
@@ -428,6 +432,10 @@ expression
 	  {
 		$$ = new NumberExpression ((int) $1);
 	  }
+	| STRING
+	  {
+		$$ = new StringExpression ((string) $1);
+	  }
 	| expression binary_operator expression
 	  {
 		$$ = new BinaryOperator ((BinaryOperator.Kind) $2, (Expression) $1, (Expression) $3);
@@ -479,9 +487,9 @@ variable_expression
 	  {
 		$$ = new ArrayAccessExpression ((VariableExpression) $1, (Expression) $3);
 	  }
-	| variable_expression OPEN_PARENS CLOSE_PARENS
+	| variable_expression OPEN_PARENS argument_list CLOSE_PARENS
 	  {
-		$$ = new InvocationExpression ((VariableExpression) $1);
+		$$ = new InvocationExpression ((VariableExpression) $1, (Expression []) $3);
 	  }
 	| PARENT OPEN_PARENS variable_expression CLOSE_PARENS
 	  {
@@ -514,6 +522,37 @@ program_arglist
 	  {
 		ArrayList args = (ArrayList) $1;
 		args.Add ($2);
+
+		$$ = args;
+	  }
+	;
+
+argument_list
+	: /* empty */
+	  {
+		$$ = new Expression [0];
+	  }
+	| argument_list_0
+	  {
+		Expression[] args = new Expression [((ArrayList) $1).Count];
+		((ArrayList) $1).CopyTo (args, 0);
+
+		$$ = args;
+	  }
+	;
+
+argument_list_0
+	: expression
+	  {
+		ArrayList args = new ArrayList ();
+		args.Add ($1);
+
+		$$ = args;
+	  }
+	| argument_list_0 COMMA expression
+	  {
+		ArrayList args = (ArrayList) $1;
+		args.Add ($3);
 
 		$$ = args;
 	  }

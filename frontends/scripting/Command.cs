@@ -43,23 +43,44 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class ExamineCommand : Command
 	{
 		VariableExpression expression;
+		FrameExpression frame_expr;
+		long address;
 		Format format;
 
 		public ExamineCommand (Format format, VariableExpression expression)
 		{
-			this.expression = expression;
 			this.format = format;
+			this.expression = expression;
+		}
+
+		public ExamineCommand (Format format, FrameExpression frame_expr, long address)
+		{
+			this.format = format;
+			this.frame_expr = frame_expr;
+			this.address = address;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ITargetObject obj = expression.ResolveVariable (context);
+			TargetAddress taddress;
+			byte[] data;
 
-			if (!obj.Location.HasAddress)
-				throw new ScriptingException ("Expression doesn't have an address.");
+			if (expression != null) {
+				ITargetObject obj = expression.ResolveVariable (context);
 
-			byte[] data = obj.Location.ReadBuffer (format.Size);
-			context.Print (TargetBinaryReader.HexDump (obj.Location.Address, data));
+				if (!obj.Location.HasAddress)
+					throw new ScriptingException ("Expression doesn't have an address.");
+
+				taddress = obj.Location.Address;
+				data = obj.Location.ReadBuffer (format.Size);
+			} else {
+				FrameHandle frame = (FrameHandle) frame_expr.Resolve (context);
+
+				taddress = new TargetAddress (frame.Frame.AddressDomain, address);
+				data = frame.Frame.TargetAccess.ReadBuffer (taddress, format.Size);
+			}
+
+			context.Print (TargetBinaryReader.HexDump (taddress, data));
 		}
 
 		public struct Format
@@ -85,17 +106,19 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class CallMethodCommand : Command
 	{
 		VariableExpression expression;
+		Expression[] arguments;
 
-		public CallMethodCommand (VariableExpression expression)
+		public CallMethodCommand (VariableExpression expression, Expression[] arguments)
 		{
 			this.expression = expression;
+			this.arguments = arguments;
 		}
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ITargetFunctionObject obj = expression.ResolveMethod (context);
+			InvocationExpression invocation = new InvocationExpression (expression, arguments);
 
-			obj.Invoke ();
+			invocation.Invoke (context, false);
 		}
 	}
 

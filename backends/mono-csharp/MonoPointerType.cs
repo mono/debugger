@@ -5,8 +5,8 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoPointerType : MonoType, ITargetPointerType
 	{
-		public MonoPointerType ()
-			: base (TargetObjectKind.Pointer, typeof (void), 0)
+		public MonoPointerType (Type type, int size, TargetAddress klass)
+			: base (TargetObjectKind.Pointer, type, size, klass)
 		{ }
 
 		public override bool IsByRef {

@@ -28,6 +28,8 @@ struct _MonoDebuggerInfo {
 	MonoInvokeFunc runtime_invoke;
 	gpointer *event_data;
 	guint32 *event_arg;
+	gpointer heap;
+	guint32 heap_size;
 };
 
 /*

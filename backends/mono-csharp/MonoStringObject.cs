@@ -42,6 +42,22 @@ namespace Mono.Debugger.Languages.CSharp
 			return new String (retval);
 		}
 
+		internal override void SetObject (object obj)
+		{
+			try {
+				if (obj is MonoStringObject)
+					obj = ((MonoStringObject) obj).Object;
+
+				StackFrame frame = location.StackFrame;
+				MonoFundamentalObjectBase fobj = type.CreateInstance (frame, obj);
+
+				location.WriteAddress (fobj.Location.Address);
+			} catch (TargetException ex) {
+				is_valid = false;
+				throw new LocationInvalidException (ex);
+			}
+		}
+
 		protected override byte[] CreateObject (object obj)
 		{
 			throw new NotSupportedException ();

@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal void SetObject (object obj)
+		internal virtual void SetObject (object obj)
 		{
 			try {
 				byte [] data = CreateObject (obj);

@@ -200,18 +200,69 @@ namespace Mono.Debugger.Languages.CSharp
 		}
 	}
 
+	internal class MonoBuiltinTypes
+	{
+		public readonly MonoType ObjectType;
+		public readonly MonoType ByteType;
+		public readonly MonoType VoidType;
+		public readonly MonoType BooleanType;
+		public readonly MonoType SByteType;
+		public readonly MonoType Int16Type;
+		public readonly MonoType UInt16Type;
+		public readonly MonoType Int32Type;
+		public readonly MonoType UInt32Type;
+		public readonly MonoType IntType;
+		public readonly MonoType UIntType;
+		public readonly MonoType Int64Type;
+		public readonly MonoType UInt64Type;
+		public readonly MonoType SingleType;
+		public readonly MonoType DoubleType;
+		public readonly MonoType CharType;
+		public readonly MonoType StringType;
+		public readonly MonoType EnumType;
+		public readonly MonoType ArrayType;
+
+		public MonoBuiltinTypes (MonoSymbolTable table, ITargetMemoryAccess memory, TargetAddress address,
+					 MonoSymbolTableReader corlib)
+		{
+			int size = memory.ReadInteger (address);
+			ITargetMemoryReader reader = memory.ReadMemory (address, size);
+
+			reader.Offset = reader.TargetIntegerSize;
+			ObjectType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			ByteType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			VoidType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			BooleanType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			SByteType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			Int16Type = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			UInt16Type = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			Int32Type = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			UInt32Type = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			IntType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			UIntType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			Int64Type = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			UInt64Type = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			SingleType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			DoubleType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			CharType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			StringType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			EnumType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+			ArrayType = corlib.GetType (memory, reader.ReadGlobalAddress ());
+		}
+	}
+
 	// <summary>
 	//   Holds all the symbol tables from the target's JIT.
 	// </summary>
 	internal class MonoSymbolTable : ILanguage, IDisposable
 	{
-		public const int  DynamicVersion = 30;
+		public const int  DynamicVersion = 31;
 		public const long DynamicMagic   = 0x7aff65af4253d427;
 
 		internal ArrayList SymbolFiles;
 		public readonly MonoCSharpLanguageBackend Language;
 		public readonly DebuggerBackend Backend;
-		public readonly ITargetInfo TargetInfo;
+		public readonly ITargetMemoryInfo TargetInfo;
 		ArrayList ranges;
 		Hashtable types;
 		Hashtable type_cache;
@@ -219,6 +270,8 @@ namespace Mono.Debugger.Languages.CSharp
 		ArrayList modules;
 		protected Hashtable module_hash;
 
+		MonoBuiltinTypes builtin;
+		MonoSymbolTableReader corlib;
 		TargetAddress StartAddress;
 		int TotalSize;
 
@@ -254,8 +307,6 @@ namespace Mono.Debugger.Languages.CSharp
 
 			TotalSize = language.MonoDebuggerInfo.SymbolTableSize;
 			StartAddress = address;
-
-			init_types ();
 		}
 
 		internal void Update (ITargetMemoryAccess memory)
@@ -277,6 +328,10 @@ namespace Mono.Debugger.Languages.CSharp
 			if (total_size != TotalSize)
 				throw new InternalError ();
 
+			TargetAddress domain = header.ReadAddress ();
+			TargetAddress corlib_address = header.ReadAddress ();
+			TargetAddress builtin_types_address = header.ReadAddress ();
+
 			int num_symbol_files = header.ReadInteger ();
 			TargetAddress symbol_files = header.ReadAddress ();
 
@@ -289,6 +344,9 @@ namespace Mono.Debugger.Languages.CSharp
 				MonoSymbolTableReader symfile = new MonoSymbolTableReader (
 					this, Backend, memory, memory, address, Language);
 				SymbolFiles.Add (symfile);
+
+				if (address == corlib_address)
+					corlib = symfile;
 
 				string name = symfile.Assembly.GetName (true).Name;
 				Module module = (Module) module_hash [name];
@@ -352,6 +410,13 @@ namespace Mono.Debugger.Languages.CSharp
 
 			last_type_table_offset = offset;
 
+			if (corlib == null)
+				throw new InternalError ();
+			if (builtin == null) {
+				builtin = new MonoBuiltinTypes (this, memory, builtin_types_address, corlib);
+				init_types ();
+			}
+
 			bool updated = false;
 
 			foreach (MonoSymbolTableReader symfile in SymbolFiles) {
@@ -401,6 +466,12 @@ namespace Mono.Debugger.Languages.CSharp
 			return MonoType.GetType (entry.Type, entry.TypeInfo, this);
 		}
 
+		public AddressDomain GlobalAddressDomain {
+			get {
+				return TargetInfo.GlobalAddressDomain;
+			}
+		}
+
 		public AddressDomain AddressDomain {
 			get {
 				return Backend.ThreadManager.AddressDomain;
@@ -447,9 +518,9 @@ namespace Mono.Debugger.Languages.CSharp
 
 		void init_types ()
 		{
-			integer_type = new MonoFundamentalType (typeof (int), Marshal.SizeOf (typeof (int)));
-			long_type = new MonoFundamentalType (typeof (long), Marshal.SizeOf (typeof (long)));
-			pointer_type = new MonoPointerType ();
+			integer_type = (MonoFundamentalType) builtin.Int32Type;
+			long_type = (MonoFundamentalType) builtin.Int64Type;
+			pointer_type = (MonoPointerType) builtin.IntType;
 		}
 
 		string ILanguage.Name {
@@ -710,6 +781,8 @@ namespace Mono.Debugger.Languages.CSharp
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress EventData;
 		public readonly TargetAddress EventArg;
+		public readonly TargetAddress Heap;
+		public readonly int HeapSize;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
@@ -725,6 +798,8 @@ namespace Mono.Debugger.Languages.CSharp
 			RuntimeInvoke = reader.ReadAddress ();
 			EventData = reader.ReadAddress ();
 			EventArg = reader.ReadAddress ();
+			Heap = reader.ReadAddress ();
+			HeapSize = reader.ReadInteger ();
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
 
@@ -757,7 +832,7 @@ namespace Mono.Debugger.Languages.CSharp
 					"Can't find Assembly.MonoDebugger_GetType");
 		}
 
-		private ClassEntry (MonoSymbolTableReader reader, ITargetMemoryReader memory)
+		internal ClassEntry (MonoSymbolTableReader reader, ITargetMemoryReader memory)
 		{
 			KlassAddress = memory.ReadAddress ();
 			Rank = memory.BinaryReader.ReadInt32 ();
@@ -809,6 +884,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		TargetAddress dynamic_address;
 		TargetAddress global_symfile;
+		int class_entry_size;
 		int address_size;
 		int long_size;
 		int int_size;
@@ -847,6 +923,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
 
+			class_entry_size = memory.ReadInteger (address);
+			address += int_size;
 			dynamic_address = address;
 
 			Assembly = Reflection.Assembly.LoadFrom (ImageFile);
@@ -900,8 +978,6 @@ namespace Mono.Debugger.Languages.CSharp
 		{
 			TargetAddress class_table = memory.ReadAddress (address);
 			address += address_size;
-			int class_entry_size = memory.ReadInteger (address);
-			address += int_size;
 			int new_num_class_entries = memory.ReadInteger (address);
 			address += int_size;
 
@@ -966,6 +1042,15 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 
 			return method;
+		}
+
+		internal MonoType GetType (ITargetMemoryAccess memory, TargetAddress address)
+		{
+			ITargetMemoryReader reader = memory.ReadMemory (address, class_entry_size);
+			ClassEntry entry = new ClassEntry (this, reader);
+
+			Table.AddType (entry);
+			return MonoType.GetType (entry.Type, entry.TypeInfo, Table);
 		}
 
 		ArrayList sources = null;
@@ -1539,6 +1624,7 @@ namespace Mono.Debugger.Languages.CSharp
 		bool initialized;
 		ManualResetEvent reload_event;
 		protected MonoSymbolTable table;
+		Heap heap;
 
 		public MonoCSharpLanguageBackend (DebuggerBackend backend, Process process)
 		{
@@ -1573,6 +1659,10 @@ namespace Mono.Debugger.Languages.CSharp
 			get {
 				return info;
 			}
+		}
+
+		public Heap DataHeap {
+			get { return heap; }
 		}
 
 		void child_exited ()
@@ -1615,6 +1705,8 @@ namespace Mono.Debugger.Languages.CSharp
 
 			trampoline_address = memory.ReadGlobalAddress (info.GenericTrampolineCode);
 			notification_address = memory.ReadGlobalAddress (info.NotificationCode);
+
+			heap = new Heap ((ITargetInfo) memory, info.Heap, info.HeapSize);
 		}
 
 		void do_update_symbol_table (ITargetMemoryAccess memory, bool force_update)

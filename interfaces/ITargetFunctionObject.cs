@@ -8,6 +8,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		ITargetObject Invoke ();
+		ITargetObject Invoke (object[] args);
 	}
 }

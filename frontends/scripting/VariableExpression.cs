@@ -79,8 +79,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 		{
 			ITargetObject target_object = ResolveVariable (context);
 
-			Console.WriteLine ("ASSIGN: {0} {1} {2} {3}", this, target_object, obj, obj.GetType ());
-
 			ITargetFundamentalObject fundamental = target_object as ITargetFundamentalObject;
 			if ((fundamental == null) || !fundamental.HasObject)
 				throw new ScriptingException ("Modifying variables of this type is not yet supported.");
@@ -283,9 +281,20 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		ITargetFunctionObject get_method (ITargetStructObject sobj)
 		{
-			foreach (ITargetMethodInfo method in sobj.Type.Methods)
-				if (method.Name == identifier)
-					return sobj.GetMethod (method.Index);
+			ITargetFunctionObject match = null;
+			foreach (ITargetMethodInfo method in sobj.Type.Methods) {
+				if (method.Name != identifier)
+					continue;
+
+				if (match != null)
+					throw new ScriptingException (
+						"Ambiguous method `{0}'; need to use full name", identifier);
+
+				match = sobj.GetMethod (method.Index);
+			}
+
+			if (match != null)
+				return match;
 
 			throw new ScriptingException ("Variable {0} has no method {1}.", var_expr.Name,
 						      identifier);
@@ -503,10 +512,12 @@ namespace Mono.Debugger.Frontends.CommandLine
 	public class InvocationExpression : VariableExpression
 	{
 		VariableExpression method_expr;
+		Expression[] arguments;
 
-		public InvocationExpression (VariableExpression method_expr)
+		public InvocationExpression (VariableExpression method_expr, Expression[] arguments)
 		{
 			this.method_expr = method_expr;
+			this.arguments = arguments;
 		}
 
 		public override string Name {
@@ -522,13 +533,26 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 		protected override ITargetObject DoResolveVariable (ScriptingContext context)
 		{
+			return Invoke (context, true);
+		}
+
+		public ITargetObject Invoke (ScriptingContext context, bool need_retval)
+		{
 			ITargetFunctionObject func = method_expr.ResolveMethod (context);
 
-			ITargetObject retval = func.Invoke ();
-			if (!func.Type.HasReturnValue)
-				throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
+			object[] args = new object [arguments.Length];
+			for (int i = 0; i < arguments.Length; i++)
+				args [i] = arguments [i].Resolve (context);
 
-			return retval;
+			try {
+				ITargetObject retval = func.Invoke (args);
+				if (need_retval && !func.Type.HasReturnValue)
+					throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
+
+				return retval;
+			} catch (MethodOverloadException ex) {
+				throw new ScriptingException ("Cannot invoke method `{0}': {1}", Name, ex.Message);
+			}
 		}
 	}
 }

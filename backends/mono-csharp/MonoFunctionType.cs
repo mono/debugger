@@ -14,13 +14,15 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoType return_type;
 		MonoType[] parameter_types;
 		TargetAddress invoke_method;
+		MonoSymbolTable table;
 
 		public MonoFunctionType (MonoStructType struct_type, MethodInfo minfo,
 					 TargetBinaryReader info, MonoSymbolTable table)
-			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
+			: base (TargetObjectKind.Function, minfo.ReflectedType, 0, TargetAddress.Null)
 		{
 			this.struct_type = struct_type;
 			this.method_info = minfo;
+			this.table = table;
 			this.method = new TargetAddress (table.AddressDomain, info.ReadAddress ());
 			int type_info = info.ReadInt32 ();
 			if (type_info != 0)
@@ -47,7 +49,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		public MonoFunctionType (MonoStructType struct_type, MethodInfo minfo,
 					 TargetAddress method, MonoType return_type, MonoSymbolTable table)
-			: base (TargetObjectKind.Function, minfo.ReflectedType, 0)
+			: base (TargetObjectKind.Function, minfo.ReflectedType, 0, TargetAddress.Null)
 		{
 			this.struct_type = struct_type;
 			this.method_info = minfo;
@@ -101,13 +103,49 @@ namespace Mono.Debugger.Languages.CSharp
 			}
 		}
 
-		internal ITargetObject Invoke (TargetLocation location, ITargetObject[] args)
+		MonoObject MarshalArgument (StackFrame frame, int index, object arg)
+		{
+			MonoType type = parameter_types [index];
+
+			if (arg is ITargetFundamentalObject)
+				arg = ((ITargetFundamentalObject) arg).Object;
+
+			if (type.Kind == TargetObjectKind.Fundamental) {
+				MonoFundamentalType ftype = (MonoFundamentalType) type;
+
+				return ftype.CreateInstance (frame, arg);
+			}
+
+			return null;
+		}
+
+		internal ITargetObject Invoke (TargetLocation location, object[] args)
 		{
 			TargetAddress exc_object;
 			TargetAddress this_object = location.Address;
 
+			if (parameter_types.Length != args.Length)
+				throw new MethodOverloadException (
+					"Method takes {0} arguments, but specified {1}.",
+					parameter_types.Length, args.Length);
+
+			TargetAddress[] arg_ptr = new TargetAddress [args.Length];
+			for (int i = 0; i < args.Length; i++) {
+				MonoObject obj;
+				try {
+					obj = MarshalArgument (location.StackFrame, i, args [i]);
+				} catch (ArgumentException) {
+					throw new MethodOverloadException ("Cannot marshal argument {0}: invalid argument.", i+1);
+				} catch {
+					obj = null;
+				}
+				if (obj == null)
+					throw new MethodOverloadException ("Cannot marshal argument {0}.", i+1);
+				arg_ptr [i] = obj.Location.Address;
+			}
+
 			TargetAddress retval = location.TargetAccess.CallInvokeMethod (
-				invoke_method, method, this_object, new TargetAddress [0], out exc_object);
+				invoke_method, method, this_object, arg_ptr, out exc_object);
 
 			if (retval.IsNull)
 				return null;

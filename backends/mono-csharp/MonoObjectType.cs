@@ -7,14 +7,14 @@ namespace Mono.Debugger.Languages.CSharp
 	{
 		internal readonly MonoSymbolTable Table;
 
-		public MonoObjectType (Type type, int size, MonoSymbolTable table)
-			: base (TargetObjectKind.Pointer, type, size, true)
+		public MonoObjectType (Type type, int size, TargetAddress klass, MonoSymbolTable table)
+			: base (TargetObjectKind.Pointer, type, size, klass, true)
 		{
 			this.Table = table;
 		}
 
-		public MonoObjectType (MonoType type, MonoSymbolTable table)
-			: this ((Type) type.TypeHandle, type.Size, table)
+		public MonoObjectType (MonoType type, TargetAddress klass, MonoSymbolTable table)
+			: this ((Type) type.TypeHandle, type.Size, klass, table)
 		{ }
 
 		public override bool IsByRef {

@@ -5,29 +5,45 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal abstract class MonoType : ITargetType
 	{
+		internal enum TypeKind {
+			Fundamental = 1,
+			String,
+			SzArray,
+			Array,
+			Pointer,
+			Enum,
+			Object,
+			Struct,
+			Class
+		};
+
 		protected Type type;
 		protected static MonoObjectType ObjectType;
 		protected static MonoClassType ObjectClass;
 		protected static ITargetMethodInfo[] ObjectClassMethods;
 		protected static ITargetMethodInfo ObjectToString;
 		protected readonly TargetObjectKind kind;
+		protected readonly TargetAddress klass;
 
 		bool has_fixed_size;
 		int size;
 
-		protected MonoType (TargetObjectKind kind, Type type, int size)
+		protected MonoType (TargetObjectKind kind, Type type, int size, TargetAddress klass)
 		{
 			this.type = type;
 			this.size = size;
 			this.kind = kind;
+			this.klass = klass;
 			this.has_fixed_size = true;
 		}
 
-		protected MonoType (TargetObjectKind kind, Type type, int size, bool has_fixed_size)
+		protected MonoType (TargetObjectKind kind, Type type, int size, TargetAddress klass,
+				    bool has_fixed_size)
 		{
 			this.type = type;
 			this.size = size;
 			this.kind = kind;
+			this.klass = klass;
 			this.has_fixed_size = has_fixed_size;
 		}
 
@@ -44,47 +60,51 @@ namespace Mono.Debugger.Languages.CSharp
 			return GetType (type, info, table);
 		}
 
-		private static MonoType GetType (Type type, TargetBinaryReader info,
-						 MonoSymbolTable table)
+		private static MonoType GetType (Type type, TargetBinaryReader info, MonoSymbolTable table)
 		{
 			if (type == typeof (void))
 				return new MonoOpaqueType (type, 0);
 
-			int size = info.ReadInt32 ();
-			if (size > 0) {
-				if (MonoFundamentalType.Supports (type))
-					return new MonoFundamentalType (type, size);
-				else
-					return new MonoOpaqueType (type, size);
-			} else if (size == -1)
+			int kind = info.ReadByte ();
+			if (kind == 0)
 				return new MonoOpaqueType (type, 0);
 
-			size = info.ReadInt32 ();
+			TargetAddress klass = new TargetAddress (table.GlobalAddressDomain, info.ReadAddress ());
+			int size = info.ReadInt32 ();
 
-			int kind = info.ReadByte ();
-			switch (kind) {
-			case 1:
-				return new MonoStringType (type, size, info);
+			switch ((TypeKind) kind) {
+			case TypeKind.Fundamental:
+				if (MonoFundamentalType.Supports (type))
+					return new MonoFundamentalType (type, size, klass, info, table);
+				else
+					throw new InternalError ("Unknown fundamental type: {0} {1}",
+								 type, Type.GetTypeCode (type));
 
-			case 2:
-				return new MonoArrayType (type, size, info, false, table);
+			case TypeKind.String:
+				return new MonoStringType (type, size, klass, info, table);
 
-			case 3:
-				return new MonoArrayType (type, size, info, true, table);
+			case TypeKind.SzArray:
+				return new MonoArrayType (type, size, klass, info, false, table);
 
-			case 4:
-				return new MonoEnumType (type, size, info, table);
+			case TypeKind.Array:
+				return new MonoArrayType (type, size, klass, info, true, table);
 
-			case 5:
-				return new MonoStructType (type, size, info, table);
+			case TypeKind.Pointer:
+				return new MonoPointerType (type, size, klass);
 
-			case 6:
-				return new MonoClassType (type, size, info, table);
+			case TypeKind.Enum:
+				return new MonoEnumType (type, size, klass, info, table);
 
-			case 7:
+			case TypeKind.Struct:
+				return new MonoStructType (type, size, klass, info, table);
+
+			case TypeKind.Class:
+				return new MonoClassType (type, size, klass, info, table);
+
+			case TypeKind.Object:
 				if (ObjectType == null) {
-					ObjectType = new MonoObjectType (typeof (object), size, table);
-					ObjectClass = new MonoClassType (typeof (object), size, info, table);
+					ObjectType = new MonoObjectType (typeof (object), size, klass, table);
+					ObjectClass = new MonoClassType (typeof (object), size, klass, info, table);
 					ObjectClassMethods = ObjectClass.Methods;
 					foreach (ITargetMethodInfo method in ObjectClassMethods) {
 						if (method.Name == "ToString")
@@ -110,6 +130,12 @@ namespace Mono.Debugger.Languages.CSharp
 		public object TypeHandle {
 			get {
 				return type;
+			}
+		}
+
+		public TargetAddress KlassAddress {
+			get {
+				return klass;
 			}
 		}
 

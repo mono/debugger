@@ -1,3 +1,18 @@
+2003-07-20  Martin Baulig  <martin@ximian.com>
+
+	Largely improved the type support.  We can now invoke methods with
+	arguments and also modify variables.
+
+	* classes/TargetBinaryWriter.cs: New class.
+
+	* interfaces/ITargetFunctionObject.cs (Invoke): The method now
+	takes a `object[] args' argument.
+
+	* backends/mono-csharp/*.cs: Improved this a lot; the JIT is now
+	providing us with better type information and explicitly tells us
+	about builtin types; added support to call methods with arguments;
+	it's now possible to modify variables.
+
 2003-07-12  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono-csharp/MonoStructType.cs: We can now call a

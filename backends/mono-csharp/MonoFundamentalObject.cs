@@ -6,9 +6,13 @@ namespace Mono.Debugger.Languages.CSharp
 {
 	internal class MonoFundamentalObject : MonoFundamentalObjectBase
 	{
-		public MonoFundamentalObject (MonoType type, TargetLocation location)
+		new MonoFundamentalType type;
+
+		public MonoFundamentalObject (MonoFundamentalType type, TargetLocation location)
 			: base (type, location)
-		{ }
+		{
+			this.type = type;
+		}
 
 		protected override long GetDynamicSize (ITargetMemoryReader reader,
 							TargetLocation location,
@@ -64,46 +68,7 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected override byte[] CreateObject (object obj)
 		{
-			switch (System.Type.GetTypeCode ((Type) type.TypeHandle)) {
-			case TypeCode.Boolean:
-				return BitConverter.GetBytes (Convert.ToBoolean (obj));
-
-			case TypeCode.Char:
-				return BitConverter.GetBytes (Convert.ToChar (obj));
-
-			case TypeCode.SByte:
-				return BitConverter.GetBytes (Convert.ToSByte (obj));
-
-			case TypeCode.Byte:
-				return BitConverter.GetBytes (Convert.ToByte (obj));
-
-			case TypeCode.Int16:
-				return BitConverter.GetBytes (Convert.ToInt16 (obj));
-
-			case TypeCode.UInt16:
-				return BitConverter.GetBytes (Convert.ToUInt16 (obj));
-
-			case TypeCode.Int32:
-				return BitConverter.GetBytes (Convert.ToInt32 (obj));
-
-			case TypeCode.UInt32:
-				return BitConverter.GetBytes (Convert.ToUInt32 (obj));
-
-			case TypeCode.Int64:
-				return BitConverter.GetBytes (Convert.ToInt64 (obj));
-
-			case TypeCode.UInt64:
-				return BitConverter.GetBytes (Convert.ToUInt64 (obj));
-
-			case TypeCode.Single:
-				return BitConverter.GetBytes (Convert.ToSingle (obj));
-
-			case TypeCode.Double:
-				return BitConverter.GetBytes (Convert.ToDouble (obj));
-
-			default:
-				throw new InvalidOperationException ();
-			}
+			return type.CreateObject (obj);
 		}
 	}
 }

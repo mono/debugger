@@ -11,6 +11,11 @@ namespace Mono.Debugger
 		{
 			this.Contents = contents;
 		}
+
+		public TargetBlob (int size)
+		{
+			this.Contents = new byte [size];
+		}
 	}
 
 	// <summary>
@@ -19,8 +24,8 @@ namespace Mono.Debugger
 	public class TargetBinaryReader
 	{
 		ITargetInfo target_info;
-		TargetBlob blob;
-		int pos;
+		protected TargetBlob blob;
+		protected int pos;
 
 		public TargetBinaryReader (byte[] contents, ITargetInfo target_info)
 			: this (new TargetBlob (contents), target_info)
@@ -75,6 +80,12 @@ namespace Mono.Debugger
 		public bool IsEof {
 			get {
 				return pos == blob.Contents.Length;
+			}
+		}
+
+		public byte[] Contents {
+			get {
+				return blob.Contents;
 			}
 		}
 

@@ -134,6 +134,11 @@ namespace Mono.Debugger
 			TargetAccess.WriteBuffer (Address, data);
 		}
 
+		public virtual void WriteAddress (TargetAddress address)
+		{
+			TargetAccess.WriteAddress (Address, address);
+		}
+
 		public ITargetAccess TargetAccess {
 			get {
 				return frame.TargetAccess;

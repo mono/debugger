@@ -2314,7 +2314,9 @@ namespace Mono.Debugger.Backends
 
 		void ITargetMemoryAccess.WriteAddress (TargetAddress address, TargetAddress value)
 		{
-			throw new InvalidOperationException ();
+			TargetBinaryWriter writer = new TargetBinaryWriter (TargetAddressSize, this);
+			writer.WriteAddress (value);
+			write_memory (address, writer.Contents);
 		}		
 
 		//

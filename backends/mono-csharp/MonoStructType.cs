@@ -13,6 +13,7 @@ namespace Mono.Debugger.Languages.CSharp
 		MonoMethodInfo[] methods;
 		TargetBinaryReader info;
 		internal readonly MonoSymbolTable Table;
+		TargetAddress klass_address;
 		int num_fields, num_properties, num_methods;
 		int field_info_size, property_info_size, method_info_size;
 		long offset;
@@ -20,16 +21,16 @@ namespace Mono.Debugger.Languages.CSharp
 
 		protected readonly TargetAddress invoke_method;
 
-		public MonoStructType (Type type, int size, TargetBinaryReader info,
-				       MonoSymbolTable table)
-			: this (TargetObjectKind.Struct, type, size, info, table)
+		public MonoStructType (Type type, int size, TargetAddress klass_address,
+				       TargetBinaryReader info, MonoSymbolTable table)
+			: this (TargetObjectKind.Struct, type, size, klass_address, info, table)
 		{ }
 
-		protected MonoStructType (TargetObjectKind kind, Type type, int size,
+		protected MonoStructType (TargetObjectKind kind, Type type, int size, TargetAddress klass_address,
 					  TargetBinaryReader info, MonoSymbolTable table)
-			: base (kind, type, size, true)
+			: base (kind, type, size, klass_address, true)
 		{
-			is_byref = info.ReadByte () != 0;
+			is_byref = kind == TargetObjectKind.Class;
 			num_fields = info.ReadInt32 ();
 			field_info_size = info.ReadInt32 ();
 			num_properties = info.ReadInt32 ();
@@ -38,6 +39,7 @@ namespace Mono.Debugger.Languages.CSharp
 			method_info_size = info.ReadInt32 ();
 			this.info = info;
 			this.offset = info.Position;
+			this.klass_address = klass_address;
 			this.Table = table;
 			info.Position += field_info_size + property_info_size + method_info_size;
 			invoke_method = table.Language.MonoDebuggerInfo.RuntimeInvoke;
@@ -225,7 +227,7 @@ namespace Mono.Debugger.Languages.CSharp
 				if (func == null)
 					return null;
 
-				return func.Invoke ();
+				return func.Invoke (new object [0]);
 			}
 
 			public override string ToString ()
