@@ -47,6 +47,17 @@ namespace Mono.Debugger.Backends
 	//     native stepping op   - stepping operation based on the machine code such as
 	//                            StepInstruction() or NextInstruction().
 	//
+	//   The SingleSteppingEngine supports both synchronous and asynchronous
+	//   operations; in synchronous mode, the engine waits until the child has stopped
+	//   before returning.  In either case, the step commands return true on success
+	//   and false an error.
+	//
+	//   Since the SingleSteppingEngine can be used from multiple threads at the same
+	//   time, you can no longer safely use the `State' property to find out whether
+	//   the target is stopped or not.  It is safe to call all the step commands from
+	//   multiple threads, but for obvious reasons only one command can run at a
+	//   time.  So if you attempt to issue a step command while the engine is still
+	//   busy, the step command will return false to signal this error.
 	// </summary>
 	public class SingleSteppingEngine
 	{
@@ -72,6 +83,13 @@ namespace Mono.Debugger.Backends
 			command_mutex = new Mutex ();
 		}
 
+		// <summary>
+		//   This is called in two situations:
+		//   a) From the glib main loop if an async operation completed
+		//   b) Before returning to the caller when a synchronous operation is completed
+		//   In either case, it's guaranteed that this method will never be called
+		//   from the background thread.
+		// </summary>
 		void ready_event_handler ()
 		{
 			lock (this) {
@@ -97,10 +115,14 @@ namespace Mono.Debugger.Backends
 				}
 
 				command_result = null;
-				command_mutex.ReleaseMutex ();
 			}
 		}
 
+		// <summary>
+		//   Start the application and - if `synchronous' is true - wait until it
+		//   stopped the first time.  In either case, this function blocks until
+		//   the application has actually been launched.
+		// </summary>
 		public void Run (bool synchronous)
 		{
 			if (engine_thread != null)
@@ -114,6 +136,11 @@ namespace Mono.Debugger.Backends
 				wait_for_completion ();
 		}
 
+		// <summary>
+		//   Attach to `pid' and - if `synchronous' is true - wait until it
+		//   actually stopped.  In either case, this function blocks until the
+		//   application has actually been launched.
+		// </summary>
 		public void Attach (int pid, bool synchronous)
 		{
 			if (engine_thread != null)
@@ -129,6 +156,10 @@ namespace Mono.Debugger.Backends
 				wait_for_completion ();
 		}
 
+		// <remarks>
+		//   This is only called on startup and blocks until the background thread
+		//   has actually been started and it's waiting for commands.
+		// </summary>
 		void wait_until_engine_is_ready ()
 		{
 			while (!start_event.WaitOne ())
@@ -137,6 +168,11 @@ namespace Mono.Debugger.Backends
 			ready_event_handler ();
 		}
 
+		// <summary>
+		//   The `send_result' methods are used to send the result of a command
+		//   from the background thread back to the caller.  This'll also wake up
+		//   the glib main loop so it can call the `ready_event_handler'.
+		// </summary>
 		void send_result (ChildEventType message, int arg)
 		{
 			lock (this) {
@@ -193,6 +229,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		// <summary>
+		//   The heart of the SingleSteppingEngine.  This runs in a background
+		//   thread and processes stepping commands.
+		// </summary>
 		void engine_thread_main (Command command)
 		{
 			bool first = true;
@@ -204,11 +244,14 @@ namespace Mono.Debugger.Backends
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
 
+				// If we reach this point the first time, signal our
+				// caller that we're now ready and about to wait for commands.
 				if (first) {
 					engine_ready ();
 					first = false;
 				}
 
+				// Wait until we get a command.
 				while (!step_event.WaitOne ())
 					;
 
@@ -219,6 +262,16 @@ namespace Mono.Debugger.Backends
 			} while (true);
 		}
 
+		// <summary>
+		//   Waits until the target stopped and returns false if it already sent
+		//   the result back to the caller (this normally happens on an error
+		//   where some sub-method already sent an error message back).  Normally
+		//   this method will return true to signal the main loop that it still
+		//   needs to send the result.
+		// </summary>
+		// <remarks>
+		//   This method may only be used in the background thread.
+		// </remarks>
 		bool wait ()
 		{
 		again:
@@ -298,6 +351,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		// <summary>
+		//   The heart of the SingleSteppingEngine's background thread - process a
+		//   command and send the result back to the caller.
+		// </summary>
 		void process_command (Command command)
 		{
 			bool ok;
@@ -308,6 +365,8 @@ namespace Mono.Debugger.Backends
 			if (command.Type == CommandType.StepOperation)
 				goto again;
 
+			// These are synchronous commands; ie. the caller blocks on us
+			// until we finished the command and sent the result.
 			switch (command.Type) {
 			case CommandType.ReloadSymtab:
 				frames_invalid ();
@@ -332,6 +391,7 @@ namespace Mono.Debugger.Backends
 			return;
 
 		again:
+			// Process another stepping command.
 			switch (command.Operation) {
 			case StepOperation.Run:
 			case StepOperation.RunInBackground:
@@ -359,8 +419,15 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
+			// If `ok' is false, then the target stopped abnormally and one of
+			// the sub-methods already sent the error message to the caller.
 			if (!ok)
 				return;
+
+			//
+			// Ok, the target stopped normally.  Now we need to compute the
+			// new stack frame and then send the result to our caller.
+			//
 
 			if (initialized && !reached_main) {
 				main_method_retaddr = inferior.GetReturnAddress ();
@@ -378,6 +445,9 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
+			// `frame_changed' computes the new stack frame - and it may also
+			// send us a new step command.  This happens for instance, if we
+			// stopped within a method's prologue or epilogue code.
 			Command new_command = frame_changed (frame, 0, command.Operation);
 			if (new_command != null) {
 				command = new_command;
@@ -504,9 +574,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public IMethod CurrentMethod {
 			get {
-				check_stopped ();
-				if (current_method == null)
-					throw new NoMethodException ();
+				check_inferior ();
 				return current_method;
 			}
 		}
@@ -571,14 +639,35 @@ namespace Mono.Debugger.Backends
 				throw new NoTargetException ();
 		}
 
-		void check_stopped ()
-		{
-			check_inferior ();
-
-			if ((State != TargetState.STOPPED) && (State != TargetState.CORE_FILE))
-				throw new TargetNotStoppedException ();
-		}
-
+		// <summary>
+		//   This method does two things:
+		//   a) It acquires the `command_mutex' (and blocks until it gets it).
+		//   b) After that, it attempts to acquire the `completed_event' as well
+		//      and returns whether it was able to do so (without blocking).
+		//   The caller must
+		//   a) If this method returned true, release the `completed_event' before
+		//      releasing the `command_mutex'.
+		//   b) In any case release the `command_mutex'.
+		// </summary>
+		// <remarks>
+		//   This is called before actually sending a stepping command to the
+		//   background thread.  First, we need to acquire the `command_mutex' -
+		//   this ensures that no synchronous command is running and that no other
+		//   thread has queued an async operation.  Once we acquired the mutex, no
+		//   other thread can issue any commands, but there may still be an async
+		//   command running, so we also need to acquire the `completed_event'.
+		//
+		//   Note that acquiring the `command_mutex' only blocks if any other
+		//   thread is about to send a command to the background thread; it'll not
+		//   block if an asynchronous operation is still running.
+		//
+		//   The `command_mutex' is basically a `lock (this)', but the background
+		//   thread needs to `lock (this)' itself to write the result, so we
+		//   cannot use this here.
+		//
+		//   The `completed_event' is only unset if an async operation is
+		//   currently running.
+		// </remarks>
 		bool check_can_run ()
 		{
 			check_inferior ();
@@ -1118,6 +1207,12 @@ namespace Mono.Debugger.Backends
 			return new StepFrame (language, mode);
 		}
 
+		// <summary>
+		//   Sends an asynchronous command to the background thread.  This is used
+		//   for all stepping commands, no matter whether the user requested a
+		//   synchronous or asynchronous operation since we can just block on the
+		//   `completed_event' in the synchronous case.
+		// </summary>
 		void send_async_command (Command command)
 		{
 			lock (this) {
@@ -1128,6 +1223,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		// <summary>
+		//   Sends a synchronous command to the background thread.  This is only
+		//   used for non-steping commands such as getting a backtrace.
+		// </summary>
 		CommandResult send_sync_command (Command command)
 		{
 			lock (this) {
@@ -1189,6 +1288,7 @@ namespace Mono.Debugger.Backends
 			start_step_operation (StepOperation.StepInstruction);
 			if (synchronous)
 				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
 			return true;
 		}
 
@@ -1205,6 +1305,7 @@ namespace Mono.Debugger.Backends
 			start_step_operation (StepOperation.NextInstruction);
 			if (synchronous)
 				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
 			return true;
 		}
 
@@ -1221,6 +1322,7 @@ namespace Mono.Debugger.Backends
 			start_step_operation (StepOperation.StepLine, get_step_frame ());
 			if (synchronous)
 				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
 			return true;
 		}
 
@@ -1237,14 +1339,17 @@ namespace Mono.Debugger.Backends
 			StepFrame frame = get_step_frame ();
 			if (frame == null) {
 				start_step_operation (StepMode.NextInstruction);
-				return true;
+				goto done;
 			}
 
 			start_step_operation (
 				StepOperation.NextLine,
 				new StepFrame (frame.Start, frame.End, null, StepMode.Finish));
+
+		done:
 			if (synchronous)
 				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
 			return true;
 		}
 
@@ -1259,13 +1364,17 @@ namespace Mono.Debugger.Backends
 			}
 
 			StackFrame frame = CurrentFrame;
-			if (frame.Method == null)
+			if (frame.Method == null) {
+				command_mutex.ReleaseMutex ();
 				throw new NoMethodException ();
+			}
 
 			start_step_operation (StepOperation.StepFrame, new StepFrame (
 				frame.Method.StartAddress, frame.Method.EndAddress, null, StepMode.Finish));
+
 			if (synchronous)
 				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
 			return true;
 		}
 
@@ -1300,6 +1409,7 @@ namespace Mono.Debugger.Backends
 				start_step_operation (StepOperation.Run, until);
 			if (synchronous)
 				wait_for_completion ();
+			command_mutex.ReleaseMutex ();
 			return true;
 		}
 
