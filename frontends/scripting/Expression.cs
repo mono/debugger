@@ -880,7 +880,7 @@ namespace Mono.Debugger.Frontends.Scripting
 		public static Expression FindMember (ITargetStructType stype, StackFrame frame,
 						     ITargetStructObject instance, string name)
 		{
-			ITargetMemberInfo member = FindMember (stype, instance != null, name);
+			ITargetMemberInfo member = FindMember (stype, instance == null, name);
 			if (member != null) {
 				if (instance != null)
 					return new StructAccessExpression (frame, instance, name);
