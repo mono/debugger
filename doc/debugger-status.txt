@@ -1,8 +1,8 @@
-Debugger Status Report as of October 18th, 2002
-===============================================
+Debugger Status Report as of January 6th, 2003
+==============================================
 
 Currently, the debugger can do everything which is mentioned in the
-RELEASE-NOTES-0.1.0.txt.
+RELEASE-NOTES-0.2.0.txt.
 
 Variables and types in managed code:
 ------------------------------------
@@ -12,9 +12,13 @@ Variables and types in managed code:
   there.  Just replace `current_frame' with whatever frame you want (use
   DebuggerBackend.GetBacktrace() to get a backtrace).
 
+  [update 01/06/03: this is implemented in the command line interface.]
+
 * We can't access register variables from another stack frame yet.  Paolo mentioned that
   they'll be saved on the stack when doing method calls, so we can unwind the stack to get
   them.   For the current stack frame, we can just read the registers.
+
+  [update 01/06/03: this is now implemented, but I haven't done much testing yet.]
 
 * We can't access register variables which are stored in two registers (for instance a
   long which is in %eax and %edx).  Look at backends/mono-csharp/MonoRegisterLocation.cs,
@@ -36,8 +40,13 @@ Variables and types in managed code:
 * Also in MonoStructType.Invoke(), we should do something reasonable with the returned
   exception; at the moment, it is returned instead of the method's return value.
 
+  [update 01/06/03: this is an API issue which must be addressed for the 0.2.0 release.]
+
 * There is no GUI to call a properties getter or an object's ToString(); see
   frontends/command-line/Interpreter.cs for an example.
+
+  [update 01/06/03: it'll take 5 minutes to implement this in the command-line interface,
+                    so this'll make it into the release.]
 
 JIT issues:
 -----------
@@ -86,9 +95,6 @@ Modules:
 
 General:
 --------
-
-* We can't debug multi-threaded applications yet.   There's also a bug which may cause
-  problems if the target fork()s a child and that child dies.
 
 * This file should go away, we should use bugzilla to keep track of bugs and outstanding
   tasks, but there's no bugzilla product for the debugger yet.

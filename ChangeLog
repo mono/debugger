@@ -1,5 +1,9 @@
 2003-01-06  Martin Baulig  <martin@ximian.com>
 
+	* doc/debugger-status.txt: Updated this document.
+
+	* doc/roadmap.txt: This one was too much outdated.  Removed.
+
 	* RELEASE-NOTES-0.2.0.txt: Started to document all the cool new
 	features here.
 
