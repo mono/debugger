@@ -9,3 +9,5 @@ configure
 libtool
 ltmain.sh
 stamp*
+core
+thecore

@@ -1,3 +1,5 @@
 Makefile
 *.exe
 Mono.Debugger.Backend.dll.config
+*.dll
+a.out
