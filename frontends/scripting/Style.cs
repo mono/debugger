@@ -359,7 +359,7 @@ namespace Mono.Debugger.Frontends.Scripting
 				contents = "<cannot display object>";
 			}
 				
-			Print ("${0} = ({1}) {2}", variable.Name, variable.Type.Name,
+			Print ("{0} = ({1}) {2}", variable.Name, variable.Type.Name,
 			       contents);
 		}
 
@@ -425,7 +425,7 @@ namespace Mono.Debugger.Frontends.Scripting
 			else
 				contents = "<cannot display object>";
 				
-			Print ("${0} = ({1}) {2}", variable.Name, variable.Type.Name,
+			Print ("{0} = ({1}) {2}", variable.Name, variable.Type.Name,
 			       contents);
 		}
 
