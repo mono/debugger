@@ -104,6 +104,10 @@ config_DATA = Debugger.exe.config Interpreter.exe.config
 
 CLEANFILES = *.exe *.dll
 
+EXTRA_DIST = \
+	mdb.in mono-debug.in SymbolFileReader.cs \
+	Debugger.exe.config.in Interpreter.exe.config.in
+
 mdb: mdb.in
 	sed -e 's^\@bindir\@^$(bindir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
