@@ -1,3 +1,16 @@
+October 15th, 2002 - Martin Baulig
+----------------------------------
+
+I was a bit too lazy to write NEWS items the last two weeks.
+
+Today is Tuesday, it's one hour past Midnight and on Saturday I'll be sitting in an air
+plane to New York City to enjoy my holidays before university starts again.
+
+The last few days, I did a lot of bug fixing and stabilizing in the backend.  Tonight, I
+started concentrate entirely on bug fixing, writing documentation and working towards a
+release.  Due to the limited time I have left, I must consider the backend as more or less
+feature complete and work towards making a stable and usable release.
+
 October 1st, 2002 - Martin Baulig
 ---------------------------------
 
