@@ -1,3 +1,11 @@
+2003-01-04  Peter Williams  <peterw@ximian.com>
+
+	* configure.in (READLINE_DEPLIBS): Check to see if libreadline
+	needs -ltermcap and if so define it here.
+
+	* glue/Makefile.am (libmonodebuggerreadline_la_LIBADD): Use
+	@READLINE_DEPLIBS@ here.
+
 2003-01-05  Martin Baulig  <martin@ximian.com>
 
 	* backends/ProcessStart.cs: The way how the debugger starts the

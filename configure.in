@@ -85,6 +85,29 @@ AC_CHECK_LIB(opcodes, disassembler,, [AC_MSG_ERROR(
 AC_PATH_PROG(MONO, mono, mono)
 AC_SUBST(PATH)
 
+
+dnl
+dnl See if readline needs -ltermcap
+dnl
+
+LIBS="-lreadline"
+CFLAGS=""
+
+AC_TRY_LINK(,,[
+READLINE_DEPLIBS=
+],[
+	LIBS="$LIBS -ltermcap"
+	AC_TRY_LINK(,,[
+		READLINE_DEPLIBS="-ltermcap"
+	],[
+		AC_MSG_ERROR([Cannot figure out how to link with the readline library; see config.log for more information])
+	])
+])
+
+AC_SUBST(READLINE_DEPLIBS)
+LIBS=""
+CFLAGS=""
+
 dnl
 dnl Quick hack
 dnl
