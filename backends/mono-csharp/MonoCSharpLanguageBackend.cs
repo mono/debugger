@@ -298,37 +298,11 @@ namespace Mono.Debugger.Languages.CSharp
 						Language);
 
 				Hashtable symfile_hash = new Hashtable ();
-				Hashtable references = new Hashtable ();
 
 				foreach (MonoSymbolTableReader symfile in SymbolFiles) {
 					string name = symfile.Assembly.GetName (true).Name;
 					load_symfile (symfile, name);
 					symfile_hash.Add (name, symfile);
-
-					if (references.Contains (name))
-						references [name] = true;
-					else
-						references.Add (name, true);
-
-					AssemblyName[] refs = symfile.Assembly.GetReferencedAssemblies ();
-					foreach (AssemblyName ref_name in refs) {
-						if (references.Contains (ref_name.Name))
-							continue;
-						references.Add (ref_name.Name, false);
-					}
-				}
-
-				foreach (string name in references.Keys) {
-					if ((bool) references [name])
-						continue;
-
-					MonoSymbolTableReader new_symfile =
-						(MonoSymbolTableReader) symfile_hash [name];
-					if (new_symfile == null)
-						throw new InternalError (
-							"Reference to unknown module {0}", name);
-					load_symfile (new_symfile, name);
-					references [name] = false;
 				}
 			}
 		}
