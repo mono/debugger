@@ -30,8 +30,6 @@ namespace Mono.Debugger.Frontends.CommandLine
 			engine = SetupEngine ();
 			parser = new LineParser (engine);
 
-			Report.CurrentDebugFlags = options.DebugFlags;
-
 			if (is_interactive) {
 				prompt = options.Prompt;
 				if (!options.IsScript)
@@ -162,6 +160,7 @@ namespace Mono.Debugger.Frontends.CommandLine
 
 			DebuggerOptions options = new DebuggerOptions ();
 			options.ProcessArgs (args);
+			Report.CurrentDebugFlags = options.DebugFlags;
 
 			Console.WriteLine ("Mono Debugger");
 
