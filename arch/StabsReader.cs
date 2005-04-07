@@ -825,8 +825,6 @@ namespace Mono.Debugger.Architecture
 
 				this.offset = offset;
 				this.register = -1;
-
-				Console.WriteLine (this);
 			}
 
 			public string Name {

@@ -1,5 +1,9 @@
 2005-04-07  Chris Toshok  <toshok@ximian.com>
 
+	* arch/StabsReader.cs (MyVariable..ctor): remove spew.
+
+2005-04-07  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Command.cs (DownCommand, UpComand): add support for an
 	argument.  in the up case, it increments
 	process.CurrentFrameIndex.  In the down case, it decrements.
