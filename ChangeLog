@@ -1,3 +1,10 @@
+2005-04-06  Chris Toshok  <toshok@ximian.com>
+
+	[ fixes bug #74469 ]
+	* frontend/Command.cs (HelpCommand.Execute): if there are no
+	commands in a family, say that and return.  don't crash.
+	(LibraryCommand.Complete): do arg/filename completion.
+
 2005-04-04  Chris Toshok  <toshok@ximian.com>
 
 	* backends/mono/MonoFundamentalType.cs: use the protected

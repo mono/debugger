@@ -2023,6 +2023,17 @@ namespace Mono.Debugger.Frontend
 				context.CurrentProcess.Process, Argument);
 		}
 
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			if (text.StartsWith ("-")) {
+				e.Completer.ArgumentCompleter (GetType(), text, start, end);
+			}
+			else {
+				/* attempt filename completion */
+				e.Completer.FilenameCompleter (text, start, end);
+			}
+		}
+
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Files; } }
 		public string Description { get { return "Load a library."; } }
@@ -2059,6 +2070,11 @@ namespace Mono.Debugger.Frontend
 
 				if (family_index != -1) {
 					ArrayList cmds = (ArrayList) e.CommandsByFamily [family_index];
+
+					if (cmds == null) {
+						Console.WriteLine ("No commands exist in that family");
+						return null;
+					}
 
 					/* we're printing out a command family */
 					Console.WriteLine ("List of commands:\n");
