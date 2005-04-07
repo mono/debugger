@@ -1197,7 +1197,7 @@ namespace Mono.Debugger.Backends
 				try {
 					inferior.GetCurrentFrame ();
 				} catch (Exception ex) {
-					Console.WriteLine ("FUCK: {0}", ex);
+					Console.WriteLine ("Couldn't get the current stack frame from inferior: {0}", ex);
 				}
 			}
 		}
