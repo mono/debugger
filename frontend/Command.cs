@@ -918,11 +918,33 @@ namespace Mono.Debugger.Frontend
 
 	public class UpCommand : ProcessCommand, IDocumentableCommand
 	{
+		int increment = 1;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args != null) {
+				if (Args.Count != 1) {
+					context.Error ("At most one argument expected");
+					return false;
+				}
+			}
+
+			try {
+				int i = (int) UInt32.Parse (Argument);;
+				increment = i;
+			} catch {
+				context.Print ("Argument must be a positive integer");
+				return false;
+			}
+
+			return true;
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
 
-			process.CurrentFrameIndex++;
+			process.CurrentFrameIndex += increment;
 			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
 		}
 
@@ -934,11 +956,33 @@ namespace Mono.Debugger.Frontend
 
 	public class DownCommand : ProcessCommand, IDocumentableCommand
 	{
+		int decrement = 1;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args != null) {
+				if (Args.Count != 1) {
+					context.Error ("At most one argument expected");
+					return false;
+				}
+			}
+
+			try {
+				int i = (int) UInt32.Parse (Argument);;
+				decrement = i;
+			} catch {
+				context.Print ("Argument must be a positive integer");
+				return false;
+			}
+
+			return true;
+		}
+
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
 
-			process.CurrentFrameIndex--;
+			process.CurrentFrameIndex -= decrement;
 			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
 		}
 

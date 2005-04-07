@@ -1,3 +1,14 @@
+2005-04-07  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Command.cs (DownCommand, UpComand): add support for an
+	argument.  in the up case, it increments
+	process.CurrentFrameIndex.  In the down case, it decrements.
+
+2005-04-06  Chris Toshok  <toshok@ximian.com>
+
+	* backends/ThreadManager.cs (ThreadManager.wait_thread_main):
+	remove the label 'again', as it's never used.
+
 2005-04-06  Chris Toshok  <toshok@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
