@@ -445,7 +445,7 @@ namespace Mono.Debugger
 		private void check_disposed ()
 		{
 			if (disposed) {
-				Console.WriteLine ("FUCK: {0}", this);
+				Console.WriteLine ("StackFrame already disposed: {0}{1}", this, Environment.StackTrace);
 				// throw new ObjectDisposedException ("StackFrame");
 			}
 		}

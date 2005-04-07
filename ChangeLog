@@ -1,5 +1,10 @@
 2005-04-06  Chris Toshok  <toshok@ximian.com>
 
+	* classes/StackFrame.cs (StackFrame.check_disposed): let's be a
+	little less flowery, shall we?
+
+2005-04-06  Chris Toshok  <toshok@ximian.com>
+
 	[ fixes bug #74469 ]
 	* frontend/Command.cs (HelpCommand.Execute): if there are no
 	commands in a family, say that and return.  don't crash.
