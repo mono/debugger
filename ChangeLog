@@ -1,5 +1,10 @@
 2005-04-08  Martin Baulig  <martin@ximian.com>
 
+	* backends/Inferior.cs (Inferior.InsertHardwareBreakpoint): Allow
+	TargetError.NotImplemented in addition to DebugRegisterOccupied.
+
+2005-04-08  Martin Baulig  <martin@ximian.com>
+
 	* arch/ArchitectureI386.cs: Renamed to Architecture_I386.cs.
 	* arch/ArchitecturePowerPC.cs: Renamed to Architecture_PowerPC.cs.
 	* arch/Architecture_X86_64.cs: New file.

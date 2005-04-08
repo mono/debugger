@@ -309,7 +309,9 @@ namespace Mono.Debugger.Backends
 				server_handle, out index, address.Address, out retval);
 			if (result == TargetError.None)
 				return retval;
-			else if (fallback && (result == TargetError.DebugRegisterOccupied)) {
+			else if (fallback &&
+				 ((result == TargetError.DebugRegisterOccupied) ||
+				  (result == TargetError.NotImplemented))) {
 				index = -1;
 				return InsertBreakpoint (address);
 			} else {
