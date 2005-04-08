@@ -419,7 +419,13 @@ extern void GC_end_blocking (void);
 #include "i386-freebsd-ptrace.c"
 #endif
 
+#if defined(__i386__)
 #include "i386-arch.c"
+#elif defined(__x86_64__)
+#include "x86_64-arch.c"
+#else
+#error "Unknown architecture"
+#endif
 
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_init,

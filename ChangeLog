@@ -1,5 +1,9 @@
 2005-04-08  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86_arch.[ch]: New files.
+
+2005-04-08  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-linux-ptrace.h: Moved `INFERIOR_REGS_TYPE'
 	and the `INFERIOR_REG_*' macros into i386-arch.h.
 

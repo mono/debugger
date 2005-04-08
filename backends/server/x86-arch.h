@@ -43,7 +43,13 @@ x86_arch_get_registers (ServerHandle *handle);
 static guint32
 x86_arch_get_tid (ServerHandle *handle);
 
+#if defined(__i386__)
 #include "i386-arch.h"
+#elif defined(__x86_64__)
+#include "x86_64-arch.h"
+#else
+#error "Unknown architecture"
+#endif
 
 G_END_DECLS
 
