@@ -1,5 +1,12 @@
 2005-04-08  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Support x86_86 in the bfd.
+
+	* arch/bfd: Added include/elf/x86-64.h, elf64-gen.c,
+	elf64-target.h and elf64.c from Binutils 2.14.
+
+2005-04-08  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-ptrace.c: Renamed to x86-ptrace.c.
 	* backends/server/i386-linux-ptrace.c: Renamed to x86-linux-ptrace.c.
 	* backends/server/i386-linux-ptrace.h: Renamed to x86-linux-ptrace.h.
