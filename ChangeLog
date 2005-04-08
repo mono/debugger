@@ -1,5 +1,10 @@
 2005-04-08  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-linux-ptrace.h: Moved `INFERIOR_REGS_TYPE'
+	and the `INFERIOR_REG_*' macros into i386-arch.h.
+
+2005-04-08  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Support x86_86 in the bfd.
 
 	* arch/bfd: Added include/elf/x86-64.h, elf64-gen.c,
