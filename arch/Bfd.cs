@@ -202,8 +202,11 @@ namespace Mono.Debugger.Architecture
 				throw new SymbolTableException ("Not an object file: {0}", filename);
 
 			target = bfd_glue_get_target_name (bfd);
-			if (target == "elf32-i386") {
-				arch = new ArchitectureI386 ();
+			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
+				if (target == "elf32-i386")
+					arch = new Architecture_I386 ();
+				else
+					arch = new Architecture_X86_64 ();
 
 				InternalSection text = GetSectionByName (".text", true);
 
@@ -236,7 +239,7 @@ namespace Mono.Debugger.Architecture
 					has_got = true;
 				}
 			} else if (target == "mach-o-be") {
-				arch = new ArchitecturePowerPC ();
+				arch = new Architecture_PowerPC ();
 
 				use_stabs = true;
 				is_powerpc = true;

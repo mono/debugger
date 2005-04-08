@@ -1,5 +1,11 @@
 2005-04-08  Martin Baulig  <martin@ximian.com>
 
+	* arch/ArchitectureI386.cs: Renamed to Architecture_I386.cs.
+	* arch/ArchitecturePowerPC.cs: Renamed to Architecture_PowerPC.cs.
+	* arch/Architecture_X86_64.cs: New file.
+
+2005-04-08  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86_arch.[ch]: New files.
 
 2005-04-08  Martin Baulig  <martin@ximian.com>

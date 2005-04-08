@@ -55,7 +55,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent stuff for the powerpc
 	// </summary>
-	internal class ArchitecturePowerPC : IArchitecture
+	internal class Architecture_PowerPC : IArchitecture
 	{
 		public bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address)
 		{
