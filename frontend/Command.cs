@@ -923,18 +923,18 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Args != null) {
-				if (Args.Count != 1) {
+				if (Args.Count == 1) {
+					try {
+						increment = (int) UInt32.Parse ((string)Args[0]);;
+					} catch {
+						context.Print ("Argument must be a positive integer");
+						return false;
+					}
+				}
+				else {
 					context.Error ("At most one argument expected");
 					return false;
 				}
-			}
-
-			try {
-				int i = (int) UInt32.Parse (Argument);;
-				increment = i;
-			} catch {
-				context.Print ("Argument must be a positive integer");
-				return false;
 			}
 
 			return true;
@@ -961,18 +961,18 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Args != null) {
-				if (Args.Count != 1) {
+				if (Args.Count == 1) {
+					try {
+						decrement = (int) UInt32.Parse ((string)Args[0]);;
+					} catch {
+						context.Print ("Argument must be a positive integer");
+						return false;
+					}
+				}
+				else {
 					context.Error ("At most one argument expected");
 					return false;
 				}
-			}
-
-			try {
-				int i = (int) UInt32.Parse (Argument);;
-				decrement = i;
-			} catch {
-				context.Print ("Argument must be a positive integer");
-				return false;
 			}
 
 			return true;
