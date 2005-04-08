@@ -5,6 +5,8 @@
 
 G_BEGIN_DECLS
 
+#if defined(__i386__)
+
 typedef enum {
 	DEBUGGER_REG_EBX = 0,
 	DEBUGGER_REG_ECX,
@@ -24,45 +26,7 @@ typedef enum {
 	DEBUGGER_REG_SS,
 
 	DEBUGGER_REG_LAST
-} DebuggerI386Registers;
-
-typedef struct {
-	BreakpointInfo info;
-	int dr_index;
-	char saved_insn;
-} I386BreakpointInfo;
-
-typedef enum {
-	STOP_ACTION_SEND_STOPPED,
-	STOP_ACTION_BREAKPOINT_HIT,
-	STOP_ACTION_CALLBACK,
-	STOP_ACTION_NOTIFICATION
-} ChildStoppedAction;
-
-static ArchInfo *
-i386_arch_initialize (void);
-
-static void
-i386_arch_finalize (ArchInfo *arch);
-
-static void
-i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 start,
-						 guint32 size, gpointer buffer);
-
-static ServerCommandError
-i386_arch_get_frame (ServerHandle *handle, guint32 eip,
-		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame,
-		     guint32 *stack);
-
-static ChildStoppedAction
-i386_arch_child_stopped (ServerHandle *handle, int stopsig,
-			 guint64 *callback_arg, guint64 *retval, guint64 *retval2);
-
-static ServerCommandError
-i386_arch_get_registers (ServerHandle *handle);
-
-static guint32
-i386_arch_get_tid (ServerHandle *handle);
+} DebuggerRegisters;
 
 /* Debug registers' indices.  */
 #define DR_NADDR		4  /* the number of debug address registers */
@@ -134,6 +98,8 @@ i386_arch_get_tid (ServerHandle *handle);
 
 G_END_DECLS
 
+#else
+#error "Wrong architecture!"
 #endif
 
-
+#endif

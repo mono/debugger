@@ -1,3 +1,14 @@
+2005-04-08  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-ptrace.c: Renamed to x86-ptrace.c.
+	* backends/server/i386-linux-ptrace.c: Renamed to x86-linux-ptrace.c.
+	* backends/server/i386-linux-ptrace.h: Renamed to x86-linux-ptrace.h.
+	* backends/server/i386-arch.h: Renamed to x86-arch.h and moved the
+	architecture-specific stuff to a new i386-arch.h.
+
+	* backends/server/x86-arch.h: Renamed `I386BreakpointInfo' to
+	`X86BreakpointInfo' and all the `i386_arch_*' functions to `x86_arch_*'.
+
 2005-04-07  Chris Toshok  <toshok@ximian.com>
 
 	* arch/StabsReader.cs (MyVariable..ctor): remove spew.

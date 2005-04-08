@@ -10,8 +10,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "i386-linux-ptrace.h"
-#include "i386-arch.h"
+#include "x86-linux-ptrace.h"
+#include "x86-arch.h"
 
 struct ArchInfo
 {
@@ -37,7 +37,7 @@ typedef struct
 static guint32 notification_address;
 
 ArchInfo *
-i386_arch_initialize (void)
+x86_arch_initialize (void)
 {
 	ArchInfo *arch = g_new0 (ArchInfo, 1);
 
@@ -47,7 +47,7 @@ i386_arch_initialize (void)
 }
 
 void
-i386_arch_finalize (ArchInfo *arch)
+x86_arch_finalize (ArchInfo *arch)
 {
 	g_ptr_array_free (arch->rti_stack, TRUE);
 	g_free (arch->saved_regs);
@@ -75,8 +75,8 @@ server_ptrace_current_insn_is_bpt (ServerHandle *handle, guint32 *is_breakpoint)
 }
 
 void
-i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 start,
-						 guint32 size, gpointer buffer)
+x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 start,
+						guint32 size, gpointer buffer)
 {
 	GPtrArray *breakpoints;
 	guint8 *ptr = buffer;
@@ -86,7 +86,7 @@ i386_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 s
 
 	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
 	for (i = 0; i < breakpoints->len; i++) {
-		I386BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+		X86BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 		guint32 offset;
 
 		if (info->info.is_hardware_bpt || !info->info.enabled)
@@ -283,10 +283,10 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 static gboolean
 check_breakpoint (ServerHandle *handle, guint64 address, guint64 *retval)
 {
-	I386BreakpointInfo *info;
+	X86BreakpointInfo *info;
 
 	mono_debugger_breakpoint_manager_lock ();
-	info = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	info = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
 	if (!info || !info->info.enabled) {
 		mono_debugger_breakpoint_manager_unlock ();
 		return FALSE;
@@ -307,7 +307,7 @@ get_runtime_invoke_data (ArchInfo *arch)
 }
 
 static ServerCommandError
-i386_arch_get_registers (ServerHandle *handle)
+x86_arch_get_registers (ServerHandle *handle)
 {
 	ServerCommandError result;
 
@@ -327,7 +327,7 @@ i386_arch_get_registers (ServerHandle *handle)
 }
 
 guint32
-i386_arch_get_tid (ServerHandle *handle)
+x86_arch_get_tid (ServerHandle *handle)
 {
 	guint32 start = INFERIOR_REG_ESP (handle->arch->current_regs) + 12;
 	guint32 tid;
@@ -339,15 +339,15 @@ i386_arch_get_tid (ServerHandle *handle)
 }
 
 ChildStoppedAction
-i386_arch_child_stopped (ServerHandle *handle, int stopsig,
-			 guint64 *callback_arg, guint64 *retval, guint64 *retval2)
+x86_arch_child_stopped (ServerHandle *handle, int stopsig,
+			guint64 *callback_arg, guint64 *retval, guint64 *retval2)
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
 	RuntimeInvokeData *rdata;
 	int i;
 
-	i386_arch_get_registers (handle);
+	x86_arch_get_registers (handle);
 
 	if (INFERIOR_REG_EIP (arch->current_regs) == notification_address) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
@@ -395,7 +395,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_ptr_array_remove (arch->rti_stack, rdata);
 		g_free (rdata);
 
-		i386_arch_get_registers (handle);
+		x86_arch_get_registers (handle);
 
 		return STOP_ACTION_CALLBACK;
 	}
@@ -437,7 +437,7 @@ i386_arch_child_stopped (ServerHandle *handle, int stopsig,
 	arch->call_address = 0;
 	arch->callback_argument = 0;
 
-	i386_arch_get_registers (handle);
+	x86_arch_get_registers (handle);
 
 	return STOP_ACTION_CALLBACK;
 }
@@ -505,9 +505,9 @@ server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 }
 
 static ServerCommandError
-i386_arch_get_frame (ServerHandle *handle, guint32 eip,
-		     guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame,
-		     guint32 *stack)
+x86_arch_get_frame (ServerHandle *handle, guint32 eip,
+		    guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame,
+		    guint32 *stack)
 {
 	ServerCommandError result;
 	guint32 value;
@@ -574,10 +574,10 @@ server_ptrace_get_ret_address (ServerHandle *handle, guint64 *retval)
 	ArchInfo *arch = handle->arch;
 	guint32 retaddr, frame, stack;
 
-	result = i386_arch_get_frame (handle, INFERIOR_REG_EIP (arch->current_regs),
-				      INFERIOR_REG_ESP (arch->current_regs),
-				      INFERIOR_REG_EBP (arch->current_regs),
-				      &retaddr, &frame, &stack);
+	result = x86_arch_get_frame (handle, INFERIOR_REG_EIP (arch->current_regs),
+				     INFERIOR_REG_ESP (arch->current_regs),
+				     INFERIOR_REG_EBP (arch->current_regs),
+				     &retaddr, &frame, &stack);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -605,10 +605,10 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 	if (INFERIOR_REG_EBP (arch->current_regs) == 0)
 		goto out;
 
-	result = i386_arch_get_frame (handle, INFERIOR_REG_EIP (arch->current_regs),
-				      INFERIOR_REG_ESP (arch->current_regs),
-				      INFERIOR_REG_EBP (arch->current_regs),
-				      &address, &frame, &stack);
+	result = x86_arch_get_frame (handle, INFERIOR_REG_EIP (arch->current_regs),
+				     INFERIOR_REG_ESP (arch->current_regs),
+				     INFERIOR_REG_EBP (arch->current_regs),
+				     &address, &frame, &stack);
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
@@ -652,7 +652,7 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 }
 
 static ServerCommandError
-do_enable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
+do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
@@ -698,7 +698,7 @@ do_enable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 }
 
 static ServerCommandError
-do_disable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
+do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
@@ -740,17 +740,17 @@ do_disable (ServerHandle *handle, I386BreakpointInfo *breakpoint)
 static ServerCommandError
 server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *bhandle)
 {
-	I386BreakpointInfo *breakpoint;
+	X86BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
 	if (breakpoint && !breakpoint->info.is_hardware_bpt) {
 		breakpoint->info.refcount++;
 		goto done;
 	}
 
-	breakpoint = g_new0 (I386BreakpointInfo, 1);
+	breakpoint = g_new0 (X86BreakpointInfo, 1);
 
 	breakpoint->info.refcount = 1;
 	breakpoint->info.address = address;
@@ -776,11 +776,11 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 static ServerCommandError
 server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
-	I386BreakpointInfo *breakpoint;
+	X86BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
 	if (!breakpoint) {
 		result = COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 		goto out;
@@ -821,7 +821,7 @@ static ServerCommandError
 server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 				    guint64 address, guint32 *bhandle)
 {
-	I386BreakpointInfo *breakpoint;
+	X86BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	result = find_free_hw_register (handle, idx);
@@ -829,7 +829,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 		return result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = g_new0 (I386BreakpointInfo, 1);
+	breakpoint = g_new0 (X86BreakpointInfo, 1);
 	breakpoint->info.address = address;
 	breakpoint->info.refcount = 1;
 	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
@@ -853,11 +853,11 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 static ServerCommandError
 server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
-	I386BreakpointInfo *breakpoint;
+	X86BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
 	if (!breakpoint) {
 		mono_debugger_breakpoint_manager_unlock ();
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
@@ -871,11 +871,11 @@ server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 static ServerCommandError
 server_ptrace_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
-	I386BreakpointInfo *breakpoint;
+	X86BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (I386BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
 	if (!breakpoint) {
 		mono_debugger_breakpoint_manager_unlock ();
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;

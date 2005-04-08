@@ -32,14 +32,14 @@
  */
 
 #ifdef __linux__
-#include "i386-linux-ptrace.h"
+#include "x86-linux-ptrace.h"
 #endif
 
 #ifdef __FreeBSD__
 #include "i386-freebsd-ptrace.h"
 #endif
 
-#include "i386-arch.h"
+#include "x86-arch.h"
 
 static guint32 io_thread (gpointer data);
 
@@ -66,7 +66,7 @@ server_ptrace_finalize (ServerHandle *handle)
 		kill (handle->inferior->pid, SIGKILL);
 		/* do_wait (handle->inferior->pid, &status); */
 	}
-	i386_arch_finalize (handle->arch);
+	x86_arch_finalize (handle->arch);
 	g_free (handle->inferior);
 	g_free (handle);
 }
@@ -139,7 +139,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	InferiorHandle *inferior = handle->inferior;
 	ServerCommandError result;
 	const int *ptr = buffer;
-	int addr = start;
+	guint64 addr = start;
 	char temp [4];
 
 	while (size >= 4) {
@@ -201,8 +201,8 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		guint64 callback_arg, retval, retval2;
 		ChildStoppedAction action;
 
-		action = i386_arch_child_stopped (handle, WSTOPSIG (status),
-						  &callback_arg, &retval, &retval2);
+		action = x86_arch_child_stopped (handle, WSTOPSIG (status),
+						 &callback_arg, &retval, &retval2);
 
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
@@ -258,7 +258,7 @@ server_ptrace_initialize (BreakpointManager *bpm)
 
 	handle->bpm = bpm;
 	handle->inferior = g_new0 (InferiorHandle, 1);
-	handle->arch = i386_arch_initialize ();
+	handle->arch = x86_arch_initialize ();
 	return handle;
 }
 
@@ -412,7 +412,7 @@ extern void GC_start_blocking (void);
 extern void GC_end_blocking (void);
 
 #ifdef __linux__
-#include "i386-linux-ptrace.c"
+#include "x86-linux-ptrace.c"
 #endif
 
 #ifdef __FreeBSD__

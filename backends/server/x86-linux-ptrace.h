@@ -1,5 +1,5 @@
-#ifndef __MONO_DEBUGGER_I386_LINUX_PTRACE_H__
-#define __MONO_DEBUGGER_I386_LINUX_PTRACE_H__
+#ifndef __MONO_DEBUGGER_X86_LINUX_PTRACE_H__
+#define __MONO_DEBUGGER_X86_LINUX_PTRACE_H__
 
 #include <asm/user.h>
 

@@ -74,7 +74,7 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 				return COMMAND_ERROR_MEMORY_ACCESS;
 			g_message (G_STRLOC ": %lx - can't read target memory of %d at "
 				   "address %08Lx : %s", pthread_self (),
-				   handle->inferior->pid, start, g_strerror (errno));
+				   handle->inferior->pid, (long long) start, g_strerror (errno));
 			return COMMAND_ERROR_MEMORY_ACCESS;
 		}
 
@@ -82,7 +82,7 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 		ptr += ret;
 	}
 
-	i386_arch_remove_breakpoints_from_target_memory (handle, start, old_size, buffer);
+	x86_arch_remove_breakpoints_from_target_memory (handle, start, old_size, buffer);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -190,7 +190,7 @@ server_ptrace_stop (ServerHandle *handle)
 	 * Try to get the thread's registers.  If we suceed, then it's already stopped
 	 * and still alive.
 	 */
-	result = i386_arch_get_registers (handle);
+	result = x86_arch_get_registers (handle);
 	if (result == COMMAND_ERROR_NONE)
 		return COMMAND_ERROR_ALREADY_STOPPED;
 
@@ -299,7 +299,7 @@ _server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main)
 		first_ret = ret;
 	}
 
-	if (i386_arch_get_registers (handle) != COMMAND_ERROR_NONE)
+	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE)
 		g_error ("Can't get registers");
 
 	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
@@ -310,7 +310,7 @@ _server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main)
 	g_free (filename);
 
 	if (!is_main) {
-		handle->inferior->tid = i386_arch_get_tid (handle);
+		handle->inferior->tid = x86_arch_get_tid (handle);
 	}
 }
 
