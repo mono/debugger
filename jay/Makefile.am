@@ -1,4 +1,4 @@
-CFLAGS = -DSKEL_DIRECTORY=\""$(prefix)/share/jay"\"
+AM_CFLAGS = -DSKEL_DIRECTORY=\""$(prefix)/share/jay"\"
 
 noinst_PROGRAMS=jay
 jay_SOURCES = closure.c error.c lalr.c lr0.c main.c mkpar.c output.c reader.c \
