@@ -32,7 +32,7 @@ typedef struct
 	guint64 callback_argument;
 } RuntimeInvokeData;
 
-static guint32 notification_address;
+static guint64 notification_address;
 
 ArchInfo *
 x86_arch_initialize (void)
@@ -56,7 +56,7 @@ x86_arch_finalize (ArchInfo *arch)
 static void
 server_ptrace_set_notification (guint64 addr)
 {
-	notification_address = (guint32) addr;
+	notification_address = addr;
 }
 
 static ServerCommandError
@@ -85,14 +85,14 @@ x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 st
 	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
 	for (i = 0; i < breakpoints->len; i++) {
 		X86BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
-		guint32 offset;
+		guint64 offset;
 
 		if (info->info.is_hardware_bpt || !info->info.enabled)
 			continue;
 		if ((info->info.address < start) || (info->info.address >= start+size))
 			continue;
 
-		offset = (guint32) info->info.address - start;
+		offset = (guint64) info->info.address - start;
 		ptr [offset] = info->saved_insn;
 	}
 
@@ -102,9 +102,9 @@ x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 st
 static ServerCommandError
 server_ptrace_get_frame (ServerHandle *handle, StackFrame *frame)
 {
-	frame->address = (guint32) INFERIOR_REG_RIP (handle->arch->current_regs);
-	frame->stack_pointer = (guint32) INFERIOR_REG_RSP (handle->arch->current_regs);
-	frame->frame_address = (guint32) INFERIOR_REG_RBP (handle->arch->current_regs);
+	frame->address = (guint64) INFERIOR_REG_RIP (handle->arch->current_regs);
+	frame->stack_pointer = (guint64) INFERIOR_REG_RSP (handle->arch->current_regs);
+	frame->frame_address = (guint64) INFERIOR_REG_RBP (handle->arch->current_regs);
 	return COMMAND_ERROR_NONE;
 }
 
@@ -153,13 +153,13 @@ x86_arch_get_registers (ServerHandle *handle)
 guint32
 x86_arch_get_tid (ServerHandle *handle)
 {
-	guint32 start = INFERIOR_REG_RSP (handle->arch->current_regs) + 12;
-	guint32 tid;
+	guint64 start = INFERIOR_REG_RSP (handle->arch->current_regs) + 12;
+	guint64 tid;
 
 	if (server_ptrace_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get tid");
 
-	return tid;
+	return (guint32) tid;
 }
 
 ChildStoppedAction
@@ -169,12 +169,11 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
 	RuntimeInvokeData *rdata;
-	int i;
 
 	x86_arch_get_registers (handle);
 
 	if (INFERIOR_REG_RIP (arch->current_regs) == notification_address) {
-		guint32 addr = (guint32) INFERIOR_REG_RSP (arch->current_regs) + 4;
+		guint64 addr = (guint64) INFERIOR_REG_RSP (arch->current_regs) + 4;
 		guint64 data [3];
 
 		if (server_ptrace_read_memory (handle, addr, 24, &data))
@@ -216,14 +215,14 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	}
 
 	if (!arch->call_address || arch->call_address != INFERIOR_REG_RIP (arch->current_regs)) {
-		int code;
+		guint64 code;
 
 #if defined(__linux__) || defined(__FreeBSD__)
 		if (stopsig != SIGTRAP)
 			return STOP_ACTION_SEND_STOPPED;
 #endif
 
-		if (server_ptrace_peek_word (handle, (guint32) (INFERIOR_REG_RIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
+		if (server_ptrace_peek_word (handle, (guint64) (INFERIOR_REG_RIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
 			return STOP_ACTION_SEND_STOPPED;
 
 		if ((code & 0xff) == 0xcc) {
@@ -261,7 +260,7 @@ static ServerCommandError
 server_ptrace_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
 			       guint32 *target_address_size, guint32 *is_bigendian)
 {
-	*target_int_size = sizeof (guint32);
+	*target_int_size = sizeof (long);
 	*target_long_size = sizeof (guint64);
 	*target_address_size = sizeof (void *);
 	*is_bigendian = 0;
@@ -274,33 +273,33 @@ server_ptrace_get_registers (ServerHandle *handle, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
 
-	values [DEBUGGER_REG_R15] = (guint32) INFERIOR_REG_R15 (arch->current_regs);
-	values [DEBUGGER_REG_R14] = (guint32) INFERIOR_REG_R14 (arch->current_regs);
-	values [DEBUGGER_REG_R13] = (guint32) INFERIOR_REG_R13 (arch->current_regs);
-	values [DEBUGGER_REG_R12] = (guint32) INFERIOR_REG_R12 (arch->current_regs);
-	values [DEBUGGER_REG_RBP] = (guint32) INFERIOR_REG_RBP (arch->current_regs);
-	values [DEBUGGER_REG_RBX] = (guint32) INFERIOR_REG_RBX (arch->current_regs);
-	values [DEBUGGER_REG_R11] = (guint32) INFERIOR_REG_R11 (arch->current_regs);
-	values [DEBUGGER_REG_R10] = (guint32) INFERIOR_REG_R10 (arch->current_regs);
-	values [DEBUGGER_REG_R9] = (guint32) INFERIOR_REG_R9 (arch->current_regs);
-	values [DEBUGGER_REG_R8] = (guint32) INFERIOR_REG_R8 (arch->current_regs);
-	values [DEBUGGER_REG_RAX] = (guint32) INFERIOR_REG_RAX (arch->current_regs);
-	values [DEBUGGER_REG_RCX] = (guint32) INFERIOR_REG_RCX (arch->current_regs);
-	values [DEBUGGER_REG_RDX] = (guint32) INFERIOR_REG_RDX (arch->current_regs);
-	values [DEBUGGER_REG_RSI] = (guint32) INFERIOR_REG_RSI (arch->current_regs);
-	values [DEBUGGER_REG_RDI] = (guint32) INFERIOR_REG_RDI (arch->current_regs);
-	values [DEBUGGER_REG_ORIG_RAX] = (guint32) INFERIOR_REG_ORIG_RAX (arch->current_regs);
-	values [DEBUGGER_REG_RIP] = (guint32) INFERIOR_REG_RIP (arch->current_regs);
-	values [DEBUGGER_REG_CS] = (guint32) INFERIOR_REG_CS (arch->current_regs);
-	values [DEBUGGER_REG_EFLAGS] = (guint32) INFERIOR_REG_EFLAGS (arch->current_regs);
-	values [DEBUGGER_REG_RSP] = (guint32) INFERIOR_REG_RSP (arch->current_regs);
-	values [DEBUGGER_REG_SS] = (guint32) INFERIOR_REG_SS (arch->current_regs);
-	values [DEBUGGER_REG_FS_BASE] = (guint32) INFERIOR_REG_FS_BASE (arch->current_regs);
-	values [DEBUGGER_REG_GS_BASE] = (guint32) INFERIOR_REG_GS_BASE (arch->current_regs);
-	values [DEBUGGER_REG_DS] = (guint32) INFERIOR_REG_DS (arch->current_regs);
-	values [DEBUGGER_REG_ES] = (guint32) INFERIOR_REG_ES (arch->current_regs);
-	values [DEBUGGER_REG_FS] = (guint32) INFERIOR_REG_FS (arch->current_regs);
-	values [DEBUGGER_REG_GS] = (guint32) INFERIOR_REG_GS (arch->current_regs);
+	values [DEBUGGER_REG_R15] = (guint64) INFERIOR_REG_R15 (arch->current_regs);
+	values [DEBUGGER_REG_R14] = (guint64) INFERIOR_REG_R14 (arch->current_regs);
+	values [DEBUGGER_REG_R13] = (guint64) INFERIOR_REG_R13 (arch->current_regs);
+	values [DEBUGGER_REG_R12] = (guint64) INFERIOR_REG_R12 (arch->current_regs);
+	values [DEBUGGER_REG_RBP] = (guint64) INFERIOR_REG_RBP (arch->current_regs);
+	values [DEBUGGER_REG_RBX] = (guint64) INFERIOR_REG_RBX (arch->current_regs);
+	values [DEBUGGER_REG_R11] = (guint64) INFERIOR_REG_R11 (arch->current_regs);
+	values [DEBUGGER_REG_R10] = (guint64) INFERIOR_REG_R10 (arch->current_regs);
+	values [DEBUGGER_REG_R9] = (guint64) INFERIOR_REG_R9 (arch->current_regs);
+	values [DEBUGGER_REG_R8] = (guint64) INFERIOR_REG_R8 (arch->current_regs);
+	values [DEBUGGER_REG_RAX] = (guint64) INFERIOR_REG_RAX (arch->current_regs);
+	values [DEBUGGER_REG_RCX] = (guint64) INFERIOR_REG_RCX (arch->current_regs);
+	values [DEBUGGER_REG_RDX] = (guint64) INFERIOR_REG_RDX (arch->current_regs);
+	values [DEBUGGER_REG_RSI] = (guint64) INFERIOR_REG_RSI (arch->current_regs);
+	values [DEBUGGER_REG_RDI] = (guint64) INFERIOR_REG_RDI (arch->current_regs);
+	values [DEBUGGER_REG_ORIG_RAX] = (guint64) INFERIOR_REG_ORIG_RAX (arch->current_regs);
+	values [DEBUGGER_REG_RIP] = (guint64) INFERIOR_REG_RIP (arch->current_regs);
+	values [DEBUGGER_REG_CS] = (guint64) INFERIOR_REG_CS (arch->current_regs);
+	values [DEBUGGER_REG_EFLAGS] = (guint64) INFERIOR_REG_EFLAGS (arch->current_regs);
+	values [DEBUGGER_REG_RSP] = (guint64) INFERIOR_REG_RSP (arch->current_regs);
+	values [DEBUGGER_REG_SS] = (guint64) INFERIOR_REG_SS (arch->current_regs);
+	values [DEBUGGER_REG_FS_BASE] = (guint64) INFERIOR_REG_FS_BASE (arch->current_regs);
+	values [DEBUGGER_REG_GS_BASE] = (guint64) INFERIOR_REG_GS_BASE (arch->current_regs);
+	values [DEBUGGER_REG_DS] = (guint64) INFERIOR_REG_DS (arch->current_regs);
+	values [DEBUGGER_REG_ES] = (guint64) INFERIOR_REG_ES (arch->current_regs);
+	values [DEBUGGER_REG_FS] = (guint64) INFERIOR_REG_FS (arch->current_regs);
+	values [DEBUGGER_REG_GS] = (guint64) INFERIOR_REG_GS (arch->current_regs);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -342,12 +341,12 @@ server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 }
 
 static ServerCommandError
-x86_64_arch_get_frame (ServerHandle *handle, guint32 eip,
-		       guint32 esp, guint32 ebp, guint32 *retaddr, guint32 *frame,
-		       guint32 *stack)
+x86_64_arch_get_frame (ServerHandle *handle, guint64 eip,
+		       guint64 esp, guint64 ebp, guint64 *retaddr, guint64 *frame,
+		       guint64 *stack)
 {
 	ServerCommandError result;
-	guint32 value;
+	guint64 value;
 
 	if (eip == 0xffffe002) {
 		ebp = esp;
@@ -409,7 +408,7 @@ server_ptrace_get_ret_address (ServerHandle *handle, guint64 *retval)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
-	guint32 retaddr, frame, stack;
+	guint64 retaddr, frame, stack;
 
 	result = x86_64_arch_get_frame (handle, INFERIOR_REG_RIP (arch->current_regs),
 					INFERIOR_REG_RSP (arch->current_regs),
@@ -429,13 +428,13 @@ server_ptrace_get_backtrace (ServerHandle *handle, gint32 max_frames,
 	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
-	guint32 address, frame, stack;
+	guint64 address, frame, stack;
 	StackFrame sframe;
 	int i;
 
-	sframe.address = (guint32) INFERIOR_REG_RIP (arch->current_regs);
-	sframe.stack_pointer = (guint32) INFERIOR_REG_RSP (arch->current_regs);
-	sframe.frame_address = (guint32) INFERIOR_REG_RBP (arch->current_regs);
+	sframe.address = (guint64) INFERIOR_REG_RIP (arch->current_regs);
+	sframe.stack_pointer = (guint64) INFERIOR_REG_RSP (arch->current_regs);
+	sframe.frame_address = (guint64) INFERIOR_REG_RBP (arch->current_regs);
 
 	g_array_append_val (frames, sframe);
 
@@ -492,15 +491,13 @@ static ServerCommandError
 do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
-	ArchInfo *arch = handle->arch;
-	InferiorHandle *inferior = handle->inferior;
 	char bopcode = 0xcc;
-	guint32 address;
+	guint64 address;
 
 	if (breakpoint->info.enabled)
 		return COMMAND_ERROR_NONE;
 
-	address = (guint32) breakpoint->info.address;
+	address = (guint64) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
@@ -523,14 +520,12 @@ static ServerCommandError
 do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
-	ArchInfo *arch = handle->arch;
-	InferiorHandle *inferior = handle->inferior;
-	guint32 address;
+	guint64 address;
 
 	if (!breakpoint->info.enabled)
 		return COMMAND_ERROR_NONE;
 
-	address = (guint32) breakpoint->info.address;
+	address = (guint64) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
