@@ -1163,8 +1163,6 @@ namespace Mono.Debugger.Frontend
 
 	public class StructAccessExpression : Expression
 	{
-		string name;
-
 		public readonly string Identifier;
 		public readonly bool IsStatic;
 

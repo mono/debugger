@@ -22,7 +22,6 @@ namespace Mono.Debugger
 	{
 		bool load_symbols;
 		bool step_into;
-		Hashtable breakpoints = new Hashtable ();
 
 		internal Module ()
 		{

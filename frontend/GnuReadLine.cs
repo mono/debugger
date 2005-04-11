@@ -75,7 +75,7 @@ namespace Mono.Debugger.Frontend
 		public static void EnableCompletion (CompletionDelegate handler)
 		{
 			completion_handler = handler;
-			mono_debugger_readline_enable_completion (handler);
+			mono_debugger_readline_enable_completion (completion_handler);
 		}
 
 		public static string CurrentLine

@@ -61,7 +61,6 @@ namespace Mono.Debugger
 		string base_dir;
 		string[] argv;
 		string[] envp;
-		bool native;
 		Assembly application;
 		DebuggerOptions options;
 

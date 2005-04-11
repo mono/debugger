@@ -1809,7 +1809,9 @@ namespace Mono.Debugger.Frontend
 		int process_id = -1;
 		ProcessHandle process;
 		ThreadGroup tgroup;
+#if PENDING_BREAKPOINTS
 		bool pending;
+#endif
 
 		protected override bool NeedsProcess {
 			get { return false; }

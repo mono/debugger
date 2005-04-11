@@ -395,7 +395,7 @@ namespace Mono.Debugger.Architecture
 			int code_alignment;
 			int data_alignment;
 			int return_register;
-			bool has_z_augmentation;
+		  //			bool has_z_augmentation;
 			byte encoding = (byte) DW_EH_PE.udata4;
 			Column[] columns;
 
@@ -472,7 +472,7 @@ namespace Mono.Debugger.Architecture
 				for (int pos = 0; pos < augmentation.Length; pos++) {
 					if (augmentation [pos] == 'z') {
 						reader.ReadLeb128 ();
-						has_z_augmentation = true;
+						//						has_z_augmentation = true;
 						continue;
 					}
 

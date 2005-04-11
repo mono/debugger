@@ -57,32 +57,19 @@ namespace Mono.Debugger.Architecture
 			types = new Hashtable ();
 
 			string_type = new NativeStringType (0);
-			int_type = RegisterFundamental (
-				"int", typeof (int), 4);
-			char_type = RegisterFundamental (
-				"char", typeof (byte), 1);
-			long_type = RegisterFundamental (
-				"long int", typeof (int), 4);
-			uint_type = RegisterFundamental (
-				"unsigned int", typeof (uint), 4);
-			ulong_type = RegisterFundamental (
-				"long unsigned int", typeof (uint), 4);
-			long_long_type = RegisterFundamental (
-				"long long int", typeof (long), 4);
-			ulong_long_type = RegisterFundamental (
-				"long long unsigned int", typeof (ulong), 8);
-			short_type = RegisterFundamental (
-				"short int", typeof (short), 2);
-			ushort_type = RegisterFundamental (
-				"short unsigned int", typeof (ushort), 2);
-			schar_type = RegisterFundamental (
-				"signed char", typeof (sbyte), 1);
-			uchar_type = RegisterFundamental (
-				"unsigned char", typeof (byte), 1);
-			float_type = RegisterFundamental (
-				"float", typeof (float), 4);
-			double_type = RegisterFundamental (
-				"double", typeof (double), 8);
+			char_type = RegisterFundamental ("char", typeof (byte), 1);
+			RegisterFundamental ("int", typeof (int), 4);
+			RegisterFundamental ("long int", typeof (int), 4);
+			RegisterFundamental ("unsigned int", typeof (uint), 4);
+			RegisterFundamental ("long unsigned int", typeof (uint), 4);
+			RegisterFundamental ("long long int", typeof (long), 4);
+			RegisterFundamental ("long long unsigned int", typeof (ulong), 8);
+			RegisterFundamental ("short int", typeof (short), 2);
+			RegisterFundamental ("short unsigned int", typeof (ushort), 2);
+			RegisterFundamental ("signed char", typeof (sbyte), 1);
+			RegisterFundamental ("unsigned char", typeof (byte), 1);
+			float_type = RegisterFundamental ("float", typeof (float), 4);
+			double_type = RegisterFundamental ("double", typeof (double), 8);
 
 			files = new ArrayList ();
 			methods = new ArrayList ();
@@ -112,17 +99,7 @@ namespace Mono.Debugger.Architecture
 		}
 
 		NativeStringType string_type;
-		NativeFundamentalType int_type;
 		NativeFundamentalType char_type;
-		NativeFundamentalType long_type;
-		NativeFundamentalType uint_type;
-		NativeFundamentalType ulong_type;
-		NativeFundamentalType long_long_type;
-		NativeFundamentalType ulong_long_type;
-		NativeFundamentalType short_type;
-		NativeFundamentalType ushort_type;
-		NativeFundamentalType schar_type;
-		NativeFundamentalType uchar_type;
 		NativeFundamentalType float_type;
 		NativeFundamentalType double_type;
 

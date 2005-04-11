@@ -24,7 +24,6 @@ namespace Mono.Debugger.Frontend.CSharp
 		static Hashtable short_keywords;
 		static System.Text.StringBuilder id_builder;
 		static System.Text.StringBuilder string_builder;
-		static System.Text.StringBuilder number_builder;
 
 		//
 		// Values for the associated token returned
@@ -57,7 +56,6 @@ namespace Mono.Debugger.Frontend.CSharp
 			InitTokens ();
 			id_builder = new System.Text.StringBuilder ();
 			string_builder = new System.Text.StringBuilder ();
-			number_builder = new System.Text.StringBuilder ();
 		}
 
 		static void InitTokens ()

@@ -119,10 +119,6 @@ namespace Mono.Debugger
 				TargetExited ();
 		}
 
-		void debugger_error (object sender, string message, Exception e)
-		{
-		}
-
 		public void Run (ProcessStart start)
 		{
 			check_disposed ();

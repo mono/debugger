@@ -10,12 +10,10 @@ namespace Mono.Debugger
 		{
 			this.language = language;
 			this.exception = exception;
-			this.user_data = user_data;
 		}
 
 		ILanguage language;
 		ITargetType exception;
-		object user_data;
 
 		bool IsSubclassOf (ITargetClassType type, ITargetType parent)
 		{

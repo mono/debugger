@@ -1,3 +1,25 @@
+2005-04-11  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Expression.cs: clean up warnings.
+
+	* frontend/CSharpTokenizer.cs: same.
+
+	* frontend/GnuReadLine.cs: same.
+
+	* frontend/Command.cs: same.
+
+	* arch/DwarfFrameReader.cs: same.
+
+	* arch/StabsReader.cs: same.
+
+	* backends/Debugger.cs: same.
+
+	* classes/ExceptionCatchPoint.cs: same.
+
+	* classes/ProcessStart.cs: same.
+
+	* classes/Module.cs: same.
+
 2005-04-11  Martin Baulig  <martin@ximian.com>
 
 	* arch/DwarfReader.cs: Add support for x86_64.
