@@ -30,6 +30,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		int[] RegisterMap {
+			get;
+		}
+
 		int CountRegisters {
 			get;
 		}
@@ -53,6 +57,9 @@ namespace Mono.Debugger
 		//   the function.
 		// </summary>
 		TargetAddress GetCallTarget (ITargetMemoryAccess target, TargetAddress address,
+					     out int insn_size);
+
+		TargetAddress GetJumpTarget (ITargetMemoryAccess target, TargetAddress address,
 					     out int insn_size);
 
 		// <summary>

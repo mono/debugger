@@ -1,3 +1,17 @@
+2005-04-11  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs: Add support for x86_64.
+
+	* arch/Bfd.cs (Bfd.GetTrampoline): Move arch-specific code into
+	IArchitecture.
+
+	* interface/IArchitecture.cs
+	(IArchitecture.GetJumpTarget): New method.
+	(IArchitecture.RegisterMap): New property.
+
+	* backends/mono/MonoSymbolFile.cs (MonoVariable.register_map):
+	Moved into IArchitecture.RegisterMap since it's arch-specific.	
+
 2005-04-08  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Command.cs (UpCommand, DownCommand): oops, fix these so

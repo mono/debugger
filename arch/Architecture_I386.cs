@@ -129,6 +129,30 @@ namespace Mono.Debugger
 				return vtable_addr;
 		}
 
+		public TargetAddress GetJumpTarget (ITargetMemoryAccess target, TargetAddress address,
+						    out int insn_size)
+		{
+			ITargetMemoryReader reader = target.ReadMemory (address, 10);
+
+			byte opcode = reader.ReadByte ();
+			byte opcode2 = reader.ReadByte ();
+
+			if ((opcode == 0xff) && (opcode2 == 0x25)) {
+				insn_size = 2 + target.TargetAddressSize;
+				return reader.ReadAddress ();
+			} else if ((opcode == 0xff) && (opcode2 == 0xa3)) {
+				int offset = reader.BinaryReader.ReadInt32 ();
+				Registers regs = target.GetRegisters ();
+				long ebx = regs [(int) I386Register.EBX].Value;
+
+				insn_size = 6;
+				return new TargetAddress (target.AddressDomain, ebx + offset);
+			}
+
+			insn_size = 0;
+			return TargetAddress.Null;
+		}
+
 		public TargetAddress GetTrampoline (ITargetMemoryAccess target,
 						    TargetAddress location,
 						    TargetAddress trampoline_address)
@@ -180,6 +204,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public int[] RegisterMap {
+			get {
+				return register_map;
+			}
+		}
+
 		public int CountRegisters {
 			get {
 				return (int) I386Register.COUNT;
@@ -213,6 +243,13 @@ namespace Mono.Debugger
 					 (int) I386Register.ESP,
 					 (int) I386Register.EIP,
 					 (int) I386Register.EFLAGS };
+
+		// FIXME: Map mono/arch/x86/x86-codegen.h registers to
+		//        debugger/arch/IArchitecture_I386.cs registers.
+		int[] register_map = { (int) I386Register.EAX, (int) I386Register.ECX,
+				       (int) I386Register.EDX, (int) I386Register.EBX,
+				       (int) I386Register.ESP, (int) I386Register.EBP,
+				       (int) I386Register.ESI, (int) I386Register.EDI };
 				
 		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "ds",
 				       "es", "fs", "gs", "eip", "cs", "eflags", "esp", "ss" };

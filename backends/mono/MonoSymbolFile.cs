@@ -31,14 +31,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 20; }
 		}
 
-		// FIXME: Map mono/arch/x86/x86-codegen.h registers to
-		//        debugger/arch/IArchitectureI386.cs registers.
-		int[] register_map = { (int)I386Register.EAX, (int)I386Register.ECX,
-				       (int)I386Register.EDX, (int)I386Register.EBX,
-				       (int)I386Register.ESP, (int)I386Register.EBP,
-				       (int)I386Register.ESI, (int)I386Register.EDI };
-
-		public VariableInfo (TargetBinaryReader reader)
+		public VariableInfo (IArchitecture arch, TargetBinaryReader reader)
 		{
 			Index = reader.ReadLeb128 ();
 			Offset = reader.ReadSLeb128 ();
@@ -49,8 +42,12 @@ namespace Mono.Debugger.Languages.Mono
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
 
+			Console.WriteLine ("VARIABLE INFO: {0} {1} {2}", Mode, Index, arch);
+
 			if (Mode == AddressMode.Register)
-				Index = register_map [Index];
+				Index = arch.RegisterMap [Index];
+
+			Console.WriteLine ("VARIABLE INFO #1: {0}", Index);
 
 			HasLivenessInfo = (BeginLiveness != 0) && (EndLiveness != 0);
 		}
@@ -124,7 +121,8 @@ namespace Mono.Debugger.Languages.Mono
 				return TargetAddress.Null;
 		}
 
-		public MethodAddress (C.MethodEntry entry, TargetBinaryReader reader, AddressDomain domain)
+		public MethodAddress (C.MethodEntry entry, TargetBinaryReader reader,
+				      AddressDomain domain, IArchitecture arch)
 		{
 			reader.Position = 16;
 			StartAddress = ReadAddress (reader, domain);
@@ -169,17 +167,17 @@ namespace Mono.Debugger.Languages.Mono
 
 			HasThis = reader.ReadByte () != 0;
 			if (HasThis)
-				ThisVariableInfo = new VariableInfo (reader);
+				ThisVariableInfo = new VariableInfo (arch, reader);
 
 			int num_params = reader.ReadLeb128 ();
 			ParamVariableInfo = new VariableInfo [num_params];
 			for (int i = 0; i < num_params; i++)
-				ParamVariableInfo [i] = new VariableInfo (reader);
+				ParamVariableInfo [i] = new VariableInfo (arch, reader);
 
 			int num_locals = reader.ReadLeb128 ();
 			LocalVariableInfo = new VariableInfo [num_locals];
 			for (int i = 0; i < num_locals; i++)
-				LocalVariableInfo [i] = new VariableInfo (reader);
+				LocalVariableInfo [i] = new VariableInfo (arch, reader);
 		}
 
 		public override string ToString ()
@@ -200,7 +198,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly C.MonoSymbolFile File;
 		internal readonly ThreadManager ThreadManager;
 		internal readonly AddressDomain GlobalAddressDomain;
-		internal readonly ITargetInfo TargetInfo;
+		internal readonly ITargetMemoryInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
 		protected readonly DebuggerBackend backend;
 		readonly MonoSymbolTable symtab;
@@ -218,7 +216,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable method_index_hash;
 
 		internal MonoSymbolFile (MonoLanguageBackend language, DebuggerBackend backend,
-					 ITargetInfo target_info, ITargetMemoryAccess memory,
+					 ITargetMemoryInfo target_info, ITargetMemoryAccess memory,
 					 TargetAddress address)
 		{
 			this.MonoLanguage = language;
@@ -294,6 +292,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override ISymbolFile SymbolFile {
 			get { return this; }
+		}
+
+		internal IArchitecture Architecture {
+			get { return TargetInfo.Architecture; }
 		}
 
 		public override bool SymbolsLoaded {
@@ -600,7 +602,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				is_loaded = true;
 
-				address = new MethodAddress (method, dynamic_reader, domain);
+				address = new MethodAddress (
+					method, dynamic_reader, domain, file.Architecture);
 
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);

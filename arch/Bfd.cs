@@ -1018,22 +1018,9 @@ namespace Mono.Debugger.Architecture
 				return TargetAddress.Null;
 			}
 
-			ITargetMemoryReader reader = memory.ReadMemory (address, 10);
-
-			byte opcode = reader.ReadByte ();
-			byte opcode2 = reader.ReadByte ();
-
-			TargetAddress jmp_target;
-			if ((opcode == 0xff) && (opcode2 == 0x25)) {
-				jmp_target = reader.ReadAddress ();
-			} else if ((opcode == 0xff) && (opcode2 == 0xa3)) {
-				int offset = reader.BinaryReader.ReadInt32 ();
-				Registers regs = memory.GetRegisters ();
-				long ebx = regs [(int) I386Register.EBX].Value;
-
-				jmp_target = new TargetAddress (
-					memory.AddressDomain, ebx + offset);
-			} else {
+			int insn_size;
+			TargetAddress jmp_target = arch.GetJumpTarget (memory, address, out insn_size);
+			if (jmp_target.IsNull) {
 				is_start = false;
 				return TargetAddress.Null;
 			}
@@ -1046,7 +1033,7 @@ namespace Mono.Debugger.Architecture
 			}
 
 			is_start = true;
-			return memory.ReadGlobalAddress (got_start + 8);
+			return memory.ReadGlobalAddress (got_start + 2 * memory.TargetAddressSize);
 		}
 
 		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,

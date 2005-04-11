@@ -98,6 +98,7 @@ namespace Mono.Debugger.Architecture
 		protected string filename;
 		bool is64bit;
 		byte address_size;
+		int frame_register;
 
 		ObjectCache debug_info_reader;
 		ObjectCache debug_abbrev_reader;
@@ -124,6 +125,14 @@ namespace Mono.Debugger.Architecture
 			this.filename = bfd.FileName;
 			this.factory = factory;
 			this.target_info = bfd.TargetInfo;
+
+			if (bfd.Target == "elf32-i386")
+				frame_register = (int) I386Register.EBP;
+			else if (bfd.Target == "elf64-x86-64")
+				frame_register = (int) X86_64_Register.RBP;
+			else
+				throw new DwarfException (
+					bfd, "Unknown architecture: {0}", bfd.Target);
 
 			debug_info_reader = create_reader (".debug_info");
 
@@ -181,7 +190,7 @@ namespace Mono.Debugger.Architecture
 
 		public static bool IsSupported (Bfd bfd)
 		{
-			if (bfd.Target == "elf32-i386")
+			if ((bfd.Target == "elf32-i386") || (bfd.Target == "elf64-x86-64"))
 				return bfd.HasSection (".debug_info");
 			else
 				return false;
@@ -2381,20 +2390,25 @@ namespace Mono.Debugger.Architecture
 
 		protected class TargetVariable : IVariable
 		{
+			DwarfReader dwarf;
 			string name;
 			NativeType type;
 			TargetBinaryReader location;
 			int offset;
 
-			public TargetVariable (string name, NativeType type, TargetBinaryReader location)
+			public TargetVariable (DwarfReader dwarf, string name, NativeType type,
+					       TargetBinaryReader location)
 			{
+				this.dwarf = dwarf;
 				this.name = name;
 				this.type = type;
 				this.location = location;
 			}
 
-			public TargetVariable (string name, NativeType type, int offset)
+			public TargetVariable (DwarfReader dwarf, string name, NativeType type,
+					       int offset)
 			{
+				this.dwarf = dwarf;
 				this.name = name;
 				this.type = type;
 				this.offset = offset;
@@ -2444,7 +2458,7 @@ namespace Mono.Debugger.Architecture
 					off = offset;
 				}
 
-				return new MonoVariableLocation (frame, true, (int) I386Register.EBP,
+				return new MonoVariableLocation (frame, true, dwarf.frame_register,
 								 off, type.IsByRef, 0);
 			}
 
@@ -3114,10 +3128,12 @@ namespace Mono.Debugger.Architecture
 				if (!use_constant) {
 					TargetBinaryReader locreader = new TargetBinaryReader (
 						       location_block, target_info);
-					variable = new TargetVariable (Name, type, locreader);
+					variable = new TargetVariable (
+						dwarf, Name, type, locreader);
 				}
 				else {
-					variable = new TargetVariable (Name, type, (int)location_constant);
+					variable = new TargetVariable (
+						dwarf, Name, type, (int)location_constant);
 				}
 				return true;
 			}

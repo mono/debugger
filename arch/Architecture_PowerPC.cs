@@ -69,6 +69,13 @@ namespace Mono.Debugger
 			return TargetAddress.Null;
 		}
 
+		public TargetAddress GetJumpTarget (ITargetMemoryAccess target,
+						    TargetAddress address, out int insn_size)
+		{
+			insn_size = 0;
+			return TargetAddress.Null;
+		}
+
 		public TargetAddress GetTrampoline (ITargetMemoryAccess target,
 						    TargetAddress location,
 						    TargetAddress trampoline_address)
@@ -119,6 +126,19 @@ namespace Mono.Debugger
 				   (int) PowerPCRegister.VRSAVE
 		};
 
+		int[] register_map = { (int) PowerPCRegister.R0,
+				       (int) PowerPCRegister.R1,
+				       (int) PowerPCRegister.R1,
+				       (int) PowerPCRegister.R2,
+				       (int) PowerPCRegister.R3,
+				       (int) PowerPCRegister.R4,
+				       (int) PowerPCRegister.R5,
+				       (int) PowerPCRegister.R6,
+				       (int) PowerPCRegister.R7,
+				       (int) PowerPCRegister.R8,
+				       (int) PowerPCRegister.R9
+		};
+
 		string[] registers = { "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
 				       "r8", "r9", "r10", "r11", "r12", "r13", "r14",
 				       "r15", "r16", "r17", "r18", "r19", "r20", "r21",
@@ -151,6 +171,12 @@ namespace Mono.Debugger
 		public int[] RegisterSizes {
 			get {
 				return reg_sizes;
+			}
+		}
+
+		public int[] RegisterMap {
+			get {
+				return register_map;
 			}
 		}
 
