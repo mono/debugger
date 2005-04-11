@@ -1,5 +1,15 @@
 2005-04-11  Chris Toshok  <toshok@ximian.com>
 
+	* classes/TargetBinaryAccess.cs: new file, move the base class
+	stuff out of TargetBinaryReader here, as well as TargetBlob.
+
+	* classes/TargetBinaryReader.cs: inherit from TargetBinaryAccess.
+	
+	* classes/TargetBinaryWriter.cs: same.  stop inheriting from
+	Reader.
+	
+2005-04-11  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Expression.cs: clean up warnings.
 
 	* frontend/CSharpTokenizer.cs: same.

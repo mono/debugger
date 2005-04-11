@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Mono.Debugger
 {
-	public class TargetBinaryWriter : TargetBinaryReader
+	public class TargetBinaryWriter : TargetBinaryAccess
 	{
 		public TargetBinaryWriter (int size, ITargetInfo target_info)
 			: base (new TargetBlob (size), target_info)
