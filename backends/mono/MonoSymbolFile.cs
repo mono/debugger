@@ -201,10 +201,10 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly ITargetMemoryInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
 		protected readonly DebuggerBackend backend;
-		readonly MonoSymbolTable symtab;
-		readonly string name;
-		readonly int address_size;
-		readonly int int_size;
+		MonoSymbolTable symtab;
+		string name;
+		int address_size;
+		int int_size;
 
 		Hashtable range_hash;
 		ArrayList ranges;
@@ -611,7 +611,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (!address.WrapperAddress.IsNull)
 					SetWrapperAddress (address.WrapperAddress);
 
-				SetSource (new MonoMethodSource (file, this, info, method, address.LineNumbers));
+				SetSource (new MonoMethodSource (file.MonoLanguage.SourceFileFactory, this, info, method, address.LineNumbers));
 			}
 
 			void get_variables ()
@@ -694,7 +694,7 @@ namespace Mono.Debugger.Languages.Mono
 						throw new InvalidOperationException ();
 
 					get_variables ();
-					return null;
+					return decl_type;
 				}
 			}
 
@@ -854,7 +854,6 @@ namespace Mono.Debugger.Languages.Mono
 		protected class MonoMethodSource : MethodSource
 		{
 			int start_row, end_row;
-			MonoSymbolFile file;
 			JitLineNumberEntry[] line_numbers;
 			C.MethodEntry method;
 			SourceMethod source_method;
@@ -862,19 +861,18 @@ namespace Mono.Debugger.Languages.Mono
 			SourceFileFactory factory;
 			Hashtable namespaces;
 
-			public MonoMethodSource (MonoSymbolFile file, IMethod imethod,
+			public MonoMethodSource (SourceFileFactory factory, IMethod imethod,
 						 SourceMethod source_method, C.MethodEntry method,
 						 JitLineNumberEntry[] line_numbers)
 				: base (imethod, source_method.SourceFile)
 			{
-				this.file = file;
+				this.factory = factory;
 				this.imethod = imethod;
 				this.method = method;
 				this.line_numbers = line_numbers;
 				this.source_method = source_method;
 				this.start_row = method.StartRow;
 				this.end_row = method.EndRow;
-				this.factory = file.MonoLanguage.DebuggerBackend.SourceFileFactory;
 			}
 
 			void generate_line_number (ArrayList lines, TargetAddress address, int offset,

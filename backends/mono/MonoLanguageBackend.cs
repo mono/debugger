@@ -253,8 +253,19 @@ namespace Mono.Debugger.Languages.Mono
 			get { return heap; }
 		}
 
-		public DebuggerBackend DebuggerBackend {
-			get { return backend; }
+		public SourceFileFactory SourceFileFactory {
+			get { return backend.SourceFileFactory; }
+		}
+
+		internal void FindImage (Process process, R.Assembly ass)
+		{
+			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [ass];
+			if (file != null)
+				return;
+
+			mutex.Lock ();
+			process.CallMethod (info.LookupAssembly, ass.Location);
+			mutex.Unlock ();
 		}
 
 		public MonoType LookupMonoType (Type type)

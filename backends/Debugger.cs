@@ -226,7 +226,7 @@ namespace Mono.Debugger
 						"Cannot load .NET assembly {0} while " +
 						"debugging an unmanaged application",
 						filename);
-				// mono_language.FindImage (process, filename);
+				mono_language.FindImage (process, ass);
 			} else
 				bfd_container.AddFile (process, filename, true, false, false);
 		}

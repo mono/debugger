@@ -1,5 +1,26 @@
 2005-04-11  Chris Toshok  <toshok@ximian.com>
 
+	* backends/Debugger.cs (DebuggerBackend.LoadLibrary): if the
+	library we're loading is a managed assembly, call
+	mono_language.FindImage on it.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.get_DebuggerBackend): nuke.
+	(MonoLanguageBackend.get_SourceFileFactory): new property.
+	(MonoLanguageBackend.FindImage): new function.  actually cause the
+	assembly to be loaded by the inferior.
+	
+	* backends/mono/MonoSymbolFile.cs (MonoMethod.Load): pass the
+	SourceFileFactory to MonoMethodSource..ctor instead of the
+	DebuggerBackend, since the SourceFileFactory is all that's used
+	anyway.
+	(MonoMethod.get_DeclaringType): don't return null, return
+	decl_type.
+	(MonoMethodSource..ctor): take SourceFileFactory instead of
+	DebuggerBackend.
+
+2005-04-11  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Command.cs (EventHandleCommand): split out this
 	behavior from BreakpointEnableCommand, since it really annoys me
 	to have BreakpointDisableCommand subclassing from
