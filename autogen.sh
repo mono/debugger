@@ -25,7 +25,7 @@ fi
 (grep "^AM_PROG_LIBTOOL" $srcdir/configure.in >/dev/null) && {
   ($LIBTOOL --version) < /dev/null > /dev/null 2>&1 || {
     echo
-    echo "**Error**: You must have \`libtool' installed to compile Gtk#."
+    echo "**Error**: You must have \`libtool' installed to compile Mono-debugger."
     echo "Get ftp://ftp.gnu.org/pub/gnu/libtool-1.2d.tar.gz"
     echo "(or a newer version if it is available)"
     DIE=1
@@ -34,7 +34,7 @@ fi
 
 (automake --version) < /dev/null > /dev/null 2>&1 || {
   echo
-  echo "**Error**: You must have \`automake' installed to compile Gtk#."
+  echo "**Error**: You must have \`automake' installed to compile Mono-debugger."
   echo "Get ftp://ftp.gnu.org/pub/gnu/automake-1.3.tar.gz"
   echo "(or a newer version if it is available)"
   DIE=1

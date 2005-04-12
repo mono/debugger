@@ -1,3 +1,8 @@
+2005-04-12  Martin Willemoes Hansen  <mwh@sysrq.dk>
+
+	* autogen.sh: Corrected error messages to print Mono-debugger 
+	  instead of Gtk#
+
 2005-04-12  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Interpreter.cs (Interpreter.ShowModules): clean up the
