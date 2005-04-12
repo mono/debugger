@@ -1586,7 +1586,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return String.Format ("valid args are:{0}", GetCommandList()); } }
 	}
 
-	public class BreakpointEnableCommand : DebuggerCommand, IDocumentableCommand
+	public abstract class EventHandleCommand : DebuggerCommand 
 	{
 		protected IEventHandle handle;
 
@@ -1603,19 +1603,22 @@ namespace Mono.Debugger.Frontend
 			handle = context.Interpreter.GetEvent (id);
 			return handle != null;
 		}
+	}
 
+	public class BreakpointEnableCommand : EventHandleCommand, IDocumentableCommand
+	{
 		protected override void DoExecute (ScriptingContext context)
 		{
 			handle.Enable (context.CurrentProcess.Process);
 		}
 
 		// IDocumentableCommand
-		public virtual CommandFamily Family { get { return CommandFamily.Breakpoints; } }
-		public virtual string Description { get { return "Enable breakpoint/catchpoint."; } }
-		public virtual string Documentation { get { return ""; } }
+		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
+		public string Description { get { return "Enable breakpoint/catchpoint."; } }
+		public string Documentation { get { return ""; } }
 	}
 
-	public class BreakpointDisableCommand : BreakpointEnableCommand, IDocumentableCommand
+	public class BreakpointDisableCommand : EventHandleCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -1623,12 +1626,12 @@ namespace Mono.Debugger.Frontend
 		}
 
 		// IDocumentableCommand
-		public override CommandFamily Family { get { return CommandFamily.Breakpoints; } }
-		public override string Description { get { return "Disable breakpoint/catchpoint."; } }
-		public override string Documentation { get { return ""; } }
+		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
+		public string Description { get { return "Disable breakpoint/catchpoint."; } }
+		public string Documentation { get { return ""; } }
 	}
 
-	public class BreakpointDeleteCommand : BreakpointEnableCommand, IDocumentableCommand
+	public class BreakpointDeleteCommand : EventHandleCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
@@ -1636,9 +1639,9 @@ namespace Mono.Debugger.Frontend
 		}
 
 		// IDocumentableCommand
-		public override CommandFamily Family { get { return CommandFamily.Breakpoints; } }
-		public override string Description { get { return "Delete breakpoint/catchpoint."; } }
-		public override string Documentation { get { return ""; } }
+		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
+		public string Description { get { return "Delete breakpoint/catchpoint."; } }
+		public string Documentation { get { return ""; } }
 	}
 
 	public abstract class SourceCommand : DebuggerCommand

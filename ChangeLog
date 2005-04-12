@@ -1,5 +1,15 @@
 2005-04-11  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs (EventHandleCommand): split out this
+	behavior from BreakpointEnableCommand, since it really annoys me
+	to have BreakpointDisableCommand subclassing from
+	BreakpointEnableCommand.
+	(BreakpointDisableCommand): subclass from EventHandleCommand.
+	(BreakpointEnableCommand): same.
+	(BreakpointDeleteCommand): same.
+
+2005-04-11  Chris Toshok  <toshok@ximian.com>
+
 	* configure.in: fix the AM_CONDITIONAL for BFD_TARGET_X86_64,
 	which (for some unknown reason) was causing the debugger to
 	configure in support for x86_64 on ubuntu 5.04 (on a p4).
