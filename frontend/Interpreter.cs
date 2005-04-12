@@ -576,14 +576,15 @@ namespace Mono.Debugger.Frontend
 				return;
 			}
 
+			Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
 			for (int i = 0; i < modules.Length; i++) {
 				Module module = modules [i];
 
-				Print ("{0,4} {1}{2}{3}{4}{5}", i, module.Name,
-				       module.IsLoaded ? " loaded" : "",
-				       module.SymbolsLoaded ? " symbols" : "",
-				       module.StepInto ? " step" : "",
-				       module.LoadSymbols ? "" :  " ignore");
+				Print ("{0,4} {1,5} {2,5} {3}",
+				       i,
+				       module.StepInto ? "y " : "n ",
+				       module.SymbolsLoaded ? "y " : "n ",
+				       module.Name);
 			}
 		}
 
