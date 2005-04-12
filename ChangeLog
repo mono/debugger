@@ -1,5 +1,11 @@
 2005-04-11  Chris Toshok  <toshok@ximian.com>
 
+	* configure.in: fix the AM_CONDITIONAL for BFD_TARGET_X86_64,
+	which (for some unknown reason) was causing the debugger to
+	configure in support for x86_64 on ubuntu 5.04 (on a p4).
+
+2005-04-11  Chris Toshok  <toshok@ximian.com>
+
 	* classes/TargetBinaryAccess.cs: new file, move the base class
 	stuff out of TargetBinaryReader here, as well as TargetBlob.
 
