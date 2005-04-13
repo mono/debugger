@@ -95,13 +95,26 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		// The method's declaring type.  In an object oriented
+		// language, this will be the class/struct in which
+		// this method is declared.
+		// </summary>
 		ITargetStructType DeclaringType {
 			get;
 		}
 
+		// <summary>
+		// True for instance methods in object oriented
+		// languages.
+		// </summary>
 		bool HasThis {
 			get;
 		}
+
+		// <summary>
+		// The method's "this" pointer.
+		// </summary>
 
 		IVariable This {
 			get;
