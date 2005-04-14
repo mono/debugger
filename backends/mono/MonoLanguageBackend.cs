@@ -578,6 +578,15 @@ namespace Mono.Debugger.Languages.Mono
 			if (name.IndexOf ('[') >= 0)
 				return null;
 
+			// XXX this fixes #74391.  we basically need
+			// to ensure the class has been initialized by
+			// the runtime (and therefore had its
+			// debugging info made available to the
+			// debugger).
+			mutex.Lock ();
+			frame.Process.CallMethod (info.LookupType, name);
+			mutex.Unlock ();
+
 			foreach (MonoSymbolFile symfile in symbol_files) {
 				Type type = symfile.Assembly.GetType (name);
 				if (type == null)

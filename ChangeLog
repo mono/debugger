@@ -1,5 +1,11 @@
 2005-04-13  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono/MonoLanguageBackend.cs: rather broken fix for
+	74391.  call MonoDebuggerInfo.LookupType before looking up the
+	type.
+
+2005-04-13  Chris Toshok  <toshok@ximian.com>
+
 	* interfaces/IMethod.cs: Add some docs.
 
 	* interfaces/IArchitecture.cs: same.
