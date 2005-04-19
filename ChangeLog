@@ -1,5 +1,11 @@
 2005-04-19  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Command.cs (CdCommand.DoExecute): special handling for
+	"." and "..", and use DirectoryInfo to make sure paths exist.
+	Fixes bug #73247.
+
+2005-04-19  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/CL.cs (LineParser.GetCommand): change the way commands
 	are parsed so that "_" on the line is assumed to be a command
 	(which doesn't exist, of course).  Fixes bug #73244.

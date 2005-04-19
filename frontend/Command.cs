@@ -681,9 +681,21 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			try {
-				Environment.CurrentDirectory = Argument;
+				string new_dir;
 
-				context.Interpreter.Options.WorkingDirectory = Argument;
+				if (Argument == "..") {
+					new_dir = new DirectoryInfo (Environment.CurrentDirectory).Parent.FullName;
+				}
+				else if (Argument == ".") {
+					new_dir = new DirectoryInfo (Environment.CurrentDirectory).FullName;
+				}
+				else {
+					new_dir = new DirectoryInfo (Argument).FullName;			    
+				}
+
+				Environment.CurrentDirectory = new_dir;
+				context.Interpreter.Options.WorkingDirectory = new_dir;
+
 				Console.WriteLine ("Working directory {0}.",
 						   context.Interpreter.Options.WorkingDirectory);
 			}
