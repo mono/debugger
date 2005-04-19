@@ -1,3 +1,9 @@
+2005-04-19  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/CL.cs (LineParser.GetCommand): change the way commands
+	are parsed so that "_" on the line is assumed to be a command
+	(which doesn't exist, of course).  Fixes bug #73244.
+
 2005-04-18  Chris Toshok  <toshok@ximian.com>
 
 	* configure.in: fix BFD_TARGET_X86_64 AM_CONDITIONAL.  Thanks to

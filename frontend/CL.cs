@@ -217,11 +217,11 @@ namespace Mono.Debugger.Frontend
 			if (p >= top)
 				return false;
 
-			if (Char.IsLetter (sb [p])){
-				int start = p++;
-				while (p < top && Char.IsLetterOrDigit (sb [p])){
-					p++;
-				}
+			int start = p++;
+			while (p < top && !Char.IsWhiteSpace (sb [p])) {
+				p++;
+			}
+			if (p-start > 0) {
 				command = sb.ToString (start, p-start);
 				return true;
 			}
