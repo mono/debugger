@@ -68,7 +68,7 @@ AC_ARG_WITH(bfd-target,
 )
 
 AM_CONDITIONAL(BFD_TARGET_POWERPC, test x$bfd_target = xpowerpc)
-AM_CONDITIONAL(BFD_TARGET_X86_64, test x$bfd_target= xx86_64)
+AM_CONDITIONAL(BFD_TARGET_X86_64, test x$bfd_target = xx86_64)
 AM_CONDITIONAL(PLATFORM_X86_64, test x$platform = xx86_64)
 AM_CONDITIONAL(PLATFORM_POWERPC, test x$platform = xpowerpc)
 
