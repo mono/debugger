@@ -103,7 +103,7 @@ namespace Mono.Debugger.Backends
 
 			if (first_index == 0) {
 				is_nptl = caller_inferior == this.inferior;
-				first_index = is_nptl ? 2 : 3;
+				first_index = is_nptl ? 3 : 4;
 			}
 
 			if (thread_hash.Count == first_index) {

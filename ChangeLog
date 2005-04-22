@@ -1,3 +1,11 @@
+2005-04-22  Chris Toshok  <toshok@ximian.com>
+
+	* backends/MonoThreadManager.cs (MonoThreadManager.ThreadCreated):
+	fix for use with the new io-layer, which appears to create an
+	additional thread at runtime startup.  This change is evil, and
+	this code is also evil.  There has to be a better way for the
+	debugger to figure out which is the main managed thread.
+
 2005-04-19  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Command.cs (CdCommand.DoExecute): special handling for
