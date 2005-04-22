@@ -59,6 +59,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
+	// managed version of struct _MonoDebugLineNumberEntry 
 	internal struct JitLineNumberEntry
 	{
 		public readonly int Offset;
@@ -76,6 +77,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
+	// managed version of struct _MonoDebugLexicalBlockEntry
 	internal struct JitLexicalBlockEntry
 	{
 		public readonly int StartOffset;
@@ -98,6 +100,8 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
+
+	// managed version of struct _MonoDebugMethodAddress
 	internal class MethodAddress
 	{
 		public readonly TargetAddress StartAddress;
@@ -124,6 +128,8 @@ namespace Mono.Debugger.Languages.Mono
 		public MethodAddress (C.MethodEntry entry, TargetBinaryReader reader,
 				      AddressDomain domain, IArchitecture arch)
 		{
+			// here we read the MonoDebugMethodAddress structure
+			// as written out in mono_debug_add_method.
 			reader.Position = 16;
 			StartAddress = ReadAddress (reader, domain);
 			EndAddress = StartAddress + reader.ReadInt32 ();
