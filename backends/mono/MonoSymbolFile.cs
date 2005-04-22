@@ -128,6 +128,7 @@ namespace Mono.Debugger.Languages.Mono
 			StartAddress = ReadAddress (reader, domain);
 			EndAddress = StartAddress + reader.ReadInt32 ();
 			WrapperAddress = ReadAddress (reader, domain);
+			ReadAddress (reader, domain);
 
 			MethodStartAddress = StartAddress + reader.ReadLeb128 ();
 			MethodEndAddress = StartAddress + reader.ReadLeb128 ();
