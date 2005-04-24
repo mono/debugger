@@ -1,3 +1,10 @@
+2005-04-24  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Command.cs (SetCommand): override DoResolve and
+	DoExecute so we can both handle debugger settings as well as
+	expressions representing assignments ("set lang auto" and "set x =
+	3", respectively).
+
 2005-04-22  Chris Toshok  <toshok@ximian.com>
 
 	* backends/MonoThreadManager.cs (MonoThreadManager.ThreadCreated):

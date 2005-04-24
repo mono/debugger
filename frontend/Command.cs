@@ -1219,6 +1219,8 @@ namespace Mono.Debugger.Frontend
 
 	public class SetCommand : NestedCommand, IDocumentableCommand
 	{
+		Expression expr;
+
 #region set subcommands
 		private class SetLangCommand : DebuggerCommand
 		{
@@ -1278,6 +1280,30 @@ namespace Mono.Debugger.Frontend
 			RegisterSubcommand ("lang", typeof (SetLangCommand));
 			RegisterSubcommand ("style", typeof (SetStyleCommand));
 		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Argument != "") {
+				Expression e = ParseExpression (context);
+				if (e is AssignmentExpression) {
+					expr = e.Resolve (context);
+					return (expr != null);
+				}
+			}
+
+			return base.DoResolve (context);
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{	  	
+			if (expr != null) {
+				expr.Evaluate (context);
+			}
+			else {
+				base.DoExecute (context);
+			}
+		}
+
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Support; } }
