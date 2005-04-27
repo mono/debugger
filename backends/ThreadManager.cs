@@ -66,7 +66,7 @@ namespace Mono.Debugger
 		Process main_process;
 
 		DebuggerEvent start_event;
-		DebuggerEvent completed_event;
+		DebuggerAutoResetEvent completed_event;
 		DebuggerMutex command_mutex;
 		bool sync_command_running;
 		bool abort_requested;
@@ -450,7 +450,6 @@ namespace Mono.Debugger
 
 			lock (this) {
 				current_command = command;
-				// completed_event.Reset ();
 				sync_command_running = true;
 				engine_event.Set ();
 			}
@@ -505,6 +504,11 @@ namespace Mono.Debugger
 
 			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
 
+			if (abort_requested) {
+				Report.Debug (DebugFlags.Wait, "Abort requested");
+				return;
+			}
+
 			int status;
 			SingleSteppingEngine event_engine;
 
@@ -516,7 +520,7 @@ namespace Mono.Debugger
 				current_event_status = 0;
 			}
 
-			if ((event_engine != null) && !abort_requested) {
+			if (event_engine != null) {
 				try {
 					event_engine.ProcessEvent (status);
 				} catch (ThreadAbortException) {
@@ -569,11 +573,6 @@ namespace Mono.Debugger
 				return;
 			}
 
-			if (abort_requested) {
-				Report.Debug (DebugFlags.Wait, "Abort requested");
-				return;
-			}
-
 			Command command;
 			lock (this) {
 				command = current_command;
@@ -621,79 +620,54 @@ namespace Mono.Debugger
 
 		void start_wait_thread ()
 		{
-			while (!abort_requested) {
-				wait_thread_main ();
-			}
-		}
+			while (true) {
+				Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
+				wait_event.Wait ();
 
-		void wait_thread_main ()
-		{
-			Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
-			wait_event.Wait ();
+				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
 
-		again:
-			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
-
-			//
-			// Wait until we got an event from the target or a command from the user.
-			//
-
-			int pid, status;
-			pid = mono_debugger_server_global_wait (out status);
-
-			Report.Debug (DebugFlags.Wait,
-				      "Wait thread received event: {0} {1:x}",
-				      pid, status);
-
-			//
-			// Note: `pid' is basically just an unique number which identifies the
-			//       SingleSteppingEngine of this event.
-			//
-
-			if (pid > 0) {
-				SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
-				if (event_engine == null)
-					throw new InternalError ("Got event {0:x} for unknown pid {1}",
-								 status, pid);
-
-				lock (this) {
-					if (current_event != null)
-						throw new InternalError ();
-
-					current_event = event_engine;
-					current_event_status = status;
-					engine_event.Set ();
+				if (abort_requested) {
+					Report.Debug (DebugFlags.Wait, "Abort requested");
+					return;
 				}
-			}
 
-			if (abort_requested) {
-				Report.Debug (DebugFlags.Wait, "Abort requested");
-				return;
+				//
+				// Wait until we got an event from the target or a command from the user.
+				//
+
+				int pid, status;
+				pid = mono_debugger_server_global_wait (out status);
+
+				Report.Debug (DebugFlags.Wait,
+					      "Wait thread received event: {0} {1:x}",
+					      pid, status);
+
+				//
+				// Note: `pid' is basically just an unique number which identifies the
+				//       SingleSteppingEngine of this event.
+				//
+
+				if (pid > 0) {
+					SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
+					if (event_engine == null)
+						throw new InternalError ("Got event {0:x} for unknown pid {1}",
+									 status, pid);
+
+					lock (this) {
+						if (current_event != null)
+							throw new InternalError ();
+
+						current_event = event_engine;
+						current_event_status = status;
+						engine_event.Set ();
+					}
+				}
 			}
 		}
 
 		//
 		// IDisposable
 		//
-
-		protected virtual void DoDispose ()
-		{
-			if (inferior_thread != null) {
-				if (inferior_thread != Thread.CurrentThread)
-					inferior_thread.Abort ();
-			}
-			if (wait_thread != null)
-				wait_thread.Abort ();
-
-			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
-			thread_hash.Values.CopyTo (threads, 0);
-
-			for (int i = 0; i < threads.Length; i++)
-				threads [i].Dispose ();
-
-			if (main_process != null)
-				main_process.Dispose ();
-		}
 
 		private bool disposed = false;
 
@@ -711,12 +685,21 @@ namespace Mono.Debugger
 					return;
 
 				abort_requested = true;
+				wait_event.Set();
+				engine_event.Set();
 				disposed = true;
 			}
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				DoDispose ();
+				SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
+				thread_hash.Values.CopyTo (threads, 0);
+
+				for (int i = 0; i < threads.Length; i++)
+					threads [i].Dispose ();
+
+				if (main_process != null)
+					main_process.Dispose ();
 			}
 		}
 

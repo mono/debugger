@@ -1,3 +1,11 @@
+2005-04-26  Chris Toshok  <toshok@ximian.com>
+
+	[ fixes bug #61196 ]
+	* classes/SymbolTableManager.cs: rework the Dispose stuff so that
+	it doesn't use Thread.Abort.
+
+	* backends/ThreadManager.cs: same.
+
 2005-04-24  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Command.cs (SetCommand): override DoResolve and

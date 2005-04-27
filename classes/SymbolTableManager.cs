@@ -10,6 +10,8 @@ namespace Mono.Debugger
 	// </summary>
 	public class SymbolTableManager : IDisposable
 	{
+		bool symtab_thread_exit;
+
 		Thread symtab_thread;
 		DebuggerAutoResetEvent symtab_reload_event;
 		DebuggerManualResetEvent symtabs_loaded_event;
@@ -169,22 +171,24 @@ namespace Mono.Debugger
 
 		void symtab_thread_start ()
 		{
-			try {
 				symtab_thread_main ();
-			} catch (ThreadAbortException) {
+
 				symtabs_loaded_event.Set ();
 				modules_loaded_event.Set ();
 				update_completed_event.Set ();
 				symtab_update_in_progress = false;
 				module_update_in_progress = false;
 				symtab_thread = null;
-			}
 		}
 
 		void symtab_thread_main ()
 		{
 			while (true) {
 				symtab_reload_event.Wait ();
+
+				if (symtab_thread_exit)
+					return;
+
 				ICollection my_new_modules;
 
 				lock (this) {
@@ -262,7 +266,8 @@ namespace Mono.Debugger
 			if (!this.disposed) {
 				if (disposing) {
 					if (symtab_thread != null) {
-						symtab_thread.Abort ();
+						symtab_thread_exit = true;
+						symtab_reload_event.Set ();
 						symtab_thread = null;
 					}
 				}
