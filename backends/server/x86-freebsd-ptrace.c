@@ -100,9 +100,9 @@ server_set_dr (InferiorHandle *handle, int regnum, unsigned long value)
 }
 
 static int
-server_do_wait (InferiorHandle *handle)
+do_wait (int pid, guint32 *status)
 {
-	int options, ret, status = 0;
+	int options, ret;
 	sigset_t mask, oldmask;
 
 	sigemptyset (&mask);
@@ -115,10 +115,10 @@ server_do_wait (InferiorHandle *handle)
 	options = WUNTRACED;
 	if (handle->is_thread)
 		options |= WLINUXCLONE;
-	ret = waitpid (handle->pid, &status, options);
+	ret = waitpid (handle->pid, status, options);
 	if (ret < 0) {
 		g_warning (G_STRLOC ": Can't waitpid (%d): %s", handle->pid, g_strerror (errno));
-		status = -1;
+		*status = -1;
 		goto out;
 	} else if (ret) {
 		goto out;
@@ -129,7 +129,7 @@ server_do_wait (InferiorHandle *handle)
 
  out:
 	sigprocmask (SIG_SETMASK, &oldmask, NULL);
-	return status;
+	return ret;
 }
 
 static void
@@ -141,7 +141,7 @@ server_setup_inferior (InferiorHandle *handle, ArchInfo *arch)
 	sigaddset (&mask, SIGINT);
 	sigprocmask (SIG_BLOCK, &mask, NULL);
 
-	server_do_wait (handle);
+	do_wait (handle->inferior->pid, &status);
 
 	if (server_get_registers (handle, &arch->current_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get registers");

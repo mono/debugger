@@ -692,13 +692,25 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
+				int i;
+				bool main_in_threads = false;
+
 				SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
 				thread_hash.Values.CopyTo (threads, 0);
 
-				for (int i = 0; i < threads.Length; i++)
-					threads [i].Dispose ();
+				for (i = 0; i < threads.Length; i++) {
+					if (main_process != null && main_process == threads[i].Process)
+						main_in_threads = true;
+					threads [i].Kill ();
+				}
 
-				if (main_process != null)
+				if (!main_in_threads)
+					main_process.Kill ();
+
+				for (i = 0; i < threads.Length; i ++)
+					threads[i].Dispose ();
+
+				if (!main_in_threads)
 					main_process.Dispose ();
 			}
 		}

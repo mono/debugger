@@ -1,5 +1,24 @@
 2005-04-26  Chris Toshok  <toshok@ximian.com>
 
+	* backends/Inferior.cs (Inferior.Dispose): don't call Kill here.
+
+	* backends/ThreadManager.cs (ThreadManager.Dispose): use a
+	two-stage method.  first we Kill all the processes, then we
+	Dispose of them.
+
+	* backends/SingleSteppingEngine.cs (SingleSteppingEngine.Dispose):
+	don't Kill the inferior here, only Dispose of it.
+
+	* backends/server/x86-ptrace.c (server_ptrace_finalize): only kill
+	the pid in server_ptrace_kill.  in finalize we do_wait.
+	(server_ptrace_kill): PT_KILL here as well, although i'm sure
+	that's unnecessary.
+
+	* backends/server/x86-freebsd-ptrace.[ch]: rename
+	i386-freebsd-ptrace.[ch].
+
+2005-04-26  Chris Toshok  <toshok@ximian.com>
+
 	[ fixes bug #61196 ]
 	* classes/SymbolTableManager.cs: rework the Dispose stuff so that
 	it doesn't use Thread.Abort.

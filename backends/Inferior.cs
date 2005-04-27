@@ -1166,7 +1166,6 @@ namespace Mono.Debugger.Backends
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					Kill ();
 					bfd_container.CloseBfd (bfd);
 					if (bfd_disassembler != null)
 						bfd_disassembler.Dispose ();

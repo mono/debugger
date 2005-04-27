@@ -36,7 +36,7 @@
 #endif
 
 #ifdef __FreeBSD__
-#include "i386-freebsd-ptrace.h"
+#include "x86-freebsd-ptrace.h"
 #endif
 
 #include "x86-arch.h"
@@ -59,12 +59,9 @@ static void
 server_ptrace_finalize (ServerHandle *handle)
 {
 	if (handle->inferior->pid) {
-		/* int status; */
+	  int status;
 
-		ptrace (PT_KILL, handle->inferior->pid, NULL, 0);
-		ptrace (PT_DETACH, handle->inferior->pid, NULL, 0);
-		kill (handle->inferior->pid, SIGKILL);
-		/* do_wait (handle->inferior->pid, &status); */
+	  do_wait (-1, &status);
 	}
 	x86_arch_finalize (handle->arch);
 	g_free (handle->inferior);
@@ -119,10 +116,13 @@ server_ptrace_detach (ServerHandle *handle)
 static ServerCommandError
 server_ptrace_kill (ServerHandle *handle)
 {
+	int status;
 	InferiorHandle *inferior = handle->inferior;
 
-	if (inferior->pid)
+	if (inferior->pid) {
+		ptrace (PT_KILL, inferior->pid, NULL, 0);
 		kill (inferior->pid, SIGKILL);
+	}
 	return COMMAND_ERROR_NONE;
 }
 
@@ -416,7 +416,7 @@ extern void GC_end_blocking (void);
 #endif
 
 #ifdef __FreeBSD__
-#include "i386-freebsd-ptrace.c"
+#include "x86-freebsd-ptrace.c"
 #endif
 
 #if defined(__i386__)
