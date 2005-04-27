@@ -78,8 +78,7 @@ namespace Mono.Debugger.Backends
 
 			PID = inferior.PID;
 
-			operation_completed_event = new DebuggerManualResetEvent (
-				"operation_completed_event", false);
+			operation_completed_event = new ManualResetEvent (false);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
@@ -875,7 +874,7 @@ namespace Mono.Debugger.Backends
 		ISimpleSymbolTable current_simple_symtab;
 		Hashtable exception_handlers;
 		bool engine_stopped;
-		DebuggerManualResetEvent operation_completed_event;
+		ManualResetEvent operation_completed_event;
 		bool stop_requested;
 		bool is_main, reached_main;
 		bool native;
@@ -989,7 +988,7 @@ namespace Mono.Debugger.Backends
 				// This will never block.  The only thing which can
 				// happen here is that we were running an async operation
 				// and did not wait for the event yet.
-				operation_completed_event.Wait ();
+				operation_completed_event.WaitOne ();
 				engine_stopped = false;
 				Report.Debug (DebugFlags.Wait,
 					      "{0} got command mutex", this);
@@ -1064,7 +1063,7 @@ namespace Mono.Debugger.Backends
 
 			if (wait) {
 				Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-				operation_completed_event.Wait ();
+				operation_completed_event.WaitOne ();
 				Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 			}
 			Report.Debug (DebugFlags.Wait,
@@ -1083,7 +1082,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.Wait ();
+			operation_completed_event.WaitOne ();
 			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 			Report.Debug (DebugFlags.Wait,
 				      "{0} released command mutex", this);
@@ -1144,7 +1143,7 @@ namespace Mono.Debugger.Backends
 			// Ok, we got the `command_mutex'.
 			// Now we can wait for the operation to finish.
 			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.Wait ();
+			operation_completed_event.WaitOne ();
 			Report.Debug (DebugFlags.Wait, "{0} stopped", this);
 			manager.ReleaseCommandMutex ();
 			return true;

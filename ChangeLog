@@ -1,3 +1,19 @@
+2005-04-27  Chris Toshok  <toshok@ximian.com>
+
+	* classes/Threading.cs: remove the Debugger events - just use the
+	stuff in corlib.
+
+	* backends/server/mutex.c: remove the debugger event stuff.
+
+	* backends/server/mutex.h: same.
+
+	* backends/SingleSteppingEngine.cs: track change from Debugger
+	events to corlib threading events.
+
+	* backends/ThreadManager.cs: same.
+
+	* classes/SymbolTableManager.cs: same.
+	
 2005-04-26  Chris Toshok  <toshok@ximian.com>
 
 	* backends/Inferior.cs (Inferior.Dispose): don't call Kill here.

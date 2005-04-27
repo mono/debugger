@@ -30,14 +30,14 @@ namespace Mono.Debugger
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 			address_domain = new AddressDomain ("global");
 
-			start_event = new DebuggerManualResetEvent ("start_event", false);
-			completed_event = new DebuggerAutoResetEvent ("completed_event", false);
+			start_event = new ManualResetEvent (false);
+			completed_event = new AutoResetEvent (false);
 			command_mutex = new DebuggerMutex ("command_mutex");
 			command_mutex.DebugFlags = DebugFlags.SSE;
 
-			ready_event = new DebuggerManualResetEvent ("ready_event", false);
+			ready_event = new ManualResetEvent (false);
 			engine_event = Semaphore.CreateThreadManagerSemaphore ();
-			wait_event = new DebuggerAutoResetEvent ("wait_event", false);
+			wait_event = new AutoResetEvent (false);
 
 			mono_debugger_server_global_init ();
 		}
@@ -54,8 +54,8 @@ namespace Mono.Debugger
 		BreakpointManager breakpoint_manager;
 		Thread inferior_thread;
 		Thread wait_thread;
-		DebuggerManualResetEvent ready_event;
-		DebuggerEvent wait_event;
+		ManualResetEvent ready_event;
+		AutoResetEvent wait_event;
 		Semaphore engine_event;
 		Hashtable thread_hash;
 
@@ -65,8 +65,8 @@ namespace Mono.Debugger
 
 		Process main_process;
 
-		DebuggerEvent start_event;
-		DebuggerAutoResetEvent completed_event;
+		ManualResetEvent start_event;
+		AutoResetEvent completed_event;
 		DebuggerMutex command_mutex;
 		bool sync_command_running;
 		bool abort_requested;
@@ -133,7 +133,7 @@ namespace Mono.Debugger
 		// </summary>
 		void wait_until_engine_is_ready ()
 		{
-			start_event.Wait ();
+			start_event.WaitOne ();
 
 			if (start_error != null)
 				throw start_error;
@@ -156,7 +156,7 @@ namespace Mono.Debugger
 
 		public Process WaitForApplication ()
 		{
-			ready_event.Wait ();
+			ready_event.WaitOne ();
 
 			return main_process;
 		}
@@ -454,7 +454,7 @@ namespace Mono.Debugger
 				engine_event.Set ();
 			}
 
-			completed_event.Wait ();
+			completed_event.WaitOne ();
 
 			CommandResult result;
 			lock (this) {
@@ -622,7 +622,7 @@ namespace Mono.Debugger
 		{
 			while (true) {
 				Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
-				wait_event.Wait ();
+				wait_event.WaitOne ();
 
 				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
 
