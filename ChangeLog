@@ -1,5 +1,10 @@
 2005-05-02  Chris Toshok  <toshok@ximian.com>
 
+	* backends/ThreadManager.cs (ThreadManager.Dispose): fix bug
+	disposing of main_process.
+
+2005-05-02  Chris Toshok  <toshok@ximian.com>
+
 	* wrapper/Makefile.am (MCS_FLAGS): use -debug instead of -g, and
 	turn off warnings about private things that are never used.
 

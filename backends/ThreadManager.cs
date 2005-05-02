@@ -699,18 +699,18 @@ namespace Mono.Debugger
 				thread_hash.Values.CopyTo (threads, 0);
 
 				for (i = 0; i < threads.Length; i++) {
-					if (main_process != null && main_process == threads[i].Process)
+					if (main_process == threads[i].Process)
 						main_in_threads = true;
 					threads [i].Kill ();
 				}
 
-				if (!main_in_threads)
+				if (main_process != null && !main_in_threads)
 					main_process.Kill ();
 
 				for (i = 0; i < threads.Length; i ++)
 					threads[i].Dispose ();
 
-				if (!main_in_threads)
+				if (main_process != null && !main_in_threads)
 					main_process.Dispose ();
 			}
 		}
