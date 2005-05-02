@@ -1,5 +1,10 @@
 2005-05-02  Chris Toshok  <toshok@ximian.com>
 
+	* wrapper/Makefile.am (MCS_FLAGS): use -debug instead of -g, and
+	turn off warnings about private things that are never used.
+
+2005-05-02  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/ScriptingContext.cs (FrameHandle.GetRegister): Resolve
 	-> GetTypeInfo.
 

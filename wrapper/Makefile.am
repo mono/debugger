@@ -21,7 +21,7 @@ bin_SCRIPTS = mdb
 
 one_SCRIPTS = mdb.exe 
 
-MCS_FLAGS = -g -define:DEBUG
+MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
 noinst_SCRIPTS = Mono.Debugger.dll
 
