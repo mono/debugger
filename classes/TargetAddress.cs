@@ -115,6 +115,20 @@ namespace Mono.Debugger
 				return 0;
 		}
 
+		public override bool Equals (object o)
+		{
+			if (o == null || !(o is TargetAddress))
+				return false;
+
+			TargetAddress b = (TargetAddress)o;
+			return address == b.address;
+		}
+
+		public override int GetHashCode ()
+		{
+			return (int)address;
+		}
+
 		//
 		// Operators
 		//
@@ -134,7 +148,7 @@ namespace Mono.Debugger
 		public static bool operator == (TargetAddress a, TargetAddress b)
 		{
 			check_domains (a, b);
-			return a.address == b.address;
+			return a.Equals (b);
 		}
 
 		public static bool operator != (TargetAddress a, TargetAddress b)

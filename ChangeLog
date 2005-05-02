@@ -1,5 +1,10 @@
 2005-05-02  Chris Toshok  <toshok@ximian.com>
 
+	* classes/TargetAddress.cs: provide Equals/GetHasCode
+	implementations to quiet mcs.
+
+2005-05-02  Chris Toshok  <toshok@ximian.com>
+
 	* backends/mono/MonoVariable.cs (MonoVariable.SetObject): Never
 	accept rewrites of large portions of functionality without proper
 	testing.  Implement this method again so it, oh, I dunno, actually
