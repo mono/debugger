@@ -84,7 +84,20 @@ namespace Mono.Debugger.Languages
 
 			long contents;
 			ITargetAccess memory = TargetAccess;
-			if (memory.TargetIntegerSize == 4)
+
+			if (data.Length > memory.TargetIntegerSize)
+				throw new InternalError ();
+
+			if (data.Length < memory.TargetIntegerSize) {
+				switch (data.Length) {
+				case 1: contents = data[0]; break;
+				case 2: contents = BitConverter.ToInt16 (data, 0); break;
+				case 4: contents = BitConverter.ToInt32 (data, 0); break;
+				default:
+				  throw new InternalError ();
+				}
+			}
+			else if (memory.TargetIntegerSize == 4)
 				contents = BitConverter.ToInt32 (data, 0);
 			else if (memory.TargetIntegerSize == 8)
 				contents = BitConverter.ToInt64 (data, 0);

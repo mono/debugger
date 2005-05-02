@@ -1,5 +1,20 @@
 2005-05-02  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono/MonoVariable.cs (MonoVariable.SetObject): Never
+	accept rewrites of large portions of functionality without proper
+	testing.  Implement this method again so it, oh, I dunno, actually
+	*does* something?
+
+	* backends/classes/MonoVariableLocation.cs
+	(MonoVariableLocation.WriteBuffer): handle some more interesting
+	value-in-register cases: 1. the buffer size is larger than the
+	size we can stuff in a register (currently maxed at sizeof(long)?
+	ugh.) 2. the buffer size is *smaller* than the TargetIntegerSize,
+	as it is with things like booleans.  This makes "set ok = true"
+	work while debugging mcs.
+
+2005-05-02  Chris Toshok  <toshok@ximian.com>
+
 	* backends/ThreadManager.cs (ThreadManager.Dispose): fix bug
 	disposing of main_process.
 

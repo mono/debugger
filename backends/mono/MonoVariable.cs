@@ -135,8 +135,12 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (obj.TypeInfo.Type != Type)
 				throw new InvalidOperationException ();
-			// TargetLocation location = GetLocation (frame);
-			// type.SetObject (location, (MonoObject) obj);
+
+			MonoObject var_object = (MonoObject)GetObject (frame);
+			if (var_object == null)
+				return;
+
+			var_object.SetObject (obj);
 		}
 
 		public override string ToString ()
