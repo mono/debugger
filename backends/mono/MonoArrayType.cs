@@ -66,9 +66,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
+		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
-			MonoTypeInfo element_info = element_type.Resolve ();
+			MonoTypeInfo element_info = element_type.GetTypeInfo ();
 			if (element_info == null)
 				return null;
 

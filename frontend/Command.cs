@@ -311,9 +311,7 @@ namespace Mono.Debugger.Frontend
 			case Format.Current: {
 				ITargetObject obj = expression.EvaluateVariable (context);
 				ITargetClassObject cobj = obj as ITargetClassObject;
-				if (cobj != null)
-					obj = cobj.CurrentObject;
-				context.PrintObject (obj);
+				context.PrintObject (cobj);
 				break;
 			}
 
@@ -353,9 +351,7 @@ namespace Mono.Debugger.Frontend
 			case Format.Current:
 				obj = expression.EvaluateVariable (context);
 				ITargetClassObject cobj = obj as ITargetClassObject;
-				if (cobj != null)
-					obj = cobj.CurrentObject;
-				context.PrintType (obj.TypeInfo.Type);
+				context.PrintType (cobj.TypeInfo.Type);
 				break;
 
 			default:
@@ -2023,6 +2019,9 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			type = expr.EvaluateType (context) as ITargetClassType;
+			// we need to resolve the TypeInfo so the
+			// debugger will load the exception type.
+			type.GetTypeInfo();
 			if (!IsSubclassOf (type, exception_type))
 				throw new ScriptingException ("Type `{0}' is not an exception type.", expr.Name);
 

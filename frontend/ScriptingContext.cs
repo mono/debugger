@@ -127,7 +127,7 @@ namespace Mono.Debugger.Frontend
 		public ITargetObject GetRegister (int index, long offset)
 		{
 			ITargetType type = GetRegisterType (index);
-			ITargetTypeInfo tinfo = type.Resolve ();
+			ITargetTypeInfo tinfo = type.GetTypeInfo ();
 			TargetLocation location = GetRegisterLocation (index, offset, false);
 			return tinfo.GetObject (location);
 		}

@@ -42,12 +42,12 @@ namespace Mono.Debugger.Languages.Mono
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
 
-			Console.WriteLine ("VARIABLE INFO: {0} {1} {2}", Mode, Index, arch);
+			Report.Debug (DebugFlags.JitSymtab, "VARIABLE INFO: {0} {1} {2}", Mode, Index, arch);
 
 			if (Mode == AddressMode.Register)
 				Index = arch.RegisterMap [Index];
 
-			Console.WriteLine ("VARIABLE INFO #1: {0}", Index);
+			Report.Debug (DebugFlags.JitSymtab, "VARIABLE INFO #1: {0}", Index);
 
 			HasLivenessInfo = (BeginLiveness != 0) && (EndLiveness != 0);
 		}
@@ -360,7 +360,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal void AddCoreType (MonoType type)
 		{
-			type.Resolve ();
+			type.GetTypeInfo ();
 			type_hash.Add (type.Type, type);
 		}
 

@@ -17,6 +17,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetTypeInfo Resolve ();
+		ITargetTypeInfo GetTypeInfo ();
 	}
 }

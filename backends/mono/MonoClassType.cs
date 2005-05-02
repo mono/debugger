@@ -96,7 +96,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetObject GetStaticField (StackFrame frame, int index)
 		{
-			MonoClassInfo info = (MonoClassInfo) Resolve ();
+			MonoClassInfo info = GetTypeInfo () as MonoClassInfo;
 			if (info == null)
 				return null;
 
@@ -168,7 +168,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			try {
 				MonoFunctionType ftype = static_methods [index].FunctionType;
-				MonoFunctionTypeInfo finfo = (MonoFunctionTypeInfo) ftype.Resolve ();
+				MonoFunctionTypeInfo finfo = ftype.GetTypeInfo () as MonoFunctionTypeInfo;
 				if (finfo == null)
 					return null;
 
@@ -333,7 +333,7 @@ namespace Mono.Debugger.Languages.Mono
  			return static_constructors [index].Get (frame);
 		}
 
-		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
+		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			return new MonoClassInfo (this, info);
 		}
@@ -458,7 +458,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			internal ITargetFunctionObject Get (StackFrame frame)
 			{
-				MonoFunctionTypeInfo func = (MonoFunctionTypeInfo) FunctionType.Resolve ();
+				MonoFunctionTypeInfo func = FunctionType.GetTypeInfo () as MonoFunctionTypeInfo;
 				if (func == null)
 					return null;
 
@@ -580,7 +580,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (!PropertyInfo.CanRead)
 					throw new InvalidOperationException ();
 
-				MonoFunctionTypeInfo getter = (MonoFunctionTypeInfo) GetterType.Resolve ();
+				MonoFunctionTypeInfo getter = GetterType.GetTypeInfo () as MonoFunctionTypeInfo;
 				if (getter == null)
 					return null;
 
@@ -597,7 +597,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (!PropertyInfo.CanRead)
 					throw new InvalidOperationException ();
 
-				MonoFunctionTypeInfo getter = (MonoFunctionTypeInfo) GetterType.Resolve ();
+				MonoFunctionTypeInfo getter = GetterType.GetTypeInfo () as MonoFunctionTypeInfo;
 				if (getter == null)
 					return null;
 

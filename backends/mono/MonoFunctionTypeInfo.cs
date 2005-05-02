@@ -53,8 +53,8 @@ namespace Mono.Debugger.Languages.Mono
 				frame, method, this_object, arg_ptr, out exc_object);
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
-			MonoTypeInfo object_type = builtin.ObjectType.Resolve ();
-			MonoTypeInfo string_type = builtin.StringType.Resolve ();
+			MonoTypeInfo object_type = builtin.ObjectType.GetTypeInfo ();
+			MonoTypeInfo string_type = builtin.StringType.GetTypeInfo ();
 
 			if (retval.IsNull) {
 				if (exc_object.IsNull)

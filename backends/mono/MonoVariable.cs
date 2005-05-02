@@ -120,7 +120,7 @@ namespace Mono.Debugger.Languages.Mono
 			if ((location == null) || !location.IsValid)
 				throw new LocationInvalidException ();
 
-			ITargetTypeInfo tinfo = type.Resolve ();
+			ITargetTypeInfo tinfo = type.GetTypeInfo ();
 			if (tinfo == null)
 				return null;
 

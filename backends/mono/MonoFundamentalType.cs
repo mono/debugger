@@ -62,7 +62,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
+		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			throw new InvalidOperationException ();
 		}

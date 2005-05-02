@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoObjectTypeInfo (this, size, klass_address);
 		}
 
-		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
+		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			throw new InvalidOperationException ();
 		}

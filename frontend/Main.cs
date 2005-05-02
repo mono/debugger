@@ -80,6 +80,7 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("disable", typeof (BreakpointDisableCommand));
 			e.RegisterCommand ("delete", typeof (BreakpointDeleteCommand));
 			e.RegisterCommand ("list", typeof (ListCommand));
+			e.RegisterAlias   ("l", typeof (ListCommand));
 			e.RegisterCommand ("break", typeof (BreakCommand));
 			e.RegisterAlias   ("b", typeof (BreakCommand));
 			e.RegisterCommand ("catch", typeof (CatchCommand));

@@ -1493,7 +1493,7 @@ namespace Mono.Debugger.Frontend
 
 			ITargetClassObject cobj = obj as ITargetClassObject;
 			if (current_ok && (cobj != null))
-				return cobj.CurrentObject;
+				return cobj;
 
 			throw new ScriptingException (
 				"Expression `{0}' is not a pointer type.", expr.Name);
@@ -1704,7 +1704,7 @@ namespace Mono.Debugger.Frontend
 				 	throw new ScriptingException ("Could not find matching indexer.");
 				}
 
-				ITargetTypeInfo getter_info = (ITargetTypeInfo) prop_info.Getter.Resolve ();
+				ITargetTypeInfo getter_info = (ITargetTypeInfo) prop_info.Getter.GetTypeInfo ();
 				if (getter_info == null) {
 					return null;
 				}
@@ -1790,7 +1790,7 @@ namespace Mono.Debugger.Frontend
 							  ITargetClassType source_type,
 							  ITargetClassType target_type)
 		{
-			ITargetClassObject current = source.CurrentObject;
+			ITargetClassObject current = source;
 			if (current.Type == source_type)
 				return null;
 
@@ -1821,7 +1821,7 @@ namespace Mono.Debugger.Frontend
 				as ITargetClassType;
 			if (type == null)
 				throw new ScriptingException (
-					"Variable {0} is not a class type.", target.Name);
+					"Type {0} is not a class type.", target.Name);
 
 			ITargetClassObject source = expr.EvaluateVariable (context)
 				as ITargetClassObject;

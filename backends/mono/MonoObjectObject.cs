@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (klass == null)
 					return null;
 
-				return klass.Resolve ();
+				return klass.GetTypeInfo ();
 			} catch {
 				return null;
 			}

@@ -44,12 +44,12 @@ namespace Mono.Debugger.Languages.Mono
 			get;
 		}
 
-		ITargetTypeInfo ITargetType.Resolve ()
+		ITargetTypeInfo ITargetType.GetTypeInfo ()
 		{
-			return Resolve ();
+			return GetTypeInfo ();
 		}
 
-		public virtual MonoTypeInfo Resolve ()
+		public virtual MonoTypeInfo GetTypeInfo ()
 		{
 			if (type_info != null)
 				return type_info;
@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.Mono
 			info.ReadLeb128 ();
 			info.ReadLeb128 ();
 
-			type_info = DoResolve (info);
+			type_info = DoGetTypeInfo (info);
 			return type_info;
 		}
 
@@ -75,7 +75,7 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		protected abstract MonoTypeInfo DoResolve (TargetBinaryReader info);
+		protected abstract MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info);
 
 		public virtual bool CheckValid (TargetLocation location)
 		{

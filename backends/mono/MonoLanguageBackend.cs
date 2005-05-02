@@ -155,7 +155,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Int32Type = new MonoFundamentalType (corlib, typeof (int), 4, klass);
-			Int32Type.Resolve ();
+			Int32Type.GetTypeInfo ();
 			corlib.AddCoreType (Int32Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
@@ -201,7 +201,6 @@ namespace Mono.Debugger.Languages.Mono
 			// and get to the Exception class
 			klass = mono_defaults.ReadGlobalAddress ();
 			ExceptionType = new MonoClassType (corlib, typeof (Exception));
-			//ExceptionType = new MonoFundamentalType (corlib, typeof (Exception), object_size, klass);
 			corlib.AddCoreType (ExceptionType);
 		}
 	}
@@ -406,7 +405,7 @@ namespace Mono.Debugger.Languages.Mono
 			read_data_table (memory, header);
 		}
 
-		// This method reads a portion of the data table (defn in mono-debug-debugger.h)
+		// This method reads a portion of the data table (defn in mono-debug.h)
 		void read_data_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
 		{
 			int num_data_tables = header.ReadInteger ();
@@ -618,7 +617,15 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
 		{
-			return null;
+			TargetLocation location = new AbsoluteTargetLocation (frame, address);
+			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetTypeInfo().GetObject (location);
+			if (obj == null)
+				return null;
+
+			if (obj.HasDereferencedObject)
+				return obj.DereferencedObject;
+			else
+				return obj;
 		}
 
 		ITargetFundamentalType ILanguage.IntegerType {

@@ -1,3 +1,95 @@
+2005-05-02  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/ScriptingContext.cs (FrameHandle.GetRegister): Resolve
+	-> GetTypeInfo.
+
+	* frontend/Main.cs (CommandLineInterpreter.SetupEngine): register
+	"l" as an alias for "list".
+
+	* frontend/Expression.cs
+	(PointerDereferenceExpression.DoEvaluateVariable): remove
+	CurrentObject stuff.
+	(ArrayAccessExpression.DoEvaluateVariable): Resolve ->
+	GetTypeInfo.
+	(CastExpression.TryCurrentCast): same.
+	(CastExpression.DoEvaluateVariable): fix an error msg.
+
+	* frontend/Command.cs (PrintExpressionCommand.Execute): nuke
+	CurrentObject stuff.
+	(PrintTypeCommand): nuke CurrentObject stuff.
+	(CatchCommand): make sure to get the TypeInfo for the exception
+	type.
+
+	* backends/mono/MonoSymbolFile.cs (VariableInfo..ctor): use
+	Report.Debug instead of Console.WriteLine.
+	(MonoSymbolFile.AddCoreType): Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoBuiltinTypeInfo..ctor): Resolve -> GetTypeInfo.
+	(MonoLanguageBackend.CreateObject): reimplement.
+
+	* backends/mono/MonoType.cs: Resolve -> GetTypeInfo.
+	
+	* backends/mono/MonoClassInfo.cs (MonoClassInfo.GetField): Resolve
+	-> GetTypeInfo.
+	(MonoClassInfo.GetStaticField): same.
+	(MonoClassInfo.GetMethod): same.
+
+	* backends/mono/MonoArrayType.cs (MonoArrayType.DoGetTypeInfo):
+	Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoStringType.cs
+	(MonoStringObject.DoGetTypeInfo): Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoObjectType.cs (MonoObjectType.DoGetTypeInfo):
+	Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoClassType.cs (MonoClassType.GetStaticField):
+	Resolve -> GetTypeInfo.
+	(.GetStaticMethod): same.
+	(.DoGetTypeInfo): same.
+	(MonoMethodInfo.Get): same.
+	(MonoPropertyInfo.Get): same.
+
+	* backends/mono/MonoFunctionTypeInfo.cs
+	(MonoFunctionTypeInfo.Invoke): Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoFundamentalType.cs
+	(MonoFundamentalType.DoGetTypeInfo): Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoObjectObject.cs
+	(MonoObjectObject.GetCurrentType): Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoOpaqueType.cs (MonoOpaqueType.DoGetTypeInfo):
+	Resolve -> GetTypeInfo.
+
+	* backends/mono/MonoClassObject.cs: nuke .CurrentObject and
+	.GetCurrentObject().
+
+	* backends/mono/MonoFunctionType.cs (MonoFunctionType..ctor):
+	remove redundant klass assignment.
+	(MonoFunctionType.InvokeStatic): Resolve -> GetTypeInfo.
+	(MonoFunctionType.DoGetTypeInfo): same.
+
+	* backends/mono/MonoVariable.cs (MonoVariable.GetObject): Resolve
+	-> GetTypeInfo.
+
+	* backends/native/NativeType.cs (NativeType.Resolve): rename
+	GetTypeInfo.
+
+	* classes/ExceptionCatchPoint.cs
+	(ExceptionCatchPoint.CheckBreakpointHit): track removal of
+	ITargetClassObject.CurrentObject.
+
+	* interfaces/ITargetType.cs: rename "Resolve" to "GetTypeInfo".
+	I'm sick of "Resolve" being used to mean about 50 different things
+	in the debugger code.
+
+	* interfaces/ITargetClassObject.cs: remove CurrentObject.  I'll
+	put it back in if someone can tell me what the purpose of it was -
+	it's broken currently and removing code that uses it fixes the
+	problem.
+
 2005-04-27  Chris Toshok  <toshok@ximian.com>
 
 	* classes/Threading.cs: remove the Debugger events - just use the

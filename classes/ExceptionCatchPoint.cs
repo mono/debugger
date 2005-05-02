@@ -37,7 +37,7 @@ namespace Mono.Debugger
 			if (exc == null)
 				return false; // OOOPS
 
-			return IsSubclassOf (exc.CurrentObject.Type, exception);
+			return IsSubclassOf (exc.Type, exception);
 		}
 
 		public override void BreakpointHit (StackFrame frame)

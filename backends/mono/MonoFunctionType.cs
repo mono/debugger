@@ -19,7 +19,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.klass = klass;
 			this.method_info = mbase;
-			this.klass = klass;
 			this.index = index;
 
 			Type rtype;
@@ -81,7 +80,7 @@ namespace Mono.Debugger.Languages.Mono
 								ITargetObject[] args,
 								bool debug)
 		{
-			MonoFunctionTypeInfo info = (MonoFunctionTypeInfo) Resolve ();
+			MonoFunctionTypeInfo info = GetTypeInfo () as MonoFunctionTypeInfo;
 			if (info == null)
 				return null;
 
@@ -90,9 +89,9 @@ namespace Mono.Debugger.Languages.Mono
 			return info.InvokeStatic (frame, margs, debug);
 		}
 
-		protected override MonoTypeInfo DoResolve (TargetBinaryReader info)
+		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
-			MonoClassInfo class_info = (MonoClassInfo) klass.Resolve ();
+			MonoClassInfo class_info = klass.GetTypeInfo () as MonoClassInfo;
 			if (class_info == null)
 				return null;
 

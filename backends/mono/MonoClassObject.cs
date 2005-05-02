@@ -20,24 +20,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.Type; }
 		}
 
-		ITargetClassObject ITargetClassObject.CurrentObject {
-			get {
-				return GetCurrentObject ();
-			}
-		}
-
-		public MonoClassObject GetCurrentObject ()
-		{
-			ITargetAccess target = location.TargetAccess;
-			TargetAddress vtable = target.ReadAddress (location.Address);
-			TargetAddress klass_address = target.ReadAddress (vtable);
-
-			MonoType klass = type.Type.File.MonoLanguage.GetClass (klass_address);
-			Console.WriteLine ("KLASS CURRENT: {0} {1}", klass_address, klass);
-			// return klass.GetClassObject (location);
-			return null;
-		}
-
 		public ITargetClassObject Parent {
 			get {
 				if (type.Type.ParentType == null)

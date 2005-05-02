@@ -70,7 +70,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return this; }
 		}
 
-		ITargetTypeInfo ITargetType.Resolve ()
+		ITargetTypeInfo ITargetType.GetTypeInfo ()
 		{
 			return this;
 		}

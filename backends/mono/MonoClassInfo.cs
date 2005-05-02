@@ -53,7 +53,7 @@ namespace Mono.Debugger.Languages.Mono
 				initialize (location.TargetAccess);
 
 				MonoClassType.MonoFieldInfo finfo = Type.Fields [index];
-				MonoTypeInfo ftype = finfo.Type.Resolve ();
+				MonoTypeInfo ftype = finfo.Type.GetTypeInfo ();
 				if (ftype == null)
 					return null;
 
@@ -81,7 +81,7 @@ namespace Mono.Debugger.Languages.Mono
 					TargetAddress.Null);
 
 				MonoClassType.MonoFieldInfo finfo = Type.StaticFields [index];
-				MonoTypeInfo ftype = finfo.Type.Resolve ();
+				MonoTypeInfo ftype = finfo.Type.GetTypeInfo ();
 				if (ftype == null)
 					return null;
 
@@ -102,7 +102,7 @@ namespace Mono.Debugger.Languages.Mono
 				initialize (location.TargetAccess);
 
 				MonoClassType.MonoMethodInfo minfo = Type.Methods [index];
-				MonoTypeInfo mtype = minfo.Type.Resolve ();
+				MonoTypeInfo mtype = minfo.Type.GetTypeInfo ();
 				if (mtype == null)
 					return null;
 
