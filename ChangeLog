@@ -1,5 +1,9 @@
 2005-05-02  Chris Toshok  <toshok@ximian.com>
 
+	* wrapper/Makefile.am: more mcs quieting.
+	
+2005-05-02  Chris Toshok  <toshok@ximian.com>
+
 	* classes/TargetAddress.cs: provide Equals/GetHasCode
 	implementations to quiet mcs.
 
