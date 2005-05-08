@@ -1,3 +1,40 @@
+2005-05-08  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Command.cs (EventHandleCommand.DoResolve): allow zero
+	arguments.
+	(BreakpointEnableCommand.DoExecute): if we have no handle, enable
+	all breakpoints/catchpoints.
+	(BreakpointDisableCommand.DoExecute): if we have no handle,
+	disable all breakpoints/catchpoints.
+	(BreakpointDeleteCommand.DoExecute): if we have no handle, delete
+	all breakpoints/catchpoints (after prompting the user).
+	(BreakCommand.DoExecute): change message printed from "Inserted
+	breakpoint..." to "Breakpoint..."
+
+	* frontend/Interpreter.cs (Interpreter.ShowBreakpoints): display
+	"No breakpoints or catchpoints." if there are non registered.
+	(Interpreter.get_Events): provide a way to get at a list (in this
+	case an array) of all breakpoints/catchpoints.  used by the bulk
+	disable/enable/delete commands.
+
+	* frontend/Main.cs (CommandLineInterpreter.SetupEngine): add "fin"
+	as an alias for "finish".
+	(CommandLineInterpreter.ParseOption): fix handling of "-script",
+	which shouldn't have an argument.
+
+2005-05-08  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoClassObject.cs (MonoClassObject.PrintObjcet):
+	fix unitialized use of "func".
+
+	* frontend/Expression.cs
+	(MemberAccessExpression.ResolveMemberAccess): try to resolve left
+	as a regular expression first, falling back to treating it as a
+	type if that fails (reverse the way the code worked previously).
+	This allows things like "print foo.a" when you've defined foo as
+	"struct foo foo" in C.  This also points out that type names (in C
+	at least), should include the "struct ".
+
 2005-05-02  Chris Toshok  <toshok@ximian.com>
 
 	* wrapper/Makefile.am: more mcs quieting.

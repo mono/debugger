@@ -462,6 +462,11 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowBreakpoints ()
 		{
+			if (events.Values.Count == 0) {
+				Print ("No breakpoints or catchpoints.");
+				return;
+			}
+				       
 			Print ("Breakpoints:");
 			Print ("{0,3} {1,6} {2,3} {3,12}  {4}", "Id", "Type", "En", "ThreadGroup", "What");
 			foreach (IEventHandle handle in events.Values) {
@@ -477,6 +482,14 @@ namespace Mono.Debugger.Frontend
 				       type,
 				       handle.IsEnabled ? "y" : "n",
 				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint.Name);
+			}
+		}
+
+		public IEventHandle[] Events {
+			get {
+				IEventHandle[] ret = new IEventHandle [events.Values.Count];
+				events.Values.CopyTo (ret, 0);
+				return ret;
 			}
 		}
 

@@ -1626,6 +1626,9 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
+			if (Args == null || Args.Count == 0)
+				return true;
+
 			int id;
 			try {
 				id = (int) UInt32.Parse (Argument);
@@ -1643,7 +1646,14 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			handle.Enable (context.CurrentProcess.Process);
+			if (handle != null) {
+				handle.Enable (context.CurrentProcess.Process);
+			}
+			else {
+				// enable all breakpoints
+				foreach (IEventHandle h in context.Interpreter.Events)
+					h.Enable (context.CurrentProcess.Process);
+			}
 		}
 
 		// IDocumentableCommand
@@ -1656,7 +1666,14 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			handle.Disable (context.CurrentProcess.Process);
+			if (handle != null) {
+				handle.Disable (context.CurrentProcess.Process);
+			}
+			else {
+				// enable all breakpoints
+				foreach (IEventHandle h in context.Interpreter.Events)
+					h.Disable (context.CurrentProcess.Process);
+			}
 		}
 
 		// IDocumentableCommand
@@ -1669,7 +1686,22 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.DeleteEvent (context.CurrentProcess, handle);
+			if (handle != null) {
+				context.Interpreter.DeleteEvent (context.CurrentProcess, handle);
+			}
+			else {
+				IEventHandle[] hs = context.Interpreter.Events;
+
+				if (hs.Length == 0)
+					return;
+
+				if (!context.Interpreter.Query ("Delete all breakpoints?"))
+					return;
+
+				// delete all breakpoints
+				foreach (IEventHandle h in context.Interpreter.Events)
+					context.Interpreter.DeleteEvent (context.CurrentProcess, h);
+			}
 		}
 
 		// IDocumentableCommand
@@ -1938,7 +1970,7 @@ namespace Mono.Debugger.Frontend
 
 						int index = context.Interpreter.InsertBreakpoint (
 								process, tgroup, location);
-						context.Print ("Inserted breakpoint {0} at {1}",
+						context.Print ("Breakpoint {0} at {1}",
 							       index, location.Name);
 					}
 					return;
@@ -1946,7 +1978,7 @@ namespace Mono.Debugger.Frontend
 				else {
 					int index = context.Interpreter.InsertBreakpoint (
 								process, tgroup, location);
-					context.Print ("Inserted breakpoint {0} at {1}",
+					context.Print ("Breakpoint {0} at {1}",
 						       index, location.Name);
 				}
 #if PENDING_BREAKPOINTS

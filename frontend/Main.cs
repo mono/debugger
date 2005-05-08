@@ -66,6 +66,7 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("nexti", typeof (NextInstructionCommand));
 			e.RegisterAlias   ("t", typeof (NextInstructionCommand));
 			e.RegisterCommand ("finish", typeof (FinishCommand));
+			e.RegisterAlias   ("fin", typeof (FinishCommand));
 			e.RegisterCommand ("backtrace", typeof (BacktraceCommand));
 			e.RegisterAlias   ("bt", typeof (BacktraceCommand));
 			e.RegisterAlias   ("where", typeof (BacktraceCommand));
@@ -243,8 +244,7 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-script":
-				value = GetValue (ref args, ref i, ms_value);
-				if (value != null) {
+				if (ms_value != null) {
 					Usage ();
 					Environment.Exit (1);
 				}
