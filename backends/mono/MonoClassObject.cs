@@ -54,7 +54,7 @@ namespace Mono.Debugger.Languages.Mono
 		public string PrintObject ()
 		{
 			ITargetObject[] args = new ITargetObject[0];
-			ITargetFunctionObject func;
+			ITargetFunctionObject func = null;
 			ITargetStructType stype = (ITargetStructType)type.Type;
 
 		again:

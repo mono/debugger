@@ -147,7 +147,7 @@ namespace Mono.Debugger.Frontend
 			bool ok = DoAssign (context, obj);
 			if (!ok)
 				throw new ScriptingException (
-					"Expression `{0}' is not an lvalue", Name);
+					"Expression `{0}' ({1}) is not an lvalue", Name, this);
 		}
 
 		protected virtual Expression DoResolveType (ScriptingContext context)
@@ -679,8 +679,25 @@ namespace Mono.Debugger.Frontend
 		public Expression ResolveMemberAccess (ScriptingContext context, bool allow_instance)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
-
 			Expression expr;
+
+			Expression lexpr = left.TryResolve (context);
+			if (lexpr != null) {
+				ITargetStructObject sobj = lexpr.EvaluateVariable (context) as ITargetStructObject;
+				if (sobj == null)
+					throw new ScriptingException (
+						"`{0}' is not a struct or class", left.Name);
+
+				expr = StructAccessExpression.FindMember (
+						sobj.Type, frame, sobj, true, name);
+				if (expr == null)
+					throw new ScriptingException (
+						"Type `{0}' has no member `{1}'",
+						sobj.Type.Name, name);
+
+				return expr;
+			}
+
 			Expression ltype = left.TryResolveType (context);
 			if (ltype != null) {
 				ITargetStructType stype = ltype.EvaluateType (context)
@@ -699,25 +716,8 @@ namespace Mono.Debugger.Frontend
 				return expr;
 			}
 
-			Expression lexpr = left.TryResolve (context);
-			if (lexpr == null)
-				throw new ScriptingException (
-					"No such variable or type: `{0}'", left.Name);
-
-			ITargetStructObject sobj = lexpr.EvaluateVariable (context)
-				as ITargetStructObject;
-			if (sobj == null)
-				throw new ScriptingException (
-					"`{0}' is not a struct or class", left.Name);
-
-			expr = StructAccessExpression.FindMember (
-				sobj.Type, frame, sobj, true, name);
-			if (expr == null)
-				throw new ScriptingException (
-					"Type `{0}' has no member `{1}'",
-					sobj.Type.Name, name);
-
-			return expr;
+			throw new ScriptingException (
+				"No such variable or type: `{0}'", left.Name);
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
