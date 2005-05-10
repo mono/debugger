@@ -34,6 +34,21 @@ namespace Mono.Debugger
 		}
 	}
 
+	public interface ITargetMemoryInfo : ITargetInfo
+	{
+		IArchitecture Architecture {
+			get;
+		}
+
+		AddressDomain AddressDomain {
+			get;
+		}
+
+		AddressDomain GlobalAddressDomain {
+			get;
+		}
+	}
+
 	public interface ITargetMemoryReader : ITargetMemoryInfo
 	{
 		// <summary>
@@ -85,21 +100,6 @@ namespace Mono.Debugger
 		TargetAddress ReadAddress ();
 
 		TargetAddress ReadGlobalAddress ();
-	}
-
-	public interface ITargetMemoryInfo : ITargetInfo
-	{
-		IArchitecture Architecture {
-			get;
-		}
-
-		AddressDomain AddressDomain {
-			get;
-		}
-
-		AddressDomain GlobalAddressDomain {
-			get;
-		}
 	}
 
 	public interface ITargetMemoryAccess : ITargetMemoryInfo

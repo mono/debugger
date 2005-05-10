@@ -25,6 +25,9 @@ mono_debugger_readline_static_init (void)
 
 	rl_catch_signals = 1;
 	rl_set_signals ();
+
+	rl_readline_name = "mdb";
+	rl_terminal_name = getenv ("TERM");
 }
 
 int

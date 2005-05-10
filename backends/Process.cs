@@ -367,7 +367,7 @@ namespace Mono.Debugger
 				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
 				null, StepMode.Finish);
 
-			Operation operation = new Operation (OperationType.StepFrame, sf);
+			Operation operation = new Operation (OperationType.FinishFrame, sf);
 			engine.SendAsyncCommand (new Command (engine, operation), wait);
 			return true;
 		}
@@ -667,10 +667,7 @@ namespace Mono.Debugger
 			get { return this; }
 		}
 
-		//
-		// ITargetInfo
-		//
-
+#region ITargetInfo implementation
 		int ITargetInfo.TargetAddressSize {
 			get {
 				check_engine ();
@@ -698,11 +695,9 @@ namespace Mono.Debugger
 				return engine.IsBigEndian;
 			}
 		}
+#endregion
 
-		//
-		// ITargetMemoryAccess
-		//
-
+#region ITargetMemoryAccess implementation
 		protected byte[] read_memory (TargetAddress address, int size)
 		{
 			CommandResult result = engine.SendSyncCommand (CommandType.ReadMemory, address, size);
@@ -811,7 +806,9 @@ namespace Mono.Debugger
 		bool ITargetMemoryAccess.CanWrite {
 			get { return false; }
 		}
+#endregion
 
+#region ITargetAccess implementation
 		void ITargetAccess.WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			write_memory (address, buffer);
@@ -839,11 +836,9 @@ namespace Mono.Debugger
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
 		}
+#endregion
 
-		//
-		// IDisposable
-		//
-
+#region IDisposable implementation
 		private bool disposed = false;
 
 		protected void check_disposed ()
@@ -885,6 +880,7 @@ namespace Mono.Debugger
 			// Take yourself off the Finalization queue
 			GC.SuppressFinalize (this);
 		}
+#endregion
 
 		~Process ()
 		{

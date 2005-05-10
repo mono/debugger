@@ -1,3 +1,20 @@
+2005-05-10  Chris Toshok  <toshok@ximian.com>
+
+	* backends/Process.cs: track StepFrame -> FinishFrame, and use
+	#regions instead of header comments for interface implementations.
+
+	* backends/SingleSteppingEngine.cs: general clean-up.  move code
+	around, rename some methods to make their purpose more apparent
+	(i.e. get rid of some overloads), rename Operation.StepFrame to
+	Operation.FinishFrame to make it more apparent what it's doing.
+
+	* glue/mono-debugger-readline.c
+	(mono_debugger_readline_static_init): set rl_readline_name and
+	rl_terminal_name.
+
+	* interfaces/ITargetMemoryAccess.cs: move ITargetMemoryInfo so
+	it's more "in order" with the rest of the file.
+
 2005-05-08  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Command.cs (EventHandleCommand.DoResolve): allow zero
