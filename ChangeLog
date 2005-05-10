@@ -1,5 +1,13 @@
 2005-05-10  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/GnuReadLine.cs: remove the Instance stuff.
+
+	* frontend/Command.cs (RunCommand.DoResolve): if there's no
+	executable file specified, error out and tell the user to use the
+	"file" command, ala gdb.
+
+2005-05-10  Chris Toshok  <toshok@ximian.com>
+
 	* backends/ThreadManager.cs: track change to SingleSteppingEngine.
 
 	* backends/Process.cs: track StepFrame -> FinishFrame, and use

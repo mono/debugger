@@ -1008,6 +1008,13 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
+			if (Args == null && (context.Interpreter.Options.File == null
+					     || context.Interpreter.Options.File == "")) {
+				Console.WriteLine ("No executable file specified.\n" +
+						   "Use the `file' command.");
+				return false;
+			}
+
 			if (context.Interpreter.HasBackend && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
 							       "Start it from the beginning?")) {
@@ -1046,7 +1053,6 @@ namespace Mono.Debugger.Frontend
 			}
 
 			argv[0] = context.Interpreter.Options.File;
-
 			Console.Write ("Starting program:");
 			foreach (string a in argv) {
 				Console.Write (" {0}", a);

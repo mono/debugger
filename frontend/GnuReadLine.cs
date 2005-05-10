@@ -94,15 +94,5 @@ namespace Mono.Debugger.Frontend
 				mono_debugger_readline_set_filename_completion_desired (value == true ? 1 : 0);
 			}
 		}
-
-		static GnuReadLine instance;
-		public static GnuReadLine Instance ()
-		{
-			if (instance == null)
-				instance = new GnuReadLine ();
-
-			return instance;
-		}
-
 	}
 }
