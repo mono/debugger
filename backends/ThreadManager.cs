@@ -609,7 +609,7 @@ namespace Mono.Debugger
 				}
 			} else {
 				try {
-					command.Engine.ProcessCommand (command.Operation);
+					command.Engine.ProcessOperation (command.Operation);
 				} catch (ThreadAbortException) {
 					return;
 				} catch (Exception e) {

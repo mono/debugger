@@ -1,5 +1,7 @@
 2005-05-10  Chris Toshok  <toshok@ximian.com>
 
+	* backends/ThreadManager.cs: track change to SingleSteppingEngine.
+
 	* backends/Process.cs: track StepFrame -> FinishFrame, and use
 	#regions instead of header comments for interface implementations.
 
