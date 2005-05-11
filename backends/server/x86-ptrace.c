@@ -127,9 +127,9 @@ server_ptrace_kill (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_peek_word (ServerHandle *handle, guint64 start, guint32 *retval)
+server_ptrace_peek_word (ServerHandle *handle, guint64 start, guint64 *retval)
 {
-	return server_ptrace_read_memory (handle, start, sizeof (int), retval);
+	return server_ptrace_read_memory (handle, start, sizeof (long), retval);
 }
 
 static ServerCommandError
@@ -138,12 +138,12 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 {
 	InferiorHandle *inferior = handle->inferior;
 	ServerCommandError result;
-	const int *ptr = buffer;
+	const long *ptr = buffer;
 	guint64 addr = start;
-	char temp [4];
+	char temp [8];
 
-	while (size >= 4) {
-		int word = *ptr++;
+	while (size >= sizeof (long)) {
+		long word = *ptr++;
 
 		errno = 0;
 		if (ptrace (PT_WRITE_D, inferior->pid, (gpointer) addr, word) != 0) {
@@ -155,19 +155,19 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 			}
 		}
 
-		addr += sizeof (int);
-		size -= sizeof (int);
+		addr += sizeof (long);
+		size -= sizeof (long);
 	}
 
 	if (!size)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_read_memory (handle, (guint32) addr, 4, &temp);
+	result = server_ptrace_read_memory (handle, (gpointer) addr, sizeof (long), &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 	memcpy (&temp, ptr, size);
 
-	return server_ptrace_write_memory (handle, (guint32) addr, 4, &temp);
+	return server_ptrace_write_memory (handle, (gpointer) addr, sizeof (long), &temp);
 }	
 
 

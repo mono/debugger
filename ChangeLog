@@ -1,5 +1,8 @@
 2005-05-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-ptrace.c (server_ptrace_peek_word): Make
+	this 64-bit safe.
+
 	* backends/server/x86_64-arch.c: Implemented the missing bits.
 
 2005-05-11  Martin Baulig  <martin@ximian.com>
