@@ -40,12 +40,12 @@ namespace Mono.Debugger.Languages.Mono
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
 			/* skip past magic, version, and total_size */
-			reader.Offset = (reader.TargetLongIntegerSize +
-					 2 * reader.TargetIntegerSize);
+			reader.Offset = 16;
 
+			SymbolTableSize         = reader.ReadInteger ();
+			HeapSize                = reader.ReadInteger ();
 			GenericTrampolineCode   = reader.ReadGlobalAddress ();
 			SymbolTable             = reader.ReadGlobalAddress ();
-			SymbolTableSize         = reader.ReadInteger ();
 			CompileMethod           = reader.ReadGlobalAddress ();
 			GetVirtualMethod        = reader.ReadGlobalAddress ();
 			GetBoxedObjectMethod    = reader.ReadGlobalAddress ();
@@ -57,7 +57,6 @@ namespace Mono.Debugger.Languages.Mono
 			LookupType              = reader.ReadGlobalAddress ();
 			LookupAssembly          = reader.ReadGlobalAddress ();
 			Heap                    = reader.ReadAddress ();
-			HeapSize                = reader.ReadInteger ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
@@ -375,8 +374,8 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress corlib_address = header.ReadGlobalAddress ();
 			TargetAddress metadata_info = header.ReadGlobalAddress ();
 
-			int num_symbol_files = header.ReadInteger ();
 			TargetAddress symfiles_address = header.ReadAddress ();
+			int num_symbol_files = header.ReadInteger ();
 
 			symfiles_address += last_num_symbol_files * memory.TargetAddressSize;
 			for (int i = last_num_symbol_files; i < num_symbol_files; i++) {
@@ -659,8 +658,8 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public TargetAddress GetTrampolineAddress (ITargetMemoryAccess memory,
-						    TargetAddress address,
-						    out bool is_start)
+							   TargetAddress address,
+							   out bool is_start)
 		{
 			is_start = false;
 

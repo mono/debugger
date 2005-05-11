@@ -36,9 +36,10 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_MAGIC,
 	MONO_DEBUGGER_VERSION,
 	sizeof (MonoDebuggerInfo),
+	sizeof (MonoSymbolTable),
+	HEAP_SIZE,
 	&mono_generic_trampoline_code,
 	&mono_symbol_table,
-	sizeof (MonoSymbolTable),
 	&debugger_compile_method,
 	&debugger_get_virtual_method,
 	&debugger_get_boxed_object,
@@ -49,8 +50,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_class_get_static_field_data,
 	&debugger_lookup_type,
 	&debugger_lookup_assembly,
-	mono_debugger_heap,
-	HEAP_SIZE
+	mono_debugger_heap
 };
 
 MonoDebuggerManager MONO_DEBUGGER__manager = {

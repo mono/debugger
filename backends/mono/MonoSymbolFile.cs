@@ -42,9 +42,10 @@ namespace Mono.Debugger.Languages.Mono
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
 
-			Report.Debug (DebugFlags.JitSymtab, "VARIABLE INFO: {0} {1} {2}", Mode, Index, arch);
+			Report.Debug (DebugFlags.JitSymtab, "VARIABLE INFO: {0} {1} {2} {3} {4}",
+				      Mode, Index, Offset, Size, arch);
 
-			if (Mode == AddressMode.Register)
+			if ((Mode == AddressMode.Register) || (Mode == AddressMode.RegOffset))
 				Index = arch.RegisterMap [Index];
 
 			Report.Debug (DebugFlags.JitSymtab, "VARIABLE INFO #1: {0}", Index);
@@ -131,8 +132,10 @@ namespace Mono.Debugger.Languages.Mono
 			// here we read the MonoDebugMethodAddress structure
 			// as written out in mono_debug_add_method.
 			reader.Position = 16;
+			int code_size = reader.ReadInt32 ();
+			reader.ReadInt32 ();
 			StartAddress = ReadAddress (reader, domain);
-			EndAddress = StartAddress + reader.ReadInt32 ();
+			EndAddress = StartAddress + code_size;
 			WrapperAddress = ReadAddress (reader, domain);
 			ReadAddress (reader, domain);
 

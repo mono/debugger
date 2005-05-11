@@ -18,9 +18,10 @@ struct _MonoDebuggerInfo {
 	guint64 magic;
 	guint32 version;
 	guint32 total_size;
+	guint32 symbol_table_size;
+	guint32 heap_size;
 	guint8 **generic_trampoline_code;
 	MonoSymbolTable **symbol_table;
-	guint32 symbol_table_size;
 	guint64 (*compile_method) (guint64 method_argument);
 	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);
 	guint64 (*get_boxed_object_method) (guint64 klass_argument, guint64 val_argument);
@@ -32,7 +33,6 @@ struct _MonoDebuggerInfo {
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	gpointer heap;
-	guint32 heap_size;
 };
 
 /*
@@ -51,8 +51,8 @@ struct _MonoDebuggerManager {
 	guint32 thread_size;
 	gpointer main_function;
 	gpointer notification_address;
-	guint32 main_tid;
 	MonoDebuggerThread *main_thread;
+	guint32 main_tid;
 };
 
 enum {
