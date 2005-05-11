@@ -1,5 +1,10 @@
 2005-05-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetAddress.cs (TargetAddress.ctor): Removed the ugly
+	trim-to-32-bit hack.
+
+2005-05-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-ptrace.c (server_ptrace_peek_word): Make
 	this 64-bit safe.
 

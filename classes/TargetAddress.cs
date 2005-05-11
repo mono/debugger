@@ -37,7 +37,7 @@ namespace Mono.Debugger
 		{
 			this.domain = domain;
 			// FIXME: hack
-			address &= 0x00000000ffffffffL;
+			// address &= 0x00000000ffffffffL;
 			this.address = (ulong) address;
 		}
 
