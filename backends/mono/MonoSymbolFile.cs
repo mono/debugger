@@ -132,10 +132,8 @@ namespace Mono.Debugger.Languages.Mono
 			// here we read the MonoDebugMethodAddress structure
 			// as written out in mono_debug_add_method.
 			reader.Position = 16;
-			int code_size = reader.ReadInt32 ();
-			reader.ReadInt32 ();
 			StartAddress = ReadAddress (reader, domain);
-			EndAddress = StartAddress + code_size;
+			EndAddress = StartAddress + reader.ReadInt32 ();
 			WrapperAddress = ReadAddress (reader, domain);
 			ReadAddress (reader, domain);
 

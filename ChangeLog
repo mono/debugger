@@ -1,3 +1,8 @@
+2005-05-11  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoSymbolFile.cs (MethodAddress..ctor): revert
+	this patch.
+
 2005-05-11  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetAddress.cs (TargetAddress.ctor): Removed the ugly
