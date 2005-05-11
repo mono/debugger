@@ -73,9 +73,8 @@ namespace Mono.Debugger.Backends
 			main_function = reader.ReadGlobalAddress ();
 			notification_address = reader.ReadGlobalAddress ();
 
-			main_tid = reader.ReadInteger ();
-
 			main_thread = reader.ReadGlobalAddress ();
+			main_tid = reader.ReadInteger ();
 
 			thread_created (inferior, main_thread, true);
 		}
