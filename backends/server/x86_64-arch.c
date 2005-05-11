@@ -153,7 +153,7 @@ x86_arch_get_registers (ServerHandle *handle)
 guint32
 x86_arch_get_tid (ServerHandle *handle)
 {
-	guint64 start = INFERIOR_REG_RSP (handle->arch->current_regs) + 12;
+	guint64 start = INFERIOR_REG_RSP (handle->arch->current_regs) + 8;
 	guint64 tid;
 
 	if (server_ptrace_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
@@ -173,15 +173,9 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	x86_arch_get_registers (handle);
 
 	if (INFERIOR_REG_RIP (arch->current_regs) == notification_address) {
-		guint64 addr = (guint64) INFERIOR_REG_RSP (arch->current_regs) + 4;
-		guint64 data [3];
-
-		if (server_ptrace_read_memory (handle, addr, 24, &data))
-			return STOP_ACTION_SEND_STOPPED;
-
-		*callback_arg = data [0];
-		*retval = data [1];
-		*retval2 = data [2];
+		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
+		*retval = INFERIOR_REG_RSI (arch->current_regs);
+		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
 
 		return STOP_ACTION_NOTIFICATION;
 	}
@@ -201,8 +195,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 		*callback_arg = rdata->callback_argument;
-		*retval = (((guint64) INFERIOR_REG_RCX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_RAX (arch->current_regs));
-		*retval2 = (((guint64) INFERIOR_REG_RBX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_RDX (arch->current_regs));
+		*retval = INFERIOR_REG_RAX (arch->current_regs);
+		*retval2 = 0;
 
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
@@ -240,8 +234,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 	*callback_arg = arch->callback_argument;
-	*retval = (((guint64) INFERIOR_REG_RCX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_RAX (arch->current_regs));
-	*retval2 = (((guint64) INFERIOR_REG_RBX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_RDX (arch->current_regs));
+	*retval = INFERIOR_REG_RAX (arch->current_regs);
+	*retval2 = 0;
 
 	g_free (arch->saved_regs);
 	g_free (arch->saved_fpregs);
@@ -674,7 +668,42 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 			   guint64 method_argument1, guint64 method_argument2,
 			   guint64 callback_argument)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	long new_rsp;
+
+	guint8 code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0xcc };
+	int size = sizeof (code);
+
+	if (arch->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - size;
+
+	*((guint64 *) code) = new_rsp + 16;
+	*((guint64 *) (code+8)) = callback_argument;
+
+	arch->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
+	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
+	arch->call_address = new_rsp + 16;
+	arch->callback_argument = callback_argument;
+
+	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_RIP (arch->current_regs) = method_address;
+	INFERIOR_REG_RDI (arch->current_regs) = method_argument1;
+	INFERIOR_REG_RSI (arch->current_regs) = method_argument2;
+	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
 }
 
 /*
@@ -687,7 +716,42 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 			     guint64 method_argument, const gchar *string_argument,
 			     guint64 callback_argument)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	long new_rsp;
+
+	guint8 code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0xcc };
+	int size = sizeof (code);
+
+	if (arch->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - size;
+
+	*((guint64 *) code) = new_rsp + 16;
+	*((guint64 *) (code+8)) = callback_argument;
+
+	arch->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
+	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
+	arch->call_address = new_rsp + 16;
+	arch->callback_argument = callback_argument;
+
+	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_RIP (arch->current_regs) = method_address;
+	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
+	INFERIOR_REG_RSI (arch->current_regs) = string_argument;
+	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
 }
 
 static ServerCommandError
@@ -696,5 +760,47 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 				  guint32 num_params, guint64 *param_data,
 				  guint64 callback_argument, gboolean debug)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	RuntimeInvokeData *rdata;
+	long new_rsp;
+
+	guint8 code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			  0xcc };
+	int size = sizeof (code);
+
+	if (arch->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - size;
+
+	*((guint64 *) code) = new_rsp + 24;
+	*((guint64 *) (code+8)) = callback_argument;
+
+	rdata = g_new0 (RuntimeInvokeData, 1);
+	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
+	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
+	rdata->call_address = new_rsp + 24;
+	rdata->callback_argument = callback_argument;
+
+	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_RIP (arch->current_regs) = invoke_method;
+	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
+	INFERIOR_REG_RSI (arch->current_regs) = object_argument;
+	INFERIOR_REG_RDX (arch->current_regs) = param_data;
+	INFERIOR_REG_RCX (arch->current_regs) = new_rsp + 16;
+	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
+
+	g_ptr_array_add (arch->rti_stack, rdata);
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
 }

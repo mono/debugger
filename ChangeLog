@@ -1,5 +1,9 @@
 2005-05-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86_64-arch.c: Implemented the missing bits.
+
+2005-05-11  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/mono-debugger-jit-wrapper.h
 	(MonoDebuggerInfo, MonoDebuggerManager): Changed the order of some
 	fields to get proper alignment on 64-bit machines.
