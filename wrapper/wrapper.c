@@ -82,9 +82,9 @@ debugger_compile_method_cb (MonoMethod *method)
 {
 	gpointer retval;
 
-	mono_debugger_lock (TRUE);
+	mono_debugger_lock ();
 	retval = mono_compile_method (method);
-	mono_debugger_unlock (TRUE);
+	mono_debugger_unlock ();
 
 	mono_debugger_notification_function (NOTIFICATION_METHOD_COMPILED, GPOINTER_TO_UINT (retval), 0);
 
@@ -139,10 +139,10 @@ debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
 {
 	guint64 retval;
 
-	mono_debugger_lock (TRUE);
+	mono_debugger_lock ();
 	// retval = mono_debugger_lookup_type (string_argument);
 	retval = -1;
-	mono_debugger_unlock (TRUE);
+	mono_debugger_unlock ();
 	return retval;
 }
 
@@ -151,9 +151,9 @@ debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument)
 {
 	gint64 retval;
 
-	mono_debugger_lock (TRUE);
+	mono_debugger_lock ();
 	retval = mono_debugger_lookup_assembly (string_argument);
-	mono_debugger_unlock (TRUE);
+	mono_debugger_unlock ();
 	return retval;
 }
 
@@ -334,7 +334,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, 0, 0);
 	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, 0, 0);
 
-	mono_debugger_unlock (FALSE);
+	mono_debugger_unlock ();
 
 	/*
 	 * Signal the main thread that it can execute the managed Main().
