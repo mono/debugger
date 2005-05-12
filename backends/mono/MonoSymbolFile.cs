@@ -132,8 +132,10 @@ namespace Mono.Debugger.Languages.Mono
 			// here we read the MonoDebugMethodAddress structure
 			// as written out in mono_debug_add_method.
 			reader.Position = 16;
+			int code_size = reader.ReadInt32 ();
+			reader.Position += 4;
 			StartAddress = ReadAddress (reader, domain);
-			EndAddress = StartAddress + reader.ReadInt32 ();
+			EndAddress = StartAddress + code_size;
 			WrapperAddress = ReadAddress (reader, domain);
 			ReadAddress (reader, domain);
 
@@ -971,10 +973,12 @@ namespace Mono.Debugger.Languages.Mono
 			public static MethodRangeEntry Create (MonoSymbolFile file, ITargetMemoryReader reader,
 							       byte[] contents)
 			{
-				/*int domain =*/ reader.ReadInteger ();
-				int index = reader.ReadInteger ();
+				reader.BinaryReader.ReadInt32 (); /* domain */
+				int index = reader.BinaryReader.ReadInt32 ();
+				int size = reader.BinaryReader.ReadInt32 ();
+				reader.BinaryReader.ReadInt32 (); /* dummy */
 				TargetAddress start = reader.ReadGlobalAddress ();
-				TargetAddress end = start + reader.ReadInteger ();
+				TargetAddress end = start + size;
 				TargetAddress wrapper = reader.ReadGlobalAddress ();
 
 				return new MethodRangeEntry (file, index, start, end, wrapper, contents);
