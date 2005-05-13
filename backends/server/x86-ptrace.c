@@ -116,7 +116,6 @@ server_ptrace_detach (ServerHandle *handle)
 static ServerCommandError
 server_ptrace_kill (ServerHandle *handle)
 {
-	int status;
 	InferiorHandle *inferior = handle->inferior;
 
 	if (inferior->pid) {

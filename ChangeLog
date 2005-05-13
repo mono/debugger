@@ -1,3 +1,8 @@
+2005-05-13  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-arch.c (x86_arch_child_stopped): Don't
+	return 64-bit values; were on 32-bit here.
+
 2005-05-11  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetAddress.cs (TargetAddress.ctor): Removed the ugly

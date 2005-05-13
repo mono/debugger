@@ -387,8 +387,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 		*callback_arg = rdata->callback_argument;
-		*retval = (((guint64) INFERIOR_REG_ECX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_EAX (arch->current_regs));
-		*retval2 = (((guint64) INFERIOR_REG_EBX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_EDX (arch->current_regs));
+		*retval = INFERIOR_REG_EAX (arch->current_regs);
+		*retval2 = INFERIOR_REG_EDX (arch->current_regs);
 
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
@@ -426,8 +426,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 	*callback_arg = arch->callback_argument;
-	*retval = (((guint64) INFERIOR_REG_ECX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_EAX (arch->current_regs));
-	*retval2 = (((guint64) INFERIOR_REG_EBX (arch->current_regs)) << 32) + ((gulong) INFERIOR_REG_EDX (arch->current_regs));
+	*retval = INFERIOR_REG_EAX (arch->current_regs);
+	*retval2 = INFERIOR_REG_EDX (arch->current_regs);
 
 	g_free (arch->saved_regs);
 	g_free (arch->saved_fpregs);
