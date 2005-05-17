@@ -15,6 +15,12 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Backends
 {
+
+// <summary>
+// MonoThreadManager is a special case handler for thread events when
+// we know we're running a managed app.
+// </summary>
+
 	internal class MonoThreadManager
 	{
 		ThreadManager thread_manager;
@@ -89,6 +95,13 @@ namespace Mono.Debugger.Backends
 		bool is_nptl;
 		int first_index;
 
+		// These two constants represent the index of the first
+		// *managed* thread started by the runtime.  In the NPTL
+		// case, it is the third thread started, in the non-NPTL
+		// case, it's the fourth.
+		const int NPTL_FIRST_MANAGED_INDEX = 3;
+		const int NON_NPTL_FIRST_MANAGED_INDEX = 4;
+
 		public bool ThreadCreated (SingleSteppingEngine sse, Inferior inferior,
 					   Inferior caller_inferior)
 		{
@@ -102,7 +115,7 @@ namespace Mono.Debugger.Backends
 
 			if (first_index == 0) {
 				is_nptl = caller_inferior == this.inferior;
-				first_index = is_nptl ? 3 : 4;
+				first_index = is_nptl ? NPTL_FIRST_MANAGED_INDEX : NON_NPTL_FIRST_MANAGED_INDEX;
 			}
 
 			if (thread_hash.Count == first_index) {

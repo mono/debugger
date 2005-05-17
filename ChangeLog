@@ -1,5 +1,10 @@
 2005-05-17  Chris Toshok  <toshok@ximian.com>
 
+	* backends/MonoThreadManager.cs: add a few comments, and add
+	constants for the thread index magic numbers.
+
+2005-05-17  Chris Toshok  <toshok@ximian.com>
+
 	* backends/ThreadManager.cs: a little cleanup.
 
 2005-05-17  Chris Toshok  <toshok@ximian.com>
