@@ -273,7 +273,7 @@ namespace Mono.Debugger.Frontend
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (val.GetType ()))
-				return null;
+				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
 			return frame.Language.CreateInstance (frame, val);
 		}
@@ -319,7 +319,7 @@ namespace Mono.Debugger.Frontend
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (typeof (string)))
-				return null;
+				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
 			return frame.Language.CreateInstance (frame, val);
 		}
@@ -354,7 +354,7 @@ namespace Mono.Debugger.Frontend
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (typeof (bool)))
-				return null;
+				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
 			return frame.Language.CreateInstance (frame, val);
 		}
@@ -1885,34 +1885,34 @@ namespace Mono.Debugger.Frontend
 
 		protected override object DoEvaluate (ScriptingContext context)
 		{
-		  bool cond;
+			bool cond;
 
-		  try {
-		  	cond = (bool) this.test.Evaluate (context);
-		  }
-		  catch (Exception e) {
-		    throw new ScriptingException (
-			   "Cannot convert {0} to a boolean for conditional: {1}",
-			   this.test, e);
-		  }
+			try {
+				cond = (bool) this.test.Evaluate (context);
+			}
+			catch (Exception e) {
+				throw new ScriptingException (
+					"Cannot convert {0} to a boolean for conditional: {1}",
+					this.test, e);
+			}
 
-		  return cond ? true_expr.Evaluate (context) : false_expr.Evaluate (context);
+			return cond ? true_expr.Evaluate (context) : false_expr.Evaluate (context);
 		}
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-		  bool cond;
+			bool cond;
 
-		  try {
-		    cond = (bool) this.test.Evaluate (context);
-		  }
-		  catch (Exception e) {
-		    throw new ScriptingException (
-			   "Cannot convert {0} to a boolean for conditional: {1}",
-			   this.test, e);
-		  }
+			try {
+				cond = (bool) this.test.Evaluate (context);
+			}
+			catch (Exception e) {
+				throw new ScriptingException (
+					"Cannot convert {0} to a boolean for conditional: {1}",
+					this.test, e);
+			}
 
-		  return cond ? true_expr.EvaluateVariable (context) : false_expr.EvaluateVariable (context);
+			return cond ? true_expr.EvaluateVariable (context) : false_expr.EvaluateVariable (context);
 		}
 	}
 
