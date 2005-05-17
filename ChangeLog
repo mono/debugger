@@ -1,5 +1,9 @@
 2005-05-17  Chris Toshok  <toshok@ximian.com>
 
+	* backends/ThreadManager.cs: a little cleanup.
+
+2005-05-17  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Expression.cs (NumberExpression.DoEvaluateVariable):
 	throw an exception with a reasonable message instead of returning
 	null here (causing a much more cryptic message to be printed.)

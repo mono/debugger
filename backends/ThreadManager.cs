@@ -161,6 +161,12 @@ namespace Mono.Debugger
 			return main_process;
 		}
 
+		public void Kill ()
+		{
+			if (main_process != null)
+				main_process.Kill ();
+		}
+
 		bool initialized;
 		MonoThreadManager mono_manager;
 		TargetAddress main_method = TargetAddress.Null;
@@ -328,6 +334,10 @@ namespace Mono.Debugger
 			get { return main_process; }
 		}
 
+		public AddressDomain AddressDomain {
+			get { return address_domain; }
+		}
+
 		public event ThreadEventHandler InitializedEvent;
 		public event ThreadEventHandler MainThreadCreatedEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
@@ -339,40 +349,34 @@ namespace Mono.Debugger
 		public event DebuggerOutputHandler DebuggerOutputEvent;
 		public event DebuggerErrorHandler DebuggerErrorEvent;
 
-		protected virtual void OnInitializedEvent (Process new_process)
+		void OnInitializedEvent (Process new_process)
 		{
 			if (InitializedEvent != null)
 				InitializedEvent (this, new_process);
 		}
 
-		protected virtual void OnMainThreadCreatedEvent (Process new_process)
+		void OnMainThreadCreatedEvent (Process new_process)
 		{
 			if (MainThreadCreatedEvent != null)
 				MainThreadCreatedEvent (this, new_process);
 		}
 
-		protected virtual void OnThreadCreatedEvent (Process new_process)
+		void OnThreadCreatedEvent (Process new_process)
 		{
 			if (ThreadCreatedEvent != null)
 				ThreadCreatedEvent (this, new_process);
 		}
 
-		protected virtual void OnThreadExitedEvent (Process process)
+		void OnThreadExitedEvent (Process process)
 		{
 			if (ThreadExitedEvent != null)
 				ThreadExitedEvent (this, process);
 		}
 
-		protected virtual void OnTargetExitedEvent ()
+		void OnTargetExitedEvent ()
 		{
 			if (TargetExitedEvent != null)
 				TargetExitedEvent ();
-		}
-
-		public void Kill ()
-		{
-			if (main_process != null)
-				main_process.Kill ();
 		}
 
 		void inferior_output (bool is_stderr, string line)
@@ -665,10 +669,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		//
-		// IDisposable
-		//
-
+#region IDisposable implementation
 		private bool disposed = false;
 
 		private void check_disposed ()
@@ -721,14 +722,11 @@ namespace Mono.Debugger
 			// Take yourself off the Finalization queue
 			GC.SuppressFinalize (this);
 		}
+#endregion
 
 		~ThreadManager ()
 		{
 			Dispose (false);
-		}
-
-		public AddressDomain AddressDomain {
-			get { return address_domain; }
 		}
 	}
 }
