@@ -585,6 +585,12 @@ namespace Mono.Debugger.Architecture
 
 			Hashtable names = new Hashtable ();
 
+			// if the reader comes back null, we just
+			// can't look up symbols by name, return an
+			// empty Hashtable to reflect this.
+			if (reader == null)
+				return names;
+
 			while (!reader.IsEof) {
 				long length = reader.ReadInitialLength ();
 				long stop = reader.Position + length;
@@ -614,11 +620,17 @@ namespace Mono.Debugger.Architecture
 		object create_reader_func (object user_data)
 		{
 			byte[] contents = bfd.GetSectionContents ((string) user_data, false);
-			if (contents == null)
-				throw new DwarfException (
-					bfd, "Can't find DWARF 2 debugging info");
 
-			return new TargetBlob (contents);
+			if (contents == null) {
+				Report.Debug (DebugFlags.DwarfReader,
+					      "{1} Can't find DWARF 2 debugging info in section `{0}'",
+					      bfd.FileName, (string) user_data);
+
+				return null;
+			}
+			else {
+				return new TargetBlob (contents);
+			}
 		}
 
 		ObjectCache create_reader (string section_name)
@@ -649,8 +661,12 @@ namespace Mono.Debugger.Architecture
 
 		public DwarfBinaryReader DebugPubnamesReader {
 			get {
-				return new DwarfBinaryReader (
-					bfd, (TargetBlob) debug_pubnames_reader.Data, Is64Bit);
+				TargetBlob blob = (TargetBlob) debug_pubnames_reader.Data;
+				if (blob == null)
+					return null;
+				else
+					return new DwarfBinaryReader (
+							bfd, (TargetBlob) debug_pubnames_reader.Data, Is64Bit);
 			}
 		}
 
@@ -695,7 +711,21 @@ namespace Mono.Debugger.Architecture
 
 		static void debug (string message, params object[] args)
 		{
-			Console.WriteLine (String.Format (message, args));
+		  //			Console.WriteLine (String.Format (message, args));
+		}
+
+		protected enum DwarfLang {
+			C89         = 0x0001,
+			C           = 0x0002,
+			Ada83       = 0x0003,
+			C_plus_plus = 0x0004,
+			Cobol74     = 0x0005,
+			Cobol85     = 0x0006,
+			Fortran77   = 0x0007,
+			Fortran90   = 0x0008,
+			Pascal83    = 0x0009,
+			Modula2     = 0x000a,
+			None        = 0x8001
 		}
 
 		protected enum DwarfTag {
@@ -1717,6 +1747,7 @@ namespace Mono.Debugger.Architecture
 			string name;
 			string comp_dir;
 			bool is_continuous;
+			DwarfLang language;
 			SourceFile file;
 			CompileUnitSymbolTable symtab;
 			ArrayList children;
@@ -1807,6 +1838,13 @@ namespace Mono.Debugger.Architecture
 
 				case DwarfAttribute.name:
 					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.language:
+#if FIXME
+					language = (DwarfLang)attribute.Data;
+					Console.WriteLine ("DieCompileUnit {0} has language {1}", name, language);
+#endif
 					break;
 				}
 			}

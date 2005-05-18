@@ -1,5 +1,13 @@
 2005-05-17  Chris Toshok  <toshok@ximian.com>
 
+	* arch/DwarfReader.cs: fix the annoying exception about not
+	finding DWARF 2 debugging info, and add (ifdefed for now) language
+	support.
+
+	* classes/Report.cs (DebugFlags): add DwarfReader.
+
+2005-05-17  Chris Toshok  <toshok@ximian.com>
+
 	* backends/MonoThreadManager.cs: add a few comments, and add
 	constants for the thread index magic numbers.
 
