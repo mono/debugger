@@ -1468,7 +1468,7 @@ namespace Mono.Debugger.Backends
 						OperationType.FinishNative);
 			}
 
-			ILanguageBackend language = method.Module.LanguageBackend as ILanguageBackend;
+			ILanguageBackend language = method.Module.LanguageBackend;
 			if (source == null)
 				return null;
 
@@ -1824,7 +1824,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			StackFrame frame = current_frame;
-			object language = (frame.Method != null) ? frame.Method.Module.LanguageBackend : null;
+			ILanguageBackend language = (frame.Method != null) ? frame.Method.Module.LanguageBackend : null;
 
 			if (frame.SourceAddress == null)
 				return new StepFrame (language, StepMode.SingleInstruction);
@@ -1848,12 +1848,7 @@ namespace Mono.Debugger.Backends
 		StepFrame CreateStepFrame (StepMode mode)
 		{
 			check_inferior ();
-			object language;
-
-			if (current_method != null)
-				language = current_method.Module.LanguageBackend;
-			else
-				language = null;
+			ILanguageBackend language = (current_method != null) ? current_method.Module.LanguageBackend : null;
 
 			return new StepFrame (language, mode);
 		}

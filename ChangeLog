@@ -1,5 +1,18 @@
 2005-05-17  Chris Toshok  <toshok@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.check_method_operation): remove unnecessary
+	cast.
+	(SingleSteppingEngine.CreateStepFrame, both overloads): pass an
+	ILanguageBackend.
+	
+
+	* backends/StepFrame.cs: all uses of this class pass it valid
+	ILanguageBackend's at the proper spot, so make that explicit in
+	the ctors and stop casting.
+
+2005-05-17  Chris Toshok  <toshok@ximian.com>
+
 	* arch/DwarfReader.cs: fix the annoying exception about not
 	finding DWARF 2 debugging info, and add (ifdefed for now) language
 	support.

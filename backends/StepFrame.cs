@@ -35,17 +35,17 @@ namespace Mono.Debugger.Backends
 		SimpleStackFrame stack;
 		StepMode mode;
 
-		internal StepFrame (object language, StepMode mode)
+		internal StepFrame (ILanguageBackend language, StepMode mode)
 			: this (TargetAddress.Null, TargetAddress.Null, null, language, mode)
 		{ }
 
 		internal StepFrame (TargetAddress start, TargetAddress end, SimpleStackFrame stack,
-				    object language, StepMode mode)
+				    ILanguageBackend language, StepMode mode)
 		{
 			this.start = start;
 			this.end = end;
 			this.stack = stack;
-			this.language = language as ILanguageBackend;
+			this.language = language;
 			this.mode = mode;
 		}
 
