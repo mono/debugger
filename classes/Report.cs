@@ -19,7 +19,8 @@ namespace Mono.Debugger
 		Notification		= 128,
 		Mutex			= 256,
 		SymbolTable		= 512,
-		SourceFiles		= 1024
+		SourceFiles		= 1024,
+		DwarfReader             = 2048
 	}
 
 	public class Report
