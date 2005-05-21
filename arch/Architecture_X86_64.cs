@@ -332,17 +332,191 @@ namespace Mono.Debugger
 			get { return 50; }
 		}
 
+		SimpleStackFrame unwind_method (SimpleStackFrame frame,
+						ITargetMemoryAccess memory, byte[] code,
+						int pos)
+		{
+			Registers old_regs = frame.Registers;
+			Registers regs = new Registers (old_regs);
+
+			TargetAddress rbp = new TargetAddress (
+				memory.AddressDomain, old_regs [(int) X86_64_Register.RBP]);
+
+			int addr_size = memory.TargetAddressSize;
+			TargetAddress new_rbp = memory.ReadAddress (rbp);
+			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
+
+			TargetAddress new_rip = memory.ReadGlobalAddress (rbp + addr_size);
+			regs [(int) X86_64_Register.RIP].SetValue (rbp + addr_size, new_rip);
+
+			TargetAddress new_rsp = rbp + 2 * addr_size;
+			regs [(int) X86_64_Register.RSP].SetValue (rbp, new_rsp);
+
+			regs [(int) X86_64_Register.RSI].Valid = true;
+			regs [(int) X86_64_Register.RDI].Valid = true;
+			regs [(int) X86_64_Register.R12].Valid = true;
+			regs [(int) X86_64_Register.R13].Valid = true;
+			regs [(int) X86_64_Register.R14].Valid = true;
+			regs [(int) X86_64_Register.R15].Valid = true;
+
+			rbp -= addr_size;
+
+			int length = code.Length;
+			while (pos < length) {
+				byte opcode = code [pos++];
+
+				long value;
+				if ((opcode == 0x41) && (pos < length)) {
+					byte opcode2 = code [pos++];
+
+					if ((opcode2 < 0x50) || (opcode2 > 0x57))
+						break;
+
+					switch (opcode2) {
+					case 0x50: /* r8 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R8].SetValue (rbp, value);
+						break;
+					case 0x51: /* r9 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R9].SetValue (rbp, value);
+						break;
+					case 0x52: /* r10 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R10].SetValue (rbp, value);
+						break;
+					case 0x53: /* r11 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R11].SetValue (rbp, value);
+						break;
+					case 0x54: /* r12 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R12].SetValue (rbp, value);
+						break;
+					case 0x55: /* r13 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R13].SetValue (rbp, value);
+						break;
+					case 0x56: /* r14 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R14].SetValue (rbp, value);
+						break;
+					case 0x57: /* r15 */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.R15].SetValue (rbp, value);
+						break;
+					}
+				} else {
+					if ((opcode < 0x50) || (opcode > 0x57))
+						break;
+
+					switch (opcode) {
+					case 0x50: /* rax */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.RAX].SetValue (rbp, value);
+						break;
+					case 0x51: /* rcx */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.RCX].SetValue (rbp, value);
+						break;
+					case 0x52: /* rdx */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.RDX].SetValue (rbp, value);
+						break;
+					case 0x53: /* rbx */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.RBX].SetValue (rbp, value);
+						break;
+					case 0x56: /* rsi */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.RSI].SetValue (rbp, value);
+						break;
+					case 0x57: /* rdi */
+						value = (long) memory.ReadInteger (rbp);
+						regs [(int) X86_64_Register.RDI].SetValue (rbp, value);
+						break;
+					}
+				}
+
+				rbp -= addr_size;
+			}
+
+			return new SimpleStackFrame (
+				new_rip, new_rsp, new_rbp, regs, frame.Level + 1);
+		}
+
+		SimpleStackFrame read_prologue (SimpleStackFrame frame,
+						ITargetMemoryAccess memory, byte[] code)
+		{
+			int length = code.Length;
+			int pos = 0;
+
+			if (length < 4)
+				return null;
+
+			while ((pos < length) &&
+			       (code [pos] == 0x90) || (code [pos] == 0xcc))
+				pos++;
+
+			if ((pos+5 < length) && (code [pos] == 0x55) && (code [pos+1] == 0x48) &&
+			    (((code [pos+2] == 0x8b) && (code [pos+3] == 0xec)) ||
+			     ((code [pos+2] == 0x89) && (code [pos+3] == 0xe5)))) {
+				pos += 4;
+				return unwind_method (frame, memory, code, pos);
+			}
+
+			//
+			// Try smart unwinding
+			//
+
+			Console.WriteLine ("TRY SMART UNWIND: {0} {1} {2}",
+					   frame.Address, frame.StackPointer,
+					   frame.FrameAddress);
+
+			return null;
+		}
+
 		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
 						     SimpleStackFrame frame, Symbol name,
 						     byte[] code)
 		{
-			return null;
+			if ((code != null) && (code.Length > 4))
+				return read_prologue (frame, memory, code);
+
+			TargetAddress rbp = frame.FrameAddress;
+
+			int addr_size = memory.TargetAddressSize;
+
+			Registers regs = new Registers (this);
+
+			TargetAddress new_rbp = memory.ReadAddress (rbp);
+			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
+
+			TargetAddress new_rip = memory.ReadGlobalAddress (rbp + addr_size);
+			regs [(int) X86_64_Register.RIP].SetValue (rbp + addr_size, new_rip);
+
+			TargetAddress new_rsp = rbp + 2 * addr_size;
+			regs [(int) X86_64_Register.RSP].SetValue (rbp, new_rsp);
+
+			rbp -= addr_size;
+
+			return new SimpleStackFrame (
+				new_rip, new_rsp, new_rbp, regs, frame.Level + 1);
 		}
 
 		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
 						     TargetAddress stack, TargetAddress frame)
 		{
-			return null;
+			TargetAddress rip = memory.ReadGlobalAddress (stack);
+			TargetAddress rsp = stack;
+			TargetAddress rbp = frame;
+
+			Registers regs = new Registers (this);
+			regs [(int) X86_64_Register.RIP].SetValue (rip);
+			regs [(int) X86_64_Register.RSP].SetValue (rsp);
+			regs [(int) X86_64_Register.RBP].SetValue (rbp);
+
+			return new SimpleStackFrame (rip, rsp, rbp, regs, 0);
 		}
 	}
 }

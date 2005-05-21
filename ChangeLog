@@ -1,3 +1,7 @@
+2005-05-21  Martin Baulig  <martin@ximian.com>
+
+	* arch/Architecture_X86_64.cs: Implemented stack unwinding.
+
 2005-05-17  Chris Toshok  <toshok@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
