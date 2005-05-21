@@ -450,8 +450,6 @@ InferiorVTable powerpc_darwin_inferior = {
 	powerpc_get_breakpoints,
 	powerpc_get_registers,
 	powerpc_set_registers,
-	powerpc_get_backtrace,
-	powerpc_get_ret_address,
 	NULL, // powerpc_stop,
 	NULL, // powerpc_global_stop,
 	NULL, // powerpc_set_signal,

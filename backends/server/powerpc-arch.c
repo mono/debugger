@@ -155,13 +155,6 @@ powerpc_get_frame (ServerHandle *handle, StackFrame *frame)
 }
 
 static ServerCommandError
-powerpc_get_ret_address (ServerHandle *handle, guint64 *retval)
-{
-	*retval = 0;
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
 do_enable (ServerHandle *handle, PowerPcBreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
@@ -365,30 +358,4 @@ powerpc_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 
 	return STOP_ACTION_SEND_STOPPED;
-}
-
-static ServerCommandError
-powerpc_get_backtrace (ServerHandle *handle, gint32 max_frames,
-		       guint64 stop_address, guint32 *count, StackFrame **data)
-{
-	GArray *frames = g_array_new (FALSE, FALSE, sizeof (StackFrame));
-	ServerCommandError result = COMMAND_ERROR_NONE;
-	ArchInfo *arch = handle->arch;
-	StackFrame sframe;
-	int i;
-
-	sframe.address = (guint32) INFERIOR_REG_PC (arch->current_regs);
-	sframe.frame_address = (guint32) INFERIOR_REG_R30 (arch->current_regs);
-
-	g_array_append_val (frames, sframe);
-	goto out;
-
-
- out:
-	*count = frames->len;
-	*data = g_new0 (StackFrame, frames->len);
-	for (i = 0; i < frames->len; i++)
-		(*data)[i] = g_array_index (frames, StackFrame, i);
-	g_array_free (frames, FALSE);
-	return result;
 }

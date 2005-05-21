@@ -1,5 +1,23 @@
 2005-05-21  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ProcessChildEvent): Use `arch.UnwindStack()'
+	to compute the `main_method_retaddr'.
+
+	* backends/Inferior.cs
+	(Inferior.GetBacktrace): Removed; this wasn't used anymore since a
+	couple of months.
+	(Inferior.GetReturnAddress): Removed.
+
+	* backends/server/library.c
+	(mono_debugger_server_get_backtrace): Removed; we don't need this
+	anymore since we have the new stack unwinding code.
+	(mono_debugger_server_get_ret_address): Removed.
+
+	* backends/server/x86-arch.h (x86_arch_get_frame): Removed.
+
+2005-05-21  Martin Baulig  <martin@ximian.com>
+
 	* arch/Architecture_X86_64.cs: Implemented stack unwinding.
 
 2005-05-17  Chris Toshok  <toshok@ximian.com>

@@ -455,8 +455,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_get_breakpoints,
 	server_ptrace_get_registers,
 	server_ptrace_set_registers,
-	server_ptrace_get_backtrace,
-	server_ptrace_get_ret_address,
 	server_ptrace_stop,
 	server_ptrace_global_stop,
 	server_ptrace_set_signal,

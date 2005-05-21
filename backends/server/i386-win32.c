@@ -314,8 +314,6 @@ InferiorInfo i386_win32_inferior = {
 	i386_arch_get_breakpoints,
 	i386_arch_get_registers,
 	i386_arch_set_registers,
-	i386_arch_get_backtrace,
-	i386_arch_get_ret_address,
 
 	NULL, // server_win32_stop,
 	NULL, // server_win32_set_signal,

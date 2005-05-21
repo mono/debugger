@@ -130,12 +130,6 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_set_registers (IntPtr handle, IntPtr values);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_backtrace (IntPtr handle, int max_frames, long stop_address, out int count, out IntPtr data);
-
-		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_ret_address (IntPtr handle, out long retval);
-
-		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_stop (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
@@ -1015,50 +1009,6 @@ namespace Mono.Debugger.Backends
 		{
 			ServerStackFrame frame = get_current_frame ();
 			return new StackFrame (this, frame);
-		}
-
-		public StackFrame[] GetBacktrace (int max_frames, TargetAddress stop)
-		{
-			IntPtr data = IntPtr.Zero;
-			try {
-				int count;
-
-				long stop_addr = 0;
-				if (!stop.IsNull)
-					stop_addr = stop.Address;
-				TargetError result = mono_debugger_server_get_backtrace (
-					server_handle, max_frames, stop_addr, out count, out data);
-
-				if (result != TargetError.None)
-					return new StackFrame [0];
-
-				check_error (result);
-
-				ServerStackFrame[] frames = new ServerStackFrame [count];
-				IntPtr temp = data;
-				for (int i = 0; i < count; i++) {
-					frames [i] = (ServerStackFrame) Marshal.PtrToStructure (
-						temp, typeof (ServerStackFrame));
-					temp = new IntPtr ((long) temp + Marshal.SizeOf (frames [i]));
-				}
-
-				StackFrame[] retval = new StackFrame [count];
-				for (int i = 0; i < count; i++)
-					retval [i] = new StackFrame (this, frames [i]);
-				return retval;
-			} finally {
-				g_free (data);
-			}
-		}
-
-		public TargetAddress GetReturnAddress ()
-		{
-			long address;
-			TargetError result = mono_debugger_server_get_ret_address (
-					server_handle, out address);
-			check_error (result);
-
-			return new TargetAddress (GlobalAddressDomain, address);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()

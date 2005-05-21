@@ -371,7 +371,12 @@ namespace Mono.Debugger.Backends
 				if (is_main && !reached_main && !exiting) {
 					arch = inferior.Architecture;
 					reached_main = true;
-					main_method_retaddr = inferior.GetReturnAddress ();
+
+					SimpleStackFrame ret_frame = arch.UnwindStack (
+						inferior, get_simple_frame (), null, null);
+					if (ret_frame != null)
+						main_method_retaddr = ret_frame.Address;
+
 					manager.ReachedMain ();
 				}
 				return;

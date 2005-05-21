@@ -267,27 +267,6 @@ mono_debugger_server_set_registers (ServerHandle *handle, guint64 *values)
 }
 
 ServerCommandError
-mono_debugger_server_get_backtrace (ServerHandle *handle, gint32 max_frames, guint64 stop_address,
-				    guint32 *count, StackFrame **frames)
-{
-	*frames = NULL;
-	if (!global_vtable->get_backtrace)
-		return COMMAND_ERROR_NOT_IMPLEMENTED;
-
-	return (* global_vtable->get_backtrace) (
-		handle, max_frames, stop_address, count, frames);
-}
-
-ServerCommandError
-mono_debugger_server_get_ret_address (ServerHandle *handle, guint64 *retval)
-{
-	if (!global_vtable->get_ret_address)
-		return COMMAND_ERROR_NOT_IMPLEMENTED;
-
-	return (* global_vtable->get_ret_address) (handle, retval);
-}
-
-ServerCommandError
 mono_debugger_server_stop (ServerHandle *handle)
 {
 	if (!global_vtable->stop)

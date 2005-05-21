@@ -272,22 +272,6 @@ struct InferiorVTable {
 						       guint64          *values);
 
 	/*
-	 * Get backtrace.  This tries to return a partial backtrace if possible, so check the `count'
-	 * and `frames' values even on an error.
-	 */
-	ServerCommandError    (* get_backtrace)       (ServerHandle     *handle,
-						       gint32            max_frames,
-						       guint64           stop_address,
-						       guint32          *count,
-						       StackFrame       **frames);
-
-	/*
-	 * This is only allowed on the first instruction of a method.
-	 */
-	ServerCommandError    (* get_ret_address)     (ServerHandle     *handle,
-						       guint64          *retval);
-
-	/*
 	 * Stop the target.
 	 */
 	ServerCommandError    (* stop)                (ServerHandle     *handle);
@@ -449,17 +433,6 @@ mono_debugger_server_get_registers       (ServerHandle        *handle,
 ServerCommandError
 mono_debugger_server_set_registers       (ServerHandle        *handle,
 					  guint64             *values);
-
-ServerCommandError
-mono_debugger_server_get_backtrace       (ServerHandle        *handle,
-					  gint32               max_frames,
-					  guint64              stop_address,
-					  guint32             *count,
-					  StackFrame         **frames);
-
-ServerCommandError
-mono_debugger_server_get_ret_address     (ServerHandle        *handle,
-					  guint64             *retval);
 
 ServerCommandError
 mono_debugger_server_stop                (ServerHandle        *handle);
