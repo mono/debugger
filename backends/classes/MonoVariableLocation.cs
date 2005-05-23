@@ -32,9 +32,11 @@ namespace Mono.Debugger.Languages
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
 			// register and return it.
-			long contents = frame.GetRegister (register);
-			if (contents == 0)
+			Register reg = frame.Registers [register];
+			if (!reg.Valid)
 				throw new LocationInvalidException ();
+
+			long contents = reg.Value;
 
 			TargetAddress address = new TargetAddress (TargetAccess.AddressDomain, contents + regoffset);
 

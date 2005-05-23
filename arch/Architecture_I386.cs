@@ -346,7 +346,7 @@ namespace Mono.Debugger
 						int pos)
 		{
 			Registers old_regs = frame.Registers;
-			Registers regs = new Registers (this);
+			Registers regs = new Registers (old_regs);
 
 			TargetAddress ebp = new TargetAddress (
 				memory.AddressDomain, old_regs [(int) I386Register.EBP]);
@@ -360,6 +360,9 @@ namespace Mono.Debugger
 
 			TargetAddress new_esp = ebp + 2 * addr_size;
 			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
+
+			regs [(int) I386Register.ESI].Valid = true;
+			regs [(int) I386Register.EDI].Valid = true;
 
 			ebp -= addr_size;
 

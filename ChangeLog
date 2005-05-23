@@ -1,3 +1,12 @@
+2005-05-23  Martin Baulig  <martin@ximian.com>
+
+	* arch/Architecture_I386.cs (Architecture_I386.unwind_method):
+	Consider %esi and %edi as valid if they're not saved.
+
+	* backends/classes/MonoVariableLocation.cs
+	(MonoVariableLocation.GetAddress): Check whether a register is
+	valid before trying to access it.
+
 2005-05-21  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
