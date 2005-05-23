@@ -573,10 +573,14 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	ArchInfo *arch = handle->arch;
 	long new_rsp;
 
-	guint8 code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			  0xcc };
-	int size = sizeof (code);
+	static guint8 static_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0xcc };
+	int static_size = sizeof (static_code);
+	int size = static_size + strlen (string_argument) + 1;
+	guint8 *code = g_malloc0 (size);
+	memcpy (code, static_code, static_size);
+	strcpy (code + static_size, string_argument);
 
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
@@ -597,7 +601,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
-	INFERIOR_REG_RSI (arch->current_regs) = string_argument;
+	INFERIOR_REG_RSI (arch->current_regs) = new_rsp + static_size;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
 
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
