@@ -344,11 +344,6 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event TargetExitedHandler TargetExitedEvent;
 
-		public event TargetOutputHandler TargetOutputEvent;
-		public event TargetOutputHandler TargetErrorOutputEvent;
-		public event DebuggerOutputHandler DebuggerOutputEvent;
-		public event DebuggerErrorHandler DebuggerErrorEvent;
-
 		void OnInitializedEvent (Process new_process)
 		{
 			if (InitializedEvent != null)
@@ -377,24 +372,6 @@ namespace Mono.Debugger
 		{
 			if (TargetExitedEvent != null)
 				TargetExitedEvent ();
-		}
-
-		void inferior_output (bool is_stderr, string line)
-		{
-			if (TargetOutputEvent != null)
-				TargetOutputEvent (is_stderr, line);
-		}
-
-		void debugger_output (string line)
-		{
-			if (DebuggerOutputEvent != null)
-				DebuggerOutputEvent (line);
-		}
-
-		void debugger_error (object sender, string message, Exception e)
-		{
-			if (DebuggerErrorEvent != null)
-				DebuggerErrorEvent (this, message, e);
 		}
 
 		// <summary>

@@ -1,5 +1,9 @@
 2005-05-27  Chris Toshok  <toshok@ximian.com>
 
+	* backends/ThreadManager.cs: remove some dead code.
+
+2005-05-27  Chris Toshok  <toshok@ximian.com>
+
 	* backends/Process.cs (Process.ReadLongInteger): fix c&p error.
 	(Process.ReadAddress): same.
 	(Process.ReadGlobalAddress): same.
