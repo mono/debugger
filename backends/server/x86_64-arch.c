@@ -216,7 +216,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			return STOP_ACTION_SEND_STOPPED;
 #endif
 
-		if (server_ptrace_peek_word (handle, (guint64) (INFERIOR_REG_RIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
+		if (server_ptrace_peek_word (handle, GPOINTER_TO_SIZE(INFERIOR_REG_RIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
 			return STOP_ACTION_SEND_STOPPED;
 
 		if ((code & 0xff) == 0xcc) {

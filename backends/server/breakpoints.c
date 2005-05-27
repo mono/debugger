@@ -49,21 +49,21 @@ void
 mono_debugger_breakpoint_manager_insert (BreakpointManager *bpm, BreakpointInfo *breakpoint)
 {
 	g_ptr_array_add (bpm->breakpoints, breakpoint);
-	g_hash_table_insert (bpm->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id), breakpoint);
+	g_hash_table_insert (bpm->breakpoint_hash, GSIZE_TO_POINTER (breakpoint->id), breakpoint);
 	if (!breakpoint->is_hardware_bpt)
-		g_hash_table_insert (bpm->breakpoint_by_addr, (gpointer) breakpoint->address, breakpoint);
+		g_hash_table_insert (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (breakpoint->address), breakpoint);
 }
 
 BreakpointInfo *
 mono_debugger_breakpoint_manager_lookup (BreakpointManager *bpm, guint64 address)
 {
-	return g_hash_table_lookup (bpm->breakpoint_by_addr, GUINT_TO_POINTER (address));
+	return g_hash_table_lookup (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (address));
 }
 
 BreakpointInfo *
 mono_debugger_breakpoint_manager_lookup_by_id (BreakpointManager *bpm, guint32 id)
 {
-	return g_hash_table_lookup (bpm->breakpoint_hash, GUINT_TO_POINTER (id));
+	return g_hash_table_lookup (bpm->breakpoint_hash, GSIZE_TO_POINTER (id));
 }
 
 GPtrArray *
@@ -78,9 +78,9 @@ mono_debugger_breakpoint_manager_remove (BreakpointManager *bpm, BreakpointInfo 
 	if (--breakpoint->refcount > 0)
 		return;
 
-	g_hash_table_remove (bpm->breakpoint_hash, GUINT_TO_POINTER (breakpoint->id));
+	g_hash_table_remove (bpm->breakpoint_hash, GSIZE_TO_POINTER (breakpoint->id));
 	if (!breakpoint->is_hardware_bpt)
-		g_hash_table_remove (bpm->breakpoint_by_addr, (gpointer) breakpoint->address);
+		g_hash_table_remove (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (breakpoint->address));
 	g_ptr_array_remove_fast (bpm->breakpoints, breakpoint);
 	g_free (breakpoint);
 }

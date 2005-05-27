@@ -126,9 +126,9 @@ server_ptrace_kill (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_peek_word (ServerHandle *handle, guint64 start, guint64 *retval)
+server_ptrace_peek_word (ServerHandle *handle, guint64 start, gsize *retval)
 {
-	return server_ptrace_read_memory (handle, start, sizeof (long), retval);
+	return server_ptrace_read_memory (handle, start, sizeof (gsize), retval);
 }
 
 static ServerCommandError
@@ -145,7 +145,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 		long word = *ptr++;
 
 		errno = 0;
-		if (ptrace (PT_WRITE_D, inferior->pid, (gpointer) addr, word) != 0) {
+		if (ptrace (PT_WRITE_D, inferior->pid, GSIZE_TO_POINTER (addr), word) != 0) {
 			if (errno == ESRCH)
 				return COMMAND_ERROR_NOT_STOPPED;
 			else if (errno) {
@@ -161,12 +161,12 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	if (!size)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_read_memory (handle, (gpointer) addr, sizeof (long), &temp);
+	result = server_ptrace_read_memory (handle, addr, sizeof (long), &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 	memcpy (&temp, ptr, size);
 
-	return server_ptrace_write_memory (handle, (gpointer) addr, sizeof (long), &temp);
+	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
 }	
 
 

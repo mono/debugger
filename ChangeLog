@@ -1,5 +1,28 @@
 2005-05-27  Chris Toshok  <toshok@ximian.com>
 
+	* backends/server/breakpoints.c
+	(mono_debugger_breakpoint_manager_insert): use GSIZE_TO_POINTER
+	instead of GUINT_TO_POINTER.
+	(mono_debugger_breakpoint_manager_lookup): same.
+	(mono_debugger_breakpoint_manager_lookup_by_id): same.
+	(mono_debugger_breakpoint_manager_remove): same.
+
+	* backends/server/i386-arch.c (x86_arch_child_stopped): use
+	GPOINTER_TO_SIZE instead of a guint32 cast (which is wrong anyway
+	- the function takes a guint64).
+
+	* backends/server/x86_64-arch.c (x86_arch_child_stopped): same.
+
+	* backends/server/x86-ptrace.c (server_ptrace_peek_word): make
+	retval gsize* instead of guint64*.
+	(server_ptrace_write_memory): use GSIZE_TO_POINTER instead of a
+	naked gpointer cast.  Also, in the case of the calls to
+	server_ptrace_read_memory, just pass addr uncasted (since the
+	method takes a guint64 anyway.  This change thanks to
+	peter@newton.cx).
+
+2005-05-27  Chris Toshok  <toshok@ximian.com>
+
 	* backends/ThreadManager.cs: remove some dead code.
 
 2005-05-27  Chris Toshok  <toshok@ximian.com>
