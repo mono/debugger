@@ -1,3 +1,9 @@
+2005-05-27  Chris Toshok  <toshok@ximian.com>
+
+	* backends/Process.cs (Process.ReadLongInteger): fix c&p error.
+	(Process.ReadAddress): same.
+	(Process.ReadGlobalAddress): same.
+	
 2005-05-23  Martin Baulig  <martin@ximian.com>
 
 	* arch/Architecture_I386.cs (Architecture_I386.unwind_method):

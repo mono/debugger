@@ -765,21 +765,21 @@ namespace Mono.Debugger
 		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetLongIntegerSize);
 			return reader.ReadLongInteger ();
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetAddressSize);
 			return reader.ReadAddress ();
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadGlobalAddress (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
+			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetAddressSize);
 			return reader.ReadGlobalAddress ();
 		}
 
