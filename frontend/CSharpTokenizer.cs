@@ -346,7 +346,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					error_details = String.Format("Can't parse float {0}", digit);
 
 					val = 0f;
-					return Token.FLOAT;
+					return Token.ERROR;
 				}
 			}
 			if (isdecimal) {
@@ -358,7 +358,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				} catch (Exception) {
 					error_details = String.Format("Can't parse decimal {0}", digit);
 					val = 0m;
-					return Token.DECIMAL;
+					return Token.ERROR;
 				}
 			}
 			if (isdouble) {
@@ -370,16 +370,40 @@ namespace Mono.Debugger.Frontend.CSharp
 				} catch (Exception) {
 					error_details = String.Format("Can't parse double {0}", digit);
 					val = 0d;
-					return Token.DOUBLE;
+					return Token.ERROR;
 				}
 			}
-			
+
+			if (ishex) {
+				// can't parse as a double because hex digits in a double
+				// format specifier are not allowed. Anyway, treat all hex
+				// numbers as unsigned because hex inputs will most likely
+				// be copy-and-pasted pointer values.
+
+				ulong l;
+
+				try {
+					l = UInt64.Parse (digit, NumberStyles.HexNumber, null);
+				} catch (Exception ex) {
+					error_details = String.Format("Can't parse hexadecimal constant {0}: {1}", digit, ex);
+					val = 0;
+					return Token.ERROR;
+				}
+
+				if (l > uint.MaxValue) {
+					val = l;
+					return Token.ULONG;
+				}
+
+				val = (uint) l;
+				return Token.UINT;
+			}
+
 			double d = 0;
-			// FIXME: http://bugzilla.ximian.com/show_bug.cgi?id=72221
 			if (!Double.TryParse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Integer, null, out d)) {
 				error_details = String.Format("Can't parse integral constant {0}", digit);
 				val = 0;
-				return Token.INT;
+				return Token.ERROR;
 			}
 			if (d < long.MinValue || d > long.MaxValue) {
 				islong = true;
@@ -399,7 +423,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					} catch (Exception) {
 						error_details = String.Format("Can't parse unsigned long {0}", digit);
 						val = 0UL;
-						return Token.ULONG;
+						return Token.ERROR;
 					}
 				} else {
 					try {
@@ -408,7 +432,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					} catch (Exception) {
 						error_details = String.Format("Can't parse long {0}", digit);
 						val = 0L;
-						return Token.LONG;
+						return Token.ERROR;
 					}
 				}
 			} else {
@@ -419,7 +443,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					} catch (Exception) {
 						error_details = String.Format("Can't parse unsigned int {0}", digit);
 						val = 0U;
-						return Token.UINT;
+						return Token.ERROR;
 					}
 				} else {
 					try {
@@ -428,7 +452,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					} catch (Exception) {
 						error_details = String.Format("Can't parse int {0}", digit);
 						val = 0;
-						return Token.INT;
+						return Token.ERROR;
 					}
 				}
 			}

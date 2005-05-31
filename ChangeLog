@@ -1,3 +1,21 @@
+2005-05-31  Peter Williams  <peter@newton.cx>
+
+	* frontend/CSharpTokenizer.cs (ReadDigit): Return Token.ERROR on
+	parse errors to actually get the parse error reported. Add new
+	code to parse hex numbers as unsigned ints always; it's illegal to
+	try and parse a double with hex digits as we were trying before.
+
+	* configure.in (AC_OUTPUT): Reflect the rename of backends/mono
+	from backends/mono-csharp.
+
+	* backends/Makefile.am (SUBDIRS): Same here.
+
+	* frontend/Interpreter.cs (Initialize): Compile fix for removal
+	of TargetOutputEvent from ThreadManager
+
+	* frontend/Main.cs (SetupEngine): Add 'k' as an alias for
+	'kill' a la gdb.
+
 2005-05-31  Raja R Harinath  <rharinath@novell.com>
 
 	* test/mdb.exp (mdb_start): Find the 'start-mdb.sh' script in

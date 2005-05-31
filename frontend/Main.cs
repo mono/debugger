@@ -73,6 +73,7 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("up", typeof (UpCommand));
 			e.RegisterCommand ("down", typeof (DownCommand));
 			e.RegisterCommand ("kill", typeof (KillCommand));
+			e.RegisterAlias   ("k", typeof (KillCommand));
 			e.RegisterCommand ("set", typeof (SetCommand));
 			e.RegisterCommand ("show", typeof (ShowCommand));
 			e.RegisterCommand ("info", typeof (ShowCommand)); /* for gdb users */

@@ -98,7 +98,6 @@ namespace Mono.Debugger.Frontend
 
 			backend = new DebuggerBackend ();
 			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-			backend.ThreadManager.TargetOutputEvent += new TargetOutputHandler (target_output);
 			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 			backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
 			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (thread_manager_initialized);

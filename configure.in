@@ -214,7 +214,7 @@ backends/Makefile
 backends/classes/Makefile
 backends/server/Makefile
 backends/ptrace/Makefile
-backends/mono-csharp/Makefile
+backends/mono/Makefile
 backends/native/Makefile
 frontend/Makefile
 arch/Makefile
