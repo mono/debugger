@@ -14,10 +14,11 @@ proc mdb_start {file args} {
     global verbose
     global process
     global spawn_id
+    global srcdir
 
     verbose "Spawning $mdb $file"
 
-    set res [spawn ./start-mdb.sh --script $file $args];
+    set res [spawn $srcdir/start-mdb.sh --script $file $args];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $mdb failed."
 	exit 1;
