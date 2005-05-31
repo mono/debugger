@@ -3,8 +3,8 @@ noinst_DATA = CSharpExpressionParser.cs
 JAY = $(top_builddir)/jay/jay
 CSLEX = $(top_builddir)/cslex/cslex.exe
 
-CSharpExpressionParser.cs: CSharpExpressionParser.jay
-	$(JAY) -ctv < skeleton $< > tmp-p && mv -f tmp-p CSharpExpressionParser.cs
+CSharpExpressionParser.cs: CSharpExpressionParser.jay $(srcdir)/skeleton
+	$(JAY) -ctv < $(srcdir)/skeleton $< > tmp-p && mv -f tmp-p CSharpExpressionParser.cs
 
 MAINTAINERCLEANFILES = CSharpExpressionParser.cs y.output
 

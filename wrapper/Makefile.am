@@ -5,7 +5,7 @@ wrapper_PROGRAMS = mono-debugger-mini-wrapper
 
 INCLUDES = \
 	-DG_LOG_DOMAIN=\"MonoDebuggerJitWrapper\" \
-	@WRAPPER_CFLAGS@ @glue_cflags@
+	$(WRAPPER_CFLAGS) $(glue_cflags)
 
 mono_debugger_mini_wrapper_SOURCES = \
 	mini-main.c			\
@@ -15,7 +15,7 @@ mono_debugger_mini_wrapper_SOURCES = \
 	mono-debugger-jit-wrapper.h
 
 mono_debugger_mini_wrapper_LDADD = \
-	@WRAPPER_LIBS@
+	$(WRAPPER_LIBS)
 
 bin_SCRIPTS = mdb
 
@@ -26,34 +26,34 @@ MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 noinst_SCRIPTS = Mono.Debugger.dll
 
 LANGUAGE_SPECIFIC_FILES = \
-	@top_srcdir@/frontend/CSharpExpressionParser.cs	\
-	@top_srcdir@/frontend/CSharpTokenizer.cs
+	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
+	$(top_srcdir)/frontend/CSharpTokenizer.cs
 
 MDB_SRCLIST = \
-	@top_srcdir@/frontend/CL.cs			\
-	@top_srcdir@/frontend/Command.cs		\
-	@top_srcdir@/frontend/Completer.cs		\
-	@top_srcdir@/frontend/DebuggerTextWriter.cs	\
-	@top_srcdir@/frontend/Expression.cs		\
-	@top_srcdir@/frontend/GnuReadLine.cs		\
-	@top_srcdir@/frontend/IExpressionParser.cs	\
-	@top_srcdir@/frontend/Interpreter.cs		\
-	@top_srcdir@/frontend/Main.cs			\
-	@top_srcdir@/frontend/MyTextReader.cs		\
-	@top_srcdir@/frontend/ScriptingContext.cs	\
-	@top_srcdir@/frontend/Style.cs			\
+	$(top_srcdir)/frontend/CL.cs			\
+	$(top_srcdir)/frontend/Command.cs		\
+	$(top_srcdir)/frontend/Completer.cs		\
+	$(top_srcdir)/frontend/DebuggerTextWriter.cs	\
+	$(top_srcdir)/frontend/Expression.cs		\
+	$(top_srcdir)/frontend/GnuReadLine.cs		\
+	$(top_srcdir)/frontend/IExpressionParser.cs	\
+	$(top_srcdir)/frontend/Interpreter.cs		\
+	$(top_srcdir)/frontend/Main.cs			\
+	$(top_srcdir)/frontend/MyTextReader.cs		\
+	$(top_srcdir)/frontend/ScriptingContext.cs	\
+	$(top_srcdir)/frontend/Style.cs			\
 	$(LANGUAGE_SPECIFIC_FILES)			\
 	AssemblyInfo.cs
 
 LIBRARY_SRCLIST = \
-	@top_srcdir@/arch/*.cs				\
-	@top_srcdir@/backends/*.cs			\
-	@top_srcdir@/backends/classes/*.cs		\
-	@top_srcdir@/backends/mono/*.cs			\
-	@top_srcdir@/backends/native/*.cs		\
-	@top_srcdir@/backends/ptrace/*.cs		\
-	@top_srcdir@/classes/*.cs			\
-	@top_srcdir@/interfaces/*.cs			\
+	$(top_srcdir)/arch/*.cs				\
+	$(top_srcdir)/backends/*.cs			\
+	$(top_srcdir)/backends/classes/*.cs		\
+	$(top_srcdir)/backends/mono/*.cs			\
+	$(top_srcdir)/backends/native/*.cs		\
+	$(top_srcdir)/backends/ptrace/*.cs		\
+	$(top_srcdir)/classes/*.cs			\
+	$(top_srcdir)/interfaces/*.cs			\
 	AssemblyInfo.cs
 
 LIBRARY_DEPS = \
@@ -66,7 +66,7 @@ MDB_DEPS = \
 	-r:./Mono.Debugger.dll
 
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)
-	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:@top_srcdir@/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)

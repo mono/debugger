@@ -1,3 +1,12 @@
+2005-05-31  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in (pkg_config_path): Rename from PKG_PATH, so as to
+	work with newer versions of pkg-config.
+	* frontend/Makefile.am (CSharpExpressionParser.cs): Pick
+	'skeleton' from $(srcdir).
+	* wrapper/Makefile.am (LANGUAGE_SPECIFIC_FILES): Look for
+	CSharpExpressionParser in $(top_builddir).
+
 2005-05-27  Chris Toshok  <toshok@ximian.com>
 
 	* backends/server/breakpoints.c
