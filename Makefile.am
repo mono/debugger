@@ -1,5 +1,7 @@
 SUBDIRS = jay interfaces classes glue arch backends frontend wrapper test
 
+DIST_SUBDIRS= doc $(SUBDIRS)
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mono-debugger.pc
 

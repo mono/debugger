@@ -3,14 +3,15 @@ INCLUDES = @SERVER_DEPENDENCIES_CFLAGS@ @server_cflags@
 lib_LTLIBRARIES = libmonodebuggerserver.la
 
 EXTRA_libmonodebuggerserver_la_SOURCES = \
-	x86-linux-ptrace.c		\
-	i386-linux-ptrace.h		\
-	i386-win32.c			\
-	i386-win32.h			\
 	i386-arch.c			\
 	i386-arch.h			\
-	x86-ptrace.c			\
-	i386-ptrace.h
+	i386-ptrace.h			\
+	i386-win32.c			\
+	i386-win32.h			\
+	x86-arch.h			\
+	x86-linux-ptrace.c		\
+	x86-linux-ptrace.h		\
+	x86-ptrace.c
 
 if PLATFORM_POWERPC
 platform_sources = powerpc-darwin.c

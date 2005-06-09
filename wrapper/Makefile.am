@@ -91,7 +91,7 @@ ASSEMBLY = $(ASSEMBLY_NAME).dll
 CLEANFILES = *.exe *.dll mdb AssemblyInfo.cs
 
 EXTRA_DIST = \
-	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config
+	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \

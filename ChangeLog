@@ -1,5 +1,12 @@
 2005-06-09  Chris Toshok  <toshok@ximian.com>
 
+	* frontend/Makefile.am, arch/Makefile.am, interfaces/Makefile.am,
+	test/Makefile.am, wrapper/Makefile.am, jay/Makefile.am,
+	classes/Makefile.am, Makefile.am, backends/server/Makefile.am,
+	backends/mono/Makefile.am: make dist work.
+
+2005-06-09  Chris Toshok  <toshok@ximian.com>
+
 	* classes/TargetBinaryReader.cs (TargetBinaryReader.PeekAddress,
 	TargetBinaryReader.ReadAddress): Patch from Hans Kratz
 	<kratz@omnicore.com>.  Use unsigned 32 bit numbers for addresses,

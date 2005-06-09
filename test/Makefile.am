@@ -2,31 +2,32 @@ SUBDIRS = mono-debugger.tests
 
 AUTOMAKE_OPTIONS = dejagnu
 
-MCS_FLAGS=-g
+MCS_FLAGS=-debug
 
 noinst_SCRIPTS = \
 	TestManagedTypes.exe TestAssembly.exe TestNamespace.exe TestModule.dll \
 	MultiThread.exe TestInvocation.exe TestInheritance.exe Simple.exe
 
-noinst_PROGRAMS = testnativetypes module libfoo.so
+noinst_LTLIBRARIES=libfoo.la
+
+noinst_PROGRAMS = testnativetypes module
 
 EXTRA_DIST = \
-	TestManagedTypes.cs TestAssembly.cs TestModule.cs TestNamespace.cs \
-	TestInvocation.cs Simple.cs TestInheritance.cs mdb.exp
+	TestManagedTypes.cs TestAssembly.cs TestNamespace.cs TestModule.cs \
+	MultiThread.cs TestInvocation.cs TestInheritance.cs Simple.cs mdb.exp
 
 testnativetypes_SOURCES = testnativetypes.c
 
 module_SOURCES = module.c
 module_LDADD = -ldl
 
-libfoo_so_SOURCES = foo.c
-libfoo_so_LDFLAGS = -shared
+libfoo_la_SOURCES = foo.c
 
 %.exe:%.cs
-	$(MCS) $(MCS_FLAGS) -o $@ $<
+	$(MCS) $(MCS_FLAGS) -out:$@ $<
 
 %.dll:%.cs
-	$(MCS) $(MCS_FLAGS) /target:library -o $@ $<
+	$(MCS) $(MCS_FLAGS) /target:library -out:$@ $<
 
 CLEANFILES = *.exe *.dll *.so *.dbg a.out *.log *.sum dbg.out
 
