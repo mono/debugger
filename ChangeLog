@@ -1,3 +1,11 @@
+2005-06-09  Chris Toshok  <toshok@ximian.com>
+
+	* classes/TargetBinaryReader.cs (TargetBinaryReader.PeekAddress,
+	TargetBinaryReader.ReadAddress): Patch from Hans Kratz
+	<kratz@omnicore.com>.  Use unsigned 32 bit numbers for addresses,
+	so sign extension doesn't break things when the addresses are >
+	2**31.
+
 2005-05-31  Peter Williams  <peter@newton.cx>
 
 	* frontend/CSharpTokenizer.cs (ReadDigit): Return Token.ERROR on

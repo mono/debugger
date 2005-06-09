@@ -147,7 +147,7 @@ namespace Mono.Debugger
 			if (AddressSize == 8)
 				return PeekInt64 (pos);
 			else
-				return PeekInt32 (pos);
+				return PeekUInt32 (pos);
 		}
 
 		public long PeekAddress ()
@@ -160,7 +160,7 @@ namespace Mono.Debugger
 			if (AddressSize == 8)
 				return ReadInt64 ();
 			else
-				return ReadInt32 ();
+				return ReadUInt32 ();
 		}
 
 		public string PeekString (long pos)
