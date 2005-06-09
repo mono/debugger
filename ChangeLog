@@ -1,5 +1,14 @@
 2005-06-09  Chris Toshok  <toshok@ximian.com>
 
+	* backends/Debugger.cs (DebuggerBackend..ctor): clean up this and
+	DoInitialize/Initialize.  There's no need for the complex
+	initialization stuff that was here before.  Put it all in the
+	.ctor.
+	(DebuggerBackend.CreateDebuggerHandler): comment on the awful name
+	of this function.
+
+2005-06-09  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Makefile.am, arch/Makefile.am, interfaces/Makefile.am,
 	test/Makefile.am, wrapper/Makefile.am, jay/Makefile.am,
 	classes/Makefile.am, Makefile.am, backends/server/Makefile.am,

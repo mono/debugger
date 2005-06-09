@@ -33,21 +33,6 @@ namespace Mono.Debugger
 		{
 			module_manager = new ModuleManager ();
 
-			DoInitialize ();
-		}
-
-		public static void Initialize ()
-		{
-			Mono.Debugger.ThreadManager.Initialize ();
-		}
-
-		protected void DoInitialize ()
-		{
-			Initialize ();
-			if (initialized)
-				throw new InternalError ();
-			initialized = true;
-
 			source_factory = new SourceFileFactory ();
 
 			languages = new ArrayList ();
@@ -59,6 +44,12 @@ namespace Mono.Debugger
 
 			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
+
+			// XXX should this be in the backend at all?
+			// all it does is cause Ctrl-C to be caught by
+			// the debugger.  Seems like this is a
+			// frontend specific thing.
+			Mono.Debugger.ThreadManager.Initialize ();
 
 			thread_manager = new ThreadManager (this);
 			thread_manager.InitializedEvent += new ThreadEventHandler (initialized_event);
@@ -168,6 +159,7 @@ namespace Mono.Debugger
 			symtab_manager.Wait ();
 		}
 
+		// XXX This desperately needs to be renamed.
 		internal ILanguageBackend CreateDebuggerHandler ()
 		{
 			mono_language = new MonoLanguageBackend (this);
@@ -230,8 +222,6 @@ namespace Mono.Debugger
 			} else
 				bfd_container.AddFile (process, filename, true, false, false);
 		}
-
-		bool initialized = false;
 
 		//
 		// IDisposable
