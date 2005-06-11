@@ -2510,12 +2510,19 @@ namespace Mono.Debugger.Architecture
 			}
 
 			public bool CanWrite {
-				get { return false; }
+				get { return type.Kind == TargetObjectKind.Fundamental; }
 			}
 
 			public void SetObject (StackFrame frame, ITargetObject obj)
 			{
-				throw new InvalidOperationException ();
+				if (obj.TypeInfo.Type != Type)
+					throw new InvalidOperationException ();
+
+				NativeFundamentalObject var_object = GetObject (frame) as NativeFundamentalObject;
+				if (var_object == null)
+					return;
+
+				var_object.SetObject (obj);
 			}
 
 			public override string ToString ()

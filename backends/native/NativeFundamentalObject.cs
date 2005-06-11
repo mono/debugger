@@ -152,5 +152,10 @@ namespace Mono.Debugger.Languages.Native
 		{
 			return GetObject ().ToString ();
 		}
+
+		public void SetObject (ITargetObject obj)
+		{
+			RawContents = obj.RawContents;
+		}
 	}
 }

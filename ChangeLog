@@ -1,3 +1,14 @@
+2005-06-11  Chris Toshok  <toshok@ximian.com>
+
+	* backends/native/NativeFundamentalObject.cs:
+	(NativeFundamentalObject.SetObject): implement using RawContents,
+	ala the mono backend.
+
+	* arch/DwarfReader.cs (TargetVariable.CanWrite): return true if
+	the variable is of a fundamental type.
+	(TargetVariable.SetObject): assuming a fundamental type, set the
+	variable.
+
 2005-06-09  Chris Toshok  <toshok@ximian.com>
 
 	* backends/Debugger.cs (DebuggerBackend..ctor): clean up this and
