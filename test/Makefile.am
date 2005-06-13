@@ -29,5 +29,5 @@ libfoo_la_SOURCES = foo.c
 %.dll:%.cs
 	$(MCS) $(MCS_FLAGS) /target:library -out:$@ $<
 
-CLEANFILES = *.exe *.dll *.so *.dbg a.out *.log *.sum dbg.out
+CLEANFILES = *.exe *.mdb *.dll *.so *.dbg a.out *.log *.sum dbg.out
 

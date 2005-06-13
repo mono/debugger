@@ -88,7 +88,7 @@ Mono.Debugger.dll.config: Mono.Debugger.dll.config.in Makefile
 ASSEMBLY_NAME = Mono.Debugger
 ASSEMBLY = $(ASSEMBLY_NAME).dll
 
-CLEANFILES = *.exe *.dll mdb AssemblyInfo.cs
+CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
 
 EXTRA_DIST = \
 	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
