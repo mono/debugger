@@ -1,3 +1,23 @@
+June 13th, 2005 - Chris Toshok
+-------------------------------
+
+Released version 0.10 of the Mono Debugger
+
+it's been a long, long time since a release, some highlights include:
+
+- the format of information communicated between runtime and debugger
+  has changed.  less is transmitted (more being taken from metadata),
+  and what is transmitted is in a more efficient form.
+- better support for exceptions.  Stepping over a statement that
+  throws an exception will land you in a catch/finally block.  Also, you
+  can cause the runtime to stop when an exception is thrown.
+- fixed a lot of different bugs.
+- fixed up the console frontend, with more of an eye toward the usability
+  of the thing.
+- substantial work has gone into the MonoDevelop debugger support.
+- Martin got amd64 support working.
+
+
 June 12th, 2004 - Martin Baulig
 -------------------------------
 
