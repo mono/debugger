@@ -1,5 +1,10 @@
 2005-06-14  Chris Toshok  <toshok@ximian.com>
 
+	* arch/DwarfReader.cs (DwarfReader.DwarfAttributes): flesh out the
+	rest of the attributes from the spec.
+
+2005-06-14  Chris Toshok  <toshok@ximian.com>
+
 	* backends/mono/MonoFundamentalObjectBase.cs
 	(MonoFundamentalObjectBase.SetObject): new method, here only as a
 	workaround for bug #75270.
