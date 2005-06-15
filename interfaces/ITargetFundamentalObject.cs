@@ -16,5 +16,9 @@ namespace Mono.Debugger.Languages
 		object Object {
 			get;
 		}
+
+		// <summary>
+		// </summary>
+		void SetObject (ITargetObject obj);
 	}
 }

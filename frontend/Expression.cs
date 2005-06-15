@@ -1435,6 +1435,54 @@ namespace Mono.Debugger.Frontend
 				return null;
 			}
 		}
+
+		protected void SetStaticField (ITargetStructType stype, StackFrame frame,
+					       ITargetFieldInfo field, ITargetObject obj)
+		{
+			ITargetFundamentalObject fobj = GetStaticField (stype, frame, field) as ITargetFundamentalObject;
+
+			if (fobj == null)
+				throw new ScriptingException ("Can only set fields that are of fundamental types.");
+
+			fobj.SetObject (obj);
+		}
+
+		protected void SetField (ITargetStructObject sobj, ITargetFieldInfo field, ITargetObject obj)
+		{
+			ITargetFundamentalObject fobj = GetField (sobj, field) as ITargetFundamentalObject;
+
+			if (fobj == null)
+				throw new ScriptingException ("Can only set fields that are of fundamental types.");
+
+			fobj.SetObject (obj);
+		}
+
+		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		{
+			ITargetMemberInfo member = FindMember (context, true);
+
+			if (member is ITargetFieldInfo) {
+
+				if (member.Type != obj.TypeInfo.Type)
+					throw new ScriptingException (
+							      "Type mismatch: cannot assign expression of type " +
+							      "`{0}' to field `{1}', which is of type `{2}'.",
+							      obj.TypeInfo.Type.Name, Name, member.Type.Name);
+
+				if (member.IsStatic)
+					SetStaticField (Type, Frame, (ITargetFieldInfo)member, obj);
+				else if (!IsStatic)
+					SetField (Instance, (ITargetFieldInfo)member, obj);
+			}
+			else if (member is ITargetPropertyInfo) 
+			  	throw new ScriptingException ("Can't set properties directly.");
+			else if (member is ITargetEventInfo)
+				throw new ScriptingException ("Can't set events directly.");
+			else if (member is ITargetMethodInfo)
+				throw new ScriptingException ("Can't set methods directly.");
+
+			return true;
+		}
 	}
 
 	public class PointerDereferenceExpression : PointerExpression
@@ -1732,6 +1780,28 @@ namespace Mono.Debugger.Frontend
 
 			return type.ElementType;
 		}
+
+		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		{
+			// array[int]
+			ITargetArrayObject aobj = expr.EvaluateVariable (context) as ITargetArrayObject;
+			if (aobj != null) {
+				int i;
+				ITargetFundamentalObject elobj;
+
+				// single dimensional array only at present
+				i = GetIntIndex (this.indices[0], context);
+
+				elobj = aobj[i] as ITargetFundamentalObject;
+
+				if (elobj != null) {
+					elobj.SetObject (obj);
+				}
+			}
+
+			return true;
+		}
+
 	}
 
 	public class CastExpression : Expression

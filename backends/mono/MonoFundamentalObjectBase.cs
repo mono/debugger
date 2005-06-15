@@ -39,6 +39,14 @@ namespace Mono.Debugger.Languages.Mono
 		protected abstract object GetObject (ITargetMemoryReader reader,
 						     TargetLocation location);
 
+		// XXX this is here due to mono bug #75270.  without the
+		// (unused) implementation, MonoFundamentalObject.SetObject
+		// is never called when going through an interface.
+		public override void SetObject (ITargetObject obj)
+		{
+			throw new NotImplementedException ();
+		}
+
 		public override string Print ()
 		{
 			object obj = GetObject ();
