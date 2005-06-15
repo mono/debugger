@@ -153,7 +153,7 @@ if test x$server_only != xyes ; then
    AC_SUBST(WRAPPER_CFLAGS)
    AC_SUBST(WRAPPER_LIBS)
 
-   GACUTIL_FLAGS='/package $(PACKAGE) /gacdir $(libdir)'
+   GACUTIL_FLAGS='/package $(PACKAGE) /gacdir $(prefix)/lib /root $(DESTDIR)$(prefix)/lib'
    AC_PATH_PROG(GACUTIL, gacutil, no)
    if test "x$GACUTIL" = "xno" ; then
       AC_MSG_ERROR([No gacutil tool found])
