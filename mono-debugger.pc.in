@@ -6,4 +6,4 @@ libdir=${exec_prefix}/lib
 Name: Mono.Debugger
 Description: Debugging API for Mono
 Version: @VERSION@
-Libs: -r:${libdir}/mono/mono-debugger/Mono.Debugger.dll
+Libs: -r:${prefix}/lib/mono/mono-debugger/Mono.Debugger.dll
