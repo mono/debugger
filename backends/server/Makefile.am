@@ -9,6 +9,8 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 	i386-win32.c			\
 	i386-win32.h			\
 	x86-arch.h			\
+	x86_64-arch.h			\
+	x86_64-arch.c			\
 	x86-linux-ptrace.c		\
 	x86-linux-ptrace.h		\
 	x86-ptrace.c
