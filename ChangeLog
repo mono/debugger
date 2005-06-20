@@ -1,5 +1,11 @@
 2005-06-20  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono/MonoSymbolFile.cs: Add IDisposable interface so we
+	can explicitly deallocate things.  Dispose of the
+	CompilerServices.MonoSymbolFile in the implementation.
+
+2005-06-20  Chris Toshok  <toshok@ximian.com>
+
 	* backends/mono/MonoStringObject.cs (MonoStringObject.SetObject):
 	fix bug #75272 by extending the workaround for #75270.  Cut and
 	paste the implementation from MonoObject here, as the empty NYI

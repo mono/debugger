@@ -198,7 +198,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable
+	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable, IDisposable
 	{
 		internal readonly int Index;
 		internal readonly R.Assembly Assembly;
@@ -572,6 +572,31 @@ namespace Mono.Debugger.Languages.Mono
 								ITargetMemoryAccess memory)
 		{
 			return null;
+		}
+
+		private bool disposed = false;
+
+		private void Dispose (bool disposing)
+		{
+			if (!this.disposed) {
+				if (disposing) {
+					File.Dispose ();
+				}
+			}
+
+			this.disposed = true;
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~MonoSymbolFile ()
+		{
+			Dispose (false);
 		}
 
 		protected class MonoMethod : MethodBase
