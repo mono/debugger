@@ -1,3 +1,11 @@
+2005-06-20  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoStringObject.cs (MonoStringObject.SetObject):
+	fix bug #75272 by extending the workaround for #75270.  Cut and
+	paste the implementation from MonoObject here, as the empty NYI
+	implementation in MonoFundamentalObjectBase (which is the
+	workaround for 75270) overrides the MonoObject impl.
+
 2005-06-14  Chris Toshok  <toshok@ximian.com>
 
 	* arch/DwarfReader.cs (DwarfReader.DwarfAttributes): flesh out the

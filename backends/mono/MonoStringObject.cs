@@ -45,6 +45,12 @@ namespace Mono.Debugger.Languages.Mono
 			object obj = GetObject ();
 			return '"' + (string) obj + '"';
 		}
+
+		// XXX this is here due to mono bug #75270.
+		public override void SetObject (ITargetObject obj)
+		{
+			Location.WriteAddress (obj.Location.Address);
+		}
 	}
 }
 
