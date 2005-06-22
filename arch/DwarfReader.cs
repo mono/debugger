@@ -711,7 +711,7 @@ namespace Mono.Debugger.Architecture
 
 		static void debug (string message, params object[] args)
 		{
-		  //			Console.WriteLine (String.Format (message, args));
+		  //		  Console.WriteLine (String.Format (message, args));
 		}
 
 		protected enum DwarfLang {
@@ -731,24 +731,51 @@ namespace Mono.Debugger.Architecture
 		protected enum DwarfTag {
 			array_type		= 0x01,
 			class_type		= 0x02,
+			entry_point             = 0x03,
 			enumeration_type	= 0x04,
 			formal_parameter	= 0x05,
+			imported_declaration    = 0x08,
+			label                   = 0x0a,
+			lexical_block           = 0x0b,
 			member			= 0x0d,
 			pointer_type		= 0x0f,
+			reference_type          = 0x10,
 			compile_unit		= 0x11,
+			string_type             = 0x12,
 			structure_type		= 0x13,
 			subroutine_type		= 0x15,
 			typedef			= 0x16,
 			union_type		= 0x17,
+			unspecified_parameters  = 0x18,
+			variant                 = 0x19,
+			common_block            = 0x1a,
 			comp_dir		= 0x1b,
 			inheritance		= 0x1c,
+			inlined_subroutine      = 0x1d,
+			module                  = 0x1e,
+			ptr_to_member_type      = 0x1f,
+			set_type                = 0x20,
 			subrange_type		= 0x21,
+			with_stmt               = 0x22,
 			access_declaration	= 0x23,
 			base_type		= 0x24,
+			catch_block             = 0x25,
 			const_type		= 0x26,
+			constant                = 0x27,
 			enumerator		= 0x28,
+			file_type               = 0x29,
+			friend                  = 0x2a,
+			namelist                = 0x2b,
+			namelist_item           = 0x2c,
+			packed_type             = 0x2d,
 			subprogram		= 0x2e,
-			variable		= 0x34
+			template_type_param     = 0x2f,
+			template_value_param    = 0x30,
+			thrown_type             = 0x31,
+			try_block               = 0x32,
+			variant_block           = 0x33,
+			variable		= 0x34,
+			volatile_type           = 0x35
 		}
 
 		protected enum DwarfAttribute {
@@ -847,6 +874,13 @@ namespace Mono.Debugger.Architecture
 			ref8			= 0x14,
 			ref_udata		= 0x15,
 			indirect                = 0x16
+		}
+
+		protected enum DwarfInline {
+			not_inlined             = 0x00,
+			inlined                 = 0x01,
+			declared_not_inlined    = 0x02,
+			declared_inline         = 0x03
 		}
 
 		protected struct LineNumber : IComparable
@@ -1274,7 +1308,7 @@ namespace Mono.Debugger.Architecture
 					method_hash.Add (current_method, new StatementMachine (stm));
 			}
 
-			public string GetSource (ISymbolContainer method, out int start_row, out int end_row,
+			public string GetSource (DieSubprogram method, out int start_row, out int end_row,
 						 out LineNumber[] lines)
 			{
 				start_row = end_row = 0;
@@ -1730,6 +1764,13 @@ namespace Mono.Debugger.Architecture
 				case DwarfTag.union_type:
 					return new DieStructureType (reader, comp_unit, offset, abbrev, true);
 
+				case DwarfTag.array_type:
+					return new DieArrayType (reader, comp_unit, offset, abbrev);
+
+				case DwarfTag.subrange_type:
+					return new DieSubrangeType (reader, comp_unit, abbrev);
+				/* XXX Need DwarfTag.enumeration_type, which can also be used for array indices */
+
 				case DwarfTag.typedef:
 					return new DieTypedef (reader, comp_unit, offset, abbrev);
 
@@ -2023,6 +2064,18 @@ namespace Mono.Debugger.Architecture
 
 				case DwarfAttribute.name:
 					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.decl_file:
+					//Console.WriteLine ("decl_file = {0}", (long) attribute.Data);
+					break;
+
+				case DwarfAttribute.decl_line:
+					//Console.WriteLine ("decl_line = {0}", (long) attribute.Data);
+					break;
+
+				case DwarfAttribute.inline:
+					//Console.WriteLine ("inline = {0}", (DwarfInline) (long)attribute.Data);
 					break;
 				}
 			}
@@ -2814,9 +2867,136 @@ namespace Mono.Debugger.Architecture
 				if (Name != null)
 					name = Name;
 				else
-					name = String.Format ("{0} *", ref_type.Name);
+					name = String.Format ("{0}*", ref_type.Name);
 
 				return new NativePointerType (name, ref_type, byte_size);
+			}
+		}
+
+		protected class DieSubrangeType : Die
+		{
+			int upper_bound;
+			int lower_bound;
+
+			public DieSubrangeType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+						AbbrevEntry abbrev)
+				: base (reader, comp_unit, abbrev)
+			{  }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.upper_bound:
+					upper_bound = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.lower_bound:
+					lower_bound = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.count:
+					lower_bound = 0;
+				  	upper_bound = ((int) (long) attribute.Data) - 1;
+					break;
+				}
+			}
+
+		  	public int UpperBound {
+				get {
+					return upper_bound;
+				}
+			}
+
+			public int LowerBound {
+				get {
+					return lower_bound;
+				}
+			}
+		}
+
+		protected class DieArrayType : DieType
+		{
+			int ordering;
+			int byte_size;
+			int stride_size;
+			long type_offset;
+			string name;
+			DieType reference;
+
+			public DieArrayType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					     long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{  }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.byte_size:
+					byte_size = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.stride_size:
+					stride_size = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.type:
+					type_offset = (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.ordering:
+					ordering = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override NativeType CreateType ()
+			{
+				reference = GetReference (type_offset);
+				if (reference == null) {
+					Console.WriteLine (
+						"UNKNOWN POINTER: {0}",
+						comp_unit.RealStartOffset + type_offset);
+					return null;
+				}
+
+				NativeType ref_type = reference.ResolveType ();
+				if (ref_type == null)
+					return null;
+
+#if false
+				/* not sure we want this */
+				if (ref_type.TypeHandle == typeof (char))
+					return new NativeStringType (byte_size);
+#endif
+
+				string name;
+				if (Name != null)
+					name = Name;
+				else
+					name = String.Format ("{0} []", ref_type.Name);
+
+				/* XXX for now just find the first
+				 * Subrange child and use that for the
+				 * array dimensions.  This should
+				 * really support multidimensional
+				 * arrays */
+				DieSubrangeType subrange = null;
+				foreach (Die d in Children) {
+					subrange = d as DieSubrangeType;
+					if (subrange == null) continue;
+					break;
+				}
+
+				return new NativeArrayType (name, ref_type,
+							    subrange.LowerBound, subrange.UpperBound, byte_size);
 			}
 		}
 
