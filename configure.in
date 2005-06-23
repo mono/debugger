@@ -75,9 +75,9 @@ AM_CONDITIONAL(PLATFORM_POWERPC, test x$platform = xpowerpc)
 AC_SUBST(glue_cflags)
 AC_SUBST(server_cflags)
 
-if test x$platform = xi386linux -a x$server_only != xyes; then
-   LINUX_NPTL_CHECK
-fi
+#if test x$platform = xi386linux -a x$server_only != xyes; then
+#   LINUX_NPTL_CHECK
+#fi
 
 dnl may require a specific autoconf version
 dnl AC_PROG_CC_FOR_BUILD
