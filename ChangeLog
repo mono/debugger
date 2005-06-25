@@ -1,3 +1,12 @@
+2005-06-25  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Expression.cs (SimpleNameExpression.DoResolve): use a
+	gdb message here since it's a little clearer (and doesn't contain
+	a typo, to boot).
+
+	* frontend/Style.cs (StyleNative.DoFormatObject): clean up the
+	array formatting a bit so it doesn't look so jammed together.
+
 2005-06-22  Chris Toshok  <toshok@ximian.com>
 
 	* backends/native/Makefile.am (EXTRA_DIST): add NativeArrayType.cs

@@ -467,15 +467,15 @@ namespace Mono.Debugger.Frontend
 			switch (obj.TypeInfo.Type.Kind) {
 			case TargetObjectKind.Array: {
 				ITargetArrayObject aobj = (ITargetArrayObject) obj;
-				StringBuilder sb = new StringBuilder ("[");
+				StringBuilder sb = new StringBuilder ("[ ");
 				int lower = aobj.LowerBound;
 				int upper = aobj.UpperBound;
 				for (int i = lower; i < upper; i++) {
 					if (i > lower)
-						sb.Append (",");
+						sb.Append (", ");
 					sb.Append (FormatObject (aobj [i], false));
 				}
-				sb.Append ("]");
+				sb.Append (" ]");
 				return sb.ToString ();
 			}
 

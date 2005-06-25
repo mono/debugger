@@ -636,7 +636,7 @@ namespace Mono.Debugger.Frontend
 			if (expr != null)
 				return expr;
 
-			throw new ScriptingException ("No such type of method: `{0}'", Name);
+			throw new ScriptingException ("No symbol `{0}' in current context.", Name);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
