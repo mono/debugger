@@ -1,3 +1,12 @@
+2005-06-28  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoFundamentalObjectBase.cs
+	(MonoFundamentalObjectBase.SetObject): remove workaround for
+	75270.
+
+	* backends/mono/MonoStringObject.cs (MonoStringObject.SetObject):
+	remove workaround for 75270.
+	
 2005-06-25  Chris Toshok  <toshok@ximian.com>
 
 	* frontend/Expression.cs (SimpleNameExpression.DoResolve): use a
