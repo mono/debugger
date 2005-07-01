@@ -1,3 +1,8 @@
+2005-07-01  Chris Toshok  <toshok@ximian.com>
+
+	* backends/classes/Utils.cs: rewrite this to remove the dep on
+	g_file_get_contents.
+
 2005-06-28  Chris Toshok  <toshok@ximian.com>
 
 	* backends/mono/MonoFundamentalObjectBase.cs
