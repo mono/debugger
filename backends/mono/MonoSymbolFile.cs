@@ -354,6 +354,8 @@ namespace Mono.Debugger.Languages.Mono
 			int rank = type.GetArrayRank ();
 			if (rank > 0)
 				result = new MonoArrayType (this, type);
+			else if (type.IsEnum)
+				result = new MonoEnumType (this, type);
 			else
 				result = new MonoClassType (this, type);
 

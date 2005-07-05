@@ -1,8 +1,9 @@
 EXTRA_DIST =  \
-	Heap.cs MonoFunctionObject.cs MonoLanguageBackend.cs MonoStringType.cs \
-	MonoArrayObject.cs MonoFunctionType.cs MonoObject.cs MonoStringTypeInfo.cs \
-	MonoArrayType.cs MonoFunctionTypeInfo.cs MonoObjectObject.cs MonoSymbolFile.cs \
-	MonoArrayTypeInfo.cs MonoFundamentalObjectBase.cs MonoObjectType.cs MonoType.cs \
-	MonoClassInfo.cs MonoFundamentalObject.cs MonoObjectTypeInfo.cs MonoTypeInfo.cs \
-	MonoClassObject.cs MonoFundamentalType.cs MonoOpaqueType.cs MonoVariable.cs \
-	MonoClassType.cs MonoFundamentalTypeInfo.cs MonoStringObject.cs
+	Heap.cs MonoArrayObject.cs MonoArrayType.cs MonoArrayTypeInfo.cs MonoClassInfo.cs \
+	MonoClassObject.cs MonoClassType.cs MonoEnumObject.cs MonoEnumType.cs \
+	MonoEnumTypeInfo.cs MonoFunctionObject.cs MonoFunctionType.cs MonoFunctionTypeInfo.cs \
+	MonoFundamentalObjectBase.cs MonoFundamentalObject.cs MonoFundamentalType.cs \
+	MonoFundamentalTypeInfo.cs MonoLanguageBackend.cs MonoMember.cs MonoObject.cs \
+	MonoObjectObject.cs MonoObjectType.cs MonoObjectTypeInfo.cs MonoOpaqueType.cs \
+	MonoStringObject.cs MonoStringType.cs MonoStringTypeInfo.cs MonoSymbolFile.cs \
+	MonoType.cs MonoTypeInfo.cs MonoVariable.cs

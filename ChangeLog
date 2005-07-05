@@ -1,5 +1,29 @@
 2005-07-05  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono/MonoArrayTypeInfo.cs: remove unused using.
+
+	* backends/mono/MonoClassInfo.cs: remove the MonoClassType. prefix
+	from MonoFieldInfo, MonoMethodInfo, and MonoPropertyInfo.
+
+	* backends/mono/MonoClassType.cs: split out all the
+	Member/Field/Property/Event classes from here.
+
+	* backends/mono/MonoMember.cs: and put them here.  Also,
+	MonoStructMember -> MonoMember, and make MonoMember not depend on
+	a MonoStructType, since it's also used for enums.
+
+	* backends/mono/MonoSymbolFile.cs: return a MonoEnumType if
+	type.IsEnum == true.
+
+	* backends/mono/Makefile.am (EXTRA_DIST): add the new Enum files
+	and MonoMember.cs.
+
+	* backends/mono/MonoEnumTypeInfo.cs,
+	backends/mono/MonoEnumType.cs, backends/mono/MonoEnumObject.cs:
+	add new enum support.
+
+2005-07-05  Chris Toshok  <toshok@ximian.com>
+
 	* frontend/Style.cs (StyleNative.FormatObject): add (obj is
 	ITargetEnumType) block, which calls FormatEnumType.
 	(StyleNative.FormatEnumMember): new function, give both the

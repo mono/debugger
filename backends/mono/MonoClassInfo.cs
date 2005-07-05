@@ -52,7 +52,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoClassType.MonoFieldInfo finfo = Type.Fields [index];
+				MonoFieldInfo finfo = Type.Fields [index];
 				MonoTypeInfo ftype = finfo.Type.GetTypeInfo ();
 				if (ftype == null)
 					return null;
@@ -80,7 +80,7 @@ namespace Mono.Debugger.Languages.Mono
 					debugger_info.ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 
-				MonoClassType.MonoFieldInfo finfo = Type.StaticFields [index];
+				MonoFieldInfo finfo = Type.StaticFields [index];
 				MonoTypeInfo ftype = finfo.Type.GetTypeInfo ();
 				if (ftype == null)
 					return null;
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoClassType.MonoMethodInfo minfo = Type.Methods [index];
+				MonoMethodInfo minfo = Type.Methods [index];
 				MonoTypeInfo mtype = minfo.Type.GetTypeInfo ();
 				if (mtype == null)
 					return null;
@@ -127,7 +127,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoClassType.MonoPropertyInfo pinfo = Type.Properties [index];
+				MonoPropertyInfo pinfo = Type.Properties [index];
 				return pinfo.Get (location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
