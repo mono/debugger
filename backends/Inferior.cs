@@ -218,7 +218,7 @@ namespace Mono.Debugger.Backends
 
 		public abstract Inferior CreateThread ();
 
-		[DllImport("glib-2.0")]
+		[DllImport("libglib-2.0-0.dll")]
 		protected extern static void g_free (IntPtr data);
 
 		protected void check_error (TargetError error)

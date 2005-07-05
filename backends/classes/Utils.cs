@@ -6,7 +6,7 @@ namespace Mono.Debugger.Backends
 {
 	internal abstract class Utils
 	{
-		[DllImport("glib-2.0")]
+		[DllImport("libglib-2.0-0.dll")]
 		extern static bool g_file_get_contents (string filename, out IntPtr contents, out int length, out IntPtr error);
 
 		public static string GetFileContents (string filename)

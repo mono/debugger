@@ -196,6 +196,17 @@ dnl
 dnl BFD checks
 dnl
 
+if test `uname -s` = "Darwin"; then
+	LIB_PREFIX=
+	LIB_SUFFIX=.dylib
+else
+	LIB_PREFIX=.so
+	LIB_SUFFIX=
+fi
+
+AC_SUBST(LIB_PREFIX)
+AC_SUBST(LIB_SUFFIX)
+
 AC_CHECK_HEADERS(stddef.h string.h strings.h stdlib.h time.h unistd.h)
 AC_CHECK_HEADERS(fcntl.h sys/file.h sys/time.h)
 AC_HEADER_TIME
@@ -210,6 +221,7 @@ interfaces/Makefile
 classes/Makefile
 glue/Makefile
 wrapper/Makefile
+wrapper/Mono.Debugger.dll.config
 backends/Makefile
 backends/classes/Makefile
 backends/server/Makefile

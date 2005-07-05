@@ -159,7 +159,7 @@ namespace Mono.Debugger.Architecture
 		[DllImport("monodebuggerserver")]
 		extern static long bfd_glue_elfi386_locate_base (IntPtr bfd, IntPtr data, int size);
 
-		[DllImport("glib-2.0")]
+		[DllImport("libglib-2.0-0.dll")]
 		extern static void g_free (IntPtr data);
 
 		[DllImport("monodebuggerserver")]
