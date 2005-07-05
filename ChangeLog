@@ -48,6 +48,7 @@
 	- add dllmap to Mono.Debugger.dll.config
 	Remove dllmap for monodebuggerderver since it will be located by 
 	ldconfig's cache or LD_LIBRARY_PATH
+	* mono-debugger-mini-wrapper: Make finding it relocatable
 
 2005-07-01  Chris Toshok  <toshok@ximian.com>
 
