@@ -79,12 +79,6 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 
 noinst_DATA = Mono.Debugger.dll.config
 
-Mono.Debugger.dll.config: Mono.Debugger.dll.config.in Makefile
-	sed -e 's^\@libdir\@^$(libdir)^g' \
-		-e 's^\@LT_VERSION_SUFFIX\@^$(LT_VERSION_SUFFIX)^g' \
-		< $(srcdir)/Mono.Debugger.dll.config.in > config.tmp \
-	&& mv config.tmp Mono.Debugger.dll.config
-
 ASSEMBLY_NAME = Mono.Debugger
 ASSEMBLY = $(ASSEMBLY_NAME).dll
 

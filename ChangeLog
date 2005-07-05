@@ -1,3 +1,11 @@
+2005-07-05  Wade Berrier <wberrier@novell.com>
+
+	* DllImport: (merged up r46954)
+	Copy what gtk-sharp does for importing glib-2.0:
+	- add dllmap to Mono.Debugger.dll.config
+	Remove dllmap for monodebuggerderver since it will be located by 
+	ldconfig's cache or LD_LIBRARY_PATH
+
 2005-07-01  Chris Toshok  <toshok@ximian.com>
 
 	* backends/classes/Utils.cs: rewrite this to remove the dep on
