@@ -207,6 +207,10 @@ namespace Mono.Debugger.Frontend
 				ITargetStructType stype = (ITargetStructType) obj;
 				return FormatStructType (frame, stype);
 			}
+			else if (obj is ITargetEnumType) {
+				ITargetEnumType etype = (ITargetEnumType) obj;
+				return FormatEnumType (frame, etype);
+			}
 			else if (obj is ITargetType) {
 				return ((ITargetType) obj).Name;
 			}
@@ -218,6 +222,18 @@ namespace Mono.Debugger.Frontend
 			else {
 				return obj.ToString ();
 			}
+		}
+
+		protected string FormatEnumMember (string prefix, ITargetMemberInfo member,
+						   bool is_static, Hashtable hash)
+		{
+			string value = "";
+			if (member.Handle is FieldInfo) {
+				FieldInfo fi = (FieldInfo)member.Handle;
+				if (fi.GetValue (null) != null)
+					value = String.Format (" = {0}", (int)fi.GetValue(null));
+			}
+			return String.Format ("{0}   {1}{2}", prefix, member.Name, value);
 		}
 
 		protected string FormatMember (string prefix, ITargetMemberInfo member,
@@ -320,6 +336,30 @@ namespace Mono.Debugger.Frontend
 				break;
 			}
 
+			case TargetObjectKind.Enum: {
+				StringBuilder sb = new StringBuilder ();
+				ITargetEnumType etype = type as ITargetEnumType;
+				sb.Append ("enum ");
+
+				if (etype.Name != null)
+					sb.Append (etype.Name);
+
+				sb.Append ("\n" + prefix + "{\n");
+
+				foreach (ITargetFieldInfo field in etype.Members) {
+					sb.Append (FormatEnumMember (prefix, field, false, hash));
+					if (field != etype.Members[etype.Members.Length - 1])
+						sb.Append (",");
+					sb.Append ("\n");
+				}
+				
+
+				sb.Append (prefix + "}");
+
+				retval = sb.ToString ();
+				break;
+			}
+
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
 				ITargetStructType stype = (ITargetStructType) type;
@@ -402,6 +442,11 @@ namespace Mono.Debugger.Frontend
 
 			hash.Remove (type);
 			return retval;
+		}
+
+		public string FormatEnumType (FrameHandle frame, ITargetEnumType etype)
+		{
+			return String.Format ("enum {0}", etype.Name);
 		}
 
 		public string FormatStructType (FrameHandle frame, ITargetStructType stype)
@@ -504,6 +549,13 @@ namespace Mono.Debugger.Frontend
 					formatter.Add (item);
 				}
 				return formatter.Format ();
+			}
+
+			case TargetObjectKind.Enum: {
+				ITargetEnumObject eobj = (ITargetEnumObject) obj;
+				ITargetObject fobj = eobj.Value;
+
+				return FormatObject (fobj, true);
 			}
 
 			default:

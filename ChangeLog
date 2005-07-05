@@ -1,3 +1,22 @@
+2005-07-05  Chris Toshok  <toshok@ximian.com>
+
+	* frontend/Style.cs (StyleNative.FormatObject): add (obj is
+	ITargetEnumType) block, which calls FormatEnumType.
+	(StyleNative.FormatEnumMember): new function, give both the
+	symbolic and numeric value.
+	(StyleNative.FormatType): add TargetObjectKind.Enum case.
+	(StyleNative.FormatEnumType): just print "enum <etype.Name>"
+	(StyleNative.DoFormatObject): add TargetObjectKind.Enum case.
+
+	* interfaces/TargetObjectKind.cs (enum TargetObjectKind): add
+	Enum.
+
+	* interfaces/ITargetEnum{Type,Object}.cs: new interfaces for
+	enumerated types/objects.
+
+	* interfaces/Makefile.am (EXTRA_DIST): Add
+	ITargetEnum{Type,Object}.cs
+
 2005-07-05  Wade Berrier <wberrier@novell.com>
 
 	* DllImport: (merged up r46954)

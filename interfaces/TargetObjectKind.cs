@@ -4,6 +4,7 @@ namespace Mono.Debugger
 	{
 		Unknown,
 		Fundamental,
+		Enum,
 		Array,
 		Struct,
 		Class,
