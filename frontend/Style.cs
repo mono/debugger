@@ -227,11 +227,12 @@ namespace Mono.Debugger.Frontend
 		protected string FormatEnumMember (string prefix, ITargetMemberInfo member,
 						   bool is_static, Hashtable hash)
 		{
+			ITargetFieldInfo fi = member as ITargetFieldInfo;
 			string value = "";
-			if (member.Handle is FieldInfo) {
-				FieldInfo fi = (FieldInfo)member.Handle;
-				if (fi.GetValue (null) != null)
-					value = String.Format (" = {0}", (int)fi.GetValue(null));
+			if (fi.HasConstValue) {
+				ITargetObject cv = fi.GetConstValue (interpreter.GlobalContext.CurrentFrame.Frame);
+				if (cv != null)
+					value = String.Format (" = {0}", cv.Print());
 			}
 			return String.Format ("{0}   {1}{2}", prefix, member.Name, value);
 		}
@@ -720,7 +721,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class StyleBase
 	{
-		Interpreter interpreter;
+		protected Interpreter interpreter;
 
 		protected StyleBase (Interpreter interpreter)
 		{

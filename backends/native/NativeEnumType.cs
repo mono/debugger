@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Native
 		members = new NativeFieldInfo [element_names.Length];
 		int i;
 		for (i = 0; i < element_names.Length; i ++) {
-			members[i] = new NativeFieldInfo (this, element_names[i], i, 0);
+			members[i] = new NativeFieldInfo (this, element_names[i], i, true, element_values[i]);
 		}
 	}
 

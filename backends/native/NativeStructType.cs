@@ -59,6 +59,8 @@ namespace Mono.Debugger.Languages.Native
 		int offset;
 		int bit_offset, bit_size;
 		bool is_bitfield;
+		bool has_const_value;
+		int const_value;
 
 		public NativeFieldInfo (NativeType type, string name, int index, int offset)
 			: base (type, name, index, false)
@@ -73,6 +75,25 @@ namespace Mono.Debugger.Languages.Native
 			this.bit_offset = bit_offset;
 			this.bit_size = bit_size;
 			this.is_bitfield = true;
+		}
+
+		public NativeFieldInfo (NativeType type, string name, int index,
+					bool has_const_value, int const_value)
+			: base (type, name, index, false)
+		{
+			this.has_const_value = has_const_value;
+			this.const_value = const_value;
+		}
+
+		public bool HasConstValue {
+			get {
+			  Console.WriteLine ("HasConstvalue = {0}", has_const_value);
+				return has_const_value;
+			}
+		}
+
+		public ITargetObject GetConstValue (StackFrame frame) {
+			return null;
 		}
 
 		public int Offset {

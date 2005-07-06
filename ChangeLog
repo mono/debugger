@@ -1,5 +1,26 @@
 2005-07-05  Chris Toshok  <toshok@ximian.com>
 
+	* backends/mono/MonoMember.cs (MonoFieldInfo): add implementations
+	of HasConstValue and GetConstValue from ITargetFieldInfo.
+
+	* backends/native/NativeEnumType.cs (NativeEnumType..ctor): use
+	the new NativeFieldInfo ctor.
+
+	* backends/native/NativeStructType.cs (NativeFieldInfo): add a new
+	ctor for fields that have constant values (right now only used by
+	enums), and add the ITargetFieldInfo "HasConstValue" and
+	"GetConstValue" implementations.
+
+	* frontend/Style.cs (StyleBase): make interpreter protected.
+	(StyleNative.FormatEnumMember): make this code work for both
+	native and managed enum types (although the native backend doesn't
+	provide the needed hooks as yet.)
+
+	* interfaces/ITargetStructType.cs (ITargetFieldInfo): add
+	HasConstValue property and GetConstValue method.
+
+2005-07-05  Chris Toshok  <toshok@ximian.com>
+
 	* backends/native/Makefile.am (EXTRA_DIST): add
 	NativeEnum{Object,Type}.cs
 

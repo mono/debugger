@@ -77,6 +77,28 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
+		public bool HasConstValue {
+			get { return FieldInfo.IsLiteral; }
+		}
+
+		public ITargetObject GetConstValue (StackFrame frame) 
+		{
+			// this is definitely swayed toward enums,
+			// where we know we can get the const value
+			// from a null instance (i.e. it's a static
+			// field.  we need to take into account
+			// finfo.IsStatic, though.
+			if (FieldInfo.DeclaringType.IsEnum) {
+				object value = FieldInfo.GetValue (null);
+			  
+				return type.File.MonoLanguage.CreateInstance (frame, (int)value);
+			}
+			else {
+				// XXX
+				return null;
+			}
+		}
+
 		protected override string MyToString ()
 		{
 			return String.Format ("{0}", type);
