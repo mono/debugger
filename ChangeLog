@@ -1,5 +1,17 @@
 2005-07-05  Chris Toshok  <toshok@ximian.com>
 
+	* backends/native/Makefile.am (EXTRA_DIST): add
+	NativeEnum{Object,Type}.cs
+
+	* backends/native/NativeEnumObject.cs,
+	backends/native/NativeEnumType.cs: barebones native support for
+	enumerated types.
+
+	* arch/DwarfReader.cs: add support for enumerator and
+	enumeration_type DIE's.
+
+2005-07-05  Chris Toshok  <toshok@ximian.com>
+
 	* backends/mono/MonoArrayTypeInfo.cs: remove unused using.
 
 	* backends/mono/MonoClassInfo.cs: remove the MonoClassType. prefix
