@@ -33,6 +33,12 @@ namespace Mono.Debugger.Languages
 		int Offset {
 			get;
 		}
+
+		bool HasConstValue {
+			get;
+		}
+
+		ITargetObject GetConstValue (StackFrame frame);
 	}
 
 	public interface ITargetPropertyInfo : ITargetMemberInfo
