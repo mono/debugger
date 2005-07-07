@@ -1,5 +1,15 @@
 2005-07-07  Chris Toshok  <toshok@ximian.com>
 
+	* backends/SingleSteppingEngine.cs: switch a few things from
+	referencing the ThreadManager directly.  Also, dispose of the
+	Process in our Dispose() method.
+
+	* backends/ThreadManager.cs (Dispose): let's just dispose of the
+	BreakpointManager and SingleSteppingEngine while we're at it,
+	shall we?
+
+2005-07-07  Chris Toshok  <toshok@ximian.com>
+
 	* backends/native/NativeStructType.cs (NativeStructMember.Handle):
 	remove.
 

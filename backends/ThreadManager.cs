@@ -690,6 +690,12 @@ namespace Mono.Debugger
 
 				if (main_process != null && !main_in_threads)
 					main_process.Dispose ();
+
+				if (breakpoint_manager != null)
+					breakpoint_manager.Dispose ();
+
+				if (the_engine != null)
+					the_engine.Dispose ();
 			}
 		}
 

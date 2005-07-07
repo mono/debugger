@@ -114,11 +114,11 @@ namespace Mono.Debugger.Backends
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			disassembler.SymbolTable = manager.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
-			current_simple_symtab = manager.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
-			current_symtab = manager.DebuggerBackend.SymbolTableManager.SymbolTable;
+			disassembler.SymbolTable = inferior.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
+			current_simple_symtab = inferior.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
+			current_symtab = inferior.DebuggerBackend.SymbolTableManager.SymbolTable;
 
-			manager.DebuggerBackend.SymbolTableManager.SymbolTableChangedEvent +=
+			inferior.DebuggerBackend.SymbolTableManager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 
 			exception_handlers = new Hashtable ();
@@ -508,7 +508,7 @@ namespace Mono.Debugger.Backends
 
 		Backtrace get_backtrace (int max_frames)
 		{
-			manager.DebuggerBackend.UpdateSymbolTable ();
+			inferior.DebuggerBackend.UpdateSymbolTable ();
 
 			if (current_frame == null)
 				throw new TargetException (TargetError.NoStack);
@@ -741,7 +741,7 @@ namespace Mono.Debugger.Backends
 
 		public IMethod Lookup (TargetAddress address)
 		{
-			manager.DebuggerBackend.UpdateSymbolTable ();
+			inferior.DebuggerBackend.UpdateSymbolTable ();
 
 			if (current_symtab == null)
 				return null;
@@ -1673,7 +1673,7 @@ namespace Mono.Debugger.Backends
 			if ((source == null) || source.IsDynamic)
 				return false;
 
-			SourceFileFactory factory = manager.DebuggerBackend.SourceFileFactory;
+			SourceFileFactory factory = inferior.DebuggerBackend.SourceFileFactory;
 			if (!factory.Exists (source.SourceFile.FileName))
 				return false;
 
@@ -2020,6 +2020,10 @@ namespace Mono.Debugger.Backends
 				if (inferior != null)
 					inferior.Dispose ();
 				inferior = null;
+
+				if (process != null)
+					process.Dispose ();;
+				process = null;
 			}
 
 			disposed = true;
