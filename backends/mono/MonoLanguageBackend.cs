@@ -727,5 +727,39 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 #endregion
+
+		private bool disposed = false;
+
+		private void Dispose (bool disposing)
+		{
+			lock (this) {
+				if (disposed)
+					return;
+			  
+				disposed = true;
+			}
+
+			if (disposing) {
+				if (symbol_files != null) {
+					foreach (MonoSymbolFile symfile in symbol_files)
+						symfile.Dispose();
+
+					symbol_files = null;
+				}
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~MonoLanguageBackend ()
+		{
+			Dispose (false);
+		}
+
 	}
 }

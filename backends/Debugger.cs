@@ -259,6 +259,12 @@ namespace Mono.Debugger
 					bfd_container.Dispose ();
 					bfd_container = null;
 				}
+				if (languages != null) {
+					foreach (ILanguage lang in languages)
+						lang.Dispose();
+					languages = null;
+				}
+			       
 			}
 		}
 

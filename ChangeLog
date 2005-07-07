@@ -1,5 +1,20 @@
 2005-07-06  Chris Toshok  <toshok@ximian.com>
 
+	* backends/Debugger.cs (DebuggerBackend.Dispose): dispose of all
+	our ILanguages.
+
+	* backends/mono/MonoLanguageBackend.cs (MonoLanguageBackend): add
+	IDisposable implementation, specifically disposing of the
+	MonoSymbolFile's, which fixes bug #75201.
+
+	* backends/native/NativeLanguage.cs (NativeLanguage): add
+	IDisposable implementation.
+
+	* interfaces/ILanguage.cs (ILanguage): languages must implement
+	IDisposable.
+
+2005-07-06  Chris Toshok  <toshok@ximian.com>
+
 	* interfaces/ITargetStructType.cs (ITargetFieldInfo): add
 	HasConstValue property and GetConstValue method to fix the build.
 

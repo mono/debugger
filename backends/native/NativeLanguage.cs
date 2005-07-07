@@ -76,5 +76,37 @@ namespace Mono.Debugger.Languages.Native
 		{
 			return null;
 		}
+
+		private bool disposed = false;
+
+		private void Dispose (bool disposing)
+		{
+			lock (this) {
+				if (disposed)
+					return;
+			  
+				disposed = true;
+			}
+
+			if (disposing) {
+				if (bfd_container != null) {
+					bfd_container.Dispose ();
+
+					bfd_container = null;
+				}
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~NativeLanguage ()
+		{
+			Dispose (false);
+		}
 	}
 }

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public interface ILanguage
+	public interface ILanguage : IDisposable
 	{
 		string Name {
 			get;
