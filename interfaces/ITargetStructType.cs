@@ -17,15 +17,6 @@ namespace Mono.Debugger.Languages
 		bool IsStatic {
 			get;
 		}
-
-		// <summary>
-		//   The current programming language's native representation of this member.
-		//   This is a System.Reflection.MemberInfo for managed data types.
-		// </summary>
-		object Handle {
-			get;
-		}
-
 	}
 
 	public interface ITargetFieldInfo : ITargetMemberInfo
