@@ -27,11 +27,11 @@ AC_DEFUN([READLINE_TRYLINK], [
 ])
 
 AC_DEFUN([CHECK_READLINE], [
-        AC_ARG_WITH(readline,   [  -with-readline=[no/yes/libedit]    Enable readline support (default=yes)])
+        AC_ARG_WITH(readline,   [  -with-readline=[yes/libedit]    Enable readline support (default=yes)])
 	AC_CACHE_CHECK([for Readline], ac_cv_with_readline, ac_cv_with_readline="${with_readline:=yes}")
 	case $ac_cv_with_readline in
 	no|"")
-		with_readline=no
+		AC_MSG_ERROR([libreadline (or libedit) is required to build the mono debugger])
 		;;
 	yes)
 		with_readline=yes
@@ -41,23 +41,21 @@ AC_DEFUN([CHECK_READLINE], [
 		;;
 	esac
 
-	if test "$with_readline" != no; then
-	   READLINE_DEPLIBS=
-	   if test "$with_readline" == yes; then
-	      READLINE_TRYLINK(readline)
-	   fi
+	READLINE_DEPLIBS=
+	if test "$with_readline" == yes; then
+	   READLINE_TRYLINK(readline)
+	fi
 
-	   # fall through to checking for libedit if we didn't find
-	   # libreadline (or if you user specified libedit)
-	   if test -z "$READLINE_DEPLIBS"; then
-	      READLINE_TRYLINK(edit)
+	# fall through to checking for libedit if we didn't find
+	# libreadline (or if you user specified libedit)
+	if test -z "$READLINE_DEPLIBS"; then
+	   READLINE_TRYLINK(edit)
 
-	      AC_DEFINE(READLINE_IS_LIBEDIT,1,[if we're using the readline api from libedit])
-	   fi
+	   AC_DEFINE(READLINE_IS_LIBEDIT,1,[if we're using the readline api from libedit])
+	fi
 
-	   if test -z "$READLINE_DEPLIBS"; then
-	      AC_MSG_ERROR([Cannot figure out how to link with the readline/libedit library; see config.log for more information])
-	   fi
+	if test -z "$READLINE_DEPLIBS"; then
+	   AC_MSG_ERROR([Cannot figure out how to link with the readline/libedit library; see config.log for more information])
 	fi
 ])
 

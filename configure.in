@@ -187,10 +187,8 @@ AC_SUBST(top_srcdir)
 AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
 
-if test x$server_only != xyes ; then
-   CHECK_READLINE
-   AC_SUBST(READLINE_DEPLIBS)
-fi
+CHECK_READLINE
+AC_SUBST(READLINE_DEPLIBS)
 
 dnl
 dnl BFD checks

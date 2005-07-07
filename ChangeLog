@@ -1,5 +1,10 @@
 2005-07-07  Chris Toshok  <toshok@ximian.com>
 
+	* configure.in, acinclude.m4: remove the optional nature of the
+	readline dep.  you must either have readline or libedit.
+
+2005-07-07  Chris Toshok  <toshok@ximian.com>
+
 	* backends/SingleSteppingEngine.cs: switch a few things from
 	referencing the ThreadManager directly.  Also, dispose of the
 	Process in our Dispose() method.
