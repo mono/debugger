@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
@@ -206,20 +207,13 @@ namespace Mono.Debugger
 
 		public void LoadLibrary (Process process, string filename)
 		{
-			Assembly ass;
-			try {
-				ass = Assembly.LoadFrom (filename);
-			} catch {
-				ass = null;
-			}
-			if (ass != null) {
-				if (mono_language == null)
-					throw new SymbolTableException (
+			if (mono_language == null)
+				throw new SymbolTableException (
 						"Cannot load .NET assembly {0} while " +
 						"debugging an unmanaged application",
 						filename);
-				mono_language.FindImage (process, ass);
-			} else
+
+			if (!mono_language.TryFindImage (process, filename))
 				bfd_container.AddFile (process, filename, true, false, false);
 		}
 

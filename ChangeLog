@@ -1,3 +1,12 @@
+2005-07-07  Chris Toshok  <toshok@ximian.com>
+
+	* backends/mono/MonoLanguageBackend.cs (TryFindImage): Rename
+	FindImage to this, return true if loading the assembly was
+	successful.
+
+	* backends/Debugger.cs: push anything dealing with Assembly
+	loading down into MonoLanguageBackend.
+
 2005-07-06  Chris Toshok  <toshok@ximian.com>
 
 	* backends/Debugger.cs (DebuggerBackend.Dispose): dispose of all

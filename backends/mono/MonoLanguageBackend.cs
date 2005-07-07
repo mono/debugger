@@ -255,15 +255,22 @@ namespace Mono.Debugger.Languages.Mono
 			get { return backend.SourceFileFactory; }
 		}
 
-		internal void FindImage (Process process, R.Assembly ass)
+		internal bool TryFindImage (Process process, string filename)
 		{
+			R.Assembly ass = R.Assembly.LoadFrom (filename);
+			if (ass == null)
+				return false;
+
 			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [ass];
 			if (file != null)
-				return;
+				return true;
 
 			mutex.Lock ();
 			process.CallMethod (info.LookupAssembly, ass.Location);
 			mutex.Unlock ();
+
+			// always return true?
+			return true;
 		}
 
 		public MonoType LookupMonoType (Type type)
