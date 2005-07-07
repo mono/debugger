@@ -1769,7 +1769,12 @@ namespace Mono.Debugger.Architecture
 
 				case DwarfTag.subrange_type:
 					return new DieSubrangeType (reader, comp_unit, abbrev);
-				/* XXX Need DwarfTag.enumeration_type, which can also be used for array indices */
+
+				case DwarfTag.enumeration_type:
+					return new DieEnumerationType (reader, comp_unit, offset, abbrev);
+
+				case DwarfTag.enumerator:
+					return new DieEnumerator (reader, comp_unit, abbrev);
 
 				case DwarfTag.typedef:
 					return new DieTypedef (reader, comp_unit, offset, abbrev);
@@ -2997,6 +3002,102 @@ namespace Mono.Debugger.Architecture
 
 				return new NativeArrayType (name, ref_type,
 							    subrange.LowerBound, subrange.UpperBound, byte_size);
+			}
+		}
+
+		protected class DieEnumerator : Die
+		{
+			string name;
+			int const_value;
+
+			public DieEnumerator (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					      AbbrevEntry abbrev)
+			  : base (reader, comp_unit, abbrev)
+			{ }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+				case DwarfAttribute.const_value:
+					const_value = (int) (long) attribute.Data;
+					break;
+				}
+			}
+
+			public string Name {
+				get {
+					return name;
+				}
+			}
+
+			public int ConstValue {
+				get {
+					return const_value;
+				}
+			}
+		}
+
+		protected class DieEnumerationType : DieType
+		{
+			string name;
+			int byte_size;
+
+			public DieEnumerationType (DwarfBinaryReader reader, CompilationUnit comp_unit,
+						   long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, offset, abbrev)
+			{  }
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.byte_size:
+					byte_size = (int) (long) attribute.Data;
+					break;
+
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.specification:
+				  Console.WriteLine ("ugh, specification");
+				  break;
+
+				default:
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			protected override NativeType CreateType ()
+			{
+				int num_elements = 0;
+				string name;
+
+				foreach (Die d in Children)
+					if (d is DieEnumerator) num_elements ++;
+
+				if (Name != null)
+					name = Name;
+				else
+					name = "<unknown enum>";
+
+				string[] names = new string [num_elements];
+				int[] values = new int [num_elements];
+
+				int i = 0;
+				foreach (Die d in Children) {
+					DieEnumerator e = d as DieEnumerator;
+					if (e == null) continue;
+
+					names[i] = e.Name;
+					values[i] = e.ConstValue;
+					i++;
+				}
+
+				return new NativeEnumType (name, byte_size, names, values);
 			}
 		}
 
