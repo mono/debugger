@@ -41,12 +41,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		object ITargetMemberInfo.Handle {
-			get {
-				return null;
-			}
-		}
-
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3}:{4})",

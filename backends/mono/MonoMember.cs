@@ -43,10 +43,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return IsStatic; }
 		}
 
-		object ITargetMemberInfo.Handle {
-			get { return MemberInfo; }
-		}
-
 		protected abstract string MyToString ();
 
 		public override string ToString ()
