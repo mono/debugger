@@ -1,3 +1,12 @@
+2005-07-12  Martin Baulig  <martin@ximian.com>
+
+	* wrapper/Makefile.am: Install the `mono-debugger-mini-wrapper' in
+	the same directory than the `Mono.Debugger.dll'
+	($(prefix)/lib/mono/1.0).
+
+	* classes/ProcessStart.cs: Assume that the wrapper is in the same
+	directory than the Mono.Debugger.dll.
+
 2005-07-07  Chris Toshok  <toshok@ximian.com>
 
 	* configure.in, acinclude.m4: remove the optional nature of the
@@ -132,7 +141,6 @@
 	- add dllmap to Mono.Debugger.dll.config
 	Remove dllmap for monodebuggerderver since it will be located by 
 	ldconfig's cache or LD_LIBRARY_PATH
-	* mono-debugger-mini-wrapper: Make finding it relocatable
 
 2005-07-01  Chris Toshok  <toshok@ximian.com>
 
