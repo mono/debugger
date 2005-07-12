@@ -72,11 +72,9 @@ namespace Mono.Debugger
 			string base_directory = System.AppDomain.CurrentDomain.BaseDirectory;
 
 			/* Use relative path based on where Mono.Debugger.dll is at to enable relocation */
-			JitWrapper = Path.GetFullPath (base_directory + 
-					Path.DirectorySeparatorChar + ".." +
-					Path.DirectorySeparatorChar + ".." +
-					Path.DirectorySeparatorChar + "mono-debugger-mini-wrapper");
-
+			JitWrapper = Path.GetFullPath (
+				base_directory + Path.DirectorySeparatorChar +
+				Path.DirectorySeparatorChar + "mono-debugger-mini-wrapper");
 		}
 
 		public ProcessStart ()

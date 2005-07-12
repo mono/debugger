@@ -1,5 +1,5 @@
-wrapperdir = $(libdir)
 onedir = $(prefix)/lib/mono/1.0
+wrapperdir = $(onedir)
 
 wrapper_PROGRAMS = mono-debugger-mini-wrapper
 
