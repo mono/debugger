@@ -264,7 +264,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected string FormatEvent (string prefix, ITargetEventInfo ev,
-						 bool is_static, Hashtable hash)
+					      bool is_static, Hashtable hash)
 		{
 			string tname = ev.Type.Name;
 			if (is_static)
