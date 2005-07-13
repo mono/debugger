@@ -1,4 +1,5 @@
 using System;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -8,7 +9,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (MonoSymbolFile file, Type type, int object_size,
+		public MonoStringType (MonoSymbolFile file, Cecil.ITypeDefinition type, int object_size,
 				       int size, TargetAddress klass)
 			: base (file, type, size, klass)
 		{
@@ -25,7 +26,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		new public static bool Supports (Type type)
+		new public static bool Supports (Cecil.ITypeReference type)
 		{
 			return type == typeof (string);
 		}

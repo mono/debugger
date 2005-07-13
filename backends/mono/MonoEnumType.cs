@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -10,9 +10,13 @@ namespace Mono.Debugger.Languages.Mono
 		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
 
-		public MonoEnumType (MonoSymbolFile file, Type type)
+		Cecil.ITypeDefinition type;
+
+		public MonoEnumType (MonoSymbolFile file, Cecil.ITypeDefinition type)
 			: base (file, TargetObjectKind.Enum, type)
-		{ }
+		{
+			this.type = type;
+		}
 
 		public override bool IsByRef {
 			get { return !type.IsValueType; }
@@ -25,11 +29,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_fields = 0, num_sfields = 0;
 
-			R.FieldInfo[] finfo = type.GetFields (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
+				if (!finfo.Attributes & (Cecil.FieldAttributes.FieldAccessMask | Cecil.FieldAttributes.Static |
+							 Cecil.FieldAttributes.Instance))
+				  continue;
 
-			foreach (R.FieldInfo field in finfo) {
 				if (field.IsStatic)
 					num_sfields++;
 				else
@@ -39,8 +43,8 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
-			int pos = 0, spos = 0;
-			for (int i = 0; i < finfo.Length; i++) {
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
 				if (finfo [i].IsStatic) {
 					static_fields [spos] = new MonoFieldInfo (File, spos, i, finfo [i]);
 					spos++;
@@ -50,6 +54,8 @@ namespace Mono.Debugger.Languages.Mono
 					fields [pos] = new MonoFieldInfo (File, pos, i, finfo [i]);
 					pos++;
 				}
+
+				i++;
 			}
 			if (pos > 1)
 				throw new InternalError ("Mono enum type has more than one instance field.");

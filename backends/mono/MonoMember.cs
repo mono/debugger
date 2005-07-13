@@ -1,20 +1,20 @@
 using System;
 using System.Text;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoMember : ITargetMemberInfo
 	{
 		public readonly MonoSymbolFile File;
-		public readonly R.MemberInfo MemberInfo;
+		public readonly Cecil.IMemberReference MemberInfo;
 		public readonly int Index;
 		public readonly int Position;
 		public readonly bool IsStatic;
 
-		public MonoMember (MonoSymbolFile file, R.MemberInfo minfo, int index, int pos,
-					 bool is_static)
+		public MonoMember (MonoSymbolFile file, Cecil.IMemberReference minfo, int index, int pos,
+				   bool is_static)
 		{
 			this.File = file;
 			this.MemberInfo = minfo;
@@ -56,9 +56,9 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		MonoType type;
 
-		public readonly R.FieldInfo FieldInfo;
+		public readonly Cecil.IFieldDefinition FieldInfo;
 
-		public MonoFieldInfo (MonoSymbolFile file, int index, int pos, R.FieldInfo finfo)
+		public MonoFieldInfo (MonoSymbolFile file, int index, int pos, Cecil.IFieldDefinition finfo)
 			: base (file, finfo, index, pos, finfo.IsStatic)
 		{
 			FieldInfo = finfo;
@@ -85,7 +85,7 @@ namespace Mono.Debugger.Languages.Mono
 			// field.  we need to take into account
 			// finfo.IsStatic, though.
 			if (FieldInfo.DeclaringType.IsEnum) {
-				object value = FieldInfo.GetValue (null);
+				object value = FieldInfo.Constant;
 			  
 				return type.File.MonoLanguage.CreateInstance (frame, (int)value);
 			}
@@ -103,11 +103,11 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoMethodInfo : MonoMember, ITargetMethodInfo
 	{
-		public readonly R.MethodBase MethodInfo;
+		public readonly Cecil.IMethodDefinition MethodInfo;
 		public readonly MonoFunctionType FunctionType;
 		public readonly MonoClassType Klass;
 
-		internal MonoMethodInfo (MonoClassType klass, int index, R.MethodBase minfo)
+		internal MonoMethodInfo (MonoClassType klass, int index, Cecil.IMethodDefinition minfo)
 			: base (klass.File, minfo, index, C.MonoDebuggerSupport.GetMethodIndex (minfo),
 				minfo.IsStatic)
 		{
@@ -130,7 +130,7 @@ namespace Mono.Debugger.Languages.Mono
 			get {
 				StringBuilder sb = new StringBuilder ();
 				bool first = true;
-				foreach (R.ParameterInfo pinfo in MethodInfo.GetParameters ()) {
+				foreach (Cecil.IParameterDefinition pinfo in MethodInfo.Parameters) {
 					if (first)
 						first = false;
 					else
@@ -161,10 +161,10 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		MonoType type;
 		public readonly MonoClassType Klass;
-		public readonly R.EventInfo EventInfo;
+		public readonly Cecil.IEventDefinition EventInfo;
 		public readonly MonoFunctionType AddType, RemoveType;
 
-		internal MonoEventInfo (MonoClassType klass, int index, R.EventInfo einfo,
+		internal MonoEventInfo (MonoClassType klass, int index, Cecil.IEventDefinition einfo,
 					bool is_static)
 			: base (klass.File, einfo, index, index, is_static)
 		{
@@ -173,13 +173,13 @@ namespace Mono.Debugger.Languages.Mono
 			Klass = klass;
 
 			EventInfo = einfo;
-			type = File.MonoLanguage.LookupMonoType (einfo.EventHandlerType);
+			type = File.MonoLanguage.LookupMonoType (einfo.EventType);
 
-			R.MethodInfo add = EventInfo.GetAddMethod ();
+			Cecil.IMethodDefinition add = EventInfo.AddMethod;
 			pos = C.MonoDebuggerSupport.GetMethodIndex (add);
 			AddType = new MonoFunctionType (File, Klass, add, pos - 1);
 
-			R.MethodInfo remove = EventInfo.GetRemoveMethod ();
+			Cecil.IMethodDefinition remove = EventInfo.RemoveMethod;
 			pos = C.MonoDebuggerSupport.GetMethodIndex (remove);
 			RemoveType = new MonoFunctionType (File, Klass, remove, pos - 1);
 		}
@@ -210,10 +210,10 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		MonoType type;
 		public readonly MonoClassType Klass;
-		public readonly R.PropertyInfo PropertyInfo;
+		public readonly Cecil.IPropertyDefinition PropertyInfo;
 		public readonly MonoFunctionType GetterType, SetterType;
 
-		internal MonoPropertyInfo (MonoClassType klass, int index, R.PropertyInfo pinfo,
+		internal MonoPropertyInfo (MonoClassType klass, int index, Cecil.IPropertyDefinition pinfo,
 					   bool is_static)
 			: base (klass.File, pinfo, index, index, is_static)
 		{
@@ -221,14 +221,14 @@ namespace Mono.Debugger.Languages.Mono
 			PropertyInfo = pinfo;
 			type = File.MonoLanguage.LookupMonoType (pinfo.PropertyType);
 
-			if (PropertyInfo.CanRead) {
-				R.MethodInfo getter = PropertyInfo.GetGetMethod (true);
+			if (PropertyInfo.GetMethod != null) {
+				Cecil.IMethodDefinition getter = PropertyInfo.GetMethod;
 				int pos = C.MonoDebuggerSupport.GetMethodIndex (getter);
 				GetterType = new MonoFunctionType (File, Klass, getter, pos - 1);
 			}
 
-			if (PropertyInfo.CanWrite) {
-				R.MethodInfo setter = PropertyInfo.GetSetMethod (true);
+			if (PropertyInfo.SetMethod != null) {
+				Cecil.IMethodDefinition setter = PropertyInfo.SetMethod;
 				int pos = C.MonoDebuggerSupport.GetMethodIndex (setter);
 				SetterType = new MonoFunctionType (File, Klass, setter, pos - 1);
 			}
@@ -239,12 +239,12 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public bool CanRead {
-			get { return PropertyInfo.CanRead; }
+			get { return PropertyInfo.GetMethod != null; }
 		}
 
 		ITargetFunctionType ITargetPropertyInfo.Getter {
 			get {
-				if (!CanRead)
+				if (PropertyInfo.GetMethod == null)
 					throw new InvalidOperationException ();
 
 				return GetterType;
@@ -252,14 +252,12 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public bool CanWrite {
-			get {
-				return PropertyInfo.CanWrite;
-			}
+			get { return PropertyInfo.SetMethod != null; }
 		}
 
 		ITargetFunctionType ITargetPropertyInfo.Setter {
 			get {
-				if (!CanWrite)
+				if (PropertyInfo.SetMethod == null)
 					throw new InvalidOperationException ();
 
 				return SetterType;
@@ -268,7 +266,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal ITargetObject Get (TargetLocation location)
 		{
-			if (!PropertyInfo.CanRead)
+			if (PropertyInfo.GetMethod == null)
 				throw new InvalidOperationException ();
 
 			MonoFunctionTypeInfo getter = GetterType.GetTypeInfo () as MonoFunctionTypeInfo;
@@ -285,7 +283,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal ITargetObject Get (StackFrame frame)
 		{
-			if (!PropertyInfo.CanRead)
+			if (PropertyInfo.SetMethod == null)
 				throw new InvalidOperationException ();
 
 			MonoFunctionTypeInfo getter = GetterType.GetTypeInfo () as MonoFunctionTypeInfo;

@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -18,11 +18,14 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] constructors;
 		MonoMethodInfo[] static_constructors;
 
+		Cecil.ITypeDefinition type;
 		MonoClassType parent_type;
 
-		public MonoClassType (MonoSymbolFile file, Type type)
+		public MonoClassType (MonoSymbolFile file, Cecil.ITypeDefinition type)
 			: base (file, TargetObjectKind.Class, type)
 		{
+			this.type = type;
+
 			if (type.BaseType != null)
 				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
 		}
@@ -46,11 +49,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_fields = 0, num_sfields = 0;
 
-			R.FieldInfo[] finfo = type.GetFields (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
+				if (!finfo.Attributes & (Cecil.FieldAttributes.FieldAccessMask | Cecil.FieldAttributes.Static |
+							 Cecil.FieldAttributes.Instance))
+				  continue;
 
-			foreach (R.FieldInfo field in finfo) {
 				if (field.IsStatic)
 					num_sfields++;
 				else
@@ -60,15 +63,21 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
-			int pos = 0, spos = 0;
-			for (int i = 0; i < finfo.Length; i++) {
-				if (finfo [i].IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (File, spos, i, finfo [i]);
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
+				if (!field.Attributes & (Cecil.FieldAttributes.FieldAccessMask | Cecil.FieldAttributes.Static |
+							 Cecil.FieldAttributes.Instance))
+				  continue;
+
+				if (field.IsStatic) {
+					static_fields [spos] = new MonoFieldInfo (File, spos, i, field);
 					spos++;
 				} else {
-					fields [pos] = new MonoFieldInfo (File, pos, i, finfo [i]);
+					fields [pos] = new MonoFieldInfo (File, pos, i, field);
 					pos++;
 				}
+
+				i++;
 			}
 		}
 
@@ -109,13 +118,11 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			int num_methods = 0, num_smethods = 0;
-
-			R.MethodInfo[] minfo = type.GetMethods (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
-
-			foreach (R.MethodInfo method in minfo) {
-				if ((method.Attributes & R.MethodAttributes.SpecialName) != 0)
+			foreach (Cecil.IMethod method in type.Methods) {
+				if (!method.Attributes & (Cecil.MethodAttributes.MemberAccessMask | Cecil.MethodAttributes.Static |
+							  Cecil.MethodAttributes.Instance))
+				  continue;
+				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
 				if (method.IsStatic)
 					num_smethods++;
@@ -126,17 +133,22 @@ namespace Mono.Debugger.Languages.Mono
 			methods = new MonoMethodInfo [num_methods];
 			static_methods = new MonoMethodInfo [num_smethods];
 
-			int pos = 0, spos = 0;
-			for (int i = 0; i < minfo.Length; i++) {
-				if ((minfo [i].Attributes & R.MethodAttributes.SpecialName) != 0)
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.IMethod method in type.Methods) {
+				if (!method.Attributes & (Cecil.MethodAttributes.MemberAccessMask | Cecil.MethodAttributes.Static |
+							  Cecil.MethodAttributes.Instance))
+				  continue;
+				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
-				if (minfo [i].IsStatic) {
-					static_methods [spos] = new MonoMethodInfo (this, spos, minfo [i]);
+				if (method.IsStatic) {
+					static_methods [spos] = new MonoMethodInfo (this, spos, method);
 					spos++;
 				} else {
-					methods [pos] = new MonoMethodInfo (this, pos, minfo [i]);
+					methods [pos] = new MonoMethodInfo (this, pos, method);
 					pos++;
 				}
+
+				i++;
 			}
 		}
 
@@ -180,26 +192,50 @@ namespace Mono.Debugger.Languages.Mono
 
 		void get_properties ()
 		{
+			int i;
 			if (properties != null)
 				return;
 
-			R.PropertyInfo[] pinfo = type.GetProperties (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			int num_sproperties = 0, num_properties = 0;
 
-			properties = new MonoPropertyInfo [pinfo.Length];
+			for (i = 0; i < type.Properties.Count; i++) {
+				IMethodDefinition m = type.Properties[i].GetMethod;
+				if (m == null) m = type.Properties[i].SetMethod;
 
-			for (int i = 0; i < pinfo.Length; i++)
-				properties [i] = new MonoPropertyInfo (this, i, pinfo [i], false);
+				if (!m.Attributes & (Cecil.MethodAttributes.MemberAccessMask | Cecil.MethodAttributes.Static |
+						     Cecil.MethodAttributes.Instance))
+					continue;
 
-			pinfo = type.GetProperties (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+				if (m.IsStatic)
+					num_sproperties++;
+				else
+					num_properties++;
+			}
 
-			static_properties = new MonoPropertyInfo [pinfo.Length];
+			properties = new MonoPropertyInfo [num_properties];
+			static_properties = new MonoPropertyInfo [num_sproperties];
 
-			for (int i = 0; i < pinfo.Length; i++)
-				static_properties [i] = new MonoPropertyInfo (this, i, pinfo [i], true);
+			int pos = 0, spos = 0;
+			i = 0;
+			foreach (IPropertyDefinition prop in type.Properties) {
+				IMethodDefinition m = type.Properties[i].GetMethod;
+				if (m == null) m = type.Properties[i].SetMethod;
+
+				if (!m.Attributes & (Cecil.MethodAttributes.MemberAccessMask | Cecil.MethodAttributes.Static |
+						     Cecil.MethodAttributes.Instance))
+					continue;
+
+				if (m.IsStatic) {
+					static_properties [spos] = new MonoPropertyInfo (this, spos, prop, true);
+					spos++;
+				}
+				else {
+					static_properties [pos] = new MonoPropertyInfo (this, spos, prop, false);
+					pos++;
+				}
+
+				i ++;
+			}
 		}
 
 		internal MonoPropertyInfo[] Properties {
@@ -232,26 +268,47 @@ namespace Mono.Debugger.Languages.Mono
 
 		void get_events ()
 		{
+			int i;
 			if (events != null)
 				return;
 
-			R.EventInfo[] einfo = type.GetEvents (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			int num_sevents = 0, num_events = 0;
+			for (i = 0; i < type.Events.Count; i++) {
+				IMethodDefinition m = type.Events[i].AddMethod;
 
-			events = new MonoEventInfo [einfo.Length];
+				if (!m.Attributes & (Cecil.MethodAttributes.MemberAccessMask | Cecil.MethodAttributes.Static |
+						     Cecil.MethodAttributes.Instance))
+					continue;
 
-			for (int i = 0; i < einfo.Length; i++)
-				events [i] = new MonoEventInfo (this, i, einfo [i], false);
+				if (m.IsStatic)
+					num_sevents++;
+				else
+					num_events++;
+			}
 
-			einfo = type.GetEvents (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			events = new MonoEventInfo [num_events];
+			static_events = new MonoEventInfo [num_sevents];
 
-			static_events = new MonoEventInfo [einfo.Length];
+			int pos = 0, spos = 0;
+			i = 0;
+			foreach (IEventDefinition ev in type.Events) {
+				IMethodDefinition m = type.Events[i].AddMethod;
 
-			for (int i = 0; i < einfo.Length; i++)
-				static_events [i] = new MonoEventInfo (this, i, einfo [i], true);
+				if (!m.Attributes & (Cecil.MethodAttributes.MemberAccessMask | Cecil.MethodAttributes.Static |
+						     Cecil.MethodAttributes.Instance))
+					continue;
+
+				if (m.IsStatic) {
+					static_events [spos] = new MonoEventInfo (this, spos, ev, true);
+					spos++;
+				}
+				else {
+					static_events [pos] = new MonoEventInfo (this, spos, ev, false);
+					pos++;
+				}
+
+				i ++;
+			}
 		}
 
 		public ITargetEventInfo[] Events {
@@ -281,29 +338,27 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_ctors = 0, num_sctors = 0;
 
-			R.ConstructorInfo[] minfo = type.GetConstructors (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
-
-			foreach (R.ConstructorInfo method in minfo) {
+			foreach (Cecil.IMethod method in type.Constructors) {
 				if (method.IsStatic)
 					num_sctors++;
 				else
 					num_ctors++;
 			}
 
-			constructors = new MonoMethodInfo [num_ctors];
-			static_constructors = new MonoMethodInfo [num_sctors];
+			constructors = new MonoMethodInfo [num_methods];
+			static_constructors = new MonoMethodInfo [num_smethods];
 
-			int pos = 0, spos = 0;
-			for (int i = 0; i < minfo.Length; i++) {
-				if (minfo [i].IsStatic) {
-					static_constructors [spos] = new MonoMethodInfo (this, spos, minfo [i]);
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.IMethod method in type.Constructors) {
+				if (method.IsStatic) {
+					static_constructors [spos] = new MonoMethodInfo (this, spos, method);
 					spos++;
 				} else {
-					constructors [pos] = new MonoMethodInfo (this, pos, minfo [i]);
+					constructors [pos] = new MonoMethodInfo (this, pos, method);
 					pos++;
 				}
+
+				i++;
 			}
 		}
 

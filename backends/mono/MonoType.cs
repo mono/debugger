@@ -1,23 +1,24 @@
 using System;
+using Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoType : ITargetType
 	{
-		protected readonly Type type;
+		protected readonly Cecil.ITypeReference typeref;
 		protected readonly MonoSymbolFile file;
 		protected readonly TargetObjectKind kind;
 		protected MonoTypeInfo type_info;
 
-		public MonoType (MonoSymbolFile file, TargetObjectKind kind, Type type)
+		public MonoType (MonoSymbolFile file, TargetObjectKind kind, Cecil.ITypeReference typeref)
 		{
 			this.file = file;
-			this.type = type;
+			this.typeref = typeref;
 			this.kind = kind;
 		}
 
-		public Type Type {
-			get { return type; }
+		public Cecil.ITypeReference Type {
+			get { return typeref; }
 		}
 
 		public TargetObjectKind Kind {
@@ -29,15 +30,15 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public virtual string Name {
-			get { return type.FullName; }
+			get { return typeref.FullName; }
 		}
 
 		object ITargetType.TypeHandle {
-			get { return type; }
+			get { return typeref; }
 		}
 
-		public Type TypeHandle {
-			get { return type; }
+		public Cecil.ITypeReference TypeHandle {
+			get { return typeref; }
 		}
 
 		public abstract bool IsByRef {

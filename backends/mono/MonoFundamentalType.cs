@@ -8,9 +8,12 @@ namespace Mono.Debugger.Languages.Mono
 		protected readonly int size;
 		protected readonly TargetAddress klass_address;
 
-		public MonoFundamentalType (MonoSymbolFile file, Type type, int size, TargetAddress klass)
+		protected readonly Cecil.ITypeDefinition type;
+
+		public MonoFundamentalType (MonoSymbolFile file, Cecil.ITypeDefinition type, int size, TargetAddress klass)
 			: base (file, TargetObjectKind.Fundamental, type)
 		{
+			this.type = type;
 			this.size = size;
 			this.klass_address = klass;
 			this.Heap = file.MonoLanguage.DataHeap;

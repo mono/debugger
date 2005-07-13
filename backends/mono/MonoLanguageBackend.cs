@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Text;
-using R = System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Threading;
@@ -273,7 +272,7 @@ namespace Mono.Debugger.Languages.Mono
 			return true;
 		}
 
-		public MonoType LookupMonoType (Type type)
+		public MonoType LookupMonoType (Cecil.ITypeReference type)
 		{
 			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [type.Assembly];
 			if (file == null) {

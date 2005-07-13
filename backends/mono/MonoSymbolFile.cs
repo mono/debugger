@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Text;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
@@ -201,8 +200,8 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable, IDisposable
 	{
 		internal readonly int Index;
-		internal readonly R.Assembly Assembly;
-		internal readonly R.Module Module;
+		internal readonly Cecil.IAssemblyDefinition Assembly;
+		internal readonly Cecil.IMethodDefinition Module;
 		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
@@ -252,20 +251,20 @@ namespace Mono.Debugger.Languages.Mono
 			MonoImage = memory.ReadAddress (address);
 			address += address_size;
 
-			Assembly = R.Assembly.LoadFrom (ImageFile);
-			Module = Assembly.GetModules () [0];
+			Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
+			Module = Assembly.MainModule;
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
 
 			try {
-				File = C.MonoSymbolFile.ReadSymbolFile (Assembly);
+				File = C.MonoSymbolFile.ReadSymbolFile (ImageFile);
 			} catch (Exception ex) {
 				Console.WriteLine (ex.Message);
 			}
 
 			symtab = new MonoSymbolTable (this);
 
-			name = Assembly.GetName (true).Name;
+			name = Assembly.Name.FullName;
 
 			backend.ModuleManager.AddModule (this);
 
@@ -345,19 +344,26 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoType LookupMonoType (Type type)
+		public MonoType LookupMonoType (Cecil.ITypeReference type)
 		{
 			MonoType result = (MonoType) type_hash [type];
 			if (result != null)
 				return result;
 
-			int rank = type.GetArrayRank ();
-			if (rank > 0)
-				result = new MonoArrayType (this, type);
+			if (type is Cecil.IArrayType)
+				result = new MonoArrayType (this, (Cecil.IArrayType)type);
+			else if (type is Cecil.ITypeDefinition)
+				result = new MonoClassType (this, (Cecil.ITypeDefinition)type);
+#if CECIL_NOTYET
 			else if (type.IsEnum)
 				result = new MonoEnumType (this, type);
-			else
-				result = new MonoClassType (this, type);
+#endif
+			else {
+				// XXX should this be here?  do we ever
+				// call LookupMonoType on something that
+				// won't be defined?
+				result = new MonoOpaqueType (this, type);
+			}
 
 			type_hash.Add (type, result);
 			return result;
@@ -463,15 +469,15 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry entry = File.GetMethod (index);
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
-			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+			Cecil.IMethodDefinition mdef = C.MonoDebuggerSupport.GetMethod (
 				File.Assembly, entry.Token);
 
-			StringBuilder sb = new StringBuilder (mbase.DeclaringType.FullName);
+			StringBuilder sb = new StringBuilder (mdef.DeclaringType.FullName);
 			sb.Append (".");
-			sb.Append (mbase.Name);
+			sb.Append (mdef.Name);
 			sb.Append ("(");
 			bool first = true;
-			foreach (R.ParameterInfo param in mbase.GetParameters ()) {
+			foreach (Cecil.Parameter param in mdef.Parameters) {
 				if (first)
 					first = false;
 				else
@@ -541,10 +547,10 @@ namespace Mono.Debugger.Languages.Mono
 			SourceMethod method = GetSourceMethod (index);
 			C.MethodEntry entry = File.GetMethod (index);
 
-			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+			Cecil.IMethodDefinition mdef = C.MonoDebuggerSupport.GetMethod (
 				File.Assembly, entry.Token);
 
-			mono_method = new MonoMethod (this, method, entry, mbase);
+			mono_method = new MonoMethod (this, method, entry, mdef);
 			method_hash.Add (index, mono_method);
 			return mono_method;
 		}
@@ -606,7 +612,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoSymbolFile file;
 			SourceMethod info;
 			C.MethodEntry method;
-			R.MethodBase rmethod;
+			Cecil.IMethodDefinition mdef;
 			MonoClassType decl_type;
 			MonoType[] param_types;
 			MonoType[] local_types;
@@ -619,17 +625,17 @@ namespace Mono.Debugger.Languages.Mono
 			Hashtable load_handlers;
 
 			public MonoMethod (MonoSymbolFile file, SourceMethod info,
-					   C.MethodEntry method, R.MethodBase rmethod)
+					   C.MethodEntry method, Cecil.IMethodDefinition mdef)
 				: base (info.Name, file.ImageFile, file)
 			{
 				this.file = file;
 				this.info = info;
 				this.method = method;
-				this.rmethod = rmethod;
+				this.mdef = mdef;
 			}
 
 			public override object MethodHandle {
-				get { return rmethod; }
+				get { return mdef; }
 			}
 
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
@@ -656,11 +662,11 @@ namespace Mono.Debugger.Languages.Mono
 				if (has_variables || !is_loaded)
 					return;
 
-				R.ParameterInfo[] param_info = rmethod.GetParameters ();
-				param_types = new MonoType [param_info.Length];
-				parameters = new IVariable [param_info.Length];
-				for (int i = 0; i < param_info.Length; i++) {
-					Type type = param_info [i].ParameterType;
+				Cecil.IParameterCollection param_info = mdef.Parameters;
+				param_types = new MonoType [param_info.Count];
+				parameters = new IVariable [param_info.Count];
+				for (int i = 0; i < param_info.Count; i++) {
+					Cecil.ITypeReference type = param_info [i].ParameterType;
 
 					param_types [i] = file.MonoLanguage.LookupMonoType (type);
 
@@ -674,8 +680,8 @@ namespace Mono.Debugger.Languages.Mono
 				locals = new IVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
-					Type type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (
-						file.Assembly, local.Signature);
+					Cecil.ITypeReference type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (
+											     file.Assembly, local.Signature);
 
 					local_types [i] = file.MonoLanguage.LookupMonoType (type);
 
@@ -695,7 +701,7 @@ namespace Mono.Debugger.Languages.Mono
 					}
 				}
 
-				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (rmethod.DeclaringType);
+				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (mdef.DeclaringType);
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
@@ -803,15 +809,14 @@ namespace Mono.Debugger.Languages.Mono
 								object user_data)
 			{
 				StringBuilder sb = new StringBuilder ();
-				sb.Append (rmethod.ReflectedType.FullName);
+				sb.Append (rmethod.DeclaringType.FullName);
 				sb.Append (":");
 				sb.Append (rmethod.Name);
 				sb.Append ("(");
-				R.ParameterInfo[] pi = rmethod.GetParameters ();
-				for (int i = 0; i < pi.Length; i++) {
+				for (int i = 0; i < rmethod.Parameters.Count; i++) {
 					if (i > 0)
 						sb.Append (",");
-					sb.Append (GetTypeSignature (pi [i].ParameterType).Replace ('+','/'));
+					sb.Append (GetTypeSignature (rmethod.Parameters[i].ParameterType).Replace ('+','/'));
 				}
 				sb.Append (")");
 				string full_name = sb.ToString ();
