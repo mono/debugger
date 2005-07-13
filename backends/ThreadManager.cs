@@ -265,8 +265,8 @@ namespace Mono.Debugger
 		internal void KillThread (SingleSteppingEngine engine)
 		{
 			thread_hash.Remove (engine.PID);
-			OnThreadExitedEvent (engine.Process);
 			engine.Process.Kill ();
+			OnThreadExitedEvent (engine.Process);
 		}
 
 		internal bool HandleChildEvent (Inferior inferior,
@@ -667,6 +667,38 @@ namespace Mono.Debugger
 				engine_event.Set();
 				disposed = true;
 			}
+
+			//
+			// There are two situations where Dispose() can be called:
+			//
+			// a) It's a user-requested `kill' or `quit'.
+			//
+			//    In this case, the wait thread is normally blocking in waitpid()
+			//    (via mono_debugger_server_global_wait ()).
+			//
+			//    To wake it up, the engine thread must issue a
+			//    ptrace (PTRACE_KILL, inferior->pid) - note that the same restriction
+			//    apply like for any other ptrace() call, so this can only be done
+			//    from the engine thread.
+			//
+			//    To do that, we just set the `abort_requested' flag here and then
+			//    join the engine thread - after it exited, we also join the wait
+			//    thread so it can reap the dead child.
+			//
+			//    Once both threads exited, we can go ahead and dispose everything.
+			//
+			// b) The child exited.
+			//
+			//    In this case, we're invoked from the engine thread via the
+			//    `ThreadExitEvent' (that's why we must not join the engine thread).
+			//
+			//    The child is already dead, so we just set the flag and join the
+			//    wait thread [note that the wait thread is already dying at this point;
+			//    it was blocking on the `wait_event', woke up and found the
+			//    `abort_requested' - so we only join it to avoid a race condition].
+			//
+			//    After that, we can go ahead and dispose everything.
+			//
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
