@@ -161,12 +161,6 @@ namespace Mono.Debugger
 			return main_process;
 		}
 
-		public void Kill ()
-		{
-			if (main_process != null)
-				main_process.Kill ();
-		}
-
 		bool initialized;
 		MonoThreadManager mono_manager;
 		TargetAddress main_method = TargetAddress.Null;
@@ -317,6 +311,7 @@ namespace Mono.Debugger
 			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				abort_requested = true;
 				OnTargetExitedEvent ();
+				the_engine.Kill ();
 			}
 
 			return retval;
@@ -483,12 +478,13 @@ namespace Mono.Debugger
 
 			engine_event.Wait ();
 
-			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
-
 			if (abort_requested) {
-				Report.Debug (DebugFlags.Wait, "Abort requested");
+				Report.Debug (DebugFlags.Wait, "Engine thread abort requested");
+				the_engine.Kill ();
 				return;
 			}
+
+			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
 
 			int status;
 			SingleSteppingEngine event_engine;
@@ -601,16 +597,20 @@ namespace Mono.Debugger
 
 		void start_wait_thread ()
 		{
+			Report.Debug (DebugFlags.Threads, "Wait thread started: {0}",
+				      DebuggerWaitHandle.CurrentThread);
+
 			while (true) {
 				Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
 				wait_event.WaitOne ();
 
-				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
-
 				if (abort_requested) {
-					Report.Debug (DebugFlags.Wait, "Abort requested");
+					Report.Debug (DebugFlags.Wait,
+						      "Wait thread abort requested");
 					return;
 				}
+
+				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
 
 				//
 				// Wait until we got an event from the target or a command from the user.
@@ -670,23 +670,20 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				int i;
+				if (Thread.CurrentThread != inferior_thread)
+					inferior_thread.Join ();
+				wait_thread.Join ();
+
 				bool main_in_threads = false;
 
 				SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
 				thread_hash.Values.CopyTo (threads, 0);
 
-				for (i = 0; i < threads.Length; i++) {
+				for (int i = 0; i < threads.Length; i++) {
 					if (main_process == threads[i].Process)
 						main_in_threads = true;
-					threads [i].Kill ();
+					threads [i].Dispose ();
 				}
-
-				if (main_process != null && !main_in_threads)
-					main_process.Kill ();
-
-				for (i = 0; i < threads.Length; i ++)
-					threads[i].Dispose ();
 
 				if (main_process != null && !main_in_threads)
 					main_process.Dispose ();

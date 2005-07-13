@@ -1,3 +1,21 @@
+2005-07-13  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_finalize): Don't call do_wait() here.
+	(server_ptrace_kill): Add error checking; note that this function
+	must only be called from the inferior thread, it is in no way
+	different from the other ptrace() functions.
+	(io_thread): exit on error.
+
+	* backends/ThreadManager.cs (ThreadManager.Kill): Removed.
+	(engine_thread_main): Call `the_engine.Kill' on `abort_requested';
+	this'll actually kill the target and also make the wait thread
+	wake up from waitpid().
+	(ThreadManager.Dispose): Don't actually kill any processes here;
+	just set the `abort_requested' flag and join the `inferior_thread'
+	and the `wait_thread' - after they exited, the target is gone and
+	we can Dispose() everything.
+
 2005-07-12  Martin Baulig  <martin@ximian.com>
 
 	* wrapper/Makefile.am: Install the `mono-debugger-mini-wrapper' in

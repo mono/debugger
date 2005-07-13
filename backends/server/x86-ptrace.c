@@ -58,11 +58,6 @@ struct InferiorHandle
 static void
 server_ptrace_finalize (ServerHandle *handle)
 {
-	if (handle->inferior->pid) {
-	  int status;
-
-	  do_wait (-1, &status);
-	}
 	x86_arch_finalize (handle->arch);
 	g_free (handle->inferior);
 	g_free (handle);
@@ -116,12 +111,11 @@ server_ptrace_detach (ServerHandle *handle)
 static ServerCommandError
 server_ptrace_kill (ServerHandle *handle)
 {
-	InferiorHandle *inferior = handle->inferior;
-
-	if (inferior->pid) {
-		ptrace (PT_KILL, inferior->pid, NULL, 0);
-		kill (inferior->pid, SIGKILL);
+	if (ptrace (PTRACE_KILL, handle->inferior->pid, NULL, 0)) {
+		g_message (G_STRLOC ": %d - %s", handle->inferior->pid, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
+
 	return COMMAND_ERROR_NONE;
 }
 
@@ -383,6 +377,9 @@ io_thread (gpointer data)
 
 	while (1) {
 		ret = poll (fds, 2, -1);
+
+		if (ret < 0)
+			break;
 
 		if (fds [0].revents & POLLIN)
 			process_output (inferior, inferior->output_fd [0], inferior->stdout_handler);

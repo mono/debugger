@@ -18,7 +18,7 @@ proc mdb_start {file args} {
 
     verbose "Spawning $mdb $file"
 
-    set res [spawn $srcdir/start-mdb.sh --script $file $args];
+    set res [spawn $srcdir/start-mdb.sh -script $file $args];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $mdb failed."
 	exit 1;
@@ -184,7 +184,7 @@ proc mdb_expect_breakpoint {} {
     set count 0
     while {$count < $max_repeat} {
 	expect {
-	    -re {^Inserted breakpoint ([0-9]+)([^\n\r]+)[\n\r]+} {
+	    -re {^Breakpoint ([0-9]+) at ([^\n\r]+)[\n\r]+} {
 		set index $expect_out(1,string)
 		pass "Inserted breakpoint $index"
 		mdb_expect_prompt
