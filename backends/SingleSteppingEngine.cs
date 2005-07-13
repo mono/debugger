@@ -76,6 +76,7 @@ namespace Mono.Debugger.Backends
 			this.start = inferior.ProcessStart;
 			this.process = new Process (this, start, inferior);
 
+			ID = process.ID;
 			PID = inferior.PID;
 
 			operation_completed_event = new ManualResetEvent (false);
@@ -489,7 +490,8 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
-			process.SendTargetEvent (args);
+			if (process != null)
+				process.SendTargetEvent (args);
 		}
 
 		internal void Start (TargetAddress func, bool is_main)
@@ -1995,7 +1997,7 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("SSE ({0}:{1}:{2:x})", process.ID, PID, TID);
+			return String.Format ("SSE ({0}:{1}:{2:x})", ID, PID, TID);
 		}
 
 		~SingleSteppingEngine ()
@@ -2060,6 +2062,7 @@ namespace Mono.Debugger.Backends
 		ManualResetEvent operation_completed_event;
 		bool stop_requested;
 		bool is_main, reached_main;
+		public readonly int ID;
 		public readonly int PID;
 		public readonly int TID;
 
