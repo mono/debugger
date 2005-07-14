@@ -22,11 +22,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetClassObject Parent {
 			get {
-				if (type.Type.ParentType == null)
+				if (!type.Type.HasParent)
 					return null;
 
-				// return type.Type.ParentType.GetClassObject (location);
-				return null;
+				return type.GetParentObject (location);
 			}
 		}
 

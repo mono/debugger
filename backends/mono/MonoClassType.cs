@@ -18,6 +18,9 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] constructors;
 		MonoMethodInfo[] static_constructors;
 
+		int num_methods = 0, num_smethods = 0;
+		internal int first_method = 0, first_smethod = 0;
+
 		MonoClassType parent_type;
 
 		public MonoClassType (MonoSymbolFile file, Type type)
@@ -103,12 +106,37 @@ namespace Mono.Debugger.Languages.Mono
 			return info.GetStaticField (frame, index);
 		}
 
+		public int CountMethods {
+			get {
+				if (parent_type != null)
+					return parent_type.CountMethods + num_methods;
+				else
+					return num_methods;
+			}
+		}
+
+		public int CountStaticMethods {
+			get {
+				if (parent_type != null)
+					return parent_type.CountStaticMethods + num_smethods;
+				else
+					return num_smethods;
+			}
+		}
+
+		public MonoMethodInfo GetMethod (int index)
+		{
+			get_methods ();
+			if (index < first_method)
+				return parent_type.GetMethod (index);
+
+			return methods [index - first_method];
+		}
+
 		void get_methods ()
 		{
 			if (methods != null)
 				return;
-
-			int num_methods = 0, num_smethods = 0;
 
 			R.MethodInfo[] minfo = type.GetMethods (
 				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
@@ -126,48 +154,49 @@ namespace Mono.Debugger.Languages.Mono
 			methods = new MonoMethodInfo [num_methods];
 			static_methods = new MonoMethodInfo [num_smethods];
 
+			if (parent_type != null) {
+				parent_type.get_methods ();
+				first_method = parent_type.CountMethods;
+				first_smethod = parent_type.CountStaticMethods;
+			}
+
 			int pos = 0, spos = 0;
 			for (int i = 0; i < minfo.Length; i++) {
 				if ((minfo [i].Attributes & R.MethodAttributes.SpecialName) != 0)
 					continue;
 				if (minfo [i].IsStatic) {
-					static_methods [spos] = new MonoMethodInfo (this, spos, minfo [i]);
+					static_methods [spos] = new MonoMethodInfo (this, first_smethod + spos, minfo [i]);
 					spos++;
 				} else {
-					methods [pos] = new MonoMethodInfo (this, pos, minfo [i]);
+					methods [pos] = new MonoMethodInfo (this, first_method + pos, minfo [i]);
 					pos++;
 				}
 			}
 		}
 
-		internal MonoMethodInfo[] Methods {
+		ITargetMethodInfo[] ITargetStructType.Methods {
 			get {
 				get_methods ();
 				return methods;
 			}
 		}
 
-		internal MonoMethodInfo[] StaticMethods {
+		ITargetMethodInfo[] ITargetStructType.StaticMethods {
 			get {
 				get_methods ();
 				return static_methods;
 			}
 		}
 
-		ITargetMethodInfo[] ITargetStructType.Methods {
-			get { return Methods; }
-		}
-
-		ITargetMethodInfo[] ITargetStructType.StaticMethods {
-			get { return StaticMethods; }
-		}
-
 		public ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
 		{
 			get_methods ();
 
+			if (index < first_smethod)
+				return parent_type.GetStaticMethod (frame, index);
+
 			try {
-				MonoFunctionType ftype = static_methods [index].FunctionType;
+				MonoFunctionType ftype = static_methods [index - first_smethod].FunctionType;
 				MonoFunctionTypeInfo finfo = ftype.GetTypeInfo () as MonoFunctionTypeInfo;
 				if (finfo == null)
 					return null;

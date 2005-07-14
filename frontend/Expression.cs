@@ -682,6 +682,22 @@ namespace Mono.Debugger.Frontend
 			Expression expr;
 
 			Expression lexpr = left.TryResolve (context);
+			if (lexpr is TypeExpression) {
+				ITargetStructType stype = lexpr.EvaluateType (context) as ITargetStructType;
+				if (stype == null)
+					throw new ScriptingException (
+						"`{0}' is not a struct or class", lexpr.Name);
+
+				expr = StructAccessExpression.FindMember (
+					stype, frame, null, allow_instance, name);
+				if (expr == null)
+					throw new ScriptingException (
+						"Type `{0}' has no member `{1}'",
+						stype.Name, name);
+
+				return expr;
+			}
+
 			if (lexpr != null) {
 				ITargetStructObject sobj = lexpr.EvaluateVariable (context) as ITargetStructObject;
 				if (sobj == null)

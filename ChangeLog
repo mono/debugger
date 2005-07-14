@@ -1,3 +1,19 @@
+2005-07-14  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Expression.cs
+	(MemberAccessExpression.ResolveMemberAccess): If `left' resolves
+	to a type, use it as a type.
+
+	* backends/mono/MonoClassType.cs: Correctly index the methods and
+	static methods if we have a parent class.
+
+	* backends/mono/MonoClassInfo.cs
+	(MonoClassInfo.GetParentObject): New internal method.
+
+	* backends/mono/MonoClassObject.cs
+	(MonoClassObject.Parent): Implement this again, using
+	MonoClassInfo.GetParentObject().	
+
 2005-07-13  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86-ptrace.c

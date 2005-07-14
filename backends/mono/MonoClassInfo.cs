@@ -9,6 +9,7 @@ namespace Mono.Debugger.Languages.Mono
 		int[] field_offsets;
 		TargetAddress[] methods;
 		MonoDebuggerInfo debugger_info;
+		MonoClassInfo parent;
 		bool initialized;
 
 		public MonoClassInfo (MonoClassType type, TargetBinaryReader info)
@@ -23,6 +24,11 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (initialized)
 				return;
+
+			if (Type.ParentType != null) {
+				parent = (MonoClassInfo) Type.ParentType.GetTypeInfo ();
+				parent.initialize (target);
+			}
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
 
@@ -101,7 +107,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoMethodInfo minfo = Type.Methods [index];
+				MonoMethodInfo minfo = Type.GetMethod (index);
 				MonoTypeInfo mtype = minfo.Type.GetTypeInfo ();
 				if (mtype == null)
 					return null;
@@ -142,5 +148,19 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return new MonoClassObject (this, location);
 		}
+
+		internal MonoClassObject GetParentObject (TargetLocation location)
+		{
+			try {
+				initialize (location.TargetAccess);
+
+				if (parent == null)
+					throw new InvalidOperationException ();
+
+				return new MonoClassObject (parent, location);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}				
 	}
 }
