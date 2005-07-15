@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public class Backtrace : IDisposable
+	public class Backtrace : MarshalByRefObject, IDisposable
 	{
 		protected StackFrame last_frame;
 		protected ITargetMemoryAccess target;

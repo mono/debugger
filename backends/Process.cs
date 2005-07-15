@@ -20,7 +20,7 @@ namespace Mono.Debugger
 						   object user_data);
 	public delegate void ProcessExitedHandler (Process process);
 
-	public class Process : ITargetAccess, IDisassembler
+	public class Process : MarshalByRefObject, ITargetAccess, IDisassembler
 	{
 		internal Process (SingleSteppingEngine engine, ProcessStart start,
 				  Inferior inferior)

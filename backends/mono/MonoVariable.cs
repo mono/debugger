@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoVariable : IVariable
+	internal class MonoVariable : MarshalByRefObject, IVariable
 	{
 		VariableInfo info;
 		string name;

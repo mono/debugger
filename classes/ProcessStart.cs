@@ -8,7 +8,7 @@ using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger
 {
-	public class DebuggerOptions
+	public class DebuggerOptions : MarshalByRefObject
 	{
 		/* The executable file we're debugging */
 		public string File = "";
@@ -49,7 +49,7 @@ namespace Mono.Debugger
 		public string MonoPrefix = null;
 	}
 
-	public class ProcessStart
+	public class ProcessStart : MarshalByRefObject
 	{
 		public string WorkingDirectory;
 		public string[] UserArguments;

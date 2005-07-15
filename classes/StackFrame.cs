@@ -10,7 +10,7 @@ namespace Mono.Debugger
 {
 	public delegate void ObjectInvalidHandler (object obj);
 
-	public sealed class Register
+	public sealed class Register : MarshalByRefObject
 	{
 		public readonly int Index;
 		public readonly int Size;
@@ -101,7 +101,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public sealed class Registers
+	public sealed class Registers : MarshalByRefObject
 	{
 		Register[] regs;
 		bool from_current_frame;
@@ -160,6 +160,8 @@ namespace Mono.Debugger
 		}
 	}
 
+
+	[Serializable]
 	public class SimpleStackFrame
 	{
 		public readonly TargetAddress Address;
@@ -191,7 +193,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public sealed class StackFrame : IDisposable
+	public sealed class StackFrame : MarshalByRefObject, IDisposable
 	{
 		IMethod method;
 		Process process;

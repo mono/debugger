@@ -1,3 +1,29 @@
+2005-07-15  Chris Toshok  <toshok@ximian.com>
+
+	* classes/StackFrame.cs (Register, Registers, StackFrame):
+	subclass from MarshalByRefObject.
+	(SimpleStackFrame): make [Serializable]
+
+	* classes/TargetEvent.cs classes/AddressDomain.cs
+	classes/MethodBase.cs classes/SourceAddress.cs
+	classes/MethodSource.cs classes/ProcessStart,
+	classes/Backtrace.cs, classes/SourceInfo.cs,
+	backends/mono/MonoObject.cs, backends/mono/MonoType.cs,
+	backends/mono/MonoTypeInfo.cs, backends/mono/MonoVariable.cs,
+	backends/ThreadManager.cs, backends/Debugger.cs: subclass from
+	MarshalByRefObject.
+
+	* classes/TargetAddress: make [Serializable]
+	
+	* backends/mono/MonoSymbolFile.cs (MonoSymbolFile.Dispose): only
+	dispose File if it's non-null.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.send_target_event): only send the target
+	event if the proc != null.
+
+	* backends/Process.cs: subclass from MarshalByRefObject.
+
 2005-07-14  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs

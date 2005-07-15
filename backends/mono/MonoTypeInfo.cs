@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoTypeInfo : ITargetTypeInfo
+	internal abstract class MonoTypeInfo : MarshalByRefObject, ITargetTypeInfo
 	{
 		internal enum TypeKind {
 			Unknown = 1,

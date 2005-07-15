@@ -17,7 +17,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
-	public class DebuggerBackend : IDisposable
+	public class DebuggerBackend : MarshalByRefObject, IDisposable
 	{
 		BfdContainer bfd_container;
 

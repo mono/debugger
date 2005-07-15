@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoObject : ITargetObject
+	internal abstract class MonoObject : MarshalByRefObject, ITargetObject
 	{
 		protected MonoTypeInfo type_info;
 		protected TargetLocation location;

@@ -12,7 +12,7 @@ namespace Mono.Debugger
 	//   A single source file.  It is used to find a breakpoint's location by method
 	//   name or source file.
 	// </summary>
-	public class SourceFile
+	public class SourceFile : MarshalByRefObject
 	{
 		public string Name {
 			get {
@@ -98,7 +98,7 @@ namespace Mono.Debugger
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.
 	// </summary>
-	public class SourceMethod
+	public class SourceMethod : MarshalByRefObject
 	{
 		public long Handle {
 			get {

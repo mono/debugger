@@ -17,7 +17,7 @@ namespace Mono.Debugger
 		UnhandledException
 	}
 
-	public class TargetEventArgs
+	public class TargetEventArgs : MarshalByRefObject
 	{
 		public readonly TargetEventType Type;
 		public readonly object Data;

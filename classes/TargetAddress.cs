@@ -17,6 +17,7 @@ namespace Mono.Debugger
 	//   to pass addresses around, it'll protect you against accidentally using
 	//   an address in another target.
 	// </summary>
+	[Serializable]
 	public struct TargetAddress : IComparable
 	{
 		private ulong address;

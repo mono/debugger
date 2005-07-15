@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoType : ITargetType
+	internal abstract class MonoType : MarshalByRefObject, ITargetType
 	{
 		protected readonly Type type;
 		protected readonly MonoSymbolFile file;

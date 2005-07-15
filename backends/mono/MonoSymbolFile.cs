@@ -582,7 +582,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (!this.disposed) {
 				if (disposing) {
-					File.Dispose ();
+					if (File != null)
+						File.Dispose ();
 				}
 			}
 

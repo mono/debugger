@@ -34,7 +34,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class MethodBase : IMethod, ISymbolLookup, IComparable
+	public abstract class MethodBase : MarshalByRefObject, IMethod, ISymbolLookup, IComparable
 	{
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;

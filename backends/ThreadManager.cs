@@ -17,7 +17,7 @@ namespace Mono.Debugger
 {
 	public delegate void ThreadEventHandler (ThreadManager manager, Process process);
 
-	public class ThreadManager
+	public class ThreadManager : MarshalByRefObject
 	{
 		internal ThreadManager (DebuggerBackend backend)
 		{
