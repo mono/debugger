@@ -33,7 +33,7 @@ namespace Mono.Debugger
 			start_event = new ManualResetEvent (false);
 			completed_event = new AutoResetEvent (false);
 			command_mutex = new DebuggerMutex ("command_mutex");
-			command_mutex.DebugFlags = DebugFlags.SSE;
+			command_mutex.DebugFlags = DebugFlags.Wait;
 
 			ready_event = new ManualResetEvent (false);
 			engine_event = Semaphore.CreateThreadManagerSemaphore ();
@@ -269,6 +269,15 @@ namespace Mono.Debugger
 			OnThreadExitedEvent (engine.Process);
 		}
 
+		void Kill ()
+		{
+			foreach (SingleSteppingEngine thread in thread_hash.Values) {
+				thread.Kill ();
+			}
+
+			the_engine.Kill ();
+		}
+
 		internal bool HandleChildEvent (Inferior inferior,
 						ref Inferior.ChildEvent cevent)
 		{
@@ -310,8 +319,8 @@ namespace Mono.Debugger
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				abort_requested = true;
+				Kill ();
 				OnTargetExitedEvent ();
-				the_engine.Kill ();
 			}
 
 			return retval;
@@ -480,7 +489,7 @@ namespace Mono.Debugger
 
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait, "Engine thread abort requested");
-				the_engine.Kill ();
+				Kill ();
 				return;
 			}
 

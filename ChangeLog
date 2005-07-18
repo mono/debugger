@@ -1,3 +1,11 @@
+2005-07-18  Martin Baulig  <martin@ximian.com>
+
+	* ThreadManager.cs
+	(ThreadManager.Kill): New private method; kill all threads here.
+	(ThreadManager.HandleChildEvent): Call Kill() before
+	OnTargetExitedEvent().
+	(ThreadManager.ctor): Use `DebugFlags.Wait' for the `command_mutex'.
+
 2005-07-15  Chris Toshok  <toshok@ximian.com>
 
 	* classes/StackFrame.cs (Register, Registers, StackFrame):
