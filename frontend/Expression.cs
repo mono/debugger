@@ -248,6 +248,10 @@ namespace Mono.Debugger.Frontend
 			get {
 				if (val is int)
 					return (long) (int) val;
+				else if (val is uint)
+					return (long) (uint) val;
+				else if (val is ulong)
+					return (long) (ulong) val;
 				else
 					return (long) val;
 			}

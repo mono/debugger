@@ -1,5 +1,10 @@
 2005-07-18  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs (NumberExpression.Value): Allow `val' to
+	be `uint' or `ulong'.
+
+2005-07-18  Martin Baulig  <martin@ximian.com>
+
 	* ThreadManager.cs
 	(ThreadManager.Kill): New private method; kill all threads here.
 	(ThreadManager.HandleChildEvent): Call Kill() before
