@@ -278,8 +278,8 @@ namespace Mono.Debugger
 				       (int) X86_64_Register.R8, (int) X86_64_Register.R9,
 				       (int) X86_64_Register.R10, (int) X86_64_Register.R11,
 				       (int) X86_64_Register.R12, (int) X86_64_Register.R13,
-				       (int) X86_64_Register.R14, (int) X86_64_Register.R14,
-				       (int) X86_64_Register.R15, (int) X86_64_Register.RIP };
+				       (int) X86_64_Register.R14, (int) X86_64_Register.R15,
+				       (int) X86_64_Register.RIP };
 
 		string[] registers = { "r15", "r14", "r13", "r12", "rbp", "rbx", "r11", "r10",
 				       "r9", "r8", "rax", "rcx", "rdx", "rsi", "rdi", "orig_rax",
