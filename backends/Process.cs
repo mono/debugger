@@ -14,6 +14,8 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
+	using SSE = SingleSteppingEngine;
+
 	public delegate bool BreakpointCheckHandler (StackFrame frame, ITargetAccess target,
 						     int index, object user_data);
 	public delegate void BreakpointHitHandler (StackFrame frame, int index,
@@ -278,7 +280,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool start_step_operation (Operation operation, bool wait)
+		bool start_step_operation (SSE.Operation operation, bool wait)
 		{
 			check_engine ();
 			if (!engine.StartOperation ())
@@ -287,25 +289,14 @@ namespace Mono.Debugger
 			return true;
 		}
 
-		bool start_step_operation (OperationType operation, TargetAddress until,
-					   bool wait)
-		{
-			return start_step_operation (new Operation (operation, until), wait);
-		}
-
-		bool start_step_operation (OperationType operation, bool wait)
-		{
-			return start_step_operation (new Operation (operation), wait);
-		}
-
 		void call_method (CallMethodData cdata)
 		{
-			engine.SendCallbackCommand (new Command (engine, new Operation (cdata)));
+			engine.SendCallbackCommand (new Command (engine, new SSE.OperationCallMethod (cdata)));
 		}
 
 		void call_method (RuntimeInvokeData rdata)
 		{
-			engine.SendCallbackCommand (new Command (engine, new Operation (rdata)));
+			engine.SendCallbackCommand (new Command (engine, new SSE.OperationRuntimeInvoke (rdata)));
 		}
 
 		// <summary>
@@ -313,7 +304,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepInstruction (bool wait)
 		{
-			return start_step_operation (OperationType.StepInstruction, wait);
+			return start_step_operation (new SSE.OperationStep (StepMode.SingleInstruction), wait);
 		}
 
 		// <summary>
@@ -321,7 +312,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepNativeInstruction (bool wait)
 		{
-			return start_step_operation (OperationType.StepNativeInstruction, wait);
+			return start_step_operation (new SSE.OperationStep (StepMode.NativeInstruction), wait);
 		}
 
 		// <summary>
@@ -329,7 +320,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool NextInstruction (bool wait)
 		{
-			return start_step_operation (OperationType.NextInstruction, wait);
+			return start_step_operation (new SSE.OperationStep (StepMode.NextInstruction), wait);
 		}
 
 		// <summary>
@@ -337,7 +328,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepLine (bool wait)
 		{
-			return start_step_operation (OperationType.StepLine, wait);
+			return start_step_operation (new SSE.OperationStep (StepMode.SourceLine), wait);
 		}
 
 		// <summary>
@@ -345,7 +336,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool NextLine (bool wait)
 		{
-			return start_step_operation (OperationType.NextLine, wait);
+			return start_step_operation (new SSE.OperationStep (StepMode.NextLine), wait);
 		}
 
 		// <summary>
@@ -367,7 +358,7 @@ namespace Mono.Debugger
 				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
 				null, StepMode.Finish);
 
-			Operation operation = new Operation (OperationType.FinishFrame, sf);
+			SSE.Operation operation = new SSE.OperationStep (sf);
 			engine.SendAsyncCommand (new Command (engine, operation), wait);
 			return true;
 		}
@@ -382,7 +373,7 @@ namespace Mono.Debugger
 				return false;
 
 			TargetAddress stack = CurrentFrame.StackPointer;
-			Operation operation = new Operation (OperationType.FinishNative, stack);
+			SSE.Operation operation = new SSE.OperationFinish (stack);
 			engine.SendAsyncCommand (new Command (engine, operation), wait);
 			return true;
 		}
@@ -404,11 +395,7 @@ namespace Mono.Debugger
 
 		public bool Continue (TargetAddress until, bool in_background, bool wait)
 		{
-			if (in_background)
-				return start_step_operation (OperationType.RunInBackground,
-							     until, wait);
-			else
-				return start_step_operation (OperationType.Run, until, wait);
+			return start_step_operation (new SSE.OperationRun (until, in_background), wait);
 		}
 
 		public void Kill ()
@@ -612,7 +599,7 @@ namespace Mono.Debugger
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				language, method_argument, object_argument, param_objects);
 			data.Debug = true;
-			return start_step_operation (new Operation (data), true);
+			return start_step_operation (new SSE.OperationRuntimeInvoke (data), true);
 		}
 
 		public TargetAddress RuntimeInvoke (StackFrame frame,

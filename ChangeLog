@@ -1,5 +1,26 @@
 2005-07-19  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (Operation): Make this class
+	abstract and nest it inside the `SingleSteppingEngine'.
+	(SingleSteppingEngine.Operation): We're now an abstract class.
+	(SingleSteppingEngine.OperationStepOverBreakpoint): Move the "step
+	over breakpoint" code here; clean it up and check for trampolines.
+	(SingleSteppingEngine.step_over_breakpoint): Check whether the
+	breakpoint is actually enabled.
+	(SingleSteppingEngine.DoStep): Moved into `OperationStep.Step()'.
+	(OperationType): Removed.
+
+	* backends/StepFrame.cs (StepMode): Added `NativeInstruction',
+	`SourceLine' and `NextLine'.
+
+	* backends/BreakpointManager.cs
+	(BreakpointManager.LookupBreakpoint): Added `out bool is_enabled'.
+
+	* backends/server/breakpoints.c
+	(mono_debugger_breakpoint_info_get_is_enabled): New public function.
+
+2005-07-19  Martin Baulig  <martin@ximian.com>
+
 	* classes/ObjectCache.cs (ObjectCache.Shutdown): New method; this
 	is some kind of a "static finalizer", it kills the timer just
 	before exiting.

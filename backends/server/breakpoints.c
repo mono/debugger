@@ -96,3 +96,9 @@ mono_debugger_breakpoint_info_get_id (BreakpointInfo *info)
 {
 	return info->id;
 }
+
+gboolean
+mono_debugger_breakpoint_info_get_is_enabled (BreakpointInfo *info)
+{
+	return info->enabled;
+}

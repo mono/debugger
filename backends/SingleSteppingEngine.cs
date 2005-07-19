@@ -150,21 +150,6 @@ namespace Mono.Debugger.Backends
 					      "{0} received event {1} ({2:x})",
 					      this, cevent, status);
 
-			if (stepping_over_breakpoint > 0) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} stepped over breakpoint {1}: {2}",
-					      this, stepping_over_breakpoint,
-					      inferior.CurrentFrame);
-
-				inferior.EnableBreakpoint (stepping_over_breakpoint);
-				manager.ReleaseGlobalThreadLock (this);
-				stepping_over_breakpoint = 0;
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} stepped over breakpoint: {1} ({2:x}) {3}",
-					      this, cevent, status, current_operation);
-			}
-
 			if (manager.HandleChildEvent (inferior, ref cevent))
 				return;
 			ProcessChildEvent (cevent);
@@ -217,6 +202,10 @@ namespace Mono.Debugger.Backends
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received exception: {1} {2} {3}",
+					      this, message, stack, ip);
+
 				bool stop_on_exc;
 				if (message == Inferior.ChildEventType.THROW_EXCEPTION)
 					stop_on_exc = throw_exception (stack, ip);
@@ -224,7 +213,7 @@ namespace Mono.Debugger.Backends
 					stop_on_exc = handle_exception (stack, ip);
 
 				if (stop_on_exc) {
-					current_operation = new Operation (OperationType.Exception, null);
+					current_operation = new OperationException (TargetAddress.Null, false);
 
 					do_continue (ip);
 					return;
@@ -302,8 +291,8 @@ namespace Mono.Debugger.Backends
 
 			if (temp_breakpoint_id != 0) {
 				Report.Debug (DebugFlags.SSE,
-					      "{0} hit temporary breakpoint at {1}",
-					      this, inferior.CurrentFrame);
+					      "{0} hit temporary breakpoint at {1}: {2}",
+					      this, inferior.CurrentFrame, message);
 
 				if (!stop_requested &&
 				    ((message != Inferior.ChildEventType.UNHANDLED_EXCEPTION) &&
@@ -337,8 +326,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
-				current_operation = new Operation (
-					OperationType.UnhandledException, exc);
+				current_operation = new OperationException (exc, true);
 
 				do_continue (ip);
 				return;
@@ -388,35 +376,16 @@ namespace Mono.Debugger.Backends
 			// other cases, `current_operation' is the current stepping
 			// operation.
 			//
-			// DoStep() will either start another atomic operation (and
-			// return false) or tell us the stepping operation is completed
-			// by returning true.
+			// ProcessEvent() will either start another atomic operation
+			// (and return false) or tell us the stepping operation is
+			// completed by returning true.
 			//
 
 			if (current_operation != null) {
-				if (current_operation.Type == OperationType.Initialize) {
-					Report.Debug (DebugFlags.SSE,
-						      "{0} initialize ({1})", this,
-						      DebuggerWaitHandle.CurrentThread);
-					if (is_main)
-						manager.Initialize (inferior);
-					Report.Debug (DebugFlags.SSE, "{0} initialize done",
-						      this);
-				} else if (current_operation.Type == OperationType.UnhandledException) {
-					frame_changed (inferior.CurrentFrame, null);
-					result = new TargetEventArgs (
-						TargetEventType.UnhandledException,
-						current_operation.Until,
-						current_frame);
-					goto send_result;
-				} else if (current_operation.Type == OperationType.Exception) {
-					frame_changed (inferior.CurrentFrame, null);
-					result = new TargetEventArgs (
-						TargetEventType.Exception,
-						current_operation.Until,
-						current_frame);
-					goto send_result;
-				} else if (!DoStep (false))
+				if (current_operation.ProcessEvent (this, inferior, cevent, out result)) {
+					if (result != null)
+						goto send_result;
+				} else
 					return;
 			}
 
@@ -499,10 +468,10 @@ namespace Mono.Debugger.Backends
 			if (is_main) {
 				if (!func.IsNull)
 					insert_temporary_breakpoint (func);
-				current_operation = new Operation (OperationType.Initialize);
-				this.is_main = is_main;
+				current_operation = new OperationInitialize ();
+				this.is_main = true;
 			} else {
-				current_operation = new Operation (OperationType.RunInBackground);
+				current_operation = new OperationRun (TargetAddress.Null, true);
 			}
 			do_continue ();
 		}
@@ -664,73 +633,11 @@ namespace Mono.Debugger.Backends
 		{
 			stop_requested = false;
 
-			if (operation.StepFrame != null)
-				operation.StartFrame = operation.StepFrame.StackFrame;
-			else
-				operation.StartFrame = get_simple_frame ();
+			Report.Debug (DebugFlags.SSE,
+				      "{0} starting {1}", this, operation);
 
-			// Process another stepping command.
-			switch (operation.Type) {
-			case OperationType.Run:
-			case OperationType.RunInBackground:
-				Step (operation);
-				break;
-
-			case OperationType.StepNativeInstruction:
-				do_step_native ();
-				break;
-
-			case OperationType.NextInstruction:
-				do_next_native ();
-				break;
-
-			case OperationType.RuntimeInvoke:
-				do_callback (new CallbackRuntimeInvoke (
-						     operation.RuntimeInvokeData));
-				break;
-
-			case OperationType.CallMethod:
-				do_callback (new CallbackCallMethod (
-						     operation.CallMethodData));
-				break;
-
-			case OperationType.StepLine:
-				operation.StepFrame = CreateStepFrame ();
-				if (operation.StepFrame == null)
-					do_step_native ();
-				else
-					Step (operation);
-				break;
-
-			case OperationType.NextLine:
-				// We cannot just set a breakpoint on the next line
-				// since we do not know which way the program's
-				// control flow will go; ie. there may be a jump
-				// instruction before reaching the next line.
-				StepFrame frame = CreateStepFrame ();
-				if (frame == null)
-					do_next_native ();
-				else {
-					operation.StepFrame = new StepFrame (
-						frame.Start, frame.End, frame.StackFrame,
-						null, StepMode.Finish);
-					Step (operation);
-				}
-				break;
-
-			case OperationType.StepInstruction:
-				operation.StepFrame = CreateStepFrame (StepMode.SingleInstruction);
-				Step (operation);
-				break;
-
-			case OperationType.FinishFrame:
-			case OperationType.FinishNative:
-				Step (operation);
-				break;
-
-			default:
-				throw new InvalidOperationException ();
-			}
+			current_operation = operation;
+			operation.Execute (this);
 		}
 
 		void update_symtabs (object sender, ISymbolTable symbol_table,
@@ -1125,16 +1032,15 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt #1: {1}",
 					      this, stopped);
 
-				if (stepping_over_breakpoint > 0) {
-					Report.Debug (DebugFlags.SSE,
-						      "{0} aborting stepping over " +
-						      "breakpoint {1}: {2}",
-						      this, stepping_over_breakpoint,
-						      inferior.CurrentFrame);
+				if (current_operation is OperationStepOverBreakpoint) {
+					int index = ((OperationStepOverBreakpoint) current_operation).Index;
 
-					inferior.EnableBreakpoint (stepping_over_breakpoint);
+					Report.Debug (DebugFlags.SSE,
+						      "{0} stepped over breakpoint {1}: {2}",
+						      this, index, inferior.CurrentFrame);
+
+					inferior.EnableBreakpoint (index);
 					manager.ReleaseGlobalThreadLock (this);
-					stepping_over_breakpoint = 0;
 				}
 
 				if (current_callback != null) {
@@ -1223,10 +1129,11 @@ namespace Mono.Debugger.Backends
 		bool step_over_breakpoint (TargetAddress until, bool current)
 		{
 			int index;
+			bool is_enabled;
 			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (
-				inferior.CurrentFrame, out index);
+				inferior.CurrentFrame, out index, out is_enabled);
 
-			if ((index == 0) ||
+			if ((index == 0) || !is_enabled ||
 			    (!current && (bpt != null) && bpt.Breaks (process.ID)))
 				return false;
 
@@ -1235,26 +1142,15 @@ namespace Mono.Debugger.Backends
 				      this, index, inferior.CurrentFrame,
 				      current ? "current " : "");
 
-			manager.AcquireGlobalThreadLock (this);
-			inferior.DisableBreakpoint (index);
+			current_operation = new OperationStepOverBreakpoint (
+				current_operation, index, until);
+			current_operation.Execute (this);
 
-			stepping_over_breakpoint = index;
-			if (until.IsNull)
-				inferior.Step ();
-			else {
-				insert_temporary_breakpoint (until);
-				inferior.Continue ();
-			}
 			return true;
 		}
 
 		bool throw_exception (TargetAddress info, TargetAddress ip)
 		{
-			if (ip == current_operation.StartFrame.Address) {
-				inferior.Continue ();
-				return false;
-			}
-
 			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
 
 			Report.Debug (DebugFlags.SSE,
@@ -1300,47 +1196,7 @@ namespace Mono.Debugger.Backends
 			if (current_operation == null)
 				return true;
 
-			/*
-			 * We're dealing with a non-fatal exception here.
-			 */
-
-			switch (current_operation.Type) {
-			case OperationType.Run:
-			case OperationType.RunInBackground:
-				// Don't stop if we're running.
-				return false;
-
-			case OperationType.StepLine:
-			case OperationType.NextLine:
-			case OperationType.FinishFrame:
-				// Check whether we need to stop.
-				break;
-
-			default:
-				// Anything else: always stop.
-				return true;
-			}
-
-			/*
-			 * If we don't have a StepFrame or if the StepFrame doesn't have a
-			 * SimpleStackFrame, we're doing something like instruction stepping -
-			 * always stop in this case.
-			 */
-			if ((current_operation.StepFrame == null) ||
-			    (current_operation.StepFrame.StackFrame == null))
-				return true;
-
-			SimpleStackFrame oframe = current_operation.StepFrame.StackFrame;
-
-			Report.Debug (DebugFlags.SSE,
-				      "{0} handling exception: {1} {2} - {3} {4} - {5}", this,
-				      current_operation.StepFrame, oframe, stack, oframe.StackPointer,
-				      stack < oframe.StackPointer);
-
-			if (stack < oframe.StackPointer)
-				return false;
-
-			return true;
+			return current_operation.HandleException (this, stack, exc);
 		}
 
 		SimpleStackFrame get_simple_frame ()
@@ -1463,24 +1319,19 @@ namespace Mono.Debugger.Backends
 		Operation check_method_operation (TargetAddress address, IMethod method,
 						  SourceAddress source, Operation operation)
 		{
-			if ((operation == null) || operation.IsNative)
+			// Do nothing if this is not a source stepping operation.
+			if ((operation == null) || !operation.IsSourceOperation)
 				return null;
 
 			if (method.IsWrapper) {
 				if (address == method.StartAddress)
-					return new Operation (
-						OperationType.Run, method.WrapperAddress);
+					return new OperationRun (method.WrapperAddress, false);
 				else
-					return new Operation (
-						OperationType.FinishNative);
+					return new OperationFinish (TargetAddress.Null);
 			}
 
 			ILanguageBackend language = method.Module.LanguageBackend;
 			if (source == null)
-				return null;
-
-			// Do nothing if this is not a source stepping operation.
-			if (!operation.IsSourceOperation)
 				return null;
 
 			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
@@ -1488,15 +1339,14 @@ namespace Mono.Debugger.Backends
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
 				// next source line.
-				return new Operation (OperationType.FinishFrame, new StepFrame (
+				return new OperationStep (new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
-					null, language, operation.Type == OperationType.StepLine ?
-					StepMode.StepFrame : StepMode.Finish));
+					null, language, StepMode.Finish));
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
 				// method's actual code).
-				return new Operation (OperationType.FinishFrame, new StepFrame (
+				return new OperationStep (new StepFrame (
 					method.StartAddress, method.MethodStartAddress, null,
 					null, StepMode.Finish));
 			}
@@ -1526,16 +1376,6 @@ namespace Mono.Debugger.Backends
 			int dr_index;
 			temp_breakpoint_id = inferior.InsertHardwareBreakpoint (
 				address, true, out dr_index);
-		}
-
-		// <summary>
-		//   Single-step one machine instruction.
-		// </summary>
-		void do_step_native ()
-		{
-			check_inferior ();
-			frames_invalid ();
-			do_step_native (TargetAddress.Null);
 		}
 
 		// <summary>
@@ -1591,39 +1431,12 @@ namespace Mono.Debugger.Backends
 			inferior.Continue ();
 		}
 
-		void do_step_native (TargetAddress trampoline)
+		void do_step_native ()
 		{
-			if (step_over_breakpoint (trampoline, true))
+			if (step_over_breakpoint (TargetAddress.Null, true))
 				return;
 
 			inferior.Step ();
-		}
-
-		protected bool Step (Operation operation)
-		{
-			check_inferior ();
-
-			current_operation = null;
-			frames_invalid ();
-
-			Report.Debug (DebugFlags.SSE, "{0} starting {1}", this, operation);
-
-			if ((operation.Type != OperationType.Run) &&
-			    (operation.Type != OperationType.RunInBackground) &&
-			    (operation.Type != OperationType.FinishNative) &&
-			    (operation.StepFrame == null)) {
-				do_step_native ();
-				return true;
-			}
-
-			current_operation = operation;
-			if (DoStep (true)) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} finished step operation", this);
-				step_operation_finished ();
-				return true;
-			}
-			return false;
 		}
 
 		void step_operation_finished ()
@@ -1631,18 +1444,19 @@ namespace Mono.Debugger.Backends
 			current_operation = null;
 		}
 
-		bool do_trampoline (StepFrame frame, TargetAddress trampoline, bool is_start)
+		void do_trampoline (ILanguageBackend language,
+				    TargetAddress trampoline, bool is_start)
 		{
-			TargetAddress compile = frame.Language.CompileMethodFunc;
+			TargetAddress compile = language.CompileMethodFunc;
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} found trampoline {1}/{3} (compile is {2})",
 				      this, trampoline, compile, is_start);
 
 			if (is_start) {
-				current_operation = new Operation (OperationType.FinishNative);
+				current_operation = new OperationFinish (TargetAddress.Null);
 				do_continue (trampoline);
-				return false;
+				return;
 			}
 
 			if (compile.IsNull) {
@@ -1652,15 +1466,14 @@ namespace Mono.Debugger.Backends
 				}
 				if (!method_has_source (method)) {
 					do_next_native ();
-					return false;
+					return;
 				}
 
 				do_continue (trampoline);
-				return false;
+				return;
 			}
 
 			do_callback (new CallbackCompileMethod (compile, trampoline));
-			return false;
 		}
 
 		bool method_has_source (IMethod method)
@@ -1693,135 +1506,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			return true;
-		}
-
-		// <summary>
-		//   If `first' is true, start a new stepping operation.
-		//   Otherwise, we've already completed one or more atomic operations and
-		//   need to find out whether we need another one.
-		//   Returns true if the stepping operation is completed (and thus the
-		//   target is still stopped) and false if it started another atomic
-		//   operation.
-		// </summary>
-		protected bool DoStep (bool first)
-		{
-			if ((current_operation.Type == OperationType.Run) ||
-			    (current_operation.Type == OperationType.RunInBackground)) {
-				TargetAddress until = current_operation.Until;
-				if (!until.IsNull)
-					do_continue (until);
-				else
-					do_continue ();
-				return false;
-			}
-
-			if (current_operation.Type == OperationType.FinishNative) {
-				return do_finish_native (first);
-			}
-
-			StepFrame frame = current_operation.StepFrame;
-			if (frame == null)
-				return true;
-
-			TargetAddress current_frame = inferior.CurrentFrame;
-			bool in_frame = is_in_step_frame (frame, current_frame);
-			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} {3}",
-				      this, current_frame, frame, in_frame);
-			if (!first && !in_frame)
-				return true;
-
-			/*
-			 * If this is not a call instruction, continue stepping until we leave
-			 * the specified step frame.
-			 */
-			int insn_size;
-			TargetAddress call = arch.GetCallTarget (inferior, current_frame, out insn_size);
-			if (call.IsNull) {
-				do_step_native ();
-				return false;
-			}
-
-			if ((current_method != null) && (current_method.HasMethodBounds) &&
-			    (call >= current_method.MethodStartAddress) &&
-			    (call < current_method.MethodEndAddress)) {
-				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
-				 * can't be a recursive call). */
-				do_step_native ();
-				return false;
-			}
-
-			/*
-			 * If we have a source language, check for trampolines.
-			 * This will trigger a JIT compilation if neccessary.
-			 */
-			if ((frame.Mode != StepMode.Finish) && (frame.Language != null)) {
-				bool is_start;
-				TargetAddress trampoline = frame.Language.GetTrampolineAddress (
-					inferior, call, out is_start);
-
-				/*
-				 * If this is a trampoline, insert a breakpoint at the start of
-				 * the corresponding method and continue.
-				 *
-				 * We don't need to distinguish between StepMode.SingleInstruction
-				 * and StepMode.StepFrame here since we'd leave the step frame anyways
-				 * when entering the method.
-				 */
-				if (!trampoline.IsNull)
-					return do_trampoline (frame, trampoline, is_start);
-			}
-
-			/*
-			 * When StepMode.SingleInstruction was requested, enter the method
-			 * no matter whether it's a system function or not.
-			 */
-			if (frame.Mode == StepMode.SingleInstruction) {
-				do_step_native ();
-				return false;
-			}
-
-			/*
-			 * In StepMode.Finish, always step over all methods.
-			 */
-			if (frame.Mode == StepMode.Finish) {
-				do_next_native ();
-				return false;
-			}
-
-			/*
-			 * Try to find out whether this is a system function by doing a symbol lookup.
-			 * If it can't be found in the symbol tables, assume it's a system function
-			 * and step over it.
-			 */
-			IMethod method = Lookup (call);
-
-			/*
-			 * If this is a PInvoke/icall wrapper, check whether we want to step into
-			 * the wrapped function.
-			 */
-			if ((method != null) && method.IsWrapper) {
-				TargetAddress wrapper = method.WrapperAddress;
-				IMethod wmethod = Lookup (wrapper);
-
-				if (!method_has_source (wmethod)) {
-					do_next_native ();
-					return false;
-				}
-
-				do_continue (wrapper);
-				return false;
-			}
-
-			if (!method_has_source (method)) {
-				do_next_native ();
-				return false;
-			}
-
-			/*
-			 * Finally, step into the method.
-			 */
-			do_step_native ();
-			return false;
 		}
 
 		// <summary>
@@ -1858,36 +1542,6 @@ namespace Mono.Debugger.Backends
 			ILanguageBackend language = (current_method != null) ? current_method.Module.LanguageBackend : null;
 
 			return new StepFrame (language, mode);
-		}
-
-		bool do_finish_native (bool first)
-		{
-			if (first) {
-				do_step_native ();
-				return false;
-			}
-
-			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
-			TargetAddress stack = frame.StackPointer;
-			if (current_operation.Until.IsNull) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} starting finish native until {1}",
-					      this, stack);
-				current_operation = new Operation (
-					OperationType.FinishNative, stack);
-			}
-
-			TargetAddress until = current_operation.Until;
-
-			Report.Debug (DebugFlags.SSE, "{0} finish native: stack = {1}, " +
-				      "until = {2}", this, stack, until);
-
-			if (stack <= until) {
-				do_next_native ();
-				return false;
-			}
-
-			return true;
 		}
 
 		StackData save_stack ()
@@ -1931,7 +1585,7 @@ namespace Mono.Debugger.Backends
 				      "{0} restored stack: {1}", this, current_frame);
 		}
 
-		void do_callback (Callback cb)
+		protected void do_callback (Callback cb)
 		{
 			if (current_callback != null)
 				throw new InternalError ();
@@ -2336,91 +1990,563 @@ namespace Mono.Debugger.Backends
 			}
 		}
 #endregion
+
+#region SSE Operations
+	internal abstract class Operation {
+		public abstract bool IsSourceOperation {
+			get;
+		}
+
+		public abstract void Execute (SingleSteppingEngine sse);
+
+		public bool ProcessEvent (SingleSteppingEngine sse,
+					  Inferior inferior,
+					  Inferior.ChildEvent cevent,
+					  out TargetEventArgs args)
+		{
+			return DoProcessEvent (sse, inferior, cevent, out args);
+		}
+
+		protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args);
+
+		public virtual bool HandleException (SingleSteppingEngine sse,
+						     TargetAddress stack, TargetAddress exc)
+		{
+			return true;
+		}
 	}
 
-	internal sealed class Operation {
-		public readonly OperationType Type;
-		public readonly TargetAddress Until;
-		public readonly RuntimeInvokeData RuntimeInvokeData;
-		public readonly CallMethodData CallMethodData;
-
-		public Operation (OperationType type)
-		{
-			this.Type = type;
-			this.Until = TargetAddress.Null;
+	internal class OperationInitialize : Operation
+	{
+		public override bool IsSourceOperation {
+			get { return true; }
 		}
 
-		public Operation (OperationType type, StepFrame frame)
+		public override void Execute (SingleSteppingEngine sse)
+		{ }
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
 		{
-			this.Type = type;
-			this.StepFrame = frame;
+			Report.Debug (DebugFlags.SSE,
+				      "{0} initialize ({1})", this,
+				      DebuggerWaitHandle.CurrentThread);
+
+			sse.manager.Initialize (inferior);
+			Report.Debug (DebugFlags.SSE, "{0} initialize done", sse);
+
+			args = null;
+			return true;
+		}
+	}
+
+	internal class OperationStepOverBreakpoint : Operation
+	{
+		Operation operation;
+		TargetAddress until;
+		public readonly int Index;
+
+		public OperationStepOverBreakpoint (Operation operation, int index,
+						    TargetAddress until)
+		{
+			this.operation = operation;
+			this.Index = index;
+			this.until = until;
 		}
 
-		public Operation (OperationType type, TargetAddress until)
-		{
-			this.Type = type;
-			this.Until = until;
+		public override bool IsSourceOperation {
+			get { return false; }
 		}
 
-		public Operation (RuntimeInvokeData data)
+		public override void Execute (SingleSteppingEngine sse)
 		{
-			this.Type = OperationType.RuntimeInvoke;
-			this.RuntimeInvokeData = data;
+			sse.manager.AcquireGlobalThreadLock (sse);
+			sse.inferior.DisableBreakpoint (Index);
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} stepping over breakpoint {1} until {2}",
+				      sse, Index, until);
+
+			if (!until.IsNull) {
+				sse.insert_temporary_breakpoint (until);
+				sse.inferior.Continue ();
+				return;
+			}
+
+			if (sse.current_method == null) {
+				sse.inferior.Step ();
+				return;
+			}
+
+			ILanguageBackend language = sse.current_method.Module.LanguageBackend;
+
+			int insn_size;
+			TargetAddress current_frame = sse.inferior.CurrentFrame;
+			TargetAddress call = sse.arch.GetCallTarget (
+				sse.inferior, current_frame, out insn_size);
+			if (call.IsNull) {
+				sse.inferior.Step ();
+				return;
+			}
+
+			bool is_start;
+			TargetAddress trampoline = language.GetTrampolineAddress (
+				sse.inferior, call, out is_start);
+
+			if (!trampoline.IsNull)
+				sse.do_trampoline (language, trampoline, is_start);
+			else
+				sse.inferior.Step ();
 		}
 
-		public Operation (CallMethodData data)
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
 		{
-			this.Type = OperationType.CallMethod;
-			this.CallMethodData = data;
+			Report.Debug (DebugFlags.SSE,
+				      "{0} stepped over breakpoint {1} while " +
+				      "running {2}: {3} {4}", sse, Index,
+				      operation, cevent, inferior.CurrentFrame);
+
+			sse.inferior.EnableBreakpoint (Index);
+			sse.manager.ReleaseGlobalThreadLock (sse);
+
+			sse.current_operation = operation;
+			return operation.ProcessEvent (sse, inferior, cevent, out args);
+		}
+	}
+
+	internal abstract class OperationStepBase : Operation
+	{
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
+		{
+			args = null;
+			return DoProcessEvent (sse, inferior);
 		}
 
+		protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior);
+	}
+
+	internal class OperationStep : OperationStepBase
+	{
 		public StepMode StepMode;
 		public StepFrame StepFrame;
 
 		public SimpleStackFrame StartFrame;
 
-		public bool IsNative {
-			get { return Type == OperationType.StepNativeInstruction; }
+		public OperationStep (StepMode mode)
+		{
+			this.StepMode = mode;
 		}
 
-		public bool IsSourceOperation {
+		public OperationStep (StepFrame frame)
+		{
+			this.StepFrame = frame;
+			this.StepMode = frame.Mode;
+		}
+
+		public override bool IsSourceOperation {
 			get {
-				return (Type == OperationType.StepLine) ||
-					(Type == OperationType.NextLine) ||
-					(Type == OperationType.Run) ||
-					(Type == OperationType.RunInBackground) ||
-					(Type == OperationType.RuntimeInvoke) ||
-					(Type == OperationType.Initialize);
+				return (StepMode == StepMode.SourceLine) ||
+					(StepMode == StepMode.NextLine);
 			}
+		}
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+			if (StepFrame != null)
+				StartFrame = StepFrame.StackFrame;
+			else
+				StartFrame = sse.get_simple_frame ();
+
+			switch (StepMode) {
+			case StepMode.NativeInstruction:
+				sse.do_step_native ();
+				break;
+
+			case StepMode.NextInstruction:
+				sse.do_next_native ();
+				break;
+
+			case StepMode.SourceLine:
+				StepFrame = sse.CreateStepFrame ();
+				if (StepFrame == null)
+					sse.do_step_native ();
+				else
+					Step (sse, true);
+				break;
+
+			case StepMode.NextLine:
+				// We cannot just set a breakpoint on the next line
+				// since we do not know which way the program's
+				// control flow will go; ie. there may be a jump
+				// instruction before reaching the next line.
+				StepFrame frame = sse.CreateStepFrame ();
+				if (frame == null)
+					sse.do_next_native ();
+				else {
+					StepFrame = new StepFrame (
+						frame.Start, frame.End, frame.StackFrame,
+						null, StepMode.Finish);
+					Step (sse, true);
+				}
+				break;
+
+			case StepMode.SingleInstruction:
+				StepFrame = sse.CreateStepFrame (StepMode.SingleInstruction);
+				Step (sse, true);
+				break;
+
+			case StepMode.Finish:
+				Step (sse, true);
+				break;
+
+			default:
+				throw new InvalidOperationException ();
+			}
+		}
+
+		public override bool HandleException (SingleSteppingEngine sse,
+						      TargetAddress stack, TargetAddress exc)
+		{
+			if ((StepMode != StepMode.SourceLine) && (StepMode != StepMode.NextLine) &&
+			    (StepMode != StepMode.StepFrame))
+				return true;
+
+			/*
+			 * If we don't have a StepFrame or if the StepFrame doesn't have a
+			 * SimpleStackFrame, we're doing something like instruction stepping -
+			 * always stop in this case.
+			 */
+			if ((StepFrame == null) || (StepFrame.StackFrame == null))
+				return true;
+
+			SimpleStackFrame oframe = StepFrame.StackFrame;
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} handling exception: {1} {2} - {3} {4} - {5}", sse,
+				      StepFrame, oframe, stack, oframe.StackPointer,
+				      stack < oframe.StackPointer);
+
+			if (stack < oframe.StackPointer)
+				return false;
+
+			return true;
+		}
+
+		protected bool Step (SingleSteppingEngine sse, bool first)
+		{
+			if (StepFrame == null) {
+				sse.do_step_native ();
+				return true;
+			}
+
+			TargetAddress current_frame = sse.inferior.CurrentFrame;
+			bool in_frame = sse.is_in_step_frame (StepFrame, current_frame);
+			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} {3}",
+				      sse, current_frame, StepFrame, in_frame);
+			if (!first && !in_frame)
+				return true;
+
+			/*
+			 * If this is not a call instruction, continue stepping until we leave
+			 * the specified step frame.
+			 */
+			int insn_size;
+			TargetAddress call = sse.arch.GetCallTarget (
+				sse.inferior, current_frame, out insn_size);
+			if (call.IsNull) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			if ((sse.current_method != null) && (sse.current_method.HasMethodBounds) &&
+			    (call >= sse.current_method.MethodStartAddress) &&
+			    (call < sse.current_method.MethodEndAddress)) {
+				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
+				 * can't be a recursive call). */
+				sse.do_step_native ();
+				return false;
+			}
+
+			/*
+			 * If we have a source language, check for trampolines.
+			 * This will trigger a JIT compilation if neccessary.
+			 */
+			if ((StepMode != StepMode.Finish) && (StepFrame.Language != null)) {
+				bool is_start;
+				TargetAddress trampoline = StepFrame.Language.GetTrampolineAddress (
+					sse.inferior, call, out is_start);
+
+				/*
+				 * If this is a trampoline, insert a breakpoint at the start of
+				 * the corresponding method and continue.
+				 *
+				 * We don't need to distinguish between StepMode.SingleInstruction
+				 * and StepMode.StepFrame here since we'd leave the step frame anyways
+				 * when entering the method.
+				 */
+				if (!trampoline.IsNull) {
+					sse.do_trampoline (StepFrame.Language, trampoline, is_start);
+					return false;
+				}
+			}
+
+			/*
+			 * When StepMode.SingleInstruction was requested, enter the method
+			 * no matter whether it's a system function or not.
+			 */
+			if (StepMode == StepMode.SingleInstruction) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			/*
+			 * In StepMode.Finish, always step over all methods.
+			 */
+			if (StepMode == StepMode.Finish) {
+				sse.do_next_native ();
+				return false;
+			}
+
+			/*
+			 * Try to find out whether this is a system function by doing a symbol lookup.
+			 * If it can't be found in the symbol tables, assume it's a system function
+			 * and step over it.
+			 */
+			IMethod method = sse.Lookup (call);
+
+			/*
+			 * If this is a PInvoke/icall wrapper, check whether we want to step into
+			 * the wrapped function.
+			 */
+			if ((method != null) && method.IsWrapper) {
+				TargetAddress wrapper = method.WrapperAddress;
+				IMethod wmethod = sse.Lookup (wrapper);
+
+				if (!sse.method_has_source (wmethod)) {
+					sse.do_next_native ();
+					return false;
+				}
+
+				sse.do_continue (wrapper);
+				return false;
+			}
+
+			if (!sse.method_has_source (method)) {
+				sse.do_next_native ();
+				return false;
+			}
+
+			/*
+			 * Finally, step into the method.
+			 */
+			sse.do_step_native ();
+			return false;
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} processing {1} event.",
+				      sse, this);
+			return Step (sse, false);
 		}
 
 		public override string ToString ()
 		{
-			if (StepFrame != null)
-				return String.Format ("Operation ({0}:{1}:{2}:{3})",
-						      Type, Until, StepMode, StepFrame);
-			else if (!Until.IsNull)
-				return String.Format ("Operation ({0}:{1})", Type, Until);
-			else
-				return String.Format ("Operation ({0})", Type);
+			return String.Format ("OperationStep ({0}:{1})",
+					      StepMode, StepFrame);
 		}
 	}
 
-	internal enum OperationType {
-		Initialize,
-		Run,
-		RunInBackground,
-		StepInstruction,       /* next CIL instruction */
-		StepNativeInstruction, /* next native instruction */
-		NextInstruction,       /* next CIL instruction, skipping method calls*/
-		StepLine,              /* next source line */
-		NextLine,              /* next source line, skipping method calls */
-		FinishFrame,           /* step until the end of the operation's StepFrame */
-		RuntimeInvoke,
-		CallMethod,
-		FinishNative,          /* step until the current native stack frame is popped */
-		UnhandledException,
-		Exception
+	internal class OperationRun : OperationStepBase
+	{
+		TargetAddress until;
+		bool in_background;
+
+		public OperationRun (TargetAddress until, bool in_background)
+		{
+			this.until = until;
+			this.in_background = in_background;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+			if (!until.IsNull)
+				sse.do_continue (until);
+			else
+				sse.do_continue ();
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior)
+		{
+			Execute (sse);
+			return false;
+		}
+
+		public override bool HandleException (SingleSteppingEngine sse,
+						      TargetAddress stack, TargetAddress exc)
+		{
+			return false;
+		}
+	}
+
+	internal class OperationFinish : OperationStepBase
+	{
+		TargetAddress stack, until;
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		public OperationFinish (TargetAddress stack)
+		{
+			this.stack = stack;
+			this.until = TargetAddress.Null;
+		}
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+			sse.do_step_native ();
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior)
+		{
+			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
+			TargetAddress stack = frame.StackPointer;
+			if (until.IsNull) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} starting finish native until {1}",
+					      sse, stack);
+				until = stack;
+			}
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} finish native: stack = {1}, " +
+				      "until = {2}", sse, stack, until);
+
+			if (stack <= until) {
+				sse.do_next_native ();
+				return false;
+			}
+
+			return true;
+		}
+	}
+
+	internal class OperationRuntimeInvoke : Operation
+	{
+		RuntimeInvokeData data;
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		public OperationRuntimeInvoke (RuntimeInvokeData data)
+		{
+			this.data = data;
+		}
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+			sse.do_callback (new CallbackRuntimeInvoke (data));
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
+		{
+			args = null;
+			return true;
+		}
+	}
+
+	internal class OperationCallMethod : Operation
+	{
+		CallMethodData cdata;
+
+		public OperationCallMethod (CallMethodData cdata)
+		{
+			this.cdata = cdata;
+		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+			sse.do_callback (new CallbackCallMethod (cdata));
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
+		{
+			args = null;
+			return true;
+		}
+	}
+
+	internal class OperationException : Operation
+	{
+		TargetAddress exc;
+		bool unhandled;
+
+		public OperationException (TargetAddress exc, bool unhandled)
+		{
+			this.exc = exc;
+			this.unhandled = unhandled;
+		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
+		{
+			if (unhandled) {
+				sse.frame_changed (inferior.CurrentFrame, null);
+				args = new TargetEventArgs (
+					TargetEventType.UnhandledException,
+					exc, sse.current_frame);
+				return true;
+			} else {
+				sse.frame_changed (inferior.CurrentFrame, null);
+				args = new TargetEventArgs (
+					TargetEventType.Exception,
+					exc, sse.current_frame);
+				return true;
+			}
+		}
+	}
+#endregion
 	}
 
 	internal enum CommandType {
@@ -2443,10 +2569,10 @@ namespace Mono.Debugger.Backends
 	internal class Command {
 		public SingleSteppingEngine Engine;
 		public CommandType Type;
-		public Operation Operation;
+		public SingleSteppingEngine.Operation Operation;
 		public object Data1, Data2;
 
-		public Command (SingleSteppingEngine engine, Operation operation)
+		public Command (SingleSteppingEngine engine, SingleSteppingEngine.Operation operation)
 		{
 			this.Engine = engine;
 			this.Type = CommandType.Operation;

@@ -7,14 +7,29 @@ namespace Mono.Debugger.Backends
 	internal enum StepMode
 	{
 		// <summary>
-		//   Step a single machine instruction.
+		//   Step a single machine instruction, but step over trampolines.
 		// </summary>
 		SingleInstruction,
+
+		// <summary>
+		//   Step a single macihne instruction, always step into method calls.
+		// </summary>
+		NativeInstruction,
 
 		// <summary>
 		//   Step a single machine instruction, but step over function calls.
 		// </summary>
 		NextInstruction,
+
+		// <summary>
+		//   Step one source line.
+		// </summary>
+		SourceLine,
+
+		// <summary>
+		//   Step one source line, but step over method calls.
+		// </summary>
+		NextLine,
 
 		// <summary>
 		//   Single-step until leaving the specified step frame or entering a method.

@@ -52,6 +52,9 @@ mono_debugger_breakpoint_manager_remove              (BreakpointManager *bpm, Br
 int
 mono_debugger_breakpoint_info_get_id                 (BreakpointInfo *info);
 
+gboolean
+mono_debugger_breakpoint_info_get_is_enabled         (BreakpointInfo *info);
+
 G_END_DECLS
 
 #endif

@@ -28,6 +28,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_breakpoint_info_get_id (IntPtr info);
 
+		[DllImport("monodebuggerserver")]
+		static extern bool mono_debugger_breakpoint_info_get_is_enabled (IntPtr info);
+
 		public BreakpointManager ()
 		{
 			breakpoints = new Hashtable ();
@@ -48,7 +51,8 @@ namespace Mono.Debugger.Backends
 			get { return _manager; }
 		}
 
-		public Breakpoint LookupBreakpoint (TargetAddress address, out int index)
+		public Breakpoint LookupBreakpoint (TargetAddress address,
+						    out int index, out bool is_enabled)
 		{
 			Lock ();
 			try {
@@ -60,6 +64,7 @@ namespace Mono.Debugger.Backends
 				}
 
 				index = mono_debugger_breakpoint_info_get_id (info);
+				is_enabled = mono_debugger_breakpoint_info_get_is_enabled (info);
 				return (Breakpoint) breakpoints [index];
 			} finally {
 				Unlock ();
@@ -82,7 +87,8 @@ namespace Mono.Debugger.Backends
 			Lock ();
 			try {
 				int index;
-				Breakpoint old = LookupBreakpoint (address, out index);
+				bool is_enabled;
+				Breakpoint old = LookupBreakpoint (address, out index, out is_enabled);
 				if (old != null)
 					throw new TargetException (
 						TargetError.AlreadyHaveBreakpoint,

@@ -167,14 +167,17 @@ namespace Mono.Debugger
 
 		void symtab_thread_start ()
 		{
-				symtab_thread_main ();
+			Report.Debug (DebugFlags.Threads, "Symtab thread started: {0}",
+				      DebuggerWaitHandle.CurrentThread);
 
-				symtabs_loaded_event.Set ();
-				modules_loaded_event.Set ();
-				update_completed_event.Set ();
-				symtab_update_in_progress = false;
-				module_update_in_progress = false;
-				symtab_thread = null;
+			symtab_thread_main ();
+
+			symtabs_loaded_event.Set ();
+			modules_loaded_event.Set ();
+			update_completed_event.Set ();
+			symtab_update_in_progress = false;
+			module_update_in_progress = false;
+			symtab_thread = null;
 		}
 
 		void symtab_thread_main ()
