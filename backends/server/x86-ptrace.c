@@ -378,7 +378,7 @@ io_thread (gpointer data)
 	while (1) {
 		ret = poll (fds, 2, -1);
 
-		if (ret < 0)
+		if ((ret < 0) && (errno != EINTR))
 			break;
 
 		if (fds [0].revents & POLLIN)

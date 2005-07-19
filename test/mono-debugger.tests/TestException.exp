@@ -13,6 +13,7 @@ set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_exception 0 "X.Test()" $file 7
 mdb_send "continue"
+mdb_expect_line "EXCEPTION: System.InvalidOperationException"
 mdb_expect_stopped 0 "X.Main()" $file 19
 mdb_send "continue"
 mdb_expect_prompt

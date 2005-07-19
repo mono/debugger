@@ -1,5 +1,10 @@
 2005-07-19  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-ptrace.c
+	(io_thread): Don't abort if we get an EINTR.
+
+2005-07-19  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs (handle_exception): Correctly
 	step over exceptions; check all catchpoints, not just the first one.
 
