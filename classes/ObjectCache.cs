@@ -17,6 +17,7 @@ namespace Mono.Debugger
 		int id;
 
 		static ArrayList objects;
+		static Timer timer;
 		static DebuggerMutex mutex;
 		static int next_id = 0;
 
@@ -36,7 +37,15 @@ namespace Mono.Debugger
 		{
 			mutex = new DebuggerMutex ("object_cache");
 			objects = new ArrayList ();
-			new Timer (new TimerCallback (cleanup_process), null, 0, 60000);
+			timer = new Timer (new TimerCallback (cleanup_process), null, 0, 60000);
+		}
+
+		public static void Shutdown ()
+		{
+			if (timer != null) {
+				timer.Dispose ();
+				timer = null;
+			}
 		}
 
 		static void cleanup_process (object dummy)

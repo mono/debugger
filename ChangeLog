@@ -1,3 +1,12 @@
+2005-07-19  Martin Baulig  <martin@ximian.com>
+
+	* classes/ObjectCache.cs (ObjectCache.Shutdown): New method; this
+	is some kind of a "static finalizer", it kills the timer just
+	before exiting.
+
+	* backends/Debugger.cs
+	(DebuggerBackend.Dispose): Call ObjectCache.Shutdown().	
+
 2005-07-18  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs (NumberExpression.Value): Allow `val' to
