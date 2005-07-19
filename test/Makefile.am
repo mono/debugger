@@ -16,6 +16,8 @@ EXTRA_DIST = \
 	TestManagedTypes.cs TestAssembly.cs TestNamespace.cs TestModule.cs \
 	MultiThread.cs TestInvocation.cs TestInheritance.cs Simple.cs mdb.exp
 
+RUNTESTFLAGS = --ignore "MultiThread.exp module.exp start-restart.exp TestModule.exp TestAssembly.exp"
+
 testnativetypes_SOURCES = testnativetypes.c
 
 module_SOURCES = module.c
