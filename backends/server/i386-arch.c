@@ -267,6 +267,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	*((guint32 *) (code+33)) = 14 + (num_params + 1) * 4;
 
 	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 

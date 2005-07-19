@@ -1,5 +1,14 @@
 2005-07-19  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86_64-arch.c
+	(server_ptrace_call_method_invoke): Correctly marshal the
+	parameters.
+
+	* backends/server/i386-arch.c (server_ptrace_call_method_invoke):
+	Don't leak memory here.
+
+2005-07-19  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs (Operation): Make this class
 	abstract and nest it inside the `SingleSteppingEngine'.
 	(SingleSteppingEngine.Operation): We're now an abstract class.
