@@ -33,6 +33,7 @@ namespace Mono.Debugger
 		public override bool CheckBreakpointHit (TargetAddress exc_address, StackFrame frame,
 							 ITargetAccess target)
 		{
+			exception.GetTypeInfo ();
 			ITargetClassObject exc = language.CreateObject (frame, exc_address) as ITargetClassObject;
 			if (exc == null)
 				return false; // OOOPS

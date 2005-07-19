@@ -208,6 +208,76 @@ proc mdb_expect_breakpoint {} {
     return -1
 }
 
+proc mdb_expect_catchpoint {} {
+    global process
+    global file
+    global max_repeat
+
+    set count 0
+    while {$count < $max_repeat} {
+	expect {
+	    -re {^Inserted catch point ([0-9]+) for ([^\n\r]+)[\n\r]+} {
+		set index $expect_out(1,string)
+		pass "Inserted catchpoint $index"
+		mdb_expect_prompt
+		return $index
+	    }
+	    {^(mdb) } {
+		fail "Failed to insert catchpoint"
+		return -1
+	    }
+	    -re {^([^\n\r]+)[\n\r]+} {
+		set line $expect_out(1,string)
+		verbose "Received `$line' when trying to insert a catchpoint"
+		incr count
+	    }
+	    timeout {
+		break
+	    }
+	}
+    }
+    perror "(timeout) Mono Debugger is not inserting catchpoint."
+    return -1
+}
+
+proc mdb_expect_exception {index func file line} {
+    global process
+    global max_repeat
+
+    set count 0
+    while {$count < $max_repeat} {
+	expect {
+	    -re {Process @([0-9]+) caught exception at ([^\n\r]+)\.[\n\r]+} {
+		set real_process $expect_out(1,string)
+		set real_frame $expect_out(2,string)
+
+		if {$real_process != $process} {
+		    fail "Debugger stopped in process $real_process, but expected $process"
+		    return
+		}
+
+		mdb_test_frame $real_frame $index $func $file $line
+		mdb_expect_prompt
+		return
+	    }
+	    {^(mdb) } {
+		fail "Process failed to catch exception in $func at $file:$line"
+		return -1
+	    }
+	    -re {^([^\n\r]+)[\n\r]+} {
+		set message $expect_out(1,string)
+		verbose "Received `$message' while waiting for target to stop"
+		incr count
+	    }
+	    timeout {
+		break
+	    }
+	}
+    }
+    perror "(timeout) Mono Debugger not responding to `frame' command."
+    return
+}
+
 proc mdb_expect_process {} {
     global max_repeat
 

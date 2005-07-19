@@ -1157,6 +1157,10 @@ namespace Mono.Debugger.Backends
 				      "{0} throwing exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
 
+			if ((current_operation != null) && !current_operation.StartFrame.IsNull &&
+			    current_operation.StartFrame == ip)
+				return false;
+
 			StackFrame frame = null;
 
 			foreach (Breakpoint bpt in exception_handlers.Values) {
@@ -1169,7 +1173,7 @@ namespace Mono.Debugger.Backends
 				if ((frame == null) && bpt.HandlerNeedsFrame)
 					frame = get_frame ();
 				if (!bpt.CheckBreakpointHit (exc, frame, inferior))
-					return false;
+					continue;
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} stopped on exception {1} at {2}", this, exc, ip);
@@ -1997,7 +2001,15 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		public abstract void Execute (SingleSteppingEngine sse);
+		public TargetAddress StartFrame;
+
+		public void Execute (SingleSteppingEngine sse)
+		{
+			StartFrame = sse.inferior.CurrentFrame;
+			DoExecute (sse);
+		}
+
+		protected abstract void DoExecute (SingleSteppingEngine sse);
 
 		public bool ProcessEvent (SingleSteppingEngine sse,
 					  Inferior inferior,
@@ -2025,7 +2037,7 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{ }
 
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,
@@ -2063,7 +2075,7 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			sse.manager.AcquireGlobalThreadLock (sse);
 			sse.inferior.DisableBreakpoint (Index);
@@ -2142,8 +2154,6 @@ namespace Mono.Debugger.Backends
 		public StepMode StepMode;
 		public StepFrame StepFrame;
 
-		public SimpleStackFrame StartFrame;
-
 		public OperationStep (StepMode mode)
 		{
 			this.StepMode = mode;
@@ -2162,13 +2172,8 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			if (StepFrame != null)
-				StartFrame = StepFrame.StackFrame;
-			else
-				StartFrame = sse.get_simple_frame ();
-
 			switch (StepMode) {
 			case StepMode.NativeInstruction:
 				sse.do_step_native ();
@@ -2385,7 +2390,7 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			if (!until.IsNull)
 				sse.do_continue (until);
@@ -2421,7 +2426,7 @@ namespace Mono.Debugger.Backends
 			this.until = TargetAddress.Null;
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			sse.do_step_native ();
 		}
@@ -2464,7 +2469,7 @@ namespace Mono.Debugger.Backends
 			this.data = data;
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			sse.do_callback (new CallbackRuntimeInvoke (data));
 		}
@@ -2492,7 +2497,7 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			sse.do_callback (new CallbackCallMethod (cdata));
 		}
@@ -2522,7 +2527,7 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		public override void Execute (SingleSteppingEngine sse)
+		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 		}
 

@@ -1,5 +1,20 @@
 2005-07-19  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs (handle_exception): Correctly
+	step over exceptions; check all catchpoints, not just the first one.
+
+	* classes/ExceptionCatchPoint.cs
+	(ExceptionCatchPoint.CheckBreakpointHit): Call `exception.GetTypeInfo()'
+	before trying to create the object.
+
+	* tests/TestException.cs: New tests.
+	* tests/mono-debugger.tests/TestException.exp: Added testcase.
+
+	* tests/mdb.exp (mdb_expect_catchpoint): New proc.
+	(mdb_expect_exception): New proc.
+
+2005-07-19  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86_64-arch.c
 	(server_ptrace_call_method_invoke): Correctly marshal the
 	parameters.
