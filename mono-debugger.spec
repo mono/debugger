@@ -6,7 +6,7 @@ Summary:	Mono Debugger.
 Name:		%name
 Version:	%version
 Release:	%release
-License:	GPL
+License:	MIT X11	
 Group:		System/Development
 Source0:	%name-%version.tar.gz
 URL:		http://www.go-mono.com/
