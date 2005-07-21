@@ -38,6 +38,11 @@ namespace Mono.Debugger.Languages
 			return new RelativeTargetLocation (relative_to, address + offset);
 		}
 
+		public override string Print ()
+		{
+			return address.ToString ();
+		}
+
 		protected override string MyToString ()
 		{
 			return String.Format (":{0}:{1}", relative_to, address);

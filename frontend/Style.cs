@@ -500,6 +500,7 @@ namespace Mono.Debugger.Frontend
 			switch (obj.TypeInfo.Type.Kind) {
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
+			case TargetObjectKind.Array:
 				return String.Format (
 					"({0}) {1}", obj.TypeInfo.Type.Name, obj.Location.Address);
 

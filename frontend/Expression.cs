@@ -1634,6 +1634,11 @@ namespace Mono.Debugger.Frontend
 			FrameHandle frame = context.CurrentFrame;
 
 			TargetLocation location = EvaluateAddress (context);
+
+			if (!location.HasAddress)
+				throw new ScriptingException (
+					"Cannot take address of expression `{0}'", expr.Name);
+
 			return frame.Language.CreatePointer (frame.Frame, location.Address);
 		}
 
@@ -1643,11 +1648,7 @@ namespace Mono.Debugger.Frontend
 			if (pexpr != null)
 				return pexpr.EvaluateAddress (context);
 
-			ITargetObject obj = expr.EvaluateVariable (context);
-			if (!obj.Location.HasAddress)
-				throw new ScriptingException (
-					"Cannot take address of expression `{0}'", expr.Name);
-			return obj.Location;
+			return expr.EvaluateVariable (context).Location;
 		}
 	}
 

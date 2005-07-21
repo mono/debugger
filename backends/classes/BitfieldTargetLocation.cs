@@ -88,6 +88,13 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
+		public override string Print ()
+		{
+			return String.Format ("Bitfield [{0}..{1}] in {2}",
+					      bit_offset, bit_offset + bit_size,
+					      relative_to.Print ());
+		}
+
 		protected override string MyToString ()
 		{
 			return String.Format (":{0}:{1}:{2}", relative_to,

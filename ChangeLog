@@ -1,5 +1,21 @@
 2005-07-21  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetLocation.cs
+	(TargetLocation.Print): New public abstract method; provides a
+	human-readable description of the location.
+
+	* frontend/Command.cs
+	(Show.ShowLocationCommand): Added `show location' command to
+	display the location of an expression.
+
+	* frontend/Expression.cs
+	(AddressOfExpression.DoEvaluateVariable): Check whether we
+	actually have an address before trying to use it.
+	(AddressOfExpression.EvaluateAddress): Allow address-less
+	expressions here.
+
+2005-07-21  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoArrayTypeInfo.cs (MonoArrayTypeInfo.ctor): Use
 	`4 x TargetAddressSize' to get proper alignment.
 

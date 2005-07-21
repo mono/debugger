@@ -112,9 +112,6 @@ namespace Mono.Debugger.Languages
 
 		public override void WriteAddress (TargetAddress address)
 		{
-			if (!HasAddress)
-				throw new InvalidOperationException ();
-
 			if (is_regoffset) {
 				// If this is a reference type, the register just holds the
 				// address of the actual data, so read the address from the
@@ -134,6 +131,20 @@ namespace Mono.Debugger.Languages
 		{
 			return new MonoVariableLocation (
 				frame, is_regoffset, register, regoffset, IsByRef, Offset + offset);
+		}
+
+		public override string Print ()
+		{
+			int regindex = frame.Registers [register].Index;
+			string name = frame.TargetAccess.Architecture.RegisterNames [regindex];
+
+			long offset = regoffset + Offset;
+			if (offset > 0)
+				return String.Format ("%{0}+0x{1:x}", name, offset);
+			else if (offset < 0)
+				return String.Format ("%{0}-0x{1:x}", name, -offset);
+			else
+				return String.Format ("%{0}", name);
 		}
 
 		protected override string MyToString ()

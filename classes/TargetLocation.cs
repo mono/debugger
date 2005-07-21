@@ -213,6 +213,8 @@ namespace Mono.Debugger.Languages
 			return "";
 		}
 
+		public abstract string Print ();
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3:x}{4})",

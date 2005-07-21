@@ -1499,6 +1499,36 @@ namespace Mono.Debugger.Frontend
 					       context.Interpreter.Style.Name);
 			}
 		}
+
+		private class ShowLocationCommand : DebuggerCommand
+		{
+			Expression expr;
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				expr = ParseExpression (context);
+				if (expr == null)
+					return false;
+
+				expr = expr.Resolve (context);
+				if (expr == null)
+					return false;
+
+				return true;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				TargetLocation location;
+				PointerExpression pexpr = expr as PointerExpression;
+				if (pexpr != null)
+					location = pexpr.EvaluateAddress (context);
+				else
+					location = expr.EvaluateVariable (context).Location;
+
+				Console.WriteLine (location.Print ());
+			}
+		}
 #endregion
 
 		public ShowCommand ()
@@ -1518,6 +1548,7 @@ namespace Mono.Debugger.Frontend
 			RegisterSubcommand ("frame", typeof (ShowFrameCommand));
 			RegisterSubcommand ("lang", typeof (ShowLangCommand));
 			RegisterSubcommand ("style", typeof (ShowStyleCommand));
+			RegisterSubcommand ("location", typeof (ShowLocationCommand));
 		}
 
 		// IDocumentableCommand

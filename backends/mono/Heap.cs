@@ -69,6 +69,11 @@ namespace Mono.Debugger.Languages.Mono
 				// FIXME: Release object.
 			}
 
+			public override string Print ()
+			{
+				return String.Format ("Heap [{0}:{1}]", base_address, address);
+			}
+
 			protected override string MyToString ()
 			{
 				return String.Format (":{0}:{1}:{2}", base_address, address, size);

@@ -29,6 +29,11 @@ namespace Mono.Debugger.Languages
 			return new AbsoluteTargetLocation (frame, address + offset);
 		}
 
+		public override string Print ()
+		{
+			return address.ToString ();
+		}
+
 		protected override string MyToString ()
 		{
 			return String.Format (":{0}", address);
