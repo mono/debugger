@@ -1,3 +1,8 @@
+2005-07-21  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono/MonoArrayTypeInfo.cs (MonoArrayTypeInfo.ctor): Use
+	`4 x TargetAddressSize' to get proper alignment.
+
 2005-07-19  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86-ptrace.c

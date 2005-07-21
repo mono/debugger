@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.Mono
 		protected MonoArrayTypeInfo subarray_type;
 
 		public MonoArrayTypeInfo (MonoArrayType type, MonoTypeInfo element_type)
-			: base (type, 3 * type.File.TargetInfo.TargetAddressSize + 4)
+			: base (type, 4 * type.File.TargetInfo.TargetAddressSize)
 		{
 			this.Type = type;
 			this.element_type = element_type;
