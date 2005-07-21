@@ -16,5 +16,6 @@ mdb_send "continue"
 mdb_expect_line "EXCEPTION: System.InvalidOperationException"
 mdb_expect_stopped 0 "X.Main()" $file 19
 mdb_send "continue"
+mdb_expect_line "Done"
 mdb_expect_prompt
 mdb_send "quit"
