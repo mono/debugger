@@ -43,7 +43,6 @@ proc mdb_expect_started { } {
 
     expect {
 	-re "Process @(\[0-9\]+) stopped at (\[^\n\r\]+)\[\r\n\]+" {
-	    verbose "Stopped"
 	    set process $expect_out(1,string)
 	    pass "Target started"
 	} -re {^ERROR:([^\n\r]+)} {

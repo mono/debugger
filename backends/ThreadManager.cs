@@ -195,6 +195,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		int next_process_id = 0;
+		internal int NextProcessID {
+			get { return ++next_process_id; }
+		}
+
 		// <summary>
 		//   Stop all currently running threads without sending any notifications.
 		//   The threads are automatically resumed to their previos state when
@@ -613,9 +618,25 @@ namespace Mono.Debugger
 				Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
 				wait_event.WaitOne ();
 
+				int pid, status;
 				if (abort_requested) {
 					Report.Debug (DebugFlags.Wait,
 						      "Wait thread abort requested");
+
+					//
+					// Reap all our children.
+					//
+
+					do {
+						pid = mono_debugger_server_global_wait (out status);
+						Report.Debug (DebugFlags.Wait,
+							      "Wait thread received event: {0} {1:x}",
+							      pid, status);
+					} while (pid > 0);
+
+					Report.Debug (DebugFlags.Wait,
+						      "Wait thread exiting");
+
 					return;
 				}
 
@@ -625,7 +646,6 @@ namespace Mono.Debugger
 				// Wait until we got an event from the target or a command from the user.
 				//
 
-				int pid, status;
 				pid = mono_debugger_server_global_wait (out status);
 
 				Report.Debug (DebugFlags.Wait,

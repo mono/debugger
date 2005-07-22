@@ -28,7 +28,7 @@ namespace Mono.Debugger
 				  Inferior inferior)
 		{
 			this.engine = engine;
-			this.id = ++next_id;
+			this.id = engine.ThreadManager.NextProcessID;
 
 			inferior.TargetOutput += new TargetOutputHandler (OnInferiorOutput);
 			inferior.DebuggerOutput += new DebuggerOutputHandler (OnDebuggerOutput);
