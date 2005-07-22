@@ -91,5 +91,6 @@ mdb_expect "(System.String) \"Boston\""
 mdb_send "print Virtual ()"
 mdb_expect "(System.Int32) 2"
 mdb_send "continue"
+mdb_expect_line "Process @4 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"

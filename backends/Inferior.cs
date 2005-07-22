@@ -64,8 +64,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public event TargetExitedHandler TargetExited;
-
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
@@ -451,14 +449,6 @@ namespace Mono.Debugger.Backends
 			get {
 				return bfd.EntryPoint;
 			}
-		}
-
-		protected void child_exited ()
-		{
-			child_pid = 0;
-			Dispose ();
-			if (TargetExited != null)
-				TargetExited ();
 		}
 
 		void inferior_stdout_handler (string line)

@@ -66,11 +66,5 @@ namespace Mono.Debugger
 		//   has changed, for instance when the target has stopped or exited.
 		// </summary>
 		event StateChangedHandler StateChanged;
-
-		// <summary>
-		//   This event is emitted when the state of the target we're currently debugging
-		//   has changed, for instance when the target has stopped or exited.
-		// </summary>
-		event TargetExitedHandler TargetExited;
 	}
 }

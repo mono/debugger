@@ -14,4 +14,8 @@ mdb_send "print Foo.Print ()"
 mdb_expect "(System.String) \"Boston\""
 mdb_send "print Foo.Boston"
 mdb_expect "(System.String) \"Boston\""
+mdb_send "continue"
+mdb_expect_line "Boston"
+mdb_expect_line "Process @4 terminated normally."
+mdb_expect_prompt
 mdb_send "quit"

@@ -1,3 +1,11 @@
+2005-07-22  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetNotification.cs
+	(ITargetNotification): Remove the `TargetExited' event.
+
+	* backends/SingleSteppingEngine.cs (SingleSteppingEngine.Dispose):
+	Don't set `process = null'.
+
 2005-07-21  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetLocation.cs

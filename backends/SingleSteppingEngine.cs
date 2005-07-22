@@ -107,8 +107,6 @@ namespace Mono.Debugger.Backends
 
 		void setup_engine ()
 		{
-			inferior.TargetExited += new TargetExitedHandler (child_exited);
-
 			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
 				      DebuggerWaitHandle.CurrentThread, this);
 
@@ -459,8 +457,7 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
-			if (process != null)
-				process.SendTargetEvent (args);
+			process.SendTargetEvent (args);
 		}
 
 		internal void Start (TargetAddress func, bool is_main)
@@ -1075,13 +1072,6 @@ namespace Mono.Debugger.Backends
 				throw new TargetException (TargetError.NoTarget);
 		}
 
-		void child_exited ()
-		{
-			inferior.Dispose ();
-			inferior = null;
-			frames_invalid ();
-		}
-
 		// <summary>
 		//   A breakpoint has been hit; now the sse needs to find out what do do:
 		//   either ignore the breakpoint and continue or keep the target stopped
@@ -1681,9 +1671,7 @@ namespace Mono.Debugger.Backends
 					inferior.Dispose ();
 				inferior = null;
 
-				if (process != null)
-					process.Dispose ();;
-				process = null;
+				process.Dispose ();;
 			}
 
 			disposed = true;
