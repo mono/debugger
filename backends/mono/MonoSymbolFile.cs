@@ -249,7 +249,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress image_file_addr = memory.ReadAddress (address);
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
-			MonoImage = memory.ReadAddress (address);
+			MonoImage = memory.ReadGlobalAddress (address);
 			address += address_size;
 
 			Assembly = R.Assembly.LoadFrom (ImageFile);
