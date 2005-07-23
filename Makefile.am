@@ -1,4 +1,4 @@
-SUBDIRS = jay interfaces classes glue arch backends frontend wrapper test
+SUBDIRS = jay interfaces classes arch backends frontend wrapper test
 
 DIST_SUBDIRS= doc $(SUBDIRS)
 

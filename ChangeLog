@@ -1,5 +1,12 @@
 2005-07-23  Martin Baulig  <martin@ximian.com>
 
+	* glue/mono-debugger-readline.[ch]: Moved to frontend/libedit/.
+
+	* configure.in: Don't check for readline anymore; we now use the
+	included libedit.  Only check for termcap.
+
+2005-07-23  Martin Baulig  <martin@ximian.com>
+
 	* frontend/libedit/: Imported libedit from NetBSD 2.0.2.
 
 	* configure.in: Added `termcap.h' and `termcap/termcap.h' checks.

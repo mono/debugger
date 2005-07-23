@@ -1,63 +1,28 @@
-AC_DEFUN([READLINE_TRYLINK], [
+AC_DEFUN([CHECK_READLINE], [
     lib="$1"
 
     old_LIBS=$LIBS
-    LIBS="-l$lib"
 
-    AC_TRY_LINK(,[rl_set_signals();],[READLINE_DEPLIBS=$LIBS],[
-		LIBS="-l$lib -ltermcap"
-		AC_TRY_LINK(,[rl_set_signals();],[
+    LIBS="-ltermcap"
+    AC_TRY_LINK(,[tgetent();],[
+	READLINE_DEPLIBS=$LIBS
+    ],[
+	LIBS="-lcurses"
+	AC_TRY_LINK(,[tgetent();],[
+		READLINE_DEPLIBS=$LIBS
+	],[
+		LIBS="-lncurses"
+		AC_TRY_LINK(,[tgetent();],[
 			READLINE_DEPLIBS=$LIBS
 		],[
-			LIBS="-l$lib -lcurses"
-			AC_TRY_LINK(,[rl_set_signals();],[
-				READLINE_DEPLIBS=$LIBS
-			],[
-				LIBS="-l$lib -lncurses"
-				AC_TRY_LINK(,[rl_set_signals();],[
-					READLINE_DEPLIBS=$LIBS
-				],[
-					READLINE_DEPLIBS=
-				])
-			])
+			AC_MSG_ERROR([Cannot find termcap library])
 		])
+	])
     ])
 
     LIBS=$old_LIBS
 ])
 
-AC_DEFUN([CHECK_READLINE], [
-        AC_ARG_WITH(readline,   [  -with-readline=[yes/libedit]    Enable readline support (default=yes)])
-	AC_CACHE_CHECK([for Readline], ac_cv_with_readline, ac_cv_with_readline="${with_readline:=yes}")
-	case $ac_cv_with_readline in
-	no|"")
-		AC_MSG_ERROR([libreadline (or libedit) is required to build the mono debugger])
-		;;
-	yes)
-		with_readline=yes
-		;;
-	libedit)
-		with_readline=libedit;
-		;;
-	esac
-
-	READLINE_DEPLIBS=
-	if test "$with_readline" == yes; then
-	   READLINE_TRYLINK(readline)
-	fi
-
-	# fall through to checking for libedit if we didn't find
-	# libreadline (or if you user specified libedit)
-	if test -z "$READLINE_DEPLIBS"; then
-	   READLINE_TRYLINK(edit)
-
-	   AC_DEFINE(READLINE_IS_LIBEDIT,1,[if we're using the readline api from libedit])
-	fi
-
-	if test -z "$READLINE_DEPLIBS"; then
-	   AC_MSG_ERROR([Cannot figure out how to link with the readline/libedit library; see config.log for more information])
-	fi
-])
 
 AC_DEFUN([LINUX_NPTL_CHECK], [
    old_LIBS=$LIBS
