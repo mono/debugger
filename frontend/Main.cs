@@ -120,9 +120,23 @@ namespace Mono.Debugger.Frontend
 		public string ReadInput (bool is_complete)
 		{
 			++line;
-			again:
-				string the_prompt = is_complete ? prompt : "... ";
-				string result = GnuReadLine.ReadLine (the_prompt);
+		again:
+			string result;
+			string the_prompt = is_complete ? prompt : "... ";
+			if (Options.IsScript) {
+				Console.Write (the_prompt);
+				result = Console.ReadLine ();
+				if (result == null)
+					return null;
+				if (result != "")
+					;
+				else if (is_complete) {
+					engine.Repeat ();
+					goto again;
+				}
+				return result;
+			} else {
+				result = GnuReadLine.ReadLine (the_prompt);
 				if (result == null)
 					return null;
 				if (result != "")
@@ -132,6 +146,7 @@ namespace Mono.Debugger.Frontend
 					goto again;
 				}
 				return result;
+			}
 		}
 
 		public void Error (int pos, string message)

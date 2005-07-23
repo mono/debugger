@@ -1,5 +1,10 @@
 2005-07-23  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Main.cs (CommandLineInterpreter.ReadInput): Don't use
+	readline if we're executing a script.
+
+2005-07-23  Martin Baulig  <martin@ximian.com>
+
 	* glue/mono-debugger-readline.[ch]: Moved to frontend/libedit/.
 
 	* configure.in: Don't check for readline anymore; we now use the
