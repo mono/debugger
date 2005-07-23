@@ -21,6 +21,7 @@ AC_DEFUN([CHECK_READLINE], [
     ])
 
     LIBS=$old_LIBS
+    AC_SUBST(READLINE_DEPLIBS)
 ])
 
 
