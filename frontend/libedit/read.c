@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)read.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: read.c,v 1.33.2.1 2004/07/10 09:28:04 tron Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * read.c: Clean this junk up! This is horrible code.

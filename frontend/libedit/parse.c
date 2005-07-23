@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)parse.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: parse.c,v 1.20 2003/12/05 13:37:48 lukem Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * parse.c: parse an editline extended command

@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)prompt.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: prompt.c,v 1.11 2003/08/07 16:44:32 agc Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * prompt.c: Prompt printing functions

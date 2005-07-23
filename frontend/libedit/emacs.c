@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)emacs.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: emacs.c,v 1.16 2003/11/02 20:07:58 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * emacs.c: Emacs functions

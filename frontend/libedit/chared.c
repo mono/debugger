@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)chared.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: chared.c,v 1.21 2003/11/02 20:08:41 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * chared.c: Character editor utilities

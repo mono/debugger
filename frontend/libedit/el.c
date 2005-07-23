@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)el.c	8.2 (Berkeley) 1/3/94";
-#else
-__RCSID("$NetBSD: el.c,v 1.38.2.1 2004/07/10 09:28:27 tron Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * el.c: EditLine interface functions

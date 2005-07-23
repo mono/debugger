@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)refresh.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: refresh.c,v 1.26 2003/08/07 16:44:33 agc Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * refresh.c: Lower level screen refreshing functions
