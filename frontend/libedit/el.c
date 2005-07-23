@@ -424,8 +424,7 @@ public int
 el_source(EditLine *el, const char *fname)
 {
 	FILE *fp;
-	size_t len;
-	char *ptr;
+	char ptr [BUFSIZ];
 
 	fp = NULL;
 	if (fname == NULL) {
@@ -456,7 +455,8 @@ el_source(EditLine *el, const char *fname)
 	if (fp == NULL)
 		return (-1);
 
-	while ((ptr = fgetln(fp, &len)) != NULL) {
+	while (fgets (ptr, BUFSIZ, fp)) {
+		size_t len = strlen (ptr);
 		if (len > 0 && ptr[len - 1] == '\n')
 			--len;
 		ptr[len] = '\0';

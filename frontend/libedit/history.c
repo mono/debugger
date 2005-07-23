@@ -33,13 +33,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)history.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: history.c,v 1.25 2003/10/18 23:48:42 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 /*
  * hist.c: History access functions
@@ -47,16 +41,12 @@ __RCSID("$NetBSD: history.c,v 1.25 2003/10/18 23:48:42 christos Exp $");
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#ifdef HAVE_VIS_H
-#include <vis.h>
-#else
-#include "np/vis.h"
-#endif
 #include <sys/stat.h>
 
 static const char hist_cookie[] = "_HiStOrY_V2_\n";
 
 #include "histedit.h"
+#include "vis.h"
 
 typedef int (*history_gfun_t)(ptr_t, HistEvent *);
 typedef int (*history_efun_t)(ptr_t, HistEvent *, const char *);
@@ -650,8 +640,8 @@ private int
 history_load(History *h, const char *fname)
 {
 	FILE *fp;
-	char *line;
-	size_t sz, max_size;
+	char line [BUFSIZ];
+	size_t max_size;
 	char *ptr;
 	int i = -1;
 	HistEvent ev;
@@ -659,16 +649,17 @@ history_load(History *h, const char *fname)
 	if ((fp = fopen(fname, "r")) == NULL)
 		return (i);
 
-	if ((line = fgetln(fp, &sz)) == NULL)
+	if (!fgets(line, BUFSIZ, fp))
 		goto done;
 
-	if (strncmp(line, hist_cookie, sz) != 0)
+	if (strcmp(line, hist_cookie) != 0)
 		goto done;
 
 	ptr = h_malloc(max_size = 1024);
 	if (ptr == NULL)
 		goto done;
-	for (i = 0; (line = fgetln(fp, &sz)) != NULL; i++) {
+	for (i = 0; fgets(line, BUFSIZ, fp); i++) {
+		size_t sz = strlen (line);
 		char c = line[sz];
 
 		if (sz != 0 && line[sz - 1] == '\n')

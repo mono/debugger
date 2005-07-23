@@ -37,9 +37,7 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-__RCSID("$NetBSD: readline.c,v 1.46 2004/02/27 14:52:18 christos Exp $");
-#endif /* not lint && not SCCSID */
+#include "sys.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -53,18 +51,14 @@ __RCSID("$NetBSD: readline.c,v 1.46 2004/02/27 14:52:18 christos Exp $");
 #include <limits.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifdef HAVE_VIS_H
-#include <vis.h>
-#else
-#include "np/vis.h"
-#endif
+#include "vis.h"
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
 #include "el.h"
 #include "fcns.h"		/* for EL_NUM_FCNS */
 #include "histedit.h"
-#include "readline/readline.h"
+#include "readline.h"
 
 /* for rl_complete() */
 #define TAB		'\r'

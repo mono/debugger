@@ -98,6 +98,10 @@ size_t	strlcpy(char *dst, const char *src, size_t size);
 char	*fgetln(FILE *fp, size_t *len);
 #endif
 
+#ifndef _DIAGASSERT
+#define _DIAGASSERT assert
+#endif
+
 #define	REGEX		/* Use POSIX.2 regular expression functions */
 #undef	REGEXP		/* Use UNIX V8 regular expression functions */
 
