@@ -80,17 +80,14 @@ namespace Mono.Debugger.Backends
 			notification_address = reader.ReadGlobalAddress ();
 
 			main_thread = reader.ReadGlobalAddress ();
-			main_tid = reader.ReadInteger ();
+			reader.ReadInteger (); /* main_tid */
 
 			thread_created (inferior, main_thread, true);
 		}
 
-		int main_tid;
 		int thread_size;
 		SingleSteppingEngine manager_sse;
-		SingleSteppingEngine main_sse;
 		ILanguageBackend csharp_language;
-		bool initialized;
 
 		bool is_nptl;
 		int first_index;
@@ -123,7 +120,6 @@ namespace Mono.Debugger.Backends
 					      "Created managed main sse: {0}",
 					      sse);
 				csharp_language = thread_manager.DebuggerBackend.CreateDebuggerHandler ();
-				main_sse = sse;
 				return true;
 			} else if (thread_hash.Count > first_index) {
 				Report.Debug (DebugFlags.Threads,
@@ -200,7 +196,6 @@ namespace Mono.Debugger.Backends
 
 				case NotificationType.InitializeThreadManager:
 					do_initialize (inferior);
-					initialized = true;
 					break;
 
 				case NotificationType.WrapperMain:

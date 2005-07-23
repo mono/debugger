@@ -81,8 +81,16 @@ namespace Mono.Debugger.Languages.Native
 
 		public bool HasConstValue {
 			get {
-			  Console.WriteLine ("HasConstvalue = {0}", has_const_value);
 				return has_const_value;
+			}
+		}
+
+		public int ConstValue {
+			get {
+				if (!has_const_value)
+					throw new InvalidOperationException ();
+
+				return const_value;
 			}
 		}
 

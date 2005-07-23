@@ -928,7 +928,6 @@ namespace Mono.Debugger.Architecture
 			long length;
 			int version;
 			long header_length, data_offset, end_offset;
-			long base_address;
 
 			DieSubprogram next_method, current_method;
 			long next_method_address;
@@ -1267,8 +1266,6 @@ namespace Mono.Debugger.Architecture
 				this.reader = dwarf.DebugLineReader;
 				this.methods = methods;
 				this.compilation_dir = compilation_dir;
-
-				base_address = dwarf.bfd.BaseAddress.Address;
 
 				reader.Position = offset;
 				length = reader.ReadInitialLength ();
@@ -2925,7 +2922,6 @@ namespace Mono.Debugger.Architecture
 			int byte_size;
 			int stride_size;
 			long type_offset;
-			string name;
 			DieType reference;
 
 			public DieArrayType (DwarfBinaryReader reader, CompilationUnit comp_unit,
@@ -2952,14 +2948,22 @@ namespace Mono.Debugger.Architecture
 					ordering = (int) (long) attribute.Data;
 					break;
 
-				case DwarfAttribute.name:
-					name = (string) attribute.Data;
-					break;
-
 				default:
 					base.ProcessAttribute (attribute);
 					break;
 				}
+			}
+
+			public int Ordering {
+				get { return ordering; }
+			}
+
+			public int ByteSize {
+				get { return byte_size; }
+			}
+
+			public int StrideSize {
+				get { return stride_size; }
 			}
 
 			protected override NativeType CreateType ()
@@ -3042,7 +3046,6 @@ namespace Mono.Debugger.Architecture
 
 		protected class DieEnumerationType : DieType
 		{
-			string name;
 			int byte_size;
 
 			public DieEnumerationType (DwarfBinaryReader reader, CompilationUnit comp_unit,
@@ -3057,13 +3060,9 @@ namespace Mono.Debugger.Architecture
 					byte_size = (int) (long) attribute.Data;
 					break;
 
-				case DwarfAttribute.name:
-					name = (string) attribute.Data;
-					break;
-
 				case DwarfAttribute.specification:
-				  Console.WriteLine ("ugh, specification");
-				  break;
+					Console.WriteLine ("ugh, specification");
+					break;
 
 				default:
 					base.ProcessAttribute (attribute);
@@ -3221,6 +3220,10 @@ namespace Mono.Debugger.Architecture
 					base.ProcessAttribute (attribute);
 					break;
 				}
+			}
+
+			public long TypeOffset {
+				get { return type_offset; }
 			}
 		}
 

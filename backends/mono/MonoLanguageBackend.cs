@@ -700,10 +700,6 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress klass = memory.ReadGlobalAddress (trampoline + 8);
 			TargetAddress image = memory.ReadGlobalAddress (klass);
 
-			TargetAddress naddr = memory.ReadAddress (
-				trampoline + 8 + 2 * memory.TargetAddressSize);
-			string name = memory.ReadString (naddr);
-
 			foreach (MonoSymbolFile file in symbol_files) {
 				if (file.MonoImage != image)
 					continue;

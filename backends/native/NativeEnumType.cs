@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages.Native
 		NativeFieldInfo value;
 
 		public NativeEnumType (string name, int size, string[] element_names, int[] element_values)
-		  : base (name, TargetObjectKind.Enum, size, true)
+			: base (name, TargetObjectKind.Enum, size, true)
 		{
 			this.element_names = element_names;
 			this.element_values = element_values;
@@ -19,10 +19,22 @@ namespace Mono.Debugger.Languages.Native
 			members = new NativeFieldInfo [element_names.Length];
 			int i;
 			for (i = 0; i < element_names.Length; i ++) {
-				members[i] = new NativeFieldInfo (this, element_names[i], i, true, element_values[i]);
+				members[i] = new NativeFieldInfo (
+					this, element_names[i], i, true, element_values[i]);
 			}
 		}
 
+		public string[] ElementNames {
+			get {
+				return element_names;
+			}
+		}
+
+		public int[] ElementValues {
+			get {
+				return element_values;
+			}
+		}
 
 		public ITargetFieldInfo Value {
 			get {

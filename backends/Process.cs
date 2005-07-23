@@ -36,7 +36,6 @@ namespace Mono.Debugger
 		}
 
 		int id;
-		static int next_id = 0;
 		SingleSteppingEngine engine;
 
 		protected internal ILanguage NativeLanguage {
@@ -372,8 +371,7 @@ namespace Mono.Debugger
 			if (!engine.StartOperation ())
 				return false;
 
-			TargetAddress stack = CurrentFrame.StackPointer;
-			SSE.Operation operation = new SSE.OperationFinish (stack);
+			SSE.Operation operation = new SSE.OperationFinish ();
 			engine.SendAsyncCommand (new Command (engine, operation), wait);
 			return true;
 		}

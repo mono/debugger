@@ -1321,7 +1321,7 @@ namespace Mono.Debugger.Backends
 				if (address == method.StartAddress)
 					return new OperationRun (method.WrapperAddress, false);
 				else
-					return new OperationFinish (TargetAddress.Null);
+					return new OperationFinish ();
 			}
 
 			ILanguageBackend language = method.Module.LanguageBackend;
@@ -1448,7 +1448,7 @@ namespace Mono.Debugger.Backends
 				      this, trampoline, compile, is_start);
 
 			if (is_start) {
-				current_operation = new OperationFinish (TargetAddress.Null);
+				current_operation = new OperationFinish ();
 				do_continue (trampoline);
 				return;
 			}
@@ -2374,6 +2374,10 @@ namespace Mono.Debugger.Backends
 			this.in_background = in_background;
 		}
 
+		public bool InBackground {
+			get { return in_background; }
+		}
+
 		public override bool IsSourceOperation {
 			get { return true; }
 		}
@@ -2402,16 +2406,10 @@ namespace Mono.Debugger.Backends
 
 	internal class OperationFinish : OperationStepBase
 	{
-		TargetAddress stack, until;
+		TargetAddress until = TargetAddress.Null;
 
 		public override bool IsSourceOperation {
 			get { return false; }
-		}
-
-		public OperationFinish (TargetAddress stack)
-		{
-			this.stack = stack;
-			this.until = TargetAddress.Null;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)

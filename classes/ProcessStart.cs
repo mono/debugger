@@ -57,7 +57,6 @@ namespace Mono.Debugger
 		public bool IsNative;
 		public bool LoadNativeSymbolTable;
 
-		string cwd;
 		string base_dir;
 		string[] argv;
 		string[] envp;
@@ -65,7 +64,6 @@ namespace Mono.Debugger
 		DebuggerOptions options;
 
 		public static string JitWrapper;
-		bool initialized = false;
 
 		static ProcessStart ()
 		{
@@ -208,11 +206,6 @@ namespace Mono.Debugger
 			list.CopyTo (envp, 0);
 		}
 
-		protected virtual void SetupWorkingDirectory ()
-		{
-			cwd = (WorkingDirectory != null) ? WorkingDirectory : ".";
-		}
-
 		protected virtual void SetupBaseDirectory ()
 		{
 			if (base_dir == null)
@@ -245,9 +238,7 @@ namespace Mono.Debugger
 		{
 			SetupEnvironment ();
 			SetupArguments ();
-			SetupWorkingDirectory ();
 			SetupBaseDirectory ();
-			initialized = true;
 		}
 
 		public static ProcessStart Create (DebuggerOptions options)

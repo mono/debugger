@@ -28,7 +28,6 @@ namespace Mono.Debugger.Architecture
 		TargetAddress entry_point = TargetAddress.Null;
 		bool is_main_module;
 		bool is_loaded;
-		int dynlink_breakpoint_id;
 		Hashtable load_handlers;
 		Hashtable symbols;
 		ArrayList simple_symbols;
@@ -393,7 +392,7 @@ namespace Mono.Debugger.Architecture
 				new BreakpointCheckHandler (dynlink_handler), null,
 				false, null);
 
-			dynlink_breakpoint_id = inferior.BreakpointManager.InsertBreakpoint (
+			inferior.BreakpointManager.InsertBreakpoint (
 				inferior, breakpoint, dynlink_breakpoint);
 
 			has_shlib_info = true;
