@@ -30,33 +30,16 @@
  */
 
 #include <sys/cdefs.h>
-#if defined(LIBC_SCCS) && !defined(lint)
-#if 0
-static char sccsid[] = "@(#)unvis.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: unvis.c,v 1.24 2003/08/07 16:42:59 agc Exp $");
-#endif
-#endif /* LIBC_SCCS and not lint */
 
-#define __LIBC12_SOURCE__
+#include "config.h"
+#include "sys.h"
 
-#include "namespace.h"
 #include <sys/types.h>
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <vis.h>
-
-#ifdef __weak_alias
-__weak_alias(strunvis,_strunvis)
-__weak_alias(unvis,_unvis)
-#endif
-
-#ifdef __warn_references
-__warn_references(unvis,
-    "warning: reference to compatibility unvis(); include <vis.h> for correct reference")
-#endif
 
 #if !HAVE_VIS
 /*

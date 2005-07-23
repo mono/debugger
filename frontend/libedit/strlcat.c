@@ -17,27 +17,12 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#if HAVE_NBTOOL_CONFIG_H
-#include "nbtool_config.h"
-#endif
+#include "config.h"
+#include "sys.h"
 
-#include <sys/cdefs.h>
-#if defined(LIBC_SCCS) && !defined(lint)
-__RCSID("$NetBSD: strlcat.c,v 1.16 2003/10/27 00:12:42 lukem Exp $");
-#endif /* LIBC_SCCS and not lint */
-
-#ifdef _LIBC
-#include "namespace.h"
-#endif
 #include <sys/types.h>
 #include <assert.h>
 #include <string.h>
-
-#ifdef _LIBC
-# ifdef __weak_alias
-__weak_alias(strlcat, _strlcat)
-# endif
-#endif
 
 #if !HAVE_STRLCAT
 /*
@@ -48,11 +33,7 @@ __weak_alias(strlcat, _strlcat)
  * If retval >= siz, truncation occurred.
  */
 size_t
-#ifdef _LIBC
-_strlcat(dst, src, siz)
-#else
 strlcat(dst, src, siz)
-#endif
 	char *dst;
 	const char *src;
 	size_t siz;

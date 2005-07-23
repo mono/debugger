@@ -83,12 +83,8 @@ int	strvisx __P((char *, const char *, size_t, int));
 int	strsvisx __P((char *, const char *, size_t, int, const char *));
 int	strunvis __P((char *, const char *));
 int	strunvisx __P((char *, const char *, int));
-#ifdef __LIBC12_SOURCE__
 int	unvis __P((char *, int, int *, int));
 int	__unvis13 __P((char *, int, int *, int));
-#else
-int	unvis __P((char *, int, int *, int))	__RENAME(__unvis13);
-#endif
 __END_DECLS
 
 #endif /* !_VIS_H_ */

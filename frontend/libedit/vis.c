@@ -66,25 +66,13 @@
  */
 
 #include <sys/cdefs.h>
-#if defined(LIBC_SCCS) && !defined(lint)
-__RCSID("$NetBSD: vis.c,v 1.27 2004/02/26 23:01:15 enami Exp $");
-#endif /* LIBC_SCCS and not lint */
+#include "sys.h"
+#include "vis.h"
 
-#include "namespace.h"
 #include <sys/types.h>
 
 #include <assert.h>
-#include <vis.h>
 #include <stdlib.h>
-
-#ifdef __weak_alias
-__weak_alias(strsvis,_strsvis)
-__weak_alias(strsvisx,_strsvisx)
-__weak_alias(strvis,_strvis)
-__weak_alias(strvisx,_strvisx)
-__weak_alias(svis,_svis)
-__weak_alias(vis,_vis)
-#endif
 
 #if !HAVE_VIS || !HAVE_SVIS
 #include <ctype.h>
