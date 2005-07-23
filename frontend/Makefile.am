@@ -1,3 +1,5 @@
+SUBDIRS = libedit
+
 noinst_DATA = $(top_builddir)/frontend/CSharpExpressionParser.cs
 
 JAY = $(top_builddir)/jay/jay
