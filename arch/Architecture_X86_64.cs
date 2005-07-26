@@ -58,6 +58,10 @@ namespace Mono.Debugger
 			ITargetMemoryReader reader = target.ReadMemory (address, 6);
 
 			byte opcode = reader.ReadByte ();
+			byte original_opcode = opcode;
+
+			if ((opcode == 0x48) || (opcode == 0x49))
+				opcode = reader.ReadByte ();
 
 			if (opcode == 0xe8) {
 				int call_target = reader.ReadInteger ();
@@ -99,35 +103,62 @@ namespace Mono.Debugger
 			}
 
 			X86_64_Register reg;
-			switch (register) {
-			case 0:
-				reg = X86_64_Register.RAX;
-				break;
-
-			case 1:
-				reg = X86_64_Register.RCX;
-				break;
-
-			case 2:
-				reg = X86_64_Register.RDX;
-				break;
-
-			case 3:
-				reg = X86_64_Register.RBX;
-				break;
-
-			case 6:
-				reg = X86_64_Register.RSI;
-				break;
-
-			case 7:
-				reg = X86_64_Register.RDI;
-				break;
-
-			default:
-				insn_size = 0;
-				return TargetAddress.Null;
+			if (original_opcode == 0x49) {
+				switch (register) {
+				case 0: /* r8 */
+					reg = X86_64_Register.R8;
+					break;
+				case 1: /* r9 */
+					reg = X86_64_Register.R9;
+					break;
+				case 2: /* r10 */
+					reg = X86_64_Register.R10;
+					break;
+				case 3: /* r11 */
+					reg = X86_64_Register.R11;
+					break;
+				case 4: /* r12 */
+					reg = X86_64_Register.R12;
+					break;
+				case 5: /* r13 */
+					reg = X86_64_Register.R13;
+					break;
+				case 6: /* r14 */
+					reg = X86_64_Register.R14;
+					break;
+				case 7: /* r15 */
+					reg = X86_64_Register.R15;
+					break;
+				default:
+					throw new InvalidOperationException ();
+				}
+			} else {
+				switch (register) {
+				case 0: /* rax */
+					reg = X86_64_Register.RAX;
+					break;
+				case 1: /* rcx */
+					reg = X86_64_Register.RCX;
+					break;
+				case 2: /* rdx */
+					reg = X86_64_Register.RDX;
+					break;
+				case 3: /* rbx */
+					reg = X86_64_Register.RBX;
+					break;
+				case 6: /* rsi */
+					reg = X86_64_Register.RSI;
+					break;
+				case 7: /* rdi */
+					reg = X86_64_Register.RDI;
+					break;
+				default:
+					throw new InvalidOperationException ();
+				}
 			}
+
+			if ((original_opcode == 0x48) || (original_opcode == 0x49))
+				insn_size++;
 
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
