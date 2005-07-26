@@ -375,8 +375,11 @@ namespace Mono.Debugger.Architecture
 					Marshal.FreeHGlobal (data);
 			}
 
-			ITargetMemoryReader reader = inferior.ReadMemory (debug_base, 20);
-			if (reader.ReadInteger () != 1)
+			int the_size = 2 * inferior.TargetLongIntegerSize +
+				3 * inferior.TargetAddressSize;
+
+			ITargetMemoryReader reader = inferior.ReadMemory (debug_base, the_size);
+			if (reader.ReadLongInteger () != 1)
 				return false;
 
 			first_link_map = reader.ReadAddress ();
@@ -384,7 +387,7 @@ namespace Mono.Debugger.Architecture
 
 			rdebug_state_addr = debug_base + reader.Offset;
 
-			if (reader.ReadInteger () != 0)
+			if (reader.ReadLongInteger () != 0)
 				return false;
 
 			SimpleBreakpoint breakpoint = new SimpleBreakpoint (
@@ -417,7 +420,8 @@ namespace Mono.Debugger.Architecture
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
-				ITargetMemoryReader map_reader = target.ReadMemory (map, 16);
+				int the_size = 4 * target.TargetAddressSize;
+				ITargetMemoryReader map_reader = target.ReadMemory (map, the_size);
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();

@@ -260,6 +260,7 @@ bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size)
 #if defined(__linux__) || defined(__FreeBSD__)
 	const guint8 *ptr;
 
+#if defined(__i386__)
 	for (ptr = data; ptr < data + size; ptr += sizeof (Elf32_Dyn)) {
 		Elf32_Dyn *dyn = (Elf32_Dyn *) ptr;
 
@@ -268,6 +269,18 @@ bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size)
 		else if (dyn->d_tag == DT_DEBUG)
 			return (guint32) dyn->d_un.d_ptr;
 	}
+#elif defined(__x86_64__)
+	for (ptr = data; ptr < data + size; ptr += sizeof (Elf64_Dyn)) {
+		Elf64_Dyn *dyn = (Elf64_Dyn *) ptr;
+
+		if (dyn->d_tag == DT_NULL)
+			break;
+		else if (dyn->d_tag == DT_DEBUG)
+			return (guint64) dyn->d_un.d_ptr;
+	}
+#else
+#error "Unknown architecture"
+#endif
 #endif
 
 	return 0;
