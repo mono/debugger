@@ -1328,7 +1328,14 @@ namespace Mono.Debugger.Backends
 			if (source == null)
 				return null;
 
-			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
+			if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
+				// Do not stop inside a method's prologue code, but stop
+				// immediately behind it (on the first instruction of the
+				// method's actual code).
+				return new OperationStep (new StepFrame (
+					method.StartAddress, method.MethodStartAddress, null,
+					null, StepMode.Finish));
+			} else if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
 				// We stopped between two source lines.  This normally
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
@@ -1336,13 +1343,6 @@ namespace Mono.Debugger.Backends
 				return new OperationStep (new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
 					null, language, StepMode.Finish));
-			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
-				// Do not stop inside a method's prologue code, but stop
-				// immediately behind it (on the first instruction of the
-				// method's actual code).
-				return new OperationStep (new StepFrame (
-					method.StartAddress, method.MethodStartAddress, null,
-					null, StepMode.Finish));
 			}
 
 			return null;
@@ -1454,6 +1454,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (compile.IsNull) {
+#if FIXME
 				IMethod method = null;
 				if (current_symtab != null) {
 					method = Lookup (trampoline);
@@ -1462,6 +1463,7 @@ namespace Mono.Debugger.Backends
 					do_next_native ();
 					return;
 				}
+#endif
 
 				do_continue (trampoline);
 				return;
@@ -1870,10 +1872,12 @@ namespace Mono.Debugger.Backends
 					      method != null ? method.Module : null,
 					      sse.method_has_source (method));
 
+#if FIXME
 				if (!sse.method_has_source (method)) {
 					sse.do_next_native ();
 					return false;
 				}
+#endif
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} entering trampoline: {1}",
@@ -2237,17 +2241,42 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
+		protected bool CheckTrampoline (SingleSteppingEngine sse, TargetAddress call)
+		{
+			if ((StepMode == StepMode.Finish) || (StepMode == StepMode.NextLine))
+				return false;
+
+			foreach (ILanguageBackend language in sse.inferior.DebuggerBackend.Languages) {
+				bool is_start;
+				TargetAddress trampoline = language.GetTrampolineAddress (
+					sse.inferior, call, out is_start);
+
+				/*
+				 * If this is a trampoline, insert a breakpoint at the start of
+				 * the corresponding method and continue.
+				 *
+				 * We don't need to distinguish between StepMode.SingleInstruction
+				 * and StepMode.StepFrame here since we'd leave the step frame anyways
+				 * when entering the method.
+				 */
+				if (!trampoline.IsNull) {
+					sse.do_trampoline (language, trampoline, is_start);
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		protected bool Step (SingleSteppingEngine sse, bool first)
 		{
-			if (StepFrame == null) {
-				sse.do_step_native ();
+			if (StepFrame == null)
 				return true;
-			}
 
 			TargetAddress current_frame = sse.inferior.CurrentFrame;
 			bool in_frame = sse.is_in_step_frame (StepFrame, current_frame);
-			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} {3}",
-				      sse, current_frame, StepFrame, in_frame);
+			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} ({3}in frame)",
+				      sse, current_frame, StepFrame, !in_frame ? "not " : "");
 			if (!first && !in_frame)
 				return true;
 
@@ -2276,24 +2305,8 @@ namespace Mono.Debugger.Backends
 			 * If we have a source language, check for trampolines.
 			 * This will trigger a JIT compilation if neccessary.
 			 */
-			if ((StepMode != StepMode.Finish) && (StepFrame.Language != null)) {
-				bool is_start;
-				TargetAddress trampoline = StepFrame.Language.GetTrampolineAddress (
-					sse.inferior, call, out is_start);
-
-				/*
-				 * If this is a trampoline, insert a breakpoint at the start of
-				 * the corresponding method and continue.
-				 *
-				 * We don't need to distinguish between StepMode.SingleInstruction
-				 * and StepMode.StepFrame here since we'd leave the step frame anyways
-				 * when entering the method.
-				 */
-				if (!trampoline.IsNull) {
-					sse.do_trampoline (StepFrame.Language, trampoline, is_start);
-					return false;
-				}
-			}
+			if (CheckTrampoline (sse, call))
+				return false;
 
 			/*
 			 * When StepMode.SingleInstruction was requested, enter the method

@@ -69,6 +69,8 @@ namespace Mono.Debugger.Architecture
 
 			bfd_hash.Add (filename, bfd);
 
+			backend.AddLanguage (bfd);
+
 			return bfd;
 		}
 

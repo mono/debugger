@@ -591,7 +591,7 @@ namespace Mono.Debugger.Architecture
 
 				return new MethodSourceData (
 					method.StartLine, method.EndLine, addresses,
-					source, method.File.SourceBuffer);
+					source, method.File.SourceBuffer, method.Module);
 			}
 		}
 

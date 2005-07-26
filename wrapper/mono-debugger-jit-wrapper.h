@@ -20,7 +20,7 @@ struct _MonoDebuggerInfo {
 	guint32 total_size;
 	guint32 symbol_table_size;
 	guint32 heap_size;
-	guint8 **generic_trampoline_code;
+	guint8 ***mono_trampoline_code;
 	MonoSymbolTable **symbol_table;
 	guint64 (*compile_method) (guint64 method_argument);
 	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);

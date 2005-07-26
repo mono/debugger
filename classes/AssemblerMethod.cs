@@ -34,18 +34,20 @@ namespace Mono.Debugger
 		ISourceBuffer buffer;
 		int start_row;
 		int end_row;
+		Module module;
 		ArrayList addresses, lines;
 		TargetAddress start_address, end_address;
 		ArrayList contents;
 		string name;
 
-		public AssemblerMethod (TargetAddress start, TargetAddress end, string name,
-					AssemblerLine[] lines)
+		public AssemblerMethod (Module module, TargetAddress start, TargetAddress end,
+					string name, AssemblerLine[] lines)
 			: base (start, start)
 		{
 			start_row = end_row = 0;
 			addresses = null;
 
+			this.module = module;
 			this.name = name;
 			this.start_address = start;
 			this.end_address = start;
@@ -134,7 +136,7 @@ namespace Mono.Debugger
 			buffer = new SourceBuffer (name, contents);
 			LineEntry[] lines = new LineEntry [addresses.Count];
 			addresses.CopyTo (lines);
-			return new MethodSourceData (start_row, end_row, lines, buffer);
+			return new MethodSourceData (start_row, end_row, lines, buffer, module);
 		}
 	}
 }

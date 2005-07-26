@@ -85,6 +85,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public Module Module {
+			get {
+				return SourceData.Module;
+			}
+		}
+
 		public SourceMethod SourceMethod {
 			get {
 				if (IsDynamic)
@@ -162,6 +168,11 @@ namespace Mono.Debugger
 				return new SourceAddress (this, entry.Line, offset, range);
 			}
 
+			if (Addresses.Length == 1)
+				return new SourceAddress (
+					this, Addresses [0].Line, (int) (address - start),
+					(int) (end - address));
+
 			return null;
 		}
 
@@ -186,20 +197,23 @@ namespace Mono.Debugger
 			public readonly LineEntry[] Addresses;
 			public readonly SourceMethod SourceMethod;
 			public readonly ISourceBuffer SourceBuffer;
+			public readonly Module Module;
 
 			public MethodSourceData (int start, int end, LineEntry[] addresses,
-						 ISourceBuffer buffer)
-				: this (start, end, addresses, null, buffer)
+						 ISourceBuffer buffer, Module module)
+				: this (start, end, addresses, null, buffer, module)
 			{ }
 
 			public MethodSourceData (int start, int end, LineEntry[] addresses,
-						 SourceMethod method, ISourceBuffer buffer)
+						 SourceMethod method, ISourceBuffer buffer,
+						 Module module)
 			{
 				this.StartRow = start;
 				this.EndRow = end;
 				this.SourceMethod = method;
 				this.SourceBuffer = buffer;
 				this.Addresses = addresses;
+				this.Module = module;
 			}
 		}
 	}

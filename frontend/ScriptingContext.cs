@@ -900,11 +900,16 @@ namespace Mono.Debugger.Frontend
 				} else 
 					start = last_line;
 			} else {
-				string filename = location.SourceFile.FileName;
-				ISourceBuffer buffer = interpreter.FindFile (filename);
-				if (buffer == null)
-					throw new ScriptingException (
-						"Cannot find source file `{0}'", filename);
+				ISourceBuffer buffer;
+
+				if (location.HasSourceFile) {
+					string filename = location.SourceFile.FileName;
+					buffer = interpreter.FindFile (filename);
+					if (buffer == null)
+						throw new ScriptingException (
+							"Cannot find source file `{0}'", filename);
+				} else
+					buffer = location.SourceBuffer;
 
 				current_source_code = buffer.Contents;
 

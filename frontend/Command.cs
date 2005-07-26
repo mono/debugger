@@ -1856,7 +1856,8 @@ namespace Mono.Debugger.Frontend
 			}
 
 			location = context.Interpreter.FindLocation (
-				context.CurrentLocation.SourceFile.FileName, line);
+					context.CurrentLocation, line);
+
 			return true;
 		}
 	}

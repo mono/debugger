@@ -38,7 +38,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	sizeof (MonoDebuggerInfo),
 	sizeof (MonoSymbolTable),
 	HEAP_SIZE,
-	&mono_generic_trampoline_code,
+	mono_trampoline_code,
 	&mono_symbol_table,
 	&debugger_compile_method,
 	&debugger_get_virtual_method,

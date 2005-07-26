@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.Mono
 	// </summary>
 	internal class MonoDebuggerInfo
 	{
-		public readonly TargetAddress GenericTrampolineCode;
+		public readonly TargetAddress MonoTrampolineCode;
 		public readonly TargetAddress SymbolTable;
 		public readonly int SymbolTableSize;
 		public readonly TargetAddress CompileMethod;
@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			SymbolTableSize         = reader.ReadInteger ();
 			HeapSize                = reader.ReadInteger ();
-			GenericTrampolineCode   = reader.ReadGlobalAddress ();
+			MonoTrampolineCode      = reader.ReadGlobalAddress ();
 			SymbolTable             = reader.ReadGlobalAddress ();
 			CompileMethod           = reader.ReadGlobalAddress ();
 			GetVirtualMethod        = reader.ReadGlobalAddress ();
@@ -65,7 +65,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return String.Format (
 				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x})",
-				GenericTrampolineCode, SymbolTable, SymbolTableSize,
+				MonoTrampolineCode, SymbolTable, SymbolTableSize,
 				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
 				RuntimeInvoke);
 		}
@@ -207,8 +207,8 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoLanguageBackend : ILanguage, ILanguageBackend
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 50;
-		public const int  MaxDynamicVersion = 50;
+		public const int  MinDynamicVersion = 51;
+		public const int  MaxDynamicVersion = 51;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		ArrayList symbol_files;
@@ -223,7 +223,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		DebuggerBackend backend;
 		MonoDebuggerInfo info;
-		TargetAddress trampoline_address;
+		TargetAddress[] trampolines;
 		bool initialized;
 		DebuggerMutex mutex;
 		Heap heap;
@@ -322,12 +322,24 @@ namespace Mono.Debugger.Languages.Mono
 			ITargetMemoryReader table = memory.ReadMemory (symbol_info, size);
 			info = new MonoDebuggerInfo (table);
 
-			trampoline_address = memory.ReadGlobalAddress (info.GenericTrampolineCode);
+			init_trampolines (memory);
+
 			heap = new Heap ((ITargetInfo) memory, info.Heap, info.HeapSize);
 
 			symbol_files = new ArrayList ();
 			assembly_hash = new Hashtable ();
 			class_hash = new Hashtable ();
+		}
+
+		void init_trampolines (ITargetMemoryAccess memory)
+		{
+			trampolines = new TargetAddress [3];
+			TargetAddress address = info.MonoTrampolineCode;
+			trampolines [0] = memory.ReadGlobalAddress (address);
+			address += memory.TargetAddressSize;
+			trampolines [1] = memory.ReadGlobalAddress (address);
+			address += memory.TargetAddressSize;
+			trampolines [2] = memory.ReadGlobalAddress (address);
 		}
 
 #region symbol table management
@@ -458,7 +470,8 @@ namespace Mono.Debugger.Languages.Mono
 		private enum DataItemType {
 			Unknown		= 0,
 			Method,
-			Class
+			Class,
+			Wrapper
 		}
 
 		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int start, int end)
@@ -487,6 +500,10 @@ namespace Mono.Debugger.Languages.Mono
 
 				case DataItemType.Class:
 					read_class_entry (reader);
+					break;
+
+				case DataItemType.Wrapper:
+					read_wrapper_entry (memory, reader);
 					break;
 				}
 
@@ -518,6 +535,26 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			file.AddClassEntry (reader, contents);
+		}
+
+		void read_wrapper_entry (ITargetMemoryAccess memory, ITargetMemoryReader reader)
+		{
+			int size = reader.BinaryReader.PeekInt32 ();
+			byte[] contents = reader.BinaryReader.PeekBuffer (size);
+			reader.BinaryReader.ReadInt32 ();
+			corlib.AddWrapperEntry (memory, reader, contents);
+
+#if FIXME
+			TargetAddress wrapper = reader.ReadGlobalAddress ();
+			TargetAddress code = reader.ReadGlobalAddress ();
+			int size = reader.ReadInteger ();
+
+			TargetAddress naddr = memory.ReadAddress (
+				wrapper + 8 + 2 * reader.TargetAddressSize);
+			string name = "<" + memory.ReadString (naddr) + ">";
+
+			corlib.AddWrapperEntry (wrapper, name, code, size);
+#endif
 		}
 #endregion
 
@@ -656,10 +693,6 @@ namespace Mono.Debugger.Languages.Mono
 #endregion
 
 #region ILanguageBackend implementation
-		public TargetAddress GenericTrampolineCode {
-			get { return trampoline_address; }
-		}
-
 		public TargetAddress RuntimeInvokeFunc {
 			get { return info.RuntimeInvoke; }
 		}
@@ -670,10 +703,17 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			is_start = false;
 
-			if (trampoline_address.IsNull)
+			if (trampolines == null)
 				return TargetAddress.Null;
 
-			return memory.Architecture.GetTrampoline (memory, address, trampoline_address);
+			foreach (TargetAddress trampoline in trampolines) {
+				TargetAddress result = memory.Architecture.GetTrampoline (
+					memory, address, trampoline);
+				if (!result.IsNull)
+					return result;
+			}
+
+			return TargetAddress.Null;
 		}
 
 		public TargetAddress CompileMethodFunc {

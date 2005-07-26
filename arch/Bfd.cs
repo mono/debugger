@@ -962,12 +962,6 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		TargetAddress ILanguageBackend.GenericTrampolineCode {
-			get {
-				return TargetAddress.Null;
-			}
-		}
-
 		TargetAddress ILanguageBackend.RuntimeInvokeFunc {
 			get {
 				throw new InvalidOperationException ();

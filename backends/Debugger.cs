@@ -92,12 +92,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal MonoLanguageBackend MonoLanguage {
-			get {
-				return mono_language;
-			}
-		}
-
 		public event TargetExitedHandler TargetExited;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
@@ -167,6 +161,15 @@ namespace Mono.Debugger
 			languages.Add (mono_language);
 
 			return mono_language;
+		}
+
+		internal void AddLanguage (ILanguageBackend language)
+		{
+			languages.Add (language);
+		}
+
+		internal ArrayList Languages {
+			get { return languages; }
 		}
 
 		public SourceLocation FindLocation (string file, int line)
@@ -254,7 +257,7 @@ namespace Mono.Debugger
 					bfd_container = null;
 				}
 				if (languages != null) {
-					foreach (ILanguage lang in languages)
+					foreach (ILanguageBackend lang in languages)
 						lang.Dispose();
 					languages = null;
 				}

@@ -42,9 +42,11 @@ namespace Mono.Debugger
 		public SourceLocation Location {
 			get {
 				if (source.IsDynamic)
-					return null;
-
-				return new SourceLocation (source.SourceMethod, row);
+					return new SourceLocation (
+						source.Module, source.SourceBuffer, row);
+				else
+					return new SourceLocation (
+						source.SourceMethod, row);
 			}
 		}
 

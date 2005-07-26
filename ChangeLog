@@ -1,5 +1,59 @@
 2005-07-26  Martin Baulig  <martin@ximian.com>
 
+	Added support for stepping into interncalls and wrappers (like
+	delegate invocations, for example).
+
+	* classes/MethodSource.cs
+	(MethodSource.Module): New public property.
+	(MethodSource.Lookup): Make this work for methods with just one
+	single source line.
+
+	* classes/SourceAddress.cs (SourceAddress.Location): This is now
+	also supported for dynamic methods.
+
+	* classes/SourceLocation.cs
+	(SourceLocation.HasSourceFile): New public property.
+	(SourceLocation.SourceBuffer): New public property.
+	(SourceLocation.ctor): Added a .ctor taking a `Module', an
+	`ISourceBuffer' and an `int' for dynamic methods.
+
+	* backends/Debugger.cs
+	(DebuggerBackend.MonoLanguage): Removed.
+	(DebuggerBackend.AddLanguage): New public function.
+	(DebuggerBackend.Languages): New public property.
+
+	* arch/BfdContainer.cs
+	(BfdContainer.AddFile): Call `backend.AddLanguage (bfd)' to
+	register the language with the backend.
+
+	* wrapper/mono-debugger-jit-wrapper.h
+	(MonoDebuggerInfo): Replaced the `guint8
+	**generic_trampoline_code' with `guint8 ***mono_trampoline_code' -
+	which is pointing to the new `mono_trampoline_address' array.
+
+	* backends/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.AddWrapperEntry): New public method.
+	(MonoSymbolFile.WrapperEntry): New private class; deal with
+	wrappers here.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoDebuggerInfo.GenericTrampolineCode): Replaced with
+	`MonoTrampolineCode', which is now pointing to the new
+	`mono_trampoline_address' array.
+
+	* backends/ILanguageBackend.cs
+	(ILanguageBackend): Implement `IDisposable'.
+
+	* backends/SingleSteppingEngine.cs
+	(OperationStep.CheckTrampoline): New protected method; check for
+	trampolines here.  We now check in all registered languages for
+	trampolines.
+
+	* frontend/ScriptingContext.cs (ScriptingContext.ListSourceCode):
+	Support dynamic source locations.
+
+2005-07-26  Martin Baulig  <martin@ximian.com>
+
 	* arch/Architecture_X86_64.cs
 	(Architecture_X86_64.GetCallTarget): Added support for the new
 	call opcodes.

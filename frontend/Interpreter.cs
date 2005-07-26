@@ -793,6 +793,17 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("No method contains the specified file/line.");
 		}
 
+		public SourceLocation FindLocation (SourceLocation location, int line)
+		{
+			if (location.HasSourceFile)
+				return FindLocation (location.SourceFile.FileName, line);
+
+			if (line > location.SourceBuffer.Contents.Length)
+				throw new ScriptingException ("Requested line is outside the current buffer.");
+
+			return new SourceLocation (location.Module, location.SourceBuffer, line);
+		}
+
 		public SourceLocation FindMethod (string name)
 		{
 			return backend.FindMethod (name);

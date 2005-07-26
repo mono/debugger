@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Text;
 using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
@@ -218,6 +219,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable range_hash;
 		ArrayList ranges;
+		ArrayList wrappers;
 		Hashtable type_hash;
 		Hashtable class_entry_hash;
 		ArrayList sources;
@@ -240,6 +242,7 @@ namespace Mono.Debugger.Languages.Mono
 			int_size = TargetInfo.TargetIntegerSize;
 
 			ranges = new ArrayList ();
+			wrappers = new ArrayList ();
 			range_hash = new Hashtable ();
 			type_hash = new Hashtable ();
 			class_entry_hash = new Hashtable ();
@@ -282,6 +285,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected ArrayList SymbolRanges {
 			get { return ranges; }
+		}
+
+		protected ArrayList WrapperEntries {
+			get { return wrappers; }
 		}
 
 		public override ISymbolTable SymbolTable {
@@ -329,6 +336,13 @@ namespace Mono.Debugger.Languages.Mono
 			MethodRangeEntry range = MethodRangeEntry.Create (this, reader, contents);
 			range_hash.Add (range.Index, range);
 			ranges.Add (range);
+		}
+
+		internal void AddWrapperEntry (ITargetMemoryAccess memory, ITargetMemoryReader reader,
+					       byte[] contents)
+		{
+			WrapperEntry wrapper = WrapperEntry.Create (this, memory, reader, contents);
+			wrappers.Add (wrapper);
 		}
 
 		internal void AddClassEntry (ITargetMemoryReader reader, byte[] contents)
@@ -422,6 +436,18 @@ namespace Mono.Debugger.Languages.Mono
 				IMethod method = range.GetMethod ();
 				return new Symbol (
 					method.Name, range.StartAddress, (int) offset);
+			}
+
+			foreach (WrapperEntry wrapper in wrappers) {
+				if ((address < wrapper.StartAddress) || (address > wrapper.EndAddress))
+					continue;
+
+				long offset = address - wrapper.StartAddress;
+				if (exact_match && (offset != 0))
+					continue;
+
+				return new Symbol (
+					wrapper.Name, wrapper.StartAddress, (int) offset);
 			}
 
 			return null;
@@ -949,7 +975,9 @@ namespace Mono.Debugger.Languages.Mono
 				lines.CopyTo (addresses, 0);
 
 				ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
-				return new MethodSourceData (start_row, end_row, addresses, source_method, buffer);
+				return new MethodSourceData (
+					start_row, end_row, addresses, source_method, buffer,
+					source_method.SourceFile.Module);
 			}
 
 			public override string[] GetNamespaces ()
@@ -1027,6 +1055,195 @@ namespace Mono.Debugger.Languages.Mono
 				return String.Format ("RangeEntry [{3}:{0:x}:{1:x}:{2:x}]",
 						      StartAddress, EndAddress, Index, File);
 			}
+		}
+
+		private class WrapperEntry : SymbolRangeEntry
+		{
+			public readonly MonoSymbolFile File;
+			public readonly TargetAddress WrapperMethod;
+			public readonly TargetAddress MethodStartAddress;
+			public readonly TargetAddress MethodEndAddress;
+			public readonly string Name;
+			public readonly string CILCode;
+			public readonly JitLineNumberEntry[] LineNumbers;
+			WrapperMethod method;
+
+			private WrapperEntry (MonoSymbolFile file, TargetAddress method, string name,
+					      TargetAddress code_start, int code_size,
+					      TargetAddress prologue_end, TargetAddress epilogue_begin,
+					      string cil_code, JitLineNumberEntry[] line_numbers)
+				: base (code_start, code_start + code_size)
+			{
+				this.File = file;
+				this.WrapperMethod = method;
+				this.MethodStartAddress = prologue_end;
+				this.MethodEndAddress = epilogue_begin;
+				this.Name = name;
+				this.CILCode = cil_code;
+				this.LineNumbers = line_numbers;
+			}
+
+			public static WrapperEntry Create (MonoSymbolFile file, ITargetMemoryAccess memory,
+							   ITargetMemoryReader reader, byte[] contents)
+			{
+				int size = reader.BinaryReader.ReadInt32 ();
+				TargetAddress wrapper = reader.ReadGlobalAddress ();
+				TargetAddress code = reader.ReadGlobalAddress ();
+
+				TargetAddress name_address = reader.ReadAddress ();
+				TargetAddress cil_address = reader.ReadAddress ();
+
+				string name = "<" + memory.ReadString (name_address) + ">";
+				string cil_code = memory.ReadString (cil_address);
+
+				TargetAddress prologue_end = code + reader.BinaryReader.ReadLeb128 ();
+				TargetAddress epilogue_begin = code + reader.BinaryReader.ReadLeb128 ();
+
+				int num_line_numbers = reader.BinaryReader.ReadLeb128 ();
+				JitLineNumberEntry[] lines = new JitLineNumberEntry [num_line_numbers];
+
+				int il_offset = 0, native_offset = 0;
+				for (int i = 0; i < num_line_numbers; i++) {
+					il_offset += reader.BinaryReader.ReadSLeb128 ();
+					native_offset += reader.BinaryReader.ReadSLeb128 ();
+
+					lines [i] = new JitLineNumberEntry (il_offset, native_offset);
+				}
+
+				return new WrapperEntry (
+					file, wrapper, name, code, size, prologue_end, epilogue_begin,
+					cil_code, lines);
+			}
+
+			protected override ISymbolLookup GetSymbolLookup ()
+			{
+				if (method != null)
+					return method;
+
+				method = new WrapperMethod (this);
+				return method;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("WrapperEntry [{0:x}:{3}:{1:x}:{2:x}]",
+						      WrapperMethod, StartAddress, EndAddress, Name);
+			}
+		}
+
+		protected class WrapperMethod : MethodBase
+		{
+			public readonly WrapperEntry Entry;
+
+			public WrapperMethod (WrapperEntry entry)
+				: base (entry.Name, entry.File.ImageFile, entry.File,
+					entry.StartAddress, entry.EndAddress)
+			{
+				this.Entry = entry;
+				SetMethodBounds (entry.MethodStartAddress, entry.MethodEndAddress);
+				SetSource (new WrapperMethodSource (this));
+			}
+
+			public override object MethodHandle {
+				get { return Entry.WrapperMethod; }
+			}
+
+			public override ITargetStructType DeclaringType {
+				get { return null; }
+			}
+
+			public override bool HasThis {
+				get { return false; }
+			}
+
+			public override IVariable This {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override IVariable[] Parameters {
+				get { return null; }
+			}
+
+			public override IVariable[] Locals {
+				get { return null; }
+			}
+
+			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+								    TargetAddress address)
+			{
+				return Entry.File.LanguageBackend.GetTrampoline (memory, address);
+			}
+		}
+
+		protected class WrapperMethodSource : MethodSource
+		{
+			WrapperMethod wrapper;
+
+			public WrapperMethodSource (WrapperMethod wrapper)
+				: base (wrapper, null)
+			{
+				this.wrapper = wrapper;
+			}
+
+			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
+						   int[] cil_offsets, ref int last_line)
+			{
+				for (int i = cil_offsets.Length - 1; i >= 0; i--) {
+					int cil_offset = cil_offsets [i];
+
+					if (cil_offset > offset)
+						continue;
+
+					if (i + 1 > last_line) {
+						lines.Add (new LineEntry (address, i + 1));
+						last_line = i + 1;
+					}
+
+					break;
+				}
+			}
+
+			protected override MethodSourceData ReadSource ()
+			{
+				ArrayList lines = new ArrayList ();
+				int last_line = -1;
+
+				JitLineNumberEntry[] line_numbers = wrapper.Entry.LineNumbers;
+
+				string[] cil_code = wrapper.Entry.CILCode.Split ('\n');
+				SourceBuffer buffer = new SourceBuffer (wrapper.Name, cil_code);
+
+				int[] cil_offsets = new int [cil_code.Length];
+				int last_cil_offset = 0;
+				for (int i = 0; i < cil_code.Length; i++) {
+					if (!cil_code [i].StartsWith ("IL_")) {
+						cil_offsets [i] = last_cil_offset;
+						continue;
+					}
+					string offset = cil_code [i].Substring (3, 4);
+					last_cil_offset = Int32.Parse (offset, NumberStyles.HexNumber);
+					cil_offsets [i] = last_cil_offset;
+				}
+
+				lines.Add (new LineEntry (wrapper.StartAddress, 1));
+
+				for (int i = 0; i < line_numbers.Length; i++) {
+					JitLineNumberEntry lne = line_numbers [i];
+
+					generate_line_number (lines, wrapper.StartAddress + lne.Address,
+							      lne.Offset, cil_offsets, ref last_line);
+				}
+
+				lines.Sort ();
+
+				LineEntry[] addresses = new LineEntry [lines.Count];
+				lines.CopyTo (addresses, 0);
+
+				return new MethodSourceData (
+					1, cil_code.Length, addresses, null, buffer,
+					wrapper.Entry.File);
+			}
+
 		}
 
 		protected struct TypeHashEntry
@@ -1128,8 +1345,11 @@ namespace Mono.Debugger.Languages.Mono
 			public override ISymbolRange[] SymbolRanges {
 				get {
 					ArrayList ranges = file.SymbolRanges;
-					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
+					ArrayList wrappers = file.WrapperEntries;
+
+					ISymbolRange[] retval = new ISymbolRange [ranges.Count + wrappers.Count];
 					ranges.CopyTo (retval, 0);
+					wrappers.CopyTo (retval, ranges.Count);
 					return retval;
 				}
 			}

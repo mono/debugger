@@ -152,7 +152,8 @@ namespace Mono.Debugger.Architecture
 				list.CopyTo (lines, 0);
 
 				return new AssemblerMethod (
-					method.StartAddress, method.EndAddress, method.Name, lines);
+					method.Module, method.StartAddress, method.EndAddress,
+					method.Name, lines);
 			}
 		}
 

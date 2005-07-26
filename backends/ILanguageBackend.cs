@@ -20,16 +20,9 @@ namespace Mono.Debugger.Backends
 		HandleException
 	}
 
-	internal interface ILanguageBackend
+	internal interface ILanguageBackend : IDisposable
 	{
 		string Name {
-			get;
-		}
-
-		// <summary>
-		//   The address of the JIT's generic trampoline code.
-		// </summary>
-		TargetAddress GenericTrampolineCode {
 			get;
 		}
 
