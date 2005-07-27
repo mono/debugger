@@ -948,7 +948,7 @@ namespace Mono.Debugger.Languages.Mono
 					if (lne.Offset > offset)
 						continue;
 
-					if (lne.Row > last_line) {
+					if (lne.Row != last_line) {
 						lines.Add (new LineEntry (address, lne.Row));
 						last_line = lne.Row;
 					}
@@ -1194,7 +1194,7 @@ namespace Mono.Debugger.Languages.Mono
 					if (cil_offset > offset)
 						continue;
 
-					if (i + 1 > last_line) {
+					if (i + 1 != last_line) {
 						lines.Add (new LineEntry (address, i + 1));
 						last_line = i + 1;
 					}
