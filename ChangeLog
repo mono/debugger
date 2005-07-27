@@ -1,3 +1,9 @@
+2005-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/MethodSource.cs (MethodSource.Lookup): Improved this;
+	don't check `address >= method_end' anymore since the JIT may put
+	code after the `ret' instruction.
+
 2005-07-26  Martin Baulig  <martin@ximian.com>
 
 	Added support for stepping into interncalls and wrappers (like

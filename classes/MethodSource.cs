@@ -147,10 +147,6 @@ namespace Mono.Debugger
 				return new SourceAddress (
 					this, StartRow, (int) (address - start),
 					(int) (method_start - address));
-			else if (address >= method_end)
-				return new SourceAddress (
-					this, EndRow, (int) (address - method_end),
-					(int) (end - address));			
 
 			TargetAddress next_address = end;
 
@@ -168,7 +164,7 @@ namespace Mono.Debugger
 				return new SourceAddress (this, entry.Line, offset, range);
 			}
 
-			if (Addresses.Length == 1)
+			if (Addresses.Length > 0)
 				return new SourceAddress (
 					this, Addresses [0].Line, (int) (address - start),
 					(int) (end - address));
