@@ -210,15 +210,18 @@ namespace Mono.Debugger.Backends
 				else
 					stop_on_exc = handle_exception (stack, ip);
 
+				Report.Debug (DebugFlags.SSE,
+					      "{0} {1}stopping at exception ({2}:{3}) - {4} - {5}",
+					      this, stop_on_exc ? "" : "not ", stack, ip,
+					      current_operation, temp_breakpoint_id);
+
 				if (stop_on_exc) {
-					current_operation = new OperationException (TargetAddress.Null, false);
+					current_operation = new OperationException (
+						TargetAddress.Null, false);
 
 					do_continue (ip);
 					return;
 				}
-
-				Report.Debug (DebugFlags.SSE, "{0} not stopping at exception ({1}:{2}) - {3}",
-					      this, stack, ip, current_operation);
 
 				if (temp_breakpoint_id != 0) {
 					do_continue ();
@@ -1328,14 +1331,7 @@ namespace Mono.Debugger.Backends
 			if (source == null)
 				return null;
 
-			if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
-				// Do not stop inside a method's prologue code, but stop
-				// immediately behind it (on the first instruction of the
-				// method's actual code).
-				return new OperationStep (new StepFrame (
-					method.StartAddress, method.MethodStartAddress, null,
-					null, StepMode.Finish));
-			} else if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
+			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
 				// We stopped between two source lines.  This normally
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
@@ -1343,6 +1339,13 @@ namespace Mono.Debugger.Backends
 				return new OperationStep (new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
 					null, language, StepMode.Finish));
+			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
+				// Do not stop inside a method's prologue code, but stop
+				// immediately behind it (on the first instruction of the
+				// method's actual code).
+				return new OperationStep (new StepFrame (
+					method.StartAddress, method.MethodStartAddress, null,
+					null, StepMode.Finish));
 			}
 
 			return null;
@@ -1454,7 +1457,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (compile.IsNull) {
-#if FIXME
 				IMethod method = null;
 				if (current_symtab != null) {
 					method = Lookup (trampoline);
@@ -1463,7 +1465,6 @@ namespace Mono.Debugger.Backends
 					do_next_native ();
 					return;
 				}
-#endif
 
 				do_continue (trampoline);
 				return;
@@ -1872,12 +1873,10 @@ namespace Mono.Debugger.Backends
 					      method != null ? method.Module : null,
 					      sse.method_has_source (method));
 
-#if FIXME
 				if (!sse.method_has_source (method)) {
 					sse.do_next_native ();
 					return false;
 				}
-#endif
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} entering trampoline: {1}",
