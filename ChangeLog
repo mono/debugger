@@ -1,5 +1,11 @@
 2005-07-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(OperationWrapper.TrampolineHandler): Allow `DelegateInvocation'
+	wrappers inside the wrapper.
+
+2005-07-28  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IMethod.cs (WrapperType): New public enum.
 	(IMethod.IsWrapper, IMethod.WrapperAddress): Removed.
 	(IMethod.WrapperType): New property.

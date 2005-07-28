@@ -1878,10 +1878,10 @@ namespace Mono.Debugger.Backends
 
 				IMethod method = sse.Lookup (trampoline);
 				Report.Debug (DebugFlags.SSE,
-					      "{0} compiled trampoline: {1} {2} {3} {4}",
+					      "{0} compiled trampoline: {1} {2} {3} {4} {5}",
 					      this, trampoline, method,
 					      method != null ? method.Module : null,
-					      SingleSteppingEngine.MethodHasSource (method));
+					      SingleSteppingEngine.MethodHasSource (method), handler);
 
 				if ((handler != null) && !handler (method)) {
 					sse.do_next_native ();
@@ -2623,6 +2623,9 @@ namespace Mono.Debugger.Backends
 
 		protected override bool TrampolineHandler (IMethod method)
 		{
+			if (method.WrapperType == WrapperType.DelegateInvoke)
+				return true;
+
 			return SingleSteppingEngine.MethodHasSource (method);
 		}
 	}
