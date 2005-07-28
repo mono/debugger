@@ -7,7 +7,7 @@ MCS_FLAGS=-debug
 noinst_SCRIPTS = \
 	TestManagedTypes.exe TestAssembly.exe TestNamespace.exe TestModule.dll \
 	MultiThread.exe TestInvocation.exe TestInheritance.exe Simple.exe TestException.exe \
-	TestRestart.exe
+	TestRestart.exe TestDelegate.exe
 
 noinst_LTLIBRARIES=libfoo.la
 
@@ -16,7 +16,7 @@ noinst_PROGRAMS = testnativetypes module
 EXTRA_DIST = \
 	TestManagedTypes.cs TestAssembly.cs TestNamespace.cs TestModule.cs \
 	MultiThread.cs TestInvocation.cs TestInheritance.cs Simple.cs TestException.cs mdb.exp \
-	TestRestart.cs
+	TestRestart.cs TestDelegate.cs
 
 RUNTESTFLAGS = --ignore "MultiThread.exp module.exp start-restart.exp TestModule.exp TestAssembly.exp"
 

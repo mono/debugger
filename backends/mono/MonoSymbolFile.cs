@@ -282,6 +282,9 @@ namespace Mono.Debugger.Languages.Mono
 					      SymbolsLoaded, StepInto, LoadSymbols);
 		}
 
+		public override DebuggerBackend DebuggerBackend {
+			get { return backend; }
+		}
 
 		protected ArrayList SymbolRanges {
 			get { return ranges; }
@@ -672,9 +675,6 @@ namespace Mono.Debugger.Languages.Mono
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
-				if (!address.WrapperAddress.IsNull)
-					SetWrapperAddress (address.WrapperAddress);
-
 				SetSource (new MonoMethodSource (file.MonoLanguage.SourceFileFactory, this, info, method, address.LineNumbers));
 			}
 
@@ -1063,6 +1063,7 @@ namespace Mono.Debugger.Languages.Mono
 			public readonly TargetAddress WrapperMethod;
 			public readonly TargetAddress MethodStartAddress;
 			public readonly TargetAddress MethodEndAddress;
+			public readonly WrapperType WrapperType;
 			public readonly string Name;
 			public readonly string CILCode;
 			public readonly JitLineNumberEntry[] LineNumbers;
@@ -1071,13 +1072,15 @@ namespace Mono.Debugger.Languages.Mono
 			private WrapperEntry (MonoSymbolFile file, TargetAddress method, string name,
 					      TargetAddress code_start, int code_size,
 					      TargetAddress prologue_end, TargetAddress epilogue_begin,
-					      string cil_code, JitLineNumberEntry[] line_numbers)
+					      WrapperType wrapper_type, string cil_code,
+					      JitLineNumberEntry[] line_numbers)
 				: base (code_start, code_start + code_size)
 			{
 				this.File = file;
 				this.WrapperMethod = method;
 				this.MethodStartAddress = prologue_end;
 				this.MethodEndAddress = epilogue_begin;
+				this.WrapperType = wrapper_type;
 				this.Name = name;
 				this.CILCode = cil_code;
 				this.LineNumbers = line_numbers;
@@ -1110,9 +1113,11 @@ namespace Mono.Debugger.Languages.Mono
 					lines [i] = new JitLineNumberEntry (il_offset, native_offset);
 				}
 
+				int wrapper_type = reader.BinaryReader.ReadLeb128 ();
+
 				return new WrapperEntry (
 					file, wrapper, name, code, size, prologue_end, epilogue_begin,
-					cil_code, lines);
+					(WrapperType) wrapper_type, cil_code, lines);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
@@ -1142,6 +1147,7 @@ namespace Mono.Debugger.Languages.Mono
 				this.Entry = entry;
 				SetMethodBounds (entry.MethodStartAddress, entry.MethodEndAddress);
 				SetSource (new WrapperMethodSource (this));
+				SetWrapperType (entry.WrapperType);
 			}
 
 			public override object MethodHandle {

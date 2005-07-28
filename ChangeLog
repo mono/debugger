@@ -1,3 +1,22 @@
+2005-07-28  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/IMethod.cs (WrapperType): New public enum.
+	(IMethod.IsWrapper, IMethod.WrapperAddress): Removed.
+	(IMethod.WrapperType): New property.
+
+	* classes/Module.cs
+	(Module.DebuggerBackend): New public abstract property.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.TrampolineHandler): New internal delegate.
+	(SingleSteppingEngine.method_has_source): Renamed to `MethodHasSource'
+	and made it static and protected.
+	(SingleSteppingEngine.do_trampoline): Added `TrampolineHandler'
+	argument; this callback tells us whether or not we should enter
+	the trampoline.
+	(OperationStepBase.CheckTrampoline): Moved here from OperationStep.
+	(OperationWrapper): New operation.
+
 2005-07-27  Martin Baulig  <martin@ximian.com>
 
 	* classes/MethodSource.cs (MethodSource.Lookup): Improved this;

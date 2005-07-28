@@ -5,6 +5,33 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
+	public enum WrapperType
+	{
+		None = 0,
+		DelegateInvoke,
+		DelegateBeginInvoke,
+		DelegateEndInvoke,
+		RuntimeInvoke,
+		NativeToManaged,
+		ManagedToNative,
+		RemotingInvoke,
+		RemotingInvokeWithCheck,
+		XDomainInvoke,
+		XDomainDispatch,
+		Ldfld,
+		Stfld,
+		LdfldRemote,
+		StfldRemote,
+		Synchronized,
+		DynamicMethod,
+		IsInst,
+		CastClass,
+		ProxyIsInst,
+		StelemRef,
+		UnBox,
+		Unknown
+	}
+
 	public interface IMethod
 	{
 		string Name {
@@ -65,14 +92,7 @@ namespace Mono.Debugger
 		//   Whether this is an icall/pinvoke wrapper.
 		//   WrapperAddress is only valid if this is true.
 		// </summary>
-		bool IsWrapper {
-			get;
-		}
-
-		// <summary>
-		//   If IsWrapper is true, this is the wrapped method's code.
-		// </summary>
-		TargetAddress WrapperAddress {
+		WrapperType WrapperType {
 			get;
 		}
 

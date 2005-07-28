@@ -33,6 +33,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract DebuggerBackend DebuggerBackend {
+			get;
+		}
+
 		internal abstract ILanguageBackend LanguageBackend {
 			get;
 		}

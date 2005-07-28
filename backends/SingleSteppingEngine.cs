@@ -69,6 +69,12 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class SingleSteppingEngine : ITargetMemoryInfo
 	{
+		// <summary>
+		//   This is invoked after compiling a trampoline - it returns whether or
+		//   not we should enter that trampoline.
+		// </summary>
+		internal delegate bool TrampolineHandler (IMethod method);
+
 		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
 		{
 			this.manager = manager;
@@ -1254,11 +1260,14 @@ namespace Mono.Debugger.Backends
 			// Mark the current stack frame and backtrace as invalid.
 			frames_invalid ();
 
+			bool same_method = false;
+
 			// Only do a method lookup if we actually need it.
-			if ((current_method == null) ||
-			    (!MethodBase.IsInSameMethod (current_method, address))) {
+			if ((current_method != null) &&
+			    MethodBase.IsInSameMethod (current_method, address))
+				same_method = true;
+			else
 				current_method = Lookup (address);
-			}
 
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
@@ -1270,15 +1279,17 @@ namespace Mono.Debugger.Backends
 			if ((current_method != null) && current_method.HasSource) {
 				SourceAddress source = current_method.Source.Lookup (address);
 
-				// If check_method_operation() returns true, it already
-				// started a stepping operation, so the target is
-				// currently running.
-				Operation new_operation = check_method_operation (
-					address, current_method, source, operation);
-				if (new_operation != null) {
-					Report.Debug (DebugFlags.EventLoop,
-						      "New operation: {0}", new_operation);
-					return new_operation;
+				if (!same_method) {
+					// If check_method_operation() returns true, it already
+					// started a stepping operation, so the target is
+					// currently running.
+					Operation new_operation = check_method_operation (
+						address, current_method, source, operation);
+					if (new_operation != null) {
+						Report.Debug (DebugFlags.EventLoop,
+							      "New operation: {0}", new_operation);
+						return new_operation;
+					}
 				}
 
 				SimpleStackFrame simple = new SimpleStackFrame (
@@ -1286,7 +1297,7 @@ namespace Mono.Debugger.Backends
 				current_frame = StackFrame.CreateFrame (
 					process, simple, current_method, source);
 			} else {
-				if (current_method != null) {
+				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
 						address, current_method, null, operation);
 					if (new_operation != null) {
@@ -1320,12 +1331,8 @@ namespace Mono.Debugger.Backends
 			if ((operation == null) || !operation.IsSourceOperation)
 				return null;
 
-			if (method.IsWrapper) {
-				if (address == method.StartAddress)
-					return new OperationRun (method.WrapperAddress, false);
-				else
-					return new OperationFinish ();
-			}
+			if (method.WrapperType != WrapperType.None)
+				return new OperationWrapper (method);
 
 			ILanguageBackend language = method.Module.LanguageBackend;
 			if (source == null)
@@ -1441,8 +1448,8 @@ namespace Mono.Debugger.Backends
 			current_operation = null;
 		}
 
-		void do_trampoline (ILanguageBackend language,
-				    TargetAddress trampoline, bool is_start)
+		void do_trampoline (ILanguageBackend language, TargetAddress trampoline,
+				    TrampolineHandler handler, bool is_start)
 		{
 			TargetAddress compile = language.CompileMethodFunc;
 
@@ -1461,7 +1468,7 @@ namespace Mono.Debugger.Backends
 				if (current_symtab != null) {
 					method = Lookup (trampoline);
 				}
-				if (!method_has_source (method)) {
+				if (!MethodHasSource (method)) {
 					do_next_native ();
 					return;
 				}
@@ -1470,10 +1477,10 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			do_callback (new CallbackCompileMethod (compile, trampoline));
+			do_callback (new CallbackCompileMethod (compile, trampoline, handler));
 		}
 
-		bool method_has_source (IMethod method)
+		protected static bool MethodHasSource (IMethod method)
 		{
 			if (method == null)
 				return false;
@@ -1485,7 +1492,7 @@ namespace Mono.Debugger.Backends
 			if ((source == null) || source.IsDynamic)
 				return false;
 
-			SourceFileFactory factory = inferior.DebuggerBackend.SourceFileFactory;
+			SourceFileFactory factory = method.Module.DebuggerBackend.SourceFileFactory;
 			if (!factory.Exists (source.SourceFile.FileName))
 				return false;
 
@@ -1845,12 +1852,15 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress compile;
 			TargetAddress trampoline;
+			TrampolineHandler handler;
 
 			public CallbackCompileMethod (TargetAddress compile,
-						      TargetAddress trampoline)
+						      TargetAddress trampoline,
+						      TrampolineHandler handler)
 			{
 				this.compile = compile;
 				this.trampoline = trampoline;
+				this.handler = handler;
 			}
 
 			protected override void DoExecute (SingleSteppingEngine sse,
@@ -1871,9 +1881,9 @@ namespace Mono.Debugger.Backends
 					      "{0} compiled trampoline: {1} {2} {3} {4}",
 					      this, trampoline, method,
 					      method != null ? method.Module : null,
-					      sse.method_has_source (method));
+					      SingleSteppingEngine.MethodHasSource (method));
 
-				if (!sse.method_has_source (method)) {
+				if ((handler != null) && !handler (method)) {
 					sse.do_next_native ();
 					return false;
 				}
@@ -2102,7 +2112,7 @@ namespace Mono.Debugger.Backends
 				sse.inferior, call, out is_start);
 
 			if (!trampoline.IsNull)
-				sse.do_trampoline (language, trampoline, is_start);
+				sse.do_trampoline (language, trampoline, null, is_start);
 			else
 				sse.inferior.Step ();
 		}
@@ -2138,6 +2148,33 @@ namespace Mono.Debugger.Backends
 
 		protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
 							Inferior inferior);
+
+		protected bool CheckTrampoline (SingleSteppingEngine sse, TargetAddress call)
+		{
+			foreach (ILanguageBackend language in sse.inferior.DebuggerBackend.Languages) {
+				bool is_start;
+				TargetAddress trampoline = language.GetTrampolineAddress (
+					sse.inferior, call, out is_start);
+
+				/*
+				 * If this is a trampoline, insert a breakpoint at the start of
+				 * the corresponding method and continue.
+				 *
+				 * We don't need to distinguish between StepMode.SingleInstruction
+				 * and StepMode.StepFrame here since we'd leave the step frame anyways
+				 * when entering the method.
+				 */
+				if (!trampoline.IsNull) {
+					sse.do_trampoline (
+						language, trampoline, TrampolineHandler, is_start);
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		protected abstract bool TrampolineHandler (IMethod method);
 	}
 
 	internal class OperationStep : OperationStepBase
@@ -2240,31 +2277,15 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		protected bool CheckTrampoline (SingleSteppingEngine sse, TargetAddress call)
+		protected override bool TrampolineHandler (IMethod method)
 		{
-			if ((StepMode == StepMode.Finish) || (StepMode == StepMode.NextLine))
-				return false;
+			if (method.WrapperType == WrapperType.DelegateInvoke)
+				return true;
 
-			foreach (ILanguageBackend language in sse.inferior.DebuggerBackend.Languages) {
-				bool is_start;
-				TargetAddress trampoline = language.GetTrampolineAddress (
-					sse.inferior, call, out is_start);
+			if (StepMode == StepMode.SourceLine)
+				return SingleSteppingEngine.MethodHasSource (method);
 
-				/*
-				 * If this is a trampoline, insert a breakpoint at the start of
-				 * the corresponding method and continue.
-				 *
-				 * We don't need to distinguish between StepMode.SingleInstruction
-				 * and StepMode.StepFrame here since we'd leave the step frame anyways
-				 * when entering the method.
-				 */
-				if (!trampoline.IsNull) {
-					sse.do_trampoline (language, trampoline, is_start);
-					return true;
-				}
-			}
-
-			return false;
+			return true;
 		}
 
 		protected bool Step (SingleSteppingEngine sse, bool first)
@@ -2301,6 +2322,14 @@ namespace Mono.Debugger.Backends
 			}
 
 			/*
+			 * In StepMode.Finish, always step over all methods.
+			 */
+			if ((StepMode == StepMode.Finish) || (StepMode == StepMode.NextLine)) {
+				sse.do_next_native ();
+				return false;
+			}
+
+			/*
 			 * If we have a source language, check for trampolines.
 			 * This will trigger a JIT compilation if neccessary.
 			 */
@@ -2317,14 +2346,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			/*
-			 * In StepMode.Finish, always step over all methods.
-			 */
-			if (StepMode == StepMode.Finish) {
-				sse.do_next_native ();
-				return false;
-			}
-
-			/*
 			 * Try to find out whether this is a system function by doing a symbol lookup.
 			 * If it can't be found in the symbol tables, assume it's a system function
 			 * and step over it.
@@ -2335,20 +2356,14 @@ namespace Mono.Debugger.Backends
 			 * If this is a PInvoke/icall wrapper, check whether we want to step into
 			 * the wrapped function.
 			 */
-			if ((method != null) && method.IsWrapper) {
-				TargetAddress wrapper = method.WrapperAddress;
-				IMethod wmethod = sse.Lookup (wrapper);
-
-				if (!sse.method_has_source (wmethod)) {
-					sse.do_next_native ();
+			if ((method != null) && (method.WrapperType != WrapperType.None)) {
+				if (method.WrapperType == WrapperType.DelegateInvoke) {
+					sse.do_step_native ();
 					return false;
 				}
-
-				sse.do_continue (wrapper);
-				return false;
 			}
 
-			if (!sse.method_has_source (method)) {
+			if (!SingleSteppingEngine.MethodHasSource (method)) {
 				sse.do_next_native ();
 				return false;
 			}
@@ -2414,6 +2429,11 @@ namespace Mono.Debugger.Backends
 		{
 			return false;
 		}
+
+		protected override bool TrampolineHandler (IMethod method)
+		{
+			return false;
+		}
 	}
 
 	internal class OperationFinish : OperationStepBase
@@ -2451,6 +2471,11 @@ namespace Mono.Debugger.Backends
 			}
 
 			return true;
+		}
+
+		protected override bool TrampolineHandler (IMethod method)
+		{
+			return false;
 		}
 	}
 
@@ -2547,6 +2572,58 @@ namespace Mono.Debugger.Backends
 					exc, sse.current_frame);
 				return true;
 			}
+		}
+	}
+
+	internal class OperationWrapper : OperationStepBase
+	{
+		IMethod method;
+
+		public OperationWrapper (IMethod method)
+		{
+			this.method = method;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{
+			sse.do_step_native ();
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse, Inferior inferior)
+		{
+			TargetAddress current_frame = inferior.CurrentFrame;
+			if ((current_frame < method.StartAddress) || (current_frame > method.EndAddress))
+				return true;
+
+			/*
+			 * If this is not a call instruction, continue stepping until we leave
+			 * the specified step frame.
+			 */
+			int insn_size;
+			TargetAddress call = sse.arch.GetCallTarget (
+				sse.inferior, current_frame, out insn_size);
+			if (call.IsNull) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			/*
+			 * If we have a source language, check for trampolines.
+			 * This will trigger a JIT compilation if neccessary.
+			 */
+			if (CheckTrampoline (sse, call))
+				return false;
+
+			return true;
+		}
+
+		protected override bool TrampolineHandler (IMethod method)
+		{
+			return SingleSteppingEngine.MethodHasSource (method);
 		}
 	}
 #endregion

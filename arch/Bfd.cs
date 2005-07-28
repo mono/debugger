@@ -481,6 +481,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
+		public override DebuggerBackend DebuggerBackend {
+			get {
+				return backend;
+			}
+		}
+
 		public Bfd MainBfd {
 			get {
 				return main_bfd;

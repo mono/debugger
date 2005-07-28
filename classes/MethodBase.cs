@@ -38,7 +38,7 @@ namespace Mono.Debugger
 	{
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
-		TargetAddress wrapper_addr = TargetAddress.Null;
+		WrapperType wrapper_type = WrapperType.None;
 		MethodSource source;
 		Module module;
 		bool is_loaded, has_bounds;
@@ -88,9 +88,9 @@ namespace Mono.Debugger
 			this.source = source;
 		}
 
-		protected void SetWrapperAddress (TargetAddress wrapper_addr)
+		protected void SetWrapperType (WrapperType wrapper_type)
 		{
-			this.wrapper_addr = wrapper_addr;
+			this.wrapper_type = wrapper_type;
 		}
 
 		public virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
@@ -196,18 +196,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool IsWrapper {
+		public WrapperType WrapperType {
 			get {
-				return !wrapper_addr.IsNull;
-			}
-		}
-
-		public TargetAddress WrapperAddress {
-			get {
-				if (!IsWrapper)
-					throw new InvalidOperationException ();
-
-				return wrapper_addr;
+				return wrapper_type;
 			}
 		}
 
