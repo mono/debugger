@@ -40,6 +40,8 @@ namespace Mono.Debugger.Remoting
 			objectURI = null;
 			host = null;
 
+			Console.Error.WriteLine ("PARSE URL: |{0}|", url);
+
 			if (!url.StartsWith ("mdb://"))
 				return null;
 
@@ -55,7 +57,7 @@ namespace Mono.Debugger.Remoting
 				path = path.Substring (colon + 1);
 			}
 
-			Console.WriteLine ("PARSE: |{0}|{1}|{2}|", objectURI, path, host);
+			Console.Error.WriteLine ("PARSE: |{0}|{1}|{2}|", objectURI, path, host);
 
 			return path;
 		}

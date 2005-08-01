@@ -2,12 +2,13 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using System.Collections;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Channels;
 
 namespace Mono.Debugger.Remoting
 {
-	internal class DebuggerClientTransportSink : IClientChannelSink
+	internal class DebuggerClientTransportSink : IClientChannelSink, IDisposable
 	{
 		string url;
 		string host;
@@ -45,7 +46,7 @@ namespace Mono.Debugger.Remoting
 
 		public Stream GetRequestStream (IMessage msg, ITransportHeaders headers)
 		{
-			Console.WriteLine ("TRANSPORT GET STREAM: {0} {1}", msg, headers);
+			Console.Error.WriteLine ("TRANSPORT GET STREAM: {0} {1}", msg, headers);
 			return null;
 		}
 
@@ -53,13 +54,16 @@ namespace Mono.Debugger.Remoting
 		{
 			ProcessStartInfo info = new ProcessStartInfo ("/home/martin/INSTALL/bin/mono");
 			info.Arguments = "--debug " + path;
+			Console.Error.WriteLine ("START: |{0}|", path);
 			info.UseShellExecute = false;
 			info.RedirectStandardInput = true;
 			info.RedirectStandardOutput = true;
 			// info.RedirectStandardError = true;
 
 			process = Process.Start (info);
-			Console.WriteLine ("CONNECT: {0}", process);
+			Console.Error.WriteLine ("CONNECT: {0} {1}", process, process.Id);
+			process.StandardOutput.ReadLine ();
+			Console.Error.WriteLine ("CONNECTED");
 		}
 		
 		public void ProcessMessage (IMessage msg,
@@ -73,31 +77,47 @@ namespace Mono.Debugger.Remoting
 			string request_uri = ((IMethodMessage) msg).Uri;
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
-			Console.WriteLine ("PROCESS MESSAGE: {0} {1} {2} {3} {4}", msg, requestHeaders,
-					   requestStream, url, request_uri);
-
 			// send the message
 			DebuggerMessageFormat.SendMessageStream (
-				process.StandardInput.BaseStream, (MemoryStream) requestStream,
-				DebuggerMessageFormat.MessageType.Request, request_uri);
+				process.StandardInput.BaseStream, requestStream, requestHeaders);
+			process.StandardInput.BaseStream.Flush ();
 
-			// read the response fro the network an copy it to a memory stream
-			DebuggerMessageFormat.MessageType msg_type;
-			string uri;
-			MemoryStream mem_stream = DebuggerMessageFormat.ReceiveMessageStream (
-				process.StandardOutput.BaseStream, out msg_type, out uri);
+			MessageStatus status = DebuggerMessageFormat.ReceiveMessageStatus (
+				process.StandardOutput.BaseStream);
 
-			Console.WriteLine ("DONE PROCESSING MESSAGE");
+			if (status != MessageStatus.MethodMessage)
+				throw new RemotingException ("Unknown response message from server");
 
-			switch (msg_type) {
-			case DebuggerMessageFormat.MessageType.Response:
-				//fixme: read response message
-				responseHeaders = null;
-				responseStream = mem_stream;
-				break;
-			default:
-				throw new Exception ("unknown response mesage header");
-			}
+			responseStream = DebuggerMessageFormat.ReceiveMessageStream (
+				process.StandardOutput.BaseStream, out responseHeaders);
 		}
+
+#region IDisposable implementation
+		~DebuggerClientTransportSink ()
+		{
+			Dispose (false);
+		}
+
+		private bool disposed = false;
+
+		protected virtual void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				Console.Error.WriteLine ("DISPOSE CLIENT TRANSPORT SINK!");
+			}
+
+			disposed = true;
+		}
+
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+#endregion
 	}
 }	

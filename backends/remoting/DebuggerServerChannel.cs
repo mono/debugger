@@ -18,7 +18,8 @@ namespace Mono.Debugger.Remoting
 			IServerChannelSinkProvider provider = new BinaryServerFormatterSinkProvider ();
 			IServerChannelSink next_sink = ChannelServices.CreateServerChannelSinkChain (provider, this);
 
-                        sink = new DebuggerServerTransportSink (next_sink);
+                        sink = new DebuggerServerTransportSink (next_sink);	
+			channel_data = new ChannelDataStore (null);
 		}
 
 		public object ChannelData {
@@ -46,13 +47,30 @@ namespace Mono.Debugger.Remoting
 			return DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
 		}
 
+		bool aborted = false;
+
 		void WaitForConnections ()
 		{
 			Stream in_stream = Console.OpenStandardInput ();
 			Stream out_stream = Console.OpenStandardOutput ();
 
-			while (true) {
-				sink.InternalProcessMessage (in_stream, out_stream);
+			while (!aborted) {
+				MessageStatus type = DebuggerMessageFormat.ReceiveMessageStatus (in_stream);
+
+				Console.Error.WriteLine ("SERVER MESSAGE: {0}", type);
+
+				switch (type) {
+				case MessageStatus.MethodMessage:
+					sink.InternalProcessMessage (in_stream, out_stream);
+					break;
+
+				case MessageStatus.Unknown:
+				case MessageStatus.CancelSignal:
+					aborted = true;
+					break;
+				}
+				in_stream.Flush ();
+				out_stream.Flush ();
 			}
 		}
 
@@ -61,6 +79,10 @@ namespace Mono.Debugger.Remoting
 			Console.Error.WriteLine ("START LISTENING: {0}", data);
 
 			if (server_thread == null) {
+				string[] uris = new string [1];
+				uris [0] = "mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Sleep.exe!Foo";
+				channel_data.ChannelUris = uris;
+
 				server_thread = new Thread (new ThreadStart (WaitForConnections));
 				server_thread.Start ();
 			}
@@ -71,9 +93,13 @@ namespace Mono.Debugger.Remoting
 			Console.Error.WriteLine ("STOP LISTENING: {0}", data);
 
 			if (server_thread != null) {
+				aborted = true;
 				server_thread.Abort ();
 				server_thread = null;
 			}
+
+			Console.Error.WriteLine ("STOPPED LISTENING");
+			Environment.Exit (0);
 		}
 	}
 }

@@ -53,44 +53,26 @@ namespace Mono.Debugger.Remoting
 
 		internal void InternalProcessMessage (Stream in_stream, Stream out_stream)
 		{
-			string uri;
-			DebuggerMessageFormat.MessageType msg_type;
-			MemoryStream msg_stream;
+			ITransportHeaders requestHeaders;
+			Stream requestStream = DebuggerMessageFormat.ReceiveMessageStream (
+				in_stream, out requestHeaders);
 
-			msg_stream = DebuggerMessageFormat.ReceiveMessageStream (
-				in_stream, out msg_type, out uri);
-			if (msg_type != DebuggerMessageFormat.MessageType.Request)
-				throw new Exception ("received wrong message type");
+			ServerChannelSinkStack sinkStack = new ServerChannelSinkStack ();
+			sinkStack.Push (this, null);
 
-			Console.Error.WriteLine ("SERVER MESSAGE: {0} {1} {2} {3}",
-						 msg_stream, msg_stream.Length, msg_type, uri);
+			IMessage responseMsg;
+			ITransportHeaders responseHeaders;
+			Stream responseStream;
 
+			ServerProcessing proc = next_sink.ProcessMessage (
+				sinkStack, null, requestHeaders, requestStream, out responseMsg,
+				out responseHeaders, out responseStream);
 
-			ServerChannelSinkStack sink_stack = new ServerChannelSinkStack();
-			sink_stack.Push (this, null);
-
-			TransportHeaders headers = new TransportHeaders ();
-			headers [CommonTransportKeys.RequestUri] = uri;
-
-			IMessage resp_message;
-			ITransportHeaders resp_headers;
-			Stream resp_stream;
-			ServerProcessing res = next_sink.ProcessMessage (sink_stack, null, headers, msg_stream,
-									 out resp_message, out resp_headers,
-									 out resp_stream);
-
-			switch (res) {
+			switch (proc) {
 			case ServerProcessing.Complete:
-				Exception e = ((IMethodReturnMessage)resp_message).Exception;
-				if (e != null) {
-					// we handle exceptions in the transport channel
-					DebuggerMessageFormat.SendExceptionMessage (out_stream, e.ToString ());
-				} else {
-					// send the response
-					DebuggerMessageFormat.SendMessageStream (
-						out_stream, (MemoryStream)resp_stream, 
-						DebuggerMessageFormat.MessageType.Response, null);
-				}
+				DebuggerMessageFormat.SendMessageStream (
+					out_stream, responseStream, responseHeaders);
+				out_stream.Flush ();
 				break;
 			case ServerProcessing.Async:
 			case ServerProcessing.OneWay:

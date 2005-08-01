@@ -4,140 +4,248 @@ using System.Runtime.Serialization;
 using System.Reflection;
 using System.Collections;
 using System.IO;
+using System.Text;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
+using System.Runtime.Remoting.Channels;
 
 namespace Mono.Debugger.Remoting
 {
-	public sealed class DebuggerMessageFormat 
+	enum MessageStatus { MethodMessage = 0, CancelSignal = 1, Unknown = 10}
+
+	internal class DebuggerMessageFormat
 	{
-		public enum MessageType : byte {
-			Request = 0,
-			Response = 1,
-			Exception = 2,
-			Unknown = 3
-		}
-		
-		public DebuggerMessageFormat ()
+		static byte[][] _msgHeaders = 
+			  {
+				  new byte[] { (byte)'.', (byte)'N', (byte)'E', (byte)'T', 1, 0 },
+				  new byte[] { 255, 255, 255, 255, 255, 255 }
+			  };
+							
+		public static int DefaultStreamBufferSize = 1000;
+
+		// Identifies an incoming message
+		public static MessageStatus ReceiveMessageStatus (Stream networkStream)
 		{
-		}
-		
-		public static void SendExceptionMessage (Stream network_stream, string message)
-		{
-			// we use the uri field to encode the message text
-			SendMessageStream (network_stream, null, MessageType.Exception, message);
-		}
-		
-		public static void SendMessageStream (Stream network_stream, MemoryStream data, 
-						      MessageType msg_type, string uri)
-		{
-			int data_len = 0;
-			
-			if (data != null)
-				data_len = (int)data.Length;
-
-			int uri_len = 0;
-
-			if (uri != null)
-				uri_len = uri.Length;
-
-			int header_len = 12 + uri_len * 2;
-			int msg_len = data_len + header_len;
-			
-			byte [] buffer = new byte [msg_len];
-
-			// magic header signature
-			buffer [0] = 255;
-			buffer [1] = 0;
-			buffer [2] = 255;
-			buffer [3] = (byte) msg_type;
-
-			// data length
-			buffer [4] = (byte) data_len;
-			buffer [5] = (byte) (data_len >> 8);
-			buffer [6] = (byte) (data_len >> 16);
-			buffer [7] = (byte) (data_len >> 24);
-
-			// uri length
-			buffer [8] = (byte) uri_len;
-			buffer [9] = (byte) (uri_len >> 8);
-			buffer [10] = (byte) (uri_len >> 16);
-			buffer [11] = (byte) (uri_len >> 24);
-
-			// uri
-			for (int i = 0; i < uri_len; i++) {
-				buffer [12 + i*2] = (byte) uri [i];
-				buffer [13 + i*2] = (byte) (uri [i] >> 8);
+			byte[] buffer = new byte [6];
+			try {
+				StreamRead (networkStream, buffer, 6);
+			} catch (Exception ex) {
+				throw new RemotingException ("Tcp transport error.", ex);
 			}
 
-			if (data_len > 0) {
-				byte [] data_buffer = data.GetBuffer ();
-				for (int i = 0; i < data_len; i++)
-					buffer [i + header_len] = data_buffer [i];
+			try
+			{
+				bool[] isOnTrack = new bool[_msgHeaders.Length];
+				bool atLeastOneOnTrack = true;
+				int i = 0;
+
+				while (atLeastOneOnTrack)
+				{
+					atLeastOneOnTrack = false;
+					byte c = buffer [i];
+					for (int n = 0; n<_msgHeaders.Length; n++)
+					{
+						if (i > 0 && !isOnTrack[n]) continue;
+
+						isOnTrack[n] = (c == _msgHeaders[n][i]);
+						if (isOnTrack[n] && (i == _msgHeaders[n].Length-1)) return (MessageStatus) n;
+						atLeastOneOnTrack = atLeastOneOnTrack || isOnTrack[n];
+					}
+					i++;
+				}
+				return MessageStatus.Unknown;
 			}
-			
-			network_stream.Write (buffer, 0, msg_len);
+			catch (Exception ex) {
+				throw new RemotingException ("Tcp transport error.", ex);
+			}
 		}
 		
-		public static MemoryStream ReceiveMessageStream (Stream network_stream,
-								 out MessageType msg_type,
-								 out string uri)
+		static bool StreamRead (Stream networkStream, byte[] buffer, int count)
 		{
-			int data_len = 0;
-			int uri_len = 0;
-			msg_type = MessageType.Unknown;
-			uri = null;
-			
-			// search for message header (255, 0, 255, msg_type, msg_len)
-			while (true) {
-				while (true) {
-					int x = network_stream.ReadByte ();
-					if (x != 255)
-						continue;
-					x = network_stream.ReadByte ();
-					if (x != 0)
-						continue;
-					x = network_stream.ReadByte ();
-					if (x != 255)
-						continue;
+			int nr = 0;
+			do {
+				int pr = networkStream.Read (buffer, nr, count - nr);
+				if (pr == 0)
+					throw new RemotingException ("Connection closed");
+				nr += pr;
+			} while (nr < count);
+			return true;
+		}
+
+		public static void SendMessageStream (Stream networkStream, Stream data, ITransportHeaders requestHeaders)
+		{
+			byte[] buffer = new byte [DefaultStreamBufferSize];
+
+			// Writes the message start header
+			byte[] dotnetHeader = _msgHeaders[(int) MessageStatus.MethodMessage];
+			networkStream.Write(dotnetHeader, 0, dotnetHeader.Length);
+
+			// Writes header tag (0x0000 if request stream, 0x0002 if response stream)
+			if(requestHeaders[CommonTransportKeys.RequestUri]!=null) buffer [0] = (byte) 0;
+			else buffer[0] = (byte) 2;
+			buffer [1] = (byte) 0 ;
+
+			// Writes ID
+			buffer [2] = (byte) 0;
+
+			// Writes assemblyID????
+			buffer [3] = (byte) 0;
+
+			// Writes the length of the stream being sent (not including the headers)
+			int num = (int)data.Length;
+			buffer [4] = (byte) num;
+			buffer [5] = (byte) (num >> 8);
+			buffer [6] = (byte) (num >> 16);
+			buffer [7] = (byte) (num >> 24);
+			networkStream.Write(buffer, 0, 8);
+	
+			// Writes the message headers
+			SendHeaders (networkStream, requestHeaders, buffer);
+
+			// Writes the stream
+			if (data is MemoryStream)
+			{
+				// The copy of the stream can be optimized. The internal
+				// buffer of MemoryStream can be used.
+				MemoryStream memStream = (MemoryStream)data;
+				networkStream.Write (memStream.GetBuffer(), 0, (int)memStream.Length);
+			}
+			else
+			{
+				int nread = data.Read (buffer, 0, buffer.Length);
+				while (nread > 0)
+				{
+					networkStream.Write (buffer, 0, nread);
+					nread = data.Read (buffer, 0, buffer.Length);
+				}
+			}
+		}
+		
+		static byte[] msgUriTransportKey = new byte[] { 4, 0, 1, 1 };
+		static byte[] msgContentTypeTransportKey = new byte[] { 6, 0, 1, 1 };
+		static byte[] msgDefaultTransportKey = new byte[] { 1, 0, 1 };
+		static byte[] msgHeaderTerminator = new byte[] { 0, 0 };
+
+		private static void SendHeaders(Stream networkStream, ITransportHeaders requestHeaders, byte[] buffer)
+		{
+			foreach (DictionaryEntry hdr in requestHeaders) {
+				switch (hdr.Key.ToString()) {
+				case CommonTransportKeys.RequestUri: 
+					networkStream.Write (msgUriTransportKey, 0, 4);
+					break;
+				case "Content-Type": 
+					networkStream.Write (msgContentTypeTransportKey, 0, 4);
+					break;
+				default: 
+					networkStream.Write (msgDefaultTransportKey, 0, 3);
+					SendString (networkStream, hdr.Key.ToString(), buffer);
+					networkStream.WriteByte (1);
 					break;
 				}
+				SendString (networkStream, hdr.Value.ToString(), buffer);
+			}
+			networkStream.Write (msgHeaderTerminator, 0, 2);	// End of headers
+		}
+		
+		public static ITransportHeaders ReceiveHeaders (Stream networkStream, byte[] buffer)
+		{
+			StreamRead (networkStream, buffer, 2);
+			
+			byte headerType = buffer [0];
+			TransportHeaders headers = new TransportHeaders ();
 
-				msg_type = (MessageType)network_stream.ReadByte ();
-				
-				byte [] buffer = new byte [8];
-				
-				int bytes_read = network_stream.Read (buffer, 0, 8);
-				if (bytes_read != 8)
-					continue;
-				
-				data_len = (buffer [0] | (buffer [1] << 8) |
-					    (buffer [2] << 16) | (buffer [3] << 24));
-				
-				uri_len = (buffer [4] | (buffer [5] << 8) |
-					   (buffer [6] << 16) | (buffer [7] << 24));
-				
-				if (uri_len > 0) {
-					byte [] uri_buffer = new byte [uri_len * 2];
-					bytes_read = network_stream.Read (uri_buffer, 0, uri_len * 2);
-					if (bytes_read != (uri_len * 2))
-						continue;
-					char [] uri_array = new char [uri_len];
-					for (int i = 0; i < uri_len; i++) {
-						uri_array [i] = (char) (uri_buffer [i * 2] | (uri_buffer [(i * 2) + 1] << 8));
-					}
-					uri = new string (uri_array);
+			while (headerType != 0)
+			{
+				string key;
+				StreamRead (networkStream, buffer, 1);	// byte 1
+				switch (headerType)
+				{
+					case 4: key = CommonTransportKeys.RequestUri; break;
+					case 6: key = "Content-Type"; break;
+					case 1: key = ReceiveString (networkStream, buffer); break;
+					default: throw new NotSupportedException ("Unknown header code: " + headerType);
 				}
-				break;
+				StreamRead (networkStream, buffer, 1);	// byte 1
+				headers[key] = ReceiveString (networkStream, buffer);
+
+				StreamRead (networkStream, buffer, 2);
+				headerType = buffer [0];
 			}
 
-			if (msg_type == MessageType.Exception)
-				throw new Exception ("\n" + uri + "\n" + "Rethrown at:\n");
-			
-			byte [] stream_buffer = new byte [data_len];
-			if ((network_stream.Read (stream_buffer, 0, data_len)) != data_len)
-				throw new Exception ("packet size error");
-			
-			return new MemoryStream (stream_buffer, false);
+			return headers;
+		}
+		
+		public static Stream ReceiveMessageStream (Stream networkStream, out ITransportHeaders headers)
+		{
+			byte[] buffer = new byte [DefaultStreamBufferSize];
+
+			headers = null;
+
+			if (buffer == null) buffer = new byte[DefaultStreamBufferSize];
+
+			// Reads header tag:  0 -> Stream with headers or 2 -> Response Stream
+			// +
+			// Gets the length of the data stream
+			StreamRead (networkStream, buffer, 8);
+
+			int byteCount = (buffer [4] | (buffer [5] << 8) |
+				(buffer [6] << 16) | (buffer [7] << 24));
+
+			// Reads the headers
+			headers = ReceiveHeaders (networkStream, buffer);
+
+			byte[] resultBuffer = new byte[byteCount];
+			StreamRead (networkStream, resultBuffer, byteCount);
+
+			return new MemoryStream (resultBuffer);
 		}		
+
+		private static void SendString (Stream networkStream, string str, byte[] buffer)
+		{
+			// Allocates a buffer. Use the internal buffer if it is 
+			// big enough. If not, create a new one.
+
+			int maxBytes = Encoding.UTF8.GetMaxByteCount(str.Length)+4;	//+4 bytes for storing the string length
+			if (maxBytes > buffer.Length)
+				buffer = new byte[maxBytes];
+
+			int num = Encoding.UTF8.GetBytes (str, 0, str.Length, buffer, 4);
+
+			// store number of bytes (not number of chars!)
+
+			buffer [0] = (byte) num;
+			buffer [1] = (byte) (num >> 8);
+			buffer [2] = (byte) (num >> 16);
+			buffer [3] = (byte) (num >> 24);
+
+			// Write the string bytes
+			networkStream.Write (buffer, 0, num + 4);
+		}
+
+		private static string ReceiveString (Stream networkStream, byte[] buffer)
+		{
+			StreamRead (networkStream, buffer, 4);
+
+			// Reads the number of bytes (not chars!)
+
+			int byteCount = (buffer [0] | (buffer [1] << 8) |
+				(buffer [2] << 16) | (buffer [3] << 24));
+
+			if (byteCount == 0) return string.Empty;
+
+			// Allocates a buffer of the correct size. Use the
+			// internal buffer if it is big enough
+
+			if (byteCount > buffer.Length)
+				buffer = new byte[byteCount];
+
+			// Reads the string
+
+			StreamRead (networkStream, buffer, byteCount);
+			char[] chars = Encoding.UTF8.GetChars (buffer, 0, byteCount);
+	
+			return new string (chars);
+		}
 	}
 }
+
