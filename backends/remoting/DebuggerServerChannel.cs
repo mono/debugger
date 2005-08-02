@@ -37,14 +37,17 @@ namespace Mono.Debugger.Remoting
 		public string[] GetUrlsForUri (string uri)
 		{
 			Console.Error.WriteLine ("GET URLS FOR URI: {0}", uri);
-			return new string [0];
+			return new string [] {
+				"mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Sleep.exe"
+					};
 		}
 
 		public string Parse (string url, out string objectURI)
 		{
 			Console.Error.WriteLine ("SERVER PARSE: {0}", url);
 			string host;
-			return DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
+			string path = DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
+			return "mdb://" + host + ":" + path;
 		}
 
 		bool aborted = false;
@@ -80,7 +83,7 @@ namespace Mono.Debugger.Remoting
 
 			if (server_thread == null) {
 				string[] uris = new string [1];
-				uris [0] = "mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Sleep.exe!Foo";
+				uris [0] = "mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Sleep.exe";
 				channel_data.ChannelUris = uris;
 
 				server_thread = new Thread (new ThreadStart (WaitForConnections));

@@ -57,6 +57,8 @@ namespace Mono.Debugger.Remoting
 			Stream requestStream = DebuggerMessageFormat.ReceiveMessageStream (
 				in_stream, out requestHeaders);
 
+			Console.Error.WriteLine ("SERVER PROCESS MESSAGE");
+
 			ServerChannelSinkStack sinkStack = new ServerChannelSinkStack ();
 			sinkStack.Push (this, null);
 
@@ -67,6 +69,8 @@ namespace Mono.Debugger.Remoting
 			ServerProcessing proc = next_sink.ProcessMessage (
 				sinkStack, null, requestHeaders, requestStream, out responseMsg,
 				out responseHeaders, out responseStream);
+
+			Console.Error.WriteLine ("SERVER PROCESSED MESSAGE: {0}", proc);
 
 			switch (proc) {
 			case ServerProcessing.Complete:

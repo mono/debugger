@@ -75,12 +75,16 @@ namespace Mono.Debugger.Remoting
 			if (requestHeaders == null)
 				requestHeaders = new TransportHeaders();
 			string request_uri = ((IMethodMessage) msg).Uri;
-			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
+			requestHeaders [CommonTransportKeys.RequestUri] = object_uri;
+
+			Console.Error.WriteLine ("PROCESS MESSAGE: |{0}|{1}|", object_uri, request_uri);
 
 			// send the message
 			DebuggerMessageFormat.SendMessageStream (
 				process.StandardInput.BaseStream, requestStream, requestHeaders);
 			process.StandardInput.BaseStream.Flush ();
+
+			Console.Error.WriteLine ("MESSAGE SENT: {0} {1}", process.Id, Process.GetCurrentProcess ().Id);
 
 			MessageStatus status = DebuggerMessageFormat.ReceiveMessageStatus (
 				process.StandardOutput.BaseStream);

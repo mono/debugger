@@ -39,26 +39,28 @@ namespace Mono.Debugger.Remoting
 			if (remoteChannelData != null) {
 				IChannelDataStore ds = remoteChannelData as IChannelDataStore;
 				Console.Error.WriteLine ("CREATE MESSAGE SINK #1: {0}", ds);
-				if (ds != null && ds.ChannelUris.Length > 0)
-					url = ds.ChannelUris [0];
-				else {
-					objectURI = null;
-					return null;
+
+				if (ds != null) {
+					foreach (string chnl_uri in ds.ChannelUris) {
+						Console.Error.WriteLine ("CREATE MESSAGE SINK #2: {0}", chnl_uri);
+						if (Parse (chnl_uri, out objectURI) == null)
+							continue;
+						Console.WriteLine ("CREATE MESSAGE SINK #3: {0}", objectURI);
+						return (IMessageSink) sink_provider.CreateSink (this, chnl_uri,
+												remoteChannelData);
+					}
 				}
-				Console.Error.WriteLine ("CREATE MESSAGE SINK #2: {0}", url);
 			}
 
-			if (DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI) == null)
-				return null;
-
-			return (IMessageSink) sink_provider.CreateSink (this, url, remoteChannelData);
+			return null;
 		}
 
 		public string Parse (string url, out string objectURI)
 		{
 			Console.Error.WriteLine ("CLIENT PARSE: {0}", url);
 			string host;
-			return DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
+			string path = DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
+			return "mdb://" + host + ":" + path;
 		}
 
 #region IDisposable implementation
