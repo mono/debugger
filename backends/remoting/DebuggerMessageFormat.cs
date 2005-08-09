@@ -11,7 +11,7 @@ using System.Runtime.Remoting.Channels;
 
 namespace Mono.Debugger.Remoting
 {
-	enum MessageStatus { MethodMessage = 0, CancelSignal = 1, Unknown = 10}
+	enum MessageStatus { Message = 0, CancelSignal = 1, Unknown = 10}
 
 	internal class DebuggerMessageFormat
 	{
@@ -72,13 +72,17 @@ namespace Mono.Debugger.Remoting
 			return true;
 		}
 
-		public static void SendMessageStream (Stream networkStream, Stream data, ITransportHeaders requestHeaders)
+		public static void SendMessageStream (Stream networkStream, Stream data,
+						      long sequenceID, ITransportHeaders requestHeaders)
 		{
 			byte[] buffer = new byte [DefaultStreamBufferSize];
 
 			// Writes the message start header
-			byte[] dotnetHeader = _msgHeaders[(int) MessageStatus.MethodMessage];
+			byte[] dotnetHeader = _msgHeaders[(int) MessageStatus.Message];
 			networkStream.Write(dotnetHeader, 0, dotnetHeader.Length);
+
+			byte[] seqBuffer = BitConverter.GetBytes (sequenceID);
+			networkStream.Write(seqBuffer, 0, seqBuffer.Length);
 
 			// Writes header tag (0x0000 if request stream, 0x0002 if response stream)
 			if(requestHeaders[CommonTransportKeys.RequestUri]!=null) buffer [0] = (byte) 0;
@@ -175,13 +179,18 @@ namespace Mono.Debugger.Remoting
 			return headers;
 		}
 		
-		public static Stream ReceiveMessageStream (Stream networkStream, out ITransportHeaders headers)
+		public static MemoryStream ReceiveMessageStream (Stream networkStream, out long sequenceID,
+								 out ITransportHeaders headers)
 		{
 			byte[] buffer = new byte [DefaultStreamBufferSize];
 
 			headers = null;
 
 			if (buffer == null) buffer = new byte[DefaultStreamBufferSize];
+
+			byte[] seqBuffer = new byte [8];
+			StreamRead (networkStream, seqBuffer, 8);
+			sequenceID = BitConverter.ToInt64 (seqBuffer, 0);
 
 			// Reads header tag:  0 -> Stream with headers or 2 -> Response Stream
 			// +

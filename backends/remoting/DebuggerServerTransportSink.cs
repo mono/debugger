@@ -28,16 +28,30 @@ namespace Mono.Debugger.Remoting
 			}
 		}
 
+		struct MessageData {
+			public readonly Stream Stream;
+			public readonly long SequenceID;
+
+			public MessageData (Stream stream, long id)
+			{
+				this.Stream = stream;
+				this.SequenceID = id;
+			}
+		}
+
 		public void AsyncProcessResponse (IServerResponseChannelSinkStack sinkStack, object state,
 						  IMessage msg, ITransportHeaders headers, Stream stream)
 		{
-			throw new NotImplementedException ();
+			MessageData data = (MessageData) state;
+			Console.WriteLine ("AYNC RESPONSE: {0}", data.SequenceID);
+			DebuggerMessageFormat.SendMessageStream (data.Stream, stream, data.SequenceID, headers);
 		}
 
 		public Stream GetResponseStream (IServerResponseChannelSinkStack sinkStack, object state,
 						 IMessage msg, ITransportHeaders headers)
 		{
-			throw new NotImplementedException ();
+			Console.WriteLine ("TRANSPORT SINK GET RESPONSE STREAM");
+			return null;
 		}
 
 		public ServerProcessing ProcessMessage (IServerChannelSinkStack sinkStack,
@@ -48,19 +62,21 @@ namespace Mono.Debugger.Remoting
 							out ITransportHeaders responseHeaders,
 							out Stream responseStream)
 		{
+			Console.WriteLine ("TRANSPORT SINK PROCESS MESSAGE");
 			throw new NotSupportedException ();
 		}
 
-		internal void InternalProcessMessage (Stream in_stream, Stream out_stream)
+		internal void InternalProcessMessage (Stream network_stream)
 		{
+			long sequence_id;
 			ITransportHeaders requestHeaders;
-			Stream requestStream = DebuggerMessageFormat.ReceiveMessageStream (
-				in_stream, out requestHeaders);
+			MemoryStream requestStream = DebuggerMessageFormat.ReceiveMessageStream (
+				network_stream, out sequence_id, out requestHeaders);
 
-			Console.Error.WriteLine ("SERVER PROCESS MESSAGE");
+			Console.Error.WriteLine ("SERVER PROCESS MESSAGE: {0}", next_sink.NextChannelSink);
 
 			ServerChannelSinkStack sinkStack = new ServerChannelSinkStack ();
-			sinkStack.Push (this, null);
+			sinkStack.Push (this, new MessageData (network_stream, sequence_id));
 
 			IMessage responseMsg;
 			ITransportHeaders responseHeaders;
@@ -70,17 +86,16 @@ namespace Mono.Debugger.Remoting
 				sinkStack, null, requestHeaders, requestStream, out responseMsg,
 				out responseHeaders, out responseStream);
 
-			Console.Error.WriteLine ("SERVER PROCESSED MESSAGE: {0}", proc);
+			Console.Error.WriteLine ("SERVER PROCESSED MESSAGE: {0} {1}", sequence_id, proc);
 
 			switch (proc) {
 			case ServerProcessing.Complete:
 				DebuggerMessageFormat.SendMessageStream (
-					out_stream, responseStream, responseHeaders);
-				out_stream.Flush ();
+					network_stream, responseStream, sequence_id, responseHeaders);
 				break;
 			case ServerProcessing.Async:
 			case ServerProcessing.OneWay:
-				throw new NotImplementedException ();
+				break;
 			}
 		}
 	}

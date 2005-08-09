@@ -5,42 +5,12 @@ using System.Runtime.Remoting.Messaging;
 
 namespace Mono.Debugger.Remoting
 {
-	public class DebuggerChannel : IChannel, IChannelSender, IChannelReceiver
+	public static class DebuggerChannel
 	{
-		DebuggerServerChannel server_channel = new DebuggerServerChannel ();
-		DebuggerClientChannel client_channel = new DebuggerClientChannel ();
-		
-		public object ChannelData {
-			get { return server_channel.ChannelData; }
-		}
-
-		public string ChannelName {
-			get { return "mdb"; }
-		}
-
-		public int ChannelPriority {
-			get { return server_channel.ChannelPriority; }
-		}
-
-		public IMessageSink CreateMessageSink (string url,
-						       object remoteChannelData,
-						       out string objectURI)
-		{
-			return client_channel.CreateMessageSink (url, remoteChannelData, out objectURI);
-		}
-
-		public string Parse (string url, out string objectURI)
-		{
-			string host;
-			return ParseDebuggerURL (url, out host, out objectURI);
-		}
-
 		internal static string ParseDebuggerURL (string url, out string host, out string objectURI)
 		{
 			objectURI = null;
 			host = null;
-
-			Console.Error.WriteLine ("PARSE URL: |{0}|", url);
 
 			if (!url.StartsWith ("mdb://"))
 				return null;
@@ -57,24 +27,7 @@ namespace Mono.Debugger.Remoting
 				path = path.Substring (colon + 1);
 			}
 
-			Console.Error.WriteLine ("PARSE: |{0}|{1}|{2}|", objectURI, path, host);
-
 			return path;
-		}
-
-		public string[] GetUrlsForUri (string uri)
-		{
-			return server_channel.GetUrlsForUri (uri);
-		}
-
-		public void StartListening (object data)
-		{
-			server_channel.StartListening (data);
-		}
-
-		public void StopListening (object data)
-		{
-			server_channel.StopListening (data);
 		}
 	}
 }

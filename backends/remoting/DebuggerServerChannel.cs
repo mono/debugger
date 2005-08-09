@@ -10,16 +10,27 @@ namespace Mono.Debugger.Remoting
 	{
 		DebuggerServerTransportSink sink;
 		ChannelDataStore channel_data;
-		Thread server_thread;
+		static Thread server_thread;
 		int priority = 1;
 
-		public DebuggerServerChannel ()
+		public DebuggerServerChannel (string url)
 		{
 			IServerChannelSinkProvider provider = new BinaryServerFormatterSinkProvider ();
-			IServerChannelSink next_sink = ChannelServices.CreateServerChannelSinkChain (provider, this);
 
-                        sink = new DebuggerServerTransportSink (next_sink);	
+			IServerChannelSinkProvider temp = provider;
+			while (temp.Next != null)
+				temp = temp.Next;
+			temp.Next = new DebuggerServerDispatchSinkProvider ();
+
+			IServerChannelSink next_sink = provider.CreateSink (this);
+			// IServerChannelSink next_sink = ChannelServices.CreateServerChannelSinkChain (provider, this);
+
+                        sink = new DebuggerServerTransportSink (next_sink);
 			channel_data = new ChannelDataStore (null);
+			channel_data.ChannelUris = new string[] { url };
+
+			DebuggerServerConnection.HandleConnection += new DebuggerServerConnection.ConnectionHandler (
+				HandleConnection);
 		}
 
 		public object ChannelData {
@@ -37,9 +48,7 @@ namespace Mono.Debugger.Remoting
 		public string[] GetUrlsForUri (string uri)
 		{
 			Console.Error.WriteLine ("GET URLS FOR URI: {0}", uri);
-			return new string [] {
-				"mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Sleep.exe"
-					};
+			return channel_data.ChannelUris;
 		}
 
 		public string Parse (string url, out string objectURI)
@@ -52,29 +61,26 @@ namespace Mono.Debugger.Remoting
 
 		bool aborted = false;
 
+		void HandleConnection (Stream stream)
+		{
+			MessageStatus type = DebuggerMessageFormat.ReceiveMessageStatus (stream);
+
+			Console.Error.WriteLine ("SERVER MESSAGE: {0}", type);
+
+			switch (type) {
+			case MessageStatus.Message:
+				sink.InternalProcessMessage (stream);
+				break;
+
+			default:
+				break;
+			}
+			stream.Flush ();
+		}
+
 		void WaitForConnections ()
 		{
-			Stream in_stream = Console.OpenStandardInput ();
-			Stream out_stream = Console.OpenStandardOutput ();
-
-			while (!aborted) {
-				MessageStatus type = DebuggerMessageFormat.ReceiveMessageStatus (in_stream);
-
-				Console.Error.WriteLine ("SERVER MESSAGE: {0}", type);
-
-				switch (type) {
-				case MessageStatus.MethodMessage:
-					sink.InternalProcessMessage (in_stream, out_stream);
-					break;
-
-				case MessageStatus.Unknown:
-				case MessageStatus.CancelSignal:
-					aborted = true;
-					break;
-				}
-				in_stream.Flush ();
-				out_stream.Flush ();
-			}
+			DebuggerServerConnection.Start ();
 		}
 
 		public void StartListening (object data)
@@ -83,10 +89,10 @@ namespace Mono.Debugger.Remoting
 
 			if (server_thread == null) {
 				string[] uris = new string [1];
-				uris [0] = "mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Sleep.exe";
+				uris [0] = "mdb://gondor:/home/martin/monocvs/debugger/backends/remoting/Server.exe";
 				channel_data.ChannelUris = uris;
 
-				server_thread = new Thread (new ThreadStart (WaitForConnections));
+				server_thread = new Thread (WaitForConnections);
 				server_thread.Start ();
 			}
 		}
@@ -102,7 +108,11 @@ namespace Mono.Debugger.Remoting
 			}
 
 			Console.Error.WriteLine ("STOPPED LISTENING");
-			Environment.Exit (0);
+		}
+
+		public static void Run ()
+		{
+			server_thread.Join ();
 		}
 	}
 }

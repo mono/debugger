@@ -20,7 +20,7 @@ namespace Mono.Debugger.Remoting
 		public IClientChannelSink CreateSink (IChannelSender channel, string url,
 						      object remoteChannelData)
 		{
-			return new DebuggerClientTransportSink (url);
+			return new DebuggerClientTransportSink ((DebuggerClientChannel) channel, url);
 		}
 	}
 }

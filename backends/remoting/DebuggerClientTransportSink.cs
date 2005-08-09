@@ -14,13 +14,14 @@ namespace Mono.Debugger.Remoting
 		string host;
 		string path;
 		string object_uri;
-		Process process;
+		DebuggerClientChannel channel;
 
-		public DebuggerClientTransportSink (string url)
+		public DebuggerClientTransportSink (DebuggerClientChannel channel, string url)
 		{
+			this.channel = channel;
 			this.url = url;
 			path = DebuggerChannel.ParseDebuggerURL (url, out host, out object_uri);
-			CreateConnection ();
+			Console.WriteLine ("CLIENT TRANSPORT SINK: |{0}|{1}|{2}|", url, path, host);
 		}
 
 		public IDictionary Properties {
@@ -46,26 +47,9 @@ namespace Mono.Debugger.Remoting
 
 		public Stream GetRequestStream (IMessage msg, ITransportHeaders headers)
 		{
-			Console.Error.WriteLine ("TRANSPORT GET STREAM: {0} {1}", msg, headers);
 			return null;
 		}
 
-		private void CreateConnection ()
-		{
-			ProcessStartInfo info = new ProcessStartInfo ("/home/martin/INSTALL/bin/mono");
-			info.Arguments = "--debug " + path;
-			Console.Error.WriteLine ("START: |{0}|", path);
-			info.UseShellExecute = false;
-			info.RedirectStandardInput = true;
-			info.RedirectStandardOutput = true;
-			// info.RedirectStandardError = true;
-
-			process = Process.Start (info);
-			Console.Error.WriteLine ("CONNECT: {0} {1}", process, process.Id);
-			process.StandardOutput.ReadLine ();
-			Console.Error.WriteLine ("CONNECTED");
-		}
-		
 		public void ProcessMessage (IMessage msg,
 					    ITransportHeaders requestHeaders,
 					    Stream requestStream,
@@ -77,23 +61,13 @@ namespace Mono.Debugger.Remoting
 			string request_uri = ((IMethodMessage) msg).Uri;
 			requestHeaders [CommonTransportKeys.RequestUri] = object_uri;
 
-			Console.Error.WriteLine ("PROCESS MESSAGE: |{0}|{1}|", object_uri, request_uri);
+			DebuggerClientConnection connection = channel.GetConnection (host, path);
 
-			// send the message
-			DebuggerMessageFormat.SendMessageStream (
-				process.StandardInput.BaseStream, requestStream, requestHeaders);
-			process.StandardInput.BaseStream.Flush ();
+			Console.Error.WriteLine ("PROCESS MESSAGE: |{0}|{1}| - {2}", object_uri, request_uri,
+						 connection);
 
-			Console.Error.WriteLine ("MESSAGE SENT: {0} {1}", process.Id, Process.GetCurrentProcess ().Id);
-
-			MessageStatus status = DebuggerMessageFormat.ReceiveMessageStatus (
-				process.StandardOutput.BaseStream);
-
-			if (status != MessageStatus.MethodMessage)
-				throw new RemotingException ("Unknown response message from server");
-
-			responseStream = DebuggerMessageFormat.ReceiveMessageStream (
-				process.StandardOutput.BaseStream, out responseHeaders);
+			connection.SendMessage (requestStream, requestHeaders,
+						out responseHeaders, out responseStream);
 		}
 
 #region IDisposable implementation

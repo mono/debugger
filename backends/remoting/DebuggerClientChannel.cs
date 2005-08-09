@@ -8,6 +8,7 @@ namespace Mono.Debugger.Remoting
 {
 	public class DebuggerClientChannel : IChannelSender, IChannel, IDisposable
 	{
+		Hashtable connections;
 		IClientChannelSinkProvider sink_provider;
 		int priority = 1;
 
@@ -15,6 +16,7 @@ namespace Mono.Debugger.Remoting
 		{
                         sink_provider = new BinaryClientFormatterSinkProvider ();
                         sink_provider.Next = new DebuggerClientTransportSinkProvider ();
+			connections = new Hashtable ();
 		}
 
 		public string ChannelName {
@@ -43,11 +45,13 @@ namespace Mono.Debugger.Remoting
 				if (ds != null) {
 					foreach (string chnl_uri in ds.ChannelUris) {
 						Console.Error.WriteLine ("CREATE MESSAGE SINK #2: {0}", chnl_uri);
-						if (Parse (chnl_uri, out objectURI) == null)
+
+						string path = chnl_uri + "!" + url;
+						if (Parse (path, out objectURI) == null)
 							continue;
-						Console.WriteLine ("CREATE MESSAGE SINK #3: {0}", objectURI);
-						return (IMessageSink) sink_provider.CreateSink (this, chnl_uri,
-												remoteChannelData);
+						Console.WriteLine ("CREATE MESSAGE SINK #3: {0} {1}", path, objectURI);
+						return (IMessageSink) sink_provider.CreateSink (
+							this, path, remoteChannelData);
 					}
 				}
 			}
@@ -63,6 +67,22 @@ namespace Mono.Debugger.Remoting
 			return "mdb://" + host + ":" + path;
 		}
 
+		public DebuggerClientConnection GetConnection (string host, string path)
+		{
+			lock (this) {
+				DebuggerClientConnection connection = (DebuggerClientConnection) connections [path];
+				if (connection != null)
+					return connection;
+
+				string[] envp = new string [0];
+				string[] argv = { "/home/martin/INSTALL/bin/mono", "--debug", path };
+
+				connection = new DebuggerClientConnection (argv, envp);
+				connections.Add (path, connection);
+				return connection;
+			}
+		}
+
 #region IDisposable implementation
 		~DebuggerClientChannel ()
 		{
@@ -76,7 +96,8 @@ namespace Mono.Debugger.Remoting
 			// Check to see if Dispose has already been called.
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				Console.Error.WriteLine ("DISPOSE CLIENT CHANNEL!");
+				foreach (DebuggerClientConnection connection in connections.Values)
+					connection.Dispose ();
 			}
 
 			disposed = true;

@@ -7,6 +7,13 @@ public class Foo : MarshalByRefObject
 		Console.Error.WriteLine ("FOO CTOR");
 	}
 
+	public void Hello ()
+	{
+		Console.WriteLine ("HELLO");
+		System.Threading.Thread.Sleep (10000);
+		Console.WriteLine ("WORLD");
+	}
+
 	public Bar Test ()
 	{
 		Console.Error.WriteLine ("FOO TEST");
@@ -16,4 +23,8 @@ public class Foo : MarshalByRefObject
 
 public class Bar : MarshalByRefObject
 {
+	public void Hello ()
+	{
+		Console.WriteLine ("BOSTON!");
+	}
 }
