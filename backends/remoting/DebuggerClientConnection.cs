@@ -54,6 +54,8 @@ namespace Mono.Debugger.Remoting
 				return;
 
 			MessageStatus status = DebuggerMessageFormat.ReceiveMessageStatus (network_stream);
+			if (status != MessageStatus.Message)
+				throw new DebuggerRemotingException ("Received invalid message {0}", status);
 
 			long sequence_id;
 			ITransportHeaders response_headers;
@@ -134,7 +136,6 @@ namespace Mono.Debugger.Remoting
 		{
 			if (!this.disposed) {
 				if (disposing) {
-					Console.WriteLine ("DISPOSE CLIENT CONNECTION!");
 					poll_thread.Abort ();
 					mono_debugger_remoting_kill (child_pid, socket_fd);
 				}

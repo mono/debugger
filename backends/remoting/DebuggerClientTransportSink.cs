@@ -13,6 +13,7 @@ namespace Mono.Debugger.Remoting
 		string url;
 		string host;
 		string path;
+		string full_path;
 		string object_uri;
 		DebuggerClientChannel channel;
 
@@ -21,6 +22,7 @@ namespace Mono.Debugger.Remoting
 			this.channel = channel;
 			this.url = url;
 			path = DebuggerChannel.ParseDebuggerURL (url, out host, out object_uri);
+			full_path = "mdb://" + host + ":" + path;
 			Console.WriteLine ("CLIENT TRANSPORT SINK: |{0}|{1}|{2}|", url, path, host);
 		}
 
@@ -59,12 +61,12 @@ namespace Mono.Debugger.Remoting
 			if (requestHeaders == null)
 				requestHeaders = new TransportHeaders();
 			string request_uri = ((IMethodMessage) msg).Uri;
-			requestHeaders [CommonTransportKeys.RequestUri] = object_uri;
+			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
 			DebuggerClientConnection connection = channel.GetConnection (host, path);
 
-			Console.Error.WriteLine ("PROCESS MESSAGE: |{0}|{1}| - {2}", object_uri, request_uri,
-						 connection);
+			Console.Error.WriteLine ("PROCESS MESSAGE: |{0}|{1}| - {2} {3}", object_uri, request_uri,
+						 connection, msg);
 
 			connection.SendMessage (requestStream, requestHeaders,
 						out responseHeaders, out responseStream);

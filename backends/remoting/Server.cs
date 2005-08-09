@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 
+using Mono.Debugger;
 using Mono.Debugger.Remoting;
 
 class Server
@@ -14,10 +15,9 @@ class Server
 		ChannelServices.RegisterChannel (channel);
 
 		RemotingConfiguration.RegisterWellKnownServiceType (
-			typeof (Foo), "Foo", WellKnownObjectMode.Singleton);
+			typeof (DebuggerBackend), "DebuggerBackend", WellKnownObjectMode.Singleton);
 
 		DebuggerServerChannel.Run ();
 		ChannelServices.UnregisterChannel (channel);
-		Console.WriteLine ("SERVER EXIT");
 	}
 }

@@ -26,6 +26,7 @@ namespace Mono.Debugger.Remoting
 
 		public static int Main ()
 		{
+			DebuggerClient.CreateConnection ();
 			DebuggerClientChannel channel = new DebuggerClientChannel ();
 			ChannelServices.RegisterChannel (channel);
 

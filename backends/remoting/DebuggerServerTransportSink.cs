@@ -73,7 +73,10 @@ namespace Mono.Debugger.Remoting
 			MemoryStream requestStream = DebuggerMessageFormat.ReceiveMessageStream (
 				network_stream, out sequence_id, out requestHeaders);
 
-			Console.Error.WriteLine ("SERVER PROCESS MESSAGE: {0}", next_sink.NextChannelSink);
+			string url = (string) requestHeaders [CommonTransportKeys.RequestUri];
+
+			Console.Error.WriteLine ("SERVER PROCESS MESSAGE: {0} {1} {2} {3}",
+						 sequence_id, next_sink, next_sink.NextChannelSink, url);
 
 			ServerChannelSinkStack sinkStack = new ServerChannelSinkStack ();
 			sinkStack.Push (this, new MessageData (network_stream, sequence_id));

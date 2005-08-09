@@ -38,22 +38,16 @@ namespace Mono.Debugger.Remoting
 			if (DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI) != null)
 				return (IMessageSink) sink_provider.CreateSink (this, url, remoteChannelData);
 
-			if (remoteChannelData != null) {
-				IChannelDataStore ds = remoteChannelData as IChannelDataStore;
-				Console.Error.WriteLine ("CREATE MESSAGE SINK #1: {0}", ds);
+			DebuggerServerChannelData data = remoteChannelData as DebuggerServerChannelData;
+			if (data != null) {
+				Console.Error.WriteLine ("CREATE MESSAGE SINK #1: {0} {1}", data, data.ChannelURL);
 
-				if (ds != null) {
-					foreach (string chnl_uri in ds.ChannelUris) {
-						Console.Error.WriteLine ("CREATE MESSAGE SINK #2: {0}", chnl_uri);
+				string path = data.ChannelURL + "!" + url;
+				if (Parse (path, out objectURI) == null)
+					return null;
+				Console.WriteLine ("CREATE MESSAGE SINK #3: {0} {1}", path, objectURI);
 
-						string path = chnl_uri + "!" + url;
-						if (Parse (path, out objectURI) == null)
-							continue;
-						Console.WriteLine ("CREATE MESSAGE SINK #3: {0} {1}", path, objectURI);
-						return (IMessageSink) sink_provider.CreateSink (
-							this, path, remoteChannelData);
-					}
-				}
+				return (IMessageSink) sink_provider.CreateSink (this, path, remoteChannelData);
 			}
 
 			return null;
@@ -61,7 +55,6 @@ namespace Mono.Debugger.Remoting
 
 		public string Parse (string url, out string objectURI)
 		{
-			Console.Error.WriteLine ("CLIENT PARSE: {0}", url);
 			string host;
 			string path = DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
 			return "mdb://" + host + ":" + path;
@@ -74,8 +67,20 @@ namespace Mono.Debugger.Remoting
 				if (connection != null)
 					return connection;
 
-				string[] envp = new string [0];
-				string[] argv = { "/home/martin/INSTALL/bin/mono", "--debug", path };
+				ArrayList list = new ArrayList ();
+				IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
+				foreach (string var in env_vars.Keys) {
+					list.Add (String.Format ("{0}={1}", var, env_vars [var]));
+				}
+
+				string[] envp = new string [list.Count];
+				list.CopyTo (envp);
+
+				string mono_path = Mono.Debugger.AssemblyInfo.prefix +
+					System.IO.Path.DirectorySeparatorChar + "bin" +
+					System.IO.Path.DirectorySeparatorChar + "mono";
+
+				string[] argv = { mono_path, "--debug", path };
 
 				connection = new DebuggerClientConnection (argv, envp);
 				connections.Add (path, connection);
