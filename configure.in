@@ -225,6 +225,7 @@ backends/server/Makefile
 backends/ptrace/Makefile
 backends/mono/Makefile
 backends/native/Makefile
+backends/remoting/Makefile
 frontend/Makefile
 frontend/libedit/Makefile
 arch/Makefile

@@ -14,7 +14,7 @@ namespace Mono.Debugger.Frontend
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
 
-	public class FrameHandle
+	public class FrameHandle : MarshalByRefObject
 	{
 		ProcessHandle process;
 		StackFrame frame;
@@ -216,7 +216,7 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class BacktraceHandle
+	public class BacktraceHandle : MarshalByRefObject
 	{
 		FrameHandle[] frames;
 
@@ -240,7 +240,7 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class ProcessHandle
+	public class ProcessHandle : MarshalByRefObject
 	{
 		Interpreter interpreter;
 		ThreadGroup tgroup;
@@ -249,6 +249,7 @@ namespace Mono.Debugger.Frontend
 		int id;
 
 		Hashtable registers;
+		ProcessEventSink sink;
 
 		public ProcessHandle (Interpreter interpreter, Process process)
 		{
@@ -256,12 +257,6 @@ namespace Mono.Debugger.Frontend
 			this.process = process;
 			this.name = process.Name;
 			this.id = process.ID;
-
-			if (!process.IsDaemon)
-				process.TargetEvent += new TargetEventHandler (target_event);
-			process.TargetExitedEvent += new TargetExitedHandler (target_exited);
-			process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
-			process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 
 			initialize ();
 		}
@@ -303,6 +298,8 @@ namespace Mono.Debugger.Frontend
 
 			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
+
+			sink = new ProcessEventSink (this);
 		}
 
 		int current_frame_idx = -1;
@@ -311,7 +308,7 @@ namespace Mono.Debugger.Frontend
 		AssemblerLine current_insn = null;
 		ITargetObject current_exception = null;
 
-		void target_exited ()
+		protected void TargetExited ()
 		{
 			process = null;
 
@@ -319,22 +316,15 @@ namespace Mono.Debugger.Frontend
 				ProcessExitedEvent (this);
 		}
 
-		void target_event (object sender, TargetEventArgs args)
+		protected void TargetEvent (TargetEventArgs args, FrameHandle new_frame, AssemblerLine new_insn)
 		{
 			current_exception = null;
 
-			if (args.Frame != null) {
-				current_frame = new FrameHandle (this, args.Frame);
-				current_frame_idx = -1;
-				current_backtrace = null;
+			current_frame = new_frame;
+			current_insn = new_insn;
 
-				current_insn = current_frame.Disassemble ();
-			} else {
-				current_insn = null;
-				current_frame = null;
-				current_frame_idx = -1;
-				current_backtrace = null;
-			}
+			current_frame_idx = -1;
+			current_backtrace = null;
 
 			string frame = "";
 			if (current_frame != null)
@@ -389,25 +379,15 @@ namespace Mono.Debugger.Frontend
 				else
 					interpreter.Print ("{0} exited with exit code {1}.",
 							   id, (int) args.Data);
-				target_exited ();
+				TargetExited ();
 				break;
 
 			case TargetEventType.TargetSignaled:
 				interpreter.Print ("{0} died with fatal signal {1}.",
 						   id, (int) args.Data);
-				target_exited ();
+				TargetExited ();
 				break;
 			}
-		}
-
-		void debugger_output (string line)
-		{
-			interpreter.Print ("DEBUGGER OUTPUT: {0}", line);
-		}
-
-		void debugger_error (object sender, string message, Exception e)
-		{
-			interpreter.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
 		}
 
 		public void Step (WhichStepCommand which)
@@ -588,7 +568,7 @@ namespace Mono.Debugger.Frontend
 		{
 			process.Kill ();
 			process = null;
-			target_exited ();
+			TargetExited ();
 		}
 
 		public string Name {
@@ -605,6 +585,49 @@ namespace Mono.Debugger.Frontend
 				return String.Format ("Daemon process @{0}: {1} {2}", id, process.PID, State);
 			else
 				return String.Format ("Process @{0}: {1} {2}", id, process.PID, State);
+		}
+
+		[Serializable]
+		private class ProcessEventSink
+		{
+			ProcessHandle process;
+
+			public ProcessEventSink (ProcessHandle process)
+			{
+				this.process = process;
+
+				if (!process.process.IsDaemon)
+					process.process.TargetEvent += new TargetEventHandler (target_event);
+				process.process.TargetExitedEvent += new TargetExitedHandler (target_exited);
+				process.process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
+				process.process.DebuggerError += new DebuggerErrorHandler (debugger_error);
+			}
+
+			public void target_event (object sender, TargetEventArgs args)
+			{
+				if (args.Frame != null) {
+					FrameHandle frame = new FrameHandle (process, args.Frame);
+					AssemblerLine insn = frame.Disassemble ();
+
+					process.TargetEvent (args, frame, insn);
+				} else
+					process.TargetEvent (args, null, null);
+			}
+
+			public void debugger_output (string line)
+			{
+				process.interpreter.Print ("DEBUGGER OUTPUT: {0}", line);
+			}
+
+			public void debugger_error (object sender, string message, Exception e)
+			{
+				process.interpreter.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
+			}
+
+			public void target_exited ()
+			{
+				process.TargetExited ();
+			}
 		}
 	}
 
@@ -645,7 +668,7 @@ namespace Mono.Debugger.Frontend
 		FinishNative
 	}
 
-	public class ScriptingContext
+	public class ScriptingContext : MarshalByRefObject
 	{
 		ProcessHandle current_process;
 		int current_frame_idx = -1;

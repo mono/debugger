@@ -293,6 +293,14 @@ namespace Mono.Debugger.Frontend
 				}
 				debug_options.StartTarget = true;
 				return true;
+
+			case "-remote":
+				if (ms_value != null) {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.IsRemote = true;
+				return true;
 			}
 
 			return false;

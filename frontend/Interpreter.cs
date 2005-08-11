@@ -7,15 +7,18 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
+
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Remoting;
 
 using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	public abstract class Interpreter
+	public abstract class Interpreter : MarshalByRefObject
 	{
+		InterpreterEventSink event_sink;
 		DebuggerBackend backend;
 		Module[] modules;
 		ProcessStart start;
@@ -89,6 +92,9 @@ namespace Mono.Debugger.Frontend
 			context = new ScriptingContext (this, is_interactive, true);
 		}
 
+		AppDomain debugger_domain;
+		static int domain_age = 0;
+
 		public DebuggerBackend Initialize ()
 		{
 			if (backend != null)
@@ -96,11 +102,12 @@ namespace Mono.Debugger.Frontend
 			if (start == null)
 				throw new ScriptingException ("No program loaded.");
 
-			backend = new DebuggerBackend ();
-			backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-			backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
-			backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
-			backend.ThreadManager.InitializedEvent += new ThreadEventHandler (thread_manager_initialized);
+			if (options.IsRemote)
+				backend = DebuggerClient.CreateConnection ();
+			else
+				backend = new DebuggerBackend ();
+
+			event_sink = new InterpreterEventSink (this, backend);
 			return backend;
 		}
 
@@ -288,11 +295,6 @@ namespace Mono.Debugger.Frontend
 			return path;
 		}
 
-		void target_output (bool is_stderr, string line)
-		{
-			PrintInferior (is_stderr, line);
-		}
-
 		public void Abort ()
 		{
 			Print ("Caught fatal error while running non-interactively; exiting!");
@@ -416,7 +418,7 @@ namespace Mono.Debugger.Frontend
 			start_event.WaitOne ();
 			context.CurrentProcess = current_process;
 
-			process.TargetOutput += new TargetOutputHandler (target_output);
+			event_sink.AddTargetOutput (process);
 
 			return process;
 		}
@@ -437,24 +439,21 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		void thread_created (ThreadManager manager, Process process)
+		protected void ThreadCreated (ProcessHandle handle)
 		{
-			ProcessHandle handle = new ProcessHandle (this, process);
-			handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-			handle.Process.TargetOutput += new TargetOutputHandler (target_output);
 			procs.Add (handle.Process.ID, handle);
 
 			if (initialized)
-				Print ("New process @{0}", process.ID);
+				Print ("New process @{0}", handle.Process.ID);
 		}
 
-		void thread_manager_initialized (ThreadManager manager, Process process)
+		protected void ThreadManagerInitialized (ThreadManager manager, Process process)
 		{
 			initialized = true;
 			start_event.Set ();
 		}
 
-		void modules_changed ()
+		protected void ModulesChanged ()
 		{
 			modules = backend.Modules;
 		}
@@ -644,18 +643,19 @@ namespace Mono.Debugger.Frontend
 				Print ("{0,4}  {1}", source.ID, source.FileName);
 		}
 
-		void process_exited (ProcessHandle process)
+		protected void ProcessExited (ProcessHandle process)
 		{
 			procs.Remove (process.ID);
 			if (process == current_process)
 				current_process = null;
 		}
 
-		void target_exited ()
+		protected void TargetExited ()
 		{
 			if (backend != null)
 				backend.Dispose ();
 			backend = null;
+			event_sink = null;
 
 			current_process = null;
 			procs = new Hashtable ();
@@ -816,7 +816,7 @@ namespace Mono.Debugger.Frontend
 
 		public void Kill ()
 		{
-			target_exited ();
+			TargetExited ();
 		}
 
 		public void LoadLibrary (Process process, string filename)
@@ -835,6 +835,59 @@ namespace Mono.Debugger.Frontend
 			}
 
 			Print ("Loaded library {0}.", filename);
+		}
+
+		protected class InterpreterEventSink : MarshalByRefObject
+		{
+			Interpreter interpreter;
+
+			public InterpreterEventSink (Interpreter interpreter, DebuggerBackend backend)
+			{
+				this.interpreter = interpreter;
+
+				backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
+				backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
+				backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
+				backend.ThreadManager.InitializedEvent += new ThreadEventHandler (thread_manager_initialized);
+			}
+
+			public void AddTargetOutput (Process process)
+			{
+				process.TargetOutput += new TargetOutputHandler (target_output);
+			}
+
+			public void thread_created (ThreadManager manager, Process process)
+			{
+				ProcessHandle handle = new ProcessHandle (interpreter, process);
+				handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
+				handle.Process.TargetOutput += new TargetOutputHandler (target_output);
+				interpreter.ThreadCreated (handle);
+			}
+
+			public void thread_manager_initialized (ThreadManager manager, Process process)
+			{
+				interpreter.ThreadManagerInitialized (manager, process);
+			}
+
+			public void modules_changed ()
+			{
+				interpreter.ModulesChanged ();
+			}
+
+			public void target_exited ()
+			{
+				interpreter.TargetExited ();
+			}
+
+			public void process_exited (ProcessHandle process)
+			{
+				interpreter.ProcessExited (process);
+			}
+
+			public void target_output (bool is_stderr, string line)
+			{
+				interpreter.PrintInferior (is_stderr, line);
+			}
 		}
 	}
 }

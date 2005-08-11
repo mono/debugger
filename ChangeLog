@@ -1,5 +1,28 @@
 2005-08-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs (DebuggerOptions.IsRemote): New option.
+
+	* frontend/Main.cs
+	(CommandLineInterpreter.ParseOption): Added `-remote' option.
+
+	* frontend/Interpreter.cs
+	(Interpreter): Make this a MarshalByRefObject.
+	(Interpreter.InterpreterEventSink): New protected class; moved all
+	the event handling in here.
+	(Interpreter.Initialize): Use `DebuggerClient.CreateConnection ()'
+	if `options.IsRemote' is set.
+
+	* frontend/ScriptingContext.cs
+	(FrameHandle, BacktraceHandle, ProcessHandle, ScriptingContext):
+	Make them MarshalByRefObject's.
+
+	* backends/remoting/: New directory.
+
+	* wrapper/Makefile.am: Create `Mono.Debugger.Remoting.Dll' and
+	`mdb-server.exe'.	
+
+2005-08-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoLanguageBackend.cs
 	(MonoLanguageBackend): Make this a MarshalByRefObject.
 

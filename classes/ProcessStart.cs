@@ -47,6 +47,8 @@ namespace Mono.Debugger
 		/* non-null if the user specified the -mono-prefix
 		 * command line argument */
 		public string MonoPrefix = null;
+
+		public bool IsRemote = false;
 	}
 
 	public class ProcessStart : MarshalByRefObject

@@ -19,11 +19,11 @@ mono_debugger_mini_wrapper_LDADD = \
 
 bin_SCRIPTS = mdb
 
-one_SCRIPTS = mdb.exe 
+one_SCRIPTS = mdb.exe mdb-server.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
-noinst_SCRIPTS = Mono.Debugger.dll
+noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Remoting.dll
 
 LANGUAGE_SPECIFIC_FILES = \
 	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
@@ -56,6 +56,25 @@ LIBRARY_SRCLIST = \
 	$(top_srcdir)/interfaces/*.cs			\
 	AssemblyInfo.cs
 
+REMOTING_SRCLIST = \
+	$(top_srcdir)/backends/remoting/DebuggerChannel.cs			\
+	$(top_srcdir)/backends/remoting/DebuggerClientChannel.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerClientTransportSink.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerClientTransportSinkProvider.cs	\
+	$(top_srcdir)/backends/remoting/DebuggerServerChannel.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerServerTransportSink.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerServerDispatchSink.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerServerDispatchSinkProvider.cs	\
+	$(top_srcdir)/backends/remoting/DebuggerServerResponseSink.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerMessageIO.cs			\
+	$(top_srcdir)/backends/remoting/DebuggerRemotingException.cs		\
+	$(top_srcdir)/backends/remoting/DebuggerConnection.cs			\
+	$(top_srcdir)/backends/remoting/DebuggerStream.cs			\
+	$(top_srcdir)/backends/remoting/DebuggerClient.cs
+
+MDB_SERVER_SRCLIST = \
+	$(top_srcdir)/backends/remoting/DebuggerServer.cs
+
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions	\
 	-r:Mono.CompilerServices.SymbolWriter
@@ -63,13 +82,31 @@ LIBRARY_DEPS = \
 MDB_DEPS = \
 	-r:Mono.GetOptions	\
 	-r:Mono.CompilerServices.SymbolWriter	\
+	-r:System.Runtime.Remoting		\
+	-r:./Mono.Debugger.dll			\
+	-r:./Mono.Debugger.Remoting.dll
+
+REMOTING_DEPS = \
+	-r:Mono.GetOptions	\
+	-r:./Mono.Debugger.dll			\
+	-r:System.Runtime.Remoting
+
+MDB_SERVER_DEPS = \
+	-r:System.Runtime.Remoting		\
+	-r:./Mono.Debugger.Remoting.dll		\
 	-r:./Mono.Debugger.dll
 
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
-mdb.exe: $(MDB_SRCLIST) Mono.Debugger.dll
+Mono.Debugger.Remoting.dll: $(REMOTING_SRCLIST) Mono.Debugger.dll
+	$(MCS) -target:library -out:Mono.Debugger.Remoting.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(REMOTING_DEPS) $(REMOTING_SRCLIST)
+
+mdb.exe: $(MDB_SRCLIST) Mono.Debugger.Remoting.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
+
+mdb-server.exe: $(MDB_SERVER_SRCLIST) Mono.Debugger.Remoting.dll
+	$(MCS) -out:mdb-server.exe $(MDB_SERVER_DEPS) $(MDB_SERVER_SRCLIST) $(MCS_FLAGS)
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	sed -e 's^\@libdir\@^$(libdir)^g' \
