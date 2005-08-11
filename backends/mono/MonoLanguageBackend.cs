@@ -204,7 +204,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoLanguageBackend : ILanguage, ILanguageBackend
+	internal class MonoLanguageBackend : MarshalByRefObject, ILanguage, ILanguageBackend
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
 		public const int  MinDynamicVersion = 52;

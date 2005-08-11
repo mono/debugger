@@ -40,7 +40,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent stuff for the x86_64.
 	// </summary>
-	internal class Architecture_X86_64 : IArchitecture
+	internal class Architecture_X86_64 : MarshalByRefObject, IArchitecture
 	{
 		public bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address)
 		{

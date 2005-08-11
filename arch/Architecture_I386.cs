@@ -29,7 +29,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent stuff for the i386.
 	// </summary>
-	internal class Architecture_I386 : IArchitecture
+	internal class Architecture_I386 : MarshalByRefObject, IArchitecture
 	{
 		public bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address)
 		{

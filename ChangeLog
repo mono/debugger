@@ -1,5 +1,16 @@
 2005-08-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend): Make this a MarshalByRefObject.
+
+	* arch/Architecture_I386.cs
+	(Architecture_I386): Make this a MarshalByRefObject.
+
+	* arch/Architecture_X86_64.cs
+	(Architecture_X86_64): Make this a MarshalByRefObject.
+
+2005-08-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceBuffer.cs (SourceBuffer): Mark [Serializable].
 	* classes/AssemblerMethod.cs (AssemblerLine): Mark [Serializable].
 	* classes/ThreadGroup.cs (ThreadGroup): Mark [Serializable].
