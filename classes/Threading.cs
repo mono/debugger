@@ -10,6 +10,9 @@ namespace Mono.Debugger
 		public DebugFlags DebugFlags = DebugFlags.Mutex;
 
 		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_current_pid ();
+
+		[DllImport("monodebuggerserver")]
 		static extern long mono_debugger_server_get_current_thread ();
 
 		protected DebuggerWaitHandle (string name)
@@ -19,8 +22,9 @@ namespace Mono.Debugger
 
 		public static string CurrentThread {
 			get {
+				int pid = mono_debugger_server_get_current_pid ();
 				long thread = mono_debugger_server_get_current_thread ();
-				return String.Format ("0x{0:x}", thread);
+				return String.Format ("[{0}:0x{1:x}]", pid, thread);
 			}
 		}
 

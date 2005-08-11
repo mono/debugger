@@ -466,6 +466,7 @@ void mono_debugger_server_sem_wait (void);
 void mono_debugger_server_sem_post (void);
 int mono_debugger_server_sem_get_value (void);
 
+guint32 mono_debugger_server_get_current_pid (void);
 guint64 mono_debugger_server_get_current_thread (void);
 
 int mono_debugger_server_get_pending_sigint (void);

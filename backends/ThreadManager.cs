@@ -381,6 +381,7 @@ namespace Mono.Debugger
 		{
 			if (TargetExitedEvent != null)
 				TargetExitedEvent ();
+			backend.Dispose ();
 		}
 
 		// <summary>

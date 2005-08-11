@@ -26,6 +26,12 @@ mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 	return global_vtable->initialize (breakpoint_manager);
 }
 
+guint32
+mono_debugger_server_get_current_pid (void)
+{
+	return getpid ();
+}
+
 guint64
 mono_debugger_server_get_current_thread (void)
 {

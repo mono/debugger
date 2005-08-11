@@ -1,5 +1,19 @@
 2005-08-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs
+	(ThreadManager.OnTargetExitedEvent): Call `backend.Dispose()' here.
+
+	* frontend/Interpreter.cs
+	(Interpreter.TargetExited): Don't call `backend.Dispose()' here.
+
+	* classes/Threading.cs
+	(DebuggerWaitHandle.CurrentThread): Include the pid.
+
+	* backends/server/library.c
+	(mono_debugger_server_get_current_pid): New function.
+
+2005-08-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs (DebuggerOptions.IsRemote): New option.
 
 	* frontend/Main.cs

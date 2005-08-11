@@ -652,8 +652,6 @@ namespace Mono.Debugger.Frontend
 
 		protected void TargetExited ()
 		{
-			if (backend != null)
-				backend.Dispose ();
 			backend = null;
 			event_sink = null;
 
