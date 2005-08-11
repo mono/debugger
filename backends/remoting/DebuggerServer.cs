@@ -10,14 +10,7 @@ class Server
 {
 	static void Main (string[] args)
 	{
-		string host = args [0];
-		string path = args [1];
-
-		string url;
-		if (host != "")
-			url = "mdb://" + host + ":" + path;
-		else
-			url = "mdb://" + path;
+		string url = args [0];
 
 		RemotingConfiguration.RegisterWellKnownServiceType (
 			typeof (DebuggerBackend), "DebuggerBackend", WellKnownObjectMode.Singleton);

@@ -41,16 +41,13 @@ namespace Mono.Debugger.Remoting
 						       object remoteChannelData,
 						       out string objectURI)
 	        {
-			string host;
-			if (DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI) != null)
+			string host, the_path;
+			if (DebuggerChannel.ParseDebuggerURL (url, out host, out the_path, out objectURI) != null)
 				return (IMessageSink) sink_provider.CreateSink (this, url, remoteChannelData);
 
 			DebuggerServerChannelData data = remoteChannelData as DebuggerServerChannelData;
 			if (data != null) {
 				string path = data.ChannelURL + "!" + url;
-				if (Parse (path, out objectURI) == null)
-					return null;
-
 				return (IMessageSink) sink_provider.CreateSink (this, path, remoteChannelData);
 			}
 
@@ -59,18 +56,17 @@ namespace Mono.Debugger.Remoting
 
 		public string Parse (string url, out string objectURI)
 		{
-			string host;
-			string path = DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
-			return "mdb://" + host + ":" + path;
+			string host, path;
+			return DebuggerChannel.ParseDebuggerURL (url, out host, out path, out objectURI);
 		}
 
-		public DebuggerConnection GetConnection (string host, string path)
+		public DebuggerConnection GetConnection (string channel_uri, string host, string path)
 		{
 			lock (this) {
 				if (server_connection != null)
 					return server_connection;
 
-				DebuggerConnection connection = (DebuggerConnection) connections [path];
+				DebuggerConnection connection = (DebuggerConnection) connections [channel_uri];
 				if (connection != null)
 					return connection;
 
@@ -83,22 +79,26 @@ namespace Mono.Debugger.Remoting
 				string[] envp = new string [list.Count];
 				list.CopyTo (envp);
 
-				string wrapper_path = null;
-				if (path == "")
-					wrapper_path = Mono.Debugger.AssemblyInfo.libdir +
-						System.IO.Path.DirectorySeparatorChar + "mono" +
-						System.IO.Path.DirectorySeparatorChar + "1.0" +
-						System.IO.Path.DirectorySeparatorChar + "mdb-server";
-				else
-					wrapper_path = path;
-
 				if (host == null)
 					host = "";
 
-				string[] argv = { wrapper_path, host, path };
+				string default_wrapper = Mono.Debugger.AssemblyInfo.libdir +
+						System.IO.Path.DirectorySeparatorChar + "mono" +
+						System.IO.Path.DirectorySeparatorChar + "1.0" +
+						System.IO.Path.DirectorySeparatorChar + "mdb-server";
+
+				string wrapper_path = path;
+				if (path == "")
+					wrapper_path = default_wrapper;
+
+				string[] argv;
+				if (host == "")
+					argv = new string[] { wrapper_path, channel_uri, host, wrapper_path };
+				else
+					argv = new string[] { default_wrapper, channel_uri, host, wrapper_path };
 
 				connection = new DebuggerConnection (server_channel, argv, envp);
-				connections.Add (path, connection);
+				connections.Add (channel_uri, connection);
 				return connection;
 			}
 		}

@@ -1,11 +1,12 @@
 #!/bin/bash
 
-HOST=$1
-URL=$2
+URL=$1
+HOST=$2
+WRAPPER=$3
 
 if test "x$HOST" != "x" ; then
-	ssh $HOST $URL "$HOST" "$URL"
+	ssh $HOST $WRAPPER "" "" $URL
 else
-	mono --debug @onedir@/mdb-server.exe "$HOST" "$URL"
+	mono --debug @onedir@/mdb-server.exe $URL
 fi
 

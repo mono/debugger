@@ -13,7 +13,7 @@ namespace Mono.Debugger.Remoting
 		string url;
 		string host;
 		string path;
-		string full_path;
+		string channel_uri;
 		string object_uri;
 		DebuggerClientChannel channel;
 
@@ -21,8 +21,7 @@ namespace Mono.Debugger.Remoting
 		{
 			this.channel = channel;
 			this.url = url;
-			path = DebuggerChannel.ParseDebuggerURL (url, out host, out object_uri);
-			full_path = "mdb://" + host + ":" + path;
+			channel_uri = DebuggerChannel.ParseDebuggerURL (url, out host, out path, out object_uri);
 		}
 
 		public IDictionary Properties {
@@ -62,7 +61,7 @@ namespace Mono.Debugger.Remoting
 			string request_uri = ((IMethodMessage) msg).Uri;
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
-			DebuggerConnection connection = channel.GetConnection (host, path);
+			DebuggerConnection connection = channel.GetConnection (channel_uri, host, path);
 
 			connection.SendMessage (requestStream, requestHeaders,
 						out responseHeaders, out responseStream);

@@ -67,9 +67,8 @@ namespace Mono.Debugger.Remoting
 
 		public string Parse (string url, out string objectURI)
 		{
-			string host;
-			string path = DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
-			return "mdb://" + host + ":" + path;
+			string host, path;
+			return DebuggerChannel.ParseDebuggerURL (url, out host, out path, out objectURI);
 		}
 
 		bool aborted = false;
