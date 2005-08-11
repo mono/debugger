@@ -34,7 +34,6 @@ namespace Mono.Debugger.Remoting
 				throw new DebuggerRemotingException ("Cannot start server: `{0}'", message);
 			}
 
-			Thread.Sleep (1000);
 			Init ();
 		}
 
