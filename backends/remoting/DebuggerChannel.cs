@@ -12,7 +12,7 @@ namespace Mono.Debugger.Remoting
 		DebuggerServerChannel server_channel;
 		DebuggerClientChannel client_channel;
 
-		[DllImport("monodebuggerremoting")]
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_remoting_setup_server ();
 
 		public DebuggerChannel (string url)

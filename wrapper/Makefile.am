@@ -114,7 +114,7 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 
-noinst_DATA = Mono.Debugger.dll.config
+noinst_DATA = Mono.Debugger.dll.config Mono.Debugger.Remoting.dll.config
 
 ASSEMBLY_NAME = Mono.Debugger
 ASSEMBLY = $(ASSEMBLY_NAME).dll
@@ -123,10 +123,11 @@ REMOTING_ASSEMBLY_NAME = Mono.Debugger.Remoting
 REMOTING_ASSEMBLY = $(REMOTING_ASSEMBLY_NAME).dll
 
 
-CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
+CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config Mono.Debugger.Remoting.dll
 
 EXTRA_DIST = \
-	mdb.in mdb-wrapper.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
+	mdb.in mdb-wrapper.in mono.snk AssemblyInfo.cs.in \
+	Mono.Debugger.dll.config.in Mono.Debugger.Remoting.dll.config.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \

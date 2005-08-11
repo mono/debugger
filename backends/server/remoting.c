@@ -1,4 +1,4 @@
-#include <mono-debugger-remoting.h>
+#include <remoting.h>
 
 gboolean
 mono_debugger_remoting_spawn (const gchar **argv, const gchar **envp, gint *child_pid,

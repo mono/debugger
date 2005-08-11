@@ -49,17 +49,17 @@ namespace Mono.Debugger.Remoting
 
 		delegate void PollHandler ();
 
-		[DllImport("monodebuggerremoting")]
+		[DllImport("monodebuggerserver")]
 		static extern bool mono_debugger_remoting_poll (int socket_fd, PollHandler func);
 
-		[DllImport("monodebuggerremoting")]
+		[DllImport("monodebuggerserver")]
 		static extern bool mono_debugger_remoting_kill (int pid, int socket_fd);
 
-		[DllImport("monodebuggerremoting")]
+		[DllImport("monodebuggerserver")]
 		static extern bool mono_debugger_remoting_spawn (string[] argv, string[] envp, out int child_pid,
 								 out int child_socket, out IntPtr error);
 
-		[DllImport("libglib-2.0.so.0")]
+		[DllImport("libglib-2.0-0.dll")]
 		static extern void g_free (IntPtr data);
 
 		void poll_cb ()

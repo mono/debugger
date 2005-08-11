@@ -219,6 +219,7 @@ interfaces/Makefile
 classes/Makefile
 wrapper/Makefile
 wrapper/Mono.Debugger.dll.config
+wrapper/Mono.Debugger.Remoting.dll.config
 backends/Makefile
 backends/classes/Makefile
 backends/server/Makefile

@@ -28,7 +28,9 @@ libmonodebuggerserver_la_SOURCES = \
 	breakpoints.c		\
 	breakpoints.h		\
 	mutex.c			\
-	mutex.h
+	mutex.h			\
+	remoting.c		\
+	remoting.h
 
 libmonodebuggerserver_la_LIBADD = \
 	@SERVER_DEPENDENCIES_LIBS@ \

@@ -1,5 +1,11 @@
 2005-08-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/remoting/mono-debugger-remoting.[ch]: Renamed to
+	backends/server/remoting.[ch] and include it in the
+	libmonodebuggerserver.la.	
+
+2005-08-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs
 	(ThreadManager.OnTargetExitedEvent): Call `backend.Dispose()' here.
 

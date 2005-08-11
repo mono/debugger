@@ -8,10 +8,10 @@ namespace Mono.Debugger.Remoting
 	{
 		int fd;
 
-		[DllImport("monodebuggerremoting")]
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_remoting_stream_read (int fd, IntPtr data, int size);
 
-		[DllImport("monodebuggerremoting")]
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_remoting_stream_write (int fd, IntPtr data, int size);
 
 		internal DebuggerStream (int fd)
