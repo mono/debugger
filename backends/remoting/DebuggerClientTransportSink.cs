@@ -63,7 +63,7 @@ namespace Mono.Debugger.Remoting
 			string request_uri = ((IMethodMessage) msg).Uri;
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
-			DebuggerClientConnection connection = channel.GetConnection (host, path);
+			DebuggerConnection connection = channel.GetConnection (host, path);
 
 			Console.Error.WriteLine ("PROCESS MESSAGE: |{0}|{1}| - {2} {3}", object_uri, request_uri,
 						 connection, msg);

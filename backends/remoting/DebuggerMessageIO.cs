@@ -11,56 +11,34 @@ using System.Runtime.Remoting.Channels;
 
 namespace Mono.Debugger.Remoting
 {
-	enum MessageStatus { Message = 0, CancelSignal = 1, Unknown = 10}
+	enum MessageStatus { Unknown = 0, Message = 1, Reply = 2, Async = 3, OneWay = 4 }
 
-	internal class DebuggerMessageFormat
+	internal class DebuggerMessageIO
 	{
-		static byte[][] _msgHeaders = 
-			  {
-				  new byte[] { (byte)'.', (byte)'N', (byte)'E', (byte)'T', 1, 0 },
-				  new byte[] { 255, 255, 255, 255, 255, 255 }
-			  };
-							
+		static byte[] msg_headers = {
+			(byte)'M', (byte)'D', (byte)'B', 148, 1, 0
+		};
+
 		public static int DefaultStreamBufferSize = 1000;
 
 		// Identifies an incoming message
-		public static MessageStatus ReceiveMessageStatus (Stream networkStream)
+		public static MessageStatus ReceiveMessageStatus (Stream network_stream, out long sequence_id)
 		{
-			byte[] buffer = new byte [6];
-			try {
-				StreamRead (networkStream, buffer, 6);
-			} catch (Exception ex) {
-				throw new RemotingException ("Tcp transport error.", ex);
+			byte[] buffer = new byte [18];
+			StreamRead (network_stream, buffer, 18);
+
+			for (int i = 0; i < 6; i++) {
+				if (buffer [i] != msg_headers [i])
+					throw new RemotingException ("Received unknown message.");
 			}
 
-			try
-			{
-				bool[] isOnTrack = new bool[_msgHeaders.Length];
-				bool atLeastOneOnTrack = true;
-				int i = 0;
+			MessageStatus status = (MessageStatus) BitConverter.ToInt32 (buffer, 6);
+			sequence_id = BitConverter.ToInt64 (buffer, 10);
 
-				while (atLeastOneOnTrack)
-				{
-					atLeastOneOnTrack = false;
-					byte c = buffer [i];
-					for (int n = 0; n<_msgHeaders.Length; n++)
-					{
-						if (i > 0 && !isOnTrack[n]) continue;
-
-						isOnTrack[n] = (c == _msgHeaders[n][i]);
-						if (isOnTrack[n] && (i == _msgHeaders[n].Length-1)) return (MessageStatus) n;
-						atLeastOneOnTrack = atLeastOneOnTrack || isOnTrack[n];
-					}
-					i++;
-				}
-				return MessageStatus.Unknown;
-			}
-			catch (Exception ex) {
-				throw new RemotingException ("Tcp transport error.", ex);
-			}
+			return status;
 		}
-		
-		static bool StreamRead (Stream networkStream, byte[] buffer, int count)
+
+		static void StreamRead (Stream networkStream, byte[] buffer, int count)
 		{
 			int nr = 0;
 			do {
@@ -69,24 +47,32 @@ namespace Mono.Debugger.Remoting
 					throw new RemotingException ("Connection closed");
 				nr += pr;
 			} while (nr < count);
-			return true;
 		}
 
-		public static void SendMessageStream (Stream networkStream, Stream data,
-						      long sequenceID, ITransportHeaders requestHeaders)
+		public static void SendMessageStatus (Stream network_stream, MessageStatus status, long sequence_id)
+		{
+			byte[] buffer = new byte [18];
+			msg_headers.CopyTo (buffer, 0);
+
+			byte[] status_data = BitConverter.GetBytes ((int) status);
+			status_data.CopyTo (buffer, 6);
+
+			byte[] seq_data = BitConverter.GetBytes (sequence_id);
+			seq_data.CopyTo (buffer, 10);
+
+			network_stream.Write (buffer, 0, 18);
+		}
+
+		public static void SendMessageStream (Stream network_stream, Stream message_stream,
+						      ITransportHeaders message_headers)
 		{
 			byte[] buffer = new byte [DefaultStreamBufferSize];
 
-			// Writes the message start header
-			byte[] dotnetHeader = _msgHeaders[(int) MessageStatus.Message];
-			networkStream.Write(dotnetHeader, 0, dotnetHeader.Length);
-
-			byte[] seqBuffer = BitConverter.GetBytes (sequenceID);
-			networkStream.Write(seqBuffer, 0, seqBuffer.Length);
-
 			// Writes header tag (0x0000 if request stream, 0x0002 if response stream)
-			if(requestHeaders[CommonTransportKeys.RequestUri]!=null) buffer [0] = (byte) 0;
-			else buffer[0] = (byte) 2;
+			if (message_headers [CommonTransportKeys.RequestUri] != null)
+				buffer [0] = (byte) 0;
+			else
+				buffer[0] = (byte) 2;
 			buffer [1] = (byte) 0 ;
 
 			// Writes ID
@@ -96,31 +82,27 @@ namespace Mono.Debugger.Remoting
 			buffer [3] = (byte) 0;
 
 			// Writes the length of the stream being sent (not including the headers)
-			int num = (int)data.Length;
+			int num = (int) message_stream.Length;
 			buffer [4] = (byte) num;
 			buffer [5] = (byte) (num >> 8);
 			buffer [6] = (byte) (num >> 16);
 			buffer [7] = (byte) (num >> 24);
-			networkStream.Write(buffer, 0, 8);
-	
+			network_stream.Write (buffer, 0, 8);
+
 			// Writes the message headers
-			SendHeaders (networkStream, requestHeaders, buffer);
+			SendHeaders (network_stream, message_headers, buffer);
 
 			// Writes the stream
-			if (data is MemoryStream)
-			{
+			if (message_stream is MemoryStream) {
 				// The copy of the stream can be optimized. The internal
 				// buffer of MemoryStream can be used.
-				MemoryStream memStream = (MemoryStream)data;
-				networkStream.Write (memStream.GetBuffer(), 0, (int)memStream.Length);
-			}
-			else
-			{
-				int nread = data.Read (buffer, 0, buffer.Length);
-				while (nread > 0)
-				{
-					networkStream.Write (buffer, 0, nread);
-					nread = data.Read (buffer, 0, buffer.Length);
+				MemoryStream mem_stream = (MemoryStream) message_stream;
+				network_stream.Write (mem_stream.GetBuffer(), 0, (int) mem_stream.Length);
+			} else {
+				int nread = message_stream.Read (buffer, 0, buffer.Length);
+				while (nread > 0) {
+					network_stream.Write (buffer, 0, nread);
+					nread = message_stream.Read (buffer, 0, buffer.Length);
 				}
 			}
 		}
@@ -179,35 +161,28 @@ namespace Mono.Debugger.Remoting
 			return headers;
 		}
 		
-		public static MemoryStream ReceiveMessageStream (Stream networkStream, out long sequenceID,
-								 out ITransportHeaders headers)
+		public static MemoryStream ReceiveMessageStream (Stream network_stream, out ITransportHeaders headers)
 		{
 			byte[] buffer = new byte [DefaultStreamBufferSize];
 
 			headers = null;
 
-			if (buffer == null) buffer = new byte[DefaultStreamBufferSize];
-
-			byte[] seqBuffer = new byte [8];
-			StreamRead (networkStream, seqBuffer, 8);
-			sequenceID = BitConverter.ToInt64 (seqBuffer, 0);
-
 			// Reads header tag:  0 -> Stream with headers or 2 -> Response Stream
 			// +
 			// Gets the length of the data stream
-			StreamRead (networkStream, buffer, 8);
+			StreamRead (network_stream, buffer, 8);
 
 			int byteCount = (buffer [4] | (buffer [5] << 8) |
 				(buffer [6] << 16) | (buffer [7] << 24));
 
 			// Reads the headers
-			headers = ReceiveHeaders (networkStream, buffer);
+			headers = ReceiveHeaders (network_stream, buffer);
 
-			byte[] resultBuffer = new byte[byteCount];
-			StreamRead (networkStream, resultBuffer, byteCount);
+			byte[] resultBuffer = new byte [byteCount];
+			StreamRead (network_stream, resultBuffer, byteCount);
 
-			return new MemoryStream (resultBuffer);
-		}		
+			return new MemoryStream (resultBuffer, 0, resultBuffer.Length, false, true);
+		}
 
 		private static void SendString (Stream networkStream, string str, byte[] buffer)
 		{

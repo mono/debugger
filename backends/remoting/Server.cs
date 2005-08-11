@@ -11,13 +11,14 @@ class Server
 	static void Main ()
 	{
 		string url = "mdb://" + Environment.MachineName + ":" + Assembly.GetExecutingAssembly ().Location;
-		DebuggerServerChannel channel = new DebuggerServerChannel (url);
+
+		DebuggerChannel channel = new DebuggerChannel (url);
 		ChannelServices.RegisterChannel (channel);
 
 		RemotingConfiguration.RegisterWellKnownServiceType (
 			typeof (DebuggerBackend), "DebuggerBackend", WellKnownObjectMode.Singleton);
 
-		DebuggerServerChannel.Run ();
+		channel.Connection.Run ();
 		ChannelServices.UnregisterChannel (channel);
 	}
 }

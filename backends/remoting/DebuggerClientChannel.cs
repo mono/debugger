@@ -9,14 +9,24 @@ namespace Mono.Debugger.Remoting
 	public class DebuggerClientChannel : IChannelSender, IChannel, IDisposable
 	{
 		Hashtable connections;
+		DebuggerServerChannel server_channel;
 		IClientChannelSinkProvider sink_provider;
+		DebuggerConnection server_connection;
 		int priority = 1;
 
-		public DebuggerClientChannel ()
+		public DebuggerClientChannel (DebuggerServerChannel server_channel)
 		{
                         sink_provider = new BinaryClientFormatterSinkProvider ();
                         sink_provider.Next = new DebuggerClientTransportSinkProvider ();
+			this.server_channel = server_channel;
 			connections = new Hashtable ();
+		}
+
+		public DebuggerClientChannel (DebuggerServerChannel server_channel,
+					      DebuggerConnection server_connection)
+			: this (server_channel)
+		{
+			this.server_connection = server_connection;
 		}
 
 		public string ChannelName {
@@ -60,10 +70,13 @@ namespace Mono.Debugger.Remoting
 			return "mdb://" + host + ":" + path;
 		}
 
-		public DebuggerClientConnection GetConnection (string host, string path)
+		public DebuggerConnection GetConnection (string host, string path)
 		{
 			lock (this) {
-				DebuggerClientConnection connection = (DebuggerClientConnection) connections [path];
+				if (server_connection != null)
+					return server_connection;
+
+				DebuggerConnection connection = (DebuggerConnection) connections [path];
 				if (connection != null)
 					return connection;
 
@@ -82,7 +95,7 @@ namespace Mono.Debugger.Remoting
 
 				string[] argv = { mono_path, "--debug", path };
 
-				connection = new DebuggerClientConnection (argv, envp);
+				connection = new DebuggerConnection (server_channel, argv, envp);
 				connections.Add (path, connection);
 				return connection;
 			}
@@ -101,8 +114,8 @@ namespace Mono.Debugger.Remoting
 			// Check to see if Dispose has already been called.
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				foreach (DebuggerClientConnection connection in connections.Values)
-					connection.Dispose ();
+				foreach (DebuggerConnection connection in connections.Values)
+					((IDisposable) connection).Dispose ();
 			}
 
 			disposed = true;

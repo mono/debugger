@@ -8,11 +8,11 @@ namespace Mono.Debugger.Remoting
 {
 	public static class DebuggerClient
 	{
-		static DebuggerClientChannel channel;
+		static DebuggerChannel channel;
 
 		static DebuggerClient ()
 		{
-			channel = new DebuggerClientChannel ();
+			channel = new DebuggerChannel ();
 			ChannelServices.RegisterChannel (channel);
 		}
 
@@ -40,7 +40,7 @@ namespace Mono.Debugger.Remoting
 		public static void Shutdown ()
 		{
 			ChannelServices.UnregisterChannel (channel);
-			channel.Dispose ();
+			((IDisposable) channel).Dispose ();
 			channel = null;
 		}
 	}

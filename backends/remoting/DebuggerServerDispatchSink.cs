@@ -50,14 +50,10 @@ namespace Mono.Debugger.Remoting
 			responseHeaders = null;
 			responseStream = null;
 
-			Console.WriteLine ("SERVER DISPATCH: {0} {1} {2}", sinkStack, requestMsg,
-					   requestMsg.GetType ());
-
 			sinkStack.Push (this, null);
 
 			DebuggerServerResponseSink responseSink = new DebuggerServerResponseSink (sinkStack);
 			IMessageCtrl ctrl = ChannelServices.AsyncDispatchMessage (requestMsg, responseSink);
-			Console.WriteLine ("SERVER DISPATCH #1: {0}", ctrl);
 
 			responseMsg = null;
 			return ServerProcessing.Async;

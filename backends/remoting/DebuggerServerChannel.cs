@@ -21,8 +21,8 @@ namespace Mono.Debugger.Remoting
 	{
 		DebuggerServerTransportSink sink;
 		object channel_data;
-		static Thread server_thread;
 		int priority = 1;
+
 		string channel_url;
 
 		public DebuggerServerChannel (string url)
@@ -37,13 +37,9 @@ namespace Mono.Debugger.Remoting
 			temp.Next = new DebuggerServerDispatchSinkProvider ();
 
 			IServerChannelSink next_sink = provider.CreateSink (this);
-			// IServerChannelSink next_sink = ChannelServices.CreateServerChannelSinkChain (provider, this);
 
                         sink = new DebuggerServerTransportSink (next_sink);
 			channel_data = new DebuggerServerChannelData (url);
-
-			DebuggerServerConnection.HandleConnection += new DebuggerServerConnection.ConnectionHandler (
-				HandleConnection);
 		}
 
 		public object ChannelData {
@@ -56,6 +52,10 @@ namespace Mono.Debugger.Remoting
 
 		public int ChannelPriority {
 			get { return priority; }
+		}
+
+		public DebuggerServerTransportSink Sink {
+			get { return sink; }
 		}
 
 		public string[] GetUrlsForUri (string uri)
@@ -75,60 +75,14 @@ namespace Mono.Debugger.Remoting
 
 		bool aborted = false;
 
-		void HandleConnection (Stream stream)
-		{
-			MessageStatus type = DebuggerMessageFormat.ReceiveMessageStatus (stream);
-
-			Console.Error.WriteLine ("SERVER MESSAGE: {0}", type);
-
-			switch (type) {
-			case MessageStatus.Message:
-				sink.InternalProcessMessage (stream);
-				break;
-
-			default:
-				break;
-			}
-			stream.Flush ();
-		}
-
-		void WaitForConnections ()
-		{
-			DebuggerServerConnection.Start ();
-		}
-
 		public void StartListening (object data)
 		{
 			Console.Error.WriteLine ("START LISTENING: {0}", data);
-
-			if (server_thread == null) {
-#if FIXME
-				string[] uris = new string [1];
-				uris [0] = channel_url;
-				channel_data.ChannelUris = uris;
-#endif
-
-				server_thread = new Thread (WaitForConnections);
-				server_thread.Start ();
-			}
 		}
 
 		public void StopListening (object data)
 		{
 			Console.Error.WriteLine ("STOP LISTENING: {0}", data);
-
-			if (server_thread != null) {
-				aborted = true;
-				server_thread.Abort ();
-				server_thread = null;
-			}
-
-			Console.Error.WriteLine ("STOPPED LISTENING");
-		}
-
-		public static void Run ()
-		{
-			server_thread.Join ();
 		}
 	}
 }
