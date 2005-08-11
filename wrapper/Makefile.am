@@ -133,7 +133,8 @@ mdb: mdb.in Makefile
 	&& mv mdb.tmp mdb 
 
 mdb-server: mdb-server.in Makefile
-	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb-server.in > mdb-server.tmp \
+	sed -e 's^\@onedir\@^$(onedir)^g' \
+		-e 's^\@prefix\@^$(prefix)^g' < $(srcdir)/mdb-server.in > mdb-server.tmp \
 	&& mv mdb-server.tmp mdb-server
 
 install-data-local:

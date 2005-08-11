@@ -5,8 +5,8 @@ HOST=$2
 WRAPPER=$3
 
 if test "x$HOST" != "x" ; then
-	ssh $HOST $WRAPPER "" "" $URL
+    ssh $HOST $WRAPPER "" "" $URL
 else
-	mono --debug @onedir@/mdb-server.exe $URL
+    PATH=@prefix@/bin:$PATH LD_LIBRARY_PATH=@prefix@/lib:$LD_LIBRARY_PATH mono --debug @onedir@/mdb-server.exe $URL
 fi
 
