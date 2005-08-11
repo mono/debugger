@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Messaging;
 
@@ -11,10 +12,14 @@ namespace Mono.Debugger.Remoting
 		DebuggerServerChannel server_channel;
 		DebuggerClientChannel client_channel;
 
+		[DllImport("monodebuggerremoting")]
+		static extern int mono_debugger_remoting_setup_server ();
+
 		public DebuggerChannel (string url)
 		{
+			int fd = mono_debugger_remoting_setup_server ();
 			server_channel = new DebuggerServerChannel (url);
-			connection = new DebuggerConnection (server_channel, 3);
+			connection = new DebuggerConnection (server_channel, fd);
 			client_channel = new DebuggerClientChannel (server_channel, connection);
 		}
 

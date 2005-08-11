@@ -21,6 +21,9 @@ gboolean
 mono_debugger_remoting_spawn (const gchar **argv, const gchar **envp, gint *child_pid,
 			      gint *child_socket, gchar **error);
 
+int
+mono_debugger_remoting_setup_server (void);
+
 void
 mono_debugger_remoting_kill (int pid, int fd);
 

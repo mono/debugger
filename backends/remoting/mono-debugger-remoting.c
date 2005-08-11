@@ -14,7 +14,8 @@ mono_debugger_remoting_spawn (const gchar **argv, const gchar **envp, gint *chil
 	if (*child_pid == 0) {
 		gchar *error_message;
 
-		dup2 (sv[0], 3);
+		close (0); close (1); close (sv [1]);
+		dup2 (sv [0], 0); dup2 (sv [0], 1);
 
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 4; i < open_max; i++)
@@ -48,6 +49,21 @@ mono_debugger_remoting_spawn (const gchar **argv, const gchar **envp, gint *chil
 	}
 
 	return TRUE;
+}
+
+int
+mono_debugger_remoting_setup_server (void)
+{
+	int fd, null;
+
+	fd = dup (0);
+	null = open ("/dev/null", 0);
+
+	close (0); close (1);
+	dup2 (2, 1);
+	dup2 (null, 0);
+
+	return fd;
 }
 
 void

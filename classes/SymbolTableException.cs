@@ -2,6 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public class SymbolTableException : TargetException
 	{
 		public SymbolTableException (string message, params object[] args)
