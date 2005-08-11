@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public abstract class Module
+	public abstract class Module : MarshalByRefObject
 	{
 		bool load_symbols;
 		bool step_into;

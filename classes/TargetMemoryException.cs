@@ -2,6 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public class TargetMemoryException : TargetException
 	{
 		public TargetMemoryException ()
@@ -22,6 +23,7 @@ namespace Mono.Debugger
 		{ }
 	}
 
+	[Serializable]
 	public class TargetMemoryReadOnlyException : TargetMemoryException
 	{
 		public TargetMemoryReadOnlyException ()

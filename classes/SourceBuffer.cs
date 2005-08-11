@@ -4,6 +4,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public class SourceBuffer : ISourceBuffer
 	{
 		string name;

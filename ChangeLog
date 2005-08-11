@@ -1,3 +1,12 @@
+2005-08-11  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceBuffer.cs (SourceBuffer): Mark [Serializable].
+	* classes/AssemblerMethod.cs (AssemblerLine): Mark [Serializable].
+	* classes/ThreadGroup.cs (ThreadGroup): Mark [Serializable].
+	* classes/TargetException.cs (TargetException): Mark [Serializable].
+
+	* classes/Module.cs (Module): Make this a MarshalByRefObject.
+
 2005-07-28  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs

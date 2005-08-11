@@ -3,6 +3,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public sealed class AssemblerLine
 	{
 		public readonly string Label;

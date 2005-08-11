@@ -3,6 +3,7 @@ using System;
 namespace Mono.Debugger
 {
 	#region Keep in sync with ServerCommandError in backends/server/server.h
+	[Serializable]
 	public enum TargetError {
 		None			= 0,
 
@@ -29,6 +30,7 @@ namespace Mono.Debugger
 	}
 	#endregion
 
+	[Serializable]
 	public class TargetException : Exception
 	{
 		public readonly TargetError Type;
@@ -97,6 +99,7 @@ namespace Mono.Debugger
 		}
 	}
 
+	[Serializable]
 	public class LocationInvalidException : TargetException
 	{
 		public LocationInvalidException ()
