@@ -46,10 +46,9 @@ namespace Mono.Debugger.Remoting
 			data.Connection.SendAsyncResponse (data.SequenceID, stream, headers);
 		}
 
-		public Stream GetResponseStream (IServerResponseChannelSinkStack sinkStack, object state,
+		public Stream GetResponseStream (IServerResponseChannelSinkStack sink_stack, object state,
 						 IMessage msg, ITransportHeaders headers)
 		{
-			Console.WriteLine ("TRANSPORT SINK GET RESPONSE STREAM");
 			return null;
 		}
 

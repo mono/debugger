@@ -34,8 +34,6 @@ namespace Mono.Debugger.Remoting
 				throw new DebuggerRemotingException ("Cannot start server: `{0}'", message);
 			}
 
-			Console.Error.WriteLine ("CREATE CLIENT CONNECION: {0}", child_pid);
-
 			Thread.Sleep (1000);
 			Init ();
 		}

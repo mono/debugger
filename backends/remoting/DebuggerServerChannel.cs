@@ -67,7 +67,6 @@ namespace Mono.Debugger.Remoting
 
 		public string Parse (string url, out string objectURI)
 		{
-			Console.Error.WriteLine ("SERVER PARSE: {0}", url);
 			string host;
 			string path = DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI);
 			return "mdb://" + host + ":" + path;
@@ -77,12 +76,10 @@ namespace Mono.Debugger.Remoting
 
 		public void StartListening (object data)
 		{
-			Console.Error.WriteLine ("START LISTENING: {0}", data);
 		}
 
 		public void StopListening (object data)
 		{
-			Console.Error.WriteLine ("STOP LISTENING: {0}", data);
 		}
 	}
 }

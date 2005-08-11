@@ -41,21 +41,15 @@ namespace Mono.Debugger.Remoting
 						       object remoteChannelData,
 						       out string objectURI)
 	        {
-			Console.Error.WriteLine ("CREATE MESSAGE SINK: {0} {1} {2}", url, remoteChannelData,
-						 sink_provider);
-
 			string host;
 			if (DebuggerChannel.ParseDebuggerURL (url, out host, out objectURI) != null)
 				return (IMessageSink) sink_provider.CreateSink (this, url, remoteChannelData);
 
 			DebuggerServerChannelData data = remoteChannelData as DebuggerServerChannelData;
 			if (data != null) {
-				Console.Error.WriteLine ("CREATE MESSAGE SINK #1: {0} {1}", data, data.ChannelURL);
-
 				string path = data.ChannelURL + "!" + url;
 				if (Parse (path, out objectURI) == null)
 					return null;
-				Console.WriteLine ("CREATE MESSAGE SINK #3: {0} {1}", path, objectURI);
 
 				return (IMessageSink) sink_provider.CreateSink (this, path, remoteChannelData);
 			}

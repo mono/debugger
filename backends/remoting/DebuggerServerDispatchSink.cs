@@ -20,17 +20,15 @@ namespace Mono.Debugger.Remoting
 			}
 		}
 
-		public void AsyncProcessResponse (IServerResponseChannelSinkStack sinkStack, object state,
+		public void AsyncProcessResponse (IServerResponseChannelSinkStack sink_stack, object state,
 						  IMessage msg, ITransportHeaders headers, Stream stream)
 		{
-			Console.WriteLine ("SERVER ASYNC PROCESS RESPONSE: {0} {1} {2}", sinkStack, state, msg);
+			ITransportHeaders response_headers = new TransportHeaders();
 
-			ITransportHeaders responseHeaders = new TransportHeaders();
-
-			if (sinkStack != null) stream = sinkStack.GetResponseStream (msg, responseHeaders);
+			if (sink_stack != null) stream = sink_stack.GetResponseStream (msg, response_headers);
 			if (stream == null) stream = new MemoryStream();
 
-			sinkStack.AsyncProcessResponse (msg, responseHeaders, stream);
+			sink_stack.AsyncProcessResponse (msg, response_headers, stream);
 		}
 
 		public Stream GetResponseStream (IServerResponseChannelSinkStack sinkStack, object state,

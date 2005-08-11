@@ -12,8 +12,7 @@ namespace Mono.Debugger.Remoting
 			}
 
 			set {
-				Console.Error.WriteLine ("NEXT SINK PROVIDER: {0}", value);
-				// ignore, we are always the last in the chain 
+				throw new NotSupportedException ();
 			}
 		}
 
