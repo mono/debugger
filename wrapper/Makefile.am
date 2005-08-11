@@ -19,7 +19,7 @@ mono_debugger_mini_wrapper_LDADD = \
 
 bin_SCRIPTS = mdb
 
-one_SCRIPTS = mdb.exe mdb-server.exe
+one_SCRIPTS = mdb.exe mdb-server.exe mdb-server
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
@@ -119,18 +119,28 @@ noinst_DATA = Mono.Debugger.dll.config
 ASSEMBLY_NAME = Mono.Debugger
 ASSEMBLY = $(ASSEMBLY_NAME).dll
 
+REMOTING_ASSEMBLY_NAME = Mono.Debugger.Remoting
+REMOTING_ASSEMBLY = $(REMOTING_ASSEMBLY_NAME).dll
+
+
 CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
 
 EXTRA_DIST = \
-	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
+	mdb.in mdb-wrapper.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
+mdb-server: mdb-server.in Makefile
+	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb-server.in > mdb-server.tmp \
+	&& mv mdb-server.tmp mdb-server
+
 install-data-local:
 	$(GACUTIL) /i $(ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i $(REMOTING_ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u $(ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /u $(REMOTING_ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
 

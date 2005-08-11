@@ -295,11 +295,16 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			case "-remote":
-				if (ms_value != null) {
-					Usage ();
-					Environment.Exit (1);
-				}
 				debug_options.IsRemote = true;
+				if (ms_value != null) {
+					int pos = ms_value.IndexOf (':');
+					if (pos != -1) {
+						debug_options.RemoteHost = ms_value.Substring (0, pos);
+						debug_options.RemoteMono = ms_value.Substring (pos + 1);
+					} else {
+						debug_options.RemoteMono = ms_value;
+					}
+				}
 				return true;
 			}
 

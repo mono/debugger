@@ -83,11 +83,19 @@ namespace Mono.Debugger.Remoting
 				string[] envp = new string [list.Count];
 				list.CopyTo (envp);
 
-				string mono_path = Mono.Debugger.AssemblyInfo.prefix +
-					System.IO.Path.DirectorySeparatorChar + "bin" +
-					System.IO.Path.DirectorySeparatorChar + "mono";
+				string wrapper_path = null;
+				if (path == "")
+					wrapper_path = Mono.Debugger.AssemblyInfo.libdir +
+						System.IO.Path.DirectorySeparatorChar + "mono" +
+						System.IO.Path.DirectorySeparatorChar + "1.0" +
+						System.IO.Path.DirectorySeparatorChar + "mdb-server";
+				else
+					wrapper_path = path;
 
-				string[] argv = { mono_path, "--debug", path };
+				if (host == null)
+					host = "";
+
+				string[] argv = { wrapper_path, host, path };
 
 				connection = new DebuggerConnection (server_channel, argv, envp);
 				connections.Add (path, connection);

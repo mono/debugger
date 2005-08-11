@@ -1,0 +1,11 @@
+#!/bin/bash
+
+HOST=$1
+URL=$2
+
+if test "x$HOST" != "x" ; then
+	ssh $HOST $URL "$HOST" "$URL"
+else
+	mono --debug @onedir@/mdb-server.exe "$HOST" "$URL"
+fi
+

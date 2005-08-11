@@ -8,9 +8,16 @@ using Mono.Debugger.Remoting;
 
 class Server
 {
-	static void Main ()
+	static void Main (string[] args)
 	{
-		string url = "mdb://" + Environment.MachineName + ":" + Assembly.GetExecutingAssembly ().Location;
+		string host = args [0];
+		string path = args [1];
+
+		string url;
+		if (host != "")
+			url = "mdb://" + host + ":" + path;
+		else
+			url = "mdb://" + path;
 
 		RemotingConfiguration.RegisterWellKnownServiceType (
 			typeof (DebuggerBackend), "DebuggerBackend", WellKnownObjectMode.Singleton);

@@ -16,14 +16,16 @@ namespace Mono.Debugger.Remoting
 			ChannelServices.RegisterChannel (channel);
 		}
 
-		public static DebuggerBackend CreateConnection ()
+		public static DebuggerBackend CreateConnection (string host, string remote_mono)
 		{
-			string base_directory = System.AppDomain.CurrentDomain.BaseDirectory;
+			if (remote_mono == null)
+				remote_mono = "";
 
-			/* Use relative path based on where Mono.Debugger.Remoting.dll is at to enable relocation */
-			string path = Path.GetFullPath (
-				base_directory + Path.DirectorySeparatorChar + "mdb-server.exe");
-			string url = "mdb://" + Environment.MachineName + ":" + path + "!DebuggerBackend";
+			string url;
+			if (host != null)
+				url = "mdb://" + host + ":" + remote_mono + "!DebuggerBackend";
+			else
+				url = "mdb://" + remote_mono + "!DebuggerBackend";
 
 			DebuggerBackend backend;
 #if FIXME

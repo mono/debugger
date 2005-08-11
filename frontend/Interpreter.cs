@@ -103,7 +103,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("No program loaded.");
 
 			if (options.IsRemote)
-				backend = DebuggerClient.CreateConnection ();
+				backend = DebuggerClient.CreateConnection (options.RemoteHost, options.RemoteMono);
 			else
 				backend = new DebuggerBackend ();
 
