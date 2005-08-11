@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Activation;
 using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Lifetime;
 
 namespace Mono.Debugger.Remoting
 {
@@ -36,6 +37,9 @@ namespace Mono.Debugger.Remoting
 			backend = (DebuggerBackend) Activator.GetObject (typeof (DebuggerBackend), url);
 #endif
 
+			ILease lease = (ILease) backend.GetLifetimeService ();
+			lease.Register (new Sponsor ());
+
 			return backend;
 		}
 
@@ -44,6 +48,15 @@ namespace Mono.Debugger.Remoting
 			ChannelServices.UnregisterChannel (channel);
 			((IDisposable) channel).Dispose ();
 			channel = null;
+		}
+
+		[Serializable]
+		protected class Sponsor : ISponsor
+		{
+			public 	TimeSpan Renewal (ILease lease)
+			{
+				return new TimeSpan (0, 5, 0);
+			}
 		}
 	}
 }
