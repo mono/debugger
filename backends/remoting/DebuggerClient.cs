@@ -16,8 +16,10 @@ namespace Mono.Debugger.Remoting
 
 		public static void GlobalShutdown ()
 		{
-			ChannelServices.UnregisterChannel (channel);
-			channel = null;
+			if (channel != null) {
+				ChannelServices.UnregisterChannel (channel);
+				channel = null;
+			}
 		}
 
 		string url;
