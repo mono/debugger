@@ -27,7 +27,6 @@ namespace Mono.Debugger
 		SymbolTableManager symtab_manager;
 		ModuleManager module_manager;
 		ThreadManager thread_manager;
-		Process process;
 		ProcessStart start;
 
 		public DebuggerBackend ()
@@ -92,18 +91,11 @@ namespace Mono.Debugger
 			}
 		}
 
-		public event TargetExitedHandler TargetExited;
+		public event TargetExitedHandler DebuggerExitedEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		public event ModulesChangedHandler ModulesChangedEvent;
 		public event BreakpointsChangedHandler BreakpointsChangedEvent;
-
-		void process_exited (Process process)
-		{
-			this.process = null;
-			if (TargetExited != null)
-				TargetExited ();
-		}
 
 		public void Run (ProcessStart start)
 		{
@@ -111,7 +103,7 @@ namespace Mono.Debugger
 
 			this.start = start;
 
-			if (process != null)
+			if (thread_manager.HasTarget)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			module_manager.Lock ();
@@ -121,8 +113,6 @@ namespace Mono.Debugger
 
 		void initialized_event (ThreadManager manager, Process process)
 		{
-			process.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-
 			ThreadGroup.Main.AddThread (process.ID);
 		}
 
@@ -262,7 +252,8 @@ namespace Mono.Debugger
 					languages = null;
 				}
 
-				ObjectCache.Shutdown ();			       
+				if (DebuggerExitedEvent != null)
+					DebuggerExitedEvent ();
 			}
 		}
 

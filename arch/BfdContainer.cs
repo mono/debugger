@@ -21,8 +21,6 @@ namespace Mono.Debugger.Architecture
 		{
 			this.backend = backend;
 			this.bfd_hash = new Hashtable ();
-
-			backend.TargetExited += new TargetExitedHandler (target_exited_handler);
 		}
 
 		public NativeLanguage NativeLanguage {
@@ -103,13 +101,6 @@ namespace Mono.Debugger.Architecture
 
 			bfd_hash.Remove (bfd.FileName);
 			bfd.Dispose ();
-		}
-
-		void target_exited_handler ()
-		{
-			foreach (Bfd bfd in bfd_hash.Values)
-				bfd.Dispose ();
-			bfd_hash = new Hashtable ();
 		}
 
 		//

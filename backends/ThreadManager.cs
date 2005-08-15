@@ -195,6 +195,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public bool HasTarget {
+			get { return inferior_thread != null; }
+		}
+
 		int next_process_id = 0;
 		internal int NextProcessID {
 			get { return ++next_process_id; }
@@ -732,6 +736,9 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
+				if (inferior_thread == null)
+					return;
+
 				if (Thread.CurrentThread != inferior_thread)
 					inferior_thread.Join ();
 				wait_thread.Join ();

@@ -1,3 +1,10 @@
+2005-08-15  Martin Baulig  <martin@ximian.com>
+
+	* backends/Debugger.cs
+	(DebuggerBackend.TargetExited): Removed this event.
+	(DebuggerBackend.DebuggerExitedEvent): New event; this is called
+	from Dispose() when everything is disposed.
+
 2005-08-11  Martin Baulig  <martin@ximian.com>
 
 	* backends/remoting/DebuggerClient.cs
