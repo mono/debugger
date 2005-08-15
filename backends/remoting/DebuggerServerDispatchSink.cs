@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Channels;
 
@@ -50,11 +51,18 @@ namespace Mono.Debugger.Remoting
 
 			sinkStack.Push (this, null);
 
+			ServerProcessing proc;
+
+			if (RemotingServices.IsOneWay (((IMethodMessage) requestMsg).MethodBase))
+				proc = ServerProcessing.OneWay;
+			else
+				proc = ServerProcessing.Async;
+
 			DebuggerServerResponseSink responseSink = new DebuggerServerResponseSink (sinkStack);
 			IMessageCtrl ctrl = ChannelServices.AsyncDispatchMessage (requestMsg, responseSink);
 
 			responseMsg = null;
-			return ServerProcessing.Async;
+			return proc;
 		}
 	}
 }

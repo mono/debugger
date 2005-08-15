@@ -19,7 +19,7 @@ namespace Mono.Debugger.Remoting
 		{
 			int fd = mono_debugger_remoting_setup_server ();
 			server_channel = new DebuggerServerChannel (url);
-			connection = new DebuggerConnection (server_channel, fd);
+			connection = new DebuggerConnection (server_channel, url, fd);
 			client_channel = new DebuggerClientChannel (server_channel, connection);
 		}
 
@@ -67,38 +67,29 @@ namespace Mono.Debugger.Remoting
 			}
 		}
 
-		public string Parse (string url, out string objectURI)
+		public string Parse (string url, out string object_uri)
 		{
-			string host, path;
-			return DebuggerChannel.ParseDebuggerURL (url, out host, out path, out objectURI);
+			return DebuggerChannel.ParseDebuggerURL (url, out object_uri);
 		}
 
-		internal static string ParseDebuggerURL (string url, out string host, out string path,
-							 out string objectURI)
+		internal DebuggerServerChannel ServerChannel {
+			get { return server_channel; }
+		}
+
+		internal static string ParseDebuggerURL (string url, out string objectURI)
 		{
 			objectURI = null;
-			host = null;
-			path = null;
 
 			if (!url.StartsWith ("mdb://"))
 				return null;
 
 			int pos = url.IndexOf ('!', 6);
 			if (pos == -1) return null;
-			path = url.Substring (6, pos - 6);
 
+			string path = url.Substring (6, pos - 6);
 			objectURI = url.Substring (pos + 1);
 
-			int colon = path.IndexOf (':');
-			if (colon > 0) {
-				host = path.Substring (0, colon);
-				path = path.Substring (colon + 1);
-			}
-
-			if (host != null)
-				return "mdb://" + host + ":" + path;
-			else
-				return "mdb://" + path;
+			return "mdb://" + path;
 		}
 	}
 }

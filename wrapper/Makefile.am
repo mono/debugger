@@ -70,10 +70,11 @@ REMOTING_SRCLIST = \
 	$(top_srcdir)/backends/remoting/DebuggerRemotingException.cs		\
 	$(top_srcdir)/backends/remoting/DebuggerConnection.cs			\
 	$(top_srcdir)/backends/remoting/DebuggerStream.cs			\
-	$(top_srcdir)/backends/remoting/DebuggerClient.cs
+	$(top_srcdir)/backends/remoting/DebuggerClient.cs			\
+	$(top_srcdir)/backends/remoting/DebuggerServer.cs
 
 MDB_SERVER_SRCLIST = \
-	$(top_srcdir)/backends/remoting/DebuggerServer.cs
+	$(top_srcdir)/backends/remoting/Server.cs
 
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions	\

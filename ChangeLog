@@ -1,5 +1,10 @@
 2005-08-15  Martin Baulig  <martin@ximian.com>
 
+	* backends/remoting/: Update to support multiple connections and
+	also correctly exit when we're done.
+
+2005-08-15  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(DebuggerBackend.TargetExited): Removed this event.
 	(DebuggerBackend.DebuggerExitedEvent): New event; this is called

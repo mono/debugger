@@ -11,8 +11,6 @@ namespace Mono.Debugger.Remoting
 	internal class DebuggerClientTransportSink : IClientChannelSink, IDisposable
 	{
 		string url;
-		string host;
-		string path;
 		string channel_uri;
 		string object_uri;
 		DebuggerClientChannel channel;
@@ -21,7 +19,7 @@ namespace Mono.Debugger.Remoting
 		{
 			this.channel = channel;
 			this.url = url;
-			channel_uri = DebuggerChannel.ParseDebuggerURL (url, out host, out path, out object_uri);
+			channel_uri = DebuggerChannel.ParseDebuggerURL (url, out object_uri);
 		}
 
 		public IDictionary Properties {
@@ -33,9 +31,16 @@ namespace Mono.Debugger.Remoting
 		}
 
 		public void AsyncProcessRequest (IClientChannelSinkStack sinkStack, IMessage msg,
-						 ITransportHeaders headers, Stream stream)
+						 ITransportHeaders requestHeaders, Stream requestStream)
 		{
-			throw new NotImplementedException ();			
+			if (requestHeaders == null)
+				requestHeaders = new TransportHeaders();
+			string request_uri = ((IMethodMessage) msg).Uri;
+			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
+
+			DebuggerConnection connection = channel.GetConnection (channel_uri);
+
+			connection.SendAsyncMessage (requestStream, requestHeaders);
 		}
 
 		public void AsyncProcessResponse (IClientResponseChannelSinkStack sinkStack,
@@ -61,7 +66,7 @@ namespace Mono.Debugger.Remoting
 			string request_uri = ((IMethodMessage) msg).Uri;
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
-			DebuggerConnection connection = channel.GetConnection (channel_uri, host, path);
+			DebuggerConnection connection = channel.GetConnection (channel_uri);
 
 			connection.SendMessage (requestStream, requestHeaders,
 						out responseHeaders, out responseStream);

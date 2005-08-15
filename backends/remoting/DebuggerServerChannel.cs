@@ -65,10 +65,9 @@ namespace Mono.Debugger.Remoting
 			// return channel_data.ChannelUris;
 		}
 
-		public string Parse (string url, out string objectURI)
+		public string Parse (string url, out string object_uri)
 		{
-			string host, path;
-			return DebuggerChannel.ParseDebuggerURL (url, out host, out path, out objectURI);
+			return DebuggerChannel.ParseDebuggerURL (url, out object_uri);
 		}
 
 		bool aborted = false;

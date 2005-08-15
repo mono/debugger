@@ -70,7 +70,8 @@ void
 mono_debugger_remoting_kill (int pid, int fd)
 {
 	close (fd);
-	kill (pid, SIGKILL);
+	if (pid)
+		kill (pid, SIGKILL);
 }
 
 int
@@ -99,7 +100,7 @@ mono_debugger_remoting_poll (int fd, PollFunc func)
 			break;
 		}
 
-		if (fds [0].revents & (POLLHUP | POLLERR))
+		if (fds [0].revents & (POLLHUP | POLLERR | POLLNVAL))
 			break;
 
 		func ();

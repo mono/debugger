@@ -7,23 +7,36 @@ using System.Runtime.Remoting.Channels;
 
 namespace Mono.Debugger.Remoting
 {
+	public delegate void ConnectionHandler (DebuggerConnection connection);
+
 	public class DebuggerConnection : IDisposable
 	{
+		string url;
 		int child_pid, socket_fd;
 		DebuggerStream network_stream;
 		DebuggerServerChannel server_channel;
+		Hashtable requests;
 		Thread poll_thread;
+		bool aborted;
+		bool shutdown_requested;
 
-		public DebuggerConnection (DebuggerServerChannel server_channel, int socket_fd)
+		public DebuggerConnection (DebuggerServerChannel server_channel, string url, int fd)
 		{
+			this.url = url;
 			this.server_channel = server_channel;
-			this.socket_fd = socket_fd;
+			this.socket_fd = fd;
+
 			Init ();
 		}
 
-		public DebuggerConnection (DebuggerServerChannel server_channel,
+		public string URL {
+			get { return url; }
+		}
+
+		public DebuggerConnection (DebuggerServerChannel server_channel, string url,
 					   string[] argv, string[] envp)
 		{
+			this.url = url;
 			this.server_channel = server_channel;
 
 			IntPtr error;
@@ -36,6 +49,22 @@ namespace Mono.Debugger.Remoting
 
 			Init ();
 		}
+
+		public void Shutdown ()
+		{
+			lock (this) {
+				if (shutdown_requested || aborted)
+					return;
+
+				shutdown_requested = true;
+				if (requests.Count > 0)
+					return;
+
+				Abort ();
+			}
+		}
+
+		public event ConnectionHandler ConnectionClosedEvent;
 
 		void Init ()
 		{
@@ -66,6 +95,9 @@ namespace Mono.Debugger.Remoting
 		{
 			long sequence_id;
 			MessageStatus status;
+
+			if (aborted)
+				return;
 
 			ITransportHeaders headers = null;
 			Stream stream = null;
@@ -160,12 +192,19 @@ namespace Mono.Debugger.Remoting
 			poll_thread.Join ();
 		}
 
+		void Abort ()
+		{
+			aborted = true;
+			mono_debugger_remoting_kill (child_pid, socket_fd);
+			poll_thread.Abort ();
+		}
+
 		void poll_thread_main ()
 		{
 			mono_debugger_remoting_poll (socket_fd, poll_cb);
+			if (ConnectionClosedEvent != null)
+				ConnectionClosedEvent (this);
 		}
-
-		protected Hashtable requests = Hashtable.Synchronized (new Hashtable ());
 
 		protected sealed class MessageData : IDisposable
 		{
@@ -213,7 +252,33 @@ namespace Mono.Debugger.Remoting
 			data.Handle.WaitOne ();
 			response_headers = data.ResponseHeaders;
 			response_stream = data.ResponseStream;
-			requests.Remove (sequence_id);
+
+			lock (this) {
+				requests.Remove (sequence_id);
+				if (shutdown_requested && (requests.Count == 0))
+					Abort ();
+			}
+		}
+
+		public void SendAsyncMessage (Stream request_stream, ITransportHeaders request_headers)
+		{
+			MessageData data;
+			long sequence_id = GetNextSequenceID ();
+			lock (this) {
+#if FIXME
+				data = new MessageData (sequence_id);
+				requests.Add (sequence_id, data);
+#endif
+
+				DebuggerMessageIO.SendMessageStatus (
+					network_stream, MessageStatus.Message, sequence_id);
+				DebuggerMessageIO.SendMessageStream (
+					network_stream, request_stream, request_headers);
+			}
+		}
+
+		void FinishRequest (MessageData data)
+		{
 		}
 
 		protected bool disposed = false;

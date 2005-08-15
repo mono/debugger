@@ -2,26 +2,46 @@ using System;
 using System.Reflection;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Messaging;
+using System.Runtime.Remoting.Activation;
+using System.Runtime.Remoting.Lifetime;
 
 using Mono.Debugger;
 using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Remoting
 {
-	public class TheDebuggerServer
+	public class DebuggerServer : MarshalByRefObject
 	{
-		static void Main (string[] args)
+		DebuggerBackend backend;
+
+		static DebuggerChannel channel;
+
+		protected static void Run (string url)
 		{
-			string url = args [0];
-
 			RemotingConfiguration.RegisterWellKnownServiceType (
-				typeof (DebuggerBackend), "DebuggerBackend", WellKnownObjectMode.Singleton);
+				typeof (DebuggerServer), "DebuggerServer", WellKnownObjectMode.Singleton);
 
-			DebuggerChannel channel = new DebuggerChannel (url);
+			channel = new DebuggerChannel (url);
 			ChannelServices.RegisterChannel (channel);
 
 			channel.Connection.Run ();
 			ChannelServices.UnregisterChannel (channel);
+		}
+
+		public DebuggerServer ()
+		{
+			backend = new DebuggerBackend ();
+			backend.DebuggerExitedEvent += new TargetExitedHandler (backend_exited);
+		}
+
+		void backend_exited ()
+		{
+			RemotingServices.Disconnect (this);
+		}
+
+		public DebuggerBackend DebuggerBackend {
+			get { return backend; }
 		}
 	}
 }

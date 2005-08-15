@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Collections;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Messaging;
 
@@ -8,7 +7,6 @@ namespace Mono.Debugger.Remoting
 {
 	public class DebuggerClientChannel : IChannelSender, IChannel, IDisposable
 	{
-		Hashtable connections;
 		DebuggerServerChannel server_channel;
 		IClientChannelSinkProvider sink_provider;
 		DebuggerConnection server_connection;
@@ -19,7 +17,6 @@ namespace Mono.Debugger.Remoting
                         sink_provider = new BinaryClientFormatterSinkProvider ();
                         sink_provider.Next = new DebuggerClientTransportSinkProvider ();
 			this.server_channel = server_channel;
-			connections = new Hashtable ();
 		}
 
 		public DebuggerClientChannel (DebuggerServerChannel server_channel,
@@ -37,70 +34,32 @@ namespace Mono.Debugger.Remoting
 			get { return priority; }
 		}
 
-		public IMessageSink CreateMessageSink (string url,
-						       object remoteChannelData,
-						       out string objectURI)
+		public IMessageSink CreateMessageSink (string url, object remote_data,
+						       out string object_uri)
 	        {
-			string host, the_path;
-			if (DebuggerChannel.ParseDebuggerURL (url, out host, out the_path, out objectURI) != null)
-				return (IMessageSink) sink_provider.CreateSink (this, url, remoteChannelData);
+			if (DebuggerChannel.ParseDebuggerURL (url, out object_uri) != null)
+				return (IMessageSink) sink_provider.CreateSink (this, url, remote_data);
 
-			DebuggerServerChannelData data = remoteChannelData as DebuggerServerChannelData;
+			DebuggerServerChannelData data = remote_data as DebuggerServerChannelData;
 			if (data != null) {
 				string path = data.ChannelURL + "!" + url;
-				return (IMessageSink) sink_provider.CreateSink (this, path, remoteChannelData);
+				return (IMessageSink) sink_provider.CreateSink (this, path, data);
 			}
 
 			return null;
 		}
 
-		public string Parse (string url, out string objectURI)
+		public string Parse (string url, out string object_uri)
 		{
-			string host, path;
-			return DebuggerChannel.ParseDebuggerURL (url, out host, out path, out objectURI);
+			return DebuggerChannel.ParseDebuggerURL (url, out object_uri);
 		}
 
-		public DebuggerConnection GetConnection (string channel_uri, string host, string path)
+		internal DebuggerConnection GetConnection (string channel_uri)
 		{
-			lock (this) {
-				if (server_connection != null)
-					return server_connection;
+			if (server_connection != null)
+				return server_connection;
 
-				DebuggerConnection connection = (DebuggerConnection) connections [channel_uri];
-				if (connection != null)
-					return connection;
-
-				ArrayList list = new ArrayList ();
-				IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
-				foreach (string var in env_vars.Keys) {
-					list.Add (String.Format ("{0}={1}", var, env_vars [var]));
-				}
-
-				string[] envp = new string [list.Count];
-				list.CopyTo (envp);
-
-				if (host == null)
-					host = "";
-
-				string default_wrapper = Mono.Debugger.AssemblyInfo.libdir +
-						System.IO.Path.DirectorySeparatorChar + "mono" +
-						System.IO.Path.DirectorySeparatorChar + "1.0" +
-						System.IO.Path.DirectorySeparatorChar + "mdb-server";
-
-				string wrapper_path = path;
-				if (path == "")
-					wrapper_path = default_wrapper;
-
-				string[] argv;
-				if (host == "")
-					argv = new string[] { wrapper_path, channel_uri, host, wrapper_path };
-				else
-					argv = new string[] { default_wrapper, channel_uri, host, wrapper_path };
-
-				connection = new DebuggerConnection (server_channel, argv, envp);
-				connections.Add (channel_uri, connection);
-				return connection;
-			}
+			return DebuggerClient.GetConnection (channel_uri);
 		}
 
 #region IDisposable implementation
@@ -116,8 +75,10 @@ namespace Mono.Debugger.Remoting
 			// Check to see if Dispose has already been called.
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
+#if FIXME
 				foreach (DebuggerConnection connection in connections.Values)
 					((IDisposable) connection).Dispose ();
+#endif
 			}
 
 			disposed = true;

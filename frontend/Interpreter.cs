@@ -19,6 +19,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class Interpreter : MarshalByRefObject
 	{
 		InterpreterEventSink event_sink;
+		DebuggerClient client;
 		DebuggerBackend backend;
 		Module[] modules;
 		ProcessStart start;
@@ -102,9 +103,10 @@ namespace Mono.Debugger.Frontend
 			if (start == null)
 				throw new ScriptingException ("No program loaded.");
 
-			if (options.IsRemote)
-				backend = DebuggerClient.CreateConnection (options.RemoteHost, options.RemoteMono);
-			else
+			if (options.IsRemote) {
+				client = new DebuggerClient (options.RemoteHost, options.RemoteMono);
+				backend = client.DebuggerBackend;
+			} else
 				backend = new DebuggerBackend ();
 
 			event_sink = new InterpreterEventSink (this, backend);
@@ -113,9 +115,7 @@ namespace Mono.Debugger.Frontend
 
 		public void Exit ()
 		{
-			if (backend != null)
-				backend.Dispose ();
-
+			DebuggerClient.GlobalShutdown ();
 			Environment.Exit (exit_code);
 		}
 
@@ -652,6 +652,11 @@ namespace Mono.Debugger.Frontend
 
 		protected void TargetExited ()
 		{
+			if (client != null) {
+				client.Shutdown ();
+				client = null;
+			}
+
 			backend = null;
 			event_sink = null;
 
