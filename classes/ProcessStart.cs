@@ -79,10 +79,10 @@ namespace Mono.Debugger
 				Path.DirectorySeparatorChar + "mono-debugger-mini-wrapper");
 		}
 
-		public ProcessStart ()
+		protected ProcessStart ()
 		{ }
 
-		public ProcessStart (DebuggerOptions the_options, string[] argv)
+		protected ProcessStart (DebuggerOptions the_options, string[] argv)
 		{
 			if (the_options == null)
 				options = new DebuggerOptions ();
@@ -245,7 +245,7 @@ namespace Mono.Debugger
 			SetupBaseDirectory ();
 		}
 
-		public static ProcessStart Create (DebuggerOptions options)
+		internal static ProcessStart Create (DebuggerOptions options)
 		{
 			if (options.File == null || options.File == "")
 				return null;
@@ -258,7 +258,7 @@ namespace Mono.Debugger
 			return new ProcessStart (options, args);
 		}
 
-		public static ProcessStart Create (DebuggerOptions options, string[] argv)
+		internal static ProcessStart Create (DebuggerOptions options, string[] argv)
 		{
 			if (argv.Length == 0)
 				return null;

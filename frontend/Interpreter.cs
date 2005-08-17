@@ -22,7 +22,6 @@ namespace Mono.Debugger.Frontend
 		DebuggerClient client;
 		DebuggerBackend backend;
 		Module[] modules;
-		ProcessStart start;
 		DebuggerOptions options;
 
 		ScriptingContext context;
@@ -100,8 +99,6 @@ namespace Mono.Debugger.Frontend
 		{
 			if (backend != null)
 				return backend;
-			if (start == null)
-				throw new ScriptingException ("No program loaded.");
 
 			if (options.IsRemote) {
 				client = new DebuggerClient (options.RemoteHost, options.RemoteMono);
@@ -121,10 +118,6 @@ namespace Mono.Debugger.Frontend
 
 		public ScriptingContext GlobalContext {
 			get { return context; }
-		}
-
-		public ProcessStart ProcessStart {
-			get { return start; }
 		}
 
 		public Style Style {
@@ -282,7 +275,7 @@ namespace Mono.Debugger.Frontend
 
 		public string GetFullPath (string filename)
 		{
-			if (start == null)
+			if (backend == null)
 				return Path.GetFullPath (filename);
 
 			if (Path.IsPathRooted (filename))
@@ -290,7 +283,9 @@ namespace Mono.Debugger.Frontend
 
 			string path = GetFullPathByFilename (filename);
 			if (path == null)
-				path = String.Concat (start.BaseDirectory, DirectorySeparatorStr, filename);
+				path = String.Concat (
+					backend.ProcessStart.BaseDirectory, DirectorySeparatorStr,
+					filename);
 
 			return path;
 		}
@@ -368,7 +363,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public ProcessStart Start (DebuggerOptions options)
+		public Process Start ()
 		{
 			string[] argv;
 
@@ -384,34 +379,22 @@ namespace Mono.Debugger.Frontend
 			Console.WriteLine ("Starting program: {0}", String.Join (" ", argv));
 
 			try {
-				ProcessStart start = Start (argv);
 				Initialize ();
-				Run ();
-				return start;
+				return Run (argv);
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
 			}
 		}
 
-		public ProcessStart Start (string[] argv)
-		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
-			start = ProcessStart.Create (options, argv);
-
-			return start;
-		}
-
-		public Process Run ()
+		protected Process Run (string[] argv)
 		{
 			if (current_process != null)
 				throw new ScriptingException ("Process already started.");
 			if (backend == null)
 				throw new ScriptingException ("No program loaded.");
 
-			backend.Run (start);
+			backend.Run (options, argv);
 			Process process = backend.ThreadManager.WaitForApplication ();
 			current_process = (ProcessHandle) procs [process.ID];
 
@@ -421,22 +404,6 @@ namespace Mono.Debugger.Frontend
 			event_sink.AddTargetOutput (process);
 
 			return process;
-		}
-
-		public Process Run (ProcessStart start)
-		{
-			if (backend != null)
-				throw new ScriptingException ("Already have a target.");
-
-			this.start = start;
-			Initialize ();
-
-			try {
-				return Run ();
-			} catch (TargetException e) {
-				throw new ScriptingException (
-					"Cannot start target: {0}", e.Message);
-			}
 		}
 
 		protected void ThreadCreated (ProcessHandle handle)

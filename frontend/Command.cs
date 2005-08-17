@@ -1031,41 +1031,17 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			string [] argv;
-			string [] cmd_args;
+			if (Args != null) {
+				string[] cmd_args = (string []) Args.ToArray (typeof (string));
 
-			if (Args == null) {
-				cmd_args = context.Interpreter.Options.InferiorArgs;
-			}
-			else {
-				cmd_args = (string []) Args.ToArray (typeof (string));
-			}
-
-			if (cmd_args == null) {
-				argv = new string [1];
-			}
-			else {
-				argv = new string [cmd_args.Length + 1];
+				string[] argv = new string [cmd_args.Length + 1];
 				cmd_args.CopyTo (argv, 1);
 
 				/* store them for the next invocation of this command */
 				context.Interpreter.Options.InferiorArgs = cmd_args;
 			}
 
-			argv[0] = context.Interpreter.Options.File;
-			Console.Write ("Starting program:");
-			foreach (string a in argv) {
-				Console.Write (" {0}", a);
-			}
-			Console.WriteLine ();
-			try {
-				context.Interpreter.Start (argv);
-				context.Interpreter.Initialize ();
-				context.Interpreter.Run ();
-			} catch (TargetException e) {
-				context.Interpreter.Kill ();
-				throw new ScriptingException (e.Message);
-			}
+			context.Interpreter.Start ();
 		}
 
 		// IDocumentableCommand

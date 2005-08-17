@@ -30,7 +30,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (options.StartTarget)
-				Start (options);
+				Start ();
 		}
 
 		DebuggerEngine SetupEngine ()

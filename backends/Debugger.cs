@@ -97,18 +97,19 @@ namespace Mono.Debugger
 		public event ModulesChangedHandler ModulesChangedEvent;
 		public event BreakpointsChangedHandler BreakpointsChangedEvent;
 
-		public void Run (ProcessStart start)
+		public ProcessStart Run (DebuggerOptions options, string[] argv)
 		{
 			check_disposed ();
-
-			this.start = start;
 
 			if (thread_manager.HasTarget)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
+			start = ProcessStart.Create (options, argv);
+
 			module_manager.Lock ();
 
 			thread_manager.StartApplication (start);
+			return start;
 		}
 
 		void initialized_event (ThreadManager manager, Process process)

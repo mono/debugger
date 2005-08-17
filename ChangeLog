@@ -1,3 +1,19 @@
+2005-08-17  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Interpreter.cs
+	(Interpreter.Start): Don't take any arguments; parse the
+	`InferiorArgs' in our `DebuggerOptions', start the target and
+	return a `Process'.
+	(Interpreter.Run): Make this protected.
+
+	* classes/ProcessStart.cs
+	(ProcessStart.ctor): Make the ctors protected.
+	(ProcessStart.Create): Make this internal.
+
+	* backends/Debugger.cs
+	(DebuggerBackend.Run): Take a `DebuggerOptions' and a `string[]'
+	as arguments; create and return the `ProcessStart' here.
+
 2005-08-15  Martin Baulig  <martin@ximian.com>
 
 	* backends/remoting/: Update to support multiple connections and
