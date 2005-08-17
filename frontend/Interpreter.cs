@@ -112,6 +112,7 @@ namespace Mono.Debugger.Frontend
 
 		public void Exit ()
 		{
+			Kill ();
 			DebuggerClient.GlobalShutdown ();
 			Environment.Exit (exit_code);
 		}
@@ -786,6 +787,11 @@ namespace Mono.Debugger.Frontend
 
 		public void Kill ()
 		{
+			if (backend != null) {
+				backend.Dispose ();
+				backend = null;
+			}
+
 			TargetExited ();
 		}
 
