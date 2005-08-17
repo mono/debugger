@@ -483,7 +483,7 @@ namespace Mono.Debugger.Languages.Mono
 				      reader.BinaryReader.Position, reader.Size);
 
 			if (start == 0)
-				reader.BinaryReader.Position = 4;
+				reader.BinaryReader.Position = memory.TargetAddressSize;
 
 			while (reader.BinaryReader.Position + 4 < reader.Size) {
 				int item_size = reader.BinaryReader.ReadInt32 ();
