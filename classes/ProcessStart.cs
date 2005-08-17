@@ -79,15 +79,15 @@ namespace Mono.Debugger
 				Path.DirectorySeparatorChar + "mono-debugger-mini-wrapper");
 		}
 
-		protected ProcessStart ()
-		{ }
-
 		protected ProcessStart (DebuggerOptions the_options, string[] argv)
 		{
 			if (the_options == null)
 				options = new DebuggerOptions ();
 			else
 				options = the_options;
+
+			if (options.DebugFlags != 0)
+				Report.CurrentDebugFlags = options.DebugFlags;
 
 			if ((argv == null) || (argv.Length == 0))
 				throw new ArgumentException ();
