@@ -1611,17 +1611,15 @@ namespace Mono.Debugger.Backends
 				      "{0} acquiring thread lock", this);
 
 			stopped = inferior.Stop (out stop_event);
-
-			get_registers ();
-			long esp = registers [(int) I386Register.ESP].Value;
-			TargetAddress addr = new TargetAddress (AddressDomain, esp);
+			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquired thread lock: {1} {2} {3} {4}",
-				      this, stopped, stop_event, EndStackAddress, addr);
+				      this, stopped, stop_event, EndStackAddress,
+				      frame.StackPointer);
 
 			if (!EndStackAddress.IsNull)
-				inferior.WriteAddress (EndStackAddress, addr);
+				inferior.WriteAddress (EndStackAddress, frame.StackPointer);
 
 			return stop_event != null;
 		}
