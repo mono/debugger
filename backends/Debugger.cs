@@ -252,6 +252,8 @@ namespace Mono.Debugger
 					languages = null;
 				}
 
+				ObjectCache.Shutdown ();
+
 				if (DebuggerExitedEvent != null)
 					DebuggerExitedEvent ();
 			}
