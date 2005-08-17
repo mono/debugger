@@ -7,7 +7,7 @@ namespace Mono.Debugger
 	//   Instances of this class are normally created as the result of a user action
 	//   such as a method lookup.
 	// </summary>
-	public class SourceLocation
+	public class SourceLocation : MarshalByRefObject
 	{
 		Module module;
 		SourceMethod method;

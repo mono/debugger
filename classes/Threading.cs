@@ -24,7 +24,8 @@ namespace Mono.Debugger
 			get {
 				int pid = mono_debugger_server_get_current_pid ();
 				long thread = mono_debugger_server_get_current_thread ();
-				return String.Format ("[{0}:0x{1:x}]", pid, thread);
+				return String.Format ("[{0}:{1}:0x{2:x}]",
+						      Environment.MachineName, pid, thread);
 			}
 		}
 

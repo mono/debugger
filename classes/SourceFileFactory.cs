@@ -6,7 +6,7 @@ using Mono.Debugger;
 
 namespace Mono.Debugger
 {
-	public class SourceFileFactory
+	public class SourceFileFactory : MarshalByRefObject
 	{
 		Hashtable files = new Hashtable ();
 
