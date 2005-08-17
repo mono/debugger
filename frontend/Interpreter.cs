@@ -100,11 +100,11 @@ namespace Mono.Debugger.Frontend
 			if (backend != null)
 				return backend;
 
-			if (options.IsRemote) {
+			if (options.IsRemote)
 				client = new DebuggerClient (options.RemoteHost, options.RemoteMono);
-				backend = client.DebuggerBackend;
-			} else
-				backend = new DebuggerBackend ();
+			else
+				client = new DebuggerClient ();
+			backend = client.DebuggerBackend;
 
 			event_sink = new InterpreterEventSink (this, backend);
 			return backend;

@@ -29,7 +29,7 @@ namespace Mono.Debugger
 		ThreadManager thread_manager;
 		ProcessStart start;
 
-		public DebuggerBackend ()
+		protected internal DebuggerBackend ()
 		{
 			module_manager = new ModuleManager ();
 

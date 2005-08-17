@@ -23,7 +23,7 @@ one_SCRIPTS = mdb.exe mdb-server.exe mdb-server
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
-noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Remoting.dll
+noinst_SCRIPTS = Mono.Debugger.dll
 
 LANGUAGE_SPECIFIC_FILES = \
 	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
@@ -49,64 +49,39 @@ LIBRARY_SRCLIST = \
 	$(top_srcdir)/arch/*.cs				\
 	$(top_srcdir)/backends/*.cs			\
 	$(top_srcdir)/backends/classes/*.cs		\
-	$(top_srcdir)/backends/mono/*.cs			\
+	$(top_srcdir)/backends/mono/*.cs		\
 	$(top_srcdir)/backends/native/*.cs		\
 	$(top_srcdir)/backends/ptrace/*.cs		\
+	$(top_srcdir)/backends/remoting/*.cs		\
 	$(top_srcdir)/classes/*.cs			\
 	$(top_srcdir)/interfaces/*.cs			\
 	AssemblyInfo.cs
 
-REMOTING_SRCLIST = \
-	$(top_srcdir)/backends/remoting/DebuggerChannel.cs			\
-	$(top_srcdir)/backends/remoting/DebuggerClientChannel.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerClientTransportSink.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerClientTransportSinkProvider.cs	\
-	$(top_srcdir)/backends/remoting/DebuggerServerChannel.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerServerTransportSink.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerServerDispatchSink.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerServerDispatchSinkProvider.cs	\
-	$(top_srcdir)/backends/remoting/DebuggerServerResponseSink.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerMessageIO.cs			\
-	$(top_srcdir)/backends/remoting/DebuggerRemotingException.cs		\
-	$(top_srcdir)/backends/remoting/DebuggerConnection.cs			\
-	$(top_srcdir)/backends/remoting/DebuggerStream.cs			\
-	$(top_srcdir)/backends/remoting/DebuggerClient.cs			\
-	$(top_srcdir)/backends/remoting/DebuggerServer.cs
-
 MDB_SERVER_SRCLIST = \
-	$(top_srcdir)/backends/remoting/Server.cs
+	$(top_srcdir)/wrapper/Server.cs
 
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions	\
-	-r:Mono.CompilerServices.SymbolWriter
+	-r:Mono.CompilerServices.SymbolWriter	\
+	-r:System.Runtime.Remoting
 
 MDB_DEPS = \
 	-r:Mono.GetOptions	\
 	-r:Mono.CompilerServices.SymbolWriter	\
 	-r:System.Runtime.Remoting		\
-	-r:./Mono.Debugger.dll			\
-	-r:./Mono.Debugger.Remoting.dll
-
-REMOTING_DEPS = \
-	-r:Mono.GetOptions	\
-	-r:./Mono.Debugger.dll			\
-	-r:System.Runtime.Remoting
+	-r:./Mono.Debugger.dll
 
 MDB_SERVER_DEPS = \
 	-r:System.Runtime.Remoting		\
-	-r:./Mono.Debugger.Remoting.dll		\
 	-r:./Mono.Debugger.dll
 
 Mono.Debugger.dll: $(LIBRARY_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
-Mono.Debugger.Remoting.dll: $(REMOTING_SRCLIST) Mono.Debugger.dll
-	$(MCS) -target:library -out:Mono.Debugger.Remoting.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(REMOTING_DEPS) $(REMOTING_SRCLIST)
-
-mdb.exe: $(MDB_SRCLIST) Mono.Debugger.Remoting.dll
+mdb.exe: $(MDB_SRCLIST)
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
-mdb-server.exe: $(MDB_SERVER_SRCLIST) Mono.Debugger.Remoting.dll
+mdb-server.exe: $(MDB_SERVER_SRCLIST)
 	$(MCS) -out:mdb-server.exe $(MDB_SERVER_DEPS) $(MDB_SERVER_SRCLIST) $(MCS_FLAGS)
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
@@ -115,20 +90,15 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 
-noinst_DATA = Mono.Debugger.dll.config Mono.Debugger.Remoting.dll.config
+noinst_DATA = Mono.Debugger.dll.config
 
 ASSEMBLY_NAME = Mono.Debugger
 ASSEMBLY = $(ASSEMBLY_NAME).dll
 
-REMOTING_ASSEMBLY_NAME = Mono.Debugger.Remoting
-REMOTING_ASSEMBLY = $(REMOTING_ASSEMBLY_NAME).dll
-
-
-CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config Mono.Debugger.Remoting.dll
+CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
 
 EXTRA_DIST = \
-	mdb.in mdb-wrapper.in mono.snk AssemblyInfo.cs.in \
-	Mono.Debugger.dll.config.in Mono.Debugger.Remoting.dll.config.in
+	mdb.in mdb-wrapper.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
@@ -141,9 +111,7 @@ mdb-server: mdb-server.in Makefile
 
 install-data-local:
 	$(GACUTIL) /i $(ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
-	$(GACUTIL) /i $(REMOTING_ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u $(ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
-	$(GACUTIL) /u $(REMOTING_ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
 

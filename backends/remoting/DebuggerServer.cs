@@ -11,10 +11,8 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Remoting
 {
-	public class DebuggerServer : MarshalByRefObject
+	public class DebuggerServer : DebuggerBackend
 	{
-		DebuggerBackend backend;
-
 		static DebuggerChannel channel;
 
 		protected static void Run (string url)
@@ -31,8 +29,7 @@ namespace Mono.Debugger.Remoting
 
 		public DebuggerServer ()
 		{
-			backend = new DebuggerBackend ();
-			backend.DebuggerExitedEvent += new TargetExitedHandler (backend_exited);
+			DebuggerExitedEvent += new TargetExitedHandler (backend_exited);
 		}
 
 		void backend_exited ()
@@ -41,7 +38,7 @@ namespace Mono.Debugger.Remoting
 		}
 
 		public DebuggerBackend DebuggerBackend {
-			get { return backend; }
+			get { return this; }
 		}
 	}
 }

@@ -24,6 +24,7 @@ namespace Mono.Debugger.Remoting
 
 		string url;
 		DebuggerServer server;
+		DebuggerBackend backend;
 		DebuggerConnection connection;
 		ILease lease;
 		Sponsor sponsor;
@@ -42,10 +43,16 @@ namespace Mono.Debugger.Remoting
 			string url = connection.URL + "!DebuggerServer";
 
 			server = (DebuggerServer) Activator.GetObject (typeof (DebuggerServer), url);
+			backend = server.DebuggerBackend;
 
 			lease = (ILease) server.GetLifetimeService ();
 			sponsor = new Sponsor ();
 			lease.Register (sponsor);
+		}
+
+		public DebuggerClient ()
+		{
+			backend = new DebuggerBackend ();
 		}
 
 		public static DebuggerConnection GetConnection (string url)
@@ -53,7 +60,7 @@ namespace Mono.Debugger.Remoting
 			return (DebuggerConnection) connections [url];
 		}
 
-		public static DebuggerConnection Connect (string host, string path)
+		internal static DebuggerConnection Connect (string host, string path)
 		{
 			string guid = Guid.NewGuid ().ToString ();
 			string channel_uri = "mdb://" + guid;
@@ -97,7 +104,7 @@ namespace Mono.Debugger.Remoting
 		}
 
 		public DebuggerBackend DebuggerBackend {
-			get { return server.DebuggerBackend; }
+			get { return backend; }
 		}
 
 		static void connection_closed (DebuggerConnection connection)
@@ -107,8 +114,10 @@ namespace Mono.Debugger.Remoting
 
 		public void Shutdown ()
 		{
-			lease.Unregister (sponsor);
-			connection.Shutdown ();
+			if (connection != null) {
+				lease.Unregister (sponsor);
+				connection.Shutdown ();
+			}
 		}
 
 		[Serializable]
