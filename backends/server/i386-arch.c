@@ -133,7 +133,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
+	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
 	arch->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
 	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
@@ -187,7 +187,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
+	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
 	arch->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
 	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
@@ -245,7 +245,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
+	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
 	rdata = g_new0 (RuntimeInvokeData, 1);
 	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
@@ -330,7 +330,7 @@ x86_arch_get_registers (ServerHandle *handle)
 guint32
 x86_arch_get_tid (ServerHandle *handle)
 {
-	guint32 start = INFERIOR_REG_ESP (handle->arch->current_regs) + 12;
+	guint32 start = (guint32) INFERIOR_REG_ESP (handle->arch->current_regs) + 12;
 	guint32 tid;
 
 	if (server_ptrace_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
@@ -373,7 +373,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		}
 	}
 
-	if (check_breakpoint (handle, INFERIOR_REG_EIP (arch->current_regs) - 1, retval)) {
+	if (check_breakpoint (handle, (guint32) INFERIOR_REG_EIP (arch->current_regs) - 1, retval)) {
 		INFERIOR_REG_EIP (arch->current_regs)--;
 		_server_ptrace_set_registers (inferior, &arch->current_regs);
 		return STOP_ACTION_BREAKPOINT_HIT;
@@ -388,8 +388,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 		*callback_arg = rdata->callback_argument;
-		*retval = INFERIOR_REG_EAX (arch->current_regs);
-		*retval2 = INFERIOR_REG_EDX (arch->current_regs);
+		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
+		*retval2 = (guint32) INFERIOR_REG_EDX (arch->current_regs);
 
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
@@ -427,8 +427,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
 	*callback_arg = arch->callback_argument;
-	*retval = INFERIOR_REG_EAX (arch->current_regs);
-	*retval2 = INFERIOR_REG_EDX (arch->current_regs);
+	*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
+	*retval2 = (guint32) INFERIOR_REG_EDX (arch->current_regs);
 
 	g_free (arch->saved_regs);
 	g_free (arch->saved_fpregs);
