@@ -476,10 +476,12 @@ namespace Mono.Debugger.Backends
 					insert_temporary_breakpoint (func);
 				current_operation = new OperationInitialize ();
 				this.is_main = true;
+				do_continue ();
 			} else {
-				current_operation = new OperationRun (TargetAddress.Null, true);
+				send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
+				current_operation = new OperationRun (func, true);
+				do_continue (func);
 			}
-			do_continue ();
 		}
 
 
@@ -2420,6 +2422,8 @@ namespace Mono.Debugger.Backends
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,
 							Inferior inferior)
 		{
+			if (!until.IsNull && inferior.CurrentFrame == until)
+				return true;
 			Execute (sse);
 			return false;
 		}
