@@ -18,10 +18,7 @@ namespace Mono.Debugger.Frontend
 {
 	public abstract class Interpreter : MarshalByRefObject
 	{
-		InterpreterEventSink event_sink;
-		DebuggerClient client;
-		DebuggerBackend backend;
-		Module[] modules;
+		DebuggerManager manager;
 		DebuggerOptions options;
 
 		ScriptingContext context;
@@ -46,14 +43,6 @@ namespace Mono.Debugger.Frontend
 
 		AutoResetEvent start_event;
 
-		internal static readonly string DirectorySeparatorStr;
-
-		static Interpreter ()
-		{
-			// FIXME: Why isn't this public in System.IO.Path ?
-			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
-		}
-
 		internal Interpreter (DebuggerTextWriter command_out,
 				      DebuggerTextWriter inferior_out,
 				      bool is_synchronous, bool is_interactive,
@@ -64,6 +53,8 @@ namespace Mono.Debugger.Frontend
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 			this.options = options;
+
+			manager = DebuggerManager.GlobalManager;
 
 			procs = new Hashtable ();
 			events = new Hashtable ();
@@ -95,26 +86,15 @@ namespace Mono.Debugger.Frontend
 		AppDomain debugger_domain;
 		static int domain_age = 0;
 
-		public DebuggerBackend Initialize ()
-		{
-			if (backend != null)
-				return backend;
-
-			if (options.IsRemote)
-				client = new DebuggerClient (options.RemoteHost, options.RemoteMono);
-			else
-				client = new DebuggerClient ();
-			backend = client.DebuggerBackend;
-
-			event_sink = new InterpreterEventSink (this, backend);
-			return backend;
-		}
-
 		public void Exit ()
 		{
 			Kill ();
 			DebuggerClient.GlobalShutdown ();
 			Environment.Exit (exit_code);
+		}
+
+		public DebuggerManager DebuggerManager {
+			get { return manager; }
 		}
 
 		public ScriptingContext GlobalContext {
@@ -200,15 +180,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public DebuggerBackend DebuggerBackend {
-			get {
-				if (backend != null)
-					return backend;
-
-				throw new ScriptingException ("No backend loaded.");
-			}
-		}
-
 		public bool IsSynchronous {
 			get { return is_synchronous; }
 		}
@@ -249,46 +220,6 @@ namespace Mono.Debugger.Frontend
 			set {
 				current_process = value;
 			}
-		}
-
-		public string GetFullPathByFilename (string filename){
-			string retval = null;
-
-			backend.ModuleManager.Lock ();
-
-			foreach (Module module in modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				foreach (SourceFile source in module.SymbolFile.Sources) {
-					if (filename.Equals (source.Name)) {
-						retval = source.FileName;
-						break;
-					}
-				}
-			}
-
-			backend.ModuleManager.UnLock ();
-
-			return retval;
-		}
-
-
-		public string GetFullPath (string filename)
-		{
-			if (backend == null)
-				return Path.GetFullPath (filename);
-
-			if (Path.IsPathRooted (filename))
-				return filename;
-
-			string path = GetFullPathByFilename (filename);
-			if (path == null)
-				path = String.Concat (
-					backend.ProcessStart.BaseDirectory, DirectorySeparatorStr,
-					filename);
-
-			return path;
 		}
 
 		public void Abort ()
@@ -352,12 +283,6 @@ namespace Mono.Debugger.Frontend
 			return (c == 'y');
 		}
 
-		public bool HasBackend {
-			get {
-				return backend != null;
-			}
-		}
-
 		public bool HasTarget {
 			get {
 				return current_process != null;
@@ -366,8 +291,10 @@ namespace Mono.Debugger.Frontend
 
 		public Process Start ()
 		{
-			string[] argv;
+			if (current_process != null)
+				throw new ScriptingException ("Process already started.");
 
+			string[] argv;
 			if (options.InferiorArgs == null)
 				argv = new string [1];
 			else {
@@ -380,31 +307,47 @@ namespace Mono.Debugger.Frontend
 			Console.WriteLine ("Starting program: {0}", String.Join (" ", argv));
 
 			try {
-				Initialize ();
-				return Run (argv);
+				DebuggerClient client;
+				if (options.IsRemote)
+					client = manager.Run (options.RemoteHost, options.RemoteMono);
+				else
+					client = manager.Run ();
+				DebuggerBackend backend = client.DebuggerBackend;
+
+				new InterpreterEventSink (this, client, backend);
+
+				backend.Run (options, argv);
+				Process process = backend.ThreadManager.WaitForApplication ();
+				current_process = (ProcessHandle) procs [process.ID];
+
+				start_event.WaitOne ();
+				context.CurrentProcess = current_process;
+
+				return process;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
 			}
 		}
 
-		protected Process Run (string[] argv)
+		public Process StartServer (string[] argv)
 		{
-			if (current_process != null)
-				throw new ScriptingException ("Process already started.");
-			if (backend == null)
-				throw new ScriptingException ("No program loaded.");
+			try {
+				DebuggerClient client = manager.Run (null, null);
+				DebuggerBackend backend = client.DebuggerBackend;
 
-			backend.Run (options, argv);
-			Process process = backend.ThreadManager.WaitForApplication ();
-			current_process = (ProcessHandle) procs [process.ID];
+				new InterpreterEventSink (this, client, backend);
 
-			start_event.WaitOne ();
-			context.CurrentProcess = current_process;
+				backend.Run (null, argv);
+				Process process = backend.ThreadManager.WaitForApplication ();
+				Print ("Server started: @{0}", process.ID);
+				process.Continue (true, false);
 
-			event_sink.AddTargetOutput (process);
-
-			return process;
+				return process;
+			} catch (TargetException e) {
+				Kill ();
+				throw new ScriptingException (e.Message);
+			}
 		}
 
 		protected void ThreadCreated (ProcessHandle handle)
@@ -419,11 +362,6 @@ namespace Mono.Debugger.Frontend
 		{
 			initialized = true;
 			start_event.Set ();
-		}
-
-		protected void ModulesChanged ()
-		{
-			modules = backend.Modules;
 		}
 
 		public void ShowBreakpoints ()
@@ -475,142 +413,6 @@ namespace Mono.Debugger.Frontend
 			events.Remove (handle.Breakpoint.Index);
 		}
 
-		public Module[] GetModules (int[] indices)
-		{
-			if (modules == null)
-				throw new ScriptingException ("No modules.");
-
-			backend.ModuleManager.Lock ();
-
-			int pos = 0;
-			Module[] retval = new Module [indices.Length];
-
-			foreach (int index in indices) {
-				if ((index < 0) || (index > modules.Length))
-					throw new ScriptingException ("No such module {0}.", index);
-
-				retval [pos++] = modules [index];
-			}
-
-			backend.ModuleManager.UnLock ();
-
-			return retval;
-		}
-
-		public Module[] Modules
-		{
-			get {
-				if (modules == null)
-					throw new ScriptingException ("No modules.");
-
-				backend.ModuleManager.Lock ();
-
-				Module[] retval = new Module [modules.Length];
-
-				Array.Copy (modules, retval, modules.Length);
-
-				backend.ModuleManager.UnLock ();
-
-				return retval;
-			}
-		}
-
-		public SourceFile[] GetSources (int[] indices)
-		{
-			if (modules == null)
-				throw new ScriptingException ("No modules.");
-
-			Hashtable source_hash = new Hashtable ();
-
-			backend.ModuleManager.Lock ();
-
-			foreach (Module module in modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				foreach (SourceFile source in module.SymbolFile.Sources)
-					source_hash.Add (source.ID, source);
-			}
-
-			int pos = 0;
-			SourceFile[] retval = new SourceFile [indices.Length];
-
-			foreach (int index in indices) {
-				SourceFile source = (SourceFile) source_hash [index];
-				if (source == null)
-					throw new ScriptingException ("No such source file: {0}", index);
-
-				retval [pos++] = source;
-			}
-
-			backend.ModuleManager.UnLock ();
-
-			return retval;
-		}
-
-		public void ShowModules ()
-		{
-			if (modules == null) {
-				Print ("No modules.");
-				return;
-			}
-
-			Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
-			for (int i = 0; i < modules.Length; i++) {
-				Module module = modules [i];
-
-				Print ("{0,4} {1,5} {2,5} {3}",
-				       i,
-				       module.StepInto ? "y " : "n ",
-				       module.SymbolsLoaded ? "y " : "n ",
-				       module.Name);
-			}
-		}
-
-		void module_operation (Module module, ModuleOperation[] operations)
-		{
-			foreach (ModuleOperation operation in operations) {
-				switch (operation) {
-				case ModuleOperation.Ignore:
-					module.LoadSymbols = false;
-					break;
-				case ModuleOperation.UnIgnore:
-					module.LoadSymbols = true;
-					break;
-				case ModuleOperation.Step:
-					module.StepInto = true;
-					break;
-				case ModuleOperation.DontStep:
-					module.StepInto = false;
-					break;
-				default:
-					throw new InternalError ();
-				}
-			}
-		}
-
-		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
-		{
-			backend.ModuleManager.Lock ();
-
-			foreach (Module module in modules)
-				module_operation (module, operations);
-
-			backend.ModuleManager.UnLock ();
-			backend.SymbolTableManager.Wait ();
-		}
-
-		public void ShowSources (Module module)
-		{
-			if (!module.SymbolsLoaded)
-				return;
-
-			Print ("Sources for module {0}:", module.Name);
-
-			foreach (SourceFile source in module.SymbolFile.Sources)
-				Print ("{0,4}  {1}", source.ID, source.FileName);
-		}
-
 		protected void ProcessExited (ProcessHandle process)
 		{
 			procs.Remove (process.ID);
@@ -618,23 +420,27 @@ namespace Mono.Debugger.Frontend
 				current_process = null;
 		}
 
-		protected void TargetExited ()
+		protected void TargetExited (DebuggerClient client)
 		{
 			if (client != null) {
-				client.Shutdown ();
-				client = null;
+				manager.TargetExited (client);
+
+				foreach (ProcessHandle proc in Processes) {
+					if (proc.DebuggerClient == client)
+						procs.Remove (proc.ID);
+				}
+
+				if ((current_process != null) && (current_process.DebuggerClient == client))
+					current_process = null;
+			} else {
+				procs = new Hashtable ();
+				current_process = null;
 			}
 
-			backend = null;
-			event_sink = null;
-
-			current_process = null;
-			procs = new Hashtable ();
 			events = new Hashtable ();
 
-			context = new ScriptingContext (this, is_interactive, true);
-
-			initialized = false;
+			// context = new ScriptingContext (this, is_interactive, true);
+			// initialized = false;
 		}
 
 		public ProcessHandle GetProcess (int number)
@@ -753,88 +559,31 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public SourceLocation FindLocation (string file, int line)
-		{
-			string path = GetFullPath (file);
-			SourceLocation location = backend.FindLocation (path, line);
-
-			if (location != null)
-				return location;
-			else
-				throw new ScriptingException ("No method contains the specified file/line.");
-		}
-
-		public SourceLocation FindLocation (SourceLocation location, int line)
-		{
-			if (location.HasSourceFile)
-				return FindLocation (location.SourceFile.FileName, line);
-
-			if (line > location.SourceBuffer.Contents.Length)
-				throw new ScriptingException ("Requested line is outside the current buffer.");
-
-			return new SourceLocation (location.Module, location.SourceBuffer, line);
-		}
-
-		public SourceLocation FindMethod (string name)
-		{
-			return backend.FindMethod (name);
-		}
-
-		public ISourceBuffer FindFile (string filename)
-		{
-			return backend.SourceFileFactory.FindFile (filename);
-		}
-
 		public void Kill ()
 		{
-			if (backend != null) {
-				backend.Dispose ();
-				backend = null;
-			}
-
-			TargetExited ();
-		}
-
-		public void LoadLibrary (Process process, string filename)
-		{
-			string pathname = Path.GetFullPath (filename);
-			if (!File.Exists (pathname))
-				throw new ScriptingException (
-					"No such file: `{0}'", pathname);
-
-			try {
-				backend.LoadLibrary (process, pathname);
-			} catch (TargetException ex) {
-				throw new ScriptingException (
-					"Cannot load library `{0}': {1}",
-					pathname, ex.Message);
-			}
-
-			Print ("Loaded library {0}.", filename);
+			manager.Kill ();
+			TargetExited (null);
 		}
 
 		protected class InterpreterEventSink : MarshalByRefObject
 		{
 			Interpreter interpreter;
+			DebuggerClient client;
 
-			public InterpreterEventSink (Interpreter interpreter, DebuggerBackend backend)
+			public InterpreterEventSink (Interpreter interpreter, DebuggerClient client,
+						     DebuggerBackend backend)
 			{
 				this.interpreter = interpreter;
+				this.client = client;
 
 				backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-				backend.ModulesChangedEvent += new ModulesChangedHandler (modules_changed);
 				backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
 				backend.ThreadManager.InitializedEvent += new ThreadEventHandler (thread_manager_initialized);
 			}
 
-			public void AddTargetOutput (Process process)
-			{
-				process.TargetOutput += new TargetOutputHandler (target_output);
-			}
-
 			public void thread_created (ThreadManager manager, Process process)
 			{
-				ProcessHandle handle = new ProcessHandle (interpreter, process);
+				ProcessHandle handle = new ProcessHandle (interpreter, client, process);
 				handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
 				handle.Process.TargetOutput += new TargetOutputHandler (target_output);
 				interpreter.ThreadCreated (handle);
@@ -845,14 +594,9 @@ namespace Mono.Debugger.Frontend
 				interpreter.ThreadManagerInitialized (manager, process);
 			}
 
-			public void modules_changed ()
-			{
-				interpreter.ModulesChanged ();
-			}
-
 			public void target_exited ()
 			{
-				interpreter.TargetExited ();
+				interpreter.TargetExited (client);
 			}
 
 			public void process_exited (ProcessHandle process)

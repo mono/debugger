@@ -42,7 +42,7 @@ namespace Mono.Debugger.Remoting
 
 			DebuggerServerChannelData data = remote_data as DebuggerServerChannelData;
 			if (data != null) {
-				string path = data.ChannelURL + "!" + url;
+				string path = data.ChannelURL + "/" + url;
 				return (IMessageSink) sink_provider.CreateSink (this, path, data);
 			}
 

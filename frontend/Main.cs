@@ -96,6 +96,7 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("about", typeof (AboutCommand));
 			e.RegisterCommand ("lookup", typeof (LookupCommand));
 			e.RegisterCommand ("unwind", typeof (UnwindCommand));
+			e.RegisterCommand ("server", typeof (ServerCommand));
 
 			return e;
 		}

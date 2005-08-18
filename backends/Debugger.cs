@@ -14,6 +14,7 @@ using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 using Mono.Debugger.Architecture;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
@@ -22,6 +23,7 @@ namespace Mono.Debugger
 		BfdContainer bfd_container;
 
 		ArrayList languages;
+		DebuggerManager manager;
 		SourceFileFactory source_factory;
 		MonoLanguageBackend mono_language;
 		SymbolTableManager symtab_manager;
@@ -161,6 +163,11 @@ namespace Mono.Debugger
 
 		internal ArrayList Languages {
 			get { return languages; }
+		}
+
+		internal DebuggerManager DebuggerManager {
+			get { return manager; }
+			set { manager = value; }
 		}
 
 		public SourceLocation FindLocation (string file, int line)

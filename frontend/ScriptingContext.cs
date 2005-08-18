@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Remoting;
 
 using Mono.GetOptions;
 
@@ -242,6 +243,7 @@ namespace Mono.Debugger.Frontend
 
 	public class ProcessHandle : MarshalByRefObject
 	{
+		DebuggerClient client;
 		Interpreter interpreter;
 		ThreadGroup tgroup;
 		Process process;
@@ -251,9 +253,11 @@ namespace Mono.Debugger.Frontend
 		Hashtable registers;
 		ProcessEventSink sink;
 
-		public ProcessHandle (Interpreter interpreter, Process process)
+		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
+				      Process process)
 		{
 			this.interpreter = interpreter;
+			this.client = client;
 			this.process = process;
 			this.name = process.Name;
 			this.id = process.ID;
@@ -261,8 +265,9 @@ namespace Mono.Debugger.Frontend
 			initialize ();
 		}
 
-		public ProcessHandle (Interpreter interpreter, Process process, int pid)
-			: this (interpreter, process)
+		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
+				      Process process, int pid)
+			: this (interpreter, client, process)
 		{
 			if (process.HasTarget) {
 				if (!process.IsDaemon) {
@@ -281,6 +286,10 @@ namespace Mono.Debugger.Frontend
 
 		public ThreadGroup ThreadGroup {
 			get { return tgroup; }
+		}
+
+		public DebuggerClient DebuggerClient {
+			get { return client; }
 		}
 
 		public event ProcessExitedHandler ProcessExitedEvent;
@@ -683,8 +692,15 @@ namespace Mono.Debugger.Frontend
 		bool is_interactive;
 		bool is_synchronous;
 
-		internal ScriptingContext (Interpreter interpreter, bool is_interactive,
-					   bool is_synchronous)
+		internal static readonly string DirectorySeparatorStr;
+
+		static ScriptingContext ()
+		{
+			// FIXME: Why isn't this public in System.IO.Path ?
+			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
+		}
+
+		internal ScriptingContext (Interpreter interpreter, bool is_interactive, bool is_synchronous)
 		{
 			this.interpreter = interpreter;
 			this.is_interactive = is_interactive;
@@ -713,6 +729,24 @@ namespace Mono.Debugger.Frontend
 
 		public Interpreter Interpreter {
 			get { return interpreter; }
+		}
+
+		public DebuggerBackend GetDebuggerBackend ()
+		{
+			if (current_process == null)
+				throw new ScriptingException ("No program to debug.");
+
+			DebuggerBackend backend = current_process.Process.DebuggerBackend;
+			if (backend == null)
+				throw new ScriptingException ("No program to debug.");
+
+			return backend;
+		}
+
+		public bool HasBackend {
+			get {
+				return interpreter.DebuggerManager.HasTarget;
+			}
 		}
 
 		public bool IsInteractive {
@@ -761,7 +795,6 @@ namespace Mono.Debugger.Frontend
 		{
 			return GetNamespaces (CurrentFrame);
 		}
-
 
 		public SourceLocation CurrentLocation {
 			get {
@@ -927,7 +960,7 @@ namespace Mono.Debugger.Frontend
 
 				if (location.HasSourceFile) {
 					string filename = location.SourceFile.FileName;
-					buffer = interpreter.FindFile (filename);
+					buffer = FindFile (filename);
 					if (buffer == null)
 						throw new ScriptingException (
 							"Cannot find source file `{0}'", filename);
@@ -1023,6 +1056,242 @@ namespace Mono.Debugger.Frontend
 			}
 
 			return sb.ToString ();
+		}
+
+		public string GetFullPathByFilename (string filename)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+
+			try {
+				backend.ModuleManager.Lock ();
+
+				Module[] modules = backend.Modules;
+
+				foreach (Module module in modules) {
+					if (!module.SymbolsLoaded)
+						continue;
+
+					foreach (SourceFile source in module.SymbolFile.Sources) {
+						if (filename.Equals (source.Name))
+							return source.FileName;
+					}
+				}
+			} finally {
+				backend.ModuleManager.UnLock ();
+			}
+
+			return null;
+		}
+
+
+		public string GetFullPath (string filename)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+
+			if (Path.IsPathRooted (filename))
+				return filename;
+
+			string path = GetFullPathByFilename (filename);
+			if (path == null)
+				path = String.Concat (
+					backend.ProcessStart.BaseDirectory, DirectorySeparatorStr,
+					filename);
+
+			return path;
+		}
+
+		public SourceLocation FindLocation (string file, int line)
+		{
+			string path = GetFullPath (file);
+			DebuggerBackend backend = GetDebuggerBackend ();
+			SourceLocation location = backend.FindLocation (path, line);
+
+			if (location != null)
+				return location;
+			else
+				throw new ScriptingException ("No method contains the specified file/line.");
+		}
+
+		public SourceLocation FindLocation (SourceLocation location, int line)
+		{
+			if (location.HasSourceFile)
+				return FindLocation (location.SourceFile.FileName, line);
+
+			if (line > location.SourceBuffer.Contents.Length)
+				throw new ScriptingException ("Requested line is outside the current buffer.");
+
+			return new SourceLocation (location.Module, location.SourceBuffer, line);
+		}
+
+		public SourceLocation FindMethod (string name)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+			return backend.FindMethod (name);
+		}
+
+		public Module[] GetModules (int[] indices)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+
+			try {
+				backend.ModuleManager.Lock ();
+
+				int pos = 0;
+				Module[] retval = new Module [indices.Length];
+
+				Module[] modules = backend.Modules;
+
+				foreach (int index in indices) {
+					if ((index < 0) || (index > modules.Length))
+						throw new ScriptingException ("No such module {0}.", index);
+
+					retval [pos++] = modules [index];
+				}
+
+				return retval;
+			} finally {
+				backend.ModuleManager.UnLock ();
+			}
+		}
+
+		public Module[] Modules 	{
+			get {
+				DebuggerBackend backend = GetDebuggerBackend ();
+				return backend.Modules;
+			}
+		}
+
+		public SourceFile[] GetSources (int[] indices)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+
+			try {
+				backend.ModuleManager.Lock ();
+
+				Hashtable source_hash = new Hashtable ();
+
+				Module[] modules = backend.Modules;
+
+				foreach (Module module in modules) {
+					if (!module.SymbolsLoaded)
+						continue;
+
+					foreach (SourceFile source in module.SymbolFile.Sources)
+						source_hash.Add (source.ID, source);
+				}
+
+				int pos = 0;
+				SourceFile[] retval = new SourceFile [indices.Length];
+
+				foreach (int index in indices) {
+					SourceFile source = (SourceFile) source_hash [index];
+					if (source == null)
+						throw new ScriptingException (
+							"No such source file: {0}", index);
+
+					retval [pos++] = source;
+				}
+
+				return retval;
+			} finally {
+				backend.ModuleManager.UnLock ();
+			}
+		}
+
+		public void ShowModules ()
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+
+			try {
+				backend.ModuleManager.Lock ();
+				Module[] modules = backend.Modules;
+
+				Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
+				for (int i = 0; i < modules.Length; i++) {
+					Module module = modules [i];
+
+					Print ("{0,4} {1,5} {2,5} {3}",
+					       i,
+					       module.StepInto ? "y " : "n ",
+					       module.SymbolsLoaded ? "y " : "n ",
+					       module.Name);
+				}
+			} finally {
+				backend.ModuleManager.UnLock ();
+			}
+		}
+
+		void module_operation (Module module, ModuleOperation[] operations)
+		{
+			foreach (ModuleOperation operation in operations) {
+				switch (operation) {
+				case ModuleOperation.Ignore:
+					module.LoadSymbols = false;
+					break;
+				case ModuleOperation.UnIgnore:
+					module.LoadSymbols = true;
+					break;
+				case ModuleOperation.Step:
+					module.StepInto = true;
+					break;
+				case ModuleOperation.DontStep:
+					module.StepInto = false;
+					break;
+				default:
+					throw new InternalError ();
+				}
+			}
+		}
+
+		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+
+			try {
+				backend.ModuleManager.Lock ();
+
+				foreach (Module module in modules)
+					module_operation (module, operations);
+			} finally {
+				backend.ModuleManager.UnLock ();
+				backend.SymbolTableManager.Wait ();
+			}
+		}
+
+		public void ShowSources (Module module)
+		{
+			if (!module.SymbolsLoaded)
+				return;
+
+			Print ("Sources for module {0}:", module.Name);
+
+			foreach (SourceFile source in module.SymbolFile.Sources)
+				Print ("{0,4}  {1}", source.ID, source.FileName);
+		}
+
+		public ISourceBuffer FindFile (string filename)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+			return backend.SourceFileFactory.FindFile (filename);
+		}
+
+		public void LoadLibrary (Process process, string filename)
+		{
+			DebuggerBackend backend = GetDebuggerBackend ();
+			string pathname = Path.GetFullPath (filename);
+			if (!File.Exists (pathname))
+				throw new ScriptingException (
+					"No such file: `{0}'", pathname);
+
+			try {
+				backend.LoadLibrary (process, pathname);
+			} catch (TargetException ex) {
+				throw new ScriptingException (
+					"Cannot load library `{0}': {1}",
+					pathname, ex.Message);
+			}
+
+			Print ("Loaded library {0}.", filename);
 		}
 	}
 }

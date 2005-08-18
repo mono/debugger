@@ -1,3 +1,24 @@
+2005-08-18  Martin Baulig  <martin@ximian.com>
+
+	* backends/remoting/DebuggerManager.cs
+	(DebuggerManager): New public class; this now takes care of our
+	DebuggerClients and manages them.
+
+	* frontend/Interpreter.cs (Interpreter): Don't use a global
+	`backend' and `modules' anymore; use a global `DebuggerManager'
+	instead.  Moved some stuff into the ScriptingContext.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext): Moved some more stuff here from the `Interpreter'.
+	(ScriptingContext.GetDebuggerBackend): New public method; gets the
+	backend from our current process.
+
+	* backends/remoting/DebuggerServer.cs: Use client activation.
+	* backends/remoting/DebuggerClient.cs: Moved here from ./backends/.
+
+	* backends/Debugger.cs
+	(Debugger.DebuggerManager): New public property.
+
 2005-08-17  Martin Baulig  <martin@ximian.com>
 
 	* backends/remoting/Server.cs: Moved to ./wrapper/Server.cs.

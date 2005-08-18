@@ -632,7 +632,7 @@ namespace Mono.Debugger.Frontend
 			if (expr != null)
 				return expr;
 
-			SourceLocation location = context.Interpreter.FindMethod (name);
+			SourceLocation location = context.FindMethod (name);
 			if (location != null)
 				return new SourceExpression (location);
 

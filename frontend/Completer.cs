@@ -235,8 +235,9 @@ namespace Mono.Debugger.Frontend
 			try {
 				ArrayList method_list = new ArrayList ();
 				string[] namespaces = de.Interpreter.GlobalContext.GetNamespaces();
+				Module[] modules = de.Interpreter.GlobalContext.Modules;
 
-				foreach (Module module in de.Interpreter.Modules) {
+				foreach (Module module in modules) {
 					if (module.SymbolFile == null) {
 						// use the module's symbol table and
 						// symbol ranges to add methods

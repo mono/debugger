@@ -17,8 +17,8 @@ namespace Mono.Debugger.Remoting
 
 		protected static void Run (string url)
 		{
-			RemotingConfiguration.RegisterWellKnownServiceType (
-				typeof (DebuggerServer), "DebuggerServer", WellKnownObjectMode.Singleton);
+			RemotingConfiguration.RegisterActivatedServiceType (
+				typeof (DebuggerServer));
 
 			channel = new DebuggerChannel (url);
 			ChannelServices.RegisterChannel (channel);

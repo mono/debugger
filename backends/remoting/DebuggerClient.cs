@@ -22,37 +22,52 @@ namespace Mono.Debugger.Remoting
 			}
 		}
 
+		int id;
 		string url;
+		DebuggerManager manager;
 		DebuggerServer server;
 		DebuggerBackend backend;
 		DebuggerConnection connection;
 		ILease lease;
 		Sponsor sponsor;
 
-		public DebuggerClient (string host, string remote_mono)
+		internal DebuggerClient (DebuggerManager manager, int id, string host, string path)
 		{
+			this.manager = manager;
+			this.id = id;
+
 			if (channel == null) {
 				channel = new DebuggerChannel ();
 				ChannelServices.RegisterChannel (channel);
 			}
 
-			if (remote_mono == null)
-				remote_mono = "";
+			if (path == null)
+				path = "";
 
-			connection = Connect (host, remote_mono);
-			string url = connection.URL + "!DebuggerServer";
+			connection = Connect (host, path);
+			object[] url = { new UrlAttribute (connection.URL) };
+			server = (DebuggerServer) Activator.CreateInstance (
+				typeof (DebuggerServer), null, url);
 
-			server = (DebuggerServer) Activator.GetObject (typeof (DebuggerServer), url);
 			backend = server.DebuggerBackend;
+			backend.DebuggerManager = manager;
 
 			lease = (ILease) server.GetLifetimeService ();
 			sponsor = new Sponsor ();
 			lease.Register (sponsor);
 		}
 
-		public DebuggerClient ()
+		internal DebuggerClient (DebuggerManager manager, int id)
 		{
+			this.manager = manager;
+			this.id = id;
+
 			backend = new DebuggerBackend ();
+			backend.DebuggerManager = manager;
+		}
+
+		public int ID {
+			get { return id; }
 		}
 
 		public static DebuggerConnection GetConnection (string url)
@@ -117,6 +132,7 @@ namespace Mono.Debugger.Remoting
 			if (connection != null) {
 				lease.Unregister (sponsor);
 				connection.Shutdown ();
+				connection = null;
 			}
 		}
 

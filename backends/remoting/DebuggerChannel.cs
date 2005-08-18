@@ -83,7 +83,7 @@ namespace Mono.Debugger.Remoting
 			if (!url.StartsWith ("mdb://"))
 				return null;
 
-			int pos = url.IndexOf ('!', 6);
+			int pos = url.IndexOf ('/', 6);
 			if (pos == -1) return null;
 
 			string path = url.Substring (6, pos - 6);

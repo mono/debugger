@@ -89,8 +89,7 @@ namespace Mono.Debugger.Frontend
 		protected bool Repeating;
 
 		protected virtual bool NeedsProcess {
-			get { return true;
-			}
+			get { return true; }
 		}
 
 		public override string Execute (Engine e)
@@ -1015,7 +1014,7 @@ namespace Mono.Debugger.Frontend
 				return false;
 			}
 
-			if (context.Interpreter.HasBackend && context.Interpreter.IsInteractive) {
+			if (context.HasBackend && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
 							       "Start it from the beginning?")) {
 					context.Interpreter.Kill ();
@@ -1071,7 +1070,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (context.Interpreter.HasBackend && context.Interpreter.IsInteractive) {
+			if (context.HasBackend && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program is running.  Exit anyway?")) {
 					return true;
 				}
@@ -1291,6 +1290,10 @@ namespace Mono.Debugger.Frontend
 
 	public class ShowCommand : NestedCommand, IDocumentableCommand
 	{
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
+
 #region show subcommands
 		private class ShowProcessesCommand : DebuggerCommand
 		{
@@ -1347,7 +1350,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				context.Interpreter.ShowModules ();
+				context.ShowModules ();
 			}
 		}
 
@@ -1375,14 +1378,14 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				modules = context.Interpreter.GetModules (ids);
+				modules = context.GetModules (ids);
 				return modules != null;
 			}
 
 			protected override void DoExecute (ScriptingContext context)
 			{
 				foreach (Module module in modules)
-					context.Interpreter.ShowSources (module);
+					context.ShowSources (module);
 			}
 		}
 
@@ -1410,7 +1413,7 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				sources = context.Interpreter.GetSources (ids);
+				sources = context.GetSources (ids);
 				return sources != null;
 			}
 
@@ -1818,7 +1821,7 @@ namespace Mono.Debugger.Frontend
 					return false;
 				}
 
-				location = context.Interpreter.FindLocation (filename, line);
+				location = context.FindLocation (filename, line);
 				return true;
 			}
 
@@ -1831,8 +1834,7 @@ namespace Mono.Debugger.Frontend
 				return DoResolveExpression (context);
 			}
 
-			location = context.Interpreter.FindLocation (
-					context.CurrentLocation, line);
+			location = context.FindLocation (context.CurrentLocation, line);
 
 			return true;
 		}
@@ -2151,8 +2153,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.LoadLibrary (
-				context.CurrentProcess.Process, Argument);
+			context.LoadLibrary (context.CurrentProcess.Process, Argument);
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -2396,4 +2397,30 @@ namespace Mono.Debugger.Frontend
 		  public string Documentation { get { return ""; } }
 	}
 
+	public class ServerCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool NeedsProcess {
+			get { return false; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args == null)
+				throw new ScriptingException ("No executable file specified.");
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			string[] cmd_args = (string []) Args.ToArray (typeof (string));
+
+			context.Interpreter.StartServer (cmd_args);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Start background server."; } }
+		public string Documentation { get { return ""; } }
+	}
 }
