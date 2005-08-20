@@ -200,15 +200,7 @@ namespace Mono.Debugger
 		public Backtrace GetBacktrace (int max_frames)
 		{
 			check_engine ();
-			CommandResult result = engine.SendSyncCommand (CommandType.GetBacktrace, max_frames);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (Backtrace) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else if (result.Type == CommandResultType.NotStopped)
-				throw new TargetException (TargetError.NotStopped);
-			else
-				throw new InternalError ();
+			return engine.GetBacktrace (max_frames);
 		}
 
 		public Backtrace GetBacktrace ()
@@ -233,18 +225,14 @@ namespace Mono.Debugger
 
 		public Registers GetRegisters ()
 		{
-			CommandResult result = engine.SendSyncCommand (CommandType.GetRegisters, null);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (Registers) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			check_engine ();
+			return engine.GetRegisters ();
 		}
 
 		public void SetRegisters (Registers registers)
 		{
-			engine.SendSyncCommand (CommandType.SetRegisters, registers);
+			check_engine ();
+			engine.SetRegisters (registers);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
@@ -274,31 +262,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool start_step_operation (SSE.Operation operation, bool wait)
-		{
-			check_engine ();
-			if (!engine.StartOperation ())
-				return false;
-			engine.SendAsyncCommand (new Command (engine, operation), wait);
-			return true;
-		}
-
-		void call_method (CallMethodData cdata)
-		{
-			engine.SendCallbackCommand (new Command (engine, new SSE.OperationCallMethod (cdata)));
-		}
-
-		void call_method (RuntimeInvokeData rdata)
-		{
-			engine.SendCallbackCommand (new Command (engine, new SSE.OperationRuntimeInvoke (rdata)));
-		}
-
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
 		public bool StepInstruction (bool wait)
 		{
-			return start_step_operation (new SSE.OperationStep (StepMode.SingleInstruction), wait);
+			check_engine ();
+			return engine.StepInstruction (wait);
 		}
 
 		// <summary>
@@ -306,7 +276,8 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepNativeInstruction (bool wait)
 		{
-			return start_step_operation (new SSE.OperationStep (StepMode.NativeInstruction), wait);
+			check_engine ();
+			return engine.StepNativeInstruction (wait);
 		}
 
 		// <summary>
@@ -314,7 +285,8 @@ namespace Mono.Debugger
 		// </summary>
 		public bool NextInstruction (bool wait)
 		{
-			return start_step_operation (new SSE.OperationStep (StepMode.NextInstruction), wait);
+			check_engine ();
+			return engine.NextInstruction (wait);
 		}
 
 		// <summary>
@@ -322,7 +294,8 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepLine (bool wait)
 		{
-			return start_step_operation (new SSE.OperationStep (StepMode.SourceLine), wait);
+			check_engine ();
+			return engine.StepLine (wait);
 		}
 
 		// <summary>
@@ -330,7 +303,8 @@ namespace Mono.Debugger
 		// </summary>
 		public bool NextLine (bool wait)
 		{
-			return start_step_operation (new SSE.OperationStep (StepMode.NextLine), wait);
+			check_engine ();
+			return engine.NextLine (wait);
 		}
 
 		// <summary>
@@ -339,22 +313,7 @@ namespace Mono.Debugger
 		public bool Finish (bool wait)
 		{
 			check_engine ();
-			if (!engine.StartOperation ())
-				return false;
-
-			StackFrame frame = CurrentFrame;
-			if (frame.Method == null) {
-				engine.AbortOperation ();
-				throw new TargetException (TargetError.NoMethod);
-			}
-
-			StepFrame sf = new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
-				null, StepMode.Finish);
-
-			SSE.Operation operation = new SSE.OperationStep (sf);
-			engine.SendAsyncCommand (new Command (engine, operation), wait);
-			return true;
+			return engine.Finish (wait);
 		}
 
 		// <summary>
@@ -363,12 +322,7 @@ namespace Mono.Debugger
 		public bool FinishNative (bool wait)
 		{
 			check_engine ();
-			if (!engine.StartOperation ())
-				return false;
-
-			SSE.Operation operation = new SSE.OperationFinish ();
-			engine.SendAsyncCommand (new Command (engine, operation), wait);
-			return true;
+			return engine.FinishNative (wait);
 		}
 
 		public bool Continue (TargetAddress until, bool synchronous)
@@ -388,7 +342,8 @@ namespace Mono.Debugger
 
 		public bool Continue (TargetAddress until, bool in_background, bool wait)
 		{
-			return start_step_operation (new SSE.OperationRun (until, in_background), wait);
+			check_engine ();
+			return engine.Continue (until, in_background, wait);
 		}
 
 		public void Kill ()
@@ -418,15 +373,7 @@ namespace Mono.Debugger
 		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			check_engine ();
-
-			CommandResult result = engine.SendSyncCommand (
-				CommandType.InsertBreakpoint, breakpoint, address);
-			if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else if (result.Type != CommandResultType.CommandOk)
-				throw new Exception ();
-
-			return (int) result.Data;
+			return engine.InsertBreakpoint (breakpoint, address);
 		}
 
 		// <summary>
@@ -437,7 +384,7 @@ namespace Mono.Debugger
 		{
 			check_disposed ();
 			if (engine != null)
-				engine.SendSyncCommand (CommandType.RemoveBreakpoint, index);
+				engine.RemoveBreakpoint (index);
 		}
 
 		// <summary>
@@ -449,15 +396,7 @@ namespace Mono.Debugger
 		public int AddEventHandler (EventType type, Breakpoint breakpoint)
 		{
 			check_engine ();
-
-			CommandResult result = engine.SendSyncCommand (
-				CommandType.AddEventHandler, type, breakpoint);
-			if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else if (result.Type != CommandResultType.CommandOk)
-				throw new Exception ();
-
-			return (int) result.Data;
+			return engine.AddEventHandler (type, breakpoint);
 		}
 
 		// <summary>
@@ -468,7 +407,7 @@ namespace Mono.Debugger
 		{
 			check_disposed ();
 			if (engine != null)
-				engine.SendSyncCommand (CommandType.RemoveEventHandler, index);
+				engine.RemoveEventHandler (index);
 		}
 
 		public ISimpleSymbolTable SimpleSymbolTable {
@@ -501,78 +440,39 @@ namespace Mono.Debugger
 		public int GetInstructionSize (TargetAddress address)
 		{
 			check_engine ();
-			CommandResult result = engine.SendSyncCommand (CommandType.GetInstructionSize, address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (int) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			return engine.GetInstructionSize (address);
 		}
 
 		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
 		{
 			check_engine ();
-			CommandResult result = engine.SendSyncCommand (CommandType.DisassembleInstruction, method, address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (AssemblerLine) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				return null;
+			return engine.DisassembleInstruction (method, address);
 		}
 
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
 			check_engine ();
-			CommandResult result = engine.SendSyncCommand (CommandType.DisassembleMethod, method);
-			if (result.Type == CommandResultType.CommandOk)
-				return (AssemblerMethod) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			return engine.DisassembleMethod (method);
 		}
 
 		public long CallMethod (TargetAddress method, long method_argument,
 					string string_argument)
 		{
-			CallMethodData data = new CallMethodData (
-				method, method_argument, string_argument, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-			return (long) data.Result;
+			check_engine ();
+			return engine.CallMethod (method, method_argument, string_argument);
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, string arg)
 		{
-			CallMethodData data = new CallMethodData (method, 0, arg, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-			long retval = (long) data.Result;
-			if (engine.TargetAddressSize == 4)
-				retval &= 0xffffffffL;
-			return new TargetAddress (engine.AddressDomain, retval);
+			check_engine ();
+			return engine.CallMethod (method, arg);
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 						 TargetAddress arg2)
 		{
-			CallMethodData data = new CallMethodData (
-				method, arg1.Address, arg2.Address, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-
-			long retval = (long) data.Result;
-			if (engine.TargetAddressSize == 4)
-				retval &= 0xffffffffL;
-			return new TargetAddress (engine.AddressDomain, retval);
+			check_engine ();
+			return engine.CallMethod (method, arg1, arg2);
 		}
 
 		public bool RuntimeInvoke (StackFrame frame,
@@ -580,19 +480,9 @@ namespace Mono.Debugger
 					   TargetAddress object_argument,
 					   TargetAddress[] param_objects)
 		{
-			IMethod method = frame.Method;
-			if (method == null)
-				throw new InvalidOperationException ();
-
-			ILanguageBackend language = method.Module.LanguageBackend
-				as ILanguageBackend;
-			if (language == null)
-				throw new InvalidOperationException ();
-
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				language, method_argument, object_argument, param_objects);
-			data.Debug = true;
-			return start_step_operation (new SSE.OperationRuntimeInvoke (data), true);
+			check_engine ();
+			return engine.RuntimeInvoke (
+				frame, method_argument, object_argument, param_objects);
 		}
 
 		public TargetAddress RuntimeInvoke (StackFrame frame,
@@ -601,22 +491,10 @@ namespace Mono.Debugger
 						    TargetAddress[] param_objects,
 						    out TargetAddress exc_object)
 		{
-			IMethod method = frame.Method;
-			if (method == null)
-				throw new InvalidOperationException ();
-
-			ILanguageBackend language = method.Module.LanguageBackend
-				as ILanguageBackend;
-			if (language == null)
-				throw new InvalidOperationException ();
-
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				language, method_argument, object_argument, param_objects);
-
-			call_method (data);
-
-			exc_object = data.ExceptionObject;
-			return data.ReturnObject;
+			check_engine ();
+			return engine.RuntimeInvoke (
+				frame, method_argument, object_argument, param_objects,
+				out exc_object);
 		}
 
 		public bool HasTarget {
@@ -678,26 +556,16 @@ namespace Mono.Debugger
 #endregion
 
 #region ITargetMemoryAccess implementation
-		protected byte[] read_memory (TargetAddress address, int size)
+		byte[] read_memory (TargetAddress address, int size)
 		{
-			CommandResult result = engine.SendSyncCommand (CommandType.ReadMemory, address, size);
-			if (result.Type == CommandResultType.CommandOk)
-				return (byte []) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			check_engine ();
+			return engine.ReadMemory (address, size);
 		}
 
 		string read_string (TargetAddress address)
 		{
-			CommandResult result = engine.SendSyncCommand (CommandType.ReadString, address);
-			if (result.Type == CommandResultType.CommandOk)
-				return (string) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			check_engine ();
+			return engine.ReadString (address);
 		}
 
 		ITargetMemoryReader get_memory_reader (TargetAddress address, int size)
@@ -706,15 +574,10 @@ namespace Mono.Debugger
 			return new TargetReader (buffer, this);
 		}
 
-		protected void write_memory (TargetAddress address, byte[] buffer)
+		void write_memory (TargetAddress address, byte[] buffer)
 		{
-			CommandResult result = engine.SendSyncCommand (CommandType.WriteMemory, address, buffer);
-			if (result.Type == CommandResultType.CommandOk)
-				return;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			check_engine ();
+			engine.WriteMemory (address, buffer);
 		}
 
 		AddressDomain ITargetMemoryInfo.AddressDomain {

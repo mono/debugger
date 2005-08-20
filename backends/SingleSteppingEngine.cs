@@ -894,7 +894,7 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Sends a synchronous command to the engine.
 		// </summary>
-		public CommandResult SendSyncCommand (Command command)
+		CommandResult SendSyncCommand (Command command)
 		{
 			lock (this) {
 				// Check whether we're curring performing an async
@@ -917,13 +917,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public CommandResult SendSyncCommand (CommandType type, object data1,
-						      object data2)
+		CommandResult SendSyncCommand (CommandType type, object data1, object data2)
 		{
 			return SendSyncCommand (new Command (this, type, data1, data2));
 		}
 
-		public CommandResult SendSyncCommand (CommandType type, object data)
+		CommandResult SendSyncCommand (CommandType type, object data)
 		{
 			return SendSyncCommand (new Command (this, type, data, null));
 		}
@@ -1662,12 +1661,344 @@ namespace Mono.Debugger.Backends
 			return String.Format ("SSE ({0}:{1}:{2:x})", ID, PID, TID);
 		}
 
+#region SSE Commands
+
+		bool start_step_operation (Operation operation, bool wait)
+		{
+			if (!StartOperation ())
+				return false;
+			SendAsyncCommand (new Command (this, operation), wait);
+			return true;
+		}
+
+		void call_method (CallMethodData cdata)
+		{
+			SendCallbackCommand (new Command (this, new OperationCallMethod (cdata)));
+		}
+
+		void call_method (RuntimeInvokeData rdata)
+		{
+			SendCallbackCommand (new Command (this, new OperationRuntimeInvoke (rdata)));
+		}
+
+		// <summary>
+		//   Step one machine instruction, but don't step into trampolines.
+		// </summary>
+		public bool StepInstruction (bool wait)
+		{
+			return start_step_operation (new OperationStep (StepMode.SingleInstruction), wait);
+		}
+
+		// <summary>
+		//   Step one machine instruction, always step into method calls.
+		// </summary>
+		public bool StepNativeInstruction (bool wait)
+		{
+			return start_step_operation (new OperationStep (StepMode.NativeInstruction), wait);
+		}
+
+		// <summary>
+		//   Step one machine instruction, but step over method calls.
+		// </summary>
+		public bool NextInstruction (bool wait)
+		{
+			return start_step_operation (new OperationStep (StepMode.NextInstruction), wait);
+		}
+
+		// <summary>
+		//   Step one source line.
+		// </summary>
+		public bool StepLine (bool wait)
+		{
+			return start_step_operation (new OperationStep (StepMode.SourceLine), wait);
+		}
+
+		// <summary>
+		//   Step one source line, but step over method calls.
+		// </summary>
+		public bool NextLine (bool wait)
+		{
+			return start_step_operation (new OperationStep (StepMode.NextLine), wait);
+		}
+
+		// <summary>
+		//   Continue until leaving the current method.
+		// </summary>
+		public bool Finish (bool wait)
+		{
+			if (!StartOperation ())
+				return false;
+
+			StackFrame frame = CurrentFrame;
+			if (frame.Method == null) {
+				AbortOperation ();
+				throw new TargetException (TargetError.NoMethod);
+			}
+
+			StepFrame sf = new StepFrame (
+				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
+				null, StepMode.Finish);
+
+			Operation operation = new OperationStep (sf);
+			SendAsyncCommand (new Command (this, operation), wait);
+			return true;
+		}
+
+		// <summary>
+		//   Continue until leaving the current method.
+		// </summary>
+		public bool FinishNative (bool wait)
+		{
+			if (!StartOperation ())
+				return false;
+
+			Operation operation = new OperationFinish ();
+			SendAsyncCommand (new Command (this, operation), wait);
+			return true;
+		}
+
+		public bool Continue (TargetAddress until, bool synchronous)
+		{
+			return Continue (until, false, synchronous);
+		}
+
+		public bool Continue (bool in_background, bool synchronous)
+		{
+			return Continue (TargetAddress.Null, in_background, synchronous);
+		}
+
+		public bool Continue (bool synchronous)
+		{
+			return Continue (TargetAddress.Null, false, synchronous);
+		}
+
+		public bool Continue (TargetAddress until, bool in_background, bool wait)
+		{
+			return start_step_operation (new OperationRun (until, in_background), wait);
+		}
+
+		public long CallMethod (TargetAddress method, long method_argument,
+					string string_argument)
+		{
+			CallMethodData data = new CallMethodData (
+				method, method_argument, string_argument, null);
+
+			call_method (data);
+			if (data.Result == null)
+				throw new Exception ();
+			return (long) data.Result;
+		}
+
+		public TargetAddress CallMethod (TargetAddress method, string arg)
+		{
+			CallMethodData data = new CallMethodData (method, 0, arg, null);
+
+			call_method (data);
+			if (data.Result == null)
+				throw new Exception ();
+			long retval = (long) data.Result;
+			if (TargetAddressSize == 4)
+				retval &= 0xffffffffL;
+			return new TargetAddress (AddressDomain, retval);
+		}
+
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+						 TargetAddress arg2)
+		{
+			CallMethodData data = new CallMethodData (
+				method, arg1.Address, arg2.Address, null);
+
+			call_method (data);
+			if (data.Result == null)
+				throw new Exception ();
+
+			long retval = (long) data.Result;
+			if (TargetAddressSize == 4)
+				retval &= 0xffffffffL;
+			return new TargetAddress (AddressDomain, retval);
+		}
+
+		public bool RuntimeInvoke (StackFrame frame,
+					   TargetAddress method_argument,
+					   TargetAddress object_argument,
+					   TargetAddress[] param_objects)
+		{
+			IMethod method = frame.Method;
+			if (method == null)
+				throw new InvalidOperationException ();
+
+			ILanguageBackend language = method.Module.LanguageBackend
+				as ILanguageBackend;
+			if (language == null)
+				throw new InvalidOperationException ();
+
+			RuntimeInvokeData data = new RuntimeInvokeData (
+				language, method_argument, object_argument, param_objects);
+			data.Debug = true;
+			return start_step_operation (new OperationRuntimeInvoke (data), true);
+		}
+
+		public TargetAddress RuntimeInvoke (StackFrame frame,
+						    TargetAddress method_argument,
+						    TargetAddress object_argument,
+						    TargetAddress[] param_objects,
+						    out TargetAddress exc_object)
+		{
+			IMethod method = frame.Method;
+			if (method == null)
+				throw new InvalidOperationException ();
+
+			ILanguageBackend language = method.Module.LanguageBackend
+				as ILanguageBackend;
+			if (language == null)
+				throw new InvalidOperationException ();
+
+			RuntimeInvokeData data = new RuntimeInvokeData (
+				language, method_argument, object_argument, param_objects);
+
+			call_method (data);
+
+			exc_object = data.ExceptionObject;
+			return data.ReturnObject;
+		}
+
+		public Backtrace GetBacktrace (int max_frames)
+		{
+			CommandResult result = SendSyncCommand (CommandType.GetBacktrace, max_frames);
+			if (result.Type == CommandResultType.CommandOk) {
+				return (Backtrace) result.Data;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else if (result.Type == CommandResultType.NotStopped)
+				throw new TargetException (TargetError.NotStopped);
+			else
+				throw new InternalError ();
+		}
+
+		public Registers GetRegisters ()
+		{
+			CommandResult result = SendSyncCommand (CommandType.GetRegisters, null);
+			if (result.Type == CommandResultType.CommandOk) {
+				return (Registers) result.Data;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		public void SetRegisters (Registers registers)
+		{
+			SendSyncCommand (CommandType.SetRegisters, registers);
+		}
+
+		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		{
+			CommandResult result = SendSyncCommand (
+				CommandType.InsertBreakpoint, breakpoint, address);
+			if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+
+			return (int) result.Data;
+		}
+
+		public void RemoveBreakpoint (int index)
+		{
+			SendSyncCommand (CommandType.RemoveBreakpoint, index);
+		}
+
+		public int AddEventHandler (EventType type, Breakpoint breakpoint)
+		{
+			CommandResult result = SendSyncCommand (
+				CommandType.AddEventHandler, type, breakpoint);
+			if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else if (result.Type != CommandResultType.CommandOk)
+				throw new Exception ();
+
+			return (int) result.Data;
+		}
+
+		public void RemoveEventHandler (int index)
+		{
+			SendSyncCommand (CommandType.RemoveEventHandler, index);
+		}
+
+		public int GetInstructionSize (TargetAddress address)
+		{
+			CommandResult result = SendSyncCommand (CommandType.GetInstructionSize, address);
+			if (result.Type == CommandResultType.CommandOk) {
+				return (int) result.Data;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
+		{
+			CommandResult result = SendSyncCommand (CommandType.DisassembleInstruction, method, address);
+			if (result.Type == CommandResultType.CommandOk) {
+				return (AssemblerLine) result.Data;
+			} else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				return null;
+		}
+
+		public AssemblerMethod DisassembleMethod (IMethod method)
+		{
+			CommandResult result = SendSyncCommand (CommandType.DisassembleMethod, method);
+			if (result.Type == CommandResultType.CommandOk)
+				return (AssemblerMethod) result.Data;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		public byte[] ReadMemory (TargetAddress address, int size)
+		{
+			CommandResult result = SendSyncCommand (CommandType.ReadMemory, address, size);
+			if (result.Type == CommandResultType.CommandOk)
+				return (byte []) result.Data;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		public string ReadString (TargetAddress address)
+		{
+			CommandResult result = SendSyncCommand (CommandType.ReadString, address);
+			if (result.Type == CommandResultType.CommandOk)
+				return (string) result.Data;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+		public void WriteMemory (TargetAddress address, byte[] buffer)
+		{
+			CommandResult result = SendSyncCommand (CommandType.WriteMemory, address, buffer);
+			if (result.Type == CommandResultType.CommandOk)
+				return;
+			else if (result.Type == CommandResultType.Exception)
+				throw (Exception) result.Data;
+			else
+				throw new InternalError ();
+		}
+
+#endregion
+
+#region IDisposable implementation
 		~SingleSteppingEngine ()
 		{
 			Dispose (false);
 		}
 
-#region IDisposable implementation
 		private bool disposed = false;
 
 		private void check_disposed ()
@@ -2036,7 +2367,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationInitialize : Operation
+	protected class OperationInitialize : Operation
 	{
 		public override bool IsSourceOperation {
 			get { return true; }
@@ -2062,7 +2393,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationStepOverBreakpoint : Operation
+	protected class OperationStepOverBreakpoint : Operation
 	{
 		Operation operation;
 		TargetAddress until;
@@ -2139,7 +2470,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal abstract class OperationStepBase : Operation
+	protected abstract class OperationStepBase : Operation
 	{
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,
 							Inferior inferior,
@@ -2181,7 +2512,7 @@ namespace Mono.Debugger.Backends
 		protected abstract bool TrampolineHandler (IMethod method);
 	}
 
-	internal class OperationStep : OperationStepBase
+	protected class OperationStep : OperationStepBase
 	{
 		public StepMode StepMode;
 		public StepFrame StepFrame;
@@ -2394,7 +2725,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationRun : OperationStepBase
+	protected class OperationRun : OperationStepBase
 	{
 		TargetAddress until;
 		bool in_background;
@@ -2442,7 +2773,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationFinish : OperationStepBase
+	protected class OperationFinish : OperationStepBase
 	{
 		TargetAddress until = TargetAddress.Null;
 
@@ -2485,7 +2816,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationRuntimeInvoke : Operation
+	protected class OperationRuntimeInvoke : Operation
 	{
 		RuntimeInvokeData data;
 
@@ -2513,7 +2844,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationCallMethod : Operation
+	protected class OperationCallMethod : Operation
 	{
 		CallMethodData cdata;
 
@@ -2541,7 +2872,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationException : Operation
+	protected class OperationException : Operation
 	{
 		TargetAddress exc;
 		bool unhandled;
@@ -2581,7 +2912,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class OperationWrapper : OperationStepBase
+	protected class OperationWrapper : OperationStepBase
 	{
 		IMethod method;
 

@@ -1,5 +1,11 @@
 2005-08-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs: Moved the implementation of all methods
+	starting commands to the SingleSteppingEngine, duplicate the API
+	entry points here and just call the corresponding method there.
+
+2005-08-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs (Process.ctor): Removed the Inferior and
 	ProcessStart arguments.
 
