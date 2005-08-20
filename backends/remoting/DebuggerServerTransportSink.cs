@@ -74,6 +74,17 @@ namespace Mono.Debugger.Remoting
 			ServerChannelSinkStack sink_stack = new ServerChannelSinkStack ();
 			sink_stack.Push (this, new MessageData (connection, sequence_id));
 
+			string channel_uri, object_uri;
+			string request_uri = (string) request_headers [CommonTransportKeys.RequestUri];
+
+			channel_uri = DebuggerChannel.ParseDebuggerURL (request_uri, out object_uri);
+			if ((channel_uri != null) && (channel_uri != connection.URL)) {
+				DebuggerConnection other = DebuggerClient.GetConnection (channel_uri);
+				other.SendMessage (request_stream, request_headers,
+						   out response_headers, out response_stream);
+				return ServerProcessing.Complete;
+			}
+
 			IMessage response_message;
 
 			return ProcessMessage (

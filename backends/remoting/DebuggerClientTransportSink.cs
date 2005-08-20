@@ -64,6 +64,10 @@ namespace Mono.Debugger.Remoting
 			if (requestHeaders == null)
 				requestHeaders = new TransportHeaders();
 			string request_uri = ((IMethodMessage) msg).Uri;
+
+			if (!request_uri.StartsWith ("mdb://"))
+				request_uri = channel_uri + "/" + request_uri;
+
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
 			DebuggerConnection connection = channel.GetConnection (channel_uri);

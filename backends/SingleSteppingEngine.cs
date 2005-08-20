@@ -80,7 +80,11 @@ namespace Mono.Debugger.Backends
 			this.manager = manager;
 			this.inferior = inferior;
 			this.start = inferior.ProcessStart;
-			this.process = new Process (this, start, inferior);
+			this.process = new Process (this);
+
+			inferior.TargetOutput += new TargetOutputHandler (process.OnInferiorOutput);
+			inferior.DebuggerOutput += new DebuggerOutputHandler (process.OnDebuggerOutput);
+			inferior.DebuggerError += new DebuggerErrorHandler (process.OnDebuggerError);
 
 			ID = process.ID;
 			PID = inferior.PID;

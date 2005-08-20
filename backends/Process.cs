@@ -24,15 +24,10 @@ namespace Mono.Debugger
 
 	public class Process : MarshalByRefObject, ITargetAccess, IDisassembler
 	{
-		internal Process (SingleSteppingEngine engine, ProcessStart start,
-				  Inferior inferior)
+		internal Process (SingleSteppingEngine engine)
 		{
 			this.engine = engine;
 			this.id = engine.ThreadManager.NextProcessID;
-
-			inferior.TargetOutput += new TargetOutputHandler (OnInferiorOutput);
-			inferior.DebuggerOutput += new DebuggerOutputHandler (OnDebuggerOutput);
-			inferior.DebuggerError += new DebuggerErrorHandler (OnDebuggerError);
 		}
 
 		int id;
@@ -76,19 +71,19 @@ namespace Mono.Debugger
 		public event TargetExitedHandler TargetExitedEvent;
 		public event ProcessExitedHandler ProcessExitedEvent;
 
-		protected virtual void OnInferiorOutput (bool is_stderr, string line)
+		internal void OnInferiorOutput (bool is_stderr, string line)
 		{
 			if (TargetOutput != null)
 				TargetOutput (is_stderr, line);
 		}
 
-		protected virtual void OnDebuggerOutput (string line)
+		internal void OnDebuggerOutput (string line)
 		{
 			if (DebuggerOutput != null)
 				DebuggerOutput (line);
 		}
 
-		protected virtual void OnDebuggerError (object sender, string message,
+		internal void OnDebuggerError (object sender, string message,
 							Exception e)
 		{
 			if (DebuggerError != null)
