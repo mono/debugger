@@ -63,12 +63,6 @@ namespace Mono.Debugger.Languages.Mono
 				return new HeapLocation (frame, heap, base_address, address + offset, size);
 			}
 
-			protected override void OnLocationInvalidEvent ()
-			{
-				base.OnLocationInvalidEvent ();
-				// FIXME: Release object.
-			}
-
 			public override string Print ()
 			{
 				return String.Format ("Heap [{0}:{1}]", base_address, address);

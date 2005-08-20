@@ -9,6 +9,7 @@ namespace Mono.Debugger.Languages
 	//   not always have an address for a variable (for instance if it's stored in a
 	//   register) and that an addresses lifetime may be limited.
 	// </summary>
+	[Serializable]
 	public abstract class TargetLocation : ICloneable
 	{
 		protected StackFrame frame;
@@ -22,8 +23,6 @@ namespace Mono.Debugger.Languages
 			this.offset = offset;
 			this.frame = frame;
 			this.is_valid = true;
-
-			frame.FrameInvalidEvent += new ObjectInvalidHandler (frame_invalid);
 		}
 
 		// <summary>
@@ -112,17 +111,9 @@ namespace Mono.Debugger.Languages
 			get { return is_valid; }
 		}
 
-		void frame_invalid (object o)
-		{
-			SetInvalid ();
-		}
-
 		protected void SetInvalid ()
 		{
-			if (is_valid) {
-				is_valid = false;
-				OnLocationInvalidEvent ();
-			}
+			is_valid = false;
 		}
 
 		protected abstract TargetAddress GetAddress ();
@@ -172,14 +163,6 @@ namespace Mono.Debugger.Languages
 			get {
 				return frame.TargetAccess;
 			}
-		}
-
-		public event LocationEventHandler LocationInvalidEvent;
-
-		protected virtual void OnLocationInvalidEvent ()
-		{
-			if (LocationInvalidEvent != null)
-				LocationInvalidEvent (this);
 		}
 
 		// <summary>

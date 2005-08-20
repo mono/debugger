@@ -294,19 +294,6 @@ namespace Mono.Debugger.Frontend
 				}
 				debug_options.StartTarget = true;
 				return true;
-
-			case "-remote":
-				debug_options.IsRemote = true;
-				if (ms_value != null) {
-					int pos = ms_value.IndexOf (':');
-					if (pos != -1) {
-						debug_options.RemoteHost = ms_value.Substring (0, pos);
-						debug_options.RemoteMono = ms_value.Substring (pos + 1);
-					} else {
-						debug_options.RemoteMono = ms_value;
-					}
-				}
-				return true;
 			}
 
 			return false;

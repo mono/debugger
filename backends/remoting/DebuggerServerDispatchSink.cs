@@ -5,6 +5,8 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Channels;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Remoting
 {
 	public class DebuggerServerDispatchSink : IServerChannelSink, IChannelSinkBase
@@ -53,13 +55,26 @@ namespace Mono.Debugger.Remoting
 
 			ServerProcessing proc;
 
-			if (RemotingServices.IsOneWay (((IMethodMessage) requestMsg).MethodBase))
+			IMethodCallMessage message = (IMethodCallMessage) requestMsg;
+			bool is_sync = message.MethodBase.IsDefined (
+				typeof (SingleSteppingEngine.SyncCommandAttribute), false);
+
+			DebuggerServerResponseSink sink = new DebuggerServerResponseSink (sinkStack);
+
+			if (is_sync) {
+				responseMsg = DebuggerServer.ThreadManager.SendSyncCommand (message, sink);
+				if (responseMsg != null)
+					return ServerProcessing.Complete;
+				else
+					return ServerProcessing.Async;
+			}
+
+			if (RemotingServices.IsOneWay (message.MethodBase))
 				proc = ServerProcessing.OneWay;
 			else
 				proc = ServerProcessing.Async;
 
-			DebuggerServerResponseSink responseSink = new DebuggerServerResponseSink (sinkStack);
-			IMessageCtrl ctrl = ChannelServices.AsyncDispatchMessage (requestMsg, responseSink);
+			IMessageCtrl ctrl = ChannelServices.AsyncDispatchMessage (requestMsg, sink);
 
 			responseMsg = null;
 			return proc;

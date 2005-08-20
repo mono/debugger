@@ -4,6 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
+	[Serializable]
 	public class BitfieldTargetLocation : TargetLocation
 	{
 		TargetLocation relative_to;
@@ -15,13 +16,6 @@ namespace Mono.Debugger.Languages
 			this.relative_to = relative_to;
 			this.bit_offset = offset;
 			this.bit_size = size;
-
-			relative_to.LocationInvalidEvent += new LocationEventHandler (location_invalid);
-		}
-
-		void location_invalid (TargetLocation location)
-		{
-			SetInvalid ();
 		}
 
 		public override bool HasAddress {

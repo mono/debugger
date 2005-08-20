@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
@@ -114,7 +116,6 @@ namespace Mono.Debugger
 		//   lock (this) before accessing/modifying them.
 		// </remarks>
 		Command current_command = null;
-		CommandResult command_result = null;
 		SingleSteppingEngine command_engine = null;
 		SingleSteppingEngine current_event = null;
 		int current_event_status = 0;
@@ -416,32 +417,14 @@ namespace Mono.Debugger
 			get { return Thread.CurrentThread == inferior_thread; }
 		}
 
-		// <summary>
-		//   Sends a synchronous command to the background thread and wait until
-		//   it is completed.  This command never throws any exceptions, but returns
-		//   an appropriate CommandResult if something went wrong.
-		//
-		//   This is used for non-steping commands such as getting a backtrace.
-		// </summary>
-		// <remarks>
-		//   You must own either the 'command_mutex' or the `this' lock prior to
-		//   calling this and you must make sure you aren't currently running any
-		//   async operations.
-		// </remarks>
-		internal CommandResult SendSyncCommand (Command command)
+		internal IMessage SendSyncCommand (IMethodCallMessage message, IMessageSink sink)
 		{
-			if (InBackgroundThread) {
-				try {
-					return command.Engine.ProcessCommand (command);
-				} catch (ThreadAbortException) {
-					;
-				} catch (Exception e) {
-					return new CommandResult (e);
-				}
-			}
+			Command command = new Command (CommandType.Message, message, sink);
 
-			if (!AcquireCommandMutex (null))
-				return CommandResult.Busy;
+			if (!AcquireCommandMutex (null)) {
+				TargetException ex = new TargetException (TargetError.NotStopped);
+				return new ReturnMessage (ex, message);
+			}
 
 			lock (this) {
 				current_command = command;
@@ -449,20 +432,7 @@ namespace Mono.Debugger
 				engine_event.Set ();
 			}
 
-			completed_event.WaitOne ();
-
-			CommandResult result;
-			lock (this) {
-				result = command_result;
-				command_result = null;
-				current_command = null;
-			}
-
-			ReleaseCommandMutex ();
-			if (result != null)
-				return result;
-			else
-				return new CommandResult (CommandResultType.UnknownError, null);
+			return null;
 		}
 
 		// <summary>
@@ -546,7 +516,6 @@ namespace Mono.Debugger
 
 				lock (this) {
 					if (sync_command_running) {
-						command_result = CommandResult.Interrupted;
 						current_command = null;
 						sync_command_running = false;
 						completed_event.Set ();
@@ -586,24 +555,27 @@ namespace Mono.Debugger
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.
-			if (command.Type != CommandType.Operation) {
-				CommandResult result;
+			if (command.Type == CommandType.Message) {
+				IMessage return_message;
 				try {
-					result = command.Engine.ProcessCommand (command);
+					return_message = ChannelServices.SyncDispatchMessage (
+						(IMessage) command.Data1);
 				} catch (ThreadAbortException) {
-					;
 					return;
-				} catch (Exception e) {
-					result = new CommandResult (e);
+				} catch (Exception ex) {
+					return_message = new ReturnMessage (
+						ex, (IMethodCallMessage) command.Data1);
 				}
 
+				((IMessageSink) command.Data2).SyncProcessMessage (return_message);
+
 				lock (this) {
-					command_result = result;
 					current_command = null;
 					sync_command_running = false;
 					completed_event.Set ();
+					ReleaseCommandMutex ();
 				}
-			} else {
+			} else if (command.Type == CommandType.Operation) {
 				try {
 					command.Engine.ProcessOperation (command.Operation);
 				} catch (ThreadAbortException) {
@@ -611,6 +583,8 @@ namespace Mono.Debugger
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
 				}
+			} else {
+				throw new InternalError ();
 			}
 		}
 

@@ -14,6 +14,7 @@ namespace Mono.Debugger.Remoting
 	public class DebuggerServer : DebuggerBackend
 	{
 		static DebuggerChannel channel;
+		static DebuggerBackend global_server;
 
 		protected static void Run (string url)
 		{
@@ -30,6 +31,11 @@ namespace Mono.Debugger.Remoting
 		public DebuggerServer ()
 		{
 			DebuggerExitedEvent += new TargetExitedHandler (backend_exited);
+
+			if (global_server != null)
+				throw new InternalError ();
+
+			global_server = this;
 		}
 
 		void backend_exited ()
@@ -39,6 +45,10 @@ namespace Mono.Debugger.Remoting
 
 		public DebuggerBackend DebuggerBackend {
 			get { return this; }
+		}
+
+		new internal static ThreadManager ThreadManager {
+			get { return global_server.ThreadManager; }
 		}
 	}
 }

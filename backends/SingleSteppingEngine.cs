@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Architecture;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Backends
 {
@@ -67,8 +68,11 @@ namespace Mono.Debugger.Backends
 	//
 	//   See the `Process' class for the "user interface".
 	// </summary>
-	internal class SingleSteppingEngine : ITargetMemoryInfo
+	internal class SingleSteppingEngine : MarshalByRefObject, ITargetMemoryInfo
 	{
+		public class SyncCommandAttribute : Attribute
+		{ }
+
 		// <summary>
 		//   This is invoked after compiling a trampoline - it returns whether or
 		//   not we should enter that trampoline.
@@ -80,7 +84,7 @@ namespace Mono.Debugger.Backends
 			this.manager = manager;
 			this.inferior = inferior;
 			this.start = inferior.ProcessStart;
-			this.process = new Process (this);
+			this.process = DebuggerManager.CreateProcess (this);
 
 			inferior.TargetOutput += new TargetOutputHandler (process.OnInferiorOutput);
 			inferior.DebuggerOutput += new DebuggerOutputHandler (process.OnDebuggerOutput);
@@ -489,28 +493,6 @@ namespace Mono.Debugger.Backends
 		}
 
 
-		Backtrace get_backtrace (int max_frames)
-		{
-			inferior.DebuggerBackend.UpdateSymbolTable ();
-
-			if (current_frame == null)
-				throw new TargetException (TargetError.NoStack);
-
-			current_backtrace = new Backtrace (
-				process, arch, current_frame, main_method_retaddr, max_frames);
-
-			current_backtrace.GetBacktrace (
-				inferior, arch, current_symtab, current_simple_symtab);
-
-			return current_backtrace;
-		}
-
-		Registers get_registers ()
-		{
-			registers = inferior.GetRegisters ();
-			return registers;
-		}
-
 		void set_registers (Registers registers)
 		{
 			if (!registers.FromCurrentFrame)
@@ -518,105 +500,6 @@ namespace Mono.Debugger.Backends
 
 			this.registers = registers;
 			inferior.SetRegisters (registers);
-		}
-
-		int get_insn_size (TargetAddress address)
-		{
-			lock (disassembler) {
-				return disassembler.GetInstructionSize (address);
-			}
-		}
-
-		AssemblerLine disassemble_insn (IMethod method, TargetAddress address)
-		{
-			lock (disassembler) {
-				return disassembler.DisassembleInstruction (method, address);
-			}
-		}
-
-		AssemblerMethod disassemble_method (IMethod method)
-		{
-			lock (disassembler) {
-				return disassembler.DisassembleMethod (method);
-			}
-		}
-
-		byte[] do_read_memory (TargetAddress address, int size)
-		{
-			return inferior.ReadBuffer (address, size);
-		}
-
-		string do_read_string (TargetAddress address)
-		{
-			return inferior.ReadString (address);
-		}
-
-		void do_write_memory (TargetAddress address, byte[] data)
-		{
-			inferior.WriteBuffer (address, data);
-		}
-
-
-		// <summary>
-		//   Process a synchronous command.
-		// </summary>
-		public CommandResult ProcessCommand (Command command)
-		{
-			object result = null;
-
-			switch (command.Type) {
-			case CommandType.GetBacktrace:
-				result = get_backtrace ((int) command.Data1);
-				break;
-			case CommandType.GetRegisters:
-				result = get_registers ();
-				break;
-			case CommandType.SetRegisters:
-				set_registers ((Registers) command.Data1);
-				break;
-			case CommandType.InsertBreakpoint:
-				result = manager.BreakpointManager.InsertBreakpoint (
-							inferior, (Breakpoint) command.Data1, (TargetAddress) command.Data2);
-				break;
-			case CommandType.RemoveBreakpoint:
-				manager.BreakpointManager.RemoveBreakpoint (
-							inferior, (int) command.Data1);
-				break;
-			case CommandType.GetInstructionSize:
-				result = get_insn_size ((TargetAddress) command.Data1);
-				break;
-			case CommandType.DisassembleInstruction:
-				result = disassemble_insn ((IMethod) command.Data1, (TargetAddress) command.Data2);
-				break;
-			case CommandType.DisassembleMethod:
-				result = disassemble_method ((IMethod) command.Data1);
-				break;
-			case CommandType.ReadMemory:
-				result = do_read_memory ((TargetAddress) command.Data1, (int) command.Data2);
-				break;
-			case CommandType.ReadString:
-				result = do_read_string ((TargetAddress) command.Data1);
-				break;
-			case CommandType.WriteMemory:
-				do_write_memory ((TargetAddress) command.Data1, (byte []) command.Data2);
-				break;
-			case CommandType.AddEventHandler: {
-				if ((EventType) command.Data1 != EventType.CatchException)
-					throw new InternalError ();
-
-				int id = ++next_exception_handler_id;
-				exception_handlers.Add (id, (Breakpoint) command.Data2);
-				result = id;
-				break;
-			}
-			case CommandType.RemoveEventHandler:
-				exception_handlers.Remove ((int) command.Data1);
-				break;
-			default:
-				throw new InternalError ();
-			}
-
-			return new CommandResult (CommandResultType.CommandOk, result);
 		}
 
 		// <summary>
@@ -723,6 +606,10 @@ namespace Mono.Debugger.Backends
 
 		public ThreadManager ThreadManager {
 			get { return manager; }
+		}
+
+		public DebuggerManager DebuggerManager {
+			get { return manager.DebuggerBackend.DebuggerManager; }
 		}
 
 		public Backtrace CurrentBacktrace {
@@ -889,42 +776,6 @@ namespace Mono.Debugger.Backends
 				engine_stopped = true;
 				manager.ReleaseCommandMutex ();
 			}
-		}
-
-		// <summary>
-		//   Sends a synchronous command to the engine.
-		// </summary>
-		CommandResult SendSyncCommand (Command command)
-		{
-			lock (this) {
-				// Check whether we're curring performing an async
-				// stepping operation.
-				if (!engine_stopped && !manager.InBackgroundThread) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} not stopped", this);
-					return CommandResult.Busy;
-				}
-
-				Report.Debug (DebugFlags.Wait,
-					      "{0} sending sync command {1}",
-					      this, command);
-				CommandResult result = manager.SendSyncCommand (command);
-				Report.Debug (DebugFlags.Wait,
-					      "{0} finished sync command {1}",
-					      this, command);
-
-				return result;
-			}
-		}
-
-		CommandResult SendSyncCommand (CommandType type, object data1, object data2)
-		{
-			return SendSyncCommand (new Command (this, type, data1, data2));
-		}
-
-		CommandResult SendSyncCommand (CommandType type, object data)
-		{
-			return SendSyncCommand (new Command (this, type, data, null));
 		}
 
 		// <summary>
@@ -1862,133 +1713,110 @@ namespace Mono.Debugger.Backends
 			return data.ReturnObject;
 		}
 
+		[SyncCommand]
 		public Backtrace GetBacktrace (int max_frames)
 		{
-			CommandResult result = SendSyncCommand (CommandType.GetBacktrace, max_frames);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (Backtrace) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else if (result.Type == CommandResultType.NotStopped)
-				throw new TargetException (TargetError.NotStopped);
-			else
-				throw new InternalError ();
+			inferior.DebuggerBackend.UpdateSymbolTable ();
+
+			if (current_frame == null)
+				throw new TargetException (TargetError.NoStack);
+
+			current_backtrace = new Backtrace (
+				process, arch, current_frame, main_method_retaddr, max_frames);
+
+			current_backtrace.GetBacktrace (
+				inferior, arch, current_symtab, current_simple_symtab);
+
+			return current_backtrace;
 		}
 
+		[SyncCommand]
 		public Registers GetRegisters ()
 		{
-			CommandResult result = SendSyncCommand (CommandType.GetRegisters, null);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (Registers) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			registers = inferior.GetRegisters ();
+			return registers;
 		}
 
+		[SyncCommand]
 		public void SetRegisters (Registers registers)
 		{
-			SendSyncCommand (CommandType.SetRegisters, registers);
+			if (!registers.FromCurrentFrame)
+				throw new InvalidOperationException ();
+
+			this.registers = registers;
+			inferior.SetRegisters (registers);
 		}
 
+		[SyncCommand]
 		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
-			CommandResult result = SendSyncCommand (
-				CommandType.InsertBreakpoint, breakpoint, address);
-			if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else if (result.Type != CommandResultType.CommandOk)
-				throw new Exception ();
-
-			return (int) result.Data;
+			return manager.BreakpointManager.InsertBreakpoint (
+				inferior, breakpoint, address);
 		}
 
+		[SyncCommand]
 		public void RemoveBreakpoint (int index)
 		{
-			SendSyncCommand (CommandType.RemoveBreakpoint, index);
+			manager.BreakpointManager.RemoveBreakpoint (inferior, index);
 		}
 
+		[SyncCommand]
 		public int AddEventHandler (EventType type, Breakpoint breakpoint)
 		{
-			CommandResult result = SendSyncCommand (
-				CommandType.AddEventHandler, type, breakpoint);
-			if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else if (result.Type != CommandResultType.CommandOk)
-				throw new Exception ();
+			if (type != EventType.CatchException)
+				throw new InternalError ();
 
-			return (int) result.Data;
+			int id = ++next_exception_handler_id;
+			exception_handlers.Add (id, breakpoint);
+			return id;
 		}
 
+		[SyncCommand]
 		public void RemoveEventHandler (int index)
 		{
-			SendSyncCommand (CommandType.RemoveEventHandler, index);
+			exception_handlers.Remove (index);
 		}
 
+		[SyncCommand]
 		public int GetInstructionSize (TargetAddress address)
 		{
-			CommandResult result = SendSyncCommand (CommandType.GetInstructionSize, address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (int) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			lock (disassembler) {
+				return disassembler.GetInstructionSize (address);
+			}
 		}
 
+		[SyncCommand]
 		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
 		{
-			CommandResult result = SendSyncCommand (CommandType.DisassembleInstruction, method, address);
-			if (result.Type == CommandResultType.CommandOk) {
-				return (AssemblerLine) result.Data;
-			} else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				return null;
+			lock (disassembler) {
+				return disassembler.DisassembleInstruction (method, address);
+			}
 		}
 
+		[SyncCommand]
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
-			CommandResult result = SendSyncCommand (CommandType.DisassembleMethod, method);
-			if (result.Type == CommandResultType.CommandOk)
-				return (AssemblerMethod) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			lock (disassembler) {
+				return disassembler.DisassembleMethod (method);
+			}
 		}
 
+		[SyncCommand]
 		public byte[] ReadMemory (TargetAddress address, int size)
 		{
-			CommandResult result = SendSyncCommand (CommandType.ReadMemory, address, size);
-			if (result.Type == CommandResultType.CommandOk)
-				return (byte []) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			return inferior.ReadBuffer (address, size);
 		}
 
+		[SyncCommand]
 		public string ReadString (TargetAddress address)
 		{
-			CommandResult result = SendSyncCommand (CommandType.ReadString, address);
-			if (result.Type == CommandResultType.CommandOk)
-				return (string) result.Data;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			return inferior.ReadString (address);
 		}
 
+		[SyncCommand]
 		public void WriteMemory (TargetAddress address, byte[] buffer)
 		{
-			CommandResult result = SendSyncCommand (CommandType.WriteMemory, address, buffer);
-			if (result.Type == CommandResultType.CommandOk)
-				return;
-			else if (result.Type == CommandResultType.Exception)
-				throw (Exception) result.Data;
-			else
-				throw new InternalError ();
+			inferior.WriteBuffer (address, buffer);
 		}
 
 #endregion
@@ -2971,19 +2799,7 @@ namespace Mono.Debugger.Backends
 
 	internal enum CommandType {
 		Operation,
-		GetBacktrace,
-		GetRegisters,
-		SetRegisters,
-		InsertBreakpoint,
-		RemoveBreakpoint,
-		AddEventHandler,
-		RemoveEventHandler,
-		GetInstructionSize,
-		DisassembleInstruction,
-		DisassembleMethod,
-		ReadMemory,
-		ReadString,
-		WriteMemory
+		Message
 	}
 
 	internal class Command {
@@ -2999,11 +2815,10 @@ namespace Mono.Debugger.Backends
 			this.Operation = operation;
 		}
 
-		public Command (SingleSteppingEngine engine, CommandType type, object data, object data2)
+		public Command (CommandType type, object data1, object data2)
 		{
-			this.Engine = engine;
 			this.Type = type;
-			this.Data1 = data;
+			this.Data1 = data1;
 			this.Data2 = data2;
 		}
 
@@ -3011,57 +2826,6 @@ namespace Mono.Debugger.Backends
 		{
 			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
 					      Engine, Type, Operation, Data1, Data2);
-		}
-	}
-
-	internal enum CommandResultType {
-		ChildEvent,
-		CommandOk,
-		NotStopped,
-		Interrupted,
-		UnknownError,
-		Exception
-	}
-
-	internal class CommandResult {
-		public readonly static CommandResult Ok = new CommandResult (CommandResultType.CommandOk, null);
-		public readonly static CommandResult Busy = new CommandResult (CommandResultType.NotStopped, null);
-		public readonly static CommandResult Interrupted = new CommandResult (CommandResultType.Interrupted, null);
-
-		public readonly CommandResultType Type;
-		public readonly Inferior.ChildEventType EventType;
-		public readonly int Argument;
-		public readonly object Data;
-
-		public CommandResult (Inferior.ChildEventType type, int arg)
-		{
-			this.EventType = type;
-			this.Argument = arg;
-		}
-
-		public CommandResult (Inferior.ChildEventType type, object data)
-		{
-			this.EventType = type;
-			this.Argument = 0;
-			this.Data = data;
-		}
-
-		public CommandResult (CommandResultType type, object data)
-		{
-			this.Type = type;
-			this.Data = data;
-		}
-
-		public CommandResult (Exception e)
-		{
-			this.Type = CommandResultType.Exception;
-			this.Data = e;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("CommandResult ({0}:{1}:{2}:{3})",
-					      Type, EventType, Argument, Data);
 		}
 	}
 

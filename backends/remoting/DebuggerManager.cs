@@ -1,16 +1,13 @@
 using System;
 using System.Collections;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Remoting
 {
 	public class DebuggerManager : MarshalByRefObject
 	{
 		public readonly Guid Guid = Guid.NewGuid ();
-
-		public static DebuggerManager GlobalManager = new DebuggerManager ();
-
-		private DebuggerManager ()
-		{ }
 
 		static int next_id = 0;
 		private Hashtable clients = Hashtable.Synchronized (new Hashtable ());
@@ -23,14 +20,6 @@ namespace Mono.Debugger.Remoting
 		long next_sequence_id = 0;
 		public long NextSequenceID {
 			get { return ++next_sequence_id; }
-		}
-
-		public DebuggerClient Run ()
-		{
-			int id = ++next_id;
-			DebuggerClient client = new DebuggerClient (this, id);
-			clients.Add (id, client);
-			return client;
 		}
 
 		public DebuggerClient Run (string host, string remote_mono)
@@ -63,6 +52,11 @@ namespace Mono.Debugger.Remoting
 
 		public bool HasTarget {
 			get { return clients.Count > 0; }
+		}
+
+		internal Process CreateProcess (SingleSteppingEngine sse)
+		{
+			return new Process (sse);
 		}
 	}
 }

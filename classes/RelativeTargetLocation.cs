@@ -5,6 +5,7 @@ namespace Mono.Debugger.Languages
 	// <summary>
 	//   This is just an address, but its lifetime is tied to the lifetime of another location.
 	// </summary>
+	[Serializable]
 	public class RelativeTargetLocation : TargetLocation
 	{
 		TargetLocation relative_to;
@@ -15,13 +16,6 @@ namespace Mono.Debugger.Languages
 		{
 			this.relative_to = relative_to;
 			this.address = address;
-
-			relative_to.LocationInvalidEvent += new LocationEventHandler (location_invalid);
-		}
-
-		void location_invalid (TargetLocation location)
-		{
-			SetInvalid ();
 		}
 
 		public override bool HasAddress {

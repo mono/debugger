@@ -54,7 +54,7 @@ namespace Mono.Debugger.Frontend
 			this.is_interactive = is_interactive;
 			this.options = options;
 
-			manager = DebuggerManager.GlobalManager;
+			manager = new DebuggerManager ();
 
 			procs = new Hashtable ();
 			events = new Hashtable ();
@@ -308,10 +308,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				DebuggerClient client;
-				if (options.IsRemote)
-					client = manager.Run (options.RemoteHost, options.RemoteMono);
-				else
-					client = manager.Run ();
+				client = manager.Run (options.RemoteHost, options.RemoteMono);
 				DebuggerBackend backend = client.DebuggerBackend;
 
 				new InterpreterEventSink (this, client, backend);

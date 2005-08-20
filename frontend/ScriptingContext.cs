@@ -15,7 +15,8 @@ namespace Mono.Debugger.Frontend
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
 
-	public class FrameHandle : MarshalByRefObject
+	[Serializable]
+	public class FrameHandle
 	{
 		ProcessHandle process;
 		StackFrame frame;
@@ -217,7 +218,8 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class BacktraceHandle : MarshalByRefObject
+	[Serializable]
+	public class BacktraceHandle
 	{
 		FrameHandle[] frames;
 

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
@@ -22,7 +23,7 @@ namespace Mono.Debugger
 						   object user_data);
 	public delegate void ProcessExitedHandler (Process process);
 
-	public class Process : MarshalByRefObject, ITargetAccess, IDisassembler
+	public class Process : MarshalByRefObject, ITargetAccess
 	{
 		internal Process (SingleSteppingEngine engine)
 		{
@@ -157,6 +158,7 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.NoTarget);
 		}
 
+		[OneWay]
 		internal void SendTargetEvent (TargetEventArgs args)
 		{
 			if ((args.Type == TargetEventType.TargetSignaled) ||
@@ -420,22 +422,6 @@ namespace Mono.Debugger
 		//
 		// Disassembling.
 		//
-
-		public IDisassembler Disassembler {
-			get { return this; }
-		}
-
-		ISimpleSymbolTable IDisassembler.SymbolTable {
-			get {
-				check_engine ();
-				return engine.SimpleSymbolTable;
-			}
-
-			set {
-				check_engine ();
-				engine.SimpleSymbolTable = value;
-			}
-		}
 
 		public int GetInstructionSize (TargetAddress address)
 		{

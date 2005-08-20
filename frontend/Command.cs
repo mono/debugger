@@ -503,7 +503,6 @@ namespace Mono.Debugger.Frontend
 		FrameHandle frame;
 		TargetAddress address;
 		IMethod method;
-		IDisassembler dis;
 		Expression expression;
 
 		public bool Method {
@@ -522,7 +521,6 @@ namespace Mono.Debugger.Frontend
 				return true;
 
 			frame = ResolveFrame (context);
-			dis = context.CurrentProcess.Process.Disassembler;
 
 			if (Argument != "") {
 				if (count < 0)
@@ -546,6 +544,8 @@ namespace Mono.Debugger.Frontend
 	
 		protected override void DoExecute (ScriptingContext context)
 		{
+			ProcessHandle process = ResolveProcess (context);
+
 			if (do_method) {
 				frame.DisassembleMethod (context);
 				return;
@@ -573,7 +573,7 @@ namespace Mono.Debugger.Frontend
 					return;
 				}
 
-				line = dis.DisassembleInstruction (method, address);
+				line = process.Process.DisassembleInstruction (method, address);
 				if (line == null) {
 					context.Error ("Cannot disassemble instruction at " +
 						       "address {0}.", address);

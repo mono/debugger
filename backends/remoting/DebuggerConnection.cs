@@ -265,10 +265,8 @@ namespace Mono.Debugger.Remoting
 			MessageData data;
 			long sequence_id = GetNextSequenceID ();
 			lock (this) {
-#if FIXME
 				data = new MessageData (sequence_id);
 				requests.Add (sequence_id, data);
-#endif
 
 				DebuggerMessageIO.SendMessageStatus (
 					network_stream, MessageStatus.Message, sequence_id);

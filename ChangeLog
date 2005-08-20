@@ -1,5 +1,39 @@
 2005-08-20  Martin Baulig  <martin@ximian.com>
 
+	Drop support for not running the debugger out-of-proc.
+
+	* classes/ScriptingContext.cs
+	(FrameHandle, BacktraceHandle): Mark this [Serializable] and not
+	MarshalByRefObject.
+
+	* classes/TargetLocation.cs
+	(TargetLocation): Mark this [Serializable].
+	(TargetLocation.LocationInvalidEvent): Removed.
+
+	* backends/Process.cs (Process): Don't implement IDisassembler.
+	(Process.SendTargetEvent): Mark this as [OneWay].
+
+	* backends/remoting/DebuggerManager.cs: Make sure we only create
+	on instance of this.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.SyncCommandAttribute): New attribute.
+	(SingleSteppingEngine.ProcessCommand): Removed - mark all
+	synchronous commands with the [SyncCommand] attribute - the
+	remoting framework will call ThreadManager.SendSyncCommand() for us.
+	(SingleSteppingEngine.CommandResult): Removed.
+
+	* backends/remoting/DebuggerServerDispatchSink.cs
+	(DebuggerServerDispatchSink.ProcessEvent): Check whether we're
+	invoking a method with the [SyncCommand] attribute and call
+	ThreadManager.CallSyncCommand().
+
+	* backends/ThreadManager.cs
+	(ThreadManager.SendSyncCommand): We're now called from the
+	remoting framework.
+
+2005-08-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs: Moved the implementation of all methods
 	starting commands to the SingleSteppingEngine, duplicate the API
 	entry points here and just call the corresponding method there.
