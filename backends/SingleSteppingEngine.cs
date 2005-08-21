@@ -524,7 +524,7 @@ namespace Mono.Debugger.Backends
 		//   back to the main event loop and wait for it (or another thread) to stop
 		//   (or to get another command from the user).
 		// </summary>
-		public void ProcessOperation (Operation operation)
+		void ProcessOperation (Operation operation)
 		{
 			stop_requested = false;
 
@@ -533,6 +533,11 @@ namespace Mono.Debugger.Backends
 
 			current_operation = operation;
 			operation.Execute (this);
+		}
+
+		public void ProcessOperation (Command command)
+		{
+			ProcessOperation (Operation.CreateOperation (command));
 		}
 
 		void update_symtabs (object sender, ISymbolTable symbol_table,
@@ -1514,22 +1519,22 @@ namespace Mono.Debugger.Backends
 
 #region SSE Commands
 
-		bool start_step_operation (Operation operation, bool wait)
+		bool start_step_operation (Command command, bool wait)
 		{
 			if (!StartOperation ())
 				return false;
-			SendAsyncCommand (new Command (this, operation), wait);
+			SendAsyncCommand (command, wait);
 			return true;
 		}
 
 		void call_method (CallMethodData cdata)
 		{
-			SendCallbackCommand (new Command (this, new OperationCallMethod (cdata)));
+			SendCallbackCommand (new Command (this, cdata));
 		}
 
 		void call_method (RuntimeInvokeData rdata)
 		{
-			SendCallbackCommand (new Command (this, new OperationRuntimeInvoke (rdata)));
+			SendCallbackCommand (new Command (this, rdata));
 		}
 
 		// <summary>
@@ -1537,7 +1542,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool StepInstruction (bool wait)
 		{
-			return start_step_operation (new OperationStep (StepMode.SingleInstruction), wait);
+			return start_step_operation (new Command (this, StepMode.SingleInstruction), wait);
 		}
 
 		// <summary>
@@ -1545,7 +1550,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool StepNativeInstruction (bool wait)
 		{
-			return start_step_operation (new OperationStep (StepMode.NativeInstruction), wait);
+			return start_step_operation (new Command (this, StepMode.NativeInstruction), wait);
 		}
 
 		// <summary>
@@ -1553,7 +1558,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool NextInstruction (bool wait)
 		{
-			return start_step_operation (new OperationStep (StepMode.NextInstruction), wait);
+			return start_step_operation (new Command (this, StepMode.NextInstruction), wait);
 		}
 
 		// <summary>
@@ -1561,7 +1566,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool StepLine (bool wait)
 		{
-			return start_step_operation (new OperationStep (StepMode.SourceLine), wait);
+			return start_step_operation (new Command (this, StepMode.SourceLine), wait);
 		}
 
 		// <summary>
@@ -1569,7 +1574,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool NextLine (bool wait)
 		{
-			return start_step_operation (new OperationStep (StepMode.NextLine), wait);
+			return start_step_operation (new Command (this, StepMode.NextLine), wait);
 		}
 
 		// <summary>
@@ -1577,6 +1582,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool Finish (bool wait)
 		{
+#if FIXME
 			if (!StartOperation ())
 				return false;
 
@@ -1590,9 +1596,11 @@ namespace Mono.Debugger.Backends
 				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
 				null, StepMode.Finish);
 
-			Operation operation = new OperationStep (sf);
-			SendAsyncCommand (new Command (this, operation), wait);
+			SendAsyncCommand (new Command (this, sf), wait);
 			return true;
+#else
+			return false;
+#endif
 		}
 
 		// <summary>
@@ -1603,8 +1611,7 @@ namespace Mono.Debugger.Backends
 			if (!StartOperation ())
 				return false;
 
-			Operation operation = new OperationFinish ();
-			SendAsyncCommand (new Command (this, operation), wait);
+			SendAsyncCommand (new Command (this, CommandType.Finish), wait);
 			return true;
 		}
 
@@ -1625,7 +1632,8 @@ namespace Mono.Debugger.Backends
 
 		public bool Continue (TargetAddress until, bool in_background, bool wait)
 		{
-			return start_step_operation (new OperationRun (until, in_background), wait);
+			Command command = new Command (this, CommandType.Run, until, in_background);
+			return start_step_operation (command, wait);
 		}
 
 		public long CallMethod (TargetAddress method, long method_argument,
@@ -1686,7 +1694,7 @@ namespace Mono.Debugger.Backends
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				language, method_argument, object_argument, param_objects);
 			data.Debug = true;
-			return start_step_operation (new OperationRuntimeInvoke (data), true);
+			return start_step_operation (new Command (this, data), true);
 		}
 
 		public TargetAddress RuntimeInvoke (StackFrame frame,
@@ -2160,7 +2168,7 @@ namespace Mono.Debugger.Backends
 #endregion
 
 #region SSE Operations
-	internal abstract class Operation {
+	protected abstract class Operation {
 		public abstract bool IsSourceOperation {
 			get;
 		}
@@ -2192,6 +2200,30 @@ namespace Mono.Debugger.Backends
 						     TargetAddress stack, TargetAddress exc)
 		{
 			return true;
+		}
+
+		public static Operation CreateOperation (Command command)
+		{
+			switch (command.Type) {
+			case CommandType.Step:
+				return new OperationStep ((StepMode) command.Data1);
+
+			case CommandType.Run:
+				return new OperationRun (
+					(TargetAddress) command.Data1, (bool) command.Data2);
+
+			case CommandType.Finish:
+				return new OperationFinish ();
+
+			case CommandType.CallMethod:
+				return new OperationCallMethod ((CallMethodData) command.Data1);
+
+			case CommandType.RuntimeInvoke:
+				return new OperationRuntimeInvoke ((RuntimeInvokeData) command.Data1);
+
+			default:
+				throw new InternalError ();
+			}
 		}
 	}
 
@@ -2797,22 +2829,60 @@ namespace Mono.Debugger.Backends
 #endregion
 	}
 
+	[Serializable]
 	internal enum CommandType {
-		Operation,
-		Message
+		Message,
+		Step,
+		Run,
+		Finish,
+		CallMethod,
+		RuntimeInvoke
 	}
 
+	[Serializable]
 	internal class Command {
-		public SingleSteppingEngine Engine;
-		public CommandType Type;
-		public SingleSteppingEngine.Operation Operation;
+		public readonly SingleSteppingEngine Engine;
+		public readonly CommandType Type;
 		public object Data1, Data2;
 
-		public Command (SingleSteppingEngine engine, SingleSteppingEngine.Operation operation)
+		public Command (SingleSteppingEngine engine, CommandType type)
 		{
 			this.Engine = engine;
-			this.Type = CommandType.Operation;
-			this.Operation = operation;
+			this.Type = type;
+		}
+
+		public Command (SingleSteppingEngine engine, CommandType type, object data1)
+			: this (engine, type)
+		{
+			this.Data1 = data1;
+		}
+
+		public Command (SingleSteppingEngine engine, CommandType type,
+				object data1, object data2)
+			: this (engine, type, data1)
+		{
+			this.Data2 = data2;
+		}
+
+		public Command (SingleSteppingEngine engine, StepMode mode)
+		{
+			this.Engine = engine;
+			this.Type = CommandType.Step;
+			this.Data1 = mode;
+		}
+
+		public Command (SingleSteppingEngine engine, CallMethodData cdata)
+		{
+			this.Engine = engine;
+			this.Type = CommandType.CallMethod;
+			this.Data1 = cdata;
+		}
+
+		public Command (SingleSteppingEngine engine, RuntimeInvokeData rdata)
+		{
+			this.Engine = engine;
+			this.Type = CommandType.RuntimeInvoke;
+			this.Data1 = rdata;
 		}
 
 		public Command (CommandType type, object data1, object data2)
@@ -2824,8 +2894,8 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("Command ({0}:{1}:{2}:{3}:{4})",
-					      Engine, Type, Operation, Data1, Data2);
+			return String.Format ("Command ({0}:{1}:{2}:{3})",
+					      Engine, Type, Data1, Data2);
 		}
 	}
 

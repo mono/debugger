@@ -1,3 +1,11 @@
+2005-08-21  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Operation): Make this class protected.
+	(CommandType): Make this serializable and provide an entry for
+	each operation type.
+	(Command): Removed the `Operation' field and make it serializable.
+
 2005-08-20  Martin Baulig  <martin@ximian.com>
 
 	Drop support for not running the debugger out-of-proc.

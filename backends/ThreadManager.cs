@@ -575,16 +575,14 @@ namespace Mono.Debugger
 					completed_event.Set ();
 					ReleaseCommandMutex ();
 				}
-			} else if (command.Type == CommandType.Operation) {
+			} else {
 				try {
-					command.Engine.ProcessOperation (command.Operation);
+					command.Engine.ProcessOperation (command);
 				} catch (ThreadAbortException) {
 					return;
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
 				}
-			} else {
-				throw new InternalError ();
 			}
 		}
 
