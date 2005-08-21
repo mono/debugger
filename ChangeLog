@@ -1,6 +1,12 @@
 2005-08-21  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OperationFinish): Handle both native and
+	non-native finish here.
+
+2005-08-21  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.Operation): Make this class protected.
 	(CommandType): Make this serializable and provide an entry for
 	each operation type.

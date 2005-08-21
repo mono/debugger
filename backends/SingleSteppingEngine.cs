@@ -1319,7 +1319,7 @@ namespace Mono.Debugger.Backends
 				      this, trampoline, compile, is_start);
 
 			if (is_start) {
-				current_operation = new OperationFinish ();
+				current_operation = new OperationFinish (true);
 				do_continue (trampoline);
 				return;
 			}
@@ -1582,25 +1582,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool Finish (bool wait)
 		{
-#if FIXME
-			if (!StartOperation ())
-				return false;
-
-			StackFrame frame = CurrentFrame;
-			if (frame.Method == null) {
-				AbortOperation ();
-				throw new TargetException (TargetError.NoMethod);
-			}
-
-			StepFrame sf = new StepFrame (
-				frame.Method.StartAddress, frame.Method.EndAddress, frame.SimpleFrame,
-				null, StepMode.Finish);
-
-			SendAsyncCommand (new Command (this, sf), wait);
-			return true;
-#else
-			return false;
-#endif
+			return start_step_operation (new Command (this, CommandType.Finish), wait);
 		}
 
 		// <summary>
@@ -1608,11 +1590,7 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public bool FinishNative (bool wait)
 		{
-			if (!StartOperation ())
-				return false;
-
-			SendAsyncCommand (new Command (this, CommandType.Finish), wait);
-			return true;
+			return start_step_operation (new Command (this, CommandType.FinishNative), wait);
 		}
 
 		public bool Continue (TargetAddress until, bool synchronous)
@@ -2213,7 +2191,10 @@ namespace Mono.Debugger.Backends
 					(TargetAddress) command.Data1, (bool) command.Data2);
 
 			case CommandType.Finish:
-				return new OperationFinish ();
+				return new OperationFinish (false);
+
+			case CommandType.FinishNative:
+				return new OperationFinish (true);
 
 			case CommandType.CallMethod:
 				return new OperationCallMethod ((CallMethodData) command.Data1);
@@ -2635,28 +2616,60 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationFinish : OperationStepBase
 	{
-		TargetAddress until = TargetAddress.Null;
+		public readonly bool Native;
+
+		public OperationFinish (bool native)
+		{
+			this.Native = native;
+		}
 
 		public override bool IsSourceOperation {
 			get { return false; }
 		}
 
+		StepFrame step_frame;
+		TargetAddress until;
+
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
+			if (!Native) {
+				StackFrame frame = sse.CurrentFrame;
+				if (frame.Method == null)
+					throw new TargetException (TargetError.NoMethod);
+
+				step_frame = new StepFrame (
+					frame.Method.StartAddress, frame.Method.EndAddress,
+					frame.SimpleFrame, null, StepMode.Finish);
+			} else {
+				Inferior.StackFrame frame = sse.inferior.GetCurrentFrame ();
+				until = frame.StackPointer;
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} starting finish native until {1}",
+					      sse, until);
+			}
+
 			sse.do_step_native ();
 		}
 
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,
 							Inferior inferior)
 		{
+			if (step_frame != null) {
+				bool in_frame = sse.is_in_step_frame (step_frame, inferior.CurrentFrame);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} finish {1} at {2} ({3}", sse, step_frame,
+					      inferior.CurrentFrame, in_frame);
+
+				if (!in_frame)
+					return true;
+
+				sse.do_next_native ();
+				return false;
+			}
+
 			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 			TargetAddress stack = frame.StackPointer;
-			if (until.IsNull) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} starting finish native until {1}",
-					      sse, stack);
-				until = stack;
-			}
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} finish native: stack = {1}, " +
@@ -2835,6 +2848,7 @@ namespace Mono.Debugger.Backends
 		Step,
 		Run,
 		Finish,
+		FinishNative,
 		CallMethod,
 		RuntimeInvoke
 	}
