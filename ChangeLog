@@ -1,5 +1,20 @@
 2005-08-21  Martin Baulig  <martin@ximian.com>
 
+	Rewrote the event handling for async commands; the `Process' now
+	sends the command and waits for its completion.
+
+	* backends/Process.cs (Process.SendAsyncCommand): New method;
+	start all async commands here and also wait here for their
+	completion.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.StartOperation): Removed.
+	(SingleSteppingEngine.AbortOperation): Removed.
+	(SingleSteppingEngine.SendAsyncCommand): Just start the command,
+	don't wait for its completion.
+
+2005-08-21  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.OperationFinish): Handle both native and
 	non-native finish here.

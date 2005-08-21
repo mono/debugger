@@ -58,7 +58,7 @@ namespace Mono.Debugger.Languages.Mono
                         if (str == null)
                                 throw new ArgumentException ();
 
-                        TargetAddress retval = frame.Process.CallMethod (CreateString, str);
+                        TargetAddress retval = frame.Process.CallMethod (CreateString, 0, str);
                         TargetLocation location = new AbsoluteTargetLocation (frame, retval);
                         return new MonoStringObject ((MonoStringTypeInfo)type_info, location);
                 }

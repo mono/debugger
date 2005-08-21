@@ -266,7 +266,7 @@ namespace Mono.Debugger.Languages.Mono
 				return true;
 
 			mutex.Lock ();
-			process.CallMethod (info.LookupAssembly, ass.Location);
+			process.CallMethod (info.LookupAssembly, 0, ass.Location);
 			mutex.Unlock ();
 
 			// always return true?
@@ -578,9 +578,9 @@ namespace Mono.Debugger.Languages.Mono
 		internal int InsertBreakpoint (Process process, string method_name,
 					       BreakpointHandler handler, object user_data)
 		{
-			long retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
+			TargetAddress retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
 
-			int index = (int) retval;
+			int index = (int) retval.Address;
 
 			if (index <= 0)
 				return -1;
@@ -626,7 +626,7 @@ namespace Mono.Debugger.Languages.Mono
 			// debugging info made available to the
 			// debugger).
 			mutex.Lock ();
-			frame.Process.CallMethod (info.LookupType, name);
+			frame.Process.CallMethod (info.LookupType, 0, name);
 			mutex.Unlock ();
 
 			foreach (MonoSymbolFile symfile in symbol_files) {

@@ -29,10 +29,14 @@ namespace Mono.Debugger
 		{
 			this.engine = engine;
 			this.id = engine.ThreadManager.NextProcessID;
+
+			operation_completed_event = new ManualResetEvent (false);
 		}
+
 
 		int id;
 		SingleSteppingEngine engine;
+		ManualResetEvent operation_completed_event;
 
 		protected internal ILanguage NativeLanguage {
 			get {
@@ -264,13 +268,38 @@ namespace Mono.Debugger
 			}
 		}
 
+		bool SendAsyncCommand (Command command, bool wait)
+		{
+			lock (this) {
+				check_engine ();
+				command.Engine = engine;
+				if (!engine.SendAsyncCommand (command))
+					return false;
+
+				operation_completed_event.Reset ();
+			}
+
+			if (wait) {
+				Report.Debug (DebugFlags.Wait, "{0} waiting", this);
+				operation_completed_event.WaitOne ();
+				Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
+			}
+
+			return true;
+		}
+
+		[OneWay]
+		internal void OperationCompleted (TargetEventArgs result)
+		{
+			operation_completed_event.Set ();
+		}
+
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
 		public bool StepInstruction (bool wait)
 		{
-			check_engine ();
-			return engine.StepInstruction (wait);
+			return SendAsyncCommand (new Command (StepMode.SingleInstruction), wait);
 		}
 
 		// <summary>
@@ -278,8 +307,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepNativeInstruction (bool wait)
 		{
-			check_engine ();
-			return engine.StepNativeInstruction (wait);
+			return SendAsyncCommand (new Command (StepMode.NativeInstruction), wait);
 		}
 
 		// <summary>
@@ -287,8 +315,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool NextInstruction (bool wait)
 		{
-			check_engine ();
-			return engine.NextInstruction (wait);
+			return SendAsyncCommand (new Command (StepMode.NextInstruction), wait);
 		}
 
 		// <summary>
@@ -296,8 +323,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool StepLine (bool wait)
 		{
-			check_engine ();
-			return engine.StepLine (wait);
+			return SendAsyncCommand (new Command (StepMode.SourceLine), wait);
 		}
 
 		// <summary>
@@ -305,8 +331,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool NextLine (bool wait)
 		{
-			check_engine ();
-			return engine.NextLine (wait);
+			return SendAsyncCommand (new Command (StepMode.NextLine), wait);
 		}
 
 		// <summary>
@@ -314,8 +339,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool Finish (bool wait)
 		{
-			check_engine ();
-			return engine.Finish (wait);
+			return SendAsyncCommand (new Command (CommandType.Finish), wait);
 		}
 
 		// <summary>
@@ -323,8 +347,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool FinishNative (bool wait)
 		{
-			check_engine ();
-			return engine.FinishNative (wait);
+			return SendAsyncCommand (new Command (CommandType.FinishNative), wait);
 		}
 
 		public bool Continue (TargetAddress until, bool synchronous)
@@ -344,8 +367,7 @@ namespace Mono.Debugger
 
 		public bool Continue (TargetAddress until, bool in_background, bool wait)
 		{
-			check_engine ();
-			return engine.Continue (until, in_background, wait);
+			return SendAsyncCommand (new Command (CommandType.Run, until, in_background), wait);
 		}
 
 		public void Kill ()
@@ -441,24 +463,32 @@ namespace Mono.Debugger
 			return engine.DisassembleMethod (method);
 		}
 
-		public long CallMethod (TargetAddress method, long method_argument,
-					string string_argument)
+		public TargetAddress CallMethod (TargetAddress method, long method_argument,
+						 string string_argument)
 		{
-			check_engine ();
-			return engine.CallMethod (method, method_argument, string_argument);
-		}
+			CallMethodData data = new CallMethodData (
+				method, method_argument, string_argument, null);
 
-		public TargetAddress CallMethod (TargetAddress method, string arg)
-		{
-			check_engine ();
-			return engine.CallMethod (method, arg);
+			if (!SendAsyncCommand (new Command (data), true))
+				throw new TargetException (TargetError.NotStopped);
+			if (data.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) data.Result;
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 						 TargetAddress arg2)
 		{
-			check_engine ();
-			return engine.CallMethod (method, arg1, arg2);
+			CallMethodData data = new CallMethodData (
+				method, arg1.Address, arg2.Address, null);
+
+			if (!SendAsyncCommand (new Command (data), true))
+				throw new TargetException (TargetError.NotStopped);
+			if (data.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) data.Result;
 		}
 
 		public bool RuntimeInvoke (StackFrame frame,
@@ -466,9 +496,10 @@ namespace Mono.Debugger
 					   TargetAddress object_argument,
 					   TargetAddress[] param_objects)
 		{
-			check_engine ();
-			return engine.RuntimeInvoke (
+			RuntimeInvokeData data = new RuntimeInvokeData (
 				frame, method_argument, object_argument, param_objects);
+			data.Debug = true;
+			return SendAsyncCommand (new Command (data), true);
 		}
 
 		public TargetAddress RuntimeInvoke (StackFrame frame,
@@ -477,10 +508,14 @@ namespace Mono.Debugger
 						    TargetAddress[] param_objects,
 						    out TargetAddress exc_object)
 		{
-			check_engine ();
-			return engine.RuntimeInvoke (
-				frame, method_argument, object_argument, param_objects,
-				out exc_object);
+			RuntimeInvokeData data = new RuntimeInvokeData (
+				frame, method_argument, object_argument, param_objects);
+
+			if (!SendAsyncCommand (new Command (data), true))
+				throw new TargetException (TargetError.NotStopped);
+
+			exc_object = data.ExceptionObject;
+			return data.ReturnObject;
 		}
 
 		public bool HasTarget {

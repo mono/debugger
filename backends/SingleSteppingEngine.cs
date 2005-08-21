@@ -93,7 +93,7 @@ namespace Mono.Debugger.Backends
 			ID = process.ID;
 			PID = inferior.PID;
 
-			operation_completed_event = new ManualResetEvent (false);
+			engine_stopped_event = new ManualResetEvent (false);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
@@ -446,11 +446,12 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				engine_stopped = true;
+				engine_stopped_event.Set ();
 				if (result != null)
 					send_target_event (result);
 				else
 					target_state = TargetState.STOPPED;
-				operation_completed_event.Set ();
+				process.OperationCompleted (result);
 			}
 		}
 
@@ -728,101 +729,22 @@ namespace Mono.Debugger.Backends
 		//   operation is finished.
 		//
 
-
-		// <summary>
-		//   This must be called before sending any commands to the engine.
-		//   It'll acquire the `command_mutex' and make sure that we aren't
-		//   currently performing any async operation.
-		//   Returns true on success and false if we're still busy.
-		// </summary>
-		// <remarks>
-		//   If this returns true, you must call either AbortOperation() or
-		//   SendAsyncCommand().
-		// </remarks>
-		public bool StartOperation ()
+		public bool SendAsyncCommand (Command command)
 		{
 			lock (this) {
-				// First try to get the `command_mutex'.
-				// If we succeed, then no synchronous command is currently
-				// running.
-				if (!manager.AcquireCommandMutex (this)) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} cannot get command mutex", this);
-					return false;
-				}
-				// Check whether we're curring performing an async
-				// stepping operation.
 				if (!engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
-					manager.ReleaseCommandMutex ();
 					return false;
 				}
-				// This will never block.  The only thing which can
-				// happen here is that we were running an async operation
-				// and did not wait for the event yet.
-				operation_completed_event.WaitOne ();
-				engine_stopped = false;
-				Report.Debug (DebugFlags.Wait,
-					      "{0} got command mutex", this);
-				return true;
-			}
-		}
 
-		// <summary>
-		//   Use this if you previously called StartOperation() and you changed
-		//   your mind and don't want to start an operation anymore.
-		// </summary>
-		public void AbortOperation ()
-		{
-			lock (this) {
-				Report.Debug (DebugFlags.Wait,
-					      "{0} aborted operation", this);
 				engine_stopped = true;
-				manager.ReleaseCommandMutex ();
-			}
-		}
-
-		// <summary>
-		//   Sends an async command to the engine.
-		// </summary>
-		// <remarks>
-		//   You must call StartOperation() prior to calling this.
-		// </remarks>	     
-		public void SendAsyncCommand (Command command, bool wait)
-		{
-			lock (this) {
-				operation_completed_event.Reset ();
-				send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
-				manager.SendAsyncCommand (command);
+				engine_stopped_event.Reset ();
 			}
 
-			if (wait) {
-				Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-				operation_completed_event.WaitOne ();
-				Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
-			}
-			Report.Debug (DebugFlags.Wait,
-				      "{0} released command mutex", this);
-			manager.ReleaseCommandMutex ();
-		}
-
-		public void SendCallbackCommand (Command command)
-		{
-			if (!StartOperation ())
-				throw new TargetException (TargetError.NotStopped);
-
-			lock (this) {
-				operation_completed_event.Reset ();
-				manager.SendAsyncCommand (command);
-			}
-
-			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.WaitOne ();
-			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
-			Report.Debug (DebugFlags.Wait,
-				      "{0} released command mutex", this);
-			manager.ReleaseCommandMutex ();
+			send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
+			manager.SendAsyncCommand (command);
+			return true;
 		}
 
 		public bool Stop ()
@@ -843,6 +765,7 @@ namespace Mono.Debugger.Backends
 
 		bool do_wait (bool stop)
 		{
+#if FIXME
 			lock (this) {
 				// First try to get the `command_mutex'.
 				// If we succeed, then no synchronous command is currently
@@ -883,6 +806,9 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.Wait, "{0} stopped", this);
 			manager.ReleaseCommandMutex ();
 			return true;
+#else
+			return true;
+#endif
 		}
 
 		public void Interrupt ()
@@ -1519,186 +1445,6 @@ namespace Mono.Debugger.Backends
 
 #region SSE Commands
 
-		bool start_step_operation (Command command, bool wait)
-		{
-			if (!StartOperation ())
-				return false;
-			SendAsyncCommand (command, wait);
-			return true;
-		}
-
-		void call_method (CallMethodData cdata)
-		{
-			SendCallbackCommand (new Command (this, cdata));
-		}
-
-		void call_method (RuntimeInvokeData rdata)
-		{
-			SendCallbackCommand (new Command (this, rdata));
-		}
-
-		// <summary>
-		//   Step one machine instruction, but don't step into trampolines.
-		// </summary>
-		public bool StepInstruction (bool wait)
-		{
-			return start_step_operation (new Command (this, StepMode.SingleInstruction), wait);
-		}
-
-		// <summary>
-		//   Step one machine instruction, always step into method calls.
-		// </summary>
-		public bool StepNativeInstruction (bool wait)
-		{
-			return start_step_operation (new Command (this, StepMode.NativeInstruction), wait);
-		}
-
-		// <summary>
-		//   Step one machine instruction, but step over method calls.
-		// </summary>
-		public bool NextInstruction (bool wait)
-		{
-			return start_step_operation (new Command (this, StepMode.NextInstruction), wait);
-		}
-
-		// <summary>
-		//   Step one source line.
-		// </summary>
-		public bool StepLine (bool wait)
-		{
-			return start_step_operation (new Command (this, StepMode.SourceLine), wait);
-		}
-
-		// <summary>
-		//   Step one source line, but step over method calls.
-		// </summary>
-		public bool NextLine (bool wait)
-		{
-			return start_step_operation (new Command (this, StepMode.NextLine), wait);
-		}
-
-		// <summary>
-		//   Continue until leaving the current method.
-		// </summary>
-		public bool Finish (bool wait)
-		{
-			return start_step_operation (new Command (this, CommandType.Finish), wait);
-		}
-
-		// <summary>
-		//   Continue until leaving the current method.
-		// </summary>
-		public bool FinishNative (bool wait)
-		{
-			return start_step_operation (new Command (this, CommandType.FinishNative), wait);
-		}
-
-		public bool Continue (TargetAddress until, bool synchronous)
-		{
-			return Continue (until, false, synchronous);
-		}
-
-		public bool Continue (bool in_background, bool synchronous)
-		{
-			return Continue (TargetAddress.Null, in_background, synchronous);
-		}
-
-		public bool Continue (bool synchronous)
-		{
-			return Continue (TargetAddress.Null, false, synchronous);
-		}
-
-		public bool Continue (TargetAddress until, bool in_background, bool wait)
-		{
-			Command command = new Command (this, CommandType.Run, until, in_background);
-			return start_step_operation (command, wait);
-		}
-
-		public long CallMethod (TargetAddress method, long method_argument,
-					string string_argument)
-		{
-			CallMethodData data = new CallMethodData (
-				method, method_argument, string_argument, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-			return (long) data.Result;
-		}
-
-		public TargetAddress CallMethod (TargetAddress method, string arg)
-		{
-			CallMethodData data = new CallMethodData (method, 0, arg, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-			long retval = (long) data.Result;
-			if (TargetAddressSize == 4)
-				retval &= 0xffffffffL;
-			return new TargetAddress (AddressDomain, retval);
-		}
-
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-						 TargetAddress arg2)
-		{
-			CallMethodData data = new CallMethodData (
-				method, arg1.Address, arg2.Address, null);
-
-			call_method (data);
-			if (data.Result == null)
-				throw new Exception ();
-
-			long retval = (long) data.Result;
-			if (TargetAddressSize == 4)
-				retval &= 0xffffffffL;
-			return new TargetAddress (AddressDomain, retval);
-		}
-
-		public bool RuntimeInvoke (StackFrame frame,
-					   TargetAddress method_argument,
-					   TargetAddress object_argument,
-					   TargetAddress[] param_objects)
-		{
-			IMethod method = frame.Method;
-			if (method == null)
-				throw new InvalidOperationException ();
-
-			ILanguageBackend language = method.Module.LanguageBackend
-				as ILanguageBackend;
-			if (language == null)
-				throw new InvalidOperationException ();
-
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				language, method_argument, object_argument, param_objects);
-			data.Debug = true;
-			return start_step_operation (new Command (this, data), true);
-		}
-
-		public TargetAddress RuntimeInvoke (StackFrame frame,
-						    TargetAddress method_argument,
-						    TargetAddress object_argument,
-						    TargetAddress[] param_objects,
-						    out TargetAddress exc_object)
-		{
-			IMethod method = frame.Method;
-			if (method == null)
-				throw new InvalidOperationException ();
-
-			ILanguageBackend language = method.Module.LanguageBackend
-				as ILanguageBackend;
-			if (language == null)
-				throw new InvalidOperationException ();
-
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				language, method_argument, object_argument, param_objects);
-
-			call_method (data);
-
-			exc_object = data.ExceptionObject;
-			return data.ReturnObject;
-		}
-
 		[SyncCommand]
 		public Backtrace GetBacktrace (int max_frames)
 		{
@@ -1864,7 +1610,7 @@ namespace Mono.Debugger.Backends
 		ISimpleSymbolTable current_simple_symtab;
 		Hashtable exception_handlers;
 		bool engine_stopped;
-		ManualResetEvent operation_completed_event;
+		ManualResetEvent engine_stopped_event;
 		bool stop_requested;
 		bool is_main, reached_main;
 		public readonly int ID;
@@ -1987,7 +1733,10 @@ namespace Mono.Debugger.Backends
 								Inferior inferior,
 								long data1, long data2)
 			{
-				data.Result = data1;
+				if (inferior.TargetAddressSize == 4)
+					data1 &= 0xffffffffL;
+
+				data.Result = new TargetAddress (inferior.AddressDomain, data1);
 
 				Report.Debug (DebugFlags.EventLoop,
 					      "Call method done: {0} {1:x} {2:x}",
@@ -2049,6 +1798,7 @@ namespace Mono.Debugger.Backends
 		protected class CallbackRuntimeInvoke : Callback
 		{
 			RuntimeInvokeData rdata;
+			ILanguageBackend language;
 			TargetAddress method;
 			bool method_compiled;
 
@@ -2061,15 +1811,25 @@ namespace Mono.Debugger.Backends
 			protected override void DoExecute (SingleSteppingEngine sse,
 							   Inferior inferior)
 			{
+				if (language == null) {
+					IMethod method = rdata.Frame.Method;
+					if (method == null)
+						throw new InvalidOperationException ();
+
+					language = method.Module.LanguageBackend as ILanguageBackend;
+					if (language == null)
+						throw new InvalidOperationException ();
+				}
+
 				if (!rdata.ObjectArgument.IsNull)
 					inferior.CallMethod (
-						rdata.Language.GetVirtualMethodFunc,
+						language.GetVirtualMethodFunc,
 						rdata.ObjectArgument.Address,
 						rdata.MethodArgument.Address, ID);
 				else {
 					method = rdata.MethodArgument;
 					inferior.CallMethod (
-						rdata.Language.CompileMethodFunc,
+						language.CompileMethodFunc,
 						method.Address, 0, ID);
 				}
 			}
@@ -2082,7 +1842,7 @@ namespace Mono.Debugger.Backends
 					method = new TargetAddress (
 						inferior.AddressDomain, data1);
 
-					inferior.CallMethod (rdata.Language.CompileMethodFunc,
+					inferior.CallMethod (language.CompileMethodFunc,
 							     method.Address,
 							     rdata.ObjectArgument.Address, ID);
 					return false;
@@ -2101,7 +1861,7 @@ namespace Mono.Debugger.Backends
 						sse.insert_temporary_breakpoint (invoke);
 
 					inferior.RuntimeInvoke (
-						rdata.Language.RuntimeInvokeFunc,
+						language.RuntimeInvokeFunc,
 						method, rdata.ObjectArgument,
 						rdata.ParamObjects, ID, rdata.Debug);
 					return false;
@@ -2855,55 +2615,43 @@ namespace Mono.Debugger.Backends
 
 	[Serializable]
 	internal class Command {
-		public readonly SingleSteppingEngine Engine;
+		public SingleSteppingEngine Engine;
 		public readonly CommandType Type;
 		public object Data1, Data2;
 
-		public Command (SingleSteppingEngine engine, CommandType type)
+		public Command (CommandType type)
 		{
-			this.Engine = engine;
 			this.Type = type;
 		}
 
-		public Command (SingleSteppingEngine engine, CommandType type, object data1)
-			: this (engine, type)
+		public Command (CommandType type, object data1)
+			: this (type)
 		{
 			this.Data1 = data1;
 		}
 
-		public Command (SingleSteppingEngine engine, CommandType type,
-				object data1, object data2)
-			: this (engine, type, data1)
+		public Command (CommandType type, object data1, object data2)
+			: this (type, data1)
 		{
 			this.Data2 = data2;
 		}
 
-		public Command (SingleSteppingEngine engine, StepMode mode)
+		public Command (StepMode mode)
 		{
-			this.Engine = engine;
 			this.Type = CommandType.Step;
 			this.Data1 = mode;
 		}
 
-		public Command (SingleSteppingEngine engine, CallMethodData cdata)
+		public Command (CallMethodData cdata)
 		{
-			this.Engine = engine;
 			this.Type = CommandType.CallMethod;
 			this.Data1 = cdata;
 		}
 
-		public Command (SingleSteppingEngine engine, RuntimeInvokeData rdata)
+		public Command (RuntimeInvokeData rdata)
 		{
-			this.Engine = engine;
 			this.Type = CommandType.RuntimeInvoke;
 			this.Data1 = rdata;
-		}
-
-		public Command (CommandType type, object data1, object data2)
-		{
-			this.Type = type;
-			this.Data1 = data1;
-			this.Data2 = data2;
 		}
 
 		public override string ToString ()
@@ -2954,7 +2702,7 @@ namespace Mono.Debugger.Backends
 
 	internal sealed class RuntimeInvokeData
 	{
-		public readonly ILanguageBackend Language;
+		public readonly StackFrame Frame;
 		public readonly TargetAddress MethodArgument;
 		public readonly TargetAddress ObjectArgument;
 		public readonly TargetAddress[] ParamObjects;
@@ -2964,12 +2712,12 @@ namespace Mono.Debugger.Backends
 		public TargetAddress ReturnObject;
 		public TargetAddress ExceptionObject;
 
-		public RuntimeInvokeData (ILanguageBackend language,
+		public RuntimeInvokeData (StackFrame frame,
 					  TargetAddress method_argument,
 					  TargetAddress object_argument,
 					  TargetAddress[] param_objects)
 		{
-			this.Language = language;
+			this.Frame = frame;
 			this.MethodArgument = method_argument;
 			this.ObjectArgument = object_argument;
 			this.ParamObjects = param_objects;
