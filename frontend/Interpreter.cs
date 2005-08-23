@@ -338,7 +338,8 @@ namespace Mono.Debugger.Frontend
 				backend.Run (null, argv);
 				Process process = backend.ThreadManager.WaitForApplication ();
 				Print ("Server started: @{0}", process.ID);
-				process.Continue (true, false);
+				process.Continue (true);
+				process.Wait ();
 
 				return process;
 			} catch (TargetException e) {
@@ -560,6 +561,11 @@ namespace Mono.Debugger.Frontend
 		{
 			manager.Kill ();
 			TargetExited (null);
+		}
+
+		public void Interrupt ()
+		{
+			manager.Interrupt ();
 		}
 
 		protected class InterpreterEventSink : MarshalByRefObject

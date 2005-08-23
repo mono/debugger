@@ -38,15 +38,10 @@ namespace Mono.Debugger
 			command_mutex.DebugFlags = DebugFlags.Wait;
 
 			ready_event = new ManualResetEvent (false);
-			engine_event = Semaphore.CreateThreadManagerSemaphore ();
 			wait_event = new AutoResetEvent (false);
+			idle_event = new ManualResetEvent (false);
 
 			mono_debugger_server_global_init ();
-		}
-
-		public static void Initialize ()
-		{
-			mono_debugger_server_static_init ();
 		}
 
 		SingleSteppingEngine the_engine;
@@ -57,8 +52,8 @@ namespace Mono.Debugger
 		Thread inferior_thread;
 		Thread wait_thread;
 		ManualResetEvent ready_event;
+		ManualResetEvent idle_event;
 		AutoResetEvent wait_event;
-		Semaphore engine_event;
 		Hashtable thread_hash;
 
 		bool has_thread_lock;
@@ -70,11 +65,7 @@ namespace Mono.Debugger
 		ManualResetEvent start_event;
 		AutoResetEvent completed_event;
 		DebuggerMutex command_mutex;
-		bool sync_command_running;
 		bool abort_requested;
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_static_init ();
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_global_init ();
@@ -108,6 +99,7 @@ namespace Mono.Debugger
 			}
 		}
 
+		bool engine_is_busy = false;
 		bool engine_is_ready = false;
 		Exception start_error = null;
 
@@ -116,7 +108,6 @@ namespace Mono.Debugger
 		//   lock (this) before accessing/modifying them.
 		// </remarks>
 		Command current_command = null;
-		SingleSteppingEngine command_engine = null;
 		SingleSteppingEngine current_event = null;
 		int current_event_status = 0;
 
@@ -144,6 +135,8 @@ namespace Mono.Debugger
 		{
 			this.start = start;
 
+			engine_is_busy = true;
+
 			wait_thread = new Thread (new ThreadStart (start_wait_thread));
 			wait_thread.IsBackground = true;
 			wait_thread.Start ();
@@ -158,6 +151,8 @@ namespace Mono.Debugger
 		public Process WaitForApplication ()
 		{
 			ready_event.WaitOne ();
+
+			engine_is_busy = false;
 
 			return main_process;
 		}
@@ -398,19 +393,15 @@ namespace Mono.Debugger
 		//   Note that you must not keep this mutex when returning from the
 		//   function which acquired it.
 		// </summary>
-		internal bool AcquireCommandMutex (SingleSteppingEngine engine)
+		internal bool AcquireCommandMutex ()
 		{
-			if (!command_mutex.TryLock ())
-				return false;
+			lock (this) {
+				if (engine_is_busy)
+					return false;
 
-			command_engine = engine;
-			return true;
-		}
-
-		internal void ReleaseCommandMutex ()
-		{
-			command_engine = null;
-			command_mutex.Unlock ();
+				engine_is_busy = true;
+				return true;
+			}
 		}
 
 		internal bool InBackgroundThread {
@@ -421,15 +412,15 @@ namespace Mono.Debugger
 		{
 			Command command = new Command (CommandType.Message, message, sink);
 
-			if (!AcquireCommandMutex (null)) {
-				TargetException ex = new TargetException (TargetError.NotStopped);
-				return new ReturnMessage (ex, message);
-			}
-
 			lock (this) {
+				if (engine_is_busy) {
+					TargetException ex = new TargetException (TargetError.NotStopped);
+					return new ReturnMessage (ex, message);
+				}
+
 				current_command = command;
-				sync_command_running = true;
-				engine_event.Set ();
+				engine_is_busy = true;
+				Semaphore.Set ();
 			}
 
 			return null;
@@ -448,7 +439,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				current_command = command;
-				engine_event.Set ();
+				Semaphore.Set ();
 			}
 		}
 
@@ -465,7 +456,7 @@ namespace Mono.Debugger
 		{
 			Report.Debug (DebugFlags.Wait, "ThreadManager waiting");
 
-			engine_event.Wait ();
+			Semaphore.Wait ();
 
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait, "Engine thread abort requested");
@@ -496,44 +487,13 @@ namespace Mono.Debugger
 				}
 
 				lock (this) {
+					engine_is_busy = false;
 					wait_event.Set ();
 				}
 
 				if (!engine_is_ready) {
 					engine_is_ready = true;
 					start_event.Set ();
-				}
-				return;
-			}
-
-			//
-			// We caught a SIGINT.
-			//
-			if (mono_debugger_server_get_pending_sigint () > 0) {
-				Report.Debug (DebugFlags.EventLoop,
-					      "ThreadManager received SIGINT: {0} {1}",
-					      command_engine, sync_command_running);
-
-				lock (this) {
-					if (sync_command_running) {
-						current_command = null;
-						sync_command_running = false;
-						completed_event.Set ();
-						return;
-					}
-
-					foreach (SingleSteppingEngine engine in thread_hash.Values) {
-						if (!engine.IsDaemon)
-							engine.Interrupt ();
-					}
-
-					if (has_thread_lock) {
-						Report.Debug (DebugFlags.Threads,
-							      "Aborting global thread lock");
-
-						has_thread_lock = false;
-						thread_lock_mutex.Unlock ();
-					}
 				}
 				return;
 			}
@@ -546,9 +506,6 @@ namespace Mono.Debugger
 				if (command == null)
 					return;
 			}
-
-			if (command == null)
-				return;
 
 			Report.Debug (DebugFlags.EventLoop,
 				      "ThreadManager received command: {0}", command);
@@ -571,9 +528,8 @@ namespace Mono.Debugger
 
 				lock (this) {
 					current_command = null;
-					sync_command_running = false;
+					engine_is_busy = false;
 					completed_event.Set ();
-					ReleaseCommandMutex ();
 				}
 			} else {
 				try {
@@ -583,6 +539,8 @@ namespace Mono.Debugger
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
 				}
+
+				engine_is_busy = false;
 			}
 		}
 
@@ -646,7 +604,8 @@ namespace Mono.Debugger
 
 						current_event = event_engine;
 						current_event_status = status;
-						engine_event.Set ();
+						engine_is_busy = true;
+						Semaphore.Set ();
 					}
 				}
 			}
@@ -670,7 +629,7 @@ namespace Mono.Debugger
 
 				abort_requested = true;
 				wait_event.Set();
-				engine_event.Set();
+				Semaphore.Set();
 				disposed = true;
 			}
 

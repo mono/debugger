@@ -47,12 +47,6 @@ namespace Mono.Debugger
 			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
 
-			// XXX should this be in the backend at all?
-			// all it does is cause Ctrl-C to be caught by
-			// the debugger.  Seems like this is a
-			// frontend specific thing.
-			Mono.Debugger.ThreadManager.Initialize ();
-
 			thread_manager = new ThreadManager (this);
 			thread_manager.InitializedEvent += new ThreadEventHandler (initialized_event);
 		}

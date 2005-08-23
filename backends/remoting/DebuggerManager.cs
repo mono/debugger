@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Collections;
 
 using Mono.Debugger.Backends;
@@ -11,6 +12,7 @@ namespace Mono.Debugger.Remoting
 
 		static int next_id = 0;
 		private Hashtable clients = Hashtable.Synchronized (new Hashtable ());
+		private AutoResetEvent interrupt_event = new AutoResetEvent (false);
 
 		int next_process_id = 0;
 		public int NextProcessID {
@@ -32,15 +34,29 @@ namespace Mono.Debugger.Remoting
 
 		public void TargetExited (DebuggerClient client)
 		{
-			lock (clients.SyncRoot) {
+			lock (this) {
 				clients.Remove (client.ID);
 				client.Shutdown ();
 			}
 		}
 
+		public void Wait (Process process)
+		{
+			WaitHandle[] handles = new WaitHandle [2];
+			handles [0] = interrupt_event;
+			handles [1] = process.WaitHandle;
+
+			WaitHandle.WaitAny (handles);
+		}
+
+		public void Interrupt ()
+		{
+			interrupt_event.Set ();
+		}
+
 		public void Kill ()
 		{
-			lock (clients.SyncRoot) {
+			lock (this) {
 				foreach (DebuggerClient client in clients.Values) {
 					client.DebuggerBackend.Dispose ();
 					client.Shutdown ();

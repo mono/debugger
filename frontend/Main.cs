@@ -1,5 +1,9 @@
 using System;
+using System.Threading;
+using System.Runtime.InteropServices;
+
 using Mono.Debugger;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Frontend
 {
@@ -9,6 +13,20 @@ namespace Mono.Debugger.Frontend
 		LineParser parser;
 		string prompt;
 		int line = 0;
+
+		Thread command_thread;
+		Thread main_thread;
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_static_init ();
+
+		[DllImport("monodebuggerserver")]
+		static extern int mono_debugger_server_get_pending_sigint ();
+
+		static CommandLineInterpreter ()
+		{
+			mono_debugger_server_static_init ();
+		}
 
 		internal CommandLineInterpreter (DebuggerTextWriter command_out,
 						 DebuggerTextWriter inferior_out,
@@ -28,6 +46,13 @@ namespace Mono.Debugger.Frontend
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
 			}
+
+			main_thread = new Thread (new ThreadStart (main_thread_main));
+			main_thread.IsBackground = true;
+
+			command_thread = new Thread (new ThreadStart (command_thread_main));
+			command_thread.IsBackground = true;
+			command_thread.Start ();
 
 			if (options.StartTarget)
 				Start ();
@@ -116,6 +141,23 @@ namespace Mono.Debugger.Frontend
 				} else
 					is_complete = false;
 			}
+		}
+
+		void main_thread_main ()
+		{
+			while (true) {
+				try {
+					MainLoop ();
+				} catch (ThreadAbortException) {
+					Thread.ResetAbort ();
+				}
+			}
+		}
+
+		public void RunMainLoop ()
+		{
+			main_thread.Start ();
+			main_thread.Join ();
 		}
 
 		public string ReadInput (bool is_complete)
@@ -375,6 +417,18 @@ namespace Mono.Debugger.Frontend
 			Environment.Exit (0);
 		}
 
+		void command_thread_main ()
+		{
+			do {
+				Semaphore.Wait ();
+				if (mono_debugger_server_get_pending_sigint () == 0)
+					continue;
+
+				Interrupt ();
+				main_thread.Abort ();
+			} while (true);
+		}
+
 		public static void Main (string[] args)
 		{
 			ConsoleTextWriter writer = new ConsoleTextWriter ();
@@ -392,7 +446,7 @@ namespace Mono.Debugger.Frontend
 				writer, writer, true, is_terminal, options);
 
 			try {
-				interpreter.MainLoop ();
+				interpreter.RunMainLoop ();
 			} catch (Exception ex) {
 				Console.WriteLine ("EX: {0}", ex);
 			} finally {

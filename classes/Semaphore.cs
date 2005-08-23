@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.Backends
 {
-	internal class Semaphore
+	public static class Semaphore
 	{
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_sem_init ();
@@ -17,17 +17,12 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_sem_get_value ();
 
-		protected Semaphore ()
+		static Semaphore ()
 		{
 			mono_debugger_server_sem_init ();
 		}
 
-		public static Semaphore CreateThreadManagerSemaphore ()
-		{
-			return new Semaphore ();
-		}
-
-		public void Wait ()
+		public static void Wait ()
 		{
 			Report.Debug (DebugFlags.Mutex, "{0} waiting for semaphore",
 				      DebuggerWaitHandle.CurrentThread);
@@ -36,22 +31,17 @@ namespace Mono.Debugger.Backends
 				      DebuggerWaitHandle.CurrentThread);
 		}
 
-		public void Set ()
+		public static void Set ()
 		{
 			Report.Debug (DebugFlags.Mutex, "{0} signalling semaphore",
 				      DebuggerWaitHandle.CurrentThread);
 			mono_debugger_server_sem_post ();
 		}
 
-		public int Value {
+		public static int Value {
 			get {
 				return mono_debugger_server_sem_get_value ();
 			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("Semaphore ({0})", Value);
 		}
 	}
 }

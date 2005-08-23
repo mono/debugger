@@ -445,6 +445,8 @@ namespace Mono.Debugger.Backends
 		void operation_completed (TargetEventArgs result)
 		{
 			lock (this) {
+				Report.Debug (DebugFlags.EventLoop, "{0} operation completed: {1}",
+					      this, result);
 				engine_stopped = true;
 				engine_stopped_event.Set ();
 				if (result != null)
@@ -732,13 +734,19 @@ namespace Mono.Debugger.Backends
 		public bool SendAsyncCommand (Command command)
 		{
 			lock (this) {
+				Report.Debug (DebugFlags.EventLoop, "{0} sending async command {1}: {2}",
+					      this, command, engine_stopped);
+
 				if (!engine_stopped) {
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
 					return false;
 				}
 
-				engine_stopped = true;
+				if (!manager.AcquireCommandMutex ())
+					return false;
+
+				engine_stopped = false;
 				engine_stopped_event.Reset ();
 			}
 
@@ -759,6 +767,8 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
+			operation_completed (new TargetEventArgs (TargetEventType.TargetExited, 0));
+
 			if (inferior != null)
 				inferior.Kill ();
 		}

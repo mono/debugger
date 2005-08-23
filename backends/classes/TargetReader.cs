@@ -51,7 +51,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class TargetReader : ITargetMemoryReader
+	internal class TargetReader : MarshalByRefObject, ITargetMemoryReader
 	{
 		byte[] data;
 		TargetBinaryReader reader;

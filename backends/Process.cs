@@ -38,6 +38,10 @@ namespace Mono.Debugger
 		SingleSteppingEngine engine;
 		ManualResetEvent operation_completed_event;
 
+		public WaitHandle WaitHandle {
+			get { return operation_completed_event; }
+		}
+
 		protected internal ILanguage NativeLanguage {
 			get {
 				check_engine ();
@@ -162,7 +166,6 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.NoTarget);
 		}
 
-		[OneWay]
 		internal void SendTargetEvent (TargetEventArgs args)
 		{
 			if ((args.Type == TargetEventType.TargetSignaled) ||
@@ -273,8 +276,13 @@ namespace Mono.Debugger
 			lock (this) {
 				check_engine ();
 				command.Engine = engine;
-				if (!engine.SendAsyncCommand (command))
+				Report.Debug (DebugFlags.EventLoop, "{0} sending async command {1}",
+					      this, command);
+
+				if (!engine.SendAsyncCommand (command)) {
+					Console.WriteLine ("ASYNC COMMAND FAILED!");
 					return false;
+				}
 
 				operation_completed_event.Reset ();
 			}
@@ -297,81 +305,82 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public bool StepInstruction (bool wait)
+		public bool StepInstruction ()
 		{
-			return SendAsyncCommand (new Command (StepMode.SingleInstruction), wait);
+			return SendAsyncCommand (new Command (StepMode.SingleInstruction), false);
 		}
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public bool StepNativeInstruction (bool wait)
+		public bool StepNativeInstruction ()
 		{
-			return SendAsyncCommand (new Command (StepMode.NativeInstruction), wait);
+			return SendAsyncCommand (new Command (StepMode.NativeInstruction), false);
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public bool NextInstruction (bool wait)
+		public bool NextInstruction ()
 		{
-			return SendAsyncCommand (new Command (StepMode.NextInstruction), wait);
+			return SendAsyncCommand (new Command (StepMode.NextInstruction), false);
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public bool StepLine (bool wait)
+		public bool StepLine ()
 		{
-			return SendAsyncCommand (new Command (StepMode.SourceLine), wait);
+			return SendAsyncCommand (new Command (StepMode.SourceLine), false);
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public bool NextLine (bool wait)
+		public bool NextLine ()
 		{
-			return SendAsyncCommand (new Command (StepMode.NextLine), wait);
+			return SendAsyncCommand (new Command (StepMode.NextLine), false);
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public bool Finish (bool wait)
+		public bool Finish ()
 		{
-			return SendAsyncCommand (new Command (CommandType.Finish), wait);
+			return SendAsyncCommand (new Command (CommandType.Finish), false);
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public bool FinishNative (bool wait)
+		public bool FinishNative ()
 		{
-			return SendAsyncCommand (new Command (CommandType.FinishNative), wait);
+			return SendAsyncCommand (new Command (CommandType.FinishNative), false);
 		}
 
-		public bool Continue (TargetAddress until, bool synchronous)
+		public bool Continue ()
 		{
-			return Continue (until, false, synchronous);
+			return Continue (TargetAddress.Null, false);
 		}
 
-		public bool Continue (bool in_background, bool synchronous)
+		public bool Continue (TargetAddress until)
 		{
-			return Continue (TargetAddress.Null, in_background, synchronous);
+			return Continue (until, false);
 		}
 
-		public bool Continue (bool synchronous)
+		public bool Continue (bool in_background)
 		{
-			return Continue (TargetAddress.Null, false, synchronous);
+			return Continue (TargetAddress.Null, in_background);
 		}
 
-		public bool Continue (TargetAddress until, bool in_background, bool wait)
+		public bool Continue (TargetAddress until, bool in_background)
 		{
-			return SendAsyncCommand (new Command (CommandType.Run, until, in_background), wait);
+			return SendAsyncCommand (new Command (CommandType.Run, until, in_background), false);
 		}
 
 		public void Kill ()
 		{
+			operation_completed_event.Set ();
 			OnProcessExitedEvent ();
 			Dispose ();
 		}
@@ -382,10 +391,11 @@ namespace Mono.Debugger
 			return engine.Stop ();
 		}
 
-		public bool Wait ()
+		public void Wait ()
 		{
-			check_engine ();
-			return engine.Wait ();
+			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
+			operation_completed_event.WaitOne ();
+			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
 		}
 
 		// <summary>

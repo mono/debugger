@@ -413,33 +413,33 @@ namespace Mono.Debugger.Frontend
 			bool ok;
 			switch (which) {
 			case WhichStepCommand.Continue:
-				ok = process.Continue (interpreter.IsSynchronous);
+				ok = process.Continue ();
 				break;
 			case WhichStepCommand.Step:
 				interpreter.Style.IsNative = false;
-				ok = process.StepLine (interpreter.IsSynchronous);
+				ok = process.StepLine ();
 				break;
 			case WhichStepCommand.Next:
 				interpreter.Style.IsNative = false;
-				ok = process.NextLine (interpreter.IsSynchronous);
+				ok = process.NextLine ();
 				break;
 			case WhichStepCommand.StepInstruction:
 				interpreter.Style.IsNative = true;
-				ok = process.StepInstruction (interpreter.IsSynchronous);
+				ok = process.StepInstruction ();
 				break;
 			case WhichStepCommand.StepNativeInstruction:
 				interpreter.Style.IsNative = true;
-				ok = process.StepNativeInstruction (interpreter.IsSynchronous);
+				ok = process.StepNativeInstruction ();
 				break;
 			case WhichStepCommand.NextInstruction:
 				interpreter.Style.IsNative = true;
-				ok = process.NextInstruction (interpreter.IsSynchronous);
+				ok = process.NextInstruction ();
 				break;
 			case WhichStepCommand.Finish:
-				ok = process.Finish (interpreter.IsSynchronous);
+				ok = process.Finish ();
 				break;
 			case WhichStepCommand.FinishNative:
-				ok = process.FinishNative (interpreter.IsSynchronous);
+				ok = process.FinishNative ();
 				break;
 			default:
 				throw new Exception ();
@@ -447,6 +447,9 @@ namespace Mono.Debugger.Frontend
 
 			if (!ok)
 				throw new ScriptingException ("{0} is not stopped.", Name);
+
+			if (interpreter.IsSynchronous)
+				interpreter.DebuggerManager.Wait (process);
 		}
 
 		public void Stop ()
@@ -465,7 +468,7 @@ namespace Mono.Debugger.Frontend
 			else if (!process.IsStopped)
 				throw new ScriptingException ("{0} is not stopped.", Name);
 
-			process.Continue (true, false);
+			process.Continue (true);
 		}
 
 		public IArchitecture Architecture {
@@ -618,9 +621,9 @@ namespace Mono.Debugger.Frontend
 			{
 				if (args.Frame != null) {
 					FrameHandle frame = new FrameHandle (process, args.Frame);
-					AssemblerLine insn = frame.Disassemble ();
+					// AssemblerLine insn = frame.Disassemble ();
 
-					process.TargetEvent (args, frame, insn);
+					process.TargetEvent (args, frame, null);
 				} else
 					process.TargetEvent (args, null, null);
 			}
@@ -862,8 +865,7 @@ namespace Mono.Debugger.Frontend
 			string formatted;
 			try {
 				formatted = interpreter.Style.FormatType (type);
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0}", ex);
+			} catch {
 				formatted = "<cannot display type>";
 			}
 			Print (formatted);

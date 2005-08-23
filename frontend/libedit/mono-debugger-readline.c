@@ -10,23 +10,9 @@ extern int rl_attempted_completion_over;
 
 static gboolean in_readline = FALSE;
 
-static void
-sigint_handler (int dummy)
-{
-	printf ("Quit\n");
-}
-
 void
 mono_debugger_readline_static_init (void)
 {
-	struct sigaction sa;
-
-	sa.sa_handler = sigint_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-
-	sigaction (SIGINT, &sa, NULL);
-
 	rl_catch_signals = 1;
 	// rl_set_signals ();
 
