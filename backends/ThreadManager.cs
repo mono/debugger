@@ -387,33 +387,19 @@ namespace Mono.Debugger
 			get { return Thread.CurrentThread == inferior_thread; }
 		}
 
-		internal IMessage SendSyncCommand (IMethodCallMessage message, IMessageSink sink)
+		internal IMessage SendCommand (IMethodCallMessage message, IMessageSink sink)
 		{
 			Command command = new Command (CommandType.Message, message, sink);
 
 			lock (this) {
+				if (current_command != null)
+					throw new InternalError ();
+
 				current_command = command;
 				Semaphore.Set ();
 			}
 
 			return null;
-		}
-
-		// <summary>
-		//   Sends an asynchronous command to the background thread.  This is used
-		//   for all stepping commands, no matter whether the user requested a
-		//   synchronous or asynchronous operation.
-		// </summary>
-		// <remarks>
-		//   You must own the 'command_mutex' before calling this method and you must
-		//   make sure you aren't currently running any async commands.
-		// </remarks>
-		internal void SendAsyncCommand (Command command)
-		{
-			lock (this) {
-				current_command = command;
-				Semaphore.Set ();
-			}
 		}
 
 		// <summary>
@@ -437,17 +423,22 @@ namespace Mono.Debugger
 				return;
 			}
 
-			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
-
 			int status;
 			SingleSteppingEngine event_engine;
+			Command command;
 
 			lock (this) {
+				Report.Debug (DebugFlags.Wait, "ThreadManager woke up: {0} {1:x} {2}",
+					      current_event, current_event_status, current_command);
+
 				event_engine = current_event;
 				status = current_event_status;
 
 				current_event = null;
 				current_event_status = 0;
+
+				command = current_command;
+				current_command = null;
 			}
 
 			if (event_engine != null) {
@@ -465,17 +456,10 @@ namespace Mono.Debugger
 					engine_is_ready = true;
 					start_event.Set ();
 				}
+			}
+
+			if (command == null)
 				return;
-			}
-
-			Command command;
-			lock (this) {
-				command = current_command;
-				current_command = null;
-
-				if (command == null)
-					return;
-			}
 
 			Report.Debug (DebugFlags.EventLoop,
 				      "ThreadManager received command: {0}", command);
@@ -496,10 +480,7 @@ namespace Mono.Debugger
 
 				((IMessageSink) command.Data2).SyncProcessMessage (return_message);
 
-				lock (this) {
-					current_command = null;
-					completed_event.Set ();
-				}
+				completed_event.Set ();
 			} else {
 				try {
 					command.Engine.ProcessOperation (command);

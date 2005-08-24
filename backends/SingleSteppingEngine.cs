@@ -70,7 +70,7 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class SingleSteppingEngine : MarshalByRefObject, ITargetMemoryInfo
 	{
-		public class SyncCommandAttribute : Attribute
+		public class CommandAttribute : Attribute
 		{ }
 
 		// <summary>
@@ -538,6 +538,22 @@ namespace Mono.Debugger.Backends
 		//   back to the main event loop and wait for it (or another thread) to stop
 		//   (or to get another command from the user).
 		// </summary>
+		void StartOperation ()
+		{
+			lock (this) {
+				if (!engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "{0} not stopped", this);
+					throw new TargetException (TargetError.NotStopped);
+				}
+
+				engine_stopped = false;
+				engine_stopped_event.Reset ();
+			}
+
+			send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
+		}
+
 		void ProcessOperation (Operation operation)
 		{
 			stop_requested = false;
@@ -693,74 +709,6 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			return inferior.GetMemoryMaps ();
-		}
-
-		//
-		// We support two kinds of commands:
-		//
-		// * synchronous commands are used for things like getting a backtrace
-		//   or accessing the target's memory.
-		//
-		//   If you send such a command to the engine, its main event loop is
-		//   blocked until the command finished, so it can send us the result
-		//   back.
-		//
-		//   The background thread may always send synchronous commands (for
-		//   instance from an event handler), so we do not acquire the
-		//   `command_mutex'.  However, we must still make sure we aren't
-		//   currently performing any async operation and ensure that no other
-		//   thread can start such an operation while we're running the command.
-		//   Because of this, we just acquire the `this' lock and then check
-		//   whether `engine_stopped' is true.
-		//
-		// * asynchronous commands are used for all stepping operations and they
-		//   can be either blocking (waiting for the operation to finish) or
-		//   non-blocking.
-		//
-		//   In either case, we need to acquire the `command_mutex' before sending
-		//   such a command and set `engine_stopped' to false (after checking that
-		//   it was previously true) to ensure that nobody can send us a synchronous
-		//   command.
-		//
-		//   `operation_completed_event' is reset by us and set when the operation
-		//   finished.
-		//
-		//   In non-blocking mode, we start the command and then release the
-		//   `command_mutex'.  Note that we can't just keep the mutex since it's
-		//   "global": it protects the main event loop and thus blocks operations
-		//   on all of the target's threads, not just on us.
-		//
-		// To summarize:
-		//
-		// * having the 'command_mutex' means that nobody can perform any operation
-		//   on any of the target's threads, ie. we're "globally blocked".
-		//
-		// * if `engine_stopped' is false (you're only allowed to check if you own
-		//   the `this' lock!), we're currently performing a stepping operation.
-		//
-		// * the `operation_completed_event' is used to wait until this stepping
-		//   operation is finished.
-		//
-
-		public bool SendAsyncCommand (Command command)
-		{
-			lock (this) {
-				Report.Debug (DebugFlags.EventLoop, "{0} sending async command {1}: {2}",
-					      this, command, engine_stopped);
-
-				if (!engine_stopped) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} not stopped", this);
-					return false;
-				}
-
-				engine_stopped = false;
-				engine_stopped_event.Reset ();
-			}
-
-			send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
-			manager.SendAsyncCommand (command);
-			return true;
 		}
 
 		public void Kill ()
@@ -1413,7 +1361,91 @@ namespace Mono.Debugger.Backends
 
 #region SSE Commands
 
-		[SyncCommand]
+		[Command]
+		public void StepInstruction ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationStep (StepMode.SingleInstruction));
+		}
+
+		[Command]
+		public void StepNativeInstruction ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationStep (StepMode.NativeInstruction));
+		}
+
+		[Command]
+		public void NextInstruction ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationStep (StepMode.NextInstruction));
+		}
+
+		[Command]
+		public void StepLine ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationStep (StepMode.SourceLine));
+		}
+
+		[Command]
+		public void NextLine ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationStep (StepMode.NextLine));
+		}
+
+		[Command]
+		public void Finish ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationFinish (false));
+		}
+
+		[Command]
+		public void FinishNative ()
+		{
+			StartOperation ();
+			ProcessOperation (new OperationFinish (true));
+		}
+
+		[Command]
+		public void Continue (TargetAddress until, bool in_background)
+
+		{
+			StartOperation ();
+			ProcessOperation (new OperationRun (until, in_background));
+		}
+
+		[Command]
+		public void RuntimeInvoke (StackFrame frame,
+					   TargetAddress method_argument,
+					   TargetAddress object_argument,
+					   TargetAddress[] param_objects)
+		{
+			StartOperation ();
+			RuntimeInvokeData data = new RuntimeInvokeData (
+				frame, method_argument, object_argument, param_objects);
+			data.Debug = true;
+			ProcessOperation (new OperationRuntimeInvoke (data));
+		}
+
+		[Command]
+		public void RuntimeInvoke (RuntimeInvokeData rdata)
+		{
+			StartOperation ();
+			ProcessOperation (new OperationRuntimeInvoke (rdata));
+		}
+
+		[Command]
+		public void CallMethod (CallMethodData cdata)
+		{
+			StartOperation ();
+			ProcessOperation (new OperationCallMethod (cdata));
+		}
+
+		[Command]
 		public Backtrace GetBacktrace (int max_frames)
 		{
 			inferior.DebuggerBackend.UpdateSymbolTable ();
@@ -1430,14 +1462,14 @@ namespace Mono.Debugger.Backends
 			return current_backtrace;
 		}
 
-		[SyncCommand]
+		[Command]
 		public Registers GetRegisters ()
 		{
 			registers = inferior.GetRegisters ();
 			return registers;
 		}
 
-		[SyncCommand]
+		[Command]
 		public void SetRegisters (Registers registers)
 		{
 			if (!registers.FromCurrentFrame)
@@ -1447,20 +1479,20 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (registers);
 		}
 
-		[SyncCommand]
+		[Command]
 		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			return manager.BreakpointManager.InsertBreakpoint (
 				inferior, breakpoint, address);
 		}
 
-		[SyncCommand]
+		[Command]
 		public void RemoveBreakpoint (int index)
 		{
 			manager.BreakpointManager.RemoveBreakpoint (inferior, index);
 		}
 
-		[SyncCommand]
+		[Command]
 		public int AddEventHandler (EventType type, Breakpoint breakpoint)
 		{
 			if (type != EventType.CatchException)
@@ -1471,13 +1503,13 @@ namespace Mono.Debugger.Backends
 			return id;
 		}
 
-		[SyncCommand]
+		[Command]
 		public void RemoveEventHandler (int index)
 		{
 			exception_handlers.Remove (index);
 		}
 
-		[SyncCommand]
+		[Command]
 		public int GetInstructionSize (TargetAddress address)
 		{
 			lock (disassembler) {
@@ -1485,7 +1517,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		[SyncCommand]
+		[Command]
 		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
 		{
 			lock (disassembler) {
@@ -1493,7 +1525,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		[SyncCommand]
+		[Command]
 		public AssemblerMethod DisassembleMethod (IMethod method)
 		{
 			lock (disassembler) {
@@ -1501,19 +1533,19 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		[SyncCommand]
+		[Command]
 		public byte[] ReadMemory (TargetAddress address, int size)
 		{
 			return inferior.ReadBuffer (address, size);
 		}
 
-		[SyncCommand]
+		[Command]
 		public string ReadString (TargetAddress address)
 		{
 			return inferior.ReadString (address);
 		}
 
-		[SyncCommand]
+		[Command]
 		public void WriteMemory (TargetAddress address, byte[] buffer)
 		{
 			inferior.WriteBuffer (address, buffer);
@@ -1912,24 +1944,8 @@ namespace Mono.Debugger.Backends
 		public static Operation CreateOperation (Command command)
 		{
 			switch (command.Type) {
-			case CommandType.Step:
-				return new OperationStep ((StepMode) command.Data1);
-
-			case CommandType.Run:
-				return new OperationRun (
-					(TargetAddress) command.Data1, (bool) command.Data2);
-
-			case CommandType.Finish:
-				return new OperationFinish (false);
-
-			case CommandType.FinishNative:
-				return new OperationFinish (true);
-
 			case CommandType.CallMethod:
 				return new OperationCallMethod ((CallMethodData) command.Data1);
-
-			case CommandType.RuntimeInvoke:
-				return new OperationRuntimeInvoke ((RuntimeInvokeData) command.Data1);
 
 			default:
 				throw new InternalError ();
@@ -2574,12 +2590,7 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal enum CommandType {
 		Message,
-		Step,
-		Run,
-		Finish,
-		FinishNative,
-		CallMethod,
-		RuntimeInvoke
+		CallMethod
 	}
 
 	[Serializable]
@@ -2605,22 +2616,10 @@ namespace Mono.Debugger.Backends
 			this.Data2 = data2;
 		}
 
-		public Command (StepMode mode)
-		{
-			this.Type = CommandType.Step;
-			this.Data1 = mode;
-		}
-
 		public Command (CallMethodData cdata)
 		{
 			this.Type = CommandType.CallMethod;
 			this.Data1 = cdata;
-		}
-
-		public Command (RuntimeInvokeData rdata)
-		{
-			this.Type = CommandType.RuntimeInvoke;
-			this.Data1 = rdata;
 		}
 
 		public override string ToString ()
@@ -2699,28 +2698,63 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	[Serializable]
-	internal sealed class RuntimeInvokeData
+	internal sealed class RuntimeInvokeData : MarshalByRefObject
 	{
-		public readonly StackFrame Frame;
-		public readonly TargetAddress MethodArgument;
-		public readonly TargetAddress ObjectArgument;
-		public readonly TargetAddress[] ParamObjects;
+		StackFrame frame;
+		TargetAddress method_arg;
+		TargetAddress object_arg;
+		TargetAddress[] param_objects;
+		bool debug, invoke_ok;
+		TargetAddress return_object;
+		TargetAddress exception_object;
 
-		public bool Debug;
-		public bool InvokeOk;
-		public TargetAddress ReturnObject;
-		public TargetAddress ExceptionObject;
+		public StackFrame Frame {
+			get { return frame; }
+		}
+
+		public TargetAddress MethodArgument {
+			get { return method_arg; }
+		}
+
+		public TargetAddress ObjectArgument {
+			get { return object_arg; }
+		}
+
+		public TargetAddress[] ParamObjects {
+			get { return param_objects; }
+		}
+
+		public bool Debug {
+			get { return debug; }
+			set { debug = value; }
+		}
+
+		public bool InvokeOk {
+			get { return invoke_ok; }
+			set { invoke_ok = true; }
+		}
+
+		public TargetAddress ReturnObject {
+			get { return return_object; }
+			set { return_object = value; }
+		}
+
+		public TargetAddress ExceptionObject {
+			get { return exception_object; }
+			set { exception_object = value; }
+		}
 
 		public RuntimeInvokeData (StackFrame frame,
 					  TargetAddress method_argument,
 					  TargetAddress object_argument,
 					  TargetAddress[] param_objects)
 		{
-			this.Frame = frame;
-			this.MethodArgument = method_argument;
-			this.ObjectArgument = object_argument;
-			this.ParamObjects = param_objects;
+			this.frame = frame;
+			this.method_arg = method_argument;
+			this.object_arg = object_argument;
+			this.param_objects = param_objects;
+			return_object = TargetAddress.Null;
+			exception_object = TargetAddress.Null;
 		}
 	}
 }

@@ -56,13 +56,13 @@ namespace Mono.Debugger.Remoting
 			ServerProcessing proc;
 
 			IMethodCallMessage message = (IMethodCallMessage) requestMsg;
-			bool is_sync = message.MethodBase.IsDefined (
-				typeof (SingleSteppingEngine.SyncCommandAttribute), false);
+			bool is_command = message.MethodBase.IsDefined (
+				typeof (SingleSteppingEngine.CommandAttribute), false);
 
 			DebuggerServerResponseSink sink = new DebuggerServerResponseSink (sinkStack);
 
-			if (is_sync) {
-				responseMsg = DebuggerServer.ThreadManager.SendSyncCommand (message, sink);
+			if (is_command) {
+				responseMsg = DebuggerServer.ThreadManager.SendCommand (message, sink);
 				if (responseMsg != null)
 					return ServerProcessing.Complete;
 				else

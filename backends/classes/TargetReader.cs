@@ -6,6 +6,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Backends
 {
+	[Serializable]
 	internal class TargetInfo : ITargetInfo
 	{
 		int target_int_size;

@@ -5,7 +5,7 @@ using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoMember : ITargetMemberInfo
+	internal abstract class MonoMember : MarshalByRefObject, ITargetMemberInfo
 	{
 		public readonly MonoSymbolFile File;
 		public readonly R.MemberInfo MemberInfo;
@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly bool IsStatic;
 
 		public MonoMember (MonoSymbolFile file, R.MemberInfo minfo, int index, int pos,
-					 bool is_static)
+				   bool is_static)
 		{
 			this.File = file;
 			this.MemberInfo = minfo;

@@ -257,111 +257,119 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool SendAsyncCommand (Command command, bool wait)
-		{
-			lock (this) {
-				check_engine ();
-				command.Engine = engine;
-				Report.Debug (DebugFlags.EventLoop, "{0} sending async command {1}",
-					      this, command);
-
-				if (!engine.SendAsyncCommand (command)) {
-					Console.WriteLine ("ASYNC COMMAND FAILED!");
-					return false;
-				}
-
-				operation_completed_event.Reset ();
-			}
-
-			if (wait) {
-				Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-				operation_completed_event.WaitOne ();
-				Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
-			}
-
-			return true;
-		}
-
-		[OneWay]
 		internal void OperationCompleted (TargetEventArgs result)
 		{
-			operation_completed_event.Set ();
+			lock (this) {
+				operation_completed_event.Set ();
+			}
 		}
 
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public bool StepInstruction ()
+		public void StepInstruction ()
 		{
-			return SendAsyncCommand (new Command (StepMode.SingleInstruction), false);
+			lock (this) {
+				check_engine ();
+				engine.StepInstruction ();
+				operation_completed_event.Reset ();
+			}
 		}
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public bool StepNativeInstruction ()
+		public void StepNativeInstruction ()
 		{
-			return SendAsyncCommand (new Command (StepMode.NativeInstruction), false);
+			lock (this) {
+				check_engine ();
+				engine.StepNativeInstruction ();
+				operation_completed_event.Reset ();
+			}
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public bool NextInstruction ()
+		public void NextInstruction ()
 		{
-			return SendAsyncCommand (new Command (StepMode.NextInstruction), false);
+			lock (this) {
+				check_engine ();
+				engine.NextInstruction ();
+				operation_completed_event.Reset ();
+			}
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public bool StepLine ()
+		public void StepLine ()
 		{
-			return SendAsyncCommand (new Command (StepMode.SourceLine), false);
+			lock (this) {
+				check_engine ();
+				engine.StepLine ();
+				operation_completed_event.Reset ();
+			}
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public bool NextLine ()
+		public void NextLine ()
 		{
-			return SendAsyncCommand (new Command (StepMode.NextLine), false);
+			lock (this) {
+				check_engine ();
+				engine.NextLine ();
+				operation_completed_event.Reset ();
+			}
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public bool Finish ()
+		public void Finish ()
 		{
-			return SendAsyncCommand (new Command (CommandType.Finish), false);
+			lock (this) {
+				check_engine ();
+				engine.Finish ();
+				operation_completed_event.Reset ();
+			}
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public bool FinishNative ()
+		public void FinishNative ()
 		{
-			return SendAsyncCommand (new Command (CommandType.FinishNative), false);
+			lock (this) {
+				check_engine ();
+				engine.FinishNative ();
+				operation_completed_event.Reset ();
+			}
 		}
 
-		public bool Continue ()
+		public void Continue ()
 		{
-			return Continue (TargetAddress.Null, false);
+			Continue (TargetAddress.Null, false);
 		}
 
-		public bool Continue (TargetAddress until)
+		public void Continue (TargetAddress until)
 		{
-			return Continue (until, false);
+			Continue (until, false);
 		}
 
-		public bool Continue (bool in_background)
+		public void Continue (bool in_background)
 		{
-			return Continue (TargetAddress.Null, in_background);
+			Continue (TargetAddress.Null, in_background);
 		}
 
-		public bool Continue (TargetAddress until, bool in_background)
+		public void Continue (TargetAddress until, bool in_background)
 		{
-			return SendAsyncCommand (new Command (CommandType.Run, until, in_background), false);
+			lock (this) {
+				check_engine ();
+				engine.Continue (until, in_background);
+				operation_completed_event.Reset ();
+			}
 		}
 
 		public void Kill ()
@@ -464,8 +472,14 @@ namespace Mono.Debugger
 			CallMethodData data = new CallMethodData (
 				method, method_argument, string_argument, null);
 
-			if (!SendAsyncCommand (new Command (data), true))
-				throw new TargetException (TargetError.NotStopped);
+			lock (this) {
+				check_engine ();
+				engine.CallMethod (data);
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
+
 			if (data.Result == null)
 				throw new TargetException (TargetError.UnknownError);
 
@@ -478,23 +492,31 @@ namespace Mono.Debugger
 			CallMethodData data = new CallMethodData (
 				method, arg1.Address, arg2.Address, null);
 
-			if (!SendAsyncCommand (new Command (data), true))
-				throw new TargetException (TargetError.NotStopped);
+			lock (this) {
+				check_engine ();
+				engine.CallMethod (data);
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
+
 			if (data.Result == null)
 				throw new TargetException (TargetError.UnknownError);
 
 			return (TargetAddress) data.Result;
 		}
 
-		public bool RuntimeInvoke (StackFrame frame,
+		public void RuntimeInvoke (StackFrame frame,
 					   TargetAddress method_argument,
 					   TargetAddress object_argument,
 					   TargetAddress[] param_objects)
 		{
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				frame, method_argument, object_argument, param_objects);
-			data.Debug = true;
-			return SendAsyncCommand (new Command (data), true);
+			lock (this) {
+				check_engine ();
+				engine.RuntimeInvoke (
+					frame, method_argument, object_argument, param_objects);
+				operation_completed_event.Reset ();
+			}
 		}
 
 		public TargetAddress RuntimeInvoke (StackFrame frame,
@@ -506,8 +528,13 @@ namespace Mono.Debugger
 			RuntimeInvokeData data = new RuntimeInvokeData (
 				frame, method_argument, object_argument, param_objects);
 
-			if (!SendAsyncCommand (new Command (data), true))
-				throw new TargetException (TargetError.NotStopped);
+			lock (this) {
+				check_engine ();
+				engine.RuntimeInvoke (data);
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
 
 			exc_object = data.ExceptionObject;
 			return data.ReturnObject;

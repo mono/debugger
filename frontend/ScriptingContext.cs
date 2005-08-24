@@ -414,43 +414,39 @@ namespace Mono.Debugger.Frontend
 
 			current_exception = null;
 
-			bool ok;
 			switch (which) {
 			case WhichStepCommand.Continue:
-				ok = process.Continue ();
+				process.Continue ();
 				break;
 			case WhichStepCommand.Step:
 				interpreter.Style.IsNative = false;
-				ok = process.StepLine ();
+				process.StepLine ();
 				break;
 			case WhichStepCommand.Next:
 				interpreter.Style.IsNative = false;
-				ok = process.NextLine ();
+				process.NextLine ();
 				break;
 			case WhichStepCommand.StepInstruction:
 				interpreter.Style.IsNative = true;
-				ok = process.StepInstruction ();
+				process.StepInstruction ();
 				break;
 			case WhichStepCommand.StepNativeInstruction:
 				interpreter.Style.IsNative = true;
-				ok = process.StepNativeInstruction ();
+				process.StepNativeInstruction ();
 				break;
 			case WhichStepCommand.NextInstruction:
 				interpreter.Style.IsNative = true;
-				ok = process.NextInstruction ();
+				process.NextInstruction ();
 				break;
 			case WhichStepCommand.Finish:
-				ok = process.Finish ();
+				process.Finish ();
 				break;
 			case WhichStepCommand.FinishNative:
-				ok = process.FinishNative ();
+				process.FinishNative ();
 				break;
 			default:
 				throw new Exception ();
 			}
-
-			if (!ok)
-				throw new ScriptingException ("{0} is not stopped.", Name);
 
 			if (interpreter.IsSynchronous)
 				interpreter.DebuggerManager.Wait (process);

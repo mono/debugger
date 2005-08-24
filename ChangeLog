@@ -1,6 +1,13 @@
 2005-08-24  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.SyncCommandAttribute): Renamed to
+	CommandAttribute and also use it for async commands.
+	(SingleSteppingEngine.SendAsyncCommand): Removed.
+
+2005-08-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.Stop): Replaced with the former contents of
 	the Interrupt() method.
 	(SingleSteppingEngine.Interrupt): Renamed to Stop().

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Mono.Debugger
 {
-
+	[Serializable]
 	public sealed class TargetBlob
 	{
 		public readonly byte[] Contents;
@@ -24,7 +24,7 @@ namespace Mono.Debugger
 	}
 
 
-	public class TargetBinaryAccess
+	public class TargetBinaryAccess : MarshalByRefObject
 	{
 		protected ITargetInfo target_info;
 		protected TargetBlob blob;
