@@ -99,7 +99,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool engine_is_busy = false;
 		bool engine_is_ready = false;
 		Exception start_error = null;
 
@@ -135,8 +134,6 @@ namespace Mono.Debugger
 		{
 			this.start = start;
 
-			engine_is_busy = true;
-
 			wait_thread = new Thread (new ThreadStart (start_wait_thread));
 			wait_thread.IsBackground = true;
 			wait_thread.Start ();
@@ -151,8 +148,6 @@ namespace Mono.Debugger
 		public Process WaitForApplication ()
 		{
 			ready_event.WaitOne ();
-
-			engine_is_busy = false;
 
 			return main_process;
 		}
@@ -283,7 +278,7 @@ namespace Mono.Debugger
 			the_engine.Kill ();
 		}
 
-		internal bool HandleChildEvent (Inferior inferior,
+		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
 						ref Inferior.ChildEvent cevent)
 		{
 			if (cevent.Type == Inferior.ChildEventType.NONE) {
@@ -322,10 +317,14 @@ namespace Mono.Debugger
 				retval = mono_manager.HandleChildEvent (inferior, ref cevent);
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
-			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				abort_requested = true;
-				Kill ();
-				OnTargetExitedEvent ();
+			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
+				if (engine.Process == main_process) {
+					abort_requested = true;
+					Kill ();
+					OnTargetExitedEvent ();
+				} else {
+					KillThread (engine);
+				}
 			}
 
 			return retval;
@@ -384,26 +383,6 @@ namespace Mono.Debugger
 			backend.Dispose ();
 		}
 
-		// <summary>
-		//   The 'command_mutex' is used to protect the engine's main loop.
-		//
-		//   Before sending any command to it, you must acquire the mutex
-		//   and release it when you're done with the command.
-		//
-		//   Note that you must not keep this mutex when returning from the
-		//   function which acquired it.
-		// </summary>
-		internal bool AcquireCommandMutex ()
-		{
-			lock (this) {
-				if (engine_is_busy)
-					return false;
-
-				engine_is_busy = true;
-				return true;
-			}
-		}
-
 		internal bool InBackgroundThread {
 			get { return Thread.CurrentThread == inferior_thread; }
 		}
@@ -413,13 +392,7 @@ namespace Mono.Debugger
 			Command command = new Command (CommandType.Message, message, sink);
 
 			lock (this) {
-				if (engine_is_busy) {
-					TargetException ex = new TargetException (TargetError.NotStopped);
-					return new ReturnMessage (ex, message);
-				}
-
 				current_command = command;
-				engine_is_busy = true;
 				Semaphore.Set ();
 			}
 
@@ -486,10 +459,7 @@ namespace Mono.Debugger
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
 
-				lock (this) {
-					engine_is_busy = false;
-					wait_event.Set ();
-				}
+				wait_event.Set ();
 
 				if (!engine_is_ready) {
 					engine_is_ready = true;
@@ -528,7 +498,6 @@ namespace Mono.Debugger
 
 				lock (this) {
 					current_command = null;
-					engine_is_busy = false;
 					completed_event.Set ();
 				}
 			} else {
@@ -539,8 +508,6 @@ namespace Mono.Debugger
 				} catch (Exception e) {
 					Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
 				}
-
-				engine_is_busy = false;
 			}
 		}
 
@@ -604,7 +571,6 @@ namespace Mono.Debugger
 
 						current_event = event_engine;
 						current_event_status = status;
-						engine_is_busy = true;
 						Semaphore.Set ();
 					}
 				}

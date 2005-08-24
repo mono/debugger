@@ -5,7 +5,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeLanguage : ILanguage
+	internal class NativeLanguage : MarshalByRefObject, ILanguage
 	{
 		BfdContainer bfd_container;
 		NativeFundamentalType integer_type;

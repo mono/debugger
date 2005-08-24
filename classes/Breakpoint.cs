@@ -8,6 +8,7 @@ namespace Mono.Debugger
 	//   This is an abstract base class which is implemented by the user interface to
 	//   hold the user's settings for a breakpoint.
 	// </summary>
+	[Serializable]
 	public abstract class Breakpoint
 	{
 		// <summary>

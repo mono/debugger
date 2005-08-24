@@ -8,8 +8,7 @@ namespace Mono.Debugger
 	//   This is used to share information about breakpoints and signal handlers
 	//   between different invocations of the same target.
 	// </summary>
-	[Serializable]
-	public class ThreadGroup
+	public class ThreadGroup : MarshalByRefObject
 	{
 		static Hashtable groups = Hashtable.Synchronized (new Hashtable ());
 		static ThreadGroup global_group, main_group;

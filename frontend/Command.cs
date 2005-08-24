@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.IO;
+using System.Threading;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
@@ -106,6 +107,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				Execute (engine.Context);
+			} catch (ThreadAbortException) {
 			} catch (Exception ex) {
 				engine.Context.Error (
 					"Caught exception while executing command {0}: {1}",

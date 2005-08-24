@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -31,7 +32,7 @@ namespace Mono.Debugger
 	#endregion
 
 	[Serializable]
-	public class TargetException : Exception
+	public class TargetException : Exception, ISerializable
 	{
 		public readonly TargetError Type;
 
@@ -97,6 +98,18 @@ namespace Mono.Debugger
 				return "Unknown error";
 			}
 		}
+
+		protected TargetException (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{
+			Type = (TargetError) info.GetValue ("Type", typeof (TargetError));
+		}
+
+                public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			info.AddValue ("Type", Type);
+			base.GetObjectData (info, context);
+		}
 	}
 
 	[Serializable]
@@ -120,6 +133,16 @@ namespace Mono.Debugger
 				return ex.Message;
 			else
 				return String.Format ("{0}: {1}", ex.GetType ().Name, ex.Message);
+		}
+
+		protected LocationInvalidException (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{
+		}
+
+                public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			base.GetObjectData (info, context);
 		}
 	}
 }

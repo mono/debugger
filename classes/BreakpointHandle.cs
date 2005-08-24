@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	public class BreakpointHandle : IEventHandle
+	public class BreakpointHandle : MarshalByRefObject, IEventHandle
 	{
 		Breakpoint breakpoint;
 		SourceLocation location;

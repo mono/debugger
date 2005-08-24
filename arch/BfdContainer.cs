@@ -11,7 +11,7 @@ using Mono.Debugger.Languages.Native;
 
 namespace Mono.Debugger.Architecture
 {
-	internal class BfdContainer : IDisposable
+	internal class BfdContainer : MarshalByRefObject, IDisposable
 	{
 		Hashtable bfd_hash;
 		DebuggerBackend backend;

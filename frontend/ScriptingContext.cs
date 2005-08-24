@@ -319,7 +319,7 @@ namespace Mono.Debugger.Frontend
 		AssemblerLine current_insn = null;
 		ITargetObject current_exception = null;
 
-		protected void TargetExited ()
+		protected void ProcessExited ()
 		{
 			process = null;
 
@@ -385,18 +385,22 @@ namespace Mono.Debugger.Frontend
 				break;
 
 			case TargetEventType.TargetExited:
-				if ((int) args.Data == 0)
-					interpreter.Print ("{0} terminated normally.", Name);
-				else
-					interpreter.Print ("{0} exited with exit code {1}.",
-							   id, (int) args.Data);
-				TargetExited ();
+				if (!process.IsDaemon) {
+					if ((int) args.Data == 0)
+						interpreter.Print ("{0} terminated normally.", Name);
+					else
+						interpreter.Print ("{0} exited with exit code {1}.",
+								   id, (int) args.Data);
+				}
+				ProcessExited ();
 				break;
 
 			case TargetEventType.TargetSignaled:
-				interpreter.Print ("{0} died with fatal signal {1}.",
-						   id, (int) args.Data);
-				TargetExited ();
+				if (!process.IsDaemon) {
+					interpreter.Print ("{0} died with fatal signal {1}.",
+							   id, (int) args.Data);
+				}
+				ProcessExited ();
 				break;
 			}
 		}
@@ -457,6 +461,8 @@ namespace Mono.Debugger.Frontend
 			if (process == null)
 				throw new ScriptingException ("{0} not running.", Name);
 			process.Stop ();
+			if (interpreter.IsSynchronous)
+				interpreter.DebuggerManager.Wait (process);
 		}
 
 		public void Background ()
@@ -582,7 +588,7 @@ namespace Mono.Debugger.Frontend
 		{
 			process.Kill ();
 			process = null;
-			TargetExited ();
+			ProcessExited ();
 		}
 
 		public string Name {
@@ -610,9 +616,7 @@ namespace Mono.Debugger.Frontend
 			{
 				this.process = process;
 
-				if (!process.process.IsDaemon)
-					process.process.TargetEvent += new TargetEventHandler (target_event);
-				process.process.TargetExitedEvent += new TargetExitedHandler (target_exited);
+				process.process.TargetEvent += new TargetEventHandler (target_event);
 				process.process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 				process.process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 			}
@@ -638,9 +642,9 @@ namespace Mono.Debugger.Frontend
 				process.interpreter.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
 			}
 
-			public void target_exited ()
+			public void process_exited ()
 			{
-				process.TargetExited ();
+				process.ProcessExited ();
 			}
 		}
 	}

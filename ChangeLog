@@ -1,3 +1,17 @@
+2005-08-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Stop): Replaced with the former contents of
+	the Interrupt() method.
+	(SingleSteppingEngine.Interrupt): Renamed to Stop().
+
+	* backends/Process.cs (ProcessExitedHandler): Removed.
+	(Process.TargetExitedEvent): Removed.
+	(Process.ProcessExitedEvent): Removed.
+
+	* backends/ThreadManager.cs (ThreadManager.HandleChildEvent): Only
+	raise a `TargetExitedEvent' if the main thread exited.
+
 2005-08-23  Martin Baulig  <martin@ximian.com>
 
 	* frontend/libedit/mono-debugger-readline.c

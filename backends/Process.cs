@@ -21,7 +21,6 @@ namespace Mono.Debugger
 						     int index, object user_data);
 	public delegate void BreakpointHitHandler (StackFrame frame, int index,
 						   object user_data);
-	public delegate void ProcessExitedHandler (Process process);
 
 	public class Process : MarshalByRefObject, ITargetAccess
 	{
@@ -55,18 +54,6 @@ namespace Mono.Debugger
 				TargetEvent (this, args);
 		}
 
-		protected virtual void OnTargetExitedEvent ()
-		{
-			if (TargetExitedEvent != null)
-				TargetExitedEvent ();
-		}
-
-		protected virtual void OnProcessExitedEvent ()
-		{
-			if (ProcessExitedEvent != null)
-				ProcessExitedEvent (this);
-		}
-
 		public event TargetOutputHandler TargetOutput;
 		public event DebuggerOutputHandler DebuggerOutput;
 		public event DebuggerErrorHandler DebuggerError;
@@ -77,8 +64,6 @@ namespace Mono.Debugger
 		//   emitted after the whole operation completed.
 		// </summary>
 		public event TargetEventHandler TargetEvent;
-		public event TargetExitedHandler TargetExitedEvent;
-		public event ProcessExitedHandler ProcessExitedEvent;
 
 		internal void OnInferiorOutput (bool is_stderr, string line)
 		{
@@ -97,6 +82,11 @@ namespace Mono.Debugger
 		{
 			if (DebuggerError != null)
 				DebuggerError (this, message, e);
+		}
+
+		public override string ToString ()
+		{
+			return Name;
 		}
 
 		// <summary>
@@ -168,10 +158,6 @@ namespace Mono.Debugger
 
 		internal void SendTargetEvent (TargetEventArgs args)
 		{
-			if ((args.Type == TargetEventType.TargetSignaled) ||
-			    (args.Type == TargetEventType.TargetExited))
-				OnTargetExitedEvent ();
-
 			OnTargetEvent (args);
 		}
 
@@ -381,14 +367,13 @@ namespace Mono.Debugger
 		public void Kill ()
 		{
 			operation_completed_event.Set ();
-			OnProcessExitedEvent ();
 			Dispose ();
 		}
 
-		public bool Stop ()
+		public void Stop ()
 		{
 			check_engine ();
-			return engine.Stop ();
+			engine.Stop ();
 		}
 
 		public void Wait ()

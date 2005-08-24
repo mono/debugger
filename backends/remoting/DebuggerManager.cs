@@ -12,7 +12,7 @@ namespace Mono.Debugger.Remoting
 
 		static int next_id = 0;
 		private Hashtable clients = Hashtable.Synchronized (new Hashtable ());
-		private AutoResetEvent interrupt_event = new AutoResetEvent (false);
+		private ManualResetEvent interrupt_event = new ManualResetEvent (false);
 
 		int next_process_id = 0;
 		public int NextProcessID {
@@ -52,6 +52,11 @@ namespace Mono.Debugger.Remoting
 		public void Interrupt ()
 		{
 			interrupt_event.Set ();
+		}
+
+		public void ClearInterrupt ()
+		{
+			interrupt_event.Reset ();
 		}
 
 		public void Kill ()

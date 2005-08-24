@@ -563,11 +563,6 @@ namespace Mono.Debugger.Frontend
 			TargetExited (null);
 		}
 
-		public void Interrupt ()
-		{
-			manager.Interrupt ();
-		}
-
 		protected class InterpreterEventSink : MarshalByRefObject
 		{
 			Interpreter interpreter;

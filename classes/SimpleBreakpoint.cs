@@ -2,6 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public class SimpleBreakpoint : Breakpoint
 	{
 		public SimpleBreakpoint (string name, ThreadGroup group,

@@ -153,16 +153,27 @@ namespace Mono.Debugger.Backends
 		public void ProcessEvent (int status)
 		{
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
+			if (has_thread_lock) {
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} while being thread-locked ({2})",
+					      this, cevent, stop_event);
+				if (stop_event != null)
+					throw new InternalError ();
+				stop_event = cevent;
+				stopped = true;
+				return;
+			}
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION)
 				Report.Debug (DebugFlags.Notification,
-					      "{0} received event {1} ({2:x})",
-					      this, cevent, status);
+					      "{0} received event {1} {2} ({3:x})",
+					      this, cevent, (NotificationType) cevent.Argument,
+					      status);
 			else
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} ({2:x})",
 					      this, cevent, status);
 
-			if (manager.HandleChildEvent (inferior, ref cevent))
+			if (manager.HandleChildEvent (this, inferior, ref cevent))
 				return;
 			ProcessChildEvent (cevent);
 		}
@@ -490,8 +501,8 @@ namespace Mono.Debugger.Backends
 				do_continue ();
 			} else {
 				send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
-				current_operation = new OperationRun (func, true);
-				do_continue (func);
+				current_operation = new OperationRun (TargetAddress.Null, true);
+				do_continue ();
 			}
 		}
 
@@ -743,9 +754,6 @@ namespace Mono.Debugger.Backends
 					return false;
 				}
 
-				if (!manager.AcquireCommandMutex ())
-					return false;
-
 				engine_stopped = false;
 				engine_stopped_event.Reset ();
 			}
@@ -755,73 +763,19 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		public bool Stop ()
-		{
-			return do_wait (true);
-		}
-
-		public bool Wait ()
-		{
-			return do_wait (false);
-		}
-
 		public void Kill ()
 		{
-			operation_completed (new TargetEventArgs (TargetEventType.TargetExited, 0));
+			lock (this) {
+				if (!engine_stopped)
+					operation_completed (
+						new TargetEventArgs (TargetEventType.TargetExited, 0));
+			}
 
 			if (inferior != null)
 				inferior.Kill ();
 		}
 
-		bool do_wait (bool stop)
-		{
-#if FIXME
-			lock (this) {
-				// First try to get the `command_mutex'.
-				// If we succeed, then no synchronous command is currently
-				// running.
-				if (!manager.AcquireCommandMutex (this)) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} cannot get command mutex", this);
-					return false;
-				}
-				// Check whether we're curring performing an async
-				// stepping operation.
-				if (engine_stopped) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} already stopped", this);
-					manager.ReleaseCommandMutex ();
-					return true;
-				}
-
-				if (stop) {
-					stop_requested = true;
-					if (!inferior.Stop ()) {
-						// We're already stopped, so just consider the
-						// current operation as finished.
-						step_operation_finished ();
-						engine_stopped = true;
-						stop_requested = false;
-						operation_completed_event.Set ();
-						manager.ReleaseCommandMutex ();
-						return true;
-					}
-				}
-			}
-
-			// Ok, we got the `command_mutex'.
-			// Now we can wait for the operation to finish.
-			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.WaitOne ();
-			Report.Debug (DebugFlags.Wait, "{0} stopped", this);
-			manager.ReleaseCommandMutex ();
-			return true;
-#else
-			return true;
-#endif
-		}
-
-		public void Interrupt ()
+		public void Stop ()
 		{
 			lock (this) {
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1}",
@@ -1175,6 +1129,9 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			int dr_index;
+			Report.Debug (DebugFlags.SSE, "{0} inserting temp breakpoint at {1}",
+				      this, address);
+
 			temp_breakpoint_id = inferior.InsertHardwareBreakpoint (
 				address, true, out dr_index);
 		}
@@ -1405,6 +1362,7 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquiring thread lock", this);
 
+			has_thread_lock = true;
 			stopped = inferior.Stop (out stop_event);
 			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 
@@ -1425,6 +1383,8 @@ namespace Mono.Debugger.Backends
 				      "{0} releasing thread lock: {1} {2}",
 				      this, stopped, stop_event);
 
+			has_thread_lock = false;
+
 			// If the target was already stopped, there's nothing to do for us.
 			if (!stopped)
 				return;
@@ -1440,11 +1400,9 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 
-				if (manager.HandleChildEvent (inferior, ref cevent))
+				if (manager.HandleChildEvent (this, inferior, ref cevent))
 					return;
 				ProcessChildEvent (cevent);
-			} else {
-				do_continue ();
 			}
 		}
 
@@ -1622,6 +1580,7 @@ namespace Mono.Debugger.Backends
 		bool engine_stopped;
 		ManualResetEvent engine_stopped_event;
 		bool stop_requested;
+		bool has_thread_lock;
 		bool is_main, reached_main;
 		public readonly int ID;
 		public readonly int PID;
@@ -2671,45 +2630,76 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
+	[Serializable]
 	internal enum CallMethodType
 	{
 		LongLong,
 		LongString
 	}
 
-	internal sealed class CallMethodData
+	internal sealed class CallMethodData : MarshalByRefObject
 	{
-		public readonly CallMethodType Type;
-		public readonly TargetAddress Method;
-		public readonly long Argument1;
-		public readonly long Argument2;
-		public readonly string StringArgument;
-		public readonly object Data;
-		public object Result;
+		CallMethodType type;
+		TargetAddress method;
+		long argument1;
+		long argument2;
+		string sargument;
+		object data;
+		object result;
+
+		public CallMethodType Type {
+			get { return type; }
+		}
+
+		public TargetAddress Method {
+			get { return method; }
+		}
+
+		public long Argument1 {
+			get { return argument1; }
+		}
+
+		public long Argument2 {
+			get { return argument2; }
+		}
+
+		public string StringArgument {
+			get { return sargument; }
+		}
+
+		public object Data {
+			get { return data; }
+		}
+
+		public object Result {
+			get { return result; }
+			set { result = value; }
+		}
 
 		public CallMethodData (TargetAddress method, long arg, string sarg,
 				       object data)
 		{
-			this.Type = CallMethodType.LongString;
-			this.Method = method;
-			this.Argument1 = arg;
-			this.Argument2 = 0;
-			this.StringArgument = sarg;
-			this.Data = data;
+			this.type = CallMethodType.LongString;
+			this.method = method;
+			this.argument1 = arg;
+			this.argument2 = 0;
+			this.sargument = sarg;
+			this.data = data;
 		}
 
 		public CallMethodData (TargetAddress method, long arg1, long arg2,
 				       object data)
 		{
-			this.Type = CallMethodType.LongLong;
-			this.Method = method;
-			this.Argument1 = arg1;
-			this.Argument2 = arg2;
-			this.StringArgument = null;
-			this.Data = data;
+			this.type = CallMethodType.LongLong;
+			this.method = method;
+			this.argument1 = arg1;
+			this.argument2 = arg2;
+			this.sargument = null;
+			this.data = data;
 		}
 	}
 
+	[Serializable]
 	internal sealed class RuntimeInvokeData
 	{
 		public readonly StackFrame Frame;
