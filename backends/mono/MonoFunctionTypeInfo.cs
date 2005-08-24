@@ -49,10 +49,16 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 			}
 
-			Process process = frame.Process;
+			bool exc;
+			TargetAddress retval = frame.Process.RuntimeInvoke (
+				frame, method, this_object, arg_ptr, out exc);
 
-			TargetAddress retval = process.RuntimeInvoke (
-				frame, method, this_object, arg_ptr, out exc_object);
+			if (exc) {
+				exc_object = retval;
+				retval = TargetAddress.Null;
+			} else {
+				exc_object = TargetAddress.Null;
+			}
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
 			MonoTypeInfo object_type = builtin.ObjectType.GetTypeInfo ();

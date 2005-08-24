@@ -523,21 +523,26 @@ namespace Mono.Debugger
 						    TargetAddress method_argument,
 						    TargetAddress object_argument,
 						    TargetAddress[] param_objects,
-						    out TargetAddress exc_object)
+						    out bool is_exc)
 		{
-			RuntimeInvokeData data = new RuntimeInvokeData (
+			RuntimeInvokeData rdata = new RuntimeInvokeData (
 				frame, method_argument, object_argument, param_objects);
 
 			lock (this) {
 				check_engine ();
-				engine.RuntimeInvoke (data);
+				engine.RuntimeInvoke (rdata);
 				operation_completed_event.Reset ();
 			}
 
 			operation_completed_event.WaitOne ();
 
-			exc_object = data.ExceptionObject;
-			return data.ReturnObject;
+			if (rdata.ExceptionObject.IsNull) {
+				is_exc = false;
+				return rdata.ReturnObject;
+			} else {
+				is_exc = true;
+				return rdata.ExceptionObject;
+			}
 		}
 
 		public bool HasTarget {
