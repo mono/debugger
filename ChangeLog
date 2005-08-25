@@ -1,3 +1,17 @@
+2005-08-25  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ILanguage.cs (ILanguage.CreateObject): Take an
+	`ITargetAccess' instead of a `StackFrame'.
+
+	* classes/TargetEvent.cs
+	(TargetEventHandler): Removed the `object sender' argument.
+
+	* backends/Process.cs
+	(Process.State): Maintain the `target_state' here and not in the
+	SingleSteppingEngine.
+	(Process.SendTargetEvent): Merge this with OperationCompleted()
+	and make it [OneWay].
+
 2005-08-24  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
