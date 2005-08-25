@@ -301,10 +301,13 @@ namespace Mono.Debugger.Frontend
 			registers = new Hashtable ();
 			IArchitecture arch = process.Architecture;
 
-			for (int i = 0; i < arch.RegisterNames.Length; i++) {
-				string register = arch.RegisterNames [i];
+			string[] reg_names = arch.RegisterNames;
+			int[] reg_indices = arch.AllRegisterIndices;
 
-				registers.Add (register, arch.AllRegisterIndices [i]);
+			for (int i = 0; i < reg_names.Length; i++) {
+				string register = reg_names [i];
+
+				registers.Add (register, reg_indices [i]);
 			}
 
 			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
