@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Mono.Debugger
 {
-	public delegate void TargetEventHandler (object sender, TargetEventArgs args);
+	public delegate void TargetEventHandler (TargetEventArgs args);
 
 	public enum TargetEventType
 	{
@@ -22,6 +22,11 @@ namespace Mono.Debugger
 		public readonly TargetEventType Type;
 		public readonly object Data;
 		public readonly StackFrame Frame;
+
+		public TargetEventArgs (TargetEventType type)
+		{
+			this.Type = type;
+		}
 
 		public TargetEventArgs (TargetEventType type, object data)
 		{

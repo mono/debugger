@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages
 
 		ITargetPointerObject CreatePointer (StackFrame frame, TargetAddress address);
 
-		ITargetObject CreateObject (StackFrame frame, TargetAddress address);
+		ITargetObject CreateObject (ITargetAccess target, TargetAddress address);
 	}
 }
 

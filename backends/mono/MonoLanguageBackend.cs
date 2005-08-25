@@ -658,9 +658,9 @@ namespace Mono.Debugger.Languages.Mono
 			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
+		public ITargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
-			TargetLocation location = new AbsoluteTargetLocation (frame, address);
+			TargetLocation location = new AbsoluteTargetLocation (null, target, address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetTypeInfo().GetObject (location);
 			if (obj == null)
 				return null;

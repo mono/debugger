@@ -72,7 +72,7 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerObject (pointer_type, location);
 		}
 
-		public ITargetObject CreateObject (StackFrame frame, TargetAddress address)
+		public ITargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
 			return null;
 		}

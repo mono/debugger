@@ -242,7 +242,7 @@ namespace Mono.Debugger.Backends
 
 				if (stop_on_exc) {
 					current_operation = new OperationException (
-						TargetAddress.Null, false);
+						stack, false);
 
 					do_continue (ip);
 					return;
@@ -456,39 +456,10 @@ namespace Mono.Debugger.Backends
 		void operation_completed (TargetEventArgs result)
 		{
 			lock (this) {
-				Report.Debug (DebugFlags.EventLoop, "{0} operation completed: {1}",
-					      this, result);
 				engine_stopped = true;
 				engine_stopped_event.Set ();
-				if (result != null)
-					send_target_event (result);
-				else
-					target_state = TargetState.STOPPED;
-				process.OperationCompleted (result);
+				process.SendTargetEvent (result, true);
 			}
-		}
-
-		void send_target_event (TargetEventArgs args)
-		{
-			Report.Debug (DebugFlags.EventLoop, "{0} sending target event {1}",
-				      this, args);
-
-			switch (args.Type) {
-			case TargetEventType.TargetRunning:
-				target_state = TargetState.RUNNING;
-				break;
-
-			case TargetEventType.TargetSignaled:
-			case TargetEventType.TargetExited:
-				target_state = TargetState.EXITED;
-				break;
-
-			default:
-				target_state = TargetState.STOPPED;
-				break;
-			}
-
-			process.SendTargetEvent (args);
 		}
 
 		internal void Start (TargetAddress func, bool is_main)
@@ -500,7 +471,8 @@ namespace Mono.Debugger.Backends
 				this.is_main = true;
 				do_continue ();
 			} else {
-				send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
+				process.SendTargetEvent (
+					new TargetEventArgs (TargetEventType.TargetRunning), false);
 				current_operation = new OperationRun (TargetAddress.Null, true);
 				do_continue ();
 			}
@@ -550,8 +522,6 @@ namespace Mono.Debugger.Backends
 				engine_stopped = false;
 				engine_stopped_event.Reset ();
 			}
-
-			send_target_event (new TargetEventArgs (TargetEventType.TargetRunning, null));
 		}
 
 		void ProcessOperation (Operation operation)
@@ -597,17 +567,6 @@ namespace Mono.Debugger.Backends
 		}
 
 #region public properties
-		public TargetState State {
-			get {
-				lock (this) {
-					if (IsDaemon)
-						return TargetState.DAEMON;
-					else
-						return target_state;
-				}
-			}
-		}
-
 		public ISimpleSymbolTable SimpleSymbolTable {
 			get {
 				check_inferior ();
@@ -1627,7 +1586,6 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
-
 
 		protected delegate bool CallbackFunc (Callback cb, long data1, long data2);
 

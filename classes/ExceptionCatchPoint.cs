@@ -3,6 +3,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public class ExceptionCatchPoint : Breakpoint
 	{
 		public ExceptionCatchPoint (ILanguage language, ITargetType exception, ThreadGroup group)
@@ -34,7 +35,8 @@ namespace Mono.Debugger
 							 ITargetAccess target)
 		{
 			exception.GetTypeInfo ();
-			ITargetClassObject exc = language.CreateObject (frame, exc_address) as ITargetClassObject;
+			ITargetClassObject exc = language.CreateObject (target, exc_address)
+				as ITargetClassObject;
 			if (exc == null)
 				return false; // OOOPS
 

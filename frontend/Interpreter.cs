@@ -319,6 +319,7 @@ namespace Mono.Debugger.Frontend
 
 				start_event.WaitOne ();
 				context.CurrentProcess = current_process;
+				manager.Wait (process);
 
 				return process;
 			} catch (TargetException e) {

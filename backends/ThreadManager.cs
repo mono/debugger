@@ -427,10 +427,9 @@ namespace Mono.Debugger
 			SingleSteppingEngine event_engine;
 			Command command;
 
-			lock (this) {
-				Report.Debug (DebugFlags.Wait, "ThreadManager woke up: {0} {1:x} {2}",
-					      current_event, current_event_status, current_command);
+			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
 
+			lock (this) {
 				event_engine = current_event;
 				status = current_event_status;
 
@@ -460,9 +459,6 @@ namespace Mono.Debugger
 
 			if (command == null)
 				return;
-
-			Report.Debug (DebugFlags.EventLoop,
-				      "ThreadManager received command: {0}", command);
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.

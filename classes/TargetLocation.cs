@@ -12,15 +12,22 @@ namespace Mono.Debugger.Languages
 	[Serializable]
 	public abstract class TargetLocation : ICloneable
 	{
+		protected ITargetAccess target;
 		protected StackFrame frame;
 		protected long offset;
 		protected bool is_byref;
 		bool is_valid;
 
 		protected TargetLocation (StackFrame frame, bool is_byref, long offset)
+			: this (frame, frame.TargetAccess, is_byref, offset)
+		{ }
+
+		protected TargetLocation (StackFrame frame, ITargetAccess target,
+					  bool is_byref, long offset)
 		{
 			this.is_byref = is_byref;
 			this.offset = offset;
+			this.target = target;
 			this.frame = frame;
 			this.is_valid = true;
 		}
@@ -161,7 +168,7 @@ namespace Mono.Debugger.Languages
 
 		public ITargetAccess TargetAccess {
 			get {
-				return frame.TargetAccess;
+				return target;
 			}
 		}
 

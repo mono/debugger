@@ -369,7 +369,7 @@ namespace Mono.Debugger.Frontend
 				ITargetObject exc_object = null;
 				if (current_frame != null)
 					exc_object = current_frame.Language.CreateObject (
-						current_frame.Frame, exc);
+						current_frame.Frame.TargetAccess, exc);
 
 				current_exception = exc_object;
 
@@ -617,13 +617,13 @@ namespace Mono.Debugger.Frontend
 				process.process.DebuggerError += new DebuggerErrorHandler (debugger_error);
 			}
 
-			public void target_event (object sender, TargetEventArgs args)
+			public void target_event (TargetEventArgs args)
 			{
 				if (args.Frame != null) {
 					FrameHandle frame = new FrameHandle (process, args.Frame);
-					// AssemblerLine insn = frame.Disassemble ();
+					AssemblerLine insn = frame.Disassemble ();
 
-					process.TargetEvent (args, frame, null);
+					process.TargetEvent (args, frame, insn);
 				} else
 					process.TargetEvent (args, null, null);
 			}

@@ -36,6 +36,7 @@ namespace Mono.Debugger
 		int id;
 		SingleSteppingEngine engine;
 		ManualResetEvent operation_completed_event;
+		TargetState target_state = TargetState.NO_TARGET;
 
 		public WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -46,12 +47,6 @@ namespace Mono.Debugger
 				check_engine ();
 				return DebuggerBackend.BfdContainer.NativeLanguage;
 			}
-		}
-
-		protected virtual void OnTargetEvent (TargetEventArgs args)
-		{
-			if (TargetEvent != null)
-				TargetEvent (this, args);
 		}
 
 		public event TargetOutputHandler TargetOutput;
@@ -95,10 +90,7 @@ namespace Mono.Debugger
 		// </summary>
 		public TargetState State {
 			get {
-				if (engine == null)
-					return TargetState.NO_TARGET;
-				else
-					return engine.State;
+				return target_state;
 			}
 		}
 
@@ -156,9 +148,37 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.NoTarget);
 		}
 
-		internal void SendTargetEvent (TargetEventArgs args)
+		[OneWay]
+		internal void SendTargetEvent (TargetEventArgs args, bool operation_completed)
 		{
-			OnTargetEvent (args);
+			Report.Debug (DebugFlags.EventLoop, "{0} sending target event {1} ({2})",
+				      engine, args, operation_completed);
+
+			if (args != null) {
+				switch (args.Type) {
+				case TargetEventType.TargetRunning:
+					target_state = TargetState.RUNNING;
+					break;
+
+				case TargetEventType.TargetSignaled:
+				case TargetEventType.TargetExited:
+					target_state = TargetState.EXITED;
+					break;
+
+				default:
+					target_state = TargetState.STOPPED;
+					break;
+				}
+
+				if (TargetEvent != null)
+					TargetEvent (args);
+			}
+
+			Report.Debug (DebugFlags.EventLoop, "{0} done sending target event {1}",
+				      engine, args);
+
+			if (operation_completed)
+				operation_completed_event.Set ();
 		}
 
 		// <summary>
@@ -257,13 +277,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal void OperationCompleted (TargetEventArgs result)
-		{
-			lock (this) {
-				operation_completed_event.Set ();
-			}
-		}
-
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
@@ -273,6 +286,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.StepInstruction ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -285,6 +299,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.StepNativeInstruction ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -297,6 +312,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.NextInstruction ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -309,6 +325,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.StepLine ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -321,6 +338,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.NextLine ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -333,6 +351,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.Finish ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -345,6 +364,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.FinishNative ();
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -369,6 +389,7 @@ namespace Mono.Debugger
 				check_engine ();
 				engine.Continue (until, in_background);
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
@@ -516,6 +537,7 @@ namespace Mono.Debugger
 				engine.RuntimeInvoke (
 					frame, method_argument, object_argument, param_objects);
 				operation_completed_event.Reset ();
+				target_state = TargetState.RUNNING;
 			}
 		}
 
