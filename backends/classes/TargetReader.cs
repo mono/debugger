@@ -27,32 +27,74 @@ namespace Mono.Debugger.Backends
 			this.is_bigendian = is_bigendian;
 		}
 
-		int ITargetInfo.TargetIntegerSize {
+		public int TargetIntegerSize {
 			get {
 				return target_int_size;
 			}
 		}
 
-		int ITargetInfo.TargetLongIntegerSize {
+		public int TargetLongIntegerSize {
 			get {
 				return target_long_size;
 			}
 		}
 
-		int ITargetInfo.TargetAddressSize {
+		public int TargetAddressSize {
 			get {
 				return target_address_size;
 			}
 		}
 
-		bool ITargetInfo.IsBigEndian {
+		public bool IsBigEndian {
 			get {
 				return is_bigendian;
 			}
 		}
 	}
 
-	internal class TargetReader : MarshalByRefObject, ITargetMemoryReader
+	[Serializable]
+	internal class TargetMemoryInfo : TargetInfo, ITargetMemoryInfo
+	{
+		IArchitecture arch;
+		AddressDomain address_domain;
+		AddressDomain global_address_domain;
+
+		internal TargetMemoryInfo (int target_int_size, int target_long_size,
+					   int target_address_size, bool is_bigendian,
+					   AddressDomain global_domain, AddressDomain domain)
+			: base (target_int_size, target_long_size, target_address_size,
+				is_bigendian)
+		{
+			this.global_address_domain = global_domain;
+			this.address_domain = domain;
+		}
+
+		internal void Initialize (IArchitecture arch)
+		{
+			this.arch = arch;
+		}
+
+		public AddressDomain AddressDomain {
+			get {
+				return address_domain;
+			}
+		}
+
+		public AddressDomain GlobalAddressDomain {
+			get {
+				return global_address_domain;
+			}
+		}
+
+		public IArchitecture Architecture {
+			get {
+				return arch;
+			}
+		}
+	}
+
+	[Serializable]
+	internal class TargetReader : ITargetMemoryReader
 	{
 		byte[] data;
 		TargetBinaryReader reader;

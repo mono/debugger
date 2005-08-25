@@ -5,6 +5,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   This is a generic binary reader.
 	// </summary>
+	[Serializable]
 	public class TargetBinaryReader : TargetBinaryAccess
 	{
 		public TargetBinaryReader (byte[] contents, ITargetInfo target_info)

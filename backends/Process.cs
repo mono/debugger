@@ -25,13 +25,17 @@ namespace Mono.Debugger
 			this.id = engine.ThreadManager.NextProcessID;
 
 			operation_completed_event = new ManualResetEvent (false);
-		}
 
+			this.target_info = engine.TargetMemoryInfo;
+			if (target_info == null)
+				throw new Exception ("FUCK");
+		}
 
 		int id;
 		SingleSteppingEngine engine;
 		ManualResetEvent operation_completed_event;
 		TargetState target_state = TargetState.NO_TARGET;
+		ITargetMemoryInfo target_info;
 
 		public WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -67,8 +71,7 @@ namespace Mono.Debugger
 				DebuggerOutput (line);
 		}
 
-		internal void OnDebuggerError (object sender, string message,
-							Exception e)
+		internal void OnDebuggerError (object sender, string message, Exception e)
 		{
 			if (DebuggerError != null)
 				DebuggerError (this, message, e);
@@ -585,58 +588,28 @@ namespace Mono.Debugger
 		}
 
 		public ITargetMemoryInfo TargetMemoryInfo {
-			get { return this; }
+			get { return target_info; }
 		}
 
 #region ITargetInfo implementation
 		int ITargetInfo.TargetAddressSize {
-			get {
-				check_engine ();
-				return engine.TargetAddressSize;
-			}
+			get { return target_info.TargetAddressSize; }
 		}
 
 		int ITargetInfo.TargetIntegerSize {
-			get {
-				check_engine ();
-				return engine.TargetIntegerSize;
-			}
+			get { return target_info.TargetIntegerSize; }
 		}
 
 		int ITargetInfo.TargetLongIntegerSize {
-			get {
-				check_engine ();
-				return engine.TargetLongIntegerSize;
-			}
+			get { return target_info.TargetLongIntegerSize; }
 		}
 
 		bool ITargetInfo.IsBigEndian {
-			get {
-				check_engine ();
-				return engine.IsBigEndian;
-			}
+			get { return target_info.IsBigEndian; }
 		}
 #endregion
 
 #region ITargetMemoryAccess implementation
-		byte[] read_memory (TargetAddress address, int size)
-		{
-			check_engine ();
-			return engine.ReadMemory (address, size);
-		}
-
-		string read_string (TargetAddress address)
-		{
-			check_engine ();
-			return engine.ReadString (address);
-		}
-
-		ITargetMemoryReader get_memory_reader (TargetAddress address, int size)
-		{
-			byte[] buffer = read_memory (address, size);
-			return new TargetReader (buffer, this);
-		}
-
 		void write_memory (TargetAddress address, byte[] buffer)
 		{
 			check_engine ();
@@ -645,68 +618,69 @@ namespace Mono.Debugger
 
 		AddressDomain ITargetMemoryInfo.AddressDomain {
 			get {
-				return engine.AddressDomain;
+				return target_info.AddressDomain;
 			}
 		}
 
 		AddressDomain ITargetMemoryInfo.GlobalAddressDomain {
 			get {
-				return engine.GlobalAddressDomain;
+				return target_info.GlobalAddressDomain;
 			}
 		}
 
 		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
 		{
-			byte[] data = read_memory (address, 1);
-			return data [0];
+			check_engine ();
+			return engine.ReadByte (address);
 		}
 
 		int ITargetMemoryAccess.ReadInteger (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetIntegerSize);
-			return reader.ReadInteger ();
+			return engine.ReadInteger (address);
 		}
 
 		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetLongIntegerSize);
-			return reader.ReadLongInteger ();
+			return engine.ReadLongInteger (address);
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetAddressSize);
-			return reader.ReadAddress ();
+			return engine.ReadAddress (address);
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadGlobalAddress (TargetAddress address)
 		{
 			check_engine ();
-			ITargetMemoryReader reader = get_memory_reader (address, engine.TargetAddressSize);
-			return reader.ReadGlobalAddress ();
+			return engine.ReadGlobalAddress (address);
 		}
 
 		string ITargetMemoryAccess.ReadString (TargetAddress address)
 		{
-			return read_string (address);
+			check_engine ();
+			return engine.ReadString (address);
 		}
 
 		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
 		{
-			return get_memory_reader (address, size);
+			check_engine ();
+			byte[] buffer = engine.ReadMemory (address, size);
+			return new TargetReader (buffer, target_info);
 		}
 
 		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (byte[] buffer)
 		{
-			return new TargetReader (buffer, this);
+			check_engine ();
+			return new TargetReader (buffer, target_info);
 		}
 
 		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
 		{
-			return read_memory (address, size);
+			check_engine ();
+			return engine.ReadMemory (address, size);
 		}
 
 		bool ITargetMemoryAccess.CanWrite {
@@ -738,7 +712,8 @@ namespace Mono.Debugger
 		void ITargetAccess.WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_engine ();
-			TargetBinaryWriter writer = new TargetBinaryWriter (engine.TargetAddressSize, this);
+			TargetBinaryWriter writer = new TargetBinaryWriter (
+				target_info.TargetAddressSize, this);
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
 		}

@@ -23,8 +23,8 @@ namespace Mono.Debugger
 		}
 	}
 
-
-	public class TargetBinaryAccess : MarshalByRefObject
+	[Serializable]
+	public class TargetBinaryAccess
 	{
 		protected ITargetInfo target_info;
 		protected TargetBlob blob;

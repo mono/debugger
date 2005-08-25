@@ -41,7 +41,7 @@ namespace Mono.Debugger.Backends
 		int child_pid, tid;
 		bool initialized;
 
-		ITargetInfo target_info;
+		TargetMemoryInfo target_info;
 		IArchitecture arch;
 
 		public bool HasTarget {
@@ -405,8 +405,9 @@ namespace Mono.Debugger.Backends
 				(out target_int_size, out target_long_size,
 				 out target_addr_size, out is_bigendian));
 
-			target_info = new TargetInfo (target_int_size, target_long_size,
-						      target_addr_size, is_bigendian != 0);
+			target_info = new TargetMemoryInfo (target_int_size, target_long_size,
+							    target_addr_size, is_bigendian != 0,
+							    global_address_domain, address_domain);
 
 			try {
 				bfd = bfd_container.AddFile (
@@ -423,6 +424,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			arch = bfd.Architecture;
+			target_info.Initialize (arch);
 
 			bfd_disassembler = bfd.GetDisassembler (this);
 		}
@@ -513,6 +515,12 @@ namespace Mono.Debugger.Backends
 		public AddressDomain GlobalAddressDomain {
 			get {
 				return global_address_domain;
+			}
+		}
+
+		public ITargetMemoryInfo TargetMemoryInfo {
+			get {
+				return target_info;
 			}
 		}
 

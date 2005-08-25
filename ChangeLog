@@ -1,5 +1,20 @@
 2005-08-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryAcess.TargetMemoryInfo): New property.
+
+	* classes/TargetAccess.cs (TargetAccess): Make this
+	[Serializable], not MarshalByRefObject.
+
+	* backends/Process.cs (Process): Maintain a local copy of the
+	serializable ITargetMemoryInfo and use it instead of doing a
+	remote invocation on the SingleSteppingEngine.
+
+	* backends/SingleSteppingEnginge.cs
+	(SingleSteppingEngine): Don't implement ITargetMemoryInfo.
+
+2005-08-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(DebuggerBackend): Make this class abstract protected.
 	(DebuggerBackend.ctor): Take a `DebuggerManager' argument.

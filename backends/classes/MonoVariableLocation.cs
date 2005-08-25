@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
@@ -38,7 +39,8 @@ namespace Mono.Debugger.Languages
 
 			long contents = reg.Value;
 
-			TargetAddress address = new TargetAddress (TargetAccess.AddressDomain, contents + regoffset);
+			TargetAddress address = new TargetAddress (
+				TargetAccess.TargetMemoryInfo.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
 				address = TargetAccess.ReadAddress (address);
@@ -55,24 +57,26 @@ namespace Mono.Debugger.Languages
 			long contents = frame.GetRegister (register);
 			contents += regoffset;
 
-			ITargetAccess memory = TargetAccess;
+			ITargetMemoryInfo info = TargetAccess.TargetMemoryInfo;
 
 			// We can read at most Inferior.TargetIntegerSize from a register
 			// (a word on the target).
-			if ((Offset < 0) || (Offset + size > memory.TargetIntegerSize))
+			if ((Offset < 0) || (Offset + size > info.TargetIntegerSize))
 				throw new ArgumentException ();
 
 			// Using ITargetMemoryReader for this is just an ugly hack, but I
 			// wanted to hide the fact that the data is cominig from a
 			// register from the caller.
 			ITargetMemoryReader reader;
-			if (memory.TargetIntegerSize == 4)
-				reader = memory.ReadMemory (BitConverter.GetBytes ((int) contents));
-			else if (memory.TargetIntegerSize == 8)
-				reader = memory.ReadMemory (BitConverter.GetBytes (contents));
+			byte[] buffer;
+			if (info.TargetIntegerSize == 4)
+				buffer = BitConverter.GetBytes ((int) contents);
+			else if (info.TargetIntegerSize == 8)
+				buffer = BitConverter.GetBytes (contents);
 			else
 				throw new InternalError ();
 
+			reader = new TargetReader (buffer, info);
 			reader.Offset = Offset;
 			return reader;
 		}

@@ -104,6 +104,10 @@ namespace Mono.Debugger
 
 	public interface ITargetMemoryAccess : ITargetMemoryInfo
 	{
+		ITargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
 		byte ReadByte (TargetAddress address);
 
 		int ReadInteger (TargetAddress address);

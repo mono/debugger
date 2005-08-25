@@ -68,7 +68,7 @@ namespace Mono.Debugger.Backends
 	//
 	//   See the `Process' class for the "user interface".
 	// </summary>
-	internal class SingleSteppingEngine : MarshalByRefObject, ITargetMemoryInfo
+	internal class SingleSteppingEngine : MarshalByRefObject
 	{
 		public class CommandAttribute : Attribute
 		{ }
@@ -84,13 +84,11 @@ namespace Mono.Debugger.Backends
 			this.manager = manager;
 			this.inferior = inferior;
 			this.start = inferior.ProcessStart;
-			this.process = DebuggerManager.CreateProcess (this);
 
-			inferior.TargetOutput += new TargetOutputHandler (process.OnInferiorOutput);
-			inferior.DebuggerOutput += new DebuggerOutputHandler (process.OnDebuggerOutput);
-			inferior.DebuggerError += new DebuggerErrorHandler (process.OnDebuggerError);
+			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
+			inferior.DebuggerOutput += new DebuggerOutputHandler (debugger_output_handler);
+			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error_handler);
 
-			ID = process.ID;
 			PID = inferior.PID;
 
 			engine_stopped_event = new ManualResetEvent (false);
@@ -105,6 +103,9 @@ namespace Mono.Debugger.Backends
 			is_main = true;
 
 			setup_engine ();
+
+			process = DebuggerManager.CreateProcess (this);
+			ID = process.ID;
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, Inferior inferior, int pid)
@@ -117,6 +118,9 @@ namespace Mono.Debugger.Backends
 			TID = inferior.TID;
 
 			setup_engine ();
+
+			process = DebuggerManager.CreateProcess (this);
+			ID = process.ID;
 		}
 
 		void setup_engine ()
@@ -619,50 +623,12 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-#region ITargetInfo implementation
-		public int TargetAddressSize {
+		public ITargetMemoryInfo TargetMemoryInfo {
 			get {
 				check_inferior ();
-				return inferior.TargetAddressSize;
+				return inferior.TargetMemoryInfo;
 			}
 		}
-
-		public int TargetIntegerSize {
-			get {
-				check_inferior ();
-				return inferior.TargetIntegerSize;
-			}
-		}
-
-		public int TargetLongIntegerSize {
-			get {
-				check_inferior ();
-				return inferior.TargetLongIntegerSize;
-			}
-		}
-
-		public bool IsBigEndian {
-			get {
-				check_inferior ();
-				return inferior.IsBigEndian;
-			}
-		}
-#endregion
-
-#region ITargetMemoryInfo implementation
-		public AddressDomain AddressDomain {
-			get {
-				check_inferior ();
-				return inferior.AddressDomain;
-			}
-		}
-
-		public AddressDomain GlobalAddressDomain {
-			get {
-				return manager.AddressDomain;
-			}
-		}
-#endregion
 
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
@@ -1295,6 +1261,21 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		void inferior_output_handler (bool is_stderr, string line)
+		{
+			process.OnInferiorOutput (is_stderr, line);
+		}
+
+		void debugger_output_handler (string line)
+		{
+			process.OnDebuggerOutput (line);
+		}
+
+		void debugger_error_handler (object sender, string message, Exception e)
+		{
+			process.OnDebuggerError (sender, message, e);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("SSE ({0}:{1}:{2:x})", ID, PID, TID);
@@ -1478,6 +1459,36 @@ namespace Mono.Debugger.Backends
 		public byte[] ReadMemory (TargetAddress address, int size)
 		{
 			return inferior.ReadBuffer (address, size);
+		}
+
+		[Command]
+		public byte ReadByte (TargetAddress address)
+		{
+			return inferior.ReadByte (address);
+		}
+
+		[Command]
+		public int ReadInteger (TargetAddress address)
+		{
+			return inferior.ReadInteger (address);
+		}
+
+		[Command]
+		public long ReadLongInteger (TargetAddress address)
+		{
+			return inferior.ReadLongInteger (address);
+		}
+
+		[Command]
+		public TargetAddress ReadAddress (TargetAddress address)
+		{
+			return inferior.ReadAddress (address);
+		}
+
+		[Command]
+		public TargetAddress ReadGlobalAddress (TargetAddress address)
+		{
+			return inferior.ReadGlobalAddress (address);
 		}
 
 		[Command]
