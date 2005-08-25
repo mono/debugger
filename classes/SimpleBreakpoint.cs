@@ -2,22 +2,21 @@ using System;
 
 namespace Mono.Debugger
 {
+	public delegate bool BreakpointCheckHandler (Breakpoint bpt, ITargetAccess target,
+						     TargetAddress address);
+
 	[Serializable]
 	public class SimpleBreakpoint : Breakpoint
 	{
 		public SimpleBreakpoint (string name, ThreadGroup group,
-					 BreakpointCheckHandler check_handler,
-					 BreakpointHitHandler hit_handler,
-					 bool needs_frame, object user_data)
-			: base (name, group, needs_frame)
+					 BreakpointCheckHandler check_handler)
+			: base (name, group)
 		{
 			this.check_handler = check_handler;
-			this.hit_handler = hit_handler;
-			this.user_data = user_data;
 		}
 
 		public SimpleBreakpoint (string name, ThreadGroup group)
-			: base (name, group, true)
+			: base (name, group)
 		{ }
 
 		public SimpleBreakpoint (string name)
@@ -25,32 +24,13 @@ namespace Mono.Debugger
 		{ }
 
 		BreakpointCheckHandler check_handler;
-		BreakpointHitHandler hit_handler;
-		object user_data;
 
-		public override bool CheckBreakpointHit (TargetAddress frame_address, StackFrame frame,
-							 ITargetAccess target)
+		public override bool CheckBreakpointHit (ITargetAccess target, TargetAddress address)
 		{
 			if (check_handler != null)
-				return check_handler (frame, target, Index, user_data);
+				return check_handler (this, target, address);
 
-			return base.CheckBreakpointHit (frame_address, frame, target);
-		}
-
-		public override void BreakpointHit (StackFrame frame)
-		{
-			if (hit_handler != null)
-				hit_handler (frame, Index, user_data);
-			else
-				OnBreakpointHit (frame);
-		}
-
-		public event BreakpointEventHandler BreakpointHitEvent;
-
-		protected virtual void OnBreakpointHit (StackFrame frame)
-		{
-			if (BreakpointHitEvent != null)
-				BreakpointHitEvent (this, frame);
+			return base.CheckBreakpointHit (target, address);
 		}
 	}
 }

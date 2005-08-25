@@ -1,5 +1,17 @@
 2005-08-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/Breakpoint.cs
+	(BreakpointEventHandler): Removed.
+	(Breakpoint.HandlerNeedsFrame): Removed.
+	(Breakpoint.CheckBreakpointHit): Removed the `StackFrame' arg.
+	(Breakpoint.BreakpointHit): Removed.
+
+	* classes/SimpleBreakpoint.cs
+	(BreakpointHitHandler): Removed.
+	(BreakpointCheckHandler): Don't take a `StackFrame' arg.
+
+2005-08-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ILanguage.cs (ILanguage.CreateObject): Take an
 	`ITargetAccess' instead of a `StackFrame'.
 

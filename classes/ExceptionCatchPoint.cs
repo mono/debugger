@@ -7,7 +7,7 @@ namespace Mono.Debugger
 	public class ExceptionCatchPoint : Breakpoint
 	{
 		public ExceptionCatchPoint (ILanguage language, ITargetType exception, ThreadGroup group)
-			: base (exception.Name, group, true)
+			: base (exception.Name, group)
 		{
 			this.language = language;
 			this.exception = exception;
@@ -31,29 +31,15 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		public override bool CheckBreakpointHit (TargetAddress exc_address, StackFrame frame,
-							 ITargetAccess target)
+		public override bool CheckBreakpointHit (ITargetAccess target, TargetAddress address)
 		{
 			exception.GetTypeInfo ();
-			ITargetClassObject exc = language.CreateObject (target, exc_address)
+			ITargetClassObject exc = language.CreateObject (target, address)
 				as ITargetClassObject;
 			if (exc == null)
 				return false; // OOOPS
 
 			return IsSubclassOf (exc.Type, exception);
-		}
-
-		public override void BreakpointHit (StackFrame frame)
-		{
-			OnBreakpointHit (frame);
-		}
-
-		public event BreakpointEventHandler BreakpointHitEvent;
-
-		protected virtual void OnBreakpointHit (StackFrame frame)
-		{
-			if (BreakpointHitEvent != null)
-				BreakpointHitEvent (this, frame);
 		}
 	}
 }

@@ -335,8 +335,7 @@ namespace Mono.Debugger.Architecture
 			return simple_symbols;
 		}
 
-		bool dynlink_handler (StackFrame frame, ITargetAccess target, int index,
-				      object user_data)
+		bool dynlink_handler (Breakpoint bpt, ITargetAccess target, TargetAddress address)
 		{
 			if (target.ReadInteger (rdebug_state_addr) != 0)
 				return false;
@@ -392,8 +391,7 @@ namespace Mono.Debugger.Architecture
 
 			SimpleBreakpoint breakpoint = new SimpleBreakpoint (
 				"dynlink", null,
-				new BreakpointCheckHandler (dynlink_handler), null,
-				false, null);
+				new BreakpointCheckHandler (dynlink_handler));
 
 			inferior.BreakpointManager.InsertBreakpoint (
 				inferior, breakpoint, dynlink_breakpoint);

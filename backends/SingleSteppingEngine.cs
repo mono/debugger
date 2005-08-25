@@ -768,17 +768,8 @@ namespace Mono.Debugger.Backends
 			if (bpt == null)
 				return false;
 
-			StackFrame frame = null;
-			// Only compute the current stack frame if the handler actually
-			// needs it.  Note that this computation is an expensive operation
-			// so we should only do it when it's actually needed.
-			if (bpt.HandlerNeedsFrame)
-				frame = get_frame ();
-			if (!bpt.CheckBreakpointHit (inferior.CurrentFrame, frame, inferior))
+			if (!bpt.CheckBreakpointHit (inferior, inferior.CurrentFrame))
 				return false;
-
-			frame_changed (inferior.CurrentFrame, current_operation);
-			bpt.BreakpointHit (current_frame);
 
 			return true;
 		}
@@ -818,25 +809,16 @@ namespace Mono.Debugger.Backends
 			    current_operation.StartFrame == ip)
 				return false;
 
-			StackFrame frame = null;
-
 			foreach (Breakpoint bpt in exception_handlers.Values) {
 				Report.Debug (DebugFlags.SSE,
-					      "{0} invoking exception handler {1} for {0}", this, bpt, exc);
+					      "{0} invoking exception handler {1} for {0}",
+					      this, bpt, exc);
 
-				// Only compute the current stack frame if the handler actually
-				// needs it.  Note that this computation is an expensive operation
-				// so we should only do it when it's actually needed.
-				if ((frame == null) && bpt.HandlerNeedsFrame)
-					frame = get_frame ();
-				if (!bpt.CheckBreakpointHit (exc, frame, inferior))
+				if (!bpt.CheckBreakpointHit (inferior, exc))
 					continue;
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} stopped on exception {1} at {2}", this, exc, ip);
-
-				// frame_changed (inferior.CurrentFrame, current_operation);
-				// bpt.BreakpointHit (current_frame);
 
 				inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
 				return true;

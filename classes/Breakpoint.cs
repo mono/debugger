@@ -2,8 +2,6 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate void BreakpointEventHandler (Breakpoint breakpoint, StackFrame frame);
-
 	// <summary>
 	//   This is an abstract base class which is implemented by the user interface to
 	//   hold the user's settings for a breakpoint.
@@ -49,23 +47,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		// <summary>
-		//   Whether the `BreakpointHit' delegate needs the StackFrame argument.
-		//   Constructing this argument is an expensive operation, so you should
-		//   set it to false unless your handler actually needs it.  Normally,
-		//   your handler only needs this argument if it wants to access any
-		//   parameters or local variables.
-		// </summary>
-		public bool HandlerNeedsFrame {
-			get {
-				return needs_frame;
-			}
-
-			set {
-				needs_frame = value;
-			}
-		}
-
 		public bool Breaks (int id)
 		{
 			if ((group == null) || group.IsGlobal)
@@ -83,28 +64,15 @@ namespace Mono.Debugger
 		//   This method is called each time the breakpoint is hit.
 		//   It returns true if the target should remain stopped and false
 		//   if the breakpoint is to be ignored.
-		//   The @frame argument is only computed if the `HandlerNeedsFrame'
-		//   property is true, otherwise it's set to null.
 		// </summary>
 		// <remarks>
-		//   This delegate is invoked _before_ any notifications are sent, so you
-		//   must not attempt to access the CurrentFrame or the CurrentMethod in
-		//   this handler.  If you want to inspect local variables, or parameters,
-		//   set the `HandlerNeedsFrame' property to true and use the @frame
-		//   argument which is passed to you.
-		//   The reason for this behavior is that these notifications won't be
-		//   sent at all (and thus the CurrentFrame and CurrentMethod won't even
-		//   get computed) if the target is to be continued.  This is necessary to
-		//   get a flicker-free UI if you have a breakpoint which is ignored the
-		//   first 1000 times it is hit, for instance.
+		//   The @target argument is *not* serializable and may not be used
+		//   anywhere outside this handler.
 		// </remarks>
-		public virtual bool CheckBreakpointHit (TargetAddress frame_address, StackFrame frame,
-							ITargetAccess target)
+		public virtual bool CheckBreakpointHit (ITargetAccess target, TargetAddress address)
 		{
 			return true;
 		}
-
-		public abstract void BreakpointHit (StackFrame frame);
 
 		public override string ToString ()
 		{
@@ -117,15 +85,13 @@ namespace Mono.Debugger
 
 		protected int index;
 		protected string name;
-		protected bool needs_frame;
 		protected ThreadGroup group;
 
 		protected static int NextBreakpointIndex = 0;
 
-		protected Breakpoint (string name, ThreadGroup group, bool needs_frame)
+		protected Breakpoint (string name, ThreadGroup group)
 		{
 			this.index = ++NextBreakpointIndex;
-			this.needs_frame = needs_frame;
 			this.group = group;
 			this.name = name;
 		}

@@ -17,11 +17,6 @@ namespace Mono.Debugger
 {
 	using SSE = SingleSteppingEngine;
 
-	public delegate bool BreakpointCheckHandler (StackFrame frame, ITargetAccess target,
-						     int index, object user_data);
-	public delegate void BreakpointHitHandler (StackFrame frame, int index,
-						   object user_data);
-
 	public class Process : MarshalByRefObject, ITargetAccess
 	{
 		internal Process (SingleSteppingEngine engine)
@@ -173,9 +168,6 @@ namespace Mono.Debugger
 				if (TargetEvent != null)
 					TargetEvent (args);
 			}
-
-			Report.Debug (DebugFlags.EventLoop, "{0} done sending target event {1}",
-				      engine, args);
 
 			if (operation_completed)
 				operation_completed_event.Set ();
