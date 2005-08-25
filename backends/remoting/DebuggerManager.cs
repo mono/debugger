@@ -34,10 +34,7 @@ namespace Mono.Debugger.Remoting
 
 		public void TargetExited (DebuggerClient client)
 		{
-			lock (this) {
-				clients.Remove (client.ID);
-				client.Shutdown ();
-			}
+			clients.Remove (client.ID);
 		}
 
 		public void Wait (Process process)

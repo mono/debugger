@@ -1,5 +1,32 @@
 2005-08-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(DebuggerBackend): Make this class abstract protected.
+	(DebuggerBackend.ctor): Take a `DebuggerManager' argument.
+	(DebuggerBackend.DebuggerExit): New protected abstract method.
+	(DebuggerBackend.DebuggerExitedEvent): Removed.
+
+	* backends/ThreadManager.cs
+	(ThreadManager.Kill): Kill the main thread last.
+	(ThreadManager.HandleChildEvent): When the main thread exited,
+	send the `TargetExitedEvent' first, then call Kill(), dispose the
+	backend and return true.
+
+	* backends/remoting/DebuggerServer.cs
+	(DebuggerServer.ctor): Take a `DebuggerManager' and a
+	`DebuggerClient' argument.
+	(DebuggerServer.DebuggerExited): Override this and call
+	`client.Shutdown()'.
+
+	* backends/remoting/DebuggerClient.cs
+	(DebuggerClient.Shutdown): Mark this as [OneWay].
+
+	* backends/remoting/DebuggerManager.cs
+	(DebuggerManager.TargetExited): Just remove the client from the
+	hash table, don't call Shutdown().
+
+2005-08-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs
 	(BreakpointEventHandler): Removed.
 	(Breakpoint.HandlerNeedsFrame): Removed.

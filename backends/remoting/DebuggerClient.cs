@@ -5,11 +5,11 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Activation;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Lifetime;
+using System.Runtime.Remoting.Messaging;
 
 namespace Mono.Debugger.Remoting
 {
-	[Serializable]
-	public class DebuggerClient
+	public class DebuggerClient : MarshalByRefObject
 	{
 		static DebuggerChannel channel;
 		static Hashtable connections = Hashtable.Synchronized (new Hashtable ());
@@ -46,24 +46,15 @@ namespace Mono.Debugger.Remoting
 
 			connection = Connect (host, path);
 			object[] url = { new UrlAttribute (connection.URL) };
+			object[] args = { manager, this };
 			server = (DebuggerServer) Activator.CreateInstance (
-				typeof (DebuggerServer), null, url);
+				typeof (DebuggerServer), args, url);
 
-			backend = server.DebuggerBackend;
-			backend.DebuggerManager = manager;
+			backend = server;
 
 			lease = (ILease) server.GetLifetimeService ();
 			sponsor = new Sponsor ();
 			lease.Register (sponsor);
-		}
-
-		internal DebuggerClient (DebuggerManager manager, int id)
-		{
-			this.manager = manager;
-			this.id = id;
-
-			backend = new DebuggerBackend ();
-			backend.DebuggerManager = manager;
 		}
 
 		public int ID {
@@ -127,6 +118,7 @@ namespace Mono.Debugger.Remoting
 			connections.Remove (connection.URL);
 		}
 
+		[OneWay]
 		public void Shutdown ()
 		{
 			if (connection != null) {

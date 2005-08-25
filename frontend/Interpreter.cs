@@ -437,9 +437,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			events = new Hashtable ();
-
-			// context = new ScriptingContext (this, is_interactive, true);
-			// initialized = false;
+			initialized = false;
 		}
 
 		public ProcessHandle GetProcess (int number)

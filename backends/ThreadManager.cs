@@ -61,6 +61,7 @@ namespace Mono.Debugger
 		AddressDomain address_domain;
 
 		Process main_process;
+		SingleSteppingEngine main_engine;
 
 		ManualResetEvent start_event;
 		AutoResetEvent completed_event;
@@ -246,6 +247,7 @@ namespace Mono.Debugger
 			if ((mono_manager != null) &&
 			    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
 				main_process = new_thread.Process;
+				main_engine = new_thread;
 
 				main_method = mono_manager.Initialize (the_engine, inferior);
 
@@ -271,11 +273,24 @@ namespace Mono.Debugger
 
 		void Kill ()
 		{
-			foreach (SingleSteppingEngine thread in thread_hash.Values) {
+			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
+			thread_hash.Values.CopyTo (threads, 0);
+
+			bool main_in_threads = false;
+
+			for (int i = 0; i < threads.Length; i++) {
+				SingleSteppingEngine thread = threads [i];
+
+				if (main_engine == thread) {
+					main_in_threads = true;
+					continue;
+				}
+
 				thread.Kill ();
 			}
 
-			the_engine.Kill ();
+			if (main_in_threads)
+				main_engine.Kill ();
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
@@ -296,6 +311,7 @@ namespace Mono.Debugger
 				mono_manager = MonoThreadManager.Initialize (this, inferior);
 
 				main_process = the_engine.Process;
+				main_engine = the_engine;
 				if (mono_manager == null)
 					main_method = inferior.MainMethodAddress;
 				else
@@ -318,10 +334,13 @@ namespace Mono.Debugger
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				if (engine.Process == main_process) {
+				if (engine == main_engine) {
 					abort_requested = true;
+					if (TargetExitedEvent != null)
+						TargetExitedEvent ();
 					Kill ();
-					OnTargetExitedEvent ();
+					backend.Dispose ();
+					return true;
 				} else {
 					KillThread (engine);
 				}
@@ -374,13 +393,6 @@ namespace Mono.Debugger
 		{
 			if (ThreadExitedEvent != null)
 				ThreadExitedEvent (this, process);
-		}
-
-		void OnTargetExitedEvent ()
-		{
-			if (TargetExitedEvent != null)
-				TargetExitedEvent ();
-			backend.Dispose ();
 		}
 
 		internal bool InBackgroundThread {

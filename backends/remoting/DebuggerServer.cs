@@ -15,6 +15,7 @@ namespace Mono.Debugger.Remoting
 	{
 		static DebuggerChannel channel;
 		static DebuggerBackend global_server;
+		DebuggerClient client;
 
 		protected static void Run (string url)
 		{
@@ -28,9 +29,10 @@ namespace Mono.Debugger.Remoting
 			ChannelServices.UnregisterChannel (channel);
 		}
 
-		public DebuggerServer ()
+		public DebuggerServer (DebuggerManager manager, DebuggerClient client)
+			: base (manager)
 		{
-			DebuggerExitedEvent += new TargetExitedHandler (backend_exited);
+			this.client = client;
 
 			if (global_server != null)
 				throw new InternalError ();
@@ -38,8 +40,9 @@ namespace Mono.Debugger.Remoting
 			global_server = this;
 		}
 
-		void backend_exited ()
+		protected override void DebuggerExited ()
 		{
+			client.Shutdown ();
 			RemotingServices.Disconnect (this);
 		}
 

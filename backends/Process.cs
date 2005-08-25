@@ -146,8 +146,9 @@ namespace Mono.Debugger
 		[OneWay]
 		internal void SendTargetEvent (TargetEventArgs args, bool operation_completed)
 		{
-			Report.Debug (DebugFlags.EventLoop, "{0} sending target event {1} ({2})",
-				      engine, args, operation_completed);
+			Report.Debug (DebugFlags.EventLoop,
+				      "{0} ({1}) sending target event {2} ({3})",
+				      this, engine, args, operation_completed);
 
 			if (args != null) {
 				switch (args.Type) {

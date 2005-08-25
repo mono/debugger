@@ -18,7 +18,7 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public class DebuggerBackend : MarshalByRefObject, IDisposable
+	public abstract class DebuggerBackend : MarshalByRefObject, IDisposable
 	{
 		BfdContainer bfd_container;
 
@@ -31,8 +31,10 @@ namespace Mono.Debugger
 		ThreadManager thread_manager;
 		ProcessStart start;
 
-		protected internal DebuggerBackend ()
+		protected DebuggerBackend (DebuggerManager manager)
 		{
+			this.manager = manager;
+
 			module_manager = new ModuleManager ();
 
 			source_factory = new SourceFileFactory ();
@@ -87,7 +89,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public event TargetExitedHandler DebuggerExitedEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		public event ModulesChangedHandler ModulesChangedEvent;
@@ -161,7 +162,6 @@ namespace Mono.Debugger
 
 		internal DebuggerManager DebuggerManager {
 			get { return manager; }
-			set { manager = value; }
 		}
 
 		public SourceLocation FindLocation (string file, int line)
@@ -216,6 +216,8 @@ namespace Mono.Debugger
 		// IDisposable
 		//
 
+		protected abstract void DebuggerExited ();
+
 		private bool disposed = false;
 
 		private void check_disposed ()
@@ -256,8 +258,7 @@ namespace Mono.Debugger
 
 				ObjectCache.Shutdown ();
 
-				if (DebuggerExitedEvent != null)
-					DebuggerExitedEvent ();
+				DebuggerExited ();
 			}
 		}
 
