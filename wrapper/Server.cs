@@ -8,12 +8,12 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Remoting
 {
-	public class Server : DebuggerServer
+	public static class Server
 	{
 		static void Main (string[] args)
 		{
 			string url = args [0];
-			Run (url);
+			DebuggerServer.Run (url);
 		}
 	}
 }

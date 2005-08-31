@@ -16,7 +16,7 @@ namespace Mono.Debugger.Remoting
 		static DebuggerChannel channel;
 		DebuggerClient client;
 
-		protected static void Run (string url)
+		public static void Run (string url)
 		{
 			RemotingConfiguration.RegisterActivatedServiceType (
 				typeof (DebuggerServer));
