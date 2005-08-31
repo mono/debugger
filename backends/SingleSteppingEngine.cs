@@ -1732,7 +1732,6 @@ namespace Mono.Debugger.Backends
 				if (inferior.TargetAddressSize == 4)
 					data1 &= 0xffffffffL;
 
-				op.Result.CommandOk = true;
 				op.Result.Result = new TargetAddress (inferior.AddressDomain, data1);
 
 				Report.Debug (DebugFlags.EventLoop,
@@ -1868,17 +1867,18 @@ namespace Mono.Debugger.Backends
 				      "Runtime invoke done: {0:x} {1:x}",
 				      data1, data2);
 
-				op.Result.CommandOk = true;
+				RuntimeInvokeResult result = new RuntimeInvokeResult ();
 				if (data1 != 0)
-					op.Result.Result = new TargetAddress (
+					result.ReturnObject = new TargetAddress (
 						inferior.AddressDomain, data1);
 				else
-					op.Result.Result = TargetAddress.Null;
+					result.ReturnObject = TargetAddress.Null;
 				if (data2 != 0)
-					op.Result.Result2 = new TargetAddress (
+					result.ExceptionObject = new TargetAddress (
 						inferior.AddressDomain, data2);
 				else
-					op.Result.Result2 = TargetAddress.Null;
+					result.ExceptionObject = TargetAddress.Null;
+				op.Result.Result = result;
 
 				return true;
 			}
@@ -2659,10 +2659,15 @@ namespace Mono.Debugger.Backends
 		LongString
 	}
 
+	[Serializable]
+	internal struct RuntimeInvokeResult
+	{
+		public TargetAddress ReturnObject;
+		public TargetAddress ExceptionObject;
+	}
+
 	internal sealed class CommandResult : MarshalByRefObject
 	{
 		public object Result;
-		public object Result2;
-		public bool CommandOk;
 	}
 }

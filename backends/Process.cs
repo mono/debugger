@@ -582,15 +582,14 @@ namespace Mono.Debugger
 
 			operation_completed_event.WaitOne ();
 
-			TargetAddress ret_object = (TargetAddress) result.Result;
-			TargetAddress exc_object = (TargetAddress) result.Result2;
+			RuntimeInvokeResult res = (RuntimeInvokeResult) result.Result;
 
-			if (exc_object.IsNull) {
+			if (res.ExceptionObject.IsNull) {
 				is_exc = false;
-				return ret_object;
+				return res.ReturnObject;
 			} else {
 				is_exc = true;
-				return exc_object;
+				return res.ExceptionObject;
 			}
 		}
 
