@@ -542,11 +542,6 @@ namespace Mono.Debugger.Backends
 			operation.Execute (this);
 		}
 
-		public void ProcessOperation (Command command)
-		{
-			ProcessOperation (Operation.CreateOperation (command));
-		}
-
 		void update_symtabs (object sender, ISymbolTable symbol_table,
 				     ISimpleSymbolTable simple_symtab)
 		{
@@ -1915,17 +1910,6 @@ namespace Mono.Debugger.Backends
 		{
 			return true;
 		}
-
-		public static Operation CreateOperation (Command command)
-		{
-			switch (command.Type) {
-			case CommandType.CallMethod:
-				return new OperationCallMethod ((CallMethodData) command.Data1);
-
-			default:
-				throw new InternalError ();
-			}
-		}
 	}
 
 	protected class OperationInitialize : Operation
@@ -2564,8 +2548,7 @@ namespace Mono.Debugger.Backends
 
 	[Serializable]
 	internal enum CommandType {
-		Message,
-		CallMethod
+		Message
 	}
 
 	[Serializable]
@@ -2589,12 +2572,6 @@ namespace Mono.Debugger.Backends
 			: this (type, data1)
 		{
 			this.Data2 = data2;
-		}
-
-		public Command (CallMethodData cdata)
-		{
-			this.Type = CommandType.CallMethod;
-			this.Data1 = cdata;
 		}
 
 		public override string ToString ()

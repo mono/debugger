@@ -500,13 +500,7 @@ namespace Mono.Debugger
 
 				completed_event.Set ();
 			} else {
-				try {
-					command.Engine.ProcessOperation (command);
-				} catch (ThreadAbortException) {
-					return;
-				} catch (Exception e) {
-					Console.WriteLine ("EXCEPTION: {0} {1}", command, e);
-				}
+				throw new InvalidOperationException ();
 			}
 		}
 
