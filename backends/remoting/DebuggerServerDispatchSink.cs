@@ -63,6 +63,9 @@ namespace Mono.Debugger.Remoting
 			IMethodCallMessage message = (IMethodCallMessage) requestMsg;
 			bool is_command = message.MethodBase.IsDefined (typeof (CommandAttribute), false);
 
+			Report.Debug (DebugFlags.Remoting, "Dispatch {0} {1}",
+				      message.MethodBase.DeclaringType, message.MethodBase);
+
 			DebuggerServerResponseSink sink = new DebuggerServerResponseSink (sinkStack);
 
 			if (is_command) {

@@ -34,7 +34,7 @@ namespace Mono.Debugger
 			address_domain = new AddressDomain ("global");
 
 			start_event = new ManualResetEvent (false);
-			completed_event = new AutoResetEvent (false);
+			completed_event = new ManualResetEvent (false);
 			command_mutex = new DebuggerMutex ("command_mutex");
 			command_mutex.DebugFlags = DebugFlags.Wait;
 
@@ -66,7 +66,7 @@ namespace Mono.Debugger
 		SingleSteppingEngine main_engine;
 
 		ManualResetEvent start_event;
-		AutoResetEvent completed_event;
+		ManualResetEvent completed_event;
 		DebuggerMutex command_mutex;
 		bool abort_requested;
 
@@ -411,17 +411,39 @@ namespace Mono.Debugger
 
 		internal IMessage SendCommand (IMethodCallMessage message, IMessageSink sink)
 		{
-			Command command = new Command (CommandType.Message, message, sink);
+			Command command = new Command (message, sink);
 
 			lock (this) {
 				if (current_command != null)
 					throw new InternalError ();
 
 				current_command = command;
+				// completed_event.Reset ();
 				Semaphore.Set ();
 			}
 
 			return null;
+		}
+
+		internal object SendCommand (SingleSteppingEngine sse, TargetAccessDelegate target,
+					     object user_data)
+		{
+			Command command = new Command (sse, target, user_data);
+
+			lock (this) {
+				if (current_command != null)
+					throw new InternalError ();
+
+				current_command = command;
+				completed_event.Reset ();
+				Semaphore.Set ();
+			}
+
+			completed_event.WaitOne ();
+			if (command.Result is Exception)
+				throw (Exception) command.Result;
+			else
+				return command.Result;
 		}
 
 		// <summary>
@@ -497,6 +519,15 @@ namespace Mono.Debugger
 				}
 
 				((IMessageSink) command.Data2).SyncProcessMessage (return_message);
+			} else if (command.Type == CommandType.TargetAccess) {
+				try {
+					command.Result = command.Engine.Invoke (
+						(TargetAccessDelegate) command.Data1, command.Data2);
+				} catch (ThreadAbortException) {
+					return;
+				} catch (Exception ex) {
+					command.Result = ex;
+				}
 
 				completed_event.Set ();
 			} else {

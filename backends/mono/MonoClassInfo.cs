@@ -25,6 +25,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (initialized)
 				return;
 
+			target.Invoke (do_initialize, null);
+		}
+
+		object do_initialize (ITargetAccess target, object data)
+		{
 			if (Type.ParentType != null) {
 				parent = (MonoClassInfo) Type.ParentType.GetTypeInfo ();
 				parent.initialize (target);
@@ -57,6 +62,7 @@ namespace Mono.Debugger.Languages.Mono
 				methods [i] = info.ReadGlobalAddress ();
 
 			initialized = true;
+			return null;
 		}
 
 		public ITargetObject GetField (TargetLocation location, int index)

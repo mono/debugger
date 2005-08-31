@@ -145,6 +145,8 @@ namespace Mono.Debugger
 		int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
 	}
 
+	public delegate object TargetAccessDelegate (ITargetAccess target, object user_data);
+
 	public interface ITargetAccess
 	{
 		ITargetMemoryInfo TargetMemoryInfo {
@@ -157,5 +159,7 @@ namespace Mono.Debugger
 
 		TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 					  TargetAddress arg2);
+
+		object Invoke (TargetAccessDelegate func, object user_data);
 	}
 }

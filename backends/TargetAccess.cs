@@ -31,6 +31,8 @@ namespace Mono.Debugger.Backends
 		public abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2);
 
+		public abstract object Invoke (TargetAccessDelegate func, object data);
+
 		//
 		// ISerializable
 		//
@@ -87,6 +89,11 @@ namespace Mono.Debugger.Backends
 		{
 			return process.CallMethod (method, arg1, arg2);
 		}
+
+		public override object Invoke (TargetAccessDelegate func, object data)
+		{
+			return process.Invoke (func, data);
+		}
 	}
 
 	[Serializable]
@@ -122,5 +129,12 @@ namespace Mono.Debugger.Backends
 				return sse.Process.CallMethod (method, arg1, arg2);
 		}
 
+		public override object Invoke (TargetAccessDelegate func, object data)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				return func (this, data);
+			else
+				return sse.ThreadManager.SendCommand (sse, func, data);
+		}
 	}
 }

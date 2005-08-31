@@ -1,5 +1,15 @@
 2005-08-31  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(CommandResult): New internal class
+	(CallMethodData, RuntimeInvokeData): Removed.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(TargetAccessDelegate): New public delegate.
+	(ITargetAccess.Invoke): New method.
+
+2005-08-31  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoLanguageBackend.cs
 	(MonoLanguageBackend.init_trampolines): Add support for delegate
 	trampolines.	

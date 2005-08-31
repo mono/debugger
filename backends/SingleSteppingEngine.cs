@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -590,6 +591,10 @@ namespace Mono.Debugger.Backends
 				check_inferior ();
 				return current_symtab;
 			}
+		}
+
+		internal ITargetAccess TargetAccess {
+			get { return target_access; }
 		}
 
 		internal Inferior Inferior {
@@ -1354,24 +1359,38 @@ namespace Mono.Debugger.Backends
 					   TargetAddress[] param_objects)
 		{
 			StartOperation ();
-			RuntimeInvokeData data = new RuntimeInvokeData (
-				frame, method_argument, object_argument, param_objects);
-			data.Debug = true;
-			ProcessOperation (new OperationRuntimeInvoke (data));
+			ProcessOperation (new OperationRuntimeInvoke (
+				frame, method_argument, object_argument, param_objects));
 		}
 
 		[Command]
-		public void RuntimeInvoke (RuntimeInvokeData rdata)
+		public void RuntimeInvoke (StackFrame frame,
+					   TargetAddress method_argument,
+					   TargetAddress object_argument,
+					   TargetAddress[] param_objects,
+					   CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationRuntimeInvoke (rdata));
+			ProcessOperation (new OperationRuntimeInvoke (
+				frame, method_argument, object_argument, param_objects, result));
 		}
 
 		[Command]
-		public void CallMethod (CallMethodData cdata)
+		public void CallMethod (TargetAddress method, long method_argument,
+					string string_argument, CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationCallMethod (cdata));
+			ProcessOperation (new OperationCallMethod (
+				method, method_argument, string_argument, result));
+		}
+
+		[Command]
+		public void CallMethod (TargetAddress method, TargetAddress arg1,
+					TargetAddress arg2, CommandResult result)
+		{
+			StartOperation ();
+			ProcessOperation (new OperationCallMethod (
+				method, arg1.Address, arg2.Address, result));
 		}
 
 		[Command]
@@ -1520,6 +1539,12 @@ namespace Mono.Debugger.Backends
 		public string PrintType (Style style, ITargetType type)
 		{
 			return style.FormatType (target_access, type);
+		}
+
+		[Command]
+		public object Invoke (TargetAccessDelegate func, object data)
+		{
+			return func (target_access, data);
 		}
 
 #endregion
@@ -1674,25 +1699,25 @@ namespace Mono.Debugger.Backends
 
 		protected class CallbackCallMethod : Callback
 		{
-			CallMethodData data;
+			OperationCallMethod op;
 
-			public CallbackCallMethod (CallMethodData data)
+			public CallbackCallMethod (OperationCallMethod op)
 			{
-				this.data = data;
+				this.op = op;
 			}
 
 			protected override void DoExecute (SingleSteppingEngine sse,
 							   Inferior inferior)
 			{
-				switch (data.Type) {
+				switch (op.Type) {
 				case CallMethodType.LongLong:
-					inferior.CallMethod (data.Method, data.Argument1,
-							     data.Argument2, ID);
+					inferior.CallMethod (
+						op.Method, op.Argument1, op.Argument2, ID);
 					break;
 
 				case CallMethodType.LongString:
-					inferior.CallMethod (data.Method, data.Argument1,
-							     data.StringArgument, ID);
+					inferior.CallMethod (
+						op.Method, op.Argument1, op.StringArgument, ID);
 					break;
 
 				default:
@@ -1707,7 +1732,8 @@ namespace Mono.Debugger.Backends
 				if (inferior.TargetAddressSize == 4)
 					data1 &= 0xffffffffL;
 
-				data.Result = new TargetAddress (inferior.AddressDomain, data1);
+				op.Result.CommandOk = true;
+				op.Result.Result = new TargetAddress (inferior.AddressDomain, data1);
 
 				Report.Debug (DebugFlags.EventLoop,
 					      "Call method done: {0} {1:x} {2:x}",
@@ -1768,14 +1794,14 @@ namespace Mono.Debugger.Backends
 
 		protected class CallbackRuntimeInvoke : Callback
 		{
-			RuntimeInvokeData rdata;
+			OperationRuntimeInvoke op;
 			ILanguageBackend language;
 			TargetAddress method;
 			bool method_compiled;
 
-			public CallbackRuntimeInvoke (RuntimeInvokeData rdata)
+			public CallbackRuntimeInvoke (OperationRuntimeInvoke op)
 			{
-				this.rdata = rdata;
+				this.op = op;
 				this.method = TargetAddress.Null;
 			}
 
@@ -1783,7 +1809,7 @@ namespace Mono.Debugger.Backends
 							   Inferior inferior)
 			{
 				if (language == null) {
-					IMethod method = rdata.Frame.Method;
+					IMethod method = op.Frame.Method;
 					if (method == null)
 						throw new InvalidOperationException ();
 
@@ -1792,13 +1818,13 @@ namespace Mono.Debugger.Backends
 						throw new InvalidOperationException ();
 				}
 
-				if (!rdata.ObjectArgument.IsNull)
+				if (!op.ObjectArgument.IsNull)
 					inferior.CallMethod (
 						language.GetVirtualMethodFunc,
-						rdata.ObjectArgument.Address,
-						rdata.MethodArgument.Address, ID);
+						op.ObjectArgument.Address,
+						op.MethodArgument.Address, ID);
 				else {
-					method = rdata.MethodArgument;
+					method = op.MethodArgument;
 					inferior.CallMethod (
 						language.CompileMethodFunc,
 						method.Address, 0, ID);
@@ -1815,7 +1841,7 @@ namespace Mono.Debugger.Backends
 
 					inferior.CallMethod (language.CompileMethodFunc,
 							     method.Address,
-							     rdata.ObjectArgument.Address, ID);
+							     op.ObjectArgument.Address, ID);
 					return false;
 				}
 
@@ -1828,13 +1854,13 @@ namespace Mono.Debugger.Backends
 					Report.Debug (DebugFlags.EventLoop,
 						      "Runtime invoke: {0}", invoke);
 
-					if (rdata.Debug)
+					if (op.Debug)
 						sse.insert_temporary_breakpoint (invoke);
 
 					inferior.RuntimeInvoke (
 						language.RuntimeInvokeFunc,
-						method, rdata.ObjectArgument,
-						rdata.ParamObjects, ID, rdata.Debug);
+						method, op.ObjectArgument,
+						op.ParamObjects, ID, op.Debug);
 					return false;
 				}
 
@@ -1842,17 +1868,17 @@ namespace Mono.Debugger.Backends
 				      "Runtime invoke done: {0:x} {1:x}",
 				      data1, data2);
 
-				rdata.InvokeOk = true;
+				op.Result.CommandOk = true;
 				if (data1 != 0)
-					rdata.ReturnObject = new TargetAddress (
+					op.Result.Result = new TargetAddress (
 						inferior.AddressDomain, data1);
 				else
-					rdata.ReturnObject = TargetAddress.Null;
+					op.Result.Result = TargetAddress.Null;
 				if (data2 != 0)
-					rdata.ExceptionObject = new TargetAddress (
+					op.Result.Result2 = new TargetAddress (
 						inferior.AddressDomain, data2);
 				else
-					rdata.ExceptionObject = TargetAddress.Null;
+					op.Result.Result2 = TargetAddress.Null;
 
 				return true;
 			}
@@ -2395,20 +2421,45 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : Operation
 	{
-		RuntimeInvokeData data;
+		public readonly StackFrame Frame;
+		public readonly TargetAddress MethodArgument;
+		public readonly TargetAddress ObjectArgument;
+		public readonly TargetAddress[] ParamObjects;
+		public readonly bool Debug;
+		public readonly CommandResult Result;
 
 		public override bool IsSourceOperation {
 			get { return true; }
 		}
 
-		public OperationRuntimeInvoke (RuntimeInvokeData data)
+		public OperationRuntimeInvoke (StackFrame frame,
+					       TargetAddress method_argument,
+					       TargetAddress object_argument,
+					       TargetAddress[] param_objects)
 		{
-			this.data = data;
+			this.Frame = frame;
+			this.MethodArgument = method_argument;
+			this.ObjectArgument = object_argument;
+			this.ParamObjects = param_objects;
+			this.Debug = true;
+		}
+
+		public OperationRuntimeInvoke (StackFrame frame,
+					       TargetAddress method_argument,
+					       TargetAddress object_argument,
+					       TargetAddress[] param_objects,
+					       CommandResult result)
+		{
+			this.Frame = frame;
+			this.MethodArgument = method_argument;
+			this.ObjectArgument = object_argument;
+			this.ParamObjects = param_objects;
+			this.Result = result;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.do_callback (new CallbackRuntimeInvoke (data));
+			sse.do_callback (new CallbackRuntimeInvoke (this));
 		}
 
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,
@@ -2423,11 +2474,31 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationCallMethod : Operation
 	{
-		CallMethodData cdata;
+		public readonly CallMethodType Type;
+		public readonly TargetAddress Method;
+		public readonly long Argument1;
+		public readonly long Argument2;
+		public readonly string StringArgument;
+		public readonly CommandResult Result;
 
-		public OperationCallMethod (CallMethodData cdata)
+		public OperationCallMethod (TargetAddress method, long arg, string sarg,
+					    CommandResult result)
 		{
-			this.cdata = cdata;
+			this.Type = CallMethodType.LongString;
+			this.Method = method;
+			this.Argument1 = arg;
+			this.StringArgument = sarg;
+			this.Result = result;
+		}
+
+		public OperationCallMethod (TargetAddress method, long arg1, long arg2,
+					    CommandResult result)
+		{
+			this.Type = CallMethodType.LongLong;
+			this.Method = method;
+			this.Argument1 = arg1;
+			this.Argument2 = arg2;
+			this.Result = result;
 		}
 
 		public override bool IsSourceOperation {
@@ -2436,7 +2507,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.do_callback (new CallbackCallMethod (cdata));
+			sse.do_callback (new CallbackCallMethod (this));
 		}
 
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,
@@ -2548,7 +2619,8 @@ namespace Mono.Debugger.Backends
 
 	[Serializable]
 	internal enum CommandType {
-		Message
+		Message,
+		TargetAccess
 	}
 
 	[Serializable]
@@ -2556,22 +2628,21 @@ namespace Mono.Debugger.Backends
 		public SingleSteppingEngine Engine;
 		public readonly CommandType Type;
 		public object Data1, Data2;
+		public object Result;
 
-		public Command (CommandType type)
+		public Command (IMethodCallMessage message, IMessageSink sink)
 		{
-			this.Type = type;
+			this.Type = CommandType.Message;
+			this.Data1 = message;
+			this.Data2 = sink;
 		}
 
-		public Command (CommandType type, object data1)
-			: this (type)
+		public Command (SingleSteppingEngine sse, TargetAccessDelegate func, object data)
 		{
-			this.Data1 = data1;
-		}
-
-		public Command (CommandType type, object data1, object data2)
-			: this (type, data1)
-		{
-			this.Data2 = data2;
+			this.Type = CommandType.TargetAccess;
+			this.Engine = sse;
+			this.Data1 = func;
+			this.Data2 = data;
 		}
 
 		public override string ToString ()
@@ -2588,125 +2659,10 @@ namespace Mono.Debugger.Backends
 		LongString
 	}
 
-	internal sealed class CallMethodData : MarshalByRefObject
+	internal sealed class CommandResult : MarshalByRefObject
 	{
-		CallMethodType type;
-		TargetAddress method;
-		long argument1;
-		long argument2;
-		string sargument;
-		object data;
-		object result;
-
-		public CallMethodType Type {
-			get { return type; }
-		}
-
-		public TargetAddress Method {
-			get { return method; }
-		}
-
-		public long Argument1 {
-			get { return argument1; }
-		}
-
-		public long Argument2 {
-			get { return argument2; }
-		}
-
-		public string StringArgument {
-			get { return sargument; }
-		}
-
-		public object Data {
-			get { return data; }
-		}
-
-		public object Result {
-			get { return result; }
-			set { result = value; }
-		}
-
-		public CallMethodData (TargetAddress method, long arg, string sarg,
-				       object data)
-		{
-			this.type = CallMethodType.LongString;
-			this.method = method;
-			this.argument1 = arg;
-			this.argument2 = 0;
-			this.sargument = sarg;
-			this.data = data;
-		}
-
-		public CallMethodData (TargetAddress method, long arg1, long arg2,
-				       object data)
-		{
-			this.type = CallMethodType.LongLong;
-			this.method = method;
-			this.argument1 = arg1;
-			this.argument2 = arg2;
-			this.sargument = null;
-			this.data = data;
-		}
-	}
-
-	internal sealed class RuntimeInvokeData : MarshalByRefObject
-	{
-		StackFrame frame;
-		TargetAddress method_arg;
-		TargetAddress object_arg;
-		TargetAddress[] param_objects;
-		bool debug, invoke_ok;
-		TargetAddress return_object;
-		TargetAddress exception_object;
-
-		public StackFrame Frame {
-			get { return frame; }
-		}
-
-		public TargetAddress MethodArgument {
-			get { return method_arg; }
-		}
-
-		public TargetAddress ObjectArgument {
-			get { return object_arg; }
-		}
-
-		public TargetAddress[] ParamObjects {
-			get { return param_objects; }
-		}
-
-		public bool Debug {
-			get { return debug; }
-			set { debug = value; }
-		}
-
-		public bool InvokeOk {
-			get { return invoke_ok; }
-			set { invoke_ok = true; }
-		}
-
-		public TargetAddress ReturnObject {
-			get { return return_object; }
-			set { return_object = value; }
-		}
-
-		public TargetAddress ExceptionObject {
-			get { return exception_object; }
-			set { exception_object = value; }
-		}
-
-		public RuntimeInvokeData (StackFrame frame,
-					  TargetAddress method_argument,
-					  TargetAddress object_argument,
-					  TargetAddress[] param_objects)
-		{
-			this.frame = frame;
-			this.method_arg = method_argument;
-			this.object_arg = object_argument;
-			this.param_objects = param_objects;
-			return_object = TargetAddress.Null;
-			exception_object = TargetAddress.Null;
-		}
+		public object Result;
+		public object Result2;
+		public bool CommandOk;
 	}
 }

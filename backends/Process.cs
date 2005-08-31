@@ -515,41 +515,39 @@ namespace Mono.Debugger
 		public TargetAddress CallMethod (TargetAddress method, long method_argument,
 						 string string_argument)
 		{
-			CallMethodData data = new CallMethodData (
-				method, method_argument, string_argument, null);
+			CommandResult result = new CommandResult ();
 
 			lock (this) {
 				check_engine ();
-				engine.CallMethod (data);
+				engine.CallMethod (method, method_argument, string_argument, result);
 				operation_completed_event.Reset ();
 			}
 
 			operation_completed_event.WaitOne ();
 
-			if (data.Result == null)
+			if (result.Result == null)
 				throw new TargetException (TargetError.UnknownError);
 
-			return (TargetAddress) data.Result;
+			return (TargetAddress) result.Result;
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 						 TargetAddress arg2)
 		{
-			CallMethodData data = new CallMethodData (
-				method, arg1.Address, arg2.Address, null);
+			CommandResult result = new CommandResult ();
 
 			lock (this) {
 				check_engine ();
-				engine.CallMethod (data);
+				engine.CallMethod (method, arg1, arg2, result);
 				operation_completed_event.Reset ();
 			}
 
 			operation_completed_event.WaitOne ();
 
-			if (data.Result == null)
+			if (result.Result == null)
 				throw new TargetException (TargetError.UnknownError);
 
-			return (TargetAddress) data.Result;
+			return (TargetAddress) result.Result;
 		}
 
 		public void RuntimeInvoke (StackFrame frame,
@@ -572,23 +570,35 @@ namespace Mono.Debugger
 						    TargetAddress[] param_objects,
 						    out bool is_exc)
 		{
-			RuntimeInvokeData rdata = new RuntimeInvokeData (
-				frame, method_argument, object_argument, param_objects);
+			CommandResult result = new CommandResult ();
 
 			lock (this) {
 				check_engine ();
-				engine.RuntimeInvoke (rdata);
+				engine.RuntimeInvoke (
+					frame, method_argument, object_argument, param_objects,
+					result);
 				operation_completed_event.Reset ();
 			}
 
 			operation_completed_event.WaitOne ();
 
-			if (rdata.ExceptionObject.IsNull) {
+			TargetAddress ret_object = (TargetAddress) result.Result;
+			TargetAddress exc_object = (TargetAddress) result.Result2;
+
+			if (exc_object.IsNull) {
 				is_exc = false;
-				return rdata.ReturnObject;
+				return ret_object;
 			} else {
 				is_exc = true;
-				return rdata.ExceptionObject;
+				return exc_object;
+			}
+		}
+
+		public object Invoke (TargetAccessDelegate func, object data)
+		{
+			lock (this) {
+				check_engine ();
+				return engine.Invoke (func, data);
 			}
 		}
 
