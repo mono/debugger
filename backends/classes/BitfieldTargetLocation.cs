@@ -74,7 +74,7 @@ namespace Mono.Debugger.Languages
 				target [i] = (byte) current;
 			}
 
-			return new TargetReader (target, TargetAccess);
+			return new TargetReader (target, TargetMemoryInfo);
 		}
 
 		protected override TargetLocation Clone (long offset)

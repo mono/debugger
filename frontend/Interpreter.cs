@@ -28,7 +28,7 @@ namespace Mono.Debugger.Frontend
 		Hashtable events;
 
 		Hashtable styles;
-		Style current_style;
+		StyleBase current_style;
 
 		Hashtable parsers_by_name;
 		Hashtable parser_names_by_language;
@@ -64,7 +64,7 @@ namespace Mono.Debugger.Frontend
 			styles.Add ("native", new StyleNative (this));
 			styles.Add ("martin", new StyleMartin (this));
 			styles.Add ("emacs", new StyleEmacs (this));
-			current_style = (Style) styles ["mono"];
+			current_style = (StyleBase) styles ["mono"];
 
 			parsers_by_name = new Hashtable ();
 			parsers_by_name.Add ("c#", typeof (CSharp.ExpressionParser));
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Frontend
 			get { return context; }
 		}
 
-		public Style Style {
+		public StyleBase Style {
 			get { return current_style; }
 			set {
 				current_style = value;
@@ -109,9 +109,9 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public Style GetStyle (string name)
+		public StyleBase GetStyle (string name)
 		{
-			Style style = (Style) styles [name];
+			StyleBase style = (StyleBase) styles [name];
 			if (style == null)
 				throw new ScriptingException (
 					"No such user interface: `{0}'", name);

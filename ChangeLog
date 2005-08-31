@@ -1,3 +1,54 @@
+2005-08-31  Martin Baulig  <martin@ximian.com>
+
+	* classes/Style.cs: Moved some of frontend/Style.cs here.
+	(Style): This is now an abstract [Serializable] class and not an
+	interface.  It allows us to do some things in the server's
+	background thread instead of in the client to avoid unneccessary
+	remoting round-trips.
+
+	* frontend/Style.cs
+	(StyleBase): New abstract base class for all the user styles.
+
+	* interfaces/IMethod.cs (IMethod.GetVariableByName): New method.
+
+	* interfaces/ITargetObject.cs: Added some properties from
+	ITargetType to avoid unneccessary remoting round-trips.
+	(ITargetObject.TypeName): New property.
+	(ITargetObject.Kind): New property.
+
+	* interfaces/ILanguage.cs (ILanguage.CreateInstance): Added
+	overloaded version which takes an `ITargetAccess'.
+
+	* interfaces/ITargetMemoryAccess (ITargetMemoryAccess.ReadMemory):
+	Remove the overloaded version which took a `byte[] buffer'.
+	(ITargetAccess): Don't derive from ITargetMemoryAccess.
+
+	* classes/StackFrame.cs (Register): Make it [Serializable].
+	(Registers, StackFrame): Likewise.
+
+	* classes/TargetEvent (TargetEventArgs): Make it [Serializable].
+
+	* backends/Inferior.cs (Inferior): Implement ITargetAccess, not
+	ITargetMemoryAccess.
+
+	* backends/Process.cs
+	(Process): Implement ITargetAccess, not ITargetMemoryAccess.
+	(Process.PrintObject): New public method.  This is now called from
+	`Style.PrintObject()' to do all the computations in the engine's
+	background thread.
+	(Process.PrintType): Likewise.
+
+	* backends/SingleSteppingEngine.cs (CommandAttribute): Make this a
+	public, non-nested class so we can also use this attribute outside
+	the SingleSteppingEngine.
+
+	* backends/TargetAccess.cs (TargetAccess): New public abstract
+	class; this is now used to access the target in the client and on
+	the server and it'll know how to "do the right thing".
+
+	* tests/mdb.exp (mdb_send_and_expect): New proc which also
+	measures the time elapsed.
+
 2005-08-25  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetMemoryAccess.cs

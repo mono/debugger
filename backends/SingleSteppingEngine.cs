@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -57,6 +58,9 @@ namespace Mono.Debugger.Backends
 //   busy, the step command will return false to signal this error.
 // </summary>
 
+	public class CommandAttribute : Attribute
+	{ }
+
 	// <summary>
 	//   The ThreadManager creates one SingleSteppingEngine instance for each thread
 	//   in the target.
@@ -70,9 +74,6 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class SingleSteppingEngine : MarshalByRefObject
 	{
-		public class CommandAttribute : Attribute
-		{ }
-
 		// <summary>
 		//   This is invoked after compiling a trampoline - it returns whether or
 		//   not we should enter that trampoline.
@@ -106,6 +107,7 @@ namespace Mono.Debugger.Backends
 
 			process = DebuggerManager.CreateProcess (this);
 			ID = process.ID;
+			target_access = new ServerTargetAccess (this);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, Inferior inferior, int pid)
@@ -121,6 +123,7 @@ namespace Mono.Debugger.Backends
 
 			process = DebuggerManager.CreateProcess (this);
 			ID = process.ID;
+			target_access = new ServerTargetAccess (this);
 		}
 
 		void setup_engine ()
@@ -594,6 +597,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		internal Inferior Inferior {
+			get { return inferior; }
+		}
+
 		public IArchitecture Architecture {
 			get { return arch; }
 		}
@@ -620,6 +627,10 @@ namespace Mono.Debugger.Backends
 
 		public IMethod CurrentMethod {
 			get { return current_method; }
+		}
+
+		public TargetAddress CurrentFrameAddress {
+			get { return inferior.CurrentFrame; }
 		}
 #endregion
 
@@ -734,7 +745,7 @@ namespace Mono.Debugger.Backends
 			if (bpt == null)
 				return false;
 
-			if (!bpt.CheckBreakpointHit (inferior, inferior.CurrentFrame))
+			if (!bpt.CheckBreakpointHit (target_access, inferior.CurrentFrame))
 				return false;
 
 			return true;
@@ -780,7 +791,7 @@ namespace Mono.Debugger.Backends
 					      "{0} invoking exception handler {1} for {0}",
 					      this, bpt, exc);
 
-				if (!bpt.CheckBreakpointHit (inferior, exc))
+				if (!bpt.CheckBreakpointHit (target_access, exc))
 					continue;
 
 				Report.Debug (DebugFlags.SSE,
@@ -834,7 +845,8 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
-			current_frame = StackFrame.CreateFrame (process, simple, current_method);
+			current_frame = StackFrame.CreateFrame (
+				process, target_access, simple, current_method);
 
 			return current_frame;
 		}
@@ -901,7 +913,7 @@ namespace Mono.Debugger.Backends
 				SimpleStackFrame simple = new SimpleStackFrame (
 					iframe, registers, 0);
 				current_frame = StackFrame.CreateFrame (
-					process, simple, current_method, source);
+					process, target_access, simple, current_method, source);
 			} else {
 				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
@@ -916,7 +928,7 @@ namespace Mono.Debugger.Backends
 				SimpleStackFrame simple = new SimpleStackFrame (
 					iframe, registers, 0);
 				current_frame = StackFrame.CreateFrame (
-					process, simple, current_symtab,
+					process, target_access, simple, current_symtab,
 					current_simple_symtab);
 			}
 
@@ -1379,7 +1391,7 @@ namespace Mono.Debugger.Backends
 				process, arch, current_frame, main_method_retaddr, max_frames);
 
 			current_backtrace.GetBacktrace (
-				inferior, arch, current_symtab, current_simple_symtab);
+				target_access, arch, current_symtab, current_simple_symtab);
 
 			return current_backtrace;
 		}
@@ -1503,6 +1515,18 @@ namespace Mono.Debugger.Backends
 			inferior.WriteBuffer (address, buffer);
 		}
 
+		[Command]
+		public string PrintObject (Style style, ITargetObject obj)
+		{
+			return style.FormatObject (target_access, obj);
+		}
+
+		[Command]
+		public string PrintType (Style style, ITargetType type)
+		{
+			return style.FormatType (target_access, type);
+		}
+
 #endregion
 
 #region IDisposable implementation
@@ -1555,6 +1579,7 @@ namespace Mono.Debugger.Backends
 		ThreadManager manager;
 		Process process;
 		Inferior inferior;
+		TargetAccess target_access;
 		IArchitecture arch;
 		IDisassembler disassembler;
 		ProcessStart start;
@@ -1574,7 +1599,6 @@ namespace Mono.Debugger.Backends
 
 		int stepping_over_breakpoint;
 
-		internal bool IsDaemon;
 		internal TargetAddress EndStackAddress;
 
 		TargetAddress main_method_retaddr = TargetAddress.Null;

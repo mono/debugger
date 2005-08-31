@@ -64,7 +64,7 @@ namespace Mono.Debugger.Backends
 			mono_debugger_server_set_notification (notification_address.Address);
 
 			manager_sse = sse;
-			manager_sse.IsDaemon = true;
+			manager_sse.Process.SetDaemon ();
 
 			return main_function;
 		}
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Backends
 			thread_hash.Add (inferior.TID, tdata);
 
 			if (thread_hash.Count == 1) {
-				sse.IsDaemon = true;
+				sse.Process.SetDaemon ();
 				return false;
 			}
 
@@ -126,7 +126,7 @@ namespace Mono.Debugger.Backends
 					      "Created managed thread: {0}", sse);
 				return false;
 			} else {
-				sse.IsDaemon = true;
+				sse.Process.SetDaemon ();
 				return false;
 			}
 		}

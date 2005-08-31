@@ -94,7 +94,8 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetObject GetConstValue (StackFrame frame) {
+		public ITargetObject GetConstValue (ITargetAccess target)
+		{
 			return null;
 		}
 
@@ -183,7 +184,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetObject GetStaticField (StackFrame frame, int index)
+		public ITargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}

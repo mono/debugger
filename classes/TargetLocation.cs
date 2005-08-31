@@ -105,7 +105,7 @@ namespace Mono.Debugger.Languages
 					return TargetAddress.Null;
 
 				return new TargetAddress (
-					TargetAccess.GlobalAddressDomain, address.Address);
+					TargetMemoryInfo.GlobalAddressDomain, address.Address);
 			}
 		}
 
@@ -127,7 +127,7 @@ namespace Mono.Debugger.Languages
 
 		public virtual ITargetMemoryReader ReadMemory (int size)
 		{
-			return TargetAccess.ReadMemory (Address, size);
+			return TargetMemoryAccess.ReadMemory (Address, size);
 		}
 
 		// <summary>
@@ -140,12 +140,12 @@ namespace Mono.Debugger.Languages
 
 		public virtual void WriteBuffer (byte[] data)
 		{
-			TargetAccess.WriteBuffer (Address, data);
+			TargetMemoryAccess.WriteBuffer (Address, data);
 		}
 
 		public virtual void WriteAddress (TargetAddress address)
 		{
-			TargetAccess.WriteAddress (Address, address);
+			TargetMemoryAccess.WriteAddress (Address, address);
 		}
 
 		public virtual TargetAddress ReadAddress ()
@@ -153,22 +153,34 @@ namespace Mono.Debugger.Languages
 			if (HasAddress)
 				return Address;
 
-			byte[] data = ReadBuffer (TargetAccess.TargetAddressSize);
+			byte[] data = ReadBuffer (TargetMemoryInfo.TargetAddressSize);
 
 			long address;
-			if (TargetAccess.TargetAddressSize == 4)
+			if (TargetMemoryInfo.TargetAddressSize == 4)
 				address = BitConverter.ToInt32 (data, 0);
-			else if (TargetAccess.TargetAddressSize == 8)
+			else if (TargetMemoryInfo.TargetAddressSize == 8)
 				address = BitConverter.ToInt64 (data, 0);
 			else
 				throw new InternalError ();
 
-			return new TargetAddress (TargetAccess.AddressDomain, address);
+			return new TargetAddress (TargetMemoryInfo.AddressDomain, address);
 		}
 
 		public ITargetAccess TargetAccess {
 			get {
 				return target;
+			}
+		}
+
+		public ITargetMemoryAccess TargetMemoryAccess {
+			get {
+				return target.TargetMemoryAccess;
+			}
+		}
+
+		public ITargetMemoryInfo TargetMemoryInfo {
+			get {
+				return target.TargetMemoryInfo;
 			}
 		}
 
@@ -187,8 +199,8 @@ namespace Mono.Debugger.Languages
 			if (!dereference)
 				return new_location;
 
-			TargetAddress address = TargetAccess.ReadAddress (new_location.Address);
-			return new RelativeTargetLocation (this,  address);
+			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
+			return new RelativeTargetLocation (this, address);
 		}
 
 		protected abstract TargetLocation Clone (long offset);
@@ -207,9 +219,13 @@ namespace Mono.Debugger.Languages
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3:x}{4})",
-					      GetType (), frame.TargetAddress, is_byref, offset,
-					      MyToString ());
+			if (frame != null)
+				return String.Format ("{0} ({1}:{2}:{3:x}{4})",
+						      GetType (), frame.TargetAddress, is_byref, offset,
+						      MyToString ());
+			else
+				return String.Format ("{0} ({1}:{2:x}{3})",
+						      GetType (), is_byref, offset, MyToString ());
 		}
 	}
 }

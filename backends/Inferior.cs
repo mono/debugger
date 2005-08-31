@@ -17,7 +17,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void ChildOutputHandler (string output);
 
-	internal abstract class Inferior : ITargetAccess, ITargetNotification, IDisposable
+	internal abstract class Inferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
@@ -741,7 +741,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		int ITargetAccess.InsertBreakpoint (Breakpoint bpt, TargetAddress address)
+		public int InsertBreakpoint (Breakpoint bpt, TargetAddress address)
 		{
 			return breakpoint_manager.InsertBreakpoint (this, bpt, address);
 		}

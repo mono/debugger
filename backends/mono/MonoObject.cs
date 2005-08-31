@@ -21,6 +21,18 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		public string TypeName {
+			get {
+				return type_info.Type.Name;
+			}
+		}
+
+		public TargetObjectKind Kind {
+			get {
+				return type_info.Type.Kind;
+			}
+		}
+
 		public bool IsValid {
 			get {
 				return is_valid && (location != null) && location.IsValid;

@@ -60,12 +60,12 @@ namespace Mono.Debugger
 					  TargetAddress stack)
 		{
 			SimpleStackFrame new_frame = arch.UnwindStack (
-				target, stack, last_frame.FrameAddress);
+				target.TargetMemoryAccess, stack, last_frame.FrameAddress);
 			if (new_frame == null)
 				return;
 
 			StackFrame frame = StackFrame.CreateFrame (
-				last_frame.Process, new_frame, symtab, simple);
+				last_frame.Process, target, new_frame, symtab, simple);
 
 			frames.Add (frame);
 			last_frame = frame;
@@ -81,7 +81,7 @@ namespace Mono.Debugger
 
 			SimpleStackFrame new_frame = null;
 			try {
-				new_frame = UnwindStack (target, arch);
+				new_frame = UnwindStack (target.TargetMemoryAccess, arch);
 			} catch (TargetException) {
 			}
 
@@ -94,7 +94,7 @@ namespace Mono.Debugger
 				return false;
 
 			StackFrame frame = StackFrame.CreateFrame (
-				last_frame.Process, new_frame, symtab, simple_symtab);
+				last_frame.Process, target, new_frame, symtab, simple_symtab);
 
 			frames.Add (frame);
 			last_frame = frame;

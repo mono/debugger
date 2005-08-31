@@ -160,5 +160,7 @@ namespace Mono.Debugger
 		SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 					      ITargetMemoryAccess memory,
 					      IArchitecture arch);
+
+		IVariable GetVariableByName (string name);
 	}
 }

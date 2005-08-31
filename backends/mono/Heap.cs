@@ -22,14 +22,14 @@ namespace Mono.Debugger.Languages.Mono
 
 		int end;
 
-		public TargetLocation Allocate (StackFrame frame, int size)
+		public TargetLocation Allocate (ITargetAccess target, int size)
 		{
 			if (end + size >= Size)
 				throw new StackOverflowException ();
 
 			TargetAddress start = StartAddress + end;
 			end += size;
-			return new HeapLocation (frame, this, start, start, size);
+			return new HeapLocation (target, this, start, start, size);
 		}
 
 		protected class HeapLocation : TargetLocation
@@ -39,9 +39,9 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress address;
 			int size;
 
-			public HeapLocation (StackFrame frame, Heap heap, TargetAddress base_address,
+			public HeapLocation (ITargetAccess target, Heap heap, TargetAddress base_address,
 					     TargetAddress address, int size)
-				: base (frame, false, 0)
+				: base (null, target, false, 0)
 			{
 				this.heap = heap;
 				this.base_address = base_address;
@@ -60,7 +60,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			protected override TargetLocation Clone (long offset)
 			{
-				return new HeapLocation (frame, heap, base_address, address + offset, size);
+				return new HeapLocation (
+					target, heap, base_address, address + offset, size);
 			}
 
 			public override string Print ()

@@ -10,7 +10,8 @@ namespace Mono.Debugger
 {
 	public delegate void ObjectInvalidHandler (object obj);
 
-	public sealed class Register : MarshalByRefObject
+	[Serializable]
+	public sealed class Register
 	{
 		public readonly int Index;
 		public readonly int Size;
@@ -77,11 +78,11 @@ namespace Mono.Debugger
 			this.value = value;
 
 			if (addr_on_stack.IsNull)
-				target.SetRegisters (registers);
-			else if (Size == target.TargetIntegerSize)
-				target.WriteInteger (addr_on_stack, (int) value);
+				target.TargetMemoryAccess.SetRegisters (registers);
+			else if (Size == target.TargetMemoryInfo.TargetIntegerSize)
+				target.TargetMemoryAccess.WriteInteger (addr_on_stack, (int) value);
 			else
-				target.WriteLongInteger (addr_on_stack, value);
+				target.TargetMemoryAccess.WriteLongInteger (addr_on_stack, value);
 		}
 
 		public bool Valid {
@@ -101,7 +102,8 @@ namespace Mono.Debugger
 		}
 	}
 
-	public sealed class Registers : MarshalByRefObject
+	[Serializable]
+	public sealed class Registers
 	{
 		Register[] regs;
 		bool from_current_frame;
@@ -193,30 +195,35 @@ namespace Mono.Debugger
 		}
 	}
 
-	public sealed class StackFrame : MarshalByRefObject, IDisposable
+	[Serializable]
+	public sealed class StackFrame : IDisposable
 	{
 		IMethod method;
 		Process process;
+		ITargetAccess target;
 		SimpleStackFrame simple;
 		SourceAddress source;
 		AddressDomain address_domain;
 		ILanguage language;
 		Symbol name;
 
-		public StackFrame (Process process, SimpleStackFrame simple,
-				   Symbol name)
+		public StackFrame (Process process, ITargetAccess target,
+				   SimpleStackFrame simple, Symbol name)
 		{
 			this.process = process;
+			this.target = target;
 			this.simple = simple;
 			this.name = name;
 
 			language = process.NativeLanguage;
 		}
 
-		public StackFrame (Process process, SimpleStackFrame simple,
-				   IMethod method, SourceAddress source)
+		public StackFrame (Process process, ITargetAccess target,
+				   SimpleStackFrame simple, IMethod method,
+				   SourceAddress source)
 		{
 			this.process = process;
+			this.target = target;
 			this.simple = simple;
 			this.method = method;
 			this.source = source;
@@ -230,30 +237,30 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal static StackFrame CreateFrame (Process process,
+		internal static StackFrame CreateFrame (Process process, ITargetAccess target,
 							SimpleStackFrame simple,
 							IMethod method)
 		{
 			SourceAddress source = null;
 			if ((method != null) && method.HasSource)
 				source = method.Source.Lookup (simple.Address);
-			return CreateFrame (process, simple, method, source);
+			return CreateFrame (process, target, simple, method, source);
 		}
 
-		internal static StackFrame CreateFrame (Process process,
+		internal static StackFrame CreateFrame (Process process, ITargetAccess target,
 							SimpleStackFrame simple,
 							IMethod method, SourceAddress source)
 		{
-			return new StackFrame (process, simple, method, source);
+			return new StackFrame (process, target, simple, method, source);
 		}
 
-		internal static StackFrame CreateFrame (Process process,
+		internal static StackFrame CreateFrame (Process process, ITargetAccess target,
 							SimpleStackFrame simple,
 							ISymbolTable symtab,
 							ISimpleSymbolTable simple_symtab)
 		{
 			if (simple.Address.IsNull)
-				return new StackFrame (process, simple, null, null);
+				return new StackFrame (process, target, simple, null, null);
 
 			IMethod method = null;
 			if (symtab != null) {
@@ -266,11 +273,11 @@ namespace Mono.Debugger
 				SourceAddress source = null;
 				if (method.HasSource)
 					source = method.Source.Lookup (simple.Address);
-				return new StackFrame (process, simple, method, source);
+				return new StackFrame (process, target, simple, method, source);
 			}
 
 			if (simple_symtab == null)
-				return new StackFrame (process, simple, null, null);
+				return new StackFrame (process, target, simple, null, null);
 
 			Symbol name;
 			try {
@@ -278,7 +285,7 @@ namespace Mono.Debugger
 			} catch {
 				name = null;
 			}
-			return new StackFrame (process, simple, name);
+			return new StackFrame (process, target, simple, name);
 		}
 
 		public SimpleStackFrame SimpleFrame {
@@ -346,7 +353,7 @@ namespace Mono.Debugger
 		public ITargetAccess TargetAccess {
 			get {
 				check_disposed ();
-				return process;
+				return target;
 			}
 		}
 
@@ -399,7 +406,7 @@ namespace Mono.Debugger
 
 		public void SetRegister (int index, long value)
 		{
-			Registers [index].WriteRegister (process, value);
+			Registers [index].WriteRegister (process.TargetAccess, value);
 		}
 
 		public event ObjectInvalidHandler FrameInvalidEvent;

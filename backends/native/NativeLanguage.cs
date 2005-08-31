@@ -65,6 +65,11 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
+		public ITargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetPointerObject CreatePointer (StackFrame frame,
 							   TargetAddress address)
 		{

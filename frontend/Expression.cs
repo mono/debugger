@@ -1235,7 +1235,7 @@ namespace Mono.Debugger.Frontend
 		protected ITargetObject GetStaticField (ITargetStructType stype, StackFrame frame, ITargetFieldInfo field)
 		{
 			try {
-				return stype.GetStaticField (frame, field.Index);
+				return stype.GetStaticField (frame.TargetAccess, field.Index);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException ("Can't get field {0}: {1}", Name, ex.Message);
 			}

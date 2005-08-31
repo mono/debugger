@@ -9,6 +9,14 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		string TypeName {
+			get;
+		}
+
+		TargetObjectKind Kind {
+			get;
+		}
+
 		// <summary>
 		//   If false, then the object can not be accessed because its location is
 		//   invalid or the object is corrupted.

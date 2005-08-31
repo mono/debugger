@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject GetConstValue (StackFrame frame);
+		ITargetObject GetConstValue (ITargetAccess target);
 	}
 
 	public interface ITargetPropertyInfo : ITargetMemberInfo
@@ -83,7 +83,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject GetStaticField (StackFrame frame, int index);
+		ITargetObject GetStaticField (ITargetAccess target, int index);
 
 		ITargetPropertyInfo[] Properties {
 			get;

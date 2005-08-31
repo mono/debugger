@@ -145,8 +145,10 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Selected stack frame has no method.");
 
 			IVariable[] param_vars = frame.Method.Parameters;
-			foreach (IVariable var in param_vars)
-				context.Interpreter.Style.PrintVariable (var, this);
+			foreach (IVariable var in param_vars) {
+				string msg = context.Interpreter.Style.PrintVariable (var, frame);
+				context.Interpreter.Print (msg);
+			}
 		}
 
 		public void ShowLocals (ScriptingContext context)
@@ -155,8 +157,10 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Selected stack frame has no method.");
 
 			IVariable[] local_vars = frame.Locals;
-			foreach (IVariable var in local_vars)
-				context.Interpreter.Style.PrintVariable (var, this);
+			foreach (IVariable var in local_vars) {
+				string msg = context.Interpreter.Style.PrintVariable (var, frame);
+				context.Interpreter.Print (msg);
+			}
 		}
 
 		public IVariable GetVariableInfo (string identifier, bool report_errors)
@@ -168,17 +172,9 @@ namespace Mono.Debugger.Frontend
 					"Selected stack frame has no method.");
 			}
 
-			IVariable[] local_vars = frame.Locals;
-			foreach (IVariable var in local_vars) {
-				if (var.Name == identifier)
-					return var;
-			}
-
-			IVariable[] param_vars = frame.Method.Parameters;
-			foreach (IVariable var in param_vars) {
-				if (var.Name == identifier)
-					return var;
-			}
+			IVariable var = frame.Method.GetVariableByName (identifier);
+			if (var != null)
+				return var;
 
 			if (!report_errors)
 				return null;
@@ -856,7 +852,15 @@ namespace Mono.Debugger.Frontend
 		{
 			string formatted;
 			try {
-				formatted = interpreter.Style.FormatObject (CurrentFrame, obj);
+				if (obj is long)
+					formatted = String.Format ("0x{0:x}", (long) obj);
+				else if (obj is string)
+					formatted = '"' + (string) obj + '"';
+				else if (obj is ITargetObject)
+					formatted = CurrentProcess.Process.PrintObject (
+						interpreter.Style, (ITargetObject) obj);
+				else
+					formatted = obj.ToString ();
 			} catch {
 				formatted = "<cannot display object>";
 			}
@@ -867,7 +871,8 @@ namespace Mono.Debugger.Frontend
 		{
 			string formatted;
 			try {
-				formatted = interpreter.Style.FormatType (type);
+				formatted = CurrentProcess.Process.PrintType (
+					interpreter.Style, type);
 			} catch {
 				formatted = "<cannot display type>";
 			}

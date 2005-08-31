@@ -3,7 +3,6 @@
 set mono mono
 set mdb "../wrapper/mdb.exe"
 set timeout 20
-set verbose 2
 set max_repeat 20
 set srcdir [absolute $srcdir]
 
@@ -324,3 +323,11 @@ proc mdb_expect {text} {
     mdb_expect_prompt
 }
 
+set repeat_count 10
+proc mdb_send_and_expect {arg1 arg2} {
+    set timestamp [time {
+	mdb_send $arg1
+	mdb_expect $arg2
+    }]
+    verbose [format "`%-30s  => $timestamp" $arg1] 2
+}

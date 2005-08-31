@@ -122,8 +122,6 @@ namespace Mono.Debugger
 
 		ITargetMemoryReader ReadMemory (TargetAddress address, int size);
 
-		ITargetMemoryReader ReadMemory (byte[] buffer);
-
 		byte[] ReadBuffer (TargetAddress address, int size);
 
 		Registers GetRegisters ();
@@ -131,10 +129,7 @@ namespace Mono.Debugger
 		bool CanWrite {
 			get;
 		}
-	}
 
-	public interface ITargetAccess : ITargetMemoryAccess
-	{
 		void WriteBuffer (TargetAddress address, byte[] buffer);
 
 		void WriteByte (TargetAddress address, byte value);
@@ -148,5 +143,19 @@ namespace Mono.Debugger
 		void SetRegisters (Registers registers);
 
 		int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
+	}
+
+	public interface ITargetAccess
+	{
+		ITargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
+		ITargetMemoryAccess TargetMemoryAccess {
+			get;
+		}
+
+		TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+					  TargetAddress arg2);
 	}
 }

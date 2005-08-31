@@ -12,7 +12,13 @@ namespace Mono.Debugger.Remoting
 
 		static int next_id = 0;
 		private Hashtable clients = Hashtable.Synchronized (new Hashtable ());
+		private Hashtable threads = Hashtable.Synchronized (new Hashtable ());
 		private ManualResetEvent interrupt_event = new ManualResetEvent (false);
+
+		public DebuggerManager ()
+		{
+			DebuggerContext.CreateClientContext (this);
+		}
 
 		int next_process_id = 0;
 		public int NextProcessID {
@@ -74,7 +80,21 @@ namespace Mono.Debugger.Remoting
 
 		internal Process CreateProcess (SingleSteppingEngine sse)
 		{
-			return new Process (sse);
+			lock (this) {
+				Process thread = new Process (this, sse);
+				threads.Add (thread.ID, thread);
+				return thread;
+			}
+		}
+
+		internal void ProcessExited (int id)
+		{
+			threads.Remove (id);
+		}
+
+		internal Process GetProcess (int id)
+		{
+			return (Process) threads [id];
 		}
 	}
 }

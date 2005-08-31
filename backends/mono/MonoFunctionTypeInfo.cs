@@ -37,8 +37,10 @@ namespace Mono.Debugger.Languages.Mono
 
 				Heap heap = Type.File.MonoLanguage.DataHeap;
 				byte[] contents = args [i].RawContents;
-				TargetLocation new_loc = heap.Allocate (frame, contents.Length);
-				frame.TargetAccess.WriteBuffer (new_loc.Address, contents);
+				TargetLocation new_loc = heap.Allocate (
+					frame.TargetAccess, contents.Length);
+				frame.TargetAccess.TargetMemoryAccess.WriteBuffer (
+					new_loc.Address, contents);
 
 				arg_ptr [i] = new_loc.Address;
 			}

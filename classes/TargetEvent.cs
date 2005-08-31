@@ -5,6 +5,7 @@ namespace Mono.Debugger
 {
 	public delegate void TargetEventHandler (TargetEventArgs args);
 
+	[Serializable]
 	public enum TargetEventType
 	{
 		TargetRunning,
@@ -17,7 +18,8 @@ namespace Mono.Debugger
 		UnhandledException
 	}
 
-	public class TargetEventArgs : MarshalByRefObject
+	[Serializable]
+	public class TargetEventArgs
 	{
 		public readonly TargetEventType Type;
 		public readonly object Data;

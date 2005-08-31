@@ -25,13 +25,16 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
 
-			TargetAddress member_info = target.ReadAddress (KlassAddress + builtin.KlassFieldOffset);
+			TargetAddress member_info = target.TargetMemoryAccess.ReadAddress (
+				KlassAddress + builtin.KlassFieldOffset);
 			int member_count = 1 + Type.Members.Length;
-			ITargetMemoryReader info = target.ReadMemory (member_info, member_count * builtin.FieldInfoSize);
+			ITargetMemoryReader info = target.TargetMemoryAccess.ReadMemory (
+				member_info, member_count * builtin.FieldInfoSize);
 
 			member_offsets = new int [member_count];
 			for (int i = 0; i < member_count; i++) {
-				info.Offset = i * builtin.FieldInfoSize + 2 * target.TargetAddressSize;
+				info.Offset = i * builtin.FieldInfoSize +
+					2 * target.TargetMemoryInfo.TargetAddressSize;
 				member_offsets [i] = info.ReadInteger ();
 			}
 
@@ -50,7 +53,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				int offset = member_offsets [finfo.Position];
 				if (!Type.IsByRef)
-					offset -= 2 * location.TargetAccess.TargetAddressSize;
+					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
 				TargetLocation member_loc = location.GetLocationAtOffset (
 					offset, ftype.Type.IsByRef);
 

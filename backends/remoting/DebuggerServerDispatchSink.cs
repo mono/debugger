@@ -31,7 +31,12 @@ namespace Mono.Debugger.Remoting
 			if (sink_stack != null) stream = sink_stack.GetResponseStream (msg, response_headers);
 			if (stream == null) stream = new MemoryStream();
 
-			sink_stack.AsyncProcessResponse (msg, response_headers, stream);
+			try {
+				sink_stack.AsyncProcessResponse (msg, response_headers, stream);
+			} catch (Exception ex) {
+				Console.WriteLine (ex);
+				throw;
+			}
 		}
 
 		public Stream GetResponseStream (IServerResponseChannelSinkStack sinkStack, object state,
@@ -51,18 +56,17 @@ namespace Mono.Debugger.Remoting
 			responseHeaders = null;
 			responseStream = null;
 
-			sinkStack.Push (this, null);
-
 			ServerProcessing proc;
 
+			sinkStack.Push (this, null);
+
 			IMethodCallMessage message = (IMethodCallMessage) requestMsg;
-			bool is_command = message.MethodBase.IsDefined (
-				typeof (SingleSteppingEngine.CommandAttribute), false);
+			bool is_command = message.MethodBase.IsDefined (typeof (CommandAttribute), false);
 
 			DebuggerServerResponseSink sink = new DebuggerServerResponseSink (sinkStack);
 
 			if (is_command) {
-				responseMsg = DebuggerServer.ThreadManager.SendCommand (message, sink);
+				responseMsg = DebuggerContext.ThreadManager.SendCommand (message, sink);
 				if (responseMsg != null)
 					return ServerProcessing.Complete;
 				else

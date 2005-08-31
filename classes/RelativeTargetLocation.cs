@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages
 		TargetAddress address;
 
 		public RelativeTargetLocation (TargetLocation relative_to, TargetAddress address)
-			: base (relative_to.StackFrame, false, 0)
+			: base (relative_to.StackFrame, relative_to.TargetAccess, false, 0)
 		{
 			this.relative_to = relative_to;
 			this.address = address;

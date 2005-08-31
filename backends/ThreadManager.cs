@@ -28,6 +28,7 @@ namespace Mono.Debugger
 			breakpoint_manager = new BreakpointManager ();
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
+			engine_hash = Hashtable.Synchronized (new Hashtable ());
 			
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 			address_domain = new AddressDomain ("global");
@@ -55,6 +56,7 @@ namespace Mono.Debugger
 		ManualResetEvent idle_event;
 		AutoResetEvent wait_event;
 		Hashtable thread_hash;
+		Hashtable engine_hash;
 
 		bool has_thread_lock;
 		DebuggerMutex thread_lock_mutex;
@@ -90,6 +92,7 @@ namespace Mono.Debugger
 				      DebuggerWaitHandle.CurrentThread, the_engine.PID);
 
 			thread_hash.Add (the_engine.PID, the_engine);
+			engine_hash.Add (the_engine.ID, the_engine);
 
 			OnThreadCreatedEvent (the_engine.Process);
 
@@ -187,6 +190,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal SingleSteppingEngine GetEngine (int id)
+		{
+			return (SingleSteppingEngine) engine_hash [id];
+		}
+
 		public bool HasTarget {
 			get { return inferior_thread != null; }
 		}
@@ -243,6 +251,7 @@ namespace Mono.Debugger
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (this, new_inferior, pid);
 
 			thread_hash.Add (pid, new_thread);
+			engine_hash.Add (new_thread.ID, new_thread);
 
 			if ((mono_manager != null) &&
 			    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
@@ -267,6 +276,7 @@ namespace Mono.Debugger
 		internal void KillThread (SingleSteppingEngine engine)
 		{
 			thread_hash.Remove (engine.PID);
+			engine_hash.Remove (engine.ID);
 			engine.Process.Kill ();
 			OnThreadExitedEvent (engine.Process);
 		}

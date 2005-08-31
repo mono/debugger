@@ -120,8 +120,17 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal virtual MonoFundamentalObjectBase CreateInstance (StackFrame frame, object obj)
 		{
-			TargetLocation location = Heap.Allocate (frame, size);
-			frame.TargetAccess.WriteBuffer (location.Address, CreateObject (obj));
+			TargetLocation location = Heap.Allocate (frame.TargetAccess, size);
+			frame.TargetAccess.TargetMemoryAccess.WriteBuffer (
+				location.Address, CreateObject (obj));
+
+			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)type_info, location);
+		}
+
+		internal virtual MonoFundamentalObject CreateInstance (ITargetAccess target, object obj)
+		{
+			TargetLocation location = Heap.Allocate (target, size);
+			target.TargetMemoryAccess.WriteBuffer (location.Address, CreateObject (obj));
 
 			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)type_info, location);
 		}

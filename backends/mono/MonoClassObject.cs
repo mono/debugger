@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -29,6 +30,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		[Command]
 		public ITargetObject GetField (int index)
 		{
 			return type.GetField (location, index);

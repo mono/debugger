@@ -32,19 +32,25 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
 
-			TargetAddress field_info = target.ReadAddress (KlassAddress + builtin.KlassFieldOffset);
+			TargetAddress field_info = target.TargetMemoryAccess.ReadAddress (
+				KlassAddress + builtin.KlassFieldOffset);
 			int field_count = Type.Fields.Length + Type.StaticFields.Length;
-			ITargetMemoryReader info = target.ReadMemory (field_info, field_count * builtin.FieldInfoSize);
+			ITargetMemoryReader info = target.TargetMemoryAccess.ReadMemory (
+				field_info, field_count * builtin.FieldInfoSize);
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				info.Offset = i * builtin.FieldInfoSize + 2 * target.TargetAddressSize;
+				info.Offset = i * builtin.FieldInfoSize +
+					2 * target.TargetMemoryInfo.TargetAddressSize;
 				field_offsets [i] = info.ReadInteger ();
 			}
 
-			TargetAddress method_info = target.ReadAddress (KlassAddress + builtin.KlassMethodsOffset);
-			int method_count = target.ReadInteger (KlassAddress + builtin.KlassMethodCountOffset);
-			info = target.ReadMemory (method_info, method_count * target.TargetAddressSize);
+			TargetAddress method_info = target.TargetMemoryAccess.ReadAddress (
+				KlassAddress + builtin.KlassMethodsOffset);
+			int method_count = target.TargetMemoryAccess.ReadInteger (
+				KlassAddress + builtin.KlassMethodCountOffset);
+			info = target.TargetMemoryAccess.ReadMemory (
+				method_info, method_count * target.TargetMemoryInfo.TargetAddressSize);
 
 			methods = new TargetAddress [method_count];
 			for (int i = 0; i < method_count; i++)
@@ -65,7 +71,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				int offset = field_offsets [finfo.Position];
 				if (!Type.IsByRef)
-					offset -= 2 * location.TargetAccess.TargetAddressSize;
+					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					offset, ftype.Type.IsByRef);
 
@@ -78,11 +84,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public ITargetObject GetStaticField (StackFrame frame, int index)
+		public ITargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			try {
-				initialize (frame.TargetAccess);
-				TargetAddress data_address = frame.Process.CallMethod (
+				initialize (target);
+				TargetAddress data_address = target.CallMethod (
 					debugger_info.ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 
@@ -92,7 +98,7 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 
 				TargetLocation location = new AbsoluteTargetLocation (
-					frame, data_address);
+					null, target, data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					field_offsets [finfo.Position], ftype.Type.IsByRef);
 

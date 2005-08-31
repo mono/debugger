@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				reader.Offset = 2 * target_info.TargetAddressSize;
 				TargetAddress bounds_address = reader.ReadAddress ();
-				ITargetMemoryReader breader = location.TargetAccess.ReadMemory (
+				ITargetMemoryReader breader = location.TargetMemoryAccess.ReadMemory (
 					bounds_address, 8 * rank);
 
 				bounds = new MonoArrayBounds [rank];

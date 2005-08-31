@@ -40,10 +40,10 @@ namespace Mono.Debugger.Languages
 			long contents = reg.Value;
 
 			TargetAddress address = new TargetAddress (
-				TargetAccess.TargetMemoryInfo.AddressDomain, contents + regoffset);
+				TargetMemoryInfo.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
-				address = TargetAccess.ReadAddress (address);
+				address = TargetMemoryAccess.ReadAddress (address);
 
 			return address;
 		}
@@ -57,11 +57,9 @@ namespace Mono.Debugger.Languages
 			long contents = frame.GetRegister (register);
 			contents += regoffset;
 
-			ITargetMemoryInfo info = TargetAccess.TargetMemoryInfo;
-
 			// We can read at most Inferior.TargetIntegerSize from a register
 			// (a word on the target).
-			if ((Offset < 0) || (Offset + size > info.TargetIntegerSize))
+			if ((Offset < 0) || (Offset + size > TargetMemoryInfo.TargetIntegerSize))
 				throw new ArgumentException ();
 
 			// Using ITargetMemoryReader for this is just an ugly hack, but I
@@ -69,14 +67,14 @@ namespace Mono.Debugger.Languages
 			// register from the caller.
 			ITargetMemoryReader reader;
 			byte[] buffer;
-			if (info.TargetIntegerSize == 4)
+			if (TargetMemoryInfo.TargetIntegerSize == 4)
 				buffer = BitConverter.GetBytes ((int) contents);
-			else if (info.TargetIntegerSize == 8)
+			else if (TargetMemoryInfo.TargetIntegerSize == 8)
 				buffer = BitConverter.GetBytes (contents);
 			else
 				throw new InternalError ();
 
-			reader = new TargetReader (buffer, info);
+			reader = new TargetReader (buffer, TargetMemoryInfo);
 			reader.Offset = Offset;
 			return reader;
 		}
@@ -89,12 +87,11 @@ namespace Mono.Debugger.Languages
 			}
 
 			long contents;
-			ITargetAccess memory = TargetAccess;
 
-			if (data.Length > memory.TargetIntegerSize)
+			if (data.Length > TargetMemoryInfo.TargetIntegerSize)
 				throw new InternalError ();
 
-			if (data.Length < memory.TargetIntegerSize) {
+			if (data.Length < TargetMemoryInfo.TargetIntegerSize) {
 				switch (data.Length) {
 				case 1: contents = data[0]; break;
 				case 2: contents = BitConverter.ToInt16 (data, 0); break;
@@ -103,9 +100,9 @@ namespace Mono.Debugger.Languages
 				  throw new InternalError ();
 				}
 			}
-			else if (memory.TargetIntegerSize == 4)
+			else if (TargetMemoryInfo.TargetIntegerSize == 4)
 				contents = BitConverter.ToInt32 (data, 0);
-			else if (memory.TargetIntegerSize == 8)
+			else if (TargetMemoryInfo.TargetIntegerSize == 8)
 				contents = BitConverter.ToInt64 (data, 0);
 			else
 				throw new InternalError ();
@@ -124,8 +121,9 @@ namespace Mono.Debugger.Languages
 				if (contents == 0)
 					throw new LocationInvalidException ();
 
-				TargetAddress taddress = new TargetAddress (TargetAccess.AddressDomain, contents + regoffset);
-				TargetAccess.WriteAddress (taddress, address);
+				TargetAddress taddress = new TargetAddress (
+					TargetMemoryInfo.AddressDomain, contents + regoffset);
+				TargetMemoryAccess.WriteAddress (taddress, address);
 			} else {
 				frame.SetRegister (register, address.Address);
 			}
@@ -140,7 +138,7 @@ namespace Mono.Debugger.Languages
 		public override string Print ()
 		{
 			int regindex = frame.Registers [register].Index;
-			string name = frame.TargetAccess.Architecture.RegisterNames [regindex];
+			string name = frame.Process.Architecture.RegisterNames [regindex];
 
 			long offset = regoffset + Offset;
 			if (offset > 0)

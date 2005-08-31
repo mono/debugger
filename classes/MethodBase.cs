@@ -251,6 +251,21 @@ namespace Mono.Debugger
 		public abstract SourceMethod GetTrampoline (ITargetMemoryAccess memory,
 							    TargetAddress address);
 
+		public IVariable GetVariableByName (string name)
+		{
+			foreach (IVariable var in Locals) {
+				if (var.Name == name)
+					return var;
+			}
+
+			foreach (IVariable var in Parameters) {
+				if (var.Name == name)
+					return var;
+			}
+
+			return null;
+		}
+
 		//
 		// ISourceLookup
 		//

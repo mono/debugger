@@ -12,30 +12,42 @@ using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
 	using SSE = SingleSteppingEngine;
 
-	public class Process : MarshalByRefObject, ITargetAccess
+	public class Process : MarshalByRefObject, ITargetMemoryAccess
 	{
-		internal Process (SingleSteppingEngine engine)
+		internal Process (DebuggerManager debugger_manager, SingleSteppingEngine engine)
 		{
 			this.engine = engine;
 			this.id = engine.ThreadManager.NextProcessID;
+			this.debugger_manager = debugger_manager;
+
+			this.manager = engine.ThreadManager;
+			this.backend = manager.DebuggerBackend;
+
+			this.pid = engine.PID;
+			this.tid = engine.TID;
 
 			operation_completed_event = new ManualResetEvent (false);
 
 			this.target_info = engine.TargetMemoryInfo;
-			if (target_info == null)
-				throw new Exception ("FUCK");
+			this.target_access = new ClientTargetAccess (this);
 		}
 
-		int id;
+		bool is_daemon;
+		int id, pid, tid;
 		SingleSteppingEngine engine;
+		DebuggerBackend backend;
+		ThreadManager manager;
+		DebuggerManager debugger_manager;
 		ManualResetEvent operation_completed_event;
 		TargetState target_state = TargetState.NO_TARGET;
 		ITargetMemoryInfo target_info;
+		TargetAccess target_access;
 
 		public WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -109,35 +121,39 @@ namespace Mono.Debugger
 
 		public int PID {
 			get {
-				return engine.PID;
+				return pid;
 			}
 		}
 
 		public int TID {
 			get {
-				return engine.TID;
-			}
-		}
-
-		public bool IsDaemon {
-			get {
-				check_engine ();
-				return engine.IsDaemon;
+				return tid;
 			}
 		}
 
 		public IArchitecture Architecture {
 			get {
 				check_engine ();
-				return engine.Architecture;
+				return target_info.Architecture;
 			}
 		}
 
 		public DebuggerBackend DebuggerBackend {
 			get {
 				check_engine ();
-				return engine.ThreadManager.DebuggerBackend;
+				return backend;
 			}
+		}
+
+		public bool IsDaemon {
+			get {
+				return is_daemon;
+			}
+		}
+
+		internal void SetDaemon ()
+		{
+			is_daemon = true;
 		}
 
 		void check_engine ()
@@ -162,6 +178,7 @@ namespace Mono.Debugger
 				case TargetEventType.TargetSignaled:
 				case TargetEventType.TargetExited:
 					target_state = TargetState.EXITED;
+					debugger_manager.ProcessExited (ID);
 					break;
 
 				default:
@@ -194,8 +211,8 @@ namespace Mono.Debugger
 
 		public TargetAddress CurrentFrameAddress {
 			get {
-				StackFrame frame = CurrentFrame;
-				return frame != null ? frame.TargetAddress : TargetAddress.Null;
+				check_engine ();
+				return engine.CurrentFrameAddress;
 			}
 		}
 
@@ -229,7 +246,7 @@ namespace Mono.Debugger
 			Backtrace bt = new Backtrace (
 				this, engine.Architecture, CurrentFrame);
 			bt.GetBacktrace (
-				this, engine.Architecture, engine.SymbolTable,
+				target_access, engine.Architecture, engine.SymbolTable,
 				SimpleSymbolTable, stack_pointer);
 			return bt;
 		}
@@ -461,6 +478,18 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string PrintObject (Style style, ITargetObject obj)
+		{
+			check_engine ();
+			return engine.PrintObject (style, obj);
+		}
+
+		public string PrintType (Style style, ITargetType type)
+		{
+			check_engine ();
+			return engine.PrintType (style, type);
+		}
+
 		//
 		// Disassembling.
 		//
@@ -580,7 +609,7 @@ namespace Mono.Debugger
 		}
 
 		public ITargetAccess TargetAccess {
-			get { return this; }
+			get { return target_access; }
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
@@ -671,12 +700,6 @@ namespace Mono.Debugger
 			return new TargetReader (buffer, target_info);
 		}
 
-		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (byte[] buffer)
-		{
-			check_engine ();
-			return new TargetReader (buffer, target_info);
-		}
-
 		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
 		{
 			check_engine ();
@@ -686,30 +709,28 @@ namespace Mono.Debugger
 		bool ITargetMemoryAccess.CanWrite {
 			get { return false; }
 		}
-#endregion
 
-#region ITargetAccess implementation
-		void ITargetAccess.WriteBuffer (TargetAddress address, byte[] buffer)
+		void ITargetMemoryAccess.WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			write_memory (address, buffer);
 		}
 
-		void ITargetAccess.WriteByte (TargetAddress address, byte value)
+		void ITargetMemoryAccess.WriteByte (TargetAddress address, byte value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetAccess.WriteInteger (TargetAddress address, int value)
+		void ITargetMemoryAccess.WriteInteger (TargetAddress address, int value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetAccess.WriteLongInteger (TargetAddress address, long value)
+		void ITargetMemoryAccess.WriteLongInteger (TargetAddress address, long value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetAccess.WriteAddress (TargetAddress address, TargetAddress value)
+		void ITargetMemoryAccess.WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_engine ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (

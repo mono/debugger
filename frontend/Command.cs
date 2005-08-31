@@ -447,7 +447,7 @@ namespace Mono.Debugger.Frontend
 				target = location.TargetAccess;
 			}
 
-			data = target.ReadBuffer (start, count);
+			data = target.TargetMemoryAccess.ReadBuffer (start, count);
 			context.Print (TargetBinaryReader.HexDump (start, data));
 			start += count;
 		}
@@ -1225,7 +1225,7 @@ namespace Mono.Debugger.Frontend
 
 		private class SetStyleCommand : DebuggerCommand
 		{
-			Style style;
+			StyleBase style;
 
 			protected override bool DoResolve (ScriptingContext context)
 			{

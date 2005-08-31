@@ -14,7 +14,6 @@ namespace Mono.Debugger.Remoting
 	public class DebuggerServer : DebuggerBackend
 	{
 		static DebuggerChannel channel;
-		static DebuggerBackend global_server;
 		DebuggerClient client;
 
 		protected static void Run (string url)
@@ -34,10 +33,7 @@ namespace Mono.Debugger.Remoting
 		{
 			this.client = client;
 
-			if (global_server != null)
-				throw new InternalError ();
-
-			global_server = this;
+			DebuggerContext.CreateServerContext (this);
 		}
 
 		protected override void DebuggerExited ()
@@ -48,10 +44,6 @@ namespace Mono.Debugger.Remoting
 
 		public DebuggerBackend DebuggerBackend {
 			get { return this; }
-		}
-
-		new internal static ThreadManager ThreadManager {
-			get { return global_server.ThreadManager; }
 		}
 	}
 }

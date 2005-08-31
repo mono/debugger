@@ -97,13 +97,13 @@ namespace Mono.Debugger.Languages.Mono
 			get { return StaticFields; }
 		}
 
-		public ITargetObject GetStaticField (StackFrame frame, int index)
+		public ITargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			MonoClassInfo info = GetTypeInfo () as MonoClassInfo;
 			if (info == null)
 				return null;
 
-			return info.GetStaticField (frame, index);
+			return info.GetStaticField (target, index);
 		}
 
 		public int CountMethods {

@@ -653,6 +653,11 @@ namespace Mono.Debugger.Languages.Mono
 			return type.CreateInstance (frame, obj);
 		}
 
+		public ITargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		{
+			return builtin_types.Int32Type.CreateInstance (target, value);
+		}
+
 		public ITargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
 		{
 			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);

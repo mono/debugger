@@ -337,10 +337,11 @@ namespace Mono.Debugger.Architecture
 
 		bool dynlink_handler (Breakpoint bpt, ITargetAccess target, TargetAddress address)
 		{
-			if (target.ReadInteger (rdebug_state_addr) != 0)
+			ITargetMemoryAccess memory = target.TargetMemoryAccess;
+			if (memory.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			do_update_shlib_info (target);
+			do_update_shlib_info (memory);
 			return false;
 		}
 
@@ -413,7 +414,7 @@ namespace Mono.Debugger.Architecture
 			do_update_shlib_info (inferior);
 		}
 
-		void do_update_shlib_info (ITargetAccess target)
+		void do_update_shlib_info (ITargetMemoryAccess target)
 		{
 			bool first = true;
 			TargetAddress map = first_link_map;
@@ -1080,7 +1081,7 @@ namespace Mono.Debugger.Architecture
 			load_handlers.Remove (data);
 		}
 
-		void module_loaded (ITargetAccess target, TargetAddress address)
+		void module_loaded (ITargetMemoryAccess target, TargetAddress address)
 		{
 			this.base_address = address;
 

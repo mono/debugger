@@ -109,6 +109,7 @@ namespace Mono.Debugger
 		event SymbolTableChangedHandler SymbolTableChanged;
 	}
 
+	[Serializable]
 	public class Symbol : IComparable
 	{
 		public readonly string Name;

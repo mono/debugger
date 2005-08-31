@@ -82,6 +82,15 @@ namespace Mono.Debugger.Languages.Mono
 			return !location.HasAddress || !location.Address.IsNull;
 		}
 
+		public MonoObject GetObject (TargetLocation location)
+		{
+			MonoTypeInfo tinfo = GetTypeInfo ();
+			if (tinfo == null)
+				return null;
+
+			return tinfo.GetObject (location);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}]", GetType (), Name);
