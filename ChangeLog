@@ -1,5 +1,11 @@
 2005-08-31  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.init_trampolines): Add support for delegate
+	trampolines.	
+
+2005-08-31  Martin Baulig  <martin@ximian.com>
+
 	* classes/Style.cs: Moved some of frontend/Style.cs here.
 	(Style): This is now an abstract [Serializable] class and not an
 	interface.  It allows us to do some things in the server's

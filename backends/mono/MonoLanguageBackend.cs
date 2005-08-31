@@ -333,13 +333,15 @@ namespace Mono.Debugger.Languages.Mono
 
 		void init_trampolines (ITargetMemoryAccess memory)
 		{
-			trampolines = new TargetAddress [3];
+			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
 			trampolines [0] = memory.ReadGlobalAddress (address);
 			address += memory.TargetAddressSize;
 			trampolines [1] = memory.ReadGlobalAddress (address);
 			address += memory.TargetAddressSize;
 			trampolines [2] = memory.ReadGlobalAddress (address);
+			address += 2 * memory.TargetAddressSize;
+			trampolines [3] = memory.ReadGlobalAddress (address);
 		}
 
 #region symbol table management
