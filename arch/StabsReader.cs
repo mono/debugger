@@ -16,6 +16,7 @@ namespace Mono.Debugger.Architecture
 		ArrayList files;
 		Hashtable types;
 		string filename;
+		int frame_register;
 		ISymbolRange[] ranges;
 		protected TargetAddress entry_point = TargetAddress.Null;
 
@@ -50,6 +51,13 @@ namespace Mono.Debugger.Architecture
 				stabs_reader = create_reader (".stab");
 				stabstr_reader = create_reader (".stabstr");
 			}
+
+			if (bfd.Target == "elf32-i386")
+				frame_register = (int) I386Register.EBP;
+			else if (bfd.Target == "elf64-x86-64")
+				frame_register = (int) X86_64_Register.RBP;
+			else
+				throw new StabsException (this, "Unknown architecture");
 
 			TargetBinaryReader reader = StabTableReader;
 			TargetBinaryReader string_reader = StringTableReader;
@@ -239,7 +247,7 @@ namespace Mono.Debugger.Architecture
 				if (type == null)
 					type = new NativeOpaqueType (null, 0);
 
-				return new MyVariable (name, entry.n_value, type);
+				return new MyVariable (this, name, entry.n_value, type);
 			}
 
 			return null;
@@ -781,6 +789,7 @@ namespace Mono.Debugger.Architecture
 
 		protected class MyVariable : IVariable
 		{
+			StabsReader stabs;
 			string name;
 			NativeType type;
 			long offset;
@@ -795,8 +804,10 @@ namespace Mono.Debugger.Architecture
 					return name.Substring (0, pos);
 			}
 
-			public MyVariable (string name, long offset, NativeType type)
+			public MyVariable (StabsReader stabs, string name, long offset,
+					   NativeType type)
 			{
+				this.stabs = stabs;
 				this.name = name;
 				this.type = type;
 
@@ -827,8 +838,8 @@ namespace Mono.Debugger.Architecture
 			public TargetLocation GetLocation (StackFrame frame)
 			{
 				return new MonoVariableLocation (
-					frame, true, (int) I386Register.EBP, offset,
-					type.IsByRef, 0);
+					frame, true, stabs.frame_register, offset,
+					type.IsByRef);
 			}
 
 			public ITargetObject GetObject (StackFrame frame)

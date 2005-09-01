@@ -1156,7 +1156,7 @@ namespace Mono.Debugger.Frontend
 		{
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
-			return frame.GetRegisterLocation (register, offset, true);
+			return frame.Frame.GetRegisterLocation (register, offset, true);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)

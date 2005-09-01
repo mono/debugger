@@ -48,17 +48,6 @@ namespace Mono.Debugger.Languages
 		}
 
 		// <summary>
-		//   After the variable's address is computed and - if it's a reference
-		//   type - dereferenced, this offset is added to it.
-		//
-		//   If this is a register variable, this offset is added to the value in
-		//   the register.
-		// </summary>
-		public long Offset {
-			get { return offset; }
-		}
-
-		// <summary>
 		//   Whether this variable has an address.  A variable may not have an
 		//   address, for instance if it's stored in a register.
 		// </summary>
@@ -94,7 +83,7 @@ namespace Mono.Debugger.Languages
 				// If the type is a reference type, the pointer on the
 				// stack has already been dereferenced, so address now
 				// points to the actual data.
-				return address + Offset;
+				return address + offset;
 			}
 		}
 

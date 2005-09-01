@@ -370,10 +370,10 @@ namespace Mono.Debugger
 		}
 
 		public TargetLocation GetRegisterLocation (int index, long reg_offset,
-							   bool dereference, long offset)
+							   bool dereference)
 		{
 			return new MonoVariableLocation (
-				this, dereference, index, reg_offset, false, offset);
+				this, dereference, index, reg_offset, false);
 		}
 
 		public IMethod Method {

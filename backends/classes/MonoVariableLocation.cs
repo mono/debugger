@@ -13,7 +13,12 @@ namespace Mono.Debugger.Languages
 		long regoffset;
 
 		public MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
-					     long regoffset, bool is_byref, long offset)
+					     long regoffset, bool is_byref)
+			: this (frame, is_regoffset, register, regoffset, is_byref, 0)
+		{ }
+
+		protected MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
+						long regoffset, bool is_byref, long offset)
 			: base (frame, is_byref, offset)
 		{
 			this.is_regoffset = is_regoffset;
@@ -59,7 +64,7 @@ namespace Mono.Debugger.Languages
 
 			// We can read at most Inferior.TargetIntegerSize from a register
 			// (a word on the target).
-			if ((Offset < 0) || (Offset + size > TargetMemoryInfo.TargetIntegerSize))
+			if ((offset < 0) || (offset + size > TargetMemoryInfo.TargetIntegerSize))
 				throw new ArgumentException ();
 
 			// Using ITargetMemoryReader for this is just an ugly hack, but I
@@ -75,7 +80,7 @@ namespace Mono.Debugger.Languages
 				throw new InternalError ();
 
 			reader = new TargetReader (buffer, TargetMemoryInfo);
-			reader.Offset = Offset;
+			reader.Offset = offset;
 			return reader;
 		}
 
@@ -129,10 +134,11 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		protected override TargetLocation Clone (long offset)
+		protected override TargetLocation Clone (long new_offset)
 		{
 			return new MonoVariableLocation (
-				frame, is_regoffset, register, regoffset, IsByRef, Offset + offset);
+				frame, is_regoffset, register, regoffset, IsByRef,
+				offset + new_offset);
 		}
 
 		public override string Print ()
@@ -140,11 +146,11 @@ namespace Mono.Debugger.Languages
 			int regindex = frame.Registers [register].Index;
 			string name = frame.Process.Architecture.RegisterNames [regindex];
 
-			long offset = regoffset + Offset;
-			if (offset > 0)
-				return String.Format ("%{0}+0x{1:x}", name, offset);
+			long the_offset = regoffset + offset;
+			if (the_offset > 0)
+				return String.Format ("%{0}+0x{1:x}", name, the_offset);
 			else if (offset < 0)
-				return String.Format ("%{0}-0x{1:x}", name, -offset);
+				return String.Format ("%{0}-0x{1:x}", name, -the_offset);
 			else
 				return String.Format ("%{0}", name);
 		}

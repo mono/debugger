@@ -121,16 +121,11 @@ namespace Mono.Debugger.Frontend
 			return frame.Language.PointerType;
 		}
 
-		public TargetLocation GetRegisterLocation (int index, long offset, bool dereference)
-		{
-			return frame.GetRegisterLocation (index, offset, dereference, 0);
-		}
-
 		public ITargetObject GetRegister (int index, long offset)
 		{
 			ITargetType type = GetRegisterType (index);
 			ITargetTypeInfo tinfo = type.GetTypeInfo ();
-			TargetLocation location = GetRegisterLocation (index, offset, false);
+			TargetLocation location = frame.GetRegisterLocation (index, offset, false);
 			return tinfo.GetObject (location);
 		}
 

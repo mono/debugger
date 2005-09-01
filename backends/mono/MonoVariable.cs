@@ -87,10 +87,10 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return new MonoVariableLocation (
-					frame, false, info.Index, info.Offset, is_byref, 0);
+					frame, false, info.Index, info.Offset, is_byref);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
 				return new MonoVariableLocation (
-					frame, true, info.Index, info.Offset, is_byref, 0);
+					frame, true, info.Index, info.Offset, is_byref);
 			else
 				return null;
 		}
