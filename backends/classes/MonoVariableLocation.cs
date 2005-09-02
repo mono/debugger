@@ -6,6 +6,7 @@ namespace Mono.Debugger.Languages
 	// <summary>
 	//   The location of a variable.
 	// </summary>
+	[Serializable]
 	internal class MonoVariableLocation : TargetLocation
 	{
 		bool is_regoffset;
