@@ -34,7 +34,8 @@ namespace Mono.Debugger
 
 			operation_completed_event = new ManualResetEvent (false);
 
-			this.target_info = engine.TargetMemoryInfo;
+			this.target_info = engine.TargetInfo;
+			this.target_memory_info = engine.TargetMemoryInfo;
 			this.target_access = new ClientTargetAccess (this);
 		}
 
@@ -46,7 +47,8 @@ namespace Mono.Debugger
 		DebuggerManager debugger_manager;
 		ManualResetEvent operation_completed_event;
 		TargetState target_state = TargetState.NO_TARGET;
-		ITargetMemoryInfo target_info;
+		ITargetInfo target_info;
+		ITargetMemoryInfo target_memory_info;
 		TargetAccess target_access;
 
 		public WaitHandle WaitHandle {
@@ -134,7 +136,7 @@ namespace Mono.Debugger
 		public IArchitecture Architecture {
 			get {
 				check_engine ();
-				return target_info.Architecture;
+				return target_memory_info.Architecture;
 			}
 		}
 
@@ -625,8 +627,12 @@ namespace Mono.Debugger
 			get { return this; }
 		}
 
-		public ITargetMemoryInfo TargetMemoryInfo {
+		public ITargetInfo TargetInfo {
 			get { return target_info; }
+		}
+
+		public ITargetMemoryInfo TargetMemoryInfo {
+			get { return target_memory_info; }
 		}
 
 #region ITargetInfo implementation
@@ -656,13 +662,13 @@ namespace Mono.Debugger
 
 		AddressDomain ITargetMemoryInfo.AddressDomain {
 			get {
-				return target_info.AddressDomain;
+				return target_memory_info.AddressDomain;
 			}
 		}
 
 		AddressDomain ITargetMemoryInfo.GlobalAddressDomain {
 			get {
-				return target_info.GlobalAddressDomain;
+				return target_memory_info.GlobalAddressDomain;
 			}
 		}
 
@@ -706,7 +712,7 @@ namespace Mono.Debugger
 		{
 			check_engine ();
 			byte[] buffer = engine.ReadMemory (address, size);
-			return new TargetReader (buffer, target_info);
+			return new TargetReader (buffer, target_memory_info);
 		}
 
 		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
@@ -743,7 +749,7 @@ namespace Mono.Debugger
 		{
 			check_engine ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (
-				target_info.TargetAddressSize, this);
+				target_info.TargetAddressSize, target_info);
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
 		}

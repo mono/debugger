@@ -24,6 +24,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		public abstract ITargetInfo TargetInfo {
+			get;
+		}
+
 		public abstract ITargetMemoryInfo TargetMemoryInfo {
 			get;
 		}
@@ -80,6 +84,10 @@ namespace Mono.Debugger.Backends
 			get { return process.TargetMemoryAccess; }
 		}
 
+		public override ITargetInfo TargetInfo {
+			get { return process.TargetInfo; }
+		}
+
 		public override ITargetMemoryInfo TargetMemoryInfo {
 			get { return process.TargetMemoryInfo; }
 		}
@@ -118,6 +126,10 @@ namespace Mono.Debugger.Backends
 
 		public override ITargetMemoryInfo TargetMemoryInfo {
 			get { return sse.TargetMemoryInfo; }
+		}
+
+		public override ITargetInfo TargetInfo {
+			get { return sse.TargetInfo; }
 		}
 
 		public override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,

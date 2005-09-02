@@ -29,7 +29,7 @@ namespace Mono.Debugger.Architecture
 		bool is64bit;
 
 		public DwarfBinaryReader (Bfd bfd, TargetBlob blob, bool is64bit)
-			: base (blob, bfd.TargetInfo)
+			: base (blob)
 		{
 			this.bfd = bfd;
 			this.is64bit = is64bit;
@@ -629,7 +629,7 @@ namespace Mono.Debugger.Architecture
 				return null;
 			}
 			else {
-				return new TargetBlob (contents);
+				return new TargetBlob (contents, bfd.TargetInfo);
 			}
 		}
 

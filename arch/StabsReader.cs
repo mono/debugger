@@ -885,15 +885,13 @@ namespace Mono.Debugger.Architecture
 
 		public TargetBinaryReader StabTableReader {
 			get {
-				return new TargetBinaryReader (
-					(TargetBlob) stabs_reader.Data, bfd.TargetInfo);
+				return new TargetBinaryReader ((TargetBlob) stabs_reader.Data);
 			}
 		}
 
 		public TargetBinaryReader StringTableReader {
 			get {
-				return new TargetBinaryReader (
-					(TargetBlob) stabstr_reader.Data, bfd.TargetInfo);
+				return new TargetBinaryReader ((TargetBlob) stabstr_reader.Data);
 			}
 		}
 
@@ -911,7 +909,7 @@ namespace Mono.Debugger.Architecture
 				throw new StabsException (
 					this, "Can't find stabs debugging info");
 
-			return new TargetBlob (contents);
+			return new TargetBlob (contents, bfd.TargetInfo);
 		}
 
 		ObjectCache create_reader (string section_name)

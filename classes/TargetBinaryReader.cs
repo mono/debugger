@@ -9,11 +9,11 @@ namespace Mono.Debugger
 	public class TargetBinaryReader : TargetBinaryAccess
 	{
 		public TargetBinaryReader (byte[] contents, ITargetInfo target_info)
-			: base (new TargetBlob (contents), target_info)
+			: base (new TargetBlob (contents, target_info))
 		{ }
 
-		public TargetBinaryReader (TargetBlob blob, ITargetInfo target_info)
-			: base (blob, target_info)
+		public TargetBinaryReader (TargetBlob blob)
+			: base (blob)
 		{
 		}
 

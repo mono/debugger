@@ -621,7 +621,7 @@ namespace Mono.Debugger.Architecture
 			if (section != null) {
 				byte[] contents = GetSectionContents (
 					new IntPtr (section.section), false);
-				TargetBlob blob = new TargetBlob (contents);
+				TargetBlob blob = new TargetBlob (contents, info);
 				frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, false);
 			}
@@ -630,7 +630,7 @@ namespace Mono.Debugger.Architecture
 			if (section != null) {
 				byte[] contents = GetSectionContents (
 					new IntPtr (section.section), false);
-				TargetBlob blob = new TargetBlob (contents);
+				TargetBlob blob = new TargetBlob (contents, info);
 				eh_frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, true);
 			}

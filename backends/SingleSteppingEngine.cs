@@ -641,6 +641,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public ITargetInfo TargetInfo {
+			get {
+				check_inferior ();
+				return inferior.TargetInfo;
+			}
+		}
+
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
 			check_inferior ();

@@ -6,7 +6,7 @@ namespace Mono.Debugger
 	public class TargetBinaryWriter : TargetBinaryAccess
 	{
 		public TargetBinaryWriter (int size, ITargetInfo target_info)
-			: base (new TargetBlob (size), target_info)
+			: base (new TargetBlob (size, target_info))
 		{ }
 
 		public void PokeByte (long pos, byte value)

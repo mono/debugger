@@ -7,15 +7,18 @@ namespace Mono.Debugger
 	public sealed class TargetBlob
 	{
 		public readonly byte[] Contents;
+		public readonly ITargetInfo TargetInfo;
 
-		public TargetBlob (byte[] contents)
+		public TargetBlob (byte[] contents, ITargetInfo target_info)
 		{
 			this.Contents = contents;
+			this.TargetInfo = target_info;
 		}
 
-		public TargetBlob (int size)
+		public TargetBlob (int size, ITargetInfo target_info)
 		{
 			this.Contents = new byte [size];
+			this.TargetInfo = target_info;
 		}
 
 		public int Size {
@@ -26,24 +29,19 @@ namespace Mono.Debugger
 	[Serializable]
 	public class TargetBinaryAccess
 	{
-		protected ITargetInfo target_info;
 		protected TargetBlob blob;
 		protected int pos;
 		protected bool swap;
 
-		public TargetBinaryAccess (TargetBlob blob, ITargetInfo target_info)
+		public TargetBinaryAccess (TargetBlob blob)
 		{
 			this.blob = blob;
-			this.target_info = target_info;
-			this.swap = target_info.IsBigEndian;
+			this.swap = blob.TargetInfo.IsBigEndian;
 		}
 
 		public int AddressSize {
 			get {
-				if (target_info == null)
-					throw new TargetMemoryException ("Can't get target address size");
-
-				int address_size = target_info.TargetAddressSize;
+				int address_size = blob.TargetInfo.TargetAddressSize;
 				if ((address_size != 4) && (address_size != 8))
 					throw new TargetMemoryException (
 						"Unknown target address size " + address_size);
@@ -54,11 +52,7 @@ namespace Mono.Debugger
 
 		public ITargetInfo TargetInfo {
 			get {
-				return target_info;
-			}
-
-			set {
-				target_info = value;
+				return blob.TargetInfo;
 			}
 		}
 

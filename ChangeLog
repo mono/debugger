@@ -1,3 +1,15 @@
+2005-09-02  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetBinaryAccess.cs
+	(TargetBlob.TargetInfo): New readonly field; the .ctor now also
+	takes in ITargetInfo argument.
+
+	* backends/TargetAccess.cs
+	(TargetAccess.TargetInfo): New public property; returns an
+	ITargetInfo instead of an ITargetMemoryInfo - use this if you
+	don't need the extra data from the ITargetMemoryInfo to save
+	serialization costs.
+
 2005-08-31  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
