@@ -1,5 +1,9 @@
 2005-09-02  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetLocation.cs (TargetLocation.IsValid): Removed.
+
+2005-09-02  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetLocation.cs
 	(TargetLocation): Don't implement ICloneable.
 	(TargetLocation.Clone): Removed.

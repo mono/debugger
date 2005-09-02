@@ -35,7 +35,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public bool IsValid {
 			get {
-				return is_valid && (location != null) && location.IsValid;
+				return is_valid && (location != null);
 			}
 		}
 

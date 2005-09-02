@@ -15,7 +15,6 @@ namespace Mono.Debugger.Languages
 		protected ITargetAccess target;
 		protected StackFrame frame;
 		protected bool is_byref;
-		bool is_valid;
 
 		protected TargetLocation (StackFrame frame, bool is_byref)
 			: this (frame, frame.TargetAccess, is_byref)
@@ -26,7 +25,6 @@ namespace Mono.Debugger.Languages
 			this.is_byref = is_byref;
 			this.target = target;
 			this.frame = frame;
-			this.is_valid = true;
 		}
 
 		// <summary>
@@ -60,20 +58,16 @@ namespace Mono.Debugger.Languages
 			get {
 				if (!HasAddress)
 					throw new InvalidOperationException ();
-				if (!IsValid)
-					return TargetAddress.Null;
 
 				// First get the address of this variable.
 				TargetAddress address;
 				try {
 					address = GetAddress ();
 				} catch (TargetException ex) {
-					SetInvalid ();
 					return TargetAddress.Null;
 				}
 
 				if (address.IsNull) {
-					SetInvalid ();
 					return TargetAddress.Null;
 				}
 
@@ -93,20 +87,6 @@ namespace Mono.Debugger.Languages
 				return new TargetAddress (
 					TargetMemoryInfo.GlobalAddressDomain, address.Address);
 			}
-		}
-
-		// <summary>
-		//   Whether this location is currently valid.  A location becomes invalid
-		//   if the variable's lifetime has expired.  This usually happens the
-		//   next time the target is resumed and leaves the variable's scope.
-		// </summary>
-		public bool IsValid {
-			get { return is_valid; }
-		}
-
-		protected void SetInvalid ()
-		{
-			is_valid = false;
 		}
 
 		protected abstract TargetAddress GetAddress ();

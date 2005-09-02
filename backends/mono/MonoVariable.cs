@@ -102,7 +102,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetLocation location = GetLocation (frame);
 
-			if ((location == null) || !location.IsValid)
+			if (location == null)
 				return false;
 
 			return type.CheckValid (location);
@@ -117,7 +117,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetLocation location = GetLocation (frame);
 
-			if ((location == null) || !location.IsValid)
+			if (location == null)
 				throw new LocationInvalidException ();
 
 			ITargetTypeInfo tinfo = type.GetTypeInfo ();
