@@ -11,14 +11,14 @@ namespace Mono.Debugger.Languages
 		TargetAddress address;
 
 		public AbsoluteTargetLocation (StackFrame frame, TargetAddress address)
-			: base (frame, false, 0)
+			: base (frame, false)
 		{
 			this.address = address;
 		}
 
 		public AbsoluteTargetLocation (StackFrame frame, ITargetAccess target,
 					       TargetAddress address)
-			: base (frame, target, false, 0)
+			: base (frame, target, false)
 		{
 			this.address = address;
 		}
@@ -32,9 +32,9 @@ namespace Mono.Debugger.Languages
 			return address;
 		}
 
-		protected override TargetLocation Clone (long offset)
+		protected override TargetLocation Clone ()
 		{
-			return new AbsoluteTargetLocation (frame, target, address + offset);
+			return new AbsoluteTargetLocation (frame, target, address);
 		}
 
 		public override string Print ()

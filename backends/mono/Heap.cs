@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			public HeapLocation (ITargetAccess target, Heap heap, TargetAddress base_address,
 					     TargetAddress address, int size)
-				: base (null, target, false, 0)
+				: base (null, target, false)
 			{
 				this.heap = heap;
 				this.base_address = base_address;
@@ -58,10 +58,10 @@ namespace Mono.Debugger.Languages.Mono
 				return address;
 			}
 
-			protected override TargetLocation Clone (long offset)
+			protected override TargetLocation Clone ()
 			{
 				return new HeapLocation (
-					target, heap, base_address, address + offset, size);
+					target, heap, base_address, address, size);
 			}
 
 			public override string Print ()

@@ -14,19 +14,16 @@ namespace Mono.Debugger.Languages
 	{
 		protected ITargetAccess target;
 		protected StackFrame frame;
-		protected long offset;
 		protected bool is_byref;
 		bool is_valid;
 
-		protected TargetLocation (StackFrame frame, bool is_byref, long offset)
-			: this (frame, frame.TargetAccess, is_byref, offset)
+		protected TargetLocation (StackFrame frame, bool is_byref)
+			: this (frame, frame.TargetAccess, is_byref)
 		{ }
 
-		protected TargetLocation (StackFrame frame, ITargetAccess target,
-					  bool is_byref, long offset)
+		protected TargetLocation (StackFrame frame, ITargetAccess target, bool is_byref)
 		{
 			this.is_byref = is_byref;
-			this.offset = offset;
 			this.target = target;
 			this.frame = frame;
 			this.is_valid = true;
@@ -83,7 +80,7 @@ namespace Mono.Debugger.Languages
 				// If the type is a reference type, the pointer on the
 				// stack has already been dereferenced, so address now
 				// points to the actual data.
-				return address + offset;
+				return address;
 			}
 		}
 
@@ -190,19 +187,23 @@ namespace Mono.Debugger.Languages
 		// </summary>
 		public virtual TargetLocation GetLocationAtOffset (long offset, bool dereference)
 		{
-			TargetLocation new_location = Clone (offset);
+			TargetLocation new_location;
+			if (offset != 0)
+				new_location = new RelativeTargetLocation (Clone (), offset);
+			else
+				new_location = Clone ();
 			if (!dereference)
 				return new_location;
 
 			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
-			return new RelativeTargetLocation (this, address);
+			return new AbsoluteTargetLocation (frame, target, address);
 		}
 
-		protected abstract TargetLocation Clone (long offset);
+		protected abstract TargetLocation Clone ();
 
-		public object Clone ()
+		object ICloneable.Clone ()
 		{
-			return Clone (0);
+			return Clone ();
 		}
 
 		protected virtual string MyToString ()
@@ -215,12 +216,12 @@ namespace Mono.Debugger.Languages
 		public override string ToString ()
 		{
 			if (frame != null)
-				return String.Format ("{0} ({1}:{2}:{3:x}{4})",
-						      GetType (), frame.TargetAddress, is_byref, offset,
+				return String.Format ("{0} ({1}:{2}:{3})",
+						      GetType (), frame.TargetAddress, is_byref,
 						      MyToString ());
 			else
-				return String.Format ("{0} ({1}:{2:x}{3})",
-						      GetType (), is_byref, offset, MyToString ());
+				return String.Format ("{0} ({1}:{2})",
+						      GetType (), is_byref, MyToString ());
 		}
 	}
 }

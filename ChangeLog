@@ -1,5 +1,16 @@
 2005-09-02  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetLocation.cs
+	(TargetLocation): Removed the `offset' - we're now using the
+	RelativeTargetLocation for this.
+	(TargetLocation.ctor): Don't take an `offset' argument anymore.
+	(TargetLocation.Clone): Likewise.
+
+	* classes/RelativeTargetLocation.cs (RelativeTargetLocation): This
+	is now a location with an offset.
+
+2005-09-02  Martin Baulig  <martin@ximian.com>
+
 	Use a `TargetBlob' instead of an `ITargetMemoryReader' wherever
 	possible to save serialization costs; this reduces the time to run
 	the test suite from 35s to 17s!.	

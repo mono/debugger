@@ -15,12 +15,7 @@ namespace Mono.Debugger.Languages
 
 		public MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
 					     long regoffset, bool is_byref)
-			: this (frame, is_regoffset, register, regoffset, is_byref, 0)
-		{ }
-
-		protected MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
-						long regoffset, bool is_byref, long offset)
-			: base (frame, is_byref, offset)
+			: base (frame, is_byref)
 		{
 			this.is_regoffset = is_regoffset;
 			this.register = register;
@@ -62,9 +57,6 @@ namespace Mono.Debugger.Languages
 			// If this is a valuetype, the register hold the whole data.
 			long contents = frame.GetRegister (register);
 			contents += regoffset;
-
-			if (offset != 0)
-				throw new ArgumentException ();
 
 			byte[] buffer;
 			if (TargetMemoryInfo.TargetIntegerSize == 4)
@@ -127,11 +119,10 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		protected override TargetLocation Clone (long new_offset)
+		protected override TargetLocation Clone ()
 		{
-			return new MonoVariableLocation (
-				frame, is_regoffset, register, regoffset, IsByRef,
-				offset + new_offset);
+			return new MonoVariableLocation (frame, is_regoffset, register,
+							 regoffset, is_byref);
 		}
 
 		public override string Print ()
@@ -139,11 +130,10 @@ namespace Mono.Debugger.Languages
 			int regindex = frame.Registers [register].Index;
 			string name = frame.Process.Architecture.RegisterNames [regindex];
 
-			long the_offset = regoffset + offset;
-			if (the_offset > 0)
-				return String.Format ("%{0}+0x{1:x}", name, the_offset);
-			else if (offset < 0)
-				return String.Format ("%{0}-0x{1:x}", name, -the_offset);
+			if (regoffset > 0)
+				return String.Format ("%{0}+0x{1:x}", name, regoffset);
+			else if (regoffset < 0)
+				return String.Format ("%{0}-0x{1:x}", name, -regoffset);
 			else
 				return String.Format ("%{0}", name);
 		}

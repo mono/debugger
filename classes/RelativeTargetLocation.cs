@@ -9,13 +9,13 @@ namespace Mono.Debugger.Languages
 	public class RelativeTargetLocation : TargetLocation
 	{
 		TargetLocation relative_to;
-		TargetAddress address;
+		long offset;
 
-		public RelativeTargetLocation (TargetLocation relative_to, TargetAddress address)
-			: base (relative_to.StackFrame, relative_to.TargetAccess, false, 0)
+		public RelativeTargetLocation (TargetLocation relative_to, long offset)
+			: base (relative_to.StackFrame, relative_to.TargetAccess, false)
 		{
 			this.relative_to = relative_to;
-			this.address = address;
+			this.offset = offset;
 		}
 
 		public override bool HasAddress {
@@ -24,22 +24,26 @@ namespace Mono.Debugger.Languages
 
 		protected override TargetAddress GetAddress ()
 		{
-			return address;
+			return relative_to.Address + offset;
 		}
 
-		protected override TargetLocation Clone (long offset)
+		protected override TargetLocation Clone ()
 		{
-			return new RelativeTargetLocation (relative_to, address + offset);
+			return new RelativeTargetLocation (relative_to, offset);
 		}
 
 		public override string Print ()
 		{
-			return address.ToString ();
+			TargetAddress address = relative_to.Address;
+			if (offset > 0)
+				return String.Format ("{0}+{1}", address, offset);
+			else
+				return String.Format ("{0}-{1}", address, -offset);
 		}
 
 		protected override string MyToString ()
 		{
-			return String.Format (":{0}:{1}", relative_to, address);
+			return String.Format (":{0}:{1}", relative_to, offset);
 		}
 	}
 }

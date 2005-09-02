@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages
 		int bit_offset, bit_size;
 
 		public BitfieldTargetLocation (TargetLocation relative_to, int offset, int size)
-			: base (relative_to.StackFrame, false, 0)
+			: base (relative_to.StackFrame, false)
 		{
 			this.relative_to = relative_to;
 			this.bit_offset = offset;
@@ -77,9 +77,9 @@ namespace Mono.Debugger.Languages
 			return new TargetBlob (target, TargetInfo);
 		}
 
-		protected override TargetLocation Clone (long offset)
+		protected override TargetLocation Clone ()
 		{
-			throw new InvalidOperationException ();
+			return new BitfieldTargetLocation (relative_to, bit_offset, bit_size);
 		}
 
 		public override string Print ()
