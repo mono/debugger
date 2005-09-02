@@ -60,21 +60,11 @@ namespace Mono.Debugger.Languages
 					throw new InvalidOperationException ();
 
 				// First get the address of this variable.
-				TargetAddress address;
 				try {
-					address = GetAddress ();
+					return GetAddress ();
 				} catch (TargetException ex) {
 					return TargetAddress.Null;
 				}
-
-				if (address.IsNull) {
-					return TargetAddress.Null;
-				}
-
-				// If the type is a reference type, the pointer on the
-				// stack has already been dereferenced, so address now
-				// points to the actual data.
-				return address;
 			}
 		}
 

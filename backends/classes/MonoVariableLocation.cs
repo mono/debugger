@@ -7,11 +7,13 @@ namespace Mono.Debugger.Languages
 	//   The location of a variable.
 	// </summary>
 	[Serializable]
-	internal class MonoVariableLocation : TargetLocation
+	internal sealed class MonoVariableLocation : TargetLocation
 	{
 		bool is_regoffset;
 		int register;
 		long regoffset;
+
+		TargetAddress address;
 
 		public MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
 					     long regoffset, bool is_byref)
@@ -20,17 +22,12 @@ namespace Mono.Debugger.Languages
 			this.is_regoffset = is_regoffset;
 			this.register = register;
 			this.regoffset = regoffset;
+
+			update ();
 		}
 
-		public override bool HasAddress {
-			get { return is_regoffset || IsByRef; }
-		}
-
-		protected override TargetAddress GetAddress ()
+		void update ()
 		{
-			if (!HasAddress)
-				throw new InvalidOperationException ();
-
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
 			// register and return it.
@@ -40,12 +37,19 @@ namespace Mono.Debugger.Languages
 
 			long contents = reg.Value;
 
-			TargetAddress address = new TargetAddress (
+			address = new TargetAddress (
 				TargetMemoryInfo.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
 				address = TargetMemoryAccess.ReadAddress (address);
+		}
 
+		public override bool HasAddress {
+			get { return is_regoffset || IsByRef; }
+		}
+
+		protected override TargetAddress GetAddress ()
+		{
 			return address;
 		}
 
@@ -55,16 +59,15 @@ namespace Mono.Debugger.Languages
 				return base.ReadMemory (size);
 
 			// If this is a valuetype, the register hold the whole data.
-			long contents = frame.GetRegister (register);
-			contents += regoffset;
+			long contents = address.Address;
 
 			byte[] buffer;
-			if (TargetMemoryInfo.TargetIntegerSize == 4)
+			if (size == 4)
 				buffer = BitConverter.GetBytes ((int) contents);
-			else if (TargetMemoryInfo.TargetIntegerSize == 8)
+			else if (size == 8)
 				buffer = BitConverter.GetBytes (contents);
 			else
-				throw new InternalError ();
+				throw new ArgumentException ();
 
 			return new TargetBlob (buffer, TargetInfo);
 		}
@@ -99,23 +102,16 @@ namespace Mono.Debugger.Languages
 
 			// If this is a valuetype, the register hold the whole data.
 			frame.SetRegister (register, contents);
+			update ();
 		}
 
-		public override void WriteAddress (TargetAddress address)
+		public override void WriteAddress (TargetAddress new_address)
 		{
 			if (is_regoffset) {
-				// If this is a reference type, the register just holds the
-				// address of the actual data, so read the address from the
-				// register and return it.
-				long contents = frame.GetRegister (register);
-				if (contents == 0)
-					throw new LocationInvalidException ();
-
-				TargetAddress taddress = new TargetAddress (
-					TargetMemoryInfo.AddressDomain, contents + regoffset);
-				TargetMemoryAccess.WriteAddress (taddress, address);
+				TargetMemoryAccess.WriteAddress (address, new_address);
 			} else {
 				frame.SetRegister (register, address.Address);
+				update ();
 			}
 		}
 
