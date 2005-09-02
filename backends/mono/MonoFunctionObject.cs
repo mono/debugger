@@ -16,8 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.Type; }
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
+		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

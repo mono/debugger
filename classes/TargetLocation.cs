@@ -114,7 +114,7 @@ namespace Mono.Debugger.Languages
 
 		protected abstract TargetAddress GetAddress ();
 
-		public virtual ITargetMemoryReader ReadMemory (int size)
+		public virtual TargetBlob ReadMemory (int size)
 		{
 			return TargetMemoryAccess.ReadMemory (Address, size);
 		}
@@ -164,6 +164,12 @@ namespace Mono.Debugger.Languages
 		public ITargetMemoryAccess TargetMemoryAccess {
 			get {
 				return target.TargetMemoryAccess;
+			}
+		}
+
+		public ITargetInfo TargetInfo {
+			get {
+				return target.TargetInfo;
 			}
 		}
 

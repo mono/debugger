@@ -72,7 +72,9 @@ namespace Mono.Debugger.Backends
 		void do_initialize (Inferior inferior)
 		{
 			int size = inferior.ReadInteger (info);
-			ITargetMemoryReader reader = inferior.ReadMemory (info, size);
+			TargetBlob blob = inferior.ReadMemory (info, size);
+			TargetReader reader = new TargetReader (blob.Contents, inferior);
+
 			reader.ReadInteger ();
 			thread_size = reader.ReadInteger ();
 
@@ -133,7 +135,8 @@ namespace Mono.Debugger.Backends
 
 		void thread_created (Inferior inferior, TargetAddress data, bool is_main)
 		{
-			ITargetMemoryReader reader = inferior.ReadMemory (data, thread_size);
+			TargetBlob blob = inferior.ReadMemory (data, thread_size);
+			TargetReader reader = new TargetReader (blob.Contents, inferior);
 			reader.ReadAddress ();
 			int tid = reader.BinaryReader.ReadInt32 ();
 			reader.BinaryReader.ReadInt32 ();

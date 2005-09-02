@@ -1,5 +1,41 @@
 2005-09-02  Martin Baulig  <martin@ximian.com>
 
+	Use a `TargetBlob' instead of an `ITargetMemoryReader' wherever
+	possible to save serialization costs; this reduces the time to run
+	the test suite from 35s to 17s!.	
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetAccess.TargetInfo): New property.
+	(ITargetMemoryAccess.ReadMemory): Return a `TargetBlob' instead of
+	an `ITargetMemoryReader'.
+
+	* classes/TargetBinaryAccess.cs
+	(TargetBlob.GetReader): New public method; returns a
+	TargetBinaryReader to read this blob.
+
+	* classes/TargetLocation.cs (TargetLocation.ReadMemory): Return a
+	`TargetBlob' instead of an `ITargetMemoryReader'.
+
+	* backends/mono/MonoObject.cs (MonoObject.GetDynamicContents):
+	Return a `TargetBlob' instead of an `ITargetMemoryReader'.
+	(MonoObject.GetDynamicSize): Take a `TargetBlob' instead of an
+	`ITargetMemoryReader'.	
+
+	* backends/mono/MonoFundamentalObjectBase.cs
+	(MonoFundamentalObjectBase.GetObject): Take a `TargetBlob' instead
+	of an `ITargetMemoryReader'.
+
+	* backends/native/NativeObject.cs (NativeObject.GetDynamicContents):
+	Return a `TargetBlob' instead of an `ITargetMemoryReader'.
+	(NativeObject.GetDynamicSize): Take a `TargetBlob' instead of an
+	`ITargetMemoryReader'.	
+
+	* backends/native/NativeFundamentalObject.cs
+	(NativeFundamentalObject.GetObject): Take a `TargetBlob' instead
+	of an `ITargetMemoryReader'.
+
+2005-09-02  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetBinaryAccess.cs
 	(TargetBlob.TargetInfo): New readonly field; the .ctor now also
 	takes in ITargetInfo argument.

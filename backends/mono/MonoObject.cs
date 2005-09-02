@@ -73,8 +73,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				try {
 					TargetLocation dynamic_location;
-					ITargetMemoryReader reader = location.ReadMemory (type_info.Size);
-					return GetDynamicSize (reader, location, out dynamic_location);
+					TargetBlob blob = location.ReadMemory (type_info.Size);
+					return GetDynamicSize (blob, location, out dynamic_location);
 				} catch (TargetException ex) {
 					is_valid = false;
 					throw new LocationInvalidException (ex);
@@ -95,13 +95,12 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected virtual ITargetMemoryReader GetDynamicContents (TargetLocation location,
-									  int max_size)
+		protected virtual TargetBlob GetDynamicContents (TargetLocation location, int max_size)
 		{
 			try {
 				TargetLocation dynamic_location;
-				ITargetMemoryReader reader = location.ReadMemory (type_info.Size);
-				long size = GetDynamicSize (reader, location, out dynamic_location);
+				TargetBlob blob = location.ReadMemory (type_info.Size);
+				long size = GetDynamicSize (blob, location, out dynamic_location);
 
 				if ((max_size > 0) && (size > (long) max_size))
 					size = max_size;
@@ -113,8 +112,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected abstract long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
+		protected abstract long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location);
 
 		public TargetLocation Location {

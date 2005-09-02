@@ -107,6 +107,10 @@ namespace Mono.Debugger.Backends
 			this.data = data;
 		}
 
+		internal TargetReader (TargetBlob data, ITargetMemoryInfo info)
+			: this (data.Contents, info)
+		{ }
+
 		public long Offset {
 			get {
 				return reader.Position;

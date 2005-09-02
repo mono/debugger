@@ -708,11 +708,11 @@ namespace Mono.Debugger
 			return engine.ReadString (address);
 		}
 
-		ITargetMemoryReader ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
+		TargetBlob ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
 		{
 			check_engine ();
 			byte[] buffer = engine.ReadMemory (address, size);
-			return new TargetReader (buffer, target_memory_info);
+			return new TargetBlob (buffer, target_info);
 		}
 
 		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)

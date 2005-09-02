@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -40,26 +41,27 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress field_info = target.TargetMemoryAccess.ReadAddress (
 				KlassAddress + builtin.KlassFieldOffset);
 			int field_count = Type.Fields.Length + Type.StaticFields.Length;
-			ITargetMemoryReader info = target.TargetMemoryAccess.ReadMemory (
-				field_info, field_count * builtin.FieldInfoSize);
+			TargetBinaryReader info = target.TargetMemoryAccess.ReadMemory (
+				field_info, field_count * builtin.FieldInfoSize).GetReader ();
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				info.Offset = i * builtin.FieldInfoSize +
+				info.Position = i * builtin.FieldInfoSize +
 					2 * target.TargetMemoryInfo.TargetAddressSize;
-				field_offsets [i] = info.ReadInteger ();
+				field_offsets [i] = info.ReadInt32 ();
 			}
 
 			TargetAddress method_info = target.TargetMemoryAccess.ReadAddress (
 				KlassAddress + builtin.KlassMethodsOffset);
 			int method_count = target.TargetMemoryAccess.ReadInteger (
 				KlassAddress + builtin.KlassMethodCountOffset);
-			info = target.TargetMemoryAccess.ReadMemory (
+			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
 				method_info, method_count * target.TargetMemoryInfo.TargetAddressSize);
 
 			methods = new TargetAddress [method_count];
+			TargetReader reader = new TargetReader (blob.Contents, target.TargetMemoryInfo);
 			for (int i = 0; i < method_count; i++)
-				methods [i] = info.ReadGlobalAddress ();
+				methods [i] = reader.ReadGlobalAddress ();
 
 			initialized = true;
 			return null;

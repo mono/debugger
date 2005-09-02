@@ -18,24 +18,24 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
+		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
-			reader.Offset = type.LengthOffset;
+			TargetBinaryReader reader = blob.GetReader ();
+			reader.Position = type.LengthOffset;
 			dynamic_location = location.GetLocationAtOffset (type.DataOffset, false);
-			return reader.BinaryReader.ReadInteger (type.LengthSize) * 2;
+			return reader.ReadInteger (type.LengthSize) * 2;
 		}
 
-		protected override object GetObject (ITargetMemoryReader reader,
-						     TargetLocation location)
+		protected override object GetObject (TargetBlob blob, TargetLocation location)
 		{
+			TargetBinaryReader reader = blob.GetReader ();
 			int length = (int) reader.Size / 2;
 
 			char[] retval = new char [length];
 
 			for (int i = 0; i < length; i++)
-				retval [i] = (char) reader.BinaryReader.ReadInt16 ();
+				retval [i] = (char) reader.ReadInt16 ();
 
 			return new String (retval);
 		}

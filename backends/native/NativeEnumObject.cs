@@ -24,8 +24,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
+		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

@@ -19,27 +19,26 @@ namespace Mono.Debugger.Languages.Mono
 			this.dimension = 0;
 			this.rank = type.Type.Rank;
 
-			ITargetInfo target_info = type.Type.File.TargetInfo;
-
 			try {
-				ITargetMemoryReader reader = location.ReadMemory (type.Size);
+				TargetBinaryReader reader = location.ReadMemory (type.Size).GetReader ();
 
-				reader.Offset = 3 * target_info.TargetAddressSize;
-				length = reader.BinaryReader.ReadInt32 ();
+				reader.Position = 3 * reader.TargetInfo.TargetAddressSize;
+				length = reader.ReadInt32 ();
 
 				if (rank == 1)
 					return;
 
-				reader.Offset = 2 * target_info.TargetAddressSize;
-				TargetAddress bounds_address = reader.ReadAddress ();
-				ITargetMemoryReader breader = location.TargetMemoryAccess.ReadMemory (
-					bounds_address, 8 * rank);
+				reader.Position = 2 * reader.TargetInfo.TargetAddressSize;
+				TargetAddress bounds_address = new TargetAddress (
+					location.TargetMemoryInfo.AddressDomain, reader.ReadAddress ());
+				TargetBinaryReader breader = location.TargetMemoryAccess.ReadMemory (
+					bounds_address, 8 * rank).GetReader ();
 
 				bounds = new MonoArrayBounds [rank];
 
 				for (int i = 0; i < rank; i++) {
-					int b_length = breader.BinaryReader.ReadInt32 ();
-					int b_lower = breader.BinaryReader.ReadInt32 ();
+					int b_length = breader.ReadInt32 ();
+					int b_lower = breader.ReadInt32 ();
 					bounds [i] = new MonoArrayBounds (b_lower, b_length);
 				}
 			} catch (TargetException ex) {
@@ -83,18 +82,18 @@ namespace Mono.Debugger.Languages.Mono
 				index -= LowerBound;
 
 				if (dimension + 1 >= rank) {
-					ITargetMemoryReader reader;
+					TargetBlob blob;
 					TargetLocation dynamic_location;
 					try {
-						reader = location.ReadMemory (type.Size);
-						GetDynamicSize (reader, location, out dynamic_location);
+						blob = location.ReadMemory (type.Size);
+						GetDynamicSize (blob, location, out dynamic_location);
 					} catch (TargetException ex) {
 						throw new LocationInvalidException (ex);
 					}
 
 					int offset;
 					if (type.Type.ElementType.IsByRef)
-						offset = index * reader.TargetAddressSize;
+						offset = index * blob.TargetInfo.TargetAddressSize;
 					else if (type.ElementType.HasFixedSize)
 						offset = index * type.ElementType.Size;
 					else
@@ -132,11 +131,10 @@ namespace Mono.Debugger.Languages.Mono
 			return length;
 		}
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
+		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
-			int element_size = GetElementSize (reader);
+			int element_size = GetElementSize (blob.TargetInfo);
 			dynamic_location = location.GetLocationAtOffset (
 				type.Size + element_size * base_index, false);
 			return element_size * GetLength ();

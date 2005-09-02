@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages
 			return sb.ToString ();
 		}
 
-		public override ITargetMemoryReader ReadMemory (int size)
+		public override TargetBlob ReadMemory (int size)
 		{
 			byte[] data = relative_to.ReadBuffer (size);
 
@@ -74,7 +74,7 @@ namespace Mono.Debugger.Languages
 				target [i] = (byte) current;
 			}
 
-			return new TargetReader (target, TargetMemoryInfo);
+			return new TargetBlob (target, TargetInfo);
 		}
 
 		protected override TargetLocation Clone (long offset)

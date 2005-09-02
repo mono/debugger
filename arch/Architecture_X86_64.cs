@@ -55,7 +55,7 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 			}
 
-			ITargetMemoryReader reader = target.ReadMemory (address, 6);
+			TargetBinaryReader reader = target.ReadMemory (address, 6).GetReader ();
 
 			byte opcode = reader.ReadByte ();
 			byte original_opcode = opcode;
@@ -64,9 +64,9 @@ namespace Mono.Debugger
 				opcode = reader.ReadByte ();
 
 			if (opcode == 0xe8) {
-				int call_target = reader.ReadInteger ();
+				int call_target = reader.ReadInt32 ();
 				insn_size = 5;
-				return address + reader.Offset + call_target;
+				return address + reader.Position + call_target;
 			} else if (opcode != 0xff) {
 				insn_size = 0;
 				return TargetAddress.Null;
@@ -84,7 +84,7 @@ namespace Mono.Debugger
 				dereference_addr = true;
 			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 2)) {
 				register = (byte) (address_byte & 0x07);
-				disp = reader.ReadInteger ();
+				disp = reader.ReadInt32 ();
 				insn_size = 6;
 				dereference_addr = true;
 			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 3)) {
@@ -175,17 +175,17 @@ namespace Mono.Debugger
 		public TargetAddress GetJumpTarget (ITargetMemoryAccess target, TargetAddress address,
 						    out int insn_size)
 		{
-			ITargetMemoryReader reader = target.ReadMemory (address, 10);
+			TargetBinaryReader reader = target.ReadMemory (address, 10).GetReader ();
 
 			byte opcode = reader.ReadByte ();
 			byte opcode2 = reader.ReadByte ();
 
 			if ((opcode == 0xff) && (opcode2 == 0x25)) {
 				insn_size = 6;
-				int offset = reader.BinaryReader.ReadInt32 ();
+				int offset = reader.ReadInt32 ();
 				return address + offset + 6;
 			} else if ((opcode == 0xff) && (opcode2 == 0xa3)) {
-				int offset = reader.BinaryReader.ReadInt32 ();
+				int offset = reader.ReadInt32 ();
 				Registers regs = target.GetRegisters ();
 				long rbx = regs [(int) X86_64_Register.RBX].Value;
 
@@ -204,21 +204,21 @@ namespace Mono.Debugger
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
-			ITargetMemoryReader reader = target.ReadMemory (location, 19);
+			TargetBinaryReader reader = target.ReadMemory (location, 19).GetReader ();
 
-			reader.Offset = 9;
+			reader.Position = 9;
 
 			byte opcode = reader.ReadByte ();
 			if (opcode != 0x68)
 				return TargetAddress.Null;
 
-			int method_info = reader.ReadInteger ();
+			int method_info = reader.ReadInt32 ();
 
 			opcode = reader.ReadByte ();
 			if (opcode != 0xe9)
 				return TargetAddress.Null;
 
-			int call_disp = reader.ReadInteger ();
+			int call_disp = reader.ReadInt32 ();
 
 			if (location + call_disp + 19 != trampoline_address)
 				return TargetAddress.Null;

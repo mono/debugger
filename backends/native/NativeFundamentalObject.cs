@@ -8,8 +8,7 @@ namespace Mono.Debugger.Languages.Native
 			: base (type, location)
 		{ }
 
-		protected override long GetDynamicSize (ITargetMemoryReader reader,
-							TargetLocation location,
+		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
@@ -33,13 +32,13 @@ namespace Mono.Debugger.Languages.Native
 		protected virtual object GetObject ()
 		{
 			try {
-				ITargetMemoryReader reader;
+				TargetBlob blob;
 				if (type_info.HasFixedSize)
-					reader = location.ReadMemory (type_info.Size);
+					blob = location.ReadMemory (type_info.Size);
 				else
-					reader = GetDynamicContents (location, MaximumDynamicSize);
+					blob = GetDynamicContents (location, MaximumDynamicSize);
 
-				return GetObject (reader, location);
+				return GetObject (blob, location);
 			} catch (TargetException ex) {
 				is_valid = false;
 				throw new LocationInvalidException (ex);
@@ -60,44 +59,44 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected object GetObject (ITargetMemoryReader reader, TargetLocation locaction)
+		protected object GetObject (TargetBlob blob, TargetLocation locaction)
 		{
 			switch (System.Type.GetTypeCode ((Type) type_info.Type.TypeHandle)) {
 			case TypeCode.Boolean:
-				return reader.BinaryReader.PeekByte () != 0;
+				return blob.Contents [0] != 0;
 
 			case TypeCode.Char:
-				return BitConverter.ToChar (reader.Contents, 0);
+				return BitConverter.ToChar (blob.Contents, 0);
 
 			case TypeCode.SByte:
-				return (sbyte) reader.BinaryReader.PeekByte ();
+				return (sbyte) blob.Contents [0];
 
 			case TypeCode.Byte:
-				return (byte) reader.BinaryReader.PeekByte ();
+				return (byte) blob.Contents [0];
 
 			case TypeCode.Int16:
-				return BitConverter.ToInt16 (reader.Contents, 0);
+				return BitConverter.ToInt16 (blob.Contents, 0);
 
 			case TypeCode.UInt16:
-				return BitConverter.ToUInt16 (reader.Contents, 0);
+				return BitConverter.ToUInt16 (blob.Contents, 0);
 
 			case TypeCode.Int32:
-				return BitConverter.ToInt32 (reader.Contents, 0);
+				return BitConverter.ToInt32 (blob.Contents, 0);
 
 			case TypeCode.UInt32:
-				return BitConverter.ToUInt32 (reader.Contents, 0);
+				return BitConverter.ToUInt32 (blob.Contents, 0);
 
 			case TypeCode.Int64:
-				return BitConverter.ToInt64 (reader.Contents, 0);
+				return BitConverter.ToInt64 (blob.Contents, 0);
 
 			case TypeCode.UInt64:
-				return BitConverter.ToUInt64 (reader.Contents, 0);
+				return BitConverter.ToUInt64 (blob.Contents, 0);
 
 			case TypeCode.Single:
-				return BitConverter.ToSingle (reader.Contents, 0);
+				return BitConverter.ToSingle (blob.Contents, 0);
 
 			case TypeCode.Double:
-				return BitConverter.ToDouble (reader.Contents, 0);
+				return BitConverter.ToDouble (blob.Contents, 0);
 
 			default:
 				throw new InvalidOperationException ();

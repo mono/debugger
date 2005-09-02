@@ -648,17 +648,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ITargetMemoryReader ReadMemory (TargetAddress address, int size)
+		public TargetBlob ReadMemory (TargetAddress address, int size)
 		{
 			check_disposed ();
 			byte [] retval = ReadBuffer (address, size);
-			return new TargetReader (retval, this);
-		}
-
-		public ITargetMemoryReader ReadMemory (byte[] buffer)
-		{
-			check_disposed ();
-			return new TargetReader (buffer, this);
+			return new TargetBlob (retval, target_info);
 		}
 
 		public bool CanWrite {

@@ -120,7 +120,7 @@ namespace Mono.Debugger
 
 		string ReadString (TargetAddress address);
 
-		ITargetMemoryReader ReadMemory (TargetAddress address, int size);
+		TargetBlob ReadMemory (TargetAddress address, int size);
 
 		byte[] ReadBuffer (TargetAddress address, int size);
 
@@ -150,6 +150,10 @@ namespace Mono.Debugger
 	public interface ITargetAccess
 	{
 		ITargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
+		ITargetInfo TargetInfo {
 			get;
 		}
 

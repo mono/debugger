@@ -378,7 +378,8 @@ namespace Mono.Debugger.Architecture
 			int the_size = 2 * inferior.TargetLongIntegerSize +
 				3 * inferior.TargetAddressSize;
 
-			ITargetMemoryReader reader = inferior.ReadMemory (debug_base, the_size);
+			TargetBlob blob = inferior.ReadMemory (debug_base, the_size);
+			TargetReader reader = new TargetReader (blob.Contents, inferior);
 			if (reader.ReadLongInteger () != 1)
 				return false;
 
@@ -420,7 +421,8 @@ namespace Mono.Debugger.Architecture
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
 				int the_size = 4 * target.TargetAddressSize;
-				ITargetMemoryReader map_reader = target.ReadMemory (map, the_size);
+				TargetBlob blob = target.ReadMemory (map, the_size);
+				TargetReader map_reader = new TargetReader (blob.Contents, target);
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();

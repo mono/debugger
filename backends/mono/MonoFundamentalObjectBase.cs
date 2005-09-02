@@ -23,21 +23,20 @@ namespace Mono.Debugger.Languages.Mono
 		internal object GetObject ()
 		{
 			try {
-				ITargetMemoryReader reader;
+				TargetBlob blob;
 				if (type_info.HasFixedSize)
-					reader = location.ReadMemory (type_info.Size);
+					blob = location.ReadMemory (type_info.Size);
 				else
-					reader = GetDynamicContents (location, MaximumDynamicSize);
+					blob = GetDynamicContents (location, MaximumDynamicSize);
 
-				return GetObject (reader, location);
+				return GetObject (blob, location);
 			} catch (TargetException ex) {
 				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
 
-		protected abstract object GetObject (ITargetMemoryReader reader,
-						     TargetLocation location);
+		protected abstract object GetObject (TargetBlob blob, TargetLocation location);
 
 		public override string Print ()
 		{

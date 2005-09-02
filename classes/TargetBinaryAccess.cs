@@ -24,6 +24,11 @@ namespace Mono.Debugger
 		public int Size {
 			get { return Contents.Length; }
 		}
+
+		public TargetBinaryReader GetReader ()
+		{
+			return new TargetBinaryReader (this);
+		}
 	}
 
 	[Serializable]

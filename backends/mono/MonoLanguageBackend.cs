@@ -109,18 +109,20 @@ namespace Mono.Debugger.Languages.Mono
 			this.Corlib = corlib;
 
 			int size = memory.ReadInteger (address);
-			ITargetMemoryReader reader = memory.ReadMemory (address, size);
-			reader.ReadInteger ();
+			TargetBinaryReader reader = memory.ReadMemory (address, size).GetReader ();
+			reader.ReadInt32 ();
 
-			int defaults_size = reader.ReadInteger ();
-			TargetAddress defaults_address = reader.ReadGlobalAddress ();
+			int defaults_size = reader.ReadInt32 ();
+			TargetAddress defaults_address = new TargetAddress (
+				memory.GlobalAddressDomain, reader.ReadAddress ());
 
-			KlassFieldOffset = reader.ReadInteger ();
-			KlassMethodsOffset = reader.ReadInteger ();
-			KlassMethodCountOffset = reader.ReadInteger ();
-			FieldInfoSize = reader.ReadInteger ();
+			KlassFieldOffset = reader.ReadInt32 ();
+			KlassMethodsOffset = reader.ReadInt32 ();
+			KlassMethodCountOffset = reader.ReadInt32 ();
+			FieldInfoSize = reader.ReadInt32 ();
 
-			ITargetMemoryReader mono_defaults = memory.ReadMemory (defaults_address, defaults_size);
+			TargetReader mono_defaults = new TargetReader (
+				memory.ReadMemory (defaults_address, defaults_size).Contents, memory);
 			mono_defaults.ReadAddress ();
 
 			TargetAddress klass = mono_defaults.ReadGlobalAddress ();
@@ -301,13 +303,13 @@ namespace Mono.Debugger.Languages.Mono
 				throw new SymbolTableException (
 					"Can't get address of `MONO_DEBUGGER__debugger_info'.");
 
-			ITargetMemoryReader header = memory.ReadMemory (symbol_info, 16);
-			long magic = header.ReadLongInteger ();
+			TargetBinaryReader header = memory.ReadMemory (symbol_info, 16).GetReader ();
+			long magic = header.ReadInt64 ();
 			if (magic != DynamicMagic)
 				throw new SymbolTableException (
 					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
 
-			int version = header.ReadInteger ();
+			int version = header.ReadInt32 ();
 			if (version < MinDynamicVersion)
 				throw new SymbolTableException (
 					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
@@ -317,9 +319,10 @@ namespace Mono.Debugger.Languages.Mono
 					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
 					"but expected at most {1}.", version, MaxDynamicVersion);
 
-			int size = (int) header.ReadInteger ();
+			int size = header.ReadInt32 ();
 
-			ITargetMemoryReader table = memory.ReadMemory (symbol_info, size);
+			TargetReader table = new TargetReader (
+				memory.ReadMemory (symbol_info, size), memory);
 			info = new MonoDebuggerInfo (table);
 
 			init_trampolines (memory);
@@ -367,7 +370,8 @@ namespace Mono.Debugger.Languages.Mono
 		void do_update (ITargetMemoryAccess memory)
 		{
 			TargetAddress symtab_address = memory.ReadAddress (info.SymbolTable);
-			ITargetMemoryReader header = memory.ReadMemory (symtab_address, info.SymbolTableSize);
+			TargetReader header = new TargetReader (
+				memory.ReadMemory (symtab_address, info.SymbolTableSize), memory);
 
 			long magic = header.ReadLongInteger ();
 			if (magic != DynamicMagic)
@@ -478,7 +482,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int start, int end)
 		{
-			ITargetMemoryReader reader = memory.ReadMemory (address + start, end - start);
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address + start, end - start), memory);
 
 			Report.Debug (DebugFlags.JitSymtab,
 				      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address, start, end,

@@ -28,14 +28,14 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress member_info = target.TargetMemoryAccess.ReadAddress (
 				KlassAddress + builtin.KlassFieldOffset);
 			int member_count = 1 + Type.Members.Length;
-			ITargetMemoryReader info = target.TargetMemoryAccess.ReadMemory (
-				member_info, member_count * builtin.FieldInfoSize);
+			TargetBinaryReader info = target.TargetMemoryAccess.ReadMemory (
+				member_info, member_count * builtin.FieldInfoSize).GetReader ();
 
 			member_offsets = new int [member_count];
 			for (int i = 0; i < member_count; i++) {
-				info.Offset = i * builtin.FieldInfoSize +
-					2 * target.TargetMemoryInfo.TargetAddressSize;
-				member_offsets [i] = info.ReadInteger ();
+				info.Position = i * builtin.FieldInfoSize +
+					2 * info.TargetInfo.TargetAddressSize;
+				member_offsets [i] = info.ReadInt32 ();
 			}
 
 			initialized = true;

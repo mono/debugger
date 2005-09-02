@@ -54,7 +54,7 @@ namespace Mono.Debugger.Languages
 			return address;
 		}
 
-		public override ITargetMemoryReader ReadMemory (int size)
+		public override TargetBlob ReadMemory (int size)
 		{
 			if (HasAddress)
 				return base.ReadMemory (size);
@@ -63,15 +63,9 @@ namespace Mono.Debugger.Languages
 			long contents = frame.GetRegister (register);
 			contents += regoffset;
 
-			// We can read at most Inferior.TargetIntegerSize from a register
-			// (a word on the target).
-			if ((offset < 0) || (offset + size > TargetMemoryInfo.TargetIntegerSize))
+			if (offset != 0)
 				throw new ArgumentException ();
 
-			// Using ITargetMemoryReader for this is just an ugly hack, but I
-			// wanted to hide the fact that the data is cominig from a
-			// register from the caller.
-			ITargetMemoryReader reader;
 			byte[] buffer;
 			if (TargetMemoryInfo.TargetIntegerSize == 4)
 				buffer = BitConverter.GetBytes ((int) contents);
@@ -80,9 +74,7 @@ namespace Mono.Debugger.Languages
 			else
 				throw new InternalError ();
 
-			reader = new TargetReader (buffer, TargetMemoryInfo);
-			reader.Offset = offset;
-			return reader;
+			return new TargetBlob (buffer, TargetInfo);
 		}
 
 		public override void WriteBuffer (byte[] data)
