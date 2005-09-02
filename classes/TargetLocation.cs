@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages
 	//   register) and that an addresses lifetime may be limited.
 	// </summary>
 	[Serializable]
-	public abstract class TargetLocation : ICloneable
+	public abstract class TargetLocation
 	{
 		protected ITargetAccess target;
 		protected StackFrame frame;
@@ -189,21 +189,14 @@ namespace Mono.Debugger.Languages
 		{
 			TargetLocation new_location;
 			if (offset != 0)
-				new_location = new RelativeTargetLocation (Clone (), offset);
+				new_location = new RelativeTargetLocation (this, offset);
 			else
-				new_location = Clone ();
+				new_location = this;
 			if (!dereference)
 				return new_location;
 
 			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
 			return new AbsoluteTargetLocation (frame, target, address);
-		}
-
-		protected abstract TargetLocation Clone ();
-
-		object ICloneable.Clone ()
-		{
-			return Clone ();
 		}
 
 		protected virtual string MyToString ()

@@ -58,12 +58,6 @@ namespace Mono.Debugger.Languages.Mono
 				return address;
 			}
 
-			protected override TargetLocation Clone ()
-			{
-				return new HeapLocation (
-					target, heap, base_address, address, size);
-			}
-
 			public override string Print ()
 			{
 				return String.Format ("Heap [{0}:{1}]", base_address, address);

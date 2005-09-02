@@ -119,12 +119,6 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		protected override TargetLocation Clone ()
-		{
-			return new MonoVariableLocation (frame, is_regoffset, register,
-							 regoffset, is_byref);
-		}
-
 		public override string Print ()
 		{
 			int regindex = frame.Registers [register].Index;

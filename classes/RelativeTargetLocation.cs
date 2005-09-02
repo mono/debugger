@@ -27,11 +27,6 @@ namespace Mono.Debugger.Languages
 			return relative_to.Address + offset;
 		}
 
-		protected override TargetLocation Clone ()
-		{
-			return new RelativeTargetLocation (relative_to, offset);
-		}
-
 		public override string Print ()
 		{
 			TargetAddress address = relative_to.Address;

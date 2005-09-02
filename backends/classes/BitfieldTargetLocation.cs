@@ -77,11 +77,6 @@ namespace Mono.Debugger.Languages
 			return new TargetBlob (target, TargetInfo);
 		}
 
-		protected override TargetLocation Clone ()
-		{
-			return new BitfieldTargetLocation (relative_to, bit_offset, bit_size);
-		}
-
 		public override string Print ()
 		{
 			return String.Format ("Bitfield [{0}..{1}] in {2}",

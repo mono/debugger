@@ -32,11 +32,6 @@ namespace Mono.Debugger.Languages
 			return address;
 		}
 
-		protected override TargetLocation Clone ()
-		{
-			return new AbsoluteTargetLocation (frame, target, address);
-		}
-
 		public override string Print ()
 		{
 			return address.ToString ();

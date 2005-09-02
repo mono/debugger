@@ -1,6 +1,12 @@
 2005-09-02  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetLocation.cs
+	(TargetLocation): Don't implement ICloneable.
+	(TargetLocation.Clone): Removed.
+
+2005-09-02  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetLocation.cs
 	(TargetLocation): Removed the `offset' - we're now using the
 	RelativeTargetLocation for this.
 	(TargetLocation.ctor): Don't take an `offset' argument anymore.
