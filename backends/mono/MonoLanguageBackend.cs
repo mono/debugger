@@ -214,7 +214,6 @@ namespace Mono.Debugger.Languages.Mono
 		static GetLocalTypeFromSignatureFunc local_type_from_sig;
 		static GetGuidFunc get_guid;
 		static CheckRuntimeVersionFunc check_runtime_version;
-		static GetMethodIndexFunc get_method_index;
 		static MakeArrayTypeFunc make_array_type;
 		static ResolveTypeFunc resolve_type;
 		static GetTypeTokenFunc get_type_token;
@@ -225,7 +224,6 @@ namespace Mono.Debugger.Languages.Mono
 		delegate Type GetLocalTypeFromSignatureFunc (R.Assembly assembly, byte[] sig);
 		delegate Guid GetGuidFunc (R.Module module);
 		delegate string CheckRuntimeVersionFunc (string filename);
-		delegate int GetMethodIndexFunc (R.MethodBase method);
 		delegate Type MakeArrayTypeFunc (Type type, int rank);
 		delegate Type ResolveTypeFunc (R.Module module, int token);
 		delegate int GetTypeTokenFunc (Type type);
@@ -265,10 +263,6 @@ namespace Mono.Debugger.Languages.Mono
 				typeof (R.Assembly), typeof (CheckRuntimeVersionFunc),
 				"MonoDebugger_CheckRuntimeVersion");
 
-			get_method_index = (GetMethodIndexFunc) create_delegate (
-				typeof (R.Assembly), typeof (GetMethodIndexFunc),
-				"MonoDebugger_GetMethodIndex");
-
 			make_array_type = (MakeArrayTypeFunc) create_delegate (
 				typeof (R.Assembly), typeof (MakeArrayTypeFunc),
 				"MonoDebugger_MakeArrayType");
@@ -305,11 +299,6 @@ namespace Mono.Debugger.Languages.Mono
 		public static string CheckRuntimeVersion (string filename)
 		{
 			return check_runtime_version (filename);
-		}
-
-		public static int GetMethodIndex (R.MethodBase method)
-		{
-			return get_method_index (method);
 		}
 
 		public static Guid GetGuid (R.Module module)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
@@ -8,7 +9,7 @@ namespace Mono.Debugger.Languages.Mono
 		new public readonly MonoClassType Type;
 
 		int[] field_offsets;
-		TargetAddress[] methods;
+		Hashtable methods;
 		MonoDebuggerInfo debugger_info;
 		MonoClassInfo parent;
 		bool initialized;
@@ -58,10 +59,19 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
 				method_info, method_count * target.TargetMemoryInfo.TargetAddressSize);
 
-			methods = new TargetAddress [method_count];
+			methods = new Hashtable ();
 			TargetReader reader = new TargetReader (blob.Contents, target.TargetMemoryInfo);
-			for (int i = 0; i < method_count; i++)
-				methods [i] = reader.ReadGlobalAddress ();
+			for (int i = 0; i < method_count; i++) {
+				TargetAddress address = reader.ReadGlobalAddress ();
+
+				TargetBlob method_blob = target.TargetMemoryAccess.ReadMemory (
+					address + 4, 4);
+				int token = method_blob.GetReader ().ReadInt32 ();
+				if (token == 0)
+					continue;
+
+				methods.Add (token, address);
+			}
 
 			initialized = true;
 			return null;
@@ -132,11 +142,13 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal TargetAddress GetMethodAddress (ITargetAccess target, int index)
+		internal TargetAddress GetMethodAddress (ITargetAccess target, int token)
 		{
 			try {
 				initialize (target);
-				return methods [index];
+				if (!methods.Contains (token))
+					throw new InternalError ();
+				return (TargetAddress) methods [token];
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

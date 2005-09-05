@@ -12,14 +12,14 @@ namespace Mono.Debugger.Languages.Mono
 		MonoType return_type;
 		MonoType[] parameter_types;
 		bool has_return_type;
-		int index;
+		int token;
 
-		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass, R.MethodBase mbase, int index)
+		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass, R.MethodBase mbase)
 			: base (file, TargetObjectKind.Function, mbase.ReflectedType)
 		{
 			this.klass = klass;
 			this.method_info = mbase;
-			this.index = index;
+			this.token = MonoDebuggerSupport.GetMethodToken (mbase);
 
 			Type rtype;
 			if (mbase is R.ConstructorInfo) {
@@ -54,8 +54,8 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parameter_types; }
 		}
 
-		public int Index {
-			get { return index; }
+		public int Token {
+			get { return token; }
 		}
 
 		ITargetType ITargetFunctionType.ReturnType {

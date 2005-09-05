@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetAddress exc_object;
 
-			TargetAddress method = Klass.GetMethodAddress (frame.TargetAccess, Type.Index);
+			TargetAddress method = Klass.GetMethodAddress (frame.TargetAccess, Type.Token);
 
 			if (Type.ParameterTypes.Length != args.Length)
 				throw new ArgumentException ();

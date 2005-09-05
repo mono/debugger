@@ -1,5 +1,12 @@
 2005-09-05  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoMember.cs (MonoMember.Position): Removed.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoDebuggerSupport.GetMethodIndex): Removed.
+
+2005-09-05  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoLanguageBackend.cs
 	(MonoDebuggerSupport): Moved here from the symbol writer.
 
