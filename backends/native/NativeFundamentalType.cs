@@ -10,7 +10,6 @@ namespace Mono.Debugger.Languages.Native
 			: base (name, TargetObjectKind.Fundamental, size)
 		{
 			this.type = type;
-			this.type_handle = type;
 		}
 
 		public override bool IsByRef {
@@ -22,6 +21,12 @@ namespace Mono.Debugger.Languages.Native
 		public Type Type {
 			get {
 				return type;
+			}
+		}
+
+		public TypeCode TypeCode {
+			get {
+				return Type.GetTypeCode (type);
 			}
 		}
 

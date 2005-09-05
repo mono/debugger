@@ -61,7 +61,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected object GetObject (TargetBlob blob, TargetLocation locaction)
 		{
-			switch (System.Type.GetTypeCode ((Type) type_info.Type.TypeHandle)) {
+			switch (((NativeFundamentalType) type_info.Type).TypeCode) {
 			case TypeCode.Boolean:
 				return blob.Contents [0] != 0;
 
@@ -105,7 +105,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected byte[] CreateObject (object obj)
 		{
-			switch (System.Type.GetTypeCode ((Type) type_info.Type.TypeHandle)) {
+			switch (((NativeFundamentalType) type_info.Type).TypeCode) {
 			case TypeCode.Boolean:
 				return BitConverter.GetBytes (Convert.ToBoolean (obj));
 

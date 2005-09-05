@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Rank = type.GetArrayRank ();
 			this.Dimension = 0;
 
-			element_type = file.LookupMonoType (type.GetElementType ());
+			element_type = file.MonoLanguage.LookupMonoType (type.GetElementType ());
 
 			if (Dimension + 1 < Rank)
 				subarray_type = new MonoArrayType (this);

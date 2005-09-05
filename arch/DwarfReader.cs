@@ -2863,7 +2863,8 @@ namespace Mono.Debugger.Architecture
 				if (ref_type == null)
 					return null;
 
-				if (ref_type.TypeHandle == typeof (char))
+				if ((ref_type is NativeFundamentalType) &&
+				    (((NativeFundamentalType) ref_type).TypeCode == TypeCode.Char))
 					return new NativeStringType (byte_size);
 
 				string name;

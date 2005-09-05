@@ -32,10 +32,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.FullName; }
 		}
 
-		object ITargetType.TypeHandle {
-			get { return type; }
-		}
-
 		public Type TypeHandle {
 			get { return type; }
 		}

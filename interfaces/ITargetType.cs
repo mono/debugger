@@ -13,10 +13,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		object TypeHandle {
-			get;
-		}
-
 		ITargetTypeInfo GetTypeInfo ();
 	}
 }

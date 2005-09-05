@@ -1,3 +1,7 @@
+2005-09-05  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetType.cs (ITargetType.TypeHandle): Removed.
+
 2005-09-02  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetLocation.cs (TargetLocation.IsValid): Removed.

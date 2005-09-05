@@ -5,7 +5,6 @@ namespace Mono.Debugger.Languages.Native
 	internal abstract class NativeType : ITargetType, ITargetTypeInfo
 	{
 		protected readonly TargetObjectKind kind;
-		protected object type_handle;
 
 		string name;
 		bool has_fixed_size;
@@ -34,12 +33,6 @@ namespace Mono.Debugger.Languages.Native
 		public string Name {
 			get {
 				return name;
-			}
-		}
-
-		public object TypeHandle {
-			get {
-				return type_handle;
 			}
 		}
 

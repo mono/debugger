@@ -887,7 +887,7 @@ namespace Mono.Debugger.Frontend
 			foreach (ITargetMethodInfo method in candidates) {
 				bool ok = true;
 				for (int i = 0; i < types.Length; i++) {
-					if (method.Type.ParameterTypes [i].TypeHandle != argtypes [i].TypeHandle) {
+					if (method.Type.ParameterTypes [i] != argtypes [i]) {
 						ok = false;
 						break;
 					}
@@ -1011,7 +1011,7 @@ namespace Mono.Debugger.Frontend
 
 				bool ok = true;
 				for (int i = 0; i < types.Length; i++) {
-					if (prop.Getter.ParameterTypes [i].TypeHandle != types [i].TypeHandle) {
+					if (prop.Getter.ParameterTypes [i] != types [i]) {
 						ok = false;
 						break;
 					}
