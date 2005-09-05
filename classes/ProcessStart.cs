@@ -4,7 +4,6 @@ using System.Configuration;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
-using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger
 {
@@ -101,7 +100,7 @@ namespace Mono.Debugger
 			}
 
 			if (application != null) {
-				string error = C.MonoDebuggerSupport.CheckRuntimeVersion (argv [0]);
+				string error = Mono.Debugger.Languages.Mono.MonoDebuggerSupport.CheckRuntimeVersion (argv [0]);
 				if (error != null)
 					throw new TargetException (
 						TargetError.CannotStartTarget, "Cannot start target: {0}",

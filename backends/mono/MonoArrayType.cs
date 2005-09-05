@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		private MonoArrayType (MonoArrayType type)
 			: base (type.File, TargetObjectKind.Array,
-				C.MonoDebuggerSupport.MakeArrayType (type.element_type.Type, type.Rank - 1))
+				MonoDebuggerSupport.MakeArrayType (type.element_type.Type, type.Rank - 1))
 		{
 			Rank = type.Rank;
 			Dimension = type.Dimension + 1;

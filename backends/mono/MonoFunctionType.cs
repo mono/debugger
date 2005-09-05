@@ -68,7 +68,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public SourceMethod Source {
 			get {
-				int token = C.MonoDebuggerSupport.GetMethodToken (method_info);
+				int token = MonoDebuggerSupport.GetMethodToken (method_info);
 				return file.GetMethodByToken (token);
 			}
 		}

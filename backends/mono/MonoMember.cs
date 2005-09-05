@@ -112,7 +112,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly string FullName;
 
 		internal MonoMethodInfo (MonoClassType klass, int index, R.MethodBase minfo)
-			: base (klass.File, minfo, index, C.MonoDebuggerSupport.GetMethodIndex (minfo),
+			: base (klass.File, minfo, index, MonoDebuggerSupport.GetMethodIndex (minfo),
 				minfo.IsStatic)
 		{
 			Klass = klass;
@@ -184,11 +184,11 @@ namespace Mono.Debugger.Languages.Mono
 			type = File.MonoLanguage.LookupMonoType (einfo.EventHandlerType);
 
 			R.MethodInfo add = einfo.GetAddMethod ();
-			pos = C.MonoDebuggerSupport.GetMethodIndex (add);
+			pos = MonoDebuggerSupport.GetMethodIndex (add);
 			AddType = new MonoFunctionType (File, Klass, add, pos - 1);
 
 			R.MethodInfo remove = einfo.GetRemoveMethod ();
-			pos = C.MonoDebuggerSupport.GetMethodIndex (remove);
+			pos = MonoDebuggerSupport.GetMethodIndex (remove);
 			RemoveType = new MonoFunctionType (File, Klass, remove, pos - 1);
 		}
 
@@ -233,13 +233,13 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (CanRead) {
 				R.MethodInfo getter = pinfo.GetGetMethod (true);
-				int pos = C.MonoDebuggerSupport.GetMethodIndex (getter);
+				int pos = MonoDebuggerSupport.GetMethodIndex (getter);
 				GetterType = new MonoFunctionType (File, Klass, getter, pos - 1);
 			}
 
 			if (CanWrite) {
 				R.MethodInfo setter = pinfo.GetSetMethod (true);
-				int pos = C.MonoDebuggerSupport.GetMethodIndex (setter);
+				int pos = MonoDebuggerSupport.GetMethodIndex (setter);
 				SetterType = new MonoFunctionType (File, Klass, setter, pos - 1);
 			}
 		}

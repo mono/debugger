@@ -354,8 +354,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (entry.Rank == 0)
 				class_entry_hash.Add (new TypeHashEntry (entry), entry);
 			else {
-				Type etype = C.MonoDebuggerSupport.ResolveType (Module, entry.Token);
-				Type atype = C.MonoDebuggerSupport.MakeArrayType (etype, entry.Rank);
+				Type etype = MonoDebuggerSupport.ResolveType (Module, entry.Token);
+				Type atype = MonoDebuggerSupport.MakeArrayType (etype, entry.Rank);
 				MonoType type = LookupMonoType (atype);
 
 				MonoLanguage.AddClass (entry.KlassAddress, type);
@@ -492,7 +492,7 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry entry = File.GetMethod (index);
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
-			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+			R.MethodBase mbase = MonoDebuggerSupport.GetMethod (
 				File.Assembly, entry.Token);
 
 			StringBuilder sb = new StringBuilder (mbase.DeclaringType.FullName);
@@ -570,7 +570,7 @@ namespace Mono.Debugger.Languages.Mono
 			SourceMethod method = GetSourceMethod (index);
 			C.MethodEntry entry = File.GetMethod (index);
 
-			R.MethodBase mbase = C.MonoDebuggerSupport.GetMethod (
+			R.MethodBase mbase = MonoDebuggerSupport.GetMethod (
 				File.Assembly, entry.Token);
 
 			mono_method = new MonoMethod (this, method, entry, mbase);
@@ -701,7 +701,7 @@ namespace Mono.Debugger.Languages.Mono
 				locals = new IVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
-					Type type = C.MonoDebuggerSupport.GetLocalTypeFromSignature (
+					Type type = MonoDebuggerSupport.GetLocalTypeFromSignature (
 						file.Assembly, local.Signature);
 
 					local_types [i] = file.MonoLanguage.LookupMonoType (type);
@@ -1262,7 +1262,7 @@ namespace Mono.Debugger.Languages.Mono
 				while (type.GetArrayRank () > 0)
 					type = type.GetElementType ();
 
-				Token = C.MonoDebuggerSupport.GetTypeToken (type);
+				Token = MonoDebuggerSupport.GetTypeToken (type);
 				Rank = type.GetArrayRank ();
 			}
 

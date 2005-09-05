@@ -1,5 +1,10 @@
 2005-09-05  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoDebuggerSupport): Moved here from the symbol writer.
+
+2005-09-05  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetType.cs (ITargetType.TypeHandle): Removed.
 
 2005-09-02  Martin Baulig  <martin@ximian.com>
