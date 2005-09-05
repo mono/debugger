@@ -220,7 +220,7 @@ namespace Mono.Debugger.Languages.Mono
 		static GetTypeTokenFunc get_type_token;
 
 		delegate Type GetTypeFunc (R.Assembly assembly, int token);
-		delegate int GetMethodTokenFunc (R.Assembly assembly, R.MethodBase method);
+		delegate int GetMethodTokenFunc (R.MethodBase method);
 		delegate R.MethodBase GetMethodFunc (R.Assembly assembly, int token);
 		delegate Type GetLocalTypeFromSignatureFunc (R.Assembly assembly, byte[] sig);
 		delegate Guid GetGuidFunc (R.Module module);
@@ -289,7 +289,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public static int GetMethodToken (R.MethodBase method)
 		{
-			return get_method_token (method.ReflectedType.Assembly, method);
+			return get_method_token (method);
 		}
 
 		public static R.MethodBase GetMethod (R.Assembly assembly, int token)
