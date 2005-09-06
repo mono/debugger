@@ -152,11 +152,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal ITargetFunctionObject Get (StackFrame frame)
 		{
-			MonoFunctionTypeInfo func = FunctionType.GetTypeInfo () as MonoFunctionTypeInfo;
-			if (func == null)
-				return null;
-
-			return func.GetStaticObject (frame);
+			return FunctionType.GetStaticObject (frame);
 		}
 
 		protected override string MyToString ()
@@ -274,11 +270,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (!CanRead)
 				throw new InvalidOperationException ();
 
-			MonoFunctionTypeInfo getter = GetterType.GetTypeInfo () as MonoFunctionTypeInfo;
-			if (getter == null)
-				return null;
-
-			ITargetFunctionObject func = getter.GetObject (location) as ITargetFunctionObject;
+			ITargetFunctionObject func = GetterType.GetObject (location) as ITargetFunctionObject;
 			if (func == null)
 				return null;
 
@@ -291,11 +283,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (!CanRead)
 				throw new InvalidOperationException ();
 
-			MonoFunctionTypeInfo getter = GetterType.GetTypeInfo () as MonoFunctionTypeInfo;
-			if (getter == null)
-				return null;
-
-			return getter.InvokeStatic (frame, new MonoObject [0], false);
+			return GetterType.InvokeStatic (frame, new MonoObject [0], false);
 		}
 
 		protected override string MyToString ()

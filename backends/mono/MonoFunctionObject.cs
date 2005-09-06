@@ -4,16 +4,16 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFunctionObject : MonoObject, ITargetFunctionObject
 	{
-		new MonoFunctionTypeInfo type;
+		new MonoFunctionType type;
 
-		public MonoFunctionObject (MonoFunctionTypeInfo type, TargetLocation location)
+		public MonoFunctionObject (MonoFunctionType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
 		}
 
 		ITargetFunctionType ITargetFunctionObject.Type {
-			get { return type.Type; }
+			get { return type; }
 		}
 
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,

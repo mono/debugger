@@ -197,11 +197,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			try {
 				MonoFunctionType ftype = static_methods [index - first_smethod].FunctionType;
-				MonoFunctionTypeInfo finfo = ftype.GetTypeInfo () as MonoFunctionTypeInfo;
-				if (finfo == null)
-					return null;
 
-				return finfo.GetStaticObject (frame);
+				return ftype.GetStaticObject (frame);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
