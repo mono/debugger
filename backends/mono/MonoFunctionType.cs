@@ -90,7 +90,7 @@ namespace Mono.Debugger.Languages.Mono
 			return info.InvokeStatic (frame, margs, debug);
 		}
 
-		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			MonoClassInfo class_info = klass.GetTypeInfo () as MonoClassInfo;
 			if (class_info == null)

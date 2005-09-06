@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.Mono
 		protected readonly Type type;
 		protected readonly MonoSymbolFile file;
 		protected readonly TargetObjectKind kind;
-		protected MonoTypeInfo type_info;
+		protected IMonoTypeInfo type_info;
 
 		public MonoType (MonoSymbolFile file, TargetObjectKind kind, Type type)
 		{
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 			return GetTypeInfo ();
 		}
 
-		public virtual MonoTypeInfo GetTypeInfo ()
+		public virtual IMonoTypeInfo GetTypeInfo ()
 		{
 			if (type_info != null)
 				return type_info;
@@ -66,12 +66,12 @@ namespace Mono.Debugger.Languages.Mono
 			return type_info;
 		}
 
-		protected virtual MonoTypeInfo CreateTypeInfo ()
+		protected virtual IMonoTypeInfo CreateTypeInfo ()
 		{
 			return null;
 		}
 
-		protected abstract MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info);
+		protected abstract IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info);
 
 		public virtual bool CheckValid (TargetLocation location)
 		{
@@ -80,7 +80,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoObject GetObject (TargetLocation location)
 		{
-			MonoTypeInfo tinfo = GetTypeInfo ();
+			IMonoTypeInfo tinfo = GetTypeInfo ();
 			if (tinfo == null)
 				return null;
 

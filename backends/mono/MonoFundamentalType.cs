@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Heap = file.MonoLanguage.DataHeap;
 		}
 
-		protected override MonoTypeInfo CreateTypeInfo ()
+		protected override IMonoTypeInfo CreateTypeInfo ()
 		{
 			return new MonoFundamentalTypeInfo (this, size, klass_address);
 		}
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			throw new InvalidOperationException ();
 		}

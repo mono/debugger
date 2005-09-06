@@ -120,7 +120,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			MonoTypeInfo tinfo = type.GetTypeInfo ();
+			IMonoTypeInfo tinfo = type.GetTypeInfo ();
 			if (tinfo == null)
 				return null;
 

@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.Type; }
 		}
 
-		protected MonoTypeInfo GetCurrentType ()
+		protected IMonoTypeInfo GetCurrentType ()
 		{
 			try {
 				// location.Address resolves to the address of the MonoObject,
@@ -36,9 +36,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoTypeInfo CurrentType {
+		public IMonoTypeInfo CurrentType {
 			get {
-				MonoTypeInfo type = GetCurrentType ();
+				IMonoTypeInfo type = GetCurrentType ();
 				if (type == null)
 					throw new LocationInvalidException ();
 				return type;
@@ -59,7 +59,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetObject DereferencedObject {
 			get {
-				MonoTypeInfo current_type = CurrentType;
+				IMonoTypeInfo current_type = CurrentType;
 
 				// If this is a reference type, then the `MonoObject *' already
 				// points to the boxed object itself.

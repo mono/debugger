@@ -2,23 +2,17 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoTypeInfo : MarshalByRefObject, ITargetTypeInfo
+	internal interface IMonoTypeInfo : ITargetTypeInfo
 	{
-		internal enum TypeKind {
-			Unknown = 1,
-			Fundamental,
-			String,
-			SzArray,
-			Array,
-			Pointer,
-			Enum,
-			Object,
-			Struct,
-			Class,
-			ClassInfo,
-			Reference
-		};
+		new MonoType Type {
+			get;
+		}
 
+		MonoObject GetObject (TargetLocation location);
+	}
+
+	internal abstract class MonoTypeInfo : MarshalByRefObject, IMonoTypeInfo
+	{
 		protected readonly MonoType type;
 		protected readonly int size;
 		protected readonly TargetAddress KlassAddress;

@@ -14,12 +14,12 @@ namespace Mono.Debugger.Languages.Mono
 			this.klass_address = klass;
 		}
 
-		protected override MonoTypeInfo CreateTypeInfo ()
+		protected override IMonoTypeInfo CreateTypeInfo ()
 		{
 			return new MonoObjectTypeInfo (this, size, klass_address);
 		}
 
-		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			throw new InvalidOperationException ();
 		}

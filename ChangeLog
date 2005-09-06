@@ -1,5 +1,14 @@
 2005-09-06  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoTypeInfo.cs
+	(IMonoTypeInfo): New internal interface.
+	(MonoTypeInfo): Implement IMonoTypeInfo.
+
+	* backends/mono/: Use `IMonoTypeInfo' instead of `MonoTypeInfo'
+	everywhere.
+
+2005-09-06  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetLocation.cs: Moved to backends/classes/.
 	* classes/AbsoluteTargetLocation.cs: Moved to backends/classes/.
 	* classes/RelativeTargetLocation.cs: Moved to backends/classes/.

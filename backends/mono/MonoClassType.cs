@@ -362,7 +362,7 @@ namespace Mono.Debugger.Languages.Mono
  			return static_constructors [index].Get (frame);
 		}
 
-		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			return new MonoClassInfo (this, info);
 		}

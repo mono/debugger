@@ -63,8 +63,8 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
-			MonoTypeInfo object_type = builtin.ObjectType.GetTypeInfo ();
-			MonoTypeInfo string_type = builtin.StringType.GetTypeInfo ();
+			IMonoTypeInfo object_type = builtin.ObjectType.GetTypeInfo ();
+			IMonoTypeInfo string_type = builtin.StringType.GetTypeInfo ();
 
 			if (retval.IsNull) {
 				if (exc_object.IsNull)

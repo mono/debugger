@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return false; }
 		}
 
-		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			return null;
 		}
