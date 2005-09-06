@@ -38,6 +38,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected abstract object GetObject (TargetBlob blob, TargetLocation location);
 
+		void ITargetFundamentalObject.SetObject (ITargetObject obj)
+		{
+			SetObject ((MonoObject) obj);
+		}
+
 		public override string Print ()
 		{
 			object obj = GetObject ();

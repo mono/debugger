@@ -121,12 +121,11 @@ namespace Mono.Debugger.Frontend
 			return frame.Language.PointerType;
 		}
 
-		public ITargetObject GetRegister (int index, long offset)
+		public ITargetObject GetRegister (int index)
 		{
-			ITargetType type = GetRegisterType (index);
-			ITargetTypeInfo tinfo = type.GetTypeInfo ();
-			TargetLocation location = frame.GetRegisterLocation (index, offset, false);
-			return tinfo.GetObject (location);
+			TargetAddress address = new TargetAddress (
+				frame.AddressDomain, frame.GetRegister (index));
+			return frame.Language.CreatePointer (frame, address);
 		}
 
 		public void SetRegister (int index, long value)
@@ -186,11 +185,6 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Variable cannot be accessed.");
 
 			return var.GetObject (frame);
-		}
-
-		public TargetLocation GetVariableLocation (IVariable var)
-		{
-			return var.GetLocation (frame);
 		}
 
 		public ILanguage Language {

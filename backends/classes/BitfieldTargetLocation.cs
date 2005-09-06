@@ -4,8 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
-	[Serializable]
-	public class BitfieldTargetLocation : TargetLocation
+	internal class BitfieldTargetLocation : TargetLocation
 	{
 		TargetLocation relative_to;
 		int bit_offset, bit_size;

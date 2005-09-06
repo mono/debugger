@@ -282,10 +282,9 @@ namespace Mono.Debugger.Frontend
 			return frame.Language.CreateInstance (frame, val);
 		}
 
-		public override TargetLocation EvaluateAddress (ScriptingContext context)
+		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
-			TargetAddress addr = new TargetAddress (context.AddressDomain, Value);
-			return new AbsoluteTargetLocation (context.CurrentFrame.Frame, addr);
+			return new TargetAddress (context.AddressDomain, Value);
 		}
 
 		protected override object DoEvaluate (ScriptingContext context)
@@ -484,7 +483,7 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class VariableAccessExpression : PointerExpression
+	public class VariableAccessExpression : Expression
 	{
 		IVariable var;
 
@@ -512,11 +511,6 @@ namespace Mono.Debugger.Frontend
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			return context.CurrentFrame.GetVariable (var);
-		}
-
-		public override TargetLocation EvaluateAddress (ScriptingContext context)
-		{
-			return context.CurrentFrame.GetVariableLocation (var);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
@@ -1113,19 +1107,17 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class PointerExpression : Expression
 	{
-		public abstract TargetLocation EvaluateAddress (ScriptingContext context);
+		public abstract TargetAddress EvaluateAddress (ScriptingContext context);
 	}
 
-	public class RegisterExpression : PointerExpression
+	public class RegisterExpression : Expression
 	{
 		string name;
 		int register = -1;
-		long offset;
 
-		public RegisterExpression (string register, long offset)
+		public RegisterExpression (string register)
 		{
 			this.name = register;
-			this.offset = offset;
 			resolved = true;
 		}
 
@@ -1149,23 +1141,11 @@ namespace Mono.Debugger.Frontend
 		{
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
-			return context.CurrentFrame.GetRegister (register, offset);
-		}
-
-		public override TargetLocation EvaluateAddress (ScriptingContext context)
-		{
-			FrameHandle frame = context.CurrentFrame;
-			register = frame.FindRegister (name);
-			return frame.Frame.GetRegisterLocation (register, offset, true);
+			return context.CurrentFrame.GetRegister (register);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)
 		{
-			if (offset != 0)
-				throw new ScriptingException (
-					"Cannot assign a register expression which " +
-					"has an offset.");
-
 			ITargetFundamentalObject fobj = tobj as ITargetFundamentalObject;
 			if ((fobj == null) || !fobj.HasObject)
 				throw new ScriptingException (
@@ -1567,26 +1547,22 @@ namespace Mono.Debugger.Frontend
 				"Expression `{0}' is not a pointer type.", expr.Name);
 		}
 
-		public override TargetLocation EvaluateAddress (ScriptingContext context)
+		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 
 			object obj = expr.Resolve (context);
 			if (obj is int)
 				obj = (long) (int) obj;
-			if (obj is long) {
-				TargetAddress taddress = new TargetAddress (
-					frame.Frame.AddressDomain, (long) obj);
-
-				return new AbsoluteTargetLocation (frame.Frame, taddress);
-			}
+			if (obj is long)
+				return new TargetAddress (frame.Frame.AddressDomain, (long) obj);
 
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException (
 					"Expression `{0}' is not a pointer type.", expr.Name);
 
-			return pobj.Location;
+			return pobj.Address;
 		}
 	}
 
@@ -1633,22 +1609,24 @@ namespace Mono.Debugger.Frontend
 		{
 			FrameHandle frame = context.CurrentFrame;
 
-			TargetLocation location = EvaluateAddress (context);
+			TargetAddress address = EvaluateAddress (context);
 
-			if (!location.HasAddress)
-				throw new ScriptingException (
-					"Cannot take address of expression `{0}'", expr.Name);
-
-			return frame.Language.CreatePointer (frame.Frame, location.Address);
+			return frame.Language.CreatePointer (frame.Frame, address);
 		}
 
-		public override TargetLocation EvaluateAddress (ScriptingContext context)
+		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
 			PointerExpression pexpr = expr as PointerExpression;
 			if (pexpr != null)
 				return pexpr.EvaluateAddress (context);
 
-			return expr.EvaluateVariable (context).Location;
+			ITargetPointerObject obj = expr.EvaluateVariable (context) as
+				ITargetPointerObject;
+			if (obj == null)
+				throw new ScriptingException (
+					"Cannot take address of expression `{0}'", expr.Name);
+
+			return obj.Address;
 		}
 	}
 
@@ -1769,6 +1747,9 @@ namespace Mono.Debugger.Frontend
 				prop_info = PropertyGroupExpression.OverloadResolve (context, frame.Language, sobj.Type, indextypes,
 										     candidates);
 
+				return null;
+
+#if FIXME
 				if (prop_info == null) {
 				 	throw new ScriptingException ("Could not find matching indexer.");
 				}
@@ -1778,12 +1759,13 @@ namespace Mono.Debugger.Frontend
 					return null;
 				}
 
-				ITargetFunctionObject func = getter_info.GetObject (sobj.Location) as ITargetFunctionObject;
+				ITargetFunctionObject func = getter_info.GetObject (sobj) as ITargetFunctionObject;
 				if (func == null) {
 					return null;
 				}
 
 				return func.Invoke (indexargs, false);
+#endif
 			}
 			
 			throw new ScriptingException (

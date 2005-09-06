@@ -124,7 +124,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public virtual void SetObject (ITargetObject obj)
+		public virtual void SetObject (MonoObject obj)
 		{
 			Location.WriteAddress (obj.Location.Address);
 		}

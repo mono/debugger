@@ -177,7 +177,7 @@ expression
 	| variable_or_type_name
 	| PERCENT IDENTIFIER
 	  {
-		$$ = new RegisterExpression ((string) $2, 0);
+		$$ = new RegisterExpression ((string) $2);
 	  }
 	| STAR expression
 	  {

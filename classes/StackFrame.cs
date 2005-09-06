@@ -369,13 +369,6 @@ namespace Mono.Debugger
 			return Registers [index].Value;
 		}
 
-		public TargetLocation GetRegisterLocation (int index, long reg_offset,
-							   bool dereference)
-		{
-			return new MonoVariableLocation (
-				this, dereference, index, reg_offset, false);
-		}
-
 		public IMethod Method {
 			get {
 				check_disposed ();

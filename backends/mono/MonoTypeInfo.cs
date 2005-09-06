@@ -63,11 +63,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return size; }
 		}
 
-		ITargetObject ITargetTypeInfo.GetObject (TargetLocation location)
-		{
-			return GetObject (location);
-		}
-
 		public abstract MonoObject GetObject (TargetLocation location);
 
 		public override string ToString ()

@@ -5,8 +5,7 @@ namespace Mono.Debugger.Languages
 	// <summary>
 	//   This is just an address, but its lifetime is tied to the lifetime of another location.
 	// </summary>
-	[Serializable]
-	public class RelativeTargetLocation : TargetLocation
+	internal class RelativeTargetLocation : TargetLocation
 	{
 		TargetLocation relative_to;
 		long offset;

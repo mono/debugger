@@ -49,10 +49,6 @@ namespace Mono.Debugger.Languages
 		// </summary>
 		byte[] GetRawDynamicContents (int max_size);
 
-		TargetLocation Location {
-			get;
-		}
-
 		string Print ();
 	}
 }

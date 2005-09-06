@@ -120,7 +120,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			ITargetTypeInfo tinfo = type.GetTypeInfo ();
+			MonoTypeInfo tinfo = type.GetTypeInfo ();
 			if (tinfo == null)
 				return null;
 
@@ -140,7 +140,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (var_object == null)
 				return;
 
-			var_object.SetObject (obj);
+			var_object.SetObject ((MonoObject) obj);
 		}
 
 		public override string ToString ()

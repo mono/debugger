@@ -2,15 +2,12 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public delegate void LocationEventHandler (TargetLocation location);
-
 	// <summary>
 	//   This class represents the `location' of a variable.  The idea is that we do
 	//   not always have an address for a variable (for instance if it's stored in a
 	//   register) and that an addresses lifetime may be limited.
 	// </summary>
-	[Serializable]
-	public abstract class TargetLocation
+	internal abstract class TargetLocation
 	{
 		protected ITargetAccess target;
 		protected StackFrame frame;

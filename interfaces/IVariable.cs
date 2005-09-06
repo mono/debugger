@@ -40,8 +40,6 @@ namespace Mono.Debugger.Languages
 		// </remarks>
 		ITargetObject GetObject (StackFrame frame);
 
-		TargetLocation GetLocation (StackFrame frame);
-
 		bool CanWrite {
 			get;
 		}

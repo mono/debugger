@@ -1,5 +1,24 @@
 2005-09-06  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetLocation.cs (TargetLocation): Make this internal
+	and don't mark it as [Serializable].
+
+	* interfaces/ITargetObject.cs (ITargetObject.Location): Removed.
+
+	* interfaces/IVariable.cs (IVariable.GetLocation): Removed.
+
+	* interfaces/ITargetTypeInfo.cs
+	(ITargetTypeInfo.GetObject): Removed.
+
+	* frontend/Expression.cs
+	(PointerExpression.EvaluateAddress): Return a `TargetAddress'
+	instead of a `TargetLocation'.
+	(VariableAccessExpression): Derive from Expression, not
+	PointerExpression.
+	(RegisterExpression): Likewise.
+
+2005-09-06  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFundamentalType.cs
 	(FundamentalKind): New public enum.
 	(ITargetFundamentalType.Type): Removed.

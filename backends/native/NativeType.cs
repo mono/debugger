@@ -54,11 +54,6 @@ namespace Mono.Debugger.Languages.Native
 
 		public abstract NativeObject GetObject (TargetLocation location);
 
-		ITargetObject ITargetTypeInfo.GetObject (TargetLocation location)
-		{
-			return GetObject (location);
-		}
-
 		ITargetType ITargetTypeInfo.Type {
 			get { return this; }
 		}

@@ -417,8 +417,7 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
 			case TargetObjectKind.Array:
-				return String.Format (
-					"({0}) {1}", obj.TypeName, obj.Location.Address);
+				return String.Format ("({0})", obj.TypeName);
 
 			default:
 				return obj.Print ();

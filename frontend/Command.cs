@@ -317,8 +317,12 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case Format.Address: {
-				ITargetObject obj = expression.EvaluateVariable (context);
-				context.Print (obj.Location.ReadAddress ());
+				ITargetPointerObject obj = expression.EvaluateVariable (context)
+					as ITargetPointerObject;
+				if (obj == null)
+					context.Print ("<cannot take address>");
+				else
+					context.Print (obj.Address);
 				break;
 			}
 
@@ -405,10 +409,9 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class ExamineCommand : DebuggerCommand, IDocumentableCommand
+	public class ExamineCommand : FrameCommand, IDocumentableCommand
 	{
 		TargetAddress start;
-		ITargetAccess target;
 		Expression expression;
 		int count = 16;
 
@@ -432,7 +435,8 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			byte[] data;
+			FrameHandle frame = ResolveFrame (context);
+			ITargetAccess target = frame.Frame.TargetAccess;
 
 			if (!Repeating) {
 				PointerExpression pexp = expression as PointerExpression;
@@ -441,13 +445,11 @@ namespace Mono.Debugger.Frontend
 						"Expression `{0}' is not a pointer.",
 						expression.Name);
 
-				TargetLocation location = pexp.EvaluateAddress (context);
-
-				start = location.Address;
-				target = location.TargetAccess;
+				start = pexp.EvaluateAddress (context);
 			}
 
-			data = target.TargetMemoryAccess.ReadBuffer (start, count);
+
+			byte[] data = target.TargetMemoryAccess.ReadBuffer (start, count);
 			context.Print (TargetBinaryReader.HexDump (start, data));
 			start += count;
 		}
@@ -560,9 +562,7 @@ namespace Mono.Debugger.Frontend
 						"Expression `{0}' is not a pointer.",
 						expression.Name);
 
-				TargetLocation location = pexp.EvaluateAddress (context);
-
-				address = location.Address;
+				address = pexp.EvaluateAddress (context);
 			}
 
 			AssemblerLine line;
@@ -1480,36 +1480,6 @@ namespace Mono.Debugger.Frontend
 					       context.Interpreter.Style.Name);
 			}
 		}
-
-		private class ShowLocationCommand : DebuggerCommand
-		{
-			Expression expr;
-
-			protected override bool DoResolve (ScriptingContext context)
-			{
-				expr = ParseExpression (context);
-				if (expr == null)
-					return false;
-
-				expr = expr.Resolve (context);
-				if (expr == null)
-					return false;
-
-				return true;
-			}
-
-			protected override void DoExecute (ScriptingContext context)
-			{
-				TargetLocation location;
-				PointerExpression pexpr = expr as PointerExpression;
-				if (pexpr != null)
-					location = pexpr.EvaluateAddress (context);
-				else
-					location = expr.EvaluateVariable (context).Location;
-
-				Console.WriteLine (location.Print ());
-			}
-		}
 #endregion
 
 		public ShowCommand ()
@@ -1529,7 +1499,6 @@ namespace Mono.Debugger.Frontend
 			RegisterSubcommand ("frame", typeof (ShowFrameCommand));
 			RegisterSubcommand ("lang", typeof (ShowLangCommand));
 			RegisterSubcommand ("style", typeof (ShowStyleCommand));
-			RegisterSubcommand ("location", typeof (ShowLocationCommand));
 		}
 
 		// IDocumentableCommand
@@ -2313,16 +2282,7 @@ namespace Mono.Debugger.Frontend
 			ResolveFrame (new_context);
 			new_context.CurrentFrameIndex = Frame;
 
-			TargetLocation location = pexpr.EvaluateAddress (context);
-			if (location == null)
-				throw new ScriptingException (
-					"Cannot evaluate expression `{0}'", pexpr.Name);
-
-			if (!location.HasAddress)
-				throw new ScriptingException (
-					"Cannot get address of expression `{0}'", pexpr.Name);
-
-			TargetAddress address = location.GlobalAddress;
+			TargetAddress address = pexpr.EvaluateAddress (context);
 			ProcessHandle process = new_context.CurrentProcess;
 			ISimpleSymbolTable symtab = process.Process.SimpleSymbolTable;
 			if (symtab == null) {
@@ -2375,16 +2335,7 @@ namespace Mono.Debugger.Frontend
 			if (Process > 0)
 				new_context.CurrentProcess = ResolveProcess (new_context);
 
-			TargetLocation location = pexpr.EvaluateAddress (context);
-			if (location == null)
-				throw new ScriptingException (
-					"Cannot evaluate expression `{0}'", pexpr.Name);
-
-			if (!location.HasAddress)
-				throw new ScriptingException (
-					"Cannot get address of expression `{0}'", pexpr.Name);
-
-			TargetAddress address = location.GlobalAddress;
+			TargetAddress address = pexpr.EvaluateAddress (context);
 			ProcessHandle process = new_context.CurrentProcess;
 
 			Backtrace backtrace = process.Process.UnwindStack (address);

@@ -21,7 +21,5 @@ namespace Mono.Debugger.Languages
 		int Size {
 			get;
 		}
-
-		ITargetObject GetObject (TargetLocation location);
 	}
 }

@@ -74,7 +74,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override void SetObject (ITargetObject obj)
+		public override void SetObject (MonoObject obj)
 		{
 			RawContents = obj.RawContents;
 		}
