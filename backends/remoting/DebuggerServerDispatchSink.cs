@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Channels;
+using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 
@@ -26,6 +27,9 @@ namespace Mono.Debugger.Remoting
 		public void AsyncProcessResponse (IServerResponseChannelSinkStack sink_stack, object state,
 						  IMessage msg, ITransportHeaders headers, Stream stream)
 		{
+			if (RemotingServices.IsOneWay (((IMethodMessage) msg).MethodBase))
+				return;
+
 			ITransportHeaders response_headers = new TransportHeaders();
 
 			if (sink_stack != null) stream = sink_stack.GetResponseStream (msg, response_headers);
@@ -33,8 +37,10 @@ namespace Mono.Debugger.Remoting
 
 			try {
 				sink_stack.AsyncProcessResponse (msg, response_headers, stream);
-			} catch (Exception ex) {
+			} catch (SerializationException ex) {
 				// FIXME: Bug #76001
+				Console.WriteLine ("EXCEPTION: {0}", ex.Message);
+			} catch (Exception ex) {
 				Console.WriteLine (ex);
 				throw;
 			}
