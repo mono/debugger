@@ -1,5 +1,11 @@
 2005-09-06  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetLocation.cs: Moved to backends/classes/.
+	* classes/AbsoluteTargetLocation.cs: Moved to backends/classes/.
+	* classes/RelativeTargetLocation.cs: Moved to backends/classes/.
+
+2005-09-06  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetLocation.cs (TargetLocation): Make this internal
 	and don't mark it as [Serializable].
 
