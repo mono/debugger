@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectType : MonoType, ITargetPointerType
+	internal class MonoObjectType : MonoType, IMonoTypeInfo, ITargetPointerType
 	{
 		int size;
 		TargetAddress klass_address;
@@ -12,11 +12,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.size = size;
 			this.klass_address = klass;
-		}
 
-		protected override IMonoTypeInfo CreateTypeInfo ()
-		{
-			return new MonoObjectTypeInfo (this, size, klass_address);
+			type_info = this;
+			file.MonoLanguage.AddClass (klass_address, this);
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
@@ -45,5 +43,27 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 			}
 		}
+
+		public int Size {
+			get { return size; }
+		}
+
+		bool ITargetTypeInfo.HasFixedSize {
+			get { return true; }
+		}
+
+		ITargetType ITargetTypeInfo.Type {
+			get { return this; }
+		}
+
+		MonoType IMonoTypeInfo.Type {
+			get { return this; }
+		}
+
+		MonoObject IMonoTypeInfo.GetObject (TargetLocation location)
+		{
+			return new MonoObjectObject (this, location);
+		}
+
 	}
 }

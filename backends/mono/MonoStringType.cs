@@ -2,32 +2,34 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoStringType : MonoFundamentalType
+	internal class MonoStringType : MonoFundamentalType, IMonoTypeInfo
 	{
-		int object_size;
+		static int max_string_length = 10000;
 
+		public readonly int ObjectSize;
 		protected readonly TargetAddress CreateString;
 
 		public MonoStringType (MonoSymbolFile file, Type type, int object_size,
 				       int size, TargetAddress klass)
 			: base (file, type, FundamentalKind.String, size, klass)
 		{
-			this.object_size = object_size;
+			this.ObjectSize = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
-		}
-
-		protected override IMonoTypeInfo CreateTypeInfo ()
-		{
-			return new MonoStringTypeInfo (this, object_size, size, klass_address);
-		}
-
-		public override bool IsByRef {
-			get { return true; }
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			throw new InvalidOperationException ();
+		}
+
+		public static int MaximumStringLength {
+			get {
+				return max_string_length;
+			}
+
+			set {
+				max_string_length = value;
+			}
 		}
 
 		public override byte[] CreateObject (object obj)
@@ -55,7 +57,12 @@ namespace Mono.Debugger.Languages.Mono
 
                         TargetAddress retval = frame.Process.CallMethod (CreateString, 0, str);
                         TargetLocation location = new AbsoluteTargetLocation (frame, retval);
-                        return new MonoStringObject ((MonoStringTypeInfo)type_info, location);
+                        return new MonoStringObject (this, location);
                 }
+
+		public override MonoObject GetObject (TargetLocation location)
+		{
+			return new MonoStringObject (this, location);
+		}
 	}
 }

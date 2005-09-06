@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
+	internal class MonoFundamentalType : MonoType, IMonoTypeInfo, ITargetFundamentalType
 	{
 		protected readonly Heap Heap;
 		protected readonly int size;
@@ -17,11 +17,9 @@ namespace Mono.Debugger.Languages.Mono
 			this.size = size;
 			this.klass_address = klass;
 			this.Heap = file.MonoLanguage.DataHeap;
-		}
 
-		protected override IMonoTypeInfo CreateTypeInfo ()
-		{
-			return new MonoFundamentalTypeInfo (this, size, klass_address);
+			type_info = this;
+			file.MonoLanguage.AddClass (klass_address, this);
 		}
 
 		public override bool IsByRef {
@@ -107,7 +105,7 @@ namespace Mono.Debugger.Languages.Mono
 			frame.TargetAccess.TargetMemoryAccess.WriteBuffer (
 				location.Address, CreateObject (obj));
 
-			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)type_info, location);
+			return new MonoFundamentalObject (this, location);
 		}
 
 		internal virtual MonoFundamentalObject CreateInstance (ITargetAccess target, object obj)
@@ -115,7 +113,28 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation location = Heap.Allocate (target, size);
 			target.TargetMemoryAccess.WriteBuffer (location.Address, CreateObject (obj));
 
-			return new MonoFundamentalObject ((MonoFundamentalTypeInfo)type_info, location);
+			return new MonoFundamentalObject (this, location);
+		}
+
+		public bool HasFixedSize {
+			get { return FundamentalKind != FundamentalKind.String; }
+		}
+
+		public int Size {
+			get { return size; }
+		}
+
+		ITargetType ITargetTypeInfo.Type {
+			get { return this; }
+		}
+
+		MonoType IMonoTypeInfo.Type {
+			get { return this; }
+		}
+
+		public virtual MonoObject GetObject (TargetLocation location)
+		{
+			return new MonoFundamentalObject (this, location);
 		}
 	}
 }

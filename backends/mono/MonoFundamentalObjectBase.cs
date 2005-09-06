@@ -4,7 +4,7 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
 	{
-		public MonoFundamentalObjectBase (MonoTypeInfo type_info, TargetLocation location)
+		public MonoFundamentalObjectBase (IMonoTypeInfo type_info, TargetLocation location)
 			: base (type_info, location)
 		{ }
 

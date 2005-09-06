@@ -4,9 +4,9 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoStringObject : MonoFundamentalObjectBase
 	{
-		new MonoStringTypeInfo type;
+		new MonoStringType type;
 
-		public MonoStringObject (MonoStringTypeInfo type, TargetLocation location)
+		public MonoStringObject (MonoStringType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected override int MaximumDynamicSize {
 			get {
-				return MonoStringTypeInfo.MaximumStringLength;
+				return MonoStringType.MaximumStringLength;
 			}
 		}
 
@@ -22,9 +22,9 @@ namespace Mono.Debugger.Languages.Mono
 							out TargetLocation dynamic_location)
 		{
 			TargetBinaryReader reader = blob.GetReader ();
-			reader.Position = type.LengthOffset;
-			dynamic_location = location.GetLocationAtOffset (type.DataOffset, false);
-			return reader.ReadInteger (type.LengthSize) * 2;
+			reader.Position = type.ObjectSize;
+			dynamic_location = location.GetLocationAtOffset (type.ObjectSize + 4, false);
+			return reader.ReadInteger (4) * 2;
 		}
 
 		protected override object GetObject (TargetBlob blob, TargetLocation location)

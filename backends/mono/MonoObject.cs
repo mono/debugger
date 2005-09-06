@@ -4,11 +4,11 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoObject : MarshalByRefObject, ITargetObject
 	{
-		protected MonoTypeInfo type_info;
+		protected IMonoTypeInfo type_info;
 		protected TargetLocation location;
 		protected bool is_valid;
 
-		public MonoObject (MonoTypeInfo type_info, TargetLocation location)
+		public MonoObject (IMonoTypeInfo type_info, TargetLocation location)
 		{
 			this.type_info = type_info;
 			this.location = location;

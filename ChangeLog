@@ -1,3 +1,18 @@
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono/MonoFundamentalType.cs (MonoFundamentalType):
+	Implement IMonoTypeInfo and merged with MonoFundamentalTypeInfo.
+
+	* backends/mono/MonoStringType.cs (MonoStringType):
+	Implement IMonoTypeInfo and merged with MonoStringTypeInfo.
+
+	* backends/mono/MonoObjectType.cs (MonoObjectType):
+	Implement IMonoTypeInfo and merged with MonoObjectTypeInfo.
+
+	* backends/mono/MonoFundamentalTypeInfo.cs: Removed.
+	* backends/mono/MonoStringTypeInfo.cs: Removed.
+	* backends/mono/MonoObjectTypeInfo.cs: Removed.
+
 2005-09-06  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono/MonoTypeInfo.cs

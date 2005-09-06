@@ -50,10 +50,6 @@ namespace Mono.Debugger.Languages.Mono
 			if (type_info != null)
 				return type_info;
 
-			type_info = CreateTypeInfo ();
-			if (type_info != null)
-				return type_info;
-
 			TargetBinaryReader info = file.GetTypeInfo (this);
 			if (info == null)
 				return null;
@@ -66,25 +62,11 @@ namespace Mono.Debugger.Languages.Mono
 			return type_info;
 		}
 
-		protected virtual IMonoTypeInfo CreateTypeInfo ()
-		{
-			return null;
-		}
-
 		protected abstract IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info);
 
 		public virtual bool CheckValid (TargetLocation location)
 		{
 			return !location.HasAddress || !location.Address.IsNull;
-		}
-
-		public MonoObject GetObject (TargetLocation location)
-		{
-			IMonoTypeInfo tinfo = GetTypeInfo ();
-			if (tinfo == null)
-				return null;
-
-			return tinfo.GetObject (location);
 		}
 
 		public override string ToString ()

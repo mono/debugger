@@ -4,9 +4,9 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFundamentalObject : MonoFundamentalObjectBase
 	{
-		new MonoFundamentalTypeInfo type;
+		new MonoFundamentalType type;
 
-		public MonoFundamentalObject (MonoFundamentalTypeInfo type, TargetLocation location)
+		public MonoFundamentalObject (MonoFundamentalType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected override object GetObject (TargetBlob blob, TargetLocation locaction)
 		{
-			switch (type.Type.FundamentalKind) {
+			switch (type.FundamentalKind) {
 			case FundamentalKind.Boolean:
 				return blob.Contents [0] != 0;
 
