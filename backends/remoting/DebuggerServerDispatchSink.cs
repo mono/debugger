@@ -34,6 +34,7 @@ namespace Mono.Debugger.Remoting
 			try {
 				sink_stack.AsyncProcessResponse (msg, response_headers, stream);
 			} catch (Exception ex) {
+				// FIXME: Bug #76001
 				Console.WriteLine (ex);
 				throw;
 			}
