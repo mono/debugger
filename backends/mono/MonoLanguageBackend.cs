@@ -127,73 +127,91 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress klass = mono_defaults.ReadGlobalAddress ();
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
-			ObjectType = new MonoObjectType (corlib, typeof (object), object_size, klass);
+			Type object_type = corlib.Assembly.GetType ("System.Object");
+			ObjectType = new MonoObjectType (corlib, object_type, object_size, klass);
 			corlib.AddCoreType (ObjectType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			ByteType = new MonoFundamentalType (corlib, typeof (byte), 1, klass);
+			Type byte_type = corlib.Assembly.GetType ("System.Byte");
+			ByteType = new MonoFundamentalType (
+				corlib, byte_type, FundamentalKind.Byte, 1, klass);
 			corlib.AddCoreType (ByteType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			VoidType = new MonoOpaqueType (corlib, typeof (void));
+			Type void_type = corlib.Assembly.GetType ("System.Void");
+			VoidType = new MonoOpaqueType (corlib, void_type);
 			corlib.AddCoreType (VoidType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			BooleanType = new MonoFundamentalType (corlib, typeof (bool), 1, klass);
+			Type bool_type = corlib.Assembly.GetType ("System.Boolean");
+			BooleanType = new MonoFundamentalType (corlib, bool_type, FundamentalKind.Byte, 1, klass);
 			corlib.AddCoreType (BooleanType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			SByteType = new MonoFundamentalType (corlib, typeof (sbyte), 1, klass);
+			Type sbyte_type = corlib.Assembly.GetType ("System.SByte");
+			SByteType = new MonoFundamentalType (corlib, sbyte_type, FundamentalKind.SByte, 1, klass);
 			corlib.AddCoreType (SByteType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Int16Type = new MonoFundamentalType (corlib, typeof (short), 2, klass);
+			Type short_type = corlib.Assembly.GetType ("System.Int16");
+			Int16Type = new MonoFundamentalType (corlib, short_type, FundamentalKind.Int16, 2, klass);
 			corlib.AddCoreType (Int16Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			UInt16Type = new MonoFundamentalType (corlib, typeof (ushort), 2, klass);
+			Type ushort_type = corlib.Assembly.GetType ("System.UInt16");
+			UInt16Type = new MonoFundamentalType (corlib, ushort_type, FundamentalKind.UInt16, 2, klass);
 			corlib.AddCoreType (UInt16Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Int32Type = new MonoFundamentalType (corlib, typeof (int), 4, klass);
+			Type int_type = corlib.Assembly.GetType ("System.Int32");
+			Int32Type = new MonoFundamentalType (corlib, int_type, FundamentalKind.Int32, 4, klass);
 			Int32Type.GetTypeInfo ();
 			corlib.AddCoreType (Int32Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			UInt32Type = new MonoFundamentalType (corlib, typeof (uint), 4, klass);
+			Type uint_type = corlib.Assembly.GetType ("System.UInt32");
+			UInt32Type = new MonoFundamentalType (corlib, uint_type, FundamentalKind.UInt32, 4, klass);
 			corlib.AddCoreType (UInt32Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			IntType = new MonoFundamentalType (corlib, typeof (IntPtr), 4, klass);
+			Type intptr_type = corlib.Assembly.GetType ("System.IntPtr");
+			IntType = new MonoFundamentalType (corlib, intptr_type, FundamentalKind.IntPtr, 4, klass);
 			corlib.AddCoreType (IntType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			UIntType = new MonoFundamentalType (corlib, typeof (UIntPtr), 4, klass);
+			Type uintptr_type = corlib.Assembly.GetType ("System.UIntPtr");
+			UIntType = new MonoFundamentalType (corlib, uintptr_type, FundamentalKind.UIntPtr, 4, klass);
 			corlib.AddCoreType (UIntType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Int64Type = new MonoFundamentalType (corlib, typeof (long), 8, klass);
+			Type long_type = corlib.Assembly.GetType ("System.Int64");
+			Int64Type = new MonoFundamentalType (corlib, long_type, FundamentalKind.Int64, 8, klass);
 			corlib.AddCoreType (Int64Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			UInt64Type = new MonoFundamentalType (corlib, typeof (ulong), 8, klass);
+			Type ulong_type = corlib.Assembly.GetType ("System.UInt64");
+			UInt64Type = new MonoFundamentalType (corlib, ulong_type, FundamentalKind.UInt64, 8, klass);
 			corlib.AddCoreType (UInt64Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			SingleType = new MonoFundamentalType (corlib, typeof (float), 4, klass);
+			Type float_type = corlib.Assembly.GetType ("System.Single");
+			SingleType = new MonoFundamentalType (corlib, float_type, FundamentalKind.Single, 4, klass);
 			corlib.AddCoreType (SingleType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			DoubleType = new MonoFundamentalType (corlib, typeof (double), 8, klass);
+			Type double_type = corlib.Assembly.GetType ("System.Double");
+			DoubleType = new MonoFundamentalType (corlib, double_type, FundamentalKind.Double, 8, klass);
 			corlib.AddCoreType (DoubleType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			CharType = new MonoFundamentalType (corlib, typeof (char), 2, klass);
+			Type char_type = corlib.Assembly.GetType ("System.Char");
+			CharType = new MonoFundamentalType (corlib, char_type, FundamentalKind.Char, 2, klass);
 			corlib.AddCoreType (CharType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
+			Type string_type = corlib.Assembly.GetType ("System.String");
 			StringType = new MonoStringType (
-				corlib, typeof (string), object_size, object_size + 4, klass);
+				corlib, string_type, object_size, object_size + 4, klass);
 			corlib.AddCoreType (StringType);
 
 			// Skip a whole bunch of clases we don't care about
@@ -201,7 +219,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			// and get to the Exception class
 			klass = mono_defaults.ReadGlobalAddress ();
-			ExceptionType = new MonoClassType (corlib, typeof (Exception));
+			Type exception_type = corlib.Assembly.GetType ("System.Exception");
+			ExceptionType = new MonoClassType (corlib, exception_type);
 			corlib.AddCoreType (ExceptionType);
 		}
 	}

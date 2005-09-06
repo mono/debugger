@@ -61,41 +61,41 @@ namespace Mono.Debugger.Languages.Native
 
 		protected object GetObject (TargetBlob blob, TargetLocation locaction)
 		{
-			switch (((NativeFundamentalType) type_info.Type).TypeCode) {
-			case TypeCode.Boolean:
+			switch (((NativeFundamentalType) type_info.Type).FundamentalKind) {
+			case FundamentalKind.Boolean:
 				return blob.Contents [0] != 0;
 
-			case TypeCode.Char:
+			case FundamentalKind.Char:
 				return BitConverter.ToChar (blob.Contents, 0);
 
-			case TypeCode.SByte:
+			case FundamentalKind.SByte:
 				return (sbyte) blob.Contents [0];
 
-			case TypeCode.Byte:
+			case FundamentalKind.Byte:
 				return (byte) blob.Contents [0];
 
-			case TypeCode.Int16:
+			case FundamentalKind.Int16:
 				return BitConverter.ToInt16 (blob.Contents, 0);
 
-			case TypeCode.UInt16:
+			case FundamentalKind.UInt16:
 				return BitConverter.ToUInt16 (blob.Contents, 0);
 
-			case TypeCode.Int32:
+			case FundamentalKind.Int32:
 				return BitConverter.ToInt32 (blob.Contents, 0);
 
-			case TypeCode.UInt32:
+			case FundamentalKind.UInt32:
 				return BitConverter.ToUInt32 (blob.Contents, 0);
 
-			case TypeCode.Int64:
+			case FundamentalKind.Int64:
 				return BitConverter.ToInt64 (blob.Contents, 0);
 
-			case TypeCode.UInt64:
+			case FundamentalKind.UInt64:
 				return BitConverter.ToUInt64 (blob.Contents, 0);
 
-			case TypeCode.Single:
+			case FundamentalKind.Single:
 				return BitConverter.ToSingle (blob.Contents, 0);
 
-			case TypeCode.Double:
+			case FundamentalKind.Double:
 				return BitConverter.ToDouble (blob.Contents, 0);
 
 			default:
@@ -105,41 +105,41 @@ namespace Mono.Debugger.Languages.Native
 
 		protected byte[] CreateObject (object obj)
 		{
-			switch (((NativeFundamentalType) type_info.Type).TypeCode) {
-			case TypeCode.Boolean:
+			switch (((NativeFundamentalType) type_info.Type).FundamentalKind) {
+			case FundamentalKind.Boolean:
 				return BitConverter.GetBytes (Convert.ToBoolean (obj));
 
-			case TypeCode.Char:
+			case FundamentalKind.Char:
 				return BitConverter.GetBytes (Convert.ToChar (obj));
 
-			case TypeCode.SByte:
+			case FundamentalKind.SByte:
 				return BitConverter.GetBytes (Convert.ToSByte (obj));
 
-			case TypeCode.Byte:
+			case FundamentalKind.Byte:
 				return BitConverter.GetBytes (Convert.ToByte (obj));
 
-			case TypeCode.Int16:
+			case FundamentalKind.Int16:
 				return BitConverter.GetBytes (Convert.ToInt16 (obj));
 
-			case TypeCode.UInt16:
+			case FundamentalKind.UInt16:
 				return BitConverter.GetBytes (Convert.ToUInt16 (obj));
 
-			case TypeCode.Int32:
+			case FundamentalKind.Int32:
 				return BitConverter.GetBytes (Convert.ToInt32 (obj));
 
-			case TypeCode.UInt32:
+			case FundamentalKind.UInt32:
 				return BitConverter.GetBytes (Convert.ToUInt32 (obj));
 
-			case TypeCode.Int64:
+			case FundamentalKind.Int64:
 				return BitConverter.GetBytes (Convert.ToInt64 (obj));
 
-			case TypeCode.UInt64:
+			case FundamentalKind.UInt64:
 				return BitConverter.GetBytes (Convert.ToUInt64 (obj));
 
-			case TypeCode.Single:
+			case FundamentalKind.Single:
 				return BitConverter.GetBytes (Convert.ToSingle (obj));
 
-			case TypeCode.Double:
+			case FundamentalKind.Double:
 				return BitConverter.GetBytes (Convert.ToDouble (obj));
 
 			default:

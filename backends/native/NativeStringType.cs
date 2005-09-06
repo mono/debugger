@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.Native
 		static int max_string_length = 100;
 
 		public NativeStringType (int size)
-			: base ("char *", typeof (string), size)
+			: base ("char *", FundamentalKind.String, size)
 		{ }
 
 		public override bool IsByRef {

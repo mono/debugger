@@ -1031,7 +1031,7 @@ namespace Mono.Debugger.Frontend
 
 			switch (type.Type.Kind) {
 			case TargetObjectKind.Fundamental:
-				sb.Append (((ITargetFundamentalType) type.Type).Type);
+				sb.Append (((ITargetFundamentalType) type.Type).FundamentalKind);
 				break;
 
 			case TargetObjectKind.Pointer: {

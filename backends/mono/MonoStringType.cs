@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoStringType (MonoSymbolFile file, Type type, int object_size,
 				       int size, TargetAddress klass)
-			: base (file, type, size, klass)
+			: base (file, type, FundamentalKind.String, size, klass)
 		{
 			this.object_size = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
@@ -23,11 +23,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool IsByRef {
 			get { return true; }
-		}
-
-		new public static bool Supports (Type type)
-		{
-			return type == typeof (string);
 		}
 
 		protected override MonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)

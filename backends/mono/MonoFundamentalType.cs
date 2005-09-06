@@ -7,10 +7,13 @@ namespace Mono.Debugger.Languages.Mono
 		protected readonly Heap Heap;
 		protected readonly int size;
 		protected readonly TargetAddress klass_address;
+		protected readonly FundamentalKind fundamental_kind;
 
-		public MonoFundamentalType (MonoSymbolFile file, Type type, int size, TargetAddress klass)
+		public MonoFundamentalType (MonoSymbolFile file, Type type,
+					    FundamentalKind kind, int size, TargetAddress klass)
 			: base (file, TargetObjectKind.Fundamental, type)
 		{
+			this.fundamental_kind = kind;
 			this.size = size;
 			this.klass_address = klass;
 			this.Heap = file.MonoLanguage.DataHeap;
@@ -22,43 +25,23 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool IsByRef {
-			get { return type.IsByRef; }
-		}
+			get {
+				switch (fundamental_kind) {
+				case FundamentalKind.Object:
+				case FundamentalKind.String:
+				case FundamentalKind.IntPtr:
+				case FundamentalKind.UIntPtr:
+					return true;
 
-		public static bool Supports (Type type)
-		{
-			if (type.IsByRef)
-				type = type.GetElementType ();
-
-			if (!type.IsPrimitive)
-				return false;
-
-			if ((type == typeof (IntPtr)) || (type == typeof (UIntPtr)))
-				return true;
-
-			switch (Type.GetTypeCode (type)) {
-			case TypeCode.Boolean:
-			case TypeCode.Char:
-			case TypeCode.SByte:
-			case TypeCode.Byte:
-			case TypeCode.Int16:
-			case TypeCode.UInt16:
-			case TypeCode.Int32:
-			case TypeCode.UInt32:
-			case TypeCode.Int64:
-			case TypeCode.UInt64:
-			case TypeCode.Single:
-			case TypeCode.Double:
-				return true;
-
-			default:
-				return false;
+				default:
+					return false;
+				}
 			}
 		}
 
-		Type ITargetFundamentalType.Type {
+		public FundamentalKind FundamentalKind {
 			get {
-				return type;
+				return fundamental_kind;
 			}
 		}
 
@@ -69,52 +52,52 @@ namespace Mono.Debugger.Languages.Mono
 
 		public virtual byte[] CreateObject (object obj)
 		{
-			switch (System.Type.GetTypeCode (type)) {
-			case TypeCode.Boolean:
+			switch (fundamental_kind) {
+			case FundamentalKind.Boolean:
 				return BitConverter.GetBytes (Convert.ToBoolean (obj));
 
-			case TypeCode.Char:
+			case FundamentalKind.Char:
 				return BitConverter.GetBytes (Convert.ToChar (obj));
 
-			case TypeCode.SByte:
+			case FundamentalKind.SByte:
 				return BitConverter.GetBytes (Convert.ToSByte (obj));
 
-			case TypeCode.Byte:
+			case FundamentalKind.Byte:
 				return BitConverter.GetBytes (Convert.ToByte (obj));
 
-			case TypeCode.Int16:
+			case FundamentalKind.Int16:
 				return BitConverter.GetBytes (Convert.ToInt16 (obj));
 
-			case TypeCode.UInt16:
+			case FundamentalKind.UInt16:
 				return BitConverter.GetBytes (Convert.ToUInt16 (obj));
 
-			case TypeCode.Int32:
+			case FundamentalKind.Int32:
 				return BitConverter.GetBytes (Convert.ToInt32 (obj));
 
-			case TypeCode.UInt32:
+			case FundamentalKind.UInt32:
 				return BitConverter.GetBytes (Convert.ToUInt32 (obj));
 
-			case TypeCode.Int64:
+			case FundamentalKind.Int64:
 				return BitConverter.GetBytes (Convert.ToInt64 (obj));
 
-			case TypeCode.UInt64:
+			case FundamentalKind.UInt64:
 				return BitConverter.GetBytes (Convert.ToUInt64 (obj));
 
-			case TypeCode.Single:
+			case FundamentalKind.Single:
 				return BitConverter.GetBytes (Convert.ToSingle (obj));
 
-			case TypeCode.Double:
+			case FundamentalKind.Double:
 				return BitConverter.GetBytes (Convert.ToDouble (obj));
 
+			case FundamentalKind.IntPtr:
+			case FundamentalKind.UIntPtr:
+				IntPtr ptr = (IntPtr) obj;
+				if (IntPtr.Size == 4)
+					return BitConverter.GetBytes (ptr.ToInt32 ());
+				else
+					return BitConverter.GetBytes (ptr.ToInt64 ());
 			default:
-				if (type == typeof (IntPtr)) {
-					IntPtr ptr = (IntPtr) obj;
-					if (IntPtr.Size == 4)
-						return BitConverter.GetBytes (ptr.ToInt32 ());
-					else
-						return BitConverter.GetBytes (ptr.ToInt64 ());
-				}
-				throw new ArgumentException ();
+				throw new InvalidOperationException ();
 			}
 		}
 

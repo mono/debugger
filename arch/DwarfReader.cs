@@ -2739,7 +2739,7 @@ namespace Mono.Debugger.Architecture
 		{
 			int byte_size;
 			int encoding;
-			Type mono_type;
+			FundamentalKind kind;
 
 			public DieBaseType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					    long offset, AbbrevEntry abbrev)
@@ -2765,59 +2765,56 @@ namespace Mono.Debugger.Architecture
 
 			protected override NativeType CreateType ()
 			{
-				mono_type = GetMonoType (
+				kind = GetMonoType (
 					(DwarfBaseTypeEncoding) encoding, byte_size);
 
-				if (mono_type == null)
+				if (kind == FundamentalKind.Unknown)
 					return new NativeOpaqueType (Name, byte_size);
 
-				return new NativeFundamentalType (Name, mono_type, byte_size);
+				return new NativeFundamentalType (Name, kind, byte_size);
 			}
 
-			protected Type GetMonoType (DwarfBaseTypeEncoding encoding, int byte_size)
+			protected FundamentalKind GetMonoType (DwarfBaseTypeEncoding encoding,
+							       int byte_size)
 			{
 				switch (encoding) {
 				case DwarfBaseTypeEncoding.signed:
 					if (byte_size == 1)
-						return typeof (sbyte);
+						return FundamentalKind.SByte;
 					else if (byte_size == 2)
-						return typeof (short);
+						return FundamentalKind.Int16;
 					else if (byte_size <= 4)
-						return typeof (int);
+						return FundamentalKind.Int32;
 					else if (byte_size <= 8)
-						return typeof (long);
+						return FundamentalKind.Int64;
 					break;
 
 				case DwarfBaseTypeEncoding.unsigned:
 					if (byte_size == 1)
-						return typeof (byte);
+						return FundamentalKind.Byte;
 					else if (byte_size == 2)
-						return typeof (ushort);
+						return FundamentalKind.UInt16;
 					else if (byte_size <= 4)
-						return typeof (uint);
+						return FundamentalKind.UInt32;
 					else if (byte_size <= 8)
-						return typeof (ulong);
+						return FundamentalKind.UInt64;
 					break;
 
 				case DwarfBaseTypeEncoding.signed_char:
 				case DwarfBaseTypeEncoding.unsigned_char:
 					if (byte_size <= 2)
-						return typeof (char);
+						return FundamentalKind.Char;
 					break;
 
 				case DwarfBaseTypeEncoding.normal_float:
 					if (byte_size <= 4)
-						return typeof (float);
+						return FundamentalKind.Single;
 					else if (byte_size <= 8)
-						return typeof (double);
+						return FundamentalKind.Double;
 					break;
 				}
 
-				return null;
-			}
-
-			public Type MonoType {
-				get { return mono_type; }
+				return FundamentalKind.Unknown;
 			}
 		}
 
@@ -2863,8 +2860,9 @@ namespace Mono.Debugger.Architecture
 				if (ref_type == null)
 					return null;
 
-				if ((ref_type is NativeFundamentalType) &&
-				    (((NativeFundamentalType) ref_type).TypeCode == TypeCode.Char))
+				NativeFundamentalType fundamental = ref_type as NativeFundamentalType;
+				if ((fundamental != null) &&
+				    (fundamental.FundamentalKind == FundamentalKind.Char))
 					return new NativeStringType (byte_size);
 
 				string name;

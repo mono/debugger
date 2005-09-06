@@ -4,29 +4,32 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeFundamentalType : NativeType, ITargetFundamentalType
 	{
-		Type type;
+		FundamentalKind fundamental_kind;
 
-		public NativeFundamentalType (string name, Type type, int size)
+		public NativeFundamentalType (string name, FundamentalKind kind, int size)
 			: base (name, TargetObjectKind.Fundamental, size)
 		{
-			this.type = type;
+			this.fundamental_kind = kind;
 		}
 
 		public override bool IsByRef {
 			get {
-				return type.IsByRef;
+				switch (fundamental_kind) {
+				case FundamentalKind.Object:
+				case FundamentalKind.String:
+				case FundamentalKind.IntPtr:
+				case FundamentalKind.UIntPtr:
+					return true;
+
+				default:
+					return false;
+				}
 			}
 		}
 
-		public Type Type {
+		public FundamentalKind FundamentalKind {
 			get {
-				return type;
-			}
-		}
-
-		public TypeCode TypeCode {
-			get {
-				return Type.GetTypeCode (type);
+				return fundamental_kind;
 			}
 		}
 

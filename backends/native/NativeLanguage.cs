@@ -16,8 +16,8 @@ namespace Mono.Debugger.Languages.Native
 		{
 			this.bfd_container = bfd_container;
 
-			integer_type = new NativeFundamentalType ("int", typeof (int), Marshal.SizeOf (typeof (int)));
-			long_type = new NativeFundamentalType ("long", typeof (long), Marshal.SizeOf (typeof (long)));
+			integer_type = new NativeFundamentalType ("int", FundamentalKind.Int32, 4);
+			long_type = new NativeFundamentalType ("long", FundamentalKind.Int64, 8);
 			pointer_type = new NativePointerType ("void *", info.TargetAddressSize);
 		}
 

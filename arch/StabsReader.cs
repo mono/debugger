@@ -65,19 +65,19 @@ namespace Mono.Debugger.Architecture
 			types = new Hashtable ();
 
 			string_type = new NativeStringType (0);
-			char_type = RegisterFundamental ("char", typeof (byte), 1);
-			RegisterFundamental ("int", typeof (int), 4);
-			RegisterFundamental ("long int", typeof (int), 4);
-			RegisterFundamental ("unsigned int", typeof (uint), 4);
-			RegisterFundamental ("long unsigned int", typeof (uint), 4);
-			RegisterFundamental ("long long int", typeof (long), 4);
-			RegisterFundamental ("long long unsigned int", typeof (ulong), 8);
-			RegisterFundamental ("short int", typeof (short), 2);
-			RegisterFundamental ("short unsigned int", typeof (ushort), 2);
-			RegisterFundamental ("signed char", typeof (sbyte), 1);
-			RegisterFundamental ("unsigned char", typeof (byte), 1);
-			float_type = RegisterFundamental ("float", typeof (float), 4);
-			double_type = RegisterFundamental ("double", typeof (double), 8);
+			char_type = RegisterFundamental ("char", FundamentalKind.Byte, 1);
+			RegisterFundamental ("int", FundamentalKind.Int32, 4);
+			RegisterFundamental ("long int", FundamentalKind.Int32, 4);
+			RegisterFundamental ("unsigned int", FundamentalKind.UInt32, 4);
+			RegisterFundamental ("long unsigned int", FundamentalKind.UInt32, 4);
+			RegisterFundamental ("long long int", FundamentalKind.Int64, 4);
+			RegisterFundamental ("long long unsigned int", FundamentalKind.UInt64, 8);
+			RegisterFundamental ("short int", FundamentalKind.Int16, 2);
+			RegisterFundamental ("short unsigned int", FundamentalKind.UInt16, 2);
+			RegisterFundamental ("signed char", FundamentalKind.SByte, 1);
+			RegisterFundamental ("unsigned char", FundamentalKind.Byte, 1);
+			float_type = RegisterFundamental ("float", FundamentalKind.Single, 4);
+			double_type = RegisterFundamental ("double", FundamentalKind.Double, 8);
 
 			files = new ArrayList ();
 			methods = new ArrayList ();
@@ -98,10 +98,9 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		NativeFundamentalType RegisterFundamental (string name, Type type, int size)
+		NativeFundamentalType RegisterFundamental (string name, FundamentalKind kind, int size)
 		{
-			NativeFundamentalType native = new NativeFundamentalType (
-				name, type, size);
+			NativeFundamentalType native = new NativeFundamentalType (name, kind, size);
 			types.Add (name, native);
 			return native;
 		}
