@@ -1,41 +1,41 @@
 using System;
 using System.Collections;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
 		MonoClassType klass;
-		R.MethodBase method_info;
+		Cecil.IMethodDefinition method_info;
 		MonoType return_type;
 		MonoType[] parameter_types;
 		bool has_return_type;
 		int token;
 
-		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass, R.MethodBase mbase)
-			: base (file, TargetObjectKind.Function, mbase.ReflectedType)
+		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass,
+					 Cecil.IMethodDefinition mdef)
+			: base (file, TargetObjectKind.Function, mdef.DeclaringType)
 		{
 			this.klass = klass;
-			this.method_info = mbase;
-			this.token = MonoDebuggerSupport.GetMethodToken (mbase);
+			this.method_info = mdef;
+			this.token = MonoDebuggerSupport.GetMethodToken (mdef);
 
-			Type rtype;
-			if (mbase is R.ConstructorInfo) {
-				rtype = mbase.DeclaringType;
+			Cecil.ITypeReference rtype;
+			if (mdef.IsConstructor) {
+				rtype = mdef.DeclaringType;
 				has_return_type = true;
 			} else {
-				rtype = ((R.MethodInfo) mbase).ReturnType;
-				has_return_type = rtype != typeof (void);
+				rtype = mdef.ReturnType.ReturnType;
+				has_return_type = rtype != null;
 			}
 			return_type = file.MonoLanguage.LookupMonoType (rtype);
 
-			R.ParameterInfo[] pinfo = mbase.GetParameters ();
-			parameter_types = new MonoType [pinfo.Length];
-			for (int i = 0; i < parameter_types.Length; i++)
+			parameter_types = new MonoType [mdef.Parameters.Count];
+			for (int i = 0; i < mdef.Parameters.Count; i++)
 				parameter_types [i] = file.MonoLanguage.LookupMonoType (
-					pinfo [i].ParameterType);
+					mdef.Parameters[i].ParameterType);
 		}
 
 		public override bool IsByRef {

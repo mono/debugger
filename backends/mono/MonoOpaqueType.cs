@@ -1,11 +1,12 @@
 using System;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoOpaqueType : MonoType
 	{
-		public MonoOpaqueType (MonoSymbolFile file, Type type)
-			: base (file, TargetObjectKind.Opaque, type)
+		public MonoOpaqueType (MonoSymbolFile file, Cecil.ITypeReference typeref)
+			: base (file, TargetObjectKind.Opaque, typeref)
 		{ }
 
 		public override bool IsByRef {

@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -24,13 +25,13 @@ namespace Mono.Debugger.Languages.Mono
 		protected MonoType element_type;
 		protected MonoArrayType subarray_type;
 
-		public MonoArrayType (MonoSymbolFile file, Type type)
+		public MonoArrayType (MonoSymbolFile file, Cecil.IArrayType type)
 			: base (file, TargetObjectKind.Array, type)
 		{
-			this.Rank = type.GetArrayRank ();
+			this.Rank = type.Rank;
 			this.Dimension = 0;
 
-			element_type = file.MonoLanguage.LookupMonoType (type.GetElementType ());
+			element_type = file.LookupMonoType (type.ElementType);
 
 			if (Dimension + 1 < Rank)
 				subarray_type = new MonoArrayType (this);

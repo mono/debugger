@@ -63,7 +63,8 @@ MDB_SERVER_SRCLIST = \
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions	\
 	-r:Mono.CompilerServices.SymbolWriter	\
-	-r:System.Runtime.Remoting
+	-r:System.Runtime.Remoting		\
+	-r:Mono.Cecil
 
 MDB_DEPS = \
 	-r:Mono.GetOptions	\

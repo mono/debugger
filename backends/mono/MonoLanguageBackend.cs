@@ -1,11 +1,11 @@
 using System;
 using System.IO;
 using System.Text;
-using R = System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
+using R = System.Reflection;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Architecture;
@@ -127,89 +127,88 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress klass = mono_defaults.ReadGlobalAddress ();
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
-			Type object_type = corlib.Assembly.GetType ("System.Object");
+			Cecil.ITypeDefinition object_type = corlib.Module.Types ["System.Object"];
 			ObjectType = new MonoObjectType (corlib, object_type, object_size, klass);
 			corlib.AddCoreType (ObjectType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type byte_type = corlib.Assembly.GetType ("System.Byte");
-			ByteType = new MonoFundamentalType (
-				corlib, byte_type, FundamentalKind.Byte, 1, klass);
+			Cecil.ITypeDefinition byte_type = corlib.Module.Types ["System.Byte"];
+			ByteType = new MonoFundamentalType (corlib, byte_type, FundamentalKind.Byte, 1, klass);
 			corlib.AddCoreType (ByteType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type void_type = corlib.Assembly.GetType ("System.Void");
+			Cecil.ITypeDefinition void_type = corlib.Module.Types ["System.Void"];
 			VoidType = new MonoOpaqueType (corlib, void_type);
 			corlib.AddCoreType (VoidType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type bool_type = corlib.Assembly.GetType ("System.Boolean");
+			Cecil.ITypeDefinition bool_type = corlib.Module.Types ["System.Boolean"];
 			BooleanType = new MonoFundamentalType (corlib, bool_type, FundamentalKind.Byte, 1, klass);
 			corlib.AddCoreType (BooleanType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type sbyte_type = corlib.Assembly.GetType ("System.SByte");
+			Cecil.ITypeDefinition sbyte_type = corlib.Module.Types ["System.SByte"];
 			SByteType = new MonoFundamentalType (corlib, sbyte_type, FundamentalKind.SByte, 1, klass);
 			corlib.AddCoreType (SByteType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type short_type = corlib.Assembly.GetType ("System.Int16");
+			Cecil.ITypeDefinition short_type = corlib.Module.Types ["System.Int16"];
 			Int16Type = new MonoFundamentalType (corlib, short_type, FundamentalKind.Int16, 2, klass);
 			corlib.AddCoreType (Int16Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type ushort_type = corlib.Assembly.GetType ("System.UInt16");
+			Cecil.ITypeDefinition ushort_type = corlib.Module.Types ["System.UInt16"];
 			UInt16Type = new MonoFundamentalType (corlib, ushort_type, FundamentalKind.UInt16, 2, klass);
 			corlib.AddCoreType (UInt16Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type int_type = corlib.Assembly.GetType ("System.Int32");
+			Cecil.ITypeDefinition int_type = corlib.Module.Types ["System.Int32"];
 			Int32Type = new MonoFundamentalType (corlib, int_type, FundamentalKind.Int32, 4, klass);
 			Int32Type.GetTypeInfo ();
 			corlib.AddCoreType (Int32Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type uint_type = corlib.Assembly.GetType ("System.UInt32");
+			Cecil.ITypeDefinition uint_type = corlib.Module.Types ["System.UInt32"];
 			UInt32Type = new MonoFundamentalType (corlib, uint_type, FundamentalKind.UInt32, 4, klass);
 			corlib.AddCoreType (UInt32Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type intptr_type = corlib.Assembly.GetType ("System.IntPtr");
+			Cecil.ITypeDefinition intptr_type = corlib.Module.Types ["System.IntPtr"];
 			IntType = new MonoFundamentalType (corlib, intptr_type, FundamentalKind.IntPtr, 4, klass);
 			corlib.AddCoreType (IntType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type uintptr_type = corlib.Assembly.GetType ("System.UIntPtr");
-			UIntType = new MonoFundamentalType (corlib, uintptr_type, FundamentalKind.UIntPtr, 4, klass);
+			Cecil.ITypeDefinition uintptr_type = corlib.Module.Types ["System.UIntPtr"];
+			UIntType = new MonoFundamentalType (corlib, uintptr_type, FundamentalKind.Object, 4, klass);
 			corlib.AddCoreType (UIntType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type long_type = corlib.Assembly.GetType ("System.Int64");
+			Cecil.ITypeDefinition long_type = corlib.Module.Types ["System.Int64"];
 			Int64Type = new MonoFundamentalType (corlib, long_type, FundamentalKind.Int64, 8, klass);
 			corlib.AddCoreType (Int64Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type ulong_type = corlib.Assembly.GetType ("System.UInt64");
+			Cecil.ITypeDefinition ulong_type = corlib.Module.Types ["System.UInt64"];
 			UInt64Type = new MonoFundamentalType (corlib, ulong_type, FundamentalKind.UInt64, 8, klass);
 			corlib.AddCoreType (UInt64Type);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type float_type = corlib.Assembly.GetType ("System.Single");
+			Cecil.ITypeDefinition float_type = corlib.Module.Types ["System.Single"];
 			SingleType = new MonoFundamentalType (corlib, float_type, FundamentalKind.Single, 4, klass);
 			corlib.AddCoreType (SingleType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type double_type = corlib.Assembly.GetType ("System.Double");
+			Cecil.ITypeDefinition double_type = corlib.Module.Types ["System.Double"];
 			DoubleType = new MonoFundamentalType (corlib, double_type, FundamentalKind.Double, 8, klass);
 			corlib.AddCoreType (DoubleType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type char_type = corlib.Assembly.GetType ("System.Char");
+			Cecil.ITypeDefinition char_type = corlib.Module.Types ["System.Char"];
 			CharType = new MonoFundamentalType (corlib, char_type, FundamentalKind.Char, 2, klass);
 			corlib.AddCoreType (CharType);
 
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type string_type = corlib.Assembly.GetType ("System.String");
+			Cecil.ITypeDefinition string_type = corlib.Module.Types ["System.String"];
 			StringType = new MonoStringType (
 				corlib, string_type, object_size, object_size + 4, klass);
 			corlib.AddCoreType (StringType);
@@ -219,7 +218,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			// and get to the Exception class
 			klass = mono_defaults.ReadGlobalAddress ();
-			Type exception_type = corlib.Assembly.GetType ("System.Exception");
+			Cecil.ITypeDefinition exception_type = corlib.Module.Types ["System.Exception"];
 			ExceptionType = new MonoClassType (corlib, exception_type);
 			corlib.AddCoreType (ExceptionType);
 		}
@@ -228,22 +227,15 @@ namespace Mono.Debugger.Languages.Mono
 	internal static class MonoDebuggerSupport
 	{
 		static GetTypeFunc get_type;
-		static GetMethodTokenFunc get_method_token;
-		static GetMethodFunc get_method;
 		static GetLocalTypeFromSignatureFunc local_type_from_sig;
 		static GetGuidFunc get_guid;
 		static CheckRuntimeVersionFunc check_runtime_version;
-		static MakeArrayTypeFunc make_array_type;
-		static ResolveTypeFunc resolve_type;
-		static GetTypeTokenFunc get_type_token;
 
 		delegate Type GetTypeFunc (R.Assembly assembly, int token);
-		delegate int GetMethodTokenFunc (R.MethodBase method);
 		delegate R.MethodBase GetMethodFunc (R.Assembly assembly, int token);
 		delegate Type GetLocalTypeFromSignatureFunc (R.Assembly assembly, byte[] sig);
 		delegate Guid GetGuidFunc (R.Module module);
 		delegate string CheckRuntimeVersionFunc (string filename);
-		delegate Type MakeArrayTypeFunc (Type type, int rank);
 		delegate Type ResolveTypeFunc (R.Module module, int token);
 		delegate int GetTypeTokenFunc (Type type);
 
@@ -263,14 +255,6 @@ namespace Mono.Debugger.Languages.Mono
 				typeof (R.Assembly), typeof (GetTypeFunc),
 				"MonoDebugger_GetType");
 
-			get_method_token = (GetMethodTokenFunc) create_delegate (
-				typeof (R.Assembly), typeof (GetMethodTokenFunc),
-				"MonoDebugger_GetMethodToken");
-
-			get_method = (GetMethodFunc) create_delegate (
-				typeof (R.Assembly), typeof (GetMethodFunc),
-				"MonoDebugger_GetMethod");
-
 			local_type_from_sig = (GetLocalTypeFromSignatureFunc) create_delegate (
 				typeof (R.Assembly), typeof (GetLocalTypeFromSignatureFunc),
 				"MonoDebugger_GetLocalTypeFromSignature");
@@ -281,18 +265,6 @@ namespace Mono.Debugger.Languages.Mono
 			check_runtime_version = (CheckRuntimeVersionFunc) create_delegate (
 				typeof (R.Assembly), typeof (CheckRuntimeVersionFunc),
 				"MonoDebugger_CheckRuntimeVersion");
-
-			make_array_type = (MakeArrayTypeFunc) create_delegate (
-				typeof (R.Assembly), typeof (MakeArrayTypeFunc),
-				"MonoDebugger_MakeArrayType");
-
-			resolve_type = (ResolveTypeFunc) create_delegate (
-				typeof (R.Module), typeof (ResolveTypeFunc),
-				"MonoDebugger_ResolveType");
-
-			get_type_token = (GetTypeTokenFunc) create_delegate (
-				typeof (R.Assembly), typeof (GetTypeTokenFunc),
-				"MonoDebugger_GetTypeToken");
 		}
 
 		public static Type GetType (R.Assembly assembly, int token)
@@ -300,14 +272,15 @@ namespace Mono.Debugger.Languages.Mono
 			return get_type (assembly, token);
 		}
 
-		public static int GetMethodToken (R.MethodBase method)
+		public static int GetMethodToken (Cecil.IMethodDefinition method)
 		{
-			return get_method_token (method);
+			return (int) (method.MetadataToken.TokenType + method.MetadataToken.RID);
 		}
 
-		public static R.MethodBase GetMethod (R.Assembly assembly, int token)
+		public static Cecil.IMethodDefinition GetMethod (Cecil.IModuleDefinition module, int token)
 		{
-			return get_method (assembly, token);
+			return (Cecil.IMethodDefinition) module.LookupByToken (
+				Cecil.Metadata.TokenType.Method, token & 0xffffff);
 		}
 
 		public static Type GetLocalTypeFromSignature (R.Assembly assembly, byte[] sig)
@@ -325,19 +298,21 @@ namespace Mono.Debugger.Languages.Mono
 			return get_guid (module);
 		}
 
-		public static Type MakeArrayType (Type type, int rank)
+		public static Cecil.ITypeReference MakeArrayType (Cecil.ITypeReference type, int rank)
 		{
-			return make_array_type (type, rank);
+			/// XXXX - TODO
+			throw new NotImplementedException ();
 		}
 
-		public static Type ResolveType (R.Module module, int token)
+		public static Cecil.ITypeReference ResolveType (Cecil.IModuleDefinition module, int token)
 		{
-			return resolve_type (module, token);
+			return (Cecil.ITypeReference) module.LookupByToken (
+				Cecil.Metadata.TokenType.TypeDef, token);
 		}
 
-		public static int GetTypeToken (Type type)
+		public static int GetTypeToken (Cecil.ITypeReference type)
 		{
-			return get_type_token (type);
+			return (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
 		}
 	}
 
@@ -410,11 +385,12 @@ namespace Mono.Debugger.Languages.Mono
 			return true;
 		}
 
-		public MonoType LookupMonoType (Type type)
+		public MonoType LookupMonoType (Cecil.ITypeReference type)
 		{
-			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [type.Assembly];
+			MonoSymbolFile file = (MonoSymbolFile) assembly_hash [type.Module.Assembly];
 			if (file == null) {
-				Console.WriteLine ("Type `{0}' from unknown assembly `{1}'", type, type.Assembly);
+				Console.WriteLine ("Type `{0}' from unknown assembly `{1}'",
+						   type, type.Module.Assembly);
 				return null;
 			}
 
@@ -772,7 +748,7 @@ namespace Mono.Debugger.Languages.Mono
 			mutex.Unlock ();
 
 			foreach (MonoSymbolFile symfile in symbol_files) {
-				Type type = symfile.Assembly.GetType (name);
+				Cecil.ITypeDefinition type = symfile.Assembly.MainModule.Types [name];
 				if (type == null)
 					continue;
 				return symfile.LookupMonoType (type);
@@ -783,16 +759,20 @@ namespace Mono.Debugger.Languages.Mono
 
 		public bool CanCreateInstance (Type type)
 		{
-			return LookupMonoType (type) != null;
+			return false;
 		}
 
 		public ITargetObject CreateInstance (StackFrame frame, object obj)
 		{
+#if FIXME
 			MonoFundamentalType type = LookupMonoType (obj.GetType ()) as MonoFundamentalType;
 			if (type == null)
 				return null;
 
 			return type.CreateInstance (frame, obj);
+#else
+			throw new NotImplementedException ();
+#endif
 		}
 
 		public ITargetFundamentalObject CreateInstance (ITargetAccess target, int value)

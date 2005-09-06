@@ -1,4 +1,5 @@
 using System;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -7,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 		int size;
 		TargetAddress klass_address;
 
-		public MonoObjectType (MonoSymbolFile file, Type type, int size, TargetAddress klass)
+		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeReference type, int size, TargetAddress klass)
 			: base (file, TargetObjectKind.Pointer, type)
 		{
 			this.size = size;

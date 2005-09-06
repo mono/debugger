@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.Mono
 		protected readonly TargetAddress klass_address;
 		protected readonly FundamentalKind fundamental_kind;
 
-		public MonoFundamentalType (MonoSymbolFile file, Type type,
+		public MonoFundamentalType (MonoSymbolFile file, Cecil.ITypeDefinition type,
 					    FundamentalKind kind, int size, TargetAddress klass)
 			: base (file, TargetObjectKind.Fundamental, type)
 		{
