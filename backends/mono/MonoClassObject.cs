@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			try {
 				ITargetObject retval = func.Invoke (
-					location.TargetAccess, this, args, false);
+					location.TargetAccess, this, args);
 
 				return retval.Print();
 			}

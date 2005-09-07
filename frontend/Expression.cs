@@ -2065,16 +2065,31 @@ namespace Mono.Debugger.Frontend
 			for (int i = 0; i < args.Length; i++)
 				objs [i] = args [i].EvaluateVariable (context);
 
+			ITargetObject instance = mg.InstanceObject;
+
 			try {
-				ITargetObject retval = func.Invoke (
-					context.CurrentFrame.Frame.TargetAccess, mg.InstanceObject,
-					objs, debug);
-				if (!debug && !func.Type.HasReturnValue)
-					throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
+				if (debug) {
+					context.CurrentProcess.RuntimeInvoke (func, instance, objs);
+					return null;
+				}
+
+				string exc_message;
+				ITargetObject retval = context.CurrentProcess.RuntimeInvoke (
+					func, mg.InstanceObject, objs, out exc_message);
+
+				if (exc_message != null)
+					throw new ScriptingException (
+						"Invocation of `{0}' raised an exception: {1}",
+						Name, exc_message);
+
+				if (!func.Type.HasReturnValue)
+					throw new ScriptingException (
+						"Method `{0}' doesn't return a value.", Name);
 
 				return retval;
-			} catch (TargetInvocationException ex) {
-				throw new ScriptingException ("Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
+			} catch (TargetException ex) {
+				throw new ScriptingException (
+					"Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
 			}
 		}
 	}
@@ -2163,7 +2178,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				return ctor.Invoke (
-					frame.Frame.TargetAccess, null, args, debug);
+					frame.Frame.TargetAccess, null, args);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException (
 					"Invocation of type `{0}'s constructor raised an " +

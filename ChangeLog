@@ -1,5 +1,10 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFunctionObject.cs
+	(ITargetFunctionObject.Invoke): Removed the `bool debug' argument.
+
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs
 	(ITargetAccess.RuntimeInvoke): Take an `ITargetFunctionObject'
 	instead of a `TargetAddress'.

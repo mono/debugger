@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
-					     ITargetObject[] args, bool debug)
+					     ITargetObject[] args)
 		{
 			throw new NotSupportedException ();
 		}

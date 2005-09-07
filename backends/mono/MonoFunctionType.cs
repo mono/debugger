@@ -80,15 +80,10 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal ITargetObject Invoke (ITargetAccess target, MonoFunctionObject method,
-					       MonoObject instance, MonoObject[] args, bool debug)
+					       MonoObject instance, MonoObject[] args)
 		{
 			if (ParameterTypes.Length != args.Length)
 				throw new ArgumentException ();
-
-			if (debug) {
-				target.RuntimeInvoke (method, instance, args);
-				return null;
-			}
 
 			string exc_message;
 			ITargetObject retval = target.RuntimeInvoke (

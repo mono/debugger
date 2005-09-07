@@ -440,6 +440,36 @@ namespace Mono.Debugger.Frontend
 				interpreter.DebuggerManager.Wait (process);
 		}
 
+		public void RuntimeInvoke (ITargetFunctionObject func,
+					   ITargetObject instance, ITargetObject[] args)
+		{
+			if (process == null)
+				throw new ScriptingException ("{0} not running.", Name);
+			else if (!process.CanRun)
+				throw new ScriptingException ("{0} cannot be executed.", Name);
+
+			current_exception = null;
+
+			process.RuntimeInvoke (func, instance, args);
+
+			if (interpreter.IsSynchronous)
+				interpreter.DebuggerManager.Wait (process);
+		}
+
+		public ITargetObject RuntimeInvoke (ITargetFunctionObject func,
+						    ITargetObject instance, ITargetObject[] args,
+						    out string exc_message)
+		{
+			if (process == null)
+				throw new ScriptingException ("{0} not running.", Name);
+			else if (!process.CanRun)
+				throw new ScriptingException ("{0} cannot be executed.", Name);
+
+			current_exception = null;
+
+			return process.RuntimeInvoke (func, instance, args, out exc_message);
+		}
+
 		public void Stop ()
 		{
 			if (process == null)

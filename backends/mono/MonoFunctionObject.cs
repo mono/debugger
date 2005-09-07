@@ -23,11 +23,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
-					     ITargetObject[] args, bool debug)
+					     ITargetObject[] args)
 		{
 			MonoObject[] margs = new MonoObject [args.Length];
 			args.CopyTo (margs, 0);
-			return type.Invoke (target, this, (MonoObject) instance, margs, debug);
+			return type.Invoke (target, this, (MonoObject) instance, margs);
 		}
 	}
 }

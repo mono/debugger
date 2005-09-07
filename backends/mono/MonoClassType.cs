@@ -280,7 +280,7 @@ namespace Mono.Debugger.Languages.Mono
 				ITargetAccess target = instance.Location.TargetAccess;
 				ITargetFunctionObject func = CreateFunctionObject (
 					target, properties [index].Getter);
-				return func.Invoke (target, instance, new ITargetObject [0], false);
+				return func.Invoke (target, instance, new ITargetObject [0]);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -292,7 +292,7 @@ namespace Mono.Debugger.Languages.Mono
 				get_properties ();
 				ITargetFunctionObject func = CreateFunctionObject (
 					target, static_properties [index].Getter);
-				return func.Invoke (target, null, new ITargetObject [0], false);
+				return func.Invoke (target, null, new ITargetObject [0]);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
