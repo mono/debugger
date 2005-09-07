@@ -259,7 +259,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
 	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	rdata->call_address = new_esp + static_size;
-	rdata->exc_address = 14 + (num_params + 1) * 4;
+	rdata->exc_address = new_esp + static_size + (num_params + 1) * 4;
 	rdata->callback_argument = callback_argument;
 
 	call_disp = (int) invoke_method - new_esp;
@@ -390,6 +390,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	rdata = get_runtime_invoke_data (arch);
 	if (rdata && (rdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
+		guint32 exc_object;
+
 		if (_server_ptrace_set_registers (inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
@@ -399,8 +401,10 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		*callback_arg = rdata->callback_argument;
 		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
 
-		if (server_ptrace_peek_word (handle, rdata->exc_address, retval2) != COMMAND_ERROR_NONE)
+		if (server_ptrace_peek_word (handle, rdata->exc_address, &exc_object) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't get exc object");
+
+		*retval2 = (guint32) exc_object;
 
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
