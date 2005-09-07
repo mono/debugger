@@ -40,6 +40,20 @@ namespace Mono.Debugger.Languages.Mono
 			get;
 		}
 
+		public abstract bool HasFixedSize {
+			get;
+		}
+
+		public virtual int Size {
+			get {
+				IMonoTypeInfo info = GetTypeInfo ();
+				if (info != null)
+					return info.Size;
+				else
+					throw new LocationInvalidException ();
+			}
+		}
+
 		ITargetTypeInfo ITargetType.GetTypeInfo ()
 		{
 			return GetTypeInfo ();

@@ -52,6 +52,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
+		public override bool HasFixedSize {
+			get { return false; }
+		}
+
 		internal MonoType ElementType {
 			get { return element_type; }
 		}

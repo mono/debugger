@@ -26,10 +26,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return subarray_type; }
 		}
 
-		public override bool HasFixedSize {
-			get { return false; }
-		}
-
 		public override MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoArrayObject (this, location);

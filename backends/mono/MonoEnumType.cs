@@ -18,6 +18,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return !type.IsValueType; }
 		}
 
+		public override bool HasFixedSize {
+			get { return true; }
+		}
+
 		void get_fields ()
 		{
 			if (fields != null)

@@ -1006,7 +1006,7 @@ namespace Mono.Debugger.Frontend
 
 		public string DumpObject (ITargetObject obj)
 		{
-			long dynamic = obj.TypeInfo.HasFixedSize ? -1 : obj.DynamicSize;
+			long dynamic = obj.TypeInfo.Type.HasFixedSize ? -1 : obj.DynamicSize;
 			return String.Format ("object:{0}:{1}:{2}", obj.IsValid,
 					      dynamic, DumpType (obj.TypeInfo));
 		}
@@ -1016,9 +1016,9 @@ namespace Mono.Debugger.Frontend
 			StringBuilder sb = new StringBuilder ();
 			sb.Append (type.Type.Name);
 			sb.Append (":");
-			sb.Append (type.HasFixedSize);
+			sb.Append (type.Type.HasFixedSize);
 			sb.Append (":");
-			sb.Append (type.Size);
+			sb.Append (type.Type.Size);
 			sb.Append (":");
 			sb.Append (type.Type.Kind);
 			sb.Append (" ");

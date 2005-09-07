@@ -8,6 +8,14 @@ namespace Mono.Debugger.Languages.Mono
 			get;
 		}
 
+		bool HasFixedSize {
+			get;
+		}
+
+		int Size {
+			get;
+		}
+
 		MonoObject GetObject (TargetLocation location);
 	}
 
@@ -49,8 +57,8 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type; }
 		}
 
-		public abstract bool HasFixedSize {
-			get;
+		public bool HasFixedSize {
+			get { return type.HasFixedSize; }
 		}
 
 		public int Size {

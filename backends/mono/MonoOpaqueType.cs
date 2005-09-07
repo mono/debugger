@@ -12,6 +12,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return false; }
 		}
 
+		public override bool HasFixedSize {
+			get { return true; }
+		}
+
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			return null;

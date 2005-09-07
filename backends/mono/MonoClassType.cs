@@ -34,6 +34,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return !Type.IsValueType; }
 		}
 
+		public override bool HasFixedSize {
+			get { return true; }
+		}
+
 		public bool HasParent {
 			get { return parent_type != null; }
 		}

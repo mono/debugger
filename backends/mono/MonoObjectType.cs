@@ -44,11 +44,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public int Size {
+		public override int Size {
 			get { return size; }
 		}
 
-		bool ITargetTypeInfo.HasFixedSize {
+		public override bool HasFixedSize {
 			get { return true; }
 		}
 

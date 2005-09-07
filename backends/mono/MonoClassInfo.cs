@@ -166,10 +166,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override bool HasFixedSize {
-			get { return true; }
-		}
-
 		public override MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoClassObject (this, location);

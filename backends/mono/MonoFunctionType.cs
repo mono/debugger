@@ -180,11 +180,11 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		public bool HasFixedSize {
+		public override bool HasFixedSize {
 			get { return true; }
 		}
 
-		public int Size {
+		public override int Size {
 			get { return File.TargetInfo.TargetAddressSize; }
 		}
 

@@ -33,8 +33,8 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				TargetBlob blob;
-				if (type_info.HasFixedSize)
-					blob = location.ReadMemory (type_info.Size);
+				if (type_info.Type.HasFixedSize)
+					blob = location.ReadMemory (type_info.Type.Size);
 				else
 					blob = GetDynamicContents (location, MaximumDynamicSize);
 
@@ -49,7 +49,8 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				byte [] data = CreateObject (obj);
-				if (!type_info.HasFixedSize || (data == null) || (data.Length != type_info.Size))
+				if (!type_info.Type.HasFixedSize || (data == null) ||
+				    (data.Length != type_info.Type.Size))
 					throw new NotSupportedException ();
 
 				RawContents = data;

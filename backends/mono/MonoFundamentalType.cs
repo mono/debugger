@@ -116,11 +116,11 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoFundamentalObject (this, location);
 		}
 
-		public bool HasFixedSize {
+		public override bool HasFixedSize {
 			get { return FundamentalKind != FundamentalKind.String; }
 		}
 
-		public int Size {
+		public override int Size {
 			get { return size; }
 		}
 

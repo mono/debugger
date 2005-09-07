@@ -1,5 +1,11 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetType.cs
+	(ITargetType.Size): New property; moved here from ITargetTypeInfo.
+	(ITargetType.HasFixedSize): Likewise.
+
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoFunctionType.cs (MonoFunctionType):
 	Implement IMonoTypeInfo and merged with MonoFunctionTypeInfo.
 
