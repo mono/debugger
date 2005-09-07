@@ -14,6 +14,7 @@ using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
 using Mono.Debugger.Architecture;
 using Mono.Debugger.Remoting;
 
@@ -1360,26 +1361,24 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (StackFrame frame,
-					   TargetAddress method_argument,
-					   TargetAddress object_argument,
-					   TargetAddress[] param_objects)
+		public void RuntimeInvoke (TargetAddress method_argument,
+					   ITargetObject object_argument,
+					   ITargetObject[] param_objects)
 		{
 			StartOperation ();
 			ProcessOperation (new OperationRuntimeInvoke (
-				frame, method_argument, object_argument, param_objects));
+				method_argument, object_argument, param_objects));
 		}
 
 		[Command]
-		public void RuntimeInvoke (StackFrame frame,
-					   TargetAddress method_argument,
-					   TargetAddress object_argument,
-					   TargetAddress[] param_objects,
+		public void RuntimeInvoke (TargetAddress method_argument,
+					   ITargetObject object_argument,
+					   ITargetObject[] param_objects,
 					   CommandResult result)
 		{
 			StartOperation ();
 			ProcessOperation (new OperationRuntimeInvoke (
-				frame, method_argument, object_argument, param_objects, result));
+				method_argument, object_argument, param_objects, result));
 		}
 
 		[Command]
@@ -1801,7 +1800,7 @@ namespace Mono.Debugger.Backends
 		protected class CallbackRuntimeInvoke : Callback
 		{
 			OperationRuntimeInvoke op;
-			ILanguageBackend language;
+			MonoLanguageBackend language;
 			TargetAddress method;
 			bool method_compiled;
 
@@ -1815,21 +1814,15 @@ namespace Mono.Debugger.Backends
 							   Inferior inferior)
 			{
 				if (language == null) {
-					IMethod method = op.Frame.Method;
-					if (method == null)
-						throw new InvalidOperationException ();
-
-					language = method.Module.LanguageBackend as ILanguageBackend;
-					if (language == null)
-						throw new InvalidOperationException ();
+					language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
 				}
 
-				if (!op.ObjectArgument.IsNull)
+				if ((op.ObjectArgument != null) && op.ObjectArgument.Location.HasAddress) {
 					inferior.CallMethod (
 						language.GetVirtualMethodFunc,
-						op.ObjectArgument.Address,
+						op.ObjectArgument.Location.Address.Address,
 						op.MethodArgument.Address, ID);
-				else {
+				} else {
 					method = op.MethodArgument;
 					inferior.CallMethod (
 						language.CompileMethodFunc,
@@ -1846,8 +1839,7 @@ namespace Mono.Debugger.Backends
 						inferior.AddressDomain, data1);
 
 					inferior.CallMethod (language.CompileMethodFunc,
-							     method.Address,
-							     op.ObjectArgument.Address, ID);
+							     method.Address, 0, ID);
 					return false;
 				}
 
@@ -1875,16 +1867,23 @@ namespace Mono.Debugger.Backends
 				      data1, data2);
 
 				RuntimeInvokeResult result = new RuntimeInvokeResult ();
-				if (data1 != 0)
-					result.ReturnObject = new TargetAddress (
-						inferior.AddressDomain, data1);
-				else
-					result.ReturnObject = TargetAddress.Null;
-				if (data2 != 0)
-					result.ExceptionObject = new TargetAddress (
+				if (data2 != 0) {
+					TargetAddress exc_address = new TargetAddress (
 						inferior.AddressDomain, data2);
-				else
-					result.ExceptionObject = TargetAddress.Null;
+					ITargetFundamentalObject exc_obj = (ITargetFundamentalObject)
+						language.CreateObject (sse.target_access, exc_address);
+
+					result.ExceptionMessage = (string) exc_obj.Object;
+				}
+
+				if (data1 != 0) {
+					TargetAddress retval_address = new TargetAddress (
+						inferior.AddressDomain, data1);
+
+					result.ReturnObject = language.CreateObject (
+						sse.target_access, retval_address);
+				}
+
 				op.Result.Result = result;
 
 				return true;
@@ -2428,10 +2427,9 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : Operation
 	{
-		public readonly StackFrame Frame;
 		public readonly TargetAddress MethodArgument;
-		public readonly TargetAddress ObjectArgument;
-		public readonly TargetAddress[] ParamObjects;
+		public readonly MonoObject ObjectArgument;
+		public readonly MonoObject[] ParamObjects;
 		public readonly bool Debug;
 		public readonly CommandResult Result;
 
@@ -2439,29 +2437,25 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public OperationRuntimeInvoke (StackFrame frame,
-					       TargetAddress method_argument,
-					       TargetAddress object_argument,
-					       TargetAddress[] param_objects)
+		public OperationRuntimeInvoke (TargetAddress method_argument,
+					       ITargetObject object_argument,
+					       ITargetObject[] param_objects)
 		{
-			this.Frame = frame;
 			this.MethodArgument = method_argument;
-			this.ObjectArgument = object_argument;
-			this.ParamObjects = param_objects;
+			this.ObjectArgument = (MonoObject) object_argument;
+			this.ParamObjects = new MonoObject [param_objects.Length];
+			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
 		}
 
-		public OperationRuntimeInvoke (StackFrame frame,
-					       TargetAddress method_argument,
-					       TargetAddress object_argument,
-					       TargetAddress[] param_objects,
+		public OperationRuntimeInvoke (TargetAddress method_argument,
+					       ITargetObject object_argument,
+					       ITargetObject[] param_objects,
 					       CommandResult result)
+			: this (method_argument, object_argument, param_objects)
 		{
-			this.Frame = frame;
-			this.MethodArgument = method_argument;
-			this.ObjectArgument = object_argument;
-			this.ParamObjects = param_objects;
 			this.Result = result;
+			this.Debug = false;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
@@ -2669,8 +2663,8 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal struct RuntimeInvokeResult
 	{
-		public TargetAddress ReturnObject;
-		public TargetAddress ExceptionObject;
+		public ITargetObject ReturnObject;
+		public string ExceptionMessage;
 	}
 
 	internal sealed class CommandResult : MarshalByRefObject

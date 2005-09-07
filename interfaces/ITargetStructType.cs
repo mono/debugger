@@ -93,7 +93,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject GetStaticProperty (StackFrame frame, int index);
+		ITargetObject GetStaticProperty (ITargetAccess target, int index);
 
 		ITargetEventInfo[] Events {
 			get;
@@ -103,8 +103,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject GetStaticEvent (StackFrame frame, int index);
-
 		ITargetMethodInfo[] Methods {
 			get;
 		}
@@ -113,19 +111,20 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetFunctionObject GetStaticMethod (StackFrame frame, int index);
+		ITargetFunctionObject GetMethod (ITargetAccess target, int index);
 
+		ITargetFunctionObject GetStaticMethod (ITargetAccess target, int index);
 
 		ITargetMethodInfo[] Constructors {
 			get;
 		}
 
-		ITargetFunctionObject GetConstructor (StackFrame frame, int index);
-
 		ITargetMethodInfo[] StaticConstructors {
 			get;
 		}
 
-		ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index);
+		ITargetFunctionObject GetConstructor (ITargetAccess target, int index);
+
+		ITargetFunctionObject GetStaticConstructor (ITargetAccess target, int index);
 	}
 }

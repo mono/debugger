@@ -1,7 +1,10 @@
 using System;
 using System.Text;
+using System.Collections;
 using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -132,15 +135,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoMethodInfo GetMethod (int index)
-		{
-			get_methods ();
-			if (index < first_method)
-				return parent_type.GetMethod (index);
-
-			return methods [index - first_method];
-		}
-
 		void get_methods ()
 		{
 			if (methods != null)
@@ -196,20 +190,41 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
+		protected ITargetFunctionObject CreateFunctionObject (ITargetAccess target,
+								      MonoFunctionType ftype)
+		{
+			try {
+				MonoClassInfo info = GetTypeInfo () as MonoClassInfo;
+				if (info == null)
+					return null;
+
+				TargetAddress address = info.GetMethodAddress (target, ftype.Token);
+				return ftype.GetObject (new AbsoluteTargetLocation (target, address));
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}
+
+		public ITargetFunctionObject GetMethod (ITargetAccess target, int index)
+		{
+			get_methods ();
+
+			if (index < first_method)
+				return parent_type.GetMethod (target, index);
+
+			return CreateFunctionObject (
+				target, methods [index - first_method].FunctionType);
+		}
+
+		public ITargetFunctionObject GetStaticMethod (ITargetAccess target, int index)
 		{
 			get_methods ();
 
 			if (index < first_smethod)
-				return parent_type.GetStaticMethod (frame, index);
+				return parent_type.GetStaticMethod (target, index);
 
-			try {
-				MonoFunctionType ftype = static_methods [index - first_smethod].FunctionType;
-
-				return ftype.GetStaticObject (frame);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
+			return CreateFunctionObject (
+				target, static_methods [index - first_smethod].FunctionType);
 		}
 
 		void get_properties ()
@@ -258,10 +273,29 @@ namespace Mono.Debugger.Languages.Mono
 			get { return StaticProperties; }
 		}
 
-		public ITargetObject GetStaticProperty (StackFrame frame, int index)
+		internal ITargetObject GetProperty (MonoClassObject instance, int index)
 		{
-			get_properties ();
-			return static_properties [index].Get (frame);
+			try {
+				get_properties ();
+				ITargetAccess target = instance.Location.TargetAccess;
+				ITargetFunctionObject func = CreateFunctionObject (
+					target, properties [index].Getter);
+				return func.Invoke (target, instance, new ITargetObject [0], false);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+		}
+
+		public ITargetObject GetStaticProperty (ITargetAccess target, int index)
+		{
+			try {
+				get_properties ();
+				ITargetFunctionObject func = CreateFunctionObject (
+					target, static_properties [index].Getter);
+				return func.Invoke (target, null, new ITargetObject [0], false);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
 		}
 
 		void get_events ()
@@ -348,12 +382,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public ITargetFunctionObject GetConstructor (StackFrame frame, int index)
-		{
-			get_constructors ();
- 			return constructors [index].Get (frame);
-		}
-
 		public ITargetMethodInfo[] StaticConstructors {
 			get {
 				get_constructors ();
@@ -361,10 +389,18 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index)
+		public ITargetFunctionObject GetConstructor (ITargetAccess target, int index)
 		{
 			get_constructors ();
- 			return static_constructors [index].Get (frame);
+ 			return CreateFunctionObject (
+				target, constructors [index].FunctionType);
+		}
+
+		public ITargetFunctionObject GetStaticConstructor (ITargetAccess target, int index)
+		{
+			get_constructors ();
+ 			return CreateFunctionObject (
+				target, static_constructors [index].FunctionType);
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
@@ -372,5 +408,39 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassInfo (this, info);
 		}
 
+		[Command]
+		public ITargetMemberInfo FindMember (string name, bool search_static,
+						     bool search_instance)
+		{
+			if (search_static) {
+				foreach (ITargetFieldInfo field in StaticFields)
+					if (field.Name == name)
+						return field;
+
+				foreach (ITargetPropertyInfo property in StaticProperties)
+					if (property.Name == name)
+						return property;
+
+				foreach (ITargetEventInfo ev in StaticEvents)
+					if (ev.Name == name)
+						return ev;
+			}
+
+			if (search_instance) {
+				foreach (ITargetFieldInfo field in Fields)
+					if (field.Name == name)
+						return field;
+
+				foreach (ITargetPropertyInfo property in Properties)
+					if (property.Name == name)
+						return property;
+
+				foreach (ITargetEventInfo ev in Events)
+					if (ev.Name == name)
+						return ev;
+			}
+
+			return null;
+		}
 	}
 }

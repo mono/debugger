@@ -212,6 +212,15 @@ namespace Mono.Debugger
 				bfd_container.AddFile (process, filename, true, false, false);
 		}
 
+		internal MonoLanguageBackend MonoLanguage {
+			get {
+				if (mono_language == null)
+					throw new InvalidOperationException ();
+
+				return mono_language;
+			}
+		}
+
 		//
 		// IDisposable
 		//

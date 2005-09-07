@@ -7,6 +7,7 @@ using System.Runtime.Remoting.Proxies;
 using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Remoting;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
@@ -34,6 +35,15 @@ namespace Mono.Debugger.Backends
 
 		public abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2);
+
+		public abstract void RuntimeInvoke (TargetAddress method_argument,
+						    ITargetObject object_argument,
+						    ITargetObject[] param_objects);
+
+		public abstract ITargetObject RuntimeInvoke (TargetAddress method_argument,
+							     ITargetObject object_argument,
+							     ITargetObject[] param_objects,
+							     out string exc_message);
 
 		public abstract object Invoke (TargetAccessDelegate func, object data);
 
@@ -98,6 +108,22 @@ namespace Mono.Debugger.Backends
 			return process.CallMethod (method, arg1, arg2);
 		}
 
+		public override void RuntimeInvoke (TargetAddress method_argument,
+						    ITargetObject object_argument,
+						    ITargetObject[] param_objects)
+		{
+			process.RuntimeInvoke (method_argument, object_argument, param_objects);
+		}
+
+		public override ITargetObject RuntimeInvoke (TargetAddress method_argument,
+							     ITargetObject object_argument,
+							     ITargetObject[] param_objects,
+							     out string exc_message)
+		{
+			return process.RuntimeInvoke (
+				method_argument, object_argument, param_objects, out exc_message);
+		}
+
 		public override object Invoke (TargetAccessDelegate func, object data)
 		{
 			return process.Invoke (func, data);
@@ -139,6 +165,30 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			else
 				return sse.Process.CallMethod (method, arg1, arg2);
+		}
+
+		public override void RuntimeInvoke (TargetAddress method_argument,
+						    ITargetObject object_argument,
+						    ITargetObject[] param_objects)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				throw new InvalidOperationException ();
+			else
+				sse.Process.RuntimeInvoke (
+					method_argument, object_argument, param_objects);
+		}
+
+		public override ITargetObject RuntimeInvoke (TargetAddress method_argument,
+							     ITargetObject object_argument,
+							     ITargetObject[] param_objects,
+							     out string exc_message)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				throw new InvalidOperationException ();
+			else
+				return sse.Process.RuntimeInvoke (
+					method_argument, object_argument, param_objects,
+					out exc_message);
 		}
 
 		public override object Invoke (TargetAccessDelegate func, object data)

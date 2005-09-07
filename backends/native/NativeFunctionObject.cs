@@ -18,16 +18,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public NativeObject Invoke (NativeObject[] args)
+		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
+					     ITargetObject[] args, bool debug)
 		{
-			return null;
-		}
-
-		ITargetObject ITargetFunctionObject.Invoke (ITargetObject[] args, bool debug)
-		{
-			NativeObject[] nargs = new NativeObject [args.Length];
-			args.CopyTo (nargs, 0);
-			return Invoke (nargs);
+			throw new NotSupportedException ();
 		}
 
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,

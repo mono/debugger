@@ -201,7 +201,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetObject GetStaticProperty (StackFrame frame, int index)
+		public ITargetObject GetStaticProperty (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -247,17 +247,22 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetFunctionObject GetStaticMethod (StackFrame frame, int index)
+		public ITargetFunctionObject GetMethod (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetFunctionObject GetConstructor (StackFrame frame, int index)
+		public ITargetFunctionObject GetStaticMethod (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetFunctionObject GetStaticConstructor (StackFrame frame, int index)
+		public ITargetFunctionObject GetConstructor (ITargetAccess target, int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		public ITargetFunctionObject GetStaticConstructor (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}

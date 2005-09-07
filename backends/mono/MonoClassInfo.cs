@@ -126,22 +126,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal ITargetFunctionObject GetMethod (TargetLocation location, int index)
-		{
-			try {
-				initialize (location.TargetAccess);
-
-				MonoMethodInfo minfo = Type.GetMethod (index);
-				IMonoTypeInfo mtype = minfo.Type.GetTypeInfo ();
-				if (mtype == null)
-					return null;
-
-				return (ITargetFunctionObject) mtype.GetObject (location);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
 		internal TargetAddress GetMethodAddress (ITargetAccess target, int token)
 		{
 			try {
@@ -149,18 +133,6 @@ namespace Mono.Debugger.Languages.Mono
 				if (!methods.Contains (token))
 					throw new InternalError ();
 				return (TargetAddress) methods [token];
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
-		internal ITargetObject GetProperty (TargetLocation location, int index)
-		{
-			try {
-				initialize (location.TargetAccess);
-
-				MonoPropertyInfo pinfo = Type.Properties [index];
-				return pinfo.Get (location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

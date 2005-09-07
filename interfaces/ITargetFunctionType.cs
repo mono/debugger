@@ -20,14 +20,10 @@ namespace Mono.Debugger.Languages
 
 		// <summary>
 		//   The current programming language's native representation of
-		//   a method.  This is a System.Reflection.MethodInfo for managed
-		//   data types.
+		//   a method.
 		// </summary>
 		object MethodHandle {
 			get;
 		}
-
-		ITargetObject InvokeStatic (StackFrame frame, ITargetObject[] args,
-					    bool debug);
 	}
 }

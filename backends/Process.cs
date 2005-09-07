@@ -552,47 +552,38 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public void RuntimeInvoke (StackFrame frame,
-					   TargetAddress method_argument,
-					   TargetAddress object_argument,
-					   TargetAddress[] param_objects)
+		public void RuntimeInvoke (TargetAddress method_argument,
+					   ITargetObject object_argument,
+					   ITargetObject[] param_objects)
 		{
 			lock (this) {
 				check_engine ();
 				engine.RuntimeInvoke (
-					frame, method_argument, object_argument, param_objects);
+					method_argument, object_argument, param_objects);
 				operation_completed_event.Reset ();
 				target_state = TargetState.RUNNING;
 			}
 		}
 
-		public TargetAddress RuntimeInvoke (StackFrame frame,
-						    TargetAddress method_argument,
-						    TargetAddress object_argument,
-						    TargetAddress[] param_objects,
-						    out bool is_exc)
+		public ITargetObject RuntimeInvoke (TargetAddress method_argument,
+						    ITargetObject object_argument,
+						    ITargetObject[] param_objects,
+						    out string exc_message)
 		{
 			CommandResult result = new CommandResult ();
 
 			lock (this) {
 				check_engine ();
 				engine.RuntimeInvoke (
-					frame, method_argument, object_argument, param_objects,
-					result);
+					method_argument, object_argument, param_objects, result);
 				operation_completed_event.Reset ();
 			}
 
 			operation_completed_event.WaitOne ();
 
 			RuntimeInvokeResult res = (RuntimeInvokeResult) result.Result;
-
-			if (res.ExceptionObject.IsNull) {
-				is_exc = false;
-				return res.ReturnObject;
-			} else {
-				is_exc = true;
-				return res.ExceptionObject;
-			}
+			exc_message = res.ExceptionMessage;
+			return res.ReturnObject;
 		}
 
 		public object Invoke (TargetAccessDelegate func, object data)

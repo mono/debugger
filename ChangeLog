@@ -1,5 +1,33 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFunctionObject.cs
+	(ITargetFunctionObject.Invoke): Added `ITargetAccess target' and
+	`ITargetObject instance' arguments.
+
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.GetStaticProperty): Take an `ITargetAccess',
+	not a `StackFrame'.
+	(ITargetStructType.GetStaticConstructor): Likewise.
+	(ITargetStructType.GetStaticMethod): Likewise.
+	(ITargetStructType.GetMethod): New method.
+	(ITargetStructType.GetConstructor): New method.
+
+	* interfaces/ITargetFunctionType.cs
+	(ITargetFunctionType.InvokeStatic): Removed.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetAccess.RuntimeInvoke): New method.
+
+	* backends/Inferior.cs (Inferior.RuntimeInvoke): Take
+	`MonoObject's as arguments instead of `TargetAddress'es and
+	marshal the objects here.
+
+	* backends/server/library.c
+	(mono_debugger_server_call_method_invoke): Copy valuetype
+	arguments on the stack instead of using the heap hack.
+
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetType.cs (ITargetType.GetTypeInfo): Removed.
 
 	* interfaces/ITargetTypeInfo.cs: Removed.

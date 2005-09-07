@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	public interface ITargetInfo
@@ -163,6 +165,15 @@ namespace Mono.Debugger
 
 		TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 					  TargetAddress arg2);
+
+		void RuntimeInvoke (TargetAddress method_argument,
+				    ITargetObject object_argument,
+				    ITargetObject[] param_objects);
+
+		ITargetObject RuntimeInvoke (TargetAddress method_argument,
+					     ITargetObject object_argument,
+					     ITargetObject[] param_objects,
+					     out string exc_message);
 
 		object Invoke (TargetAccessDelegate func, object user_data);
 	}

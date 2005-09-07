@@ -613,14 +613,15 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
-				  guint64 method_argument, guint64 object_argument,
-				  guint32 num_params, guint64 *param_data,
+				  guint64 method_argument, guint32 num_params,
+				  guint32 blob_size, guint64 *param_data,
+				  gint32 *offset_data, gconstpointer blob_data,
 				  guint64 callback_argument, gboolean debug)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	RuntimeInvokeData *rdata;
-	long new_rsp;
+	guint64 new_rsp;
 	int i;
 
 	static guint8 static_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -628,19 +629,25 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 					0xcc };
 	int static_size = sizeof (static_code);
-	int size = static_size + (num_params + 2) * 8;
+	int size = static_size + (num_params + 3) * 8 + blob_size;
 	guint8 *code = g_malloc0 (size);
-	guint32 *ptr = (guint32 *) (code + static_size);
+	guint64 *ptr = (guint64 *) (code + static_size + blob_size);
+	guint64 blob_start;
 	memcpy (code, static_code, static_size);
-
-	for (i = 0; i < num_params; i++)
-		ptr [i] = param_data [i];
-	ptr [num_params] = 0;
+	memcpy (code + static_size, blob_data, blob_size);
 
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
 	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - size;
+	blob_start = new_rsp + static_size;
+
+	for (i = 0; i < num_params; i++) {
+		if (offset_data [i] >= 0)
+			ptr [i] = blob_start + offset_data [i];
+		else
+			ptr [i] = param_data [i];
+	}
 
 	*((guint64 *) code) = new_rsp + 24;
 	*((guint64 *) (code+8)) = callback_argument;
@@ -658,8 +665,8 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 
 	INFERIOR_REG_RIP (arch->current_regs) = invoke_method;
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
-	INFERIOR_REG_RSI (arch->current_regs) = object_argument;
-	INFERIOR_REG_RDX (arch->current_regs) = new_rsp + static_size;
+	INFERIOR_REG_RSI (arch->current_regs) = ptr [0];
+	INFERIOR_REG_RDX (arch->current_regs) = new_rsp + static_size + blob_size + 8;
 	INFERIOR_REG_RCX (arch->current_regs) = new_rsp + 16;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
 

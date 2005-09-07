@@ -22,6 +22,12 @@ namespace Mono.Debugger.Languages
 			this.address = address;
 		}
 
+		public AbsoluteTargetLocation (ITargetAccess target, TargetAddress address)
+			: base (null, target, false)
+		{
+			this.address = address;
+		}
+
 		public override bool HasAddress {
 			get { return true; }
 		}

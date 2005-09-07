@@ -788,6 +788,10 @@ namespace Mono.Debugger.Frontend
 			get { return instance == null; }
 		}
 
+		public ITargetObject InstanceObject {
+			get { return instance; }
+		}
+
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return this;
@@ -819,7 +823,7 @@ namespace Mono.Debugger.Frontend
 			ITargetMethodInfo method = OverloadResolve (context, arguments);
 
 			if (method.IsStatic)
-				return stype.GetStaticMethod (frame, method.Index);
+				return stype.GetStaticMethod (frame.TargetAccess, method.Index);
 			else if (!IsStatic)
 				return instance.GetMethod (method.Index);
 			else
@@ -1233,7 +1237,7 @@ namespace Mono.Debugger.Frontend
 		protected ITargetObject GetStaticProperty (ITargetStructType stype, StackFrame frame, ITargetPropertyInfo property)
 		{
 			try {
-				return stype.GetStaticProperty (frame, property.Index);
+				return stype.GetStaticProperty (frame.TargetAccess, property.Index);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException ("Can't get property {0}: {1}", Name, ex.Message);
 			}
@@ -1250,11 +1254,15 @@ namespace Mono.Debugger.Frontend
 
 		protected ITargetObject GetStaticEvent (ITargetStructType stype, StackFrame frame, ITargetEventInfo ev)
 		{
+#if FIXME
 			try {
 				return stype.GetStaticEvent (frame, ev.Index);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException ("Can't get event {0}: {1}", Name, ex.Message);
 			}
+#else
+			throw new NotImplementedException ();
+#endif
 		}
 
 		protected ITargetObject GetMember (ITargetStructObject sobj, ITargetMemberInfo member)
@@ -2058,7 +2066,9 @@ namespace Mono.Debugger.Frontend
 				objs [i] = args [i].EvaluateVariable (context);
 
 			try {
-				ITargetObject retval = func.Invoke (objs, debug);
+				ITargetObject retval = func.Invoke (
+					context.CurrentFrame.Frame.TargetAccess, mg.InstanceObject,
+					objs, debug);
 				if (!debug && !func.Type.HasReturnValue)
 					throw new ScriptingException ("Method `{0}' doesn't return a value.", Name);
 
@@ -2145,14 +2155,15 @@ namespace Mono.Debugger.Frontend
 					"for your list of arguments.", type_expr.Name);
 
 			ITargetFunctionObject ctor = stype.GetConstructor (
-				frame.Frame, method.Index);
+				frame.Frame.TargetAccess, method.Index);
 
 			ITargetObject[] args = new ITargetObject [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)
 				args [i] = arguments [i].EvaluateVariable (context);
 
 			try {
-				return ctor.Type.InvokeStatic (frame.Frame, args, debug);
+				return ctor.Invoke (
+					frame.Frame.TargetAccess, null, args, debug);
 			} catch (TargetInvocationException ex) {
 				throw new ScriptingException (
 					"Invocation of type `{0}'s constructor raised an " +

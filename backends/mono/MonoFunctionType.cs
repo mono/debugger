@@ -79,100 +79,26 @@ namespace Mono.Debugger.Languages.Mono
 			get { return method_info; }
 		}
 
-		protected ITargetObject Invoke (StackFrame frame, TargetAddress this_object,
-						MonoObject[] args, bool debug)
+		internal ITargetObject Invoke (ITargetAccess target, TargetAddress method,
+					       MonoObject instance, MonoObject[] args, bool debug)
 		{
-			TargetAddress exc_object;
-
-			MonoClassInfo class_info = klass.GetTypeInfo () as MonoClassInfo;
-			if (class_info == null)
-				return null;
-
-			TargetAddress method = class_info.GetMethodAddress (
-				frame.TargetAccess, Token);
-
 			if (ParameterTypes.Length != args.Length)
 				throw new ArgumentException ();
 
-			TargetAddress[] arg_ptr = new TargetAddress [args.Length];
-			for (int i = 0; i < args.Length; i++) {
-				if (args [i].Location.HasAddress) {
-					arg_ptr [i] = args [i].Location.Address;
-					continue;
-				}
-
-				Heap heap = File.MonoLanguage.DataHeap;
-				byte[] contents = args [i].RawContents;
-				TargetLocation new_loc = heap.Allocate (
-					frame.TargetAccess, contents.Length);
-				frame.TargetAccess.TargetMemoryAccess.WriteBuffer (
-					new_loc.Address, contents);
-
-				arg_ptr [i] = new_loc.Address;
-			}
-
 			if (debug) {
-				frame.Process.RuntimeInvoke (
-					frame, method, this_object, arg_ptr);
+				target.RuntimeInvoke (method, instance, args);
 				return null;
 			}
 
-			bool exc;
-			TargetAddress retval = frame.Process.RuntimeInvoke (
-				frame, method, this_object, arg_ptr, out exc);
+			string exc_message;
+			ITargetObject retval = target.RuntimeInvoke (
+				method, instance, args, out exc_message);
 
-			if (exc) {
-				exc_object = retval;
-				retval = TargetAddress.Null;
-			} else {
-				exc_object = TargetAddress.Null;
-			}
-
-			MonoBuiltinTypeInfo builtin = File.MonoLanguage.BuiltinTypes;
-			IMonoTypeInfo object_type = builtin.ObjectType.GetTypeInfo ();
-			IMonoTypeInfo string_type = builtin.StringType.GetTypeInfo ();
-
-			if (retval.IsNull) {
-				if (exc_object.IsNull)
-					return null;
-
-				TargetLocation exc_loc = new AbsoluteTargetLocation (frame, exc_object);
-				MonoStringObject exc_obj = (MonoStringObject) string_type.GetObject (exc_loc);
-				string exc_message = (string) exc_obj.Object;
-
+			if (exc_message != null)
 				throw new TargetException (
 					TargetError.InvocationException, exc_message);
-			}
 
-			TargetLocation retval_loc = new AbsoluteTargetLocation (frame, retval);
-			MonoObjectObject retval_obj = (MonoObjectObject) object_type.GetObject (retval_loc);
-
-			if ((retval_obj == null) || !retval_obj.HasDereferencedObject ||
-			    (ReturnType == builtin.ObjectType))
-				return retval_obj;
-			else
-				return retval_obj.DereferencedObject;
-		}
-
-		internal ITargetObject Invoke (TargetLocation location, MonoObject[] args,
-					       bool debug)
-		{
-			return Invoke (location.StackFrame, location.Address, args, debug);
-		}
-
-		ITargetObject ITargetFunctionType.InvokeStatic (StackFrame frame,
-								ITargetObject[] args,
-								bool debug)
-		{
-			MonoObject[] margs = new MonoObject [args.Length];
-			args.CopyTo (margs, 0);
-			return InvokeStatic (frame, margs, debug);
-		}
-
-		public ITargetObject InvokeStatic (StackFrame frame, MonoObject[] args,
-						   bool debug)
-		{
-			return Invoke (frame, TargetAddress.Null, args, debug);
+			return retval;
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
@@ -192,14 +118,14 @@ namespace Mono.Debugger.Languages.Mono
 			get { return this; }
 		}
 
-		public MonoObject GetObject (TargetLocation location)
+		public MonoFunctionObject GetObject (TargetLocation location)
 		{
 			return new MonoFunctionObject (this, location);
 		}
 
-		public MonoFunctionObject GetStaticObject (StackFrame frame)
+		MonoObject IMonoTypeInfo.GetObject (TargetLocation location)
 		{
-			return new MonoFunctionObject (this, new AbsoluteTargetLocation (frame, TargetAddress.Null));
+			return new MonoFunctionObject (this, location);
 		}
 	}
 }

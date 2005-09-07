@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetObject GetProperty (int index)
 		{
-			return type.GetProperty (location, index);
+			return type.Type.GetProperty (this, index);
 		}
 
 		public ITargetObject GetEvent (int index)
@@ -49,7 +49,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetFunctionObject GetMethod (int index)
 		{
-			return type.GetMethod (location, index);
+			return type.Type.GetMethod (location.TargetAccess, index);
 		}
 
 		public string PrintObject ()
@@ -78,7 +78,8 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			try {
-				ITargetObject retval = func.Invoke (args, false);
+				ITargetObject retval = func.Invoke (
+					location.TargetAccess, this, args, false);
 
 				return retval.Print();
 			}

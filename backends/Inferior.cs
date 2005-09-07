@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Architecture;
+using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backends
 {
@@ -105,7 +106,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, long object_address, int num_params, IntPtr param_array, long callback_argument, bool debug);
+		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
@@ -259,30 +260,67 @@ namespace Mono.Debugger.Backends
 		}
 
 		public void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
-					   TargetAddress object_argument, TargetAddress[] param_objects,
+					   MonoObject object_argument, MonoObject[] param_objects,
 					   long callback_arg, bool debug)
 		{
 			check_disposed ();
 
-			int size = param_objects.Length;
-			long[] param_addresses = new long [size];
-			for (int i = 0; i < param_objects.Length; i++)
-				param_addresses [i] = param_objects [i].Address;
+			int length = param_objects.Length + 1;
 
-			IntPtr data = IntPtr.Zero;
-			try {
-				if (size > 0) {
-					data = Marshal.AllocHGlobal (size * 8);
-					Marshal.Copy (param_addresses, 0, data, size);
+			MonoObject[] input_objects = new MonoObject [length];
+			input_objects [0] = object_argument;
+			param_objects.CopyTo (input_objects, 1);
+
+			int blob_size = 0;
+			byte[][] blobs = new byte [length][];
+			int[] blob_offsets = new int [length];
+			long[] addresses = new long [length];
+
+			for (int i = 0; i < length; i++) {
+				if (input_objects [i] == null)
+					continue;
+				if (input_objects [i].Location.HasAddress) {
+					blob_offsets [i] = -1;
+					addresses [i] = input_objects [i].Location.Address.Address;
+					continue;
 				}
+				blobs [i] = input_objects [i].RawContents;
+				blob_offsets [i] = blob_size;
+				blob_size += blobs [i].Length;
+			}
+
+			byte[] blob = new byte [blob_size];
+			blob_size = 0;
+			for (int i = 0; i < length; i++) {
+				if (blobs [i] == null)
+					continue;
+				blobs [i].CopyTo (blob, blob_size);
+				blob_size += blobs [i].Length;
+			}
+
+			IntPtr blob_data = IntPtr.Zero, param_data = IntPtr.Zero;
+			IntPtr offset_data = IntPtr.Zero;
+			try {
+				if (blob_size > 0) {
+					blob_data = Marshal.AllocHGlobal (blob_size);
+					Marshal.Copy (blob, 0, blob_data, blob_size);
+				}
+
+				param_data = Marshal.AllocHGlobal (length * 8);
+				Marshal.Copy (addresses, 0, param_data, length);
+
+				offset_data = Marshal.AllocHGlobal (length * 4);
+				Marshal.Copy (blob_offsets, 0, offset_data, length);
 
 				check_error (mono_debugger_server_call_method_invoke (
 					server_handle, invoke_method.Address, method_argument.Address,
-					object_argument.Address, size, data, callback_arg,
-					debug));
+					length, blob_size, param_data, offset_data, blob_data,
+					callback_arg, debug));
 			} finally {
-				if (data != IntPtr.Zero)
-					Marshal.FreeHGlobal (data);
+				if (blob_data != IntPtr.Zero)
+					Marshal.FreeHGlobal (blob_data);
+				Marshal.FreeHGlobal (param_data);
+				Marshal.FreeHGlobal (offset_data);
 			}
 		}
 

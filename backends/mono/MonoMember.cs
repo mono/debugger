@@ -150,11 +150,6 @@ namespace Mono.Debugger.Languages.Mono
 			return String.Format ("{0}({1})", Name, sb.ToString ());
 		}
 
-		internal ITargetFunctionObject Get (StackFrame frame)
-		{
-			return FunctionType.GetStaticObject (frame);
-		}
-
 		protected override string MyToString ()
 		{
 			return String.Format ("{0}", FunctionType);
@@ -210,7 +205,7 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		MonoType type;
 		public readonly MonoClassType Klass;
-		public readonly MonoFunctionType GetterType, SetterType;
+		public readonly MonoFunctionType Getter, Setter;
 		public readonly bool CanRead, CanWrite;
 
 		internal MonoPropertyInfo (MonoClassType klass, int index, R.PropertyInfo pinfo,
@@ -224,12 +219,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (CanRead) {
 				R.MethodInfo getter = pinfo.GetGetMethod (true);
-				GetterType = new MonoFunctionType (File, Klass, getter);
+				Getter = new MonoFunctionType (File, Klass, getter);
 			}
 
 			if (CanWrite) {
 				R.MethodInfo setter = pinfo.GetSetMethod (true);
-				SetterType = new MonoFunctionType (File, Klass, setter);
+				Setter = new MonoFunctionType (File, Klass, setter);
 			}
 		}
 
@@ -246,7 +241,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (!CanRead)
 					throw new InvalidOperationException ();
 
-				return GetterType;
+				return Getter;
 			}
 		}
 
@@ -261,29 +256,8 @@ namespace Mono.Debugger.Languages.Mono
 				if (!CanWrite)
 					throw new InvalidOperationException ();
 
-				return SetterType;
+				return Setter;
 			}
-		}
-
-		internal ITargetObject Get (TargetLocation location)
-		{
-			if (!CanRead)
-				throw new InvalidOperationException ();
-
-			ITargetFunctionObject func = GetterType.GetObject (location) as ITargetFunctionObject;
-			if (func == null)
-				return null;
-
-			ITargetObject retval = func.Invoke (new MonoObject [0], false);
-			return retval;
-		}
-
-		internal ITargetObject Get (StackFrame frame)
-		{
-			if (!CanRead)
-				throw new InvalidOperationException ();
-
-			return GetterType.InvokeStatic (frame, new MonoObject [0], false);
 		}
 
 		protected override string MyToString ()
