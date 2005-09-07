@@ -2,15 +2,15 @@ namespace Mono.Debugger.Languages
 {
 	public interface ITargetArrayObject : ITargetObject
 	{
-		int LowerBound {
+		new ITargetArrayType Type {
 			get;
 		}
 
-		int UpperBound {
-			get;
-		}
+		int GetLowerBound (int dimension);
 
-		ITargetObject this [int index] {
+		int GetUpperBound (int dimension);
+
+		ITargetObject this [params int[] indices] {
 			get;
 		}
 	}

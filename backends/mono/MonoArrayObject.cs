@@ -8,7 +8,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected readonly int rank;
 		protected readonly int length;
-		protected readonly int dimension;
 		protected readonly int base_index;
 		protected readonly MonoArrayBounds[] bounds;
 
@@ -16,7 +15,6 @@ namespace Mono.Debugger.Languages.Mono
 			: base (type, location)
 		{
 			this.type = type;
-			this.dimension = 0;
 			this.rank = type.Type.Rank;
 
 			try {
@@ -46,70 +44,76 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoArrayObject (MonoArrayObject array, TargetLocation location, int index)
-			: base (array.type.SubArrayType, location)
+		ITargetArrayType ITargetArrayObject.Type {
+			get { return type.Type; }
+		}
+
+		public int GetLowerBound (int dimension)
 		{
-			this.type = array.type.SubArrayType;
-			this.rank = array.rank;
-			this.length = array.length;
-			this.dimension = array.dimension + 1;
-			this.base_index = index;
-			this.bounds = array.bounds;
+			if ((dimension < 0) || (dimension >= rank))
+				throw new ArgumentException ();
+
+			if (rank == 1)
+				return 0;
+
+			return bounds [dimension].Lower;
 		}
 
-		public int LowerBound {
-			get {
-				if (rank == 1)
-					return 0;
+		public int GetUpperBound (int dimension)
+		{
+			if ((dimension < 0) || (dimension >= rank))
+				throw new ArgumentException ();
 
-				return bounds [dimension].Lower;
-			}
+			if (rank == 1)
+				return length;
+
+			return bounds [dimension].Lower + bounds [dimension].Length;
 		}
 
-		public int UpperBound {
+		public ITargetObject this [params int[] indices] {
 			get {
-				if (rank == 1)
-					return length;
-
-				return bounds [dimension].Lower + bounds [dimension].Length;
-			}
-		}
-
-		public ITargetObject this [int index] {
-			get {
-				if ((index < LowerBound) || (index >= UpperBound))
+				if (indices.Length != rank)
 					throw new ArgumentException ();
-				index -= LowerBound;
 
-				if (dimension + 1 >= rank) {
-					TargetBlob blob;
-					TargetLocation dynamic_location;
-					try {
-						blob = location.ReadMemory (type.Size);
-						GetDynamicSize (blob, location, out dynamic_location);
-					} catch (TargetException ex) {
-						throw new LocationInvalidException (ex);
+				if (rank > 1) {
+					for (int i = 0; i < rank; i++) {
+						if (indices [i] < bounds [i].Lower)
+							throw new ArgumentException ();
+
+						indices [i] -= bounds [i].Lower;
+
+						if (indices [i] >= bounds [i].Length)
+							throw new ArgumentException ();
 					}
+				} else if ((indices [0] < 0) || (indices [0] > length))
+					throw new ArgumentException ();
 
-					int offset;
-					if (type.Type.ElementType.IsByRef)
-						offset = index * blob.TargetInfo.TargetAddressSize;
-					else if (type.ElementType.HasFixedSize)
-						offset = index * type.ElementType.Size;
-					else
-						throw new InvalidOperationException ();
+				int index = indices [0];
+				for (int i = 1; i < rank; i++)
+					index = index * bounds [i].Length + indices [i];
 
-					TargetLocation new_location =
-						dynamic_location.GetLocationAtOffset (
-							offset, type.Type.ElementType.IsByRef);
-
-					return type.ElementType.GetObject (new_location);
+				TargetBlob blob;
+				TargetLocation dynamic_location;
+				try {
+					blob = location.ReadMemory (type.Size);
+					GetDynamicSize (blob, location, out dynamic_location);
+				} catch (TargetException ex) {
+					throw new LocationInvalidException (ex);
 				}
 
-				for (int i = dimension + 1; i < rank; i++)
-					index *= bounds [i].Length;
+				int offset;
+				if (type.Type.ElementType.IsByRef)
+					offset = index * blob.TargetInfo.TargetAddressSize;
+				else if (type.ElementType.HasFixedSize)
+					offset = index * type.ElementType.Size;
+				else
+					throw new InvalidOperationException ();
 
-				return new MonoArrayObject (this, location, base_index + index);
+				TargetLocation new_location =
+					dynamic_location.GetLocationAtOffset (
+						offset, type.Type.ElementType.IsByRef);
+
+				return type.ElementType.GetObject (new_location);
 			}
 		}
 
@@ -125,8 +129,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		int GetLength ()
 		{
-			int length = UpperBound - LowerBound;
-			for (int i = dimension + 1; i < rank; i++)
+			int length = GetUpperBound (0) - GetLowerBound (0);
+			for (int i = 1; i < rank; i++)
 				length *= bounds [i].Length;
 			return length;
 		}

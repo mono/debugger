@@ -1,5 +1,22 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetArrayType.cs
+	(ITargetArrayType.Rank): New property.
+	(ITargetArrayType.ElementType): Do the right thing here.
+
+	* interfaces/ITargetArrayObject.cs
+	(ITargetArrayObject.LowerBound): Renamed to GetLowerBound(); now
+	takes a dimension argument.
+	(ITargetArrayObject.UpperBound): Renamed to GetUpperBound(); now
+	takes a dimension argument.
+	(ITargetArrayObject.this): Take a `params int[] indices'.
+
+	* frontend/Expression.cs
+	(ArrayAccessExpression.DoEvaluateVariable): Use C# syntax and
+	behavior to access multi-dimensial arrays.
+
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetStructType.cs
 	(ITargetStructType.PrintObject): Removed.
 	

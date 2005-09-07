@@ -2,10 +2,12 @@ namespace Mono.Debugger.Languages
 {
 	public interface ITargetArrayType : ITargetType
 	{
+		int Rank {
+			get;
+		}
+
 		// <summary>
-		//   The array's element type.  For multi-dimensional arrays,
-		//   this'll return the array type itself unless this is the
-		//   last dimension.
+		//   The array's element type.
 		// </summary>
 		ITargetType ElementType {
 			get;

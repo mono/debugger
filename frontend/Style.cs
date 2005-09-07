@@ -424,22 +424,45 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		protected void DoFormatArray (ITargetArrayObject aobj, StringBuilder sb,
+					      int dimension, int rank, int[] indices)
+		{
+			sb.Append ("[ ");
+
+			int[] new_indices = new int [dimension + 1];
+			indices.CopyTo (new_indices, 0);
+
+			int lower = aobj.GetLowerBound (dimension);
+			int upper = aobj.GetUpperBound (dimension);
+
+			for (int i = lower; i < upper; i++) {
+				if (i > lower)
+					sb.Append (", ");
+
+				new_indices [dimension] = i;
+				if (dimension + 1 < rank)
+					DoFormatArray (aobj, sb, dimension + 1, rank, new_indices);
+				else
+					sb.Append (DoFormatObject (aobj [new_indices], false));
+			}
+
+			sb.Append (" ]");
+		}
+
+		protected string DoFormatArray (ITargetArrayObject aobj)
+		{
+			int rank = aobj.Type.Rank;
+			StringBuilder sb = new StringBuilder ();
+
+			DoFormatArray (aobj, sb, 0, rank, new int [0]);
+			return sb.ToString ();
+		}
+
 		protected string DoFormatObject (ITargetObject obj)
 		{
 			switch (obj.Kind) {
-			case TargetObjectKind.Array: {
-				ITargetArrayObject aobj = (ITargetArrayObject) obj;
-				StringBuilder sb = new StringBuilder ("[ ");
-				int lower = aobj.LowerBound;
-				int upper = aobj.UpperBound;
-				for (int i = lower; i < upper; i++) {
-					if (i > lower)
-						sb.Append (", ");
-					sb.Append (DoFormatObject (aobj [i], false));
-				}
-				sb.Append (" ]");
-				return sb.ToString ();
-			}
+			case TargetObjectKind.Array:
+				return DoFormatArray ((ITargetArrayObject) obj);
 
 			case TargetObjectKind.Pointer: {
 				ITargetPointerObject pobj = (ITargetPointerObject) obj;

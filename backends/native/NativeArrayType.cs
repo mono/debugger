@@ -23,6 +23,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		int ITargetArrayType.Rank {
+			get {
+				return 1;
+			}
+		}
+
 		ITargetType ITargetArrayType.ElementType {
 			get {
 				return ElementType;

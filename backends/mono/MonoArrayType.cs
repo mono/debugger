@@ -22,7 +22,6 @@ namespace Mono.Debugger.Languages.Mono
 		protected readonly int Dimension;
 
 		protected MonoType element_type;
-		protected MonoArrayType subarray_type;
 
 		public MonoArrayType (MonoSymbolFile file, Type type)
 			: base (file, TargetObjectKind.Array, type)
@@ -31,21 +30,6 @@ namespace Mono.Debugger.Languages.Mono
 			this.Dimension = 0;
 
 			element_type = file.MonoLanguage.LookupMonoType (type.GetElementType ());
-
-			if (Dimension + 1 < Rank)
-				subarray_type = new MonoArrayType (this);
-		}
-
-		private MonoArrayType (MonoArrayType type)
-			: base (type.File, TargetObjectKind.Array,
-				MonoDebuggerSupport.MakeArrayType (type.element_type.Type, type.Rank - 1))
-		{
-			Rank = type.Rank;
-			Dimension = type.Dimension + 1;
-			element_type = type.element_type;
-
-			if (Dimension + 1 < Rank)
-				subarray_type = new MonoArrayType (this);
 		}
 
 		public override bool IsByRef {
@@ -60,14 +44,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return element_type; }
 		}
 
-		internal MonoArrayType SubArrayType {
-			get { return subarray_type; }
+		int ITargetArrayType.Rank {
+			get { return Rank; }
 		}
 
 		ITargetType ITargetArrayType.ElementType {
-			get {
-				return ElementType;
-			}
+			get { return ElementType; }
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)

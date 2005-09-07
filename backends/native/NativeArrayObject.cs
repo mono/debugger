@@ -8,7 +8,8 @@ namespace Mono.Debugger.Languages.Native
 		int upper_bound;
 		new NativeArrayType type;
 
-		public NativeArrayObject (NativeArrayType type, TargetLocation location, int lower_bound, int upper_bound)
+		public NativeArrayObject (NativeArrayType type, TargetLocation location,
+					  int lower_bound, int upper_bound)
 			: base (type, location)
 		{
 			this.type = type;
@@ -16,20 +17,32 @@ namespace Mono.Debugger.Languages.Native
 			this.upper_bound = upper_bound;
 		}
 
-		public int LowerBound {
-			get {
-				return lower_bound;
-			}
+		ITargetArrayType ITargetArrayObject.Type {
+			get { return type; }
 		}
 
-		public int UpperBound {
-			get {
-				return upper_bound;
-			}
+		public int GetLowerBound (int dimension)
+		{
+			if (dimension != 0)
+				throw new ArgumentException ();
+
+			return lower_bound;
 		}
 
-		public ITargetObject this [int index] {
+		public int GetUpperBound (int dimension)
+		{
+			if (dimension != 0)
+				throw new ArgumentException ();
+
+			return upper_bound;
+		}
+
+		public ITargetObject this [params int[] indices] {
 			get {
+				if (indices.Length != 1)
+					throw new ArgumentException ();
+
+				int index = indices [0];
 				int size = type.ElementType.Size;
 
 				TargetLocation new_location = location.GetLocationAtOffset (

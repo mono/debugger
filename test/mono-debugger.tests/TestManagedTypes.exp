@@ -73,9 +73,9 @@ mdb_send "continue"
 mdb_expect_line "5"
 mdb_expect_stopped 0 "X.MultiValueTypeArray()" $file $bpt_multi_value_array
 mdb_send_and_expect "print a" "(System.Int32\[,\]) \[ \[ 6, 7, 8 \], \[ 9, 10, 11 \] \]"
-mdb_send_and_expect "print a\[1\]" "(System.Int32\[\]) \[ 9, 10, 11 \]"
-mdb_send_and_expect "print a\[1\]\[2\]" "(System.Int32) 11"
-mdb_send_and_expect "print a\[2\]" "ERROR: Index 2 of array expression a out of bounds (must be between 0 and 1)."
+mdb_send_and_expect "print a\[1\]" "ERROR: Index of array expression `a' out of bounds."
+mdb_send_and_expect "print a\[1,2\]" "(System.Int32) 11"
+mdb_send_and_expect "print a\[2\]" "ERROR: Index of array expression `a' out of bounds."
 
 mdb_send "break $bpt_string_array"
 set breakpoint [mdb_expect_breakpoint]
@@ -91,8 +91,7 @@ mdb_send "continue"
 mdb_expect_line "System.String\[\]"
 mdb_expect_stopped 0 "X.MultiStringArray()" $file $bpt_multi_string_array
 mdb_send_and_expect "print a" "(System.String\[,\]) \[ \[ \"Hello\", \"World\" \], \[ \"New York\", \"Boston\" \], \[ \"Ximian\", \"Monkeys\" \] \]"
-mdb_send_and_expect "print a\[2\]" "(System.String\[\]) \[ \"Ximian\", \"Monkeys\" \]"
-mdb_send_and_expect "print a\[2\]\[1\]" "(System.String) \"Monkeys\""
+mdb_send_and_expect "print a\[2,1\]" "(System.String) \"Monkeys\""
 
 mdb_send "break $bpt_struct_type"
 set breakpoint [mdb_expect_breakpoint]

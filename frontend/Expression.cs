@@ -1652,9 +1652,9 @@ namespace Mono.Debugger.Frontend
 			StringBuilder sb = new StringBuilder("");
 			bool comma = false;
 			foreach (Expression index in indices) {
-			  if (comma) sb.Append(",");
-			  sb.Append (index.ToString());
-			  comma = true;
+				if (comma) sb.Append(",");
+				sb.Append (index.ToString());
+				comma = true;
 			}
 			name = String.Format ("{0}[{1}]", expr.Name, sb.ToString());
 		}
@@ -1682,7 +1682,8 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		int GetIntIndex (Expression index, ScriptingContext context) {
+		int GetIntIndex (Expression index, ScriptingContext context)
+		{
 			try {
 				return (int) index.Evaluate (context);
 			}
@@ -1695,38 +1696,35 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			int i;
 			ITargetObject obj = expr.EvaluateVariable (context);
+
+			int[] int_indices = new int [indices.Length];
+			for (int i = 0; i < indices.Length; i++)
+				int_indices [i] = GetIntIndex (indices [i], context);
 
 			// array[int]
 			ITargetArrayObject aobj = obj as ITargetArrayObject;
 			if (aobj != null) {
-				// single dimensional array only at present
-				i = GetIntIndex (this.indices[0], context);
-
-				if ((i < aobj.LowerBound) || (i >= aobj.UpperBound)) {
-					if (aobj.UpperBound == 0)
-						throw new ScriptingException (
-								       "Index {0} of array expression {1} out of bounds " +
-								       "(array is of zero length)", i, expr.Name);
-					else
-						throw new ScriptingException (
-								       "Index {0} of array expression {1} out of bounds " +
-								       "(must be between {2} and {3}).", i, expr.Name,
-								       aobj.LowerBound, aobj.UpperBound - 1);
+				try {
+					return aobj [int_indices];
+				} catch (ArgumentException ex) {
+					throw new ScriptingException (
+						"Index of array expression `{0}' out of bounds.",
+						expr.Name);
 				}
-
-				return aobj [i];
 			}
 
 			// pointer[int]
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj != null) {
 				// single dimensional array only at present
-				i = GetIntIndex (this.indices[0], context);
+				if (int_indices.Length != 1)
+					throw new ScriptingException (
+						"Multi-dimensial arrays of type {0} are not yet supported",
+						expr.Name);
 
 				if (pobj.Type.IsArray)
-					return pobj.GetArrayElement (i);
+					return pobj.GetArrayElement (int_indices [0]);
 
 				throw new ScriptingException (
 						       "Variable {0} is not an array type.", expr.Name);
@@ -1743,7 +1741,7 @@ namespace Mono.Debugger.Frontend
 
 				ITargetType[] indextypes = new ITargetType [indices.Length];
 				ITargetObject[] indexargs = new ITargetObject [indices.Length];
-				for (i = 0; i < indices.Length; i++) {
+				for (int i = 0; i < indices.Length; i++) {
 					indextypes [i] = indices [i].EvaluateType (context);
 					if (indextypes [i] == null)
 						return null;
