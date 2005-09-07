@@ -33,8 +33,8 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				TargetBlob blob;
-				if (type_info.Type.HasFixedSize)
-					blob = location.ReadMemory (type_info.Type.Size);
+				if (type.HasFixedSize)
+					blob = location.ReadMemory (type.Size);
 				else
 					blob = GetDynamicContents (location, MaximumDynamicSize);
 
@@ -49,8 +49,8 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				byte [] data = CreateObject (obj);
-				if (!type_info.Type.HasFixedSize || (data == null) ||
-				    (data.Length != type_info.Type.Size))
+				if (!type.HasFixedSize || (data == null) ||
+				    (data.Length != type.Size))
 					throw new NotSupportedException ();
 
 				RawContents = data;
@@ -62,7 +62,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected object GetObject (TargetBlob blob, TargetLocation locaction)
 		{
-			switch (((NativeFundamentalType) type_info.Type).FundamentalKind) {
+			switch (((NativeFundamentalType) type).FundamentalKind) {
 			case FundamentalKind.Boolean:
 				return blob.Contents [0] != 0;
 
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Languages.Native
 
 		protected byte[] CreateObject (object obj)
 		{
-			switch (((NativeFundamentalType) type_info.Type).FundamentalKind) {
+			switch (((NativeFundamentalType) type).FundamentalKind) {
 			case FundamentalKind.Boolean:
 				return BitConverter.GetBytes (Convert.ToBoolean (obj));
 

@@ -6,7 +6,7 @@ namespace Mono.Debugger.Languages.Native
 	{
 		int lower_bound;
 		int upper_bound;
-		NativeArrayType type;
+		new NativeArrayType type;
 
 		public NativeArrayObject (NativeArrayType type, TargetLocation location, int lower_bound, int upper_bound)
 			: base (type, location)

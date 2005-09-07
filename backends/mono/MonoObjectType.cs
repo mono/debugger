@@ -52,10 +52,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		ITargetType ITargetTypeInfo.Type {
-			get { return this; }
-		}
-
 		MonoType IMonoTypeInfo.Type {
 			get { return this; }
 		}

@@ -4,32 +4,32 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal abstract class NativeObject : MarshalByRefObject, ITargetObject
 	{
-		protected ITargetTypeInfo type_info;
+		protected ITargetType type;
 		protected TargetLocation location;
 		protected bool is_valid;
 
-		public NativeObject (ITargetTypeInfo type_info, TargetLocation location)
+		public NativeObject (ITargetType type, TargetLocation location)
 		{
-			this.type_info = type_info;
+			this.type = type;
 			this.location = location;
 			is_valid = true;
 		}
 
 		public ITargetType Type {
 			get {
-				return type_info.Type;
+				return type;
 			}
 		}
 
 		public string TypeName {
 			get {
-				return type_info.Type.Name;
+				return type.Name;
 			}
 		}
 
 		public TargetObjectKind Kind {
 			get {
-				return type_info.Type.Kind;
+				return type.Kind;
 			}
 		}
 
@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages.Native
 		public virtual byte[] RawContents {
 			get {
 				try {
-					return location.ReadBuffer (type_info.Type.Size);
+					return location.ReadBuffer (type.Size);
 				} catch (TargetException ex) {
 					is_valid = false;
 					throw new LocationInvalidException (ex);
@@ -50,7 +50,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 			set {
 				try {
-					if (!type_info.Type.HasFixedSize || (value.Length != type_info.Type.Size))
+					if (!type.HasFixedSize || (value.Length != type.Size))
 						throw new ArgumentException ();
 					location.WriteBuffer (value);
 				} catch (TargetException ex) {
@@ -68,12 +68,12 @@ namespace Mono.Debugger.Languages.Native
 
 		public virtual long DynamicSize {
 			get {
-				if (type_info.Type.HasFixedSize)
+				if (type.HasFixedSize)
 					throw new InvalidOperationException ();
 
 				try {
 					TargetLocation dynamic_location;
-					TargetBlob blob = location.ReadMemory (type_info.Type.Size);
+					TargetBlob blob = location.ReadMemory (type.Size);
 					return GetDynamicSize (blob, location, out dynamic_location);
 				} catch (TargetException ex) {
 					is_valid = false;
@@ -84,7 +84,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public virtual byte[] GetRawDynamicContents (int max_size)
 		{
-			if (type_info.Type.HasFixedSize)
+			if (type.HasFixedSize)
 				throw new InvalidOperationException ();
 
 			try {
@@ -100,7 +100,7 @@ namespace Mono.Debugger.Languages.Native
 		{
 			try {
 				TargetLocation dynamic_location;
-				TargetBlob blob = location.ReadMemory (type_info.Type.Size);
+				TargetBlob blob = location.ReadMemory (type.Size);
 				long size = GetDynamicSize (blob, location, out dynamic_location);
 
 				if ((max_size > 0) && (size > (long) max_size))

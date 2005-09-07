@@ -54,11 +54,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		ITargetTypeInfo ITargetType.GetTypeInfo ()
-		{
-			return GetTypeInfo ();
-		}
-
 		public virtual IMonoTypeInfo GetTypeInfo ()
 		{
 			if (type_info != null)

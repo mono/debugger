@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal interface IMonoTypeInfo : ITargetTypeInfo
+	internal interface IMonoTypeInfo
 	{
 		new MonoType Type {
 			get;
@@ -47,10 +47,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (!klass_address.IsNull)
 				type.File.MonoLanguage.AddClass (klass_address, type);
-		}
-
-		ITargetType ITargetTypeInfo.Type {
-			get { return type; }
 		}
 
 		public MonoType Type {

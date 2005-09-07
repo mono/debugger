@@ -28,7 +28,5 @@ namespace Mono.Debugger.Languages
 		int Size {
 			get;
 		}
-
-		ITargetTypeInfo GetTypeInfo ();
 	}
 }

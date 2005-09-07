@@ -1,5 +1,13 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetType.cs (ITargetType.GetTypeInfo): Removed.
+
+	* interfaces/ITargetTypeInfo.cs: Removed.
+	(ITargetTypeInfo): This is now an internal implementation detail
+	and not exposed to the client.
+
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetObject.cs (ITargetObject.TypeInfo): Removed.
 	(ITargetObject.Type): New property.
 

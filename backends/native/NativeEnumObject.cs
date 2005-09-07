@@ -4,7 +4,7 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeEnumObject : NativeObject, ITargetEnumObject
 	{
-		NativeEnumType type;
+		new NativeEnumType type;
 
 		public NativeEnumObject (NativeEnumType type, TargetLocation location)
 			: base (type, location)

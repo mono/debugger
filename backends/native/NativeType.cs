@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal abstract class NativeType : ITargetType, ITargetTypeInfo
+	internal abstract class NativeType : ITargetType
 	{
 		protected readonly TargetObjectKind kind;
 
@@ -53,15 +53,6 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public abstract NativeObject GetObject (TargetLocation location);
-
-		ITargetType ITargetTypeInfo.Type {
-			get { return this; }
-		}
-
-		ITargetTypeInfo ITargetType.GetTypeInfo ()
-		{
-			return this;
-		}
 
 		public override string ToString ()
 		{

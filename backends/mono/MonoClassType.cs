@@ -42,7 +42,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parent_type != null; }
 		}
 
-		public ITargetClassType ParentType {
+		ITargetClassType ITargetClassType.ParentType {
+			get { return parent_type; }
+		}
+
+		public MonoClassType ParentType {
 			get { return parent_type; }
 		}
 

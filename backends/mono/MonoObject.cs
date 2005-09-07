@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.Mono
 			is_valid = true;
 		}
 
-		public ITargetTypeInfo TypeInfo {
+		public IMonoTypeInfo TypeInfo {
 			get {
 				return type_info;
 			}

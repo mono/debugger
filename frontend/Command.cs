@@ -2038,9 +2038,6 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			type = expr.EvaluateType (context) as ITargetClassType;
-			// we need to resolve the TypeInfo so the
-			// debugger will load the exception type.
-			type.GetTypeInfo();
 			if (!IsSubclassOf (type, exception_type))
 				throw new ScriptingException ("Type `{0}' is not an exception type.", expr.Name);
 
