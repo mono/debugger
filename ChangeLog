@@ -1,5 +1,10 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.PrintObject): Removed.
+	
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.throw_exception): Always ignore the
 	exception if we're in an OperationRuntimeInvoke.
