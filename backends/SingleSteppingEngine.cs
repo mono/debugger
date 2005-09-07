@@ -204,27 +204,6 @@ namespace Mono.Debugger.Backends
 			Inferior.ChildEventType message = cevent.Type;
 			int arg = (int) cevent.Argument;
 
-			// Callbacks happen when the user (or the engine) called a method
-			// in the target (RuntimeInvoke).
-			if (current_callback != null) {
-				TargetEventArgs args;
-				if (!current_callback.ProcessEvent (this, inferior, cevent,
-								    out args))
-					return;
-
-				current_callback = null;
-
-				if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
-					Report.Debug (DebugFlags.EventLoop,
-						      "{0} completed callback", this);
-
-					// Ok, inform the user that we stopped.
-					step_operation_finished ();
-					operation_completed (args);
-					return;
-				}
-			}
-
 			TargetEventArgs result = null;
 
 			if ((message == Inferior.ChildEventType.THROW_EXCEPTION) ||
@@ -257,8 +236,27 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 
-				if (temp_breakpoint_id != 0) {
-					do_continue ();
+				do_continue ();
+				return;
+			}
+
+			// Callbacks happen when the user (or the engine) called a method
+			// in the target (RuntimeInvoke).
+			if (current_callback != null) {
+				TargetEventArgs args;
+				if (!current_callback.ProcessEvent (this, inferior, cevent,
+								    out args))
+					return;
+
+				current_callback = null;
+
+				if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
+					Report.Debug (DebugFlags.EventLoop,
+						      "{0} completed callback", this);
+
+					// Ok, inform the user that we stopped.
+					step_operation_finished ();
+					operation_completed (args);
 					return;
 				}
 			}
@@ -2470,6 +2468,12 @@ namespace Mono.Debugger.Backends
 		{
 			args = null;
 			return true;
+		}
+
+		public override bool HandleException (SingleSteppingEngine sse,
+						      TargetAddress stack, TargetAddress exc)
+		{
+			return false;
 		}
 	}
 
