@@ -216,8 +216,9 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
-				  guint64 method_argument, guint64 object_argument,
-				  guint32 num_params, guint64 *param_data,
+				  guint64 method_argument, guint32 num_params,
+				  guint32 blob_size, guint64 *param_data,
+				  gint32 *offset_data, gconstpointer blob_data,
 				  guint64 callback_argument, gboolean debug)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
@@ -233,19 +234,25 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 					0x92, 0x00, 0x00, 0x00, 0x00, 0x8b, 0x12, 0x31,
 					0xdb, 0x31, 0xc9, 0xcc };
 	int static_size = sizeof (static_code);
-	int size = static_size + (num_params + 2) * 4;
+	int size = static_size + (num_params + 3) * 4 + blob_size;
 	guint8 *code = g_malloc0 (size);
-	guint32 *ptr = (guint32 *) (code + static_size);
+	guint32 *ptr = (guint32 *) (code + static_size + blob_size);
+	guint64 blob_start;
 	memcpy (code, static_code, static_size);
-
-	for (i = 0; i < num_params; i++)
-		ptr [i] = param_data [i];
-	ptr [num_params] = 0;
+	memcpy (code + static_size, blob_data, blob_size);
 
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
+	blob_start = new_esp + static_size;
+
+	for (i = 0; i < num_params; i++) {
+		if (offset_data [i] >= 0)
+			ptr [i] = blob_start + offset_data [i];
+		else
+			ptr [i] = param_data [i];
+	}
 
 	rdata = g_new0 (RuntimeInvokeData, 1);
 	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
@@ -260,8 +267,8 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 		*((guint32 *) (code+1)) = 0;
 	} else
 		*((guint32 *) (code+1)) = new_esp + static_size + (num_params + 1) * 4;
-	*((guint32 *) (code+6)) = new_esp + static_size;
-	*((guint32 *) (code+11)) = object_argument;
+	*((guint32 *) (code+6)) = new_esp + static_size + blob_size + 4;
+	*((guint32 *) (code+11)) = ptr [0];
 	*((guint32 *) (code+16)) = method_argument;
 	*((guint32 *) (code+21)) = call_disp - 25;
 	*((guint32 *) (code+33)) = 14 + (num_params + 1) * 4;
