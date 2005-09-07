@@ -1361,7 +1361,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (TargetAddress method_argument,
+		public void RuntimeInvoke (ITargetFunctionObject method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects)
 		{
@@ -1371,7 +1371,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (TargetAddress method_argument,
+		public void RuntimeInvoke (ITargetFunctionObject method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects,
 					   CommandResult result)
@@ -1821,9 +1821,9 @@ namespace Mono.Debugger.Backends
 					inferior.CallMethod (
 						language.GetVirtualMethodFunc,
 						op.ObjectArgument.Location.Address.Address,
-						op.MethodArgument.Address, ID);
+						op.MethodArgument.Location.Address.Address, ID);
 				} else {
-					method = op.MethodArgument;
+					method = op.MethodArgument.Location.Address;
 					inferior.CallMethod (
 						language.CompileMethodFunc,
 						method.Address, 0, ID);
@@ -2427,7 +2427,7 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : Operation
 	{
-		public readonly TargetAddress MethodArgument;
+		public readonly MonoFunctionObject MethodArgument;
 		public readonly MonoObject ObjectArgument;
 		public readonly MonoObject[] ParamObjects;
 		public readonly bool Debug;
@@ -2437,18 +2437,18 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public OperationRuntimeInvoke (TargetAddress method_argument,
+		public OperationRuntimeInvoke (ITargetFunctionObject method_argument,
 					       ITargetObject object_argument,
 					       ITargetObject[] param_objects)
 		{
-			this.MethodArgument = method_argument;
+			this.MethodArgument = (MonoFunctionObject) method_argument;
 			this.ObjectArgument = (MonoObject) object_argument;
 			this.ParamObjects = new MonoObject [param_objects.Length];
 			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
 		}
 
-		public OperationRuntimeInvoke (TargetAddress method_argument,
+		public OperationRuntimeInvoke (ITargetFunctionObject method_argument,
 					       ITargetObject object_argument,
 					       ITargetObject[] param_objects,
 					       CommandResult result)

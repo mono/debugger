@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return method_info; }
 		}
 
-		internal ITargetObject Invoke (ITargetAccess target, TargetAddress method,
+		internal ITargetObject Invoke (ITargetAccess target, MonoFunctionObject method,
 					       MonoObject instance, MonoObject[] args, bool debug)
 		{
 			if (ParameterTypes.Length != args.Length)

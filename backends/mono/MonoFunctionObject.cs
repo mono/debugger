@@ -27,8 +27,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			MonoObject[] margs = new MonoObject [args.Length];
 			args.CopyTo (margs, 0);
-			return type.Invoke (target, location.Address,
-					    (MonoObject) instance, margs, debug);
+			return type.Invoke (target, this, (MonoObject) instance, margs, debug);
 		}
 	}
 }

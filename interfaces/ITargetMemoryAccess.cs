@@ -166,11 +166,11 @@ namespace Mono.Debugger
 		TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 					  TargetAddress arg2);
 
-		void RuntimeInvoke (TargetAddress method_argument,
+		void RuntimeInvoke (ITargetFunctionObject method_argument,
 				    ITargetObject object_argument,
 				    ITargetObject[] param_objects);
 
-		ITargetObject RuntimeInvoke (TargetAddress method_argument,
+		ITargetObject RuntimeInvoke (ITargetFunctionObject method_argument,
 					     ITargetObject object_argument,
 					     ITargetObject[] param_objects,
 					     out string exc_message);
