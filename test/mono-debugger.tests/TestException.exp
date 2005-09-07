@@ -15,6 +15,8 @@ mdb_expect_exception 0 "X.Test()" $file 7
 mdb_send "continue"
 mdb_expect_line "EXCEPTION: System.InvalidOperationException"
 mdb_expect_stopped 0 "X.Main()" $file 19
+mdb_send "print x.Test()"
+mdb_expect_line "ERROR: Invocation of `x.Test ()' raised an exception: System.InvalidOperationException: Operation is not valid due to the current state of the object"
 mdb_send "continue"
 mdb_expect_line "Done"
 mdb_expect_line "Process @4 terminated normally."

@@ -792,6 +792,9 @@ namespace Mono.Debugger.Backends
 			    current_operation.StartFrame == ip)
 				return false;
 
+			if (current_operation is OperationRuntimeInvoke)
+				return false;
+
 			foreach (Breakpoint bpt in exception_handlers.Values) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",

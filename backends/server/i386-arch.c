@@ -31,6 +31,7 @@ typedef struct
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	long call_address;
+	long exc_address;
 	guint64 callback_argument;
 } RuntimeInvokeData;
 
@@ -258,6 +259,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
 	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	rdata->call_address = new_esp + static_size;
+	rdata->exc_address = 14 + (num_params + 1) * 4;
 	rdata->callback_argument = callback_argument;
 
 	call_disp = (int) invoke_method - new_esp;
@@ -396,7 +398,9 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		*callback_arg = rdata->callback_argument;
 		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
-		*retval2 = (guint32) INFERIOR_REG_EDX (arch->current_regs);
+
+		if (server_ptrace_peek_word (handle, rdata->exc_address, retval2) != COMMAND_ERROR_NONE)
+			g_error (G_STRLOC ": Can't get exc object");
 
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);

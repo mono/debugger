@@ -1,6 +1,18 @@
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.throw_exception): Always ignore the
+	exception if we're in an OperationRuntimeInvoke.
+
+	* backends/server/x86_64-arch.cs (x86_arch_child_stopped): On
+	runtime invoke, we must read the exception object from the
+	exception address.
+
+	* tests/mono-debugger.tests/TestException.exp: Added testcase.
+
+2005-09-07  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.ProcessChildEvent): Handle exceptions first.
 
 2005-09-07  Martin Baulig  <martin@ximian.com>
