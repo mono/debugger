@@ -28,7 +28,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual ITargetType DoEvaluateType (ScriptingContext context)
 		{
-			return EvaluateVariable (context).TypeInfo.Type;
+			return EvaluateVariable (context).Type;
 		}
 
 		public ITargetType EvaluateType (ScriptingContext context)
@@ -518,11 +518,11 @@ namespace Mono.Debugger.Frontend
 			if (!var.CanWrite)
 				return false;
 
-			if (var.Type != obj.TypeInfo.Type)
+			if (var.Type != obj.Type)
 				throw new ScriptingException (
 					"Type mismatch: cannot assign expression of type " +
 					"`{0}' to variable `{1}', which is of type `{2}'.",
-					obj.TypeInfo.Type.Name, Name, var.Type.Name);
+					obj.TypeName, Name, var.Type.Name);
 
 			var.SetObject (context.CurrentFrame.Frame, obj);
 			return true;
@@ -1463,11 +1463,11 @@ namespace Mono.Debugger.Frontend
 
 			if (member is ITargetFieldInfo) {
 
-				if (member.Type != obj.TypeInfo.Type)
+				if (member.Type != obj.Type)
 					throw new ScriptingException (
 							      "Type mismatch: cannot assign expression of type " +
 							      "`{0}' to field `{1}', which is of type `{2}'.",
-							      obj.TypeInfo.Type.Name, Name, member.Type.Name);
+							      obj.TypeName, Name, member.Type.Name);
 
 				if (member.IsStatic)
 					SetStaticField (Type, Frame, (ITargetFieldInfo)member, obj);
@@ -1873,7 +1873,7 @@ namespace Mono.Debugger.Frontend
 		static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
 					      ITargetClassType target_type)
 		{
-			if (source.TypeInfo.Type == target_type)
+			if (source.Type == target_type)
 				return source;
 
 			ITargetClassObject sobj = source as ITargetClassObject;
@@ -1917,7 +1917,7 @@ namespace Mono.Debugger.Frontend
 			if (obj == null)
 				return null;
 
-			return obj.TypeInfo.Type;
+			return obj.Type;
 		}
 	}
 

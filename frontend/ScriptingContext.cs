@@ -1006,30 +1006,30 @@ namespace Mono.Debugger.Frontend
 
 		public string DumpObject (ITargetObject obj)
 		{
-			long dynamic = obj.TypeInfo.Type.HasFixedSize ? -1 : obj.DynamicSize;
+			long dynamic = obj.Type.HasFixedSize ? -1 : obj.DynamicSize;
 			return String.Format ("object:{0}:{1}:{2}", obj.IsValid,
-					      dynamic, DumpType (obj.TypeInfo));
+					      dynamic, DumpType (obj.Type));
 		}
 
-		public string DumpType (ITargetTypeInfo type)
+		public string DumpType (ITargetType type)
 		{
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (type.Type.Name);
+			sb.Append (type.Name);
 			sb.Append (":");
-			sb.Append (type.Type.HasFixedSize);
+			sb.Append (type.HasFixedSize);
 			sb.Append (":");
-			sb.Append (type.Type.Size);
+			sb.Append (type.Size);
 			sb.Append (":");
-			sb.Append (type.Type.Kind);
+			sb.Append (type.Kind);
 			sb.Append (" ");
 
-			switch (type.Type.Kind) {
+			switch (type.Kind) {
 			case TargetObjectKind.Fundamental:
-				sb.Append (((ITargetFundamentalType) type.Type).FundamentalKind);
+				sb.Append (((ITargetFundamentalType) type).FundamentalKind);
 				break;
 
 			case TargetObjectKind.Pointer: {
-				ITargetPointerType ptype = (ITargetPointerType) type.Type;
+				ITargetPointerType ptype = (ITargetPointerType) type;
 				sb.Append (ptype.IsTypesafe);
 				sb.Append (":");
 				sb.Append (ptype.HasStaticType);
@@ -1041,11 +1041,11 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case TargetObjectKind.Array:
-				sb.Append (((ITargetArrayType) type.Type).ElementType.Name);
+				sb.Append (((ITargetArrayType) type).ElementType.Name);
 				break;
 
 			case TargetObjectKind.Alias: {
-				ITargetTypeAlias alias = (ITargetTypeAlias) type.Type;
+				ITargetTypeAlias alias = (ITargetTypeAlias) type;
 				sb.Append (alias.TargetName);
 				if (alias.TargetType != null) {
 					sb.Append (":");

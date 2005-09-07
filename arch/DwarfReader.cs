@@ -2605,7 +2605,7 @@ namespace Mono.Debugger.Architecture
 
 			public void SetObject (StackFrame frame, ITargetObject obj)
 			{
-				if (obj.TypeInfo.Type != Type)
+				if (obj.Type != Type)
 					throw new InvalidOperationException ();
 
 				NativeFundamentalObject var_object = GetObject (frame) as NativeFundamentalObject;

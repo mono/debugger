@@ -15,9 +15,9 @@ namespace Mono.Debugger.Languages.Native
 			is_valid = true;
 		}
 
-		public ITargetTypeInfo TypeInfo {
+		public ITargetType Type {
 			get {
-				return type_info;
+				return type_info.Type;
 			}
 		}
 
@@ -132,7 +132,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} [{1}]", GetType (), TypeInfo);
+			return String.Format ("{0} [{1}]", GetType (), Type);
 		}
 	}
 }

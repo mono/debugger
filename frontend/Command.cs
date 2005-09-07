@@ -350,13 +350,13 @@ namespace Mono.Debugger.Frontend
 
 			case Format.Object:
 				ITargetObject obj = expression.EvaluateVariable (context);
-				context.PrintType (obj.TypeInfo.Type);
+				context.PrintType (obj.Type);
 				break;
 
 			case Format.Current:
 				obj = expression.EvaluateVariable (context);
 				ITargetClassObject cobj = obj as ITargetClassObject;
-				context.PrintType (cobj.TypeInfo.Type);
+				context.PrintType (cobj.Type);
 				break;
 
 			default:

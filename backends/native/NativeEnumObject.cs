@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Native
 			this.type = type;
 		}
 
-		public ITargetEnumType Type {
+		new public ITargetEnumType Type {
 			get {
 				return type;
 			}

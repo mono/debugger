@@ -21,6 +21,12 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		ITargetType ITargetObject.Type {
+			get {
+				return type_info.Type;
+			}
+		}
+
 		public string TypeName {
 			get {
 				return type_info.Type.Name;

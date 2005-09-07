@@ -133,7 +133,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void SetObject (StackFrame frame, ITargetObject obj)
 		{
-			if (obj.TypeInfo.Type != Type)
+			if (obj.Type != Type)
 				throw new InvalidOperationException ();
 
 			MonoObject var_object = (MonoObject)GetObject (frame);

@@ -5,7 +5,7 @@ namespace Mono.Debugger.Languages
 		// <summary>
 		//   The type info of this object.
 		// </summary>
-		ITargetTypeInfo TypeInfo {
+		ITargetType Type {
 			get;
 		}
 
