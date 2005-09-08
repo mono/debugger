@@ -110,7 +110,7 @@ namespace Mono.Debugger.Languages
 			if (is_regoffset) {
 				TargetMemoryAccess.WriteAddress (address, new_address);
 			} else {
-				frame.SetRegister (register, address.Address);
+				frame.SetRegister (register, new_address.Address);
 				update ();
 			}
 		}

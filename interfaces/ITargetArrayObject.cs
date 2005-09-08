@@ -10,8 +10,8 @@ namespace Mono.Debugger.Languages
 
 		int GetUpperBound (int dimension);
 
-		ITargetObject this [params int[] indices] {
-			get;
+		ITargetObject this [int[] indices] {
+			get; set;
 		}
 	}
 }

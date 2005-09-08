@@ -8,7 +8,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected readonly int rank;
 		protected readonly int length;
-		protected readonly int base_index;
 		protected readonly MonoArrayBounds[] bounds;
 
 		public MonoArrayObject (MonoArrayTypeInfo type, TargetLocation location)
@@ -70,27 +69,39 @@ namespace Mono.Debugger.Languages.Mono
 			return bounds [dimension].Lower + bounds [dimension].Length;
 		}
 
-		public ITargetObject this [params int[] indices] {
+		int GetArrayOffset (int[] indices)
+		{
+			if (indices.Length != rank)
+				throw new ArgumentException ();
+
+			if (rank > 1) {
+				for (int i = 0; i < rank; i++) {
+					if (indices [i] < bounds [i].Lower)
+						throw new ArgumentException ();
+
+					indices [i] -= bounds [i].Lower;
+
+					if (indices [i] >= bounds [i].Length)
+						throw new ArgumentException ();
+				}
+			} else if ((indices [0] < 0) || (indices [0] > length))
+				throw new ArgumentException ();
+
+			int index = indices [0];
+			for (int i = 1; i < rank; i++)
+				index = index * bounds [i].Length + indices [i];
+
+			if (type.Type.ElementType.IsByRef)
+				return index * location.TargetInfo.TargetAddressSize;
+			else if (type.ElementType.HasFixedSize)
+				return index * type.ElementType.Size;
+			else
+				throw new InvalidOperationException ();
+		}
+
+		public ITargetObject this [int[] indices] {
 			get {
-				if (indices.Length != rank)
-					throw new ArgumentException ();
-
-				if (rank > 1) {
-					for (int i = 0; i < rank; i++) {
-						if (indices [i] < bounds [i].Lower)
-							throw new ArgumentException ();
-
-						indices [i] -= bounds [i].Lower;
-
-						if (indices [i] >= bounds [i].Length)
-							throw new ArgumentException ();
-					}
-				} else if ((indices [0] < 0) || (indices [0] > length))
-					throw new ArgumentException ();
-
-				int index = indices [0];
-				for (int i = 1; i < rank; i++)
-					index = index * bounds [i].Length + indices [i];
+				int offset = GetArrayOffset (indices);
 
 				TargetBlob blob;
 				TargetLocation dynamic_location;
@@ -101,19 +112,29 @@ namespace Mono.Debugger.Languages.Mono
 					throw new LocationInvalidException (ex);
 				}
 
-				int offset;
-				if (type.Type.ElementType.IsByRef)
-					offset = index * blob.TargetInfo.TargetAddressSize;
-				else if (type.ElementType.HasFixedSize)
-					offset = index * type.ElementType.Size;
-				else
-					throw new InvalidOperationException ();
-
 				TargetLocation new_location =
 					dynamic_location.GetLocationAtOffset (
 						offset, type.Type.ElementType.IsByRef);
 
 				return type.ElementType.GetObject (new_location);
+			}
+
+			set {
+				int offset = GetArrayOffset (indices);
+
+				TargetBlob blob;
+				TargetLocation dynamic_location;
+				try {
+					blob = location.ReadMemory (type.Size);
+					GetDynamicSize (blob, location, out dynamic_location);
+				} catch (TargetException ex) {
+					throw new LocationInvalidException (ex);
+				}
+
+				TargetLocation new_location =
+					dynamic_location.GetLocationAtOffset (offset, false);
+
+				type.ElementType.SetObject (new_location, (MonoObject) value);
 			}
 		}
 
@@ -139,8 +160,7 @@ namespace Mono.Debugger.Languages.Mono
 							out TargetLocation dynamic_location)
 		{
 			int element_size = GetElementSize (blob.TargetInfo);
-			dynamic_location = location.GetLocationAtOffset (
-				type.Size + element_size * base_index, false);
+			dynamic_location = location.GetLocationAtOffset (type.Size, false);
 			return element_size * GetLength ();
 		}
 

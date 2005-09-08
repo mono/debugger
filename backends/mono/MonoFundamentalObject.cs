@@ -73,10 +73,5 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 			}
 		}
-
-		public override void SetObject (MonoObject obj)
-		{
-			RawContents = obj.RawContents;
-		}
 	}
 }

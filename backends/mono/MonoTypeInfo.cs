@@ -17,6 +17,8 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		MonoObject GetObject (TargetLocation location);
+
+		void SetObject (TargetLocation location, MonoObject obj);
 	}
 
 	internal abstract class MonoTypeInfo : MarshalByRefObject, IMonoTypeInfo
@@ -62,6 +64,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public abstract MonoObject GetObject (TargetLocation location);
+
+		public virtual void SetObject (TargetLocation location, MonoObject obj)
+		{
+			type.SetObject (location, obj);
+		}
 
 		public override string ToString ()
 		{

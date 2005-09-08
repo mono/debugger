@@ -133,14 +133,16 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void SetObject (StackFrame frame, ITargetObject obj)
 		{
-			if (obj.Type != Type)
+			TargetLocation location = GetLocation (frame);
+
+			if (location == null)
+				throw new LocationInvalidException ();
+
+			IMonoTypeInfo tinfo = type.GetTypeInfo ();
+			if (tinfo == null)
 				throw new InvalidOperationException ();
 
-			MonoObject var_object = (MonoObject)GetObject (frame);
-			if (var_object == null)
-				return;
-
-			var_object.SetObject ((MonoObject) obj);
+			tinfo.SetObject (location, (MonoObject) obj);
 		}
 
 		public override string ToString ()

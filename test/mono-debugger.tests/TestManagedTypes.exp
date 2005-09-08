@@ -79,20 +79,20 @@ mdb_send_and_expect "print a" "(System.Int32\[,\]) \[ \[ 6, 7, 8 \], \[ 9, 10, 1
 mdb_send_and_expect "print a\[1\]" "ERROR: Index of array expression `a' out of bounds."
 mdb_send_and_expect "print a\[1,2\]" "(System.Int32) 11"
 mdb_send_and_expect "print a\[2\]" "ERROR: Index of array expression `a' out of bounds."
-# FIXME
-# mdb_send "set a\[1,2\] = 50"
-# mdb_expect_prompt
+mdb_send "set a\[1,2\] = 50"
+mdb_expect_prompt
 
 mdb_send "break $bpt_string_array"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_line "11"
+mdb_expect_line "50"
 mdb_expect_stopped 0 "X.StringArray()" $file $bpt_string_array
 mdb_send_and_expect "print a" "(System.String\[\]) \[ \"Hello\", \"World\" \]"
 mdb_send_and_expect "print a\[1\]" "(System.String) \"World\""
-# FIXME
-# mdb_send "set a\[1\] = \"Trier\""
-# mdb_expect_prompt
+mdb_send "set a\[1\] = \"Trier\""
+mdb_expect_prompt
+mdb_send_and_expect "print a" "(System.String\[\]) \[ \"Hello\", \"Trier\" \]"
+mdb_send_and_expect "print a\[1\]" "(System.String) \"Trier\""
 
 mdb_send "break $bpt_multi_string_array"
 set breakpoint [mdb_expect_breakpoint]
@@ -101,6 +101,20 @@ mdb_expect_line "System.String\[\]"
 mdb_expect_stopped 0 "X.MultiStringArray()" $file $bpt_multi_string_array
 mdb_send_and_expect "print a" "(System.String\[,\]) \[ \[ \"Hello\", \"World\" \], \[ \"New York\", \"Boston\" \], \[ \"Ximian\", \"Monkeys\" \] \]"
 mdb_send_and_expect "print a\[2,1\]" "(System.String) \"Monkeys\""
+mdb_send "set a\[2,1\] = \"Primates\""
+mdb_expect_prompt
+mdb_send_and_expect "print a" "(System.String\[,\]) \[ \[ \"Hello\", \"World\" \], \[ \"New York\", \"Boston\" \], \[ \"Ximian\", \"Primates\" \] \]"
+mdb_send_and_expect "print a\[2,1\]" "(System.String) \"Primates\""
+mdb_send "set a\[0,1\] = \"Lions\""
+mdb_expect_prompt
+mdb_send_and_expect "print a" "(System.String\[,\]) \[ \[ \"Hello\", \"Lions\" \], \[ \"New York\", \"Boston\" \], \[ \"Ximian\", \"Primates\" \] \]"
+mdb_send_and_expect "print a\[0,1\]" "(System.String) \"Lions\""
+mdb_send_and_expect "print a\[2,1\]" "(System.String) \"Primates\""
+mdb_send "set a\[0,0\] = \"Birds\""
+mdb_expect_prompt
+mdb_send "set a\[2,0\] = \"Dogs\""
+mdb_expect_prompt
+mdb_send_and_expect "print a" "(System.String\[,\]) \[ \[ \"Birds\", \"Lions\" \], \[ \"New York\", \"Boston\" \], \[ \"Dogs\", \"Primates\" \] \]"
 
 mdb_send "break $bpt_struct_type"
 set breakpoint [mdb_expect_breakpoint]

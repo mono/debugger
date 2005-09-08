@@ -78,6 +78,37 @@ namespace Mono.Debugger.Languages.Mono
 			return !location.HasAddress || !location.Address.IsNull;
 		}
 
+		public void SetObject (TargetLocation location, MonoObject obj)
+		{
+			if (obj == null) {
+				if (IsByRef) {
+					location.WriteAddress (TargetAddress.Null);
+					return;
+				}
+
+				throw new InvalidOperationException ();
+			}
+
+			if (IsByRef) {
+				if (obj.TypeInfo.Type.IsByRef) {
+					location.WriteAddress (obj.Location.Address);
+					return;
+				}
+
+				throw new InvalidOperationException ();
+			}
+
+			if (GetTypeInfo () == null)
+				throw new InvalidOperationException ();
+
+			if (!type_info.HasFixedSize || !obj.TypeInfo.HasFixedSize)
+				throw new InvalidOperationException ();
+			if (type_info.Size != obj.TypeInfo.Size)
+				throw new InvalidOperationException ();
+
+			location.WriteBuffer (obj.RawContents);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}]", GetType (), Name);

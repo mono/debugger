@@ -1,3 +1,16 @@
+2005-09-08  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetArrayObject.cs (ITargetArrayObject.this): Take
+	an `int[] indices' arguments (not a `params' one) and added setter.
+
+	* backends/mono/MonoType.cs (MonoType.SetObject): New method.
+
+	* frontend/Expression.cs (ArrayAccessExpression.DoAssign): Support
+	modifying multi-dimensional arrays.
+
+	* tests/mono-debugger.test/TestManagedTypes.exp: Added a bunch of
+	array modification tests.	
+
 2005-09-07  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetArrayType.cs

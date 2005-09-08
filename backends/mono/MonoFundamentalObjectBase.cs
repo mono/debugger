@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void ITargetFundamentalObject.SetObject (ITargetObject obj)
 		{
-			SetObject ((MonoObject) obj);
+			type_info.SetObject (location, (MonoObject) obj);
 		}
 
 		public override string Print ()

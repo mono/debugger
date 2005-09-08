@@ -130,11 +130,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public virtual void SetObject (MonoObject obj)
-		{
-			Location.WriteAddress (obj.Location.Address);
-		}
-
 		public virtual string Print ()
 		{
 			return ToString ();

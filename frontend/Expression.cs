@@ -1694,17 +1694,23 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		int[] GetIntIndices (ScriptingContext context)
+		{
+			int[] int_indices = new int [indices.Length];
+			for (int i = 0; i < indices.Length; i++)
+				int_indices [i] = GetIntIndex (indices [i], context);
+			return int_indices;
+		}
+
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			ITargetObject obj = expr.EvaluateVariable (context);
 
-			int[] int_indices = new int [indices.Length];
-			for (int i = 0; i < indices.Length; i++)
-				int_indices [i] = GetIntIndex (indices [i], context);
 
 			// array[int]
 			ITargetArrayObject aobj = obj as ITargetArrayObject;
 			if (aobj != null) {
+				int[] int_indices = GetIntIndices (context);
 				try {
 					return aobj [int_indices];
 				} catch (ArgumentException ex) {
@@ -1718,6 +1724,7 @@ namespace Mono.Debugger.Frontend
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj != null) {
 				// single dimensional array only at present
+				int[] int_indices = GetIntIndices (context);
 				if (int_indices.Length != 1)
 					throw new ScriptingException (
 						"Multi-dimensial arrays of type {0} are not yet supported",
@@ -1795,16 +1802,13 @@ namespace Mono.Debugger.Frontend
 			// array[int]
 			ITargetArrayObject aobj = expr.EvaluateVariable (context) as ITargetArrayObject;
 			if (aobj != null) {
-				int i;
-				ITargetFundamentalObject elobj;
-
-				// single dimensional array only at present
-				i = GetIntIndex (this.indices[0], context);
-
-				elobj = aobj[i] as ITargetFundamentalObject;
-
-				if (elobj != null) {
-					elobj.SetObject (obj);
+				int[] int_indices = GetIntIndices (context);
+				try {
+					aobj [int_indices] = obj;
+				} catch (ArgumentException ex) {
+					throw new ScriptingException (
+						"Index of array expression `{0}' out of bounds.",
+						expr.Name);
 				}
 			}
 

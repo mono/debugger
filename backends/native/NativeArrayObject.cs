@@ -37,7 +37,7 @@ namespace Mono.Debugger.Languages.Native
 			return upper_bound;
 		}
 
-		public ITargetObject this [params int[] indices] {
+		public ITargetObject this [int[] indices] {
 			get {
 				if (indices.Length != 1)
 					throw new ArgumentException ();
@@ -49,6 +49,10 @@ namespace Mono.Debugger.Languages.Native
 						    index * size, type.ElementType.IsByRef);
 
 				return type.ElementType.GetObject (new_location);
+			}
+
+			set {
+				throw new NotSupportedException ();
 			}
 		}
 
