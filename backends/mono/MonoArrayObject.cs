@@ -116,6 +116,9 @@ namespace Mono.Debugger.Languages.Mono
 					dynamic_location.GetLocationAtOffset (
 						offset, type.Type.ElementType.IsByRef);
 
+				if (new_location.HasAddress && new_location.Address.IsNull)
+					return new MonoNullObject (type.ElementType, new_location);
+
 				return type.ElementType.GetObject (new_location);
 			}
 

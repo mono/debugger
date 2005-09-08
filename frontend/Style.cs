@@ -413,6 +413,9 @@ namespace Mono.Debugger.Frontend
 
 		protected string DoFormatObjectRecursed (ITargetObject obj)
 		{
+			if (obj.IsNull)
+				return "null";
+
 			switch (obj.Kind) {
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
@@ -460,6 +463,9 @@ namespace Mono.Debugger.Frontend
 
 		protected string DoFormatObject (ITargetObject obj)
 		{
+			if (obj.IsNull)
+				return "null";
+
 			switch (obj.Kind) {
 			case TargetObjectKind.Array:
 				return DoFormatArray ((ITargetArrayObject) obj);
@@ -505,14 +511,11 @@ namespace Mono.Debugger.Frontend
 
 		public override string PrintVariable (IVariable variable, StackFrame frame)
 		{
+			string contents;
 			ITargetObject obj = null;
+
 			try {
 				obj = variable.GetObject (frame);
-			} catch {
-			}
-
-			string contents;
-			try {
 				if (obj != null)
 					contents = DoFormatObject (obj, false);
 				else
@@ -520,7 +523,7 @@ namespace Mono.Debugger.Frontend
 			} catch {
 				contents = "<cannot display object>";
 			}
-				
+
 			return String.Format (
 				"{0} = ({1}) {2}", variable.Name, variable.Type.Name, contents);
 		}

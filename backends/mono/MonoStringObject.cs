@@ -42,6 +42,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string Print ()
 		{
+			if (location.Address.IsNull)
+				return "null";
 			object obj = GetObject ();
 			return '"' + (string) obj + '"';
 		}

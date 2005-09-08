@@ -1,5 +1,25 @@
 2005-09-08  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetObject.cs
+	(ITargetObject.IsNull): New property.
+
+	* interfaces/ILanguage.cs
+	(ILanguage.CreateNullObject): New method.
+
+	* backends/mono/MonoNullObject.cs: New file.
+
+	* backends/mono/MonoVariable.cs (MonoVariable.GetObject): Return a
+	`MonoNullObject' if the location is null.
+
+	* frontend/CSharpExpressionParser.jay (constant): Added `NULL'.
+
+	* frontend/Expression.cs (NullExpression): New expression.
+
+	* test/TestNull.cs, test/mono-debugger.test/TestNull.exp: Added
+	tests for `null' handling.
+
+2005-09-08  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetArrayObject.cs (ITargetArrayObject.this): Take
 	an `int[] indices' arguments (not a `params' one) and added setter.
 

@@ -25,6 +25,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		bool IsNull {
+			get;
+		}
+
 		// <summary>
 		//   Returns the raw contents of this object.  For objects with dynamic size,
 		//   this returns a buffer of `Type.Size' bytes which is just enough to get

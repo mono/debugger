@@ -641,33 +641,49 @@ namespace Mono.Debugger.Backends
 		public TargetAddress ReadAddress (TargetAddress address)
 		{
 			check_disposed ();
+			TargetAddress res;
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetAddress (AddressDomain, (uint) ReadInteger (address));
+				res = new TargetAddress (AddressDomain, (uint) ReadInteger (address));
+				break;
 
 			case 8:
-				return new TargetAddress (AddressDomain, ReadLongInteger (address));
+				res = new TargetAddress (AddressDomain, ReadLongInteger (address));
+				break;
 
 			default:
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
 			}
+
+			if (res.Address == 0)
+				return TargetAddress.Null;
+			else
+				return res;
 		}
 
 		public TargetAddress ReadGlobalAddress (TargetAddress address)
 		{
 			check_disposed ();
+			TargetAddress res;
 			switch (TargetAddressSize) {
 			case 4:
-				return new TargetAddress (GlobalAddressDomain, (uint) ReadInteger (address));
+				res = new TargetAddress (GlobalAddressDomain, (uint) ReadInteger (address));
+				break;
 
 			case 8:
-				return new TargetAddress (GlobalAddressDomain, ReadLongInteger (address));
+				res = new TargetAddress (GlobalAddressDomain, ReadLongInteger (address));
+				break;
 
 			default:
 				throw new TargetMemoryException (
 					"Unknown target address size " + TargetAddressSize);
 			}
+
+			if (res.Address == 0)
+				return TargetAddress.Null;
+			else
+				return res;
 		}
 
 		public string ReadString (TargetAddress address)

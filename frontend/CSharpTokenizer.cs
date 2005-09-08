@@ -71,7 +71,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			keywords.Add ("false", Token.FALSE);
 			keywords.Add ("True", Token.TRUE);
 			keywords.Add ("False", Token.FALSE);
-			keywords.Add ("null", Token.FALSE);
+			keywords.Add ("null", Token.NULL);
 		}
 
 		public string error {

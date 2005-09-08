@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -21,6 +22,16 @@ namespace Mono.Debugger
 			: this (String.Format ("Cannot read {1} bytes from target memory at address {0:x}",
 					       address, size))
 		{ }
+
+		protected TargetMemoryException (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{
+		}
+
+                public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			base.GetObjectData (info, context);
+		}
 	}
 
 	[Serializable]
@@ -34,5 +45,15 @@ namespace Mono.Debugger
 			: base (String.Format ("Can't write to target memory at address 0x{0:x}: {1}",
 					       address, "the current target's memory is read-only"))
 		{ }
+
+		protected TargetMemoryReadOnlyException (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{
+		}
+
+                public override void GetObjectData (SerializationInfo info, StreamingContext context)
+		{
+			base.GetObjectData (info, context);
+		}
 	}
 }

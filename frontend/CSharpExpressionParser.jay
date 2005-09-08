@@ -150,11 +150,15 @@ constant
 	{
 		$$ = new NumberExpression ((decimal) $1);
 	}
-
 	| STRING
 	  {
 		$$ = new StringExpression ((string) $1);
 	  }
+	| NULL
+	  {
+		$$ = new NullExpression ();
+	  }
+	;
 
 expression
 	: constant

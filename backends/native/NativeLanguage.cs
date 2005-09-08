@@ -79,7 +79,12 @@ namespace Mono.Debugger.Languages.Native
 
 		public ITargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
-			return null;
+			throw new NotSupportedException ();
+		}
+
+		public ITargetObject CreateNullObject (ITargetAccess target, ITargetType type)
+		{
+			throw new NotSupportedException ();
 		}
 
 		private bool disposed = false;

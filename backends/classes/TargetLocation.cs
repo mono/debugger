@@ -116,6 +116,9 @@ namespace Mono.Debugger.Languages
 			else
 				throw new InternalError ();
 
+			if (address == 0)
+				return TargetAddress.Null;
+
 			return new TargetAddress (TargetMemoryInfo.AddressDomain, address);
 		}
 

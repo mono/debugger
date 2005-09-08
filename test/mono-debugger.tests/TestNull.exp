@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set bpt_main 14
+set bpt_1 21
+set file $srcdir/TestNull.cs
+
+mdb_start "TestNull.exe"
+mdb_expect_frame 0 "X.Main()" $file $bpt_main
+mdb_send "break $bpt_1"
+set breakpoint [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_stopped  0 "X.Main()" $file $bpt_1
+
+mdb_send_and_expect "p x" "(X) null"
+mdb_send_and_expect "p hello" "(System.String) null"
+mdb_send_and_expect "p int_array" "(System.Int32\[\]) null"
+mdb_send_and_expect "p x_array" "(X\[\]) null"
+mdb_send_and_expect "p y_array" "(X\[\]) \[ null \]"
+mdb_send_and_expect "p z_array" "(X\[\]) \[ { Foo = 5 } \]"
+
+mdb_send "set y_array \[0\] = new X (9)"
+mdb_expect_prompt
+mdb_send "set z_array \[0\] = null"
+mdb_expect_prompt
+
+mdb_send_and_expect "p y_array" "(X\[\]) \[ { Foo = 9 } \]"
+mdb_send_and_expect "p z_array" "(X\[\]) \[ null \]"
+
+mdb_send "continue"
+mdb_expect_line "True"
+mdb_expect_line "True"
+mdb_expect_line "True"
+mdb_expect_line "True"
+mdb_expect_line "False"
+mdb_expect_line "False"
+mdb_expect_line "Process @4 terminated normally."
+mdb_expect_prompt
+mdb_send "quit"

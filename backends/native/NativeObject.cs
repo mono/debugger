@@ -35,7 +35,16 @@ namespace Mono.Debugger.Languages.Native
 
 		public bool IsValid {
 			get {
-				return is_valid && (location != null);
+				return is_valid;
+			}
+		}
+
+		public bool IsNull {
+			get {
+				if (!location.HasAddress)
+					return false;
+				else
+					return location.Address.IsNull;
 			}
 		}
 

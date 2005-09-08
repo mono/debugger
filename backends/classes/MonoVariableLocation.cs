@@ -37,8 +37,11 @@ namespace Mono.Debugger.Languages
 
 			long contents = reg.Value;
 
-			address = new TargetAddress (
-				TargetMemoryInfo.AddressDomain, contents + regoffset);
+			if (contents == 0)
+				address = TargetAddress.Null;
+			else
+				address = new TargetAddress (
+					TargetMemoryInfo.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
 				address = TargetMemoryAccess.ReadAddress (address);

@@ -363,6 +363,30 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public class NullExpression : Expression
+	{
+		public override string Name {
+			get { return "null"; }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			resolved = true;
+			return this;
+		}
+
+		protected override object DoEvaluate (ScriptingContext context)
+		{
+			return null;
+		}
+
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			StackFrame frame = context.CurrentFrame.Frame;
+			return frame.Language.CreateObject (frame.TargetAccess, TargetAddress.Null);
+		}
+	}
+
 	public class ThisExpression : Expression
 	{
 		public override string Name {
