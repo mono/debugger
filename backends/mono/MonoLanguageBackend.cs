@@ -508,7 +508,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader header = new TargetReader (
 				memory.ReadMemory (symtab_address, info.SymbolTableSize), memory);
 
-			long magic = header.ReadLongInteger ();
+			long magic = header.BinaryReader.ReadInt64 ();
 			if (magic != DynamicMagic)
 				throw new SymbolTableException (
 					"Debugger symbol table has unknown magic {0:x}.", magic);

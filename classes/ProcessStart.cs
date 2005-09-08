@@ -27,7 +27,7 @@ namespace Mono.Debugger
 		public string WorkingDirectory = Environment.CurrentDirectory;
 
 		/* Whether or not we load native symbol tables */
-		public bool LoadNativeSymbolTable = false;
+		public bool LoadNativeSymbolTable = true;
 
 		/* true if we're running in a script */
 		public bool IsScript = false;
@@ -57,7 +57,7 @@ namespace Mono.Debugger
 		public string[] UserArguments;
 		public string[] UserEnvironment;
 		public bool IsNative;
-		public bool LoadNativeSymbolTable;
+		public bool LoadNativeSymbolTable = true;
 
 		string base_dir;
 		string[] argv;

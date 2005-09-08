@@ -193,7 +193,13 @@ namespace Mono.Debugger.Backends
 
 		public long ReadLongInteger ()
 		{
-			return reader.ReadInt64 ();
+			if (TargetLongIntegerSize == 4)
+				return reader.ReadInt32 ();
+			else if (TargetLongIntegerSize == 8)
+				return reader.ReadInt64 ();
+			else
+				throw new TargetMemoryException (
+					"Unknown target long integer size " + TargetLongIntegerSize);
 		}
 
 		long do_read_address ()

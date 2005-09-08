@@ -1043,6 +1043,9 @@ namespace Mono.Debugger.Architecture
 		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 								ITargetMemoryAccess memory)
 		{
+			if ((frame.Address < StartAddress) || (frame.Address > EndAddress))
+				return null;
+
 			if (frame_reader != null) {
 				SimpleStackFrame new_frame = frame_reader.UnwindStack (
 					frame, memory, arch);

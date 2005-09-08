@@ -1,5 +1,14 @@
 2005-09-08  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-arch.c (server_ptrace_get_target_info):
+	Make `target_long_size' 4 bytes, not 8.
+
+	* backends/classes/TargetReader.cs
+	(TargetReader.ReadLongInteger): Read either 4 or 8 bytes,
+	depending on the `TargetLongIntegerSize'.
+
+2005-09-08  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs (StackFrame): Make this a
 	MarshalByRefObject; this is required if we want to modify
 	registers.
