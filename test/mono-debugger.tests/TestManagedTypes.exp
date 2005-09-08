@@ -35,14 +35,19 @@ mdb_send_and_expect "ptype f" "System.Single"
 mdb_send_and_expect "print f" "(System.Single) 0.7142857"
 mdb_send_and_expect "ptype hello" "System.String"
 mdb_send_and_expect "print hello" "(System.String) \"Hello World\""
+mdb_send "set a = 9"
+mdb_expect_prompt
+mdb_send "set hello = \"Monkey\""
+mdb_expect_prompt
+mdb_send_and_expect "print a" "(System.Int32) 9"
 
 mdb_send "break $bpt_boxed_value"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_line "5"
+mdb_expect_line "9"
 mdb_expect_line "7"
 mdb_expect_line "0.7142857"
-mdb_expect_line "Hello World"
+mdb_expect_line "Monkey"
 mdb_expect_stopped 0 "X.BoxedValueType()" $file $bpt_boxed_value
 mdb_send_and_expect "print a" "(System.Int32) 5"
 mdb_send_and_expect "print boxed_a" "(System.Object) &(System.Int32) 5"

@@ -196,7 +196,7 @@ namespace Mono.Debugger
 	}
 
 	[Serializable]
-	public sealed class StackFrame : IDisposable
+	public sealed class StackFrame : MarshalByRefObject, IDisposable
 	{
 		IMethod method;
 		Process process;

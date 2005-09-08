@@ -21,17 +21,20 @@ mdb_send_and_expect "p x_array" "(X\[\]) null"
 mdb_send_and_expect "p y_array" "(X\[\]) \[ null \]"
 mdb_send_and_expect "p z_array" "(X\[\]) \[ { Foo = 5 } \]"
 
+mdb_send "set x = new X (81)"
+mdb_expect_prompt
 mdb_send "set y_array \[0\] = new X (9)"
 mdb_expect_prompt
 mdb_send "set z_array \[0\] = null"
 mdb_expect_prompt
 
+mdb_send_and_expect "p x" "(X) { Foo = 81 }"
 mdb_send_and_expect "p y_array" "(X\[\]) \[ { Foo = 9 } \]"
 mdb_send_and_expect "p z_array" "(X\[\]) \[ null \]"
 
 mdb_send "continue"
 mdb_expect_line "True"
-mdb_expect_line "True"
+mdb_expect_line "False"
 mdb_expect_line "True"
 mdb_expect_line "True"
 mdb_expect_line "False"

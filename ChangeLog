@@ -1,5 +1,14 @@
 2005-09-08  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (StackFrame): Make this a
+	MarshalByRefObject; this is required if we want to modify
+	registers.
+
+	* tests/mono-debugger.tests/TestManagedType.exp, TestNull.exp:
+	Added tests to modify variables.
+
+2005-09-08  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetObject.cs
 	(ITargetObject.IsNull): New property.
 
