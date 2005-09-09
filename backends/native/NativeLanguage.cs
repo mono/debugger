@@ -41,7 +41,11 @@ namespace Mono.Debugger.Languages.Native
 			get { return pointer_type; }
 		}
 
-		public ITargetType ExceptionType {
+		ITargetClassType ILanguage.ExceptionType {
+			get { return null; }
+		}
+
+		ITargetClassType ILanguage.DelegateType {
 			get { return null; }
 		}
 

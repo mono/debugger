@@ -13,6 +13,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ILanguage Language {
+			get;
+		}
+
 		// <summary>
 		//   Whether an instance of this type has a fixed size.
 		// </summary>

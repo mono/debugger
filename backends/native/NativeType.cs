@@ -30,6 +30,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ILanguage Language {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
 		public string Name {
 			get {
 				return name;

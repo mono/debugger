@@ -152,7 +152,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected override string MyToString ()
 		{
-			return String.Format ("{0}", FunctionType);
+			return String.Format ("{0}", FullName);
 		}
 	}
 
@@ -161,7 +161,7 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		MonoType type;
 		public readonly MonoClassType Klass;
-		public readonly MonoFunctionType AddType, RemoveType;
+		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
 		internal MonoEventInfo (MonoClassType klass, int index, R.EventInfo einfo,
 					bool is_static)
@@ -172,10 +172,16 @@ namespace Mono.Debugger.Languages.Mono
 			type = File.MonoLanguage.LookupMonoType (einfo.EventHandlerType);
 
 			R.MethodInfo add = einfo.GetAddMethod ();
-			AddType = new MonoFunctionType (File, Klass, add);
+			if (add != null)
+				AddType = new MonoFunctionType (File, Klass, add);
 
 			R.MethodInfo remove = einfo.GetRemoveMethod ();
-			RemoveType = new MonoFunctionType (File, Klass, remove);
+			if (remove != null)
+				RemoveType = new MonoFunctionType (File, Klass, remove);
+
+			R.MethodInfo raise = einfo.GetRaiseMethod (true);
+			if (raise != null)
+				RaiseType = new MonoFunctionType (File, Klass, raise);
 		}
 
 		public override MonoType Type {
@@ -194,9 +200,15 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		ITargetFunctionType ITargetEventInfo.Raise {
+			get {
+				return RaiseType;
+			}
+		}
+
 		protected override string MyToString ()
 		{
-			return String.Format ("{0}:{1}", AddType, RemoveType);
+			return String.Format ("{0}:{1}:{2}", AddType, RemoveType, RaiseType);
 		}
 	}
 

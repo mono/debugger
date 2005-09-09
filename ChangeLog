@@ -1,5 +1,25 @@
 2005-09-09  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ILanguage.cs
+	(ILanguage.DelegateType): New property.
+	(ILanguage.ExceptionType): Changed type from `ITargetType' to
+	`ITargetClassType'.
+
+	* interfaces/ITargetType.cs
+	(ITargetType.Language): New property.
+
+	* frontend/Expression.cs
+	(CastExpression.TryCast): Make this static method public.
+	(InvocationExpression.ResolveDelegate): New protected method.
+	(InvocationExpression.DoResolve): If the `method_expr' did not
+	resolve to a `MethodGroupExpression', call ResolveDelegate() and
+	try to resolve it as a delegate.
+
+	* tests/mono-debugger.tests/TestDelegate.exp: Added tests for
+	event invocations.
+
+2005-09-09  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetStructObject.cs
 	(ITargetFunctionObject.GetEvent): Removed.
 

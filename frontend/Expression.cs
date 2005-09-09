@@ -1873,8 +1873,8 @@ namespace Mono.Debugger.Frontend
 			return TryParentCast (context, current, current.Type, target_type);
 		}
 
-		static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
-					      ITargetClassType target_type)
+		public static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
+						     ITargetClassType target_type)
 		{
 			if (source.Type == target_type)
 				return source;
@@ -2011,6 +2011,35 @@ namespace Mono.Debugger.Frontend
 			get { return name; }
 		}
 
+		MethodGroupExpression ResolveDelegate (ScriptingContext context, Expression expr)
+		{
+			ITargetStructObject sobj = expr.EvaluateVariable (context)
+				as ITargetStructObject;
+			if (sobj == null)
+				return null;
+
+			ITargetClassType delegate_type = sobj.Type.Language.DelegateType;
+			if (CastExpression.TryCast (context, sobj, delegate_type) == null)
+				return null;
+
+			ITargetMemberInfo invoke = null;
+			foreach (ITargetMemberInfo member in sobj.Type.Methods) {
+				if (member.Name == "Invoke") {
+					invoke = member;
+					break;
+				}
+			}
+
+			if (invoke == null)
+				return null;
+
+			ArrayList list = new ArrayList ();
+			list.Add (invoke);
+
+			return new MethodGroupExpression (
+				sobj.Type, "Invoke", sobj, sobj.Type.Language, list);
+		}
+
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			method_expr = method_expr.Resolve (context);
@@ -2018,6 +2047,9 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			mg = method_expr as MethodGroupExpression;
+			if (mg == null)
+				mg = ResolveDelegate (context, method_expr);
+
 			if (mg == null)
 				throw new ScriptingException (
 					"Expression `{0}' is not a method.", method_expr.Name);

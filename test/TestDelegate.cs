@@ -1,6 +1,6 @@
 using System;
 
-public delegate void FooHandler ();
+public delegate long FooHandler (int a);
 
 class X
 {
@@ -12,19 +12,21 @@ class X
 		Foo += new FooHandler (boston);
 	}
 
-	void foo ()
+	long foo (int a)
 	{
-		Console.WriteLine ("Hello World");
+		Console.WriteLine ("Hello World: {0}", a);
+		return 2 * a;
 	}
 
-	void boston ()
+	long boston (int a)
 	{
-		Console.WriteLine ("Boston");
+		Console.WriteLine ("Boston: {0}", a);
+		return 3 * a;
 	}
 
 	static void Main ()
 	{
 		X x = new X ();
-		x.Foo ();
+		x.Foo (4);
 	}
 }

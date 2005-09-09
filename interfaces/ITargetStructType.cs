@@ -60,6 +60,10 @@ namespace Mono.Debugger.Languages
 		ITargetFunctionType Remove {
 			get;
 		}
+
+		ITargetFunctionType Raise {
+			get;
+		}
 	}
 
 	public interface ITargetMethodInfo : ITargetMemberInfo

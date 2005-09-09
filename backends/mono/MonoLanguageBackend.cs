@@ -97,6 +97,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFundamentalType CharType;
 		public readonly MonoStringType StringType;
 		public readonly MonoClassType ExceptionType;
+		public readonly MonoClassType DelegateType;
 
 		public readonly int KlassFieldOffset;
 		public readonly int KlassMethodsOffset;
@@ -215,7 +216,15 @@ namespace Mono.Debugger.Languages.Mono
 			corlib.AddCoreType (StringType);
 
 			// Skip a whole bunch of clases we don't care about
-			mono_defaults.Offset += 10 * corlib.TargetInfo.TargetAddressSize;
+			mono_defaults.Offset += 2 * corlib.TargetInfo.TargetAddressSize;
+
+			klass = mono_defaults.ReadGlobalAddress ();
+			Type delegate_type = corlib.Assembly.GetType ("System.Delegate");
+			DelegateType = new MonoClassType (corlib, delegate_type);
+			corlib.AddCoreType (DelegateType);
+
+			// Skip a whole bunch of clases we don't care about
+			mono_defaults.Offset += 7 * corlib.TargetInfo.TargetAddressSize;
 
 			// and get to the Exception class
 			klass = mono_defaults.ReadGlobalAddress ();
@@ -845,8 +854,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types.IntType; }
 		}
 
-		ITargetType ILanguage.ExceptionType {
+		ITargetClassType ILanguage.ExceptionType {
 			get { return builtin_types.ExceptionType; }
+		}
+
+		ITargetClassType ILanguage.DelegateType {
+			get { return builtin_types.DelegateType; }
 		}
 #endregion
 

@@ -44,6 +44,12 @@ namespace Mono.Debugger.Languages.Mono
 			get;
 		}
 
+		public ILanguage Language {
+			get {
+				return file.MonoLanguage;
+			}
+		}
+
 		public virtual int Size {
 			get {
 				IMonoTypeInfo info = GetTypeInfo ();
