@@ -62,6 +62,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
+					     ITargetObject[] args)
+		{
+			throw new NotSupportedException ();
+		}
+
 		public override NativeObject GetObject (TargetLocation location)
 		{
 			return new NativeFunctionObject (this, location);

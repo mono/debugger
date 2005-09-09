@@ -47,11 +47,6 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		public ITargetFunctionObject GetMethod (int index)
-		{
-			return type.Type.GetMethod (location.TargetAccess, index);
-		}
-
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{

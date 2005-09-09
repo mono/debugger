@@ -825,8 +825,8 @@ namespace Mono.Debugger.Frontend
 								      LocationType type, Expression[] types)
 		{
 			try {
-				ITargetMethodInfo method = OverloadResolve (context, types);
-				return new SourceLocation (method.Type.Source);
+				ITargetFunctionType func = OverloadResolve (context, types);
+				return new SourceLocation (func.Source);
 			} catch {
 				ArrayList list = new ArrayList ();
 				foreach (ITargetMethodInfo method in methods) {
@@ -840,24 +840,15 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public ITargetFunctionObject EvaluateMethod (ScriptingContext context,
-							     StackFrame frame,
-							     Expression[] arguments)
+		public ITargetFunctionType EvaluateMethod (ScriptingContext context,
+							   StackFrame frame,
+							   Expression[] arguments)
 		{
-			ITargetMethodInfo method = OverloadResolve (context, arguments);
-
-			if (method.IsStatic)
-				return stype.GetStaticMethod (frame.TargetAccess, method.Index);
-			else if (!IsStatic)
-				return instance.GetMethod (method.Index);
-			else
-				throw new ScriptingException (
-					"Instance method {0} cannot be used in " +
-					"static context.", Name);
+			return OverloadResolve (context, arguments);
 		}
 
-		protected ITargetMethodInfo OverloadResolve (ScriptingContext context,
-							     Expression[] types)
+		public ITargetFunctionType OverloadResolve (ScriptingContext context,
+							    Expression[] types)
 		{
 			ArrayList candidates = new ArrayList ();
 
@@ -866,11 +857,11 @@ namespace Mono.Debugger.Frontend
 				    (method.Type.ParameterTypes.Length != types.Length))
 					continue;
 
-				candidates.Add (method);
+				candidates.Add (method.Type);
 			}
 
 			if (candidates.Count == 1)
-				return (ITargetMethodInfo) candidates [0];
+				return (ITargetFunctionType) candidates [0];
 
 			if (candidates.Count == 0)
 				throw new ScriptingException (
@@ -882,7 +873,7 @@ namespace Mono.Debugger.Frontend
 					"Ambiguous method `{0}'; need to use " +
 					"full name", Name);
 
-			ITargetMethodInfo match = OverloadResolve (
+			ITargetFunctionType match = OverloadResolve (
 				context, language, stype, types, candidates);
 
 			if (match == null)
@@ -893,11 +884,11 @@ namespace Mono.Debugger.Frontend
 			return match;
 		}
 
-		public static ITargetMethodInfo OverloadResolve (ScriptingContext context,
-								 ILanguage language,
-								 ITargetStructType stype,
-								 Expression[] types,
-								 ArrayList candidates)
+		public static ITargetFunctionType OverloadResolve (ScriptingContext context,
+								   ILanguage language,
+								   ITargetStructType stype,
+								   Expression[] types,
+								   ArrayList candidates)
 		{
 			// We do a very simple overload resolution here
 			ITargetType[] argtypes = new ITargetType [types.Length];
@@ -905,11 +896,11 @@ namespace Mono.Debugger.Frontend
 				argtypes [i] = types [i].EvaluateType (context);
 
 			// Ok, no we need to find an exact match.
-			ITargetMethodInfo match = null;
-			foreach (ITargetMethodInfo method in candidates) {
+			ITargetFunctionType match = null;
+			foreach (ITargetFunctionType method in candidates) {
 				bool ok = true;
 				for (int i = 0; i < types.Length; i++) {
-					if (method.Type.ParameterTypes [i] != argtypes [i]) {
+					if (method.ParameterTypes [i] != argtypes [i]) {
 						ok = false;
 						break;
 					}
@@ -2084,8 +2075,7 @@ namespace Mono.Debugger.Frontend
 					return null;
 			}
 
-			ITargetFunctionObject func = mg.EvaluateMethod (
-				context, context.CurrentFrame.Frame, args);
+			ITargetFunctionType func = mg.OverloadResolve (context, args);
 
 			ITargetObject[] objs = new ITargetObject [args.Length];
 			for (int i = 0; i < args.Length; i++)
@@ -2108,7 +2098,7 @@ namespace Mono.Debugger.Frontend
 						"Invocation of `{0}' raised an exception: {1}",
 						Name, exc_message);
 
-				if (!func.Type.HasReturnValue)
+				if (!func.HasReturnValue)
 					throw new ScriptingException (
 						"Method `{0}' doesn't return a value.", Name);
 
@@ -2178,25 +2168,22 @@ namespace Mono.Debugger.Frontend
 			ArrayList candidates = new ArrayList ();
 			candidates.AddRange (stype.Constructors);
 
-			ITargetMethodInfo method;
+			ITargetFunctionType ctor;
 			if (candidates.Count == 0)
 				throw new ScriptingException (
 					"Type `{0}' has no public constructor.",
 					type_expr.Name);
 			else if (candidates.Count == 1)
-				method = (ITargetMethodInfo) candidates [0];
+				ctor = ((ITargetMethodInfo) candidates [0]).Type;
 			else
-				method = MethodGroupExpression.OverloadResolve (
+				ctor = MethodGroupExpression.OverloadResolve (
 					context, frame.Frame.Language, stype, arguments,
 					candidates);
 
-			if (method == null)
+			if (ctor == null)
 				throw new ScriptingException (
 					"Type `{0}' has no constructor which is applicable " +
 					"for your list of arguments.", type_expr.Name);
-
-			ITargetFunctionObject ctor = stype.GetConstructor (
-				frame.Frame.TargetAccess, method.Index);
 
 			ITargetObject[] args = new ITargetObject [arguments.Length];
 			for (int i = 0; i < arguments.Length; i++)

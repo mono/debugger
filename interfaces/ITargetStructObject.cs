@@ -11,7 +11,5 @@ namespace Mono.Debugger.Languages
 		ITargetObject GetProperty (int index);
 
 		ITargetObject GetEvent (int index);
-
-		ITargetFunctionObject GetMethod (int index);
 	}
 }

@@ -190,43 +190,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected ITargetFunctionObject CreateFunctionObject (ITargetAccess target,
-								      MonoFunctionType ftype)
-		{
-			try {
-				MonoClassInfo info = GetTypeInfo () as MonoClassInfo;
-				if (info == null)
-					return null;
-
-				TargetAddress address = info.GetMethodAddress (target, ftype.Token);
-				return ftype.GetObject (new AbsoluteTargetLocation (target, address));
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
-		public ITargetFunctionObject GetMethod (ITargetAccess target, int index)
-		{
-			get_methods ();
-
-			if (index < first_method)
-				return parent_type.GetMethod (target, index);
-
-			return CreateFunctionObject (
-				target, methods [index - first_method].FunctionType);
-		}
-
-		public ITargetFunctionObject GetStaticMethod (ITargetAccess target, int index)
-		{
-			get_methods ();
-
-			if (index < first_smethod)
-				return parent_type.GetStaticMethod (target, index);
-
-			return CreateFunctionObject (
-				target, static_methods [index - first_smethod].FunctionType);
-		}
-
 		void get_properties ()
 		{
 			if (properties != null)
@@ -278,8 +241,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				get_properties ();
 				ITargetAccess target = instance.Location.TargetAccess;
-				ITargetFunctionObject func = CreateFunctionObject (
-					target, properties [index].Getter);
+				ITargetFunctionType func = properties [index].Getter;
 				return func.Invoke (target, instance, new ITargetObject [0]);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
@@ -290,8 +252,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			try {
 				get_properties ();
-				ITargetFunctionObject func = CreateFunctionObject (
-					target, static_properties [index].Getter);
+				ITargetFunctionType func = static_properties [index].Getter;
 				return func.Invoke (target, null, new ITargetObject [0]);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
@@ -387,20 +348,6 @@ namespace Mono.Debugger.Languages.Mono
 				get_constructors ();
 				return static_constructors;
 			}
-		}
-
-		public ITargetFunctionObject GetConstructor (ITargetAccess target, int index)
-		{
-			get_constructors ();
- 			return CreateFunctionObject (
-				target, constructors [index].FunctionType);
-		}
-
-		public ITargetFunctionObject GetStaticConstructor (ITargetAccess target, int index)
-		{
-			get_constructors ();
- 			return CreateFunctionObject (
-				target, static_constructors [index].FunctionType);
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)

@@ -1,3 +1,26 @@
+2005-09-09  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetStructObject.cs
+	(ITargetStructObject.GetMethod): Removed.
+
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.GetMethod): Removed.
+	(ITargetStructType.GetStaticMethod): Removed.
+	(ITargetStructType.GetConstructor): Removed.
+	(ITargetStructType.GetStaticConstructor): Removed.
+	(ITargetStructType.Invoke): New method.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetAccess.RuntimeInvoke): Take an `ITargetFunctionType'
+	instead of an `ITargetFunctionObject'.
+
+	* backends/Process.cs (Process.RuntimeInvoke): Take an
+	`ITargetFunctionType' instead of an `ITargetFunctionObject'.
+
+	* frontend/Expression.cs
+	(MethodGroupExpression.OverloadResolve): Return an
+	`ITargetFunctionType' instead of an `ITargetMethodInfo'.
+
 2005-09-08  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/i386-arch.c (server_ptrace_get_target_info):

@@ -111,10 +111,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetFunctionObject GetMethod (ITargetAccess target, int index);
-
-		ITargetFunctionObject GetStaticMethod (ITargetAccess target, int index);
-
 		ITargetMethodInfo[] Constructors {
 			get;
 		}
@@ -122,9 +118,5 @@ namespace Mono.Debugger.Languages
 		ITargetMethodInfo[] StaticConstructors {
 			get;
 		}
-
-		ITargetFunctionObject GetConstructor (ITargetAccess target, int index);
-
-		ITargetFunctionObject GetStaticConstructor (ITargetAccess target, int index);
 	}
 }

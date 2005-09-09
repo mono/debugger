@@ -21,14 +21,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			throw new InvalidOperationException ();
 		}
-
-		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
-					     ITargetObject[] args)
-		{
-			MonoObject[] margs = new MonoObject [args.Length];
-			args.CopyTo (margs, 0);
-			return type.Invoke (target, this, (MonoObject) instance, margs);
-		}
 	}
 }
 

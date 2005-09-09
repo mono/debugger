@@ -25,5 +25,8 @@ namespace Mono.Debugger.Languages
 		object MethodHandle {
 			get;
 		}
+
+		ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
+				      ITargetObject[] args);
 	}
 }

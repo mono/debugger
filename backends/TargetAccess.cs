@@ -36,11 +36,11 @@ namespace Mono.Debugger.Backends
 		public abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2);
 
-		public abstract void RuntimeInvoke (ITargetFunctionObject method_argument,
+		public abstract void RuntimeInvoke (ITargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects);
 
-		public abstract ITargetObject RuntimeInvoke (ITargetFunctionObject method_argument,
+		public abstract ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
 							     ITargetObject object_argument,
 							     ITargetObject[] param_objects,
 							     out string exc_message);
@@ -108,14 +108,14 @@ namespace Mono.Debugger.Backends
 			return process.CallMethod (method, arg1, arg2);
 		}
 
-		public override void RuntimeInvoke (ITargetFunctionObject method_argument,
+		public override void RuntimeInvoke (ITargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects)
 		{
 			process.RuntimeInvoke (method_argument, object_argument, param_objects);
 		}
 
-		public override ITargetObject RuntimeInvoke (ITargetFunctionObject method_argument,
+		public override ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
 							     ITargetObject object_argument,
 							     ITargetObject[] param_objects,
 							     out string exc_message)
@@ -167,7 +167,7 @@ namespace Mono.Debugger.Backends
 				return sse.Process.CallMethod (method, arg1, arg2);
 		}
 
-		public override void RuntimeInvoke (ITargetFunctionObject method_argument,
+		public override void RuntimeInvoke (ITargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects)
 		{
@@ -178,7 +178,7 @@ namespace Mono.Debugger.Backends
 					method_argument, object_argument, param_objects);
 		}
 
-		public override ITargetObject RuntimeInvoke (ITargetFunctionObject method_argument,
+		public override ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
 							     ITargetObject object_argument,
 							     ITargetObject[] param_objects,
 							     out string exc_message)

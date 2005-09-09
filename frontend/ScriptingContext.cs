@@ -438,7 +438,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.DebuggerManager.Wait (process);
 		}
 
-		public void RuntimeInvoke (ITargetFunctionObject func,
+		public void RuntimeInvoke (ITargetFunctionType func,
 					   ITargetObject instance, ITargetObject[] args)
 		{
 			if (process == null)
@@ -454,7 +454,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.DebuggerManager.Wait (process);
 		}
 
-		public ITargetObject RuntimeInvoke (ITargetFunctionObject func,
+		public ITargetObject RuntimeInvoke (ITargetFunctionType func,
 						    ITargetObject instance, ITargetObject[] args,
 						    out string exc_message)
 		{

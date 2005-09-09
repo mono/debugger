@@ -18,12 +18,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
-					     ITargetObject[] args)
-		{
-			throw new NotSupportedException ();
-		}
-
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{

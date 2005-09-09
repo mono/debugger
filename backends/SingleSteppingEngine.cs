@@ -1362,7 +1362,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (ITargetFunctionObject method_argument,
+		public void RuntimeInvoke (ITargetFunctionType method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects)
 		{
@@ -1372,7 +1372,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (ITargetFunctionObject method_argument,
+		public void RuntimeInvoke (ITargetFunctionType method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects,
 					   CommandResult result)
@@ -1802,13 +1802,14 @@ namespace Mono.Debugger.Backends
 		{
 			OperationRuntimeInvoke op;
 			MonoLanguageBackend language;
-			TargetAddress method;
+			TargetAddress method, method_argument;
 			bool method_compiled;
 
 			public CallbackRuntimeInvoke (OperationRuntimeInvoke op)
 			{
 				this.op = op;
 				this.method = TargetAddress.Null;
+				this.method_argument = TargetAddress.Null;
 			}
 
 			protected override void DoExecute (SingleSteppingEngine sse,
@@ -1816,15 +1817,17 @@ namespace Mono.Debugger.Backends
 			{
 				if (language == null) {
 					language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
+					method_argument = op.MethodArgument.GetMethodAddress (
+						sse.TargetAccess);
 				}
 
 				if ((op.ObjectArgument != null) && op.ObjectArgument.Location.HasAddress) {
 					inferior.CallMethod (
 						language.GetVirtualMethodFunc,
 						op.ObjectArgument.Location.Address.Address,
-						op.MethodArgument.Location.Address.Address, ID);
+						method_argument.Address, ID);
 				} else {
-					method = op.MethodArgument.Location.Address;
+					method = method_argument;
 					inferior.CallMethod (
 						language.CompileMethodFunc,
 						method.Address, 0, ID);
@@ -1836,8 +1839,7 @@ namespace Mono.Debugger.Backends
 								long data1, long data2)
 			{
 				if (method.IsNull) {
-					method = new TargetAddress (
-						inferior.AddressDomain, data1);
+					method = new TargetAddress (inferior.AddressDomain, data1);
 
 					inferior.CallMethod (language.CompileMethodFunc,
 							     method.Address, 0, ID);
@@ -2428,7 +2430,7 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : Operation
 	{
-		public readonly MonoFunctionObject MethodArgument;
+		public readonly MonoFunctionType MethodArgument;
 		public readonly MonoObject ObjectArgument;
 		public readonly MonoObject[] ParamObjects;
 		public readonly bool Debug;
@@ -2438,18 +2440,18 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public OperationRuntimeInvoke (ITargetFunctionObject method_argument,
+		public OperationRuntimeInvoke (ITargetFunctionType method_argument,
 					       ITargetObject object_argument,
 					       ITargetObject[] param_objects)
 		{
-			this.MethodArgument = (MonoFunctionObject) method_argument;
+			this.MethodArgument = (MonoFunctionType) method_argument;
 			this.ObjectArgument = (MonoObject) object_argument;
 			this.ParamObjects = new MonoObject [param_objects.Length];
 			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
 		}
 
-		public OperationRuntimeInvoke (ITargetFunctionObject method_argument,
+		public OperationRuntimeInvoke (ITargetFunctionType method_argument,
 					       ITargetObject object_argument,
 					       ITargetObject[] param_objects,
 					       CommandResult result)

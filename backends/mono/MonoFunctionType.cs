@@ -79,8 +79,8 @@ namespace Mono.Debugger.Languages.Mono
 			get { return method_info; }
 		}
 
-		internal ITargetObject Invoke (ITargetAccess target, MonoFunctionObject method,
-					       MonoObject instance, MonoObject[] args)
+		internal ITargetObject DoInvoke (ITargetAccess target, MonoFunctionType method,
+						 MonoObject instance, MonoObject[] args)
 		{
 			if (ParameterTypes.Length != args.Length)
 				throw new ArgumentException ();
@@ -94,6 +94,14 @@ namespace Mono.Debugger.Languages.Mono
 					TargetError.InvocationException, exc_message);
 
 			return retval;
+		}
+
+		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
+					     ITargetObject[] args)
+		{
+			MonoObject[] margs = new MonoObject [args.Length];
+			args.CopyTo (margs, 0);
+			return DoInvoke (target, this, (MonoObject) instance, margs);
 		}
 
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
@@ -111,6 +119,19 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoType IMonoTypeInfo.Type {
 			get { return this; }
+		}
+
+		public TargetAddress GetMethodAddress (ITargetAccess target)
+		{
+			try {
+				MonoClassInfo info = klass.GetTypeInfo () as MonoClassInfo;
+				if (info == null)
+					throw new LocationInvalidException ();
+
+				return info.GetMethodAddress (target, Token);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
 		}
 
 		public MonoFunctionObject GetObject (TargetLocation location)
