@@ -1755,8 +1755,7 @@ namespace Mono.Debugger.Frontend
 			catch (MultipleLocationsMatchException ex) {
 				context.AddMethodSearchResult (ex.Sources, !all);
 				return all != false;
-			}
-			catch (ScriptingException ex) {
+			} catch (ScriptingException ex) {
 				return false;
 			}
 		}
@@ -1865,9 +1864,6 @@ namespace Mono.Debugger.Frontend
 		int process_id = -1;
 		ProcessHandle process;
 		ThreadGroup tgroup;
-#if PENDING_BREAKPOINTS
-		bool pending;
-#endif
 
 		protected override bool NeedsProcess {
 			get { return false; }
@@ -1906,6 +1902,11 @@ namespace Mono.Debugger.Frontend
 				}
 			}
 
+			if (!resolved) {
+				context.Error ("No such method: `{0}'", Argument);
+				return false;
+			}
+
 			if (process_id > 0) {
 				process = context.Interpreter.GetProcess (process_id);
 				if (group == null)
@@ -1916,24 +1917,6 @@ namespace Mono.Debugger.Frontend
 			if (tgroup == null)
 				tgroup = context.Interpreter.GetThreadGroup (Group, false);
 
-			if (!resolved) {
-#if PENDING_BREAKPOINTS
-				if (context.Interpreter.IsInteractive) {
-					if (context.Interpreter.Query ("Make breakpoint pending on future shared library load?")) {
-						All = true;
-					  	context.Interpreter.InsertPendingBreakpoint (process, tgroup, Argument);
-						pending = true;
-						return true;
-					}
-					else {
-						return false;
-					}
-				}
-#endif
-				return false;
-			}
-
-
 			if (location == null)
 				location = context.CurrentLocation;
 
@@ -1942,35 +1925,21 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-#if PENDING_BREAKPOINTS
-			if (pending) {
-				int index = context.Interpreter.InsertPendingBreakpoint (
-						 process, tgroup, Argument);
-				context.Print ("Breakpoint {0} ({1}) pending.", index, Argument);
-			}
-			else {
-#endif
-				if (All) {
-					for (int i = 1; i <= context.NumMethodSearchResults; i ++) {
-						SourceMethod method = context.GetMethodSearchResult (i);
-						location = new SourceLocation (method);
+			if (All) {
+				for (int i = 1; i <= context.NumMethodSearchResults; i ++) {
+					SourceMethod method = context.GetMethodSearchResult (i);
+					location = new SourceLocation (method);
 
-						int index = context.Interpreter.InsertBreakpoint (
-								process, tgroup, location);
-						context.Print ("Breakpoint {0} at {1}",
-							       index, location.Name);
-					}
-					return;
-				}
-				else {
 					int index = context.Interpreter.InsertBreakpoint (
-								process, tgroup, location);
-					context.Print ("Breakpoint {0} at {1}",
-						       index, location.Name);
+						process, tgroup, location);
+					context.Print ("Breakpoint {0} at {1}", index, location.Name);
 				}
-#if PENDING_BREAKPOINTS
+				return;
+			} else {
+				int index = context.Interpreter.InsertBreakpoint (
+					process, tgroup, location);
+				context.Print ("Breakpoint {0} at {1}", index, location.Name);
 			}
-#endif
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)

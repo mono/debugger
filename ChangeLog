@@ -1,5 +1,10 @@
 2005-09-09  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs (BreakCommand): Don't silently fail if we
+	cannot find the method.
+
+2005-09-09  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationWrapper.DoProcessEvent): Step into non-trampoline
 	method calls.

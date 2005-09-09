@@ -1432,6 +1432,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				return new SourceLocation (func.Source);
+
 			default:
 				return null;
 			}
@@ -2052,7 +2053,7 @@ namespace Mono.Debugger.Frontend
 
 			if (mg == null)
 				throw new ScriptingException (
-					"Expression `{0}' is not a method.", method_expr.Name);
+					"Expression `{0}' is not a method.", Name);
 
 			resolved = true;
 			return this;
