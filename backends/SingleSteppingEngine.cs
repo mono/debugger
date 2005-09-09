@@ -2591,29 +2591,23 @@ namespace Mono.Debugger.Backends
 		protected override bool DoProcessEvent (SingleSteppingEngine sse, Inferior inferior)
 		{
 			TargetAddress current_frame = inferior.CurrentFrame;
+			Report.Debug (DebugFlags.EventLoop, "{0} wrapper stopped at {1} ({2}:{3})",
+				      sse, current_frame, method.StartAddress, method.EndAddress);
 			if ((current_frame < method.StartAddress) || (current_frame > method.EndAddress))
 				return true;
 
 			/*
 			 * If this is not a call instruction, continue stepping until we leave
-			 * the specified step frame.
+			 * the current method.
 			 */
 			int insn_size;
 			TargetAddress call = sse.arch.GetCallTarget (
 				sse.inferior, current_frame, out insn_size);
-			if (call.IsNull) {
-				sse.do_step_native ();
-				return false;
-			}
-
-			/*
-			 * If we have a source language, check for trampolines.
-			 * This will trigger a JIT compilation if neccessary.
-			 */
-			if (CheckTrampoline (sse, call))
+			if (!call.IsNull && CheckTrampoline (sse, call))
 				return false;
 
-			return true;
+			sse.do_step_native ();
+			return false;
 		}
 
 		protected override bool TrampolineHandler (IMethod method)
