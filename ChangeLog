@@ -1,5 +1,10 @@
 2005-09-09  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetStructObject.cs
+	(ITargetFunctionObject.GetEvent): Removed.
+
+2005-09-09  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFunctionObject.cs: Removed.
 
 2005-09-09  Martin Baulig  <martin@ximian.com>

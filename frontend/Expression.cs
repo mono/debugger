@@ -1258,46 +1258,24 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected ITargetObject GetEvent (ITargetStructObject sobj, ITargetEventInfo ev)
-		{
-			try {
-				return sobj.GetEvent (ev.Index);
-			} catch (TargetInvocationException ex) {
-				throw new ScriptingException ("Can't get event {0}: {1}", Name, ex.Message);
-			}
-		}
-
-		protected ITargetObject GetStaticEvent (ITargetStructType stype, StackFrame frame, ITargetEventInfo ev)
-		{
-#if FIXME
-			try {
-				return stype.GetStaticEvent (frame, ev.Index);
-			} catch (TargetInvocationException ex) {
-				throw new ScriptingException ("Can't get event {0}: {1}", Name, ex.Message);
-			}
-#else
-			throw new NotImplementedException ();
-#endif
-		}
-
 		protected ITargetObject GetMember (ITargetStructObject sobj, ITargetMemberInfo member)
 		{
 			if (member is ITargetPropertyInfo)
 				return GetProperty (sobj, (ITargetPropertyInfo) member);
-			else if (member is ITargetEventInfo)
-				return GetEvent (sobj, (ITargetEventInfo) member);
-			else
+			else if (member is ITargetFieldInfo)
 				return GetField (sobj, (ITargetFieldInfo) member);
+			else
+				throw new ScriptingException ("Member {0} is of unknown type", Name);
 		}
 
 		protected ITargetObject GetStaticMember (ITargetStructType stype, StackFrame frame, ITargetMemberInfo member)
 		{
 			if (member is ITargetPropertyInfo)
 				return GetStaticProperty (stype, frame, (ITargetPropertyInfo) member);
-			else if (member is ITargetEventInfo)
-				return GetStaticEvent (stype, frame, (ITargetEventInfo) member);
-			else
+			else if (member is ITargetFieldInfo)
 				return GetStaticField (stype, frame, (ITargetFieldInfo) member);
+			else
+				throw new ScriptingException ("Member {0} is of unknown type", Name);
 		}
 
 		public static ITargetMemberInfo FindMember (ITargetStructType stype, bool is_static, string name)

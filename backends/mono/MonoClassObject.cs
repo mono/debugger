@@ -41,12 +41,6 @@ namespace Mono.Debugger.Languages.Mono
 			return type.Type.GetProperty (this, index);
 		}
 
-		public ITargetObject GetEvent (int index)
-		{
-			// return type.GetEvent (location, index);
-			return null;
-		}
-
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
