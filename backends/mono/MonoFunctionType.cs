@@ -134,14 +134,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoFunctionObject GetObject (TargetLocation location)
-		{
-			return new MonoFunctionObject (this, location);
-		}
-
 		MonoObject IMonoTypeInfo.GetObject (TargetLocation location)
 		{
-			return new MonoFunctionObject (this, location);
+			throw new InvalidOperationException ();
 		}
 	}
 }

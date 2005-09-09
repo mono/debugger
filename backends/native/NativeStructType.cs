@@ -247,26 +247,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetFunctionObject GetMethod (ITargetAccess target, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public ITargetFunctionObject GetStaticMethod (ITargetAccess target, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public ITargetFunctionObject GetConstructor (ITargetAccess target, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public ITargetFunctionObject GetStaticConstructor (ITargetAccess target, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public override NativeObject GetObject (TargetLocation location)
 		{
 			return new NativeStructObject (this, location);
