@@ -1,3 +1,39 @@
+2005-09-10  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceLocation.cs
+	(SourceLocation.InsertBreakpoint): Removed; use
+	DebuggerBackend.InsertBreakpoint() instead.
+
+	* classes/EventHandle.cs: New file.
+
+	* classes/BreakpointHandle.cs
+	(BreakpointHandle): Derive from EventHandle.
+
+	* backends/Debugger.cs
+	(DebuggerBackend.InsertBreakpoint): New public method
+	(DebuggerBackend.InsertBreakpoint): Added overloaded version which
+	takes an `ITargetFunctionType' instead of a `SourceLocation'.
+
+	* backends/Process.cs
+	(Process.InsertBreakpoint): Added overloaded version which takes
+	an `ITargetFunctionType'.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ProcessChildEvent): Also do the normal
+	frame_changed() stuff if we hit a breakpoint.
+	(SingleSteppingEngine.InsertBreakpoint): Added overloaded version
+	which takes an `ITargetFunctionType'.
+
+	* frontend/Expression.cs (LocationType): Added `DelegateInvoke'.
+	(Expression.EvaluateMethod): New abstract method.
+	(StructAccessExpression.DoEvaluateMethod): Added delegate support.
+
+	* frontend/Command.cs (BreakCommand): Started to cleanup the mess
+	here; use Expression.EvaluateMethod() when evaluating expressions.
+
+	* tests/mono-debugger.tests/TestDelegate.exp: Added test case to
+	set a breakpoint on an event invocation.
+
 2005-09-09  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs (BreakCommand): Don't silently fail if we

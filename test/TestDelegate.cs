@@ -28,5 +28,7 @@ class X
 	{
 		X x = new X ();
 		x.Foo (4);
+		Console.WriteLine ("Back in main");
+		x.Foo (11);
 	}
 }

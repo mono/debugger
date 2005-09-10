@@ -346,6 +346,23 @@ namespace Mono.Debugger.Frontend
 					interpreter.Abort ();
 				break;
 
+			case TargetEventType.TargetHitBreakpoint:
+				if (!interpreter.IsInteractive)
+					break;
+
+				interpreter.Print ("{0} hit breakpoint {1}{2}.",
+						   Name, (int) args.Data, frame);
+
+				if (interpreter.IsScript)
+					break;
+
+				interpreter.Style.TargetStopped (
+					interpreter.GlobalContext, current_frame, current_insn);
+
+				if (!interpreter.IsInteractive)
+					interpreter.Abort ();
+				break;
+
 			case TargetEventType.Exception:
 			case TargetEventType.UnhandledException:
 				interpreter.Print ("{0} caught {2}exception{1}.", Name, frame,

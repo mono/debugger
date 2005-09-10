@@ -115,8 +115,8 @@ namespace Mono.Debugger.Languages.Mono
 			: base (klass.File, minfo, index, minfo.IsStatic)
 		{
 			Klass = klass;
-			FunctionType = new MonoFunctionType (File, Klass, minfo);
 			FullName = compute_fullname (minfo);
+			FunctionType = new MonoFunctionType (File, Klass, minfo, FullName);
 		}
 
 		public override MonoType Type {
@@ -147,7 +147,7 @@ namespace Mono.Debugger.Languages.Mono
 				sb.Append (pinfo.ParameterType);
 			}
 
-			return String.Format ("{0}({1})", Name, sb.ToString ());
+			return String.Format ("{0}.{1}({2})", Klass.Name, Name, sb.ToString ());
 		}
 
 		protected override string MyToString ()
@@ -173,15 +173,15 @@ namespace Mono.Debugger.Languages.Mono
 
 			R.MethodInfo add = einfo.GetAddMethod ();
 			if (add != null)
-				AddType = new MonoFunctionType (File, Klass, add);
+				AddType = new MonoFunctionType (File, Klass, add, Name);
 
 			R.MethodInfo remove = einfo.GetRemoveMethod ();
 			if (remove != null)
-				RemoveType = new MonoFunctionType (File, Klass, remove);
+				RemoveType = new MonoFunctionType (File, Klass, remove, Name);
 
 			R.MethodInfo raise = einfo.GetRaiseMethod (true);
 			if (raise != null)
-				RaiseType = new MonoFunctionType (File, Klass, raise);
+				RaiseType = new MonoFunctionType (File, Klass, raise, Name);
 		}
 
 		public override MonoType Type {
@@ -231,12 +231,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (CanRead) {
 				R.MethodInfo getter = pinfo.GetGetMethod (true);
-				Getter = new MonoFunctionType (File, Klass, getter);
+				Getter = new MonoFunctionType (File, Klass, getter, Name);
 			}
 
 			if (CanWrite) {
 				R.MethodInfo setter = pinfo.GetSetMethod (true);
-				Setter = new MonoFunctionType (File, Klass, setter);
+				Setter = new MonoFunctionType (File, Klass, setter, Name);
 			}
 		}
 

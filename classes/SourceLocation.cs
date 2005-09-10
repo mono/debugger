@@ -105,13 +105,6 @@ namespace Mono.Debugger
 				return method.Method.StartAddress;
 		}
 
-		public BreakpointHandle InsertBreakpoint (Process process, Breakpoint bpt)
-		{
-			BreakpointHandle handle = BreakpointHandle.Create (process, bpt, this);
-			handle.Enable (process);
-			return handle;
-		}
-
 		public override string ToString ()
 		{
 			return String.Format ("SourceLocation ({0})", Name);

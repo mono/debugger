@@ -872,7 +872,7 @@ namespace Mono.Debugger.Languages.Mono
 					load_handlers = null;
 			}
 
-			protected sealed class HandlerData : IDisposable
+			protected sealed class HandlerData : MarshalByRefObject, IDisposable
 			{
 				public readonly MonoMethod Method;
 				public readonly MethodLoadedHandler Handler;

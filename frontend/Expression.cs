@@ -12,6 +12,7 @@ namespace Mono.Debugger.Frontend
 	public enum LocationType
 	{
 		Method,
+		DelegateInvoke,
 		PropertyGetter,
 		PropertySetter,
 		EventAdd,
@@ -105,7 +106,15 @@ namespace Mono.Debugger.Frontend
 		protected virtual SourceLocation DoEvaluateLocation (ScriptingContext context,
 								     LocationType type, Expression[] types)
 		{
-			return null;
+			ITargetFunctionType func = DoEvaluateMethod (context, type, types);
+			if (func == null)
+				return null;
+
+			SourceMethod source = func.Source;
+			if (source == null)
+				return null;
+
+			return new SourceLocation (source);
 		}
 
 		public SourceLocation EvaluateLocation (ScriptingContext context, LocationType type,
@@ -124,6 +133,36 @@ namespace Mono.Debugger.Frontend
 						"Expression `{0}' is not a method", Name);
 
 				return location;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException (
+					"Location of variable `{0}' is invalid: {1}",
+					Name, ex.Message);
+			}
+		}
+
+		protected virtual ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+									LocationType type,
+									Expression[] types)
+		{
+			return null;
+		}
+
+		public ITargetFunctionType EvaluateMethod (ScriptingContext context,
+							   LocationType type, Expression [] types)
+		{
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
+
+			try {
+				ITargetFunctionType func = DoEvaluateMethod (context, type, types);
+				if (func == null)
+					throw new ScriptingException (
+						"Expression `{0}' is not a method", Name);
+
+				return func;
 			} catch (LocationInvalidException ex) {
 				throw new ScriptingException (
 					"Location of variable `{0}' is invalid: {1}",
@@ -821,30 +860,28 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      LocationType type, Expression[] types)
+		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+									 LocationType type,
+									 Expression[] types)
 		{
-			try {
-				ITargetFunctionType func = OverloadResolve (context, types);
-				return new SourceLocation (func.Source);
-			} catch {
-				ArrayList list = new ArrayList ();
-				foreach (ITargetMethodInfo method in methods) {
-					if (method.Type.Source == null)
-						continue;
-					list.Add (method.Type.Source);
-				}
-				SourceMethod[] sources = new SourceMethod [list.Count];
-				list.CopyTo (sources, 0);
-				throw new MultipleLocationsMatchException (sources);
-			}
-		}
+			if (type != LocationType.Method)
+				return null;
 
-		public ITargetFunctionType EvaluateMethod (ScriptingContext context,
-							   StackFrame frame,
-							   Expression[] arguments)
-		{
-			return OverloadResolve (context, arguments);
+			ITargetFunctionType func = OverloadResolve (context, types);
+			if (func != null)
+				return func;
+
+			ArrayList list = new ArrayList ();
+			foreach (ITargetMethodInfo method in methods) {
+				if (method.Type.Source == null)
+					continue;
+				list.Add (method.Type.Source);
+			}
+			if (list.Count == 0)
+				return null;
+			SourceMethod[] sources = new SourceMethod [list.Count];
+			list.CopyTo (sources, 0);
+			throw new MultipleLocationsMatchException (sources);
 		}
 
 		public ITargetFunctionType OverloadResolve (ScriptingContext context,
@@ -1390,14 +1427,23 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
 		}
 
-		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      LocationType type, Expression[] types)
+		public ITargetFunctionType ResolveMethod (ScriptingContext context)
+		{
+			MethodGroupExpression mg = InvocationExpression.ResolveDelegate (
+				context, this);
+			if (mg == null)
+				return null;
+
+			return mg.OverloadResolve (context, null);
+		}
+
+		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+									 LocationType type,
+									 Expression[] types)
 		{
 			ITargetMemberInfo member = FindMember (context, true);
 			if (member == null)
 				return null;
-
-			ITargetFunctionType func;
 
 			switch (type) {
 			case LocationType.PropertyGetter:
@@ -1410,28 +1456,33 @@ namespace Mono.Debugger.Frontend
 					if (!property.CanRead)
 						throw new ScriptingException (
 							"Property {0} doesn't have a getter.", Name);
-					func = property.Getter;
+					return property.Getter;
 				} else {
 					if (!property.CanWrite)
 						throw new ScriptingException (
 							"Property {0} doesn't have a setter.", Name);
-					func = property.Setter;
+					return property.Setter;
 				}
 
-				return new SourceLocation (func.Source);
 			case LocationType.EventAdd:
 			case LocationType.EventRemove:
 				ITargetEventInfo ev = member as ITargetEventInfo;
 				if (ev == null)
 					return null;
 
-				if (type == LocationType.EventAdd) {
-					func = ev.Add;
-				} else {
-					func = ev.Remove;
-				}
+				if (type == LocationType.EventAdd)
+					return ev.Add;
+				else
+					return ev.Remove;
 
-				return new SourceLocation (func.Source);
+			case LocationType.Method:
+			case LocationType.DelegateInvoke:
+				MethodGroupExpression mg = InvocationExpression.ResolveDelegate (
+					context, this);
+				if (mg == null)
+					return null;
+
+				return mg.EvaluateMethod (context, LocationType.Method, types);
 
 			default:
 				return null;
@@ -2012,7 +2063,8 @@ namespace Mono.Debugger.Frontend
 			get { return name; }
 		}
 
-		MethodGroupExpression ResolveDelegate (ScriptingContext context, Expression expr)
+		public static MethodGroupExpression ResolveDelegate (ScriptingContext context,
+								     Expression expr)
 		{
 			ITargetStructObject sobj = expr.EvaluateVariable (context)
 				as ITargetStructObject;
@@ -2064,17 +2116,11 @@ namespace Mono.Debugger.Frontend
 			return Invoke (context, false);
 		}
 
-		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      LocationType type, Expression[] types)
+		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+									 LocationType type,
+									 Expression[] types)
 		{
-			Expression[] argtypes = new Expression [arguments.Length];
-			for (int i = 0; i < arguments.Length; i++) {
-				argtypes [i] = arguments [i].ResolveType (context);
-				if (argtypes [i] == null)
-					return null;
-			}
-
-			return method_expr.EvaluateLocation (context, type, argtypes);
+			return method_expr.EvaluateMethod (context, type, types);
 		}
 
 		public ITargetObject Invoke (ScriptingContext context, bool debug)

@@ -451,6 +451,27 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Insert a breakpoint at function @func.
+		//
+		//   Returns a number which may be passed to RemoveBreakpoint() to remove
+		//   the breakpoint.
+		// </summary>
+		public int InsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func)
+		{
+			CommandResult result = new CommandResult ();
+
+			lock (this) {
+				check_engine ();
+				engine.InsertBreakpoint (breakpoint, func, result);
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
+
+			return (int) result.Result;
+		}
+
+		// <summary>
 		//   Add an event handler.
 		//
 		//   Returns a number which may be passed to RemoveEventHandler() to remove

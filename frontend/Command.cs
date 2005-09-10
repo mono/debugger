@@ -1729,34 +1729,33 @@ namespace Mono.Debugger.Frontend
 			set { type = LocationType.EventRemove; }
 		}
 
+		public bool Invoke {
+			get { return type == LocationType.DelegateInvoke; }
+			set { type = LocationType.DelegateInvoke; }
+		}
+
 		public bool All {
 			get { return all; }
 			set { all = value; }
 		}
 
-		protected bool DoResolveExpression (ScriptingContext context)
+		protected ITargetFunctionType EvaluateMethod (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
 			if (expr == null)
-				return false;
+				return null;
 
-			MemberAccessExpression mexpr = expr as MemberAccessExpression;
-			if (mexpr != null)
-				expr = mexpr.ResolveMemberAccess (context, true);
-			else
-				expr = expr.Resolve (context);
+			expr = expr.Resolve (context);
 			if (expr == null)
-				return false;
+				return null;
 
 			try {
-				location = expr.EvaluateLocation (context, type, null);
-				return location != null;
-			}
-			catch (MultipleLocationsMatchException ex) {
+				return expr.EvaluateMethod (context, type, null);
+			} catch (MultipleLocationsMatchException ex) {
 				context.AddMethodSearchResult (ex.Sources, !all);
-				return all != false;
+				return null;
 			} catch (ScriptingException ex) {
-				return false;
+				return null;
 			}
 		}
 
@@ -1801,12 +1800,11 @@ namespace Mono.Debugger.Frontend
 			try {
 				line = (int) UInt32.Parse (Argument);
 			} catch {
-				return DoResolveExpression (context);
+				return false;
 			}
 
 			location = context.FindLocation (context.CurrentLocation, line);
-
-			return true;
+			return location != null;
 		}
 	}
 
@@ -1862,6 +1860,7 @@ namespace Mono.Debugger.Frontend
 	{
 		string group;
 		int process_id = -1;
+		ITargetFunctionType func;
 		ProcessHandle process;
 		ThreadGroup tgroup;
 
@@ -1877,6 +1876,12 @@ namespace Mono.Debugger.Frontend
 		public int Process {
 			get { return process_id; }
 			set { process_id = value; }
+		}
+
+		bool ResolveMethod (ScriptingContext context)
+		{
+			func = EvaluateMethod (context);
+			return func != null;
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -1902,6 +1907,9 @@ namespace Mono.Debugger.Frontend
 				}
 			}
 
+			if (!resolved)
+				resolved = ResolveMethod (context);
+
 			if (!resolved) {
 				context.Error ("No such method: `{0}'", Argument);
 				return false;
@@ -1917,7 +1925,7 @@ namespace Mono.Debugger.Frontend
 			if (tgroup == null)
 				tgroup = context.Interpreter.GetThreadGroup (Group, false);
 
-			if (location == null)
+			if ((location == null) && (func == null))
 				location = context.CurrentLocation;
 
 			return true;
@@ -1935,10 +1943,16 @@ namespace Mono.Debugger.Frontend
 					context.Print ("Breakpoint {0} at {1}", index, location.Name);
 				}
 				return;
-			} else {
+			} else if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
 					process, tgroup, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
+			} else if (func != null) {
+				int index = context.Interpreter.InsertBreakpoint (
+					process, tgroup, func);
+				context.Print ("Breakpoint {0} at {1}", index, func.Name);
+			} else {
+				throw new ScriptingException ("Cannot insert breakpoint.");
 			}
 		}
 

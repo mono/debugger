@@ -530,8 +530,8 @@ namespace Mono.Debugger.Frontend
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
-			BreakpointHandle handle = location.InsertBreakpoint (
-				thread.Process, breakpoint);
+			EventHandle handle = thread.Process.DebuggerBackend.InsertBreakpoint (
+				thread.Process, breakpoint, location);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
@@ -540,8 +540,23 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public int InsertExceptionCatchPoint (ILanguage language, ProcessHandle thread, ThreadGroup group,
-						      ITargetType exception)
+		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
+					     ITargetFunctionType func)
+		{
+			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
+
+			EventHandle handle = thread.Process.DebuggerBackend.InsertBreakpoint (
+				thread.Process, breakpoint, func);
+			if (handle == null)
+				throw new ScriptingException ("Could not insert breakpoint.");
+
+			events.Add (breakpoint.Index, handle);
+
+			return breakpoint.Index;
+		}
+
+		public int InsertExceptionCatchPoint (ILanguage language, ProcessHandle thread,
+						      ThreadGroup group, ITargetType exception)
 		{
 			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);
 

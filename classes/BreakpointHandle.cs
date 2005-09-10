@@ -1,21 +1,22 @@
 using System;
 
 using Mono.Debugger.Backends;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	public class BreakpointHandle : MarshalByRefObject, IEventHandle
+	public class BreakpointHandle : EventHandle
 	{
-		Breakpoint breakpoint;
 		SourceLocation location;
+		ITargetFunctionType function;
 		TargetAddress address = TargetAddress.Null;
 		int breakpoint_id = -1;
 		IDisposable load_handler;
 
-		private BreakpointHandle (Process process, Breakpoint breakpoint,
-					  SourceLocation location)
+		internal BreakpointHandle (Process process, Breakpoint breakpoint,
+					   SourceLocation location)
+			: base (breakpoint)
 		{
-			this.breakpoint = breakpoint;
 			this.location = location;
 
 			if (location.Method.IsLoaded)
@@ -23,42 +24,40 @@ namespace Mono.Debugger
 			EnableBreakpoint (process);
 		}
 
-		internal static BreakpointHandle Create (Process process, Breakpoint bpt,
-							 SourceLocation location)
+		internal BreakpointHandle (Process process, Breakpoint breakpoint,
+					   ITargetFunctionType func)
+			: base (breakpoint)
 		{
-			return new BreakpointHandle (process, bpt, location);
+			this.function = func;
+
+			EnableBreakpoint (process);
 		}
 
 		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)
+			: base (breakpoint)
 		{
-			this.breakpoint = breakpoint;
 			this.address = address;
 		}
 
-#region IEventHandle
-		public Breakpoint Breakpoint {
-			get { return breakpoint; }
-		}
-
-		public bool IsEnabled {
+		public override bool IsEnabled {
 			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}
 
-		public void Enable (Process process)
+		public override void Enable (Process process)
 		{
 			lock (this) {
 				EnableBreakpoint (process);
 			}
 		}
 
-		public void Disable (Process process)
+		public override void Disable (Process process)
 		{
 			lock (this) {
 				DisableBreakpoint (process);
 			}
 		}
 
-		public void Remove (Process process)
+		public override void Remove (Process process)
 		{
 			if (load_handler != null) {
 				load_handler.Dispose ();
@@ -66,7 +65,6 @@ namespace Mono.Debugger
 			}
 			Disable (process);
 		}
-#endregion
 
 		void EnableBreakpoint (Process process)
 		{
@@ -77,6 +75,9 @@ namespace Mono.Debugger
 				if (!address.IsNull)
 					breakpoint_id = process.InsertBreakpoint (
 						breakpoint, address);
+				else if (function != null)
+					breakpoint_id = process.InsertBreakpoint (
+						breakpoint, function);
 				else if (location.Method.IsDynamic) {
 					// A dynamic method is a method which may emit a
 					// callback when it's loaded.  We register this

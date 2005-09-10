@@ -319,7 +319,7 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 
-				step_operation_finished ();
+				goto operation_finished;
 			}
 
 			if (temp_breakpoint_id != 0) {
@@ -422,6 +422,7 @@ namespace Mono.Debugger.Backends
 					return;
 			}
 
+		operation_finished:
 			//
 			// Ok, the target stopped normally.  Now we need to compute the
 			// new stack frame and then send the result to our caller.
@@ -447,6 +448,10 @@ namespace Mono.Debugger.Backends
 			//
 			Operation new_operation = frame_changed (frame, current_operation);
 			if (new_operation != null) {
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} frame changed at {1} => new operation {2}",
+					      this, frame, new_operation);
+
 				ProcessOperation (new_operation);
 				return;
 			}
@@ -912,11 +917,8 @@ namespace Mono.Debugger.Backends
 					// currently running.
 					Operation new_operation = check_method_operation (
 						address, current_method, source, operation);
-					if (new_operation != null) {
-						Report.Debug (DebugFlags.EventLoop,
-							      "New operation: {0}", new_operation);
+					if (new_operation != null)
 						return new_operation;
-					}
 				}
 
 				SimpleStackFrame simple = new SimpleStackFrame (
@@ -927,11 +929,8 @@ namespace Mono.Debugger.Backends
 				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
 						address, current_method, null, operation);
-					if (new_operation != null) {
-						Report.Debug (DebugFlags.EventLoop,
-							      "New operation: {0}", new_operation);
+					if (new_operation != null)
 						return new_operation;
-					}
 				}
 
 				SimpleStackFrame simple = new SimpleStackFrame (
@@ -1448,6 +1447,14 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
+		public void InsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func,
+					      CommandResult result)
+		{
+			StartOperation ();
+			ProcessOperation (new OperationInsertBreakpoint (breakpoint, func, result));
+		}
+
+		[Command]
 		public int AddEventHandler (EventType type, Breakpoint breakpoint)
 		{
 			if (type != EventType.CatchException)
@@ -1780,7 +1787,7 @@ namespace Mono.Debugger.Backends
 				IMethod method = sse.Lookup (trampoline);
 				Report.Debug (DebugFlags.SSE,
 					      "{0} compiled trampoline: {1} {2} {3} {4} {5}",
-					      this, trampoline, method,
+					      sse, trampoline, method,
 					      method != null ? method.Module : null,
 					      SingleSteppingEngine.MethodHasSource (method), handler);
 
@@ -1795,6 +1802,47 @@ namespace Mono.Debugger.Backends
 
 				sse.do_continue (trampoline, trampoline);
 				return false;
+			}
+		}
+
+		protected class CallbackInsertBreakpoint : Callback
+		{
+			OperationInsertBreakpoint op;
+			MonoLanguageBackend language;
+			TargetAddress method, address;
+
+			public CallbackInsertBreakpoint (OperationInsertBreakpoint op)
+			{
+				this.op = op;
+				method = TargetAddress.Null;
+				address = TargetAddress.Null;
+			}
+
+			protected override void DoExecute (SingleSteppingEngine sse,
+							   Inferior inferior)
+			{
+				if (language == null)
+					language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
+
+				if (method.IsNull) {
+					method = op.Function.GetMethodAddress (sse.target_access);
+
+					inferior.CallMethod (language.CompileMethodFunc,
+							     method.Address, 0, ID);
+				}
+			}
+
+			protected override bool DoProcessEvent (SingleSteppingEngine sse,
+								Inferior inferior,
+								long data1, long data2)
+			{
+				address = new TargetAddress (inferior.AddressDomain, data1);
+
+				int index = sse.ThreadManager.BreakpointManager.InsertBreakpoint (
+					inferior, op.Breakpoint, address);
+
+				op.Result.Result = index;
+				return true;
 			}
 		}
 
@@ -1997,8 +2045,8 @@ namespace Mono.Debugger.Backends
 			sse.inferior.DisableBreakpoint (Index);
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} until {2}",
-				      sse, Index, until);
+				      "{0} stepping over breakpoint {1} until {2} ({3})",
+				      sse, Index, until, sse.current_method);
 
 			if (!until.IsNull) {
 				sse.insert_temporary_breakpoint (until);
@@ -2518,6 +2566,39 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			sse.do_callback (new CallbackCallMethod (this));
+		}
+
+		protected override bool DoProcessEvent (SingleSteppingEngine sse,
+							Inferior inferior,
+							Inferior.ChildEvent cevent,
+							out TargetEventArgs args)
+		{
+			args = null;
+			return true;
+		}
+	}
+
+	protected class OperationInsertBreakpoint : Operation
+	{
+		public readonly Breakpoint Breakpoint;
+		public readonly MonoFunctionType Function;
+		public readonly CommandResult Result;
+
+		public OperationInsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func,
+						  CommandResult result)
+		{
+			this.Breakpoint = breakpoint;
+			this.Function = (MonoFunctionType) func;
+			this.Result = result;
+		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{
+			sse.do_callback (new CallbackInsertBreakpoint (this));
 		}
 
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,

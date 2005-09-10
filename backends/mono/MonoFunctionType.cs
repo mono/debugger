@@ -12,14 +12,17 @@ namespace Mono.Debugger.Languages.Mono
 		MonoType return_type;
 		MonoType[] parameter_types;
 		bool has_return_type;
+		string full_name;
 		int token;
 
-		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass, R.MethodBase mbase)
+		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass, R.MethodBase mbase,
+					 string full_name)
 			: base (file, TargetObjectKind.Function, mbase.ReflectedType)
 		{
 			this.klass = klass;
 			this.method_info = mbase;
 			this.token = MonoDebuggerSupport.GetMethodToken (mbase);
+			this.full_name = full_name;
 
 			Type rtype;
 			if (mbase is R.ConstructorInfo) {
@@ -38,6 +41,10 @@ namespace Mono.Debugger.Languages.Mono
 					pinfo [i].ParameterType);
 
 			type_info = this;
+		}
+
+		public override string Name {
+			get { return full_name; }
 		}
 
 		public override bool IsByRef {
