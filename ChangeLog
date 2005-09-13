@@ -1,3 +1,16 @@
+2005-09-14  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs (Command.NeedsProcess): Removed.
+	(Command.Execute): Protect the whole method in a try...catch
+	block; handle ScriptingException' separately.
+
+	* frontend/Interpreter.cs (Interpreter.CurrentProcess): Removed.
+
+	* frontend/ScriptingContext.cs (ScriptingContext.CurrentProcess):
+	Check whether the process is still alive.
+
+	* backends/ThreadManager.cs (ThreadManager): Don't block on Kill().
+
 2005-09-13  Martin Baulig  <martin@ximian.com>
 
 	Reworked the ThreadManager's event queue to make it more robust

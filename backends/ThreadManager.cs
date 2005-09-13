@@ -607,6 +607,9 @@ namespace Mono.Debugger
 					      "Wait thread received event: {0} {1:x}",
 					      pid, status);
 
+				if (abort_requested)
+					continue;
+
 				//
 				// Note: `pid' is basically just an unique number which identifies the
 				//       SingleSteppingEngine of this event.

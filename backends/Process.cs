@@ -173,7 +173,6 @@ namespace Mono.Debugger
 				case TargetEventType.TargetSignaled:
 				case TargetEventType.TargetExited:
 					target_state = TargetState.EXITED;
-					debugger_manager.ProcessExited (ID);
 					break;
 
 				default:
@@ -771,6 +770,8 @@ namespace Mono.Debugger
 			if (engine != null) {
 				engine.Dispose ();
 				engine = null;
+
+				debugger_manager.ProcessExited (ID);
 			}
 		}
 

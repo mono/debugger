@@ -810,13 +810,19 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public ProcessHandle CurrentProcess {
-			get { return current_process; }
+			get {
+				if ((current_process == null) || !current_process.IsAlive)
+					throw new ScriptingException ("No program to debug.");
+
+				return current_process;
+			}
+
 			set { current_process = value; }
 		}
 
 		public FrameHandle CurrentFrame {
 			get {
-				return current_process.GetFrame (current_frame_idx);
+				return CurrentProcess.GetFrame (current_frame_idx);
 			}
 		}
 

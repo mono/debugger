@@ -24,7 +24,6 @@ namespace Mono.Debugger.Frontend
 		ScriptingContext context;
 
 		ProcessHandle main_process;
-		ProcessHandle current_process;
 		Hashtable procs;
 		Hashtable events;
 
@@ -210,19 +209,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public ProcessHandle CurrentProcess {
-			get {
-				if (current_process == null)
-					throw new ScriptingException ("No target.");
-
-				return current_process;
-			}
-
-			set {
-				current_process = value;
-			}
-		}
-
 		public void Abort ()
 		{
 			Print ("Caught fatal error while running non-interactively; exiting!");
@@ -286,13 +272,13 @@ namespace Mono.Debugger.Frontend
 
 		public bool HasTarget {
 			get {
-				return current_process != null;
+				return main_process != null;
 			}
 		}
 
 		public Process Start ()
 		{
-			if (current_process != null)
+			if (main_process != null)
 				throw new ScriptingException ("Process already started.");
 
 			string[] argv;
@@ -317,11 +303,10 @@ namespace Mono.Debugger.Frontend
 
 				backend.Run (options, argv);
 				Process process = backend.ThreadManager.WaitForApplication ();
-				current_process = (ProcessHandle) procs [process.ID];
-				main_process = current_process;
+				main_process = (ProcessHandle) procs [process.ID];
 
 				start_event.WaitOne ();
-				context.CurrentProcess = current_process;
+				context.CurrentProcess = main_process;
 				manager.Wait (process);
 
 				return process;
@@ -419,10 +404,10 @@ namespace Mono.Debugger.Frontend
 		protected void ProcessExited (DebuggerClient client, ProcessHandle process)
 		{
 			procs.Remove (process.ID);
-			if (process == current_process)
-				current_process = null;
-			if (process == main_process)
+			if (process == main_process) {
 				TargetExited (client);
+				context.CurrentProcess = null;
+			}
 		}
 
 		protected void TargetExited (DebuggerClient client)
@@ -435,13 +420,13 @@ namespace Mono.Debugger.Frontend
 						procs.Remove (proc.ID);
 				}
 
-				if ((current_process != null) && (current_process.DebuggerClient == client))
-					current_process = null;
-				if ((main_process != null) && (main_process.DebuggerClient == client))
+				if ((main_process != null) && (main_process.DebuggerClient == client)) {
 					main_process = null;
+					context.CurrentProcess = null;
+				}
 			} else {
 				procs = new Hashtable ();
-				current_process = null;
+				context.CurrentProcess = null;
 				main_process = null;
 			}
 
@@ -452,7 +437,7 @@ namespace Mono.Debugger.Frontend
 		public ProcessHandle GetProcess (int number)
 		{
 			if (number == -1)
-				return CurrentProcess;
+				return context.CurrentProcess;
 
 			foreach (ProcessHandle proc in Processes)
 				if (proc.ID == number)

@@ -89,25 +89,19 @@ namespace Mono.Debugger.Frontend
 	{
 		protected bool Repeating;
 
-		protected virtual bool NeedsProcess {
-			get { return true; }
-		}
-
 		public override string Execute (Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
-			if (NeedsProcess && (engine.Context.CurrentProcess == null)) {
-				engine.Context.Error ("No program to debug.", this, null);
-				return null;
-			}
-			
-			if (!Resolve (engine.Context))
-				return null;
-
 			try {
+				if (!Resolve (engine.Context))
+					return null;
+
 				Execute (engine.Context);
 			} catch (ThreadAbortException) {
+			} catch (ScriptingException ex) {
+				engine.Context.Error (ex);
+				return null;
 			} catch (Exception ex) {
 				engine.Context.Error (
 					"Caught exception while executing command {0}: {1}",
@@ -595,10 +589,6 @@ namespace Mono.Debugger.Frontend
 
 	public class FileCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Args != null && Args.Count != 1) {
@@ -635,10 +625,6 @@ namespace Mono.Debugger.Frontend
 
 	public class PwdCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Argument != "") {
@@ -662,10 +648,6 @@ namespace Mono.Debugger.Frontend
 
 	public class CdCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Args == null) {
@@ -1003,10 +985,6 @@ namespace Mono.Debugger.Frontend
 
 	public class RunCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Args == null && (context.Interpreter.Options.File == null
@@ -1066,10 +1044,6 @@ namespace Mono.Debugger.Frontend
 
 	public class QuitCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (context.HasBackend && context.Interpreter.IsInteractive) {
@@ -1292,10 +1266,6 @@ namespace Mono.Debugger.Frontend
 
 	public class ShowCommand : NestedCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 #region show subcommands
 		private class ShowProcessesCommand : DebuggerCommand
 		{
@@ -1864,10 +1834,6 @@ namespace Mono.Debugger.Frontend
 		ProcessHandle process;
 		ThreadGroup tgroup;
 
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		public string Group {
 			get { return group; }
 			set { group = value; }
@@ -2332,10 +2298,6 @@ namespace Mono.Debugger.Frontend
 
 	public class ServerCommand : DebuggerCommand, IDocumentableCommand
 	{
-		protected override bool NeedsProcess {
-			get { return false; }
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Args == null)
