@@ -188,6 +188,11 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public void Error (string message, params object[] args)
+		{
+			Console.WriteLine ("ERROR: " + String.Format (message, args));
+		}
+
 		public void UpdateSymbolTable ()
 		{ }
 

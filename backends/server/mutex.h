@@ -18,6 +18,15 @@ mono_debugger_mutex_unlock       (GMutex *mutex);
 gboolean
 mono_debugger_mutex_trylock      (GMutex *mutex);
 
+GCond *
+mono_debugger_cond_new           (void);
+
+void
+mono_debugger_cond_wait          (GMutex *mutex, GCond *cond);
+
+void
+mono_debugger_cond_broadcast     (GCond *cond);
+
 G_END_DECLS
 
 #endif

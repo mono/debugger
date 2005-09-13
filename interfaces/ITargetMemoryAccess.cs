@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 
-using Mono.Debugger.Languages;
-
 namespace Mono.Debugger
 {
 	public interface ITargetInfo
@@ -145,36 +143,5 @@ namespace Mono.Debugger
 		void SetRegisters (Registers registers);
 
 		int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
-	}
-
-	public delegate object TargetAccessDelegate (ITargetAccess target, object user_data);
-
-	public interface ITargetAccess
-	{
-		ITargetMemoryInfo TargetMemoryInfo {
-			get;
-		}
-
-		ITargetInfo TargetInfo {
-			get;
-		}
-
-		ITargetMemoryAccess TargetMemoryAccess {
-			get;
-		}
-
-		TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-					  TargetAddress arg2);
-
-		void RuntimeInvoke (ITargetFunctionType method_argument,
-				    ITargetObject object_argument,
-				    ITargetObject[] param_objects);
-
-		ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
-					     ITargetObject object_argument,
-					     ITargetObject[] param_objects,
-					     out string exc_message);
-
-		object Invoke (TargetAccessDelegate func, object user_data);
 	}
 }

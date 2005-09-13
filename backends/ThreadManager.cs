@@ -21,6 +21,8 @@ namespace Mono.Debugger
 
 	public class ThreadManager : MarshalByRefObject
 	{
+		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (500);
+
 		internal ThreadManager (DebuggerBackend backend)
 		{
 			this.backend = backend;
@@ -34,13 +36,16 @@ namespace Mono.Debugger
 			address_domain = new AddressDomain ("global");
 
 			start_event = new ManualResetEvent (false);
-			completed_event = new ManualResetEvent (false);
 			command_mutex = new DebuggerMutex ("command_mutex");
 			command_mutex.DebugFlags = DebugFlags.Wait;
 
 			ready_event = new ManualResetEvent (false);
 			wait_event = new AutoResetEvent (false);
 			idle_event = new ManualResetEvent (false);
+			engine_event = new ManualResetEvent (true);
+
+			event_queue = new DebuggerEventQueue ("event_queue");
+			event_queue.DebugFlags = DebugFlags.Wait;
 
 			mono_debugger_server_global_init ();
 		}
@@ -49,11 +54,13 @@ namespace Mono.Debugger
 
 		ProcessStart start;
 		DebuggerBackend backend;
+		DebuggerEventQueue event_queue;
 		BreakpointManager breakpoint_manager;
 		Thread inferior_thread;
 		Thread wait_thread;
 		ManualResetEvent ready_event;
 		ManualResetEvent idle_event;
+		ManualResetEvent engine_event;
 		AutoResetEvent wait_event;
 		Hashtable thread_hash;
 		Hashtable engine_hash;
@@ -66,7 +73,6 @@ namespace Mono.Debugger
 		SingleSteppingEngine main_engine;
 
 		ManualResetEvent start_event;
-		ManualResetEvent completed_event;
 		DebuggerMutex command_mutex;
 		bool abort_requested;
 
@@ -95,6 +101,8 @@ namespace Mono.Debugger
 			engine_hash.Add (the_engine.ID, the_engine);
 
 			OnThreadCreatedEvent (the_engine.Process);
+
+			event_queue.Lock ();
 
 			wait_event.Set ();
 
@@ -346,9 +354,9 @@ namespace Mono.Debugger
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				if (engine == main_engine) {
 					abort_requested = true;
+					Kill ();
 					if (TargetExitedEvent != null)
 						TargetExitedEvent ();
-					Kill ();
 					backend.Dispose ();
 					return true;
 				} else {
@@ -381,6 +389,8 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event TargetExitedHandler TargetExitedEvent;
 
+		public event TargetEventHandler TargetEvent;
+
 		void OnInitializedEvent (Process new_process)
 		{
 			if (InitializedEvent != null)
@@ -405,6 +415,17 @@ namespace Mono.Debugger
 				ThreadExitedEvent (this, process);
 		}
 
+		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			try {
+				if (TargetEvent != null)
+					TargetEvent (sse.TargetAccess, args);
+			} catch (Exception ex) {
+				backend.Error ("{0} caught exception while sending {1}:\n{2}",
+					       sse, args, ex);
+			}
+		}
+
 		internal bool InBackgroundThread {
 			get { return Thread.CurrentThread == inferior_thread; }
 		}
@@ -413,14 +434,18 @@ namespace Mono.Debugger
 		{
 			Command command = new Command (message, sink);
 
-			lock (this) {
-				if (current_command != null)
-					throw new InternalError ();
-
-				current_command = command;
-				// completed_event.Reset ();
-				Semaphore.Set ();
+			if (!engine_event.WaitOne (WaitTimeout, false)) {
+				return new ReturnMessage (
+					new TargetException (TargetError.NotStopped), message);
 			}
+
+			event_queue.Lock ();
+			engine_event.Reset ();
+
+			current_command = command;
+
+			event_queue.Signal ();
+			event_queue.Unlock ();
 
 			return null;
 		}
@@ -430,16 +455,19 @@ namespace Mono.Debugger
 		{
 			Command command = new Command (sse, target, user_data);
 
-			lock (this) {
-				if (current_command != null)
-					throw new InternalError ();
+			if (!engine_event.WaitOne (WaitTimeout, false))
+				throw new TargetException (TargetError.NotStopped);
 
-				current_command = command;
-				completed_event.Reset ();
-				Semaphore.Set ();
-			}
+			event_queue.Lock ();
+			engine_event.Reset ();
 
-			completed_event.WaitOne ();
+			current_command = command;
+
+			event_queue.Signal ();
+			event_queue.Unlock ();
+
+			engine_event.WaitOne ();
+
 			if (command.Result is Exception)
 				throw (Exception) command.Result;
 			else
@@ -459,7 +487,7 @@ namespace Mono.Debugger
 		{
 			Report.Debug (DebugFlags.Wait, "ThreadManager waiting");
 
-			Semaphore.Wait ();
+			event_queue.Wait ();
 
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait, "Engine thread abort requested");
@@ -473,16 +501,14 @@ namespace Mono.Debugger
 
 			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
 
-			lock (this) {
-				event_engine = current_event;
-				status = current_event_status;
+			event_engine = current_event;
+			status = current_event_status;
 
-				current_event = null;
-				current_event_status = 0;
+			current_event = null;
+			current_event_status = 0;
 
-				command = current_command;
-				current_command = null;
-			}
+			command = current_command;
+			current_command = null;
 
 			if (event_engine != null) {
 				try {
@@ -493,6 +519,7 @@ namespace Mono.Debugger
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
 
+				engine_event.Set ();
 				wait_event.Set ();
 
 				if (!engine_is_ready) {
@@ -518,6 +545,8 @@ namespace Mono.Debugger
 						ex, (IMethodCallMessage) command.Data1);
 				}
 
+				engine_event.Set ();
+
 				((IMessageSink) command.Data2).SyncProcessMessage (return_message);
 			} else if (command.Type == CommandType.TargetAccess) {
 				try {
@@ -529,7 +558,7 @@ namespace Mono.Debugger
 					command.Result = ex;
 				}
 
-				completed_event.Set ();
+				engine_event.Set ();
 			} else {
 				throw new InvalidOperationException ();
 			}
@@ -589,14 +618,19 @@ namespace Mono.Debugger
 						throw new InternalError ("Got event {0:x} for unknown pid {1}",
 									 status, pid);
 
-					lock (this) {
-						if (current_event != null)
-							throw new InternalError ();
+					engine_event.WaitOne ();
 
-						current_event = event_engine;
-						current_event_status = status;
-						Semaphore.Set ();
-					}
+					event_queue.Lock ();
+					engine_event.Reset ();
+
+					if (current_event != null)
+						throw new InternalError ();
+
+					current_event = event_engine;
+					current_event_status = status;
+
+					event_queue.Signal ();
+					event_queue.Unlock ();
 				}
 			}
 		}
@@ -619,7 +653,7 @@ namespace Mono.Debugger
 
 				abort_requested = true;
 				wait_event.Set();
-				Semaphore.Set();
+				event_queue.Signal();
 				disposed = true;
 			}
 

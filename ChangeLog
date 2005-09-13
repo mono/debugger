@@ -1,3 +1,35 @@
+2005-09-13  Martin Baulig  <martin@ximian.com>
+
+	Reworked the ThreadManager's event queue to make it more robust
+	and catch deadlocks.
+
+	* interfaces/ITargetAccess.cs (ITargetAccess): Splitted this out
+	from ITargetMemoryAccess.cs.
+
+	* classes/TargetEvent.cs
+	(TargetEventHandler): Added `ITargetAccess' argument; use this to
+	access the target inside the event handler.
+
+	* backends/Process.cs (Process.TargetEvent): Removed.
+
+	* backends/ThreadManager.cs
+	(ThreadManager.TargetEvent): Moved the event here from `Process'.
+	(ThreadManager): Reworked the event queue to make it more robust
+	and catch deadlocks.
+
+	* backends/mono/MonoObjectObject.cs
+	(MonoObjectObject.GetCurrentType): Don't catch exceptions here.
+
+	* frontend/Interpreter.cs
+	(Interpreter.ProcessEventSink): New protected [Serializable]
+	class; handle the `ThreadManager.TargetEvent' here.
+
+	* frontend/ScriptingContext.cs
+	(FrameHandle.TargetEvent): Moved all the frame-related stuff here
+	from the `ProcessHandle'.
+	(ProcessHandle): Moved all the frame-related stuff to the
+	`FrameHandle'.	
+
 2005-09-10  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceLocation.cs

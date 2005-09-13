@@ -18,22 +18,18 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected IMonoTypeInfo GetCurrentType ()
 		{
-			try {
-				// location.Address resolves to the address of the MonoObject,
-				// dereferencing it once gives us the vtable, dereferencing it
-				// twice the class.
-				TargetAddress address;
-				address = location.TargetMemoryAccess.ReadAddress (location.Address);
-				address = location.TargetMemoryAccess.ReadGlobalAddress (address);
+			// location.Address resolves to the address of the MonoObject,
+			// dereferencing it once gives us the vtable, dereferencing it
+			// twice the class.
+			TargetAddress address;
+			address = location.TargetMemoryAccess.ReadAddress (location.Address);
+			address = location.TargetMemoryAccess.ReadGlobalAddress (address);
 
-				MonoType klass = type.File.MonoLanguage.GetClass (address);
-				if (klass == null)
-					return null;
-
-				return klass.GetTypeInfo ();
-			} catch {
+			MonoType klass = type.File.MonoLanguage.GetClass (address);
+			if (klass == null)
 				return null;
-			}
+
+			return klass.GetTypeInfo ();
 		}
 
 		public IMonoTypeInfo CurrentType {

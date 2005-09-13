@@ -18,11 +18,15 @@ namespace Mono.Debugger.Frontend
 	[Serializable]
 	public class FrameHandle
 	{
+		Interpreter interpreter;
 		ProcessHandle process;
 		StackFrame frame;
+		ITargetObject current_exception;
 
-		public FrameHandle (ProcessHandle process, StackFrame frame)
+		public FrameHandle (Interpreter interpreter, ProcessHandle process,
+				    StackFrame frame)
 		{
+			this.interpreter = interpreter;
 			this.process = process;
 			this.frame = frame;
 		}
@@ -54,9 +58,9 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public void Disassemble (ScriptingContext context)
+		public void Disassemble (ScriptingContext context, ITargetAccess target)
 		{
-			AssemblerLine line = Disassemble ();
+			AssemblerLine line = Disassemble (target);
 
 			if (line != null)
 				context.PrintInstruction (line);
@@ -65,30 +69,30 @@ namespace Mono.Debugger.Frontend
 					       frame.TargetAddress);
 		}
 
-		public AssemblerLine Disassemble ()
+		public AssemblerLine Disassemble (ITargetAccess target)
 		{
-			return Disassemble (frame.TargetAddress);
+			return Disassemble (target, frame.TargetAddress);
 		}
 
-		public AssemblerLine Disassemble (TargetAddress address)
+		public AssemblerLine Disassemble (ITargetAccess target, TargetAddress address)
 		{
 			IMethod method = frame.Method;
 			if ((method == null) || !method.IsLoaded)
-				return process.Process.DisassembleInstruction (null, address);
+				return target.DisassembleInstruction (null, address);
 			else if ((address < method.StartAddress) || (address >= method.EndAddress))
-				return process.Process.DisassembleInstruction (null, address);
+				return target.DisassembleInstruction (null, address);
 			else
-				return process.Process.DisassembleInstruction (method, address);
+				return target.DisassembleInstruction (method, address);
 		}
 
-		public void DisassembleMethod (ScriptingContext context)
+		public void DisassembleMethod (ScriptingContext context, ITargetAccess target)
 		{
 			IMethod method = frame.Method;
 
 			if ((method == null) || !method.IsLoaded)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			AssemblerMethod asm = process.Process.DisassembleMethod (method);
+			AssemblerMethod asm = target.DisassembleMethod (method);
 			foreach (AssemblerLine line in asm.Lines)
 				context.PrintInstruction (line);
 		}
@@ -195,6 +199,104 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public ITargetObject ExceptionObject {
+			get {
+				return current_exception;
+			}
+		}
+
+		public void TargetEvent (ITargetAccess target, TargetEventArgs args)
+		{
+			switch (args.Type) {
+			case TargetEventType.TargetStopped: {
+				if ((int) args.Data != 0)
+					interpreter.Print ("{0} received signal {1} at {2}.",
+							   target.Name, (int) args.Data, frame);
+				else if (!interpreter.IsInteractive)
+					break;
+				else
+					interpreter.Print ("{0} stopped at {1}.", target.Name, frame);
+
+				if (interpreter.IsScript)
+					break;
+
+				AssemblerLine insn;
+				try {
+					insn = Disassemble (target);
+				} catch {
+					insn = null;
+				}
+
+				interpreter.Style.TargetStopped (
+					interpreter.GlobalContext, this, insn);
+
+				if (!interpreter.IsInteractive)
+					interpreter.Abort ();
+				break;
+			}
+
+			case TargetEventType.TargetHitBreakpoint: {
+				if (!interpreter.IsInteractive)
+					break;
+
+				interpreter.Print ("{0} hit breakpoint {1} at {2}.",
+						   target.Name, (int) args.Data, frame);
+
+				if (interpreter.IsScript)
+					break;
+
+				AssemblerLine insn;
+				try {
+					insn = Disassemble (target);
+				} catch {
+					insn = null;
+				}
+
+				interpreter.Style.TargetStopped (
+					interpreter.GlobalContext, this, insn);
+
+				if (!interpreter.IsInteractive)
+					interpreter.Abort ();
+				break;
+			}
+
+			case TargetEventType.Exception:
+			case TargetEventType.UnhandledException:
+				interpreter.Print ("{0} caught {2}exception at {1}.", target.Name, frame,
+						   args.Type == TargetEventType.Exception ?
+						   "" : "unhandled ");
+
+				TargetAddress exc = (TargetAddress) args.Data;
+				ITargetObject exc_object = null;
+
+				try {
+					if (frame.Language != null)
+						exc_object = frame.Language.CreateObject (target, exc);
+				} catch {
+					exc_object = null;
+				}
+
+				current_exception = exc_object;
+
+				if (interpreter.IsScript)
+					break;
+
+				AssemblerLine insn;
+				try {
+					insn = Disassemble (target);
+				} catch {
+					insn = null;
+				}
+
+				interpreter.Style.UnhandledException (
+					interpreter.GlobalContext, this, insn, exc_object);
+
+				if (!interpreter.IsInteractive)
+					interpreter.Abort ();
+				break;
+			}
+		}
+
 		public override string ToString ()
 		{
 			return frame.ToString ();
@@ -206,13 +308,15 @@ namespace Mono.Debugger.Frontend
 	{
 		FrameHandle[] frames;
 
-		public BacktraceHandle (ProcessHandle process, Backtrace backtrace)
+		public BacktraceHandle (Interpreter interpreter, ProcessHandle process,
+					Backtrace backtrace)
 		{
 			StackFrame[] bt_frames = backtrace.Frames;
 			if (bt_frames != null) {
 				frames = new FrameHandle [bt_frames.Length];
 				for (int i = 0; i < frames.Length; i++)
-					frames [i] = new FrameHandle (process, bt_frames [i]);
+					frames [i] = new FrameHandle (
+						interpreter, process, bt_frames [i]);
 			} else
 				frames = new FrameHandle [0];
 		}
@@ -257,7 +361,7 @@ namespace Mono.Debugger.Frontend
 			if (process.HasTarget) {
 				if (!process.IsDaemon) {
 					StackFrame frame = process.CurrentFrame;
-					current_frame = new FrameHandle (this, frame);
+					current_frame = new FrameHandle (interpreter, this, frame);
 					interpreter.Print ("{0} stopped at {1}.", Name, frame);
 					interpreter.Style.PrintFrame (
 						interpreter.GlobalContext, current_frame);
@@ -302,8 +406,6 @@ namespace Mono.Debugger.Frontend
 		int current_frame_idx = -1;
 		FrameHandle current_frame = null;
 		BacktraceHandle current_backtrace = null;
-		AssemblerLine current_insn = null;
-		ITargetObject current_exception = null;
 
 		protected void ProcessExited ()
 		{
@@ -313,80 +415,14 @@ namespace Mono.Debugger.Frontend
 				ProcessExitedEvent (this);
 		}
 
-		protected void TargetEvent (TargetEventArgs args, FrameHandle new_frame, AssemblerLine new_insn)
+		internal void TargetEvent (TargetEventArgs args, FrameHandle new_frame)
 		{
-			current_exception = null;
-
 			current_frame = new_frame;
-			current_insn = new_insn;
 
 			current_frame_idx = -1;
 			current_backtrace = null;
 
-			string frame = "";
-			if (current_frame != null)
-				frame = String.Format (" at {0}", current_frame);
-
 			switch (args.Type) {
-			case TargetEventType.TargetStopped:
-				if ((int) args.Data != 0)
-					interpreter.Print ("{0} received signal {1}{2}.", Name, (int) args.Data, frame);
-				else if (!interpreter.IsInteractive)
-					break;
-				else
-					interpreter.Print ("{0} stopped{1}.", Name, frame);
-
-				if (interpreter.IsScript)
-					break;
-
-				interpreter.Style.TargetStopped (
-					interpreter.GlobalContext, current_frame, current_insn);
-
-				if (!interpreter.IsInteractive)
-					interpreter.Abort ();
-				break;
-
-			case TargetEventType.TargetHitBreakpoint:
-				if (!interpreter.IsInteractive)
-					break;
-
-				interpreter.Print ("{0} hit breakpoint {1}{2}.",
-						   Name, (int) args.Data, frame);
-
-				if (interpreter.IsScript)
-					break;
-
-				interpreter.Style.TargetStopped (
-					interpreter.GlobalContext, current_frame, current_insn);
-
-				if (!interpreter.IsInteractive)
-					interpreter.Abort ();
-				break;
-
-			case TargetEventType.Exception:
-			case TargetEventType.UnhandledException:
-				interpreter.Print ("{0} caught {2}exception{1}.", Name, frame,
-						   args.Type == TargetEventType.Exception ? "" : "unhandled ");
-
-				TargetAddress exc = (TargetAddress) args.Data;
-				ITargetObject exc_object = null;
-				if (current_frame != null)
-					exc_object = current_frame.Language.CreateObject (
-						current_frame.Frame.TargetAccess, exc);
-
-				current_exception = exc_object;
-
-				if (interpreter.IsScript)
-					break;
-
-				interpreter.Style.UnhandledException (
-					interpreter.GlobalContext, current_frame, current_insn,
-					exc_object);
-
-				if (!interpreter.IsInteractive)
-					interpreter.Abort ();
-				break;
-
 			case TargetEventType.TargetExited:
 				if (!process.IsDaemon) {
 					if ((int) args.Data == 0)
@@ -414,8 +450,6 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
-
-			current_exception = null;
 
 			switch (which) {
 			case WhichStepCommand.Continue:
@@ -463,8 +497,6 @@ namespace Mono.Debugger.Frontend
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
 
-			current_exception = null;
-
 			process.RuntimeInvoke (func, instance, args);
 
 			if (interpreter.IsSynchronous)
@@ -479,8 +511,6 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
-
-			current_exception = null;
 
 			return process.RuntimeInvoke (func, instance, args, out exc_message);
 		}
@@ -555,7 +585,8 @@ namespace Mono.Debugger.Frontend
 			if ((max_frames == -1) && (current_backtrace != null))
 				return current_backtrace;
 
-			current_backtrace = new BacktraceHandle (this, process.GetBacktrace (max_frames));
+			current_backtrace = new BacktraceHandle (
+				interpreter, this, process.GetBacktrace (max_frames));
 
 			if (current_backtrace == null)
 				throw new ScriptingException ("No stack.");
@@ -578,7 +609,8 @@ namespace Mono.Debugger.Frontend
 
 			if (number == -1) {
 				if (current_frame == null)
-					current_frame = new FrameHandle (this, process.CurrentFrame);
+					current_frame = new FrameHandle (
+						interpreter, this, process.CurrentFrame);
 
 				return current_frame;
 			}
@@ -596,12 +628,6 @@ namespace Mono.Debugger.Frontend
 					return TargetState.NO_TARGET;
 				else
 					return process.State;
-			}
-		}
-
-		public ITargetObject CurrentException {
-			get {
-				return current_exception;
 			}
 		}
 
@@ -645,20 +671,8 @@ namespace Mono.Debugger.Frontend
 			{
 				this.process = process;
 
-				process.process.TargetEvent += new TargetEventHandler (target_event);
 				process.process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
 				process.process.DebuggerError += new DebuggerErrorHandler (debugger_error);
-			}
-
-			public void target_event (TargetEventArgs args)
-			{
-				if (args.Frame != null) {
-					FrameHandle frame = new FrameHandle (process, args.Frame);
-					AssemblerLine insn = frame.Disassemble ();
-
-					process.TargetEvent (args, frame, insn);
-				} else
-					process.TargetEvent (args, null, null);
 			}
 
 			public void debugger_output (string line)

@@ -69,7 +69,7 @@ proc mdb_expect_prompt { } {
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set line $expect_out(1,string)
-		verbose "Received `$line' when waiting for a command prompt"
+		fail "Received `$line' when waiting for a command prompt"
 		incr count
 	    }
 	    timeout {
@@ -162,7 +162,7 @@ proc mdb_expect_stopped {index func file line} {
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set message $expect_out(1,string)
-		verbose "Received `$message' while waiting for target to stop"
+		fail "Received `$message' while waiting for target to stop"
 		incr count
 	    }
 	    timeout {
@@ -194,7 +194,7 @@ proc mdb_expect_breakpoint {} {
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set line $expect_out(1,string)
-		verbose "Received `$line' when trying to insert a breakpoint"
+		fail "Received `$line' when trying to insert a breakpoint"
 		incr count
 	    }
 	    timeout {
@@ -226,7 +226,7 @@ proc mdb_expect_catchpoint {} {
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set line $expect_out(1,string)
-		verbose "Received `$line' when trying to insert a catchpoint"
+		fail "Received `$line' when trying to insert a catchpoint"
 		incr count
 	    }
 	    timeout {
@@ -264,7 +264,7 @@ proc mdb_expect_exception {index func file line} {
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set message $expect_out(1,string)
-		verbose "Received `$message' while waiting for target to stop"
+		fail "Received `$message' while waiting for target to stop"
 		incr count
 	    }
 	    timeout {
@@ -291,7 +291,7 @@ proc mdb_expect_process {} {
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set line $expect_out(1,string)
-		verbose "Received `$line' when waiting for a new process"
+		fail "Received `$line' when waiting for a new process"
 		incr count
 	    } timeout {
 		break

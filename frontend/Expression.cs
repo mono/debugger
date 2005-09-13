@@ -421,8 +421,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
-			return frame.Language.CreateObject (frame.TargetAccess, TargetAddress.Null);
+			throw new InvalidOperationException ();
 		}
 	}
 
@@ -497,7 +496,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			exc = context.CurrentProcess.CurrentException;
+			exc = context.CurrentFrame.ExceptionObject;
 			if (exc == null)
 				throw new ScriptingException ("No current exception.");
 
@@ -2290,7 +2289,14 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			ITargetObject obj = right.EvaluateVariable (context);
+			ITargetObject obj;
+			if (right is NullExpression) {
+				StackFrame frame = context.CurrentFrame.Frame;
+				ITargetType ltype = left.EvaluateType (context);
+				obj = frame.Language.CreateNullObject (frame.TargetAccess, ltype);
+			} else
+				obj = right.EvaluateVariable (context);
+
 			left.Assign (context, obj);
 			return obj;
 		}

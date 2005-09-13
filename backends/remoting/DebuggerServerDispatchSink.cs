@@ -77,9 +77,11 @@ namespace Mono.Debugger.Remoting
 
 			if (is_command) {
 				responseMsg = DebuggerContext.ThreadManager.SendCommand (message, sink);
-				if (responseMsg != null)
+				if (responseMsg != null) {
+					Report.Debug (DebugFlags.Remoting, "Dispatch completed {0}",
+						      responseMsg);
 					return ServerProcessing.Complete;
-				else
+				} else
 					return ServerProcessing.Async;
 			}
 

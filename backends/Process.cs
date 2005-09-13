@@ -66,13 +66,6 @@ namespace Mono.Debugger
 		public event DebuggerOutputHandler DebuggerOutput;
 		public event DebuggerErrorHandler DebuggerError;
 
-		// <summary>
-		//   This event is emitted each time a stepping operation is started or
-		//   completed.  Other than the Inferior's StateChangedEvent, it is only
-		//   emitted after the whole operation completed.
-		// </summary>
-		public event TargetEventHandler TargetEvent;
-
 		internal void OnInferiorOutput (bool is_stderr, string line)
 		{
 			if (TargetOutput != null)
@@ -187,9 +180,6 @@ namespace Mono.Debugger
 					target_state = TargetState.STOPPED;
 					break;
 				}
-
-				if (TargetEvent != null)
-					TargetEvent (args);
 			}
 
 			if (operation_completed)

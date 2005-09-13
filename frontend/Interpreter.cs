@@ -23,6 +23,7 @@ namespace Mono.Debugger.Frontend
 
 		ScriptingContext context;
 
+		ProcessHandle main_process;
 		ProcessHandle current_process;
 		Hashtable procs;
 		Hashtable events;
@@ -312,10 +313,12 @@ namespace Mono.Debugger.Frontend
 				DebuggerBackend backend = client.DebuggerBackend;
 
 				new InterpreterEventSink (this, client, backend);
+				new ProcessEventSink (this, backend.ThreadManager);
 
 				backend.Run (options, argv);
 				Process process = backend.ThreadManager.WaitForApplication ();
 				current_process = (ProcessHandle) procs [process.ID];
+				main_process = current_process;
 
 				start_event.WaitOne ();
 				context.CurrentProcess = current_process;
@@ -335,6 +338,7 @@ namespace Mono.Debugger.Frontend
 				DebuggerBackend backend = client.DebuggerBackend;
 
 				new InterpreterEventSink (this, client, backend);
+				new ProcessEventSink (this, backend.ThreadManager);
 
 				backend.Run (null, argv);
 				Process process = backend.ThreadManager.WaitForApplication ();
@@ -412,11 +416,13 @@ namespace Mono.Debugger.Frontend
 			events.Remove (handle.Breakpoint.Index);
 		}
 
-		protected void ProcessExited (ProcessHandle process)
+		protected void ProcessExited (DebuggerClient client, ProcessHandle process)
 		{
 			procs.Remove (process.ID);
 			if (process == current_process)
 				current_process = null;
+			if (process == main_process)
+				TargetExited (client);
 		}
 
 		protected void TargetExited (DebuggerClient client)
@@ -431,9 +437,12 @@ namespace Mono.Debugger.Frontend
 
 				if ((current_process != null) && (current_process.DebuggerClient == client))
 					current_process = null;
+				if ((main_process != null) && (main_process.DebuggerClient == client))
+					main_process = null;
 			} else {
 				procs = new Hashtable ();
 				current_process = null;
+				main_process = null;
 			}
 
 			events = new Hashtable ();
@@ -613,12 +622,38 @@ namespace Mono.Debugger.Frontend
 
 			public void process_exited (ProcessHandle process)
 			{
-				interpreter.ProcessExited (process);
+				interpreter.ProcessExited (client, process);
 			}
 
 			public void target_output (bool is_stderr, string line)
 			{
 				interpreter.PrintInferior (is_stderr, line);
+			}
+		}
+
+		[Serializable]
+		protected class ProcessEventSink
+		{
+			Interpreter interpreter;
+
+			public ProcessEventSink (Interpreter interpreter, ThreadManager manager)
+			{
+				this.interpreter = interpreter;
+
+				manager.TargetEvent += new TargetEventHandler (target_event);
+			}
+
+			public void target_event (ITargetAccess target, TargetEventArgs args)
+			{
+				ProcessHandle proc = (ProcessHandle) interpreter.procs [target.ID];
+
+				FrameHandle frame = null;
+				if (args.Frame != null) {
+					frame = new FrameHandle (interpreter, proc, args.Frame);
+					frame.TargetEvent (target, args);
+				}
+
+				proc.TargetEvent (args, frame);
 			}
 		}
 	}

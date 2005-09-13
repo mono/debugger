@@ -551,7 +551,7 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			if (do_method) {
-				frame.DisassembleMethod (context);
+				frame.DisassembleMethod (context, frame.Frame.TargetAccess);
 				return;
 			}
 

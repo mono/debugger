@@ -15,10 +15,20 @@ namespace Mono.Debugger.Backends
 	public abstract class TargetAccess : ITargetAccess, ISerializable
 	{
 		int id;
+		string name;
 
-		protected TargetAccess (int id)
+		protected TargetAccess (int id, string name)
 		{
 			this.id = id;
+			this.name = name;
+		}
+
+		public int ID {
+			get { return id; }
+		}
+
+		public string Name {
+			get { return name; }
 		}
 
 		public abstract ITargetMemoryAccess TargetMemoryAccess {
@@ -46,6 +56,11 @@ namespace Mono.Debugger.Backends
 							     out string exc_message);
 
 		public abstract object Invoke (TargetAccessDelegate func, object data);
+
+		public abstract AssemblerLine DisassembleInstruction (IMethod method,
+								      TargetAddress address);
+
+		public abstract AssemblerMethod DisassembleMethod (IMethod method);
 
 		//
 		// ISerializable
@@ -85,7 +100,7 @@ namespace Mono.Debugger.Backends
 		Process process;
 
 		public ClientTargetAccess (Process process)
-			: base (process.ID)
+			: base (process.ID, process.Name)
 		{
 			this.process = process;
 		}
@@ -128,6 +143,17 @@ namespace Mono.Debugger.Backends
 		{
 			return process.Invoke (func, data);
 		}
+
+		public override AssemblerLine DisassembleInstruction (IMethod method,
+								      TargetAddress address)
+		{
+			return process.DisassembleInstruction (method, address);
+		}
+
+		public override AssemblerMethod DisassembleMethod (IMethod method)
+		{
+			return process.DisassembleMethod (method);
+		}
 	}
 
 	[Serializable]
@@ -136,7 +162,7 @@ namespace Mono.Debugger.Backends
 		SingleSteppingEngine sse;
 
 		public ServerTargetAccess (SingleSteppingEngine sse)
-			: base (sse.ID)
+			: base (sse.ID, sse.Name)
 		{
 			this.sse = sse;
 		}
@@ -197,6 +223,23 @@ namespace Mono.Debugger.Backends
 				return func (this, data);
 			else
 				return sse.ThreadManager.SendCommand (sse, func, data);
+		}
+
+		public override AssemblerLine DisassembleInstruction (IMethod method,
+								      TargetAddress address)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				return sse.DisassembleInstruction (method, address);
+			else
+				return sse.Process.DisassembleInstruction (method, address);
+		}
+
+		public override AssemblerMethod DisassembleMethod (IMethod method)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				return sse.DisassembleMethod (method);
+			else
+				return sse.Process.DisassembleMethod (method);
 		}
 	}
 }

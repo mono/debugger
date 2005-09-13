@@ -109,6 +109,7 @@ namespace Mono.Debugger.Backends
 
 			process = DebuggerManager.CreateProcess (this);
 			ID = process.ID;
+			Name = process.Name;
 			target_access = new ServerTargetAccess (this);
 		}
 
@@ -125,6 +126,7 @@ namespace Mono.Debugger.Backends
 
 			process = DebuggerManager.CreateProcess (this);
 			ID = process.ID;
+			Name = process.Name;
 			target_access = new ServerTargetAccess (this);
 		}
 
@@ -470,6 +472,8 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				engine_stopped = true;
 				engine_stopped_event.Set ();
+				if (result != null)
+					manager.SendTargetEvent (this, result);
 				process.SendTargetEvent (result, true);
 			}
 		}
@@ -483,8 +487,9 @@ namespace Mono.Debugger.Backends
 				this.is_main = true;
 				do_continue ();
 			} else {
-				process.SendTargetEvent (
-					new TargetEventArgs (TargetEventType.TargetRunning), false);
+				TargetEventArgs args = new TargetEventArgs (TargetEventType.TargetRunning);
+				manager.SendTargetEvent (this, args);
+				process.SendTargetEvent (args, false);
 				current_operation = new OperationRun (TargetAddress.Null, true);
 				do_continue ();
 			}
@@ -1625,6 +1630,7 @@ namespace Mono.Debugger.Backends
 		bool stop_requested;
 		bool has_thread_lock;
 		bool is_main, reached_main;
+		public readonly string Name;
 		public readonly int ID;
 		public readonly int PID;
 		public readonly int TID;

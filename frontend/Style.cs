@@ -89,7 +89,7 @@ namespace Mono.Debugger.Frontend
 			if (!frame.PrintSource (context))
 				native = true;
 			if (native)
-				frame.Disassemble (context);
+				frame.Disassemble (context, frame.Frame.TargetAccess);
 		}
 
 		public override void TargetStopped (ScriptingContext context, FrameHandle frame,
@@ -578,7 +578,7 @@ namespace Mono.Debugger.Frontend
 		public override void PrintFrame (ScriptingContext context, FrameHandle frame)
 		{
 			context.Print (frame);
-			frame.Disassemble (context);
+			frame.Disassemble (context, frame.Frame.TargetAccess);
 			frame.PrintSource (context);
 		}
 
