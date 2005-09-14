@@ -7,7 +7,5 @@ namespace Mono.Debugger.Languages
 		}
 
 		ITargetObject GetField (int index);
-
-		ITargetObject GetProperty (int index);
 	}
 }

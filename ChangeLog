@@ -1,5 +1,16 @@
 2005-09-14  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFunctionType.cs
+	(ITargetFunctionType.Invoke): Removed.
+
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.GetStaticProperty): Removed.
+
+	* interfaces/ITargetStructObject.cs
+	(ITargetStructObject.GetProperty): Removed.
+
+2005-09-14  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoSymbolFile.cs
 	(MonoSymbolFile.MonoMethod.get_variables): Use the
 	`C.LocalVariableEntry's index to point into the MethodAddress.

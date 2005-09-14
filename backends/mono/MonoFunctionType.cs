@@ -86,31 +86,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return method_info; }
 		}
 
-		internal ITargetObject DoInvoke (ITargetAccess target, MonoFunctionType method,
-						 MonoObject instance, MonoObject[] args)
-		{
-			if (ParameterTypes.Length != args.Length)
-				throw new ArgumentException ();
-
-			string exc_message;
-			ITargetObject retval = target.RuntimeInvoke (
-				method, instance, args, out exc_message);
-
-			if (exc_message != null)
-				throw new TargetException (
-					TargetError.InvocationException, exc_message);
-
-			return retval;
-		}
-
-		public ITargetObject Invoke (ITargetAccess target, ITargetObject instance,
-					     ITargetObject[] args)
-		{
-			MonoObject[] margs = new MonoObject [args.Length];
-			args.CopyTo (margs, 0);
-			return DoInvoke (target, this, (MonoObject) instance, margs);
-		}
-
 		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
 		{
 			throw new InvalidOperationException ();

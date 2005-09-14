@@ -97,8 +97,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject GetStaticProperty (ITargetAccess target, int index);
-
 		ITargetEventInfo[] Events {
 			get;
 		}

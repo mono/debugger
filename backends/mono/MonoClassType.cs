@@ -236,29 +236,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return StaticProperties; }
 		}
 
-		internal ITargetObject GetProperty (MonoClassObject instance, int index)
-		{
-			try {
-				get_properties ();
-				ITargetAccess target = instance.Location.TargetAccess;
-				ITargetFunctionType func = properties [index].Getter;
-				return func.Invoke (target, instance, new ITargetObject [0]);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
-		public ITargetObject GetStaticProperty (ITargetAccess target, int index)
-		{
-			try {
-				get_properties ();
-				ITargetFunctionType func = static_properties [index].Getter;
-				return func.Invoke (target, null, new ITargetObject [0]);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
 		void get_events ()
 		{
 			if (events != null)

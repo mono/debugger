@@ -1009,25 +1009,6 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-#if false
-		public ITargetFunctionObject EvaluateProperty (ScriptingContext context,
-							       StackFrame frame,
-							       bool getter,
-							       Expression[] arguments)
-		{
-			ITargetPropertyInfo prop = OverloadResolve (context, getter, arguments);
-
-			if (prop.IsStatic)
-				return stype.GetStaticProperty (frame, prop.Index);
-			else if (!IsStatic)
-				return instance.GetProperty (prop.Index);
-			else
-				throw new ScriptingException (
-					"Instance property {0} cannot be used in " +
-					"static context.", Name);
-		}
-#endif
-
 		protected ITargetPropertyInfo OverloadResolve (ScriptingContext context,
 							       bool getter,
 							       ITargetType[] types)
@@ -1296,38 +1277,40 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected ITargetObject GetProperty (ITargetStructObject sobj, ITargetPropertyInfo property)
+		protected ITargetObject GetProperty (ScriptingContext context,
+						     ITargetStructObject instance,
+						     ITargetPropertyInfo prop)
 		{
-			try {
-				return sobj.GetProperty (property.Index);
-			} catch (TargetInvocationException ex) {
-				throw new ScriptingException ("Can't get property {0}: {1}", Name, ex.Message);
-			}
+			string exc_message;
+			ITargetObject res = context.CurrentProcess.RuntimeInvoke (
+				prop.Getter, instance, new ITargetObject [0],
+				out exc_message);
+
+			if (exc_message != null)
+				throw new ScriptingException (
+					"Invocation of `{0}' raised an exception: {1}",
+					Name, exc_message);
+
+			return res;
 		}
 
-		protected ITargetObject GetStaticProperty (ITargetStructType stype, StackFrame frame, ITargetPropertyInfo property)
-		{
-			try {
-				return stype.GetStaticProperty (frame.TargetAccess, property.Index);
-			} catch (TargetInvocationException ex) {
-				throw new ScriptingException ("Can't get property {0}: {1}", Name, ex.Message);
-			}
-		}
-
-		protected ITargetObject GetMember (ITargetStructObject sobj, ITargetMemberInfo member)
+		protected ITargetObject GetMember (ScriptingContext context,
+						   ITargetStructObject sobj, ITargetMemberInfo member)
 		{
 			if (member is ITargetPropertyInfo)
-				return GetProperty (sobj, (ITargetPropertyInfo) member);
+				return GetProperty (context, sobj, (ITargetPropertyInfo) member);
 			else if (member is ITargetFieldInfo)
 				return GetField (sobj, (ITargetFieldInfo) member);
 			else
 				throw new ScriptingException ("Member {0} is of unknown type", Name);
 		}
 
-		protected ITargetObject GetStaticMember (ITargetStructType stype, StackFrame frame, ITargetMemberInfo member)
+		protected ITargetObject GetStaticMember (ScriptingContext context,
+							 ITargetStructType stype, StackFrame frame,
+							 ITargetMemberInfo member)
 		{
 			if (member is ITargetPropertyInfo)
-				return GetStaticProperty (stype, frame, (ITargetPropertyInfo) member);
+				return GetProperty (context, null, (ITargetPropertyInfo) member);
 			else if (member is ITargetFieldInfo)
 				return GetStaticField (stype, frame, (ITargetFieldInfo) member);
 			else
@@ -1439,9 +1422,9 @@ namespace Mono.Debugger.Frontend
 			ITargetMemberInfo member = FindMember (context, true);
 
 			if (member.IsStatic)
-				return GetStaticMember (Type, Frame, member);
+				return GetStaticMember (context, Type, Frame, member);
 			else if (!IsStatic)
-				return GetMember (Instance, member);
+				return GetMember (context, Instance, member);
 			else
 				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
 		}
@@ -2317,14 +2300,16 @@ namespace Mono.Debugger.Frontend
 			for (int i = 0; i < arguments.Length; i++)
 				args [i] = arguments [i].EvaluateVariable (context);
 
-			try {
-				return ctor.Invoke (
-					frame.Frame.TargetAccess, null, args);
-			} catch (TargetInvocationException ex) {
+			string exc_message;
+			ITargetObject res = context.CurrentProcess.RuntimeInvoke (
+				ctor, null, args, out exc_message);
+
+			if (exc_message != null)
 				throw new ScriptingException (
 					"Invocation of type `{0}'s constructor raised an " +
-					"exception: {1}", type_expr.Name, ex.Message);
-			}
+					"exception: {1}", type_expr.Name, exc_message);
+
+			return res;
 		}
 	}
 
