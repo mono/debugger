@@ -2248,6 +2248,9 @@ namespace Mono.Debugger.Backends
 
 		protected override bool TrampolineHandler (IMethod method)
 		{
+			if (method == null)
+				return false;
+
 			if (method.WrapperType == WrapperType.DelegateInvoke)
 				return true;
 
@@ -2699,6 +2702,9 @@ namespace Mono.Debugger.Backends
 
 		protected override bool TrampolineHandler (IMethod method)
 		{
+			if (method == null)
+				return false;
+
 			if (method.WrapperType == WrapperType.DelegateInvoke)
 				return true;
 
