@@ -295,7 +295,6 @@ public Expression Parse (string text)
 		// of the grammar
 		//
 		current_context.Error (lexer.Location + "  : Parsing error ");
-		current_context.Error (e.ToString ());
 		return null;
 	}
 }

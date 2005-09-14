@@ -133,10 +133,8 @@ namespace Mono.Debugger.Frontend
 			IExpressionParser parser = context.Interpreter.GetExpressionParser (context, ToString());
 
 			Expression expr = parser.Parse (arg);
-			if (expr == null){
-				Console.WriteLine (Environment.StackTrace);
+			if (expr == null)
 				context.Error ("Cannot parse arguments");
-			}
 
 			return expr;
 		}
