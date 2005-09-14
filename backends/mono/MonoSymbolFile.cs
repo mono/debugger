@@ -712,13 +712,13 @@ namespace Mono.Debugger.Languages.Mono
 						locals [i] = new MonoVariable (
 							file.backend, local.Name, local_types [i],
 							true, local_types [i].IsByRef, this,
-							address.LocalVariableInfo [i],
+							address.LocalVariableInfo [local.Index],
 							block.StartAddress, block.EndAddress);
 					} else {
 						locals [i] = new MonoVariable (
 							file.backend, local.Name, local_types [i],
 							true, local_types [i].IsByRef, this,
-							address.LocalVariableInfo [i]);
+							address.LocalVariableInfo [local.Index]);
 					}
 				}
 

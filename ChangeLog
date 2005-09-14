@@ -1,5 +1,11 @@
 2005-09-14  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.MonoMethod.get_variables): Use the
+	`C.LocalVariableEntry's index to point into the MethodAddress.
+
+2005-09-14  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs
 	(ArrayAccessExpression.DoEvaluateVariable, DoAssign): Add support
 	for indexers.
