@@ -1,6 +1,15 @@
 2005-09-14  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs
+	(ArrayAccessExpression.DoEvaluateVariable, DoAssign): Add support
+	for indexers.
+
+	* test/TestIndexer.cs: New test.
+	* test/mono-debugger.tests/TestIndexer.exp: New test.
+
+2005-09-14  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Expression.cs
 	(ArrayAccessExpression.GetIntIndex): Allow variables as indices.
 
 2005-09-14  Martin Baulig  <martin@ximian.com>

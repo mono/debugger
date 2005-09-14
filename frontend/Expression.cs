@@ -186,7 +186,7 @@ namespace Mono.Debugger.Frontend
 			bool ok = DoAssign (context, obj);
 			if (!ok)
 				throw new ScriptingException (
-					"Expression `{0}' ({1}) is not an lvalue", Name, this);
+					"Expression `{0}' is not an lvalue", Name);
 		}
 
 		protected virtual Expression DoResolveType (ScriptingContext context)
@@ -330,6 +330,11 @@ namespace Mono.Debugger.Frontend
 		{
 			return val;
 		}
+
+		public override string ToString ()
+		{
+			return Name;
+		}
 	}
 
 	public class StringExpression : Expression
@@ -342,7 +347,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public override string Name {
-			get { return val; }
+			get { return '"' + val + '"'; }
 		}
 
 		protected override Expression DoResolve (ScriptingContext context)
@@ -364,6 +369,11 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
 			return frame.Language.CreateInstance (frame, val);
+		}
+
+		public override string ToString ()
+		{
+			return Name;
 		}
 	}
 
@@ -400,6 +410,11 @@ namespace Mono.Debugger.Frontend
 
 			return frame.Language.CreateInstance (frame, val);
 		}
+
+		public override string ToString ()
+		{
+			return Name;
+		}
 	}
 
 	public class NullExpression : Expression
@@ -422,6 +437,11 @@ namespace Mono.Debugger.Frontend
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
 			throw new InvalidOperationException ();
+		}
+
+		public override string ToString ()
+		{
+			return Name;
 		}
 	}
 
@@ -1755,7 +1775,6 @@ namespace Mono.Debugger.Frontend
 		{
 			ITargetObject obj = expr.EvaluateVariable (context);
 
-
 			// array[int]
 			ITargetArrayObject aobj = obj as ITargetArrayObject;
 			if (aobj != null) {
@@ -1806,33 +1825,31 @@ namespace Mono.Debugger.Frontend
 						return null;
 				}
 
-				prop_info = PropertyGroupExpression.OverloadResolve (context, frame.Language, sobj.Type, indextypes,
-										     candidates);
+				prop_info = PropertyGroupExpression.OverloadResolve (
+					context, frame.Language, sobj.Type, indextypes, candidates);
 
-				return null;
-
-#if FIXME
-				if (prop_info == null) {
+				if (prop_info == null)
 				 	throw new ScriptingException ("Could not find matching indexer.");
-				}
 
-				ITargetTypeInfo getter_info = (ITargetTypeInfo) prop_info.Getter.GetTypeInfo ();
-				if (getter_info == null) {
-					return null;
-				}
+				if (!prop_info.CanRead)
+					throw new ScriptingException (
+						"Indexer `{0}' doesn't have a getter.", expr.Name);
 
-				ITargetFunctionObject func = getter_info.GetObject (sobj) as ITargetFunctionObject;
-				if (func == null) {
-					return null;
-				}
+				string exc_message;
+				ITargetObject res = context.CurrentProcess.RuntimeInvoke (
+					prop_info.Getter, sobj, indexargs, out exc_message);
 
-				return func.Invoke (indexargs, false);
-#endif
+				if (exc_message != null)
+					throw new ScriptingException (
+						"Invocation of `{0}' raised an exception: {1}",
+						expr, exc_message);
+
+				return res;
 			}
-			
+
 			throw new ScriptingException (
-						      "{0} is neither an array/pointer type, nor is it " +
-						      "an object with a valid indexer.");
+				"{0} is neither an array/pointer type, nor is it " +
+				"an object with a valid indexer.", expr);
 		}
 
 		protected override ITargetType DoEvaluateType (ScriptingContext context)
@@ -1846,22 +1863,72 @@ namespace Mono.Debugger.Frontend
 			return type.ElementType;
 		}
 
-		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		protected override bool DoAssign (ScriptingContext context, ITargetObject right)
 		{
+			ITargetObject obj = expr.EvaluateVariable (context);
+
 			// array[int]
-			ITargetArrayObject aobj = expr.EvaluateVariable (context) as ITargetArrayObject;
+			ITargetArrayObject aobj = obj as ITargetArrayObject;
 			if (aobj != null) {
 				int[] int_indices = GetIntIndices (context);
 				try {
-					aobj [int_indices] = obj;
+					aobj [int_indices] = right;
 				} catch (ArgumentException ex) {
 					throw new ScriptingException (
 						"Index of array expression `{0}' out of bounds.",
 						expr.Name);
 				}
+
+				return true;
 			}
 
-			return true;
+			// indexers
+			ITargetStructObject sobj = obj as ITargetStructObject;
+			if (sobj != null) {
+				StackFrame frame = context.CurrentFrame.Frame;
+				ITargetPropertyInfo prop_info;
+				ArrayList candidates = new ArrayList ();
+
+				candidates.AddRange (sobj.Type.Properties);
+
+				ITargetType[] indextypes = new ITargetType [indices.Length];
+				ITargetObject[] indexargs = new ITargetObject [indices.Length + 1];
+				for (int i = 0; i < indices.Length; i++) {
+					indextypes [i] = indices [i].EvaluateType (context);
+					if (indextypes [i] == null)
+						return false;
+					indexargs [i] = indices [i].EvaluateVariable (context);
+					if (indexargs [i] == null)
+						return false;
+				}
+
+				indexargs [indices.Length] = right;
+
+				prop_info = PropertyGroupExpression.OverloadResolve (
+					context, frame.Language, sobj.Type, indextypes, candidates);
+
+				if (prop_info == null)
+				 	throw new ScriptingException ("Could not find matching indexer.");
+
+				if (!prop_info.CanWrite)
+					throw new ScriptingException (
+						"Indexer `{0}' doesn't have a setter.", expr.Name);
+
+				string exc_message;
+				context.CurrentProcess.RuntimeInvoke (
+					prop_info.Setter, sobj, indexargs, out exc_message);
+
+				if (exc_message != null)
+					throw new ScriptingException (
+						"Invocation of `{0}' raised an exception: {1}",
+						expr, exc_message);
+
+				return true;
+			}
+			
+			throw new ScriptingException (
+				"{0} is neither an array/pointer type, nor is it " +
+				"an object with a valid indexer.", expr);
 		}
 
 	}
