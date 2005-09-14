@@ -1729,12 +1729,17 @@ namespace Mono.Debugger.Frontend
 		int GetIntIndex (Expression index, ScriptingContext context)
 		{
 			try {
-				return (int) index.Evaluate (context);
-			}
-			catch (Exception e) {
+				object idx = index.Evaluate (context);
+
+				if (idx is int)
+					return (int) idx;
+
+				ITargetFundamentalObject obj = (ITargetFundamentalObject) idx;
+				return (int) obj.Object;
+			} catch (Exception e) {
 				throw new ScriptingException (
-					      "Cannot convert {0} to an integer for indexing: {1}",
-					      index, e);
+					"Cannot convert {0} to an integer for indexing: {1}",
+					index, e);
 			}
 		}
 

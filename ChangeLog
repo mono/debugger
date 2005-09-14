@@ -1,5 +1,10 @@
 2005-09-14  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(ArrayAccessExpression.GetIntIndex): Allow variables as indices.
+
+2005-09-14  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs (Command.NeedsProcess): Removed.
 	(Command.Execute): Protect the whole method in a try...catch
 	block; handle ScriptingException' separately.
