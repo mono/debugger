@@ -265,5 +265,39 @@ namespace Mono.Debugger.Languages.Native
 
 			return field.Type.GetObject (field_loc);
 		}
+
+		public ITargetMemberInfo FindMember (string name, bool search_static,
+						     bool search_instance)
+		{
+			if (search_static) {
+				foreach (ITargetFieldInfo field in StaticFields)
+					if (field.Name == name)
+						return field;
+
+				foreach (ITargetPropertyInfo property in StaticProperties)
+					if (property.Name == name)
+						return property;
+
+				foreach (ITargetEventInfo ev in StaticEvents)
+					if (ev.Name == name)
+						return ev;
+			}
+
+			if (search_instance) {
+				foreach (ITargetFieldInfo field in Fields)
+					if (field.Name == name)
+						return field;
+
+				foreach (ITargetPropertyInfo property in Properties)
+					if (property.Name == name)
+						return property;
+
+				foreach (ITargetEventInfo ev in Events)
+					if (ev.Name == name)
+						return ev;
+			}
+
+			return null;
+		}
 	}
 }

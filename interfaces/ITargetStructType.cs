@@ -120,5 +120,8 @@ namespace Mono.Debugger.Languages
 		ITargetMethodInfo[] StaticConstructors {
 			get;
 		}
+
+		ITargetMemberInfo FindMember (string name, bool search_static,
+					      bool search_instance);
 	}
 }

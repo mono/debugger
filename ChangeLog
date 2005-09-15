@@ -1,5 +1,12 @@
 2005-09-14  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(StructAccessExpression.FindMember): Improved this; also search
+	for fields in the base class; don't allow accessing static members
+	through an instance.
+
+2005-09-14  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFunctionType.cs
 	(ITargetFunctionType.Invoke): Removed.
 

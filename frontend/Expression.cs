@@ -674,7 +674,7 @@ namespace Mono.Debugger.Frontend
 
 			return StructAccessExpression.FindMember (
 				method.DeclaringType, frame.Frame,
-				(ITargetStructObject) instance, false, full_name);
+				(ITargetStructObject) instance, true, full_name);
 		}
 
 		Expression Lookup (ScriptingContext context, FrameHandle frame)
@@ -756,7 +756,7 @@ namespace Mono.Debugger.Frontend
 			get { return left.Name + "." + name; }
 		}
 
-		public Expression ResolveMemberAccess (ScriptingContext context, bool allow_instance)
+		public Expression ResolveMemberAccess (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 			Expression expr;
@@ -769,7 +769,7 @@ namespace Mono.Debugger.Frontend
 						"`{0}' is not a struct or class", lexpr.Name);
 
 				expr = StructAccessExpression.FindMember (
-					stype, frame, null, allow_instance, name);
+					stype, frame, null, true, name);
 				if (expr == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -785,7 +785,7 @@ namespace Mono.Debugger.Frontend
 						"`{0}' is not a struct or class", left.Name);
 
 				expr = StructAccessExpression.FindMember (
-						sobj.Type, frame, sobj, true, name);
+						sobj.Type, frame, sobj, false, name);
 				if (expr == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -803,7 +803,7 @@ namespace Mono.Debugger.Frontend
 						"`{0}' is not a struct or class", ltype.Name);
 
 				expr = StructAccessExpression.FindMember (
-					stype, frame, null, allow_instance, name);
+					stype, frame, null, true, name);
 				if (expr == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -818,7 +818,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return ResolveMemberAccess (context, false);
+			return ResolveMemberAccess (context);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -1219,38 +1219,23 @@ namespace Mono.Debugger.Frontend
 
 	public class StructAccessExpression : Expression
 	{
-		public readonly string Identifier;
-		public readonly bool IsStatic;
+		public readonly ITargetStructType Type;
+		public readonly ITargetStructObject Instance;
+		public readonly ITargetMemberInfo Member;
 
-		ITargetStructType Type;
-		ITargetStructObject Instance;
-		StackFrame Frame;
-
-		protected StructAccessExpression (StackFrame frame, ITargetStructType type,
-						  string identifier)
-		{
-			this.Frame = frame;
-			this.Type = type;
-			this.Identifier = identifier;
-			this.IsStatic = true;
-			resolved = true;
-		}
-
-		protected StructAccessExpression (StackFrame frame,
+		protected StructAccessExpression (ITargetStructType type,
 						  ITargetStructObject instance,
-						  string identifier)
+						  ITargetMemberInfo member)
 		{
-			this.Frame = frame;
-			this.Type = instance.Type;
+			this.Type = type;
 			this.Instance = instance;
-			this.Identifier = identifier;
-			this.IsStatic = false;
+			this.Member = member;
 			resolved = true;
 		}
 
 		public override string Name {
 			get {
-				return Identifier;
+				return Member.Name;
 			}
 		}
 
@@ -1317,64 +1302,35 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Member {0} is of unknown type", Name);
 		}
 
-		public static ITargetMemberInfo FindMember (ITargetStructType stype, bool is_static, string name)
-		{
-			if (!is_static) {
-				foreach (ITargetFieldInfo field in stype.Fields)
-					if (field.Name == name)
-						return field;
-
-				foreach (ITargetPropertyInfo property in stype.Properties)
-					if (property.Name == name)
-						return property;
-
-				foreach (ITargetEventInfo ev in stype.Events)
-					if (ev.Name == name)
-						return ev;
-			}
-
-			foreach (ITargetFieldInfo field in stype.StaticFields)
-				if (field.Name == name)
-					return field;
-
-			foreach (ITargetPropertyInfo property in stype.StaticProperties)
-				if (property.Name == name)
-					return property;
-
-			foreach (ITargetEventInfo ev in stype.StaticEvents)
-				if (ev.Name == name)
-					return ev;
-
-			return null;
-		}
-
 		public static Expression FindMember (ITargetStructType stype, StackFrame frame,
-						     ITargetStructObject instance, bool allow_instance,
+						     ITargetStructObject instance, bool allow_static,
 						     string name)
 		{
-			ITargetMemberInfo member = FindMember (stype, (instance == null) && !allow_instance, name);
+			ITargetClassObject sobj = instance as ITargetClassObject;
+
+		again:
+			ITargetMemberInfo member = stype.FindMember (
+				name, (instance == null) || allow_static, (instance != null));
+
 			if (member != null) {
-				if (instance != null)
-					return new StructAccessExpression (frame, instance, name);
+				if (sobj != null)
+					return new StructAccessExpression (stype, sobj, member);
 				else
-					return new StructAccessExpression (frame, stype, name);
+					return new StructAccessExpression (stype, instance, member);
 			}
 
 			ArrayList methods = new ArrayList ();
 
-		again:
 			if (name == ".ctor") {
 				foreach (ITargetMethodInfo method in stype.Constructors) {
 					methods.Add (method);
 				}
-			}
-			else if (name == ".cctor") {
+			} else if (name == ".cctor") {
 				foreach (ITargetMethodInfo method in stype.StaticConstructors) {
 					methods.Add (method);
 				}
-			}
-			else {
-				if ((instance != null) || allow_instance) {
+			} else {
+				if (instance != null) {
 					foreach (ITargetMethodInfo method in stype.Methods) {
 						if (method.Name != name)
 							continue;
@@ -1383,14 +1339,15 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				foreach (ITargetMethodInfo method in stype.StaticMethods) {
-					if (method.Name != name)
-						continue;
+				if ((instance == null) || allow_static) {
+					foreach (ITargetMethodInfo method in stype.StaticMethods) {
+						if (method.Name != name)
+							continue;
 
-					methods.Add (method);
+						methods.Add (method);
+					}
 				}
 			}
-
 
 			if (methods.Count > 0)
 				return new MethodGroupExpression (
@@ -1399,34 +1356,24 @@ namespace Mono.Debugger.Frontend
 			ITargetClassType ctype = stype as ITargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
 				stype = ctype.ParentType;
+				sobj = sobj.Parent;
 				goto again;
 			}
 
 			return null;
 		}
 
-		protected ITargetMemberInfo FindMember (ScriptingContext context, bool report_error)
-		{
-			ITargetMemberInfo member = FindMember (Type, IsStatic, Identifier);
-			if ((member != null) || !report_error)
-				return member;
-
-			if (IsStatic)
-				throw new ScriptingException ("Type {0} has no static member {1}.", Type.Name, Identifier);
-			else
-				throw new ScriptingException ("Type {0} has no member {1}.", Type.Name, Identifier);
-		}
-
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			ITargetMemberInfo member = FindMember (context, true);
+			StackFrame frame = context.CurrentFrame.Frame;
 
-			if (member.IsStatic)
-				return GetStaticMember (context, Type, Frame, member);
-			else if (!IsStatic)
-				return GetMember (context, Instance, member);
+			if (Member.IsStatic)
+				return GetStaticMember (context, Type, frame, Member);
+			else if (Instance != null)
+				return GetMember (context, Instance, Member);
 			else
-				throw new ScriptingException ("Instance member {0} cannot be used in static context.", Name);
+				throw new ScriptingException (
+					"Instance member {0} cannot be used in static context.", Name);
 		}
 
 		public ITargetFunctionType ResolveMethod (ScriptingContext context)
@@ -1443,14 +1390,10 @@ namespace Mono.Debugger.Frontend
 									 LocationType type,
 									 Expression[] types)
 		{
-			ITargetMemberInfo member = FindMember (context, true);
-			if (member == null)
-				return null;
-
 			switch (type) {
 			case LocationType.PropertyGetter:
 			case LocationType.PropertySetter:
-				ITargetPropertyInfo property = member as ITargetPropertyInfo;
+				ITargetPropertyInfo property = Member as ITargetPropertyInfo;
 				if (property == null)
 					return null;
 
@@ -1468,7 +1411,7 @@ namespace Mono.Debugger.Frontend
 
 			case LocationType.EventAdd:
 			case LocationType.EventRemove:
-				ITargetEventInfo ev = member as ITargetEventInfo;
+				ITargetEventInfo ev = Member as ITargetEventInfo;
 				if (ev == null)
 					return null;
 
@@ -1514,26 +1457,25 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
 		{
-			ITargetMemberInfo member = FindMember (context, true);
+			if (Member is ITargetFieldInfo) {
+				StackFrame frame = context.CurrentFrame.Frame;
 
-			if (member is ITargetFieldInfo) {
-
-				if (member.Type != obj.Type)
+				if (Member.Type != obj.Type)
 					throw new ScriptingException (
 							      "Type mismatch: cannot assign expression of type " +
 							      "`{0}' to field `{1}', which is of type `{2}'.",
-							      obj.TypeName, Name, member.Type.Name);
+							      obj.TypeName, Name, Member.Type.Name);
 
-				if (member.IsStatic)
-					SetStaticField (Type, Frame, (ITargetFieldInfo)member, obj);
-				else if (!IsStatic)
-					SetField (Instance, (ITargetFieldInfo)member, obj);
+				if (Member.IsStatic)
+					SetStaticField (Type, frame, (ITargetFieldInfo)Member, obj);
+				else if (Instance != null)
+					SetField (Instance, (ITargetFieldInfo)Member, obj);
 			}
-			else if (member is ITargetPropertyInfo) 
+			else if (Member is ITargetPropertyInfo) 
 			  	throw new ScriptingException ("Can't set properties directly.");
-			else if (member is ITargetEventInfo)
+			else if (Member is ITargetEventInfo)
 				throw new ScriptingException ("Can't set events directly.");
-			else if (member is ITargetMethodInfo)
+			else if (Member is ITargetMethodInfo)
 				throw new ScriptingException ("Can't set methods directly.");
 
 			return true;
