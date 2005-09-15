@@ -1,5 +1,13 @@
 2005-09-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs
+	(ProcessStart.IsMonoAssembly): New protected method; does a
+	quick check whether something is an assembly or not.
+	(ProcessStart..ctor): Don't try to load the assembly; use
+	IsMonoAssembly() instead.
+
+2005-09-15  Martin Baulig  <martin@ximian.com>
+
 	* cecil/: When compiling from SVN, you must checkout cecil here to
 	make things work.
 

@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Configuration;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Specialized;
 
@@ -62,7 +61,6 @@ namespace Mono.Debugger
 		string base_dir;
 		string[] argv;
 		string[] envp;
-		Assembly application;
 		DebuggerOptions options;
 
 		public static string JitWrapper;
@@ -75,6 +73,37 @@ namespace Mono.Debugger
 			JitWrapper = Path.GetFullPath (
 				base_directory + Path.DirectorySeparatorChar +
 				Path.DirectorySeparatorChar + "mono-debugger-mini-wrapper");
+		}
+
+		protected static bool IsMonoAssembly (string filename)
+		{
+			try {
+				FileStream stream = new FileStream (filename, FileMode.Open);
+
+				byte[] data = new byte [128];
+				if (stream.Read (data, 0, 128) != 128)
+					return false;
+
+				if ((data [0] != 'M') || (data [1] != 'Z'))
+					return false;
+
+				int offset = data [60] + (data [61] << 8) +
+					(data [62] << 16) + (data [63] << 24);
+
+				stream.Position = offset;
+
+				data = new byte [28];
+				if (stream.Read (data, 0, 28) != 28)
+					return false;
+
+				if ((data [0] != 'P') && (data [1] != 'E') &&
+				    (data [2] != 0) && (data [3] != 0))
+					return false;
+
+				return true;
+			} catch {
+				return false;
+			}
 		}
 
 		protected ProcessStart (DebuggerOptions the_options, string[] argv)
@@ -93,19 +122,7 @@ namespace Mono.Debugger
 			this.UserArguments = argv;
 			this.WorkingDirectory = options.WorkingDirectory;
 
-			try {
-				application = Assembly.LoadFrom (argv [0]);
-			} catch {
-				application = null;
-			}
-
-			if (application != null) {
-				string error = Mono.Debugger.Languages.Mono.MonoDebuggerSupport.CheckRuntimeVersion (argv [0]);
-				if (error != null)
-					throw new TargetException (
-						TargetError.CannotStartTarget, "Cannot start target: {0}",
-						error);
-
+			if (IsMonoAssembly (argv [0])) {
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
