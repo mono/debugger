@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -19,17 +20,37 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoArrayType : MonoType, ITargetArrayType
 	{
 		public readonly int Rank;
-		protected readonly int Dimension;
 
-		protected MonoType element_type;
+		readonly MonoType element_type;
+		readonly string full_name;
 
-		public MonoArrayType (MonoSymbolFile file, Type type)
-			: base (file, TargetObjectKind.Array, type)
+		public MonoArrayType (MonoSymbolFile file, Cecil.IArrayType type)
+			: base (file, TargetObjectKind.Array)
 		{
-			this.Rank = type.GetArrayRank ();
-			this.Dimension = 0;
+			this.Rank = type.Rank;
 
-			element_type = file.MonoLanguage.LookupMonoType (type.GetElementType ());
+			element_type = file.MonoLanguage.LookupMonoType (type.ElementType);
+			full_name = compute_fullname ();
+		}
+
+		public MonoArrayType (MonoType element_type, int rank)
+			: base (element_type.File, TargetObjectKind.Array)
+		{
+			this.element_type = element_type;
+			this.Rank = rank;
+
+			full_name = compute_fullname ();
+		}
+
+		string compute_fullname ()
+		{
+			string rank_specifier;
+			if (Rank == 1)
+				rank_specifier = "[]";
+			else
+				rank_specifier = "[" + new String (',', Rank-1) + "]";
+
+			return element_type.Name + rank_specifier;
 		}
 
 		public override bool IsByRef {
@@ -38,6 +59,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool HasFixedSize {
 			get { return false; }
+		}
+
+		public override string Name {
+			get { return full_name; }
 		}
 
 		internal MonoType ElementType {
@@ -52,7 +77,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return ElementType; }
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
 			IMonoTypeInfo element_info = element_type.GetTypeInfo ();
 			if (element_info == null)

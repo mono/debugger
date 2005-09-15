@@ -1,7 +1,6 @@
 using System;
 using System.Text;
-using R = System.Reflection;
-using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -13,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int Index;
 		public readonly bool IsStatic;
 
-		public MonoMember (MonoSymbolFile file, R.MemberInfo minfo, int index,
+		public MonoMember (MonoSymbolFile file, Cecil.IMemberReference minfo, int index,
 				   bool is_static)
 		{
 			this.File = file;
@@ -58,10 +57,10 @@ namespace Mono.Debugger.Languages.Mono
 		bool is_literal;
 
 		[NonSerialized]
-		public readonly R.FieldInfo FieldInfo;
+		public readonly Cecil.IFieldDefinition FieldInfo;
 		public readonly int Position;
 
-		public MonoFieldInfo (MonoSymbolFile file, int index, int pos, R.FieldInfo finfo)
+		public MonoFieldInfo (MonoSymbolFile file, int index, int pos, Cecil.IFieldDefinition finfo)
 			: base (file, finfo, index, finfo.IsStatic)
 		{
 			FieldInfo = finfo;
@@ -89,13 +88,17 @@ namespace Mono.Debugger.Languages.Mono
 			// from a null instance (i.e. it's a static
 			// field.  we need to take into account
 			// finfo.IsStatic, though.
+#if FIXME
 			if ((FieldInfo != null) && FieldInfo.DeclaringType.IsEnum) {
-				object value = FieldInfo.GetValue (null);
+				object value = FieldInfo.Constant;
 			  
 				return type.File.MonoLanguage.CreateInstance (target, (int)value);
 			} else {
 				throw new InvalidOperationException ();
 			}
+#else
+			throw new NotImplementedException ();
+#endif
 		}
 
 		protected override string MyToString ()
@@ -111,7 +114,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType Klass;
 		public readonly string FullName;
 
-		internal MonoMethodInfo (MonoClassType klass, int index, R.MethodBase minfo)
+		internal MonoMethodInfo (MonoClassType klass, int index, Cecil.IMethodDefinition minfo)
 			: base (klass.File, minfo, index, minfo.IsStatic)
 		{
 			Klass = klass;
@@ -135,11 +138,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		string compute_fullname (R.MethodBase minfo)
+		string compute_fullname (Cecil.IMethodDefinition minfo)
 		{
 			StringBuilder sb = new StringBuilder ();
 			bool first = true;
-			foreach (R.ParameterInfo pinfo in minfo.GetParameters ()) {
+			foreach (Cecil.IParameterReference pinfo in minfo.Parameters) {
 				if (first)
 					first = false;
 				else
@@ -163,23 +166,23 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType Klass;
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
-		internal MonoEventInfo (MonoClassType klass, int index, R.EventInfo einfo,
+		internal MonoEventInfo (MonoClassType klass, int index, Cecil.IEventDefinition einfo,
 					bool is_static)
 			: base (klass.File, einfo, index, is_static)
 		{
 			Klass = klass;
 
-			type = File.MonoLanguage.LookupMonoType (einfo.EventHandlerType);
+			type = File.MonoLanguage.LookupMonoType (einfo.EventType);
 
-			R.MethodInfo add = einfo.GetAddMethod ();
+			Cecil.IMethodDefinition add = einfo.AddMethod;
 			if (add != null)
 				AddType = new MonoFunctionType (File, Klass, add, Name);
 
-			R.MethodInfo remove = einfo.GetRemoveMethod ();
+			Cecil.IMethodDefinition remove = einfo.RemoveMethod;
 			if (remove != null)
 				RemoveType = new MonoFunctionType (File, Klass, remove, Name);
 
-			R.MethodInfo raise = einfo.GetRaiseMethod (true);
+			Cecil.IMethodDefinition raise = einfo.InvokeMethod;
 			if (raise != null)
 				RaiseType = new MonoFunctionType (File, Klass, raise, Name);
 		}
@@ -220,24 +223,20 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFunctionType Getter, Setter;
 		public readonly bool CanRead, CanWrite;
 
-		internal MonoPropertyInfo (MonoClassType klass, int index, R.PropertyInfo pinfo,
+		internal MonoPropertyInfo (MonoClassType klass, int index, Cecil.IPropertyDefinition pinfo,
 					   bool is_static)
 			: base (klass.File, pinfo, index, is_static)
 		{
 			Klass = klass;
 			type = File.MonoLanguage.LookupMonoType (pinfo.PropertyType);
-			CanRead = pinfo.CanRead;
-			CanWrite = pinfo.CanWrite;
+			CanRead = pinfo.GetMethod != null;
+			CanWrite = pinfo.SetMethod != null;
 
-			if (CanRead) {
-				R.MethodInfo getter = pinfo.GetGetMethod (true);
-				Getter = new MonoFunctionType (File, Klass, getter, Name);
-			}
+			if (pinfo.GetMethod != null)
+				Getter = new MonoFunctionType (File, Klass, pinfo.GetMethod, Name);
 
-			if (CanWrite) {
-				R.MethodInfo setter = pinfo.GetSetMethod (true);
-				Setter = new MonoFunctionType (File, Klass, setter, Name);
-			}
+			if (pinfo.SetMethod != null)
+				Setter = new MonoFunctionType (File, Klass, pinfo.SetMethod, Name);
 		}
 
 		public override MonoType Type {

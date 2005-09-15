@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -10,9 +10,21 @@ namespace Mono.Debugger.Languages.Mono
 		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
 
-		public MonoEnumType (MonoSymbolFile file, Type type)
-			: base (file, TargetObjectKind.Enum, type)
-		{ }
+		Cecil.ITypeDefinition type;
+
+		public MonoEnumType (MonoSymbolFile file, Cecil.ITypeDefinition type)
+			: base (file, TargetObjectKind.Enum)
+		{
+			this.type = type;
+		}
+
+		public Cecil.ITypeDefinition Type {
+			get { return type; }
+		}
+
+		public override string Name {
+			get { return type.FullName; }
+		}
 
 		public override bool IsByRef {
 			get { return !type.IsValueType; }
@@ -29,11 +41,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_fields = 0, num_sfields = 0;
 
-			R.FieldInfo[] finfo = type.GetFields (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
-
-			foreach (R.FieldInfo field in finfo) {
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
 				if (field.IsStatic)
 					num_sfields++;
 				else
@@ -43,17 +51,19 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
-			int pos = 0, spos = 0;
-			for (int i = 0; i < finfo.Length; i++) {
-				if (finfo [i].IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (File, spos, i, finfo [i]);
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
+				if (field.IsStatic) {
+					static_fields [spos] = new MonoFieldInfo (File, spos, i, field);
 					spos++;
 				} else {
-					if (finfo[i].Name != "value__")
+					if (field.Name != "value__")
 						throw new InternalError ("Mono enum type has instance field with name other than 'value__'.");
-					fields [pos] = new MonoFieldInfo (File, pos, i, finfo [i]);
+					fields [pos] = new MonoFieldInfo (File, pos, i, field);
 					pos++;
 				}
+
+				i++;
 			}
 			if (pos > 1)
 				throw new InternalError ("Mono enum type has more than one instance field.");
@@ -90,8 +100,16 @@ namespace Mono.Debugger.Languages.Mono
 			return info.GetMember (frame, index);
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
+			TargetBinaryReader info = file.GetTypeInfo (type);
+			if (info == null)
+				return null;
+
+			info.Position = 8;
+			info.ReadLeb128 ();
+			info.ReadLeb128 ();
+
 			return new MonoEnumTypeInfo (this, info);
 		}
 	}

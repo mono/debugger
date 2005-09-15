@@ -1,4 +1,5 @@
 using System;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -6,24 +7,31 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		int size;
 		TargetAddress klass_address;
+		Cecil.ITypeDefinition typedef;
 
-		public MonoObjectType (MonoSymbolFile file, Type type, int size, TargetAddress klass)
-			: base (file, TargetObjectKind.Pointer, type)
+		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeDefinition typedef,
+				       int size, TargetAddress klass)
+			: base (file, TargetObjectKind.Pointer)
 		{
 			this.size = size;
 			this.klass_address = klass;
+			this.typedef = typedef;
 
 			type_info = this;
 			file.MonoLanguage.AddClass (klass_address, this);
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
 			throw new InvalidOperationException ();
 		}
 
 		public override bool IsByRef {
 			get { return true; }
+		}
+
+		public override string Name {
+			get { return typedef.FullName; }
 		}
 
 		public bool IsTypesafe {

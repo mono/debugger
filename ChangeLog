@@ -1,3 +1,35 @@
+2005-09-15  Martin Baulig  <martin@ximian.com>
+
+	The big Cecil port :-)
+
+	* backends/mono/MonoDebuggerSupport.cs: New file.
+	(MonoDebuggerSupport): Moved here from MonoLanguageBackend.cs.
+	(MonoDebuggerSupport.GetLocalTypeFromSignature): New method.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.LookupMonoType): Take a
+	`Cecil.ITypeReference' instead of a `Type.
+	(MonoLanguageBackend.GetFundamentalType): New method.
+
+	* backends/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.LookupMonoType): Take a `Cecil.ITypeReference'
+	instead of a `Type'.
+	(MonoSymbolFile.AddCoreType): Take a `Cecil.ITypeDefinition'
+	instead of a `MonoType'.
+	(MonoSymbolFile.AddType): Take a `MonoClassType' instead of a
+	`MonoType'.
+	(MonoSymbolFile.GetTypeInfo): Take a `Cecil.ITypeDefinition'
+	instead of a `MonoType'.
+
+	* backends/mono/MonoClassType.cs
+	(MonoClassType.Type): New public property.
+
+	* backends/mono/MonoType.cs
+	(MonoType.Type): Removed; the .ctor also doesn't take a `type'
+	argument anymore.
+	(MonoType.Name): Made this abstract.
+	(MonoType.DoGetTypeInfo): Removed the `TargetBinaryReader' arg.
+
 2005-09-14  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs

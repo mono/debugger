@@ -8,11 +8,13 @@ namespace Mono.Debugger.Languages.Mono
 		protected readonly int size;
 		protected readonly TargetAddress klass_address;
 		protected readonly FundamentalKind fundamental_kind;
+		protected readonly Cecil.ITypeDefinition typedef;
 
-		public MonoFundamentalType (MonoSymbolFile file, Type type,
+		public MonoFundamentalType (MonoSymbolFile file, Cecil.ITypeDefinition type,
 					    FundamentalKind kind, int size, TargetAddress klass)
-			: base (file, TargetObjectKind.Fundamental, type)
+			: base (file, TargetObjectKind.Fundamental)
 		{
+			this.typedef = type;
 			this.fundamental_kind = kind;
 			this.size = size;
 			this.klass_address = klass;
@@ -20,6 +22,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			type_info = this;
 			file.MonoLanguage.AddClass (klass_address, this);
+		}
+
+		public override string Name {
+			get { return typedef.FullName; }
 		}
 
 		public override bool IsByRef {
@@ -43,7 +49,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
 			throw new InvalidOperationException ();
 		}

@@ -1,8 +1,8 @@
 using System;
 using System.Text;
 using System.Collections;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
+using Cecil = Mono.Cecil;
 
 using Mono.Debugger.Backends;
 
@@ -24,17 +24,28 @@ namespace Mono.Debugger.Languages.Mono
 		int num_methods = 0, num_smethods = 0;
 		internal int first_method = 0, first_smethod = 0;
 
+		Cecil.ITypeDefinition type;
 		MonoClassType parent_type;
 
-		public MonoClassType (MonoSymbolFile file, Type type)
-			: base (file, TargetObjectKind.Class, type)
+		public MonoClassType (MonoSymbolFile file, Cecil.ITypeDefinition type)
+			: base (file, TargetObjectKind.Class)
 		{
+			this.type = type;
+
 			if (type.BaseType != null)
 				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
 		}
 
+		public Cecil.ITypeDefinition Type {
+			get { return type; }
+		}
+
+		public override string Name {
+			get { return type.FullName; }
+		}
+
 		public override bool IsByRef {
-			get { return !Type.IsValueType; }
+			get { return !type.IsValueType; }
 		}
 
 		public override bool HasFixedSize {
@@ -60,11 +71,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_fields = 0, num_sfields = 0;
 
-			R.FieldInfo[] finfo = type.GetFields (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
-
-			foreach (R.FieldInfo field in finfo) {
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
 				if (field.IsStatic)
 					num_sfields++;
 				else
@@ -74,15 +81,17 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
-			int pos = 0, spos = 0;
-			for (int i = 0; i < finfo.Length; i++) {
-				if (finfo [i].IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (File, spos, i, finfo [i]);
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.IFieldDefinition field in type.Fields) {
+				if (field.IsStatic) {
+					static_fields [spos] = new MonoFieldInfo (File, spos, i, field);
 					spos++;
 				} else {
-					fields [pos] = new MonoFieldInfo (File, pos, i, finfo [i]);
+					fields [pos] = new MonoFieldInfo (File, pos, i, field);
 					pos++;
 				}
+
+				i++;
 			}
 		}
 
@@ -140,12 +149,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (methods != null)
 				return;
 
-			R.MethodInfo[] minfo = type.GetMethods (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
-
-			foreach (R.MethodInfo method in minfo) {
-				if ((method.Attributes & R.MethodAttributes.SpecialName) != 0)
+			foreach (Cecil.IMethodDefinition method in type.Methods) {
+				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
 				if (method.IsStatic)
 					num_smethods++;
@@ -163,14 +168,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			int pos = 0, spos = 0;
-			for (int i = 0; i < minfo.Length; i++) {
-				if ((minfo [i].Attributes & R.MethodAttributes.SpecialName) != 0)
+			foreach (Cecil.IMethodDefinition method in type.Methods) {
+				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
-				if (minfo [i].IsStatic) {
-					static_methods [spos] = new MonoMethodInfo (this, first_smethod + spos, minfo [i]);
+				if (method.IsStatic) {
+					static_methods [spos] = new MonoMethodInfo (this, spos, method);
 					spos++;
 				} else {
-					methods [pos] = new MonoMethodInfo (this, first_method + pos, minfo [i]);
+					methods [pos] = new MonoMethodInfo (this, pos, method);
 					pos++;
 				}
 			}
@@ -195,23 +200,35 @@ namespace Mono.Debugger.Languages.Mono
 			if (properties != null)
 				return;
 
-			R.PropertyInfo[] pinfo = type.GetProperties (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			int num_sproperties = 0, num_properties = 0;
 
-			properties = new MonoPropertyInfo [pinfo.Length];
+			foreach (Cecil.IPropertyDefinition prop in type.Properties) {
+				Cecil.IMethodDefinition m = prop.GetMethod;
+				if (m == null) m = prop.SetMethod;
 
-			for (int i = 0; i < pinfo.Length; i++)
-				properties [i] = new MonoPropertyInfo (this, i, pinfo [i], false);
+				if (m.IsStatic)
+					num_sproperties++;
+				else
+					num_properties++;
+			}
 
-			pinfo = type.GetProperties (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			properties = new MonoPropertyInfo [num_properties];
+			static_properties = new MonoPropertyInfo [num_sproperties];
 
-			static_properties = new MonoPropertyInfo [pinfo.Length];
+			int pos = 0, spos = 0;
+			foreach (Cecil.IPropertyDefinition prop in type.Properties) {
+				Cecil.IMethodDefinition m = prop.GetMethod;
+				if (m == null) m = prop.SetMethod;
 
-			for (int i = 0; i < pinfo.Length; i++)
-				static_properties [i] = new MonoPropertyInfo (this, i, pinfo [i], true);
+				if (m.IsStatic) {
+					static_properties [spos] = new MonoPropertyInfo (this, spos, prop, true);
+					spos++;
+				}
+				else {
+					properties [pos] = new MonoPropertyInfo (this, pos, prop, false);
+					pos++;
+				}
+			}
 		}
 
 		internal MonoPropertyInfo[] Properties {
@@ -241,23 +258,32 @@ namespace Mono.Debugger.Languages.Mono
 			if (events != null)
 				return;
 
-			R.EventInfo[] einfo = type.GetEvents (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			int num_sevents = 0, num_events = 0;
+			foreach (Cecil.IEventDefinition ev in type.Events) {
+				Cecil.IMethodDefinition m = ev.AddMethod;
 
-			events = new MonoEventInfo [einfo.Length];
+				if (m.IsStatic)
+					num_sevents++;
+				else
+					num_events++;
+			}
 
-			for (int i = 0; i < einfo.Length; i++)
-				events [i] = new MonoEventInfo (this, i, einfo [i], false);
+			events = new MonoEventInfo [num_events];
+			static_events = new MonoEventInfo [num_sevents];
 
-			einfo = type.GetEvents (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
+			int pos = 0, spos = 0;
+			foreach (Cecil.IEventDefinition ev in type.Events) {
+				Cecil.IMethodDefinition m = ev.AddMethod;
 
-			static_events = new MonoEventInfo [einfo.Length];
-
-			for (int i = 0; i < einfo.Length; i++)
-				static_events [i] = new MonoEventInfo (this, i, einfo [i], true);
+				if (m.IsStatic) {
+					static_events [spos] = new MonoEventInfo (this, spos, ev, true);
+					spos++;
+				}
+				else {
+					static_events [pos] = new MonoEventInfo (this, spos, ev, false);
+					pos++;
+				}
+			}
 		}
 
 		public ITargetEventInfo[] Events {
@@ -287,11 +313,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_ctors = 0, num_sctors = 0;
 
-			R.ConstructorInfo[] minfo = type.GetConstructors (
-				R.BindingFlags.DeclaredOnly | R.BindingFlags.Static | R.BindingFlags.Instance |
-				R.BindingFlags.Public | R.BindingFlags.NonPublic);
-
-			foreach (R.ConstructorInfo method in minfo) {
+			foreach (Cecil.IMethodDefinition method in type.Constructors) {
 				if (method.IsStatic)
 					num_sctors++;
 				else
@@ -302,12 +324,12 @@ namespace Mono.Debugger.Languages.Mono
 			static_constructors = new MonoMethodInfo [num_sctors];
 
 			int pos = 0, spos = 0;
-			for (int i = 0; i < minfo.Length; i++) {
-				if (minfo [i].IsStatic) {
-					static_constructors [spos] = new MonoMethodInfo (this, spos, minfo [i]);
+			foreach (Cecil.IMethodDefinition method in type.Constructors) {
+				if (method.IsStatic) {
+					static_constructors [spos] = new MonoMethodInfo (this, spos, method);
 					spos++;
 				} else {
-					constructors [pos] = new MonoMethodInfo (this, pos, minfo [i]);
+					constructors [pos] = new MonoMethodInfo (this, pos, method);
 					pos++;
 				}
 			}
@@ -327,8 +349,16 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
+			TargetBinaryReader info = file.GetTypeInfo (type);
+			if (info == null)
+				return null;
+
+			info.Position = 8;
+			info.ReadLeb128 ();
+			info.ReadLeb128 ();
+
 			return new MonoClassInfo (this, info);
 		}
 

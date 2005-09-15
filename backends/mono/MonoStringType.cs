@@ -1,4 +1,5 @@
 using System;
+using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -9,7 +10,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int ObjectSize;
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (MonoSymbolFile file, Type type, int object_size,
+		public MonoStringType (MonoSymbolFile file, Cecil.ITypeDefinition type, int object_size,
 				       int size, TargetAddress klass)
 			: base (file, type, FundamentalKind.String, size, klass)
 		{
@@ -17,7 +18,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo (TargetBinaryReader info)
+		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
 			throw new InvalidOperationException ();
 		}
