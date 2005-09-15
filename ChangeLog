@@ -1,5 +1,13 @@
 2005-09-15  Martin Baulig  <martin@ximian.com>
 
+	* cecil/: When compiling from SVN, you must checkout cecil here to
+	make things work.
+
+	* wrapper/Makefile.am: Build `Mono.Debugger.Cecil.dll' and install
+	it in the GAC.
+
+2005-09-15  Martin Baulig  <martin@ximian.com>
+
 	The big Cecil port :-)
 
 	* backends/mono/MonoDebuggerSupport.cs: New file.

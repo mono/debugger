@@ -23,7 +23,7 @@ one_SCRIPTS = mdb.exe mdb-server.exe mdb-server
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
-noinst_SCRIPTS = Mono.Debugger.dll
+noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Cecil.dll
 
 LANGUAGE_SPECIFIC_FILES = \
 	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
@@ -64,7 +64,7 @@ LIBRARY_DEPS = \
 	-r:Mono.GetOptions	\
 	-r:Mono.CompilerServices.SymbolWriter	\
 	-r:System.Runtime.Remoting		\
-	-r:Mono.Cecil
+	-r:./Mono.Debugger.Cecil.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions	\
@@ -76,13 +76,16 @@ MDB_SERVER_DEPS = \
 	-r:System.Runtime.Remoting		\
 	-r:./Mono.Debugger.dll
 
-Mono.Debugger.dll: $(LIBRARY_SRCLIST)
+Mono.Debugger.dll: Makefile Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
-mdb.exe: $(MDB_SRCLIST)
+Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
+	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/wrapper/mono.snk)
+
+mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
-mdb-server.exe: $(MDB_SERVER_SRCLIST)
+mdb-server.exe: Makefile $(MDB_SERVER_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb-server.exe $(MDB_SERVER_DEPS) $(MDB_SERVER_SRCLIST) $(MCS_FLAGS)
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
@@ -92,9 +95,6 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	&& mv assinfo.tmp AssemblyInfo.cs
 
 noinst_DATA = Mono.Debugger.dll.config
-
-ASSEMBLY_NAME = Mono.Debugger
-ASSEMBLY = $(ASSEMBLY_NAME).dll
 
 CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
 
@@ -111,8 +111,9 @@ mdb-server: mdb-server.in Makefile
 	&& mv mdb-server.tmp mdb-server
 
 install-data-local:
-	$(GACUTIL) /i $(ASSEMBLY) /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
-	$(GACUTIL) /u $(ASSEMBLY_NAME) $(GACUTIL_FLAGS) || exit 1;
-
+	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /u Mono.Debugger.Cecil $(GACUTIL_FLAGS) || exit 1;
