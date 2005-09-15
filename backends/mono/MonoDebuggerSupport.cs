@@ -3,59 +3,12 @@ using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Cecil;
 using Mono.Cecil.Metadata;
-using R = System.Reflection;
 using C = Mono.CompilerServices.SymbolWriter;
 
 namespace Mono.Debugger.Languages.Mono
 {
 	internal static class MonoDebuggerSupport
 	{
-		static GetTypeFunc get_type;
-		static GetLocalTypeFromSignatureFunc local_type_from_sig;
-		static GetGuidFunc get_guid;
-		static CheckRuntimeVersionFunc check_runtime_version;
-
-		delegate Type GetTypeFunc (R.Assembly assembly, int token);
-		delegate R.MethodBase GetMethodFunc (R.Assembly assembly, int token);
-		delegate Type GetLocalTypeFromSignatureFunc (R.Assembly assembly, byte[] sig);
-		delegate Guid GetGuidFunc (R.Module module);
-		delegate string CheckRuntimeVersionFunc (string filename);
-		delegate Type ResolveTypeFunc (R.Module module, int token);
-		delegate int GetTypeTokenFunc (Type type);
-
-		static Delegate create_delegate (Type type, Type delegate_type, string name)
-		{
-			R.MethodInfo mi = type.GetMethod (name, R.BindingFlags.Static |
-							  R.BindingFlags.NonPublic);
-			if (mi == null)
-				throw new InternalError ("Can't find " + name);
-
-			return Delegate.CreateDelegate (delegate_type, mi);
-		}
-
-		static MonoDebuggerSupport ()
-		{
-			get_type = (GetTypeFunc) create_delegate (
-				typeof (R.Assembly), typeof (GetTypeFunc),
-				"MonoDebugger_GetType");
-
-			local_type_from_sig = (GetLocalTypeFromSignatureFunc) create_delegate (
-				typeof (R.Assembly), typeof (GetLocalTypeFromSignatureFunc),
-				"MonoDebugger_GetLocalTypeFromSignature");
-
-			get_guid = (GetGuidFunc) create_delegate (
-				typeof (R.Module), typeof (GetGuidFunc), "Mono_GetGuid");
-
-			check_runtime_version = (CheckRuntimeVersionFunc) create_delegate (
-				typeof (R.Assembly), typeof (CheckRuntimeVersionFunc),
-				"MonoDebugger_CheckRuntimeVersion");
-		}
-
-		public static Type GetType (R.Assembly assembly, int token)
-		{
-			return get_type (assembly, token);
-		}
-
 		public static int GetMethodToken (Cecil.IMethodDefinition method)
 		{
 			return (int) (method.MetadataToken.TokenType + method.MetadataToken.RID);
@@ -65,21 +18,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return (Cecil.IMethodDefinition) module.LookupByToken (
 				Cecil.Metadata.TokenType.Method, token & 0xffffff);
-		}
-
-		public static Type GetLocalTypeFromSignature (R.Assembly assembly, byte[] sig)
-		{
-			return local_type_from_sig (assembly, sig);
-		}
-
-		public static string CheckRuntimeVersion (string filename)
-		{
-			return check_runtime_version (filename);
-		}
-
-		public static Guid GetGuid (R.Module module)
-		{
-			return get_guid (module);
 		}
 
 		public static Cecil.ITypeReference MakeArrayType (Cecil.ITypeReference type, int rank)

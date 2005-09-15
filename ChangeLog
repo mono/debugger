@@ -1,5 +1,10 @@
 2005-09-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/MonoDebuggerSupport.cs
+	(MonoDebuggerSupport): Removed the old reflection-based delegates.
+
+2005-09-15  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs
 	(ProcessStart.IsMonoAssembly): New protected method; does a
 	quick check whether something is an assembly or not.
