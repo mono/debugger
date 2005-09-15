@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
-using R = System.Reflection;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Architecture;
@@ -286,7 +285,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal bool TryFindImage (Process process, string filename)
 		{
-			R.Assembly ass = R.Assembly.LoadFrom (filename);
+			Cecil.IAssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
 			if (ass == null)
 				return false;
 
@@ -294,11 +293,6 @@ namespace Mono.Debugger.Languages.Mono
 			if (file != null)
 				return true;
 
-			mutex.Lock ();
-			process.CallMethod (info.LookupAssembly, 0, ass.Location);
-			mutex.Unlock ();
-
-			// always return true?
 			return true;
 		}
 

@@ -1,5 +1,10 @@
 2005-09-15  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.TryFindImage): Don't use reflection here.
+
+2005-09-15  Martin Baulig  <martin@ximian.com>
+
 	* classes/MonoDebuggerSupport.cs
 	(MonoDebuggerSupport): Removed the old reflection-based delegates.
 
