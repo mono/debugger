@@ -2516,7 +2516,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class TargetVariable : IVariable
+		protected class TargetVariable : MarshalByRefObject, IVariable
 		{
 			DwarfReader dwarf;
 			string name;

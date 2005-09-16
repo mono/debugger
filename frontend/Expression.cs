@@ -323,7 +323,7 @@ namespace Mono.Debugger.Frontend
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
-			return new TargetAddress (context.AddressDomain, Value);
+			return new TargetAddress (context.GlobalAddressDomain, Value);
 		}
 
 		protected override object DoEvaluate (ScriptingContext context)
@@ -1197,7 +1197,12 @@ namespace Mono.Debugger.Frontend
 		{
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
-			return context.CurrentFrame.GetRegister (register);
+			try {
+				return frame.GetRegister (register);
+			} catch {
+				throw new ScriptingException (
+					"Can't access register `{0}' selected stack frame.");
+			}
 		}
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)
@@ -1552,7 +1557,7 @@ namespace Mono.Debugger.Frontend
 			if (obj is int)
 				obj = (long) (int) obj;
 			if (obj is long)
-				return new TargetAddress (frame.Frame.AddressDomain, (long) obj);
+				return new TargetAddress (context.GlobalAddressDomain, (long) obj);
 
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj == null)

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal abstract class NativeType : ITargetType
+	internal abstract class NativeType : MarshalByRefObject, ITargetType
 	{
 		protected readonly TargetObjectKind kind;
 

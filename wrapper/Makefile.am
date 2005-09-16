@@ -80,7 +80,7 @@ Mono.Debugger.dll: Makefile Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
-	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/wrapper/mono.snk)
+	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/wrapper/mono.snk)
 
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)

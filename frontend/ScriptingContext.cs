@@ -752,7 +752,8 @@ namespace Mono.Debugger.Frontend
 			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
 		}
 
-		internal ScriptingContext (Interpreter interpreter, bool is_interactive, bool is_synchronous)
+		internal ScriptingContext (Interpreter interpreter, bool is_interactive,
+					   bool is_synchronous)
 		{
 			this.interpreter = interpreter;
 			this.is_interactive = is_interactive;
@@ -869,6 +870,12 @@ namespace Mono.Debugger.Frontend
 		public AddressDomain AddressDomain {
 			get {
 				return address_domain;
+			}
+		}
+
+		public AddressDomain GlobalAddressDomain {
+			get {
+				return interpreter.GlobalAddressDomain;
 			}
 		}
 

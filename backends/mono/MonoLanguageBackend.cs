@@ -640,18 +640,6 @@ namespace Mono.Debugger.Languages.Mono
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
 			corlib.AddWrapperEntry (memory, reader, contents);
-
-#if FIXME
-			TargetAddress wrapper = reader.ReadGlobalAddress ();
-			TargetAddress code = reader.ReadGlobalAddress ();
-			int size = reader.ReadInteger ();
-
-			TargetAddress naddr = memory.ReadAddress (
-				wrapper + 8 + 2 * reader.TargetAddressSize);
-			string name = "<" + memory.ReadString (naddr) + ">";
-
-			corlib.AddWrapperEntry (wrapper, name, code, size);
-#endif
 		}
 #endregion
 

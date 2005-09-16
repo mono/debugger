@@ -109,6 +109,15 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public AddressDomain GlobalAddressDomain {
+			get {
+				if (main_process == null)
+					throw new ScriptingException ("No target.");
+
+				return main_process.Process.TargetMemoryInfo.GlobalAddressDomain;
+			}
+		}
+
 		public StyleBase GetStyle (string name)
 		{
 			StyleBase style = (StyleBase) styles [name];

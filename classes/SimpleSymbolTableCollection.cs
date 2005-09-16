@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public class SimpleSymbolTableCollection : ISimpleSymbolTable, ICollection
+	public class SimpleSymbolTableCollection : MarshalByRefObject, ISimpleSymbolTable, ICollection
 	{
 		ArrayList symtabs = new ArrayList ();
 
