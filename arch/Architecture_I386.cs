@@ -210,6 +210,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public int[] DwarfFrameRegisterMap {
+			get {
+				return dwarf_frame_register_map;
+			}
+		}
+
 		public int CountRegisters {
 			get {
 				return (int) I386Register.COUNT;
@@ -250,6 +256,14 @@ namespace Mono.Debugger
 				       (int) I386Register.EDX, (int) I386Register.EBX,
 				       (int) I386Register.ESP, (int) I386Register.EBP,
 				       (int) I386Register.ESI, (int) I386Register.EDI };
+
+		int[] dwarf_frame_register_map = new int [] {
+			(int) I386Register.EIP, (int) I386Register.ESP, (int) I386Register.EBP,
+
+			(int) I386Register.EAX, (int) I386Register.EBX, (int) I386Register.ECX,
+			(int) I386Register.EDX, (int) I386Register.ESP, (int) I386Register.EBP,
+			(int) I386Register.ESI, (int) I386Register.EDI
+		};
 				
 		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "ds",
 				       "es", "fs", "gs", "eip", "cs", "eflags", "esp", "ss" };

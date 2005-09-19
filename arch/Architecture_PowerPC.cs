@@ -180,6 +180,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public int[] DwarfFrameRegisterMap {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
 		public int CountRegisters {
 			get {
 				return (int) PowerPCRegister.COUNT;

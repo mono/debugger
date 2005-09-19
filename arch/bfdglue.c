@@ -60,6 +60,10 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 	int flags;
 
 	symbol = symbol_table [idx];
+
+	if ((symbol->flags & (BSF_WEAK | BSF_DYNAMIC)) == (BSF_WEAK | BSF_DYNAMIC))
+		return NULL;
+
 	flags = symbol->flags & ~(BSF_DYNAMIC | BSF_NOT_AT_END);
 
 	if (flags == (BSF_OBJECT | BSF_GLOBAL)) {

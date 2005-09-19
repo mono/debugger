@@ -45,6 +45,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		int[] DwarfFrameRegisterMap {
+			get;
+		}
+
 		// <summary>
 		// The length of the
 		// AllRegisterIndices/RegisterNames/RegisterSizes

@@ -562,7 +562,7 @@ namespace Mono.Debugger.Backends
 
 		public IMethod Lookup (TargetAddress address)
 		{
-			inferior.DebuggerBackend.UpdateSymbolTable ();
+			inferior.DebuggerBackend.UpdateSymbolTable (inferior);
 
 			if (current_symtab == null)
 				return null;
@@ -1407,7 +1407,7 @@ namespace Mono.Debugger.Backends
 		[Command]
 		public Backtrace GetBacktrace (int max_frames)
 		{
-			inferior.DebuggerBackend.UpdateSymbolTable ();
+			inferior.DebuggerBackend.UpdateSymbolTable (inferior);
 
 			if (current_frame == null)
 				throw new TargetException (TargetError.NoStack);

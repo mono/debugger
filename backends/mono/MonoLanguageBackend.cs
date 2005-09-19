@@ -437,6 +437,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 #region symbol table management
+		internal void Update (ITargetMemoryAccess target)
+		{
+			do_update_symbol_table (target);
+		}
+
 		void do_update_symbol_table (ITargetMemoryAccess memory)
 		{
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");

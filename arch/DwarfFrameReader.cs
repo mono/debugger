@@ -73,7 +73,7 @@ namespace Mono.Debugger.Architecture
 				TargetAddress start = new TargetAddress (
 					target.GlobalAddressDomain, initial);
 
-				if ((address < start) || (address >= start + range))
+				if ((address < start) || (address > start + range))
 					goto end;
 
 				Entry fde = new Entry (cie, start, address);
@@ -194,7 +194,7 @@ namespace Mono.Debugger.Architecture
 
 			public override string ToString ()
 			{
-				return String.Format ("[{0}:{1}:{2}]", State, Register, Offset);
+				return String.Format ("[{0}:{1}:{2:x}]", State, Register, Offset);
 			}
 		}
 
@@ -206,8 +206,12 @@ namespace Mono.Debugger.Architecture
 			Column[] columns;
 
 			public Entry (CIE cie)
-				: this (cie, TargetAddress.Null, TargetAddress.Null)
-			{ }
+			{
+				this.cie = cie;
+				this.current_address = TargetAddress.Null;
+				this.address = TargetAddress.Null;
+				this.columns = cie.Columns;
+			}
 
 			public Entry (CIE cie, TargetAddress initial_location,
 				      TargetAddress address)
@@ -215,7 +219,8 @@ namespace Mono.Debugger.Architecture
 				this.cie = cie;
 				this.current_address = initial_location;
 				this.address = address;
-				this.columns = cie.Columns;
+				this.columns = new Column [cie.Columns.Length];
+				cie.Columns.CopyTo (columns, 0);
 			}
 
 			public Column[] Columns {
@@ -271,45 +276,27 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			I386Register GetArchRegister (int dwarf_index)
+			int GetArchRegister (int index)
 			{
-				switch (dwarf_index) {
-				case 0:
-					return I386Register.EAX;
-				case 1:
-					return I386Register.EBX;
-				case 2:
-					return I386Register.ECX;
-				case 3:
-					return I386Register.EDX;
-				case 4:
-					return I386Register.ESP;
-				case 5:
-					return I386Register.EBP;
-				case 6:
-					return I386Register.ESI;
-				case 7:
-					return I386Register.EDI;
-				default:
-					throw new ArgumentException ();
-				}
+				return cie.Architecture.DwarfFrameRegisterMap [index];
 			}
 
 			Register GetRegister (Registers regs, int index)
 			{
-				return regs [(int) GetArchRegister (index)];
+				return regs [GetArchRegister (index)];
 			}
 
-			long GetRegisterValue (Registers regs, I386Register reg, Column column)
+			long GetRegisterValue (Registers regs, int reg, Column column)
 			{
-				I386Register index = GetArchRegister (column.Register);
-				long value = regs [(int) index].GetValue () + column.Offset;
-				regs [(int) reg].SetValue (TargetAddress.Null, value);
+				int index = GetArchRegister (column.Register + 3);
+				long value = regs [index].GetValue () + column.Offset;
+
+				regs [GetArchRegister (reg)].SetValue (TargetAddress.Null, value);
 				return value;
 			}
 
 			void GetValue (ITargetMemoryAccess target, Registers regs,
-				       TargetAddress cfa, I386Register reg, Column column)
+				       TargetAddress cfa, int reg, Column column)
 			{
 				switch (column.State) {
 				case State.Register: {
@@ -318,7 +305,7 @@ namespace Mono.Debugger.Architecture
 				}
 
 				case State.SameValue:
-					regs [(int) reg].Valid = true;
+					regs [GetArchRegister (reg)].Valid = true;
 					break;
 
 				case State.Undefined:
@@ -326,8 +313,8 @@ namespace Mono.Debugger.Architecture
 
 				case State.Offset: {
 					TargetAddress addr = cfa + column.Offset;
-					long value = (uint) target.ReadInteger (addr);
-					regs [(int) reg].SetValue (addr, value);
+					long value = target.ReadAddress (addr).Address;
+					regs [GetArchRegister (reg)].SetValue (address, value);
 					break;
 				}
 
@@ -339,20 +326,16 @@ namespace Mono.Debugger.Architecture
 			void SetRegisters (Registers regs, ITargetMemoryAccess target,
 					   IArchitecture arch, Column[] columns)
 			{
-				long cfa_addr = GetRegisterValue (
-					regs, I386Register.ESP, columns [0]);
+				TargetAddress old_rsp = new TargetAddress (
+					target.GlobalAddressDomain, GetRegister (regs, 1).GetValue ());
+
+				long cfa_addr = GetRegisterValue (regs, 1, columns [0]);
 				TargetAddress cfa = new TargetAddress (
 					target.GlobalAddressDomain, cfa_addr);
 
-				GetValue (target, regs, cfa, I386Register.EIP,
-					  columns [cie.ReturnRegister + 1]);
-				GetValue (target, regs, cfa, I386Register.EAX, columns [1]);
-				GetValue (target, regs, cfa, I386Register.EBX, columns [2]);
-				GetValue (target, regs, cfa, I386Register.ECX, columns [3]);
-				GetValue (target, regs, cfa, I386Register.EDX, columns [4]);
-				GetValue (target, regs, cfa, I386Register.EBP, columns [6]);
-				GetValue (target, regs, cfa, I386Register.ESI, columns [7]);
-				GetValue (target, regs, cfa, I386Register.EDI, columns [8]);
+				for (int i = 1; i < columns.Length; i++) {
+					GetValue (target, regs, cfa, i+2, columns [i]);
+				}
 			}
 
 			public SimpleStackFrame Unwind (SimpleStackFrame frame,
@@ -360,13 +343,14 @@ namespace Mono.Debugger.Architecture
 							IArchitecture arch)
 			{
 				Registers old_regs = frame.Registers;
+
 				Registers regs = new Registers (old_regs);
 
 				SetRegisters (regs, target, arch, columns);
 
-				Register eip = regs [(int) I386Register.EIP];
-				Register esp = regs [(int) I386Register.ESP];
-				Register ebp = regs [(int) I386Register.EBP];
+				Register eip = GetRegister (regs, 0);
+				Register esp = GetRegister (regs, 1);
+				Register ebp = GetRegister (regs, 2);
 
 				if (!eip.Valid || !esp.Valid)
 					return null;
@@ -412,6 +396,10 @@ namespace Mono.Debugger.Architecture
 
 			public CIE Next {
 				get { return next; }
+			}
+
+			public IArchitecture Architecture {
+				get { return frame.bfd.Architecture; }
 			}
 
 			public long Offset {
@@ -494,11 +482,11 @@ namespace Mono.Debugger.Architecture
 				columns = new Column [return_register + 2];
 				for (int i = 0; i < columns.Length; i++)
 					columns [i] = new Column (State.Undefined);
-				columns [7].State = State.SameValue;
-				columns [8].State = State.SameValue;
 
 				Entry entry = new Entry (this);
 				entry.Read (reader, end_pos);
+
+				reader.Position = end_pos;
 			}
 		}
 

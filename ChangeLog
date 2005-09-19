@@ -1,3 +1,16 @@
+2005-09-19  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/IArchitecture.cs
+	(IArchitecture.DwarfFrameRegisterMap): New property.
+
+	* arch/DwarfFrameReader.cs: Make this portable and actually work.
+
+	* arch/bfdglue.c (bfd_glue_get_symbol): Don't return weak symbols.
+
+	* backends/Debugger.cs
+	(DebuggerBackend.UpdateSymbolTable): Added `ITargetMemoryAccess'
+	argument; call `MonoLanguage.Update (target)' if it's not null.
+
 2005-09-15  Martin Baulig  <martin@ximian.com>
 
 	* backends/mono/MonoLanguageBackend.cs

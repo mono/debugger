@@ -193,8 +193,11 @@ namespace Mono.Debugger
 			Console.WriteLine ("ERROR: " + String.Format (message, args));
 		}
 
-		public void UpdateSymbolTable ()
-		{ }
+		internal void UpdateSymbolTable (ITargetMemoryAccess target)
+		{
+			if (MonoLanguage != null)
+				MonoLanguage.Update (target);
+		}
 
 		public Module[] Modules {
 			get {
