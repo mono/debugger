@@ -711,7 +711,7 @@ namespace Mono.Debugger.Architecture
 
 		static void debug (string message, params object[] args)
 		{
-		  //		  Console.WriteLine (String.Format (message, args));
+			// Console.WriteLine (String.Format (message, args));
 		}
 
 		protected enum DwarfLang {
@@ -1031,6 +1031,10 @@ namespace Mono.Debugger.Architecture
 						end_line = st_line;
 					}
 
+					engine.debug ("COMMIT: {0} {1} {2}:{3} - {4} {5}",
+						      engine.current_method, creating, st_file,
+						      start_file, st_address, st_line);
+
 					if (st_file == start_file)
 						lines.Add (new LineNumber (st_address, st_line));
 
@@ -1219,8 +1223,9 @@ namespace Mono.Debugger.Architecture
 
 			void end_sequence (StatementMachine stm)
 			{
-				debug ("NEXT: {0:x} {1:x} {2} {3} {4}", stm.st_address, next_method_address,
-				       methods.Count, current_method, next_method);
+				debug ("NEXT: {0:x} {1:x} {2} {3} {4} {5}", stm.st_address,
+				       next_method_address, stm.lines.Count, methods.Count,
+				       current_method, next_method);
 
 				if (current_method != null)
 					method_hash.Add (current_method, new StatementMachine (stm));
@@ -1231,7 +1236,9 @@ namespace Mono.Debugger.Architecture
 				} else
 					next_method_address = 0;
 
-				debug ("NEW NEXT: {0:x}", next_method_address);
+				debug ("NEW NEXT: {0:x} {1} - {2}:{3}",
+				       next_method_address, current_method, stm.start_file, stm.st_file);
+				stm.start_file = stm.st_file;
 			}
 
 			void commit (StatementMachine stm)

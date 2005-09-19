@@ -175,7 +175,8 @@ namespace Mono.Debugger
 		public void DumpLineNumbers ()
 		{
 			Console.WriteLine ("--------");
-			Console.WriteLine ("DUMPING LINE NUMBER TABLE");
+			Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0} {1}",
+					   name, file);
 			Console.WriteLine ("BOUNDS: start = {0} / {1}, end = {2} / {3}", 
 					   start, method_start, end, method_end);
 			Console.WriteLine ("--------");
