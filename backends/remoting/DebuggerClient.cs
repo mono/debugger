@@ -121,10 +121,12 @@ namespace Mono.Debugger.Remoting
 		[OneWay]
 		public void Shutdown ()
 		{
-			if (connection != null) {
-				lease.Unregister (sponsor);
-				connection.Shutdown ();
-				connection = null;
+			lock (this) {
+				if (connection != null) {
+					lease.Unregister (sponsor);
+					connection.Shutdown ();
+					connection = null;
+				}
 			}
 		}
 

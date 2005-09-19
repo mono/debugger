@@ -195,8 +195,8 @@ namespace Mono.Debugger
 
 		internal void UpdateSymbolTable (ITargetMemoryAccess target)
 		{
-			if (MonoLanguage != null)
-				MonoLanguage.Update (target);
+			if (mono_language != null)
+				mono_language.Update (target);
 		}
 
 		public Module[] Modules {

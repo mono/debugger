@@ -2,6 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
+	[Serializable]
 	internal abstract class NativeStructMember : ITargetMemberInfo
 	{
 		public readonly NativeType Type;
@@ -48,6 +49,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
+	[Serializable]
 	internal class NativeFieldInfo : NativeStructMember, ITargetFieldInfo
 	{
 		int offset;
