@@ -321,6 +321,9 @@ namespace Mono.Debugger.Frontend
 				Environment.Exit (1);
 				return true;
 
+			case "-help":
+			case "--help":
+			case "-h":
 			case "-usage":
 				if (ms_value != null) {
 					Usage ();
