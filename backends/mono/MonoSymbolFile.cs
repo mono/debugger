@@ -351,6 +351,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal void AddClassEntry (ITargetMemoryReader reader, byte[] contents)
 		{
 			ClassEntry entry = new ClassEntry (this, reader, contents);
+
 			if (entry.Rank == 0)
 				class_entry_hash.Add (new TypeHashEntry (entry), entry);
 			else {
@@ -1266,7 +1267,7 @@ namespace Mono.Debugger.Languages.Mono
 				} else
 					Rank = 0;
 
-				Token = MonoDebuggerSupport.GetTypeToken (type);
+				Token = (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
 			}
 
 			public TypeHashEntry (ClassEntry entry)

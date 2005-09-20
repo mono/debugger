@@ -25,11 +25,12 @@ namespace Mono.Debugger.Languages.Mono
 			address = location.TargetMemoryAccess.ReadAddress (location.Address);
 			address = location.TargetMemoryAccess.ReadGlobalAddress (address);
 
-			MonoType klass = type.File.MonoLanguage.GetClass (address);
+			MonoType klass = type.File.MonoLanguage.GetClass (location.TargetAccess, address);
 			if (klass == null)
 				return null;
 
-			return klass.GetTypeInfo ();
+			IMonoTypeInfo info = klass.GetTypeInfo ();
+			return info;
 		}
 
 		public IMonoTypeInfo CurrentType {
@@ -64,7 +65,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				int offset = current_type.Type.IsByRef ? 0 : type.Size;
 				TargetLocation new_location = location.GetLocationAtOffset (offset, false);
-				return current_type.GetObject (new_location);
+				ITargetObject obj = current_type.GetObject (new_location);
+				return obj;
 			}
 		}
 

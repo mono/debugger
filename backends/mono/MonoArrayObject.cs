@@ -4,17 +4,17 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoArrayObject : MonoObject, ITargetArrayObject
 	{
-		protected new MonoArrayTypeInfo type;
+		protected new MonoArrayType type;
 
 		protected readonly int rank;
 		protected readonly int length;
 		protected readonly MonoArrayBounds[] bounds;
 
-		public MonoArrayObject (MonoArrayTypeInfo type, TargetLocation location)
+		public MonoArrayObject (MonoArrayType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
-			this.rank = type.Type.Rank;
+			this.rank = type.Rank;
 
 			try {
 				TargetBinaryReader reader = location.ReadMemory (type.Size).GetReader ();
@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		ITargetArrayType ITargetArrayObject.Type {
-			get { return type.Type; }
+			get { return type; }
 		}
 
 		public int GetLowerBound (int dimension)
@@ -91,7 +91,7 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 1; i < rank; i++)
 				index = index * bounds [i].Length + indices [i];
 
-			if (type.Type.ElementType.IsByRef)
+			if (type.ElementType.IsByRef)
 				return index * location.TargetInfo.TargetAddressSize;
 			else if (type.ElementType.HasFixedSize)
 				return index * type.ElementType.Size;
@@ -114,12 +114,14 @@ namespace Mono.Debugger.Languages.Mono
 
 				TargetLocation new_location =
 					dynamic_location.GetLocationAtOffset (
-						offset, type.Type.ElementType.IsByRef);
+						offset, type.ElementType.IsByRef);
+
+				IMonoTypeInfo element_info = type.ElementType.GetTypeInfo ();
 
 				if (new_location.HasAddress && new_location.Address.IsNull)
-					return new MonoNullObject (type.ElementType, new_location);
+					return new MonoNullObject (element_info, new_location);
 
-				return type.ElementType.GetObject (new_location);
+				return element_info.GetObject (new_location);
 			}
 
 			set {
@@ -143,7 +145,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		int GetElementSize (ITargetInfo info)
 		{
-			if (type.Type.ElementType.IsByRef)
+			if (type.ElementType.IsByRef)
 				return info.TargetAddressSize;
 			else if (type.ElementType.HasFixedSize)
 				return type.ElementType.Size;
@@ -170,7 +172,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}:{2}:{3}]", GetType (), type,
-					      type.Type.ElementType, length);
+					      type.ElementType, length);
 		}
 	}
 }

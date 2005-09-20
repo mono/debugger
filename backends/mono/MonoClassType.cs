@@ -49,7 +49,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasFixedSize {
-			get { return true; }
+			get { return false; }
 		}
 
 		public bool HasParent {
@@ -392,6 +392,77 @@ namespace Mono.Debugger.Languages.Mono
 				foreach (ITargetEventInfo ev in Events)
 					if (ev.Name == name)
 						return ev;
+			}
+
+			return null;
+		}
+
+		public static MonoType ReadMonoClass (MonoLanguageBackend language,
+						      ITargetAccess target, TargetAddress address)
+		{
+			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
+				address, language.BuiltinTypes.KlassSize);
+			TargetReader reader = new TargetReader (blob, target.TargetMemoryInfo);
+
+			TargetAddress image = reader.ReadGlobalAddress ();
+			MonoSymbolFile file = language.GetImage (image);
+
+			reader.ReadGlobalAddress ();
+			TargetAddress element_class = reader.ReadGlobalAddress ();
+
+			if (file == null)
+				return null;
+
+			reader.Offset = language.BuiltinTypes.KlassTokenOffset;
+			uint token = reader.BinaryReader.ReadUInt32 ();
+
+			reader.Offset = language.BuiltinTypes.KlassByValArgOffset;
+			TargetAddress byval_data_addr = reader.ReadGlobalAddress ();
+			reader.Offset += 2;
+			int type = reader.ReadByte ();
+
+			reader.Offset = language.BuiltinTypes.KlassGenericClassOffset;
+			TargetAddress generic_class = reader.ReadGlobalAddress ();
+
+			reader.Offset = language.BuiltinTypes.KlassGenericContainerOffset;
+			TargetAddress generic_container = reader.ReadGlobalAddress ();
+
+			if (!generic_class.IsNull || !generic_container.IsNull)
+				return null;
+
+			if ((type == 0x11) || (type == 0x12)) { // MONO_TYPE_(VALUETYPE|CLASS)
+				Cecil.ITypeDefinition tdef;
+
+				if ((token & 0xff000000) != 0x02000000)
+					return null;
+
+				token &= 0x00ffffff;
+				tdef = (Cecil.ITypeDefinition) file.Module.LookupByToken (
+					Cecil.Metadata.TokenType.TypeDef, (int) token);
+
+				if (tdef != null)
+					return new MonoClassType (file, tdef);
+			} else if (type == 0x1d) { // MONO_TYPE_SZARRAY
+				MonoType eklass = ReadMonoClass (language, target, element_class);
+				if (eklass == null)
+					return null;
+
+				return new MonoArrayType (eklass, 1);
+			} else if (type == 0x14) { // MONO_TYPE_ARRAY
+				MonoType eklass = ReadMonoClass (language, target, element_class);
+				if (eklass == null)
+					return null;
+
+				TargetBlob array_data = target.TargetMemoryAccess.ReadMemory (
+					byval_data_addr, language.BuiltinTypes.ArrayTypeSize);
+
+				TargetReader array_reader = new TargetReader (
+					array_data, target.TargetMemoryInfo);
+
+				array_reader.ReadGlobalAddress ();
+				int rank = array_reader.ReadByte ();
+
+				return new MonoArrayType (eklass, rank);
 			}
 
 			return null;

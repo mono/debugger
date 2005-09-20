@@ -26,15 +26,10 @@ namespace Mono.Debugger.Languages.Mono
 			throw new NotImplementedException ();
 		}
 
-		public static Cecil.ITypeReference ResolveType (Cecil.IModuleDefinition module, int token)
+		public static Cecil.ITypeDefinition ResolveType (Cecil.IModuleDefinition module, int token)
 		{
-			return (Cecil.ITypeReference) module.LookupByToken (
+			return (Cecil.ITypeDefinition) module.LookupByToken (
 				Cecil.Metadata.TokenType.TypeDef, token);
-		}
-
-		public static int GetTypeToken (Cecil.ITypeReference type)
-		{
-			return (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
 		}
 
 		public static MonoType GetLocalTypeFromSignature (MonoSymbolFile file, byte[] signature)

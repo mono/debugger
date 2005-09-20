@@ -1,3 +1,18 @@
+2005-09-20  Martin Baulig  <martin@ximian.com>
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoBuiltinTypeInfo): Added some fields.
+
+	* backends/mono/MonoArrayTypeInfo.cs: Removed.
+
+	* backends/mono/MonoArrayType.cs
+	(MonoArrayType): Implement IMonoTypeInfo.
+
+	* backends/mono/MonoClassType.cs
+	(MonoClassType.ReadMonoClass): New public static method; reads a
+	`MonoClass' from the target address space and creates a `MonoType'
+	for it.
+
 2005-09-19  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/IArchitecture.cs

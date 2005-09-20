@@ -98,9 +98,18 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType ExceptionType;
 		public readonly MonoClassType DelegateType;
 
+		public readonly int TypeSize;
+		public readonly int ArrayTypeSize;
+		public readonly int KlassSize;
+		public readonly int KlassInstanceSizeOffset;
+		public readonly int KlassTokenOffset;
 		public readonly int KlassFieldOffset;
 		public readonly int KlassMethodsOffset;
 		public readonly int KlassMethodCountOffset;
+		public readonly int KlassThisArgOffset;
+		public readonly int KlassByValArgOffset;
+		public readonly int KlassGenericClassOffset;
+		public readonly int KlassGenericContainerOffset;
 		public readonly int FieldInfoSize;
 
 		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, ITargetMemoryAccess memory,
@@ -116,9 +125,18 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress defaults_address = new TargetAddress (
 				memory.GlobalAddressDomain, reader.ReadAddress ());
 
+			TypeSize = reader.ReadInt32 ();
+			ArrayTypeSize = reader.ReadInt32 ();
+			KlassSize = reader.ReadInt32 ();
+			KlassInstanceSizeOffset = reader.ReadInt32 ();
+			KlassTokenOffset = reader.ReadInt32 ();
 			KlassFieldOffset = reader.ReadInt32 ();
 			KlassMethodsOffset = reader.ReadInt32 ();
 			KlassMethodCountOffset = reader.ReadInt32 ();
+			KlassThisArgOffset = reader.ReadInt32 ();
+			KlassByValArgOffset = reader.ReadInt32 ();
+			KlassGenericClassOffset = reader.ReadInt32 ();
+			KlassGenericContainerOffset = reader.ReadInt32 ();
 			FieldInfoSize = reader.ReadInt32 ();
 
 			TargetReader mono_defaults = new TargetReader (
@@ -240,6 +258,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		ArrayList symbol_files;
 		int last_num_symbol_files;
+		Hashtable image_hash;
 		Hashtable assembly_hash;
 		Hashtable assembly_by_name;
 		Hashtable class_hash;
@@ -376,12 +395,22 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void AddClass (TargetAddress klass_address, MonoType type)
 		{
-			class_hash.Add (klass_address, type);
+			if (!class_hash.Contains (klass_address))
+				class_hash.Add (klass_address, type);
 		}
 
-		public MonoType GetClass (TargetAddress klass_address)
+		public MonoType GetClass (ITargetAccess target, TargetAddress klass_address)
 		{
-			return (MonoType) class_hash [klass_address];
+			MonoType type = (MonoType) class_hash [klass_address];
+			if (type != null)
+				return type;
+
+			return MonoClassType.ReadMonoClass (this, target, klass_address);
+		}
+
+		public MonoSymbolFile GetImage (TargetAddress address)
+		{
+			return (MonoSymbolFile) image_hash [address];
 		}
 
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
@@ -418,6 +447,7 @@ namespace Mono.Debugger.Languages.Mono
 			heap = new Heap ((ITargetInfo) memory, info.Heap, info.HeapSize);
 
 			symbol_files = new ArrayList ();
+			image_hash = new Hashtable ();
 			assembly_hash = new Hashtable ();
 			assembly_by_name = new Hashtable ();
 			class_hash = new Hashtable ();
@@ -504,6 +534,7 @@ namespace Mono.Debugger.Languages.Mono
 				try {
 					MonoSymbolFile symfile = new MonoSymbolFile (
 						this, backend, memory, memory, address);
+					image_hash.Add (symfile.MonoImage, symfile);
 					symbol_files.Add (symfile);
 					assembly_hash.Add (symfile.Assembly, symfile);
 					assembly_by_name.Add (symfile.Assembly.Name.Name, symfile);

@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoArrayType : MonoType, ITargetArrayType
+	internal class MonoArrayType : MonoType, IMonoTypeInfo, ITargetArrayType
 	{
 		public readonly int Rank;
 
@@ -29,6 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.Rank = type.Rank;
 
+			type_info = this;
 			element_type = file.MonoLanguage.LookupMonoType (type.ElementType);
 			full_name = compute_fullname ();
 		}
@@ -39,6 +40,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.element_type = element_type;
 			this.Rank = rank;
 
+			type_info = this;
 			full_name = compute_fullname ();
 		}
 
@@ -61,6 +63,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return false; }
 		}
 
+		public override int Size {
+			get { return 4 * file.TargetInfo.TargetAddressSize; }
+		}
+
 		public override string Name {
 			get { return full_name; }
 		}
@@ -79,11 +85,16 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected override IMonoTypeInfo DoGetTypeInfo ()
 		{
-			IMonoTypeInfo element_info = element_type.GetTypeInfo ();
-			if (element_info == null)
-				return null;
+			throw new InvalidOperationException ();
+		}
 
-			return new MonoArrayTypeInfo (this, element_info);
+		MonoType IMonoTypeInfo.Type {
+			get { return this; }
+		}
+
+		public virtual MonoObject GetObject (TargetLocation location)
+		{
+			return new MonoArrayObject (this, location);
 		}
 	}
 }
