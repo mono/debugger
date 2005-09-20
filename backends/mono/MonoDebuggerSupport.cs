@@ -20,18 +20,6 @@ namespace Mono.Debugger.Languages.Mono
 				Cecil.Metadata.TokenType.Method, token & 0xffffff);
 		}
 
-		public static Cecil.ITypeReference MakeArrayType (Cecil.ITypeReference type, int rank)
-		{
-			/// XXXX - TODO
-			throw new NotImplementedException ();
-		}
-
-		public static Cecil.ITypeDefinition ResolveType (Cecil.IModuleDefinition module, int token)
-		{
-			return (Cecil.ITypeDefinition) module.LookupByToken (
-				Cecil.Metadata.TokenType.TypeDef, token);
-		}
-
 		public static MonoType GetLocalTypeFromSignature (MonoSymbolFile file, byte[] signature)
 		{
 			TargetBlob blob = new TargetBlob (signature, file.TargetInfo);
