@@ -124,7 +124,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetObject GetStaticField (ITargetAccess target, int index)
 		{
-			MonoClassInfo info = GetTypeInfo () as MonoClassInfo;
+			MonoClassInfo info = GetTypeInfo ();
 			if (info == null)
 				return null;
 
@@ -359,9 +359,28 @@ namespace Mono.Debugger.Languages.Mono
 			if (type_info != null)
 				return type_info;
 			type_info = DoGetTypeInfo ();
+
 			if (type_info == null)
 				throw new LocationInvalidException ();
+
 			return type_info;
+		}
+
+		public bool ResolveClass (ITargetAccess target)
+		{
+			if (type_info != null)
+				return true;
+
+			type_info = DoGetTypeInfo ();
+			if (type_info != null)
+				return true;
+
+			int token = (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
+			TargetAddress klass = file.MonoLanguage.LookupClass (
+				target, file.MonoImage, token);
+
+			type_info = new MonoClassInfo (this, target, klass);
+			return true;
 		}
 
 		protected MonoClassInfo DoGetTypeInfo ()
@@ -378,7 +397,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override MonoObject GetObject (TargetLocation location)
 		{
-			MonoClassInfo info = (MonoClassInfo) GetTypeInfo ();
+			MonoClassInfo info = GetTypeInfo ();
 			return info.GetObject (location);
 		}
 

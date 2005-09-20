@@ -68,6 +68,12 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
+		ITargetStructType ITargetFunctionType.DeclaringType {
+			get {
+				return null;
+			}
+		}
+
 		public override NativeObject GetObject (TargetLocation location)
 		{
 			throw new NotSupportedException ();

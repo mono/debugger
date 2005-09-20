@@ -24,6 +24,7 @@ static guint64 debugger_get_virtual_method (guint64 class_arg, guint64 method_ar
 static guint64 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg);
 static guint64 debugger_create_string (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
+static guint64 debugger_lookup_class (guint64 image_argument, guint64 token_arg);
 static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
 static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument);
 
@@ -48,6 +49,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_runtime_invoke,
 	&debugger_create_string,
 	&debugger_class_get_static_field_data,
+	&debugger_lookup_class,
 	&debugger_lookup_type,
 	&debugger_lookup_assembly,
 	mono_debugger_heap
@@ -144,6 +146,20 @@ debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
 	retval = -1;
 	mono_debugger_unlock ();
 	return retval;
+}
+
+static guint64
+debugger_lookup_class (guint64 image_argument, guint64 token_argument)
+{
+	MonoImage *image = (MonoImage *) GUINT_TO_POINTER ((gssize) image_argument);
+	guint32 token = (guint32) token_argument;
+	MonoClass *klass;
+
+	klass = mono_class_get (image, token);
+	if (klass)
+		mono_class_init (klass);
+
+	return GPOINTER_TO_UINT (klass);
 }
 
 static guint64

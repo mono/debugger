@@ -123,5 +123,7 @@ namespace Mono.Debugger.Languages
 
 		ITargetMemberInfo FindMember (string name, bool search_static,
 					      bool search_instance);
+
+		bool ResolveClass (ITargetAccess target);
 	}
 }

@@ -29,6 +29,22 @@ namespace Mono.Debugger.Languages.Mono
 			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
 		}
 
+		public MonoClassInfo (MonoClassType type, ITargetAccess target,
+				      TargetAddress klass_address)
+		{
+			this.type = type;
+			this.KlassAddress = klass_address;
+
+			int offset = type.File.MonoLanguage.BuiltinTypes.KlassInstanceSizeOffset;
+			size = target.TargetMemoryAccess.ReadInteger (klass_address + offset);
+
+			type.File.MonoLanguage.AddClass (KlassAddress, type);
+
+			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
+
+			do_initialize (target, null);
+		}
+
 		void initialize (ITargetAccess target)
 		{
 			if (initialized)
@@ -40,7 +56,7 @@ namespace Mono.Debugger.Languages.Mono
 		object do_initialize (ITargetAccess target, object data)
 		{
 			if (type.ParentType != null) {
-				parent = (MonoClassInfo) type.ParentType.GetTypeInfo ();
+				parent = type.ParentType.GetTypeInfo ();
 				parent.initialize (target);
 			}
 

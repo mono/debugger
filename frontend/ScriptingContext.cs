@@ -496,6 +496,8 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
+			if (!func.DeclaringType.ResolveClass (process.TargetAccess))
+				throw new ScriptingException ("{0} can't be resolved.", Name);
 
 			process.RuntimeInvoke (func, instance, args);
 
@@ -511,6 +513,8 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
+			if (!func.DeclaringType.ResolveClass (process.TargetAccess))
+				throw new ScriptingException ("{0} can't be resolved.", Name);
 
 			return process.RuntimeInvoke (func, instance, args, out exc_message);
 		}

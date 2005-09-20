@@ -72,6 +72,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parameter_types; }
 		}
 
+		ITargetStructType ITargetFunctionType.DeclaringType {
+			get { return klass; }
+		}
+
 		public SourceMethod Source {
 			get {
 				int token = MonoDebuggerSupport.GetMethodToken (method_info);
@@ -94,7 +98,7 @@ namespace Mono.Debugger.Languages.Mono
 		public TargetAddress GetMethodAddress (ITargetAccess target)
 		{
 			try {
-				MonoClassInfo info = klass.GetTypeInfo () as MonoClassInfo;
+				MonoClassInfo info = klass.GetTypeInfo ();
 				if (info == null)
 					throw new LocationInvalidException ();
 

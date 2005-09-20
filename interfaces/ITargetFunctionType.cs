@@ -25,5 +25,9 @@ namespace Mono.Debugger.Languages
 		object MethodHandle {
 			get;
 		}
+
+		ITargetStructType DeclaringType {
+			get;
+		}
 	}
 }

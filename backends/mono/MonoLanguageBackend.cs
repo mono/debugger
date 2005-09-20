@@ -31,6 +31,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
+		public readonly TargetAddress LookupClass;
 		public readonly TargetAddress LookupType;
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress Heap;
@@ -53,6 +54,7 @@ namespace Mono.Debugger.Languages.Mono
 			RuntimeInvoke           = reader.ReadGlobalAddress ();
 			CreateString            = reader.ReadGlobalAddress ();
 			ClassGetStaticFieldData = reader.ReadGlobalAddress ();
+			LookupClass             = reader.ReadGlobalAddress ();
 			LookupType              = reader.ReadGlobalAddress ();
 			LookupAssembly          = reader.ReadGlobalAddress ();
 			Heap                    = reader.ReadAddress ();
@@ -758,6 +760,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			return null;
+		}
+
+		public TargetAddress LookupClass (ITargetAccess target, TargetAddress image,
+						  int token)
+		{
+			TargetAddress arg = new TargetAddress (
+				target.TargetMemoryInfo.AddressDomain, token);
+			return target.CallMethod (info.LookupClass, image, arg);
 		}
 
 		MonoFundamentalType GetFundamentalType (Type type)

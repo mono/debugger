@@ -1,5 +1,29 @@
 2005-09-20  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.ResolveClass): New method.
+
+	* interfaces/ITargetFunctionType.cs
+	(ITargetFunctionType.DeclaringType): New property.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoDebuggerInfo.LookupClass): New field.
+	(MonoLanguageBackend.LookupClass): New method.
+
+	* wrapper/mono-debugger-jit-wrapper.h
+	(MonoDebuggerInfo): Added `lookup_class'.
+
+	* backends/mono/MonoClassType.cs
+	(MonoClassType.ResolveClass): If we don't already have a
+	`type_info', create it via MonoLanguageBackend.LookupClass();
+	this'll effectively call `mono_class_get (image, token)' in the
+	target and use the returned `MonoClass *' address.
+
+	* frontend/ScriptingContext.cs (ProcessHandle.RuntimeInvoke): Call
+	`func.DeclaringType.ResolveClass (process.TargetAccess)'.
+
+2005-09-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoEnumType.cs: Unused; disable for the moment.
 	* backends/mono/MonoEnumTypeInfo.cs: Likewise.
 	* backends/mono/MonoEnumObject.cs: Likewise.
