@@ -351,18 +351,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal void AddClassEntry (ITargetMemoryReader reader, byte[] contents)
 		{
 			ClassEntry entry = new ClassEntry (this, reader, contents);
-
-			if (entry.Rank == 0)
-				class_entry_hash.Add (new TypeHashEntry (entry), entry);
-			else {
-#if FIXME
-				Type etype = MonoDebuggerSupport.ResolveType (Module, entry.Token);
-				Type atype = MonoDebuggerSupport.MakeArrayType (etype, entry.Rank);
-				MonoType type = LookupMonoType (atype);
-
-				MonoLanguage.AddClass (entry.KlassAddress, type);
-#endif
-			}
+			class_entry_hash.Add (new TypeHashEntry (entry), entry);
 		}
 
 		public MonoType LookupMonoType (Cecil.ITypeReference type)
@@ -1255,36 +1244,26 @@ namespace Mono.Debugger.Languages.Mono
 		protected struct TypeHashEntry
 		{
 			public readonly int Token;
-			public readonly int Rank;
 
-			public TypeHashEntry (Cecil.ITypeReference type)
+			public TypeHashEntry (Cecil.ITypeDefinition type)
 			{
-				Cecil.IArrayType array = type as Cecil.IArrayType;
-				if (array != null) {
-					type = array.ElementType;
-					Rank = array.Rank;
-				} else
-					Rank = 0;
-
 				Token = (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
 			}
 
 			public TypeHashEntry (ClassEntry entry)
 			{
 				Token = entry.Token;
-				Rank = entry.Rank;
 			}
 
 			public TypeHashEntry (int token)
 			{
 				Token = token;
-				Rank = 0;
 			}
 
 			public override bool Equals (object o)
 			{
 				TypeHashEntry entry = (TypeHashEntry) o;
-				return (entry.Token == Token) && (entry.Rank == Rank);
+				return (entry.Token == Token);
 			}
 
 			public override int GetHashCode ()
@@ -1294,7 +1273,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override string ToString ()
 			{
-				return String.Format ("TypeHashEntry ({0:x}:{1})", Token, Rank);
+				return String.Format ("TypeHashEntry ({0:x})", Token);
 			}
 		}
 
@@ -1302,7 +1281,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			public readonly MonoSymbolFile File;
 			public readonly int Token;
-			public readonly int Rank;
 			public readonly int InstanceSize;
 			public readonly TargetAddress KlassAddress;
 			readonly byte[] contents;
@@ -1313,7 +1291,6 @@ namespace Mono.Debugger.Languages.Mono
 				this.contents = contents;
 
 				Token = reader.BinaryReader.ReadLeb128 ();
-				Rank = reader.BinaryReader.ReadLeb128 ();
 				InstanceSize = reader.BinaryReader.ReadLeb128 ();
 				KlassAddress = reader.ReadGlobalAddress ();
 			}
@@ -1324,8 +1301,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override string ToString ()
 			{
-				return String.Format ("ClassEntry [{0}:{1:x}:{2}:{3}:{4}]",
-						      File, Token, Rank, InstanceSize, KlassAddress);
+				return String.Format ("ClassEntry [{0}:{1:x}:{2}:{3}]",
+						      File, Token, InstanceSize, KlassAddress);
 			}
 		}
 

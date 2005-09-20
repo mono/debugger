@@ -372,7 +372,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			info.Position = 8;
 			info.ReadLeb128 ();
-			info.ReadLeb128 ();
 
 			return new MonoClassInfo (this, info);
 		}
