@@ -27,10 +27,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		bool ITargetPointerObject.HasDereferencedObject {
-			get { return type.HasStaticType; }
-		}
-
 		ITargetObject ITargetPointerObject.DereferencedObject {
 			get {
 				if (!type.HasStaticType)

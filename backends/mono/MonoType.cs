@@ -7,7 +7,6 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		protected readonly MonoSymbolFile file;
 		protected readonly TargetObjectKind kind;
-		protected IMonoTypeInfo type_info;
 
 		public MonoType (MonoSymbolFile file, TargetObjectKind kind)
 		{
@@ -41,26 +40,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public virtual int Size {
-			get {
-				IMonoTypeInfo info = GetTypeInfo ();
-				if (info != null)
-					return info.Size;
-				else
-					throw new LocationInvalidException ();
-			}
+		public abstract int Size {
+			get;
 		}
-
-		public virtual IMonoTypeInfo GetTypeInfo ()
-		{
-			if (type_info != null)
-				return type_info;
-
-			type_info = DoGetTypeInfo ();
-			return type_info;
-		}
-
-		protected abstract IMonoTypeInfo DoGetTypeInfo ();
 
 		public virtual bool CheckValid (TargetLocation location)
 		{
@@ -79,7 +61,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			if (IsByRef) {
-				if (obj.TypeInfo.Type.IsByRef) {
+				if (obj.Type.IsByRef) {
 					location.WriteAddress (obj.Location.Address);
 					return;
 				}
@@ -87,16 +69,15 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 			}
 
-			if (GetTypeInfo () == null)
+			if (!HasFixedSize || !obj.Type.HasFixedSize)
 				throw new InvalidOperationException ();
-
-			if (!type_info.HasFixedSize || !obj.TypeInfo.HasFixedSize)
-				throw new InvalidOperationException ();
-			if (type_info.Size != obj.TypeInfo.Size)
+			if (Size != obj.Type.Size)
 				throw new InvalidOperationException ();
 
 			location.WriteBuffer (obj.RawContents);
 		}
+
+		public abstract MonoObject GetObject (TargetLocation location);
 
 		public override string ToString ()
 		{

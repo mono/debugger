@@ -1,5 +1,26 @@
 2005-09-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoEnumType.cs: Unused; disable for the moment.
+	* backends/mono/MonoEnumTypeInfo.cs: Likewise.
+	* backends/mono/MonoEnumObject.cs: Likewise.
+
+	* backends/mono/MonoTypeInfo.cs: Removed.
+
+	* backends/mono/MonoType.cs
+	(MonoType.GetTypeInfo): Removed.
+	(MonoType.DoGetTypeInfo): Removed.
+	(MonoType.Size): Made this abstract.
+	(MonoType.GetObject): New public abstract method.
+
+	* backends/mono/MonoClassInfo.cs
+	(MonoClassInfo): Killed the `MonoTypeInfo' base classs; derive
+	directly from `MarshalByRefObject'.
+
+	* backends/mono/MonoObject.cs
+	(MonoObject): `IMonoTypeInfo' is gone; use the `MonoType' directly.
+
+2005-09-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/mono/MonoLanguageBackend.cs
 	(MonoBuiltinTypeInfo): Added some fields.
 

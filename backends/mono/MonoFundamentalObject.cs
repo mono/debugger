@@ -4,13 +4,9 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFundamentalObject : MonoFundamentalObjectBase
 	{
-		new MonoFundamentalType type;
-
 		public MonoFundamentalObject (MonoFundamentalType type, TargetLocation location)
 			: base (type, location)
-		{
-			this.type = type;
-		}
+		{ }
 
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
@@ -20,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected override object GetObject (TargetBlob blob, TargetLocation locaction)
 		{
-			switch (type.FundamentalKind) {
+			switch (Type.FundamentalKind) {
 			case FundamentalKind.Boolean:
 				return blob.Contents [0] != 0;
 

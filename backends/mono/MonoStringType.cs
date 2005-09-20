@@ -3,7 +3,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoStringType : MonoFundamentalType, IMonoTypeInfo
+	internal class MonoStringType : MonoFundamentalType
 	{
 		static int max_string_length = 10000;
 
@@ -16,11 +16,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.ObjectSize = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
-		}
-
-		protected override IMonoTypeInfo DoGetTypeInfo ()
-		{
-			throw new InvalidOperationException ();
 		}
 
 		public static int MaximumStringLength {

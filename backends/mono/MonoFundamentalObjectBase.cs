@@ -4,9 +4,13 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
 	{
-		public MonoFundamentalObjectBase (IMonoTypeInfo type_info, TargetLocation location)
-			: base (type_info, location)
-		{ }
+		new public readonly MonoFundamentalType Type;
+
+		public MonoFundamentalObjectBase (MonoFundamentalType type, TargetLocation location)
+			: base (type, location)
+		{
+			this.Type = type;
+		}
 
 		public bool HasObject {
 			get {
@@ -24,8 +28,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			try {
 				TargetBlob blob;
-				if (type_info.HasFixedSize)
-					blob = location.ReadMemory (type_info.Size);
+				if (Type.HasFixedSize)
+					blob = location.ReadMemory (Type.Size);
 				else
 					blob = GetDynamicContents (location, MaximumDynamicSize);
 
@@ -40,7 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void ITargetFundamentalObject.SetObject (ITargetObject obj)
 		{
-			type_info.SetObject (location, (MonoObject) obj);
+			Type.SetObject (location, (MonoObject) obj);
 		}
 
 		public override string Print ()

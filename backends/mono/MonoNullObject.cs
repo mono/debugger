@@ -4,7 +4,7 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoNullObject : MonoObject
 	{
-		public MonoNullObject (IMonoTypeInfo type, TargetLocation location)
+		public MonoNullObject (MonoType type, TargetLocation location)
 			: base (type, location)
 		{ }
 

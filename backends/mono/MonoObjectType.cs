@@ -3,7 +3,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectType : MonoType, IMonoTypeInfo, ITargetPointerType
+	internal class MonoObjectType : MonoType, ITargetPointerType
 	{
 		int size;
 		TargetAddress klass_address;
@@ -17,13 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.klass_address = klass;
 			this.typedef = typedef;
 
-			type_info = this;
 			file.MonoLanguage.AddClass (klass_address, this);
-		}
-
-		protected override IMonoTypeInfo DoGetTypeInfo ()
-		{
-			throw new InvalidOperationException ();
 		}
 
 		public override bool IsByRef {
@@ -60,11 +54,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		MonoType IMonoTypeInfo.Type {
-			get { return this; }
-		}
-
-		MonoObject IMonoTypeInfo.GetObject (TargetLocation location)
+		public override MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoObjectObject (this, location);
 		}

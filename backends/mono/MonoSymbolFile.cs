@@ -386,7 +386,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal void AddCoreType (MonoType type, Cecil.ITypeDefinition typedef)
 		{
-			type.GetTypeInfo ();
 			type_hash.Add (typedef, type);
 		}
 

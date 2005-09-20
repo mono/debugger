@@ -5,7 +5,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFunctionType : MonoType, IMonoTypeInfo, ITargetFunctionType
+	internal class MonoFunctionType : MonoType, ITargetFunctionType
 	{
 		MonoClassType klass;
 		Cecil.IMethodDefinition method_info;
@@ -38,8 +38,6 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < mdef.Parameters.Count; i++)
 				parameter_types [i] = file.MonoLanguage.LookupMonoType (
 					mdef.Parameters[i].ParameterType);
-
-			type_info = this;
 		}
 
 		public override string Name {
@@ -85,21 +83,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return method_info; }
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo ()
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public override bool HasFixedSize {
 			get { return true; }
 		}
 
 		public override int Size {
 			get { return File.TargetInfo.TargetAddressSize; }
-		}
-
-		MonoType IMonoTypeInfo.Type {
-			get { return this; }
 		}
 
 		public TargetAddress GetMethodAddress (ITargetAccess target)
@@ -115,7 +104,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		MonoObject IMonoTypeInfo.GetObject (TargetLocation location)
+		public override MonoObject GetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

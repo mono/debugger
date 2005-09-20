@@ -26,12 +26,16 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasFixedSize {
-			get { return true; }
+			get { return false; }
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo ()
+		public override int Size {
+			get { return 0; }
+		}
+
+		public override MonoObject GetObject (TargetLocation location)
 		{
-			return null;
+			throw new InvalidOperationException ();
 		}
 	}
 }

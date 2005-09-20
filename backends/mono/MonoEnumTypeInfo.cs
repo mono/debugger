@@ -2,6 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
+#if FIXME
 	internal class MonoEnumTypeInfo : MonoTypeInfo
 	{
 		new public readonly MonoEnumType Type;
@@ -92,4 +93,5 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoEnumObject (this, location);
 		}
 	}
+#endif
 }

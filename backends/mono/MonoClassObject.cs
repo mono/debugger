@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 		new MonoClassInfo type;
 
 		public MonoClassObject (MonoClassInfo type, TargetLocation location)
-			: base (type, location)
+			: base (type.Type, location)
 		{
 			this.type = type;
 		}

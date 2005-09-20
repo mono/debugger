@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type; }
 		}
 
-		protected IMonoTypeInfo GetCurrentType ()
+		protected MonoType GetCurrentType ()
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
@@ -25,17 +25,12 @@ namespace Mono.Debugger.Languages.Mono
 			address = location.TargetMemoryAccess.ReadAddress (location.Address);
 			address = location.TargetMemoryAccess.ReadGlobalAddress (address);
 
-			MonoType klass = type.File.MonoLanguage.GetClass (location.TargetAccess, address);
-			if (klass == null)
-				return null;
-
-			IMonoTypeInfo info = klass.GetTypeInfo ();
-			return info;
+			return type.File.MonoLanguage.GetClass (location.TargetAccess, address);
 		}
 
-		public IMonoTypeInfo CurrentType {
+		public MonoType CurrentType {
 			get {
-				IMonoTypeInfo type = GetCurrentType ();
+				MonoType type = GetCurrentType ();
 				if (type == null)
 					throw new LocationInvalidException ();
 				return type;
@@ -44,26 +39,22 @@ namespace Mono.Debugger.Languages.Mono
 
 		ITargetType ITargetPointerObject.CurrentType {
 			get {
-				return CurrentType.Type;
-			}
-		}
-
-		public bool HasDereferencedObject {
-			get {
-				return GetCurrentType () != null;
+				return CurrentType;
 			}
 		}
 
 		public ITargetObject DereferencedObject {
 			get {
-				IMonoTypeInfo current_type = CurrentType;
+				MonoType current_type = GetCurrentType ();
+				if (current_type == null)
+					return null;
 
 				// If this is a reference type, then the `MonoObject *' already
 				// points to the boxed object itself.
 				// If it's a valuetype, then the boxed contents is immediately
 				// after the `MonoObject' header.
 
-				int offset = current_type.Type.IsByRef ? 0 : type.Size;
+				int offset = current_type.IsByRef ? 0 : type.Size;
 				TargetLocation new_location = location.GetLocationAtOffset (offset, false);
 				ITargetObject obj = current_type.GetObject (new_location);
 				return obj;

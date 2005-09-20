@@ -1534,11 +1534,18 @@ namespace Mono.Debugger.Frontend
 
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj != null) {
-				if (!pobj.HasDereferencedObject)
+				ITargetObject result;
+				try {
+					result = pobj.DereferencedObject;
+				} catch {
+					result = null;
+				}
+
+				if (result == null)
 					throw new ScriptingException (
 						"Cannot dereference `{0}'.", expr.Name);
 
-				return pobj.DereferencedObject;
+				return result;
 			}
 
 			ITargetClassObject cobj = obj as ITargetClassObject;

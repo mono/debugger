@@ -5,6 +5,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
+#if FIXME
 	internal class MonoEnumType : MonoType, ITargetEnumType
 	{
 		MonoFieldInfo[] fields;
@@ -113,5 +114,5 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoEnumTypeInfo (this, info);
 		}
 	}
-
+#endif
 }

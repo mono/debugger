@@ -124,11 +124,7 @@ namespace Mono.Debugger.Languages.Mono
 				return backend.MonoLanguage.CreateNullObject (
 					frame.TargetAccess, type);
 
-			IMonoTypeInfo tinfo = type.GetTypeInfo ();
-			if (tinfo == null)
-				return null;
-
-			return tinfo.GetObject (location);
+			return type.GetObject (location);
 		}
 
 		public bool CanWrite {
@@ -142,11 +138,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			IMonoTypeInfo tinfo = type.GetTypeInfo ();
-			if (tinfo == null)
-				throw new InvalidOperationException ();
-
-			tinfo.SetObject (location, (MonoObject) obj);
+			type.SetObject (location, (MonoObject) obj);
 		}
 
 		public override string ToString ()

@@ -828,25 +828,27 @@ namespace Mono.Debugger.Languages.Mono
 		public ITargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, address);
-			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetTypeInfo().GetObject (location);
+			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
 			if (obj == null)
 				return null;
 
-			if (obj.HasDereferencedObject)
-				return obj.DereferencedObject;
-			else
-				return obj;
+			ITargetObject result;
+			try {
+				result = obj.DereferencedObject;
+				if (result == null)
+					result = obj;
+			} catch {
+				result = obj;
+			}
+
+			return result;
 		}
 
 		public ITargetObject CreateNullObject (ITargetAccess target, ITargetType type)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, TargetAddress.Null);
 
-			IMonoTypeInfo tinfo = ((MonoType) type).GetTypeInfo ();
-			if (tinfo == null)
-				tinfo = builtin_types.ObjectType;
-
-			return new MonoNullObject (tinfo, location);
+			return new MonoNullObject ((MonoType) type, location);
 		}
 
 		ITargetFundamentalType ILanguage.IntegerType {

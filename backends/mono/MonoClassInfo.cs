@@ -4,9 +4,11 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassInfo : MonoTypeInfo
+	internal class MonoClassInfo : MarshalByRefObject
 	{
-		new public readonly MonoClassType Type;
+		protected readonly MonoClassType type;
+		protected readonly int size;
+		protected readonly TargetAddress KlassAddress;
 
 		int[] field_offsets;
 		Hashtable methods;
@@ -15,9 +17,14 @@ namespace Mono.Debugger.Languages.Mono
 		bool initialized;
 
 		public MonoClassInfo (MonoClassType type, TargetBinaryReader info)
-			: base (type, info)
 		{
-			this.Type = type;
+			this.type = type;
+
+			size = info.ReadLeb128 ();
+			KlassAddress = new TargetAddress (
+				type.File.GlobalAddressDomain, info.ReadAddress ());
+
+			type.File.MonoLanguage.AddClass (KlassAddress, type);
 
 			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
 		}
@@ -32,8 +39,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		object do_initialize (ITargetAccess target, object data)
 		{
-			if (Type.ParentType != null) {
-				parent = (MonoClassInfo) Type.ParentType.GetTypeInfo ();
+			if (type.ParentType != null) {
+				parent = (MonoClassInfo) type.ParentType.GetTypeInfo ();
 				parent.initialize (target);
 			}
 
@@ -41,7 +48,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress field_info = target.TargetMemoryAccess.ReadAddress (
 				KlassAddress + builtin.KlassFieldOffset);
-			int field_count = Type.Fields.Length + Type.StaticFields.Length;
+			int field_count = type.Fields.Length + type.StaticFields.Length;
 			TargetBinaryReader info = target.TargetMemoryAccess.ReadMemory (
 				field_info, field_count * builtin.FieldInfoSize).GetReader ();
 
@@ -82,21 +89,18 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoFieldInfo finfo = Type.Fields [index];
-				IMonoTypeInfo ftype = finfo.Type.GetTypeInfo ();
-				if (ftype == null)
-					return null;
+				MonoFieldInfo finfo = type.Fields [index];
 
 				int offset = field_offsets [finfo.Position];
-				if (!Type.IsByRef)
+				if (!type.IsByRef)
 					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
 				TargetLocation field_loc = location.GetLocationAtOffset (
-					offset, ftype.Type.IsByRef);
+					offset, finfo.Type.IsByRef);
 
 				if (field_loc.Address.IsNull)
 					return null;
 
-				return ftype.GetObject (field_loc);
+				return finfo.Type.GetObject (field_loc);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -110,17 +114,14 @@ namespace Mono.Debugger.Languages.Mono
 					debugger_info.ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 
-				MonoFieldInfo finfo = Type.StaticFields [index];
-				IMonoTypeInfo ftype = finfo.Type.GetTypeInfo ();
-				if (ftype == null)
-					return null;
+				MonoFieldInfo finfo = type.StaticFields [index];
 
 				TargetLocation location = new AbsoluteTargetLocation (
 					null, target, data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
-					field_offsets [finfo.Position], ftype.Type.IsByRef);
+					field_offsets [finfo.Position], finfo.Type.IsByRef);
 
-				return ftype.GetObject (field_loc);
+				return finfo.Type.GetObject (field_loc);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -138,7 +139,15 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public MonoClassType Type {
+			get { return type; }
+		}
+
+		public int Size {
+			get { return size; }
+		}
+
+		public MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoClassObject (this, location);
 		}

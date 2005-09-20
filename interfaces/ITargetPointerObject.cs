@@ -15,13 +15,6 @@ namespace Mono.Debugger.Languages
 		}
 
 		// <summary>
-		//   If true, this pointer can be dereferenced to an ITargetObject.
-		// </summary>
-		bool HasDereferencedObject {
-			get;
-		}
-
-		// <summary>
 		//   If HasDereferencedObject is true, return the dereferenced object.
 		// </summary>
 		ITargetObject DereferencedObject {

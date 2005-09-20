@@ -26,6 +26,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Cecil.ITypeDefinition type;
 		MonoClassType parent_type;
+		MonoClassInfo type_info;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.ITypeDefinition type)
 			: base (file, TargetObjectKind.Class)
@@ -50,6 +51,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool HasFixedSize {
 			get { return false; }
+		}
+
+		public override int Size {
+			get { return 2 * file.TargetInfo.TargetAddressSize; }
 		}
 
 		public bool HasParent {
@@ -349,7 +354,17 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo ()
+		public MonoClassInfo GetTypeInfo ()
+		{
+			if (type_info != null)
+				return type_info;
+			type_info = DoGetTypeInfo ();
+			if (type_info == null)
+				throw new LocationInvalidException ();
+			return type_info;
+		}
+
+		protected MonoClassInfo DoGetTypeInfo ()
 		{
 			TargetBinaryReader info = file.GetTypeInfo (type);
 			if (info == null)
@@ -360,6 +375,12 @@ namespace Mono.Debugger.Languages.Mono
 			info.ReadLeb128 ();
 
 			return new MonoClassInfo (this, info);
+		}
+
+		public override MonoObject GetObject (TargetLocation location)
+		{
+			MonoClassInfo info = (MonoClassInfo) GetTypeInfo ();
+			return info.GetObject (location);
 		}
 
 		[Command]
@@ -441,7 +462,7 @@ namespace Mono.Debugger.Languages.Mono
 					Cecil.Metadata.TokenType.TypeDef, (int) token);
 
 				if (tdef != null)
-					return new MonoClassType (file, tdef);
+					return file.LookupMonoType (tdef);
 			} else if (type == 0x1d) { // MONO_TYPE_SZARRAY
 				MonoType eklass = ReadMonoClass (language, target, element_class);
 				if (eklass == null)

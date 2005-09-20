@@ -472,10 +472,14 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Pointer: {
 				ITargetPointerObject pobj = (ITargetPointerObject) obj;
-				if (pobj.Type.IsTypesafe && pobj.HasDereferencedObject) {
-					ITargetObject deref = pobj.DereferencedObject;
-					return String.Format ("&({0}) {1}", deref.TypeName,
-							      DoFormatObject (deref, false));
+				if (pobj.Type.IsTypesafe) {
+					try {
+						ITargetObject deref = pobj.DereferencedObject;
+						return String.Format ("&({0}) {1}", deref.TypeName,
+								      DoFormatObject (deref, false));
+					} catch {
+						return pobj.Print ();
+					}
 				} else
 					return pobj.Print ();
 			}

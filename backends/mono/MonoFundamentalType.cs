@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFundamentalType : MonoType, IMonoTypeInfo, ITargetFundamentalType
+	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
 	{
 		protected readonly Heap Heap;
 		protected readonly int size;
@@ -20,7 +20,6 @@ namespace Mono.Debugger.Languages.Mono
 			this.klass_address = klass;
 			this.Heap = file.MonoLanguage.DataHeap;
 
-			type_info = this;
 			file.MonoLanguage.AddClass (klass_address, this);
 		}
 
@@ -47,11 +46,6 @@ namespace Mono.Debugger.Languages.Mono
 			get {
 				return fundamental_kind;
 			}
-		}
-
-		protected override IMonoTypeInfo DoGetTypeInfo ()
-		{
-			throw new InvalidOperationException ();
 		}
 
 		public virtual byte[] CreateObject (object obj)
@@ -130,11 +124,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return size; }
 		}
 
-		MonoType IMonoTypeInfo.Type {
-			get { return this; }
-		}
-
-		public virtual MonoObject GetObject (TargetLocation location)
+		public override MonoObject GetObject (TargetLocation location)
 		{
 			return new MonoFundamentalObject (this, location);
 		}
