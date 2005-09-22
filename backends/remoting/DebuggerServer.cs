@@ -21,6 +21,11 @@ namespace Mono.Debugger.Remoting
 			RemotingConfiguration.RegisterActivatedServiceType (
 				typeof (DebuggerServer));
 
+			// FIXME FIXME FIXME
+			LifetimeServices.LeaseTime = TimeSpan.FromHours (3);
+			LifetimeServices.LeaseManagerPollTime = TimeSpan.FromHours (3);
+			LifetimeServices.RenewOnCallTime = TimeSpan.FromHours (3);
+
 			channel = new DebuggerChannel (url);
 			ChannelServices.RegisterChannel (channel);
 

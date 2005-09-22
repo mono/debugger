@@ -36,6 +36,11 @@ namespace Mono.Debugger.Remoting
 			this.manager = manager;
 			this.id = id;
 
+			// FIXME FIXME FIXME
+			LifetimeServices.LeaseTime = TimeSpan.FromHours (3);
+			LifetimeServices.LeaseManagerPollTime = TimeSpan.FromHours (3);
+			LifetimeServices.RenewOnCallTime = TimeSpan.FromHours (3);
+
 			if (channel == null) {
 				channel = new DebuggerChannel ();
 				ChannelServices.RegisterChannel (channel);
@@ -133,9 +138,9 @@ namespace Mono.Debugger.Remoting
 		[Serializable]
 		protected class Sponsor : ISponsor
 		{
-			public 	TimeSpan Renewal (ILease lease)
+			public TimeSpan Renewal (ILease lease)
 			{
-				return new TimeSpan (0, 5, 0);
+				return TimeSpan.FromHours (3);
 			}
 		}
 	}

@@ -1,5 +1,10 @@
 2005-09-22  Martin Baulig  <martin@ximian.com>
 
+	* backends/remoting/DebuggerServer.cs: Big big FIXME; set the
+	lease timeout to 3 hours to prevent the debugger from dying.
+
+2005-09-22  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationCallback): New operation; this replaces the old
 	`Callback' mechanism.
