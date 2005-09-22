@@ -5,8 +5,11 @@ source $srcdir/mdb.exp
 
 set line_world 12
 set line_test 18
-set line_porta_nigra 58
-set line_main 76
+set line_test_2 19
+set line_test_3 20
+set line_porta_nigra 61
+set line_roman_baths 73
+set line_main 84
 set file $srcdir/TestBreakpoint.cs
 
 mdb_start "TestBreakpoint.exe"
@@ -14,23 +17,43 @@ mdb_expect_frame 0 "X.Main()" $file $line_main
 
 mdb_send "break TestBreakpoint.cs:$line_test"
 set bpt_1 [mdb_expect_breakpoint]
-mdb_send "break Martin.Baulig.Hello.World"
+mdb_send "break $line_test_2"
 set bpt_2 [mdb_expect_breakpoint]
+mdb_send "break $line_test_3"
+set bpt_3 [mdb_expect_breakpoint]
+mdb_send "break Martin.Baulig.Hello.World"
+set bpt_world [mdb_expect_breakpoint]
 
 mdb_send "continue"
-mdb_expect_stopped 0 "Martin.Baulig.Hello.Test()" $file $line_test
+mdb_expect_hit_breakpoint 0 "Martin.Baulig.Hello.Test()" $bpt_1 $file $line_test
 
-# mdb_send "break -get Trier.PortaNigra"
-# set bpt_3 [mdb_expect_breakpoint]
-# mdb_send "continue"
-# mdb_expect_stopped 0 "Europe.Germany.Trier.get_PortaNigra()" $file $line_porta_nigra
+mdb_send "break -get trier.PortaNigra"
+set bpt_porta_nigra [mdb_expect_breakpoint]
+# We are stopped on a breakpoint and use "continue" to step over it
+mdb_send "continue"
+mdb_expect_hit_breakpoint 0 "Europe.Germany.Trier.get_PortaNigra()" $bpt_porta_nigra $file $line_porta_nigra
+mdb_send "next"
+# Step over the breakpoint with "next"
+mdb_expect_stopped 0 "Europe.Germany.Trier.get_PortaNigra()" $file [expr $line_porta_nigra + 1]
 
 mdb_send "continue"
-mdb_expect_stopped 0 "Martin.Baulig.Hello.World(Postcard.Picture)" $file $line_world
+mdb_expect_hit_breakpoint 0 "Martin.Baulig.Hello.World(Postcard.Picture)" $bpt_world $file $line_world
+mdb_send "disable $bpt_world"
+mdb_expect_prompt
 
 mdb_send "continue"
-
 mdb_expect_line "http://de.wikipedia.org/wiki/Bild:Porta_Nigra_Trier.jpg"
+mdb_expect_hit_breakpoint 0 "Martin.Baulig.Hello.Test()" $bpt_2 $file $line_test_2
+# We are stopped on a breakpoint and use "next" to step over it
+mdb_send "next"
+mdb_expect_line "http://de.wikipedia.org/wiki/Bild:Trier_Innenstadt.jpg"
+mdb_expect_hit_breakpoint 0 "Martin.Baulig.Hello.Test()" $bpt_3 $file $line_test_3
+# We are stopped on a breakpoint and use "step" to step over it
+mdb_send "step"
+mdb_expect_stopped 0 "Europe.Germany.Trier.get_RomanBaths()" $file $line_roman_baths
+
+mdb_send "continue"
+mdb_expect_line "http://de.wikipedia.org/wiki/Bild:Trier_roman_baths_DSC02378.jpg";
 mdb_expect_line "Process @4 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"

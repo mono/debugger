@@ -23,7 +23,7 @@ mdb_expect_frame 0 "X.Main()" $file 218
 mdb_send "break $bpt_simple"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_stopped 0 "X.Simple()" $file $bpt_simple
+mdb_expect_hit_breakpoint 0 "X.Simple()" $breakpoint $file $bpt_simple
 mdb_send_and_expect "dump -mode object a" "object:True:-1:System.Int32:True:4:Fundamental Int32"
 mdb_send_and_expect "ptype a" "System.Int32"
 mdb_send_and_expect "print a" "(System.Int32) 5"
@@ -48,7 +48,7 @@ mdb_expect_line "9"
 mdb_expect_line "7"
 mdb_expect_line "0.7142857"
 mdb_expect_line "Monkey"
-mdb_expect_stopped 0 "X.BoxedValueType()" $file $bpt_boxed_value
+mdb_expect_hit_breakpoint 0 "X.BoxedValueType()" $breakpoint $file $bpt_boxed_value
 mdb_send_and_expect "print a" "(System.Int32) 5"
 mdb_send_and_expect "print boxed_a" "(System.Object) &(System.Int32) 5"
 mdb_send_and_expect "print *boxed_a" "(System.Int32) 5"
@@ -58,7 +58,7 @@ set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "5"
 mdb_expect_line "5"
-mdb_expect_stopped 0 "X.BoxedReferenceType()" $file $bpt_boxed_ref
+mdb_expect_hit_breakpoint 0 "X.BoxedReferenceType()" $breakpoint $file $bpt_boxed_ref
 mdb_send_and_expect "print hello" "(System.String) \"Hello World\""
 mdb_send_and_expect "print boxed_hello" "(System.Object) &(System.String) \"Hello World\""
 mdb_send_and_expect "print *boxed_hello" "(System.String) \"Hello World\""
@@ -68,7 +68,7 @@ set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "Hello World"
 mdb_expect_line "Hello World"
-mdb_expect_stopped 0 "X.SimpleArray()" $file $bpt_simple_array
+mdb_expect_hit_breakpoint 0 "X.SimpleArray()" $breakpoint $file $bpt_simple_array
 mdb_send_and_expect "print a" "(System.Int32\[\]) \[ 3, 4, 5 \]"
 mdb_send_and_expect "print a\[1\]" "(System.Int32) 4"
 mdb_send "set a\[2\] = 9"
@@ -79,7 +79,7 @@ mdb_send "break $bpt_multi_value_array"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "9"
-mdb_expect_stopped 0 "X.MultiValueTypeArray()" $file $bpt_multi_value_array
+mdb_expect_hit_breakpoint 0 "X.MultiValueTypeArray()" $breakpoint $file $bpt_multi_value_array
 mdb_send_and_expect "print a" "(System.Int32\[,\]) \[ \[ 6, 7, 8 \], \[ 9, 10, 11 \] \]"
 mdb_send_and_expect "print a\[1\]" "ERROR: Index of array expression `a' out of bounds."
 mdb_send_and_expect "print a\[1,2\]" "(System.Int32) 11"
@@ -91,7 +91,7 @@ mdb_send "break $bpt_string_array"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "50"
-mdb_expect_stopped 0 "X.StringArray()" $file $bpt_string_array
+mdb_expect_hit_breakpoint 0 "X.StringArray()" $breakpoint $file $bpt_string_array
 mdb_send_and_expect "print a" "(System.String\[\]) \[ \"Hello\", \"World\" \]"
 mdb_send_and_expect "print a\[1\]" "(System.String) \"World\""
 mdb_send "set a\[1\] = \"Trier\""
@@ -103,7 +103,7 @@ mdb_send "break $bpt_multi_string_array"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "System.String\[\]"
-mdb_expect_stopped 0 "X.MultiStringArray()" $file $bpt_multi_string_array
+mdb_expect_hit_breakpoint 0 "X.MultiStringArray()" $breakpoint $file $bpt_multi_string_array
 mdb_send_and_expect "print a" "(System.String\[,\]) \[ \[ \"Hello\", \"World\" \], \[ \"New York\", \"Boston\" \], \[ \"Ximian\", \"Monkeys\" \] \]"
 mdb_send_and_expect "print a\[2,1\]" "(System.String) \"Monkeys\""
 mdb_send "set a\[2,1\] = \"Primates\""
@@ -127,7 +127,7 @@ mdb_send "continue"
 mdb_expect_line "System.String\[,\]"
 mdb_expect_line "51.2"
 mdb_expect_line "Hello World"
-mdb_expect_stopped 0 "X.StructType()" $file $bpt_struct_type
+mdb_expect_hit_breakpoint 0 "X.StructType()" $breakpoint $file $bpt_struct_type
 mdb_send_and_expect "print a" "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }"
 
 mdb_send "break $bpt_class_type"
@@ -136,7 +136,7 @@ mdb_send "continue"
 mdb_expect_line "A"
 mdb_expect_line "5"
 mdb_expect_line "3.14"
-mdb_expect_stopped 0 "X.ClassType()" $file $bpt_class_type
+mdb_expect_hit_breakpoint 0 "X.ClassType()" $breakpoint $file $bpt_class_type
 mdb_send_and_expect "print b" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
 
 mdb_send "break $bpt_inherited_class_type"
@@ -144,7 +144,7 @@ set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "B"
 mdb_expect_line "8"
-mdb_expect_stopped 0 "X.InheritedClassType()" $file $bpt_inherited_class_type
+mdb_expect_hit_breakpoint 0 "X.InheritedClassType()" $breakpoint $file $bpt_inherited_class_type
 mdb_send_and_expect "print c" "(C) { a = 8, f = 3.14 }"
 mdb_send_and_expect "print b" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
 mdb_send_and_expect "print (B) c" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
@@ -153,7 +153,7 @@ mdb_send "break $bpt_complex_struct_type"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "5"
-mdb_expect_stopped 0 "X.ComplexStructType()" $file $bpt_complex_struct_type
+mdb_expect_hit_breakpoint 0 "X.ComplexStructType()" $breakpoint $file $bpt_complex_struct_type
 mdb_send_and_expect "print d.a" "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }"
 mdb_send_and_expect "print d.b" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
 mdb_send_and_expect "print d.c" "(C) { a = 8, f = 3.14 }"
@@ -163,7 +163,7 @@ mdb_send "break $bpt_function_struct_type"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
 mdb_expect_line "Eintracht Trier"
-mdb_expect_stopped 0 "X.FunctionStructType()" $file $bpt_function_struct_type
+mdb_expect_hit_breakpoint 0 "X.FunctionStructType()" $breakpoint $file $bpt_function_struct_type
 mdb_send_and_expect "print e" "(E) { a = 9 }"
 mdb_send_and_expect "print e.a" "(System.Int32) 9"
 mdb_send_and_expect "print e.Foo (5)" "(System.Int64) 5"

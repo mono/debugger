@@ -231,36 +231,12 @@ namespace Mono.Debugger.Backends
 					      current_operation, temp_breakpoint_id);
 
 				if (stop_on_exc) {
-					current_operation = new OperationException (
-						stack, false);
-
-					do_continue (ip);
+					PushOperation (new OperationException (ip, stack, false));
 					return;
 				}
 
 				do_continue ();
 				return;
-			}
-
-			// Callbacks happen when the user (or the engine) called a method
-			// in the target (RuntimeInvoke).
-			if (current_callback != null) {
-				TargetEventArgs args;
-				if (!current_callback.ProcessEvent (this, inferior, cevent,
-								    out args))
-					return;
-
-				current_callback = null;
-
-				if (message == Inferior.ChildEventType.CHILD_CALLBACK) {
-					Report.Debug (DebugFlags.EventLoop,
-						      "{0} completed callback", this);
-
-					// Ok, inform the user that we stopped.
-					step_operation_finished ();
-					operation_completed (args);
-					return;
-				}
 			}
 
 			// To step over a method call, the sse inserts a temporary
@@ -284,18 +260,24 @@ namespace Mono.Debugger.Backends
 					// we can't remove the breakpoint anymore after
 					// the target exited, but we need to clear this id.
 					temp_breakpoint_id = 0;
-				else if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
-					if (arg == temp_breakpoint_id) {
-						// we hit the temporary breakpoint; this'll always
-						// happen in the `correct' thread since the
-						// `temp_breakpoint_id' is only set in this
-						// SingleSteppingEngine and not in any other thread's.
+				else if ((message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) &&
+					 (arg == temp_breakpoint_id)) {
+					// we hit the temporary breakpoint; this'll always
+					// happen in the `correct' thread since the
+					// `temp_breakpoint_id' is only set in this
+					// SingleSteppingEngine and not in any other thread's.
+
+					inferior.RemoveBreakpoint (temp_breakpoint_id);
+					temp_breakpoint_id = 0;
+
+					Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (arg);
+					if (bpt == null) {
 						message = Inferior.ChildEventType.CHILD_STOPPED;
 						arg = 0;
-
-						inferior.RemoveBreakpoint (temp_breakpoint_id);
-						temp_breakpoint_id = 0;
-					}
+						cevent = new Inferior.ChildEvent (
+							Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
+					} else
+						goto send_result;
 				}
 			}
 
@@ -310,7 +292,7 @@ namespace Mono.Debugger.Backends
 					result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
 				} else if (arg == 0) {
 					// Unknown breakpoint, always stop.
-				} else if (step_over_breakpoint (TargetAddress.Null, false)) {
+				} else if (step_over_breakpoint (TargetAddress.Null, TargetAddress.Null, false)) {
 					Report.Debug (DebugFlags.EventLoop,
 						      "{0} now stepping over breakpoint", this);
 					return;
@@ -332,6 +314,7 @@ namespace Mono.Debugger.Backends
 				if (!stop_requested &&
 				    ((message != Inferior.ChildEventType.UNHANDLED_EXCEPTION) &&
 				     (message != Inferior.ChildEventType.THROW_EXCEPTION) &&
+				     (message != Inferior.ChildEventType.CHILD_CALLBACK) &&
 				     (message != Inferior.ChildEventType.HANDLE_EXCEPTION))) {
 					inferior.Continue (); // do_continue ();
 					return;
@@ -361,9 +344,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
-				current_operation = new OperationException (exc, true);
-
-				do_continue (ip);
+				PushOperation (new OperationException (ip, exc, true));
 				return;
 			}
 
@@ -378,11 +359,6 @@ namespace Mono.Debugger.Backends
 			case Inferior.ChildEventType.CHILD_EXITED:
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
 				exiting = true;	
-				break;
-
-			case Inferior.ChildEventType.CHILD_CALLBACK:
-				frame_changed (inferior.CurrentFrame, null);
-				result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
 				break;
 			}
 
@@ -417,11 +393,20 @@ namespace Mono.Debugger.Backends
 			//
 
 			if (current_operation != null) {
-				if (current_operation.ProcessEvent (this, inferior, cevent, out result)) {
-					if (result != null)
-						goto send_result;
-				} else
+				bool send_result;
+
+				if (!current_operation.ProcessEvent (this, inferior, cevent,
+								     out result, out send_result))
 					return;
+
+				if (result != null)
+					goto send_result;
+
+				if (!send_result) {
+					step_operation_finished ();
+					operation_completed (null);
+					return;
+				}
 			}
 
 		operation_finished:
@@ -452,7 +437,10 @@ namespace Mono.Debugger.Backends
 			if (new_operation != null) {
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} frame changed at {1} => new operation {2}",
-					      this, frame, new_operation);
+					      this, frame, new_operation, message);
+
+				if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
+					new_operation.PendingBreakpoint = arg;
 
 				ProcessOperation (new_operation);
 				return;
@@ -461,7 +449,22 @@ namespace Mono.Debugger.Backends
 			//
 			// Now we're really finished.
 			//
+			int pending_bpt = -1;
+			if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
+				pending_bpt = arg;
+			else if (current_operation != null)
+				pending_bpt = current_operation.PendingBreakpoint;
 			step_operation_finished ();
+			if (pending_bpt >= 0) {
+				Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (pending_bpt);
+				if (bpt != null) {
+					result = new TargetEventArgs (
+						TargetEventType.TargetHitBreakpoint, bpt.Index,
+						current_frame);
+					goto send_result;
+				}
+			}
+
 			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
 			goto send_result;
 		}
@@ -549,6 +552,12 @@ namespace Mono.Debugger.Backends
 				      "{0} starting {1}", this, operation);
 
 			current_operation = operation;
+			operation.Execute (this);
+		}
+
+		void PushOperation (Operation operation)
+		{
+			current_operation.PushOperation (this, operation);
 			operation.Execute (this);
 		}
 
@@ -700,11 +709,6 @@ namespace Mono.Debugger.Backends
 					manager.ReleaseGlobalThreadLock (this);
 				}
 
-				if (current_callback != null) {
-					current_callback.Abort ();
-					current_callback = null;
-				}
-
 				if (!stopped) {
 					// We're already stopped, so just consider the
 					// current operation as finished.
@@ -767,7 +771,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool step_over_breakpoint (TargetAddress until, bool current)
+		bool step_over_breakpoint (TargetAddress trampoline, TargetAddress until, bool current)
 		{
 			int index;
 			bool is_enabled;
@@ -779,14 +783,11 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over {3}breakpoint {1} at {2}",
+				      "{0} stepping over {3}breakpoint {1} at {2} until {4}/{5}",
 				      this, index, inferior.CurrentFrame,
-				      current ? "current " : "");
+				      current ? "current " : "", trampoline, until);
 
-			current_operation = new OperationStepOverBreakpoint (
-				current_operation, index, until);
-			current_operation.Execute (this);
-
+			PushOperation (new OperationStepOverBreakpoint (index, trampoline, until));
 			return true;
 		}
 
@@ -1063,7 +1064,7 @@ namespace Mono.Debugger.Backends
 			if (!until.IsNull)
 				insert_temporary_breakpoint (until);
 
-			if (step_over_breakpoint (trampoline, true))
+			if (step_over_breakpoint (trampoline, until, true))
 				return;
 
 			inferior.Continue ();
@@ -1071,7 +1072,8 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			if (step_over_breakpoint (TargetAddress.Null, true))
+			int index;
+			if (step_over_breakpoint (TargetAddress.Null, TargetAddress.Null, true))
 				return;
 
 			inferior.Step ();
@@ -1088,12 +1090,13 @@ namespace Mono.Debugger.Backends
 			TargetAddress compile = language.CompileMethodFunc;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} found trampoline {1}/{3} (compile is {2})",
-				      this, trampoline, compile, is_start);
+				      "{0} found trampoline {1}/{3} (compile is {2}) while running {4}",
+				      this, trampoline, compile, is_start, current_operation);
 
 			if (is_start) {
-				current_operation = new OperationFinish (true);
-				do_continue (trampoline);
+				Console.WriteLine ("DO TRAMPOLINE: {0}", trampoline);
+				PushOperation (new OperationFinish (true));
+				// do_continue (trampoline);
 				return;
 			}
 
@@ -1111,7 +1114,8 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			do_callback (new CallbackCompileMethod (compile, trampoline, handler));
+			PushOperation (new OperationCompileMethod (compile, trampoline, handler));
+			return;
 		}
 
 		protected static bool MethodHasSource (IMethod method)
@@ -1188,7 +1192,8 @@ namespace Mono.Debugger.Backends
 			// Save current state.
 			//
 			StackData stack_data = new StackData (
-				current_method, current_frame, current_backtrace, registers);
+				current_method, inferior.CurrentFrame, current_frame,
+				current_backtrace, registers);
 
 			current_method = null;
 			current_frame = null;
@@ -1200,7 +1205,7 @@ namespace Mono.Debugger.Backends
 
 		void restore_stack (StackData stack)
 		{
-			if (inferior.CurrentFrame != stack.Frame.TargetAddress) {
+			if (inferior.CurrentFrame != stack.Address) {
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} discarding saved stack: stopped " +
 					      "at {1}, but recorded {2}", this,
@@ -1221,15 +1226,6 @@ namespace Mono.Debugger.Backends
 			registers = stack.Registers;
 			Report.Debug (DebugFlags.EventLoop,
 				      "{0} restored stack: {1}", this, current_frame);
-		}
-
-		protected void do_callback (Callback cb)
-		{
-			if (current_callback != null)
-				throw new InternalError ();
-
-			current_callback = cb;
-			cb.Execute (this, inferior);
 		}
 
 		// <summary>
@@ -1610,7 +1606,6 @@ namespace Mono.Debugger.Backends
 		protected Backtrace current_backtrace;
 		protected Registers registers;
 
-		Callback current_callback;
 		bool stopped;
 		Inferior.ChildEvent stop_event;
 		Operation current_operation;
@@ -1644,320 +1639,21 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
 
-		protected delegate bool CallbackFunc (Callback cb, long data1, long data2);
-
 #region Nested SSE classes
-		protected abstract class Callback
-		{
-			public readonly long ID = ++next_id;
-			StackData stack_data;
-
-			static int next_id = 0;
-
-			public void Execute (SingleSteppingEngine sse,
-					     Inferior inferior)
-			{
-				stack_data = sse.save_stack ();
-				DoExecute (sse, inferior);
-			}
-
-			protected abstract void DoExecute (SingleSteppingEngine sse,
-							   Inferior inferior);
-
-			public bool ProcessEvent (SingleSteppingEngine sse,
-						  Inferior inferior,
-						  Inferior.ChildEvent cevent,
-						  out TargetEventArgs args)
-			{
-				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} at {2} while waiting for " +
-					      "callback {3}", sse, cevent, inferior.CurrentFrame, this);
-
-				args = null;
-				if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
-					Abort ();
-					return true;
-				}
-
-				if (ID != cevent.Argument) {
-					Abort ();
-					goto out_frame_changed;
-				}
-
-				if (!DoProcessEvent (sse, inferior, cevent.Data1, cevent.Data2))
-					return false;
-
-				if (stack_data != null) {
-					sse.restore_stack (stack_data);
-					return true;
-				}
-
-			out_frame_changed:
-				sse.frame_changed (inferior.CurrentFrame, null);
-				args = new TargetEventArgs (
-					TargetEventType.FrameChanged,
-					sse.current_frame);
-				return true;
-			}
-
-			protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
-								Inferior inferior,
-								long data1, long data2);
-
-			public void Abort ()
-			{
-				if (stack_data == null)
-					return;
-
-				if (stack_data.Frame != null)
-					stack_data.Frame.Dispose ();
-
-				if (stack_data.Backtrace != null)
-					stack_data.Backtrace.Dispose ();
-			}
-		}
-
-		protected class CallbackCallMethod : Callback
-		{
-			OperationCallMethod op;
-
-			public CallbackCallMethod (OperationCallMethod op)
-			{
-				this.op = op;
-			}
-
-			protected override void DoExecute (SingleSteppingEngine sse,
-							   Inferior inferior)
-			{
-				switch (op.Type) {
-				case CallMethodType.LongLong:
-					inferior.CallMethod (
-						op.Method, op.Argument1, op.Argument2, ID);
-					break;
-
-				case CallMethodType.LongString:
-					inferior.CallMethod (
-						op.Method, op.Argument1, op.StringArgument, ID);
-					break;
-
-				default:
-					throw new InvalidOperationException ();
-				}
-			}
-
-			protected override bool DoProcessEvent (SingleSteppingEngine sse,
-								Inferior inferior,
-								long data1, long data2)
-			{
-				if (inferior.TargetAddressSize == 4)
-					data1 &= 0xffffffffL;
-
-				op.Result.Result = new TargetAddress (inferior.AddressDomain, data1);
-
-				Report.Debug (DebugFlags.EventLoop,
-					      "Call method done: {0} {1:x} {2:x}",
-					      sse, data1, data2);
-
-				return true;
-			}
-		}
-
-		protected class CallbackCompileMethod : Callback
-		{
-			TargetAddress compile;
-			TargetAddress trampoline;
-			TrampolineHandler handler;
-
-			public CallbackCompileMethod (TargetAddress compile,
-						      TargetAddress trampoline,
-						      TrampolineHandler handler)
-			{
-				this.compile = compile;
-				this.trampoline = trampoline;
-				this.handler = handler;
-			}
-
-			protected override void DoExecute (SingleSteppingEngine sse,
-							   Inferior inferior)
-			{
-				inferior.CallMethod (compile, trampoline.Address, 0, ID);
-			}
-
-			protected override bool DoProcessEvent (SingleSteppingEngine sse,
-								Inferior inferior,
-								long data1, long data2)
-			{
-				TargetAddress trampoline = new TargetAddress (
-					inferior.GlobalAddressDomain, data1);
-
-				IMethod method = sse.Lookup (trampoline);
-				Report.Debug (DebugFlags.SSE,
-					      "{0} compiled trampoline: {1} {2} {3} {4} {5}",
-					      sse, trampoline, method,
-					      method != null ? method.Module : null,
-					      SingleSteppingEngine.MethodHasSource (method), handler);
-
-				if ((handler != null) && !handler (method)) {
-					sse.do_next_native ();
-					return false;
-				}
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} entering trampoline: {1}",
-					      this, trampoline);
-
-				sse.do_continue (trampoline, trampoline);
-				return false;
-			}
-		}
-
-		protected class CallbackInsertBreakpoint : Callback
-		{
-			OperationInsertBreakpoint op;
-			MonoLanguageBackend language;
-			TargetAddress method, address;
-
-			public CallbackInsertBreakpoint (OperationInsertBreakpoint op)
-			{
-				this.op = op;
-				method = TargetAddress.Null;
-				address = TargetAddress.Null;
-			}
-
-			protected override void DoExecute (SingleSteppingEngine sse,
-							   Inferior inferior)
-			{
-				if (language == null)
-					language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
-
-				if (method.IsNull) {
-					method = op.Function.GetMethodAddress (sse.target_access);
-
-					inferior.CallMethod (language.CompileMethodFunc,
-							     method.Address, 0, ID);
-				}
-			}
-
-			protected override bool DoProcessEvent (SingleSteppingEngine sse,
-								Inferior inferior,
-								long data1, long data2)
-			{
-				address = new TargetAddress (inferior.AddressDomain, data1);
-
-				int index = sse.ThreadManager.BreakpointManager.InsertBreakpoint (
-					inferior, op.Breakpoint, address);
-
-				op.Result.Result = index;
-				return true;
-			}
-		}
-
-		protected class CallbackRuntimeInvoke : Callback
-		{
-			OperationRuntimeInvoke op;
-			MonoLanguageBackend language;
-			TargetAddress method, method_argument;
-			bool method_compiled;
-
-			public CallbackRuntimeInvoke (OperationRuntimeInvoke op)
-			{
-				this.op = op;
-				this.method = TargetAddress.Null;
-				this.method_argument = TargetAddress.Null;
-			}
-
-			protected override void DoExecute (SingleSteppingEngine sse,
-							   Inferior inferior)
-			{
-				if (language == null) {
-					language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
-					method_argument = op.MethodArgument.GetMethodAddress (
-						sse.TargetAccess);
-				}
-
-				if ((op.ObjectArgument != null) && op.ObjectArgument.Location.HasAddress) {
-					inferior.CallMethod (
-						language.GetVirtualMethodFunc,
-						op.ObjectArgument.Location.Address.Address,
-						method_argument.Address, ID);
-				} else {
-					method = method_argument;
-					inferior.CallMethod (
-						language.CompileMethodFunc,
-						method.Address, 0, ID);
-				}
-			}
-
-			protected override bool DoProcessEvent (SingleSteppingEngine sse,
-								Inferior inferior,
-								long data1, long data2)
-			{
-				if (method.IsNull) {
-					method = new TargetAddress (inferior.AddressDomain, data1);
-
-					inferior.CallMethod (language.CompileMethodFunc,
-							     method.Address, 0, ID);
-					return false;
-				}
-
-				if (!method_compiled) {
-					method_compiled = true;
-
-					TargetAddress invoke = new TargetAddress (
-						inferior.AddressDomain, data1);
-
-					Report.Debug (DebugFlags.EventLoop,
-						      "Runtime invoke: {0}", invoke);
-
-					if (op.Debug)
-						sse.insert_temporary_breakpoint (invoke);
-
-					inferior.RuntimeInvoke (
-						language.RuntimeInvokeFunc,
-						method, op.ObjectArgument,
-						op.ParamObjects, ID, op.Debug);
-					return false;
-				}
-
-				Report.Debug (DebugFlags.EventLoop,
-				      "Runtime invoke done: {0:x} {1:x}",
-				      data1, data2);
-
-				RuntimeInvokeResult result = new RuntimeInvokeResult ();
-				if (data2 != 0) {
-					TargetAddress exc_address = new TargetAddress (
-						inferior.AddressDomain, data2);
-					ITargetFundamentalObject exc_obj = (ITargetFundamentalObject)
-						language.CreateObject (sse.target_access, exc_address);
-
-					result.ExceptionMessage = (string) exc_obj.Object;
-				}
-
-				if (data1 != 0) {
-					TargetAddress retval_address = new TargetAddress (
-						inferior.AddressDomain, data1);
-
-					result.ReturnObject = language.CreateObject (
-						sse.target_access, retval_address);
-				}
-
-				op.Result.Result = result;
-
-				return true;
-			}
-		}
-
 		internal sealed class StackData
 		{
 			public readonly IMethod Method;
+			public readonly TargetAddress Address;
 			public readonly StackFrame Frame;
 			public readonly Backtrace Backtrace;
 			public readonly Registers Registers;
 
-			public StackData (IMethod method, StackFrame frame,
-					  Backtrace backtrace, Registers registers)
+			public StackData (IMethod method, TargetAddress address,
+					  StackFrame frame, Backtrace backtrace,
+					  Registers registers)
 			{
 				this.Method = method;
+				this.Address = address;
 				this.Frame = frame;
 				this.Backtrace = backtrace;
 				this.Registers = registers;
@@ -1967,13 +1663,22 @@ namespace Mono.Debugger.Backends
 
 #region SSE Operations
 	protected abstract class Operation {
+		protected enum EventResult
+		{
+			Running,
+			Completed,
+			CompletedCallback,
+			AskParent
+		}
+
 		public abstract bool IsSourceOperation {
 			get;
 		}
 
 		public TargetAddress StartFrame;
+		public int PendingBreakpoint = -1;
 
-		public void Execute (SingleSteppingEngine sse)
+		public virtual void Execute (SingleSteppingEngine sse)
 		{
 			StartFrame = sse.inferior.CurrentFrame;
 			DoExecute (sse);
@@ -1981,18 +1686,66 @@ namespace Mono.Debugger.Backends
 
 		protected abstract void DoExecute (SingleSteppingEngine sse);
 
-		public bool ProcessEvent (SingleSteppingEngine sse,
-					  Inferior inferior,
-					  Inferior.ChildEvent cevent,
-					  out TargetEventArgs args)
+		Operation child;
+
+		public virtual void PushOperation (SingleSteppingEngine sse, Operation op)
 		{
+			if (child != null)
+				child.PushOperation (sse, op);
+			else
+				child = op;
+		}
+
+		public virtual bool ProcessEvent (SingleSteppingEngine sse,
+						  Inferior inferior,
+						  Inferior.ChildEvent cevent,
+						  out TargetEventArgs args, out bool send_result)
+		{
+			EventResult result = ProcessEvent (sse, inferior, cevent, out args);
+
+			switch (result) {
+			case EventResult.Running:
+				send_result = false;
+				return false;
+
+			case EventResult.Completed:
+				send_result = true;
+				return true;
+
+			case EventResult.CompletedCallback:
+				send_result = false;
+				return true;
+
+			default:
+				throw new InternalError ();
+			}
+		}
+
+		protected virtual EventResult ProcessEvent (SingleSteppingEngine sse,
+							    Inferior inferior,
+							    Inferior.ChildEvent cevent,
+							    out TargetEventArgs args)
+		{
+			if (child != null) {
+				EventResult result = child.ProcessEvent (
+					sse, inferior, cevent, out args);
+
+				if (result != EventResult.AskParent)
+					return result;
+
+				child = null;
+
+				if (this is OperationCallback)
+					return EventResult.AskParent;
+			}
+
 			return DoProcessEvent (sse, inferior, cevent, out args);
 		}
 
-		protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args);
+		protected abstract EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args);
 
 		public virtual bool HandleException (SingleSteppingEngine sse,
 						     TargetAddress stack, TargetAddress exc)
@@ -2010,10 +1763,10 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{ }
 
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} initialize ({1})", this,
@@ -2023,21 +1776,22 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE, "{0} initialize done", sse);
 
 			args = null;
-			return true;
+			return EventResult.Completed;
 		}
 	}
 
 	protected class OperationStepOverBreakpoint : Operation
 	{
-		Operation operation;
+		TargetAddress trampoline;
 		TargetAddress until;
 		public readonly int Index;
+		bool has_thread_lock;
 
-		public OperationStepOverBreakpoint (Operation operation, int index,
+		public OperationStepOverBreakpoint (int index, TargetAddress trampoline,
 						    TargetAddress until)
 		{
-			this.operation = operation;
 			this.Index = index;
+			this.trampoline = trampoline;
 			this.until = until;
 		}
 
@@ -2050,12 +1804,15 @@ namespace Mono.Debugger.Backends
 			sse.manager.AcquireGlobalThreadLock (sse);
 			sse.inferior.DisableBreakpoint (Index);
 
-			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} until {2} ({3})",
-				      sse, Index, until, sse.current_method);
+			has_thread_lock = true;
 
-			if (!until.IsNull) {
-				sse.insert_temporary_breakpoint (until);
+			Report.Debug (DebugFlags.SSE,
+				      "{0} stepping over breakpoint {1} until {2}/{3} ({4})",
+				      sse, Index, trampoline, until, sse.current_method);
+
+			if (!trampoline.IsNull) {
+				until = TargetAddress.Null;
+				sse.insert_temporary_breakpoint (trampoline);
 				sse.inferior.Continue ();
 				return;
 			}
@@ -2077,42 +1834,85 @@ namespace Mono.Debugger.Backends
 			}
 
 			bool is_start;
-			TargetAddress trampoline = language.GetTrampolineAddress (
+			TargetAddress trampoline_address = language.GetTrampolineAddress (
 				sse.inferior, call, out is_start);
 
-			if (!trampoline.IsNull)
-				sse.do_trampoline (language, trampoline, null, is_start);
+			if (!trampoline_address.IsNull)
+				sse.do_trampoline (language, trampoline_address, null, is_start);
 			else
 				sse.inferior.Step ();
 		}
 
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		void ReleaseThreadLock (SingleSteppingEngine sse)
 		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} stepped over breakpoint {1} while " +
-				      "running {2}: {3} {4}", sse, Index,
-				      operation, cevent, inferior.CurrentFrame);
+			if (has_thread_lock) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} stepped over breakpoint {1}: {2}",
+					      sse, Index, sse.inferior.CurrentFrame);
 
-			sse.inferior.EnableBreakpoint (Index);
-			sse.manager.ReleaseGlobalThreadLock (sse);
+				sse.inferior.EnableBreakpoint (Index);
+				sse.manager.ReleaseGlobalThreadLock (sse);
 
-			sse.current_operation = operation;
-			return operation.ProcessEvent (sse, inferior, cevent, out args);
+				has_thread_lock = false;
+			}
+		}
+
+		public override void PushOperation (SingleSteppingEngine sse, Operation op)
+		{
+			// ReleaseThreadLock (sse);
+			base.PushOperation (sse, op);
+		}
+
+		protected override EventResult ProcessEvent (SingleSteppingEngine sse,
+							     Inferior inferior,
+							     Inferior.ChildEvent cevent,
+							     out TargetEventArgs args)
+		{
+			if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK)
+				ReleaseThreadLock (sse);
+			return base.ProcessEvent (sse, inferior, cevent, out args);
+		}
+
+		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.EventLoop,
+				      "{0} stepped over breakpoint at {1}: {2} {3} {4}",
+				      sse, inferior.CurrentFrame, Index, cevent, until);
+
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) &&
+			    (cevent.Argument != Index)) {
+				args = null;
+				return EventResult.Completed;
+			}
+
+			if (!until.IsNull) {
+				sse.do_continue (until);
+
+				args = null;
+				until = TargetAddress.Null;
+				return EventResult.Running;
+			}
+
+			args = null;
+			return EventResult.AskParent;
 		}
 	}
 
 	protected abstract class OperationStepBase : Operation
 	{
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
 		{
 			args = null;
-			return DoProcessEvent (sse, inferior);
+			if (DoProcessEvent (sse, inferior))
+				return EventResult.Completed;
+			else
+				return EventResult.Running;
 		}
 
 		protected abstract bool DoProcessEvent (SingleSteppingEngine sse,
@@ -2485,13 +2285,92 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected class OperationRuntimeInvoke : Operation
+	protected abstract class OperationCallback : Operation
+	{
+		public readonly long ID = ++next_id;
+		StackData stack_data;
+
+		static int next_id = 0;
+
+		public override void Execute (SingleSteppingEngine sse)
+		{
+			stack_data = sse.save_stack ();
+			base.Execute (sse);
+		}
+
+		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.EventLoop,
+				      "{0} received event {1} at {2} while waiting for " +
+				      "callback {3}", sse, cevent, inferior.CurrentFrame, this);
+
+			args = null;
+			if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
+				Abort ();
+				return EventResult.CompletedCallback;
+			}
+
+			if (ID != cevent.Argument) {
+				Abort ();
+				goto out_frame_changed;
+			}
+
+			if (!CallbackCompleted (sse, inferior, cevent.Data1, cevent.Data2))
+				return EventResult.Running;
+
+			if (stack_data != null) {
+				sse.restore_stack (stack_data);
+				return EventResult.CompletedCallback;
+			}
+
+		out_frame_changed:
+			sse.frame_changed (inferior.CurrentFrame, null);
+			args = new TargetEventArgs (
+				TargetEventType.FrameChanged, sse.current_frame);
+			return EventResult.Completed;
+		}
+
+		protected abstract bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2);
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		public void Abort ()
+		{
+			if (stack_data == null)
+				return;
+
+			if (stack_data.Frame != null)
+				stack_data.Frame.Dispose ();
+
+			if (stack_data.Backtrace != null)
+				stack_data.Backtrace.Dispose ();
+		}
+
+		protected void RestoreStack (SingleSteppingEngine sse)
+		{
+			if (stack_data != null)
+				sse.restore_stack (stack_data);
+		}
+	}
+
+	protected class OperationRuntimeInvoke : OperationCallback
 	{
 		public readonly MonoFunctionType MethodArgument;
 		public readonly MonoObject ObjectArgument;
 		public readonly MonoObject[] ParamObjects;
 		public readonly bool Debug;
 		public readonly CommandResult Result;
+
+		MonoLanguageBackend language;
+		TargetAddress method, method_argument;
+		bool method_compiled;
 
 		public override bool IsSourceOperation {
 			get { return true; }
@@ -2506,6 +2385,9 @@ namespace Mono.Debugger.Backends
 			this.ParamObjects = new MonoObject [param_objects.Length];
 			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
+
+			this.method = TargetAddress.Null;
+			this.method_argument = TargetAddress.Null;
 		}
 
 		public OperationRuntimeInvoke (ITargetFunctionType method_argument,
@@ -2520,15 +2402,76 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.do_callback (new CallbackRuntimeInvoke (this));
+			language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
+			method_argument = MethodArgument.GetMethodAddress (sse.TargetAccess);
+
+			if ((ObjectArgument != null) && ObjectArgument.Location.HasAddress) {
+				sse.inferior.CallMethod (
+					language.GetVirtualMethodFunc,
+					ObjectArgument.Location.Address.Address,
+					method_argument.Address, ID);
+			} else {
+				method = method_argument;
+				sse.inferior.CallMethod (
+					language.CompileMethodFunc, method.Address, 0, ID);
+			}
 		}
 
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
 		{
-			args = null;
+			if (method.IsNull) {
+				method = new TargetAddress (inferior.AddressDomain, data1);
+
+				inferior.CallMethod (language.CompileMethodFunc,
+						     method.Address, 0, ID);
+				return false;
+			}
+
+			if (!method_compiled) {
+				method_compiled = true;
+
+				TargetAddress invoke = new TargetAddress (
+					inferior.AddressDomain, data1);
+
+				Report.Debug (DebugFlags.EventLoop,
+					      "Runtime invoke: {0}", invoke);
+
+				if (Debug)
+					sse.insert_temporary_breakpoint (invoke);
+
+				inferior.RuntimeInvoke (
+					language.RuntimeInvokeFunc,
+					method, ObjectArgument,
+					ParamObjects, ID, Debug);
+				return false;
+			}
+
+			Report.Debug (DebugFlags.EventLoop,
+				      "Runtime invoke done: {0:x} {1:x}",
+				      data1, data2);
+
+			RuntimeInvokeResult result = new RuntimeInvokeResult ();
+			if (data2 != 0) {
+				TargetAddress exc_address = new TargetAddress (
+					inferior.AddressDomain, data2);
+				ITargetFundamentalObject exc_obj = (ITargetFundamentalObject)
+					language.CreateObject (sse.target_access, exc_address);
+
+				result.ExceptionMessage = (string) exc_obj.Object;
+			}
+
+			if (data1 != 0) {
+				TargetAddress retval_address = new TargetAddress (
+					inferior.AddressDomain, data1);
+
+				result.ReturnObject = language.CreateObject (
+					sse.target_access, retval_address);
+			}
+
+			Result.Result = result;
+
 			return true;
 		}
 
@@ -2539,7 +2482,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected class OperationCallMethod : Operation
+	protected class OperationCallMethod : OperationCallback
 	{
 		public readonly CallMethodType Type;
 		public readonly TargetAddress Method;
@@ -2568,30 +2511,132 @@ namespace Mono.Debugger.Backends
 			this.Result = result;
 		}
 
-		public override bool IsSourceOperation {
-			get { return false; }
-		}
-
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.do_callback (new CallbackCallMethod (this));
+			switch (Type) {
+			case CallMethodType.LongLong:
+				sse.inferior.CallMethod (Method, Argument1, Argument2, ID);
+				break;
+
+			case CallMethodType.LongString:
+				sse.inferior.CallMethod (Method, Argument1, StringArgument, ID);
+				break;
+
+			default:
+				throw new InvalidOperationException ();
+			}
 		}
 
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
 		{
-			args = null;
+			if (inferior.TargetAddressSize == 4)
+				data1 &= 0xffffffffL;
+
+			Result.Result = new TargetAddress (inferior.AddressDomain, data1);
+
+			Report.Debug (DebugFlags.EventLoop,
+				      "{0} call method done: {1:x} {2:x}",
+				      sse, data1, data2);
+				
 			return true;
 		}
 	}
 
-	protected class OperationInsertBreakpoint : Operation
+	protected class OperationCompileMethod : OperationCallback
+	{
+		public readonly TargetAddress CompileMethod;
+		public readonly TargetAddress Address;
+		public readonly TrampolineHandler TrampolineHandler;
+
+		public OperationCompileMethod (TargetAddress compile, TargetAddress address,
+					       TrampolineHandler handler)
+		{
+			this.CompileMethod = compile;
+			this.Address = address;
+			this.TrampolineHandler = handler;
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{
+			Report.Debug (DebugFlags.EventLoop, "{0} compiling method: {1}", sse, Address);
+			sse.inferior.CallMethod (CompileMethod, Address.Address, 0, ID);
+		}
+
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
+		{
+			TargetAddress address = new TargetAddress (
+				inferior.GlobalAddressDomain, data1);
+
+			Report.Debug (DebugFlags.EventLoop, "{0} done compiling method: {1}",
+				      sse, address);
+
+			RestoreStack (sse);
+			sse.PushOperation (new OperationMethodCompiled (this, address));
+			return false;
+		}
+
+		protected class OperationMethodCompiled : Operation
+		{
+			public readonly OperationCompileMethod Parent;
+			public readonly TargetAddress Address;
+
+			public OperationMethodCompiled (OperationCompileMethod parent,
+							TargetAddress address)
+			{
+				this.Parent = parent;
+				this.Address = address;
+			}
+
+			public override bool IsSourceOperation {
+				get { return true; }
+			}
+
+			protected override void DoExecute (SingleSteppingEngine sse)
+			{
+				IMethod method = sse.Lookup (Address);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} compiled method: {1} {2} {3} {4} {5}",
+					      sse, Address, method,
+					      method != null ? method.Module : null,
+					      SingleSteppingEngine.MethodHasSource (method),
+					      Parent.TrampolineHandler);
+
+				if ((Parent.TrampolineHandler != null) &&
+				    !Parent.TrampolineHandler (method)) {
+					sse.do_next_native ();
+					return;
+				}
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} entering trampoline: {1}",
+					      sse, Address);
+
+				sse.do_continue (Address, Address);
+			}
+
+			protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+								       Inferior inferior,
+								       Inferior.ChildEvent cevent,
+								       out TargetEventArgs args)
+			{
+				args = null;
+				return EventResult.AskParent;
+			}
+		}
+	}
+
+	protected class OperationInsertBreakpoint : OperationCallback
 	{
 		public readonly Breakpoint Breakpoint;
 		public readonly MonoFunctionType Function;
 		public readonly CommandResult Result;
+
+		MonoLanguageBackend language;
+		TargetAddress method, address;
 
 		public OperationInsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func,
 						  CommandResult result)
@@ -2601,32 +2646,40 @@ namespace Mono.Debugger.Backends
 			this.Result = result;
 		}
 
-		public override bool IsSourceOperation {
-			get { return false; }
-		}
-
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.do_callback (new CallbackInsertBreakpoint (this));
+			if (language == null)
+				language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
+
+			method = Function.GetMethodAddress (sse.target_access);
+
+			sse.inferior.CallMethod (language.CompileMethodFunc,
+						 method.Address, 0, ID);
 		}
 
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
 		{
-			args = null;
+			address = new TargetAddress (inferior.AddressDomain, data1);
+
+			int index = sse.ThreadManager.BreakpointManager.InsertBreakpoint (
+				inferior, Breakpoint, address);
+
+			Result.Result = index;
 			return true;
 		}
 	}
 
 	protected class OperationException : Operation
 	{
+		TargetAddress ip;
 		TargetAddress exc;
 		bool unhandled;
 
-		public OperationException (TargetAddress exc, bool unhandled)
+		public OperationException (TargetAddress ip, TargetAddress exc, bool unhandled)
 		{
+			this.ip = ip;
 			this.exc = exc;
 			this.unhandled = unhandled;
 		}
@@ -2637,25 +2690,26 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
+			sse.do_continue (ip);
 		}
 
-		protected override bool DoProcessEvent (SingleSteppingEngine sse,
-							Inferior inferior,
-							Inferior.ChildEvent cevent,
-							out TargetEventArgs args)
+		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
 		{
 			if (unhandled) {
 				sse.frame_changed (inferior.CurrentFrame, null);
 				args = new TargetEventArgs (
 					TargetEventType.UnhandledException,
 					exc, sse.current_frame);
-				return true;
+				return EventResult.Completed;
 			} else {
 				sse.frame_changed (inferior.CurrentFrame, null);
 				args = new TargetEventArgs (
 					TargetEventType.Exception,
 					exc, sse.current_frame);
-				return true;
+				return EventResult.Completed;
 			}
 		}
 	}

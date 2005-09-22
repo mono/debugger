@@ -13,7 +13,7 @@ mdb_expect_frame 0 "X.Main()" $file $bpt_main
 mdb_send "break $bpt_main_1"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_stopped 0 "X.Main()" $file $bpt_main_1
+mdb_expect_hit_breakpoint 0 "X.Main()" $breakpoint $file $bpt_main_1
 
 mdb_send_and_expect "p x\[0\]" "(System.String) \"Hello\""
 mdb_send_and_expect "p x\[1\]" "(System.String) \"World\""

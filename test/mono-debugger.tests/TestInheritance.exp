@@ -9,7 +9,7 @@ mdb_expect_frame 0 "X.Main()" $file 119
 mdb_send "break 123"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_stopped 0 "X.Main()" $file 123
+mdb_expect_hit_breakpoint 0 "X.Main()" $breakpoint $file 123
 mdb_send "print d.Test ()"
 mdb_expect "(System.String) \"Hello World\""
 mdb_send "print a.Test ()"
@@ -67,7 +67,7 @@ mdb_send_and_expect "print d.a" "(System.Int32) 8"
 mdb_send "break 90"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_stopped 0 "C.Hello()" $file 90
+mdb_expect_hit_breakpoint 0 "C.Hello()" $breakpoint $file 90
 mdb_send "print this"
 mdb_expect "(C) { f = 3.14 }"
 mdb_send "print f"

@@ -16,6 +16,8 @@ namespace Martin.Baulig
 		{
 			Trier trier = new Trier ();
 			World (trier.PortaNigra);
+			World (trier.CityCenter);
+			World (Trier.RomanBaths);
 		}
 	}
 }
@@ -55,15 +57,21 @@ namespace Europe
 			const string RomanBathsURL = "Bild:Trier_roman_baths_DSC02378.jpg";
 
 			public Picture PortaNigra {
-				get { return new BeautifulPicture (WikipediaRoot + PortaNigraURL); }
+				get {
+					return new BeautifulPicture (WikipediaRoot + PortaNigraURL);
+				}
 			}
 
 			public Picture CityCenter {
-				get { return new BeautifulPicture (WikipediaRoot + CityCenterURL); }
+				get {
+					return new BeautifulPicture (WikipediaRoot + CityCenterURL);
+				}
 			}
 
 			public static Picture RomanBaths {
-				get { return new BeautifulPicture (WikipediaRoot + RomanBathsURL); }
+				get {
+					return new BeautifulPicture (WikipediaRoot + RomanBathsURL);
+				}
 			}
 		}
 	}

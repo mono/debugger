@@ -9,7 +9,7 @@ mdb_expect_frame 0 "X.Main()" $file 47
 mdb_send "break 31"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_stopped 0 "X.Test(System.Int32,System.String)" $file 31
+mdb_expect_hit_breakpoint 0 "X.Test(System.Int32,System.String)" $breakpoint $file 31
 mdb_send "print a"
 mdb_expect "(System.Int32) 5"
 mdb_send "print Hello (4)"
@@ -41,7 +41,7 @@ mdb_expect_line "Foo: 5"
 mdb_expect_line "Foo with a string: Hello World"
 mdb_expect_line "Hello: 5"
 mdb_expect_line "Static Hello: 5"
-mdb_expect_stopped 0 "X.TestStatic(X,System.Int32,System.String)" $file 39
+mdb_expect_hit_breakpoint 0 "X.TestStatic(X,System.Int32,System.String)" $breakpoint $file 39
 mdb_send "print a"
 mdb_expect "(System.Int32) 9"
 mdb_send "print b"
