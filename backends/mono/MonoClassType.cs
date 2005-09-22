@@ -285,7 +285,7 @@ namespace Mono.Debugger.Languages.Mono
 					spos++;
 				}
 				else {
-					static_events [pos] = new MonoEventInfo (this, spos, ev, false);
+					events [pos] = new MonoEventInfo (this, pos, ev, false);
 					pos++;
 				}
 			}
