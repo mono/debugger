@@ -925,6 +925,12 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
+		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			throw new ScriptingException ("Expression `{0}' is a method, not a " +
+						      "field or property.", Name);
+		}
+
 		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
 									 LocationType type,
 									 Expression[] types)

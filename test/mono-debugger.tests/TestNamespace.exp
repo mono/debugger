@@ -3,19 +3,35 @@
 
 source $srcdir/mdb.exp
 
+set line_main 36
+set line_main_2 37
+set line_world 12
+set line_test 46
+
 set file $srcdir/TestNamespace.cs
 mdb_start "TestNamespace.exe"
-mdb_expect_frame 0 "Test.X.Main()" $file 36
-mdb_send "break 12"
-set breakpoint [mdb_expect_breakpoint]
+mdb_expect_frame 0 "Test.X.Main()" $file $line_main
+mdb_send "break $line_world"
+set bpt_world [mdb_expect_breakpoint]
+mdb_send "break $line_main_2"
+set bpt_main_2 [mdb_expect_breakpoint]
+mdb_send "break Y.Test"
+set bpt_test [mdb_expect_breakpoint]
 mdb_send "continue"
-mdb_expect_hit_breakpoint  0 "Martin.Baulig.Hello.World()" $breakpoint $file 12
-mdb_send "print Foo.Print ()"
-mdb_expect "(System.String) \"Boston\""
-mdb_send "print Foo.Boston"
-mdb_expect "(System.String) \"Boston\""
+mdb_expect_hit_breakpoint  0 "Martin.Baulig.Hello.World()" $bpt_world $file $line_world
+mdb_send_and_expect "print Foo.Print ()" "(System.String) \"Boston\""
+mdb_send_and_expect "print Foo.Print" "ERROR: Expression `Martin.Baulig.Foo.Print' is a method, not a field or property."
+mdb_send_and_expect "print Foo.Boston" "(System.String) \"Boston\""
+mdb_send_and_expect "print Martin.Baulig.Foo.Boston" "(System.String) \"Boston\""
 mdb_send "continue"
 mdb_expect_line "Boston"
+mdb_expect_hit_breakpoint 0 "Test.X.Main()" $bpt_main_2 $file $line_main_2
+mdb_send_and_expect "print Martin.Baulig.Foo.Boston" "(System.String) \"Boston\""
+mdb_send "continue"
+mdb_expect_hit_breakpoint 0 "Y.Test()" $bpt_test $file $line_test
+mdb_send_and_expect "print Martin.Baulig.Foo.Boston" "(System.String) \"Boston\""
+mdb_send_and_expect "print Martin.Baulig.Foo.Print ()" "(System.String) \"Boston\""
+mdb_send "continue"
 mdb_expect_line "Process @4 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"

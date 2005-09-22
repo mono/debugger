@@ -34,6 +34,15 @@ namespace Test
 		static void Main ()
 		{
 			Hello.World ();
+			Y.Test ();
 		}
+	}
+}
+
+class Y
+{
+	public static void Test ()
+	{
+		Martin.Baulig.Foo.Print ();
 	}
 }
