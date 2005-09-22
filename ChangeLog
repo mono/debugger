@@ -1,3 +1,21 @@
+2005-09-22  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(OperationCallback): New operation; this replaces the old
+	`Callback' mechanism.
+	(Callback): Removed.
+	(SingleSteppingEngine.ProcessChildEvent): Correctly emit the
+	`TargetEventType.TargetHitBreakpoint' event when hitting a
+	breakpoint instead of just `TargetEventType.TargetStopped'.
+	(OperationStepOverBreakpoint): Improved and fixed a couple of
+	problems.
+
+	* test/mono-debugger.tests/*.exp: Reflect latest
+	TargetHitBreakpoint changes.
+
+	* test/mono-debugger.tests/TestBreakpoint.exp: Added some more
+	test cases for stepping over breakpoints.
+
 2005-09-21  Martin Baulig  <martin@ximian.com>
 
 	* test/TestBreakpoint.cs: New test.
