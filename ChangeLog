@@ -1,5 +1,20 @@
 2005-09-22  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.SetStaticField): New method.
+
+	* interfaces/ITargetStructObject.cs
+	(ITargetStructObject.SetField): New method.
+
+	* frontend/Expression.cs (MemberExpression): New abstract class.
+	(MethodGroupExpression): Derive from MemberExpression.
+	(StructAccessExpression): Derive from MemberExpression.
+	(StructAccessExpression.FindMember): Big cleanup; take
+	`bool search_instance' and a `bool search_static' args, save the
+	`ITargetStructObject instance' as `MemberExpression.InstanceObject'.
+
+2005-09-22  Martin Baulig  <martin@ximian.com>
+
 	* backends/remoting/DebuggerServer.cs: Big big FIXME; set the
 	lease timeout to 3 hours to prevent the debugger from dying.
 

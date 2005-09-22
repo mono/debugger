@@ -36,6 +36,12 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetField (location, index);
 		}
 
+		[Command]
+		public void SetField (int index, ITargetObject obj)
+		{
+			type.SetField (location, index, (MonoObject) obj);
+		}
+
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{

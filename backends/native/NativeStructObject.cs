@@ -23,6 +23,11 @@ namespace Mono.Debugger.Languages.Native
 			return type.GetField (location, index);
 		}
 
+		public void SetField (int index, ITargetObject obj)
+		{
+			type.SetField (location, index, (NativeObject) obj);
+		}
+
 		public ITargetObject GetProperty (int index)
 		{
 			throw new InvalidOperationException ();

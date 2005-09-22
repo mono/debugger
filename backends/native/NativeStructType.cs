@@ -191,6 +191,11 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
+		public void SetStaticField (ITargetAccess target, int index, ITargetObject obj)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		public ITargetPropertyInfo[] Properties {
 			get {
 				return new ITargetPropertyInfo [0];
@@ -271,6 +276,21 @@ namespace Mono.Debugger.Languages.Native
 					field_loc, field.BitOffset, field.BitSize);
 
 			return field.Type.GetObject (field_loc);
+		}
+
+		internal void SetField (TargetLocation location, int index, NativeObject obj)
+		{
+			NativeFieldInfo field = fields [index];
+
+			TargetLocation field_loc = location.GetLocationAtOffset (
+				field.Offset, field.Type.IsByRef);
+
+			if (!field.Type.IsByRef && field.IsBitfield)
+				field_loc = new BitfieldTargetLocation (
+					field_loc, field.BitOffset, field.BitSize);
+
+			// field.Type.SetObject (field_loc, obj);
+			throw new NotImplementedException ();
 		}
 
 		public ITargetMemberInfo FindMember (string name, bool search_static,

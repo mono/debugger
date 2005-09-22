@@ -89,6 +89,8 @@ namespace Mono.Debugger.Languages
 
 		ITargetObject GetStaticField (ITargetAccess target, int index);
 
+		void SetStaticField (ITargetAccess target, int index, ITargetObject obj);
+
 		ITargetPropertyInfo[] Properties {
 			get;
 		}

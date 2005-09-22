@@ -125,10 +125,13 @@ namespace Mono.Debugger.Languages.Mono
 		public ITargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			MonoClassInfo info = GetTypeInfo ();
-			if (info == null)
-				return null;
-
 			return info.GetStaticField (target, index);
+		}
+
+		public void SetStaticField (ITargetAccess target, int index, ITargetObject obj)
+		{
+			MonoClassInfo info = GetTypeInfo ();
+			info.SetStaticField (target, index, (MonoObject) obj);
 		}
 
 		public int CountMethods {

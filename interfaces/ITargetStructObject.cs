@@ -7,5 +7,7 @@ namespace Mono.Debugger.Languages
 		}
 
 		ITargetObject GetField (int index);
+
+		void SetField (int index, ITargetObject obj);
 	}
 }
