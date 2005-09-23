@@ -8,8 +8,8 @@ namespace Mono.Debugger.Languages.Native
 	internal class NativeLanguage : MarshalByRefObject, ILanguage
 	{
 		BfdContainer bfd_container;
-		NativeFundamentalType integer_type;
-		NativeFundamentalType long_type;
+		TargetFundamentalType integer_type;
+		TargetFundamentalType long_type;
 		NativePointerType pointer_type;
 		NativeOpaqueType void_type;
 		ITargetInfo info;
@@ -19,8 +19,8 @@ namespace Mono.Debugger.Languages.Native
 			this.bfd_container = bfd_container;
 			this.info = info;
 
-			integer_type = new NativeFundamentalType (this, "int", FundamentalKind.Int32, 4);
-			long_type = new NativeFundamentalType (this, "long", FundamentalKind.Int64, 8);
+			integer_type = new TargetFundamentalType (this, "int", FundamentalKind.Int32, 4);
+			long_type = new TargetFundamentalType (this, "long", FundamentalKind.Int64, 8);
 			pointer_type = new NativePointerType (this, "void *", info.TargetAddressSize);
 			void_type = new NativeOpaqueType (this, "void", 0);
 		}

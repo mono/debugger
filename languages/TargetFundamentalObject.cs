@@ -76,7 +76,7 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		void ITargetFundamentalObject.SetObject (ITargetObject obj)
+		public void SetObject (ITargetObject obj)
 		{
 			Type.SetObject (location, (TargetObject) obj);
 		}

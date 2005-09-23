@@ -3,9 +3,9 @@ using System.Text;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeStringObject : NativeFundamentalObject
+	internal class NativeStringObject : TargetFundamentalObject
 	{
-		public NativeStringObject (TargetType type, TargetLocation location)
+		public NativeStringObject (NativeStringType type, TargetLocation location)
 			: base (type, location)
 		{ }
 

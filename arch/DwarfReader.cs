@@ -2615,7 +2615,7 @@ namespace Mono.Debugger.Architecture
 				if (obj.Type != Type)
 					throw new InvalidOperationException ();
 
-				NativeFundamentalObject var_object = GetObject (frame) as NativeFundamentalObject;
+				TargetFundamentalObject var_object = GetObject (frame) as TargetFundamentalObject;
 				if (var_object == null)
 					return;
 
@@ -2780,7 +2780,7 @@ namespace Mono.Debugger.Architecture
 				if (kind == FundamentalKind.Unknown)
 					return new NativeOpaqueType (language, Name, byte_size);
 
-				return new NativeFundamentalType (language, Name, kind, byte_size);
+				return new TargetFundamentalType (language, Name, kind, byte_size);
 			}
 
 			protected FundamentalKind GetMonoType (DwarfBaseTypeEncoding encoding,
@@ -2869,7 +2869,7 @@ namespace Mono.Debugger.Architecture
 				if (ref_type == null)
 					return null;
 
-				NativeFundamentalType fundamental = ref_type as NativeFundamentalType;
+				TargetFundamentalType fundamental = ref_type as TargetFundamentalType;
 				if ((fundamental != null) &&
 				    (fundamental.FundamentalKind == FundamentalKind.Char))
 					return new NativeStringType (language, byte_size);

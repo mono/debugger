@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeStringType : NativeFundamentalType
+	internal class NativeStringType : TargetFundamentalType
 	{
 		static int max_string_length = 100;
 
