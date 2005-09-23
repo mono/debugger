@@ -296,10 +296,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types; }
 		}
 
-		public Heap DataHeap {
-			get { return heap; }
-		}
-
 		public SourceFileFactory SourceFileFactory {
 			get { return backend.SourceFileFactory; }
 		}
@@ -413,6 +409,11 @@ namespace Mono.Debugger.Languages.Mono
 		public MonoSymbolFile GetImage (TargetAddress address)
 		{
 			return (MonoSymbolFile) image_hash [address];
+		}
+
+		public TargetAddress AllocateMemory (ITargetAccess target, int size)
+		{
+			return heap.Allocate (target, size);
 		}
 
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)

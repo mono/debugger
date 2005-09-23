@@ -47,6 +47,8 @@ namespace Mono.Debugger.Languages
 		ITargetObject CreateObject (ITargetAccess target, TargetAddress address);
 
 		ITargetObject CreateNullObject (ITargetAccess target, ITargetType type);
+
+		TargetAddress AllocateMemory (ITargetAccess target, int size);
 	}
 }
 

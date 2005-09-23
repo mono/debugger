@@ -86,6 +86,11 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
+		public TargetAddress AllocateMemory (ITargetAccess target, int size)
+		{
+			throw new NotSupportedException ();
+		}
+
 		public ITargetObject CreateNullObject (ITargetAccess target, ITargetType type)
 		{
 			throw new NotSupportedException ();

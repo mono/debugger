@@ -4,7 +4,6 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
 	{
-		protected readonly Heap Heap;
 		protected readonly int size;
 		protected readonly TargetAddress klass_address;
 		protected readonly FundamentalKind fundamental_kind;
@@ -18,7 +17,6 @@ namespace Mono.Debugger.Languages.Mono
 			this.fundamental_kind = kind;
 			this.size = size;
 			this.klass_address = klass;
-			this.Heap = file.MonoLanguage.DataHeap;
 
 			file.MonoLanguage.AddClass (klass_address, this);
 		}
@@ -101,18 +99,19 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal virtual MonoFundamentalObjectBase CreateInstance (StackFrame frame, object obj)
 		{
-			TargetLocation location = Heap.Allocate (frame.TargetAccess, size);
-			frame.TargetAccess.TargetMemoryAccess.WriteBuffer (
-				location.Address, CreateObject (obj));
+			TargetAddress address = Language.AllocateMemory (frame.TargetAccess, size);
+			frame.TargetAccess.TargetMemoryAccess.WriteBuffer (address, CreateObject (obj));
 
+			TargetLocation location = new AbsoluteTargetLocation (frame.TargetAccess, address);
 			return new MonoFundamentalObject (this, location);
 		}
 
 		internal virtual MonoFundamentalObject CreateInstance (ITargetAccess target, object obj)
 		{
-			TargetLocation location = Heap.Allocate (target, size);
-			target.TargetMemoryAccess.WriteBuffer (location.Address, CreateObject (obj));
+			TargetAddress address = Language.AllocateMemory (target, size);
+			target.TargetMemoryAccess.WriteBuffer (address, CreateObject (obj));
 
+			TargetLocation location = new AbsoluteTargetLocation (target, address);
 			return new MonoFundamentalObject (this, location);
 		}
 

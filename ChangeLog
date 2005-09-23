@@ -1,5 +1,14 @@
 2005-09-23  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ILanguage.cs
+	(ILanguage.AllocateMemory): New method.
+
+	* backends/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.DataHeap): removed; use AllocateMemory()
+	instead.	
+
+2005-09-23  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetType.cs (ITargetType.IsByRef): New property.
 
 	* backends/mono/MonoObject.cs
