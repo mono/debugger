@@ -1,5 +1,15 @@
 2005-09-23  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoFundamentalType.cs: Moved to
+	languages/TargetFundamentalType.cs
+	(MonoFundamentalType): Renamed to `TargetFundamentalType'.
+
+	* languages/mono/MonoFundamentalObject.cs: Moved to
+	languages/TargetFundamentalObject.cs
+	(MonoFundamentalObject): Renamed to `TargetFundamentalObject'.
+
+2005-09-23  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoFundamentalObjectBase.cs
 	(MonoFundamentalObjectBase): Merged into `MonoFundamentalObject'.
 

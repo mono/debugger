@@ -1,24 +1,24 @@
 using System;
 
-namespace Mono.Debugger.Languages.Mono
+namespace Mono.Debugger.Languages
 {
-	internal class MonoFundamentalType : TargetType, ITargetFundamentalType
+	internal class TargetFundamentalType : TargetType, ITargetFundamentalType
 	{
 		protected readonly int size;
 		protected readonly FundamentalKind fundamental_kind;
-		protected readonly Cecil.ITypeDefinition typedef;
+		protected readonly string name;
 
-		public MonoFundamentalType (ILanguage language, Cecil.ITypeDefinition type,
-					    FundamentalKind kind, int size)
+		public TargetFundamentalType (ILanguage language, string name,
+					      FundamentalKind kind, int size)
 			: base (language, TargetObjectKind.Fundamental)
 		{
-			this.typedef = type;
+			this.name = name;
 			this.fundamental_kind = kind;
 			this.size = size;
 		}
 
 		public override string Name {
-			get { return typedef.FullName; }
+			get { return name; }
 		}
 
 		public override bool IsByRef {
@@ -93,13 +93,13 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal virtual MonoFundamentalObject CreateInstance (ITargetAccess target, object obj)
+		internal virtual TargetFundamentalObject CreateInstance (ITargetAccess target, object obj)
 		{
 			TargetAddress address = Language.AllocateMemory (target, size);
 			target.TargetMemoryAccess.WriteBuffer (address, CreateObject (obj));
 
 			TargetLocation location = new AbsoluteTargetLocation (target, address);
-			return new MonoFundamentalObject (this, location);
+			return new TargetFundamentalObject (this, location);
 		}
 
 		public override bool HasFixedSize {
@@ -112,7 +112,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetObject (TargetLocation location)
 		{
-			return new MonoFundamentalObject (this, location);
+			return new TargetFundamentalObject (this, location);
 		}
 	}
 }

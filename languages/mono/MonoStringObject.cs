@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoStringObject : MonoFundamentalObject
+	internal class MonoStringObject : TargetFundamentalObject
 	{
 		new protected readonly MonoStringType Type;
 

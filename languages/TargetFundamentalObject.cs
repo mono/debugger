@@ -1,12 +1,12 @@
 using System;
 
-namespace Mono.Debugger.Languages.Mono
+namespace Mono.Debugger.Languages
 {
-	internal class MonoFundamentalObject : TargetObject, ITargetFundamentalObject
+	internal class TargetFundamentalObject : TargetObject, ITargetFundamentalObject
 	{
-		new public readonly MonoFundamentalType Type;
+		new public readonly TargetFundamentalType Type;
 
-		public MonoFundamentalObject (MonoFundamentalType type, TargetLocation location)
+		public TargetFundamentalObject (TargetFundamentalType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.Type = type;
