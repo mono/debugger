@@ -7,13 +7,15 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		int size;
 		TargetAddress klass_address;
+		MonoSymbolFile file;
 		Cecil.ITypeDefinition typedef;
 
 		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeDefinition typedef,
 				       int size, TargetAddress klass)
-			: base (file, TargetObjectKind.Pointer)
+			: base (file.MonoLanguage, TargetObjectKind.Pointer)
 		{
 			this.size = size;
+			this.file = file;
 			this.klass_address = klass;
 			this.typedef = typedef;
 
@@ -26,6 +28,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string Name {
 			get { return typedef.FullName; }
+		}
+
+		public MonoSymbolFile File {
+			get { return file; }
 		}
 
 		public bool IsTypesafe {

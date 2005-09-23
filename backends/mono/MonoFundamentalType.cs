@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoFundamentalType (MonoSymbolFile file, Cecil.ITypeDefinition type,
 					    FundamentalKind kind, int size, TargetAddress klass)
-			: base (file, TargetObjectKind.Fundamental)
+			: base (file.MonoLanguage, TargetObjectKind.Fundamental)
 		{
 			this.typedef = type;
 			this.fundamental_kind = kind;

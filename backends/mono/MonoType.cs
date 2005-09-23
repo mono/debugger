@@ -5,21 +5,17 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoType : MarshalByRefObject, ITargetType
 	{
-		protected readonly MonoSymbolFile file;
+		protected readonly ILanguage language;
 		protected readonly TargetObjectKind kind;
 
-		public MonoType (MonoSymbolFile file, TargetObjectKind kind)
+		protected MonoType (ILanguage language, TargetObjectKind kind)
 		{
-			this.file = file;
+			this.language = language;
 			this.kind = kind;
 		}
 
 		public TargetObjectKind Kind {
 			get { return kind; }
-		}
-
-		public MonoSymbolFile File {
-			get { return file; }
 		}
 
 		public abstract string Name {
@@ -35,9 +31,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public ILanguage Language {
-			get {
-				return file.MonoLanguage;
-			}
+			get { return language; }
 		}
 
 		public abstract int Size {

@@ -21,17 +21,21 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] constructors;
 		MonoMethodInfo[] static_constructors;
 
+		int size;
 		int num_methods = 0, num_smethods = 0;
 		internal int first_method = 0, first_smethod = 0;
 
 		Cecil.ITypeDefinition type;
+		MonoSymbolFile file;
 		MonoClassType parent_type;
 		MonoClassInfo type_info;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.ITypeDefinition type)
-			: base (file, TargetObjectKind.Class)
+			: base (file.MonoLanguage, TargetObjectKind.Class)
 		{
 			this.type = type;
+			this.file = file;
+			this.size = 2 * file.TargetInfo.TargetAddressSize;
 
 			if (type.BaseType != null)
 				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
@@ -54,7 +58,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override int Size {
-			get { return 2 * file.TargetInfo.TargetAddressSize; }
+			get { return size; }
+		}
+
+		public MonoSymbolFile File {
+			get { return file; }
 		}
 
 		public bool HasParent {

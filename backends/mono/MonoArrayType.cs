@@ -23,18 +23,20 @@ namespace Mono.Debugger.Languages.Mono
 
 		readonly MonoType element_type;
 		readonly string full_name;
+		int size;
 
 		public MonoArrayType (MonoSymbolFile file, Cecil.IArrayType type)
-			: base (file, TargetObjectKind.Array)
+			: base (file.MonoLanguage, TargetObjectKind.Array)
 		{
 			this.Rank = type.Rank;
 
+			size = 4 * file.TargetInfo.TargetAddressSize;
 			element_type = file.MonoLanguage.LookupMonoType (type.ElementType);
 			full_name = compute_fullname ();
 		}
 
 		public MonoArrayType (MonoType element_type, int rank)
-			: base (element_type.File, TargetObjectKind.Array)
+			: base (element_type.Language, TargetObjectKind.Array)
 		{
 			this.element_type = element_type;
 			this.Rank = rank;
@@ -62,7 +64,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override int Size {
-			get { return 4 * file.TargetInfo.TargetAddressSize; }
+			get { return size; }
 		}
 
 		public override string Name {

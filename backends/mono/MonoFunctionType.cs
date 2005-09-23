@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass,
 					 Cecil.IMethodDefinition mdef, string full_name)
-			: base (file, TargetObjectKind.Function)
+			: base (file.MonoLanguage, TargetObjectKind.Function)
 		{
 			this.klass = klass;
 			this.method_info = mdef;
@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 		public SourceMethod Source {
 			get {
 				int token = MonoDebuggerSupport.GetMethodToken (method_info);
-				return file.GetMethodByToken (token);
+				return klass.File.GetMethodByToken (token);
 			}
 		}
 
@@ -92,7 +92,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override int Size {
-			get { return File.TargetInfo.TargetAddressSize; }
+			get { return klass.File.TargetInfo.TargetAddressSize; }
 		}
 
 		public TargetAddress GetMethodAddress (ITargetAccess target)

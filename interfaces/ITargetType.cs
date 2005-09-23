@@ -9,6 +9,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		bool IsByRef {
+			get;
+		}
+
 		TargetObjectKind Kind {
 			get;
 		}

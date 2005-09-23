@@ -4,7 +4,7 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal abstract class MonoObject : MarshalByRefObject, ITargetObject
 	{
-		protected MonoType type;
+		protected ITargetType type;
 		protected TargetLocation location;
 
 		public MonoObject (MonoType type, TargetLocation location)
@@ -13,13 +13,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.location = location;
 		}
 
-		public MonoType Type {
-			get {
-				return type;
-			}
-		}
-
-		ITargetType ITargetObject.Type {
+		public ITargetType Type {
 			get {
 				return type;
 			}
