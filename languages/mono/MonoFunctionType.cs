@@ -5,12 +5,12 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFunctionType : MonoType, ITargetFunctionType
+	internal class MonoFunctionType : TargetType, ITargetFunctionType
 	{
 		MonoClassType klass;
 		Cecil.IMethodDefinition method_info;
-		MonoType return_type;
-		MonoType[] parameter_types;
+		TargetType return_type;
+		TargetType[] parameter_types;
 		bool has_return_type;
 		string full_name;
 		int token;
@@ -34,7 +34,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 			return_type = file.MonoLanguage.LookupMonoType (rtype);
 
-			parameter_types = new MonoType [mdef.Parameters.Count];
+			parameter_types = new TargetType [mdef.Parameters.Count];
 			for (int i = 0; i < mdef.Parameters.Count; i++)
 				parameter_types [i] = file.MonoLanguage.LookupMonoType (
 					mdef.Parameters[i].ParameterType);
@@ -48,7 +48,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		public MonoType ReturnType {
+		public TargetType ReturnType {
 			get { return return_type; }
 		}
 
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return has_return_type; }
 		}
 
-		public MonoType[] ParameterTypes {
+		public TargetType[] ParameterTypes {
 			get { return parameter_types; }
 		}
 
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

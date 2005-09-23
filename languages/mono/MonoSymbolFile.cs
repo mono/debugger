@@ -354,9 +354,9 @@ namespace Mono.Debugger.Languages.Mono
 			class_entry_hash.Add (new TypeHashEntry (entry), entry);
 		}
 
-		public MonoType LookupMonoType (Cecil.ITypeReference type)
+		public TargetType LookupMonoType (Cecil.ITypeReference type)
 		{
-			MonoType result = (MonoType) type_hash [type];
+			TargetType result = (TargetType) type_hash [type];
 			if (result != null)
 				return result;
 
@@ -373,7 +373,7 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public void AddType (MonoType type, Cecil.ITypeDefinition typedef)
+		public void AddType (TargetType type, Cecil.ITypeDefinition typedef)
 		{
 			type_hash.Add (typedef, type);
 		}
@@ -625,8 +625,8 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry method;
 			Cecil.IMethodDefinition mdef;
 			MonoClassType decl_type;
-			MonoType[] param_types;
-			MonoType[] local_types;
+			TargetType[] param_types;
+			TargetType[] local_types;
 			IVariable this_var;
 			IVariable[] parameters;
 			IVariable[] locals;
@@ -671,7 +671,7 @@ namespace Mono.Debugger.Languages.Mono
 					return;
 
 				Cecil.IParameterDefinitionCollection param_info = mdef.Parameters;
-				param_types = new MonoType [param_info.Count];
+				param_types = new TargetType [param_info.Count];
 				parameters = new IVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
 					Cecil.ITypeReference type = param_info [i].ParameterType;
@@ -684,7 +684,7 @@ namespace Mono.Debugger.Languages.Mono
 						address.ParamVariableInfo [i], 0, 0);
 				}
 
-				local_types = new MonoType [method.NumLocals];
+				local_types = new TargetType [method.NumLocals];
 				locals = new IVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];

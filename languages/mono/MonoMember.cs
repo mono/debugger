@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.IsStatic = is_static;
 		}
 
-		public abstract MonoType Type {
+		public abstract TargetType Type {
 			get;
 		}
 
@@ -53,7 +53,7 @@ namespace Mono.Debugger.Languages.Mono
 	[Serializable]
 	internal class MonoFieldInfo : MonoMember, ITargetFieldInfo
 	{
-		MonoType type;
+		TargetType type;
 		bool is_literal;
 
 		[NonSerialized]
@@ -69,7 +69,7 @@ namespace Mono.Debugger.Languages.Mono
 			type = File.MonoLanguage.LookupMonoType (finfo.FieldType);
 		}
 
-		public override MonoType Type {
+		public override TargetType Type {
 			get { return type; }
 		}
 
@@ -122,7 +122,7 @@ namespace Mono.Debugger.Languages.Mono
 			FunctionType = new MonoFunctionType (File, Klass, minfo, FullName);
 		}
 
-		public override MonoType Type {
+		public override TargetType Type {
 			get { return FunctionType; }
 		}
 
@@ -162,7 +162,7 @@ namespace Mono.Debugger.Languages.Mono
 	[Serializable]
 	internal class MonoEventInfo : MonoMember, ITargetEventInfo
 	{
-		MonoType type;
+		TargetType type;
 		public readonly MonoClassType Klass;
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
@@ -187,7 +187,7 @@ namespace Mono.Debugger.Languages.Mono
 				RaiseType = new MonoFunctionType (File, Klass, raise, Name);
 		}
 
-		public override MonoType Type {
+		public override TargetType Type {
 			get { return type; }
 		}
 
@@ -218,7 +218,7 @@ namespace Mono.Debugger.Languages.Mono
 	[Serializable]
 	internal class MonoPropertyInfo : MonoMember, ITargetPropertyInfo
 	{
-		MonoType type;
+		TargetType type;
 		public readonly MonoClassType Klass;
 		public readonly MonoFunctionType Getter, Setter;
 		public readonly bool CanRead, CanWrite;
@@ -239,7 +239,7 @@ namespace Mono.Debugger.Languages.Mono
 				Setter = new MonoFunctionType (File, Klass, pinfo.SetMethod, Name);
 		}
 
-		public override MonoType Type {
+		public override TargetType Type {
 			get { return type; }
 		}
 

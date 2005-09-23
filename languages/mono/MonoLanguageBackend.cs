@@ -318,7 +318,7 @@ namespace Mono.Debugger.Languages.Mono
 			return true;
 		}
 
-		public MonoType LookupMonoType (Cecil.ITypeReference type)
+		public TargetType LookupMonoType (Cecil.ITypeReference type)
 		{
 			MonoSymbolFile file;
 
@@ -336,7 +336,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			Cecil.IArrayType array = type as Cecil.IArrayType;
 			if (array != null) {
-				MonoType element_type = LookupMonoType (array.ElementType);
+				TargetType element_type = LookupMonoType (array.ElementType);
 				if (element_type == null)
 					return null;
 
@@ -386,7 +386,7 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 			}
 
-			MonoType mono_type = file.LookupMonoType (typedef);
+			TargetType mono_type = file.LookupMonoType (typedef);
 			if (mono_type == null)
 				return null;
 
@@ -396,22 +396,22 @@ namespace Mono.Debugger.Languages.Mono
 				return mono_type;
 		}
 
-		public void AddClass (TargetAddress klass_address, MonoType type)
+		public void AddClass (TargetAddress klass_address, TargetType type)
 		{
 			if (!class_hash.Contains (klass_address))
 				class_hash.Add (klass_address, type);
 		}
 
-		internal void AddCoreType (MonoType type, Cecil.ITypeDefinition typedef,
+		internal void AddCoreType (TargetType type, Cecil.ITypeDefinition typedef,
 					   TargetAddress klass)
 		{
 			corlib.AddType (type, typedef);
 			AddClass (klass, type);
 		}
 
-		public MonoType GetClass (ITargetAccess target, TargetAddress klass_address)
+		public TargetType GetClass (ITargetAccess target, TargetAddress klass_address)
 		{
-			MonoType type = (MonoType) class_hash [klass_address];
+			TargetType type = (TargetType) class_hash [klass_address];
 			if (type != null)
 				return type;
 
@@ -871,7 +871,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, TargetAddress.Null);
 
-			return new MonoNullObject ((MonoType) type, location);
+			return new MonoNullObject ((TargetType) type, location);
 		}
 
 		ITargetFundamentalType ILanguage.IntegerType {

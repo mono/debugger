@@ -2,9 +2,9 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoNullObject : MonoObject
+	internal class MonoNullObject : TargetObject
 	{
-		public MonoNullObject (MonoType type, TargetLocation location)
+		public MonoNullObject (TargetType type, TargetLocation location)
 			: base (type, location)
 		{ }
 

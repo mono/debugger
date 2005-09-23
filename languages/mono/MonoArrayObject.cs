@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoArrayObject : MonoObject, ITargetArrayObject
+	internal class MonoArrayObject : TargetObject, ITargetArrayObject
 	{
 		protected new MonoArrayType type;
 
@@ -137,7 +137,7 @@ namespace Mono.Debugger.Languages.Mono
 				TargetLocation new_location =
 					dynamic_location.GetLocationAtOffset (offset, false);
 
-				type.ElementType.SetObject (new_location, (MonoObject) value);
+				type.ElementType.SetObject (new_location, (TargetObject) value);
 			}
 		}
 

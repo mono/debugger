@@ -8,7 +8,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassType : MonoType, ITargetClassType
+	internal class MonoClassType : TargetType, ITargetClassType
 	{
 		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
@@ -137,7 +137,7 @@ namespace Mono.Debugger.Languages.Mono
 		public void SetStaticField (ITargetAccess target, int index, ITargetObject obj)
 		{
 			MonoClassInfo info = GetTypeInfo ();
-			info.SetStaticField (target, index, (MonoObject) obj);
+			info.SetStaticField (target, index, (TargetObject) obj);
 		}
 
 		public int CountMethods {
@@ -404,7 +404,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassInfo (this, info);
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			MonoClassInfo info = GetTypeInfo ();
 			return info.GetObject (location);
@@ -445,8 +445,8 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		public static MonoType ReadMonoClass (MonoLanguageBackend language,
-						      ITargetAccess target, TargetAddress address)
+		public static TargetType ReadMonoClass (MonoLanguageBackend language,
+							ITargetAccess target, TargetAddress address)
 		{
 			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
 				address, language.BuiltinTypes.KlassSize);
@@ -491,13 +491,13 @@ namespace Mono.Debugger.Languages.Mono
 				if (tdef != null)
 					return file.LookupMonoType (tdef);
 			} else if (type == 0x1d) { // MONO_TYPE_SZARRAY
-				MonoType eklass = ReadMonoClass (language, target, element_class);
+				TargetType eklass = ReadMonoClass (language, target, element_class);
 				if (eklass == null)
 					return null;
 
 				return new MonoArrayType (eklass, 1);
 			} else if (type == 0x14) { // MONO_TYPE_ARRAY
-				MonoType eklass = ReadMonoClass (language, target, element_class);
+				TargetType eklass = ReadMonoClass (language, target, element_class);
 				if (eklass == null)
 					return null;
 

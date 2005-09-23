@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassObject : MonoObject, ITargetClassObject
+	internal class MonoClassObject : TargetObject, ITargetClassObject
 	{
 		new MonoClassInfo type;
 
@@ -39,7 +39,7 @@ namespace Mono.Debugger.Languages.Mono
 		[Command]
 		public void SetField (int index, ITargetObject obj)
 		{
-			type.SetField (location, index, (MonoObject) obj);
+			type.SetField (location, index, (TargetObject) obj);
 		}
 
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,

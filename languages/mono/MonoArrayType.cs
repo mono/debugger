@@ -17,11 +17,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoArrayType : MonoType, ITargetArrayType
+	internal class MonoArrayType : TargetType, ITargetArrayType
 	{
 		public readonly int Rank;
 
-		readonly MonoType element_type;
+		readonly TargetType element_type;
 		readonly string full_name;
 
 		public MonoArrayType (MonoSymbolFile file, Cecil.IArrayType type)
@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Mono
 			full_name = compute_fullname ();
 		}
 
-		public MonoArrayType (MonoType element_type, int rank)
+		public MonoArrayType (TargetType element_type, int rank)
 			: base (element_type.Language, TargetObjectKind.Array)
 		{
 			this.element_type = element_type;
@@ -69,7 +69,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return full_name; }
 		}
 
-		internal MonoType ElementType {
+		internal TargetType ElementType {
 			get { return element_type; }
 		}
 
@@ -81,7 +81,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return ElementType; }
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new MonoArrayObject (this, location);
 		}

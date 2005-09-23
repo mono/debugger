@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Architecture;
-using Mono.Debugger.Languages.Mono;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
@@ -260,14 +260,14 @@ namespace Mono.Debugger.Backends
 		}
 
 		public void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
-					   MonoObject object_argument, MonoObject[] param_objects,
+					   TargetObject object_argument, TargetObject[] param_objects,
 					   long callback_arg, bool debug)
 		{
 			check_disposed ();
 
 			int length = param_objects.Length + 1;
 
-			MonoObject[] input_objects = new MonoObject [length];
+			TargetObject[] input_objects = new TargetObject [length];
 			input_objects [0] = object_argument;
 			param_objects.CopyTo (input_objects, 1);
 
@@ -277,7 +277,7 @@ namespace Mono.Debugger.Backends
 			long[] addresses = new long [length];
 
 			for (int i = 0; i < length; i++) {
-				MonoObject obj = input_objects [i];
+				TargetObject obj = input_objects [i];
 
 				if (obj == null)
 					continue;

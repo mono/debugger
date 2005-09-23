@@ -3,7 +3,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectType : MonoType, ITargetPointerType
+	internal class MonoObjectType : TargetType, ITargetPointerType
 	{
 		int size;
 		MonoSymbolFile file;
@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new MonoObjectObject (this, location);
 		}

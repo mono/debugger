@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal abstract class MonoFundamentalObjectBase : MonoObject, ITargetFundamentalObject
+	internal abstract class MonoFundamentalObjectBase : TargetObject, ITargetFundamentalObject
 	{
 		new public readonly MonoFundamentalType Type;
 
@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void ITargetFundamentalObject.SetObject (ITargetObject obj)
 		{
-			Type.SetObject (location, (MonoObject) obj);
+			Type.SetObject (location, (TargetObject) obj);
 		}
 
 		public override string Print (ITargetAccess target)

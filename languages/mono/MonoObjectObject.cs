@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectObject : MonoObject, ITargetPointerObject
+	internal class MonoObjectObject : TargetObject, ITargetPointerObject
 	{
 		new MonoObjectType type;
 
@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type; }
 		}
 
-		protected MonoType GetCurrentType ()
+		protected TargetType GetCurrentType ()
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
@@ -28,9 +28,9 @@ namespace Mono.Debugger.Languages.Mono
 			return type.File.MonoLanguage.GetClass (location.TargetAccess, address);
 		}
 
-		public MonoType CurrentType {
+		public TargetType CurrentType {
 			get {
-				MonoType type = GetCurrentType ();
+				TargetType type = GetCurrentType ();
 				if (type == null)
 					throw new LocationInvalidException ();
 				return type;
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public ITargetObject DereferencedObject {
 			get {
-				MonoType current_type = GetCurrentType ();
+				TargetType current_type = GetCurrentType ();
 				if (current_type == null)
 					return null;
 

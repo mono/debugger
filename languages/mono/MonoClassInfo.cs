@@ -122,7 +122,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal void SetField (TargetLocation location, int index, MonoObject obj)
+		internal void SetField (TargetLocation location, int index, TargetObject obj)
 		{
 			try {
 				initialize (location.TargetAccess);
@@ -162,7 +162,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal void SetStaticField (ITargetAccess target, int index, MonoObject obj)
+		internal void SetStaticField (ITargetAccess target, int index, TargetObject obj)
 		{
 			try {
 				initialize (target);
@@ -203,7 +203,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return size; }
 		}
 
-		public MonoObject GetObject (TargetLocation location)
+		public TargetObject GetObject (TargetLocation location)
 		{
 			return new MonoClassObject (this, location);
 		}

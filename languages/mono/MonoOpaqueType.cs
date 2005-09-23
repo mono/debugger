@@ -3,7 +3,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoOpaqueType : MonoType
+	internal class MonoOpaqueType : TargetType
 	{
 		Cecil.ITypeReference typeref;
 
@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -2375,8 +2375,8 @@ namespace Mono.Debugger.Backends
 	protected class OperationRuntimeInvoke : OperationCallback
 	{
 		public readonly MonoFunctionType MethodArgument;
-		public readonly MonoObject ObjectArgument;
-		public readonly MonoObject[] ParamObjects;
+		public readonly TargetObject ObjectArgument;
+		public readonly TargetObject[] ParamObjects;
 		public readonly bool Debug;
 		public readonly CommandResult Result;
 
@@ -2393,8 +2393,8 @@ namespace Mono.Debugger.Backends
 					       ITargetObject[] param_objects)
 		{
 			this.MethodArgument = (MonoFunctionType) method_argument;
-			this.ObjectArgument = (MonoObject) object_argument;
-			this.ParamObjects = new MonoObject [param_objects.Length];
+			this.ObjectArgument = (TargetObject) object_argument;
+			this.ParamObjects = new TargetObject [param_objects.Length];
 			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
 

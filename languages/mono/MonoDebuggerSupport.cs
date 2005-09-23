@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages.Mono
 				Cecil.Metadata.TokenType.Method, token & 0xffffff);
 		}
 
-		public static MonoType GetLocalTypeFromSignature (MonoSymbolFile file, byte[] signature)
+		public static TargetType GetLocalTypeFromSignature (MonoSymbolFile file, byte[] signature)
 		{
 			TargetBlob blob = new TargetBlob (signature, file.TargetInfo);
 			TargetBinaryReader reader = blob.GetReader ();
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 				reader.Position++;
 			}
 
-			MonoType type = GetTypeFromSignature (file, reader);
+			TargetType type = GetTypeFromSignature (file, reader);
 			if (type != null)
 				return type;
 
@@ -61,8 +61,8 @@ namespace Mono.Debugger.Languages.Mono
 			return integer;
 		}
 
-		static MonoType GetTypeFromSignature (MonoSymbolFile file,
-						      TargetBinaryReader reader)
+		static TargetType GetTypeFromSignature (MonoSymbolFile file,
+							TargetBinaryReader reader)
 		{
 			byte value = reader.ReadByte ();
 			switch (value) {
@@ -102,7 +102,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			case 0x14: /* ARRAY */ {
-				MonoType element_type = GetTypeFromSignature (file, reader);
+				TargetType element_type = GetTypeFromSignature (file, reader);
 				if (element_type == null)
 					return null;
 
@@ -124,7 +124,7 @@ namespace Mono.Debugger.Languages.Mono
 				return file.MonoLanguage.BuiltinTypes.ObjectType;
 
 			case 0x1d: /* SZARRAY */ {
-				MonoType element_type = GetTypeFromSignature (file, reader);
+				TargetType element_type = GetTypeFromSignature (file, reader);
 				if (element_type == null)
 					return null;
 
@@ -139,7 +139,7 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		static MonoType GetTypeFromDefOrRef (MonoSymbolFile file, uint dor)
+		static TargetType GetTypeFromDefOrRef (MonoSymbolFile file, uint dor)
 		{
 			Cecil.Metadata.MetadataToken token;
 
@@ -166,8 +166,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (type == null)
 				return null;
 
-			MonoType retval = file.MonoLanguage.LookupMonoType (type);
-			return retval;
+			return file.MonoLanguage.LookupMonoType (type);
 		}
 	}
 }

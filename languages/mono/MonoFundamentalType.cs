@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
+	internal class MonoFundamentalType : TargetType, ITargetFundamentalType
 	{
 		protected readonly int size;
 		protected readonly FundamentalKind fundamental_kind;
@@ -111,7 +111,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return size; }
 		}
 
-		public override MonoObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new MonoFundamentalObject (this, location);
 		}
