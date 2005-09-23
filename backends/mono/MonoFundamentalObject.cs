@@ -14,8 +14,10 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		protected override object GetObject (TargetBlob blob, TargetLocation locaction)
+		public override object GetObject (ITargetAccess target)
 		{
+			TargetBlob blob = location.ReadMemory (Type.Size);
+
 			switch (Type.FundamentalKind) {
 			case FundamentalKind.Boolean:
 				return blob.Contents [0] != 0;

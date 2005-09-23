@@ -46,28 +46,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected virtual int MaximumDynamicSize {
-			get {
-				return -1;
-			}
-		}
-
-		protected virtual TargetBlob GetDynamicContents (TargetLocation location, int max_size)
-		{
-			try {
-				TargetLocation dynamic_location;
-				TargetBlob blob = location.ReadMemory (type.Size);
-				long size = GetDynamicSize (blob, location, out dynamic_location);
-
-				if ((max_size > 0) && (size > (long) max_size))
-					size = max_size;
-
-				return dynamic_location.ReadMemory ((int) size);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
 		protected abstract long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location);
 

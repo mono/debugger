@@ -12,22 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		public object GetObject (ITargetAccess target)
-		{
-			try {
-				TargetBlob blob;
-				if (Type.HasFixedSize)
-					blob = location.ReadMemory (Type.Size);
-				else
-					blob = GetDynamicContents (location, MaximumDynamicSize);
-
-				return GetObject (blob, location);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
-		protected abstract object GetObject (TargetBlob blob, TargetLocation location);
+		public abstract object GetObject (ITargetAccess target);
 
 		void ITargetFundamentalObject.SetObject (ITargetObject obj)
 		{
