@@ -6,13 +6,11 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		protected MonoType type;
 		protected TargetLocation location;
-		protected bool is_valid;
 
 		public MonoObject (MonoType type, TargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
-			is_valid = true;
 		}
 
 		public MonoType Type {
@@ -39,12 +37,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public bool IsValid {
-			get {
-				return is_valid;
-			}
-		}
-
 		public bool IsNull {
 			get {
 				if (!location.HasAddress)
@@ -59,7 +51,6 @@ namespace Mono.Debugger.Languages.Mono
 				try {
 					return location.ReadBuffer (type.Size);
 				} catch (TargetException ex) {
-					is_valid = false;
 					throw new LocationInvalidException (ex);
 				}
 			}
@@ -69,7 +60,6 @@ namespace Mono.Debugger.Languages.Mono
 						throw new ArgumentException ();
 					location.WriteBuffer (value);
 				} catch (TargetException ex) {
-					is_valid = false;
 					throw new LocationInvalidException (ex);
 				}
 			}
@@ -91,7 +81,6 @@ namespace Mono.Debugger.Languages.Mono
 					TargetBlob blob = location.ReadMemory (type.Size);
 					return GetDynamicSize (blob, location, out dynamic_location);
 				} catch (TargetException ex) {
-					is_valid = false;
 					throw new LocationInvalidException (ex);
 				}
 			}
@@ -105,7 +94,6 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				return GetDynamicContents (location, max_size).Contents;
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -122,7 +110,6 @@ namespace Mono.Debugger.Languages.Mono
 
 				return dynamic_location.ReadMemory ((int) size);
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -132,14 +119,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetLocation Location {
 			get {
-				if (!IsValid)
-					throw new LocationInvalidException ();
-
 				return location;
 			}
 		}
 
-		public virtual string Print ()
+		public virtual string Print (ITargetAccess target)
 		{
 			return ToString ();
 		}

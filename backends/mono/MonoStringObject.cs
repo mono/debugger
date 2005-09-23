@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new String (retval);
 		}
 
-		public override string Print ()
+		public override string Print (ITargetAccess target)
 		{
 			if (location.Address.IsNull)
 				return "null";

@@ -134,7 +134,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public virtual string Print ()
+		public virtual string Print (ITargetAccess target)
 		{
 			return ToString ();
 		}

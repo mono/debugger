@@ -1082,9 +1082,7 @@ namespace Mono.Debugger.Frontend
 
 		public string DumpObject (ITargetObject obj)
 		{
-			long dynamic = obj.Type.HasFixedSize ? -1 : obj.DynamicSize;
-			return String.Format ("object:{0}:{1}:{2}", obj.IsValid,
-					      dynamic, DumpType (obj.Type));
+			return String.Format ("object:{0}", DumpType (obj.Type));
 		}
 
 		public string DumpType (ITargetType type)

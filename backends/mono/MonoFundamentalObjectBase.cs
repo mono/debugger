@@ -35,7 +35,6 @@ namespace Mono.Debugger.Languages.Mono
 
 				return GetObject (blob, location);
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -47,7 +46,7 @@ namespace Mono.Debugger.Languages.Mono
 			Type.SetObject (location, (MonoObject) obj);
 		}
 
-		public override string Print ()
+		public override string Print (ITargetAccess target)
 		{
 			object obj = GetObject ();
 			if (obj is IntPtr)

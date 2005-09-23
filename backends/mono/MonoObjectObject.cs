@@ -87,7 +87,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print ()
+		public override string Print (ITargetAccess target)
 		{
 			if (HasAddress)
 				return String.Format ("MonoObject ({0})", Address);

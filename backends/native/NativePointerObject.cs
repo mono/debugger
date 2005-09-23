@@ -76,7 +76,7 @@ namespace Mono.Debugger.Languages.Native
 			return type.StaticType.GetObject (new_location);
 		}
 
-		public override string Print ()
+		public override string Print (ITargetAccess target)
 		{
 			if (HasAddress) {
 				if (Address.IsNull)

@@ -148,14 +148,14 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override string Print ()
+		public override string Print (ITargetAccess target)
 		{
 			return GetObject ().ToString ();
 		}
 
 		public void SetObject (ITargetObject obj)
 		{
-			RawContents = obj.RawContents;
+			throw new NotImplementedException ();
 		}
 	}
 }
