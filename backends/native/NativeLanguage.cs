@@ -11,10 +11,12 @@ namespace Mono.Debugger.Languages.Native
 		NativeFundamentalType integer_type;
 		NativeFundamentalType long_type;
 		NativePointerType pointer_type;
+		ITargetInfo info;
 
 		public NativeLanguage (BfdContainer bfd_container, ITargetInfo info)
 		{
 			this.bfd_container = bfd_container;
+			this.info = info;
 
 			integer_type = new NativeFundamentalType ("int", FundamentalKind.Int32, 4);
 			long_type = new NativeFundamentalType ("long", FundamentalKind.Int64, 8);
@@ -39,6 +41,10 @@ namespace Mono.Debugger.Languages.Native
 
 		public ITargetType PointerType {
 			get { return pointer_type; }
+		}
+
+		public ITargetInfo TargetInfo {
+			get { return info; }
 		}
 
 		ITargetClassType ILanguage.ExceptionType {

@@ -8,6 +8,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetInfo TargetInfo {
+			get;
+		}
+
 		ITargetFundamentalType IntegerType {
 			get;
 		}

@@ -21,7 +21,6 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] constructors;
 		MonoMethodInfo[] static_constructors;
 
-		int size;
 		int num_methods = 0, num_smethods = 0;
 		internal int first_method = 0, first_smethod = 0;
 
@@ -35,7 +34,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.type = type;
 			this.file = file;
-			this.size = 2 * file.TargetInfo.TargetAddressSize;
 
 			if (type.BaseType != null)
 				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
@@ -58,7 +56,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override int Size {
-			get { return size; }
+			get { return 2 * Language.TargetInfo.TargetAddressSize; }
 		}
 
 		public MonoSymbolFile File {

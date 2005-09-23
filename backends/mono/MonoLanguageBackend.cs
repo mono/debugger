@@ -300,6 +300,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return backend.SourceFileFactory; }
 		}
 
+		public ITargetInfo TargetInfo {
+			get { return corlib.TargetInfo; }
+		}
+
 		internal bool TryFindImage (Process process, string filename)
 		{
 			Cecil.IAssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
