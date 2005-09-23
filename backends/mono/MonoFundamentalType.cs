@@ -5,20 +5,16 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoFundamentalType : MonoType, ITargetFundamentalType
 	{
 		protected readonly int size;
-		protected readonly TargetAddress klass_address;
 		protected readonly FundamentalKind fundamental_kind;
 		protected readonly Cecil.ITypeDefinition typedef;
 
-		public MonoFundamentalType (MonoSymbolFile file, Cecil.ITypeDefinition type,
-					    FundamentalKind kind, int size, TargetAddress klass)
-			: base (file.MonoLanguage, TargetObjectKind.Fundamental)
+		public MonoFundamentalType (ILanguage language, Cecil.ITypeDefinition type,
+					    FundamentalKind kind, int size)
+			: base (language, TargetObjectKind.Fundamental)
 		{
 			this.typedef = type;
 			this.fundamental_kind = kind;
 			this.size = size;
-			this.klass_address = klass;
-
-			file.MonoLanguage.AddClass (klass_address, this);
 		}
 
 		public override string Name {

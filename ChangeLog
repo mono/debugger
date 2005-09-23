@@ -1,5 +1,17 @@
 2005-09-23  Martin Baulig  <martin@ximian.com>
 
+	* backends/mono/MonoFundamentalType.cs
+	(MonoFundamentalType.ctor): Just take an `ILanguage' instead of a
+	`MonoSymbolFile'; removed the `klass_address' argument.
+
+	* backends/mono/MonoObjectType.cs
+	(MonoObjectType.ctor): Removed the `klass_address' argument.
+
+	* backends/mono/MonoStringType.cs
+	(MonoStringtype.ctor): Removed the `klass_address' argument.
+
+2005-09-23  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ILanguage.cs
 	(ILanguage.TargetInfo): New property.
 

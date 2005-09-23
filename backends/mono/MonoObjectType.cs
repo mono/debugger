@@ -6,20 +6,15 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoObjectType : MonoType, ITargetPointerType
 	{
 		int size;
-		TargetAddress klass_address;
 		MonoSymbolFile file;
 		Cecil.ITypeDefinition typedef;
 
-		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeDefinition typedef,
-				       int size, TargetAddress klass)
+		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeDefinition typedef, int size)
 			: base (file.MonoLanguage, TargetObjectKind.Pointer)
 		{
 			this.size = size;
 			this.file = file;
-			this.klass_address = klass;
 			this.typedef = typedef;
-
-			file.MonoLanguage.AddClass (klass_address, this);
 		}
 
 		public override bool IsByRef {

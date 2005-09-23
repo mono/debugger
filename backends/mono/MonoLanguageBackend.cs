@@ -145,92 +145,93 @@ namespace Mono.Debugger.Languages.Mono
 				memory.ReadMemory (defaults_address, defaults_size).Contents, memory);
 			mono_defaults.ReadAddress ();
 
+			MonoLanguageBackend language = corlib.MonoLanguage;
 			TargetAddress klass = mono_defaults.ReadGlobalAddress ();
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
 			Cecil.ITypeDefinition object_type = corlib.Module.Types ["System.Object"];
-			ObjectType = new MonoObjectType (corlib, object_type, object_size, klass);
-			corlib.AddCoreType (ObjectType, object_type);
+			ObjectType = new MonoObjectType (corlib, object_type, object_size);
+			language.AddCoreType (ObjectType, object_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition byte_type = corlib.Module.Types ["System.Byte"];
-			ByteType = new MonoFundamentalType (corlib, byte_type, FundamentalKind.Byte, 1, klass);
-			corlib.AddCoreType (ByteType, byte_type);
+			ByteType = new MonoFundamentalType (language, byte_type, FundamentalKind.Byte, 1);
+			language.AddCoreType (ByteType, byte_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition void_type = corlib.Module.Types ["System.Void"];
 			VoidType = new MonoOpaqueType (corlib, void_type);
-			corlib.AddCoreType (VoidType, void_type);
+			language.AddCoreType (VoidType, void_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition bool_type = corlib.Module.Types ["System.Boolean"];
-			BooleanType = new MonoFundamentalType (corlib, bool_type, FundamentalKind.Byte, 1, klass);
-			corlib.AddCoreType (BooleanType, bool_type);
+			BooleanType = new MonoFundamentalType (language, bool_type, FundamentalKind.Byte, 1);
+			language.AddCoreType (BooleanType, bool_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition sbyte_type = corlib.Module.Types ["System.SByte"];
-			SByteType = new MonoFundamentalType (corlib, sbyte_type, FundamentalKind.SByte, 1, klass);
-			corlib.AddCoreType (SByteType, sbyte_type);
+			SByteType = new MonoFundamentalType (language, sbyte_type, FundamentalKind.SByte, 1);
+			language.AddCoreType (SByteType, sbyte_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition short_type = corlib.Module.Types ["System.Int16"];
-			Int16Type = new MonoFundamentalType (corlib, short_type, FundamentalKind.Int16, 2, klass);
-			corlib.AddCoreType (Int16Type, short_type);
+			Int16Type = new MonoFundamentalType (language, short_type, FundamentalKind.Int16, 2);
+			language.AddCoreType (Int16Type, short_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition ushort_type = corlib.Module.Types ["System.UInt16"];
-			UInt16Type = new MonoFundamentalType (corlib, ushort_type, FundamentalKind.UInt16, 2, klass);
-			corlib.AddCoreType (UInt16Type, ushort_type);
+			UInt16Type = new MonoFundamentalType (language, ushort_type, FundamentalKind.UInt16, 2);
+			language.AddCoreType (UInt16Type, ushort_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition int_type = corlib.Module.Types ["System.Int32"];
-			Int32Type = new MonoFundamentalType (corlib, int_type, FundamentalKind.Int32, 4, klass);
-			corlib.AddCoreType (Int32Type, int_type);
+			Int32Type = new MonoFundamentalType (language, int_type, FundamentalKind.Int32, 4);
+			language.AddCoreType (Int32Type, int_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition uint_type = corlib.Module.Types ["System.UInt32"];
-			UInt32Type = new MonoFundamentalType (corlib, uint_type, FundamentalKind.UInt32, 4, klass);
-			corlib.AddCoreType (UInt32Type, uint_type);
+			UInt32Type = new MonoFundamentalType (language, uint_type, FundamentalKind.UInt32, 4);
+			language.AddCoreType (UInt32Type, uint_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition intptr_type = corlib.Module.Types ["System.IntPtr"];
-			IntType = new MonoFundamentalType (corlib, intptr_type, FundamentalKind.IntPtr, 4, klass);
-			corlib.AddCoreType (IntType, intptr_type);
+			IntType = new MonoFundamentalType (language, intptr_type, FundamentalKind.IntPtr, 4);
+			language.AddCoreType (IntType, intptr_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition uintptr_type = corlib.Module.Types ["System.UIntPtr"];
-			UIntType = new MonoFundamentalType (corlib, uintptr_type, FundamentalKind.Object, 4, klass);
-			corlib.AddCoreType (UIntType, uintptr_type);
+			UIntType = new MonoFundamentalType (language, uintptr_type, FundamentalKind.Object, 4);
+			language.AddCoreType (UIntType, uintptr_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition long_type = corlib.Module.Types ["System.Int64"];
-			Int64Type = new MonoFundamentalType (corlib, long_type, FundamentalKind.Int64, 8, klass);
-			corlib.AddCoreType (Int64Type, long_type);
+			Int64Type = new MonoFundamentalType (language, long_type, FundamentalKind.Int64, 8);
+			language.AddCoreType (Int64Type, long_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition ulong_type = corlib.Module.Types ["System.UInt64"];
-			UInt64Type = new MonoFundamentalType (corlib, ulong_type, FundamentalKind.UInt64, 8, klass);
-			corlib.AddCoreType (UInt64Type, ulong_type);
+			UInt64Type = new MonoFundamentalType (language, ulong_type, FundamentalKind.UInt64, 8);
+			language.AddCoreType (UInt64Type, ulong_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition float_type = corlib.Module.Types ["System.Single"];
-			SingleType = new MonoFundamentalType (corlib, float_type, FundamentalKind.Single, 4, klass);
-			corlib.AddCoreType (SingleType, float_type);
+			SingleType = new MonoFundamentalType (language, float_type, FundamentalKind.Single, 4);
+			language.AddCoreType (SingleType, float_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition double_type = corlib.Module.Types ["System.Double"];
-			DoubleType = new MonoFundamentalType (corlib, double_type, FundamentalKind.Double, 8, klass);
-			corlib.AddCoreType (DoubleType, double_type);
+			DoubleType = new MonoFundamentalType (language, double_type, FundamentalKind.Double, 8);
+			language.AddCoreType (DoubleType, double_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition char_type = corlib.Module.Types ["System.Char"];
-			CharType = new MonoFundamentalType (corlib, char_type, FundamentalKind.Char, 2, klass);
-			corlib.AddCoreType (CharType, char_type);
+			CharType = new MonoFundamentalType (language, char_type, FundamentalKind.Char, 2);
+			language.AddCoreType (CharType, char_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition string_type = corlib.Module.Types ["System.String"];
 			StringType = new MonoStringType (
-				corlib, string_type, object_size, object_size + 4, klass);
-			corlib.AddCoreType (StringType, string_type);
+				corlib, string_type, object_size, object_size + 4);
+			language.AddCoreType (StringType, string_type, klass);
 
 			// Skip a whole bunch of clases we don't care about
 			mono_defaults.Offset += 2 * corlib.TargetInfo.TargetAddressSize;
@@ -238,7 +239,7 @@ namespace Mono.Debugger.Languages.Mono
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition delegate_type = corlib.Module.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
-			corlib.AddCoreType (DelegateType, delegate_type);
+			language.AddCoreType (DelegateType, delegate_type, klass);
 
 			// Skip a whole bunch of clases we don't care about
 			mono_defaults.Offset += 7 * corlib.TargetInfo.TargetAddressSize;
@@ -247,7 +248,7 @@ namespace Mono.Debugger.Languages.Mono
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition exception_type = corlib.Module.Types ["System.Exception"];
 			ExceptionType = new MonoClassType (corlib, exception_type);
-			corlib.AddCoreType (ExceptionType, exception_type);
+			language.AddCoreType (ExceptionType, exception_type, klass);
 		}
 	}
 
@@ -399,6 +400,13 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (!class_hash.Contains (klass_address))
 				class_hash.Add (klass_address, type);
+		}
+
+		internal void AddCoreType (MonoType type, Cecil.ITypeDefinition typedef,
+					   TargetAddress klass)
+		{
+			corlib.AddType (type, typedef);
+			AddClass (klass, type);
 		}
 
 		public MonoType GetClass (ITargetAccess target, TargetAddress klass_address)

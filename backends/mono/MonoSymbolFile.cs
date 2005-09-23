@@ -373,14 +373,9 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		internal void AddCoreType (MonoType type, Cecil.ITypeDefinition typedef)
+		public void AddType (MonoType type, Cecil.ITypeDefinition typedef)
 		{
 			type_hash.Add (typedef, type);
-		}
-
-		public void AddType (MonoClassType type)
-		{
-			type_hash.Add (type.Type, type);
 		}
 
 		public TargetBinaryReader GetTypeInfo (Cecil.ITypeDefinition type)
