@@ -835,7 +835,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (type == null)
 				return null;
 
-			return type.CreateInstance (frame, obj);
+			return type.CreateInstance (frame.TargetAccess, obj);
 		}
 
 		public ITargetFundamentalObject CreateInstance (ITargetAccess target, int value)

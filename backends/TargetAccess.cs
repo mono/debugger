@@ -46,6 +46,9 @@ namespace Mono.Debugger.Backends
 		public abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2);
 
+		public abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
+							  string string_argument);
+
 		public abstract void RuntimeInvoke (ITargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects);
@@ -123,6 +126,12 @@ namespace Mono.Debugger.Backends
 			return process.CallMethod (method, arg1, arg2);
 		}
 
+		public override TargetAddress CallMethod (TargetAddress method, long method_argument,
+							  string string_argument)
+		{
+			return process.CallMethod (method, method_argument, string_argument);
+		}
+
 		public override void RuntimeInvoke (ITargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects)
@@ -191,6 +200,15 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			else
 				return sse.Process.CallMethod (method, arg1, arg2);
+		}
+
+		public override TargetAddress CallMethod (TargetAddress method, long method_argument,
+							  string string_argument)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				throw new InvalidOperationException ();
+			else
+				return sse.Process.CallMethod (method, method_argument, string_argument);
 		}
 
 		public override void RuntimeInvoke (ITargetFunctionType method_argument,

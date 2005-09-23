@@ -45,14 +45,15 @@ namespace Mono.Debugger.Languages.Mono
                         return retval;
 		}
 
-                internal override MonoFundamentalObjectBase CreateInstance (StackFrame frame, object obj)
+                internal override MonoFundamentalObjectBase CreateInstance (ITargetAccess target,
+									    object obj)
                 {
                         string str = obj as string;
                         if (str == null)
                                 throw new ArgumentException ();
 
-                        TargetAddress retval = frame.Process.CallMethod (CreateString, 0, str);
-                        TargetLocation location = new AbsoluteTargetLocation (frame, retval);
+                        TargetAddress retval = target.CallMethod (CreateString, 0, str);
+                        TargetLocation location = new AbsoluteTargetLocation (target, retval);
                         return new MonoStringObject (this, location);
                 }
 
