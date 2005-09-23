@@ -7,6 +7,13 @@ namespace Martin.Baulig
 
 	public class Hello
 	{
+		protected Trier trier;
+
+		public Hello ()
+		{
+			trier = new Trier ();
+		}
+
 		public static void World (Picture picture)
 		{
 			Console.WriteLine (picture);
@@ -14,10 +21,15 @@ namespace Martin.Baulig
 
 		public void Test ()
 		{
-			Trier trier = new Trier ();
 			World (trier.PortaNigra);
 			World (trier.CityCenter);
 			World (Trier.RomanBaths);
+		}
+
+		public Trier Trier {
+			get {
+				return trier;
+			}
 		}
 	}
 }
@@ -83,5 +95,6 @@ class X
 	{
 		Martin.Baulig.Hello hello = new Martin.Baulig.Hello ();
 		hello.Test ();
+		Console.WriteLine (hello);
 	}
 }

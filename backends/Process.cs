@@ -592,6 +592,10 @@ namespace Mono.Debugger
 			operation_completed_event.WaitOne ();
 
 			RuntimeInvokeResult res = (RuntimeInvokeResult) result.Result;
+			if (res == null) {
+				exc_message = null;
+				return null;
+			}
 			exc_message = res.ExceptionMessage;
 			return res.ReturnObject;
 		}
