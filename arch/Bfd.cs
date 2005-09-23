@@ -34,9 +34,7 @@ namespace Mono.Debugger.Architecture
 		ISimpleSymbolTable simple_symtab;
 		DwarfReader dwarf;
 		DwarfFrameReader frame_reader, eh_frame_reader;
-		StabsReader stabs;
 		bool dwarf_loaded;
-		bool stabs_loaded;
 		bool has_debugging_info;
 		string filename, target;
 		bool is_coredump;
@@ -45,7 +43,6 @@ namespace Mono.Debugger.Architecture
 		TargetAddress base_address, start_address, end_address;
 		TargetAddress plt_start, plt_end, got_start;
 		bool is_powerpc;
-		bool use_stabs;
 		bool has_got;
 
 		[Flags]
@@ -220,10 +217,7 @@ namespace Mono.Debugger.Architecture
 
 				read_bfd_symbols ();
 
-				if (StabsReader.IsSupported (this)) {
-					has_debugging_info = true;
-					use_stabs = true;
-				} else if (DwarfReader.IsSupported (this))
+				if (DwarfReader.IsSupported (this))
 					has_debugging_info = true;
 
 				InternalSection plt_section = GetSectionByName (".plt", false);
@@ -237,39 +231,12 @@ namespace Mono.Debugger.Architecture
 						memory.GlobalAddressDomain, base_address.Address + got_section.vma);
 					has_got = true;
 				}
-			} else if (target == "mach-o-be") {
-				arch = new Architecture_PowerPC ();
-
-				use_stabs = true;
-				is_powerpc = true;
-
-				InternalSection text = GetSectionByName (
-					"LC_SEGMENT.__TEXT.__text", true);
-
-				start_address = new TargetAddress (
-					info.GlobalAddressDomain, text.vma);
-				end_address = start_address + text.size;
-
-				has_debugging_info = StabsReader.IsSupported (this);
 			} else
 				throw new SymbolTableException (
 					"Symbol file {0} has unknown target architecture {1}",
 					filename, target);
 
-			if (is_powerpc) {
-				load_stabs ();
-
-				if (stabs != null) {
-					simple_symtab = stabs;
-					entry_point = stabs.EntryPoint;
-				} else
-					entry_point = SimpleLookup ("_main");
-			} else {
-				if (use_stabs)
-					load_stabs ();
-
-				entry_point = SimpleLookup ("main");
-			}
+			entry_point = SimpleLookup ("main");
 
 			backend.ModuleManager.AddModule (this);
 
@@ -582,15 +549,13 @@ namespace Mono.Debugger.Architecture
 		}
 
 		public override bool SymbolsLoaded {
-			get { return (dwarf != null) || (stabs != null); }
+			get { return (dwarf != null); }
 		}
 
 		public override ISymbolFile SymbolFile {
 			get {
 				if (dwarf != null)
 					return dwarf;
-				else if (stabs != null)
-					return stabs;
 				else
 					return null;
 			}
@@ -600,8 +565,6 @@ namespace Mono.Debugger.Architecture
 			get {
 				if (dwarf != null)
 					return dwarf.SymbolTable;
-				else if (stabs != null)
-					return stabs;
 				else
 					throw new InvalidOperationException ();
 			}
@@ -685,51 +648,12 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		void load_stabs ()
-		{
-			if (stabs_loaded)
-				return;
-
-			try {
-				stabs = new StabsReader (this, this, backend.SourceFileFactory);
-			} catch (Exception ex) {
-				Console.WriteLine ("Cannot read STABS debugging info from " +
-						   "symbol file `{0}': {1}", FileName, ex);
-				has_debugging_info = false;
-			}
-
-			stabs_loaded = true;
-
-			if (stabs != null) {
-				has_debugging_info = true;
-				OnSymbolsLoadedEvent ();
-			}
-		}
-
-		void unload_stabs ()
-		{
-			if (!stabs_loaded)
-				return;
-
-			stabs_loaded = false;
-			if (stabs != null) {
-				stabs = null;
-				OnSymbolsUnLoadedEvent ();
-			}
-		}
-
 		protected override void OnModuleChangedEvent ()
 		{
 			if (LoadSymbols) {
-				if (use_stabs)
-					load_stabs ();
-				else
-					load_dwarf ();
+				load_dwarf ();
 			} else {
-				if (use_stabs)
-					unload_stabs ();
-				else
-					unload_dwarf ();
+				unload_dwarf ();
 			}
 
 			base.OnModuleChangedEvent ();

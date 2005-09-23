@@ -1,5 +1,12 @@
 2005-09-23  Martin Baulig  <martin@ximian.com>
 
+	* arch/StabsReader.cs: Removed for the moment until someone fully
+	implements PowerPC support.
+
+	* arch/Bfd.cs: Disabled PowerPC support.
+
+2005-09-23  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoType.cs: Moved to languages/TargetType.cs.
 	(MonoType): Renamed to `TargetType'.
 
