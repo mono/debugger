@@ -93,8 +93,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal virtual MonoFundamentalObjectBase CreateInstance (ITargetAccess target,
-									   object obj)
+		internal virtual MonoFundamentalObject CreateInstance (ITargetAccess target, object obj)
 		{
 			TargetAddress address = Language.AllocateMemory (target, size);
 			target.TargetMemoryAccess.WriteBuffer (address, CreateObject (obj));

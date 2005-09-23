@@ -45,8 +45,7 @@ namespace Mono.Debugger.Languages.Mono
                         return retval;
 		}
 
-                internal override MonoFundamentalObjectBase CreateInstance (ITargetAccess target,
-									    object obj)
+                internal override MonoFundamentalObject CreateInstance (ITargetAccess target, object obj)
                 {
                         string str = obj as string;
                         if (str == null)
