@@ -402,7 +402,6 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-		operation_finished:
 			//
 			// Ok, the target stopped normally.  Now we need to compute the
 			// new stack frame and then send the result to our caller.
@@ -1066,7 +1065,6 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			int index;
 			if (step_over_breakpoint (TargetAddress.Null, TargetAddress.Null, true))
 				return;
 
@@ -2473,7 +2471,7 @@ namespace Mono.Debugger.Backends
 				ITargetFundamentalObject exc_obj = (ITargetFundamentalObject)
 					language.CreateObject (sse.target_access, exc_address);
 
-				result.ExceptionMessage = (string) exc_obj.Object;
+				result.ExceptionMessage = (string) exc_obj.GetObject (sse.target_access);
 			}
 
 			if (data1 != 0) {

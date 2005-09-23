@@ -21,12 +21,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected override object GetObject ()
+		public override object GetObject (ITargetAccess target)
 		{
 			try {
 				return ReadString (location);
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}

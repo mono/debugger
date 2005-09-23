@@ -766,7 +766,6 @@ namespace Mono.Debugger.Frontend
 
 		public MemberExpression ResolveMemberAccess (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
 			MemberExpression member;
 
 			Expression lexpr = left.TryResolve (context);
@@ -1259,14 +1258,14 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)
 		{
 			ITargetFundamentalObject fobj = tobj as ITargetFundamentalObject;
-			if ((fobj == null) || !fobj.HasObject)
+			if (fobj == null)
 				throw new ScriptingException (
 					"Cannot store non-fundamental object `{0}' in " +
 					" a registers", tobj);
 
-			object obj = fobj.Object;
-			long value = Convert.ToInt64 (obj);
 			FrameHandle frame = context.CurrentFrame;
+			object obj = fobj.GetObject (frame.Frame.TargetAccess);
+			long value = Convert.ToInt64 (obj);
 			register = frame.FindRegister (name);
 			frame.SetRegister (register, value);
 			return true;
@@ -1584,8 +1583,6 @@ namespace Mono.Debugger.Frontend
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
-
 			object obj = expr.Resolve (context);
 			if (obj is int)
 				obj = (long) (int) obj;
@@ -1709,7 +1706,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		int GetIntIndex (Expression index, ScriptingContext context)
+		int GetIntIndex (ITargetAccess target, Expression index, ScriptingContext context)
 		{
 			try {
 				object idx = index.Evaluate (context);
@@ -1718,7 +1715,7 @@ namespace Mono.Debugger.Frontend
 					return (int) idx;
 
 				ITargetFundamentalObject obj = (ITargetFundamentalObject) idx;
-				return (int) obj.Object;
+				return (int) obj.GetObject (target);
 			} catch (Exception e) {
 				throw new ScriptingException (
 					"Cannot convert {0} to an integer for indexing: {1}",
@@ -1726,22 +1723,23 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		int[] GetIntIndices (ScriptingContext context)
+		int[] GetIntIndices (ITargetAccess target, ScriptingContext context)
 		{
 			int[] int_indices = new int [indices.Length];
 			for (int i = 0; i < indices.Length; i++)
-				int_indices [i] = GetIntIndex (indices [i], context);
+				int_indices [i] = GetIntIndex (target, indices [i], context);
 			return int_indices;
 		}
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
+			ITargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 			ITargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
 			ITargetArrayObject aobj = obj as ITargetArrayObject;
 			if (aobj != null) {
-				int[] int_indices = GetIntIndices (context);
+				int[] int_indices = GetIntIndices (target, context);
 				try {
 					return aobj [int_indices];
 				} catch (ArgumentException ex) {
@@ -1755,7 +1753,7 @@ namespace Mono.Debugger.Frontend
 			ITargetPointerObject pobj = obj as ITargetPointerObject;
 			if (pobj != null) {
 				// single dimensional array only at present
-				int[] int_indices = GetIntIndices (context);
+				int[] int_indices = GetIntIndices (target, context);
 				if (int_indices.Length != 1)
 					throw new ScriptingException (
 						"Multi-dimensial arrays of type {0} are not yet supported",
@@ -1828,12 +1826,13 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject right)
 		{
+			ITargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 			ITargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
 			ITargetArrayObject aobj = obj as ITargetArrayObject;
 			if (aobj != null) {
-				int[] int_indices = GetIntIndices (context);
+				int[] int_indices = GetIntIndices (target, context);
 				try {
 					aobj [int_indices] = right;
 				} catch (ArgumentException ex) {
@@ -2248,8 +2247,6 @@ namespace Mono.Debugger.Frontend
 
 		public ITargetObject Invoke (ScriptingContext context, bool debug)
 		{
-			FrameHandle frame = context.CurrentFrame;
-
 			ITargetStructType stype = type_expr.EvaluateType (context)
 				as ITargetStructType;
 			if (stype == null)

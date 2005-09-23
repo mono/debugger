@@ -12,19 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		public bool HasObject {
-			get {
-				return true;
-			}
-		}
-
-		public object Object {
-			get {
-				return GetObject ();
-			}
-		}
-
-		internal object GetObject ()
+		public object GetObject (ITargetAccess target)
 		{
 			try {
 				TargetBlob blob;
@@ -48,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string Print (ITargetAccess target)
 		{
-			object obj = GetObject ();
+			object obj = GetObject (target);
 			if (obj is IntPtr)
 				return String.Format ("0x{0:x}", ((IntPtr) obj).ToInt64 ());
 			else if (obj is UIntPtr)

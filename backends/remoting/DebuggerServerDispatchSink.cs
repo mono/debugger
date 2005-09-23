@@ -90,7 +90,7 @@ namespace Mono.Debugger.Remoting
 			else
 				proc = ServerProcessing.Async;
 
-			IMessageCtrl ctrl = ChannelServices.AsyncDispatchMessage (requestMsg, sink);
+			ChannelServices.AsyncDispatchMessage (requestMsg, sink);
 
 			responseMsg = null;
 			return proc;

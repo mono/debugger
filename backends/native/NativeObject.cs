@@ -6,13 +6,11 @@ namespace Mono.Debugger.Languages.Native
 	{
 		protected ITargetType type;
 		protected TargetLocation location;
-		protected bool is_valid;
 
 		public NativeObject (ITargetType type, TargetLocation location)
 		{
 			this.type = type;
 			this.location = location;
-			is_valid = true;
 		}
 
 		public ITargetType Type {
@@ -33,12 +31,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public bool IsValid {
-			get {
-				return is_valid;
-			}
-		}
-
 		public bool IsNull {
 			get {
 				if (!location.HasAddress)
@@ -53,7 +45,6 @@ namespace Mono.Debugger.Languages.Native
 				try {
 					return location.ReadBuffer (type.Size);
 				} catch (TargetException ex) {
-					is_valid = false;
 					throw new LocationInvalidException (ex);
 				}
 			}
@@ -63,7 +54,6 @@ namespace Mono.Debugger.Languages.Native
 						throw new ArgumentException ();
 					location.WriteBuffer (value);
 				} catch (TargetException ex) {
-					is_valid = false;
 					throw new LocationInvalidException (ex);
 				}
 			}
@@ -85,7 +75,6 @@ namespace Mono.Debugger.Languages.Native
 					TargetBlob blob = location.ReadMemory (type.Size);
 					return GetDynamicSize (blob, location, out dynamic_location);
 				} catch (TargetException ex) {
-					is_valid = false;
 					throw new LocationInvalidException (ex);
 				}
 			}
@@ -99,7 +88,6 @@ namespace Mono.Debugger.Languages.Native
 			try {
 				return GetDynamicContents (location, max_size).Contents;
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -117,7 +105,6 @@ namespace Mono.Debugger.Languages.Native
 
 				return dynamic_location.ReadMemory ((int) size);
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -127,9 +114,6 @@ namespace Mono.Debugger.Languages.Native
 
 		public TargetLocation Location {
 			get {
-				if (!IsValid)
-					throw new LocationInvalidException ();
-
 				return location;
 			}
 		}

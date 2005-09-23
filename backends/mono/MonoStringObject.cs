@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (location.Address.IsNull)
 				return "null";
-			object obj = GetObject ();
+			object obj = GetObject (target);
 			return '"' + (string) obj + '"';
 		}
 	}

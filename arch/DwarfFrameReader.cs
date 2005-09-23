@@ -59,8 +59,10 @@ namespace Mono.Debugger.Architecture
 				else
 					is_cie = cie_pointer == -1;
 
-				if (is_cie)
-					goto end;
+				if (is_cie) {
+					reader.Position = end_pos;
+					continue;
+				}
 
 				if (is_ehframe)
 					cie_pointer = (int) reader.Position - cie_pointer - 4;
@@ -73,15 +75,14 @@ namespace Mono.Debugger.Architecture
 				TargetAddress start = new TargetAddress (
 					target.GlobalAddressDomain, initial);
 
-				if ((address < start) || (address > start + range))
-					goto end;
+				if ((address < start) || (address > start + range)) {
+					reader.Position = end_pos;
+					continue;
+				}
 
 				Entry fde = new Entry (cie, start, address);
 				fde.Read (reader, end_pos);
 				return fde.Unwind (frame, target, arch);
-
-			end:
-				reader.Position = end_pos;
 			}
 
 			return null;
@@ -326,9 +327,6 @@ namespace Mono.Debugger.Architecture
 			void SetRegisters (Registers regs, ITargetMemoryAccess target,
 					   IArchitecture arch, Column[] columns)
 			{
-				TargetAddress old_rsp = new TargetAddress (
-					target.GlobalAddressDomain, GetRegister (regs, 1).GetValue ());
-
 				long cfa_addr = GetRegisterValue (regs, 1, columns [0]);
 				TargetAddress cfa = new TargetAddress (
 					target.GlobalAddressDomain, cfa_addr);

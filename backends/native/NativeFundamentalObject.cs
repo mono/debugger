@@ -14,22 +14,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public bool HasObject {
-			get {
-				return true;
-			}
-		}
-
-		public object Object {
-			get {
-				return GetObject ();
-			}
-			set {
-				SetObject (value);
-			}
-		}
-
-		protected virtual object GetObject ()
+		public virtual object GetObject (ITargetAccess target)
 		{
 			try {
 				TargetBlob blob;
@@ -40,7 +25,6 @@ namespace Mono.Debugger.Languages.Native
 
 				return GetObject (blob, location);
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -55,7 +39,6 @@ namespace Mono.Debugger.Languages.Native
 
 				RawContents = data;
 			} catch (TargetException ex) {
-				is_valid = false;
 				throw new LocationInvalidException (ex);
 			}
 		}
@@ -150,7 +133,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public override string Print (ITargetAccess target)
 		{
-			return GetObject ().ToString ();
+			return GetObject (target).ToString ();
 		}
 
 		public void SetObject (ITargetObject obj)
