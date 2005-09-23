@@ -6,8 +6,8 @@ namespace Mono.Debugger.Languages.Native
 	{
 		static int max_string_length = 100;
 
-		public NativeStringType (int size)
-			: base ("char *", FundamentalKind.String, size)
+		public NativeStringType (ILanguage language, int size)
+			: base (language, "char *", FundamentalKind.String, size)
 		{ }
 
 		public override bool IsByRef {
@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeStringObject (this, location);
 		}

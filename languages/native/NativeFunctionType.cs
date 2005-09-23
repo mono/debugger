@@ -2,16 +2,31 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeFunctionType : NativeType, ITargetFunctionType
+	internal class NativeFunctionType : TargetType, ITargetFunctionType
 	{
-		NativeType return_type;
-		NativeType[] parameter_types;
+		string name;
+		TargetType return_type;
+		TargetType[] parameter_types;
 
-		public NativeFunctionType (string name, NativeType return_type, NativeType[] parameter_types)
-			: base (name, TargetObjectKind.Function, 0)
+		public NativeFunctionType (ILanguage language, string name,
+					   TargetType return_type, TargetType[] parameter_types)
+			: base (language, TargetObjectKind.Function)
 		{
+			this.name = name;
 			this.return_type = return_type;
 			this.parameter_types = parameter_types;
+		}
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return Language.TargetInfo.TargetAddressSize; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
 		}
 
 		public override bool IsByRef {
@@ -22,17 +37,17 @@ namespace Mono.Debugger.Languages.Native
 
 		public bool HasReturnValue {
 			get {
-				return return_type != VoidType;
+				return return_type != Language.VoidType;
 			}
 		}
 
-		public NativeType ReturnType {
+		public TargetType ReturnType {
 			get {
 				return return_type;
 			}
 		}
 
-		public NativeType[] ParameterTypes {
+		public TargetType[] ParameterTypes {
 			get {
 				return parameter_types;
 			}
@@ -74,7 +89,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			throw new NotSupportedException ();
 		}

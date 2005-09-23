@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeArrayObject : NativeObject, ITargetArrayObject
+	internal class NativeArrayObject : TargetObject, ITargetArrayObject
 	{
 		int lower_bound;
 		int upper_bound;

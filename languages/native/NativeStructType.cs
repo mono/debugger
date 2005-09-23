@@ -5,12 +5,12 @@ namespace Mono.Debugger.Languages.Native
 	[Serializable]
 	internal abstract class NativeStructMember : ITargetMemberInfo
 	{
-		public readonly NativeType Type;
+		public readonly TargetType Type;
 		public readonly string Name;
 		public readonly int Index;
 		public readonly bool IsStatic;
 
-		public NativeStructMember (NativeType type, string name, int index, bool is_static)
+		public NativeStructMember (TargetType type, string name, int index, bool is_static)
 		{
 			this.Type = type;
 			this.Name = name;
@@ -58,13 +58,13 @@ namespace Mono.Debugger.Languages.Native
 		bool has_const_value;
 		int const_value;
 
-		public NativeFieldInfo (NativeType type, string name, int index, int offset)
+		public NativeFieldInfo (TargetType type, string name, int index, int offset)
 			: base (type, name, index, false)
 		{
 			this.offset = offset;
 		}
 
-		public NativeFieldInfo (NativeType type, string name, int index, int offset,
+		public NativeFieldInfo (TargetType type, string name, int index, int offset,
 					int bit_offset, int bit_size)
 			: this (type, name, index, offset)
 		{
@@ -73,7 +73,7 @@ namespace Mono.Debugger.Languages.Native
 			this.is_bitfield = true;
 		}
 
-		public NativeFieldInfo (NativeType type, string name, int index,
+		public NativeFieldInfo (TargetType type, string name, int index,
 					bool has_const_value, int const_value)
 			: base (type, name, index, false)
 		{
@@ -149,16 +149,22 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
-	internal class NativeStructType : NativeType, ITargetStructType
+	internal class NativeStructType : TargetType, ITargetStructType
 	{
+		string name;
+		int size;
 		NativeFieldInfo[] fields;
 
-		internal NativeStructType (string name, int size)
-			: base (name, TargetObjectKind.Struct, size)
-		{ }
+		internal NativeStructType (ILanguage language, string name, int size)
+			: base (language, TargetObjectKind.Struct)
+		{
+			this.name = name;
+			this.size = size;
+		}
 
-		internal NativeStructType (string name, NativeFieldInfo[] fields, int size)
-			: this (name, size)
+		internal NativeStructType (ILanguage language, string name,
+					   NativeFieldInfo[] fields, int size)
+			: this (language, name, size)
 		{
 			this.fields = fields;
 		}
@@ -166,6 +172,18 @@ namespace Mono.Debugger.Languages.Native
 		internal void SetFields (NativeFieldInfo[] fields)
 		{
 			this.fields = fields;
+		}
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return size; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
 		}
 
 		public override bool IsByRef {
@@ -259,12 +277,12 @@ namespace Mono.Debugger.Languages.Native
 			return true;
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeStructObject (this, location);
 		}
 
-		internal NativeObject GetField (TargetLocation location, int index)
+		internal TargetObject GetField (TargetLocation location, int index)
 		{
 			NativeFieldInfo field = fields [index];
 
@@ -278,7 +296,7 @@ namespace Mono.Debugger.Languages.Native
 			return field.Type.GetObject (field_loc);
 		}
 
-		internal void SetField (TargetLocation location, int index, NativeObject obj)
+		internal void SetField (TargetLocation location, int index, TargetObject obj)
 		{
 			NativeFieldInfo field = fields [index];
 

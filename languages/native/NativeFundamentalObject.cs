@@ -2,9 +2,9 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeFundamentalObject : NativeObject, ITargetFundamentalObject
+	internal class NativeFundamentalObject : TargetObject, ITargetFundamentalObject
 	{
-		public NativeFundamentalObject (NativeType type, TargetLocation location)
+		public NativeFundamentalObject (TargetType type, TargetLocation location)
 			: base (type, location)
 		{ }
 
@@ -14,37 +14,14 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public virtual object GetObject (ITargetAccess target)
-		{
-			try {
-				TargetBlob blob;
-				if (type.HasFixedSize)
-					blob = location.ReadMemory (type.Size);
-				else
-					blob = GetDynamicContents (location, MaximumDynamicSize);
-
-				return GetObject (blob, location);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
-		}
-
 		internal void SetObject (object obj)
 		{
-			try {
-				byte [] data = CreateObject (obj);
-				if (!type.HasFixedSize || (data == null) ||
-				    (data.Length != type.Size))
-					throw new NotSupportedException ();
-
-				RawContents = data;
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
 		}
 
-		protected object GetObject (TargetBlob blob, TargetLocation locaction)
+		public virtual object GetObject (ITargetAccess target)
 		{
+			TargetBlob blob = location.ReadMemory (Type.Size);
+
 			switch (((NativeFundamentalType) type).FundamentalKind) {
 			case FundamentalKind.Boolean:
 				return blob.Contents [0] != 0;

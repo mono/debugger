@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeOpaqueObject : NativeObject
+	internal class NativeOpaqueObject : TargetObject
 	{
 		public NativeOpaqueObject (NativeOpaqueType type, TargetLocation location)
 			: base (type, location)
@@ -12,11 +12,6 @@ namespace Mono.Debugger.Languages.Native
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
-		}
-
-		public override string ToString ()
-		{
-			return TargetBinaryReader.HexDump (RawContents);
 		}
 	}
 }

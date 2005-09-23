@@ -2,22 +2,38 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeTypeAlias : NativeType, ITargetTypeAlias
+	internal class NativeTypeAlias : TargetType, ITargetTypeAlias
 	{
-		public NativeTypeAlias (string name, string target_name)
-			: base (name, TargetObjectKind.Alias, 0)
+		string name;
+
+		public NativeTypeAlias (ILanguage language, string name, string target_name)
+			: base (language, TargetObjectKind.Alias)
 		{
 			this.target_name = target_name;
+			this.name = name;
 		}
 
-		public NativeTypeAlias (string name, string target_name, NativeType target)
-			: this (name, target_name)
+		public NativeTypeAlias (ILanguage language, string name, string target_name,
+					TargetType target)
+			: this (language, name, target_name)
 		{
 			this.target_type = target;
 		}
 
 		string target_name;
-		NativeType target_type;
+		TargetType target_type;
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return 0; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
+		}
 
 		public override bool IsByRef {
 			get {
@@ -29,7 +45,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return target_name; }
 		}
 
-		public NativeType TargetType {
+		public TargetType TargetType {
 			get { return target_type; }
 			set { target_type = value; }
 		}
@@ -38,7 +54,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return target_type; }
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			if (target_type == null)
 				return null;

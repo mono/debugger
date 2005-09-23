@@ -28,6 +28,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		ITargetType VoidType {
+			get;
+		}
+
 		ITargetClassType DelegateType {
 			get;
 		}

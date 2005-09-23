@@ -890,6 +890,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types.IntType; }
 		}
 
+		ITargetType ILanguage.VoidType {
+			get { return builtin_types.VoidType; }
+		}
+
 		ITargetClassType ILanguage.ExceptionType {
 			get { return builtin_types.ExceptionType; }
 		}

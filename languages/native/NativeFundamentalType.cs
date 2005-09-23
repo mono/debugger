@@ -2,14 +2,31 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeFundamentalType : NativeType, ITargetFundamentalType
+	internal class NativeFundamentalType : TargetType, ITargetFundamentalType
 	{
+		string name;
+		int size;
 		FundamentalKind fundamental_kind;
 
-		public NativeFundamentalType (string name, FundamentalKind kind, int size)
-			: base (name, TargetObjectKind.Fundamental, size)
+		public NativeFundamentalType (ILanguage language, string name,
+					      FundamentalKind kind, int size)
+			: base (language, TargetObjectKind.Fundamental)
 		{
+			this.name = name;
+			this.size = size;
 			this.fundamental_kind = kind;
+		}
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return size; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
 		}
 
 		public override bool IsByRef {
@@ -33,7 +50,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeFundamentalObject (this, location);
 		}

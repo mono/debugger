@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativePointerObject : NativeObject, ITargetPointerObject
+	internal class NativePointerObject : TargetObject, ITargetPointerObject
 	{
 		new NativePointerType type;
 

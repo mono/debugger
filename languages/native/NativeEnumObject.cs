@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeEnumObject : NativeObject, ITargetEnumObject
+	internal class NativeEnumObject : TargetObject, ITargetEnumObject
 	{
 		new NativeEnumType type;
 

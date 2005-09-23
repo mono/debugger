@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeStructObject : NativeObject, ITargetStructObject
+	internal class NativeStructObject : TargetObject, ITargetStructObject
 	{
 		new NativeStructType type;
 
@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public void SetField (int index, ITargetObject obj)
 		{
-			type.SetField (location, index, (NativeObject) obj);
+			type.SetField (location, index, (TargetObject) obj);
 		}
 
 		public ITargetObject GetProperty (int index)

@@ -11,6 +11,7 @@ namespace Mono.Debugger.Languages.Native
 		NativeFundamentalType integer_type;
 		NativeFundamentalType long_type;
 		NativePointerType pointer_type;
+		NativeOpaqueType void_type;
 		ITargetInfo info;
 
 		public NativeLanguage (BfdContainer bfd_container, ITargetInfo info)
@@ -18,9 +19,10 @@ namespace Mono.Debugger.Languages.Native
 			this.bfd_container = bfd_container;
 			this.info = info;
 
-			integer_type = new NativeFundamentalType ("int", FundamentalKind.Int32, 4);
-			long_type = new NativeFundamentalType ("long", FundamentalKind.Int64, 8);
-			pointer_type = new NativePointerType ("void *", info.TargetAddressSize);
+			integer_type = new NativeFundamentalType (this, "int", FundamentalKind.Int32, 4);
+			long_type = new NativeFundamentalType (this, "long", FundamentalKind.Int64, 8);
+			pointer_type = new NativePointerType (this, "void *", info.TargetAddressSize);
+			void_type = new NativeOpaqueType (this, "void", 0);
 		}
 
 		public string Name {
@@ -41,6 +43,10 @@ namespace Mono.Debugger.Languages.Native
 
 		public ITargetType PointerType {
 			get { return pointer_type; }
+		}
+
+		public ITargetType VoidType {
+			get { return void_type; }
 		}
 
 		public ITargetInfo TargetInfo {

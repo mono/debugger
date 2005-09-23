@@ -2,19 +2,38 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativePointerType : NativeType, ITargetPointerType
+	internal class NativePointerType : TargetType, ITargetPointerType
 	{
-		public NativePointerType (string name, int size)
-			: base (name, TargetObjectKind.Pointer, size)
-		{ }
+		string name;
+		int size;
 
-		public NativePointerType (string name, NativeType target_type, int size)
-			: base (name, TargetObjectKind.Pointer, size)
+		public NativePointerType (ILanguage language, string name, int size)
+			: base (language, TargetObjectKind.Pointer)
+		{
+			this.name = name;
+			this.size = size;
+		}
+
+		public NativePointerType (ILanguage language, string name,
+					  TargetType target_type, int size)
+			: this (language, name, size)
 		{
 			this.target_type = target_type;
 		}
 
-		NativeType target_type;
+		TargetType target_type;
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return size; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
+		}
 
 		public override bool IsByRef {
 			get {
@@ -40,7 +59,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public NativeType StaticType {
+		public TargetType StaticType {
 			get {
 				if (target_type == null)
 					throw new InvalidOperationException ();
@@ -55,7 +74,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativePointerObject (this, location);
 		}

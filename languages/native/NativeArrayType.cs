@@ -2,22 +2,40 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-
-	internal class NativeArrayType : NativeType, ITargetArrayType
+	internal class NativeArrayType : TargetType, ITargetArrayType
 	{
-		public NativeArrayType (string name, NativeType element_type, int lower_bound, int upper_bound, int size)
-			: base (name, TargetObjectKind.Array, size, true)
+		string name;
+		int size;
+
+		public NativeArrayType (ILanguage language, string name, TargetType element_type,
+					int lower_bound, int upper_bound, int size)
+			: base (language, TargetObjectKind.Array)
 		{
+			this.name = name;
+			this.size = size;
+
 			this.element_type = element_type;
 			this.lower_bound = lower_bound;
 			this.upper_bound = upper_bound;
 		}
 	  
-		NativeType element_type;
+		TargetType element_type;
 		int lower_bound;
 		int upper_bound;
 
-		public NativeType ElementType {
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return size; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
+		}
+
+		public TargetType ElementType {
 			get {
 				return element_type;
 			}
@@ -41,7 +59,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeArrayObject (this, location, lower_bound, upper_bound);
 		}

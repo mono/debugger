@@ -5,11 +5,11 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeStringObject : NativeFundamentalObject
 	{
-		public NativeStringObject (NativeType type, TargetLocation location)
+		public NativeStringObject (TargetType type, TargetLocation location)
 			: base (type, location)
 		{ }
 
-		protected override int MaximumDynamicSize {
+		protected int MaximumDynamicSize {
 			get {
 				return NativeStringType.MaximumStringLength;
 			}

@@ -2,17 +2,23 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeEnumType : NativeType, ITargetEnumType
+	internal class NativeEnumType : TargetType, ITargetEnumType
 	{
+		string name;
+		int size;
+
 		string[] element_names;
 		int[] element_values;
 
 		NativeFieldInfo[] members;
 		NativeFieldInfo value;
 
-		public NativeEnumType (string name, int size, string[] element_names, int[] element_values)
-			: base (name, TargetObjectKind.Enum, size, true)
+		public NativeEnumType (ILanguage language, string name, int size,
+				       string[] element_names, int[] element_values)
+			: base (language, TargetObjectKind.Enum)
 		{
+			this.name = name;
+			this.size = size;
 			this.element_names = element_names;
 			this.element_values = element_values;
 
@@ -22,6 +28,18 @@ namespace Mono.Debugger.Languages.Native
 				members[i] = new NativeFieldInfo (
 					this, element_names[i], i, true, element_values[i]);
 			}
+		}
+
+		public override string Name {
+			get { return name; }
+		}
+
+		public override int Size {
+			get { return size; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
 		}
 
 		public string[] ElementNames {
@@ -59,7 +77,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override NativeObject GetObject (TargetLocation location)
+		public override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeEnumObject (this, location);
 		}
