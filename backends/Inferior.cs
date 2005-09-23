@@ -277,14 +277,16 @@ namespace Mono.Debugger.Backends
 			long[] addresses = new long [length];
 
 			for (int i = 0; i < length; i++) {
-				if (input_objects [i] == null)
+				MonoObject obj = input_objects [i];
+
+				if (obj == null)
 					continue;
-				if (input_objects [i].Location.HasAddress) {
+				if (obj.Location.HasAddress) {
 					blob_offsets [i] = -1;
-					addresses [i] = input_objects [i].Location.Address.Address;
+					addresses [i] = obj.Location.Address.Address;
 					continue;
 				}
-				blobs [i] = input_objects [i].RawContents;
+				blobs [i] = obj.Location.ReadBuffer (obj.Type.Size);
 				blob_offsets [i] = blob_size;
 				blob_size += blobs [i].Length;
 			}
