@@ -10,23 +10,10 @@ namespace Mono.Debugger.Languages
 	internal abstract class TargetLocation
 	{
 		protected ITargetAccess target;
-		protected StackFrame frame;
 
-		protected TargetLocation (StackFrame frame)
-			: this (frame, frame.TargetAccess)
-		{ }
-
-		protected TargetLocation (StackFrame frame, ITargetAccess target)
+		protected TargetLocation (ITargetAccess target)
 		{
 			this.target = target;
-			this.frame = frame;
-		}
-
-		// <summary>
-		//   The stack frame this location belongs to.
-		// </summary>
-		public StackFrame StackFrame {
-			get { return frame; }
 		}
 
 		// <summary>
@@ -147,13 +134,7 @@ namespace Mono.Debugger.Languages
 
 		public override string ToString ()
 		{
-			if (frame != null)
-				return String.Format ("{0} ({1}:{2})",
-						      GetType (), frame.TargetAddress,
-						      MyToString ());
-			else
-				return String.Format ("{0} ({1})",
-						      GetType (), MyToString ());
+			return String.Format ("{0} ({1})", GetType (), MyToString ());
 		}
 	}
 }

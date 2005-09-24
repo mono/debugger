@@ -158,7 +158,7 @@ namespace Mono.Debugger.Languages.Mono
 				MonoFieldInfo finfo = type.StaticFields [index];
 
 				TargetLocation location = new AbsoluteTargetLocation (
-					null, target, data_address);
+					target, data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					field_offsets [finfo.Position]);
 
@@ -183,7 +183,7 @@ namespace Mono.Debugger.Languages.Mono
 				MonoFieldInfo finfo = type.StaticFields [index];
 
 				TargetLocation location = new AbsoluteTargetLocation (
-					null, target, data_address);
+					target, data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					field_offsets [finfo.Position]);
 

@@ -2593,8 +2593,9 @@ namespace Mono.Debugger.Architecture
 					off = offset;
 				}
 
-				return new MonoVariableLocation (frame, true, dwarf.frame_register,
-								 off, type.IsByRef);
+				Register reg = frame.Registers [dwarf.frame_register];
+				return new MonoVariableLocation (
+					frame.TargetAccess, true, reg, off, type.IsByRef);
 			}
 
 			public ITargetObject GetObject (StackFrame frame)

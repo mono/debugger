@@ -89,7 +89,8 @@ namespace Mono.Debugger.Languages.Native
 		public ITargetPointerObject CreatePointer (StackFrame frame,
 							   TargetAddress address)
 		{
-			TargetLocation location = new AbsoluteTargetLocation (frame, address);
+			TargetLocation location = new AbsoluteTargetLocation (
+				frame.TargetAccess, address);
 			return new NativePointerObject (pointer_type, location);
 		}
 

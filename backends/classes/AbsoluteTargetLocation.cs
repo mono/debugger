@@ -9,21 +9,8 @@ namespace Mono.Debugger.Languages
 	{
 		TargetAddress address;
 
-		public AbsoluteTargetLocation (StackFrame frame, TargetAddress address)
-			: base (frame)
-		{
-			this.address = address;
-		}
-
-		public AbsoluteTargetLocation (StackFrame frame, ITargetAccess target,
-					       TargetAddress address)
-			: base (frame, target)
-		{
-			this.address = address;
-		}
-
 		public AbsoluteTargetLocation (ITargetAccess target, TargetAddress address)
-			: base (null, target)
+			: base (target)
 		{
 			this.address = address;
 		}

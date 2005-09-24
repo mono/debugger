@@ -11,14 +11,14 @@ namespace Mono.Debugger.Languages
 	{
 		bool is_byref;
 		bool is_regoffset;
-		int register;
+		Register register;
 		long regoffset;
 
 		TargetAddress address;
 
-		public MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
-					     long regoffset, bool is_byref)
-			: base (frame)
+		public MonoVariableLocation (ITargetAccess target, bool is_regoffset,
+					     Register register, long regoffset, bool is_byref)
+			: base (target)
 		{
 			this.is_regoffset = is_regoffset;
 			this.register = register;
@@ -33,11 +33,10 @@ namespace Mono.Debugger.Languages
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
 			// register and return it.
-			Register reg = frame.Registers [register];
-			if (!reg.Valid)
+			if (!register.Valid)
 				throw new LocationInvalidException ();
 
-			long contents = reg.Value;
+			long contents = register.Value;
 
 			if (contents == 0)
 				address = TargetAddress.Null;
@@ -106,7 +105,7 @@ namespace Mono.Debugger.Languages
 				throw new InternalError ();
 
 			// If this is a valuetype, the register hold the whole data.
-			frame.SetRegister (register, contents);
+			register.WriteRegister (target, contents);
 			update ();
 		}
 
@@ -115,22 +114,20 @@ namespace Mono.Debugger.Languages
 			if (is_regoffset) {
 				target.TargetMemoryAccess.WriteAddress (address, new_address);
 			} else {
-				frame.SetRegister (register, new_address.Address);
+				register.WriteRegister (target, new_address.Address);
 				update ();
 			}
 		}
 
 		public override string Print ()
 		{
-			int regindex = frame.Registers [register].Index;
-			string name = frame.Process.Architecture.RegisterNames [regindex];
-
+			int regindex = register.Index;
 			if (regoffset > 0)
-				return String.Format ("%{0}+0x{1:x}", name, regoffset);
+				return String.Format ("%{0}+0x{1:x}", register.Index, regoffset);
 			else if (regoffset < 0)
-				return String.Format ("%{0}-0x{1:x}", name, -regoffset);
+				return String.Format ("%{0}-0x{1:x}", register.Index, -regoffset);
 			else
-				return String.Format ("%{0}", name);
+				return String.Format ("%{0}", register.Index);
 		}
 
 		protected override string MyToString ()

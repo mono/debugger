@@ -1,5 +1,14 @@
 2005-09-24  Martin Baulig  <martin@ximian.com>
 
+	* backends/classes/TargetLocation.cs
+	(TargetLocation.StackFrame): Removed.
+
+	* backends/classes/MonoVariableLocation.cs
+	(MonoVariableLocation..ctor): Take an `ITargeAccess' and a
+	`Register' argument instead of a `StackFrame'.
+
+2005-09-24  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFundamentalObject.cs
 	(ITargetFundamentalObject.SetObject): Added `ITargetAccess' arg.
 

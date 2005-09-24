@@ -85,12 +85,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetLocation GetLocation (StackFrame frame)
 		{
+			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return new MonoVariableLocation (
-					frame, false, info.Index, info.Offset, is_byref);
+					frame.TargetAccess, false, register, info.Offset, is_byref);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
 				return new MonoVariableLocation (
-					frame, true, info.Index, info.Offset, is_byref);
+					frame.TargetAccess, true, register, info.Offset, is_byref);
 			else
 				return null;
 		}
